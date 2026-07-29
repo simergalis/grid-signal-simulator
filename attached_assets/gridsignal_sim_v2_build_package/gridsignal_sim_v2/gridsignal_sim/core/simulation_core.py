@@ -122,8 +122,14 @@ class SimulationState:
 def evaluate_tick(state: SimulationState, sim_time: float, dt_seconds: float) -> TickResult:
     """The fixed-order tick evaluation (Design Spec Section 5 / 10.1):
 
-        GPU -> Cooling -> Turbine/BESS (arbitration) -> Solar (offset)
+        GPU -> Cooling -> Solar (renewable offset) -> Turbine/BESS (arbitration)
         -> Checkpoint classifier -> Confidence engine
+
+    Solar moves before arbitration (Step 3 Item 0): P_dispatch_required(t) =
+    P_total(t) − P_renewable(t) per §7.1.1.  The arbitrator sizes against
+    P_dispatch_required, not P_total.  Renewables have no lead-time signal and
+    are structurally absent from the ramp-capability calculation inside
+    DispatchArbitrator (§7.1.1 asymmetry 1 & 2).
 
     Deterministic: same inputs, same order, every time -- no dict/set
     iteration order dependency (all module lists are plain lists).
@@ -138,16 +144,22 @@ def evaluate_tick(state: SimulationState, sim_time: float, dt_seconds: float) ->
 
     p_total_mw = p_compute_mw + p_cooling_mw
 
-    # 3. Turbine ramp + BESS shortfall coverage
-    for turbine in state.turbines:
-        turbine.advance(sim_time, dt_seconds)
-    turbine_output_mw, bess_output_mw = state.arbitrator.tick(p_total_mw, dt_seconds)
-
-    # 4. Solar offset (Extension E-1) -> Net_demand(t), clipped at zero
+    # 3. Solar offset (Extension E-1 / §7.1.1) — evaluated BEFORE arbitration
+    #    so the fleet sizes against P_dispatch_required, not P_total.
+    #    P_renewable can vanish without notice (Δt_lead = 0 for inverter trips);
+    #    the arbitrator must never count it as ramp capability.
     for solar in state.solar_arrays:
         solar.advance(sim_time, dt_seconds)
-    solar_output_mw = sum(s.output_mw() for s in state.solar_arrays)
-    net_demand_mw = max(0.0, p_total_mw - solar_output_mw)
+    p_renewable_mw = sum(s.output_mw() for s in state.solar_arrays)
+    # P_dispatch_required(t) = P_total(t) − P_renewable(t), clipped at zero.
+    # net_demand_mw is a synonym kept for TickResult reporting compatibility.
+    p_dispatch_required_mw = max(0.0, p_total_mw - p_renewable_mw)
+    net_demand_mw = p_dispatch_required_mw
+
+    # 4. Turbine ramp + BESS shortfall coverage, sized against P_dispatch_required
+    for turbine in state.turbines:
+        turbine.advance(sim_time, dt_seconds)
+    turbine_output_mw, bess_output_mw = state.arbitrator.tick(p_dispatch_required_mw, dt_seconds)
 
     # 5. Checkpoint classification, per active training job
     checkpoint_states: dict[str, str] = {}

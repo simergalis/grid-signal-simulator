@@ -278,10 +278,23 @@ class InsufficientReserveAlert:
 
 
 class DispatchArbitrator:
-    """Stages turbines and BESS against a predicted step-load per
-    source spec Section 7.2's four-step rule. This skeleton exposes
-    one entry point per tick; the Run Manager (runtime/run_manager.py)
-    calls it after computing this tick's P_total(t)."""
+    """Stages turbines and BESS against P_dispatch_required(t) per §7.1.1.
+
+    P_dispatch_required(t) = P_total(t) − P_renewable(t).
+
+    Two asymmetries are structural here, not branch-guarded:
+
+    1. No lead time for renewable shortfalls.  An inverter trip is a step
+       change with Δt_lead = 0; stage_for_predicted_step() is only called for
+       compute job starts (which do have lead time).  Renewable availability is
+       subtracted by the caller before tick() is entered, so the fleet sizes
+       against the net load it must serve from dispatchable sources alone.
+
+    2. Renewables are availability, not dispatchability.  P_renewable is never
+       counted toward ramp capability in the step-4 shortfall calculation.
+       stage_for_predicted_step() uses only turbine r_asset values — there is
+       no renewable term to forget, because there is no renewable term at all.
+    """
 
     def __init__(self, turbines: list[TurbineModule], bess_units: list[BessModule]) -> None:
         self.turbines = turbines
@@ -290,9 +303,18 @@ class DispatchArbitrator:
     def stage_for_predicted_step(
         self, delta_p_mw: float, dt_lead_seconds: float, sim_time: float
     ) -> Optional[InsufficientReserveAlert]:
-        """Called once, at a job's `starting` event (source spec
-        Section 7.2 step 1) -- NOT every tick. Splits delta_p across
-        online turbines and checks reserve sufficiency (step 4)."""
+        """Called once at a job's STARTING event (§7.2 step 1) — NOT every tick.
+
+        delta_p_mw is the step increase in P_dispatch_required caused by the
+        new job.  For a compute job start this equals the step in P_total (solar
+        output is unaffected by a new job landing); it must NOT include any
+        renewable contribution because renewables can vanish without notice
+        (Δt_lead = 0 for renewable shortfalls).
+
+        Ramp capability is turbine-only — renewables are structurally absent
+        from this function (no term to add, no branch to forget).  BESS bridges
+        any gap between turbine ramp rate and required delta delivery time.
+        """
         if not self.turbines:
             required_ramp_s = float("inf")
         else:
@@ -306,9 +328,9 @@ class DispatchArbitrator:
         if gap_s <= 0:
             return None  # sufficient lead time, no alert -- TC-11
 
-        # Peak shortfall the BESS must cover, per the Section 7.3 worked
-        # example: turbines have already ramped `dt_lead_seconds` worth
-        # by the time the full load lands.
+        # Peak shortfall the BESS must cover, per the §7.3 worked example:
+        # turbines have already ramped dt_lead_seconds worth by the time the
+        # full load lands.  Ramp capability = turbines only (§7.1.1 asymmetry 2).
         already_ramped_mw = sum(t.config.r_asset_mw_per_s for t in self.turbines) * dt_lead_seconds
         peak_shortfall_mw = max(0.0, delta_p_mw - already_ramped_mw)
 
@@ -325,13 +347,23 @@ class DispatchArbitrator:
             fires_at_sim_time=sim_time,
         )
 
-    def tick(self, p_total_mw: float, dt_seconds: float) -> tuple[float, float]:
-        """Called every tick. Returns (turbine_output_mw, bess_output_mw)."""
+    def tick(self, p_dispatch_required_mw: float, dt_seconds: float) -> tuple[float, float]:
+        """Called every tick.  Returns (turbine_output_mw, bess_output_mw).
+
+        p_dispatch_required_mw = P_total(t) − P_renewable(t) per §7.1.1.
+        The renewable offset is applied by the caller (evaluate_tick) before
+        this method is entered — renewables are structurally absent from all
+        ramp and reserve arithmetic here (§7.1.1 asymmetry 2).
+
+        A renewable shortfall (inverter trip, cloud shadow) has Δt_lead = 0;
+        the fleet must cover P_dispatch_required from dispatchable sources alone
+        with no warning (§7.1.1 asymmetry 1).
+        """
         turbine_output_mw = sum(t.output_mw() for t in self.turbines)
         bess_output_mw = 0.0
-        remaining_total = p_total_mw
+        remaining = p_dispatch_required_mw
         for bess in self.bess_units:
-            bess_output_mw += bess.cover_shortfall(remaining_total, turbine_output_mw, dt_seconds)
+            bess_output_mw += bess.cover_shortfall(remaining, turbine_output_mw, dt_seconds)
         return turbine_output_mw, bess_output_mw
 
 
