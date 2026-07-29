@@ -1,0 +1,28 @@
+Three fixes, one change set. Write a failing test for each before fixing it.
+
+D1 — explicit hold. Your own analysis is correct: explicit_active is consumed after one
+tick, so from tick 2 the heuristic's 45s RECOVERY_WINDOW_S timeout runs against a
+drop_onset_time set by checkpoint_start. A checkpoint write longer than 45s autonomously
+moves to UNCERTAIN then JOB_END, overriding an authoritative scheduler event and risking
+an erroneous turbine ramp-down. Implement your proposed fix: a separate explicit_hold flag,
+set on checkpoint_start, cleared on checkpoint_end. While explicit_hold is true the
+IN_VALLEY branch skips the elapsed > RECOVERY_WINDOW_S check entirely. Keep explicit_active
+for the single-tick bypass — the two flags do different jobs.
+Test: checkpoint_start, 24 ticks (120s) at 80% draw, then checkpoint_end. Must be
+IN_VALLEY throughout and CHECKPOINT after. This fails today at tick 10.
+
+D2 — terminal guard bypass. apply_explicit_event writes hist.state directly with no
+JOB_END check, so a late or duplicate checkpoint_end after JOB_END resurrects the job to
+CHECKPOINT. §11.3's reordering buffer makes late events expected. Add the same terminal
+guard: once JOB_END is set for a job_id, apply_explicit_event must not change state. Log
+the discarded event rather than dropping it silently.
+Test: drive a job to JOB_END, then apply checkpoint_end. State must remain JOB_END.
+
+D3 — test honesty, no behaviour change. TC-07 and TC-08 take the identical code path and
+differ only in when the test stops observing. Do not change the code. Update both
+docstrings to say so explicitly: TC-08 asserts the UNCERTAIN hold before the 30s grace
+expires; TC-07 asserts the JOB_END terminal state after it; both from the same input class.
+Note in the docstring that §6.2's job-end bullet and ambiguous-case bullet describe the same
+input state, and that this implementation reads them as classification vs staging behaviour.
+
+Then re-run all four Step 1 commands and report. Stop.

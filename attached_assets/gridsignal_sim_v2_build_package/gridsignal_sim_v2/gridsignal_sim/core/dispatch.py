@@ -11,12 +11,15 @@ layer.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
 
 from .asset_modules import BessModule, GPUModule, TurbineModule
 from .models import ConfidenceBand, DataQualityTag
+
+_log = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -41,10 +44,19 @@ class _JobDrawHistory:
     pre_drop_draw_mw: Optional[float] = None
     state: CheckpointState = CheckpointState.NORMAL
     uncertain_since: Optional[float] = None
-    # Set by apply_explicit_event(); causes record_and_classify() to short-circuit
-    # the shape heuristic for exactly one tick.  This ensures the explicit
-    # scheduler event is the authoritative classification, not immediately
-    # overwritten by heuristic re-evaluation.
+
+    # D1 fix (explicit_hold): set by apply_explicit_event(checkpoint_start=True),
+    # cleared by apply_explicit_event(checkpoint_start=False).  While True, the
+    # IN_VALLEY branch skips the RECOVERY_WINDOW_S timeout entirely — the
+    # scheduler event is authoritative and the heuristic timer must not override
+    # it regardless of how long the checkpoint write takes.
+    explicit_hold: bool = False
+
+    # D1/B-1 (explicit_active): set alongside explicit_hold on checkpoint_start,
+    # consumed on exactly the next record_and_classify call.  Prevents the NORMAL/
+    # CHECKPOINT re-entry branch from immediately re-detecting a drop and
+    # overwriting the IN_VALLEY state the explicit event just established.
+    # Does a different job from explicit_hold and must be kept separately.
     explicit_active: bool = False
 
     def trailing_median(self, sim_time: float, window_s: float = 300.0) -> Optional[float]:
@@ -71,7 +83,7 @@ class CheckpointClassifier:
     DROP_THRESHOLD_FRACTION = 0.15      # §6.2: drop >= 15% triggers IN_VALLEY
     MIN_DROP_DURATION_S = 5.0
     MAX_DROP_DURATION_S = 30.0
-    RECOVERY_WINDOW_S = 45.0            # §6.2: recovery window
+    RECOVERY_WINDOW_S = 45.0            # §6.2: recovery window (heuristic only)
     RECOVERY_THRESHOLD_FRACTION = 0.90  # §6.2: >= 90% recovery -> CHECKPOINT
     UNCERTAIN_GRACE_PERIOD_S = 30.0     # §6.2: hold staging after 45s expiry
 
@@ -87,31 +99,57 @@ class CheckpointClassifier:
         """Apply an authoritative scheduler checkpoint_start or checkpoint_end.
 
         Per §6.2, an explicit scheduler event is the primary signal and
-        short-circuits the shape heuristic entirely.  This method initialises
-        all state that the heuristic would normally set -- specifically
-        drop_onset_time and pre_drop_draw_mw -- so that the next call to
-        record_and_classify() does not enter a half-initialised IN_VALLEY
-        branch.  The explicit_active flag tells record_and_classify() to skip
-        the heuristic for exactly one tick after this call.
+        short-circuits the shape heuristic entirely.
+
+        D2 fix: JOB_END is terminal.  apply_explicit_event previously wrote
+        hist.state directly with no terminal check, so a late or duplicate
+        checkpoint_end (expected under §11.3's reordering buffer) would resurrect
+        a finished job to CHECKPOINT.  Events arriving after JOB_END are now
+        discarded and logged.
+
+        D1 fix: explicit_hold (set here on checkpoint_start, cleared on
+        checkpoint_end) causes the IN_VALLEY branch in record_and_classify to
+        skip the RECOVERY_WINDOW_S timeout for as long as the authoritative hold
+        is active.  This is separate from explicit_active, which only bypasses
+        the re-entry drop-detection on exactly the next tick.
         """
         hist = self._history_for(job_id)
+
+        # D2 fix: terminal guard.  §11.3 reordering buffer means late events are
+        # expected in production; discard silently-but-visibly rather than letting
+        # a stale event change control state.
+        if hist.state == CheckpointState.JOB_END:
+            _log.debug(
+                "apply_explicit_event discarded for job %r: state is JOB_END "
+                "(terminal).  is_checkpoint_start=%r sim_time=%s",
+                job_id, is_checkpoint_start, sim_time,
+            )
+            return
+
         if is_checkpoint_start:
             hist.state = CheckpointState.IN_VALLEY
             hist.drop_onset_time = sim_time
             # Initialise pre_drop_draw_mw from the trailing median so the
             # IN_VALLEY guard below does not see None.  Fall back to the last
             # recorded sample, or to a sentinel when there is no history yet
-            # (sentinel is safe because explicit events bypass shape heuristic).
+            # (sentinel is safe because explicit_active bypasses the heuristic
+            # on tick 1, and explicit_hold bypasses the timeout thereafter).
             median = hist.trailing_median(sim_time)
             if median is not None and median > 0:
                 hist.pre_drop_draw_mw = median
             elif hist.samples:
                 hist.pre_drop_draw_mw = hist.samples[-1][1]
             else:
-                hist.pre_drop_draw_mw = 1.0  # sentinel; bypassed by explicit_active
+                hist.pre_drop_draw_mw = 1.0  # sentinel
+            # D1 fix: hold the explicit state until checkpoint_end arrives.
+            hist.explicit_hold = True
         else:
             hist.state = CheckpointState.CHECKPOINT
-        # Short-circuit the heuristic on the very next record_and_classify call.
+            # D1 fix: checkpoint_end closes the authoritative hold.
+            hist.explicit_hold = False
+
+        # B-1/D1 fix: bypass the re-entry drop-detection branch for exactly one
+        # tick so that the explicit event is not immediately overwritten.
         hist.explicit_active = True
 
     def record_and_classify(
@@ -119,7 +157,7 @@ class CheckpointClassifier:
     ) -> CheckpointState:
         hist = self._history_for(job_id)
         hist.samples.append((sim_time, draw_mw))
-        cutoff = sim_time - 600  # keep a bit more than the 5-minute window
+        cutoff = sim_time - 600  # keep slightly more than the 5-minute window
         hist.samples = [(t, v) for t, v in hist.samples if t >= cutoff]
 
         # B-3 fix: JOB_END is terminal.  A classification that oscillates
@@ -128,8 +166,8 @@ class CheckpointClassifier:
         if hist.state == CheckpointState.JOB_END:
             return hist.state
 
-        # B-1 fix (explicit-event path): the explicit scheduler event is the
-        # authoritative signal; short-circuit the heuristic for one tick.
+        # B-1/D1 fix (explicit_active): the explicit scheduler event is the
+        # authoritative signal; bypass re-entry drop-detection for one tick.
         if hist.explicit_active:
             hist.explicit_active = False
             return hist.state
@@ -145,9 +183,8 @@ class CheckpointClassifier:
             return hist.state
 
         if hist.state == CheckpointState.IN_VALLEY:
-            # B-1 fix: replace assert with a real guard.  Asserts are stripped
-            # under python -O, which would convert this crash into silent None
-            # arithmetic on a control path.
+            # B-1 fix: raise rather than assert — asserts are stripped under
+            # python -O, silently converting a visible crash into None arithmetic.
             if hist.drop_onset_time is None or hist.pre_drop_draw_mw is None:
                 raise ValueError(
                     f"IN_VALLEY for job {job_id!r} is missing drop_onset_time or "
@@ -165,24 +202,25 @@ class CheckpointClassifier:
                 and recovered_fraction >= self.RECOVERY_THRESHOLD_FRACTION
             ):
                 hist.state = CheckpointState.CHECKPOINT
-            elif elapsed > self.RECOVERY_WINDOW_S:
+            elif elapsed > self.RECOVERY_WINDOW_S and not hist.explicit_hold:
+                # D1 fix: only apply the heuristic timeout when there is no
+                # authoritative scheduler hold in force.  If explicit_hold is True
+                # the checkpoint_start event has asserted that this IS a checkpoint
+                # write; we wait for the matching checkpoint_end regardless of
+                # elapsed time.
                 if recovered_fraction >= self.RECOVERY_THRESHOLD_FRACTION:
-                    # Recovered after the window -- not a clean checkpoint by the
-                    # heuristic, but the job is running normally again.
+                    # Recovered after the window — job is running normally again.
                     hist.state = CheckpointState.NORMAL
                 else:
                     # B-2 fix: 45s elapsed without recovery and without an
-                    # explicit job_end event.  §6.2 routes this to UNCERTAIN:
-                    # hold staging for a further 30s grace period and flag the
-                    # job.  JOB_END follows only from an explicit event OR from
-                    # the grace period expiring in the UNCERTAIN handler below.
-                    # (Previously the code set JOB_END here, then tested
-                    # `elif recovered < 0.90` -- an unreachable branch because
-                    # that condition was already consumed by the preceding line.)
+                    # explicit job_end event → UNCERTAIN; hold staging for the
+                    # 30s grace period.  JOB_END follows only from an explicit
+                    # event or grace-period expiry in the UNCERTAIN handler below.
                     hist.state = CheckpointState.UNCERTAIN
                     if hist.uncertain_since is None:
                         hist.uncertain_since = sim_time
-            # else: still within recovery window, not yet recovered -> stays IN_VALLEY
+            # else: within recovery window, OR explicit hold suppressing timeout
+            #       → stay IN_VALLEY
             return hist.state
 
         if hist.state == CheckpointState.UNCERTAIN:
@@ -190,8 +228,8 @@ class CheckpointClassifier:
                 raise ValueError(
                     f"UNCERTAIN for job {job_id!r} is missing uncertain_since.  "
                     "UNCERTAIN must only be entered when the IN_VALLEY recovery "
-                    "window expires without recovery, at which point uncertain_since "
-                    "is set to the current sim_time."
+                    "window expires without recovery, setting uncertain_since at "
+                    "that moment."
                 )
             if sim_time - hist.uncertain_since > self.UNCERTAIN_GRACE_PERIOD_S:
                 hist.state = CheckpointState.JOB_END
@@ -269,9 +307,6 @@ class DispatchArbitrator:
         remaining_total = p_total_mw
         for bess in self.bess_units:
             bess_output_mw += bess.cover_shortfall(remaining_total, turbine_output_mw, dt_seconds)
-            # Each BESS unit sees the same (p_total, turbine_output) pair in
-            # this skeleton -- a fleet-aware split is a documented refinement,
-            # not required to demonstrate the arbitration rule itself.
         return turbine_output_mw, bess_output_mw
 
 
@@ -290,8 +325,6 @@ class ConfidenceEngine:
     """
 
     BASE_BAND_FRACTION = 0.05
-    # Chosen values, not derived -- label makes the intent explicit so
-    # future work does not mistake them for measured constants.
     WIDENING_PER_TAG = {
         DataQualityTag.UNMAPPED_HARDWARE: 0.10,   # chosen value
         DataQualityTag.UNCALIBRATED_SITE: 0.08,   # chosen value

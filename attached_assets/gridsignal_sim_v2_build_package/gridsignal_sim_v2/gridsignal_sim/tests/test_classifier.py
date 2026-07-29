@@ -115,8 +115,25 @@ def test_tc06_heuristic_positive_match():
 
 def test_tc07_heuristic_negative_match_job_end():
     """TC-07: 15% drop, 30s duration, recovers to only 85% by 45s.
-    Eventually classified job_end after uncertain grace period expires
-    (UNCERTAIN at 45s + JOB_END after 30s grace = 75s+ from onset).
+    Classified job_end.
+
+    D3 — test honesty: TC-07 and TC-08 share the identical code path.
+    Both enter IN_VALLEY on the same 15%-threshold drop, both transit to
+    UNCERTAIN when elapsed > 45s without recovery, and both would reach
+    JOB_END if observed long enough.  They differ only in when the test
+    stops asserting:
+
+      TC-08 asserts the UNCERTAIN hold *before* the 30s grace expires
+            (60s total elapsed, ~10s into the grace period).
+      TC-07 asserts the JOB_END terminal state *after* the grace expires
+            (85s total elapsed, 35s into the grace period).
+
+    §6.2 states two bullets — "ambiguous case → uncertain" and
+    "no recovery → job_end" — that describe the same input state at
+    different points in time.  This implementation reads the first bullet
+    as a staging-hold behaviour (keep turbines staged during the grace
+    period) and the second as the eventual classification (JOB_END once
+    grace expires).  TC-07 and TC-08 each assert one half of that pair.
     """
     clf = CheckpointClassifier()
     t = _settle(clf, "j1", 10.0)
@@ -143,8 +160,26 @@ def test_tc07_heuristic_negative_match_job_end():
 
 def test_tc08_ambiguous_uncertain():
     """TC-08: 16% drop, no recovery and no job_end event by 45s.
-    Status = uncertain; staging held for additional 30s grace period;
-    dashboard flag set.
+    Status = uncertain; staging held for additional 30s grace period.
+
+    D3 — test honesty: TC-07 and TC-08 share the identical code path.
+    Both enter IN_VALLEY on the same 15%-threshold drop (TC-08 uses 16%,
+    which is above the threshold in the same direction), both transit to
+    UNCERTAIN when elapsed > 45s without a >=90% recovery, and both
+    would reach JOB_END if the test continued past the 30s grace period.
+    They differ only in when the test stops asserting:
+
+      TC-08 asserts the UNCERTAIN hold *before* the 30s grace expires
+            (60s total elapsed, ~10s into the grace period).
+      TC-07 asserts the JOB_END terminal state *after* the grace expires
+            (85s total elapsed, 35s into the grace period).
+
+    §6.2 states two bullets — "ambiguous case → uncertain" and
+    "no recovery → job_end" — that describe the same input state at
+    different points in time.  This implementation reads the first bullet
+    as a staging-hold behaviour (keep turbines staged during the grace
+    period) and the second as the eventual classification (JOB_END once
+    grace expires).  TC-08 asserts the hold; TC-07 asserts the terminal.
     """
     clf = CheckpointClassifier()
     t = _settle(clf, "j1", 10.0)
@@ -248,4 +283,99 @@ def test_effective_pue_identity():
     assert math.isclose(effective_pue, expected, rel_tol=1e-6), (
         f"effective PUE {effective_pue:.8f} ≠ PUE_base × (1+α_max) = {expected:.8f} "
         "— an α/PUE double-count has been reintroduced"
+    )
+
+
+# ---------------------------------------------------------------------------
+# D1 — explicit hold must suppress RECOVERY_WINDOW_S timeout
+# ---------------------------------------------------------------------------
+
+def test_d1_explicit_hold_survives_45s_timeout():
+    """D1: checkpoint_start must suppress the RECOVERY_WINDOW_S timeout entirely.
+
+    §6.2: the explicit scheduler event is the authoritative (primary) signal.
+    A checkpoint write longer than 45s must stay IN_VALLEY until checkpoint_end
+    arrives — the heuristic fallback timer must not override an authoritative
+    scheduler event.
+
+    Current defect: explicit_active is consumed after tick 1.  From tick 2 the
+    IN_VALLEY branch's elapsed > RECOVERY_WINDOW_S check runs normally, and at
+    tick 10 (50s elapsed) transitions to UNCERTAIN, overriding the scheduler.
+
+    Fix required: a separate explicit_hold flag (set on checkpoint_start, cleared
+    on checkpoint_end) that causes the IN_VALLEY branch to skip the timeout check.
+    explicit_active (single-tick bypass of the re-entry drop-detection) does a
+    different job and must be kept.
+
+    This test fails today at tick 10 (50s elapsed).
+    """
+    clf = CheckpointClassifier()
+    t = _settle(clf, "j1", 10.0)
+
+    clf.apply_explicit_event("j1", is_checkpoint_start=True, sim_time=t)
+
+    # 24 ticks = 120s — well past the 45s heuristic window — at 80% draw
+    for i in range(24):
+        t += TICK_S
+        state = clf.record_and_classify("j1", t, 8.0)
+        assert state is CheckpointState.IN_VALLEY, (
+            f"tick {i + 1} (elapsed={(i + 1) * TICK_S:.0f}s): explicit_hold must "
+            f"suppress RECOVERY_WINDOW_S timeout; got {state}"
+        )
+
+    # checkpoint_end arrives after the long write
+    clf.apply_explicit_event("j1", is_checkpoint_start=False, sim_time=t)
+    t += TICK_S
+    final = clf.record_and_classify("j1", t, 10.0)
+    assert final is CheckpointState.CHECKPOINT, (
+        f"explicit checkpoint_end must classify as CHECKPOINT; got {final}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# D2 — terminal guard bypass in apply_explicit_event
+# ---------------------------------------------------------------------------
+
+def test_d2_late_checkpoint_end_after_job_end_discarded():
+    """D2: apply_explicit_event must honour the JOB_END terminal guard.
+
+    §11.3's reordering buffer makes late or duplicate events expected in
+    production.  A checkpoint_end arriving after JOB_END must be discarded —
+    resurrecting a terminal job to CHECKPOINT is incorrect and would re-stage
+    turbines for a job that has already ended.
+
+    Current defect: apply_explicit_event writes hist.state directly with no
+    JOB_END check, so the late checkpoint_end sets state=CHECKPOINT and the
+    next record_and_classify returns CHECKPOINT instead of JOB_END.
+
+    This test fails today because state becomes CHECKPOINT after the call.
+    """
+    clf = CheckpointClassifier()
+    t = _settle(clf, "j1", 10.0)
+    onset = t
+
+    # Drive to JOB_END via the heuristic path
+    drop_draw = 10.0 * 0.85   # 15% drop; stays below 90% throughout
+    clf.record_and_classify("j1", t, drop_draw)
+    while (t - onset) < 85.0:
+        t += TICK_S
+        clf.record_and_classify("j1", t, drop_draw)
+
+    assert clf.state_of("j1") is CheckpointState.JOB_END, "setup failed: expected JOB_END"
+
+    # Late / duplicate checkpoint_end arrives after the job is already terminal
+    clf.apply_explicit_event("j1", is_checkpoint_start=False, sim_time=t)
+
+    # apply_explicit_event must not override JOB_END
+    assert clf.state_of("j1") is CheckpointState.JOB_END, (
+        f"apply_explicit_event must discard late checkpoint_end when state is "
+        f"JOB_END (terminal); got {clf.state_of('j1')}"
+    )
+
+    # record_and_classify on the next tick must also stay JOB_END
+    t += TICK_S
+    state = clf.record_and_classify("j1", t, 10.0)
+    assert state is CheckpointState.JOB_END, (
+        f"record_and_classify after discarded checkpoint_end must stay JOB_END; "
+        f"got {state}"
     )
