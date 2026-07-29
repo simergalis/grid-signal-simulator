@@ -35,7 +35,7 @@ import time
 from dataclasses import dataclass, field, asdict
 from typing import Optional
 
-import core.scenario_factory as scenario_factory
+import runtime.scenario_factory as scenario_factory
 import runtime.run_manager as run_manager_module
 from core.models import TickResult
 from core.simulation_core import evaluate_tick as _uninstrumented_evaluate_tick

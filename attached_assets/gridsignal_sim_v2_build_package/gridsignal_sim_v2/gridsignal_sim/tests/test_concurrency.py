@@ -8,7 +8,7 @@ import asyncio
 
 import pytest
 
-from core.scenario_factory import build_run_context
+from runtime.scenario_factory import build_run_context
 from runtime.run_manager import RunManager, WebSocketHub
 
 
