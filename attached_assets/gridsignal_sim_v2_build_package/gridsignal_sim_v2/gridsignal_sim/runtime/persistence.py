@@ -1,0 +1,594 @@
+"""
+runtime/persistence.py — SQLAlchemy-async persistence layer.
+
+v2.5 §22.7: ONE SQLite file on disk, WAL mode.  This is the Tier 0 + Tier 1
+store for the simulator.  Promoting to PostgreSQL is a connection-string
+change per §22.1 principle 4; all access goes through the ORM — no raw SQL
+in application code.
+
+reference/schema_fix.sql is the PostgreSQL PROMOTION TARGET; it is not used
+here.  Table shapes and constraint reasoning come from that file; dialect
+(SERIAL, JSONB, partitioning) does not.
+
+Write path
+----------
+SqlitePersistedTimeseriesSink.append() enqueues ticks onto _write_queue
+(a bounded asyncio.Queue) and returns immediately.  _drain_task, a
+background asyncio.Task started by start(), drains the queue and issues the
+INSERT outside the tick path.
+
+This decouples SQLite write latency from tick scheduling latency: a 1–5 ms
+embedded-store write in a single-process async app would otherwise appear as
+tick delivery latency during NFR-2 load testing and get misattributed to the
+forecast path (§22.7).
+
+Where the queue lives
+---------------------
+_write_queue is an asyncio.Queue(maxsize=QUEUE_MAXSIZE) created in start().
+_drain_task is the asyncio.Task that reads from _write_queue.
+Both are attributes of SqlitePersistedTimeseriesSink; neither is module-level
+state, so concurrent runs each driven by the same sink instance share one
+queue and one drain task — writes from all runs fan into the same serialised
+INSERT stream, which is correct for a single SQLite file.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Optional
+
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    select,
+    text,
+)
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+from core.models import TickResult
+
+_log = logging.getLogger(__name__)
+
+# Sentinel placed on _write_queue by stop() to signal the drain task to exit.
+_STOP = object()
+
+
+# ---------------------------------------------------------------------------
+# ORM base
+# ---------------------------------------------------------------------------
+
+class Base(DeclarativeBase):
+    pass
+
+
+# ---------------------------------------------------------------------------
+# §8.1 core entities
+# ---------------------------------------------------------------------------
+
+class Site(Base):
+    """§8.1 Site: top-level configuration container for one physical facility."""
+
+    __tablename__ = "site"
+
+    site_id: Mapped[str] = mapped_column(String, primary_key=True)
+    pue_base: Mapped[float] = mapped_column(Float, nullable=False)
+    alpha_max: Mapped[float] = mapped_column(Float, nullable=False)
+    tau_seconds: Mapped[float] = mapped_column(Float, nullable=False)
+    dt_thermal_seconds: Mapped[float] = mapped_column(Float, nullable=False)
+    uncalibrated: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class AssetConfig(Base):
+    """§8.1 AssetConfig: one row per physical asset (GPU module, turbine,
+    BESS unit, solar array) associated with a site.  config_json holds the
+    full serialised config dataclass so the row is self-contained."""
+
+    __tablename__ = "asset_config"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    site_id: Mapped[str] = mapped_column(
+        String, ForeignKey("site.site_id"), nullable=False, index=True
+    )
+    asset_type: Mapped[str] = mapped_column(
+        String, nullable=False
+    )  # gpu | turbine | bess | solar
+    asset_id: Mapped[str] = mapped_column(String, nullable=False)
+    config_json: Mapped[str] = mapped_column(
+        Text, nullable=False
+    )  # JSON-serialised config dataclass
+
+
+class Scenario(Base):
+    """§8.1 Scenario: a named run configuration; one row per run.
+    finalize() creates or updates this row when the run completes."""
+
+    __tablename__ = "scenario"
+
+    run_id: Mapped[str] = mapped_column(String, primary_key=True)
+    site_id: Mapped[Optional[str]] = mapped_column(
+        String, ForeignKey("site.site_id"), nullable=True, index=True
+    )
+    name: Mapped[str] = mapped_column(String, nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    verdict: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+
+
+class RunTimeseries(Base):
+    """§8.1 RunTimeseries: one row per TickResult.  Append-only (NFR-5).
+    data_quality_tags and checkpoint_states are JSON strings; SQLite has no
+    native JSON column type, and TEXT is portable to PostgreSQL's JSONB on
+    promotion (schema_fix.sql uses JSONB)."""
+
+    __tablename__ = "run_timeseries"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    run_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    tick_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    sim_time_seconds: Mapped[float] = mapped_column(Float, nullable=False)
+    p_compute_mw: Mapped[float] = mapped_column(Float, nullable=False)
+    p_cooling_mw: Mapped[float] = mapped_column(Float, nullable=False)
+    p_total_mw: Mapped[float] = mapped_column(Float, nullable=False)
+    net_demand_mw: Mapped[float] = mapped_column(Float, nullable=False)
+    turbine_output_mw: Mapped[float] = mapped_column(Float, nullable=False)
+    bess_output_mw: Mapped[float] = mapped_column(Float, nullable=False)
+    bess_soc_fraction: Mapped[float] = mapped_column(Float, nullable=False)
+    confidence_lower_mw: Mapped[float] = mapped_column(Float, nullable=False)
+    confidence_upper_mw: Mapped[float] = mapped_column(Float, nullable=False)
+    data_quality_tags: Mapped[str] = mapped_column(
+        Text, nullable=False
+    )  # JSON array of tag value strings
+    insufficient_reserve_alert: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    checkpoint_states: Mapped[str] = mapped_column(
+        Text, nullable=False
+    )  # JSON object: job_id -> state string
+
+
+class ControlEvent(Base):
+    """§8.1 ControlEvent: append-only log of all workload signals received
+    by a run.  Acknowledgments live in ControlEventAck so this table
+    stays immutable per FR-2.5 / NFR-5 — no UPDATE ever touches this table."""
+
+    __tablename__ = "control_event"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    run_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    event_id: Mapped[str] = mapped_column(String, nullable=False)
+    job_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    event_type: Mapped[str] = mapped_column(String, nullable=False)
+    timestamp: Mapped[float] = mapped_column(Float, nullable=False)
+    hardware_profile_id: Mapped[str] = mapped_column(String, nullable=False)
+    node_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    workload_class: Mapped[str] = mapped_column(String, nullable=False)
+    site_id: Mapped[str] = mapped_column(String, nullable=False)
+    received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+# ---------------------------------------------------------------------------
+# §17.1 deduplication window
+# ---------------------------------------------------------------------------
+
+class DedupeKey(Base):
+    """§17.1: 15-minute rolling deduplication window.
+    A row records the first time a (site_id, job_id, event_type, event_id)
+    4-tuple was seen.  Duplicate deliveries within the window are discarded
+    by checking for the row's existence before processing."""
+
+    __tablename__ = "dedupe_key"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    site_id: Mapped[str] = mapped_column(String, nullable=False)
+    job_id: Mapped[str] = mapped_column(String, nullable=False)
+    event_type: Mapped[str] = mapped_column(String, nullable=False)
+    event_id: Mapped[str] = mapped_column(String, nullable=False)
+    first_seen_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, index=True
+    )
+
+    __table_args__ = (
+        UniqueConstraint(
+            "site_id", "job_id", "event_type", "event_id",
+            name="uq_dedupe_key_tuple",
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# §17.2 quarantine
+# ---------------------------------------------------------------------------
+
+class Quarantine(Base):
+    """§17.2: Events that failed schema, domain, or parseability validation.
+
+    raw_payload is TEXT (never a JSON column) because a malformed event may
+    not be valid JSON at all, and §17.2 requires the full byte sequence be
+    logged.  parsed_json is an optional JSON-string sidecar for events that
+    parsed successfully but failed domain validation.
+
+    failure_kind is one of: schema | domain | unparseable
+    The CHECK constraint is enforced by the DB, not application code, so it
+    holds even on direct writes (e.g., during a post-incident investigation).
+    """
+
+    __tablename__ = "quarantine"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    site_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    received_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, index=True
+    )
+    raw_payload: Mapped[str] = mapped_column(Text, nullable=False)  # TEXT — never JSON column
+    parsed_json: Mapped[Optional[str]] = mapped_column(
+        Text, nullable=True
+    )  # optional JSON sidecar
+    failure_kind: Mapped[str] = mapped_column(
+        String, nullable=False
+    )  # schema | domain | unparseable
+    field_name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    rule_violated: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    # Recovery path (§17.2): a correcting event may clear a quarantined entry.
+    corrected_by_event: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    cleared_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "failure_kind IN ('schema', 'domain', 'unparseable')",
+            name="ck_quarantine_failure_kind",
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# §21.6 / §26.3 recommendation + audit trail
+# ---------------------------------------------------------------------------
+
+class Principal(Base):
+    """§21.6: human or system principals who can review recommendations.
+    role is one of: viewer | operator | approver."""
+
+    __tablename__ = "principal"
+
+    principal_id: Mapped[str] = mapped_column(String, primary_key=True)
+    display_name: Mapped[str] = mapped_column(String, nullable=False)
+    role: Mapped[str] = mapped_column(String, nullable=False)  # viewer|operator|approver
+
+    __table_args__ = (
+        CheckConstraint(
+            "role IN ('viewer', 'operator', 'approver')",
+            name="ck_principal_role",
+        ),
+    )
+
+
+class Recommendation(Base):
+    """§21.6 / §26.3: agent-generated parameter change proposal.
+
+    The DB-level CHECK constraint on reviewer_id ensures a row cannot reach
+    state='applied' or state='rejected' with reviewer_id IS NULL.  This is
+    enforced at the storage layer rather than application code so it holds
+    even on direct DB writes during an audit or post-incident review.
+
+    generated_by distinguishes model-produced from fallback-heuristic
+    proposals; prompt_digest (SHA-256 hex) records what prompt produced a
+    model response so it can be reproduced or audited.
+    """
+
+    __tablename__ = "recommendation"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    state: Mapped[str] = mapped_column(
+        String, nullable=False, default="proposed"
+    )  # proposed|under_review|applied|rejected
+    originating_agent: Mapped[str] = mapped_column(String, nullable=False)
+    parameter_name: Mapped[str] = mapped_column(String, nullable=False)
+    current_value: Mapped[str] = mapped_column(Text, nullable=False)   # JSON-serialised
+    proposed_value: Mapped[str] = mapped_column(Text, nullable=False)  # JSON-serialised
+    observation_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    window_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    window_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    evidence_digest: Mapped[str] = mapped_column(String, nullable=False)  # SHA-256 hex
+    estimated_impact: Mapped[Optional[str]] = mapped_column(
+        Text, nullable=True
+    )  # free-form JSON
+    reversibility: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True
+    )  # immediate|scheduled|irreversible
+    expires_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    model_vendor: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    prompt_digest: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True
+    )  # SHA-256 hex of the prompt used to generate this recommendation
+    generated_by: Mapped[str] = mapped_column(
+        String, nullable=False
+    )  # model | fallback
+    reviewer_id: Mapped[Optional[str]] = mapped_column(
+        String, ForeignKey("principal.principal_id"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    reviewed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "state IN ('proposed', 'under_review', 'applied', 'rejected')",
+            name="ck_recommendation_state",
+        ),
+        CheckConstraint(
+            "generated_by IN ('model', 'fallback')",
+            name="ck_recommendation_generated_by",
+        ),
+        # §21.6: a recommendation cannot be applied or rejected without a
+        # reviewer.  DB-enforced so no application code can accidentally bypass
+        # it; reviewer_id must be set before the state transition is written.
+        CheckConstraint(
+            "NOT (state IN ('applied', 'rejected') AND reviewer_id IS NULL)",
+            name="ck_recommendation_reviewer_required",
+        ),
+    )
+
+
+class ParameterChangeAudit(Base):
+    """§21.6: immutable record of every parameter change that was applied.
+    reviewer_id is NOT NULL here (unlike Recommendation where it starts null);
+    a row is only written after the review step passes and the change is live.
+    effective_from records when the new value took effect (§21.6)."""
+
+    __tablename__ = "parameter_change_audit"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    recommendation_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("recommendation.id"), nullable=True
+    )
+    parameter_name: Mapped[str] = mapped_column(String, nullable=False)
+    old_value: Mapped[str] = mapped_column(Text, nullable=False)  # JSON-serialised
+    new_value: Mapped[str] = mapped_column(Text, nullable=False)  # JSON-serialised
+    reviewer_id: Mapped[str] = mapped_column(
+        String, ForeignKey("principal.principal_id"), nullable=False  # NOT NULL — §21.6
+    )
+    effective_from: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False  # §21.6
+    )
+    applied_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    rationale: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+
+# ---------------------------------------------------------------------------
+# FR-2.5 / NFR-5 control event acknowledgment
+# ---------------------------------------------------------------------------
+
+class ControlEventAck(Base):
+    """FR-2.5 / NFR-5: acknowledgments live here, not as a mutable column on
+    ControlEvent, so that ControlEvent stays append-only.  An ACK is written
+    when a downstream consumer (SCADA layer, advisory agent) confirms it
+    has processed a control event.  One event may accumulate multiple ACKs
+    from different consumers.
+
+    ack_kind is one of: received | processed | rejected."""
+
+    __tablename__ = "control_event_ack"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    control_event_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("control_event.id"), nullable=False, index=True
+    )
+    acknowledged_by: Mapped[str] = mapped_column(
+        String, nullable=False
+    )  # system component id or principal_id
+    ack_kind: Mapped[str] = mapped_column(
+        String, nullable=False
+    )  # received | processed | rejected
+    acked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    __table_args__ = (
+        CheckConstraint(
+            "ack_kind IN ('received', 'processed', 'rejected')",
+            name="ck_control_event_ack_kind",
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
+# SqlitePersistedTimeseriesSink
+# ---------------------------------------------------------------------------
+
+class SqlitePersistedTimeseriesSink:
+    """TimeseriesSink Protocol implementation backed by a local SQLite file.
+
+    v2.5 §22.7: one file, WAL mode.  Promoting to PostgreSQL is a
+    connection-string change per §22.1 principle 4.
+
+    Write path (where the queue lives)
+    -----------------------------------
+    _write_queue  — asyncio.Queue(maxsize=QUEUE_MAXSIZE), created in start().
+                    append() puts TickResult objects here and returns without
+                    waiting for the DB write.
+    _drain_task   — asyncio.Task, created in start(), that reads from
+                    _write_queue and issues INSERT statements.  Lives
+                    alongside the run's asyncio task; they yield to each
+                    other cooperatively.
+
+    This is the "bounded queue drained by its own task" the build plan §22.7
+    refers to.  Tick-path latency is limited to queue.put() overhead
+    (microseconds), not SQLite write latency (1–5 ms).
+
+    Lifecycle
+    ---------
+    1. Construct: SqlitePersistedTimeseriesSink(db_path)
+    2. start()    — engine, schema, drain task
+    3. append()   — called per tick from RunManager._drive()
+    4. finalize() — called from RunManager._drive()'s finally block;
+                    drains the queue then records the verdict
+    5. stop()     — called externally to dispose engine and drain task
+    """
+
+    QUEUE_MAXSIZE: int = 1000
+    # 1000 is a chosen value.  A 4-hour run at 5-second ticks produces 2880
+    # rows maximum; 1000 gives ~3 minutes of buffering before backpressure.
+
+    def __init__(self, db_path: str | Path) -> None:
+        self._db_path = Path(db_path)
+        self._engine = None
+        # _write_queue and _drain_task are created in start() so they are
+        # bound to the correct event loop.  Do not create them in __init__.
+        self._write_queue: asyncio.Queue | None = None
+        self._drain_task: asyncio.Task | None = None
+
+    async def start(self) -> None:
+        """Create engine, apply schema, start the drain task.
+        Must be called inside a running event loop before any append()."""
+        self._engine = create_async_engine(
+            f"sqlite+aiosqlite:///{self._db_path}",
+            echo=False,
+        )
+        async with self._engine.begin() as conn:
+            # WAL mode per §22.7: reader/writer concurrency without full table
+            # locks; better behaviour than the default rollback-journal mode
+            # for a process that both writes ticks and reads them for broadcast.
+            await conn.execute(text("PRAGMA journal_mode=WAL"))
+            await conn.run_sync(Base.metadata.create_all)
+
+        # _write_queue is the seam between the tick path (append) and the DB
+        # write path (_drain_loop).  See class docstring for sizing rationale.
+        self._write_queue = asyncio.Queue(maxsize=self.QUEUE_MAXSIZE)
+        self._drain_task = asyncio.create_task(
+            self._drain_loop(), name="persistence-drain"
+        )
+        _log.debug("SqlitePersistedTimeseriesSink started: db=%s", self._db_path)
+
+    async def stop(self) -> None:
+        """Send the stop sentinel, wait for the drain task to exit cleanly,
+        then dispose the engine.  Call after finalize() has returned."""
+        if self._write_queue is not None:
+            await self._write_queue.put(_STOP)
+        if self._drain_task is not None:
+            await self._drain_task
+            self._drain_task = None
+        if self._engine is not None:
+            await self._engine.dispose()
+            self._engine = None
+        _log.debug("SqlitePersistedTimeseriesSink stopped: db=%s", self._db_path)
+
+    async def _drain_loop(self) -> None:
+        """Background task: dequeue TickResult rows and INSERT them.
+        Exits when it dequeues the _STOP sentinel placed by stop()."""
+        assert self._engine is not None, "_drain_loop started before engine"
+        assert self._write_queue is not None
+
+        while True:
+            item = await self._write_queue.get()
+            if item is _STOP:
+                self._write_queue.task_done()
+                break
+            tick: TickResult = item
+            try:
+                async with AsyncSession(self._engine) as session:
+                    async with session.begin():
+                        session.add(
+                            RunTimeseries(
+                                run_id=tick.run_id,
+                                tick_index=tick.tick_index,
+                                sim_time_seconds=tick.sim_time_seconds,
+                                p_compute_mw=tick.p_compute_mw,
+                                p_cooling_mw=tick.p_cooling_mw,
+                                p_total_mw=tick.p_total_mw,
+                                net_demand_mw=tick.net_demand_mw,
+                                turbine_output_mw=tick.turbine_output_mw,
+                                bess_output_mw=tick.bess_output_mw,
+                                bess_soc_fraction=tick.bess_soc_fraction,
+                                confidence_lower_mw=tick.confidence.lower_bound_mw,
+                                confidence_upper_mw=tick.confidence.upper_bound_mw,
+                                data_quality_tags=json.dumps(
+                                    sorted(t.value for t in tick.confidence.tags)
+                                ),
+                                insufficient_reserve_alert=tick.insufficient_reserve_alert,
+                                checkpoint_states=json.dumps(tick.checkpoint_states),
+                            )
+                        )
+            except Exception:
+                _log.exception(
+                    "persistence drain: failed to write tick %d for run %s",
+                    tick.tick_index,
+                    tick.run_id,
+                )
+            finally:
+                # task_done() must be called whether the write succeeded or
+                # failed so that join() in finalize() is not blocked by errors.
+                self._write_queue.task_done()
+
+    # ------------------------------------------------------------------
+    # TimeseriesSink Protocol
+    # ------------------------------------------------------------------
+
+    async def append(self, tick: TickResult) -> None:
+        """Enqueue tick for background write.  Returns as soon as the tick
+        is on the queue — does not wait for the DB INSERT to complete.
+
+        If _write_queue is at capacity, put() yields to the event loop until
+        space is available, surfacing backpressure as tick-loop latency rather
+        than a silent drop.  A WARNING is emitted so the operator can see the
+        drain task is falling behind."""
+        if self._write_queue is None:
+            raise RuntimeError(
+                "SqlitePersistedTimeseriesSink.start() has not been called"
+            )
+        if self._write_queue.full():
+            _log.warning(
+                "persistence write queue at capacity (%d); tick path yielding "
+                "— drain task may not be keeping up with tick rate",
+                self.QUEUE_MAXSIZE,
+            )
+        await self._write_queue.put(tick)
+
+    async def finalize(self, run_id: str, verdict: str | None) -> None:
+        """Flush all pending tick writes, then record the run's completion.
+
+        join() blocks until every item already on _write_queue has had
+        task_done() called by the drain task.  Only then is the Scenario row
+        written, guaranteeing that when finalize() returns both the ticks and
+        the verdict are durable."""
+        if self._write_queue is None:
+            raise RuntimeError(
+                "SqlitePersistedTimeseriesSink.start() has not been called"
+            )
+        # Drain: wait for all enqueued ticks to be processed.
+        await self._write_queue.join()
+
+        if self._engine is None:
+            return
+        now = datetime.now(timezone.utc)
+        async with AsyncSession(self._engine) as session:
+            async with session.begin():
+                stmt = select(Scenario).where(Scenario.run_id == run_id)
+                result = await session.execute(stmt)
+                scenario = result.scalar_one_or_none()
+                if scenario is None:
+                    scenario = Scenario(
+                        run_id=run_id,
+                        name=run_id,
+                        created_at=now,
+                    )
+                    session.add(scenario)
+                scenario.completed_at = now
+                scenario.verdict = verdict
+        _log.debug("run %s finalized: verdict=%r", run_id, verdict)

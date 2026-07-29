@@ -92,8 +92,8 @@ class CheckpointClassifier:
     # §23.6 curtailment: "a partitioned controller must not be able to hold a
     # customer's fleet down indefinitely."
     # 900.0 s is a CHOSEN value with no measured basis; the plausible upper bound
-    # on a large model checkpoint write is unmeasured (CL-2).
-    MAX_EXPLICIT_HOLD_S = 900.0         # CHOSEN value — no measured basis (CL-2)
+    # on a large model checkpoint write is unmeasured (PROTO-3).
+    MAX_EXPLICIT_HOLD_S = 900.0         # CHOSEN value — no measured basis (PROTO-3)
 
     def __init__(self) -> None:
         self._jobs: dict[str, _JobDrawHistory] = {}
@@ -216,7 +216,7 @@ class CheckpointClassifier:
                 _log.warning(
                     "explicit_hold safety-released for job %r: checkpoint_end not "
                     "received after %.0fs (MAX_EXPLICIT_HOLD_S=%.0f — CHOSEN value, "
-                    "no measured basis).  Heuristic resumes.",
+                    "no measured basis, PROTO-3).  Heuristic resumes.",
                     job_id, elapsed, self.MAX_EXPLICIT_HOLD_S,
                 )
                 hist.explicit_hold = False
@@ -351,13 +351,17 @@ class ConfidenceEngine:
 
     BASE_BAND_FRACTION = 0.05
     WIDENING_PER_TAG = {
-        DataQualityTag.UNMAPPED_HARDWARE: 0.10,   # chosen value
-        DataQualityTag.UNCALIBRATED_SITE: 0.08,   # chosen value
-        DataQualityTag.INVALID_PAYLOAD: 0.15,     # chosen value
+        DataQualityTag.UNMAPPED_HARDWARE: 0.10,   # chosen value — no measured basis
+        DataQualityTag.UNCALIBRATED_SITE: 0.08,   # chosen value — no measured basis
+        DataQualityTag.INVALID_PAYLOAD: 0.15,     # chosen value — no measured basis
+        DataQualityTag.STALE_PROFILE: 0.12,       # chosen value — no measured basis (v2.5 §5.3)
     }
 
     def band_for(self, point_estimate_mw: float, tags: set[DataQualityTag]) -> ConfidenceBand:
-        fraction = self.BASE_BAND_FRACTION + sum(self.WIDENING_PER_TAG[t] for t in tags)
+        # Use .get(t, 0.0) so a tag added to DataQualityTag before its widening
+        # factor is calibrated does not crash — it just contributes zero widening,
+        # which is visible in the tag set and therefore not silent.
+        fraction = self.BASE_BAND_FRACTION + sum(self.WIDENING_PER_TAG.get(t, 0.0) for t in tags)
         return ConfidenceBand(
             point_estimate_mw=point_estimate_mw,
             plus_minus_fraction=fraction,

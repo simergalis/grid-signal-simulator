@@ -117,6 +117,20 @@ class GPUModule(AssetModule):
             if self._job_profiles.get(job_id)  # profile known -> job is active
         ]
 
+    def has_active_unmapped_jobs(self) -> bool:
+        """True if any currently active job on this module uses a hardware
+        profile that is not present in the library.
+
+        Called per-tick by evaluate_tick() to tag the *segment* rather than
+        the run.  §5.1 and §12 require the affected segment to be tagged;
+        a sticky run-global flag (the previous approach) tagged every
+        subsequent segment even after the unmapped job ended.
+        """
+        return any(
+            self._job_profiles.get(job_id) not in self.hardware_library
+            for job_id in self._node_counts
+        )
+
 
 # ---------------------------------------------------------------------------
 # Cooling module -- source spec Section 8

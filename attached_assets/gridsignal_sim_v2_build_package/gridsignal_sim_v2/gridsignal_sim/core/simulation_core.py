@@ -39,7 +39,11 @@ class SimulationState:
     confidence_engine: ConfidenceEngine = field(default_factory=ConfidenceEngine)
     arbitrator: DispatchArbitrator = field(init=False)
     tick_index: int = 0
-    _unmapped_hardware_ever_seen: bool = False
+    # _unmapped_hardware_ever_seen removed (Step 2 per-segment tagging fix):
+    # that flag was sticky — once set it tagged every subsequent tick even
+    # after the unmapped job ended.  §5.1 and §12 require tagging the
+    # affected segment.  evaluate_tick() now checks per-tick via
+    # GPUModule.has_active_unmapped_jobs().
     _pending_alert: InsufficientReserveAlert | None = None
     _job_owner_index: dict[str, int] = field(default_factory=dict)
 
@@ -70,9 +74,10 @@ class SimulationState:
         counts), then the arbitrator is staged if this is a job start.
         """
         gpu = self._owning_gpu_module(signal)
-        unmapped = gpu.apply_signal(signal)
-        if unmapped:
-            self._unmapped_hardware_ever_seen = True
+        gpu.apply_signal(signal)
+        # Unmapped-hardware tagging is now per-tick (see evaluate_tick step 6)
+        # rather than run-global; apply_signal's return value is intentionally
+        # discarded here.
 
         if signal.event_type == WorkloadEventType.STARTING:
             delta_p_mw = sum(g.output_mw() for g in self.gpu_modules)
@@ -130,9 +135,12 @@ def evaluate_tick(state: SimulationState, sim_time: float, dt_seconds: float) ->
             new_state = state.classifier.record_and_classify(job_id, sim_time, job_draw_mw)
             checkpoint_states[job_id] = new_state.value
 
-    # 6. Confidence banding
+    # 6. Confidence banding — tags belong to this segment, not the run.
+    # Per-segment tagging fix (Step 2): check live state of each module
+    # this tick instead of a sticky run-global flag.  An unmapped job that
+    # ended two hours ago must not tag the current segment (§5.1, §12).
     tags: set[DataQualityTag] = set()
-    if state._unmapped_hardware_ever_seen:
+    if any(g.has_active_unmapped_jobs() for g in state.gpu_modules):
         tags.add(DataQualityTag.UNMAPPED_HARDWARE)
     if state.site.uncalibrated:
         tags.add(DataQualityTag.UNCALIBRATED_SITE)

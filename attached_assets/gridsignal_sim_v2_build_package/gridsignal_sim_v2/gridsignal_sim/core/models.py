@@ -24,10 +24,28 @@ from typing import Optional
 
 @dataclass(frozen=True)
 class HardwareProfile:
-    """Source spec Section 5: kW_i lookup, keyed by hardware_profile_id."""
+    """Source spec Section 5: kW_i lookup, keyed by hardware_profile_id.
+
+    v2.5 §5.2: counting_unit declares what node_count is expressed in
+    (chassis / cabinet / package / die / accelerator).  A site reporting
+    dies against a profile assuming packages produces a forecast off by
+    exactly 2x with no visible symptom other than persistent forecast error
+    (TC-53).  Validation logic deferred to Step 10.
+
+    v2.5 §5.3: vintage_generation + vintage_established let the confidence
+    engine flag stale profiles.  Forecasting against a two-generation-old
+    profile under-predicts by 60-90 kW/cabinet (TC-54).  No validation yet.
+    """
     profile_id: str
     rated_kw: float
     description: str = ""
+    # v2.5 §5.2 — counting unit; must be one of the five canonical values but
+    # validation is deferred to Step 10.  Optional so existing call-sites that
+    # omit it are not broken.
+    counting_unit: Optional[str] = None    # chassis|cabinet|package|die|accelerator
+    # v2.5 §5.3 — profile vintage.  Optional for the same reason.
+    vintage_generation: Optional[str] = None   # e.g. "gen4", "h100", "grace-hopper"
+    vintage_established: Optional[str] = None  # ISO-8601 date string, e.g. "2024-Q1"
 
 
 GENERIC_FALLBACK_PROFILE = HardwareProfile(
@@ -114,6 +132,7 @@ class DataQualityTag(str, Enum):
     UNMAPPED_HARDWARE = "unmapped_hardware"
     UNCALIBRATED_SITE = "uncalibrated_site"
     INVALID_PAYLOAD = "invalid_payload"
+    STALE_PROFILE = "stale_profile"   # v2.5 §5.3: profile vintage is outdated
 
 
 @dataclass

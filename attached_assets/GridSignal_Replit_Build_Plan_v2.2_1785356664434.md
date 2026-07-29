@@ -1,4 +1,4 @@
-# GridSignal Simulator — Replit Build Plan v2.1: Phased Prompt Sequence
+# GridSignal Simulator — Replit Build Plan v2.2: Phased Prompt Sequence
 
 **Purpose.** A sequence of scoped prompts to hand Replit's agent one at a time, each building on
 the working skeleton (`gridsignal_sim/`) rather than asking for "the whole simulator" in one pass.
@@ -190,7 +190,28 @@ live. Both are worth showing before the rest finishes.
 
 ---
 
-## Step 1b — Classifier repair + layering fix *(new; do this first)*
+## Step 1b — Classifier repair + layering fix *(COMPLETE — July 29, 2026)*
+
+> **Executed and closed.** 19 tests passing; `test_step1b_findings.py` 6/6; 1x load gate holding
+> (p99 tick 3.6 ms against a 1000 ms budget). Four defects fixed, two of them found during the
+> step rather than by the audit:
+>
+> | ID | Defect | Fix |
+> |---|---|---|
+> | B-1 | `apply_explicit_event()` crashed the next tick | `explicit_active` single-tick bypass; `assert` → `raise ValueError` |
+> | B-2 | `UNCERTAIN` unreachable | 45 s expiry routes to `UNCERTAIN`; separate handler fires `JOB_END` after the 30 s grace |
+> | B-3 | `JOB_END` not terminal | Terminal check at the top of `record_and_classify` |
+> | B-5 | `core/` imported `runtime/` | `scenario_factory` moved to `runtime/`; three import paths updated, no assertions changed |
+> | **D1** | `explicit_hold` absent — a >45 s checkpoint self-classified as `UNCERTAIN`, overriding an authoritative scheduler event | `explicit_hold` flag, set on `checkpoint_start`, cleared on `checkpoint_end`; skips the timeout entirely while held |
+> | **D2** | `apply_explicit_event` bypassed the terminal guard — a late `checkpoint_end` resurrected a `JOB_END` job | Terminal check added; discarded events logged, not dropped silently |
+> | **D4** | `explicit_hold` unbounded — a missing `checkpoint_end` held staging forever | `MAX_EXPLICIT_HOLD_S`; on expiry the hold releases and the **heuristic resumes** rather than jumping to a classification |
+>
+> D1, D2, and D4 are the same failure class as v2.5 §23.6's dead-man rule: *"a partitioned
+> controller must not be able to hold a customer's fleet down indefinitely."* Worth carrying
+> forward — every hold introduced in later steps needs the same question asked of it.
+
+**Original prompt retained below for reference.**
+
 
 **Governs:** v2.5 §6.2, §2 item 4; Design Spec §2 principle 2.
 
@@ -329,6 +350,31 @@ namespaces, per §22.7.
 them separately means doing several of them twice.
 
 **Prompt:**
+> **0. `P_dispatch_required(t)` — do this first; the other three build on it.** v2.5 §7.1.1:
+>
+> ```
+> P_dispatch_required(t) = P_total(t) − P_renewable(t)
+> ```
+>
+> §7.2's ΔP is a change in `P_dispatch_required(t)`, **not** in `P_total(t)`. Today
+> `evaluate_tick()` calls `arbitrator.tick(p_total_mw, …)` and computes `net_demand_mw`
+> *afterwards*, where it is written into `TickResult` and read by nothing — so solar reduces a
+> displayed figure and has zero effect on staging, the reserve check, or the alert.
+>
+> Move the renewable term ahead of arbitration and pass `P_dispatch_required` to it. Two
+> asymmetries must survive implementation:
+>
+> - **No lead time.** A renewable shortfall carries no advance signal. An inverter trip is a step
+>   change with `Δt_lead = 0`. The reserve check treats renewable output as capacity that can
+>   vanish without notice.
+> - **Availability, not dispatchability.** `P_renewable(t)` is subtracted from the load the fleet
+>   must serve. It may **never** be counted toward ramp capability in the §7.2 step-4 shortfall
+>   calculation. Turbine ramp rate and BESS discharge are the only terms that close a gap. Write
+>   `ramp_capability()` so renewables are structurally absent — no branch to forget.
+>
+> A compute step-load and a collapse in renewable output are the same event class to the
+> Arbitrator (TC-33).
+>
 > **1. Per-job draw attribution.** `core/simulation_core.py` line 125 sets
 > `job_draw_mw = p_compute_mw`, which is the **site-wide** sum across all GPU modules — not the
 > module's aggregate, as the inline comment claims. Attribute draw per job so the checkpoint
@@ -494,11 +540,37 @@ v2.5 §22.8 flags this as open and states the likely answer; this step decides i
 
 ## Step 6 · Phase 2 — FastAPI application wiring
 
-**Unchanged from Build Plan v1.** Use the original Phase 2 prompt and acceptance criteria verbatim.
+**Governs:** Simulator Design Spec §7 (API Design); Simulator Functional Spec §10.1, §10.2.
 
-One note: the "one `RunManager` and one `WebSocketHub` instance, held as FastAPI app state"
-criterion now does double duty — it is also what stops agents instantiating their own runs in
-Step 12.
+**Goal:** Stand up the real REST + WebSocket surface against the existing `RunManager` and the
+Step 2 persistence layer — no UI yet.
+
+**Prompt:**
+> Implement the FastAPI application described in the attached design spec §7's endpoint table:
+> `POST /runs` (starts a run via the existing `RunManager.start_run`), `WS /runs/{run_id}/live`
+> (subscribes to `WebSocketHub`, using a thin adapter from FastAPI's `WebSocket` to the existing
+> `WebSocketLike` Protocol in `runtime/run_manager.py`), `GET /runs/{run_id}/results` (reads
+> `RunTimeseries` from the Phase 1 sink), and REST CRUD for `/sites`, `/asset-configs`,
+> `/scenarios` per functional spec §7.2–§7.3's screens. One `RunManager` and one `WebSocketHub`
+> instance, held as FastAPI app state, shared across requests — do not create a new one per
+> request. Add integration tests in `tests/test_api.py` using FastAPI's `TestClient`/
+> `AsyncClient`: starting a run via REST and receiving ticks over the WebSocket in order, and a
+> concurrent-users test that starts 5 runs via 5 simultaneous REST calls and confirms all 5
+> progress independently (this should reuse the isolation-proving pattern from
+> `tests/test_concurrency.py`, against the real HTTP/WebSocket surface this time, not the bare
+> `RunManager`). Do not implement the frontend yet.
+
+**Acceptance criteria:**
+- `uvicorn` (or Replit's run command) serves the API; `POST /runs` returns a `run_id`.
+- WebSocket delivers ticks in order for a subscribed run.
+- The 5-concurrent-runs-via-HTTP test passes — this is the first real proof the ≥5-concurrent-
+  users NFR (functional spec §11) holds through the actual API, not just the internal
+  `RunManager`.
+- No per-request `RunManager`/`WebSocketHub` instantiation (check the app-state wiring
+  specifically — this is an easy way to silently break run isolation).
+
+The "one `RunManager` and one `WebSocketHub` instance, held as FastAPI app state" criterion now
+does double duty — it is also what stops agents instantiating their own runs in Step 12.
 
 ---
 
@@ -509,9 +581,18 @@ Design Spec §3, §4.4.
 
 **Goal:** As original, plus the v2.5 landing-page panels and correct behaviour under acceleration.
 
-**Prompt (extends the original Phase 3 prompt):**
-> Build the Live Dashboard per simulator functional spec §7.1 as originally specified. Three
-> additions from Forecast Engine Functional Spec v2.5:
+**Prompt:**
+> Scaffold a React (Vite) frontend under `frontend/` and implement the Live Dashboard screen per
+> functional spec §7.1: current GPU/turbine/BESS/solar output, a live-updating power-forecast
+> chart (P_compute, P_cooling, P_total against time), and an alert banner for
+> `insufficient_reserve_alert`. Connect to the Phase 2 WebSocket endpoint. Use a lightweight
+> charting library (Chart.js or Recharts, per design spec §3's stack table). Before writing
+> component code, show me a short written description of the planned layout and component
+> breakdown so I can confirm it matches functional spec §7.1 before you build it. After building,
+> start a run via the Phase 2 API and confirm the dashboard updates within the 1-second latency
+> target (functional spec §11) — describe how you verified this, not just that you believe it.
+
+**Additionally**, three items from Forecast Engine Functional Spec v2.5:
 >
 > 1. **Panels per v2.5 §19.2.** The hero countdown to GPU full-TDP (Δt_lead); the forecast panel
 >    plotting `P_compute`, `P_cooling`, `P_total` **and `P_renewable`** with the confidence band;
@@ -536,7 +617,11 @@ Design Spec §3, §4.4.
 > component breakdown so I can confirm it against §7.1 and §19.2 before you build.
 
 **Acceptance criteria:**
-- As original, plus: dashboard remains correct and visibly labelled at `rate=60`.
+- Layout matches functional spec §7.1's described panels — check this yourself against the spec
+  text, don't just accept "looks reasonable."
+- Dashboard visibly updates live while a run is in progress, not just on page load.
+- No Section 7.2/7.3/7.4 functionality bleeding in yet — keep this phase scoped to §7.1 only.
+- Dashboard remains correct and visibly labelled at `rate=60`.
 - The bridging-capability readout is in **seconds**, and matches the arithmetic that fires the
   insufficient-reserve alert.
 - No new broadcaster — `WebSocketHub` extended, not replaced.
@@ -547,9 +632,18 @@ Design Spec §3, §4.4.
 
 **Governs:** Simulator Functional Spec §7.2, §7.3, §6.2; v2.5 §7.1.1.
 
-**Prompt (extends the original Phase 4 prompt):**
-> Build the Scenario Builder and Asset Configuration screens as originally specified. Three
-> additions:
+**Prompt:**
+> Implement the Scenario Builder (functional spec §7.2) and Asset Configuration (§7.3) screens
+> against the Phase 2 REST endpoints for `/scenarios` and `/asset-configs`. The Scenario Builder
+> must let a user script a sequence of `WorkloadSignal` events (job launch, turbine failure,
+> cloudy period — per §7.2) and define pass/fail assertions. The stressor list should match
+> functional spec §6.2's stressor table exactly — list what stressors you implemented against
+> that table and flag any you couldn't map cleanly. The Asset Configuration screen exposes the
+> per-site parameters listed in functional spec §7.3 (battery size, turbine ramp rate, cooling
+> lag, etc.) without requiring a code change. Persist scenarios/configs through the Phase 1
+> persistence layer, not in frontend state only.
+
+**Additionally**, three items:
 >
 > 1. **Every assertion needs a machine-evaluable `check:` expression**, not just a prose `expect:`.
 >    An assertion that cannot be evaluated is documentation, not a test.
@@ -568,19 +662,42 @@ Design Spec §3, §4.4.
 > clock skew, unmapped SKUs — TC-15, TC-18, TC-20, TC-23).
 
 **Acceptance criteria:**
-- As original, plus: every preset runs and its assertions evaluate to a verdict.
+- Every stressor in functional spec §6.2's table has a UI affordance, or there's an explicit,
+  reported gap.
+- A scenario built in the UI, saved, reloaded, and run produces the same result as one built via
+  `core/scenario_factory.py` with equivalent parameters — this is a good sanity check that the
+  UI-to-domain-model translation is faithful, not lossy.
+- Every preset runs and its assertions evaluate to a verdict.
 - **TC-33 specifically**: a +6 MW compute step and a −6 MW renewable step produce the same ΔP in
   `P_dispatch_required(t)` and the same staging response, with Run B evaluated at `Δt_lead = 0`.
-  If Step 1's audit found `P_dispatch_required` missing, this is where it must exist.
+  `P_dispatch_required` is implemented in **Step 3 item 0**, not here — this step exercises it
+  through a scenario rather than introducing it.
 
 ---
 
 ## Step 9 · Phase 5 — Results/playback screen + pass/fail verdicts
 
-**Unchanged from Build Plan v1** except for one scoping note: the **Scenario Planner** (v2.5 §18.5,
-FR-4.4 — "more BESS or a second turbine?") is a *different product* from the Scenario Builder and
-is **not** built here. It moves to Step 15. Keep this phase to the results/playback screen and
-verdict evaluation as originally specified.
+**Governs:** Simulator Functional Spec §7.4; the `TODO` in `runtime/run_manager.py`'s `_drive()`.
+
+**Scoping note.** The **Scenario Planner** (v2.5 §18.5, FR-4.4 — "more BESS or a second turbine?")
+is a *different product* from the Scenario Builder and is **not** built here. It moves to Step 15.
+
+**Prompt:**
+> Two things. First, implement scenario assertion evaluation: replace the `TODO` in
+> `runtime/run_manager.py`'s `_drive()` (`verdict = None`) with real evaluation of a scenario's
+> pass/fail assertions (functional spec §7.2) against the completed `RunTimeseries`, and persist
+> the verdict via `sink.finalize()`. Second, implement the Results screen (functional spec §7.4):
+> scrubbable tick-by-tick playback of a completed run, with the verdict and which specific
+> assertions passed/failed shown clearly. Add tests in `tests/test_verdicts.py` covering at least
+> one scenario that should pass and one that should deliberately fail, using the TC-10-style
+> insufficient-reserve worked example from the source spec (source spec §7.3) as the failing
+> case.
+
+**Acceptance criteria:**
+- `verdict` is no longer hardcoded `None` anywhere in the run lifecycle.
+- The failing-case test actually fails the assertion it's supposed to (i.e., you've checked it
+  isn't vacuously passing).
+- Playback is scrubbable (can jump to an arbitrary tick), not just a linear replay.
 
 ---
 
@@ -916,9 +1033,20 @@ Procurement and Network Telemetry wait for Step 14.
 
 ## Step 16 · Phase 8 — Replit deployment
 
-**Unchanged from Build Plan v1.** Use the original Phase 8 prompt and acceptance criteria verbatim,
-including **"confirm no external database or cloud service is referenced anywhere in the config"** —
-that criterion is correct per v2.5 §22.7 and stands.
+**Prompt:**
+> Configure this Repl per functional spec §10.2–§10.3: a single run command that builds the React
+> frontend and then starts the FastAPI server serving the built frontend as static files on one
+> port (§10.2's "single Repl process, single port" model). Confirm no external database or cloud
+> service is referenced anywhere in the config. Enable Always-On per §10.2's rationale (avoiding
+> cold-start delay before investor demos, not because correctness requires it). Publish a Replit
+> Deployment separate from the development Repl per §10.3, and report both URLs.
+
+**Acceptance criteria:**
+- One `.replit`/build command; "Run" produces a working demo with no manual build step.
+- Dev and deployed instances are separate, per §10.3's explicit guidance.
+
+The **"no external database or cloud service"** criterion above is correct per v2.5 §22.7 and
+stands unchanged — see §0.1.
 
 Two additions:
 - Use a **Reserved VM** rather than Always-On alone; a non-Reserved Repl sleeps on inactivity, which
@@ -982,6 +1110,45 @@ Spec §12.5; `scripts/load_test.py`.
 - If Replit's agent proposes deviating from a spec section in any step (a different library, a
   simplified data model, skipping a stressor), that's fine to accept — but make it say so
   explicitly rather than silently substituting, so you're deciding rather than discovering later.
+
+---
+
+## Chosen constants register
+
+Every value below is **chosen, not derived**. v2.5's discipline throughout is that placeholder
+numbers are labelled as placeholders, and a build that quietly accumulates unlabelled constants
+trades one defect class for a worse one. Each must carry the label in code and, where it reaches
+an operator, on the console.
+
+| ID | Constant | Value | Introduced | Basis |
+|---|---|---|---|---|
+| **PROTO-1** | Δt_lead internal ramp shape | piecewise | Step 3 | §6.1 gives the interval, not the curve |
+| **PROTO-2** | Wind power curve | Weibull | Step 15 | Unvalidated against any site |
+| **PROTO-3** | `MAX_EXPLICIT_HOLD_S` | 900 s | **Step 1b (done)** | Plausible upper bound on a large checkpoint write. Unmeasured |
+| **PROTO-4** | Confidence widening factors | base 0.05; unmapped +0.10; uncalibrated +0.08; invalid_payload +0.15; stale_profile TBD | pre-existing, extended Step 2 | Additive composition. No measured basis |
+| **PROTO-5** | Agent cadence floors and ceilings | 30 s – 24 h | Step 13 | Derived from cost, not from observed agent value |
+| **PROTO-6** | Token budget | soft 2.2 M / hard 15 M per site-day | Step 12 | Derived from PROTO-5 and a 1 544-token evidence window |
+
+**Naming.** Use the `PROTO-` prefix for simulator-chosen constants. Do **not** use `CL-`, `LP-`,
+`AG-`, `ST-`, or `PX-` — those are v2.5's own residual-item namespaces (`CL-1` is Tier B power-cap
+yield, `CL-3` is economic curtailment), and reusing them creates a collision that only surfaces
+when someone cross-references the parent spec. `MAX_EXPLICIT_HOLD_S` was initially tagged `CL-2`
+during Step 1b; retag it **PROTO-3**.
+
+---
+
+## Proposed amendments to v2.5
+
+Raised by implementation, not in force until v2.5 adopts them.
+
+| ID | Amendment |
+|---|---|
+| **PA-1** | Regenerate Figure 1 with the learning plane (§21.8 already asks for it) |
+| **PA-2** | Add wind as a second non-dispatchable source under §7.1.1 treatment |
+| **PA-3** | Specify, or explicitly decline to specify, the Δt_lead internal curve |
+| **PA-4** | Adopt simulated time as the measurement basis for all specification intervals (closes ST-4) |
+| **PA-5** | `P_cooling(t) = Σₖ αₖ(t) × ΔP_compute_k(t − Δt_thermal)` — cooling must superpose per step-load, as §11.1 already requires of compute. A single α with a single t₀ is only correct for one step-load per run |
+| **PA-6** | §6.2's job-end bullet and ambiguous-case bullet **describe the same input state and prescribe different outcomes**. Both say "did not return to ≥90% within 45 s"; one says classify `job_end`, the other says hold as `uncertain`. TC-07 and TC-08 differ only in drop depth, which affects nothing in the classification path. The Step 1b implementation reads them as *classification* (45 s → `uncertain`) versus *staging behaviour* (+30 s grace → `job_end`), which is coherent. §6.2 should say so |
 
 ---
 
