@@ -7,9 +7,9 @@ layer, tested independently of the run-management/concurrency layer.
 
 import math
 
-from core.asset_modules import CoolingModule, GPUModule, TurbineModule
+from core.asset_modules import BessModule, CoolingModule, GPUModule, IrradianceProfile, SolarModule, TurbineModule
 from core.dispatch import DispatchArbitrator
-from core.models import HardwareProfile, SiteConfig, TurbineConfig, WorkloadEventType, WorkloadSignal, WorkloadClass
+from core.models import BessConfig, HardwareProfile, SiteConfig, SolarConfig, TurbineConfig, WorkloadEventType, WorkloadSignal, WorkloadClass
 
 
 def test_tc01_instantaneous_compute_term_single_profile():
@@ -165,4 +165,162 @@ def test_d7_onboarding_alert_fires_once_per_unique_profile_id():
     assert tick_b.unrecognised_profile_alerts == frozenset({UNMAPPED_B}), (
         f"Fourth job with a new unmapped profile_id {UNMAPPED_B!r} must produce "
         f"exactly one alert; got {tick_b.unrecognised_profile_alerts!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# D8 — staging sizes against P_dispatch_required, not P_total
+# ---------------------------------------------------------------------------
+
+def test_d8_staging_sizes_against_dispatch_required_not_p_total():
+    """D8: stage_for_predicted_step() must receive the increment this job
+    adds to P_dispatch_required, net of renewable output at staging time.
+
+    A job starting while a solar array is already producing must cause a
+    strictly smaller turbine staged-target than the same job in a scenario
+    with no renewable output.  If the staging path still uses total site
+    compute (old bug) or omits the renewable offset, the two targets are
+    equal and this assertion fails.
+    """
+    from core.simulation_core import SimulationState, evaluate_tick
+
+    PROFILE_ID = "enterprise_8gpu_air"
+    NODE_COUNT = 10
+    RATED_KW = 10.2
+    PUE = 1.03
+    SOLAR_MW = 0.060  # 60 kW — covers more than half the job's compute draw
+
+    library = {PROFILE_ID: HardwareProfile(PROFILE_ID, rated_kw=RATED_KW)}
+    site = SiteConfig(site_id="site-d8", pue_base=PUE)
+
+    def _make_state(with_solar: bool) -> tuple:
+        turbine = TurbineModule(TurbineConfig(asset_id="t0", r_asset_mw_per_s=0.2, rated_mw=10.0))
+        cooling = CoolingModule(asset_id="cool-0", site=site)
+        bess = BessModule(BessConfig(asset_id="bess-0", rated_mw=5.0, usable_mwh=2.0))
+        if with_solar:
+            solar = SolarModule(
+                SolarConfig(asset_id="solar-0", rated_mw=SOLAR_MW),
+                irradiance_profile=IrradianceProfile([(0.0, 1.0), (600.0, 1.0)]),
+            )
+            # Pre-advance so output_mw() returns SOLAR_MW at the moment the
+            # staging signal arrives (simulates solar already running when a
+            # new job starts mid-run).
+            solar.advance(0.0, 5.0)
+            solar_arrays = [solar]
+        else:
+            solar_arrays = []
+        state = SimulationState(
+            run_id=f"run-d8-{'solar' if with_solar else 'nosolar'}",
+            site=site,
+            gpu_modules=[GPUModule(asset_id="gpu-0", site=site, hardware_library=library)],
+            turbines=[turbine],
+            bess_units=[bess],
+            solar_arrays=solar_arrays,
+            cooling=cooling,
+        )
+        return state, turbine
+
+    signal = WorkloadSignal(
+        event_id="e1",
+        job_id="job-1",
+        event_type=WorkloadEventType.STARTING,
+        timestamp=0.0,
+        hardware_profile_id=PROFILE_ID,
+        node_count=NODE_COUNT,
+        workload_class=WorkloadClass.TRAINING,
+        site_id="site-d8",
+    )
+
+    # Scenario A: no renewables — staged target equals full job compute draw
+    state_no_solar, turbine_no_solar = _make_state(False)
+    state_no_solar.apply_workload_signal(signal, dt_lead_seconds=30.0)
+    target_no_solar = turbine_no_solar._target_mw
+
+    # Scenario B: solar pre-advanced to SOLAR_MW — staged target must be smaller
+    state_with_solar, turbine_with_solar = _make_state(True)
+    state_with_solar.apply_workload_signal(signal, dt_lead_seconds=30.0)
+    target_with_solar = turbine_with_solar._target_mw
+
+    assert target_with_solar < target_no_solar, (
+        f"Staging with {SOLAR_MW} MW solar (target={target_with_solar:.5f} MW) must be "
+        f"strictly less than without solar (target={target_no_solar:.5f} MW). "
+        f"The staging path is not offsetting by renewable output."
+    )
+
+
+# ---------------------------------------------------------------------------
+# D9 — demo-20mw with PROTO-7 solar sizing produces non-zero BESS output
+# ---------------------------------------------------------------------------
+
+def test_d9_demo_20mw_produces_nonzero_bess_output():
+    """D9: after correcting the demo-20mw node count to 1900 (≈ 19.96 MW) and
+    sizing solar at 25% of peak compute (PROTO-7 ≈ 4.99 MW), the dispatch
+    arbitrator must call on the BESS at some tick.
+
+    This confirms that the PROTO-7 solar fraction is not so large it clamps
+    P_dispatch_required to zero (the old degenerate scenario with 16 MW solar
+    against a 2.5 MW load), and that the single default turbine cannot ramp
+    fast enough within dt_lead=30 s to cover a ≈ 15 MW requirement alone.
+    """
+    from core.simulation_core import SimulationState, evaluate_tick
+
+    NODE_COUNT = 1900          # corrected to produce ≈ 19.96 MW (was 200 → ~2.1 MW)
+    PROFILE_ID = "enterprise_8gpu_air"
+    RATED_KW = 10.2
+    PUE = 1.03
+
+    library = {PROFILE_ID: HardwareProfile(PROFILE_ID, rated_kw=RATED_KW)}
+    site = SiteConfig(site_id="site-demo20", pue_base=PUE)
+
+    peak_compute_mw = NODE_COUNT * RATED_KW * PUE / 1000.0          # ≈ 19.957 MW
+    solar_rated_mw = 0.25 * peak_compute_mw                          # PROTO-7 ≈ 4.989 MW
+
+    turbine = TurbineModule(TurbineConfig(asset_id="t0", r_asset_mw_per_s=0.2, rated_mw=10.0))
+    bess = BessModule(BessConfig(asset_id="bess-0", rated_mw=5.0, usable_mwh=2.0))
+    solar = SolarModule(
+        SolarConfig(asset_id="solar-0", rated_mw=solar_rated_mw),
+        irradiance_profile=IrradianceProfile([(0.0, 1.0), (600.0, 1.0)]),
+    )
+    cooling = CoolingModule(asset_id="cool-0", site=site)
+
+    state = SimulationState(
+        run_id="run-d9-demo20",
+        site=site,
+        gpu_modules=[GPUModule(asset_id="gpu-0", site=site, hardware_library=library)],
+        turbines=[turbine],
+        bess_units=[bess],
+        solar_arrays=[solar],
+        cooling=cooling,
+    )
+
+    # Apply the starting signal.  Solar has not advanced yet (t=0 pre-tick),
+    # so the staging delta equals the full job compute draw — the turbine is
+    # staged to its rated_mw cap (10 MW), well below the ≈ 15 MW dispatch req.
+    state.apply_workload_signal(
+        WorkloadSignal(
+            event_id="e1",
+            job_id="job-big",
+            event_type=WorkloadEventType.STARTING,
+            timestamp=0.0,
+            hardware_profile_id=PROFILE_ID,
+            node_count=NODE_COUNT,
+            workload_class=WorkloadClass.TRAINING,
+            site_id="site-demo20",
+        ),
+        dt_lead_seconds=30.0,
+    )
+
+    bess_outputs: list[float] = []
+    t = 0.0
+    DT = 5.0
+    for _ in range(20):   # 100 simulated seconds — plenty of time to see BESS fire
+        tick = evaluate_tick(state, t, DT)
+        bess_outputs.append(tick.bess_output_mw)
+        t += DT
+
+    assert any(b > 0.0 for b in bess_outputs), (
+        f"demo-20mw with PROTO-7 solar sizing must produce non-zero BESS output "
+        f"at some tick within the first 100 s; all values were zero.\n"
+        f"  solar_rated_mw={solar_rated_mw:.3f}, peak_compute_mw={peak_compute_mw:.3f}\n"
+        f"  bess_outputs (first 10 ticks): {bess_outputs[:10]}"
     )

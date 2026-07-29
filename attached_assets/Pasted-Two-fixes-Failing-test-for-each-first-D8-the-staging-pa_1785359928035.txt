@@ -1,0 +1,33 @@
+Two fixes. Failing test for each first.
+
+D8 — the staging path was not converted. Item 0 changed tick() but apply_workload_signal()
+still computes delta_p_mw = sum(g.output_mw() for g in self.gpu_modules) — gross compute, no
+renewable term. So the per-tick path sizes against P_dispatch_required and the staging-time
+reserve check sizes against P_total. Your own report shows the consequence: turbines ramping
+to 2.101 MW into a site whose net requirement is 0.000 MW.
+
+You updated stage_for_predicted_step()'s docstring to say delta_p_mw is a step increase in
+P_dispatch_required. Make the call site true to it: delta_p_mw must be the increment this job
+adds to P_dispatch_required, net of renewable output at staging time. Note the audit also
+found this call site uses total site compute rather than the job's increment — fix both, they
+are the same line.
+Test: a job starting while renewable output already covers part of the load must stage a
+smaller turbine target than the same job with no renewables. Assert the two differ.
+
+D9 — demo scenarios are degenerate. scenario_factory builds four solar arrays at rated_mw=4.0
+= 16 MW against a ~2.5 MW load, so P_dispatch_required clamps at zero and BESS bridging, the
+insufficient-reserve alert, and TC-33's equivalence are all unreachable in every shipped
+scenario. Size renewable nameplate as a fraction of peak compute draw, not a multiple —
+20-30% is a defensible starting point and should be tagged PROTO-7, chosen with no measured
+basis. The compound case that must remain demonstrable is a renewable shortfall coincident
+with a compute spike (§7.1.1).
+Also: demo-20mw settles at 2.521 MW. Either the name or the node counts are wrong. Say which
+and fix it.
+Test: after resizing, demo-20mw must produce non-zero BESS output at some tick.
+
+Confirm separately, no code: where is max(0.0, ...) applied to P_dispatch_required? Clamping
+is right for the arbitrator — there is nothing to dispatch. But the unclamped value is the
+export condition and matters for the §7.1 grid-tie boundary later. Keep the raw value
+somewhere, or say explicitly that export is out of scope for now.
+
+Re-run all four and report. Stop.

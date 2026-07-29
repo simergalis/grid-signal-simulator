@@ -20,7 +20,7 @@ from .asset_modules import BessModule, CoolingModule, GPUModule, SolarModule, Tu
 
 _log = logging.getLogger(__name__)
 from .dispatch import CheckpointClassifier, ConfidenceEngine, DispatchArbitrator, InsufficientReserveAlert
-from .models import DataQualityTag, SiteConfig, TickResult, WorkloadEventType, WorkloadSignal
+from .models import DataQualityTag, GENERIC_FALLBACK_PROFILE, SiteConfig, TickResult, WorkloadEventType, WorkloadSignal
 
 
 @dataclass
@@ -106,7 +106,31 @@ class SimulationState:
             )
 
         if signal.event_type == WorkloadEventType.STARTING:
-            delta_p_mw = sum(g.output_mw() for g in self.gpu_modules)
+            # D8 fix: delta_p_mw must be the increment this job adds to
+            # P_dispatch_required, net of renewable output at staging time.
+            # The old code had two errors on the same line:
+            #   (1) sum(g.output_mw()) = total site compute, not this job's increment.
+            #   (2) no renewable offset — staging sized against P_total, not P_dispatch_required.
+            #
+            # Compute this job's own draw using the same fallback as output_mw():
+            _profile = gpu.hardware_library.get(
+                signal.hardware_profile_id, GENERIC_FALLBACK_PROFILE
+            )
+            _job_compute_mw = signal.node_count * _profile.rated_kw * self.site.pue_base / 1000.0
+            _p_compute_after = sum(g.output_mw() for g in self.gpu_modules)
+            _p_compute_before = _p_compute_after - _job_compute_mw
+            # Current renewable output at the moment staging occurs.  When
+            # solar has not yet been advanced (first tick, t=0) this is 0,
+            # and delta_p_mw collapses to job_compute_mw — correct behaviour,
+            # since no renewable offset is available yet.
+            _p_renewable_mw = sum(s.output_mw() for s in self.solar_arrays)
+            # Delta in P_dispatch_required.  Strictly <= _job_compute_mw:
+            # renewables already covering part of the pre-job load absorb some
+            # of the step, reducing what dispatchable sources must pre-stage for.
+            delta_p_mw = (
+                max(0.0, _p_compute_after - _p_renewable_mw)
+                - max(0.0, _p_compute_before - _p_renewable_mw)
+            )
             self._pending_alert = self.arbitrator.stage_for_predicted_step(
                 delta_p_mw=delta_p_mw,
                 dt_lead_seconds=dt_lead_seconds,
@@ -153,6 +177,12 @@ def evaluate_tick(state: SimulationState, sim_time: float, dt_seconds: float) ->
     p_renewable_mw = sum(s.output_mw() for s in state.solar_arrays)
     # P_dispatch_required(t) = P_total(t) − P_renewable(t), clipped at zero.
     # net_demand_mw is a synonym kept for TickResult reporting compatibility.
+    #
+    # EXPORT SCOPE NOTE: the unclamped value (p_total_mw - p_renewable_mw) can
+    # be negative when renewable output exceeds load — that is the grid-export
+    # condition and is relevant for the §7.1 grid-tie boundary.  It is NOT
+    # stored here; only the clamped value is used.  Grid-export modelling is
+    # out of scope for this simulator release.
     p_dispatch_required_mw = max(0.0, p_total_mw - p_renewable_mw)
     net_demand_mw = p_dispatch_required_mw
 

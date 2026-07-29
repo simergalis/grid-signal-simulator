@@ -69,9 +69,21 @@ def build_run_context(
         for i in range(turbine_count)
     ]
     bess_units = [BessModule(BessConfig(asset_id="bess-0", rated_mw=bess_rated_mw, usable_mwh=bess_usable_mwh))]
+    # PROTO-7: solar sized at 25% of peak compute draw — CHOSEN, no measured basis.
+    # Sizing as a fraction of peak compute keeps P_dispatch_required non-zero
+    # (BESS bridging, the reserve check, and the §7.1.1 renewable-shortfall
+    # scenario all remain exercisable) while representing a realistic on-site
+    # renewable contribution.  20–30% is the chosen range; 25% is the midpoint.
+    _solar_profile = DEFAULT_HARDWARE_LIBRARY.get(
+        hardware_profile_id,
+        HardwareProfile(hardware_profile_id, rated_kw=12.0),
+    )
+    _peak_compute_mw = node_count * _solar_profile.rated_kw * site.pue_base / 1000.0
+    _solar_rated_mw = 0.25 * _peak_compute_mw  # PROTO-7 — CHOSEN, no measured basis
+
     solar_arrays = [
         SolarModule(
-            SolarConfig(asset_id="solar-0", rated_mw=4.0),
+            SolarConfig(asset_id="solar-0", rated_mw=_solar_rated_mw),
             irradiance_profile=IrradianceProfile([(0.0, 1.0), (end_sim_time, 1.0)]),
         )
     ]
@@ -152,9 +164,20 @@ def build_load_test_context(
         BessModule(BessConfig(asset_id=f"bess-{i}", rated_mw=bess_rated_mw, usable_mwh=bess_usable_mwh))
         for i in range(bess_count)
     ]
+    # PROTO-7: solar total = 25% of peak compute draw, distributed equally.
+    # See build_run_context() for the sizing rationale.
+    _lt_profile = DEFAULT_HARDWARE_LIBRARY.get(
+        hardware_profile_id,
+        HardwareProfile(hardware_profile_id, rated_kw=12.0),
+    )
+    _lt_peak_compute_mw = (
+        gpu_module_count * nodes_per_gpu_module * _lt_profile.rated_kw * site.pue_base / 1000.0
+    )
+    _lt_solar_rated_mw_each = (0.25 * _lt_peak_compute_mw) / max(solar_count, 1)  # PROTO-7
+
     solar_arrays = [
         SolarModule(
-            SolarConfig(asset_id=f"solar-{i}", rated_mw=4.0),
+            SolarConfig(asset_id=f"solar-{i}", rated_mw=_lt_solar_rated_mw_each),
             irradiance_profile=IrradianceProfile([(0.0, 1.0), (end_sim_time, 1.0)]),
         )
         for i in range(solar_count)
