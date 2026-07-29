@@ -379,3 +379,59 @@ def test_d2_late_checkpoint_end_after_job_end_discarded():
         f"record_and_classify after discarded checkpoint_end must stay JOB_END; "
         f"got {state}"
     )
+
+
+# ---------------------------------------------------------------------------
+# D4 — explicit_hold must release after MAX_EXPLICIT_HOLD_S
+# ---------------------------------------------------------------------------
+
+def test_d4_explicit_hold_releases_after_max():
+    """D4: explicit_hold must not hold IN_VALLEY indefinitely when checkpoint_end
+    never arrives.
+
+    §11.3's reordering buffer and §17.2's quarantine make a missing checkpoint_end
+    an expected production condition.  §23.6 (curtailment): "a partitioned
+    controller must not be able to hold a customer's fleet down indefinitely" —
+    same failure class applied here to turbine ramp-down staging.
+
+    Fix: MAX_EXPLICIT_HOLD_S (default 900.0 — CHOSEN value, no measured basis).
+    When explicit_hold is True and elapsed > MAX_EXPLICIT_HOLD_S, clear the hold
+    and let the heuristic resume.  The normal 45s/30s path then applies: since
+    elapsed is already >> 45s, UNCERTAIN fires on the release tick, and JOB_END
+    follows after UNCERTAIN_GRACE_PERIOD_S.
+
+    The D1 test (checkpoint_end arriving before max hold) must still pass unchanged.
+
+    This test fails today with AttributeError: MAX_EXPLICIT_HOLD_S not defined.
+    """
+    clf = CheckpointClassifier()
+    t = _settle(clf, "j1", 10.0)
+    onset = t
+
+    clf.apply_explicit_event("j1", is_checkpoint_start=True, sim_time=t)
+
+    # Advance past MAX_EXPLICIT_HOLD_S at 80% draw — no checkpoint_end ever arrives.
+    # The hold must expire; the heuristic must resume.
+    while (t - onset) <= CheckpointClassifier.MAX_EXPLICIT_HOLD_S:
+        t += TICK_S
+        clf.record_and_classify("j1", t, 8.0)
+    # t - onset is now just over MAX_EXPLICIT_HOLD_S; hold should have released
+    # and, since elapsed >> 45s, the IN_VALLEY → UNCERTAIN transition fires
+    # on the same tick.
+
+    assert clf.state_of("j1") is CheckpointState.UNCERTAIN, (
+        f"after MAX_EXPLICIT_HOLD_S ({CheckpointClassifier.MAX_EXPLICIT_HOLD_S:.0f}s) "
+        f"with no checkpoint_end, explicit_hold must release and heuristic must "
+        f"resume to UNCERTAIN; got {clf.state_of('j1')}"
+    )
+    uncertain_entered_at = t   # sim_time at which UNCERTAIN was entered
+
+    # Advance past the 30s grace period — must reach JOB_END on normal timings
+    while (t - uncertain_entered_at) <= CheckpointClassifier.UNCERTAIN_GRACE_PERIOD_S:
+        t += TICK_S
+        clf.record_and_classify("j1", t, 8.0)
+
+    assert clf.state_of("j1") is CheckpointState.JOB_END, (
+        f"after UNCERTAIN grace period expires, must reach JOB_END; "
+        f"got {clf.state_of('j1')}"
+    )

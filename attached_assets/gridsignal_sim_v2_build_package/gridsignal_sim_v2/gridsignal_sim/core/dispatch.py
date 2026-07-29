@@ -86,6 +86,14 @@ class CheckpointClassifier:
     RECOVERY_WINDOW_S = 45.0            # §6.2: recovery window (heuristic only)
     RECOVERY_THRESHOLD_FRACTION = 0.90  # §6.2: >= 90% recovery -> CHECKPOINT
     UNCERTAIN_GRACE_PERIOD_S = 30.0     # §6.2: hold staging after 45s expiry
+    # D4 fix: safety ceiling on explicit_hold.  If checkpoint_end never arrives
+    # (scheduler crash, dropped event, or §17.2 quarantine) the hold must release
+    # so turbine ramp-down is not blocked indefinitely — same failure class as
+    # §23.6 curtailment: "a partitioned controller must not be able to hold a
+    # customer's fleet down indefinitely."
+    # 900.0 s is a CHOSEN value with no measured basis; the plausible upper bound
+    # on a large model checkpoint write is unmeasured (CL-2).
+    MAX_EXPLICIT_HOLD_S = 900.0         # CHOSEN value — no measured basis (CL-2)
 
     def __init__(self) -> None:
         self._jobs: dict[str, _JobDrawHistory] = {}
@@ -197,6 +205,23 @@ class CheckpointClassifier:
                 draw_mw / hist.pre_drop_draw_mw if hist.pre_drop_draw_mw else 0.0
             )
 
+            # D4 fix: safety release.  If checkpoint_end never arrives (scheduler
+            # crash, dropped event, §17.2 quarantine) the hold must expire rather
+            # than keeping the job IN_VALLEY forever and blocking turbine ramp-down.
+            # After release, execution falls through to the elif below, which fires
+            # immediately (elapsed >> RECOVERY_WINDOW_S) and sets UNCERTAIN.
+            # The explicit event pair remains authoritative when present; this only
+            # fires when checkpoint_end has been absent for MAX_EXPLICIT_HOLD_S.
+            if hist.explicit_hold and elapsed > self.MAX_EXPLICIT_HOLD_S:
+                _log.warning(
+                    "explicit_hold safety-released for job %r: checkpoint_end not "
+                    "received after %.0fs (MAX_EXPLICIT_HOLD_S=%.0f — CHOSEN value, "
+                    "no measured basis).  Heuristic resumes.",
+                    job_id, elapsed, self.MAX_EXPLICIT_HOLD_S,
+                )
+                hist.explicit_hold = False
+                # Fall through — do NOT jump to a classification here.
+
             if (
                 elapsed <= self.RECOVERY_WINDOW_S
                 and recovered_fraction >= self.RECOVERY_THRESHOLD_FRACTION
@@ -207,7 +232,7 @@ class CheckpointClassifier:
                 # authoritative scheduler hold in force.  If explicit_hold is True
                 # the checkpoint_start event has asserted that this IS a checkpoint
                 # write; we wait for the matching checkpoint_end regardless of
-                # elapsed time.
+                # elapsed time (up to MAX_EXPLICIT_HOLD_S, per D4).
                 if recovered_fraction >= self.RECOVERY_THRESHOLD_FRACTION:
                     # Recovered after the window — job is running normally again.
                     hist.state = CheckpointState.NORMAL
@@ -219,7 +244,7 @@ class CheckpointClassifier:
                     hist.state = CheckpointState.UNCERTAIN
                     if hist.uncertain_since is None:
                         hist.uncertain_since = sim_time
-            # else: within recovery window, OR explicit hold suppressing timeout
+            # else: within recovery window, OR explicit hold still active
             #       → stay IN_VALLEY
             return hist.state
 
