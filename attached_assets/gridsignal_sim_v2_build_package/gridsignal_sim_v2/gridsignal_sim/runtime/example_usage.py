@@ -35,8 +35,15 @@ async def main() -> None:
     # → InsufficientReserveAlert fires.  Keeps the §7.3 alert path exercisable in
     # the shipped scenarios (TC-10 is the unit test; this is the end-to-end case).
     contexts = [
+        # D11: bess_rated_mw raised to 15.0 MW (PROTO-8 — CHOSEN, no measured basis)
+        # so the BESS can actually deliver the peak shortfall (~13.96 MW) and the
+        # reserve check passes.  The old 5.0 MW BESS triggered a false-negative
+        # alert before D11 (sustainable_s was energy-only, not power-gated) and a
+        # correct alert after D11 (13.96 MW > 5.0 MW rated → sustainable_s = 0).
+        # Sizing at 15 MW keeps this scenario as the "reserve sufficient" case while
+        # demo-alert (bess_rated_mw=5.0) remains the "alert fires" case.
         build_run_context("demo-20mw", job_id="job-big", node_count=1900,
-                          turbine_rated_mw=25.0, end_sim_time=300.0),
+                          turbine_rated_mw=25.0, bess_rated_mw=15.0, end_sim_time=300.0),
         build_run_context("demo-5mw", job_id="job-small", node_count=476,
                           dt_lead_seconds=60.0, end_sim_time=300.0),
         build_run_context("demo-baseline", job_id="job-idle", node_count=1,

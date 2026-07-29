@@ -295,9 +295,24 @@ class BessModule(AssetModule):
     def max_sustainable_seconds(self, discharge_mw: float) -> float:
         """Used by the insufficient-reserve check (dispatch.py):
         how long, in seconds, this BESS can sustain `discharge_mw`
-        given current state of charge."""
+        given current state of charge and power rating.
+
+        §7.2 step 4 specifies "the BESS's max sustainable discharge duration
+        AT THE REQUIRED POWER LEVEL."  A unit cannot sustain any power level
+        above its rated_mw — for any duration — so the answer is 0.0 in that
+        case.  The pre-D11 code omitted this check and computed energy /
+        discharge_mw, producing a finite (but physically impossible) duration
+        when discharge_mw > rated_mw.  That is the energy-vs-time confusion
+        §7.2 step 4's parenthetical warns against: 516 s sustainable on a
+        14 MW draw from a 5 MW battery is a false negative.
+
+        D11 fix: return 0.0 whenever discharge_mw exceeds rated_mw.
+        """
         if discharge_mw <= 0:
             return math.inf
+        # D11 fix: power ceiling.  Above rating the unit cannot deliver at all.
+        if discharge_mw > self.config.rated_mw:
+            return 0.0
         hours = self.soc_mwh / discharge_mw
         return hours * 3600.0
 

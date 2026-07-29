@@ -334,6 +334,17 @@ class DispatchArbitrator:
         already_ramped_mw = sum(t.config.r_asset_mw_per_s for t in self.turbines) * dt_lead_seconds
         peak_shortfall_mw = max(0.0, delta_p_mw - already_ramped_mw)
 
+        # FLEET AGGREGATION NOTE (Step 3 Item 4): the per-unit call below
+        # distributes peak_shortfall equally across units and then takes the
+        # min() sustainable duration.  With the D11 power-ceiling fix in place,
+        # each unit now correctly returns 0 when its share exceeds its rated_mw.
+        # However, the fleet-level question is richer: can the COMBINED fleet
+        # (sum of rated power AND sum of stored energy) cover the peak shortfall
+        # for the full gap duration?  A min() on per-unit durations underestimates
+        # a heterogeneous fleet and a simple equal-share division misallocates when
+        # units have different rated_mw values.  Step 3 Item 4 should replace this
+        # with a fleet-level check that: (1) sums rated_mw to compare against
+        # peak_shortfall, and (2) computes a weighted energy budget across units.
         total_sustainable_s = min(
             (b.max_sustainable_seconds(peak_shortfall_mw / max(len(self.bess_units), 1)) for b in self.bess_units),
             default=0.0,

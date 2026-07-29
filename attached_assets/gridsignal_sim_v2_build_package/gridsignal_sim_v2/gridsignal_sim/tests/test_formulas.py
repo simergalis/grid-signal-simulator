@@ -436,3 +436,70 @@ def test_d10_demo_20mw_bess_fires_and_tapers():
         f"Turbine must be running at end of run; "
         f"final output = {turbine_outputs[-1]:.3f} MW"
     )
+
+
+# ---------------------------------------------------------------------------
+# D11 — reserve check must be power-limited, not just energy-limited
+# ---------------------------------------------------------------------------
+
+def test_d11_reserve_alert_fires_when_bess_power_insufficient():
+    """D11: max_sustainable_seconds must return 0 when discharge_mw > rated_mw.
+
+    The pre-D11 code computed energy / discharge_mw regardless of the unit's
+    power rating, producing a finite (but physically impossible) sustainable
+    duration and a false-negative reserve check.
+
+    §7.2 step 4: "max sustainable discharge duration AT THE REQUIRED POWER LEVEL."
+    Above rating that duration is zero — the unit cannot produce the power at all.
+
+    This test exercises the case TC-10 does NOT cover: a power-limited BESS
+    (ample stored energy, insufficient rated output) must fire the alert.
+    """
+    # Construct the scenario directly via DispatchArbitrator so we exercise
+    # the reserve-check arithmetic without running a full tick loop.
+    #
+    # Fleet: 1 turbine at 0.2 MW/s, rated 100 MW (large — not the constraint).
+    #        1 BESS rated 5.0 MW, 10.0 MWh (ample energy — not the constraint).
+    # Job:   delta_p_mw = 20 MW, dt_lead = 30 s.
+    #   required_ramp_s  = 20 / 0.2          = 100 s
+    #   gap_s            = 100 - 30          =  70 s
+    #   already_ramped   = 0.2 × 30          =   6 MW
+    #   peak_shortfall   = 20 - 6            =  14 MW
+    #   peak_shortfall / 1 BESS              =  14 MW  > rated 5 MW
+    #   → max_sustainable_seconds(14) must return 0 → 0 < 70 → alert fires.
+    #
+    # Without D11: sustainable_s = (10.0 / 14) × 3600 = 2571 s >> 70 s → NO alert (bug).
+    turbine = TurbineModule(TurbineConfig(
+        asset_id="t-d11", r_asset_mw_per_s=0.2, rated_mw=100.0
+    ))
+    bess = BessModule(BessConfig(
+        asset_id="bess-d11",
+        rated_mw=5.0,
+        usable_mwh=10.0,   # ample energy — the constraint is power, not energy
+    ))
+
+    arbitrator = DispatchArbitrator(turbines=[turbine], bess_units=[bess])
+    alert = arbitrator.stage_for_predicted_step(
+        delta_p_mw=20.0,
+        dt_lead_seconds=30.0,
+        sim_time=0.0,
+    )
+
+    assert alert is not None, (
+        "InsufficientReserveAlert must fire when peak shortfall (14 MW) exceeds "
+        "BESS rated power (5 MW), even though 10 MWh of stored energy would "
+        "notionally last 2571 s at that rate.  max_sustainable_seconds must "
+        "return 0 when discharge_mw > rated_mw (D11 power-ceiling fix)."
+    )
+
+    # Also directly verify the power-ceiling behaviour on the BESS instance.
+    assert bess.max_sustainable_seconds(14.0) == 0.0, (
+        "max_sustainable_seconds(14.0) must return 0.0 because 14 MW > rated 5 MW; "
+        f"got {bess.max_sustainable_seconds(14.0)}"
+    )
+    # Energy-limited path still works: at or below rated power, energy governs.
+    expected_s = (10.0 / 4.0) * 3600.0   # 4 MW ≤ 5 MW rated → 9000 s
+    assert bess.max_sustainable_seconds(4.0) == expected_s, (
+        f"max_sustainable_seconds(4.0) should be {expected_s} s (energy-limited); "
+        f"got {bess.max_sustainable_seconds(4.0)}"
+    )
