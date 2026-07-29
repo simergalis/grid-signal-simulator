@@ -171,4 +171,9 @@ class TickResult:
     bess_soc_fraction: float
     confidence: ConfidenceBand
     insufficient_reserve_alert: bool = False
+    # D7 fix: §5.1 onboarding alerts — frozenset of hardware_profile_id strings
+    # for which the one-time alert fired on this tick.  Empty frozenset = no new
+    # alerts.  Deduplicated per (site_id, hardware_profile_id) in SimulationState
+    # so the set is non-empty on at most one tick per unique profile_id per run.
+    unrecognised_profile_alerts: frozenset[str] = field(default_factory=frozenset)
     checkpoint_states: dict[str, str] = field(default_factory=dict)  # job_id -> state

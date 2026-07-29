@@ -13,9 +13,12 @@ without any parallelism.
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 
 from .asset_modules import BessModule, CoolingModule, GPUModule, SolarModule, TurbineModule
+
+_log = logging.getLogger(__name__)
 from .dispatch import CheckpointClassifier, ConfidenceEngine, DispatchArbitrator, InsufficientReserveAlert
 from .models import DataQualityTag, SiteConfig, TickResult, WorkloadEventType, WorkloadSignal
 
@@ -46,6 +49,15 @@ class SimulationState:
     # GPUModule.has_active_unmapped_jobs().
     _pending_alert: InsufficientReserveAlert | None = None
     _job_owner_index: dict[str, int] = field(default_factory=dict)
+    # D7 fix: §5.1 onboarding alert deduplication.
+    # _unmapped_profile_alerted: profile_ids for which the one-time alert has
+    #   already been queued this run.  site_id is implicit (one SimulationState
+    #   = one site), so this set deduplicates on (site_id, hardware_profile_id).
+    # _pending_unrecognised_alerts: profile_ids whose first-seen alert will fire
+    #   on the next TickResult.  Set by apply_workload_signal(); drained and
+    #   cleared by evaluate_tick() before returning TickResult.
+    _unmapped_profile_alerted: set[str] = field(default_factory=set)
+    _pending_unrecognised_alerts: set[str] = field(default_factory=set)
 
     def __post_init__(self) -> None:
         self.arbitrator = DispatchArbitrator(self.turbines, self.bess_units)
@@ -74,10 +86,24 @@ class SimulationState:
         counts), then the arbitrator is staged if this is a job start.
         """
         gpu = self._owning_gpu_module(signal)
-        gpu.apply_signal(signal)
-        # Unmapped-hardware tagging is now per-tick (see evaluate_tick step 6)
-        # rather than run-global; apply_signal's return value is intentionally
-        # discarded here.
+        new_unmapped = gpu.apply_signal(signal)
+        # Unmapped-hardware confidence tagging is per-tick via evaluate_tick step 6.
+        # D7 fix: §5.1 onboarding alert — fire once per unique unmapped
+        # hardware_profile_id per site.  Deduplicated by _unmapped_profile_alerted;
+        # queued in _pending_unrecognised_alerts so it surfaces on the next
+        # TickResult (reaching operator subscribers, not only the log).
+        if new_unmapped and signal.hardware_profile_id not in self._unmapped_profile_alerted:
+            self._unmapped_profile_alerted.add(signal.hardware_profile_id)
+            self._pending_unrecognised_alerts.add(signal.hardware_profile_id)
+            _log.warning(
+                "§5.1 onboarding alert (site=%r): hardware profile %r is not in "
+                "the library.  Map it in the hardware profile library to enable "
+                "per-profile draw attribution and confidence calibration.  "
+                "(First seen on job_id=%r)",
+                self.site.site_id,
+                signal.hardware_profile_id,
+                signal.job_id,
+            )
 
         if signal.event_type == WorkloadEventType.STARTING:
             delta_p_mw = sum(g.output_mw() for g in self.gpu_modules)
@@ -150,6 +176,11 @@ def evaluate_tick(state: SimulationState, sim_time: float, dt_seconds: float) ->
     if alert_fired:
         state._pending_alert = None
 
+    # D7 fix: §5.1 onboarding alerts — drain the pending set and clear it so
+    # the frozenset is non-empty on at most one tick per unique profile_id.
+    unrecognised_alerts = frozenset(state._pending_unrecognised_alerts)
+    state._pending_unrecognised_alerts = set()
+
     state.tick_index += 1
     return TickResult(
         run_id=state.run_id,
@@ -164,5 +195,6 @@ def evaluate_tick(state: SimulationState, sim_time: float, dt_seconds: float) ->
         bess_soc_fraction=(state.bess_units[0].soc_fraction if state.bess_units else 1.0),
         confidence=confidence,
         insufficient_reserve_alert=alert_fired,
+        unrecognised_profile_alerts=unrecognised_alerts,
         checkpoint_states=checkpoint_states,
     )

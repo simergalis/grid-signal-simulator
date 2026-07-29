@@ -17,12 +17,19 @@ can never be dropped even under sustained write pressure:
 
   _write_queue  — bounded asyncio.Queue(maxsize=QUEUE_MAXSIZE) for
                   RunTimeseries (tick) rows.  append() uses put_nowait(); on
-                  QueueFull the tick is dropped, _dropped_ticks is incremented,
+                  QueueFull the tick is DROPPED, _dropped_ticks is incremented,
                   and a WARNING is emitted once per LOG_DROP_EVERY_N drops.
-                  §22.2 permits Tier 1 degradation; it does not permit
-                  delaying a forecast.  (D5 fix: was await put(), which could
-                  suspend inside the tick and backpressure the control plane —
-                  exactly what §22.7 forbids.)
+
+                  RECORDED SIMULATOR DEVIATION (§22.2): §22.2 Tier 1 specifies
+                  "buffer to Tier 0 and drain on recovery" — dropping is what
+                  §22.4 permits for Tier 2 analytical batches.  In this
+                  simulator, Tier 0 and Tier 1 share one SQLite file (§22.7),
+                  so there is nowhere else to buffer to; drop-on-full behaviour
+                  is defensible on that basis but is NOT spec-compliant §22.2
+                  Tier 1 behaviour.  The _dropped_ticks counter and finalize()
+                  WARNING are the mitigation and stay.
+                  (D5 fix: was await put(), which could suspend inside the tick
+                  and backpressure the control plane — §22.7 forbids that.)
 
   _ce_queue     — UNBOUNDED asyncio.Queue() for ControlEvent rows.
                   append_control_event() uses put_nowait() which never raises
@@ -169,6 +176,11 @@ class RunTimeseries(Base):
         Text, nullable=False
     )  # JSON array of tag value strings
     insufficient_reserve_alert: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    # D7 fix: §5.1 onboarding alerts — JSON array of hardware_profile_id strings
+    # for which the one-time alert fired on this tick.  Empty array = no new alerts.
+    unrecognised_profile_alerts: Mapped[str] = mapped_column(
+        Text, nullable=False, default="[]"
+    )
     checkpoint_states: Mapped[str] = mapped_column(
         Text, nullable=False
     )  # JSON object: job_id -> state string
@@ -569,6 +581,9 @@ class SqlitePersistedTimeseriesSink:
                                     sorted(t.value for t in tick.confidence.tags)
                                 ),
                                 insufficient_reserve_alert=tick.insufficient_reserve_alert,
+                                unrecognised_profile_alerts=json.dumps(
+                                    sorted(tick.unrecognised_profile_alerts)
+                                ),
                                 checkpoint_states=json.dumps(tick.checkpoint_states),
                             )
                         )

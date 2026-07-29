@@ -84,3 +84,85 @@ def test_turbine_ramps_at_configured_rate():
     turbine.advance(sim_time=0.0, dt_seconds=30.0)
     # 0.2 MW/s * 30s = 6.0 MW -> exactly reaches target
     assert math.isclose(turbine.output_mw(), 6.0, abs_tol=1e-6)
+
+
+# ---------------------------------------------------------------------------
+# D7: §5.1 onboarding alert deduplication
+# ---------------------------------------------------------------------------
+
+def test_d7_onboarding_alert_fires_once_per_unique_profile_id():
+    """§5.1: one onboarding alert per unique unmapped hardware_profile_id per site.
+
+    Three jobs all carrying the same unmapped profile_id must produce exactly
+    one alert total.  A fourth job carrying a different unmapped profile_id must
+    produce exactly one more alert — not zero, not two.
+
+    The alert surfaces on TickResult.unrecognised_profile_alerts (a frozenset of
+    profile_id strings) so it reaches operator subscribers, not only the log.
+    It is non-empty on at most one tick per unique profile_id per run.
+    """
+    from core.simulation_core import SimulationState, evaluate_tick
+    from core.asset_modules import BessModule, CoolingModule, SolarModule
+    from core.models import (
+        BessConfig, SolarConfig, TurbineConfig,
+        WorkloadClass, WorkloadEventType, WorkloadSignal,
+    )
+
+    site = SiteConfig(site_id="site-onboard", pue_base=1.03, uncalibrated=False)
+    # Empty hardware_library — every profile is unmapped.
+    gpu = GPUModule(asset_id="gpu-0", site=site, hardware_library={})
+    turbine = TurbineModule(TurbineConfig(asset_id="t0", r_asset_mw_per_s=0.2, rated_mw=10.0))
+    cooling = CoolingModule(asset_id="cool-0", site=site)
+
+    state = SimulationState(
+        run_id="run-onboard",
+        site=site,
+        gpu_modules=[gpu],
+        turbines=[turbine],
+        bess_units=[],
+        solar_arrays=[],
+        cooling=cooling,
+    )
+
+    def _signal(job_id: str, profile_id: str, t: float) -> WorkloadSignal:
+        return WorkloadSignal(
+            event_id=f"e-{job_id}",
+            job_id=job_id,
+            event_type=WorkloadEventType.STARTING,
+            timestamp=t,
+            hardware_profile_id=profile_id,
+            node_count=4,
+            workload_class=WorkloadClass.TRAINING,
+            site_id="site-onboard",
+        )
+
+    UNMAPPED_A = "missing-sku-a"
+    UNMAPPED_B = "missing-sku-b"
+    DT = 5.0
+
+    # --- Three jobs, all UNMAPPED_A ---
+    alerts_seen: list[frozenset[str]] = []
+    t = 0.0
+    for i in range(3):
+        state.apply_workload_signal(_signal(f"job-{i}", UNMAPPED_A, t), dt_lead_seconds=30.0)
+        tick = evaluate_tick(state, t, DT)
+        if tick.unrecognised_profile_alerts:
+            alerts_seen.append(tick.unrecognised_profile_alerts)
+        t += DT
+
+    assert len(alerts_seen) == 1, (
+        f"Expected exactly 1 alert for 3 jobs on the same unmapped profile_id "
+        f"({UNMAPPED_A!r}); got {len(alerts_seen)}: {alerts_seen}"
+    )
+    assert alerts_seen[0] == frozenset({UNMAPPED_A}), (
+        f"Alert frozenset should contain only {UNMAPPED_A!r}; got {alerts_seen[0]}"
+    )
+
+    # --- Fourth job, different unmapped profile_id (UNMAPPED_B) ---
+    state.apply_workload_signal(_signal("job-3", UNMAPPED_B, t), dt_lead_seconds=30.0)
+    tick_b = evaluate_tick(state, t, DT)
+
+    assert tick_b.unrecognised_profile_alerts == frozenset({UNMAPPED_B}), (
+        f"Fourth job with a new unmapped profile_id {UNMAPPED_B!r} must produce "
+        f"exactly one alert; got {tick_b.unrecognised_profile_alerts!r}"
+    )
