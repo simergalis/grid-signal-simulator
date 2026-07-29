@@ -10,26 +10,41 @@ reference/schema_fix.sql is the PostgreSQL PROMOTION TARGET; it is not used
 here.  Table shapes and constraint reasoning come from that file; dialect
 (SERIAL, JSONB, partitioning) does not.
 
-Write path
-----------
-SqlitePersistedTimeseriesSink.append() enqueues ticks onto _write_queue
-(a bounded asyncio.Queue) and returns immediately.  _drain_task, a
-background asyncio.Task started by start(), drains the queue and issues the
-INSERT outside the tick path.
+Write paths
+-----------
+Two separate queues are maintained so that Tier-0 audit data (ControlEvent)
+can never be dropped even under sustained write pressure:
+
+  _write_queue  — bounded asyncio.Queue(maxsize=QUEUE_MAXSIZE) for
+                  RunTimeseries (tick) rows.  append() uses put_nowait(); on
+                  QueueFull the tick is dropped, _dropped_ticks is incremented,
+                  and a WARNING is emitted once per LOG_DROP_EVERY_N drops.
+                  §22.2 permits Tier 1 degradation; it does not permit
+                  delaying a forecast.  (D5 fix: was await put(), which could
+                  suspend inside the tick and backpressure the control plane —
+                  exactly what §22.7 forbids.)
+
+  _ce_queue     — UNBOUNDED asyncio.Queue() for ControlEvent rows.
+                  append_control_event() uses put_nowait() which never raises
+                  on an unbounded queue.  ControlEvent is FR-2.5/NFR-5 audit
+                  data and must never be dropped.  Keeping it on a separate
+                  unbounded queue means backpressure on the SQLite write path
+                  is absorbed by memory, not by silent row loss.
+
+Both drain tasks (_drain_task for RunTimeseries, _ce_drain_task for
+ControlEvent) are started by start() and stopped by stop().
 
 This decouples SQLite write latency from tick scheduling latency: a 1–5 ms
 embedded-store write in a single-process async app would otherwise appear as
 tick delivery latency during NFR-2 load testing and get misattributed to the
 forecast path (§22.7).
 
-Where the queue lives
+Where the queues live
 ---------------------
-_write_queue is an asyncio.Queue(maxsize=QUEUE_MAXSIZE) created in start().
-_drain_task is the asyncio.Task that reads from _write_queue.
-Both are attributes of SqlitePersistedTimeseriesSink; neither is module-level
-state, so concurrent runs each driven by the same sink instance share one
-queue and one drain task — writes from all runs fan into the same serialised
-INSERT stream, which is correct for a single SQLite file.
+Both queues and both drain tasks are attributes of SqlitePersistedTimeseriesSink;
+neither is module-level state, so concurrent runs each driven by the same sink
+instance share the same serialised INSERT streams, which is correct for a
+single SQLite file.
 """
 
 from __future__ import annotations
@@ -418,44 +433,64 @@ class SqlitePersistedTimeseriesSink:
     v2.5 §22.7: one file, WAL mode.  Promoting to PostgreSQL is a
     connection-string change per §22.1 principle 4.
 
-    Write path (where the queue lives)
-    -----------------------------------
+    Write paths (where the queues live)
+    -------------------------------------
     _write_queue  — asyncio.Queue(maxsize=QUEUE_MAXSIZE), created in start().
-                    append() puts TickResult objects here and returns without
-                    waiting for the DB write.
-    _drain_task   — asyncio.Task, created in start(), that reads from
-                    _write_queue and issues INSERT statements.  Lives
-                    alongside the run's asyncio task; they yield to each
-                    other cooperatively.
+                    append() enqueues TickResult objects using put_nowait().
+                    On QueueFull, the tick is DROPPED (Tier-1 degradation per
+                    §22.2), _dropped_ticks is incremented, and a WARNING is
+                    emitted once per LOG_DROP_EVERY_N drops.
+                    (D5 fix: was await put(), which blocked the event loop
+                    under backpressure — §22.7 forbids store writes blocking
+                    the event loop.)
 
-    This is the "bounded queue drained by its own task" the build plan §22.7
-    refers to.  Tick-path latency is limited to queue.put() overhead
-    (microseconds), not SQLite write latency (1–5 ms).
+    _ce_queue     — asyncio.Queue() with NO maxsize, created in start().
+                    append_control_event() enqueues ControlEvent rows here.
+                    put_nowait() on an unbounded queue never raises QueueFull,
+                    so ControlEvent rows (FR-2.5/NFR-5 audit data) are NEVER
+                    dropped under sustained pressure.
+
+    _drain_task   — asyncio.Task draining _write_queue (RunTimeseries INSERTs).
+    _ce_drain_task — asyncio.Task draining _ce_queue (ControlEvent INSERTs).
+
+    Tick-path latency is limited to put_nowait() overhead (microseconds),
+    not SQLite write latency (1–5 ms).
 
     Lifecycle
     ---------
     1. Construct: SqlitePersistedTimeseriesSink(db_path)
-    2. start()    — engine, schema, drain task
+    2. start()    — engine, schema, both drain tasks
     3. append()   — called per tick from RunManager._drive()
-    4. finalize() — called from RunManager._drive()'s finally block;
-                    drains the queue then records the verdict
-    5. stop()     — called externally to dispose engine and drain task
+    4. finalize() — drains both queues then records the verdict; logs
+                    dropped-tick count if any ticks were lost this run
+    5. stop()     — sends sentinels to both queues, awaits both drain tasks,
+                    disposes engine
     """
 
     QUEUE_MAXSIZE: int = 1000
     # 1000 is a chosen value.  A 4-hour run at 5-second ticks produces 2880
     # rows maximum; 1000 gives ~3 minutes of buffering before backpressure.
 
+    LOG_DROP_EVERY_N: int = 100
+    # Emit a WARNING at most once per LOG_DROP_EVERY_N tick drops so the
+    # operator sees the problem without being flooded during sustained pressure.
+
     def __init__(self, db_path: str | Path) -> None:
         self._db_path = Path(db_path)
         self._engine = None
-        # _write_queue and _drain_task are created in start() so they are
-        # bound to the correct event loop.  Do not create them in __init__.
+        # _write_queue, _drain_task, _ce_queue, and _ce_drain_task are all
+        # created in start() so they are bound to the correct event loop.
+        # Do not create asyncio primitives in __init__.
         self._write_queue: asyncio.Queue | None = None
         self._drain_task: asyncio.Task | None = None
+        self._ce_queue: asyncio.Queue | None = None
+        self._ce_drain_task: asyncio.Task | None = None
+        # D5 fix: count RunTimeseries rows dropped due to a full _write_queue.
+        # Surfaced in finalize() so operators know data was lost this run.
+        self._dropped_ticks: int = 0
 
     async def start(self) -> None:
-        """Create engine, apply schema, start the drain task.
+        """Create engine, apply schema, start both drain tasks.
         Must be called inside a running event loop before any append()."""
         self._engine = create_async_engine(
             f"sqlite+aiosqlite:///{self._db_path}",
@@ -468,22 +503,34 @@ class SqlitePersistedTimeseriesSink:
             await conn.execute(text("PRAGMA journal_mode=WAL"))
             await conn.run_sync(Base.metadata.create_all)
 
-        # _write_queue is the seam between the tick path (append) and the DB
-        # write path (_drain_loop).  See class docstring for sizing rationale.
+        # _write_queue (bounded): RunTimeseries tick rows.
+        # _ce_queue (unbounded): ControlEvent audit rows — never dropped.
+        # See class docstring for the D5-fix rationale on the two-queue design.
         self._write_queue = asyncio.Queue(maxsize=self.QUEUE_MAXSIZE)
         self._drain_task = asyncio.create_task(
             self._drain_loop(), name="persistence-drain"
         )
+        self._ce_queue = asyncio.Queue()  # no maxsize — unbounded by design
+        self._ce_drain_task = asyncio.create_task(
+            self._ce_drain_loop(), name="persistence-ce-drain"
+        )
         _log.debug("SqlitePersistedTimeseriesSink started: db=%s", self._db_path)
 
     async def stop(self) -> None:
-        """Send the stop sentinel, wait for the drain task to exit cleanly,
-        then dispose the engine.  Call after finalize() has returned."""
+        """Send stop sentinels to both drain tasks, wait for them to exit
+        cleanly, then dispose the engine.  Call after finalize() has returned."""
+        # Tick (RunTimeseries) drain.
         if self._write_queue is not None:
             await self._write_queue.put(_STOP)
         if self._drain_task is not None:
             await self._drain_task
             self._drain_task = None
+        # ControlEvent drain.
+        if self._ce_queue is not None:
+            await self._ce_queue.put(_STOP)
+        if self._ce_drain_task is not None:
+            await self._ce_drain_task
+            self._ce_drain_task = None
         if self._engine is not None:
             await self._engine.dispose()
             self._engine = None
@@ -536,43 +583,110 @@ class SqlitePersistedTimeseriesSink:
                 # failed so that join() in finalize() is not blocked by errors.
                 self._write_queue.task_done()
 
+    async def _ce_drain_loop(self) -> None:
+        """Background task: dequeue ControlEvent rows and INSERT them.
+        Uses an unbounded queue so no audit row is ever dropped.
+        Exits when it dequeues the _STOP sentinel placed by stop()."""
+        assert self._engine is not None, "_ce_drain_loop started before engine"
+        assert self._ce_queue is not None
+
+        while True:
+            item = await self._ce_queue.get()
+            if item is _STOP:
+                self._ce_queue.task_done()
+                break
+            ce: ControlEvent = item
+            try:
+                async with AsyncSession(self._engine) as session:
+                    async with session.begin():
+                        session.add(ce)
+            except Exception:
+                _log.exception(
+                    "persistence ce-drain: failed to write ControlEvent %r "
+                    "for run %s",
+                    ce.event_id,
+                    ce.run_id,
+                )
+            finally:
+                self._ce_queue.task_done()
+
     # ------------------------------------------------------------------
     # TimeseriesSink Protocol
     # ------------------------------------------------------------------
 
     async def append(self, tick: TickResult) -> None:
-        """Enqueue tick for background write.  Returns as soon as the tick
-        is on the queue — does not wait for the DB INSERT to complete.
+        """Enqueue tick for background write.  Returns as soon as put_nowait()
+        is called — does not wait for the DB INSERT to complete.
 
-        If _write_queue is at capacity, put() yields to the event loop until
-        space is available, surfacing backpressure as tick-loop latency rather
-        than a silent drop.  A WARNING is emitted so the operator can see the
-        drain task is falling behind."""
+        D5 fix: uses put_nowait() instead of await put().  §22.7 forbids
+        store writes from blocking the event loop; await put() on a full queue
+        would suspend inside the tick path, surfacing SQLite latency as tick
+        delivery latency.
+
+        If _write_queue is at capacity, the tick is DROPPED (Tier-1 degradation
+        per §22.2), _dropped_ticks is incremented, and a WARNING is emitted
+        once per LOG_DROP_EVERY_N drops.  ControlEvent rows are NOT routed here;
+        use append_control_event() — they travel on the unbounded _ce_queue and
+        are never dropped."""
         if self._write_queue is None:
             raise RuntimeError(
                 "SqlitePersistedTimeseriesSink.start() has not been called"
             )
-        if self._write_queue.full():
-            _log.warning(
-                "persistence write queue at capacity (%d); tick path yielding "
-                "— drain task may not be keeping up with tick rate",
-                self.QUEUE_MAXSIZE,
+        try:
+            self._write_queue.put_nowait(tick)
+        except asyncio.QueueFull:
+            self._dropped_ticks += 1
+            if self._dropped_ticks % self.LOG_DROP_EVERY_N == 1:
+                # Log on the 1st drop and every LOG_DROP_EVERY_N thereafter.
+                _log.warning(
+                    "persistence write queue full (%d capacity); tick DROPPED "
+                    "(total dropped this sink: %d).  Drain task is behind tick "
+                    "rate — §22.2 Tier-1 degradation in effect.",
+                    self.QUEUE_MAXSIZE,
+                    self._dropped_ticks,
+                )
+
+    async def append_control_event(self, ce: ControlEvent) -> None:
+        """Enqueue a ControlEvent row for background write on the unbounded
+        _ce_queue.  put_nowait() on an unbounded queue never raises QueueFull,
+        so ControlEvent rows (FR-2.5/NFR-5 audit data) are NEVER dropped.
+
+        This is the correct path for audit rows.  Tick rows belong in append().
+        """
+        if self._ce_queue is None:
+            raise RuntimeError(
+                "SqlitePersistedTimeseriesSink.start() has not been called"
             )
-        await self._write_queue.put(tick)
+        self._ce_queue.put_nowait(ce)
 
     async def finalize(self, run_id: str, verdict: str | None) -> None:
-        """Flush all pending tick writes, then record the run's completion.
+        """Flush all pending tick and ControlEvent writes, then record the
+        run's completion.
 
-        join() blocks until every item already on _write_queue has had
-        task_done() called by the drain task.  Only then is the Scenario row
-        written, guaranteeing that when finalize() returns both the ticks and
-        the verdict are durable."""
-        if self._write_queue is None:
+        join() blocks until every item already on both queues has had
+        task_done() called by the respective drain task.  Only then is the
+        Scenario row written, guaranteeing that when finalize() returns all
+        ticks, all ControlEvent rows, and the verdict are durable.
+
+        If any ticks were dropped during this run due to write-queue pressure,
+        a WARNING is emitted here so the operator can see the data loss in the
+        run summary without having to grep mid-run logs."""
+        if self._write_queue is None or self._ce_queue is None:
             raise RuntimeError(
                 "SqlitePersistedTimeseriesSink.start() has not been called"
             )
-        # Drain: wait for all enqueued ticks to be processed.
+        # Drain both queues before writing the verdict row.
         await self._write_queue.join()
+        await self._ce_queue.join()
+
+        if self._dropped_ticks > 0:
+            _log.warning(
+                "run %s finalized with %d RunTimeseries row(s) dropped due to "
+                "write-queue pressure (§22.2 Tier-1 degradation).  "
+                "Persisted tick count may be less than total tick count.",
+                run_id,
+                self._dropped_ticks,
+            )
 
         if self._engine is None:
             return

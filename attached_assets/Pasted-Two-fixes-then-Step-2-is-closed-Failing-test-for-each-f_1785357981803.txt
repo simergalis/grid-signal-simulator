@@ -1,0 +1,31 @@
+Two fixes, then Step 2 is closed. Failing test for each first.
+
+D5 — the write queue can block the tick path. append() calls
+`await self._write_queue.put(tick)` on an asyncio.Queue(maxsize=1000). When the drain falls
+behind, await put() suspends inside the tick — that is back-pressure reaching the control
+plane, which is exactly what v2.5 §22.7 forbids: "Store writes must not block the event loop."
+Same failure class as a bounded WebSocket queue with await.
+
+Fix: append() uses put_nowait(). On QueueFull, do NOT block and do NOT silently drop:
+- RunTimeseries rows may be dropped under sustained pressure — increment a dropped counter,
+  log once per N drops, and surface the count in finalize(). §22.2 permits Tier 1 degradation;
+  it does not permit delaying a forecast.
+- ControlEvent rows are audit data (FR-2.5/NFR-5) and must NEVER be dropped. If they share
+  this queue, split them onto a path that cannot lose rows. Say which you did.
+Test: fill the queue with a stalled drain, then call append() and assert it returns without
+awaiting and without raising.
+
+D6 — zero-widening default. band_for uses WIDENING_PER_TAG.get(t, 0.0), so a tag with no
+calibrated factor contributes zero widening — the band is identical to having no tag at all,
+and TC-17's conservative dispatch sizing silently fails for it. This is TC-63's argument:
+defaulting to zero reproduces the unadjusted arithmetic the mechanism exists to correct.
+Fix: .get(t, DEFAULT_WIDENING) with DEFAULT_WIDENING = 0.15, tagged as a CHOSEN value with no
+measured basis (PROTO-4). An unknown data-quality problem is at least as bad as the worst
+known one. Log once per unrecognised tag.
+Test: band_for with a tag absent from WIDENING_PER_TAG must produce a strictly wider band than
+band_for with no tags.
+
+Also confirm, no code needed: does §5.1's one-time onboarding alert per unrecognised profile
+ID per site still fire after _unmapped_hardware_ever_seen was removed? Quote the line.
+
+Re-run all four commands and report. Stop.

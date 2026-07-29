@@ -350,6 +350,16 @@ class ConfidenceEngine:
     """
 
     BASE_BAND_FRACTION = 0.05
+
+    # D6 fix: DEFAULT_WIDENING is used when a DataQualityTag has no
+    # calibrated entry in WIDENING_PER_TAG.  Before this fix, .get(t, 0.0)
+    # returned 0.0 for unknown tags — making an unknown tag produce the
+    # same band as having no tag at all, silently reproducing the unadjusted
+    # arithmetic the mechanism exists to correct (TC-63 argument).
+    # An unknown data-quality problem is at least as bad as the worst known
+    # one; 0.15 is a CHOSEN value with no measured basis (PROTO-4).
+    DEFAULT_WIDENING: float = 0.15   # CHOSEN — no measured basis (PROTO-4)
+
     WIDENING_PER_TAG = {
         DataQualityTag.UNMAPPED_HARDWARE: 0.10,   # chosen value — no measured basis
         DataQualityTag.UNCALIBRATED_SITE: 0.08,   # chosen value — no measured basis
@@ -357,11 +367,32 @@ class ConfidenceEngine:
         DataQualityTag.STALE_PROFILE: 0.12,       # chosen value — no measured basis (v2.5 §5.3)
     }
 
+    def __init__(self) -> None:
+        # D6 fix: track which unknown tags have already been warned about so
+        # the log fires at most once per unrecognised tag per engine instance
+        # (one-time alert per session, not per tick — same pattern as §5.1's
+        # one-time onboarding alert for unmapped hardware profiles).
+        self._warned_unknown_tags: set[DataQualityTag] = set()
+
     def band_for(self, point_estimate_mw: float, tags: set[DataQualityTag]) -> ConfidenceBand:
-        # Use .get(t, 0.0) so a tag added to DataQualityTag before its widening
-        # factor is calibrated does not crash — it just contributes zero widening,
-        # which is visible in the tag set and therefore not silent.
-        fraction = self.BASE_BAND_FRACTION + sum(self.WIDENING_PER_TAG.get(t, 0.0) for t in tags)
+        # D6 fix: unknown tags use DEFAULT_WIDENING, not 0.0.
+        # Log once per unrecognised tag so the operator knows calibration is
+        # missing; subsequent ticks are silent to avoid per-tick log spam.
+        fraction = self.BASE_BAND_FRACTION
+        for t in tags:
+            w = self.WIDENING_PER_TAG.get(t)
+            if w is None:
+                if t not in self._warned_unknown_tags:
+                    _log.warning(
+                        "ConfidenceEngine: DataQualityTag %r has no calibrated "
+                        "widening factor — applying DEFAULT_WIDENING=%.2f "
+                        "(CHOSEN, no measured basis, PROTO-4).  Add a "
+                        "WIDENING_PER_TAG entry when calibrated data is available.",
+                        t, self.DEFAULT_WIDENING,
+                    )
+                    self._warned_unknown_tags.add(t)
+                w = self.DEFAULT_WIDENING
+            fraction += w
         return ConfidenceBand(
             point_estimate_mw=point_estimate_mw,
             plus_minus_fraction=fraction,

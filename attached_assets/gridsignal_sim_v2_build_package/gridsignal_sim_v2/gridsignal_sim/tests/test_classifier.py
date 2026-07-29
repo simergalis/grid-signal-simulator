@@ -435,3 +435,43 @@ def test_d4_explicit_hold_releases_after_max():
         f"after UNCERTAIN grace period expires, must reach JOB_END; "
         f"got {clf.state_of('j1')}"
     )
+
+
+# ---------------------------------------------------------------------------
+# D6: unknown DataQualityTag gets DEFAULT_WIDENING, not 0.0
+# ---------------------------------------------------------------------------
+
+def test_d6_unknown_tag_uses_default_widening(monkeypatch) -> None:
+    """band_for with a tag absent from WIDENING_PER_TAG must produce a
+    strictly wider band than band_for with no tags at all.
+
+    D6 fix: ConfidenceEngine.band_for uses .get(t, DEFAULT_WIDENING=0.15)
+    rather than .get(t, 0.0).  Before the fix, an unknown tag produced a band
+    identical to the no-tag baseline — silently reproducing the unadjusted
+    arithmetic the confidence mechanism exists to correct (TC-63 argument).
+
+    Simulates an unknown tag by patching WIDENING_PER_TAG to remove
+    STALE_PROFILE, then passing STALE_PROFILE as the tag under test.
+    """
+    from core.dispatch import ConfidenceEngine
+    from core.models import DataQualityTag
+
+    engine = ConfidenceEngine()
+    # Remove STALE_PROFILE from the calibrated dict to simulate a tag that
+    # has not yet been assigned a measured widening factor.
+    reduced = {
+        k: v for k, v in ConfidenceEngine.WIDENING_PER_TAG.items()
+        if k != DataQualityTag.STALE_PROFILE
+    }
+    monkeypatch.setattr(ConfidenceEngine, "WIDENING_PER_TAG", reduced)
+
+    p = 10.0
+    band_no_tags = engine.band_for(p, set())
+    band_with_unknown = engine.band_for(p, {DataQualityTag.STALE_PROFILE})
+
+    assert band_with_unknown.upper_bound_mw > band_no_tags.upper_bound_mw, (
+        "band_for with an unknown tag must widen strictly over the no-tag "
+        "baseline; DEFAULT_WIDENING (0.15) was not applied — got identical "
+        f"bands: no_tags={band_no_tags.upper_bound_mw:.4f} MW, "
+        f"unknown_tag={band_with_unknown.upper_bound_mw:.4f} MW"
+    )

@@ -294,3 +294,64 @@ async def test_data_quality_tags_roundtrip(tmp_path: Path) -> None:
     assert stored_states == {"job-1": "in_valley"}
 
     await sink.stop()
+
+
+# ---------------------------------------------------------------------------
+# Test 6 (D5): append() does not block or raise when the write queue is full
+# ---------------------------------------------------------------------------
+
+async def test_append_does_not_block_when_queue_full(tmp_path: Path) -> None:
+    """append() must return without blocking and without raising when the
+    write queue is at capacity.
+
+    D5 fix: append() uses put_nowait() instead of await put().  §22.7 forbids
+    store writes from suspending in the tick path; await put() on a full queue
+    would do exactly that.
+
+    On QueueFull:
+      - no exception is raised
+      - _dropped_ticks is incremented
+      - the call returns in the same event-loop turn (verified with wait_for)
+    """
+    db_path = tmp_path / "test_nowait.db"
+    sink = SqlitePersistedTimeseriesSink(db_path)
+    await sink.start()
+
+    # Cancel the drain task so items accumulate without being consumed.
+    assert sink._drain_task is not None
+    sink._drain_task.cancel()
+    try:
+        await sink._drain_task
+    except asyncio.CancelledError:
+        pass
+    sink._drain_task = None  # prevent stop() from trying to await it again
+
+    # Fill the queue to capacity directly (bypass append so we don't consume
+    # the drop budget before the assertion tick).
+    assert sink._write_queue is not None
+    for i in range(sink.QUEUE_MAXSIZE):
+        sink._write_queue.put_nowait(_make_tick("run-nowait", i))
+
+    assert sink._write_queue.full(), "pre-condition: queue must be full"
+    dropped_before = sink._dropped_ticks
+
+    # append() must not block — if it awaits, asyncio.wait_for raises TimeoutError.
+    try:
+        await asyncio.wait_for(
+            sink.append(_make_tick("run-nowait", sink.QUEUE_MAXSIZE)),
+            timeout=0.05,
+        )
+    except asyncio.TimeoutError:
+        pytest.fail(
+            "append() blocked on a full queue — put_nowait() was not used"
+        )
+
+    # Dropped counter must have incremented by exactly 1.
+    assert sink._dropped_ticks == dropped_before + 1, (
+        f"_dropped_ticks expected {dropped_before + 1}, got {sink._dropped_ticks}"
+    )
+
+    # Clean up: engine is still alive; dispose directly since drain task is gone.
+    if sink._engine is not None:
+        await sink._engine.dispose()
+        sink._engine = None
