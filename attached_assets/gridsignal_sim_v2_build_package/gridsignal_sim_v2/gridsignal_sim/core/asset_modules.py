@@ -110,6 +110,25 @@ class GPUModule(AssetModule):
             total_kw += nodes * profile.rated_kw
         return total_kw * self.site.pue_base / 1000.0
 
+    def per_job_compute_mw(self, job_id: str) -> float:
+        """Per-job compute draw: Nodes_i(t) × kW_i × PUE_base / 1000.
+
+        Shared substrate for Step 3 Items 1–3:
+          Item 1 — checkpoint classifier attribution (this call site)
+          Item 2 — Δt_lead partial ramp (job's own draw while ramping)
+          Item 3 — per-job cooling superposition (each job lags independently)
+
+        Building this once here avoids three separate sources of truth for the
+        same quantity.  Returns 0.0 if job_id is not currently active on this
+        module (e.g. after JOB_END removes it from _node_counts).
+        """
+        nodes = self._node_counts.get(job_id, 0)
+        if nodes == 0:
+            return 0.0
+        profile_id = self._job_profiles.get(job_id, "")
+        profile = self.hardware_library.get(profile_id, GENERIC_FALLBACK_PROFILE)
+        return nodes * profile.rated_kw * self.site.pue_base / 1000.0
+
     def active_training_jobs(self) -> list[str]:
         return [
             job_id

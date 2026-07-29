@@ -43,14 +43,16 @@ async def main() -> None:
         # Sizing at 15 MW keeps this scenario as the "reserve sufficient" case while
         # demo-alert (bess_rated_mw=5.0) remains the "alert fires" case.
         build_run_context("demo-20mw", job_id="job-big", node_count=1900,
-                          turbine_rated_mw=25.0, bess_rated_mw=15.0, end_sim_time=300.0),
+                          turbine_rated_mw=25.0, bess_rated_mw=15.0,
+                          bess_usable_mwh=8.0,   # PROTO-8: 15 MW / 8 MWh ≈ 1.9C — plausible C-rate
+                          end_sim_time=300.0),
         build_run_context("demo-5mw", job_id="job-small", node_count=476,
                           dt_lead_seconds=60.0, end_sim_time=300.0),
         build_run_context("demo-baseline", job_id="job-idle", node_count=1,
                           end_sim_time=300.0),
         build_run_context("demo-alert", job_id="job-alert", node_count=1900,
-                          turbine_rated_mw=25.0, bess_usable_mwh=0.2,
-                          end_sim_time=300.0),  # PROTO-8 small BESS → alert fires
+                          turbine_rated_mw=25.0, bess_usable_mwh=2.5,
+                          end_sim_time=300.0),  # PROTO-8: 5 MW / 2.5 MWh = 2C; power ceiling fires alert
     ]
 
     await asyncio.gather(*(manager.start_run(c) for c in contexts))

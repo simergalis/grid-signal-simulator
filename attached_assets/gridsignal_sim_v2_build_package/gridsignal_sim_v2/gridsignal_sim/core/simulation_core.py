@@ -191,15 +191,17 @@ def evaluate_tick(state: SimulationState, sim_time: float, dt_seconds: float) ->
         turbine.advance(sim_time, dt_seconds)
     turbine_output_mw, bess_output_mw = state.arbitrator.tick(p_dispatch_required_mw, dt_seconds)
 
-    # 5. Checkpoint classification, per active training job
+    # 5. Checkpoint classification, per active training job.
+    # Step 3 Item 1: use gpu.per_job_compute_mw(job_id) — the draw for THIS job
+    # on THIS module — not the site-wide p_compute_mw sum.  A 20% checkpoint dip
+    # in a 1 MW job is a 0.4% dip in a 50 MW site and never crosses §6.2's 15%
+    # threshold when the classifier sees the aggregate.
+    # per_job_compute_mw() is the shared substrate: Items 2 and 3 will consume
+    # the same accessor rather than each deriving their own job-level draw.
     checkpoint_states: dict[str, str] = {}
     for gpu in state.gpu_modules:
         for job_id in gpu.active_training_jobs():
-            job_draw_mw = p_compute_mw  # simplified: per-job draw attribution is a
-            # documented refinement -- this skeleton classifies against the
-            # module's aggregate draw, which is correct for the single-job-
-            # per-module case exercised by the starter scenarios (functional
-            # spec Section 6.4) and should be extended for multi-job modules.
+            job_draw_mw = gpu.per_job_compute_mw(job_id)
             new_state = state.classifier.record_and_classify(job_id, sim_time, job_draw_mw)
             checkpoint_states[job_id] = new_state.value
 

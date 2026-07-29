@@ -8,7 +8,7 @@ layer, tested independently of the run-management/concurrency layer.
 import math
 
 from core.asset_modules import BessModule, CoolingModule, GPUModule, IrradianceProfile, SolarModule, TurbineModule
-from core.dispatch import DispatchArbitrator
+from core.dispatch import CheckpointClassifier, CheckpointState, DispatchArbitrator
 from core.models import BessConfig, HardwareProfile, SiteConfig, SolarConfig, TurbineConfig, WorkloadEventType, WorkloadSignal, WorkloadClass
 
 
@@ -503,3 +503,113 @@ def test_d11_reserve_alert_fires_when_bess_power_insufficient():
         f"max_sustainable_seconds(4.0) should be {expected_s} s (energy-limited); "
         f"got {bess.max_sustainable_seconds(4.0)}"
     )
+
+
+# ---------------------------------------------------------------------------
+# Step 3 Item 1 — per-job draw attribution for checkpoint classifier
+# ---------------------------------------------------------------------------
+
+def test_step3_item1_per_job_draw_detects_small_job_checkpoint():
+    """Step 3 Item 1: checkpoint dip on a small job must be visible to the
+    classifier.  The old code passed the site-wide p_compute_mw sum; a 20%
+    dip in a 1 MW job is a ~1.5% dip in a 50 MW site and never crosses §6.2's
+    15% threshold.
+
+    Setup
+    -----
+    One GPU module carrying two training jobs:
+      - large:  100 nodes × enterprise_8gpu_air → 1.0506 MW
+      - small:   10 nodes × enterprise_8gpu_air → 0.1051 MW
+    Site total: 1.1557 MW
+
+    After scaling the small job from 10 → 1 node:
+      - small draw drops to 0.0105 MW  (–90 % of per-job median) → IN_VALLEY
+      - site total drops to 1.0612 MW  (– 8.2% of site median)    → NORMAL
+
+    The test runs the classifier directly (no full evaluate_tick loop needed)
+    so it is fast and does not depend on runtime/ plumbing.
+    """
+    PROFILE_ID = "enterprise_8gpu_air"
+    RATED_KW = 10.2
+    PUE = 1.03
+
+    large_draw = 100 * RATED_KW * PUE / 1000.0   # 1.0506 MW
+    small_draw = 10  * RATED_KW * PUE / 1000.0   # 0.1051 MW
+    small_draw_dip = 1 * RATED_KW * PUE / 1000.0 # 0.0105 MW  (scale 10→1 node)
+
+    site_total_before = large_draw + small_draw     # 1.1557 MW
+    site_total_after  = large_draw + small_draw_dip # 1.0612 MW
+
+    DT = 5.0
+    BASELINE_TICKS = 12   # 60 s — enough for a stable trailing median
+
+    # ------------------------------------------------------------------ #
+    # Path A: per-job attribution (new code) — dip MUST be detected       #
+    # ------------------------------------------------------------------ #
+    clf_per_job = CheckpointClassifier()
+    t = 0.0
+    for _ in range(BASELINE_TICKS):
+        clf_per_job.record_and_classify("large", t, large_draw)
+        clf_per_job.record_and_classify("small", t, small_draw)
+        t += DT
+
+    # First dip tick — small job scaled down to 1 node
+    clf_per_job.record_and_classify("large", t, large_draw)
+    state_small_after = clf_per_job.record_and_classify("small", t, small_draw_dip)
+
+    assert state_small_after == CheckpointState.IN_VALLEY, (
+        f"Per-job attribution must detect a 90% draw dip on the small job "
+        f"(small_draw={small_draw:.4f} MW → {small_draw_dip:.4f} MW).\n"
+        f"  median ≈ {small_draw:.4f} MW, threshold = {small_draw * 0.85:.4f} MW, "
+        f"  got state={state_small_after!r}"
+    )
+
+    # ------------------------------------------------------------------ #
+    # Path B: site-wide aggregate (old code) — dip must NOT be detected   #
+    # ------------------------------------------------------------------ #
+    # Use the same job id ("small") so the median builds from the same
+    # baseline draw — here we pretend the classifier only sees the total.
+    clf_aggregate = CheckpointClassifier()
+    t = 0.0
+    for _ in range(BASELINE_TICKS):
+        clf_aggregate.record_and_classify("small", t, site_total_before)
+        t += DT
+
+    state_agg_after = clf_aggregate.record_and_classify("small", t, site_total_after)
+
+    assert state_agg_after == CheckpointState.NORMAL, (
+        f"Site-wide aggregate draw must NOT detect the small-job dip "
+        f"(site total drops only {(1 - site_total_after/site_total_before)*100:.1f}% "
+        f"< 15% threshold).\n"
+        f"  Expected NORMAL, got {state_agg_after!r}"
+    )
+
+    # ------------------------------------------------------------------ #
+    # Sanity: per_job_compute_mw() accessor returns the right values       #
+    # ------------------------------------------------------------------ #
+    site = SiteConfig(site_id="site-item1", pue_base=PUE)
+    library = {PROFILE_ID: HardwareProfile(PROFILE_ID, rated_kw=RATED_KW)}
+    gpu = GPUModule(asset_id="gpu-0", site=site, hardware_library=library)
+
+    from core.models import WorkloadClass
+    for job_id, n in [("large", 100), ("small", 10)]:
+        gpu.apply_signal(WorkloadSignal(
+            event_id=f"e-{job_id}", job_id=job_id,
+            event_type=WorkloadEventType.STARTING, timestamp=0.0,
+            hardware_profile_id=PROFILE_ID, node_count=n,
+            workload_class=WorkloadClass.TRAINING, site_id="site-item1",
+        ))
+
+    assert abs(gpu.per_job_compute_mw("large") - large_draw) < 1e-9, (
+        f"per_job_compute_mw('large') expected {large_draw:.6f}, "
+        f"got {gpu.per_job_compute_mw('large'):.6f}"
+    )
+    assert abs(gpu.per_job_compute_mw("small") - small_draw) < 1e-9, (
+        f"per_job_compute_mw('small') expected {small_draw:.6f}, "
+        f"got {gpu.per_job_compute_mw('small'):.6f}"
+    )
+    # Sum of per-job draws must equal module output_mw()
+    assert abs(
+        gpu.per_job_compute_mw("large") + gpu.per_job_compute_mw("small")
+        - gpu.output_mw()
+    ) < 1e-9, "sum of per_job_compute_mw() values must equal output_mw()"
