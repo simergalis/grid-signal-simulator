@@ -1,0 +1,34 @@
+Now do STEP 3 ITEM 2 from v2.2 — Δt_lead as a real ramp. Stop after it.
+
+GPUModule.apply_signal() applies the full node count on STARTING and advance() is a no-op,
+so compute draw steps 0 → full TDP in one tick. The 30–60s of lead time the product exists
+to exploit is not simulated at all.
+
+A job entering STARTING begins a ramp over its Δt_lead, reaching full TDP at the end, driven
+by advance(). Use a piecewise shape matching §6.1's stated physical causes — container init
+near idle, steep rise through weight load, plateau at collective warmup. Tag it PROTO-1:
+CHOSEN shape, no measured basis. §6.1 specifies the interval, not the curve inside it.
+
+THE TRAP — current draw and target draw are now different quantities, and conflating them
+breaks the product's core claim:
+- per_job_compute_mw() returns CURRENT draw. During the ramp this is partial. P_compute(t),
+  the classifier, and the cooling term all consume this.
+- stage_for_predicted_step() needs TARGET draw — the job's eventual full-TDP increment. The
+  whole point of reading the queue is staging for load that has not arrived yet.
+If staging uses current draw at STARTING, it stages for near-idle and the turbine ramps for
+nothing. Add a separate per-job target accessor alongside per_job_compute_mw(). Say which
+call sites use which.
+
+You may modify tests/test_formulas.py for this item only — a ramp changes what draw at a
+given tick means. TC-01 asserts the instantaneous compute term and will need to evaluate
+after ramp completion rather than immediately. Report every assertion you changed and why.
+Do not weaken any of them; re-anchor them in time.
+
+Gate: audit_tests/test_step3_findings.py::test_dt_lead_is_modelled_as_a_ramp must pass. The
+other three stay failing.
+
+Expect example_usage.py to move — P_total at tick 60 should be unchanged (ramps complete
+long before), but the early ticks now differ. If nothing moves, the ramp is not wired into
+the run path.
+
+Re-run all four and report, with alerts_seen and the 1x wall clock. Stop.

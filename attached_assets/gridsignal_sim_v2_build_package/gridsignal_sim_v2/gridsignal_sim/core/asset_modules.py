@@ -78,19 +78,64 @@ class GPUModule(AssetModule):
     _node_counts: dict[str, int] = field(default_factory=dict)  # job_id -> nodes
     _job_profiles: dict[str, str] = field(default_factory=dict)  # job_id -> profile_id
     unmapped_profile_seen: set[str] = field(default_factory=set)
+    # Step 3 Item 2: Δt_lead ramp state.
+    # ramp_seconds — the window over which a newly-allocated job ramps from
+    # 0 → full TDP.  §6.1 specifies "30–60 s" as the interval; the exact
+    # curve inside it is PROTO-1 (CHOSEN, no measured basis — see _ramp_multiplier).
+    ramp_seconds: float = 45.0
+    _ramp_progress: dict[str, float] = field(default_factory=dict)  # job_id -> [0.0, 1.0]
+
+    # ------------------------------------------------------------------
+    # Δt_lead ramp shape  (Step 3 Item 2 — PROTO-1)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _ramp_multiplier(progress: float) -> float:
+        """Piecewise ramp shape matching §6.1's physical narrative.
+
+        PROTO-1: CHOSEN shape, no measured basis.  §6.1 specifies the
+        interval (Δt_lead = 30–60 s), not the curve inside it.
+
+        Three phases defined by progress ∈ [0, 1]:
+          Phase 1 [0.00, 0.20): near-idle container init        0.00 → 0.05
+          Phase 2 [0.20, 0.70): steep linear rise, weight load  0.05 → 0.95
+          Phase 3 [0.70, 1.00]: plateau, collective warmup       0.95 → 1.00
+        """
+        if progress <= 0.0:
+            return 0.0
+        if progress >= 1.0:
+            return 1.0
+        if progress < 0.20:
+            return 0.05 * (progress / 0.20)
+        if progress < 0.70:
+            return 0.05 + 0.90 * ((progress - 0.20) / 0.50)
+        # Phase 3: 0.70 ≤ progress < 1.0
+        return 0.95 + 0.05 * ((progress - 0.70) / 0.30)
 
     def apply_signal(self, signal: WorkloadSignal) -> bool:
         """Returns True if this signal introduced an unmapped hardware
         profile (source spec Section 5.1), so the caller can raise the
-        one-time onboarding alert and confidence-widening tag."""
+        one-time onboarding alert and confidence-widening tag.
+
+        Step 3 Item 2: STARTING initialises the ramp at 0 (nothing yet
+        running); SCALE snaps to 1.0 (the job is already live — the node
+        count changes but no cold-start delay applies); JOB_END/CANCELLED
+        removes the ramp entry alongside the node count.
+        """
         unmapped = signal.hardware_profile_id not in self.hardware_library
 
-        if signal.event_type in (WorkloadEventType.STARTING, WorkloadEventType.SCALE):
+        if signal.event_type == WorkloadEventType.STARTING:
             self._node_counts[signal.job_id] = signal.node_count
             self._job_profiles[signal.job_id] = signal.hardware_profile_id
+            self._ramp_progress[signal.job_id] = 0.0          # begin Δt_lead ramp
+        elif signal.event_type == WorkloadEventType.SCALE:
+            self._node_counts[signal.job_id] = signal.node_count
+            self._job_profiles[signal.job_id] = signal.hardware_profile_id
+            self._ramp_progress[signal.job_id] = 1.0          # already live, no ramp
         elif signal.event_type in (WorkloadEventType.JOB_END, WorkloadEventType.CANCELLED):
             self._node_counts.pop(signal.job_id, None)
             self._job_profiles.pop(signal.job_id, None)
+            self._ramp_progress.pop(signal.job_id, None)
         # checkpoint_start/checkpoint_end intentionally leave node_count
         # untouched -- the classifier (dispatch.py) reads the resulting
         # draw shape, it doesn't get a node-count signal of its own.
@@ -100,27 +145,55 @@ class GPUModule(AssetModule):
         return unmapped
 
     def advance(self, sim_time: float, dt_seconds: float) -> None:
-        return  # no autonomous dynamics; state changes only via apply_signal
+        """Advance the Δt_lead ramp for every job currently in mid-ramp.
+
+        Step 3 Item 2: advance() is no longer a no-op.  Each tick the
+        progress fraction for ramping jobs increases by dt_seconds /
+        ramp_seconds, clamped at 1.0 (full TDP).  Jobs with progress
+        already at 1.0 skip the update so steady-state runs are free.
+        """
+        for job_id in list(self._ramp_progress):
+            p = self._ramp_progress[job_id]
+            if p < 1.0:
+                self._ramp_progress[job_id] = min(1.0, p + dt_seconds / self.ramp_seconds)
 
     def output_mw(self) -> float:
-        total_kw = 0.0
-        for job_id, nodes in self._node_counts.items():
-            profile_id = self._job_profiles[job_id]
-            profile = self.hardware_library.get(profile_id, GENERIC_FALLBACK_PROFILE)
-            total_kw += nodes * profile.rated_kw
-        return total_kw * self.site.pue_base / 1000.0
+        """Sum of current (ramped) per-job draws across all active jobs."""
+        return sum(self.per_job_compute_mw(job_id) for job_id in self._node_counts)
 
     def per_job_compute_mw(self, job_id: str) -> float:
-        """Per-job compute draw: Nodes_i(t) × kW_i × PUE_base / 1000.
+        """Current (ramped) draw for job_id: Nodes_i × kW_i × PUE_base / 1000
+        × _ramp_multiplier(progress).
 
-        Shared substrate for Step 3 Items 1–3:
-          Item 1 — checkpoint classifier attribution (this call site)
-          Item 2 — Δt_lead partial ramp (job's own draw while ramping)
-          Item 3 — per-job cooling superposition (each job lags independently)
+        CURRENT draw — partial during the Δt_lead window.  All three items
+        in Step 3 consume this:
+          Item 1 — checkpoint classifier: sees actual draw shape (dips detectable)
+          Item 2 — P_compute(t) / cooling input: sees the ramping load
+          Item 3 — per-job cooling superposition: each job's own lagged trace
 
-        Building this once here avoids three separate sources of truth for the
-        same quantity.  Returns 0.0 if job_id is not currently active on this
-        module (e.g. after JOB_END removes it from _node_counts).
+        Returns 0.0 if job_id is not active on this module.
+        Use per_job_target_mw() when you need full-TDP regardless of ramp.
+        """
+        nodes = self._node_counts.get(job_id, 0)
+        if nodes == 0:
+            return 0.0
+        profile_id = self._job_profiles.get(job_id, "")
+        profile = self.hardware_library.get(profile_id, GENERIC_FALLBACK_PROFILE)
+        full_kw = nodes * profile.rated_kw * self.site.pue_base / 1000.0
+        progress = self._ramp_progress.get(job_id, 1.0)  # 1.0 = fully ramped
+        return full_kw * self._ramp_multiplier(progress)
+
+    def per_job_target_mw(self, job_id: str) -> float:
+        """Full-TDP draw for job_id, regardless of ramp progress.
+
+        TARGET draw — used by apply_workload_signal() for staging:
+        stage_for_predicted_step() must plan for the load the job will
+        eventually place, not the near-zero draw at the STARTING tick.
+        Staging with current draw (ramp=0) would produce delta_p≈0 and
+        the turbine would stage for nothing — exactly the trap §6.1 warns
+        about.
+
+        Returns 0.0 if job_id is not active on this module.
         """
         nodes = self._node_counts.get(job_id, 0)
         if nodes == 0:
@@ -128,6 +201,16 @@ class GPUModule(AssetModule):
         profile_id = self._job_profiles.get(job_id, "")
         profile = self.hardware_library.get(profile_id, GENERIC_FALLBACK_PROFILE)
         return nodes * profile.rated_kw * self.site.pue_base / 1000.0
+
+    def target_output_mw(self) -> float:
+        """Sum of full-TDP draws across all active jobs (no ramp adjustment).
+
+        Used in apply_workload_signal() staging: computing delta_p_mw as
+        (target_after − target_before) gives the anticipated load increment
+        the dispatch fleet must pre-stage for, irrespective of how far
+        through their individual ramps the current jobs are.
+        """
+        return sum(self.per_job_target_mw(job_id) for job_id in self._node_counts)
 
     def active_training_jobs(self) -> list[str]:
         return [

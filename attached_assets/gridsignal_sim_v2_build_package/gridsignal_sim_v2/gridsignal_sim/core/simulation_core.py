@@ -112,24 +112,30 @@ class SimulationState:
             #   (1) sum(g.output_mw()) = total site compute, not this job's increment.
             #   (2) no renewable offset — staging sized against P_total, not P_dispatch_required.
             #
-            # Compute this job's own draw using the same fallback as output_mw():
-            _profile = gpu.hardware_library.get(
-                signal.hardware_profile_id, GENERIC_FALLBACK_PROFILE
-            )
-            _job_compute_mw = signal.node_count * _profile.rated_kw * self.site.pue_base / 1000.0
-            _p_compute_after = sum(g.output_mw() for g in self.gpu_modules)
-            _p_compute_before = _p_compute_after - _job_compute_mw
+            # Step 3 Item 2 — TARGET draw for staging.
+            # After the Δt_lead ramp fix, apply_signal(STARTING) sets ramp_progress=0,
+            # so output_mw() returns ≈0 for the new job.  Computing delta_p_mw from
+            # output_mw() would give delta_p ≈ 0 — the turbine stages for nothing.
+            # Staging must use TARGET draw (full TDP), because that is the load the
+            # turbine needs to be ready for when Δt_lead expires.
+            #
+            # target_output_mw() sums per_job_target_mw() for all active jobs,
+            # ignoring ramp progress.  per_job_target_mw() is the complementary
+            # accessor to per_job_compute_mw(): same formula, no ramp multiplier.
+            _job_target_mw = gpu.per_job_target_mw(signal.job_id)
+            _p_target_after = sum(g.target_output_mw() for g in self.gpu_modules)
+            _p_target_before = _p_target_after - _job_target_mw
             # Current renewable output at the moment staging occurs.  When
             # solar has not yet been advanced (first tick, t=0) this is 0,
-            # and delta_p_mw collapses to job_compute_mw — correct behaviour,
+            # and delta_p_mw collapses to _job_target_mw — correct behaviour,
             # since no renewable offset is available yet.
             _p_renewable_mw = sum(s.output_mw() for s in self.solar_arrays)
-            # Delta in P_dispatch_required.  Strictly <= _job_compute_mw:
+            # Delta in P_dispatch_required.  Strictly <= _job_target_mw:
             # renewables already covering part of the pre-job load absorb some
             # of the step, reducing what dispatchable sources must pre-stage for.
             delta_p_mw = (
-                max(0.0, _p_compute_after - _p_renewable_mw)
-                - max(0.0, _p_compute_before - _p_renewable_mw)
+                max(0.0, _p_target_after - _p_renewable_mw)
+                - max(0.0, _p_target_before - _p_renewable_mw)
             )
             self._pending_alert = self.arbitrator.stage_for_predicted_step(
                 delta_p_mw=delta_p_mw,
@@ -158,7 +164,13 @@ def evaluate_tick(state: SimulationState, sim_time: float, dt_seconds: float) ->
     Deterministic: same inputs, same order, every time -- no dict/set
     iteration order dependency (all module lists are plain lists).
     """
-    # 1. Compute term
+    # 1. Compute term — advance GPU ramps first (Step 3 Item 2: Δt_lead ramp).
+    # GPU advance() is no longer a no-op: it advances the per-job ramp_progress
+    # by dt_seconds/ramp_seconds so that P_compute grows realistically from near-0
+    # at STARTING toward full TDP over the Δt_lead window, rather than stepping
+    # to full TDP in a single tick.
+    for gpu in state.gpu_modules:
+        gpu.advance(sim_time, dt_seconds)
     p_compute_mw = sum(g.output_mw() for g in state.gpu_modules)
     state.cooling.record_compute_sample(sim_time, p_compute_mw)
 

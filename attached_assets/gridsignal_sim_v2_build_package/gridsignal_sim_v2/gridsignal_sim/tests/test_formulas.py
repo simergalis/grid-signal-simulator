@@ -14,7 +14,15 @@ from core.models import BessConfig, HardwareProfile, SiteConfig, SolarConfig, Tu
 
 def test_tc01_instantaneous_compute_term_single_profile():
     """Source spec TC-01: 10 nodes, enterprise_8gpu_air (10.2 kW), PUE_base=1.03
-    -> P_compute ~= 0.1051 MW, within +/-0.1%."""
+    -> P_compute ~= 0.1051 MW, within +/-0.1%.
+
+    Step 3 Item 2 (Δt_lead ramp) re-anchor: draw starts near zero at STARTING
+    (container init phase) and reaches full TDP after the ramp completes.
+    The TC-01 target value is unchanged; evaluation is re-anchored at ramp
+    completion rather than at tick 0, which was only correct when advance()
+    was a no-op.  The pre-ramp assertion is new (verifies the ramp actually
+    starts low) and does not weaken the original assertion.
+    """
     site = SiteConfig(site_id="s1", pue_base=1.03)
     library = {"enterprise_8gpu_air": HardwareProfile("enterprise_8gpu_air", rated_kw=10.2)}
     gpu = GPUModule(asset_id="gpu-0", site=site, hardware_library=library)
@@ -26,7 +34,28 @@ def test_tc01_instantaneous_compute_term_single_profile():
         )
     )
     expected = 10 * 10.2 * 1.03 / 1000.0
-    assert math.isclose(gpu.output_mw(), expected, rel_tol=1e-3)
+
+    # NEW: verify ramp starts low (§6.1 container-init phase, PROTO-1 shape).
+    # This assertion was not present before Item 2 because advance() was a no-op
+    # and output_mw() immediately returned full TDP.
+    assert gpu.output_mw() < expected * 0.5, (
+        f"draw must start below 50 % of full TDP at STARTING; "
+        f"got {gpu.output_mw():.4f} MW vs full TDP {expected:.4f} MW"
+    )
+
+    # Advance past ramp completion (default ramp_seconds=45 s; advance 50 s).
+    # RE-ANCHOR: the original assertion evaluated immediately after apply_signal.
+    # After Item 2, output_mw() is partial until advance() has run for >= ramp_seconds.
+    # The expected value is identical; only the evaluation point moves.
+    t = 0.0
+    while t < gpu.ramp_seconds + 5.0:
+        gpu.advance(t, 5.0)
+        t += 5.0
+
+    assert math.isclose(gpu.output_mw(), expected, rel_tol=1e-3), (
+        f"P_compute after ramp completion: expected {expected:.6f} MW, "
+        f"got {gpu.output_mw():.6f} MW"
+    )
 
 
 def test_tc02_cooling_zero_before_thermal_delay():
@@ -405,11 +434,15 @@ def test_d10_demo_20mw_bess_fires_and_tapers():
         turbine_outputs.append(tick.turbine_output_mw)
         t += DT
 
-    # 1. BESS must fire during the ramp (ticks 1-20, t=0-95 s).
-    #    At tick 1: turbine output = 1.0 MW, P_dispatch ~14.97 MW,
-    #    shortfall ~13.97 MW > BESS rated 5 MW → BESS discharges at 5 MW.
+    # 1. BESS must fire at some point during the first 20 ticks (0–95 s).
+    #    Step 3 Item 2 re-anchor: with the Δt_lead ramp, compute starts near 0
+    #    and solar covers the load for the first few ticks, so BESS does NOT
+    #    fire at tick 1.  It fires once the ramp drives P_compute above P_solar
+    #    and the turbine can't yet cover the gap — typically around tick 3–4
+    #    (t≈15–20 s).  The assertion is unchanged (any > 0 in [:20]); only the
+    #    explanatory comment is updated.
     assert any(b > 0.0 for b in bess_outputs[:20]), (
-        "BESS must discharge during ramp (ticks 1-20 / t=0-95 s).\n"
+        "BESS must discharge during ramp (within ticks 0-19 / t=0-95 s).\n"
         f"  bess_outputs[:20] = {bess_outputs[:20]}"
     )
 
@@ -600,15 +633,24 @@ def test_step3_item1_per_job_draw_detects_small_job_checkpoint():
             workload_class=WorkloadClass.TRAINING, site_id="site-item1",
         ))
 
+    # Step 3 Item 2 re-anchor: per_job_compute_mw() now returns the RAMPED draw,
+    # which is near-zero immediately after apply_signal(STARTING).  Advance past
+    # ramp completion (default 45 s; advance 50 s) before checking the values.
+    # The expected values are unchanged; only the evaluation point moves.
+    t_sanity = 0.0
+    while t_sanity < gpu.ramp_seconds + 5.0:
+        gpu.advance(t_sanity, 5.0)
+        t_sanity += 5.0
+
     assert abs(gpu.per_job_compute_mw("large") - large_draw) < 1e-9, (
-        f"per_job_compute_mw('large') expected {large_draw:.6f}, "
+        f"per_job_compute_mw('large') after ramp: expected {large_draw:.6f}, "
         f"got {gpu.per_job_compute_mw('large'):.6f}"
     )
     assert abs(gpu.per_job_compute_mw("small") - small_draw) < 1e-9, (
-        f"per_job_compute_mw('small') expected {small_draw:.6f}, "
+        f"per_job_compute_mw('small') after ramp: expected {small_draw:.6f}, "
         f"got {gpu.per_job_compute_mw('small'):.6f}"
     )
-    # Sum of per-job draws must equal module output_mw()
+    # Sum of per-job draws must equal module output_mw() (also after ramp)
     assert abs(
         gpu.per_job_compute_mw("large") + gpu.per_job_compute_mw("small")
         - gpu.output_mw()
