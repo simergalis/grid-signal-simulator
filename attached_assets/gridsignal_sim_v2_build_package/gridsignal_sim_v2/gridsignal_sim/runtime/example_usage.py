@@ -24,10 +24,26 @@ async def main() -> None:
     #   1900 nodes → 1900 × 10.2 × 1.03 / 1000 ≈ 19.96 MW  ("demo-20mw")
     #    476 nodes →  476 × 10.2 × 1.03 / 1000 ≈  5.00 MW  ("demo-5mw")
     # The old counts (200 / 50) produced ~2.1 MW / ~0.5 MW — the names were wrong.
+    #
+    # D10 / PROTO-8: demo-20mw turbine_rated_mw raised to 25 MW so the turbine
+    # can reach steady-state P_dispatch_required (~19 MW) and allow BESS to taper
+    # to standby — demonstrating the full §7.2 arc (ramp → bridge → catchup → taper).
+    # Default 10 MW cap prevented taper from ever firing (turbine saturated below load).
+    #
+    # demo-alert: same load but small BESS (usable_mwh=0.2, PROTO-8 — CHOSEN).
+    # max_sustainable_seconds(13.96 MW) = (0.2/13.96)×3600 ≈ 52s < gap_s ≈ 70s
+    # → InsufficientReserveAlert fires.  Keeps the §7.3 alert path exercisable in
+    # the shipped scenarios (TC-10 is the unit test; this is the end-to-end case).
     contexts = [
-        build_run_context("demo-20mw", job_id="job-big", node_count=1900, end_sim_time=300.0),
-        build_run_context("demo-5mw", job_id="job-small", node_count=476, dt_lead_seconds=60.0, end_sim_time=300.0),
-        build_run_context("demo-baseline", job_id="job-idle", node_count=1, end_sim_time=300.0),
+        build_run_context("demo-20mw", job_id="job-big", node_count=1900,
+                          turbine_rated_mw=25.0, end_sim_time=300.0),
+        build_run_context("demo-5mw", job_id="job-small", node_count=476,
+                          dt_lead_seconds=60.0, end_sim_time=300.0),
+        build_run_context("demo-baseline", job_id="job-idle", node_count=1,
+                          end_sim_time=300.0),
+        build_run_context("demo-alert", job_id="job-alert", node_count=1900,
+                          turbine_rated_mw=25.0, bess_usable_mwh=0.2,
+                          end_sim_time=300.0),  # PROTO-8 small BESS → alert fires
     ]
 
     await asyncio.gather(*(manager.start_run(c) for c in contexts))

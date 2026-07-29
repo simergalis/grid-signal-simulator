@@ -51,6 +51,11 @@ def build_run_context(
     dt_lead_seconds: float = 30.0,
     turbine_count: int = 1,
     r_asset_mw_per_s: float = 0.2,
+    # PROTO-8: turbine_rated_mw default (10 MW) matches the fleet sizing that
+    # produces the §7.2 arc for a single-turbine ~5 MW scenario.  Larger loads
+    # (e.g. demo-20mw at ~19 MW) must pass a higher value so the turbine can
+    # eventually cover steady-state P_dispatch_required and allow BESS to taper.
+    turbine_rated_mw: float = 10.0,
     bess_rated_mw: float = 5.0,
     bess_usable_mwh: float = 2.0,
     end_sim_time: float = 600.0,
@@ -65,7 +70,11 @@ def build_run_context(
     )
     cooling = CoolingModule(asset_id="cooling-0", site=site)
     turbines = [
-        TurbineModule(TurbineConfig(asset_id=f"turbine-{i}", r_asset_mw_per_s=r_asset_mw_per_s))
+        TurbineModule(TurbineConfig(
+            asset_id=f"turbine-{i}",
+            r_asset_mw_per_s=r_asset_mw_per_s,
+            rated_mw=turbine_rated_mw,
+        ))
         for i in range(turbine_count)
     ]
     bess_units = [BessModule(BessConfig(asset_id="bess-0", rated_mw=bess_rated_mw, usable_mwh=bess_usable_mwh))]

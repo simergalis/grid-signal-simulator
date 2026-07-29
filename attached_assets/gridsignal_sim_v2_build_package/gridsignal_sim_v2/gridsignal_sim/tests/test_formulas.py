@@ -324,3 +324,115 @@ def test_d9_demo_20mw_produces_nonzero_bess_output():
         f"  solar_rated_mw={solar_rated_mw:.3f}, peak_compute_mw={peak_compute_mw:.3f}\n"
         f"  bess_outputs (first 10 ticks): {bess_outputs[:10]}"
     )
+
+
+# ---------------------------------------------------------------------------
+# D10 — demo-20mw must demonstrate the full §7.2 arc: fire then taper
+# ---------------------------------------------------------------------------
+
+def test_d10_demo_20mw_bess_fires_and_tapers():
+    """D10 / PROTO-8: with turbine_rated_mw=25 MW the turbine can reach
+    steady-state P_dispatch_required (~19 MW at full cooling), so the §7.2
+    arc completes:
+
+        1. BESS bridges the gap while turbine ramps (bess_output > 0)
+        2. Turbine catches up and sustains coverage for 10 s
+        3. BESS tapers to zero and stays there to run end
+        4. Turbine carries the full load at the final tick
+
+    The old fleet (turbine_rated_mw=10 MW, pinned below the ~19 MW
+    steady-state load) made the taper unreachable — turbine was always
+    short, BESS ran at rated power for the entire run.
+    """
+    from core.simulation_core import SimulationState, evaluate_tick
+
+    NODE_COUNT = 1900
+    PROFILE_ID = "enterprise_8gpu_air"
+    RATED_KW = 10.2
+    PUE = 1.03
+    TURBINE_RATED_MW = 25.0   # PROTO-8 — CHOSEN, no measured basis
+
+    library = {PROFILE_ID: HardwareProfile(PROFILE_ID, rated_kw=RATED_KW)}
+    site = SiteConfig(site_id="site-d10", pue_base=PUE)
+
+    peak_compute_mw = NODE_COUNT * RATED_KW * PUE / 1000.0     # ~19.957 MW
+    solar_rated_mw = 0.25 * peak_compute_mw                     # PROTO-7 ~4.989 MW
+
+    turbine = TurbineModule(TurbineConfig(
+        asset_id="t0", r_asset_mw_per_s=0.2, rated_mw=TURBINE_RATED_MW
+    ))
+    bess = BessModule(BessConfig(asset_id="bess-0", rated_mw=5.0, usable_mwh=2.0))
+    solar = SolarModule(
+        SolarConfig(asset_id="solar-0", rated_mw=solar_rated_mw),
+        irradiance_profile=IrradianceProfile([(0.0, 1.0), (600.0, 1.0)]),
+    )
+    cooling = CoolingModule(asset_id="cool-0", site=site)
+
+    state = SimulationState(
+        run_id="run-d10",
+        site=site,
+        gpu_modules=[GPUModule(asset_id="gpu-0", site=site, hardware_library=library)],
+        turbines=[turbine],
+        bess_units=[bess],
+        solar_arrays=[solar],
+        cooling=cooling,
+    )
+
+    # Solar has not advanced yet at t=0, so staging delta equals the full
+    # compute draw (19.957 MW).  Turbine stages to 19.957 MW (fits within
+    # rated 25 MW).  Ramp time = 99.8 s; run is 300 s.
+    state.apply_workload_signal(
+        WorkloadSignal(
+            event_id="e1",
+            job_id="job-big",
+            event_type=WorkloadEventType.STARTING,
+            timestamp=0.0,
+            hardware_profile_id=PROFILE_ID,
+            node_count=NODE_COUNT,
+            workload_class=WorkloadClass.TRAINING,
+            site_id="site-d10",
+        ),
+        dt_lead_seconds=30.0,
+    )
+
+    bess_outputs: list[float] = []
+    turbine_outputs: list[float] = []
+    t = 0.0
+    DT = 5.0
+    for _ in range(60):   # 300 simulated seconds
+        tick = evaluate_tick(state, t, DT)
+        bess_outputs.append(tick.bess_output_mw)
+        turbine_outputs.append(tick.turbine_output_mw)
+        t += DT
+
+    # 1. BESS must fire during the ramp (ticks 1-20, t=0-95 s).
+    #    At tick 1: turbine output = 1.0 MW, P_dispatch ~14.97 MW,
+    #    shortfall ~13.97 MW > BESS rated 5 MW → BESS discharges at 5 MW.
+    assert any(b > 0.0 for b in bess_outputs[:20]), (
+        "BESS must discharge during ramp (ticks 1-20 / t=0-95 s).\n"
+        f"  bess_outputs[:20] = {bess_outputs[:20]}"
+    )
+
+    # 2. BESS must taper to zero before run end.
+    #    Turbine reaches AT_TARGET (~19.957 MW) near t=100 s, which exceeds
+    #    P_dispatch_required (~16-19 MW depending on cooling phase).
+    #    After 10 s sustained coverage the taper fires.
+    #    Allow until tick 30 (t=145 s) for the taper, then assert silence.
+    taper_tick = next(
+        (i for i, b in enumerate(bess_outputs) if b == 0.0 and i >= 20),
+        None,
+    )
+    assert taper_tick is not None and taper_tick < 30, (
+        f"BESS must taper to zero by tick 30 (t=145 s); taper not observed.\n"
+        f"  bess_outputs = {bess_outputs}"
+    )
+    assert all(b == 0.0 for b in bess_outputs[taper_tick:]), (
+        f"Once BESS tapers it must stay at zero; re-fired after tick {taper_tick}.\n"
+        f"  bess_outputs[{taper_tick}:] = {bess_outputs[taper_tick:]}"
+    )
+
+    # 3. Turbine must carry the load at the final tick.
+    assert turbine_outputs[-1] > 0.0, (
+        f"Turbine must be running at end of run; "
+        f"final output = {turbine_outputs[-1]:.3f} MW"
+    )
