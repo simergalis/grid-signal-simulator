@@ -34,13 +34,13 @@ def _make_clock(
     rate: float = 1.0,
 ) -> SimClock:
     """Convenience factory for tests that call evaluate_tick() directly.
-    wall_stamp_utc=0.0 is the safe sentinel — tests do not need a live wall
-    clock.  Mirrors the SimClock constructed by RunContext.step() in
-    runtime/run_manager.py, minus the real-time wall stamp."""
+    wall_stamp_utc=None signals absent wall clock — arithmetic on None is a
+    TypeError, not a silent 1970 result.  Mirrors the SimClock constructed by
+    RunContext.step() in runtime/run_manager.py, minus the real-time wall stamp."""
     return SimClock(
         sim_time=sim_time,
         dt_seconds=dt_seconds,
-        wall_stamp_utc=0.0,
+        wall_stamp_utc=None,
         rate=rate,
         tick_seq=tick_seq,
     )

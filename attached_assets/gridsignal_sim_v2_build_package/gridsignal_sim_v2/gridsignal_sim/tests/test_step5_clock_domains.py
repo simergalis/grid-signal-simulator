@@ -1,14 +1,20 @@
 """
 tests/test_step5_clock_domains.py — Step 5: Simulated clock and the two clock domains.
 
-v2.5 TC-34 and TC-35, each run at rate=1 and rate=60.
+v2.5 TC-35, run at rate=1 and rate=60.  Also contains test_sim_clock_rate_arithmetic
+which verifies the rate-vs-wall-time arithmetic used throughout the simulator.
+
+TC-34 (v2.5 §16.8) is "restart preserves the 15-minute dedupe window."
+It requires the §17.1 dedupe LOGIC (not just the dedupe_key table from Step 2).
+TC-34 is DEFERRED to Step 10 where the dedupe window implementation lives.
+Do not re-label any test here as TC-34 until that logic exists and is exercised.
 
 Both tests pass trivially at rate=1 (simulated time == wall time); the rate=60
 variants are the checks that catch a clock-domain error.  If anything measured
 a grace period or dedupe window in wall seconds rather than simulated seconds,
 the rate=60 run would produce a different answer than the rate=1 run.
 
-TC-34 — SimClock rate arithmetic: at rate=60, a 15-minute dedupe window covers
+test_sim_clock_rate_arithmetic: at rate=60, a 15-minute dedupe window covers
          15 SIMULATED minutes (900 sim-s), which is only 15 real seconds of wall
          time (900/60=15), not 15 wall minutes.  The window is measured in
          simulated time; wall time is just a receipt.
@@ -38,11 +44,11 @@ def _make_clock(
     tick_seq: int = 0,
     rate: float = 1.0,
 ) -> SimClock:
-    """SimClock factory for tests — wall_stamp_utc=0.0 is the safe sentinel."""
+    """SimClock factory for tests — wall_stamp_utc=None signals absent wall clock."""
     return SimClock(
         sim_time=sim_time,
         dt_seconds=dt_seconds,
-        wall_stamp_utc=0.0,
+        wall_stamp_utc=None,
         rate=rate,
         tick_seq=tick_seq,
     )
@@ -53,10 +59,9 @@ def _make_clock(
 # ---------------------------------------------------------------------------
 
 @pytest.mark.parametrize("rate", [1.0, 60.0])
-def test_tc34_sim_clock_rate_arithmetic(rate: float) -> None:
-    """TC-34: at rate R, 15 simulated minutes elapses while only 15/R real
-    seconds pass.  The 15-minute dedupe window (§17.1) expires in simulated
-    time, so at rate=60 it expires after 15 real seconds, not 15 wall minutes.
+def test_sim_clock_rate_arithmetic(rate: float) -> None:
+    """Verify SimClock rate arithmetic: at rate R, 15 simulated minutes elapses
+    while only 15/R real seconds pass.
 
     This test verifies:
     - sim_time accumulates at dt_seconds per tick regardless of rate.
@@ -65,7 +70,11 @@ def test_tc34_sim_clock_rate_arithmetic(rate: float) -> None:
 
     If a future implementation measured the dedupe window in wall time, the
     rate=60 variant would assert incorrectly (wall elapsed < window, never
-    expires), making this test the clock-domain detector described in TC-34.
+    expires), making this the clock-domain detector needed by any dedupe logic.
+
+    NOTE — TC-34 (v2.5 §16.8, "restart preserves the 15-minute dedupe window")
+    is DEFERRED to Step 10.  TC-34 requires the §17.1 dedupe LOGIC (not just
+    the dedupe_key table from Step 2).  Do not label this test TC-34.
     """
     DT = 5.0                       # simulated tick interval (seconds)
     DEDUPE_WINDOW_SIM_S = 15 * 60  # §17.1: 15-minute window in simulated seconds

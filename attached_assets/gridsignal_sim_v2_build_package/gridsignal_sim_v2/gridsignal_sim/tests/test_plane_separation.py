@@ -70,11 +70,11 @@ def _make_clock(
     tick_seq: int = 0,
     rate: float = 1.0,
 ) -> SimClock:
-    """SimClock factory for tests — wall_stamp_utc=0.0 is the safe sentinel."""
+    """SimClock factory for tests — wall_stamp_utc=None signals absent wall clock."""
     return SimClock(
         sim_time=sim_time,
         dt_seconds=dt_seconds,
-        wall_stamp_utc=0.0,
+        wall_stamp_utc=None,
         rate=rate,
         tick_seq=tick_seq,
     )
