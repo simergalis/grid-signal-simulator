@@ -266,26 +266,51 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     )
     dt_lead_next_s = _dt_lead_raw if _dt_lead_raw < math.inf else 0.0
 
-    # 4c. bess_bridging_seconds: fleet bridging duration at the current net demand.
-    # C1 correction: a MW/MW × 3600 ratio in the serializer is dimensionally wrong
-    # (§7.2.4 names this exact error).  Compute duration here by calling
-    # BessModule.max_sustainable_seconds() — the same function stage_for_predicted_step
-    # uses — so the AssetReservePanel and the insufficient-reserve alert arithmetic
-    # are identical: they call the same function with the same inputs and can never
-    # disagree.
-    # For a fleet, apply D13: min() across proportionally-allocated shares (not sum).
-    # math.inf when net_demand_mw == 0 (no load — full reserve, no bridging required).
-    # The serializer caps math.inf to 86 400.0 (24 h) for JSON safety.
-    if state.bess_units:
-        _bbs_island_mode = state.site.island_mode
-        _bbs_ceilings = [b.bridging_available_mw(_bbs_island_mode) for b in state.bess_units]
-        _bbs_allocs = state.arbitrator._proportional_allocations(net_demand_mw, _bbs_ceilings)
-        bess_bridging_seconds = min(
-            b.max_sustainable_seconds(alloc, _bbs_island_mode)
-            for b, alloc in zip(state.bess_units, _bbs_allocs)
-        )
+    # 4c. bess_bridging_seconds + bridging_basis: fleet bridging duration at the
+    # BINDING demand — max(net_demand_mw, pending predicted peak shortfall).
+    #
+    # F2 fix: when a step has been staged and its predicted peak shortfall exceeds
+    # current net demand (typical at t=0: GPU hasn't ramped yet but the alert is
+    # live), the panel must answer the same question as the alert banner ("can the
+    # BESS sustain the predicted peak?"), not the easier question ("can it sustain
+    # the near-zero current demand?").  Using net_demand_mw at t=0 produces
+    # "full reserve" alongside "Insufficient reserve" — contradictory to the
+    # operator.  The binding constraint is whatever is larger.
+    #
+    # bridging_basis names which denominator was used so AssetReservePanel can
+    # label it and the operator knows the panel is answering the same question
+    # the banner asked.
+    #
+    # C1 correction still applies: use BessModule.max_sustainable_seconds()
+    # (the same function stage_for_predicted_step uses) rather than a MW/MW × 3600
+    # ratio.  Fleet aggregation: D13 min() across proportional shares, not sum().
+    # math.inf when binding demand ≤ 0 (no_load); serializer caps to 86 400 s.
+    _pending_peak_mw = (
+        state._pending_alert.shortfall_mw
+        if state._pending_alert is not None
+        else 0.0
+    )
+    _binding_demand_mw = max(net_demand_mw, _pending_peak_mw)
+
+    if _binding_demand_mw <= 0.0:
+        bridging_basis = "no_load"
+        bess_bridging_seconds = math.inf
     else:
-        bess_bridging_seconds = 0.0
+        bridging_basis = (
+            "predicted_peak" if _pending_peak_mw > net_demand_mw else "current_demand"
+        )
+        if state.bess_units:
+            _bbs_island_mode = state.site.island_mode
+            _bbs_ceilings = [b.bridging_available_mw(_bbs_island_mode) for b in state.bess_units]
+            _bbs_allocs = state.arbitrator._proportional_allocations(
+                _binding_demand_mw, _bbs_ceilings
+            )
+            bess_bridging_seconds = min(
+                b.max_sustainable_seconds(alloc, _bbs_island_mode)
+                for b, alloc in zip(state.bess_units, _bbs_allocs)
+            )
+        else:
+            bess_bridging_seconds = 0.0
 
     # 5. Checkpoint classification, per active training job.
     # Step 3 Item 1: use gpu.per_job_compute_mw(job_id) — the draw for THIS job
@@ -341,4 +366,5 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         p_renewable_mw=p_renewable_mw,
         bess_bridging_seconds=bess_bridging_seconds,
         dt_lead_next_s=dt_lead_next_s,
+        bridging_basis=bridging_basis,
     )

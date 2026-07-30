@@ -123,6 +123,11 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # dt_lead_next_s: HeroPanel countdown — seconds to next GPU full-TDP.
         #   0.0 when no job is currently ramping.
         "dt_lead_next_s": round(tick.dt_lead_next_s, 2),
+        # bridging_basis: which demand figure is binding for bess_bridging_seconds.
+        #   "predicted_peak" — staged prediction's peak shortfall is binding.
+        #   "current_demand" — current net_demand_mw is binding.
+        #   "no_load"        — net demand is zero; no bridging required.
+        "bridging_basis": tick.bridging_basis,
     }
 
 

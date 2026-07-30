@@ -36,12 +36,17 @@ import { useTickStream } from './ws/useTickStream'
 
 const FRAME_INTERVAL_MS = 250   // 4 Hz render loop
 
-/** Demo scenario body — mirrors example_usage.py "demo-20mw".
- *  In Step 8 this will come from a ScenarioBuilder form. */
+/** Demo scenario body — uses the F1 scenario_preset field to select
+ *  demo-alert (the scenario that exercises the alert path).
+ *  In Step 8 this will come from a ScenarioBuilder form.
+ *
+ *  F1 note: the old body sent {scenario_id, end_sim_time, playback_speed}
+ *  which does not match StartRunRequest and produced HTTP 422 on every load.
+ *  scenario_preset replaces scenario_id and is recognised by the API. */
 const DEMO_RUN_BODY = {
-  scenario_id: 'demo-20mw',
-  end_sim_time: 14400.0,   // 4 h simulated
-  playback_speed: 60,      // 60× accelerated — one real minute = one sim hour
+  scenario_preset: 'demo-alert',
+  end_sim_time: 300.0,   // 5 min simulated (ramp completes in ~45 s)
+  playback_speed: 10,    // 10× — ramp visible for ~4.5 real seconds at 4 Hz
 }
 
 export default function App() {

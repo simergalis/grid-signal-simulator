@@ -251,3 +251,12 @@ class TickResult:
     #   Named dt_lead_next_s (not dt_lead_s) so the semantics are on the field.
     #   0.0 when no job is currently ramping.
     dt_lead_next_s: float = 0.0
+    # bridging_basis: which demand figure is binding for bess_bridging_seconds.
+    # F2 fix: when a staged prediction's predicted peak shortfall exceeds current
+    # net demand, the panel must answer the same question as the alert banner
+    # ("can the BESS sustain the predicted peak?"), not the easier question
+    # ("can it sustain the near-zero current demand?").
+    #   "predicted_peak" — staged prediction's peak shortfall is the binding figure.
+    #   "current_demand" — current net_demand_mw is the binding figure.
+    #   "no_load"        — net demand is zero; bridging is not required.
+    bridging_basis: str = "current_demand"

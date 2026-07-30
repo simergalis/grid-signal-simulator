@@ -150,17 +150,24 @@ def test_delete_run_not_found() -> None:
 # ---------------------------------------------------------------------------
 
 def test_post_run_invalid_body_returns_422() -> None:
-    """A request body missing required fields must be rejected with 422.
+    """An empty body — no scenario_preset, no job_id, no node_count — must be
+    rejected with 422.
 
-    Pydantic validation must name both missing fields (job_id and
-    node_count) in the error detail."""
+    After the F1 fix, job_id and node_count are Optional fields validated
+    together by a model_validator.  An empty body triggers that validator,
+    which raises a ValueError whose message names both missing fields.
+    The response is still 422; the error detail is now a model-level
+    ValidationError rather than per-field missing-field errors, so we
+    check the raw response text instead of drilling into loc tuples.
+    """
     with TestClient(create_app()) as client:
-        resp = client.post("/runs", json={})   # missing job_id and node_count
+        resp = client.post("/runs", json={})   # no scenario_preset, job_id, or node_count
     assert resp.status_code == 422
-    errors = resp.json()["detail"]
-    fields_with_errors = {e["loc"][-1] for e in errors}
-    assert "job_id" in fields_with_errors
-    assert "node_count" in fields_with_errors
+    body_text = resp.text
+    # The model_validator message is:
+    #   "Fields ['job_id', 'node_count'] are required when scenario_preset is not provided."
+    assert "job_id" in body_text
+    assert "node_count" in body_text
 
 
 # ---------------------------------------------------------------------------

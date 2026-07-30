@@ -23,13 +23,23 @@ const SOC_MIN = 0.10   // §3.3 usable lower bound
 const SOC_MAX = 0.95   // §3.3 usable upper bound
 const BRIDGING_FULL_RESERVE = 86400  // server cap for math.inf
 
-function formatBridging(seconds: number, netDemand: number): string {
-  if (seconds >= BRIDGING_FULL_RESERVE || netDemand <= 0)
+function formatBridging(seconds: number, basis: string): string {
+  if (basis === 'no_load' || seconds >= BRIDGING_FULL_RESERVE)
     return 'full reserve'
   if (seconds === 0) return '0 s — cannot bridge'
   if (seconds >= 3600) return `${(seconds / 3600).toFixed(1)} h`
   if (seconds >= 60)   return `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`
   return `${seconds.toFixed(0)} s`
+}
+
+function BasisLabel({ basis }: { basis: string }) {
+  if (basis === 'no_load') return null
+  const isPredicted = basis === 'predicted_peak'
+  return (
+    <div className={`font-mono text-[10px] ${isPredicted ? 'text-warn/80' : 'text-muted'}`}>
+      basis: {isPredicted ? 'predicted peak shortfall' : 'current demand'}
+    </div>
+  )
 }
 
 interface SocBarProps {
@@ -73,8 +83,13 @@ export function AssetReservePanel() {
     )
   }
 
-  const bridgingStr  = formatBridging(tick.bess_bridging_seconds, tick.net_demand_mw)
-  const cannotBridge = tick.bess_bridging_seconds === 0 && tick.net_demand_mw > 0
+  const basis        = tick.bridging_basis
+  const bridgingStr  = formatBridging(tick.bess_bridging_seconds, basis)
+  // cannotBridge: zero bridging when there IS a real (or predicted) demand to serve.
+  // Uses binding_demand > 0 rather than net_demand_mw > 0 so that the "cannot bridge"
+  // state appears correctly at t=0 when basis="predicted_peak" and demand is still 0.
+  const bindingDemand = basis === 'no_load' ? 0 : 1   // >0 when basis is not no_load
+  const cannotBridge = tick.bess_bridging_seconds === 0 && bindingDemand > 0
   const socPct       = (tick.bess_soc_fraction * 100).toFixed(1)
 
   return (
@@ -93,9 +108,11 @@ export function AssetReservePanel() {
         </div>
         {cannotBridge && (
           <div className="font-mono text-xs text-danger">
-            above power ceiling — cannot bridge at current demand
+            above power ceiling — cannot bridge at{' '}
+            {basis === 'predicted_peak' ? 'predicted peak shortfall' : 'current demand'}
           </div>
         )}
+        <BasisLabel basis={basis} />
         {tags.length > 0 && (
           <div className="flex gap-1 flex-wrap">
             {tags.map(t => <DataQualityBadge key={t} tag={t} />)}

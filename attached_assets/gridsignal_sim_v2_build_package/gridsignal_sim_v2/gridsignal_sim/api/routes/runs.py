@@ -27,6 +27,42 @@ from runtime.scenario_factory import build_run_context
 
 router = APIRouter(prefix="/runs", tags=["runs"])
 
+# ---------------------------------------------------------------------------
+# F1 scaffolding: named scenario presets.
+# Maps scenario_preset values to build_run_context keyword arguments,
+# mirroring the parameters used by runtime/example_usage.py.
+# Step 8 replaces this dict with real scenario CRUD; nothing in core/ or
+# runtime/ knows about these names — they are an API-layer convenience only.
+# ---------------------------------------------------------------------------
+
+_SCENARIO_PRESETS: dict[str, dict] = {
+    "demo-20mw": dict(
+        job_id="job-big",
+        node_count=1900,
+        turbine_rated_mw=25.0,
+        bess_rated_mw=18.0,
+        bess_usable_mwh=8.0,
+        bess_grid_forming=True,
+    ),
+    "demo-alert": dict(
+        job_id="job-alert",
+        node_count=1900,
+        turbine_rated_mw=25.0,
+        # bess_rated_mw uses build_run_context default of 5.0
+        bess_usable_mwh=2.5,
+        bess_grid_forming=True,
+    ),
+    "demo-5mw": dict(
+        job_id="job-small",
+        node_count=476,
+        dt_lead_seconds=60.0,
+    ),
+    "demo-baseline": dict(
+        job_id="job-idle",
+        node_count=1,
+    ),
+}
+
 
 def _run_manager(request: Request) -> RunManager:
     """Dependency: retrieve the shared RunManager from FastAPI app state."""
@@ -47,15 +83,29 @@ async def start_run(
 
     Returns the assigned run_id.  The run advances autonomously via an
     asyncio task; subscribe to /ws/{run_id} for live tick data.
+
+    When scenario_preset is provided, all BESS / turbine parameters are
+    expanded from _SCENARIO_PRESETS.  When absent, job_id and node_count
+    must both be present (enforced by the StartRunRequest validator).
     """
     run_id = f"run-{uuid.uuid4().hex[:12]}"
+
+    if body.scenario_preset is not None:
+        preset_kwargs = _SCENARIO_PRESETS[body.scenario_preset].copy()
+    else:
+        # hardware_profile_id is passed as an explicit kwarg below; omit it here
+        # to avoid "multiple values for keyword argument" when the two are merged.
+        preset_kwargs = {
+            "job_id": body.job_id,
+            "node_count": body.node_count,
+        }
+
     ctx = build_run_context(
         run_id,
-        job_id=body.job_id,
-        node_count=body.node_count,
         hardware_profile_id=body.hardware_profile_id,
         end_sim_time=body.end_sim_time,
         playback_speed=body.playback_speed,
+        **preset_kwargs,
     )
     await manager.start_run(ctx)
     return StartRunResponse(run_id=run_id)

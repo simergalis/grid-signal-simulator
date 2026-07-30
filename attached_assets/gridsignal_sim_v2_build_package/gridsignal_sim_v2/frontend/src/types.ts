@@ -36,6 +36,9 @@ export interface TickPayload {
   p_renewable_mw: number         // ForecastChart 4th trace
   bess_bridging_seconds: number  // AssetReservePanel; 86400 = "full reserve"
   dt_lead_next_s: number         // HeroPanel countdown; 0 = no active ramp
+
+  // F2 addition — which demand figure is binding for bess_bridging_seconds
+  bridging_basis: 'predicted_peak' | 'current_demand' | 'no_load'
 }
 
 export interface RunMeta {
