@@ -62,6 +62,40 @@ class SimClock:
                    this alongside every RunTimeseries row.  On restart, the
                    runtime layer reads the highest persisted tick_seq and sets
                    sim_time = tick_seq × dt_seconds so that Rule 2 holds.
+
+    sim_time labeling convention — INTERVAL-START
+    ---------------------------------------------
+    sim_time is the START of the interval this tick covers: [sim_time, sim_time+dt_seconds).
+    RunContext.step() passes sim_time to SimClock BEFORE calling evaluate_tick(), and
+    increments self.sim_time AFTER evaluate_tick() returns.  Inside evaluate_tick(),
+    asset advance() calls run BEFORE any measurement is taken, so every quantity in
+    TickResult (power, SoC, dt_lead_next_s, bridging_seconds, …) reflects the physical
+    state at sim_time + dt_seconds — the END of the interval, not the start.
+
+    Concretely: the tick labeled sim_time=0.0 (tick_index=1) describes state after the
+    first 5 simulated seconds have elapsed.  dt_lead_next_s=40.0 on that tick means
+    "40 s of ramp remain at t=5 s", not at t=0 s.
+
+    Step 8 / plotting convention
+    ----------------------------
+    When rendering a time-series chart with sim_time_seconds on the x-axis, interpret
+    each point as "state measured at the end of the interval starting at sim_time."
+    Two valid options for the x-axis coordinate:
+
+      (A) Interval-start labeling (current) — plot at x = sim_time.
+          Simple; matches the persisted field value.
+          Visually the first point appears at x=0 but physically represents t=5s state.
+
+      (B) Interval-end labeling — plot at x = sim_time + dt_seconds.
+          Physically accurate; the first point appears at x=5.
+          Requires every query/chart to add dt_seconds to the label.
+
+    This codebase uses convention (A) throughout.  Attribution code in Step 8 and
+    later steps must apply the same convention — do NOT mix (A) for storage and (B)
+    for attribution, or tick-to-forecast alignment will be off by one interval.
+
+    The chosen convention is deliberate and consistent; the only semantic trap is
+    forgetting that sim_time=0.0 does NOT mean "no time has elapsed yet."
     """
 
     sim_time: float
