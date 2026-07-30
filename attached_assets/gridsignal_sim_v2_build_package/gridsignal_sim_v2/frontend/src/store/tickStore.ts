@@ -16,6 +16,19 @@
  *       Add ALL N ticks to history (no interpolation — §2.2 "no fabricated curves").
  *       Expose N as `decimationCount` for the chart badge.
  *
+ * F4 — alert latching (rising-edge latch):
+ *   `insufficient_reserve_alert` is true on exactly one tick (the staging tick).
+ *   If the panel read from `latestTick.insufficient_reserve_alert` directly, the
+ *   banner would flash for one frame and vanish before the operator can act.
+ *   §7.2.4 requires operator acknowledgment, so we latch on rising edge:
+ *     - When any pending tick has insufficient_reserve_alert=true, capture it as
+ *       `latchedAlert` (keyed by tick_index — a new alert on a later tick
+ *       replaces the latch).
+ *     - `latchedAlert` is cleared only by calling `acknowledgeAlert(tickIndex)`.
+ *     - AlertDock reads `latchedAlert`, not `latestTick.insufficient_reserve_alert`.
+ *   The backend flag is intentionally unchanged: it correctly fires once at staging
+ *   time (§7.2.4); the latch is a pure UI concern.
+ *
  * Acknowledged alerts are stored by tick_index so a new alert on a later
  * tick re-shows the banner.  Backend acknowledgment (POST /api/alerts/{id}/ack)
  * is deferred to Step 8 — this is local-only dismissal (§19.2 Step 7 boundary).
@@ -59,6 +72,7 @@ function interpolateTick(a: TickPayload, b: TickPayload, t: number): TickPayload
     // Boolean and string fields: use most-recent tick (b).
     insufficient_reserve_alert: b.insufficient_reserve_alert,
     data_quality_tags: b.data_quality_tags,
+    bridging_basis: b.bridging_basis,
   }
 }
 
@@ -78,6 +92,16 @@ interface TickState {
   decimationCount: number
   /** Run metadata (id, playback speed). Set on run start/subscription. */
   runMeta: RunMeta | null
+  /**
+   * F4 — latched alert tick.
+   * The tick on which insufficient_reserve_alert last fired (rising edge).
+   * Null when no alert is active (either never fired, or was acknowledged).
+   * Populated by drainFrame() on rising edge; cleared by acknowledgeAlert().
+   * AlertDock reads this, NOT latestTick.insufficient_reserve_alert, so the
+   * banner persists until the operator clicks Acknowledge even though the
+   * backend flag is true on only one tick.
+   */
+  latchedAlert: TickPayload | null
   /** tick_index values the user has locally acknowledged (Step 7 only;
    *  Step 8 will add durable server-side ack via POST). */
   acknowledgedAlerts: Set<number>
@@ -90,6 +114,11 @@ interface TickState {
   /** Called by the 4 Hz render loop to move pending ticks into display state. */
   drainFrame: () => void
   setRunMeta: (meta: RunMeta) => void
+  /**
+   * Acknowledge the latched alert identified by tickIndex.
+   * Clears latchedAlert when it matches, and records tickIndex in
+   * acknowledgedAlerts so a future alert at the same index doesn't re-latch.
+   */
   acknowledgeAlert: (tickIndex: number) => void
   reset: () => void
 }
@@ -102,6 +131,7 @@ export const useTickStore = create<TickState>((set, get) => ({
   pendingTicks: [],
   decimationCount: 0,
   runMeta: null,
+  latchedAlert: null,
   acknowledgedAlerts: new Set(),
   _lastFrameWall: 0,
 
@@ -138,6 +168,22 @@ export const useTickStore = create<TickState>((set, get) => ({
     const secondNewest = pending.length > 1 ? pending[pending.length - 2]
       : (s.isInterpolated ? s.prevTick : s.latestTick)
 
+    // F4: rising-edge alert latch.
+    // Scan all pending ticks for an alert flag.  If any tick has
+    // insufficient_reserve_alert=true AND it is a newer event than the current
+    // latch (higher tick_index), update the latch.  The already-acknowledged
+    // set prevents re-latching an event the operator has already cleared.
+    let newLatchedAlert = s.latchedAlert
+    for (const t of pending) {
+      if (
+        t.insufficient_reserve_alert &&
+        !s.acknowledgedAlerts.has(t.tick_index) &&
+        (newLatchedAlert === null || t.tick_index > newLatchedAlert.tick_index)
+      ) {
+        newLatchedAlert = t
+      }
+    }
+
     set({
       latestTick: newest,
       isInterpolated: false,
@@ -145,6 +191,7 @@ export const useTickStore = create<TickState>((set, get) => ({
       history: nextHistory,
       pendingTicks: [],
       decimationCount: pending.length > 1 ? pending.length : 0,
+      latchedAlert: newLatchedAlert,
       _lastFrameWall: now,
     })
   },
@@ -154,14 +201,21 @@ export const useTickStore = create<TickState>((set, get) => ({
   },
 
   acknowledgeAlert(tickIndex) {
-    set(s => ({ acknowledgedAlerts: new Set([...s.acknowledgedAlerts, tickIndex]) }))
+    set(s => ({
+      acknowledgedAlerts: new Set([...s.acknowledgedAlerts, tickIndex]),
+      // Clear the latch only when it matches the acknowledged event.
+      // If a newer alert has already replaced it, leave the new latch in place.
+      latchedAlert:
+        s.latchedAlert?.tick_index === tickIndex ? null : s.latchedAlert,
+    }))
   },
 
   reset() {
     set({
       latestTick: null, isInterpolated: false, prevTick: null,
       history: [], pendingTicks: [], decimationCount: 0,
-      runMeta: null, acknowledgedAlerts: new Set(), _lastFrameWall: 0,
+      runMeta: null, latchedAlert: null, acknowledgedAlerts: new Set(),
+      _lastFrameWall: 0,
     })
   },
 }))

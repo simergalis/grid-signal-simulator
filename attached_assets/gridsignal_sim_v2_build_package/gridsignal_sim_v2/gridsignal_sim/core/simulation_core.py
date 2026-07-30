@@ -350,7 +350,11 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     return TickResult(
         run_id=state.run_id,
         tick_index=state.tick_index,
-        sim_time_seconds=sim_time,
+        # F5: TickResult carries the INTERVAL-END timestamp — the instant the
+        # state was measured (after asset advance() calls).  SimClock.sim_time
+        # is the interval START; all internal elapsed calculations above use
+        # clock.sim_time directly.  Only the persisted / wire field changes.
+        sim_time_seconds=sim_time + clock.dt_seconds,
         p_compute_mw=p_compute_mw,
         p_cooling_mw=p_cooling_mw,
         p_total_mw=p_total_mw,

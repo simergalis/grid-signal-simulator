@@ -204,6 +204,11 @@ class TickResult:
     broadcast, per Design Spec Section 4.2/4.4."""
     run_id: str
     tick_index: int
+    # F5: interval-END timestamp — the simulated instant this TickResult describes.
+    # Equals clock.sim_time + clock.dt_seconds.  All internal elapsed-time checks
+    # inside evaluate_tick() use clock.sim_time (interval-start); this persisted
+    # and wire field carries the interval-end value so stored rows are aligned with
+    # the physical state they represent and FR-1.5 MAPE attribution is unbiased.
     sim_time_seconds: float
     p_compute_mw: float
     p_cooling_mw: float

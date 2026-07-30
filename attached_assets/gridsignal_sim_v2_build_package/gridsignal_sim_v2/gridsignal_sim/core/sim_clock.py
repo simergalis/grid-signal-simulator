@@ -63,39 +63,36 @@ class SimClock:
                    runtime layer reads the highest persisted tick_seq and sets
                    sim_time = tick_seq × dt_seconds so that Rule 2 holds.
 
-    sim_time labeling convention — INTERVAL-START
-    ---------------------------------------------
-    sim_time is the START of the interval this tick covers: [sim_time, sim_time+dt_seconds).
-    RunContext.step() passes sim_time to SimClock BEFORE calling evaluate_tick(), and
-    increments self.sim_time AFTER evaluate_tick() returns.  Inside evaluate_tick(),
-    asset advance() calls run BEFORE any measurement is taken, so every quantity in
-    TickResult (power, SoC, dt_lead_next_s, bridging_seconds, …) reflects the physical
-    state at sim_time + dt_seconds — the END of the interval, not the start.
+    Two-domain timestamp design (F5)
+    ---------------------------------
+    SimClock carries the INTERVAL-START timestamp for use by evaluate_tick()
+    internals.  TickResult carries the INTERVAL-END timestamp for persistence
+    and the wire.  These are different by design:
 
-    Concretely: the tick labeled sim_time=0.0 (tick_index=1) describes state after the
-    first 5 simulated seconds have elapsed.  dt_lead_next_s=40.0 on that tick means
-    "40 s of ramp remain at t=5 s", not at t=0 s.
+    SimClock.sim_time = START of the evaluation interval [sim_time, sim_time+dt).
+    TickResult.sim_time_seconds = sim_time + dt_seconds = END of the interval.
 
-    Step 8 / plotting convention
-    ----------------------------
-    When rendering a time-series chart with sim_time_seconds on the x-axis, interpret
-    each point as "state measured at the end of the interval starting at sim_time."
-    Two valid options for the x-axis coordinate:
+    Why the split:
+      • evaluate_tick() checks elapsed time against specification thresholds
+        (e.g. "has the 45 s ramp window expired?").  These checks compare
+        clock.sim_time against stored timestamps, so they must use the
+        interval-start value — the same reference point the timestamps were
+        recorded against.
+      • TickResult is an instantaneous reading taken AFTER asset advance() calls
+        have consumed dt_seconds of simulated time.  The state it describes is
+        genuinely at t = sim_time + dt, not at t = sim_time.  Labeling it with
+        the interval-start would introduce a systematic 5 s bias on every row
+        stored in persistence — a problem for FR-1.5 MAPE calculations and for
+        Step 8 forecast-vs-measured attribution that aligns on timestamps.
 
-      (A) Interval-start labeling (current) — plot at x = sim_time.
-          Simple; matches the persisted field value.
-          Visually the first point appears at x=0 but physically represents t=5s state.
+    Concretely: tick_index=1, SimClock.sim_time=0.0 → TickResult.sim_time_seconds=5.0.
+    dt_lead_next_s=40.0 means "40 s of ramp remain at t=5 s (the reading instant)."
 
-      (B) Interval-end labeling — plot at x = sim_time + dt_seconds.
-          Physically accurate; the first point appears at x=5.
-          Requires every query/chart to add dt_seconds to the label.
-
-    This codebase uses convention (A) throughout.  Attribution code in Step 8 and
-    later steps must apply the same convention — do NOT mix (A) for storage and (B)
-    for attribution, or tick-to-forecast alignment will be off by one interval.
-
-    The chosen convention is deliberate and consistent; the only semantic trap is
-    forgetting that sim_time=0.0 does NOT mean "no time has elapsed yet."
+    Step 8 / attribution rule
+    -------------------------
+    Always align forecast and measured rows by TickResult.sim_time_seconds (the
+    interval-end value stored in persistence).  Never add or subtract dt_seconds
+    in query code — the offset is already baked into the stored field.
     """
 
     sim_time: float

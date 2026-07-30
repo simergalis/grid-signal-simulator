@@ -1,8 +1,11 @@
 /**
  * AlertDock.tsx — insufficient_reserve_alert banner + acknowledge button (§7.1 / §19.2).
  *
- * Visible only when insufficient_reserve_alert is true AND the alert has not
- * been locally acknowledged for the current tick_index.
+ * F4 — reads `latchedAlert` from the store (NOT latestTick.insufficient_reserve_alert).
+ * The backend sets insufficient_reserve_alert=true on exactly one tick (the staging
+ * tick); reading the raw flag would make the banner flash for one frame (~0.5 s at 10×)
+ * and disappear before the operator can act.  The store latches on rising edge and only
+ * clears on Acknowledge — see tickStore.ts for the latch design.
  *
  * The Acknowledge button follows §2.3's "solid button = bounded reversible
  * action" affordance: pressing it is not destructive, and the banner re-appears
@@ -18,13 +21,11 @@
 import { useTickStore } from '../store/tickStore'
 
 export function AlertDock() {
-  const tick        = useTickStore(s => s.latestTick)
-  const acked       = useTickStore(s => s.acknowledgedAlerts)
-  const acknowledge = useTickStore(s => s.acknowledgeAlert)
+  const tick          = useTickStore(s => s.latestTick)
+  const latchedAlert  = useTickStore(s => s.latchedAlert)
+  const acknowledge   = useTickStore(s => s.acknowledgeAlert)
 
-  const alertActive   = tick?.insufficient_reserve_alert === true
-  const alreadyAcked  = tick ? acked.has(tick.tick_index) : false
-  const showAlert     = alertActive && !alreadyAcked
+  const showAlert = latchedAlert !== null
 
   if (!showAlert) {
     return (
@@ -53,12 +54,10 @@ export function AlertDock() {
               Insufficient reserve
             </div>
             <div className="font-mono text-xs text-warn/70">
-              Alert fired at tick #{tick?.tick_index ?? '—'}
+              Alert fired at tick #{latchedAlert.tick_index}
               {' · '}
               sim time{' '}
-              {tick
-                ? `${tick.sim_time_seconds.toFixed(0)} s`
-                : '—'}
+              {latchedAlert.sim_time_seconds.toFixed(0)} s
             </div>
           </div>
         </div>
@@ -72,7 +71,7 @@ export function AlertDock() {
       {/* Acknowledge — §2.3 solid button */}
       <div className="space-y-1">
         <button
-          onClick={() => tick && acknowledge(tick.tick_index)}
+          onClick={() => acknowledge(latchedAlert.tick_index)}
           className="w-full rounded bg-warn px-4 py-2 font-mono text-sm font-semibold
                      text-canvas transition-colors hover:bg-warn/80 active:scale-95"
         >
