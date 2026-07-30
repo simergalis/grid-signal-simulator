@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import math
 from abc import ABC, abstractmethod
+from collections import deque
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
@@ -244,18 +245,36 @@ class _LoadEnvelope:
 
     onset_t    — t₀ₖ: the STARTING event timestamp (simulation path) or the
                  sim_time at which a step-up was detected (scalar path).
-    load_mw    — scalar-path only: constant step-load size; unused when
-                 history is populated.
-    history    — simulation path: [(sim_t, mw), …] per-tick samples from
+    load_mw    — scalar-path only: constant step-load size; preserved on
+                 close (do NOT zero on JOB_END) so _lagged_mw can return the
+                 historical load for target_time in [onset_t, end_t].
+    history    — simulation path: deque of (sim_t, mw) per-tick samples from
                  GPUModule.per_job_compute_mw(), enabling ramp-varying loads.
     end_t      — set on JOB_END/CANCELLED; envelope is retained for
                  dt_thermal + 5·τ seconds after this time, then pruned.
-                 Retention rule per §8: "the heat is already in the room."
+                 Retention rule (P3): "the heat is already in the room" —
+                 P_cooling stays elevated for ~dt_thermal seconds after job
+                 end, then decays as the lagged compute term crosses end_t.
+                 Pruning earlier causes a discontinuous P_cooling drop; never
+                 pruning leaks memory.  Pruning happens in advance().
+
+    Cursor fields (P1 — O(1) amortised lagged-sample lookup):
+    _cursor_abs    — absolute index into the conceptual "all samples ever
+                     appended" sequence.  Deque-relative index is
+                     cursor_rel = _cursor_abs - _pruned_count.
+    _pruned_count  — samples popped from the left of the deque via popleft().
+                     Invariant: _cursor_abs >= _pruned_count always.
+    THE TRAP: if you hold a plain integer index into the deque and call
+    popleft(), the index silently refers to the wrong element.  The absolute
+    counter + pruned_count pair avoids this: cursor_rel stays valid after
+    each popleft() because _pruned_count is incremented in lockstep.
     """
     onset_t: float
     load_mw: float = 0.0
-    history: list[tuple[float, float]] = field(default_factory=list)
+    history: deque = field(default_factory=deque)   # deque of (sim_t, mw)
     end_t: Optional[float] = None
+    _pruned_count: int = field(default=0, init=False)
+    _cursor_abs: int = field(default=0, init=False)
 
 
 @dataclass
@@ -329,8 +348,12 @@ class CoolingModule(AssetModule):
 
         Job IDs absent from _envelopes (started before this module was
         initialised, or using the scalar path) are silently skipped.
+
+        P1 pruning: popleft() is O(1) on deque.  _pruned_count is incremented
+        in lockstep so cursor_rel = _cursor_abs - _pruned_count stays valid
+        after each removal.  THE TRAP: a bare integer index into the deque
+        would silently point at the wrong sample after the first popleft().
         """
-        # Only need slightly more than dt_thermal lookback.
         retention_buf = self.site.dt_thermal_seconds * 2 + 10
         cutoff = sim_time - retention_buf
         for job_id, mw in per_job_mw.items():
@@ -338,8 +361,14 @@ class CoolingModule(AssetModule):
             if env is None:
                 continue
             env.history.append((sim_time, mw))
-            while env.history and env.history[0][0] < cutoff:
-                env.history.pop(0)
+            # Keep at least one sample; popleft() shifts deque positions, so
+            # _pruned_count must be incremented in lockstep with each removal.
+            while len(env.history) > 1 and env.history[0][0] < cutoff:
+                env.history.popleft()
+                env._pruned_count += 1
+            # Pin cursor to new head if pruning advanced past it (safety guard).
+            if env._cursor_abs < env._pruned_count:
+                env._cursor_abs = env._pruned_count
 
     # ------------------------------------------------------------------
     # Scalar path (backward compat)
@@ -348,9 +377,13 @@ class CoolingModule(AssetModule):
     def record_compute_sample(self, sim_time: float, p_compute_mw: float) -> None:
         """Scalar aggregate interface — backward compat for unit tests.
 
-        Each step-up in aggregate compute creates a new synthetic envelope
-        (onset_t = sim_time, load_mw = delta).  Step-downs mark the youngest
-        live envelope ended so the retention rule drains it naturally.
+        Each step-up creates a synthetic envelope (onset_t=sim_time, load_mw=delta).
+        Step-downs close the youngest live envelope(s) WITHOUT zeroing load_mw,
+        so _lagged_mw still returns the historical load for target_time in
+        [onset_t, end_t] and P_cooling drains over ~dt_thermal after the job ends.
+
+        Partial reduction: the closed envelope keeps its original load_mw; a
+        continuation envelope is spawned at the same onset_t with the reduced load.
 
         IMPORTANT: simulation_core.py calls register_job_start() +
         record_job_compute() instead, so onset timestamps come from STARTING
@@ -363,18 +396,29 @@ class CoolingModule(AssetModule):
             self._synth_counter += 1
             self._envelopes[key] = _LoadEnvelope(onset_t=sim_time, load_mw=delta)
         elif delta < -_EPS:
-            # Reduce/close youngest live envelope(s) to match the drop.
+            # Close youngest live envelope(s) to account for the load drop.
+            # DO NOT zero load_mw: _lagged_mw uses it for target_time < end_t,
+            # keeping P_cooling elevated for ~dt_thermal after the job ends.
             remaining = -delta
             for key in reversed(list(self._envelopes)):
                 env = self._envelopes[key]
                 if env.end_t is not None:
                     continue
-                take = min(env.load_mw, remaining)
-                env.load_mw -= take
-                remaining -= take
-                if env.load_mw <= _EPS:
+                if env.load_mw <= remaining + _EPS:
+                    # Close whole envelope; preserve load_mw for lagged history.
                     env.end_t = sim_time
-                    env.load_mw = 0.0
+                    remaining -= env.load_mw
+                else:
+                    # Partial reduction: close old envelope (load_mw unchanged),
+                    # spawn continuation at same onset_t with reduced load.
+                    env.end_t = sim_time
+                    reduced = env.load_mw - remaining
+                    remaining = 0.0
+                    new_key = f"_syn_{self._synth_counter}"
+                    self._synth_counter += 1
+                    self._envelopes[new_key] = _LoadEnvelope(
+                        onset_t=env.onset_t, load_mw=reduced
+                    )
                 if remaining <= _EPS:
                     break
         self._prev_agg_mw = p_compute_mw
@@ -384,30 +428,49 @@ class CoolingModule(AssetModule):
     # ------------------------------------------------------------------
 
     def _lagged_mw(self, env: _LoadEnvelope, target_time: float) -> float:
-        """Nearest-sample lagged compute for one envelope at t − dt_thermal.
+        """Lagged compute for one envelope at t − dt_thermal.
 
-        Simulation path: nearest-sample lookup in env.history.
-        Scalar path: constant env.load_mw (step load), active from onset_t.
+        Simulation path (history populated): cursor-based forward scan.
+          lag_time advances monotonically each tick, so _cursor_abs only moves
+          forward — amortised O(1).  SIDE EFFECT: advances _cursor_abs in-place.
+          cursor_rel = _cursor_abs - _pruned_count is the deque-relative index;
+          _pruned_count compensates for popleft() calls so the index stays valid.
+
+        Scalar path (history empty): step load active for target_time in
+          [onset_t, end_t].  load_mw is NEVER zeroed on close (see
+          record_compute_sample step-down handler) so the historical load is
+          available for the full dt_thermal drain window after job end.
 
         Returns 0.0 if the envelope had not yet started at target_time.
         """
         if env.history:
-            # Simulation path — nearest-sample lookup.
+            # Simulation path — cursor-based forward scan.
             if target_time < env.onset_t:
                 return 0.0
-            best = min(env.history, key=lambda s: abs(s[0] - target_time))
-            return best[1]
+            cursor_rel = env._cursor_abs - env._pruned_count
+            while (cursor_rel + 1 < len(env.history)
+                   and env.history[cursor_rel + 1][0] <= target_time):
+                env._cursor_abs += 1
+                cursor_rel += 1
+            return env.history[cursor_rel][1]
         else:
-            # Scalar path — constant load from onset_t.
-            return env.load_mw if target_time >= env.onset_t else 0.0
+            # Scalar path — step load from onset_t to end_t (inclusive).
+            if target_time < env.onset_t:
+                return 0.0
+            if env.end_t is not None and target_time > env.end_t:
+                return 0.0
+            return env.load_mw
 
     def advance(self, sim_time: float, dt_seconds: float) -> None:
         """Sum per-envelope αₖ × P_k_lagged and prune expired envelopes.
 
-        Pruning rule: end_t is set by register_job_end() (simulation path) or
-        by the scalar path's step-down handler.  An envelope is removed when
-        sim_time > end_t + dt_thermal + 5·τ — i.e., after the lagged heat has
-        fully dissipated (5 time-constants ≈ 99.3% decay).
+        Retention rule (P3): an ended envelope is removed when
+          sim_time > end_t + dt_thermal + 5·τ
+        That is dt_thermal + 5·τ = 90 + 100 = 190 s after end_t with SITE
+        defaults.  Pruning earlier drops P_cooling discontinuously because the
+        lagged compute term still references history inside that window.  Never
+        pruning leaks one envelope per job per run.  Pruning happens here, once
+        per tick, so the hot path is a single dict iteration.
         """
         retention = self.site.dt_thermal_seconds + 5.0 * self.site.tau_seconds
         lag_time = sim_time - self.site.dt_thermal_seconds
@@ -424,14 +487,13 @@ class CoolingModule(AssetModule):
             # αₖ(t): zero until dt_thermal has elapsed since onset.
             threshold = env.onset_t + self.site.dt_thermal_seconds
             if sim_time < threshold:
-                continue  # α_k = 0; no contribution yet
+                continue  # α_k = 0 before thermal delay expires
             elapsed = sim_time - threshold
             alpha_k = self.site.alpha_max * (
                 1.0 - math.exp(-elapsed / self.site.tau_seconds)
             )
 
-            lagged = self._lagged_mw(env, lag_time)
-            total += alpha_k * lagged
+            total += alpha_k * self._lagged_mw(env, lag_time)
 
         self._last_output_mw = total
 

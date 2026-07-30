@@ -655,3 +655,163 @@ def test_step3_item1_per_job_draw_detects_small_job_checkpoint():
         gpu.per_job_compute_mw("large") + gpu.per_job_compute_mw("small")
         - gpu.output_mw()
     ) < 1e-9, "sum of per_job_compute_mw() values must equal output_mw()"
+
+
+# ---------------------------------------------------------------------------
+# Step 3 Item 3 — per-job cooling superposition
+# ---------------------------------------------------------------------------
+
+def test_item3_concurrent_job_cooling_no_dip_and_smooth_rise():
+    """Step 3 Item 3 (a): second concurrent job's cooling rises smoothly.
+
+    Pre-fix behaviour: with a single aggregate alpha already at alpha_max,
+    job B's lagged compute arrives as a +2.000 MW step in one tick — the
+    aliasing §8 warns against.  Post-fix: job B has its own envelope with
+    onset_t=400, so α_B(490) = 0 and the rise is first-order at tau.
+
+    (a) job A's cooling must not dip when job B starts.
+    (b) max single-tick delta must be below the first-order bound at tau.
+    (c) steady-state identity: Σ α_k × P_k = α_max × P_compute.
+    """
+    site = SiteConfig(site_id="s1", pue_base=1.03, alpha_max=0.20,
+                      tau_seconds=20.0, dt_thermal_seconds=90.0)
+    cooling = CoolingModule(asset_id="c1", site=site)
+
+    t = 0.0
+    while t < 400.0:
+        cooling.record_compute_sample(t, 5.0)
+        cooling.advance(t, 5.0)
+        t += 5.0
+    settled_a = cooling.output_mw()
+    assert settled_a > 0.9, f"job A should settle near 1.0 MW; got {settled_a:.3f} MW"
+
+    trace: list[float] = []
+    deltas: list[float] = []
+    prev = settled_a
+    while t < 800.0:
+        cooling.record_compute_sample(t, 15.0)   # job B adds 10 MW
+        cooling.advance(t, 5.0)
+        trace.append(cooling.output_mw())
+        deltas.append(cooling.output_mw() - prev)
+        prev = cooling.output_mw()
+        t += 5.0
+
+    # (a) job A's cooling must not dip when job B starts
+    assert min(trace) >= settled_a * 0.95, (
+        f"P_cooling dipped to {min(trace):.3f} MW from settled {settled_a:.3f} MW — "
+        "job A's cooling must not fall because job B started (naive t0 reset symptom)"
+    )
+    # (b) max single-tick rise must be below the first-order bound at tau
+    step_mw = site.alpha_max * 10.0
+    first_order_max = step_mw * (1 - math.exp(-5.0 / site.tau_seconds))
+    assert max(deltas) < first_order_max * 2.0, (
+        f"P_cooling jumped {max(deltas):.3f} MW in one tick; "
+        f"first-order bound at tau={site.tau_seconds}s: ~{first_order_max:.3f} MW. "
+        "The second step-load must not alias as an instantaneous step."
+    )
+    # (c) steady-state §12 identity
+    assert math.isclose(trace[-1], site.alpha_max * 15.0, rel_tol=1e-3), (
+        f"settled at {trace[-1]:.3f} MW, expected {site.alpha_max * 15.0:.3f} MW"
+    )
+
+
+def test_item3_job_end_cooling_persists_over_thermal_lag():
+    """Step 3 Item 3 (b): ending a job must not collapse P_cooling immediately.
+
+    Pre-fix failure mode: deleting the envelope on JOB_END drops P_cooling to
+    zero in one tick — a discontinuous step in the opposite direction from the
+    second-step aliasing bug.
+
+    Post-fix: envelope.end_t is set but load_mw is preserved.  _lagged_mw
+    returns load_mw for target_time ≤ end_t, so P_cooling stays elevated for
+    ~dt_thermal seconds and decays only when the lagged-compute cursor crosses
+    end_t.
+
+    Assert: for all ticks within dt_thermal − 2·DT seconds of job end,
+    P_cooling remains ≥ 90 % of the settled value.
+    """
+    site = SiteConfig(site_id="s1", pue_base=1.03, alpha_max=0.20,
+                      tau_seconds=20.0, dt_thermal_seconds=90.0)
+    cooling = CoolingModule(asset_id="c1", site=site)
+    DT = 5.0
+
+    # Settle job A at 5 MW
+    t = 0.0
+    while t < 400.0:
+        cooling.record_compute_sample(t, 5.0)
+        cooling.advance(t, DT)
+        t += DT
+    settled = cooling.output_mw()
+    assert settled > 0.9, f"job A should settle near 1.0 MW; got {settled:.3f} MW"
+
+    # End job A: compute drops to 0
+    t_end = t   # 400.0
+    post_end: list[float] = []
+    while t < t_end + site.dt_thermal_seconds + DT:
+        cooling.record_compute_sample(t, 0.0)
+        cooling.advance(t, DT)
+        post_end.append(cooling.output_mw())
+        t += DT
+
+    # P_cooling must stay elevated for dt_thermal − 2 ticks (grace for boundaries)
+    grace_ticks = 2
+    sustained = post_end[: int(site.dt_thermal_seconds / DT) - grace_ticks]
+    assert sustained, "sustained window is empty — check dt_thermal / DT ratio"
+    assert all(v > settled * 0.9 for v in sustained), (
+        f"P_cooling collapsed before dt_thermal={site.dt_thermal_seconds}s elapsed. "
+        f"Min in sustained window: {min(sustained):.3f} MW "
+        f"(threshold {settled * 0.9:.3f} MW). "
+        "The heat is still in the room — retention must hold for ~dt_thermal."
+    )
+
+
+def test_item3_cursor_pruning_does_not_corrupt_lagged_lookup():
+    """P1: deque popleft() must not silently shift the cursor to the wrong sample.
+
+    THE TRAP: if _cursor_abs is a plain deque index and popleft() is called,
+    the index points at the NEXT element rather than the intended one — wrong
+    cooling values, no error raised.  The fix uses an absolute counter
+    (_cursor_abs) plus a pruned-count (_pruned_count); cursor_rel =
+    _cursor_abs - _pruned_count remains valid after every popleft().
+
+    Procedure: register a job, run 500 s (retention_buf = 190 s, so several
+    rounds of pruning occur).  Compare _lagged_mw() cursor result against a
+    brute-force min(history, …) scan of the retained deque.  Also verify
+    pruning actually happened (otherwise the cursor path was never exercised).
+    """
+    site = SiteConfig(site_id="s1", pue_base=1.03, alpha_max=0.20,
+                      tau_seconds=20.0, dt_thermal_seconds=90.0)
+    cooling = CoolingModule(asset_id="c1", site=site)
+    DT = 5.0
+    JOB = "job-cursor-test"
+    cooling.register_job_start(JOB, onset_t=0.0)
+
+    t = 0.0
+    while t < 500.0:
+        # Linearly increasing load — every sample has a unique value so a
+        # corrupted cursor produces a detectably wrong result.
+        mw = 1.0 + t / 100.0
+        cooling.record_job_compute(t, {JOB: mw})
+        t += DT
+
+    env = cooling._envelopes[JOB]
+
+    # Pruning must have occurred
+    assert env._pruned_count > 0, (
+        f"No samples were pruned (_pruned_count={env._pruned_count}). "
+        "Increase run duration or check retention_buf calculation."
+    )
+
+    # Advance cursor to the current lag_time by calling _lagged_mw once
+    lag_time = (t - DT) - site.dt_thermal_seconds
+    cursor_result = cooling._lagged_mw(env, lag_time)
+
+    # Brute-force nearest-sample on the retained deque
+    brute = min(env.history, key=lambda s: abs(s[0] - lag_time))[1]
+
+    assert math.isclose(cursor_result, brute, rel_tol=1e-9), (
+        f"Cursor gave {cursor_result:.6f} MW; brute-force gave {brute:.6f} MW. "
+        f"(_cursor_abs={env._cursor_abs}, _pruned_count={env._pruned_count}, "
+        f"cursor_rel={env._cursor_abs - env._pruned_count}, "
+        f"deque len={len(env.history)}) — pruning has corrupted the cursor."
+    )
