@@ -947,15 +947,18 @@ def test_item4_demo_scenarios_alert_behavior():
     """Step 3 Item 4 (d): anchor reserve does not break demo-20mw (no alert)
     and demo-alert still fires.
 
-    Uses the same sizing as example_usage.py: demo-20mw has bess_rated_mw=15,
-    bess_usable_mwh=8, bess_grid_forming=True; demo-alert has rated=5, mwh=2.5,
-    grid_forming=True.  Both are islanded anchors with p_anchor_reserve=1 MW.
+    Uses the same sizing as example_usage.py: demo-20mw has bess_rated_mw=18
+    (P5 resize: was 15, giving only 30 mW / 0.2% margin after 1 MW anchor
+    deduction; 18 MW gives bridging=17 MW → 21.7% margin over ~13.97 MW
+    shortfall), bess_usable_mwh=8, bess_grid_forming=True; demo-alert has
+    rated=5, mwh=2.5, grid_forming=True.  Both are islanded anchors with
+    p_anchor_reserve=1 MW.
     """
     from runtime.scenario_factory import build_run_context
 
     ctx_ok = build_run_context(
         "item4-20mw", job_id="job-big", node_count=1900,
-        turbine_rated_mw=25.0, bess_rated_mw=15.0,
+        turbine_rated_mw=25.0, bess_rated_mw=18.0,
         bess_usable_mwh=8.0, bess_grid_forming=True,
         end_sim_time=300.0,
     )
@@ -987,12 +990,74 @@ def test_item4_demo_scenarios_alert_behavior():
     alerts_alert = any(r.insufficient_reserve_alert for r in ctx_alert.sink.rows)
 
     assert not alerts_20mw, (
-        f"demo-20mw (15 MW BESS, anchor, bridging=14 MW) must not alert; "
-        f"peak shortfall ≈ 13.97 MW < 14 MW → reserve check passes. "
+        f"demo-20mw (18 MW BESS, anchor, bridging=17 MW) must not alert; "
+        f"peak shortfall ≈ 13.97 MW < 17 MW → reserve check passes (21.7% margin). "
         f"If alerting, anchor reserve deduction is over-applied."
     )
     assert alerts_alert, (
         f"demo-alert (5 MW BESS, anchor, bridging=4 MW) must alert; "
         f"peak shortfall ≈ 13.97 MW > 4 MW → reserve check fails. "
         f"If not alerting, anchor reserve deduction is not being applied."
+    )
+
+
+def test_d13_min_not_sum_fleet_endurance():
+    """D13 — reserve aggregation must use min(), not sum(), over per-unit durations.
+
+    Counter-example from the defect report:
+      Unit A: 10 MW rated, 1 MWh usable  → max_sustainable_seconds(10 MW) = 360 s
+      Unit B: 10 MW rated, 10 MWh usable → max_sustainable_seconds(10 MW) = 3600 s
+      Fleet peak shortfall: 20 MW  (proportional: 10 MW each, equal weights)
+      gap_s = 400 s  (constructed via r_asset=0.05 MW/s, dt_lead=0 s)
+
+    At t=360 s unit A is empty.  The fleet drops to 10 MW and there is a
+    10 MW hole for the remaining 40 s of the gap.  The alert must fire.
+
+    sum = 360 + 3600 = 3960 s ≥ 400 s → no alert (WRONG — B's surplus masks A)
+    min = 360 s < 400 s → alert fires (CORRECT)
+
+    This test asserts the alert fires AND explicitly shows that sum() would not
+    have fired, so any regression that reintroduces sum is immediately visible.
+    """
+    from core.dispatch import DispatchArbitrator
+    from core.models import BessConfig, IslandMode, SiteConfig, TurbineConfig
+
+    # Construct gap_s = 400 s:
+    #   required_ramp_s = delta_p_mw / r_asset = 20 / 0.05 = 400 s
+    #   gap_s = required_ramp_s - dt_lead_seconds = 400 - 0 = 400 s
+    turbine = TurbineModule(TurbineConfig(
+        asset_id="t-d13", r_asset_mw_per_s=0.05, rated_mw=100.0,
+    ))
+    # Unit A: runs out of energy at 10 MW after 360 s (1 MWh / 10 MW × 3600)
+    bess_a = BessModule(BessConfig(asset_id="a-d13", rated_mw=10.0, usable_mwh=1.0))
+    # Unit B: plenty of energy — 3600 s at 10 MW — but cannot compensate for A's gap
+    bess_b = BessModule(BessConfig(asset_id="b-d13", rated_mw=10.0, usable_mwh=10.0))
+
+    site = SiteConfig(site_id="s-d13-test")
+    arb = DispatchArbitrator([turbine], [bess_a, bess_b], site)
+
+    # delta_p_mw=20, dt_lead=0 → gap_s=400, already_ramped=0, peak_shortfall=20 MW
+    # proportional: both get 10 MW (equal rated_mw → equal bridging weights)
+    alert = arb.stage_for_predicted_step(
+        delta_p_mw=20.0, dt_lead_seconds=0.0, sim_time=0.0,
+    )
+
+    assert alert is not None, (
+        "D13: InsufficientReserveAlert must fire — unit A exhausts at 360 s < gap_s=400 s. "
+        "sum() = 3960 s would have masked the alert; min() = 360 s correctly fires it."
+    )
+
+    # Explicitly verify sum() would have given the wrong answer.
+    island_mode = IslandMode.ISLANDED
+    alloc_each = 10.0  # proportional share for each equal-rated unit
+    dur_a = bess_a.max_sustainable_seconds(alloc_each, island_mode)
+    dur_b = bess_b.max_sustainable_seconds(alloc_each, island_mode)
+    assert math.isclose(dur_a, 360.0, rel_tol=1e-9), (
+        f"Unit A should sustain 360 s at 10 MW; got {dur_a:.1f} s"
+    )
+    assert dur_a + dur_b > 400.0, (
+        f"Regression guard: sum={dur_a + dur_b:.0f} s > 400 s (sum path would miss the alert)"
+    )
+    assert min(dur_a, dur_b) < 400.0, (
+        f"Regression guard: min={min(dur_a, dur_b):.0f} s < 400 s (min path fires correctly)"
     )

@@ -38,16 +38,22 @@ async def main() -> None:
         # Step 3 Item 4 (anchor reserve): demo-20mw and demo-alert both designate
         # their BESS as the islanded grid-forming anchor (bess_grid_forming=True).
         # With p_anchor_reserve_mw=1.0 MW (BessConfig default):
-        #   demo-20mw: bridging_available = 15.0 - 1.0 = 14.0 MW
-        #              peak_shortfall ≈ 13.97 MW < 14.0 MW → NO ALERT  ✓
+        #   demo-20mw: bridging_available = 18.0 - 1.0 = 17.0 MW
+        #              peak_shortfall ≈ 13.97 MW < 17.0 MW → NO ALERT  ✓
+        #              margin = (17.0 - 13.97) / 13.97 ≈ 21.7%  (P5 defensible margin)
         #   demo-alert: bridging_available = 5.0 - 1.0 = 4.0 MW
         #               peak_shortfall ≈ 13.97 MW > 4.0 MW → ALERT     ✓
-        # No resize needed: the 15 MW / 8 MWh BESS retains sufficient headroom
-        # even after the 1 MW anchor deduction.
+        #
+        # P5 resize: 15 MW → 18 MW rated (8 MWh unchanged, 18MW/8MWh ≈ 2.2C — reasonable).
+        # The prior 15 MW sizing gave only 30 mW headroom (0.2%) after the 1 MW anchor
+        # deduction: bridging=14.0 MW vs shortfall=13.97 MW.  Step 11's island-mode
+        # transitions will shift shortfall by O(1 MW); 0.2% headroom would flip the
+        # reserve check unpredictably.  18 MW gives 21.7% margin — stable under
+        # parameter drift while remaining well within plausible data-centre BESS sizing.
         build_run_context("demo-20mw", job_id="job-big", node_count=1900,
-                          turbine_rated_mw=25.0, bess_rated_mw=15.0,
-                          bess_usable_mwh=8.0,   # PROTO-8: 15 MW / 8 MWh ≈ 1.9C — plausible C-rate
-                          bess_grid_forming=True, # anchor unit, 1 MW reserve withheld
+                          turbine_rated_mw=25.0, bess_rated_mw=18.0,
+                          bess_usable_mwh=8.0,   # PROTO-8: 18 MW / 8 MWh ≈ 2.2C — plausible C-rate
+                          bess_grid_forming=True, # anchor unit, 1 MW reserve withheld → 17 MW bridging
                           end_sim_time=300.0),
         build_run_context("demo-5mw", job_id="job-small", node_count=476,
                           dt_lead_seconds=60.0, end_sim_time=300.0),

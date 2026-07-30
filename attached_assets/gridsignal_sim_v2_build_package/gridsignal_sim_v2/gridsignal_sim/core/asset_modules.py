@@ -594,7 +594,7 @@ class BessModule(AssetModule):
         allocated_mw: float,
         fleet_covered: bool,
         dt_seconds: float,
-        island_mode: IslandMode,
+        power_ceiling_mw: float,
     ) -> float:
         """Discharge this unit's proportionally allocated share of the fleet shortfall.
 
@@ -610,8 +610,12 @@ class BessModule(AssetModule):
           with zero allocation (e.g. depleted) does NOT falsely advance its taper
           timer while the fleet still has a shortfall.
 
-        Power ceiling: bridging_available_mw(island_mode), not raw rated_mw, so
-          the anchor reserve is enforced here as well as in the reserve check.
+        power_ceiling_mw — pre-computed bridging_available_mw for this unit,
+          passed in by DispatchArbitrator.tick() which hoists the computation
+          once per tick (P4 fix).  This avoids a redundant self.site.island_mode
+          read and a bridging_available_mw() call inside the hot per-tick loop.
+          The anchor reserve is still enforced; the caller computed the ceiling
+          with the correct island_mode before entering the loop.
         """
         if fleet_covered:
             self._sustained_catchup_seconds += dt_seconds
@@ -625,7 +629,7 @@ class BessModule(AssetModule):
         if allocated_mw <= 0:
             return 0.0
 
-        max_by_power = self.bridging_available_mw(island_mode)
+        max_by_power = power_ceiling_mw
         max_by_energy = self.soc_mwh / (dt_seconds / 3600.0) if dt_seconds > 0 else max_by_power
         discharge_mw = min(allocated_mw, max_by_power, max_by_energy)
 

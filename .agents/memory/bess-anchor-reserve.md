@@ -3,6 +3,25 @@ name: BESS anchor reserve design (Step 3 Item 4)
 description: IslandMode enum, grid_forming flag, bridging_available_mw, fleet split, and why sum-of-durations not min().
 ---
 
+**D13 — reserve aggregation operator: min(), not sum():**
+sum() overestimates fleet endurance by up to N×. Counter-example: A 10MW/1MWh + B 10MW/10MWh,
+peak 20MW, gap 400s → each gets 10MW. A sustains 360s, B sustains 3600s. sum=3960 → no alert
+(wrong). At t=360s A is empty, 10MW hole for 40s. min=360 → alert fires. The earlier "sum collapses
+when overflow forces D11 0.0" argument only covers the POWER ceiling case, not ENERGY exhaustion.
+min() catches both. Regression guard is in test_d13_min_not_sum_fleet_endurance.
+
+**P4 hoisting pattern (tick hot path):**
+island_mode and bridging_available_mw() computed ONCE per tick in DispatchArbitrator.tick();
+ceilings list passed to _proportional_allocations(demand, weights) and directly to
+cover_shortfall(alloc, fleet_covered, dt, power_ceiling_mw). Eliminated 1 extra island_mode read
++ N extra bridging_available_mw calls per tick. cover_shortfall signature changed from
+(…, island_mode: IslandMode) to (…, power_ceiling_mw: float) — only tick() calls it.
+Result: p50 948→842 µs, 2x wall 29.7→27.5 s.
+
+**P5 demo sizing:**
+demo-20mw BESS resized 15→18 MW rated (8 MWh unchanged, ~2.2C). bridging_available=17 MW vs
+~13.97 MW shortfall → 21.7% margin. Prior 15 MW gave 30 mW (0.2%) after 1 MW anchor deduction.
+
 **The formula (v2.5 §7.1.2):**
 `BESS_bridging_available(t) = rated_mw − p_anchor_reserve_mw`
 …only when `grid_forming=True AND island_mode=ISLANDED`. Otherwise deduction = 0.

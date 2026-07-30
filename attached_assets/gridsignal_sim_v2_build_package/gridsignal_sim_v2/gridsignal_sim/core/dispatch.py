@@ -310,9 +310,15 @@ class DispatchArbitrator:
     # Fleet allocation helper (Step 3 Item 4)
     # ------------------------------------------------------------------
 
-    def _proportional_allocations(self, demand_mw: float) -> list[float]:
-        """Split demand_mw across BESS units proportional to each unit's
-        bridging_available_mw (anchor-adjusted power ceiling).
+    def _proportional_allocations(
+        self, demand_mw: float, weights: list[float]
+    ) -> list[float]:
+        """Split demand_mw across BESS units proportional to pre-computed weights.
+
+        weights — bridging_available_mw values aligned with self.bess_units,
+        computed once by the caller (tick or stage_for_predicted_step) and
+        reused here.  This avoids a redundant self.site.island_mode read and N
+        redundant bridging_available_mw() calls per tick (P4 hoisting fix).
 
         When all units are identical this reduces to equal sharing.  For a
         heterogeneous fleet it prevents equal-share over-allocation to weak
@@ -327,13 +333,12 @@ class DispatchArbitrator:
 
         Returns a list aligned with self.bess_units.
         """
-        island_mode = self.site.island_mode
-        weights = [b.bridging_available_mw(island_mode) for b in self.bess_units]
         total_w = sum(weights)
         if total_w <= 0:
             # Fallback to rated_mw weights so the call path is always defined.
-            weights = [b.config.rated_mw for b in self.bess_units]
-            total_w = sum(weights) or 1.0
+            rated_weights = [b.config.rated_mw for b in self.bess_units]
+            total_w = sum(rated_weights) or 1.0
+            return [demand_mw * w / total_w for w in rated_weights]
         return [demand_mw * w / total_w for w in weights]
 
     def stage_for_predicted_step(
@@ -351,23 +356,29 @@ class DispatchArbitrator:
         from this function (no term to add, no branch to forget).  BESS bridges
         any gap between turbine ramp rate and required delta delivery time.
 
-        Step 3 Item 4 — reserve aggregation:
+        Step 3 Item 4 — reserve aggregation (D13 corrected: min not sum):
           1. Allocate peak_shortfall_mw proportional to bridging_available_mw.
-          2. Sum each unit's max_sustainable_seconds at ITS OWN allocated share.
-          3. Compare sum against gap_s.
+          2. Take MIN (not sum) of each unit's max_sustainable_seconds at its
+             own proportional share.
+          3. Compare min against gap_s.
 
-        The sum works because:
-          - When fleet CAN cover: all allocations ≤ bridging_available_mw; each
-            unit returns a positive duration; sum >> gap_s.
-          - When fleet CANNOT cover: at least one unit's allocation exceeds its
-            bridging_available_mw (because total_available < demand); that unit
-            returns 0.0, collapsing the sum below gap_s → alert fires.
+        D13 — why min(), not sum():
+          sum() overestimates fleet endurance by up to N×.
+          Counter-example: unit A 10MW/1MWh, unit B 10MW/10MWh, peak 20MW,
+          gap 400s.  Proportional allocation gives each 10MW.
+          A sustains 360s, B sustains 3600s.  sum=3960s → no alert (WRONG).
+          Truth: at t=360s A is empty, fleet drops to 10MW, 10MW hole for 40s.
+          min=360s → alert fires correctly.
 
-        D11 interaction: bridging_available_mw is the power ceiling (not rated_mw),
-        so an anchor unit with reserve withheld and a unit allocated above its
-        ceiling both correctly return 0.0.  A plain min() over equal-share
-        fractions would average 0.0 away for a heterogeneous fleet; summing
-        preserves the D11 signal.
+          The earlier rationale for sum was wrong: "proportional overflow causes
+          D11 0.0 return, collapsing sum" is only true for units OVER their POWER
+          ceiling.  It misses ENERGY exhaustion where both units are within their
+          power ceilings but one runs out of stored energy before gap_s elapses.
+          min() catches both the power-ceiling and energy-exhaustion cases.
+
+        P4: ceilings hoisted once above the inner loop — bridging_available_mw
+        is invariant within a call and is consumed by both the proportional split
+        and max_sustainable_seconds.
         """
         if not self.turbines:
             required_ramp_s = float("inf")
@@ -386,15 +397,20 @@ class DispatchArbitrator:
         already_ramped_mw = sum(t.config.r_asset_mw_per_s for t in self.turbines) * dt_lead_seconds
         peak_shortfall_mw = max(0.0, delta_p_mw - already_ramped_mw)
 
-        # Step 3 Item 4: proportional allocation + sum of sustainable durations.
+        # P4: compute island_mode and per-unit ceilings once; reuse for both
+        # proportional split and max_sustainable_seconds.
         island_mode = self.site.island_mode
-        allocations = self._proportional_allocations(peak_shortfall_mw)
-        total_sustainable_s = sum(
-            b.max_sustainable_seconds(alloc, island_mode)
-            for b, alloc in zip(self.bess_units, allocations)
+        ceilings = [b.bridging_available_mw(island_mode) for b in self.bess_units]
+        allocations = self._proportional_allocations(peak_shortfall_mw, ceilings)
+
+        # D13: min over proportional shares, not sum.
+        fleet_min_s = min(
+            (b.max_sustainable_seconds(alloc, island_mode)
+             for b, alloc in zip(self.bess_units, allocations)),
+            default=0.0,
         )
-        if total_sustainable_s >= gap_s:
-            return None  # fleet can bridge the gap -- no alert
+        if fleet_min_s >= gap_s:
+            return None  # every unit can sustain its share for the full gap
 
         return InsufficientReserveAlert(
             shortfall_mw=peak_shortfall_mw,
@@ -430,12 +446,18 @@ class DispatchArbitrator:
         fleet_shortfall = max(0.0, p_dispatch_required_mw - turbine_output_mw)
         fleet_covered = fleet_shortfall <= 0.0
 
+        # P4: hoist island_mode and per-unit bridging ceilings once per tick.
+        # Both are invariant within a tick; computing them inside cover_shortfall
+        # previously re-read self.site.island_mode and called bridging_available_mw
+        # N extra times per tick (N = BESS count).  The pre-computed ceilings are
+        # passed directly to cover_shortfall, which uses them as the power cap.
         island_mode = self.site.island_mode
-        allocations = self._proportional_allocations(fleet_shortfall)
+        ceilings = [b.bridging_available_mw(island_mode) for b in self.bess_units]
+        allocations = self._proportional_allocations(fleet_shortfall, ceilings)
 
         bess_output_mw = 0.0
-        for bess, alloc in zip(self.bess_units, allocations):
-            bess_output_mw += bess.cover_shortfall(alloc, fleet_covered, dt_seconds, island_mode)
+        for bess, alloc, ceiling in zip(self.bess_units, allocations, ceilings):
+            bess_output_mw += bess.cover_shortfall(alloc, fleet_covered, dt_seconds, ceiling)
         return turbine_output_mw, bess_output_mw
 
 
