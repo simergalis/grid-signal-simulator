@@ -225,3 +225,29 @@ class TickResult:
     # tests that do not inject a real wall stamp.  Needed alongside sim_time so
     # forecast-error attribution can compare simulated latency to real latency.
     wall_stamp_utc: float = 0.0
+    # Step 7: three fields required by the live dashboard that are computed in
+    # core but were absent from TickResult (and therefore the WS payload).
+    #
+    # p_renewable_mw: cannot be back-computed from net_demand_mw after the fact
+    #   because the clamp max(0, p_total − p_renewable) is lossy: when renewable
+    #   output exceeds total load, net_demand_mw is 0 and p_renewable is invisible.
+    p_renewable_mw: float = 0.0
+    # bess_bridging_seconds: how long the BESS fleet can sustain net_demand_mw
+    #   from current state of charge, using the same proportional-allocation +
+    #   min() logic as stage_for_predicted_step (D13).  Using the SAME function
+    #   (BessModule.max_sustainable_seconds) ensures the AssetReservePanel and
+    #   the insufficient-reserve alert arithmetic are identical; they cannot
+    #   disagree if they call the same code.
+    #   C1 correction: a MW/MW × 3600 ratio computed in the serializer would be
+    #   dimensionally wrong (§7.2.4 names this exact error).  The duration must
+    #   come from max_sustainable_seconds(), not from the serializer.
+    #   math.inf when net_demand_mw == 0 (no load, no bridging required);
+    #   serializer caps to 86 400.0 (24 h) for JSON safety.
+    bess_bridging_seconds: float = 0.0
+    # dt_lead_next_s: seconds until the next in-flight GPU job reaches full TDP.
+    #   C2 correction: min() across in-flight ramp remaining times, not sum().
+    #   Two jobs with 10 s and 30 s remaining → next TDP event in 10 s.
+    #   sum() = 40 s corresponds to no physical event.
+    #   Named dt_lead_next_s (not dt_lead_s) so the semantics are on the field.
+    #   0.0 when no job is currently ramping.
+    dt_lead_next_s: float = 0.0

@@ -14,6 +14,7 @@ without any parallelism.
 from __future__ import annotations
 
 import logging
+import math
 from dataclasses import dataclass, field
 
 from .asset_modules import BessModule, CoolingModule, GPUModule, SolarModule, TurbineModule
@@ -252,6 +253,40 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         turbine.advance(sim_time, dt_seconds)
     turbine_output_mw, bess_output_mw = state.arbitrator.tick(p_dispatch_required_mw, dt_seconds)
 
+    # 4b. dt_lead_next_s: minimum remaining ramp time across all in-flight GPU jobs.
+    # C2 correction: min(), not sum().  Two jobs with 10 s and 30 s remaining →
+    # the next GPU-full-TDP event fires in 10 s, not 40 s.  sum() does not
+    # correspond to any physical event.  Named dt_lead_next_s (not dt_lead_s) so
+    # the semantics are encoded in the field, not hidden in a comment.
+    # math.inf is returned by min_ramp_remaining_seconds when no job is ramping;
+    # convert to 0.0 for the TickResult ("no active ramp").
+    _dt_lead_raw = min(
+        (g.min_ramp_remaining_seconds() for g in state.gpu_modules),
+        default=math.inf,
+    )
+    dt_lead_next_s = _dt_lead_raw if _dt_lead_raw < math.inf else 0.0
+
+    # 4c. bess_bridging_seconds: fleet bridging duration at the current net demand.
+    # C1 correction: a MW/MW × 3600 ratio in the serializer is dimensionally wrong
+    # (§7.2.4 names this exact error).  Compute duration here by calling
+    # BessModule.max_sustainable_seconds() — the same function stage_for_predicted_step
+    # uses — so the AssetReservePanel and the insufficient-reserve alert arithmetic
+    # are identical: they call the same function with the same inputs and can never
+    # disagree.
+    # For a fleet, apply D13: min() across proportionally-allocated shares (not sum).
+    # math.inf when net_demand_mw == 0 (no load — full reserve, no bridging required).
+    # The serializer caps math.inf to 86 400.0 (24 h) for JSON safety.
+    if state.bess_units:
+        _bbs_island_mode = state.site.island_mode
+        _bbs_ceilings = [b.bridging_available_mw(_bbs_island_mode) for b in state.bess_units]
+        _bbs_allocs = state.arbitrator._proportional_allocations(net_demand_mw, _bbs_ceilings)
+        bess_bridging_seconds = min(
+            b.max_sustainable_seconds(alloc, _bbs_island_mode)
+            for b, alloc in zip(state.bess_units, _bbs_allocs)
+        )
+    else:
+        bess_bridging_seconds = 0.0
+
     # 5. Checkpoint classification, per active training job.
     # Step 3 Item 1: use gpu.per_job_compute_mw(job_id) — the draw for THIS job
     # on THIS module — not the site-wide p_compute_mw sum.  A 20% checkpoint dip
@@ -303,4 +338,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         unrecognised_profile_alerts=unrecognised_alerts,
         checkpoint_states=checkpoint_states,
         wall_stamp_utc=clock.wall_stamp_utc,
+        p_renewable_mw=p_renewable_mw,
+        bess_bridging_seconds=bess_bridging_seconds,
+        dt_lead_next_s=dt_lead_next_s,
     )

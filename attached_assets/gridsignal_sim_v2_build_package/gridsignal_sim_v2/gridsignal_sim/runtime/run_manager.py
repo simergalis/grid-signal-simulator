@@ -40,6 +40,20 @@ class WebSocketLike(Protocol):
     async def send_json(self, data: dict) -> None: ...
 
 
+# Step 7 — back-pressure bound: one 4 Hz render frame (250 ms).
+# If a browser tab is backgrounded its TCP receive buffer fills and
+# ws.send_json() never resolves, blocking broadcast() indefinitely.
+# Wrapping each send in asyncio.wait_for() caps the delay to one frame;
+# a stalled socket is dropped via the same unsubscribe path as an exception.
+#
+# KNOWN BOUNDARY (Step 7): a dropped subscriber does NOT auto-recover.
+# Until Step 8 adds snapshot-on-connect and the resync protocol
+# (Design Spec §2.2), a backgrounded tab that returns will show a dead
+# panel until the user reloads.  This is acceptable for Step 7 but must
+# be a known boundary, not a surprise.
+_SEND_TIMEOUT_S: float = 0.25
+
+
 class WebSocketHub:
     """Per-run pub/sub. Design Spec Section 4.4: broadcast fans out
     concurrently to every subscriber of a run; a slow or dead
@@ -66,15 +80,22 @@ class WebSocketHub:
 
         async def _safe_send(ws: WebSocketLike) -> None:
             try:
-                await ws.send_json(payload)
-            except Exception:  # noqa: BLE001 -- a dead socket must not break the run
-                logger.info("dropping stale subscriber for run %s", run_id)
+                await asyncio.wait_for(ws.send_json(payload), timeout=_SEND_TIMEOUT_S)
+            except (Exception, asyncio.TimeoutError):  # noqa: BLE001
+                # TimeoutError: TCP buffer full (backgrounded tab) — drop now.
+                # Exception:    dead socket — drop now.
+                # Either path: subscriber is removed; broadcast() returns
+                # within _SEND_TIMEOUT_S of starting, not indefinitely.
+                logger.info("dropping stale subscriber for run %s (timeout or error)", run_id)
                 self.unsubscribe(run_id, ws)
 
         await asyncio.gather(*(_safe_send(ws) for ws in subs))
 
 
 def _tick_result_to_dict(tick: TickResult) -> dict:
+    import math as _math  # local import — _tick_result_to_dict is in the runtime layer;
+    # math is a stdlib module so there is no plane-separation concern, but keeping
+    # the import local avoids polluting the module namespace.
     return {
         "run_id": tick.run_id,
         "tick_index": tick.tick_index,
@@ -91,6 +112,17 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         "data_quality_tags": sorted(t.value for t in tick.confidence.tags),
         "insufficient_reserve_alert": tick.insufficient_reserve_alert,
         "checkpoint_states": tick.checkpoint_states,
+        # Step 7 additions — required by live dashboard panels.
+        # p_renewable_mw: ForecastChart 4th trace; not recoverable from net_demand_mw
+        #   after the lossy clamp max(0, p_total − p_renewable).
+        "p_renewable_mw": round(tick.p_renewable_mw, 4),
+        # bess_bridging_seconds: AssetReservePanel "bridging capability in seconds".
+        #   math.inf (net_demand_mw == 0 → no load) is capped at 86 400 s (24 h)
+        #   for JSON safety; the UI renders this as "full reserve".
+        "bess_bridging_seconds": round(min(tick.bess_bridging_seconds, 86400.0), 1),
+        # dt_lead_next_s: HeroPanel countdown — seconds to next GPU full-TDP.
+        #   0.0 when no job is currently ramping.
+        "dt_lead_next_s": round(tick.dt_lead_next_s, 2),
     }
 
 

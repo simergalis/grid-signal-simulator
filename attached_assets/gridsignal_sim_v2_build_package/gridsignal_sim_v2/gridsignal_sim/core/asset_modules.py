@@ -221,6 +221,24 @@ class GPUModule(AssetModule):
             if self._job_profiles.get(job_id)  # profile known -> job is active
         ]
 
+    def min_ramp_remaining_seconds(self) -> float:
+        """Minimum remaining ramp time across in-flight jobs (ramp_progress < 1.0).
+
+        Used by evaluate_tick() to compute dt_lead_next_s (hero panel countdown).
+        Returns math.inf when no jobs are currently ramping (all at full TDP or
+        no active jobs).  The caller converts math.inf to 0.0 ("no active ramp").
+
+        C2 correction: the hero countdown shows when the NEXT job reaches full TDP.
+        Only min() has that semantics; sum() across two jobs' remaining times does
+        not correspond to any physical event.
+        """
+        remaining = (
+            (1.0 - p) * self.ramp_seconds
+            for p in self._ramp_progress.values()
+            if p < 1.0
+        )
+        return min(remaining, default=math.inf)
+
     def has_active_unmapped_jobs(self) -> bool:
         """True if any currently active job on this module uses a hardware
         profile that is not present in the library.

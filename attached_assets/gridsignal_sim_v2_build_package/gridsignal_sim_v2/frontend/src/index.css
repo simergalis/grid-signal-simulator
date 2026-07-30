@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base reset for operational dashboard aesthetic */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #0d1117;  /* canvas */
+  color: #e6edf3;             /* text */
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Thin scrollbar for operational feel */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track  { background: #0d1117; }
+::-webkit-scrollbar-thumb  { background: #30363d; border-radius: 2px; }
