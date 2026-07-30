@@ -184,6 +184,10 @@ class RunTimeseries(Base):
     checkpoint_states: Mapped[str] = mapped_column(
         Text, nullable=False
     )  # JSON object: job_id -> state string
+    # Step 5: wall-clock stamp alongside simulated time for every persisted row.
+    # Enables forecast-error attribution against real latency (v2.5 §22.8).
+    # UTC Unix timestamp (float); 0.0 when a test does not inject a real stamp.
+    wall_stamp_utc: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
 
 
 class ControlEvent(Base):
@@ -585,6 +589,7 @@ class SqlitePersistedTimeseriesSink:
                                     sorted(tick.unrecognised_profile_alerts)
                                 ),
                                 checkpoint_states=json.dumps(tick.checkpoint_states),
+                                wall_stamp_utc=tick.wall_stamp_utc,
                             )
                         )
             except Exception:

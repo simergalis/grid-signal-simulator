@@ -22,6 +22,7 @@ _log = logging.getLogger(__name__)
 from .dispatch import CheckpointClassifier, ConfidenceEngine, DispatchArbitrator, InsufficientReserveAlert
 from .models import DataQualityTag, GENERIC_FALLBACK_PROFILE, SiteConfig, TickResult, WorkloadEventType, WorkloadSignal
 from ._plane_guard import _EVALUATE_TICK_PERMITTED
+from .sim_clock import SimClock
 
 
 @dataclass
@@ -162,7 +163,7 @@ class SimulationState:
             self.classifier.apply_explicit_event(signal.job_id, is_checkpoint_start=False, sim_time=signal.timestamp)
 
 
-def evaluate_tick(state: SimulationState, sim_time: float, dt_seconds: float) -> TickResult:
+def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     """The fixed-order tick evaluation (Design Spec Section 5 / 10.1):
 
         GPU -> Cooling -> Solar (renewable offset) -> Turbine/BESS (arbitration)
@@ -194,6 +195,13 @@ def evaluate_tick(state: SimulationState, sim_time: float, dt_seconds: float) ->
             "_plane_guard_active() context manager from "
             "tests/test_plane_separation.py."
         )
+
+    # Step 5: unpack SimClock into local names so the function body is unchanged.
+    # sim_time and dt_seconds are simulated seconds (Rule 1: all spec intervals
+    # are measured in simulated time).  wall_stamp_utc is carried through to
+    # TickResult so the persistence layer can record both clocks per tick.
+    sim_time = clock.sim_time
+    dt_seconds = clock.dt_seconds
 
     # 1. Compute term — advance GPU ramps first (Step 3 Item 2: Δt_lead ramp).
     # GPU advance() is no longer a no-op: it advances the per-job ramp_progress
@@ -294,4 +302,5 @@ def evaluate_tick(state: SimulationState, sim_time: float, dt_seconds: float) ->
         insufficient_reserve_alert=alert_fired,
         unrecognised_profile_alerts=unrecognised_alerts,
         checkpoint_states=checkpoint_states,
+        wall_stamp_utc=clock.wall_stamp_utc,
     )

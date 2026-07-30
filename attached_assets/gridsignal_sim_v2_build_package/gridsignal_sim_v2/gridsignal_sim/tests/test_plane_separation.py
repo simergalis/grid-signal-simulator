@@ -34,6 +34,8 @@ import textwrap
 
 import pytest
 
+from core.sim_clock import SimClock
+
 # ---------------------------------------------------------------------------
 # Shared infrastructure
 # ---------------------------------------------------------------------------
@@ -60,6 +62,22 @@ def _plane_guard_active():
         yield
     finally:
         _EVALUATE_TICK_PERMITTED.reset(token)
+
+
+def _make_clock(
+    sim_time: float,
+    dt_seconds: float,
+    tick_seq: int = 0,
+    rate: float = 1.0,
+) -> SimClock:
+    """SimClock factory for tests — wall_stamp_utc=0.0 is the safe sentinel."""
+    return SimClock(
+        sim_time=sim_time,
+        dt_seconds=dt_seconds,
+        wall_stamp_utc=0.0,
+        rate=rate,
+        tick_seq=tick_seq,
+    )
 
 
 def _minimal_sim_state():
@@ -229,7 +247,7 @@ class TestRuntimeLayer:
         token = _EVALUATE_TICK_PERMITTED.set(False)
         try:
             with pytest.raises(RuntimeError, match="runtime guard"):
-                evaluate_tick(state, sim_time=0.0, dt_seconds=5.0)
+                evaluate_tick(state, _make_clock(0.0, 5.0))
         finally:
             _EVALUATE_TICK_PERMITTED.reset(token)
 
@@ -250,7 +268,7 @@ class TestRuntimeLayer:
         state, _ctx = _minimal_sim_state()
 
         with _plane_guard_active():
-            result = evaluate_tick(state, sim_time=0.0, dt_seconds=5.0)
+            result = evaluate_tick(state, _make_clock(0.0, 5.0))
 
         assert result is not None
         assert result.tick_index == 1
@@ -292,7 +310,7 @@ class TestRuntimeLayer:
 
         # Sentinel must now be False (default) again.
         with pytest.raises(RuntimeError, match="runtime guard"):
-            evaluate_tick(ctx.sim_state, sim_time=5.0, dt_seconds=5.0)
+            evaluate_tick(ctx.sim_state, _make_clock(5.0, 5.0))
 
     # -----------------------------------------------------------------------
     # DEMONSTRATE: sentinel is ContextVar-scoped (concurrency isolation)

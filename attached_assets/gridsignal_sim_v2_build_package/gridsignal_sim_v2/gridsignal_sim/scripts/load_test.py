@@ -81,9 +81,9 @@ class _Instrumentation:
 _instr = _Instrumentation()
 
 
-def _instrumented_evaluate_tick(state, sim_time, dt_seconds) -> TickResult:
+def _instrumented_evaluate_tick(state, clock) -> TickResult:
     start = time.perf_counter()
-    result = _uninstrumented_evaluate_tick(state, sim_time, dt_seconds)
+    result = _uninstrumented_evaluate_tick(state, clock)
     elapsed = time.perf_counter() - start
     _instr.compute_durations_s.append(elapsed)
     _instr.computed_at[(result.run_id, result.tick_index)] = time.perf_counter()

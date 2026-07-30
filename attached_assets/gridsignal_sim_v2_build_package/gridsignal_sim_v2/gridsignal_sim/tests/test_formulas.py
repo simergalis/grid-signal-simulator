@@ -11,6 +11,7 @@ import math
 from core.asset_modules import BessModule, CoolingModule, GPUModule, IrradianceProfile, SolarModule, TurbineModule
 from core.dispatch import CheckpointClassifier, CheckpointState, DispatchArbitrator
 from core.models import BessConfig, HardwareProfile, SiteConfig, SolarConfig, TurbineConfig, WorkloadEventType, WorkloadSignal, WorkloadClass
+from core.sim_clock import SimClock
 
 
 @contextlib.contextmanager
@@ -24,6 +25,25 @@ def _plane_guard_active():
         yield
     finally:
         _EVALUATE_TICK_PERMITTED.reset(token)
+
+
+def _make_clock(
+    sim_time: float,
+    dt_seconds: float,
+    tick_seq: int = 0,
+    rate: float = 1.0,
+) -> SimClock:
+    """Convenience factory for tests that call evaluate_tick() directly.
+    wall_stamp_utc=0.0 is the safe sentinel — tests do not need a live wall
+    clock.  Mirrors the SimClock constructed by RunContext.step() in
+    runtime/run_manager.py, minus the real-time wall stamp."""
+    return SimClock(
+        sim_time=sim_time,
+        dt_seconds=dt_seconds,
+        wall_stamp_utc=0.0,
+        rate=rate,
+        tick_seq=tick_seq,
+    )
 
 
 def test_tc01_instantaneous_compute_term_single_profile():
@@ -189,7 +209,7 @@ def test_d7_onboarding_alert_fires_once_per_unique_profile_id():
     with _plane_guard_active():
         for i in range(3):
             state.apply_workload_signal(_signal(f"job-{i}", UNMAPPED_A, t), dt_lead_seconds=30.0)
-            tick = evaluate_tick(state, t, DT)
+            tick = evaluate_tick(state, _make_clock(t, DT, tick_seq=i))
             if tick.unrecognised_profile_alerts:
                 alerts_seen.append(tick.unrecognised_profile_alerts)
             t += DT
@@ -205,7 +225,7 @@ def test_d7_onboarding_alert_fires_once_per_unique_profile_id():
     # --- Fourth job, different unmapped profile_id (UNMAPPED_B) ---
     state.apply_workload_signal(_signal("job-3", UNMAPPED_B, t), dt_lead_seconds=30.0)
     with _plane_guard_active():
-        tick_b = evaluate_tick(state, t, DT)
+        tick_b = evaluate_tick(state, _make_clock(t, DT))
 
     assert tick_b.unrecognised_profile_alerts == frozenset({UNMAPPED_B}), (
         f"Fourth job with a new unmapped profile_id {UNMAPPED_B!r} must produce "
@@ -359,8 +379,8 @@ def test_d9_demo_20mw_produces_nonzero_bess_output():
     t = 0.0
     DT = 5.0
     with _plane_guard_active():
-        for _ in range(20):   # 100 simulated seconds — plenty of time to see BESS fire
-            tick = evaluate_tick(state, t, DT)
+        for i in range(20):   # 100 simulated seconds — plenty of time to see BESS fire
+            tick = evaluate_tick(state, _make_clock(t, DT, tick_seq=i))
             bess_outputs.append(tick.bess_output_mw)
             t += DT
 
@@ -446,8 +466,8 @@ def test_d10_demo_20mw_bess_fires_and_tapers():
     t = 0.0
     DT = 5.0
     with _plane_guard_active():
-        for _ in range(60):   # 300 simulated seconds
-            tick = evaluate_tick(state, t, DT)
+        for i in range(60):   # 300 simulated seconds
+            tick = evaluate_tick(state, _make_clock(t, DT, tick_seq=i))
             bess_outputs.append(tick.bess_output_mw)
             turbine_outputs.append(tick.turbine_output_mw)
             t += DT

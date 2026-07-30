@@ -26,10 +26,11 @@ description: Location, four verification commands, and status of all completed i
 - P4 — hoist island_mode + bridging ceilings once per tick; cover_shortfall takes power_ceiling_mw
 - P5 — demo-20mw BESS resized 15→18 MW; bridging 17 MW; 21.7% margin over ~13.97 MW shortfall
 - Step 4 — control-plane purity gate (see plane-separation-guard.md)
+- Step 5 — SimClock + two clock domains (see clock-domains.md)
 
 **Audit gate status:** 13/13 passing (all closed)
 
-**Test counts:** 50 unit tests (tests/), 13 audit tests (audit_tests/)
+**Test counts:** 54 unit tests (tests/), 13 audit tests (audit_tests/)
 
 **Demo scenario alerts_seen (stable):**
 - demo-20mw: False, demo-alert: True, demo-5mw: False, demo-baseline: False

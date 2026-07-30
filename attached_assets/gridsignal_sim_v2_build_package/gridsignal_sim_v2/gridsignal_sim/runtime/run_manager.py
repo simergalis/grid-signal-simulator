@@ -18,10 +18,12 @@ from __future__ import annotations
 import asyncio
 import itertools
 import logging
+import time as _time_module
 from dataclasses import dataclass, field
 from typing import Awaitable, Callable, Optional, Protocol
 
 from core.models import TickResult, WorkloadSignal
+from core.sim_clock import SimClock
 from core.simulation_core import SimulationState, evaluate_tick
 from core._plane_guard import _EVALUATE_TICK_PERMITTED
 
@@ -162,11 +164,26 @@ class RunContext:
         The sentinel is defined in core/_plane_guard.py (so evaluate_tick can
         check it without importing runtime/); it is SET HERE by the runtime
         caller, never inside core/ itself — self-signing would defeat the guard.
+
+        Step 5 — SimClock injection: construct the SimClock here (the only
+        place in the runtime that reads the wall clock) and pass it into
+        evaluate_tick().  core/ never reads the wall clock directly — the
+        static gate in scripts/check_plane_separation.py enforces this.
+        wall_stamp_utc is a UTC Unix timestamp (time.time()) so the persistence
+        layer can record both clocks alongside every RunTimeseries row, enabling
+        forecast-error attribution against real latency (v2.5 §22.8).
         """
         self._apply_due_events()
+        clock = SimClock(
+            sim_time=self.sim_time,
+            dt_seconds=TICK_INTERVAL_SIM_SECONDS,
+            wall_stamp_utc=_time_module.time(),
+            rate=self.playback_speed,
+            tick_seq=self.sim_state.tick_index,
+        )
         _token = _EVALUATE_TICK_PERMITTED.set(True)
         try:
-            result = evaluate_tick(self.sim_state, self.sim_time, TICK_INTERVAL_SIM_SECONDS)
+            result = evaluate_tick(self.sim_state, clock)
         finally:
             _EVALUATE_TICK_PERMITTED.reset(_token)
         self.sim_time += TICK_INTERVAL_SIM_SECONDS

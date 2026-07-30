@@ -220,3 +220,8 @@ class TickResult:
     # so the set is non-empty on at most one tick per unique profile_id per run.
     unrecognised_profile_alerts: frozenset[str] = field(default_factory=frozenset)
     checkpoint_states: dict[str, str] = field(default_factory=dict)  # job_id -> state
+    # Step 5: wall-clock stamp at the tick start, as a UTC Unix timestamp.
+    # Supplied by RunContext.step() via SimClock; 0.0 is the safe sentinel for
+    # tests that do not inject a real wall stamp.  Needed alongside sim_time so
+    # forecast-error attribution can compare simulated latency to real latency.
+    wall_stamp_utc: float = 0.0
