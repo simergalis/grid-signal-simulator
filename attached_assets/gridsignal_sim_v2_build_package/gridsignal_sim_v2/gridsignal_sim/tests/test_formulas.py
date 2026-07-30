@@ -5,11 +5,25 @@ Section 16, Addendum A)". No asyncio here: this is the pure-Python
 layer, tested independently of the run-management/concurrency layer.
 """
 
+import contextlib
 import math
 
 from core.asset_modules import BessModule, CoolingModule, GPUModule, IrradianceProfile, SolarModule, TurbineModule
 from core.dispatch import CheckpointClassifier, CheckpointState, DispatchArbitrator
 from core.models import BessConfig, HardwareProfile, SiteConfig, SolarConfig, TurbineConfig, WorkloadEventType, WorkloadSignal, WorkloadClass
+
+
+@contextlib.contextmanager
+def _plane_guard_active():
+    """Set the Step-4 ContextVar sentinel for tests that call evaluate_tick()
+    directly (without going through RunContext.step()).  Mirrors the set/reset
+    logic in RunContext.step() — see tests/test_plane_separation.py."""
+    from core._plane_guard import _EVALUATE_TICK_PERMITTED
+    token = _EVALUATE_TICK_PERMITTED.set(True)
+    try:
+        yield
+    finally:
+        _EVALUATE_TICK_PERMITTED.reset(token)
 
 
 def test_tc01_instantaneous_compute_term_single_profile():
@@ -172,12 +186,13 @@ def test_d7_onboarding_alert_fires_once_per_unique_profile_id():
     # --- Three jobs, all UNMAPPED_A ---
     alerts_seen: list[frozenset[str]] = []
     t = 0.0
-    for i in range(3):
-        state.apply_workload_signal(_signal(f"job-{i}", UNMAPPED_A, t), dt_lead_seconds=30.0)
-        tick = evaluate_tick(state, t, DT)
-        if tick.unrecognised_profile_alerts:
-            alerts_seen.append(tick.unrecognised_profile_alerts)
-        t += DT
+    with _plane_guard_active():
+        for i in range(3):
+            state.apply_workload_signal(_signal(f"job-{i}", UNMAPPED_A, t), dt_lead_seconds=30.0)
+            tick = evaluate_tick(state, t, DT)
+            if tick.unrecognised_profile_alerts:
+                alerts_seen.append(tick.unrecognised_profile_alerts)
+            t += DT
 
     assert len(alerts_seen) == 1, (
         f"Expected exactly 1 alert for 3 jobs on the same unmapped profile_id "
@@ -189,7 +204,8 @@ def test_d7_onboarding_alert_fires_once_per_unique_profile_id():
 
     # --- Fourth job, different unmapped profile_id (UNMAPPED_B) ---
     state.apply_workload_signal(_signal("job-3", UNMAPPED_B, t), dt_lead_seconds=30.0)
-    tick_b = evaluate_tick(state, t, DT)
+    with _plane_guard_active():
+        tick_b = evaluate_tick(state, t, DT)
 
     assert tick_b.unrecognised_profile_alerts == frozenset({UNMAPPED_B}), (
         f"Fourth job with a new unmapped profile_id {UNMAPPED_B!r} must produce "
@@ -342,10 +358,11 @@ def test_d9_demo_20mw_produces_nonzero_bess_output():
     bess_outputs: list[float] = []
     t = 0.0
     DT = 5.0
-    for _ in range(20):   # 100 simulated seconds — plenty of time to see BESS fire
-        tick = evaluate_tick(state, t, DT)
-        bess_outputs.append(tick.bess_output_mw)
-        t += DT
+    with _plane_guard_active():
+        for _ in range(20):   # 100 simulated seconds — plenty of time to see BESS fire
+            tick = evaluate_tick(state, t, DT)
+            bess_outputs.append(tick.bess_output_mw)
+            t += DT
 
     assert any(b > 0.0 for b in bess_outputs), (
         f"demo-20mw with PROTO-7 solar sizing must produce non-zero BESS output "
@@ -428,11 +445,12 @@ def test_d10_demo_20mw_bess_fires_and_tapers():
     turbine_outputs: list[float] = []
     t = 0.0
     DT = 5.0
-    for _ in range(60):   # 300 simulated seconds
-        tick = evaluate_tick(state, t, DT)
-        bess_outputs.append(tick.bess_output_mw)
-        turbine_outputs.append(tick.turbine_output_mw)
-        t += DT
+    with _plane_guard_active():
+        for _ in range(60):   # 300 simulated seconds
+            tick = evaluate_tick(state, t, DT)
+            bess_outputs.append(tick.bess_output_mw)
+            turbine_outputs.append(tick.turbine_output_mw)
+            t += DT
 
     # 1. BESS must fire at some point during the first 20 ticks (0–95 s).
     #    Step 3 Item 2 re-anchor: with the Δt_lead ramp, compute starts near 0

@@ -23,6 +23,7 @@ from typing import Awaitable, Callable, Optional, Protocol
 
 from core.models import TickResult, WorkloadSignal
 from core.simulation_core import SimulationState, evaluate_tick
+from core._plane_guard import _EVALUATE_TICK_PERMITTED
 
 logger = logging.getLogger("gridsignal.run_manager")
 
@@ -154,9 +155,20 @@ class RunContext:
 
     def step(self) -> TickResult:
         """Advance exactly one tick and return the result. Synchronous
-        and deterministic -- see core/simulation_core.py."""
+        and deterministic -- see core/simulation_core.py.
+
+        Step 4 — runtime purity sentinel: set _EVALUATE_TICK_PERMITTED True
+        for the duration of evaluate_tick(), then reset it unconditionally.
+        The sentinel is defined in core/_plane_guard.py (so evaluate_tick can
+        check it without importing runtime/); it is SET HERE by the runtime
+        caller, never inside core/ itself — self-signing would defeat the guard.
+        """
         self._apply_due_events()
-        result = evaluate_tick(self.sim_state, self.sim_time, TICK_INTERVAL_SIM_SECONDS)
+        _token = _EVALUATE_TICK_PERMITTED.set(True)
+        try:
+            result = evaluate_tick(self.sim_state, self.sim_time, TICK_INTERVAL_SIM_SECONDS)
+        finally:
+            _EVALUATE_TICK_PERMITTED.reset(_token)
         self.sim_time += TICK_INTERVAL_SIM_SECONDS
         return result
 

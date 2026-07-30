@@ -21,6 +21,7 @@ from .asset_modules import BessModule, CoolingModule, GPUModule, SolarModule, Tu
 _log = logging.getLogger(__name__)
 from .dispatch import CheckpointClassifier, ConfidenceEngine, DispatchArbitrator, InsufficientReserveAlert
 from .models import DataQualityTag, GENERIC_FALLBACK_PROFILE, SiteConfig, TickResult, WorkloadEventType, WorkloadSignal
+from ._plane_guard import _EVALUATE_TICK_PERMITTED
 
 
 @dataclass
@@ -175,7 +176,25 @@ def evaluate_tick(state: SimulationState, sim_time: float, dt_seconds: float) ->
 
     Deterministic: same inputs, same order, every time -- no dict/set
     iteration order dependency (all module lists are plain lists).
+
+    Step 4 — runtime purity guard: the ContextVar sentinel
+    _EVALUATE_TICK_PERMITTED must be True when this function is entered.
+    The sentinel is SET BY THE CALLER (runtime/run_manager.py:RunContext.step),
+    not here — setting it here would self-sign and defeat the guard.  Direct
+    callers (scripts, tests) must use core._plane_guard or the test helper
+    _plane_guard_active() in tests/test_plane_separation.py.
     """
+    # Step 4: runtime purity guard — reject calls that bypass the runtime harness.
+    if not _EVALUATE_TICK_PERMITTED.get():
+        raise RuntimeError(
+            "evaluate_tick() called without the runtime guard active.  "
+            "The ContextVar core._plane_guard._EVALUATE_TICK_PERMITTED must be "
+            "True before entering evaluate_tick().  In production this is set by "
+            "RunContext.step() in runtime/run_manager.py.  In tests, use the "
+            "_plane_guard_active() context manager from "
+            "tests/test_plane_separation.py."
+        )
+
     # 1. Compute term — advance GPU ramps first (Step 3 Item 2: Δt_lead ramp).
     # GPU advance() is no longer a no-op: it advances the per-job ramp_progress
     # by dt_seconds/ramp_seconds so that P_compute grows realistically from near-0
