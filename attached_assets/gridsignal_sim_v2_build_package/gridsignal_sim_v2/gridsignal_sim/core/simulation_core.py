@@ -106,6 +106,10 @@ class SimulationState:
             )
 
         if signal.event_type == WorkloadEventType.STARTING:
+            # Step 3 Item 3: register t₀ₖ with the cooling module directly from
+            # the STARTING event timestamp.  The engine must never infer onset
+            # from aggregate draw shape (§8).
+            self.cooling.register_job_start(signal.job_id, signal.timestamp)
             # D8 fix: delta_p_mw must be the increment this job adds to
             # P_dispatch_required, net of renewable output at staging time.
             # The old code had two errors on the same line:
@@ -142,6 +146,11 @@ class SimulationState:
                 dt_lead_seconds=dt_lead_seconds,
                 sim_time=signal.timestamp,
             )
+        elif signal.event_type in (WorkloadEventType.JOB_END, WorkloadEventType.CANCELLED):
+            # Step 3 Item 3: mark the envelope ended so the retention window
+            # starts.  Heat is already in the room; the buffer drains over
+            # dt_thermal + 5·τ — it must not drop in one tick.
+            self.cooling.register_job_end(signal.job_id, signal.timestamp)
 
         if signal.event_type == WorkloadEventType.CHECKPOINT_START:
             self.classifier.apply_explicit_event(signal.job_id, is_checkpoint_start=True, sim_time=signal.timestamp)
@@ -171,8 +180,18 @@ def evaluate_tick(state: SimulationState, sim_time: float, dt_seconds: float) ->
     # to full TDP in a single tick.
     for gpu in state.gpu_modules:
         gpu.advance(sim_time, dt_seconds)
-    p_compute_mw = sum(g.output_mw() for g in state.gpu_modules)
-    state.cooling.record_compute_sample(sim_time, p_compute_mw)
+    # Step 3 Item 3: per-job cooling superposition.
+    # Build the per-job draw dict from all GPU modules (each job lives in exactly
+    # one module via _job_owner_index, so no double-counting).  Pass this to
+    # CoolingModule's simulation path instead of the old aggregate scalar.
+    # The engine reads per_job_compute_mw() directly — it does NOT infer job
+    # boundaries from aggregate draw shape (§8 / Build Plan v2.2 Step 3 Item 3).
+    _per_job_draws: dict[str, float] = {}
+    for _g in state.gpu_modules:
+        for _job_id in _g._node_counts:
+            _per_job_draws[_job_id] = _g.per_job_compute_mw(_job_id)
+    p_compute_mw = sum(_per_job_draws.values())
+    state.cooling.record_job_compute(sim_time, _per_job_draws)
 
     # 2. Cooling term (lagged)
     state.cooling.advance(sim_time, dt_seconds)

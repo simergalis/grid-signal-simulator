@@ -235,61 +235,205 @@ class GPUModule(AssetModule):
 
 
 # ---------------------------------------------------------------------------
-# Cooling module -- source spec Section 8
+# Cooling module -- source spec Section 8 / Build Plan v2.2 Step 3 Item 3
 # ---------------------------------------------------------------------------
 
 @dataclass
+class _LoadEnvelope:
+    """One job's (or synthetic step-load's) lagged cooling contribution.
+
+    onset_t    — t₀ₖ: the STARTING event timestamp (simulation path) or the
+                 sim_time at which a step-up was detected (scalar path).
+    load_mw    — scalar-path only: constant step-load size; unused when
+                 history is populated.
+    history    — simulation path: [(sim_t, mw), …] per-tick samples from
+                 GPUModule.per_job_compute_mw(), enabling ramp-varying loads.
+    end_t      — set on JOB_END/CANCELLED; envelope is retained for
+                 dt_thermal + 5·τ seconds after this time, then pruned.
+                 Retention rule per §8: "the heat is already in the room."
+    """
+    onset_t: float
+    load_mw: float = 0.0
+    history: list[tuple[float, float]] = field(default_factory=list)
+    end_t: Optional[float] = None
+
+
+@dataclass
 class CoolingModule(AssetModule):
-    """P_cooling(t) = alpha(t) * P_compute(t - dt_thermal)
+    """Per-job cooling superposition (Step 3 Item 3 — v2.5 §8, §11.1).
 
-    alpha(t) = alpha_max * (1 - e^-((t - t0 - dt_thermal) / tau))  for t >= t0 + dt_thermal
-             = 0                                                   otherwise
+    P_cooling(t) = Σₖ αₖ(t) × P_compute_k(t − Δt_thermal)
+    αₖ(t) = α_max × (1 − e^−(t − t₀ₖ − Δt_thermal)/τ)   for t ≥ t₀ₖ + Δt_thermal
+           = 0                                             otherwise
 
-    Requires a short history of P_compute samples to look back
-    dt_thermal seconds -- maintained by the caller (simulation_core.py)
-    and passed in each tick via `record_compute_sample`.
+    k indexes JOBS, not detected aggregate step-loads.  Each job has its own
+    envelope so that:
+      (a) a second job's cooling rises smoothly from zero after its own
+          dt_thermal lag — not as a step discontinuity into an already-settled
+          alpha (the aliasing §8 warns against);
+      (b) ending a job does NOT collapse its cooling contribution; heat
+          already in the room drains over dt_thermal + 5·τ seconds.
+
+    Two interfaces feed this module:
+
+    Scalar path — record_compute_sample(t, float):
+        Backward-compatible interface used by direct-unit tests (e.g. audit
+        tests, test_tc02, test_tc03) that work with aggregate P_compute.
+        Step-up changes (delta > 0) create a synthetic envelope at that
+        sim_time; step-downs mark the youngest live envelope ended.
+
+    Simulation path — register_job_start / register_job_end / record_job_compute:
+        Called by simulation_core.py using the STARTING event timestamp as
+        t₀ₖ and per_job_compute_mw() as the varying load trace.  This is the
+        canonical path; the engine must not infer onset from aggregate draw
+        shape — it reads the STARTING signal directly.
+
+    §12 identity: at steady state Σₖ αₖ × P_k = α_max × P_compute, so
+    effective PUE = PUE_base × (1 + α_max), same as the pre-Item-3 formula.
     """
 
     asset_id: str
     site: SiteConfig
-    step_onset_time: Optional[float] = None  # t0: first tick a step-load appears
-    _compute_history: list[tuple[float, float]] = field(default_factory=list)  # (t, P_compute)
+    _envelopes: dict[str, _LoadEnvelope] = field(default_factory=dict)
     _last_output_mw: float = 0.0
+    # Scalar-path state
+    _prev_agg_mw: float = 0.0
+    _synth_counter: int = 0
+
+    # ------------------------------------------------------------------
+    # Simulation path
+    # ------------------------------------------------------------------
+
+    def register_job_start(self, job_id: str, onset_t: float) -> None:
+        """Record t₀ₖ from the STARTING event.  Called by apply_workload_signal().
+
+        Creates a fresh envelope; existing history for the same job_id (from a
+        previous run reusing an id) is discarded so the onset is correct.
+        """
+        self._envelopes[job_id] = _LoadEnvelope(onset_t=onset_t)
+
+    def register_job_end(self, job_id: str, end_t: float) -> None:
+        """Mark envelope ended.  Retained for dt_thermal + 5·τ, then pruned.
+
+        Pruning location: advance() checks end_t against the retention window
+        each tick.  Pruning in advance() rather than here prevents an early
+        caller from inadvertently dropping history mid-drain.
+        """
+        if job_id in self._envelopes:
+            self._envelopes[job_id].end_t = end_t
+
+    def record_job_compute(self, sim_time: float,
+                            per_job_mw: dict[str, float]) -> None:
+        """Per-tick simulation-path sample.  Called from evaluate_tick() after
+        GPU advance() so the draw already reflects the Item 2 ramp.
+
+        Job IDs absent from _envelopes (started before this module was
+        initialised, or using the scalar path) are silently skipped.
+        """
+        # Only need slightly more than dt_thermal lookback.
+        retention_buf = self.site.dt_thermal_seconds * 2 + 10
+        cutoff = sim_time - retention_buf
+        for job_id, mw in per_job_mw.items():
+            env = self._envelopes.get(job_id)
+            if env is None:
+                continue
+            env.history.append((sim_time, mw))
+            while env.history and env.history[0][0] < cutoff:
+                env.history.pop(0)
+
+    # ------------------------------------------------------------------
+    # Scalar path (backward compat)
+    # ------------------------------------------------------------------
 
     def record_compute_sample(self, sim_time: float, p_compute_mw: float) -> None:
-        self._compute_history.append((sim_time, p_compute_mw))
-        # Bound history growth: only need slightly more than dt_thermal seconds of lookback.
-        cutoff = sim_time - (self.site.dt_thermal_seconds * 2 + 10)
-        while self._compute_history and self._compute_history[0][0] < cutoff:
-            self._compute_history.pop(0)
+        """Scalar aggregate interface — backward compat for unit tests.
 
-        if self.step_onset_time is None and p_compute_mw > 0:
-            self.step_onset_time = sim_time
+        Each step-up in aggregate compute creates a new synthetic envelope
+        (onset_t = sim_time, load_mw = delta).  Step-downs mark the youngest
+        live envelope ended so the retention rule drains it naturally.
 
-    def _lagged_compute_mw(self, target_time: float) -> float:
-        """Nearest-sample lookup of P_compute at (t - dt_thermal). A
-        production build may want linear interpolation between
-        samples; nearest-sample is sufficient at the 5s tick cadence
-        (source spec Section 3.1) and keeps this deterministic and
-        simple for the skeleton."""
-        if not self._compute_history:
-            return 0.0
-        best = min(self._compute_history, key=lambda sample: abs(sample[0] - target_time))
-        return best[1]
+        IMPORTANT: simulation_core.py calls register_job_start() +
+        record_job_compute() instead, so onset timestamps come from STARTING
+        events — the engine must never infer t₀ from aggregate draw shape.
+        """
+        _EPS = 1e-9
+        delta = p_compute_mw - self._prev_agg_mw
+        if delta > _EPS:
+            key = f"_syn_{self._synth_counter}"
+            self._synth_counter += 1
+            self._envelopes[key] = _LoadEnvelope(onset_t=sim_time, load_mw=delta)
+        elif delta < -_EPS:
+            # Reduce/close youngest live envelope(s) to match the drop.
+            remaining = -delta
+            for key in reversed(list(self._envelopes)):
+                env = self._envelopes[key]
+                if env.end_t is not None:
+                    continue
+                take = min(env.load_mw, remaining)
+                env.load_mw -= take
+                remaining -= take
+                if env.load_mw <= _EPS:
+                    env.end_t = sim_time
+                    env.load_mw = 0.0
+                if remaining <= _EPS:
+                    break
+        self._prev_agg_mw = p_compute_mw
 
-    def _alpha(self, sim_time: float) -> float:
-        if self.step_onset_time is None:
-            return 0.0
-        threshold = self.step_onset_time + self.site.dt_thermal_seconds
-        if sim_time < threshold:
-            return 0.0
-        elapsed_past_threshold = sim_time - threshold
-        return self.site.alpha_max * (1 - math.exp(-elapsed_past_threshold / self.site.tau_seconds))
+    # ------------------------------------------------------------------
+    # Shared internals
+    # ------------------------------------------------------------------
+
+    def _lagged_mw(self, env: _LoadEnvelope, target_time: float) -> float:
+        """Nearest-sample lagged compute for one envelope at t − dt_thermal.
+
+        Simulation path: nearest-sample lookup in env.history.
+        Scalar path: constant env.load_mw (step load), active from onset_t.
+
+        Returns 0.0 if the envelope had not yet started at target_time.
+        """
+        if env.history:
+            # Simulation path — nearest-sample lookup.
+            if target_time < env.onset_t:
+                return 0.0
+            best = min(env.history, key=lambda s: abs(s[0] - target_time))
+            return best[1]
+        else:
+            # Scalar path — constant load from onset_t.
+            return env.load_mw if target_time >= env.onset_t else 0.0
 
     def advance(self, sim_time: float, dt_seconds: float) -> None:
+        """Sum per-envelope αₖ × P_k_lagged and prune expired envelopes.
+
+        Pruning rule: end_t is set by register_job_end() (simulation path) or
+        by the scalar path's step-down handler.  An envelope is removed when
+        sim_time > end_t + dt_thermal + 5·τ — i.e., after the lagged heat has
+        fully dissipated (5 time-constants ≈ 99.3% decay).
+        """
+        retention = self.site.dt_thermal_seconds + 5.0 * self.site.tau_seconds
         lag_time = sim_time - self.site.dt_thermal_seconds
-        lagged_compute = self._lagged_compute_mw(lag_time)
-        self._last_output_mw = self._alpha(sim_time) * lagged_compute
+        total = 0.0
+
+        for key in list(self._envelopes):
+            env = self._envelopes[key]
+
+            # Prune envelopes whose heat has fully dissipated.
+            if env.end_t is not None and sim_time > env.end_t + retention:
+                del self._envelopes[key]
+                continue
+
+            # αₖ(t): zero until dt_thermal has elapsed since onset.
+            threshold = env.onset_t + self.site.dt_thermal_seconds
+            if sim_time < threshold:
+                continue  # α_k = 0; no contribution yet
+            elapsed = sim_time - threshold
+            alpha_k = self.site.alpha_max * (
+                1.0 - math.exp(-elapsed / self.site.tau_seconds)
+            )
+
+            lagged = self._lagged_mw(env, lag_time)
+            total += alpha_k * lagged
+
+        self._last_output_mw = total
 
     def output_mw(self) -> float:
         return self._last_output_mw

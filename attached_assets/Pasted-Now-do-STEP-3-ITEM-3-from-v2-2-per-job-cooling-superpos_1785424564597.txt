@@ -1,0 +1,42 @@
+Now do STEP 3 ITEM 3 from v2.2 — per-job cooling superposition. Stop after it.
+
+Profiling verdict: proceed. Item 2's cost is ~5% on p50 and bounded. 1x at 12.0s against a
+30s budget. Report 2x as well as 1x from here — 2x has 20% headroom against the same budget
+where 1x has 60%, so it breaks first.
+
+THE FORMULATION — do not invent a step detector on the aggregate series.
+    P_cooling(t) = Σₖ αₖ(t) × P_compute_k(t − Δt_thermal)
+    αₖ(t) = α_max × (1 − e^−(t − t₀ₖ − Δt_thermal)/τ)   for t ≥ t₀ₖ + Δt_thermal, else 0
+k indexes JOBS, not detected step-loads. t₀ₖ is job k's STARTING event — the engine reads
+that signal directly and should never infer onset from draw shape. Consume
+per_job_compute_mw() from Item 1. This handles the Item 2 ramp naturally: a ramping job
+contributes a ramping lagged term, no special case.
+
+Today CoolingModule keeps one site-wide sample buffer and a single step_onset_time set once
+on the first non-zero sample and never reset. The result: the two-stage rise is correct for
+the first job of a run, and every later step arrives as a discontinuity — measured at
++2.000 MW in one tick against a superposed 0.442 MW. §8 is explicit that "a discontinuous
+step is itself physically unrealistic and would falsely alias as a second instantaneous
+event to the dispatch controller."
+
+THE TRAP — a job ending does NOT end its cooling contribution.
+P_compute_k(t − Δt_thermal) keeps drawing on job k's history for Δt_thermal seconds AFTER
+the job ends. The heat is already in the room. If you delete a job's sample buffer on
+JOB_END or CANCELLED, P_cooling drops discontinuously by that job's whole contribution —
+the same error class as a naive t₀ reset, in the opposite direction. Retain each job's
+buffer for at least Δt_thermal + 5τ past its end, then prune. Say what your retention rule
+is and where pruning happens, or this leaks.
+
+Gate: audit_tests/test_step3_findings.py::test_second_step_load_produces_its_own_cooling_
+rise must pass. The two anchor-reserve gates stay failing.
+
+The §12 identity test must stay green. At steady state Σ αₖ × P_k = α_max × P_compute, so
+effective PUE is still PUE_base × (1 + α_max). If it breaks, the superposition is wrong —
+that is what the test is for.
+
+Tests: (a) job A settled, job B starts 400s later — assert job A's cooling never dips and
+the max single-tick delta is below a first-order rise bound at tau, not a step; (b) a job
+ends while cooling is settled — assert P_cooling decays over ~Δt_thermal rather than
+dropping in one tick.
+
+Re-run all four and report, with alerts_seen, 1x AND 2x wall clocks. Stop.
