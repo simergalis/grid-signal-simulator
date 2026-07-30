@@ -27,6 +27,7 @@ description: Location, four verification commands, and status of all completed i
 - P5 — demo-20mw BESS resized 15→18 MW; bridging 17 MW; 21.7% margin over ~13.97 MW shortfall
 - Step 4 — control-plane purity gate (see plane-separation-guard.md)
 - Step 5 — SimClock + two clock domains (see clock-domains.md)
+- Step 6 — FastAPI wiring (see fastapi-wiring.md)
 
 **Audit gate status:** 13/13 passing (all closed)
 

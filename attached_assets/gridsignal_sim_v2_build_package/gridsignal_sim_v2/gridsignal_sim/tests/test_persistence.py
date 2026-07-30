@@ -58,6 +58,7 @@ def _make_tick(run_id: str, tick_index: int, p_total: float = 1.5) -> TickResult
 # Test 1: ticks all recoverable after finalize()
 # ---------------------------------------------------------------------------
 
+@pytest.mark.asyncio
 async def test_ticks_recoverable_after_finalize(tmp_path: Path) -> None:
     """A run's ticks must all be readable from the DB after finalize() returns.
 
@@ -107,6 +108,7 @@ async def test_ticks_recoverable_after_finalize(tmp_path: Path) -> None:
 # Test 2: two concurrent runs' rows don't interleave
 # ---------------------------------------------------------------------------
 
+@pytest.mark.asyncio
 async def test_concurrent_runs_rows_do_not_interleave(tmp_path: Path) -> None:
     """Rows from two concurrent runs must be correctly attributed to their
     respective run_ids, even when both append concurrently to the same sink.
@@ -153,6 +155,7 @@ async def test_concurrent_runs_rows_do_not_interleave(tmp_path: Path) -> None:
 # Test 3: persistence survives re-opening
 # ---------------------------------------------------------------------------
 
+@pytest.mark.asyncio
 async def test_persistence_survives_reopening(tmp_path: Path) -> None:
     """Data written by one sink instance must be readable by a fresh instance
     opened on the same file.
@@ -204,6 +207,7 @@ async def test_persistence_survives_reopening(tmp_path: Path) -> None:
 # Test 4: recommendation CHECK constraint (reviewer_id required for terminal states)
 # ---------------------------------------------------------------------------
 
+@pytest.mark.asyncio
 async def test_recommendation_reviewer_constraint(tmp_path: Path) -> None:
     """A Recommendation row must not reach state=applied or state=rejected
     with reviewer_id IS NULL.
@@ -251,6 +255,7 @@ async def test_recommendation_reviewer_constraint(tmp_path: Path) -> None:
 # Test 5: data_quality_tags round-trips correctly
 # ---------------------------------------------------------------------------
 
+@pytest.mark.asyncio
 async def test_data_quality_tags_roundtrip(tmp_path: Path) -> None:
     """Tags stored as a JSON array in data_quality_tags must deserialise back
     to the original set of tag value strings."""
@@ -300,6 +305,7 @@ async def test_data_quality_tags_roundtrip(tmp_path: Path) -> None:
 # Test 6 (D5): append() does not block or raise when the write queue is full
 # ---------------------------------------------------------------------------
 
+@pytest.mark.asyncio
 async def test_append_does_not_block_when_queue_full(tmp_path: Path) -> None:
     """append() must return without blocking and without raising when the
     write queue is at capacity.
