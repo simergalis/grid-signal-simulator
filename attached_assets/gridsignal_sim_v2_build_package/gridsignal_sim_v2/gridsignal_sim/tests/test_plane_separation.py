@@ -45,7 +45,14 @@ CORE_DIR = pathlib.Path(__file__).parent.parent / "core"
 # Re-use the scanner from the standalone script so the two are always in sync.
 import sys
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
-from scripts.check_plane_separation import scan_source, check_all, FORBIDDEN_TOP_LEVEL  # noqa: E402
+from scripts.check_plane_separation import (  # noqa: E402
+    scan_source,
+    check_all,
+    check_api,
+    FORBIDDEN_TOP_LEVEL,
+    FORBIDDEN_API_TOP_LEVEL,
+    API_DIR,
+)
 
 
 @contextlib.contextmanager
@@ -348,4 +355,152 @@ class TestRuntimeLayer:
         )
         assert inner_saw == [True], (
             "Inner context did not see True — ContextVar not set correctly."
+        )
+
+
+# ===========================================================================
+# LAYER 1 — Static gate, api/ target  (Step 6 addition)
+# ===========================================================================
+
+class TestApiStaticLayer:
+    """AST import scanner for the api/ package.
+
+    api/ must not import from core.* directly.  The permitted chain is
+    api/ → runtime/ → core/.  api/ legitimately imports FastAPI/Starlette/
+    asyncio, so the forbidden list is narrower than core/'s — it only
+    forbids the top-level package 'core'.
+
+    Each test either DEMONSTRATES THE GATE FAILING (injecting a violation
+    into synthetic source) or DEMONSTRATES THE GATE PASSING (scanning the
+    real api/ files).
+    """
+
+    # -----------------------------------------------------------------------
+    # DEMONSTRATE FAILING — `from core.sim_clock import SimClock`
+    # -----------------------------------------------------------------------
+
+    def test_api_gate_catches_sim_clock_import(self):
+        """DEMONSTRATE FAILING (api/ gate):
+
+        Inject 'from core.sim_clock import SimClock' — the canonical example
+        from Q5 — into a synthetic api/ module.  A request handler that
+        constructs a SimClock bypasses RunContext.step()'s sole ownership of
+        the wall-clock stamp and the plane-guard sentinel.
+
+        If this test does not assert a violation, the gate is broken.
+        """
+        poisoned = (
+            "from core.sim_clock import SimClock\n"
+            "\n"
+            "def bad_handler(request):\n"
+            "    clock = SimClock(sim_time=0.0, dt_seconds=5.0,\n"
+            "                    wall_stamp_utc=None, rate=1.0, tick_seq=0)\n"
+        )
+
+        violations = scan_source("api/routes/bad.py", poisoned,
+                                 FORBIDDEN_API_TOP_LEVEL)
+
+        assert violations, (
+            "API GATE IS BROKEN: 'from core.sim_clock import SimClock' "
+            "injected into api/routes/bad.py produced no violation."
+        )
+        assert any("core" in v for v in violations), violations
+
+    # -----------------------------------------------------------------------
+    # DEMONSTRATE FAILING — `from core.simulation_core import evaluate_tick`
+    # -----------------------------------------------------------------------
+
+    def test_api_gate_catches_evaluate_tick_import(self):
+        """DEMONSTRATE FAILING (api/ gate):
+
+        'from core.simulation_core import evaluate_tick' — a handler that
+        calls evaluate_tick() directly would bypass the plane-guard sentinel
+        and the two-clock-domain invariant enforced by RunContext.step().
+        """
+        poisoned = "from core.simulation_core import evaluate_tick\n"
+
+        violations = scan_source("api/app_bad.py", poisoned,
+                                 FORBIDDEN_API_TOP_LEVEL)
+
+        assert violations, (
+            "API GATE IS BROKEN: 'from core.simulation_core import "
+            "evaluate_tick' produced no violation."
+        )
+
+    # -----------------------------------------------------------------------
+    # DEMONSTRATE FAILING — `from core._plane_guard import _EVALUATE_TICK_PERMITTED`
+    # -----------------------------------------------------------------------
+
+    def test_api_gate_catches_plane_guard_import(self):
+        """DEMONSTRATE FAILING (api/ gate):
+
+        Importing the ContextVar sentinel directly into api/ would allow a
+        request handler to set it and call evaluate_tick(), which is exactly
+        the invariant the sentinel exists to prevent from happening outside
+        RunContext.step().
+        """
+        poisoned = (
+            "from core._plane_guard import _EVALUATE_TICK_PERMITTED\n"
+        )
+
+        violations = scan_source("api/routes/dangerous.py", poisoned,
+                                 FORBIDDEN_API_TOP_LEVEL)
+
+        assert violations, (
+            "API GATE IS BROKEN: 'from core._plane_guard import "
+            "_EVALUATE_TICK_PERMITTED' produced no violation."
+        )
+
+    # -----------------------------------------------------------------------
+    # DEMONSTRATE FAILING — late import inside a function body
+    # -----------------------------------------------------------------------
+
+    def test_api_gate_catches_late_core_import_in_handler(self):
+        """DEMONSTRATE FAILING (api/ gate) — late import inside a function:
+
+        A late 'from core import ...' inside a request handler body would
+        not be caught by a module-level-only scan.  This confirms the walker
+        covers all AST nodes.
+        """
+        poisoned = (
+            "from fastapi import APIRouter\n"
+            "router = APIRouter()\n"
+            "\n"
+            "@router.get('/bad')\n"
+            "def bad_route():\n"
+            "    from core.simulation_core import evaluate_tick  # late import\n"
+            "    return evaluate_tick(None, None)\n"
+        )
+
+        violations = scan_source("api/routes/late.py", poisoned,
+                                 FORBIDDEN_API_TOP_LEVEL)
+
+        assert violations, (
+            "API GATE IS BROKEN: late 'from core...' inside a function body "
+            "was not caught.  The scanner must use ast.walk() over all nodes."
+        )
+
+    # -----------------------------------------------------------------------
+    # DEMONSTRATE PASSING — real api/ files are clean
+    # -----------------------------------------------------------------------
+
+    def test_api_gate_clean_api_passes(self):
+        """DEMONSTRATE PASSING (api/ gate):
+
+        The real api/**/*.py files must contain no imports from core.*.
+        This is the CI-breaking check: if any api/ module develops a
+        forbidden core/ import this assertion fires and the build fails.
+        """
+        all_violations = check_api(API_DIR)
+
+        assert not all_violations, (
+            "api/ core-import violations found — build fails:\n"
+            + "\n".join(f"  {v}" for v in all_violations)
+        )
+
+    def test_api_forbidden_set_covers_required_packages(self):
+        """Sanity-check: FORBIDDEN_API_TOP_LEVEL contains 'core'."""
+        assert "core" in FORBIDDEN_API_TOP_LEVEL, (
+            "FORBIDDEN_API_TOP_LEVEL must contain 'core' to block all "
+            "direct api/ → core/ imports."
         )
