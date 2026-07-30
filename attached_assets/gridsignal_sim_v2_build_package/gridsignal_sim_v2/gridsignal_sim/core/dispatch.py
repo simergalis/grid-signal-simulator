@@ -17,7 +17,7 @@ from enum import Enum
 from typing import Optional
 
 from .asset_modules import BessModule, GPUModule, TurbineModule
-from .models import ConfidenceBand, DataQualityTag
+from .models import ConfidenceBand, DataQualityTag, IslandMode, SiteConfig
 
 _log = logging.getLogger(__name__)
 
@@ -296,9 +296,45 @@ class DispatchArbitrator:
        no renewable term to forget, because there is no renewable term at all.
     """
 
-    def __init__(self, turbines: list[TurbineModule], bess_units: list[BessModule]) -> None:
+    def __init__(
+        self,
+        turbines: list[TurbineModule],
+        bess_units: list[BessModule],
+        site: "SiteConfig",
+    ) -> None:
         self.turbines = turbines
         self.bess_units = bess_units
+        self.site = site   # read each tick for island_mode (Step 3 Item 4 / §7.1.2)
+
+    # ------------------------------------------------------------------
+    # Fleet allocation helper (Step 3 Item 4)
+    # ------------------------------------------------------------------
+
+    def _proportional_allocations(self, demand_mw: float) -> list[float]:
+        """Split demand_mw across BESS units proportional to each unit's
+        bridging_available_mw (anchor-adjusted power ceiling).
+
+        When all units are identical this reduces to equal sharing.  For a
+        heterogeneous fleet it prevents equal-share over-allocation to weak
+        units, which would cause D11's power-ceiling guard to return 0.0 for
+        those units and understate total fleet capability.
+
+        If total bridging capacity is zero (all units depleted or anchored
+        to zero), each unit gets a proportional share of demand_mw based on
+        rated_mw so the taper/SoC logic still sees the correct demand signal
+        and drains gracefully — none of them can deliver, but the call path
+        stays well-defined.
+
+        Returns a list aligned with self.bess_units.
+        """
+        island_mode = self.site.island_mode
+        weights = [b.bridging_available_mw(island_mode) for b in self.bess_units]
+        total_w = sum(weights)
+        if total_w <= 0:
+            # Fallback to rated_mw weights so the call path is always defined.
+            weights = [b.config.rated_mw for b in self.bess_units]
+            total_w = sum(weights) or 1.0
+        return [demand_mw * w / total_w for w in weights]
 
     def stage_for_predicted_step(
         self, delta_p_mw: float, dt_lead_seconds: float, sim_time: float
@@ -314,6 +350,24 @@ class DispatchArbitrator:
         Ramp capability is turbine-only — renewables are structurally absent
         from this function (no term to add, no branch to forget).  BESS bridges
         any gap between turbine ramp rate and required delta delivery time.
+
+        Step 3 Item 4 — reserve aggregation:
+          1. Allocate peak_shortfall_mw proportional to bridging_available_mw.
+          2. Sum each unit's max_sustainable_seconds at ITS OWN allocated share.
+          3. Compare sum against gap_s.
+
+        The sum works because:
+          - When fleet CAN cover: all allocations ≤ bridging_available_mw; each
+            unit returns a positive duration; sum >> gap_s.
+          - When fleet CANNOT cover: at least one unit's allocation exceeds its
+            bridging_available_mw (because total_available < demand); that unit
+            returns 0.0, collapsing the sum below gap_s → alert fires.
+
+        D11 interaction: bridging_available_mw is the power ceiling (not rated_mw),
+        so an anchor unit with reserve withheld and a unit allocated above its
+        ceiling both correctly return 0.0.  A plain min() over equal-share
+        fractions would average 0.0 away for a heterogeneous fleet; summing
+        preserves the D11 signal.
         """
         if not self.turbines:
             required_ramp_s = float("inf")
@@ -328,29 +382,19 @@ class DispatchArbitrator:
         if gap_s <= 0:
             return None  # sufficient lead time, no alert -- TC-11
 
-        # Peak shortfall the BESS must cover, per the §7.3 worked example:
-        # turbines have already ramped dt_lead_seconds worth by the time the
-        # full load lands.  Ramp capability = turbines only (§7.1.1 asymmetry 2).
+        # Peak shortfall the BESS fleet must cover, per the §7.3 worked example.
         already_ramped_mw = sum(t.config.r_asset_mw_per_s for t in self.turbines) * dt_lead_seconds
         peak_shortfall_mw = max(0.0, delta_p_mw - already_ramped_mw)
 
-        # FLEET AGGREGATION NOTE (Step 3 Item 4): the per-unit call below
-        # distributes peak_shortfall equally across units and then takes the
-        # min() sustainable duration.  With the D11 power-ceiling fix in place,
-        # each unit now correctly returns 0 when its share exceeds its rated_mw.
-        # However, the fleet-level question is richer: can the COMBINED fleet
-        # (sum of rated power AND sum of stored energy) cover the peak shortfall
-        # for the full gap duration?  A min() on per-unit durations underestimates
-        # a heterogeneous fleet and a simple equal-share division misallocates when
-        # units have different rated_mw values.  Step 3 Item 4 should replace this
-        # with a fleet-level check that: (1) sums rated_mw to compare against
-        # peak_shortfall, and (2) computes a weighted energy budget across units.
-        total_sustainable_s = min(
-            (b.max_sustainable_seconds(peak_shortfall_mw / max(len(self.bess_units), 1)) for b in self.bess_units),
-            default=0.0,
+        # Step 3 Item 4: proportional allocation + sum of sustainable durations.
+        island_mode = self.site.island_mode
+        allocations = self._proportional_allocations(peak_shortfall_mw)
+        total_sustainable_s = sum(
+            b.max_sustainable_seconds(alloc, island_mode)
+            for b, alloc in zip(self.bess_units, allocations)
         )
         if total_sustainable_s >= gap_s:
-            return None  # BESS can bridge the gap -- no alert
+            return None  # fleet can bridge the gap -- no alert
 
         return InsufficientReserveAlert(
             shortfall_mw=peak_shortfall_mw,
@@ -369,12 +413,29 @@ class DispatchArbitrator:
         A renewable shortfall (inverter trip, cloud shadow) has Δt_lead = 0;
         the fleet must cover P_dispatch_required from dispatchable sources alone
         with no warning (§7.1.1 asymmetry 1).
+
+        Step 3 Item 4 — fleet split:
+          Distribute the fleet shortfall proportional to each unit's
+          bridging_available_mw (anchor-adjusted).  For a homogeneous fleet this
+          equals equal sharing.  For a heterogeneous fleet it prevents equal-share
+          over-allocation to weak units (spec test case b) and respects anchor
+          reserve deductions (spec test case c).
+
+          fleet_covered flag: True when turbines already cover demand at fleet
+          level — passed to cover_shortfall for taper logic.  A unit with zero
+          allocation (depleted or anchored) must not advance its own taper timer
+          while the fleet still has a shortfall.
         """
         turbine_output_mw = sum(t.output_mw() for t in self.turbines)
+        fleet_shortfall = max(0.0, p_dispatch_required_mw - turbine_output_mw)
+        fleet_covered = fleet_shortfall <= 0.0
+
+        island_mode = self.site.island_mode
+        allocations = self._proportional_allocations(fleet_shortfall)
+
         bess_output_mw = 0.0
-        remaining = p_dispatch_required_mw
-        for bess in self.bess_units:
-            bess_output_mw += bess.cover_shortfall(remaining, turbine_output_mw, dt_seconds)
+        for bess, alloc in zip(self.bess_units, allocations):
+            bess_output_mw += bess.cover_shortfall(alloc, fleet_covered, dt_seconds, island_mode)
         return turbine_output_mw, bess_output_mw
 
 

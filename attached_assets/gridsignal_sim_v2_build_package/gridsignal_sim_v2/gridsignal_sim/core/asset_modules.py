@@ -24,6 +24,7 @@ from .models import (
     BessConfig,
     GENERIC_FALLBACK_PROFILE,
     HardwareProfile,
+    IslandMode,
     SiteConfig,
     SolarConfig,
     TurbineConfig,
@@ -567,28 +568,66 @@ class BessModule(AssetModule):
     def soc_fraction(self) -> float:
         return self.soc_mwh / self.config.usable_mwh if self.config.usable_mwh else 0.0
 
-    def cover_shortfall(self, p_total_mw: float, turbine_output_mw: float, dt_seconds: float) -> float:
-        """Source spec Section 7.2 step 2-3:
+    def bridging_available_mw(self, island_mode: IslandMode) -> float:
+        """Anchor-adjusted bridging power ceiling (v2.5 §7.1.2).
 
-            BESS_output(t) = max(0, P_total(t) - turbine_output(t))
+            BESS_bridging_available(t) = min(rated, usable SoC) − P_anchor_reserve
 
-        bounded by rated capacity and state of charge, tapering to
-        standby once turbines have sustained coverage for 10s.
+        P_anchor_reserve is non-zero only when BOTH conditions hold:
+          1. This unit is the designated grid-forming anchor (grid_forming=True).
+          2. The site is in ISLANDED mode (island_mode=IslandMode.ISLANDED).
+        In any other combination (grid-following unit, or grid-tie mode),
+        P_anchor_reserve = 0 and the full rated power is available for bridging.
+
+        Conservative default: grid_forming=False → most units have no deduction.
+        The anchor role must be explicitly assigned; it must not be assumed.
         """
-        shortfall = max(0.0, p_total_mw - turbine_output_mw)
+        anchor_deduction = (
+            self.config.p_anchor_reserve_mw
+            if self.config.grid_forming and island_mode == IslandMode.ISLANDED
+            else 0.0
+        )
+        return max(0.0, self.config.rated_mw - anchor_deduction)
 
-        if turbine_output_mw >= p_total_mw:
+    def cover_shortfall(
+        self,
+        allocated_mw: float,
+        fleet_covered: bool,
+        dt_seconds: float,
+        island_mode: IslandMode,
+    ) -> float:
+        """Discharge this unit's proportionally allocated share of the fleet shortfall.
+
+        Step 3 Item 4 — this unit no longer receives the full fleet shortfall.
+        The DispatchArbitrator splits peak_shortfall proportional to each unit's
+        bridging_available_mw before calling cover_shortfall, so allocated_mw
+        is at most this unit's bridging_available_mw.
+
+        fleet_covered — True when turbine_output >= p_dispatch_required at the
+          fleet level.  Controls the taper timer: once turbines have covered the
+          fleet shortfall for 10 continuous seconds, this unit tapers to standby.
+          Using the fleet-level flag (not per-unit allocation) ensures a unit
+          with zero allocation (e.g. depleted) does NOT falsely advance its taper
+          timer while the fleet still has a shortfall.
+
+        Power ceiling: bridging_available_mw(island_mode), not raw rated_mw, so
+          the anchor reserve is enforced here as well as in the reserve check.
+        """
+        if fleet_covered:
             self._sustained_catchup_seconds += dt_seconds
         else:
             self._sustained_catchup_seconds = 0.0
 
         if self._sustained_catchup_seconds >= 10.0:
             self._current_output_mw = 0.0
-            return self._current_output_mw
+            return 0.0
 
-        max_by_power = self.config.rated_mw
+        if allocated_mw <= 0:
+            return 0.0
+
+        max_by_power = self.bridging_available_mw(island_mode)
         max_by_energy = self.soc_mwh / (dt_seconds / 3600.0) if dt_seconds > 0 else max_by_power
-        discharge_mw = min(shortfall, max_by_power, max_by_energy)
+        discharge_mw = min(allocated_mw, max_by_power, max_by_energy)
 
         self.soc_mwh = max(0.0, self.soc_mwh - discharge_mw * (dt_seconds / 3600.0))
         self._current_output_mw = discharge_mw
@@ -600,26 +639,26 @@ class BessModule(AssetModule):
     def output_mw(self) -> float:
         return self._current_output_mw
 
-    def max_sustainable_seconds(self, discharge_mw: float) -> float:
+    def max_sustainable_seconds(self, discharge_mw: float, island_mode: IslandMode) -> float:
         """Used by the insufficient-reserve check (dispatch.py):
-        how long, in seconds, this BESS can sustain `discharge_mw`
-        given current state of charge and power rating.
+        how long, in seconds, this BESS can sustain `discharge_mw` given
+        current state of charge and anchor-adjusted power ceiling.
 
-        §7.2 step 4 specifies "the BESS's max sustainable discharge duration
-        AT THE REQUIRED POWER LEVEL."  A unit cannot sustain any power level
-        above its rated_mw — for any duration — so the answer is 0.0 in that
-        case.  The pre-D11 code omitted this check and computed energy /
-        discharge_mw, producing a finite (but physically impossible) duration
-        when discharge_mw > rated_mw.  That is the energy-vs-time confusion
-        §7.2 step 4's parenthetical warns against: 516 s sustainable on a
-        14 MW draw from a 5 MW battery is a false negative.
+        §7.2 step 4: "the BESS's max sustainable discharge duration AT THE
+        REQUIRED POWER LEVEL."  A unit cannot sustain any power level above
+        its bridging_available_mw — for any duration — so the answer is 0.0.
 
-        D11 fix: return 0.0 whenever discharge_mw exceeds rated_mw.
+        D11 fix (extended to anchor reserve): the power ceiling is now
+        bridging_available_mw(island_mode), not raw rated_mw.  An anchor unit
+        can only deliver up to (rated_mw − p_anchor_reserve_mw), so a discharge
+        request above that returns 0.0.  Omitting the anchor deduction would
+        allow an anchor to appear capable when it is not — exactly the TC-61/
+        TC-63 failure mode the constraint exists to prevent.
         """
         if discharge_mw <= 0:
             return math.inf
-        # D11 fix: power ceiling.  Above rating the unit cannot deliver at all.
-        if discharge_mw > self.config.rated_mw:
+        effective_ceiling = self.bridging_available_mw(island_mode)
+        if discharge_mw > effective_ceiling:
             return 0.0
         hours = self.soc_mwh / discharge_mw
         return hours * 3600.0

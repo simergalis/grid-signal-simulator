@@ -35,16 +35,19 @@ async def main() -> None:
     # → InsufficientReserveAlert fires.  Keeps the §7.3 alert path exercisable in
     # the shipped scenarios (TC-10 is the unit test; this is the end-to-end case).
     contexts = [
-        # D11: bess_rated_mw raised to 15.0 MW (PROTO-8 — CHOSEN, no measured basis)
-        # so the BESS can actually deliver the peak shortfall (~13.96 MW) and the
-        # reserve check passes.  The old 5.0 MW BESS triggered a false-negative
-        # alert before D11 (sustainable_s was energy-only, not power-gated) and a
-        # correct alert after D11 (13.96 MW > 5.0 MW rated → sustainable_s = 0).
-        # Sizing at 15 MW keeps this scenario as the "reserve sufficient" case while
-        # demo-alert (bess_rated_mw=5.0) remains the "alert fires" case.
+        # Step 3 Item 4 (anchor reserve): demo-20mw and demo-alert both designate
+        # their BESS as the islanded grid-forming anchor (bess_grid_forming=True).
+        # With p_anchor_reserve_mw=1.0 MW (BessConfig default):
+        #   demo-20mw: bridging_available = 15.0 - 1.0 = 14.0 MW
+        #              peak_shortfall ≈ 13.97 MW < 14.0 MW → NO ALERT  ✓
+        #   demo-alert: bridging_available = 5.0 - 1.0 = 4.0 MW
+        #               peak_shortfall ≈ 13.97 MW > 4.0 MW → ALERT     ✓
+        # No resize needed: the 15 MW / 8 MWh BESS retains sufficient headroom
+        # even after the 1 MW anchor deduction.
         build_run_context("demo-20mw", job_id="job-big", node_count=1900,
                           turbine_rated_mw=25.0, bess_rated_mw=15.0,
                           bess_usable_mwh=8.0,   # PROTO-8: 15 MW / 8 MWh ≈ 1.9C — plausible C-rate
+                          bess_grid_forming=True, # anchor unit, 1 MW reserve withheld
                           end_sim_time=300.0),
         build_run_context("demo-5mw", job_id="job-small", node_count=476,
                           dt_lead_seconds=60.0, end_sim_time=300.0),
@@ -52,6 +55,7 @@ async def main() -> None:
                           end_sim_time=300.0),
         build_run_context("demo-alert", job_id="job-alert", node_count=1900,
                           turbine_rated_mw=25.0, bess_usable_mwh=2.5,
+                          bess_grid_forming=True, # anchor unit; bridging_available=4 MW < shortfall
                           end_sim_time=300.0),  # PROTO-8: 5 MW / 2.5 MWh = 2C; power ceiling fires alert
     ]
 

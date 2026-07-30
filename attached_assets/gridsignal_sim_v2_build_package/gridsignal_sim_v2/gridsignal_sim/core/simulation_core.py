@@ -60,7 +60,10 @@ class SimulationState:
     _pending_unrecognised_alerts: set[str] = field(default_factory=set)
 
     def __post_init__(self) -> None:
-        self.arbitrator = DispatchArbitrator(self.turbines, self.bess_units)
+        # Step 3 Item 4: arbitrator now holds a reference to site so it can
+        # read island_mode each tick (mode changes with operating state —
+        # Step 11 will flip it; holding the reference keeps the tick path O(1)).
+        self.arbitrator = DispatchArbitrator(self.turbines, self.bess_units, self.site)
 
     def _owning_gpu_module(self, signal: WorkloadSignal) -> GPUModule:
         """A WorkloadSignal targets exactly one GPU module -- the real

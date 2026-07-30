@@ -58,6 +58,11 @@ def build_run_context(
     turbine_rated_mw: float = 10.0,
     bess_rated_mw: float = 5.0,
     bess_usable_mwh: float = 2.0,
+    # Step 3 Item 4: whether the BESS is the grid-forming anchor unit.
+    # Default False — most units are grid-following; the anchor role must be
+    # explicitly assigned.  Set True for islanded scenarios where this BESS
+    # holds frequency by retaining headroom in both directions (§7.1.2).
+    bess_grid_forming: bool = False,
     end_sim_time: float = 600.0,
     playback_speed: float = 0.0,  # 0 == "max" speed, no artificial delay
 ) -> RunContext:
@@ -77,7 +82,12 @@ def build_run_context(
         ))
         for i in range(turbine_count)
     ]
-    bess_units = [BessModule(BessConfig(asset_id="bess-0", rated_mw=bess_rated_mw, usable_mwh=bess_usable_mwh))]
+    bess_units = [BessModule(BessConfig(
+        asset_id="bess-0",
+        rated_mw=bess_rated_mw,
+        usable_mwh=bess_usable_mwh,
+        grid_forming=bess_grid_forming,
+    ))]
     # PROTO-7: solar sized at 25% of peak compute draw — CHOSEN, no measured basis.
     # Sizing as a fraction of peak compute keeps P_dispatch_required non-zero
     # (BESS bridging, the reserve check, and the §7.1.1 renewable-shortfall

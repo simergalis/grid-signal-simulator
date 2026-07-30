@@ -1,0 +1,3 @@
+- [gridsignal-sim-v2 overview](gridsignal-sim-v2-overview.md) — codebase root, four verification commands, completed items through Step 3 Item 4.
+- [bess-anchor-reserve](bess-anchor-reserve.md) — IslandMode + grid_forming design; why sum-of-durations not min(); THE TRAP with cover_shortfall taper flag.
+- [cooling-envelope-cursor](cooling-envelope-cursor.md) — deque + absolute cursor design; THE TRAP with popleft() shifting plain integer indices.

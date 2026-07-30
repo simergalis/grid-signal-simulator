@@ -87,7 +87,7 @@ def test_tc10_insufficient_reserve_worked_example():
     """Source spec TC-10 / Section 7.3: 20 MW job, dt_lead=30s, single
     turbine r_asset=0.2 MW/s -> alert fires, gap ~70s, peak shortfall 14 MW."""
     turbine = TurbineModule(TurbineConfig(asset_id="t0", r_asset_mw_per_s=0.2, rated_mw=25.0))
-    arbitrator = DispatchArbitrator(turbines=[turbine], bess_units=[])
+    arbitrator = DispatchArbitrator(turbines=[turbine], bess_units=[], site=SiteConfig(site_id="s-tc10"))
 
     alert = arbitrator.stage_for_predicted_step(delta_p_mw=20.0, dt_lead_seconds=30.0, sim_time=0.0)
 
@@ -100,7 +100,7 @@ def test_tc11_sufficient_reserve_no_false_alert():
     """Source spec TC-11: 5 MW job, dt_lead=60s, r_asset=0.2 MW/s
     -> required ramp 25s < 60s lead -> no alert."""
     turbine = TurbineModule(TurbineConfig(asset_id="t0", r_asset_mw_per_s=0.2, rated_mw=25.0))
-    arbitrator = DispatchArbitrator(turbines=[turbine], bess_units=[])
+    arbitrator = DispatchArbitrator(turbines=[turbine], bess_units=[], site=SiteConfig(site_id="s-tc11"))
 
     alert = arbitrator.stage_for_predicted_step(delta_p_mw=5.0, dt_lead_seconds=60.0, sim_time=0.0)
 
@@ -511,7 +511,8 @@ def test_d11_reserve_alert_fires_when_bess_power_insufficient():
         usable_mwh=10.0,   # ample energy — the constraint is power, not energy
     ))
 
-    arbitrator = DispatchArbitrator(turbines=[turbine], bess_units=[bess])
+    arbitrator = DispatchArbitrator(turbines=[turbine], bess_units=[bess],
+                                    site=SiteConfig(site_id="s-d11"))
     alert = arbitrator.stage_for_predicted_step(
         delta_p_mw=20.0,
         dt_lead_seconds=30.0,
@@ -526,15 +527,17 @@ def test_d11_reserve_alert_fires_when_bess_power_insufficient():
     )
 
     # Also directly verify the power-ceiling behaviour on the BESS instance.
-    assert bess.max_sustainable_seconds(14.0) == 0.0, (
+    from core.models import IslandMode
+    _mode = IslandMode.ISLANDED
+    assert bess.max_sustainable_seconds(14.0, _mode) == 0.0, (
         "max_sustainable_seconds(14.0) must return 0.0 because 14 MW > rated 5 MW; "
-        f"got {bess.max_sustainable_seconds(14.0)}"
+        f"got {bess.max_sustainable_seconds(14.0, _mode)}"
     )
     # Energy-limited path still works: at or below rated power, energy governs.
     expected_s = (10.0 / 4.0) * 3600.0   # 4 MW ≤ 5 MW rated → 9000 s
-    assert bess.max_sustainable_seconds(4.0) == expected_s, (
+    assert bess.max_sustainable_seconds(4.0, _mode) == expected_s, (
         f"max_sustainable_seconds(4.0) should be {expected_s} s (energy-limited); "
-        f"got {bess.max_sustainable_seconds(4.0)}"
+        f"got {bess.max_sustainable_seconds(4.0, _mode)}"
     )
 
 
@@ -814,4 +817,182 @@ def test_item3_cursor_pruning_does_not_corrupt_lagged_lookup():
         f"(_cursor_abs={env._cursor_abs}, _pruned_count={env._pruned_count}, "
         f"cursor_rel={env._cursor_abs - env._pruned_count}, "
         f"deque len={len(env.history)}) — pruning has corrupted the cursor."
+    )
+
+
+# ---------------------------------------------------------------------------
+# Step 3 Item 4 — BESS fleet split, anchor constraint, reserve aggregation
+# ---------------------------------------------------------------------------
+
+def test_item4_fleet_covers_shortfall_above_single_unit_rating():
+    """Step 3 Item 4 (a): a shortfall that exceeds any single unit's rating
+    but is within the combined fleet capacity must NOT fire an alert.
+
+    Pre-fix behaviour (equal-share min()): each unit gets peak/n.  With two
+    units rated 5 MW each and peak=8 MW, each gets 4 MW, max_sustainable_s(4)
+    is finite, min > gap_s → passes.  But with two units rated 3 MW and 7 MW,
+    each gets 4 MW: unit-A (rated 3) → 4 > 3 → 0.0, min=0 → FALSE ALERT.
+
+    Post-fix (proportional split + sum): unit-A gets 8×3/10=2.4 MW < 3 MW,
+    unit-B gets 8×7/10=5.6 MW < 7 MW; both return finite seconds; sum > gap_s.
+    """
+    from core.dispatch import DispatchArbitrator
+    from core.models import BessConfig, IslandMode, SiteConfig, TurbineConfig
+
+    site = SiteConfig(site_id="s1")
+    # Two heterogeneous units: 3 MW and 7 MW, fleet total = 10 MW.
+    # Peak shortfall = 8 MW > 3 MW (single unit), < 10 MW (fleet).
+    bess_a = BessModule(BessConfig(asset_id="bess-a", rated_mw=3.0, usable_mwh=4.0))
+    bess_b = BessModule(BessConfig(asset_id="bess-b", rated_mw=7.0, usable_mwh=4.0))
+    turbine = TurbineModule(TurbineConfig(asset_id="t0", r_asset_mw_per_s=0.2, rated_mw=20.0))
+    arb = DispatchArbitrator([turbine], [bess_a, bess_b], site)
+
+    # peak_shortfall = 8 MW, dt_lead=30s → already_ramped=6 MW → peak=2 MW
+    # Use delta_p_mw large enough that peak_shortfall_mw > single unit rating.
+    # r_asset=0.2, dt_lead=30 → already_ramped=6; delta_p=14 → peak=8 MW.
+    alert = arb.stage_for_predicted_step(
+        delta_p_mw=14.0, dt_lead_seconds=30.0, sim_time=0.0
+    )
+    assert alert is None, (
+        f"Fleet (3+7=10 MW) should cover an 8 MW shortfall without alert; "
+        f"got {alert}. Equal-share division allocates 4 MW to the 3 MW unit "
+        "(D11 → 0.0), making min()=0 < gap_s. Proportional split is required."
+    )
+
+
+def test_item4_heterogeneous_fleet_proportional_split():
+    """Step 3 Item 4 (b): verify the proportional split itself.
+
+    Fleet: unit-A rated=2 MW (25% weight), unit-B rated=6 MW (75% weight).
+    Fleet shortfall = 4 MW.  Expected allocations: A=1 MW, B=3 MW.
+
+    tick() must deliver these allocations to cover_shortfall so each unit
+    discharges in proportion to its bridging capacity.  We confirm by checking
+    each unit's output_mw() after one tick.
+    """
+    from core.dispatch import DispatchArbitrator
+    from core.models import BessConfig, IslandMode, SiteConfig, TurbineConfig
+
+    site = SiteConfig(site_id="s1")
+    bess_a = BessModule(BessConfig(asset_id="ba", rated_mw=2.0, usable_mwh=10.0))
+    bess_b = BessModule(BessConfig(asset_id="bb", rated_mw=6.0, usable_mwh=10.0))
+    # Turbine produces 0 MW so fleet shortfall = p_dispatch_required.
+    turbine = TurbineModule(TurbineConfig(asset_id="t0", r_asset_mw_per_s=0.0, rated_mw=0.0))
+    arb = DispatchArbitrator([turbine], [bess_a, bess_b], site)
+
+    turbine_mw, bess_mw = arb.tick(p_dispatch_required_mw=4.0, dt_seconds=5.0)
+    # Proportional: A gets 4×(2/8)=1 MW, B gets 4×(6/8)=3 MW.
+    assert math.isclose(bess_a.output_mw(), 1.0, abs_tol=1e-9), (
+        f"unit-A (rated 2 MW, weight 25%) should get 1.0 MW; got {bess_a.output_mw():.4f} MW. "
+        "Equal share (2 MW each) would saturate unit-A and waste its capacity."
+    )
+    assert math.isclose(bess_b.output_mw(), 3.0, abs_tol=1e-9), (
+        f"unit-B (rated 6 MW, weight 75%) should get 3.0 MW; got {bess_b.output_mw():.4f} MW."
+    )
+    assert math.isclose(bess_mw, 4.0, abs_tol=1e-9), (
+        f"fleet BESS output should equal shortfall 4.0 MW; got {bess_mw:.4f} MW."
+    )
+
+
+def test_item4_anchor_unit_contributes_less_bridging_than_grid_following():
+    """Step 3 Item 4 (c): identical units — one grid-forming anchor, one grid-following.
+
+    Post-fix: anchor.bridging_available_mw < grid_following.bridging_available_mw
+    by exactly p_anchor_reserve_mw.  The reserve check sees fewer MW from the
+    anchor, so the fleet check may fire when the anchor deficit is large enough.
+    """
+    from core.models import BessConfig, IslandMode
+
+    # Two identical units, 8 MW rated, 1 MW anchor reserve (default).
+    grid_following = BessModule(BessConfig(
+        asset_id="gf", rated_mw=8.0, usable_mwh=4.0,
+        grid_forming=False,  # grid-following: full 8 MW available
+    ))
+    anchor = BessModule(BessConfig(
+        asset_id="anc", rated_mw=8.0, usable_mwh=4.0,
+        grid_forming=True,   # anchor: 8 - 1 = 7 MW available
+    ))
+
+    mode = IslandMode.ISLANDED
+    gf_bridge = grid_following.bridging_available_mw(mode)
+    anc_bridge = anchor.bridging_available_mw(mode)
+
+    assert gf_bridge > anc_bridge, (
+        f"grid-following bridging ({gf_bridge} MW) must exceed anchor bridging "
+        f"({anc_bridge} MW); both units are identical except for grid_forming."
+    )
+    expected_deduction = anchor.config.p_anchor_reserve_mw
+    assert math.isclose(gf_bridge - anc_bridge, expected_deduction, abs_tol=1e-9), (
+        f"deduction should be exactly p_anchor_reserve_mw={expected_deduction} MW; "
+        f"got {gf_bridge - anc_bridge:.4f} MW."
+    )
+
+    # In GRID_TIE mode, even grid_forming=True units have no deduction.
+    assert math.isclose(
+        anchor.bridging_available_mw(IslandMode.GRID_TIE),
+        anchor.config.rated_mw,
+        abs_tol=1e-9,
+    ), "anchor unit in GRID_TIE mode must have zero anchor deduction"
+
+    # max_sustainable_seconds respects the anchor ceiling.
+    assert anchor.max_sustainable_seconds(7.5, mode) == 0.0, (
+        "anchor (bridging=7 MW) must return 0.0 for discharge_mw=7.5 > 7.0"
+    )
+    assert anchor.max_sustainable_seconds(6.0, mode) > 0, (
+        "anchor (bridging=7 MW) should return positive duration for 6 MW request"
+    )
+
+
+def test_item4_demo_scenarios_alert_behavior():
+    """Step 3 Item 4 (d): anchor reserve does not break demo-20mw (no alert)
+    and demo-alert still fires.
+
+    Uses the same sizing as example_usage.py: demo-20mw has bess_rated_mw=15,
+    bess_usable_mwh=8, bess_grid_forming=True; demo-alert has rated=5, mwh=2.5,
+    grid_forming=True.  Both are islanded anchors with p_anchor_reserve=1 MW.
+    """
+    from runtime.scenario_factory import build_run_context
+
+    ctx_ok = build_run_context(
+        "item4-20mw", job_id="job-big", node_count=1900,
+        turbine_rated_mw=25.0, bess_rated_mw=15.0,
+        bess_usable_mwh=8.0, bess_grid_forming=True,
+        end_sim_time=300.0,
+    )
+    ctx_alert = build_run_context(
+        "item4-alert", job_id="job-alert", node_count=1900,
+        turbine_rated_mw=25.0, bess_usable_mwh=2.5,
+        bess_grid_forming=True,
+        end_sim_time=300.0,
+    )
+
+    import asyncio
+    from runtime.run_manager import RunManager, WebSocketHub
+
+    async def _run():
+        hub = WebSocketHub()
+        mgr = RunManager(hub)
+        await asyncio.gather(
+            mgr.start_run(ctx_ok),
+            mgr.start_run(ctx_alert),
+        )
+        await asyncio.gather(
+            mgr._tasks[ctx_ok.run_id],
+            mgr._tasks[ctx_alert.run_id],
+        )
+
+    asyncio.run(_run())
+
+    alerts_20mw = any(r.insufficient_reserve_alert for r in ctx_ok.sink.rows)
+    alerts_alert = any(r.insufficient_reserve_alert for r in ctx_alert.sink.rows)
+
+    assert not alerts_20mw, (
+        f"demo-20mw (15 MW BESS, anchor, bridging=14 MW) must not alert; "
+        f"peak shortfall ≈ 13.97 MW < 14 MW → reserve check passes. "
+        f"If alerting, anchor reserve deduction is over-applied."
+    )
+    assert alerts_alert, (
+        f"demo-alert (5 MW BESS, anchor, bridging=4 MW) must alert; "
+        f"peak shortfall ≈ 13.97 MW > 4 MW → reserve check fails. "
+        f"If not alerting, anchor reserve deduction is not being applied."
     )

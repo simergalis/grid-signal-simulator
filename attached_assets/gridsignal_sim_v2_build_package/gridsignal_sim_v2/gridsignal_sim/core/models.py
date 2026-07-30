@@ -89,6 +89,29 @@ class WorkloadSignal:
 
 
 # ---------------------------------------------------------------------------
+# Operating mode (Step 3 Item 4 / v2.5 §7.1.2)
+# ---------------------------------------------------------------------------
+
+class IslandMode(str, Enum):
+    """Site-level operating mode — read each tick by the dispatch arbitrator,
+    not from static config, because the anchor role changes with mode.
+
+    Default: ISLANDED.  Rationale (TC-63): defaulting to GRID_TIE makes
+    P_anchor_reserve zero for every unit (grid_forming has no effect unless
+    islanded), which silently reproduces the unadjusted arithmetic this
+    constraint exists to correct.  The representative market for this product
+    is islanded data centres; ISLANDED is therefore both conservative and
+    realistic.
+
+    Mode transition machinery is out of scope until Step 11 (§28).  The
+    field is mutable on SiteConfig so Step 11 can flip it without changing
+    BessConfig or the dispatch interface.
+    """
+    GRID_TIE = "grid_tie"
+    ISLANDED  = "islanded"
+
+
+# ---------------------------------------------------------------------------
 # Asset configuration (Design Spec Section 6 / functional spec Section 8.1)
 # ---------------------------------------------------------------------------
 
@@ -100,6 +123,11 @@ class SiteConfig:
     tau_seconds: float = 20.0         # source spec Section 8
     dt_thermal_seconds: float = 90.0  # source spec Section 8-9, 60-120s
     uncalibrated: bool = True         # source spec Section 17.3
+    # Step 3 Item 4 — §7.1.2: anchor constraint is mode-dependent.
+    # Default ISLANDED: conservative (TC-63) and representative market.
+    # Step 11 (§28) will add the transition machinery; for now we expose the
+    # field so the arbitrator can read it each tick.
+    island_mode: IslandMode = IslandMode.ISLANDED
 
 
 @dataclass
@@ -115,6 +143,21 @@ class BessConfig:
     rated_mw: float = 5.0
     usable_mwh: float = 2.0
     initial_soc_fraction: float = 1.0
+    # Step 3 Item 4 — v2.5 §7.1.2: anchor reserve.
+    # p_anchor_reserve_mw: power withheld from bridging when this unit is the
+    #   island's grid-forming anchor (grid_forming=True, island_mode=ISLANDED).
+    #   An anchor must retain headroom in BOTH directions to regulate against
+    #   disturbance; its full rating is therefore not available for bridging.
+    # TC-63: default must be non-zero — defaulting to 0 silently reproduces the
+    #   unadjusted arithmetic this constraint exists to correct.  1.0 MW is a
+    #   CHOSEN value (no measured basis, PROTO-9); calibrate against design partner
+    #   frequency-regulation specs.
+    p_anchor_reserve_mw: float = 1.0  # CHOSEN — non-zero per TC-63, no measured basis (PROTO-9)
+    # grid_forming: True when this unit is the designated grid-forming anchor
+    #   for the islanded bus.  False = grid-following; P_anchor_reserve = 0.
+    #   Default False: most units in a fleet are grid-following; the anchor role
+    #   is an explicit designation, not a default assumption.
+    grid_forming: bool = False
 
 
 @dataclass
