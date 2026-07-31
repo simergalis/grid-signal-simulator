@@ -5,6 +5,8 @@
  *   • Originating agent, kind, estimated impact, confidence, state, expiry.
  *   • Reasoning text.
  *   • Approve / Reject buttons for PENDING proposals.
+ *   • For proposals with requires_confirmation=true: Approve opens a
+ *     Confirm-consequence modal (type "CONFIRM" to proceed).
  *   • Sort by estimated impact (descending).
  *   • Agents ON/OFF toggle in the header.
  *   • generated_by badge: "MODEL" (normal) vs "FALLBACK" (distinct, amber).
@@ -14,6 +16,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useTickStore } from '../store/tickStore'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -91,6 +94,136 @@ function ConfidenceBar({ value }: { value: number }) {
 }
 
 // ---------------------------------------------------------------------------
+// ConfirmModal — type-to-confirm for requires_confirmation proposals
+// ---------------------------------------------------------------------------
+
+function ConfirmModal({
+  proposal,
+  onConfirm,
+  onCancel,
+}: {
+  proposal: Proposal
+  onConfirm: () => void
+  onCancel: () => void
+}) {
+  const latestTick     = useTickStore(s => s.latestTick)
+  const [typed, setTyped] = useState('')
+
+  // Count jobs currently in a running state (informational; not guaranteed accurate)
+  const runningJobs = latestTick
+    ? Object.entries(latestTick.checkpoint_states)
+        .filter(([, state]) => state === 'running')
+        .map(([jobId]) => jobId)
+    : []
+
+  const dtLead = latestTick?.dt_lead_next_s ?? 0
+
+  const confirmed = typed === 'CONFIRM'
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+      <div className="w-[480px] rounded-lg border border-border bg-surface shadow-2xl overflow-hidden">
+
+        {/* Header */}
+        <div className="px-5 py-4 border-b border-border">
+          <div className="flex items-center gap-2">
+            <span className="text-warn text-lg">⚠</span>
+            <h3 className="text-sm font-semibold text-text">Review before applying</h3>
+          </div>
+          <p className="mt-1 text-xs text-text-muted">
+            This proposal requires confirmation before it is applied to the dispatch layer.
+          </p>
+        </div>
+
+        {/* Proposal summary */}
+        <div className="px-5 py-4 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-[10px] text-text-muted uppercase tracking-wide">Kind</p>
+              <p className="text-xs text-text font-mono">{KIND_LABELS[proposal.kind] ?? proposal.kind}</p>
+            </div>
+            {proposal.suggested_tier && (
+              <div>
+                <p className="text-[10px] text-text-muted uppercase tracking-wide">Tier</p>
+                <p className="text-xs text-text font-mono">{proposal.suggested_tier}</p>
+              </div>
+            )}
+            <div>
+              <p className="text-[10px] text-text-muted uppercase tracking-wide">Estimated impact</p>
+              <p className="text-xs text-text font-semibold">{proposal.estimated_impact_mw.toFixed(2)} MW</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-text-muted uppercase tracking-wide">Confidence</p>
+              <ConfidenceBar value={proposal.confidence} />
+            </div>
+          </div>
+
+          {/* Affected jobs */}
+          <div className="rounded border border-border bg-canvas p-3 space-y-1.5">
+            <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide">
+              Restoration cost
+            </p>
+            <p className="text-xs text-text">
+              {runningJobs.length > 0
+                ? `${runningJobs.length} job${runningJobs.length > 1 ? 's' : ''} currently running.`
+                : 'No jobs in running state (cost applies to next staged job).'}
+            </p>
+            <p className="text-xs text-text-muted leading-relaxed">
+              Each affected job must complete the GPU ramp-up sequence
+              {dtLead > 0 ? ` (approximately ${dtLead.toFixed(0)} s remaining at current rate)` : ''}
+              , plus checkpoint reload overhead, before resuming full throughput.
+              This figure is based on ramp-lead time and checkpoint mechanics —
+              not forfeited compute.
+            </p>
+            {runningJobs.length > 0 && (
+              <div className="text-[10px] font-mono text-text-muted">
+                {runningJobs.slice(0, 4).join(', ')}
+                {runningJobs.length > 4 ? `, +${runningJobs.length - 4} more` : ''}
+              </div>
+            )}
+          </div>
+
+          {/* Type-to-confirm */}
+          <div className="space-y-1.5">
+            <label className="text-[10px] text-text-muted">
+              Type <span className="font-mono text-text">CONFIRM</span> to proceed
+            </label>
+            <input
+              type="text"
+              className="w-full rounded border border-border bg-canvas px-2 py-1.5 text-xs text-text
+                         font-mono focus:outline-none focus:ring-1 focus:ring-warn"
+              placeholder="CONFIRM"
+              value={typed}
+              onChange={e => setTyped(e.target.value)}
+              autoFocus
+              onKeyDown={e => { if (e.key === 'Enter' && confirmed) onConfirm() }}
+            />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 py-3 border-t border-border flex justify-end gap-2">
+          <button
+            onClick={onCancel}
+            className="rounded border border-border px-4 py-1.5 text-xs text-text-muted hover:text-text"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={!confirmed}
+            className="rounded bg-red-700 px-4 py-1.5 text-xs font-semibold text-white
+                       hover:bg-red-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            Confirm and apply
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // ProposalCard
 // ---------------------------------------------------------------------------
 
@@ -98,10 +231,12 @@ function ProposalCard({
   proposal,
   onAccept,
   onReject,
+  onRequestConfirm,
 }: {
   proposal: Proposal
   onAccept: (id: string) => void
   onReject: (id: string) => void
+  onRequestConfirm: (p: Proposal) => void
 }) {
   const isPending = proposal.state === 'pending'
   const stateClass = STATE_CLASSES[proposal.state] ?? 'text-text-muted'
@@ -183,15 +318,26 @@ function ProposalCard({
         </p>
       )}
 
-      {/* Approve / Reject (PENDING only) */}
+      {/* Actions (PENDING only) */}
       {isPending && (
         <div className="flex gap-2 pt-1">
-          <button
-            onClick={() => onAccept(proposal.proposal_id)}
-            className="px-3 py-1 text-xs rounded bg-green-600 hover:bg-green-500 text-white transition-colors"
-          >
-            Approve
-          </button>
+          {proposal.requires_confirmation ? (
+            /* Tier C/D or other high-consequence: gate behind confirm modal */
+            <button
+              onClick={() => onRequestConfirm(proposal)}
+              className="px-3 py-1 text-xs rounded bg-amber-700 hover:bg-amber-600 text-white transition-colors"
+            >
+              Review &amp; Approve
+            </button>
+          ) : (
+            /* Tier A/B: direct Approve */
+            <button
+              onClick={() => onAccept(proposal.proposal_id)}
+              className="px-3 py-1 text-xs rounded bg-green-600 hover:bg-green-500 text-white transition-colors"
+            >
+              Approve
+            </button>
+          )}
           <button
             onClick={() => onReject(proposal.proposal_id)}
             className="px-3 py-1 text-xs rounded bg-red-700 hover:bg-red-600 text-white transition-colors"
@@ -217,12 +363,13 @@ export function ProposalsPage({
   agentsEnabled: boolean
   onToggleAgents: () => void
 }) {
-  const [proposals, setProposals] = useState<Proposal[]>([])
-  const [loading,   setLoading]   = useState(false)
-  const [error,     setError]     = useState<string | null>(null)
+  const [proposals,     setProposals]     = useState<Proposal[]>([])
+  const [loading,       setLoading]       = useState(false)
+  const [error,         setError]         = useState<string | null>(null)
+  const [confirmTarget, setConfirmTarget] = useState<Proposal | null>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // ── Fetch proposals ──────────────────────────────────────────────────────
+  // ── Fetch proposals ───────────────────────────────────────────────────────
 
   const fetchProposals = useCallback(async () => {
     if (!runId) return
@@ -230,7 +377,6 @@ export function ProposalsPage({
       const resp = await fetch(`/proposals/${runId}`)
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
       const data = await resp.json()
-      // Sort by estimated_impact_mw descending.
       const sorted = (data.proposals as Proposal[]).sort(
         (a, b) => b.estimated_impact_mw - a.estimated_impact_mw,
       )
@@ -262,6 +408,20 @@ export function ProposalsPage({
     fetchProposals()
   }, [fetchProposals])
 
+  const handleRequestConfirm = useCallback((p: Proposal) => {
+    setConfirmTarget(p)
+  }, [])
+
+  const handleModalConfirm = useCallback(async () => {
+    if (!confirmTarget) return
+    setConfirmTarget(null)
+    await handleAccept(confirmTarget.proposal_id)
+  }, [confirmTarget, handleAccept])
+
+  const handleModalCancel = useCallback(() => {
+    setConfirmTarget(null)
+  }, [])
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   const pending   = proposals.filter(p => p.state === 'pending')
@@ -269,6 +429,16 @@ export function ProposalsPage({
 
   return (
     <div className="flex flex-col h-full bg-canvas text-text overflow-hidden">
+
+      {/* Confirm-consequence modal */}
+      {confirmTarget && (
+        <ConfirmModal
+          proposal={confirmTarget}
+          onConfirm={handleModalConfirm}
+          onCancel={handleModalCancel}
+        />
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-surface flex-shrink-0">
         <div>
@@ -276,7 +446,6 @@ export function ProposalsPage({
           <p className="text-xs text-text-muted">§19.10 — advisory recommendations from the agent layer</p>
         </div>
         <div className="flex items-center gap-3">
-          {/* Summary counts */}
           {proposals.length > 0 && (
             <span className="text-xs text-text-muted">
               {pending.length} pending / {proposals.length} total
@@ -335,12 +504,13 @@ export function ProposalsPage({
                 proposal={p}
                 onAccept={handleAccept}
                 onReject={handleReject}
+                onRequestConfirm={handleRequestConfirm}
               />
             ))}
           </section>
         )}
 
-        {/* Terminal proposals (collapsed by default when many) */}
+        {/* Terminal proposals */}
         {terminal.length > 0 && (
           <section className="space-y-3">
             <h3 className="text-xs font-semibold text-text-muted uppercase tracking-wide">
@@ -352,6 +522,7 @@ export function ProposalsPage({
                 proposal={p}
                 onAccept={handleAccept}
                 onReject={handleReject}
+                onRequestConfirm={handleRequestConfirm}
               />
             ))}
           </section>

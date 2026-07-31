@@ -1,26 +1,30 @@
 /**
- * ScenarioBuilder.tsx — Right-side drawer for creating/editing scenarios (Step 8).
+ * ScenarioBuilder.tsx — right-side drawer for creating/editing scenarios (Step 8).
  *
- * Three sections:
- *   1. Identity — name, description
- *   2. Fleet    — BESS units (add/remove, live C-rate indicator) + turbines
- *   3. Run Params — solar, dt_lead, end_sim_time, island_mode, pue_base
+ * Sections:
+ *   1. Identity        — name, description
+ *   2. Fleet           — BESS units (sliders, pill-toggle grid-forming), turbines
+ *   3. Run Parameters  — solar, dt_lead slider, sim duration, PUE slider,
+ *                        island_mode radio, hardware_profile dropdown,
+ *                        irradiance-steps table
+ *   4. PMS Configuration (optional) — enable toggle + transition_mode radio
  *
- * Props:
- *   editId     — scenario_id to edit, or null to create new
- *   onClose    — dismiss the drawer (no save)
- *   onSaved    — called with scenario_id after successful save
- *
- * D12 / PROTO-9: C-rate warnings appear inline per BESS unit in orange.
- * §7.1.2: the UI allows only one grid_forming=true at a time; selecting
- *         grid_forming on a second unit clears the previous anchor.
+ * Widget decisions:
+ *   · initial_soc_fraction, dt_lead_seconds, pue_base → SliderField
+ *     (bounded, continuous, visual feedback more useful than raw number)
+ *   · exact-value fields (rated_mw, usable_mwh, …) → NumField with unit suffix
+ *   · island_mode → two-option radio with consequence text per option
+ *   · grid_forming  → pill toggle with always-visible consequence text
+ *   · hardware_profile_id → <select> dropdown
+ *   · transition_mode → two-option radio with consequence text
+ *   · irradiance_steps → editable two-column table (sim_time_s / irradiance)
  */
 
 import { useEffect, useState } from 'react'
 import { useScenarioStore } from '../store/scenarioStore'
 import type { BessUnitSpec, TurbineUnitSpec, ScenarioSpec } from '../types'
 
-// ── C-rate helper ────────────────────────────────────────────────────────────
+// ── C-rate helper ─────────────────────────────────────────────────────────────
 
 function cRate(b: BessUnitSpec): number {
   return b.usable_mwh > 0 ? b.rated_mw / b.usable_mwh : 0
@@ -35,8 +39,6 @@ function cRateWarning(b: BessUnitSpec): string | null {
   return null
 }
 
-// ── CRateBadge ───────────────────────────────────────────────────────────────
-
 function CRateBadge({ b }: { b: BessUnitSpec }) {
   const c = cRate(b)
   const warn = cRateWarning(b)
@@ -50,7 +52,98 @@ function CRateBadge({ b }: { b: BessUnitSpec }) {
   )
 }
 
-// ── Defaults ─────────────────────────────────────────────────────────────────
+// ── Field widgets ─────────────────────────────────────────────────────────────
+
+/** Exact-value number input with optional unit suffix and range hint in label. */
+function NumField({
+  label, value, min, max, step = 0.1, unit = '', onChange,
+}: {
+  label: string; value: number; min?: number; max?: number; step?: number;
+  unit?: string; onChange: (v: number) => void
+}) {
+  const hint = (min !== undefined && max !== undefined)
+    ? ` (${min}–${max}${unit ? ' ' + unit : ''})`
+    : unit ? ` (${unit})` : ''
+  return (
+    <label className="flex flex-col gap-0.5">
+      <span className="text-[10px] text-muted">{label}{hint}</span>
+      <input
+        type="number"
+        className="w-full rounded border border-border bg-canvas px-2 py-1 text-xs text-text
+                   focus:outline-none focus:ring-1 focus:ring-accent"
+        value={value}
+        min={min}
+        max={max}
+        step={step}
+        onChange={e => onChange(Number(e.target.value))}
+      />
+    </label>
+  )
+}
+
+/** Slider with live numeric readout and visible min/max. */
+function SliderField({
+  label, value, min, max, step = 0.01, unit = '', decimals = 2, onChange,
+}: {
+  label: string; value: number; min: number; max: number; step?: number;
+  unit?: string; decimals?: number; onChange: (v: number) => void
+}) {
+  return (
+    <label className="flex flex-col gap-1">
+      <div className="flex justify-between items-baseline">
+        <span className="text-[10px] text-muted">{label}</span>
+        <span className="font-mono text-[10px] text-text tabular-nums">
+          {value.toFixed(decimals)}{unit}
+        </span>
+      </div>
+      <input
+        type="range"
+        className="w-full accent-accent h-1"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={e => onChange(Number(e.target.value))}
+      />
+      <div className="flex justify-between text-[9px] text-muted">
+        <span>{min}{unit}</span>
+        <span>{max}{unit}</span>
+      </div>
+    </label>
+  )
+}
+
+/** Two-option radio group with per-option consequence text. */
+function RadioGroup<T extends string>({
+  label, value, options, onChange,
+}: {
+  label: string
+  value: T
+  options: { value: T; label: string; consequence: string }[]
+  onChange: (v: T) => void
+}) {
+  return (
+    <fieldset className="space-y-2">
+      <legend className="text-[10px] text-muted">{label}</legend>
+      {options.map(opt => (
+        <label key={opt.value} className="flex gap-2 cursor-pointer">
+          <input
+            type="radio"
+            className="mt-0.5 accent-accent"
+            checked={value === opt.value}
+            onChange={() => onChange(opt.value)}
+          />
+          <div>
+            <div className="text-xs text-text">{opt.label}</div>
+            <div className="text-[10px] text-muted leading-snug">{opt.consequence}</div>
+          </div>
+        </label>
+      ))}
+    </fieldset>
+  )
+}
+
+// ── Defaults ──────────────────────────────────────────────────────────────────
 
 function defaultBess(index: number): BessUnitSpec {
   return {
@@ -58,7 +151,7 @@ function defaultBess(index: number): BessUnitSpec {
     rated_mw: 5.0,
     usable_mwh: 2.5,
     initial_soc_fraction: 0.95,
-    grid_forming: index === 0,  // first unit defaults to anchor
+    grid_forming: index === 0,
   }
 }
 
@@ -84,31 +177,22 @@ function blankSpec(): ScenarioSpec {
     island_mode: true,
     pue_base: 1.03,
     end_sim_time: 300,
+    pms_config: null,
   }
 }
 
-// ── Number field helper ───────────────────────────────────────────────────────
+// ── Known hardware profiles ───────────────────────────────────────────────────
+// Add new profile IDs here as they are commissioned.
 
-function NumField({
-  label, value, min, max, step = 0.1, onChange,
-}: {
-  label: string; value: number; min?: number; max?: number; step?: number;
-  onChange: (v: number) => void
-}) {
+const HARDWARE_PROFILES = [
+  { id: 'enterprise_8gpu_air', label: 'enterprise_8gpu_air — 8× GPU air-cooled' },
+]
+
+// ── Section header ────────────────────────────────────────────────────────────
+
+function SectionHeader({ title }: { title: string }) {
   return (
-    <label className="flex flex-col gap-0.5">
-      <span className="text-[10px] text-muted">{label}</span>
-      <input
-        type="number"
-        className="w-full rounded border border-border bg-canvas px-2 py-1 text-xs text-text
-                   focus:outline-none focus:ring-1 focus:ring-accent"
-        value={value}
-        min={min}
-        max={max}
-        step={step}
-        onChange={e => onChange(Number(e.target.value))}
-      />
-    </label>
+    <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted">{title}</h3>
   )
 }
 
@@ -124,9 +208,9 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
   const createScenario = useScenarioStore(s => s.createScenario)
   const updateScenario = useScenarioStore(s => s.updateScenario)
 
-  const [spec, setSpec]   = useState<ScenarioSpec>(blankSpec())
-  const [busy, setBusy]   = useState(false)
-  const [err,  setErr]    = useState<string | null>(null)
+  const [spec,     setSpec]     = useState<ScenarioSpec>(blankSpec())
+  const [busy,     setBusy]     = useState(false)
+  const [err,      setErr]      = useState<string | null>(null)
   const [warnings, setWarnings] = useState<string[]>([])
 
   // If editing, load the existing spec
@@ -138,7 +222,8 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
     fetch(`/scenarios/${editId}`)
       .then(r => r.json())
       .then(d => {
-        setSpec(d.spec as ScenarioSpec)
+        const loaded = d.spec as ScenarioSpec
+        setSpec({ ...loaded, pms_config: (loaded as ScenarioSpec & { pms_config?: typeof loaded.pms_config }).pms_config ?? null })
         setWarnings(d.c_rate_warnings ?? [])
       })
       .catch(e => setErr(String(e)))
@@ -148,10 +233,9 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
   const patch = (partial: Partial<ScenarioSpec>) =>
     setSpec(prev => ({ ...prev, ...partial }))
 
-  // ── BESS mutations ───────────────────────────────────────────────────────
+  // ── BESS mutations ────────────────────────────────────────────────────────
   const patchBess = (i: number, partial: Partial<BessUnitSpec>) => {
     const updated = spec.bess_units.map((b, idx) => idx === i ? { ...b, ...partial } : b)
-    // §7.1.2: if setting grid_forming on unit i, clear others
     if (partial.grid_forming) {
       patch({ bess_units: updated.map((b, idx) => ({ ...b, grid_forming: idx === i })) })
     } else {
@@ -165,12 +249,11 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
   const removeBess = (i: number) => {
     if (spec.bess_units.length <= 1) return
     const next = spec.bess_units.filter((_, idx) => idx !== i)
-    // Ensure at least one grid_forming if all removed the anchor
     const hasForming = next.some(b => b.grid_forming)
     patch({ bess_units: hasForming ? next : next.map((b, idx) => ({ ...b, grid_forming: idx === 0 })) })
   }
 
-  // ── Turbine mutations ────────────────────────────────────────────────────
+  // ── Turbine mutations ─────────────────────────────────────────────────────
   const patchTurbine = (i: number, partial: Partial<TurbineUnitSpec>) =>
     patch({ turbine_units: spec.turbine_units.map((t, idx) => idx === i ? { ...t, ...partial } : t) })
 
@@ -182,7 +265,26 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
     patch({ turbine_units: spec.turbine_units.filter((_, idx) => idx !== i) })
   }
 
-  // ── Save ─────────────────────────────────────────────────────────────────
+  // ── Irradiance step mutations ─────────────────────────────────────────────
+  const patchIrr = (i: number, col: 0 | 1, value: number) => {
+    const next = spec.irradiance_steps.map((row, idx) =>
+      idx === i ? (col === 0 ? [value, row[1]] : [row[0], value]) as [number, number] : row
+    )
+    patch({ irradiance_steps: next })
+  }
+
+  const addIrrStep = () => {
+    const last = spec.irradiance_steps[spec.irradiance_steps.length - 1]
+    const t = last ? last[0] + 60 : 0
+    patch({ irradiance_steps: [...spec.irradiance_steps, [t, 1.0]] })
+  }
+
+  const removeIrrStep = (i: number) => {
+    if (spec.irradiance_steps.length <= 1) return
+    patch({ irradiance_steps: spec.irradiance_steps.filter((_, idx) => idx !== i) })
+  }
+
+  // ── Save ──────────────────────────────────────────────────────────────────
   const handleSave = async () => {
     if (!spec.name.trim()) { setErr('Name is required'); return }
     setBusy(true)
@@ -202,13 +304,10 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    /* Backdrop */
     <div className="fixed inset-0 z-40 flex" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      {/* Transparent left area — click to close */}
       <div className="flex-1" />
 
-      {/* Drawer */}
-      <aside className="relative z-50 flex h-full w-[400px] flex-col border-l border-border bg-surface shadow-xl overflow-hidden">
+      <aside className="relative z-50 flex h-full w-[420px] flex-col border-l border-border bg-surface shadow-xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <h2 className="text-sm font-semibold text-text">
@@ -222,11 +321,11 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
         </div>
 
         {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5 text-sm">
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6 text-sm">
 
-          {/* ── Section 1: Identity ── */}
+          {/* ── Section 1: Identity ─────────────────────────────────────── */}
           <section>
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted">Identity</h3>
+            <SectionHeader title="Identity" />
             <div className="space-y-2">
               <label className="flex flex-col gap-0.5">
                 <span className="text-[10px] text-muted">Name *</span>
@@ -251,55 +350,67 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
             </div>
           </section>
 
-          {/* ── Section 2: Fleet ── */}
+          {/* ── Section 2: Fleet ────────────────────────────────────────── */}
           <section>
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted">Fleet</h3>
+            <SectionHeader title="Fleet" />
 
             {/* BESS units */}
-            <div className="mb-3">
+            <div className="mb-4">
               <div className="mb-1 flex items-center justify-between">
                 <span className="text-[10px] text-muted">BESS Units</span>
-                <button
-                  className="text-[10px] text-accent hover:underline"
-                  onClick={addBess}
-                >+ Add BESS</button>
+                <button className="text-[10px] text-accent hover:underline" onClick={addBess}>
+                  + Add BESS
+                </button>
               </div>
               <div className="space-y-3">
                 {spec.bess_units.map((b, i) => (
-                  <div key={i} className="rounded border border-border bg-canvas p-2 space-y-2">
+                  <div key={i} className="rounded border border-border bg-canvas p-3 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-mono text-muted">{b.asset_id}</span>
                       <div className="flex items-center gap-2">
                         <CRateBadge b={b} />
                         {spec.bess_units.length > 1 && (
-                          <button
-                            className="text-[10px] text-danger hover:underline"
-                            onClick={() => removeBess(i)}
-                          >remove</button>
+                          <button className="text-[10px] text-danger hover:underline"
+                            onClick={() => removeBess(i)}>remove</button>
                         )}
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
-                      <NumField label="Rated MW" value={b.rated_mw} min={0.1} step={0.5}
+                    <div className="grid grid-cols-2 gap-3">
+                      <NumField label="Rated" unit="MW" value={b.rated_mw} min={0.1} step={0.5}
                         onChange={v => patchBess(i, { rated_mw: v })} />
-                      <NumField label="Usable MWh" value={b.usable_mwh} min={0.1} step={0.5}
+                      <NumField label="Usable" unit="MWh" value={b.usable_mwh} min={0.1} step={0.5}
                         onChange={v => patchBess(i, { usable_mwh: v })} />
-                      <NumField label="Initial SoC" value={b.initial_soc_fraction} min={0.1} max={1.0} step={0.05}
-                        onChange={v => patchBess(i, { initial_soc_fraction: v })} />
-                      <label className="flex flex-col gap-1 pt-3">
-                        <span className="text-[10px] text-muted">Grid-forming anchor</span>
-                        <input
-                          type="checkbox"
-                          className="h-3 w-3 accent-accent"
-                          checked={b.grid_forming}
-                          onChange={e => patchBess(i, { grid_forming: e.target.checked })}
-                        />
-                        <span className="text-[9px] text-muted">§7.1.2 — one unit max</span>
-                      </label>
                     </div>
 
-                    {/* C-rate warning detail */}
+                    <SliderField
+                      label="Initial SoC"
+                      value={b.initial_soc_fraction}
+                      min={0.1} max={1.0} step={0.05}
+                      unit=""
+                      decimals={2}
+                      onChange={v => patchBess(i, { initial_soc_fraction: v })}
+                    />
+
+                    {/* Grid-forming pill toggle */}
+                    <div className="space-y-1">
+                      <button
+                        onClick={() => patchBess(i, { grid_forming: !b.grid_forming })}
+                        className={`px-2.5 py-1 rounded text-[10px] font-mono transition-colors border
+                          ${b.grid_forming
+                            ? 'bg-accent/15 text-accent border-accent/40'
+                            : 'bg-canvas text-muted border-border hover:border-text-muted'
+                          }`}
+                      >
+                        {b.grid_forming ? '● Grid-forming anchor' : '○ Grid-following'}
+                      </button>
+                      <p className="text-[9px] text-muted leading-snug">
+                        {b.grid_forming
+                          ? 'Provides voltage/frequency reference for the islanded network. §7.1.2: one unit only.'
+                          : 'Takes reference from the anchor unit or upstream grid.'}
+                      </p>
+                    </div>
+
                     {cRateWarning(b) && (
                       <p className="text-[9px] text-orange-400">{cRateWarning(b)}</p>
                     )}
@@ -312,10 +423,9 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
             <div>
               <div className="mb-1 flex items-center justify-between">
                 <span className="text-[10px] text-muted">Turbine Units</span>
-                <button
-                  className="text-[10px] text-accent hover:underline"
-                  onClick={addTurbine}
-                >+ Add Turbine</button>
+                <button className="text-[10px] text-accent hover:underline" onClick={addTurbine}>
+                  + Add Turbine
+                </button>
               </div>
               <div className="space-y-2">
                 {spec.turbine_units.map((t, i) => (
@@ -328,9 +438,9 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                       )}
                     </div>
                     <div className="grid grid-cols-2 gap-2">
-                      <NumField label="Rated MW" value={t.rated_mw} min={0.1} step={1}
+                      <NumField label="Rated" unit="MW" value={t.rated_mw} min={0.1} step={1}
                         onChange={v => patchTurbine(i, { rated_mw: v })} />
-                      <NumField label="Ramp MW/s" value={t.r_asset_mw_per_s} min={0.01} step={0.05}
+                      <NumField label="Ramp rate" unit="MW/s" value={t.r_asset_mw_per_s} min={0.01} step={0.05}
                         onChange={v => patchTurbine(i, { r_asset_mw_per_s: v })} />
                     </div>
                   </div>
@@ -339,46 +449,189 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
             </div>
           </section>
 
-          {/* ── Section 3: Run Parameters ── */}
+          {/* ── Section 3: Run Parameters ────────────────────────────────── */}
           <section>
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted">Run Parameters</h3>
-            <div className="grid grid-cols-2 gap-2">
-              <NumField label="Solar rated MW" value={spec.solar_rated_mw} min={0} step={0.5}
-                onChange={v => patch({ solar_rated_mw: v })} />
-              <NumField label="dt_lead (s)" value={spec.dt_lead_seconds} min={0} max={300} step={5}
-                onChange={v => patch({ dt_lead_seconds: v })} />
-              <NumField label="Sim duration (s)" value={spec.end_sim_time} min={60} max={86400} step={60}
-                onChange={v => patch({ end_sim_time: v })} />
-              <NumField label="PUE base" value={spec.pue_base} min={1.0} max={2.0} step={0.01}
-                onChange={v => patch({ pue_base: v })} />
-            </div>
+            <SectionHeader title="Run Parameters" />
+            <div className="space-y-4">
 
-            <div className="mt-2 flex items-center gap-2">
-              <input
-                id="island_mode"
-                type="checkbox"
-                className="h-3 w-3 accent-accent"
-                checked={spec.island_mode}
-                onChange={e => patch({ island_mode: e.target.checked })}
+              {/* dt_lead slider */}
+              <SliderField
+                label="Δt_lead — ramp-up lead time"
+                value={spec.dt_lead_seconds}
+                min={0} max={300} step={5}
+                unit=" s"
+                decimals={0}
+                onChange={v => patch({ dt_lead_seconds: v })}
               />
-              <label htmlFor="island_mode" className="text-xs text-text cursor-pointer">
-                Island mode (§7.1.2 anchor reserve active)
+
+              {/* PUE slider */}
+              <SliderField
+                label="PUE base — power usage effectiveness"
+                value={spec.pue_base}
+                min={1.0} max={2.0} step={0.01}
+                unit=""
+                decimals={2}
+                onChange={v => patch({ pue_base: v })}
+              />
+
+              <div className="grid grid-cols-2 gap-2">
+                <NumField label="Solar capacity" unit="MW" value={spec.solar_rated_mw} min={0} step={0.5}
+                  onChange={v => patch({ solar_rated_mw: v })} />
+                <NumField label="Sim duration" unit="s" value={spec.end_sim_time} min={60} max={86400} step={60}
+                  onChange={v => patch({ end_sim_time: v })} />
+              </div>
+
+              {/* Hardware profile dropdown */}
+              <label className="flex flex-col gap-0.5">
+                <span className="text-[10px] text-muted">Hardware profile</span>
+                <select
+                  value={spec.hardware_profile_id}
+                  onChange={e => patch({ hardware_profile_id: e.target.value })}
+                  className="w-full rounded border border-border bg-canvas px-2 py-1 text-xs text-text
+                             focus:outline-none focus:ring-1 focus:ring-accent"
+                >
+                  {HARDWARE_PROFILES.map(p => (
+                    <option key={p.id} value={p.id}>{p.label}</option>
+                  ))}
+                </select>
               </label>
+
+              {/* Island mode radio */}
+              <RadioGroup
+                label="Operating mode"
+                value={spec.island_mode ? 'island' : 'grid'}
+                options={[
+                  {
+                    value: 'island',
+                    label: 'Island',
+                    consequence: 'No grid backup. §7.1.2 anchor reserve active; BESS must bridge any deficit.',
+                  },
+                  {
+                    value: 'grid',
+                    label: 'Grid-connected',
+                    consequence: 'Grid provides backup; anchor reserve constraint is relaxed.',
+                  },
+                ]}
+                onChange={v => patch({ island_mode: v === 'island' })}
+              />
+
+              {/* Irradiance steps table */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] text-muted">Solar irradiance profile (zero-order hold)</span>
+                  <button className="text-[10px] text-accent hover:underline" onClick={addIrrStep}>
+                    + Add step
+                  </button>
+                </div>
+                <table className="w-full text-[10px] font-mono">
+                  <thead>
+                    <tr className="text-muted">
+                      <th className="text-left pb-1 pr-2 font-normal">t (s)</th>
+                      <th className="text-left pb-1 pr-2 font-normal">Irradiance [0–1]</th>
+                      <th />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {spec.irradiance_steps.map(([t, ir], i) => (
+                      <tr key={i} className="align-middle">
+                        <td className="pr-2 pb-1">
+                          <input
+                            type="number"
+                            className="w-20 rounded border border-border bg-canvas px-1.5 py-0.5 text-text
+                                       focus:outline-none focus:ring-1 focus:ring-accent"
+                            value={t}
+                            min={0}
+                            step={1}
+                            onChange={e => patchIrr(i, 0, Number(e.target.value))}
+                          />
+                        </td>
+                        <td className="pr-2 pb-1">
+                          <input
+                            type="number"
+                            className="w-20 rounded border border-border bg-canvas px-1.5 py-0.5 text-text
+                                       focus:outline-none focus:ring-1 focus:ring-accent"
+                            value={ir}
+                            min={0} max={1} step={0.05}
+                            onChange={e => patchIrr(i, 1, Number(e.target.value))}
+                          />
+                        </td>
+                        <td className="pb-1">
+                          {spec.irradiance_steps.length > 1 && (
+                            <button
+                              onClick={() => removeIrrStep(i)}
+                              className="text-muted hover:text-danger transition-colors"
+                              aria-label="Remove step"
+                            >×</button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <p className="text-[9px] text-muted mt-0.5">
+                  Value holds from t until the next step. First step must start at t = 0.
+                </p>
+              </div>
             </div>
           </section>
 
-          {/* API-level C-rate warnings (from last save) */}
+          {/* ── Section 4: PMS Configuration ────────────────────────────── */}
+          <section>
+            <SectionHeader title="PMS Configuration" />
+            <div className="space-y-3">
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 accent-accent"
+                  checked={spec.pms_config !== null}
+                  onChange={e => patch({
+                    pms_config: e.target.checked ? { transition_mode: 'open_transition' } : null
+                  })}
+                />
+                <div>
+                  <div className="text-xs text-text">Enable PMS integration</div>
+                  <div className="text-[9px] text-muted leading-snug">
+                    Wires a Protection & Management System layer (§28).
+                    Exposes fast-shed interlock (TC-64) and SCADA commissioning checks (TC-65).
+                  </div>
+                </div>
+              </label>
+
+              {spec.pms_config !== null && (
+                <RadioGroup
+                  label="Transition mode"
+                  value={spec.pms_config.transition_mode}
+                  options={[
+                    {
+                      value: 'open_transition',
+                      label: 'Open transition',
+                      consequence: 'Brief coverage discontinuity during source switchover. '
+                        + 'Load must ride through the gap.',
+                    },
+                    {
+                      value: 'closed_transition',
+                      label: 'Closed transition',
+                      consequence: 'Momentary parallel connection: no coverage discontinuity. '
+                        + 'Requires both sources live simultaneously.',
+                    },
+                  ]}
+                  onChange={v => patch({ pms_config: { transition_mode: v as 'open_transition' | 'closed_transition' } })}
+                />
+              )}
+            </div>
+          </section>
+
+          {/* PROTO-9 C-rate warnings (from last save) */}
           {warnings.length > 0 && (
             <section className="rounded border border-orange-500/30 bg-orange-500/5 p-2">
               <p className="mb-1 text-[10px] font-semibold text-orange-400">PROTO-9 C-rate warnings</p>
               {warnings.map((w, i) => (
                 <p key={i} className="text-[9px] text-orange-300">{w}</p>
               ))}
-              <p className="mt-1 text-[9px] text-muted">Scenario saved successfully. Warnings are advisory only.</p>
+              <p className="mt-1 text-[9px] text-muted">Scenario saved. Warnings are advisory only.</p>
             </section>
           )}
 
-          {/* Error */}
           {err && (
             <p className="text-xs text-danger">{err}</p>
           )}

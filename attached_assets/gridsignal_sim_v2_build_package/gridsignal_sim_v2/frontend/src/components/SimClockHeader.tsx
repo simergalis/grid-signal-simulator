@@ -61,11 +61,16 @@ export function SimClockHeader() {
         )}
       </div>
 
-      {/* Right: DQ legend */}
+      {/* Right: DQ legend — chips muted at rest, lit when the tag fires this tick */}
       <div className="flex items-center gap-1.5">
-        <span className="mr-1 font-mono text-[10px] text-muted uppercase tracking-wider">DQ tags</span>
+        <span className="mr-1 font-mono text-[10px] text-muted uppercase tracking-wider">Legend</span>
         {ALL_DQ_TAGS.map(tag => (
-          <DataQualityBadge key={tag} tag={tag} full />
+          <DataQualityBadge
+            key={tag}
+            tag={tag}
+            full
+            active={tick?.data_quality_tags.includes(tag) ?? false}
+          />
         ))}
       </div>
     </header>

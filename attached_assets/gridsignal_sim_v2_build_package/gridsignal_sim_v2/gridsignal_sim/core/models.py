@@ -431,3 +431,13 @@ class TickResult:
     # scada_commands_issued: count of commands issued to the egress boundary
     #   this tick (informational; TC-68 inspects the egress log directly).
     scada_commands_issued: int = 0
+    # W1c — thermal headroom fields.
+    # Stamped by the run loop immediately after _update_thermal_state() and
+    # BEFORE sink.append() / broadcast() so the live WebSocket payload and
+    # the stored timeseries carry live thermal data (Cell 3).
+    # Mirrors the computation in GET /thermal; guaranteed to agree because
+    # both use the same _approach_rate_mw_s / _rated_cooling_mw ctx fields.
+    rated_cooling_mw:   float = 0.0      # rated cooling capacity (factory config)
+    absorbable_mw:      float = 0.0      # max(0, rated − current) MW of headroom
+    time_to_limit_s:    float = 86400.0  # s until headroom reaches 0 (86400 = ∞)
+    approach_rate_mw_s: float = 0.0      # MW/s approach rate (+ = rising load)

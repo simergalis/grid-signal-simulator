@@ -39,6 +39,14 @@ export interface TickPayload {
 
   // F2 addition — which demand figure is binding for bess_bridging_seconds
   bridging_basis: 'predicted_peak' | 'current_demand' | 'no_load'
+
+  // W1c — thermal headroom (serialised by run loop before sink/broadcast).
+  // Mirrors GET /thermal; guaranteed to agree because they share the same
+  // _update_thermal_state() source and RunContext fields.
+  rated_cooling_mw:   number  // rated capacity MW from factory config
+  absorbable_mw:      number  // max(0, rated - current) before thermal limit
+  time_to_limit_s:    number  // seconds until headroom = 0 (86400 = effectively ∞)
+  approach_rate_mw_s: number  // MW/s rate of change (positive = load rising)
 }
 
 export interface RunMeta {
@@ -74,6 +82,11 @@ export interface TurbineUnitSpec {
   r_asset_mw_per_s: number
 }
 
+/** PMS wiring exposed in the Scenario Builder. */
+export interface PmsConfigSpec {
+  transition_mode: 'open_transition' | 'closed_transition'
+}
+
 export interface ScenarioSpec {
   name: string
   description: string
@@ -87,6 +100,7 @@ export interface ScenarioSpec {
   island_mode: boolean
   pue_base: number                    // [1.0, 2.0]
   end_sim_time: number                // [60, 86400] s
+  pms_config: PmsConfigSpec | null    // null = PMS disabled
 }
 
 export interface ScenarioSummary {

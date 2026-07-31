@@ -24,7 +24,6 @@ import { SimClockHeader }    from './components/SimClockHeader'
 import { HeroPanel }         from './components/HeroPanel'
 import { ForecastChart }     from './components/ForecastChart'
 import { AssetReservePanel } from './components/AssetReservePanel'
-import { AlertDock }         from './components/AlertDock'
 import { RunControlBar }     from './components/RunControlBar'
 import { ScenarioBuilder }   from './components/ScenarioBuilder'
 import { ResultsScreen }     from './components/ResultsScreen'
@@ -164,22 +163,19 @@ export default function App() {
 
       {/* Page content */}
       {currentPage === 'overview' ? (
-        /* 2×2 panel grid */
-        <main className="flex-1 grid grid-cols-1 md:grid-cols-2 grid-rows-2 gap-px bg-border overflow-hidden">
-          {/* Row 1 */}
-          <div className="bg-surface overflow-auto">
+        /* Overview: full-width hero strip (4 cells) + chart / asset reserve below */
+        <main className="flex-1 grid grid-cols-2 grid-rows-[auto_1fr] gap-px bg-border overflow-hidden">
+          {/* Row 1 — HeroPanel spans full width (4 cells: Δt_lead, bridge, thermal, alerts) */}
+          <div className="col-span-2 bg-surface overflow-auto">
             <HeroPanel />
           </div>
+
+          {/* Row 2 — left: chart; right: asset reserve */}
           <div className="bg-surface overflow-hidden">
             <ForecastChart />
           </div>
-
-          {/* Row 2 */}
           <div className="bg-surface overflow-auto">
             <AssetReservePanel />
-          </div>
-          <div className="bg-surface overflow-auto">
-            <AlertDock />
           </div>
         </main>
       ) : currentPage === 'proposals' ? (

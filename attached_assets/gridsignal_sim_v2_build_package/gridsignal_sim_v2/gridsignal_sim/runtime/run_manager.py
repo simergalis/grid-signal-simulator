@@ -167,6 +167,11 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         "pms_order_conflict": tick.pms_order_conflict,
         # scada_commands_issued: count of SCADA commands issued this tick (TC-68).
         "scada_commands_issued": tick.scada_commands_issued,
+        # W1c — thermal headroom (stamped onto TickResult before sink/broadcast).
+        "rated_cooling_mw":   round(tick.rated_cooling_mw, 4),
+        "absorbable_mw":      round(tick.absorbable_mw, 3),
+        "time_to_limit_s":    round(tick.time_to_limit_s, 1),
+        "approach_rate_mw_s": round(tick.approach_rate_mw_s, 6),
     }
 
 
@@ -585,6 +590,24 @@ class RunManager:
         try:
             while not ctx.is_complete():
                 tick_result = ctx.step()                           # sync, in-budget (Design Spec 4.3)
+
+                # ── W1c-pre: update thermal state BEFORE sink/broadcast ───
+                # Stamping rated_cooling_mw / absorbable_mw / time_to_limit_s /
+                # approach_rate_mw_s onto TickResult here (not after broadcast)
+                # ensures the live WebSocket payload and the stored timeseries
+                # both carry live thermal data — Cell 3 reads from latestTick.
+                _update_thermal_state(ctx, tick_result)
+                _th_rated     = ctx._rated_cooling_mw
+                _th_absorb    = max(0.0, _th_rated - tick_result.p_cooling_mw)
+                _th_approach  = ctx._approach_rate_mw_s
+                tick_result.rated_cooling_mw   = _th_rated
+                tick_result.absorbable_mw      = _th_absorb
+                tick_result.approach_rate_mw_s = _th_approach
+                tick_result.time_to_limit_s    = (
+                    min(_th_absorb / _th_approach, 86_400.0)
+                    if _th_approach > 1e-6 else 86_400.0
+                )
+
                 await ctx.sink.append(tick_result)                 # I/O -- yields to sibling runs
                 await self._ws_hub.broadcast(ctx.run_id, tick_result)  # I/O -- yields
 
@@ -619,8 +642,7 @@ class RunManager:
                                 _jid, tick_result.sim_time_seconds
                             )
 
-                # ── W1c: thermal state ────────────────────────────────────
-                _update_thermal_state(ctx, tick_result)
+                # ── W1c: thermal state — already updated before sink/broadcast above.
 
                 # ── AD1: procurement evaluation (TC-47, TC-52) ───────────
                 # Observe-only: does NOT write to sim_state; dispatch trace

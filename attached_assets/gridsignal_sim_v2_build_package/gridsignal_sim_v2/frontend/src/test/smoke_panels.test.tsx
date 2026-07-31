@@ -45,6 +45,11 @@ const ALERT_TICK: TickPayload = {
   insufficient_reserve_alert: true,
   data_quality_tags: [],
   checkpoint_states: {},
+  // W1c — thermal headroom fields (stamped by backend before broadcast)
+  rated_cooling_mw:   0.0,
+  absorbable_mw:      0.0,
+  time_to_limit_s:    86400.0,
+  approach_rate_mw_s: 0.0,
 }
 
 /** Tick 2 — alert flag cleared; banner must still show (F4 latch). */

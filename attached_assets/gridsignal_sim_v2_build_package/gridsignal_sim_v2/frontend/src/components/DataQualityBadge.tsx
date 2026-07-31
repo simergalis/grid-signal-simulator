@@ -27,14 +27,22 @@ interface Props {
   tag: string
   /** Show full label instead of 3-letter code.  Used in the header legend. */
   full?: boolean
+  /**
+   * When false (legend chips at rest), render muted grey regardless of tag type.
+   * Defaults to true so inline badges on data panels remain coloured.
+   */
+  active?: boolean
 }
 
-export function DataQualityBadge({ tag, full = false }: Props) {
+export function DataQualityBadge({ tag, full = false, active = true }: Props) {
   const meta = TAG_META[tag as DQTag]
   if (!meta) return null
+  const colorClass = active
+    ? meta.color
+    : 'bg-surface-2 text-muted border-border'
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-xs leading-tight ${meta.color}`}
+      className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-xs leading-tight transition-colors ${colorClass}`}
       title={meta.label}
     >
       ⚑ {full ? meta.label : meta.code}
