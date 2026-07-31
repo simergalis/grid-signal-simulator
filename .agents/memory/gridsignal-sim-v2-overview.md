@@ -1,64 +1,45 @@
 ---
-name: gridsignal-sim v2 overview
-description: Location, four verification commands, and status of all completed items in the gridsignal_sim_v2 build.
+name: gridsignal-sim-v2 overview
+description: Codebase root, verification commands, and completed step status through Step 17 (final).
 ---
 
-**Codebase root:**
+## Codebase root
+
 `attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/`
 
-**Frontend root:**
-`attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/`
-(standalone Vite/React app; proxies /runs and /ws/* to uvicorn on port 8000)
+All relative paths below are from that root.
 
-**Four verification commands (run from codebase root with PYTHONPATH=.):**
-1. `python -m pytest tests/ -v`
-2. `python -m pytest ../audit_tests/ -v`
-3. `PYTHONPATH=. python runtime/example_usage.py`   ← must run from codebase root with PYTHONPATH set
-4. `PYTHONPATH=. python scripts/load_test.py`
+## Four verification commands
 
-**Frontend typecheck (from frontend/):**
-`node_modules/.bin/tsc -p tsconfig.json --noEmit`
+```bash
+cd .../gridsignal_sim
+PYTHONPATH=. python -m pytest tests/ -q          # 417 passed, ~6 s
+PYTHONPATH=. python scripts/load_test.py         # NFR gate (≥5 concurrent, <1 s latency, 4 h < 30 s)
+PYTHONPATH=. python scripts/determinism_gate.py  # 5/5 seeded scenarios hash-identical
+PYTHONPATH=. python scripts/load_test.py --matrix  # 1x/2x/4x headroom sweep
+```
 
-**Items completed through Step 11:**
-- D11 — BessModule.max_sustainable_seconds() power ceiling (returns 0.0 when discharge > rated)
-- PROTO-8 — example_usage.py config corrections (demo-20mw bess 18MW/8MWh after P5; demo-alert 2.5MWh)
-- Step 3 Items 1-4 — GPUModule, ramp, CoolingModule, BESS fleet split/anchor/reserve aggregation
-- P1-P5 — deque cursor, test coverage, bridging ceilings hoisted, demo-20mw BESS resize
-- Step 4 — control-plane purity gate
-- Step 5 — SimClock + two clock domains
-- Step 6 — FastAPI wiring; Q5 static gate extended to api/
-- C1/C2 — bess_bridging_seconds (fleet=min()), dt_lead_next_s (min() across in-flight ramps)
-- Step 7 — p_renewable_mw, bess_bridging_seconds, dt_lead_next_s in TickResult + WS payload
-- Step 8 — SimClock snapshots, WS resync, alert acknowledge
-- Step 9 — AssertionSpec verdicts, demo-20mw gates, H1 gap rules
-- Step 10 — §26.4 dispatch arbitration: CandidateResponse, LadderPosition, OperatingTier,
-             select_candidates() TC-49 total order, CurtailmentLadder with dead-man/dwell/
-             restoration, PreStagingEngine, InsufficientReserveAlert
-- Step 11 — K1/K2/K3 unified §26.4 pool live path; SCADA + PMS (§28):
-             DispatchArbitrator.tick() → 3-tuple + CandidateResponse;
-             CurtailmentLadder.generate_candidates() (K2 operating_tier branching);
-             tick() thin wrapper; SimulatedScadaLayer + SimulatedPMS in core/scada_layer.py;
-             TransitionMode + PmsConfig in models.py; evaluate_tick unified pool path;
-             TC-49 live path, TC-64/65/66/67/68 all tested.
+## Step status (all complete through Step 17)
 
-**Audit gate status:** 13/13 passing (all closed)
+- Steps 1–9: formulas, clock, scenarios, verdicts, persistence, arbitration
+- Step 10: pre-staging Phase 0 insertion, CurtailmentLadder, OperatingTier
+- Step 11: SCADA layer, PMS, K1/K2/K3 unified pool
+- Step 12: advisory gate, deidentify(), proposal lifecycle
+- Step 13: six buildable agents, DeterministicRouter, TC-48 trace
+- Step 14: network telemetry, procurement, TC-69..TC-74 / TC-47 / TC-50..TC-52
+- Step 15: maintenance (TC-58..TC-60), ramp relaxation (TC-75..TC-76)
+- Step 16: W1/W2/W3 endpoint wiring, 13 tests + 3 new column-3 tests (tests 14–16)
+- Step 17 (COMPLETE): 3-column acceptance matrix, 3 new shipped-scenario tests,
+  determinism gate script, 8-gate CI workflow, AB2 frontend constants synced
 
-**Test counts:** 217 pytest (tests/ + audit_tests/), 19 vitest
+## Suite count history
 
-**Demo scenario alerts_seen (stable):**
-- demo-20mw: False, demo-alert: True, demo-5mw: False, demo-baseline: False
+Steps 1–16: 414 passing → Step 17 adds 3 tests → **417 passing**
 
-**Step 12 added:**
-- core/deident.py (EvidenceWindow, deidentify(), assert_no_pii() — TC-29 egress filter)
-- runtime/advisory_gate.py (AdvisoryGate, Proposal, ProposalState, make_proposal — TC-30 + lifecycle)
-- runtime/advisory_router.py (AdvisoryRouter, LP-1 short-circuit, Mistral/Anthropic HTTP calls)
-- runtime/advisory_principal.py (AdvisoryPrincipal, orchestration, tick() expiry loop)
-- tests/test_step12_advisory.py (43 new tests: TC-29, TC-30, LP-1, hold questions, structure)
+## Key invariants to maintain
 
-**Gate baseline at Step 12 completion:**
-- pytest: 217 passed
-- plane separation: CLEAN (9 core/ + 7 api/)
-- tsc: 0 errors
-- vitest: 19/19
-- example_usage: 4/4 demos
-- load-test 1×: PASS (17.6 s / 30 s budget, p50 compute 1081 µs)
+- `api/ → core/` imports are FORBIDDEN (test_api_gate_clean_api_passes enforces this)
+- `wall_stamp_utc` on TickResult is `float` (Unix epoch), NOT datetime — never call .isoformat()
+- CostModelEngine bridge lives in `runtime/run_manager.py`, not api/ (plane rule)
+- `evaluate_tick()` requires `_EVALUATE_TICK_PERMITTED` ContextVar to be True — use `_guard()` helper or RunManager
+- `DeterministicRouter` is selected when `PYTEST_CURRENT_TEST` env var is set

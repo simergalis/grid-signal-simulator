@@ -32,12 +32,17 @@ interface AssetMixSpec {
 }
 
 interface RunHistoryEntry {
-  run_id:             string
-  label:              string
-  duration_hours:     number
-  grid_import_mwh:    number
-  generation_mwh:     number
-  storage_charge_mwh: number
+  run_id:              string
+  label:               string
+  duration_hours:      number
+  grid_import_mwh:     number
+  generation_mwh:      number
+  storage_charge_mwh:  number
+  // AB2: Python §21.2 CostModelEngine result (PROTO-21-COST defaults).
+  // Present for completed runs fetched from GET /runs/{id}/energy-summary.
+  cost_breakdown?:     CostBreakdown
+  cost_model_config?:  Record<string, number>
+  turbine_rated_mw?:   number
 }
 
 interface CostBreakdown {
@@ -64,16 +69,29 @@ interface ScenarioPlannerPageProps {
 }
 
 // ---------------------------------------------------------------------------
-// §21.2 cost computation (mirrors core/cost_model.py, runs client-side)
+// §21.2 cost computation (mirrors core/cost_model.py PROTO-21-COST defaults)
+//
+// AB2: The Python CostModelEngine is now the authoritative §21.2 implementation.
+// The completed-run cost_breakdown is fetched from GET /runs/{id}/energy-summary
+// and surfaced via RunHistoryEntry.cost_breakdown.
+//
+// _computeCost is retained for the what-if surface only — it applies these
+// constants to hypothetical asset-mix parameters (different turbine_rated_mw,
+// bess_rated_mwh) against the energy totals of an actual completed run.
+//
+// IMPORTANT: these constants MUST stay in sync with core/cost_model.py
+// _COST_CFG_DEFAULTS (PROTO-21-COST).  The test in test_step16_wiring.py
+// (test_energy_summary_includes_cost_breakdown) guards this via the
+// cost_model_config key in the energy-summary response.
 // ---------------------------------------------------------------------------
 
 const COST_CONFIG = {
-  grid_import_price_per_mwh:      85.0,   // GBP/MWh
-  turbine_capital_per_mw_year: 120000.0,  // GBP/MW/year — amortised debt service
-  turbine_variable_per_mwh:        5.0,   // GBP/MWh variable O&M
+  grid_import_price_per_mwh:      120.0,  // GBP/MWh  (PROTO-21-COST)
+  turbine_capital_per_mw_year:  45000.0,  // GBP/MW/year — amortised debt service
+  turbine_variable_per_mwh:       55.0,   // GBP/MWh variable O&M
   storage_roundtrip_efficiency:    0.88,
-  storage_charge_price_per_mwh:   75.0,
-  storage_discharge_price_per_mwh: 2.0,
+  storage_charge_price_per_mwh:   60.0,
+  storage_discharge_price_per_mwh: 0.0,
 }
 
 function _computeCost(

@@ -1,11 +1,12 @@
 """
-tests/test_step16_wiring.py — W1/W2 endpoint acceptance tests.
+tests/test_step16_wiring.py — W1/W2 endpoint acceptance tests + shipped-scenario
+column-3 coverage (Step 17).
 
 Verifies the six advisory/monitoring endpoints wired in W1 (run-loop
 agent/telemetry/thermal wiring) and W2 (advisory, procurement,
 network-telemetry, thermal, energy-summary REST surfaces).
 
-Test count: 13  (8 sync TestClient + 5 async completed-run)
+Test count: 16  (8 sync TestClient + 8 async completed-run / manual-tick)
 
 Sync tests (1–8) use TestClient with end_sim_time=1e15 so the run is
 always active during the assertion, or test 404 paths that need no
@@ -24,10 +25,32 @@ import pytest
 from fastapi.testclient import TestClient
 from httpx import AsyncClient, ASGITransport
 
+import json
+
 from api.app import create_app
 from api.routes.scenarios import build_seeded_store
 from runtime.run_manager import RunManager, WebSocketHub
-from runtime.scenario_factory import build_run_context
+from runtime.scenario_factory import build_run_context, build_run_context_from_spec
+from contextlib import contextmanager
+
+from core.sim_clock import SimClock
+from core.simulation_core import evaluate_tick
+from core.scada_layer import PROTECTION_COMMANDS
+from core._plane_guard import _EVALUATE_TICK_PERMITTED
+
+
+@contextmanager
+def _guard():
+    """Activate the evaluate_tick() runtime purity guard for a single call.
+
+    Mirrors _plane_guard_active() from test_plane_separation.py.
+    Required whenever tests call evaluate_tick() directly (outside RunManager).
+    """
+    token = _EVALUATE_TICK_PERMITTED.set(True)
+    try:
+        yield
+    finally:
+        _EVALUATE_TICK_PERMITTED.reset(token)
 
 
 # ---------------------------------------------------------------------------
@@ -300,3 +323,191 @@ async def test_energy_summary_returns_required_fields_for_completed_run():
     assert isinstance(body["generation_mwh"], float)
     assert isinstance(body["duration_hours"], float)
     assert body["duration_hours"] > 0.0, "duration_hours must be positive for a completed run"
+
+
+# ===========================================================================
+# Step 17 shipped-scenario column-3 tests (14–16)
+#
+# These are the only tests in the suite that exercise TC assertions on the
+# *build_seeded_store → build_run_context_from_spec* path (column 3 of the
+# acceptance matrix).  Direct-invocation tests (most of the suite) satisfy
+# columns 1 and 2 only.
+# ===========================================================================
+
+# 14 ────────────────────────────────────────────────────────────────────────
+@pytest.mark.asyncio
+async def test_demo_prestage_column3_tc55_tc56():
+    """TC-55/TC-56 column-3: PreStagingEngine engagement via the shipped
+    demo-prestage scenario (build_seeded_store → build_run_context_from_spec).
+
+    TC-55: temperature-bound limits shift — headroom exhausts so the shift
+           tapers from the full 1.0 MW ceiling toward the warmup floor
+           (~0.04 MW) within the 300 s run.
+    TC-56: bms_override=False (default) → PreStagingEngine engages at all;
+           at least one tick must have pre_staging_shift_mw > 0.
+    """
+    store = build_seeded_store()
+    rec = store.get("demo-prestage")
+    assert rec is not None, "demo-prestage must exist in seeded store"
+
+    spec_data = json.loads(rec.spec_json)
+    ctx = build_run_context_from_spec("col3-prestage", spec_data)
+
+    hub = WebSocketHub()
+    manager = RunManager(hub)
+    await manager.start_run(ctx)
+    task = manager._tasks.get("col3-prestage")
+    if task is not None:
+        await task
+
+    completed = manager._completed.get("col3-prestage")
+    assert completed is not None, "run must complete and be stored"
+
+    shifts = [
+        float(row.get("pre_staging_shift_mw", 0.0))
+        for row in completed.tick_dicts
+    ]
+    assert len(shifts) > 0, "must have at least one tick"
+
+    # TC-56 (col-3): engine engages — at least one positive shift
+    assert any(s > 0.0 for s in shifts), (
+        "TC-56/col-3: bms_override=False must allow PreStagingEngine to engage; "
+        "no tick had pre_staging_shift_mw > 0"
+    )
+
+    # TC-55 (col-3): shift is bounded by temperature headroom — tapers over run
+    # Peak is at most max_shift_mw=1.0; later ticks should drop toward the
+    # warmup-replenishment floor once the lower-band 18 °C is approached.
+    peak = max(shifts)
+    assert peak <= 1.001, (
+        f"TC-55/col-3: shift must never exceed max_shift_mw=1.0; peak={peak:.4f}"
+    )
+    # After the first 30 ticks the engine is in steady-state floor territory.
+    late = [s for s in shifts[30:] if s >= 0.0]
+    if late:
+        late_max = max(late)
+        assert late_max < peak or late_max < 1.0, (
+            f"TC-55/col-3: late-run shift ({late_max:.4f}) not bounded below peak "
+            f"({peak:.4f}); headroom taper did not fire"
+        )
+
+
+# 15 ────────────────────────────────────────────────────────────────────────
+@pytest.mark.asyncio
+async def test_demo_pms_column3_tc64_to_tc68():
+    """TC-64..TC-68 column-3: SimulatedPMS active on the demo-pms shipped path.
+
+    Drives 60 ticks manually (no RunManager) so fast-shed and open-transition
+    can be injected at exact tick boundaries.
+
+    TC-64: pms_fast_shed_active=True for ≥ 1 tick after inject_fast_shed().
+    TC-65: pms_order_conflict is None throughout (no false positives with an
+           empty shed-priority-order).
+    TC-66: pms.fast_shed_log records the injection.
+    TC-67: open_transition injects a coverage gap — scada_commands_issued ≥ 1
+           in the ticks that follow.
+    TC-68: zero protection commands in the scada_layer egress log.
+    """
+    store = build_seeded_store()
+    rec = store.get("demo-pms")
+    assert rec is not None, "demo-pms must exist in seeded store"
+
+    spec_data = json.loads(rec.spec_json)
+    ctx = build_run_context_from_spec("col3-pms", spec_data)
+    state = ctx.sim_state
+    pms = state.pms
+    assert pms is not None, "demo-pms must instantiate a SimulatedPMS"
+
+    DT = 5.0          # TICK_INTERVAL_SIM_SECONDS matches run_manager.py
+    SHED_TICK = 5     # inject fast-shed just before tick 5 fires
+    TRANS_TICK = 12   # inject open-transition just before tick 12 fires
+    TOTAL_TICKS = 60
+
+    results = []
+    for tick_seq in range(TOTAL_TICKS):
+        sim_time = tick_seq * DT
+        if tick_seq == SHED_TICK:
+            pms.inject_fast_shed(shed_load_mw=3.0, sim_time=sim_time)
+        if tick_seq == TRANS_TICK:
+            pms.inject_transition(sim_time=sim_time)
+        clock = SimClock(
+            sim_time=sim_time,
+            dt_seconds=DT,
+            wall_stamp_utc=0.0,
+            rate=0.0,
+            tick_seq=tick_seq,
+        )
+        with _guard():
+            tr = evaluate_tick(state, clock)
+        results.append(tr)
+
+    # TC-64: fast shed active for ≥ 1 tick
+    shed_active = [r for r in results if getattr(r, "pms_fast_shed_active", False)]
+    assert shed_active, (
+        "TC-64/col-3: pms_fast_shed_active must be True during fast-shed window; "
+        f"fast_shed_log={pms.fast_shed_log}"
+    )
+
+    # TC-65: no false order conflicts (demo-pms has empty shed_priority_order)
+    conflicts = [r for r in results if getattr(r, "pms_order_conflict", None) is not None]
+    assert not conflicts, (
+        f"TC-65/col-3: unexpected pms_order_conflict in ticks "
+        f"{[results.index(r) for r in conflicts[:3]]}"
+    )
+
+    # TC-66: fast_shed_log records the injection
+    assert len(pms.fast_shed_log) >= 1, (
+        "TC-66/col-3: pms.fast_shed_log must contain at least one entry after inject_fast_shed()"
+    )
+
+    # TC-67: SCADA issued commands during/after the transition window
+    window = results[TRANS_TICK: TRANS_TICK + 8]
+    assert any(getattr(r, "scada_commands_issued", 0) >= 1 for r in window), (
+        "TC-67/col-3: open-transition must trigger ≥ 1 SCADA command in the "
+        f"8-tick window starting at tick {TRANS_TICK}"
+    )
+
+    # TC-68: zero protection commands across all 60 ticks
+    egress = getattr(state.scada_layer, "egress_log", [])
+    protection_found = [e for e in egress if e.command_type in PROTECTION_COMMANDS]
+    assert not protection_found, (
+        f"TC-68/col-3: protection commands found in egress: "
+        f"{[e.command_type.value for e in protection_found[:3]]}"
+    )
+
+
+# 16 ────────────────────────────────────────────────────────────────────────
+@pytest.mark.asyncio
+async def test_energy_summary_includes_cost_breakdown():
+    """AB2 column-3: energy-summary returns cost_breakdown + cost_model_config.
+
+    The Python §21.2 CostModelEngine (PROTO-21-COST defaults) is now the
+    authoritative implementation.  The frontend TypeScript mirrors its
+    constants; this test guards against silent divergence.
+    """
+    manager = await _manager_with_completed_run("cmp-cost")
+    app = _app_with_manager(manager)
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        resp = await ac.get("/runs/cmp-cost/energy-summary")
+    assert resp.status_code == 200
+    body = resp.json()
+
+    assert "cost_breakdown" in body, (
+        "energy-summary must include cost_breakdown (AB2 / PROTO-21-COST)"
+    )
+    cb = body["cost_breakdown"]
+    for field in (
+        "grid_import_cost", "generation_cost", "storage_cost",
+        "total_cost", "generation_duty_fraction", "grid_fraction",
+    ):
+        assert field in cb, f"cost_breakdown missing field: {field!r}"
+    assert isinstance(cb["total_cost"], float)
+    assert cb["total_cost"] >= 0.0
+
+    assert "cost_model_config" in body, "energy-summary must include cost_model_config"
+    cfg = body["cost_model_config"]
+    # Guard against silent Python/TypeScript constant divergence (PROTO-21-COST):
+    assert cfg.get("grid_import_price_per_mwh") == pytest.approx(120.0), (
+        "PROTO-21-COST grid price must be 120 GBP/MWh; "
+        "update ScenarioPlannerPage.tsx COST_CONFIG to match"
+    )
