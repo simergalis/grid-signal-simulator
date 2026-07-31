@@ -326,7 +326,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             if _binding_demand_mw > sum(_bbs_ceilings):
                 bess_bridging_seconds = 0.0
             else:
-                _bbs_allocs = state.arbitrator._proportional_allocations(
+                _bbs_allocs = state.arbitrator._capped_equal_share_allocations(
                     _binding_demand_mw, _bbs_ceilings
                 )
                 bess_bridging_seconds = min(

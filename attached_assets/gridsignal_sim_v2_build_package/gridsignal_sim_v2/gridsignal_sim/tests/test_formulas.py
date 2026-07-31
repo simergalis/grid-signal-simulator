@@ -898,22 +898,35 @@ def test_item4_fleet_covers_shortfall_above_single_unit_rating():
     )
 
 
-def test_item4_heterogeneous_fleet_proportional_split():
-    """Step 3 Item 4 (b): verify the D14-corrected equal-share-then-cap allocation.
+def test_item4_small_unit_capped_to_ceiling_under_equal_share():
+    """Step 3 Item 4 (b): equal-share caps the small unit at its power ceiling.
 
-    Fleet: unit-A rated=2 MW, unit-B rated=6 MW.  Fleet shortfall = 4 MW.
+    Fixture (both grid_forming=False → anchor_deduction=0 → ceiling = rated_mw):
+      Unit A: rated_mw=2.0, usable_mwh=10.0 → bridging_available_mw = 2.0 MW
+      Unit B: rated_mw=6.0, usable_mwh=10.0 → bridging_available_mw = 6.0 MW
 
-    D14 equal-share-then-cap algorithm:
-      Round 1: equal share = 4/2 = 2 MW each.
-               A: 2 MW == ceiling (2 MW) → capped at 2 MW.
-               B: 2 MW < ceiling (6 MW) → allocated 2 MW.  No remaining demand.
-      Result: A=2 MW (fully utilised), B=2 MW.  sum=4 MW ✓.
+    Power ceilings differ ([2.0, 6.0] MW).  Fleet shortfall = 4 MW.
 
-    Pre-D14 proportional-by-ceiling gave A=1 MW (50% utilisation), B=3 MW.
-    The D14 fix ensures the small unit is used to its ceiling before the large
-    unit absorbs remaining demand.
+    _capped_equal_share_allocations trace:
+      Round 1: equal share = 4/2 = 2.0 MW each.
+               A: share (2.0) ≥ headroom (2.0) → capped at 2.0 MW.  Capping bound.
+               B: share (2.0) < headroom (6.0) → allocated 2.0 MW.
+               remaining = 4 - (2.0 + 2.0) = 0 → done.
+      Result: A=2.0 MW (100% ceiling, fully utilised), B=2.0 MW (33% of ceiling).
 
-    tick() must deliver these allocations to cover_shortfall; we confirm by
+    Both allocations are equal in MW but for different reasons — A hit its ceiling,
+    B absorbed only the equal share because the residual demand was zero.  The result
+    is NOT a coincidence of equal ceilings; A's ceiling of 2.0 MW is half of B's 6.0 MW.
+
+    Pre-D14 proportional-by-ceiling gave A=4×(2/8)=1 MW (50% utilisation), B=3 MW.
+    Equal-share drives the small unit to 100% of its ceiling first.
+
+    Endurance consequence (see _capped_equal_share_allocations docstring):
+    A is driven harder than under proportional, which shortens its endurance.
+    D13's min() will therefore be set by A in any scenario where A's SoC/MW
+    ratio is lower than B's — which is the correct physical outcome.
+
+    tick() must deliver these allocations via cover_shortfall; confirmed by
     checking each unit's output_mw() after one tick.
     """
     from core.dispatch import DispatchArbitrator
@@ -1048,7 +1061,7 @@ def test_item4_demo_scenarios_alert_behavior():
 
 
 def test_d14_capped_allocation_sum_invariant():
-    """D14: _proportional_allocations must satisfy sum == min(demand, sum(ceilings)).
+    """D14: _capped_equal_share_allocations must satisfy sum == min(demand, sum(ceilings)).
 
     No allocation may exceed its unit's ceiling.  Two sub-cases:
       (a) demand < fleet capacity → sum(allocs) == demand, small unit fully used.
@@ -1069,7 +1082,7 @@ def test_d14_capped_allocation_sum_invariant():
     ceilings = [5.0, 20.0]
 
     # (a) demand 12 MW < fleet ceiling 25 MW: full demand must be met.
-    allocs = arb._proportional_allocations(12.0, ceilings)
+    allocs = arb._capped_equal_share_allocations(12.0, ceilings)
     assert all(a <= c + 1e-9 for a, c in zip(allocs, ceilings)), (
         f"no allocation may exceed its ceiling; got {allocs} vs ceilings {ceilings}"
     )
@@ -1085,7 +1098,7 @@ def test_d14_capped_allocation_sum_invariant():
     )
 
     # (b) demand 30 MW > fleet ceiling 25 MW: every unit capped, remainder unmet.
-    allocs_over = arb._proportional_allocations(30.0, ceilings)
+    allocs_over = arb._capped_equal_share_allocations(30.0, ceilings)
     assert all(a <= c + 1e-9 for a, c in zip(allocs_over, ceilings)), (
         "over-demand: no allocation may exceed ceiling"
     )
@@ -1098,7 +1111,7 @@ def test_d14_capped_allocation_sum_invariant():
     bess_c = BessModule(BessConfig(asset_id="c-d14", rated_mw=5.0, usable_mwh=10.0))
     bess_d = BessModule(BessConfig(asset_id="d-d14", rated_mw=5.0, usable_mwh=10.0))
     arb2 = DispatchArbitrator([turbine], [bess_c, bess_d], site)
-    allocs_hom = arb2._proportional_allocations(6.0, [5.0, 5.0])
+    allocs_hom = arb2._capped_equal_share_allocations(6.0, [5.0, 5.0])
     assert math.isclose(sum(allocs_hom), 6.0, abs_tol=1e-9)
     assert all(a <= 5.0 + 1e-9 for a in allocs_hom)
     # Equal split of 6 MW: each gets 3 MW (both below ceiling of 5 MW).

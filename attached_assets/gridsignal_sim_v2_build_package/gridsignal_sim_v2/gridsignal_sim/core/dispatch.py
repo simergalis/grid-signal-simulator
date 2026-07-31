@@ -310,7 +310,7 @@ class DispatchArbitrator:
     # Fleet allocation helper (Step 3 Item 4)
     # ------------------------------------------------------------------
 
-    def _proportional_allocations(
+    def _capped_equal_share_allocations(
         self, demand_mw: float, weights: list[float]
     ) -> list[float]:
         """Capped equal-share allocation with iterative redistribution (D14).
@@ -318,24 +318,53 @@ class DispatchArbitrator:
         weights — bridging_available_mw values (per-unit power ceilings),
         aligned with self.bess_units, computed once by the caller (P4 hoisting).
 
-        Algorithm:
-          Round 1: give each active unit an equal share of the remaining demand.
-          Any unit whose share reaches its ceiling is capped there; the
-          remainder is redistributed equally among units still with headroom.
-          Repeat until the demand is fully met or every unit is at its ceiling.
-
         Guarantee: sum(result) == min(demand_mw, sum(weights)) and
         result[i] <= weights[i] for all i.  D11's guard (max_sustainable_seconds
-        returns 0.0 above ceiling) must never fire from this code path after D14
-        — no allocation may exceed its unit's ceiling.
+        returns 0.0 above ceiling) must never fire from this code path — no
+        allocation may exceed its unit's ceiling.
 
-        Why equal-share rather than proportional-by-ceiling:
-          Proportional-by-ceiling gives a small unit (5 MW) only 2.4 MW of a
-          12 MW fleet shortfall alongside a large unit (20 MW), leaving it at
-          48% utilisation.  Equal-share caps the small unit at its ceiling
-          (5 MW) first and sends the remaining 7 MW to the large unit — the
-          small unit is fully used and D11 is never invoked.  This is the
-          D14-corrected behaviour.
+        --- Policy decision (D14) ---
+
+        Policy in force: equal-share-then-redistribute.
+          Each active unit receives an equal fraction of the remaining demand.
+          Units that hit their ceiling are frozen there; the residual is
+          redistributed equally among units still with headroom.  Rounds
+          continue until the demand is fully met or every unit is at its
+          ceiling.
+
+        Alternative considered: proportional-then-cap-then-redistribute.
+          Each unit receives (ceiling_i / sum(ceilings)) × demand, then
+          any over-ceiling allocations are capped and the surplus is
+          redistributed proportionally among uncapped units.
+
+        Both alternatives satisfy the guarantee above.  They differ in which
+        unit absorbs load first:
+
+          Fleet [5 MW, 20 MW], shortfall 12 MW:
+            Equal-share:   round 1 share=6 → A capped at 5, B=6 → residual 1
+                           round 2 share=1 → B=7       result [5.0,  7.0]
+            Proportional:  A=12×(5/25)=2.4, B=9.6      result [2.4,  9.6]
+
+        Equal-share drives the small unit to 100% of its ceiling while the
+        large unit sits at 35%.  Because D13 takes min() over per-unit
+        endurance, the unit driven HARDEST sets fleet endurance.  Equal-share
+        can therefore yield a SHORTER fleet endurance than proportional for the
+        same shortfall: if A has the same SoC/MW as B, A's endurance (at 5 MW)
+        is shorter than B's would have been (at 9.6 MW) even though B's
+        allocation is larger.
+
+        Equal-share is the chosen policy because:
+          1. Full small-unit utilisation is the physically correct first step —
+             a unit that can produce should be driven to its rated limit before
+             the excess falls to larger units.
+          2. Proportional-by-ceiling under-uses small units, which caused D11's
+             max_sustainable_seconds to return 0.0 for seemingly low allocations
+             when the implicit ceiling was never checked.  That code path is now
+             an error (see D11 note above).
+          3. Fleet endurance is captured separately via D13's min(); the
+             allocation policy does not need to optimise endurance — it needs
+             to tell each unit what to attempt, and the alert mechanism tells
+             the operator whether that attempt will outlast the gap.
 
         If total bridging capacity is zero (all units depleted or anchored to
         zero), fall back to rated_mw-proportional so the taper/SoC logic still
@@ -451,7 +480,7 @@ class DispatchArbitrator:
                 fires_at_sim_time=sim_time,
             )
 
-        allocations = self._proportional_allocations(peak_shortfall_mw, ceilings)
+        allocations = self._capped_equal_share_allocations(peak_shortfall_mw, ceilings)
 
         # D13: min over capped shares, not sum.
         fleet_min_s = min(
@@ -503,7 +532,7 @@ class DispatchArbitrator:
         # passed directly to cover_shortfall, which uses them as the power cap.
         island_mode = self.site.island_mode
         ceilings = [b.bridging_available_mw(island_mode) for b in self.bess_units]
-        allocations = self._proportional_allocations(fleet_shortfall, ceilings)
+        allocations = self._capped_equal_share_allocations(fleet_shortfall, ceilings)
 
         bess_output_mw = 0.0
         for bess, alloc, ceiling in zip(self.bess_units, allocations, ceilings):

@@ -188,13 +188,14 @@ def test_bess_bridging_seconds_above_power_ceiling_returns_zero():
         f"expected 0.0 s above power ceiling, got {result}"
     )
 
-    # D14: _proportional_allocations caps at the ceiling; max_sustainable no longer
-    # returns 0.0 from this path.  Power-limited cases are detected by comparing
-    # demand to sum(ceilings) — the same guard used by stage_for_predicted_step
-    # and evaluate_tick — not by relying on D11's max_sustainable 0.0 return.
+    # D14: _capped_equal_share_allocations caps at the ceiling; max_sustainable
+    # no longer returns 0.0 from this path.  Power-limited cases are detected
+    # by comparing demand to sum(ceilings) — the same guard used by
+    # stage_for_predicted_step and evaluate_tick — not by relying on D11's
+    # max_sustainable 0.0 return.
     island_mode = site.island_mode
     ceilings = [bess.bridging_available_mw(island_mode)]  # [5.0 MW]
-    allocs = state.arbitrator._proportional_allocations(demand_mw, ceilings)
+    allocs = state.arbitrator._capped_equal_share_allocations(demand_mw, ceilings)
     assert allocs == pytest.approx([5.0], abs=1e-9), (
         f"D14: allocation capped at ceiling 5.0 MW; got {allocs}"
     )

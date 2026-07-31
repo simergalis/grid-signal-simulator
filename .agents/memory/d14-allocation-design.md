@@ -29,10 +29,17 @@ Any future code path that calls `_proportional_allocations` then feeds the resul
 `max_sustainable_seconds` must add a `demand > sum(ceilings)` check first.
 If it is skipped, a power-limited fleet will silently report finite endurance.
 
+## Naming
+Function was renamed from `_proportional_allocations` to `_capped_equal_share_allocations`.
+The old name was a lie after D14 — call sites in dispatch.py, simulation_core.py, and tests
+all updated. Any future call site must also use `_capped_equal_share_allocations`.
+
 ## Tests updated by D14
-- `test_item4_heterogeneous_fleet_proportional_split`: expected changed from [1.0, 3.0] to [2.0, 2.0]
-  for [2 MW, 6 MW] fleet with 4 MW demand.
-- `test_bess_bridging_seconds_above_power_ceiling_returns_zero`: removed stale fleet_min==0.0
-  assertion; replaced with allocs-capped assertion + power-limited pre-condition comment.
+- `test_item4_small_unit_capped_to_ceiling_under_equal_share` (renamed from
+  `test_item4_heterogeneous_fleet_proportional_split`): [2.0,6.0] MW ceilings, demand 4 MW.
+  A is capped at 2.0 (100% utilised), B gets 2.0 (33%). Equal MWs from unequal ceilings is
+  correct — capping bound for A.
+- `test_bess_bridging_seconds_above_power_ceiling_returns_zero`: removed stale fleet_min==0.0;
+  replaced with allocs-capped assertion + power-limited pre-condition comment.
 - New test: `test_d14_capped_allocation_sum_invariant` — covers demand<ceiling, demand>ceiling,
   and the D14 heterogeneous example ([5,20] fleet, demand=12 → [5,7]).
