@@ -312,14 +312,34 @@ TC-12–TC-27, TC-34, TC-36–TC-40, TC-45, TC-53–TC-54
 in `RunContext` and calls it from `_drive()` after `_update_thermal_state()` each tick.
 
 **Engines are observe-only** — they read `TickResult` fields but write nothing to `sim_state`.
-The dispatch trace hash is therefore unaffected; all three new scenarios have identical hashes
-to demo-20mw in the determinism gate (`f33094cadb63…`), confirming zero influence on dispatch.
+The dispatch trace hash is therefore unaffected; all three new scenarios produce **identical hashes
+to demo-20mw** in the determinism gate (`f33094cadb63…`).
+
+> **AE1a — why identical hashes are the proof, not a wiring failure.**
+> A cold reader might assume identical hashes mean the engine call was silently skipped.
+> The opposite is true: because the engines are observe-only (no `sim_state` writes), the
+> only way the dispatch trace *could* differ is if the engine call had a side-effect on
+> `sim_state`. The hash match is therefore the formal proof that the non-perturbation
+> guarantee holds. Wiring failures would be caught by the RunContext field assertions in
+> `test_step16_wiring.py` (which verify `procurement_layer is not None` etc.), not by the
+> hash. Do not mistake "same hash" for "engine not called".
 
 | Scenario | Engine | TCs exercised |
 |----------|--------|--------------|
 | demo-procurement | `ProcurementLayer.evaluate_tick()` | TC-47 (NonFirmImportEffect), TC-52 (ReservationProposal) |
 | demo-maintenance | `MaintenanceLayer.evaluate_tick()` | TC-58 (re-rated reserve), TC-59 (full-window validation), TC-60 (raise requires_confirmation) |
-| demo-ramp-relax | `RampRelaxationEngine.evaluate()` | TC-75 (upper-bound check), TC-76 (covered by unit test; evaluate() path exercised) |
+| demo-ramp-relax | `RampRelaxationEngine.evaluate()` | TC-75 (upper-bound check — approximate; see AE1b below), TC-76 (covered by unit test; evaluate() path exercised) |
+
+> **AE1b — TC-75 live-path coverage uses an approximate reserve position (PROTO-22).**
+> `_drive()` builds the `ReservePosition` with `available_capacity_mw = turbine_rated_mw`
+> (25 MW in demo-ramp-relax). This omits BESS bridging capacity and renewable generation,
+> overstating dispatchable headroom. TC-75 gates on `headroom_at_upper_bound >= threshold`
+> precisely so that relaxation is *conservative* (the upper-bound check is meant to be the
+> worst-case demand, preserving safety margin). An optimistic proxy works against that
+> intent — in a real deployment the position should be computed from all contributing
+> sources. Tagged **PROTO-22 (CHOSEN, no measured basis)** in the engine docstring and at
+> the call site in `_drive()`. The unit tests for TC-75 use exact positions and are not
+> affected.
 
 **`ScenarioSpec.calibrated`** is left at its default `False` for all three — `site.uncalibrated=True`
 is correct since these scenarios don't need the curtailment dwell to fire.

@@ -164,6 +164,17 @@ class RampRelaxationEngine:
 
         Returns a SiteRampPolicy.  Callers act on adaptive_active to decide
         whether to apply the shortened adaptive ramp duration.
+
+        PROTO-22 (CHOSEN, no measured basis) — capacity proxy in demo scenarios:
+        When called from RunManager._drive(), available_capacity_mw is set to
+        turbine_rated_mw only.  This omits BESS bridging capacity and renewable
+        generation, overstating available headroom.  TC-75's upper-bound gate is
+        intentionally conservative (upper bound = worst-case demand), so an
+        optimistic capacity proxy works against that intent.  In a production
+        deployment, available_capacity_mw must be computed from all contributing
+        dispatchable sources (turbine fleet + BESS SoC headroom + firm renewable).
+        The unit tests for TC-75 use exact, independently controlled positions and
+        are not affected by this approximation.
         """
         # TC-76: GridSignal loss always returns baseline regardless of reserve.
         if not gridSignal_connected:

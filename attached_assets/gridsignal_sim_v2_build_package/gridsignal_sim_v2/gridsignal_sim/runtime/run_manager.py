@@ -655,12 +655,18 @@ class RunManager:
                 # Observe-only: evaluate() returns a SiteRampPolicy but the
                 # policy is advisory only — ramp caps are not applied to
                 # TurbineModule, so the dispatch trace hash is unaffected.
+                #
+                # PROTO-22 (CHOSEN, no measured basis): available_capacity_mw
+                # is set to turbine_rated_mw only, omitting BESS bridging and
+                # renewable contribution.  This overstates headroom and works
+                # against TC-75's conservative upper-bound intent.  A production
+                # deployment must include all dispatchable sources.  See the
+                # RampRelaxationEngine.evaluate() docstring for full rationale.
                 if ctx.ramp_relaxation_engine is not None:
                     from core.ramp_relaxation import ReservePosition  # lazy
                     ctx.ramp_relaxation_engine.evaluate(
                         ReservePosition(
-                            # Use turbine_rated_mw as total capacity proxy.
-                            # Falls back to current output if rated_mw unknown.
+                            # PROTO-22: turbine_rated_mw proxy — see note above.
                             available_capacity_mw=(
                                 ctx.turbine_rated_mw
                                 or (
@@ -669,7 +675,7 @@ class RunManager:
                                 )
                             ),
                             current_demand_mw=tick_result.net_demand_mw,
-                            # PROTO-AD1: +10% pessimistic upper-bound forecast.
+                            # +10% pessimistic upper-bound forecast.
                             forecast_upper_bound_mw=(
                                 tick_result.net_demand_mw * 1.10
                             ),
