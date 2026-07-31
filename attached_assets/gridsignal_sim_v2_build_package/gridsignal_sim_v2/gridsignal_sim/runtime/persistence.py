@@ -135,7 +135,21 @@ class AssetConfig(Base):
 
 class Scenario(Base):
     """§8.1 Scenario: a named run configuration; one row per run.
-    finalize() creates or updates this row when the run completes."""
+    finalize() creates or updates this row when the run completes.
+
+    Step 8 additions:
+    - scenario_id (String, nullable, indexed): the stable ID used by
+      api/routes/scenarios.py ScenarioStore.  Null for runs that were
+      started via the direct job_id+node_count path.
+    - spec_json (Text, nullable): JSON-serialised ScenarioSpec, copied from
+      ScenarioRecord.spec_json at run start.  Null for direct-path runs.
+      Step 9 migrates ScenarioStore.create() to write rows here instead of
+      to the in-memory dict.
+
+    The run_id PK is kept for backwards compatibility with the Step 2 ORM
+    schema.  scenario_id is a separate, stable identifier created once per
+    scenario (vs. run_id which is minted per run).
+    """
 
     __tablename__ = "scenario"
 
@@ -149,6 +163,13 @@ class Scenario(Base):
         DateTime(timezone=True), nullable=True
     )
     verdict: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    # Step 8: stable scenario ID and full spec (both nullable for old rows).
+    scenario_id: Mapped[Optional[str]] = mapped_column(
+        String, nullable=True, index=True, default=None
+    )
+    spec_json: Mapped[Optional[str]] = mapped_column(
+        Text, nullable=True, default=None
+    )
 
 
 class RunTimeseries(Base):

@@ -150,7 +150,7 @@ def test_delete_run_not_found() -> None:
 # ---------------------------------------------------------------------------
 
 def test_post_run_invalid_body_returns_422() -> None:
-    """An empty body — no scenario_preset, no job_id, no node_count — must be
+    """An empty body — no scenario_id, no job_id, no node_count — must be
     rejected with 422.
 
     After the F1 fix, job_id and node_count are Optional fields validated
@@ -165,7 +165,7 @@ def test_post_run_invalid_body_returns_422() -> None:
     assert resp.status_code == 422
     body_text = resp.text
     # The model_validator message is:
-    #   "Fields ['job_id', 'node_count'] are required when scenario_preset is not provided."
+    #   "Fields ['job_id', 'node_count'] are required when scenario_id is not provided."
     assert "job_id" in body_text
     assert "node_count" in body_text
 

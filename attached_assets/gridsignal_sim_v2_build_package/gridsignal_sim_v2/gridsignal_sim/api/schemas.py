@@ -2,6 +2,7 @@
 api/schemas.py — Pydantic request / response models for the HTTP API.
 
 Step 6 / v2.5 §8.1.
+Step 8: adds ScenarioSpec + related models; removes F1 scenario_preset scaffolding.
 
 No imports from core/ — the wire format is owned here; core/models.py
 is the authoritative in-process representation and is not exposed
@@ -10,38 +11,184 @@ directly to callers.
 
 from __future__ import annotations
 
-from typing import Literal, Optional
+import uuid as _uuid
+from typing import Optional
 
 from pydantic import BaseModel, Field, model_validator
 
-# Accepted values for scenario_preset (F1 scaffolding — Step 8 replaces
-# with real scenario CRUD).
-ScenarioPreset = Literal["demo-20mw", "demo-alert", "demo-5mw", "demo-baseline"]
 
+# ---------------------------------------------------------------------------
+# Step 8: Scenario schemas
+# ---------------------------------------------------------------------------
+
+class WorkloadEventSpec(BaseModel):
+    """One scripted workload event (GPU job or renewable step) within a scenario.
+
+    event_type must be a WorkloadEventType string value:
+      "starting"   — GPU job ramp begins; staging fires with dt_lead_seconds.
+      "job_end"    — GPU job finishes.
+      "solar_step" — Renewable curtailment; staging fires with dt_lead=0 (§7.1.1).
+      Any other WorkloadEventType value is forwarded as-is.
+
+    For solar_step events job_id, node_count, and hardware_profile_id are
+    ignored by the runtime; renewable_shortfall_mw carries the staging delta.
+    """
+    event_id: str = Field(default_factory=lambda: f"evt-{_uuid.uuid4().hex[:8]}")
+    job_id: str = ""
+    event_type: str  # WorkloadEventType string value
+    timestamp: float = Field(ge=0.0)
+    node_count: int = Field(default=0, ge=0)
+    hardware_profile_id: str = "enterprise_8gpu_air"
+    # §7.1.1 SOLAR_STEP: magnitude of the renewable drop that triggers staging.
+    # Zero for all other event types.
+    renewable_shortfall_mw: float = Field(default=0.0, ge=0.0)
+
+
+class BessUnitSpec(BaseModel):
+    """One BESS unit within a scenario's fleet."""
+    asset_id: str
+    rated_mw: float = Field(gt=0)
+    usable_mwh: float = Field(gt=0)
+    initial_soc_fraction: float = Field(default=0.95, ge=0.1, le=1.0)
+    # §7.1.2: at most one unit per scenario may be the grid-forming anchor.
+    # Validated at the ScenarioSpec level.
+    grid_forming: bool = False
+
+    def c_rate(self) -> float:
+        return self.rated_mw / self.usable_mwh
+
+    def c_rate_warning(self) -> Optional[str]:
+        """D12 / PROTO-9: warn if C-rate is outside 0.25–4.0 C.
+        Returns None when within bounds.  Callers include the warning as a
+        response field; it never causes a 400 (the bound is chosen, not
+        measured)."""
+        c = self.c_rate()
+        if not (0.25 <= c <= 4.0):
+            return (
+                f"{self.asset_id}: C-rate {c:.2f} C outside 0.25–4.0 C "
+                f"(PROTO-9 — chosen, no measured basis; "
+                f"rated_mw={self.rated_mw}, usable_mwh={self.usable_mwh})"
+            )
+        return None
+
+
+class TurbineUnitSpec(BaseModel):
+    """One turbine unit within a scenario's fleet."""
+    asset_id: str
+    rated_mw: float = Field(default=10.0, gt=0)
+    r_asset_mw_per_s: float = Field(default=0.2, gt=0)
+
+
+class ScenarioSpec(BaseModel):
+    """Full scenario configuration.  Stored as spec_json in ScenarioRecord.
+    Posted to POST /scenarios or PUT /scenarios/{id}.
+
+    irradiance_steps convention — zero-order hold ("value applies from t
+    onward"): [(0.0, 1.0), (30.0, 0.0)] gives 1.0 for t<30 and 0.0 for
+    t≥30.  The last sample's value applies for all time beyond it.
+    """
+    name: str = Field(min_length=1)
+    description: str = ""
+
+    # Workload events ordered by timestamp.  Empty list = no scripted events
+    # (idle run or run with pre-existing state from t<0, which is not yet
+    # supported — see TC-33 compute scenario for the deferred-start pattern).
+    workload_events: list[WorkloadEventSpec] = Field(default_factory=list)
+    hardware_profile_id: str = "enterprise_8gpu_air"
+    dt_lead_seconds: float = Field(
+        default=30.0, ge=0.0, le=300.0,
+        description=(
+            "Advance warning time for GPU job starts (seconds).  "
+            "SOLAR_STEP events always use dt_lead=0 regardless of this value (§7.1.1)."
+        ),
+    )
+
+    bess_units: list[BessUnitSpec] = Field(min_length=1)
+    turbine_units: list[TurbineUnitSpec] = Field(min_length=1)
+
+    solar_rated_mw: float = Field(default=0.0, ge=0.0)
+    irradiance_steps: list[tuple[float, float]] = Field(
+        default_factory=lambda: [(0.0, 1.0)],
+        description="Zero-order-hold irradiance profile. Duplicate timestamps unnecessary.",
+    )
+
+    island_mode: bool = True
+    pue_base: float = Field(default=1.03, ge=1.0, le=2.0)
+    end_sim_time: float = Field(default=300.0, ge=60.0, le=86400.0)
+
+    @model_validator(mode="after")
+    def _single_grid_forming_anchor(self) -> "ScenarioSpec":
+        """§7.1.2: only one BESS unit may be the grid-forming anchor."""
+        forming = [u for u in self.bess_units if u.grid_forming]
+        if len(forming) > 1:
+            ids = [u.asset_id for u in forming]
+            raise ValueError(
+                f"§7.1.2: at most one BESS unit may have grid_forming=True "
+                f"(found {len(forming)}: {ids}). "
+                f"Only the designated island-frequency anchor holds the anchor reserve."
+            )
+        return self
+
+    def collect_c_rate_warnings(self) -> list[str]:
+        """Return all non-None C-rate warnings across the BESS fleet."""
+        return [w for u in self.bess_units if (w := u.c_rate_warning()) is not None]
+
+
+class ScenarioSummary(BaseModel):
+    """Lightweight row returned by GET /scenarios (list)."""
+    scenario_id: str
+    name: str
+    description: str
+    created_at: str   # ISO-8601 UTC
+
+
+class ScenarioDetailResponse(BaseModel):
+    """Full detail returned by GET /scenarios/{id}."""
+    scenario_id: str
+    name: str
+    description: str
+    created_at: str
+    spec: ScenarioSpec
+    c_rate_warnings: list[str]
+
+
+class CreateScenarioResponse(BaseModel):
+    """Returned by POST /scenarios and PUT /scenarios/{id}."""
+    scenario_id: str
+    name: str
+    c_rate_warnings: list[str]
+
+
+# ---------------------------------------------------------------------------
+# Run lifecycle schemas
+# ---------------------------------------------------------------------------
 
 class StartRunRequest(BaseModel):
-    # F1 fix: scenario_preset bypasses the per-field job_id / node_count
-    # requirement, instead expanding to the build_run_context kwargs defined
-    # in _SCENARIO_PRESETS (api/routes/runs.py).  This is scaffolding so
-    # Page 1 is demonstrable without Step 8's real scenario CRUD.
-    scenario_preset: Optional[ScenarioPreset] = Field(
+    """Start a new simulation run.
+
+    Two accepted paths:
+      (a) scenario_id  — reference a stored ScenarioSpec; fleet and workload
+          parameters come from the stored spec.
+      (b) job_id + node_count  — direct programmatic path; used by tests and
+          load-test scripts.
+
+    Step 8 removes the F1 scenario_preset scaffolding.  Callers that used
+    scenario_preset must switch to scenario_id (POST /scenarios first to
+    obtain one).
+    """
+    scenario_id: Optional[str] = Field(
         default=None,
-        description=(
-            "Named demo preset.  Sets all BESS / turbine parameters to the values "
-            "used by example_usage.py, including bess_rated_mw and bess_usable_mwh "
-            "which the individual fields cannot currently express.  When present, "
-            "job_id and node_count are optional.  Step 8 replaces this with real "
-            "scenario CRUD."
-        ),
+        description="Stored scenario ID from GET /scenarios. "
+                    "When set, all fleet/workload parameters come from the spec.",
     )
     job_id: Optional[str] = Field(
         default=None,
-        description="Job identifier; required when scenario_preset is not set.",
+        description="Job identifier; required when scenario_id is not set.",
     )
     node_count: Optional[int] = Field(
         default=None,
         ge=1,
-        description="Number of GPU nodes; required when scenario_preset is not set.",
+        description="Number of GPU nodes; required when scenario_id is not set.",
     )
     hardware_profile_id: str = "enterprise_8gpu_air"
     end_sim_time: float = Field(default=300.0, gt=0, description="Simulated seconds to run")
@@ -52,9 +199,9 @@ class StartRunRequest(BaseModel):
     )
 
     @model_validator(mode="after")
-    def _require_job_fields_without_preset(self) -> "StartRunRequest":
-        """job_id and node_count are required exactly when scenario_preset is absent."""
-        if self.scenario_preset is None:
+    def _require_scenario_or_job_fields(self) -> "StartRunRequest":
+        """scenario_id OR (job_id + node_count) must be present."""
+        if self.scenario_id is None:
             missing = [
                 name
                 for name, val in [("job_id", self.job_id), ("node_count", self.node_count)]
@@ -62,7 +209,7 @@ class StartRunRequest(BaseModel):
             ]
             if missing:
                 raise ValueError(
-                    f"Fields {missing} are required when scenario_preset is not provided."
+                    f"Fields {missing} are required when scenario_id is not provided."
                 )
         return self
 

@@ -34,15 +34,25 @@ from fastapi import FastAPI
 
 from runtime.run_manager import RunManager, WebSocketHub
 from api.routes import runs, ws as ws_routes
+from api.routes.scenarios import build_seeded_store
+from api.routes import scenarios as scenarios_routes
 
 
 @asynccontextmanager
 async def _lifespan(application: FastAPI):
-    """Create process-lifetime singletons and attach them to app.state."""
+    """Create process-lifetime singletons and attach them to app.state.
+
+    Step 8 additions:
+      scenario_store — in-memory ScenarioStore pre-seeded with the seven
+      built-in demo scenarios.  Step 9 replaces this with a SqliteScenarioStore
+      using the same Scenario ORM entity (runtime/persistence.py) + spec_json.
+    """
     hub = WebSocketHub()
     manager = RunManager(hub)
+    scenario_store = build_seeded_store()
     application.state.ws_hub = hub
     application.state.run_manager = manager
+    application.state.scenario_store = scenario_store
     yield
     # asyncio shuts down remaining run tasks on process exit.
     # Explicit cleanup (e.g. waiting for in-flight runs) would go here
@@ -60,6 +70,7 @@ def create_app() -> FastAPI:
         version="0.1.0",
         lifespan=_lifespan,
     )
+    application.include_router(scenarios_routes.router)
     application.include_router(runs.router)
     application.include_router(ws_routes.router)
     return application

@@ -90,7 +90,23 @@ class SimulationState:
         timestamp is reached. Fixed order per module design (Section
         5 of the design spec): GPU modules first (they own node
         counts), then the arbitrator is staged if this is a job start.
+
+        Step 8 — SOLAR_STEP: §7.1.1 renewable curtailment carries no advance
+        signal.  The staging path is identical to a compute STARTING event, but
+        dt_lead is always 0.  This is the TC-33 invariant made executable:
+        stage_for_predicted_step sees the same delta_p_mw regardless of whether
+        the step came from a compute ramp or a renewable drop.  Only dt_lead
+        differs, which correctly makes the renewable gap (and therefore the BESS
+        bridging requirement) larger.  Early-return so the GPU plane is untouched.
         """
+        if signal.event_type == WorkloadEventType.SOLAR_STEP:
+            self._pending_alert = self.arbitrator.stage_for_predicted_step(
+                delta_p_mw=signal.renewable_shortfall_mw,
+                dt_lead_seconds=0.0,   # §7.1.1: no advance signal for renewables
+                sim_time=signal.timestamp,
+            )
+            return
+
         gpu = self._owning_gpu_module(signal)
         new_unmapped = gpu.apply_signal(signal)
         # Unmapped-hardware confidence tagging is per-tick via evaluate_tick step 6.

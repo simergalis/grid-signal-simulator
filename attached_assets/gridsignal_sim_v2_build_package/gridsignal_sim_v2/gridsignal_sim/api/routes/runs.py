@@ -2,6 +2,8 @@
 api/routes/runs.py — Run lifecycle REST endpoints.
 
 Step 6 / v2.5 §8.1.
+Step 8: removes F1 _SCENARIO_PRESETS scaffolding; adds scenario_id path that
+        looks up a stored ScenarioSpec and calls build_run_context_from_spec.
 
 POST   /runs               start a new run
 GET    /runs               list active run IDs
@@ -11,57 +13,24 @@ DELETE /runs/{run_id}      cancel a run
 Invariants:
   - RunManager is retrieved from app.state (set once in the lifespan).
     No endpoint creates its own RunManager instance.
+  - ScenarioStore is retrieved from app.state (set once in the lifespan).
+    No endpoint creates its own ScenarioStore instance.
   - No SimClock construction or evaluate_tick() calls here.
     All simulation logic lives in RunContext.step() (runtime/run_manager.py).
 """
 
 from __future__ import annotations
 
+import json
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from api.schemas import RunListResponse, RunStatusResponse, StartRunRequest, StartRunResponse
 from runtime.run_manager import RunManager
-from runtime.scenario_factory import build_run_context
+from runtime.scenario_factory import build_run_context, build_run_context_from_spec
 
 router = APIRouter(prefix="/runs", tags=["runs"])
-
-# ---------------------------------------------------------------------------
-# F1 scaffolding: named scenario presets.
-# Maps scenario_preset values to build_run_context keyword arguments,
-# mirroring the parameters used by runtime/example_usage.py.
-# Step 8 replaces this dict with real scenario CRUD; nothing in core/ or
-# runtime/ knows about these names — they are an API-layer convenience only.
-# ---------------------------------------------------------------------------
-
-_SCENARIO_PRESETS: dict[str, dict] = {
-    "demo-20mw": dict(
-        job_id="job-big",
-        node_count=1900,
-        turbine_rated_mw=25.0,
-        bess_rated_mw=18.0,
-        bess_usable_mwh=8.0,
-        bess_grid_forming=True,
-    ),
-    "demo-alert": dict(
-        job_id="job-alert",
-        node_count=1900,
-        turbine_rated_mw=25.0,
-        # bess_rated_mw uses build_run_context default of 5.0
-        bess_usable_mwh=2.5,
-        bess_grid_forming=True,
-    ),
-    "demo-5mw": dict(
-        job_id="job-small",
-        node_count=476,
-        dt_lead_seconds=60.0,
-    ),
-    "demo-baseline": dict(
-        job_id="job-idle",
-        node_count=1,
-    ),
-}
 
 
 def _run_manager(request: Request) -> RunManager:
@@ -77,6 +46,7 @@ def _run_manager(request: Request) -> RunManager:
 )
 async def start_run(
     body: StartRunRequest,
+    request: Request,
     manager: RunManager = Depends(_run_manager),
 ) -> StartRunResponse:
     """Create and immediately start a new RunContext.
@@ -84,29 +54,45 @@ async def start_run(
     Returns the assigned run_id.  The run advances autonomously via an
     asyncio task; subscribe to /ws/{run_id} for live tick data.
 
-    When scenario_preset is provided, all BESS / turbine parameters are
-    expanded from _SCENARIO_PRESETS.  When absent, job_id and node_count
-    must both be present (enforced by the StartRunRequest validator).
+    Two accepted paths (Step 8 — scenario_preset removed):
+
+    (a) scenario_id: looks up the stored ScenarioSpec and builds the
+        RunContext via build_run_context_from_spec.  All fleet/workload
+        parameters come from the stored spec.
+
+    (b) job_id + node_count: direct programmatic path — calls the flat
+        build_run_context kwarg interface.  Used by tests and load scripts.
     """
     run_id = f"run-{uuid.uuid4().hex[:12]}"
 
-    if body.scenario_preset is not None:
-        preset_kwargs = _SCENARIO_PRESETS[body.scenario_preset].copy()
+    if body.scenario_id is not None:
+        scenario_store = request.app.state.scenario_store
+        record = scenario_store.get(body.scenario_id)
+        if record is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Scenario {body.scenario_id!r} not found. "
+                       f"Use GET /scenarios to list available scenarios.",
+            )
+        scenario_store.link_run(body.scenario_id, run_id)
+        spec_data = json.loads(record.spec_json)
+        ctx = build_run_context_from_spec(
+            run_id,
+            spec_data,
+            playback_speed=body.playback_speed,
+        )
     else:
-        # hardware_profile_id is passed as an explicit kwarg below; omit it here
-        # to avoid "multiple values for keyword argument" when the two are merged.
-        preset_kwargs = {
-            "job_id": body.job_id,
-            "node_count": body.node_count,
-        }
+        # Direct programmatic path — scenario_id absent, job_id+node_count present
+        # (enforced by StartRunRequest.model_validator).
+        ctx = build_run_context(
+            run_id,
+            job_id=body.job_id,
+            node_count=body.node_count,
+            hardware_profile_id=body.hardware_profile_id,
+            end_sim_time=body.end_sim_time,
+            playback_speed=body.playback_speed,
+        )
 
-    ctx = build_run_context(
-        run_id,
-        hardware_profile_id=body.hardware_profile_id,
-        end_sim_time=body.end_sim_time,
-        playback_speed=body.playback_speed,
-        **preset_kwargs,
-    )
     await manager.start_run(ctx)
     return StartRunResponse(run_id=run_id)
 

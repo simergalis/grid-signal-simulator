@@ -64,6 +64,12 @@ class WorkloadEventType(str, Enum):
     CHECKPOINT_END = "checkpoint_end"
     JOB_END = "job_end"
     CANCELLED = "cancelled"
+    # Step 8 — §7.1.1: renewable curtailment fires this event so the arbitrator
+    # stages with dt_lead=0 through the same path as a compute step.  The
+    # symmetry is TC-33's core invariant: identical delta_p_mw produces identical
+    # staging arithmetic regardless of whether the ΔP came from a compute step
+    # (dt_lead>0) or a renewable step (dt_lead=0).
+    SOLAR_STEP = "solar_step"
 
 
 class WorkloadClass(str, Enum):
@@ -86,6 +92,10 @@ class WorkloadSignal:
     workload_class: WorkloadClass
     site_id: str
     queue_depth: Optional[float] = None  # required for inference class
+    # §7.1.1 SOLAR_STEP: magnitude of the renewable-output drop that triggers
+    # staging.  Zero for all other event types.  Named _mw (megawatts) not
+    # _fraction because staging arithmetic works in absolute power, not ratios.
+    renewable_shortfall_mw: float = 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -158,6 +168,25 @@ class BessConfig:
     #   Default False: most units in a fleet are grid-following; the anchor role
     #   is an explicit designation, not a default assumption.
     grid_forming: bool = False
+
+    def __post_init__(self) -> None:
+        """D12 / PROTO-9: warn when C-rate is outside the 0.25–4.0 C physical
+        range (chosen, no measured basis).  Deployed grid storage runs ~0.5 C;
+        the guard exists to catch typos, not to block non-standard configs.
+        Emitted as a warning so operators modelling real systems outside this
+        range are not blocked.
+        """
+        import warnings
+        _c_rate = self.rated_mw / self.usable_mwh
+        if not (0.25 <= _c_rate <= 4.0):
+            warnings.warn(
+                f"BessConfig {self.asset_id!r}: C-rate {_c_rate:.2f} C is "
+                f"outside the 0.25–4.0 C physical range "
+                f"(PROTO-9 — chosen, no measured basis). "
+                f"rated_mw={self.rated_mw}, usable_mwh={self.usable_mwh}",
+                UserWarning,
+                stacklevel=2,
+            )
 
 
 @dataclass

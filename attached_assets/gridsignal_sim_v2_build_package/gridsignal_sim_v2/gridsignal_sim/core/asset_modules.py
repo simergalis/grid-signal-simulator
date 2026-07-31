@@ -722,17 +722,30 @@ class IrradianceProfile:
         self._samples = sorted(samples)
 
     def fraction_at(self, sim_time: float) -> float:
+        """Return the irradiance fraction for sim_time.
+
+        Convention — zero-order hold ("value applies from t onward"):
+        Each sample specifies the value that holds from its timestamp
+        forward until the next sample.  The last sample's value applies
+        for all time beyond it.
+
+        Examples:
+          [(0.0, 1.0)]                  → always 1.0
+          [(0.0, 1.0), (30.0, 0.0)]     → 1.0 for t < 30, 0.0 for t ≥ 30
+          [(0.0, 1.0), (end, 1.0)]      → always 1.0 (degenerate constant)
+
+        Consequence: duplicate timestamps are unnecessary.  The old style
+        [(0, 1.0), (30, 1.0), (30, 0.0)] was used to model a step-drop;
+        simply [(0, 1.0), (30, 0.0)] expresses the same thing with fewer
+        samples.  If two samples share a timestamp the last one (by sort
+        order) wins, which matches the intuitive "override" reading.
+        """
         if not self._samples:
             return 1.0
-        if sim_time <= self._samples[0][0]:
-            return self._samples[0][1]
-        if sim_time >= self._samples[-1][0]:
-            return self._samples[-1][1]
-        for (t0, f0), (t1, f1) in zip(self._samples, self._samples[1:]):
-            if t0 <= sim_time <= t1:
-                span = t1 - t0
-                if span == 0:
-                    return f0
-                weight = (sim_time - t0) / span
-                return f0 + (f1 - f0) * weight
-        return self._samples[-1][1]
+        result = self._samples[0][1]   # value before the first anchor
+        for t, f in self._samples:
+            if t <= sim_time:
+                result = f
+            else:
+                break
+        return result

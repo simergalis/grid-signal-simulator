@@ -15,6 +15,8 @@ is the concurrency layer).
 
 from __future__ import annotations
 
+import uuid as _uuid
+
 from core.asset_modules import (
     BessModule,
     CoolingModule,
@@ -26,6 +28,7 @@ from core.asset_modules import (
 from core.models import (
     BessConfig,
     HardwareProfile,
+    IslandMode,
     SiteConfig,
     SolarConfig,
     TurbineConfig,
@@ -236,6 +239,141 @@ def build_load_test_context(
         events=events,
         dt_lead_seconds=dt_lead_seconds,
         end_sim_time=end_sim_time,
+        playback_speed=playback_speed,
+        sink=InMemoryTimeseriesSink(),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Step 8: build_run_context_from_spec
+# ---------------------------------------------------------------------------
+
+def build_run_context_from_spec(
+    run_id: str,
+    spec_data: dict,
+    playback_speed: float = 0.0,
+) -> RunContext:
+    """Build a RunContext from a scenario spec dictionary (JSON-round-trip safe).
+
+    ``spec_data`` is the plain-Python form of a serialised ScenarioSpec —
+    i.e. ``json.loads(record.spec_json)`` or ``spec.model_dump()``.
+    All dicts, lists, and scalars; no Pydantic models.
+
+    Design constraints:
+    - This function must NOT import from api/ (runtime/ → api/ is forbidden
+      by §21.1 plane-separation).  The caller (api/routes/runs.py) is
+      responsible for validating the spec via Pydantic and serialising it;
+      this function only reads a plain dict.
+    - WorkloadClass is always TRAINING.  The scenario builder does not
+      distinguish class types; that's a Step 10 concern.
+    - An empty workload_events list is valid (idle run or TC-33 compute
+      where the job starts at t>0).
+    - SOLAR_STEP events are forwarded with event_type=WorkloadEventType.SOLAR_STEP;
+      SimulationState.apply_workload_signal's early-return handles them.
+
+    Step 9 will swap ScenarioRecord.spec_json reads from in-memory to
+    SQLAlchemy while calling this function identically.
+    """
+    # ── Site configuration ────────────────────────────────────────────────
+    island = (
+        IslandMode.ISLANDED
+        if spec_data.get("island_mode", True)
+        else IslandMode.GRID_TIE
+    )
+    site = SiteConfig(
+        site_id=f"site-for-{run_id}",
+        pue_base=spec_data.get("pue_base", 1.03),
+        island_mode=island,
+    )
+
+    hw_id = spec_data.get("hardware_profile_id", "enterprise_8gpu_air")
+
+    # ── Modules ───────────────────────────────────────────────────────────
+    gpu_modules = [
+        GPUModule(
+            asset_id="gpu-0",
+            site=site,
+            hardware_library=DEFAULT_HARDWARE_LIBRARY,
+        )
+    ]
+    cooling = CoolingModule(asset_id="cooling-0", site=site)
+
+    turbines = [
+        TurbineModule(
+            TurbineConfig(
+                asset_id=t.get("asset_id") or f"turbine-{i}",
+                r_asset_mw_per_s=float(t.get("r_asset_mw_per_s", 0.2)),
+                rated_mw=float(t.get("rated_mw", 10.0)),
+            )
+        )
+        for i, t in enumerate(spec_data.get("turbine_units", []))
+    ]
+
+    bess_units = [
+        BessModule(
+            BessConfig(
+                asset_id=b.get("asset_id") or f"bess-{i}",
+                rated_mw=float(b.get("rated_mw", 5.0)),
+                usable_mwh=float(b.get("usable_mwh", 2.0)),
+                initial_soc_fraction=float(b.get("initial_soc_fraction", 0.95)),
+                grid_forming=bool(b.get("grid_forming", False)),
+            )
+        )
+        for i, b in enumerate(spec_data.get("bess_units", []))
+    ]
+
+    # ── Solar ─────────────────────────────────────────────────────────────
+    solar_rated_mw = float(spec_data.get("solar_rated_mw", 0.0))
+    irradiance_steps_raw = spec_data.get("irradiance_steps", [(0.0, 1.0)])
+    irradiance_steps: list[tuple[float, float]] = [tuple(s) for s in irradiance_steps_raw]
+
+    solar_arrays: list[SolarModule] = []
+    if solar_rated_mw > 0:
+        solar_arrays = [
+            SolarModule(
+                SolarConfig(asset_id="solar-0", rated_mw=solar_rated_mw),
+                irradiance_profile=IrradianceProfile(irradiance_steps),
+            )
+        ]
+
+    # ── SimulationState ───────────────────────────────────────────────────
+    sim_state = SimulationState(
+        run_id=run_id,
+        site=site,
+        gpu_modules=gpu_modules,
+        turbines=turbines,
+        bess_units=bess_units,
+        solar_arrays=solar_arrays,
+        cooling=cooling,
+    )
+
+    # ── Workload events ───────────────────────────────────────────────────
+    events: list[WorkloadSignal] = []
+    for evt in spec_data.get("workload_events", []):
+        event_id = evt.get("event_id") or f"evt-{_uuid.uuid4().hex[:8]}"
+        job_id = evt.get("job_id") or f"job-{_uuid.uuid4().hex[:8]}"
+        events.append(
+            WorkloadSignal(
+                event_id=event_id,
+                job_id=job_id,
+                event_type=WorkloadEventType(evt["event_type"]),
+                timestamp=float(evt["timestamp"]),
+                hardware_profile_id=evt.get("hardware_profile_id") or hw_id,
+                node_count=int(evt.get("node_count", 0)),
+                workload_class=WorkloadClass.TRAINING,
+                site_id=site.site_id,
+                renewable_shortfall_mw=float(evt.get("renewable_shortfall_mw", 0.0)),
+            )
+        )
+    events.sort(key=lambda e: e.timestamp)
+
+    # ── RunContext ────────────────────────────────────────────────────────
+    return RunContext(
+        run_id=run_id,
+        sim_state=sim_state,
+        events=events,
+        dt_lead_seconds=float(spec_data.get("dt_lead_seconds", 30.0)),
+        end_sim_time=float(spec_data.get("end_sim_time", 300.0)),
         playback_speed=playback_speed,
         sink=InMemoryTimeseriesSink(),
     )
