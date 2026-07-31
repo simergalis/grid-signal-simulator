@@ -27,15 +27,28 @@ PORT="${PORT:-8080}"
 echo "=== [start_prod] GridSignal Simulator v2 ==="
 echo "    Backend dir  : $BACKEND_DIR"
 echo "    Listening on : 0.0.0.0:$PORT"
-echo "    MISTRAL_API_KEY  : ${MISTRAL_API_KEY:+SET (LP-1 Mistral path active)}${MISTRAL_API_KEY:-ABSENT (LP-1 no-op active)}"
-echo "    ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:+SET (LP-1 Anthropic path active)}${ANTHROPIC_API_KEY:-ABSENT (LP-1 no-op active)}"
+# Use if/else — the original ${KEY:+word}${KEY:-fallback} pattern concatenates
+# both branches when KEY is set (":+" gives "word", ":-" gives the key VALUE),
+# leaking the secret into the log.  Proper conditionals avoid that.
+if [ -n "${MISTRAL_API_KEY:-}" ]; then
+    echo "    MISTRAL_API_KEY  : SET (LP-1 Mistral path active)"
+else
+    echo "    MISTRAL_API_KEY  : ABSENT (LP-1 no-op active)"
+fi
+if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+    echo "    ANTHROPIC_API_KEY: SET (LP-1 Anthropic path active)"
+else
+    echo "    ANTHROPIC_API_KEY: ABSENT (LP-1 no-op active)"
+fi
 echo ""
 
 cd "$BACKEND_DIR"
 
+# Use `python3 -m uvicorn` rather than bare `uvicorn` so the module is found
+# via the Python path (.pythonlibs) rather than requiring uvicorn on $PATH.
 # PYTHONPATH must include the backend root so `from core.xxx import ...` resolves.
 exec env PYTHONPATH="$BACKEND_DIR:${PYTHONPATH:-}" \
-  uvicorn api.app:app \
+  python3 -m uvicorn api.app:app \
     --host 0.0.0.0 \
     --port "$PORT" \
     --log-level info

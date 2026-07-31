@@ -1,0 +1,39 @@
+kind = "web"
+previewPath = "/"
+title = "GridSignal Simulator"
+description = "GridSignal Simulator v2 — a Python FastAPI + React SPA that models a grid-connected site with turbine, BESS, solar, and demand loads. Runs seeded scenario simulations (demo-20mw, demo-alert, demo-pms-shortfall, etc.) with real-time WebSocket tick streaming, forecast charts, curtailment proposals, and advisory overlays. The dev and production server is uvicorn; the React dashboard is pre-built and served as static files."
+version = "1.0.0"
+id = "artifacts/gridsignal"
+router = "path"
+
+[[services]]
+name = "web"
+# "/" claims all sub-paths including /ws/*, /scenarios, /runs for the proxy.
+paths = [ "/" ]
+localPort = 22126
+
+[services.env]
+PORT = "22126"
+BASE_PATH = "/"
+
+# Deliverable: dev preview now serves the real Python FastAPI via uvicorn.
+# Absolute path used because the artifact workflow CWD is artifacts/gridsignal/,
+# not the repo root, so relative "attached_assets/..." would fail.
+# start_prod.sh computes its own paths from $SCRIPT_DIR; it reads $PORT from env
+# (set to 22126 above). frontend/dist/ already exists so the SPA is served too.
+[services.development]
+run = "bash /home/runner/workspace/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/scripts/start_prod.sh"
+
+[services.production]
+
+[services.production.build]
+args = ["bash", "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/scripts/build_prod.sh"]
+
+[services.production.run]
+args = ["bash", "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/scripts/start_prod.sh"]
+
+[services.production.run.env]
+PORT = "8080"
+
+[services.production.health.startup]
+path = "/healthz"
