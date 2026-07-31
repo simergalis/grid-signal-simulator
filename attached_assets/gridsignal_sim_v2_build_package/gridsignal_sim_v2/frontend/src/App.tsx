@@ -28,9 +28,12 @@ import { AlertDock }         from './components/AlertDock'
 import { RunControlBar }     from './components/RunControlBar'
 import { ScenarioBuilder }   from './components/ScenarioBuilder'
 import { ResultsScreen }     from './components/ResultsScreen'
+import { ProposalsPage }     from './components/ProposalsPage'
 import { useTickStore }      from './store/tickStore'
 import { useScenarioStore }  from './store/scenarioStore'
 import { useTickStream }     from './ws/useTickStream'
+
+type PageView = 'overview' | 'proposals'
 
 const FRAME_INTERVAL_MS = 250   // 4 Hz render loop
 
@@ -40,6 +43,8 @@ export default function App() {
   const [resultsRunId,  setResultsRunId]  = useState<string | null>(null)
   const [drawerOpen,    setDrawerOpen]    = useState(false)
   const [editId,        setEditId]        = useState<string | null>(null)
+  const [currentPage,   setCurrentPage]   = useState<PageView>('overview')
+  const [agentsEnabled, setAgentsEnabled] = useState(true)
 
   const drainFrame = useTickStore(s => s.drainFrame)
   const setRunMeta = useTickStore(s => s.setRunMeta)
@@ -87,6 +92,17 @@ export default function App() {
     setDrawerOpen(false)
   }, [selectScenario])
 
+  const handleToggleAgents = useCallback(() => {
+    const next = !agentsEnabled
+    setAgentsEnabled(next)
+    // Best-effort API call — fire-and-forget; LP-1 guarantees dispatch is unaffected.
+    fetch('/api/agents/toggle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: next }),
+    }).catch(() => { /* ignore network errors */ })
+  }, [agentsEnabled])
+
   // Show results screen if a completed run is selected for viewing.
   if (resultsRunId !== null) {
     return (
@@ -115,24 +131,59 @@ export default function App() {
       {/* Persistent sim-clock header */}
       <SimClockHeader />
 
-      {/* 2×2 panel grid */}
-      <main className="flex-1 grid grid-cols-1 md:grid-cols-2 grid-rows-2 gap-px bg-border overflow-hidden">
-        {/* Row 1 */}
-        <div className="bg-surface overflow-auto">
-          <HeroPanel />
-        </div>
-        <div className="bg-surface overflow-hidden">
-          <ForecastChart />
-        </div>
+      {/* Page navigation tabs */}
+      <div className="flex gap-px border-b border-border bg-border flex-shrink-0">
+        {([
+          ['overview',   'Overview'],
+          ['proposals',  'Proposals & Learning'],
+        ] as const).map(([page, label]) => (
+          <button
+            key={page}
+            onClick={() => setCurrentPage(page)}
+            className={`px-4 py-2 text-xs font-medium transition-colors ${
+              currentPage === page
+                ? 'bg-surface text-text border-b-2 border-accent -mb-px'
+                : 'bg-canvas text-text-muted hover:text-text hover:bg-surface/50'
+            }`}
+          >
+            {label}
+            {page === 'proposals' && agentsEnabled && (
+              <span className="ml-1.5 inline-block w-1.5 h-1.5 rounded-full bg-green-400 align-middle" />
+            )}
+          </button>
+        ))}
+      </div>
 
-        {/* Row 2 */}
-        <div className="bg-surface overflow-auto">
-          <AssetReservePanel />
-        </div>
-        <div className="bg-surface overflow-auto">
-          <AlertDock />
-        </div>
-      </main>
+      {/* Page content */}
+      {currentPage === 'overview' ? (
+        /* 2×2 panel grid */
+        <main className="flex-1 grid grid-cols-1 md:grid-cols-2 grid-rows-2 gap-px bg-border overflow-hidden">
+          {/* Row 1 */}
+          <div className="bg-surface overflow-auto">
+            <HeroPanel />
+          </div>
+          <div className="bg-surface overflow-hidden">
+            <ForecastChart />
+          </div>
+
+          {/* Row 2 */}
+          <div className="bg-surface overflow-auto">
+            <AssetReservePanel />
+          </div>
+          <div className="bg-surface overflow-auto">
+            <AlertDock />
+          </div>
+        </main>
+      ) : (
+        /* §19.10 Proposals & Learning page */
+        <main className="flex-1 overflow-hidden">
+          <ProposalsPage
+            runId={runId ?? lastRunId}
+            agentsEnabled={agentsEnabled}
+            onToggleAgents={handleToggleAgents}
+          />
+        </main>
+      )}
 
       {/* Scenario Builder drawer */}
       {drawerOpen && (

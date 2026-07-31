@@ -588,3 +588,192 @@ class TestEvidenceWindowStructure:
                 f"Bin min/mean/max invariant violated: "
                 f"min={b.v_min} mean={b.v_mean} max={b.v_max}"
             )
+
+
+# ---------------------------------------------------------------------------
+# N2: transport-layer mock — exact wire bytes captured and checked for PII
+# ---------------------------------------------------------------------------
+
+class TestN2TransportLayerWireCapture:
+    """N2: verify TC-29 at the actual HTTP transport layer, not just at the
+    EvidenceWindow boundary.
+
+    The outbound Mistral/Anthropic HTTP request body is captured via a
+    transport-level monkeypatch of urllib.request.urlopen *before any bytes
+    leave the process*.  The captured bytes are then checked for PII tokens.
+
+    This test demonstrates option (b): a transport mock that asserts the exact
+    bytes on the wire.  It runs on every pytest invocation without requiring
+    real API keys.
+    """
+
+    SITE_ID = "site-n2-transport-test-acme-corp"
+    JOB_ID  = "job-n2-classified-run-XYZ-1234"
+    SKUS    = frozenset({"enterprise_8gpu_air", "midrange_4gpu_water"})
+
+    def _make_evidence(self) -> EvidenceWindow:
+        ticks = _make_ticks(60)
+        return deidentify(
+            ticks,
+            site_id=self.SITE_ID,
+            job_id=self.JOB_ID,
+            hardware_profile_ids=self.SKUS,
+        )
+
+    def test_n2_outbound_bytes_contain_no_pii(self) -> None:
+        """N2: exact bytes captured at transport layer contain no PII tokens."""
+        from unittest.mock import patch, MagicMock
+        import urllib.request as _urllib_req
+        from runtime.advisory_router import AdvisoryRouter
+
+        captured_body: dict = {}
+
+        # Fake response shaped like Mistral's success JSON.
+        fake_resp_body = json.dumps({
+            "choices": [{
+                "message": {
+                    "role": "assistant",
+                    "content": '{"kind":"curtailment","estimated_impact_mw":2.0,'
+                               '"confidence":0.75,"reasoning":"test_n2","suggested_tier":null}',
+                }
+            }]
+        }).encode()
+
+        def fake_urlopen(req, timeout=None):
+            captured_body.update(json.loads(req.data.decode()))
+            resp = MagicMock()
+            resp.read.return_value = fake_resp_body
+            resp.__enter__ = lambda s: s
+            resp.__exit__ = MagicMock(return_value=False)
+            return resp
+
+        evidence = self._make_evidence()
+
+        with patch.object(_urllib_req, "urlopen", fake_urlopen):
+            # Inject a fake key so the router thinks it has a backend.
+            import os
+            original = os.environ.get("MISTRAL_API_KEY")
+            os.environ["MISTRAL_API_KEY"] = "fake-key-n2-test"
+            try:
+                router = AdvisoryRouter()
+                proposal = router.route(evidence, sim_time=300.0)
+            finally:
+                if original is None:
+                    del os.environ["MISTRAL_API_KEY"]
+                else:
+                    os.environ["MISTRAL_API_KEY"] = original
+
+        # Verify bytes were captured.
+        assert captured_body, "N2: no bytes captured — urlopen was not called."
+
+        # Serialise the captured request body and check for PII.
+        wire_bytes = json.dumps(captured_body)
+        forbidden = (
+            [self.SITE_ID, self.JOB_ID]
+            + list(self.SKUS)
+            + ["acme", "classified", "enterprise", "midrange"]
+        )
+        for token in forbidden:
+            assert token.lower() not in wire_bytes.lower(), (
+                f"N2 TC-29 VIOLATION: token {token!r} found in outbound wire bytes.\n"
+                f"Wire length: {len(wire_bytes)} chars."
+            )
+
+    def test_n2_outbound_request_structure(self) -> None:
+        """N2: outbound request has model, messages, and no extra fields."""
+        from unittest.mock import patch, MagicMock
+        import urllib.request as _urllib_req
+        from runtime.advisory_router import AdvisoryRouter
+
+        captured: dict = {}
+
+        def fake_urlopen(req, timeout=None):
+            captured.update(json.loads(req.data.decode()))
+            resp = MagicMock()
+            resp.read.return_value = json.dumps({
+                "choices": [{"message": {"role": "assistant", "content":
+                    '{"kind":"load_defer","estimated_impact_mw":0.1,"confidence":0.0,'
+                    '"reasoning":"test","suggested_tier":null}'}}]
+            }).encode()
+            resp.__enter__ = lambda s: s
+            resp.__exit__ = MagicMock(return_value=False)
+            return resp
+
+        evidence = self._make_evidence()
+
+        import os
+        original = os.environ.get("MISTRAL_API_KEY")
+        os.environ["MISTRAL_API_KEY"] = "fake-key-n2-structure"
+        try:
+            with patch.object(_urllib_req, "urlopen", fake_urlopen):
+                router = AdvisoryRouter()
+                router.route(evidence, sim_time=100.0)
+        finally:
+            if original is None:
+                del os.environ["MISTRAL_API_KEY"]
+            else:
+                os.environ["MISTRAL_API_KEY"] = original
+
+        assert "model" in captured, "N2: outbound body must have 'model' field."
+        assert "messages" in captured, "N2: outbound body must have 'messages' field."
+        msgs = captured["messages"]
+        assert any(m.get("role") == "system" for m in msgs), (
+            "N2: system message must be present."
+        )
+        assert any(m.get("role") == "user" for m in msgs), (
+            "N2: user message must be present."
+        )
+        # System message must contain no PII.
+        system_content = next(
+            m["content"] for m in msgs if m.get("role") == "system"
+        )
+        for token in [self.SITE_ID, self.JOB_ID] + list(self.SKUS):
+            assert token.lower() not in system_content.lower(), (
+                f"N2: PII token {token!r} found in system prompt."
+            )
+
+    def test_n2_agent_system_prompt_override_captured_at_wire(self) -> None:
+        """N2: when an agent passes a custom system_prompt, the wire uses it."""
+        from unittest.mock import patch, MagicMock
+        import urllib.request as _urllib_req
+        from runtime.advisory_router import AdvisoryRouter
+
+        captured: dict = {}
+
+        def fake_urlopen(req, timeout=None):
+            captured.update(json.loads(req.data.decode()))
+            resp = MagicMock()
+            resp.read.return_value = json.dumps({
+                "choices": [{"message": {"role": "assistant", "content":
+                    '{"kind":"curtailment","estimated_impact_mw":1.0,'
+                    '"confidence":0.5,"reasoning":"test","suggested_tier":null}'}}]
+            }).encode()
+            resp.__enter__ = lambda s: s
+            resp.__exit__ = MagicMock(return_value=False)
+            return resp
+
+        evidence = self._make_evidence()
+        custom_prompt = "CUSTOM_SYSTEM_PROMPT_MARKER: advisory agent test"
+
+        import os
+        original = os.environ.get("MISTRAL_API_KEY")
+        os.environ["MISTRAL_API_KEY"] = "fake-key-n2-custom"
+        try:
+            with patch.object(_urllib_req, "urlopen", fake_urlopen):
+                router = AdvisoryRouter()
+                router.route(evidence, sim_time=200.0, system_prompt=custom_prompt)
+        finally:
+            if original is None:
+                del os.environ["MISTRAL_API_KEY"]
+            else:
+                os.environ["MISTRAL_API_KEY"] = original
+
+        wire = json.dumps(captured)
+        assert "CUSTOM_SYSTEM_PROMPT_MARKER" in wire, (
+            "N2: custom system_prompt must appear in the outbound wire bytes."
+        )
+        # Still no PII.
+        for token in [self.SITE_ID, self.JOB_ID] + list(self.SKUS):
+            assert token.lower() not in wire.lower(), (
+                f"N2: PII token {token!r} found in wire even with custom prompt."
+            )

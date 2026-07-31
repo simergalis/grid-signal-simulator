@@ -112,6 +112,7 @@ class AdvisoryRouter:
         sim_time: float,
         *,
         lifetime_s: float = DEFAULT_PROPOSAL_LIFETIME_S,
+        system_prompt: Optional[str] = None,
     ) -> Optional[Proposal]:
         """Route evidence to the active model backend and return a Proposal.
 
@@ -127,12 +128,13 @@ class AdvisoryRouter:
 
         wire = json.dumps(dataclasses.asdict(evidence), separators=(",", ":"))
         user_message = f"Evidence window:\n{wire}"
+        active_prompt = system_prompt if system_prompt is not None else _SYSTEM_PROMPT
 
         try:
             if self._mistral_key:
-                raw = self._call_mistral(user_message)
+                raw = self._call_mistral(user_message, system_prompt=active_prompt)
             else:
-                raw = self._call_anthropic(user_message)
+                raw = self._call_anthropic(user_message, system_prompt=active_prompt)
         except Exception as exc:
             _log.warning("advisory_router: model call failed (%s); returning None.", exc)
             return None
@@ -141,13 +143,13 @@ class AdvisoryRouter:
 
     # ── Backend calls ─────────────────────────────────────────────────────
 
-    def _call_mistral(self, user_message: str) -> str:
+    def _call_mistral(self, user_message: str, *, system_prompt: str = _SYSTEM_PROMPT) -> str:
         """HTTP POST to Mistral chat completions. Returns raw assistant content."""
         import urllib.request
         payload = json.dumps({
             "model": _MISTRAL_MODEL,
             "messages": [
-                {"role": "system",  "content": _SYSTEM_PROMPT},
+                {"role": "system",  "content": system_prompt},
                 {"role": "user",    "content": user_message},
             ],
             "max_tokens": _MAX_TOKENS,
@@ -170,13 +172,13 @@ class AdvisoryRouter:
         except urllib.error.HTTPError as e:
             raise RuntimeError(f"Mistral HTTP {e.code}: {e.read()[:200]}") from e
 
-    def _call_anthropic(self, user_message: str) -> str:
+    def _call_anthropic(self, user_message: str, *, system_prompt: str = _SYSTEM_PROMPT) -> str:
         """HTTP POST to Anthropic messages. Returns raw content text."""
         import urllib.request
         payload = json.dumps({
             "model": _ANTHROPIC_MODEL,
             "max_tokens": _MAX_TOKENS,
-            "system": _SYSTEM_PROMPT,
+            "system": system_prompt,
             "messages": [{"role": "user", "content": user_message}],
         }).encode()
         req = urllib.request.Request(

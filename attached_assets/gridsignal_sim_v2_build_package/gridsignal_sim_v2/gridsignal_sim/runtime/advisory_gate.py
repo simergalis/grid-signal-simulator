@@ -47,12 +47,15 @@ MAX_PROPOSAL_LIFETIME_S  = 3600.0 # CHOSEN — 1 simulated hour maximum
 DEFAULT_PROPOSAL_LIFETIME_S = 300.0  # CHOSEN — 5 simulated minutes
 
 # Valid proposal kinds (TC-30 also rejects unknown kinds).
+# "calibration" is added in Step 13 for the CalibrationAgent (§21.6 gate).
+# TC-57: calibration proposals ALWAYS require reviewer confirmation.
 VALID_PROPOSAL_KINDS: frozenset[str] = frozenset({
     "curtailment",
     "pre_staging",
     "bess_reserve_adjust",
     "turbine_ramp_rate",
     "load_defer",
+    "calibration",        # Step 13 — CalibrationAgent (§21.6); TC-57
 })
 
 
@@ -110,6 +113,23 @@ class Proposal:
     proposal_id:        str  = field(default_factory=lambda: str(uuid.uuid4()))
     state:              ProposalState = ProposalState.PENDING
     rejection_reason:   Optional[str] = None
+
+    # ── Provenance (stamped by BaseAdvisoryAgent, Step 13) ────────────────
+    # These fields are set by advisory/agents/base.py BEFORE gate.validate()
+    # is called.  They identify which agent generated the proposal, which
+    # system prompt was used, what evidence was seen, and whether the output
+    # came from a model or the heuristic fallback.
+    #
+    # originating_agent  — AGENT_NAME of the agent class (e.g. "compute")
+    # prompt_digest      — SHA-256[:16] of the canonical system prompt file
+    # evidence_digest    — SHA-256[:16] of the serialised EvidenceWindow
+    # generated_by       — "model" | "fallback"
+    # requires_confirmation — True unless curtailment A/B at AUTONOMOUS tier
+    originating_agent:    str  = ""
+    prompt_digest:        str  = ""
+    evidence_digest:      str  = ""
+    generated_by:         str  = "model"    # "model" | "fallback"
+    requires_confirmation: bool = True       # TC-32, TC-57
 
     @property
     def is_terminal(self) -> bool:
