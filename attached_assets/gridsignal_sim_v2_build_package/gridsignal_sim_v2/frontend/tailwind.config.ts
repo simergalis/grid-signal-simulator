@@ -18,6 +18,13 @@ export default {
         warn:    '#f0883e',
         danger:  '#f85149',
         ok:      '#3fb950',
+        // Mockup colour vocabulary (§4 of UI-IMPLEMENTATION-PLAN)
+        teal:     '#3fb6a8',   // confirms readiness, healthy flow, compute
+        gold:     '#e0a458',   // gas turbine / generation
+        solar:    '#f2c94c',   // solar / yellow
+        battery:  '#4a9fe0',   // battery, cooling
+        violet:   '#9b8ce0',   // optimisation agents
+        islanded: '#5a6673',   // inactive / not connected / grey
       },
       fontFamily: {
         mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],

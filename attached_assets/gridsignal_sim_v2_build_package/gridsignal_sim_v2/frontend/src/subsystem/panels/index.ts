@@ -1,0 +1,53 @@
+/**
+ * panels/index.ts — registry mapping subsystem id → panel config.
+ *
+ * Each panel config implements deriveData(tick, alert, history) → PanelData.
+ * The modal shell calls this once per render; the panel never fetches data itself.
+ */
+
+import type { TickPayload, HistoryPoint } from '../../types'
+import type { ReactNode } from 'react'
+import type { StatRow } from '../../charts/StatTable'
+
+export interface PanelData {
+  stateLabel:  string
+  stateColour: string
+  verdict:     string
+  heroValue:   string
+  heroLabel:   string
+  chartTitle:  string
+  chart:       ReactNode
+  statRows:    StatRow[]
+  secondary?:  ReactNode
+  why:         [string, string, string]
+}
+
+export interface PanelConfig {
+  deriveData: (
+    tick:    TickPayload | null,
+    alert:   TickPayload | null,
+    history: HistoryPoint[]
+  ) => PanelData
+}
+
+import { generationPanel }      from './generation'
+import { storagePanel }         from './storage'
+import { renewablePanel }       from './renewable'
+import { thermalPanel }         from './thermal'
+import { computePanel }         from './compute'
+import { gridPanel }            from './grid'
+import { forecastQualityPanel } from './forecastQuality'
+import { networkPanel }         from './network'
+import { agentsPanel }          from './agents'
+
+export const PANEL_CONFIGS: Record<string, PanelConfig> = {
+  generation:          generationPanel,
+  storage:             storagePanel,
+  renewable:           renewablePanel,
+  thermal:             thermalPanel,
+  compute:             computePanel,
+  grid:                gridPanel,
+  'forecast-quality':  forecastQualityPanel,
+  network:             networkPanel,
+  agents:              agentsPanel,
+}

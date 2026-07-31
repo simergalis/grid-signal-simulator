@@ -32,11 +32,12 @@ import { NetworkTelemetryPage }  from './components/NetworkTelemetryPage'
 import { ProcurementPage }       from './components/ProcurementPage'
 import { ThermalCoolingPage }    from './components/ThermalCoolingPage'
 import { ScenarioPlannerPage }   from './components/ScenarioPlannerPage'
+import { ReadinessScreen }        from './readiness/ReadinessScreen'
 import { useTickStore }      from './store/tickStore'
 import { useScenarioStore }  from './store/scenarioStore'
 import { useTickStream }     from './ws/useTickStream'
 
-type PageView = 'overview' | 'proposals' | 'procurement' | 'network' | 'thermal' | 'scenarios'
+type PageView = 'readiness' | 'overview' | 'proposals' | 'procurement' | 'network' | 'thermal' | 'scenarios'
 
 const FRAME_INTERVAL_MS = 250   // 4 Hz render loop
 
@@ -46,7 +47,7 @@ export default function App() {
   const [resultsRunId,  setResultsRunId]  = useState<string | null>(null)
   const [drawerOpen,    setDrawerOpen]    = useState(false)
   const [editId,        setEditId]        = useState<string | null>(null)
-  const [currentPage,   setCurrentPage]   = useState<PageView>('overview')
+  const [currentPage,   setCurrentPage]   = useState<PageView>('readiness')
   const [agentsEnabled, setAgentsEnabled] = useState(true)
 
   const drainFrame = useTickStore(s => s.drainFrame)
@@ -73,6 +74,8 @@ export default function App() {
     setLastRunId(id)
     setResultsRunId(null)   // close any open results screen
     setRunMeta({ run_id: id, playback_speed: speed })
+    // Hand off from Readiness landing screen to live overview.
+    setCurrentPage('overview')
   }, [reset, setRunMeta])
 
   const handleRunStopped = useCallback(() => {
@@ -137,6 +140,7 @@ export default function App() {
       {/* Page navigation tabs */}
       <div className="flex gap-px border-b border-border bg-border flex-shrink-0">
         {([
+          ['readiness',   'Readiness'],
           ['overview',    'Overview'],
           ['proposals',   'Proposals & Learning'],
           ['procurement', 'Grid & Procurement'],
@@ -162,7 +166,12 @@ export default function App() {
       </div>
 
       {/* Page content */}
-      {currentPage === 'overview' ? (
+      {currentPage === 'readiness' ? (
+        /* Readiness landing screen — default view; hands off to overview on run start */
+        <main className="flex-1 overflow-hidden">
+          <ReadinessScreen onNavigate={(tabId) => setCurrentPage(tabId as PageView)} />
+        </main>
+      ) : currentPage === 'overview' ? (
         /* Overview: full-width hero strip (4 cells) + chart / asset reserve below */
         <main className="flex-1 grid grid-cols-2 grid-rows-[auto_1fr] gap-px bg-border overflow-hidden">
           {/* Row 1 — HeroPanel spans full width (4 cells: Δt_lead, bridge, thermal, alerts) */}

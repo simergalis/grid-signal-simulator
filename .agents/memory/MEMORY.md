@@ -8,3 +8,4 @@
 - [step11-scada-pms-design](step11-scada-pms-design.md) — K1/K2/K3 unified pool wiring; generate_candidates() live path; TC-64–TC-68 patterns; TRAP: never call both tick() and generate_candidates() in same tick.
 - [step12-advisory-design](step12-advisory-design.md) — deident.py egress filter; advisory gate/router/principal structure; LP-1 short-circuit; TC-29/TC-30 wire guarantees; proposal lifecycle hold questions.
 - [w1-w2-w3-wiring](w1-w2-w3-wiring.md) — run-loop agent/telemetry/thermal wiring; circular-import trap; plane-sep trap; advisory endpoint 409 semantics; energy-summary RT_EFF proxy; frontend URL prefixes.
+- [ui-implementation-u1-u4](ui-implementation-u1-u4.md) — chart primitives + Readiness screen + 9 subsystem modals + tick wiring; getByText multiple-match trap; ComposedChart for mixed Line+Area.
