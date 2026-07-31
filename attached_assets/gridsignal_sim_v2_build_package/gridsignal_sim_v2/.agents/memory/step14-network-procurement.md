@@ -91,6 +91,35 @@ TC-75: `headroom_at_upper_bound = available - forecast_upper_bound`. Must be >= 
 TC-76: `gridSignal_connected=False` → returns baseline policy (adaptive_active=False). `baseline_ramp_cap_mw=0` raises ValueError at construction.
 Cost model: duty_fraction = min(1.0, gen_mwh / (rated_mw × hours)). Capital = capital_per_mw_year × rated_mw × (hours/8760).
 
+## Step 16 deployment configuration
+
+deploymentTarget = "vm" (Reserved VM) — set in .replit via verifyAndReplaceDotReplit.
+artifact.toml (api-server / "GridSignal Simulator"):
+  production.build → bash .../scripts/build_prod.sh  (npm install + vite build)
+  production.run   → bash .../scripts/start_prod.sh  (exec uvicorn api.app:app)
+  health.startup   → /healthz (added to api/app.py, returns {status:ok,version:0.1.0})
+
+Static file serving: _FRONTEND_DIST = Path(__file__).parents[2] / "frontend" / "dist"
+  Mounted AFTER all API routes with StaticFiles(html=True).
+  Guard: only mounted if dist/ exists → test suite unaffected.
+
+§22.7 / v2.5 §0.1 — no external DB or cloud:
+  Grep for postgresql/mongodb/mysql/redis/firebase/dynamodb/s3/gcloud across api+core+runtime+advisory
+  returns only false-positive "redistributed" in dispatch.py comments. CLEAN.
+
+LP-1 live verification (dev server, no keys set):
+  /healthz → {status:ok} — server starts without LLM keys
+  POST /runs demo-20mw → run_id issued, 60 ticks, 0 drops, overall=INCONCLUSIVE
+  (INCONCLUSIVE = no assertions in this scenario; 0 crashes = LP-1 PASS)
+  MISTRAL_API_KEY and ANTHROPIC_API_KEY are in Replit Secrets (both were already set).
+
+HardwareClassMap docstring (P1 scope boundary correction):
+  resolve() returns rated_kw_per_unit (wattage) only.
+  The reverse mapping (class_index → SKU) is discarded at session end.
+  A proposal outliving its session is permanently unresolvable to specific hardware.
+  Stated as deliberate scope boundary per §21.4, not an oversight.
+  Operators requiring SKU traceability must persist the map before session ends.
+
 ## Frontend additions (Step 14)
 
 - NetworkTelemetryPage.tsx — §19.9, read-only, no controls (TC-74 by design)

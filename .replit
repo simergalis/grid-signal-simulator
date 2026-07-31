@@ -2,7 +2,12 @@ modules = ["nodejs-24", "python-base-3.13"]
 
 [deployment]
 router = "application"
-deploymentTarget = "autoscale"
+# Step 16 / §10.2: Reserved VM.
+# Always-On alone does not prevent a non-Reserved Repl from sleeping on inactivity,
+# which kills long scenario runs mid-demonstration. The gridsignal sim is stateful
+# in-process (RunManager, WebSocketHub) — autoscale cold-start kills in-flight
+# WebSocket runs.
+deploymentTarget = "vm"
 
 [deployment.postBuild]
 args = ["pnpm", "store", "prune"]

@@ -33,17 +33,21 @@ P1 correction: stability scope is PER SESSION, not per call.
   • Across sessions the mapping changes (fresh RNG seed) — unlinkability is
     cross-session, not cross-call.  That is all §21.4 requires.
 
-Reviewer resolution (§21.4)
-----------------------------
-A reviewer reading a stored proposal referencing "profile_B at 10.2 kW/unit"
-can resolve that class from this session's HardwareClassMap:
+Reviewer resolution — scope boundary (§21.4)
+---------------------------------------------
+A stored proposal carries class_index (e.g. "profile_B") and
+rated_kw_per_unit (e.g. 10.2) on the wire.  Power-level reasoning is
+always possible from the wire entry alone.
 
-    map.resolve("profile_B") → 10.2   # rated_kw_per_unit
+resolve(class_index) → rated_kw_per_unit is a wattage lookup ONLY.
+The reverse mapping to a physical SKU exists only for the lifetime of the
+HardwareClassMap object.  When the session ends and the object is discarded,
+a proposal referencing "profile_B" becomes permanently unresolvable to
+specific hardware.  This is a deliberate scope boundary per §21.4 — the
+full reverse mapping must not outlive the session.
 
-rated_kw_per_unit is already on the wire entry, so power-level reasoning
-requires no further resolution.  For engineering-level resolution (which
-physical SKU is "profile_B"), the reviewer with appropriate clearance looks
-up the session map stored alongside the advisory session record.
+Operators requiring SKU-level traceability must persist the HardwareClassMap
+alongside the advisory session record before the session ends.
 
 De-identification rules:
   • Fleet size (node count) is OMITTED — combining wattage with fleet size
@@ -102,19 +106,26 @@ class HardwareClassMap:
         instability within a session.  P1 corrects the original over-strict
         per-call reshuffling.
 
-    Reviewer resolution (§21.4)
-    ---------------------------
-    A stored proposal carries class_index (e.g. "profile_B") and
-    rated_kw_per_unit (e.g. 10.2).  The reviewer already has the power datum.
-    For engineering-level resolution (which physical SKU is "profile_B"):
+    Reviewer resolution — scope boundary (§21.4)
+    ---------------------------------------------
+    resolve(class_index) → rated_kw_per_unit (float) or None.
 
-        session_map.resolve("profile_B")  →  10.2 kW/unit
+    This is a wattage lookup only.  The reverse mapping
+    (class_index → profile_id → physical SKU) is held ONLY in the internal
+    ``_pid_to_idx`` / ``_idx_to_kw`` dicts and is discarded when this object
+    goes out of scope (i.e. at session end).
 
-    The class letter alone does not identify the SKU — that mapping is held in
-    this object, which is stored alongside the advisory session record.  A
-    reviewer with appropriate clearance reads the session's HardwareClassMap
-    to resolve the letter back to a rated capacity (and from there, via the
-    operator's internal hardware catalog, to the physical SKU).
+    **A proposal that outlives its advisory session is permanently
+    unresolvable to specific hardware.**  rated_kw_per_unit travels on the
+    wire with the proposal, so power-level reasoning is always possible; but
+    which physical SKU corresponds to "profile_B" cannot be recovered once the
+    HardwareClassMap for that session is gone.  This is a deliberate scope
+    boundary, not an oversight — §21.4 forbids retaining the full reverse
+    mapping beyond the session lifetime.
+
+    Operators requiring long-lived SKU traceability must store the
+    HardwareClassMap alongside the advisory session record before the session
+    ends.  That is an operational concern outside the scope of this class.
 
     Not serialised to the wire — the wire carries only class_index and
     rated_kw_per_unit; SKU names never appear (TC-29).

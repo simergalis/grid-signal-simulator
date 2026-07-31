@@ -2,6 +2,11 @@
 api/app.py — FastAPI application factory.
 
 Step 6 / v2.5 §8.1 / Design Spec Section 4.
+Step 16 / §10.2: single-port model — FastAPI serves both the REST/WS API
+  and the pre-built React frontend as static files.  Route registration
+  order is strict: API routers first, then the static-file catch-all.
+  The static mount is only attached when the frontend dist/ directory
+  exists, so the test suite (which never builds the frontend) is unaffected.
 
 ONE RunManager and ONE WebSocketHub are created in the lifespan context
 and attached to app.state.  Every request handler retrieves them through
@@ -24,18 +29,32 @@ Invariants:
   - api/ never constructs a SimClock or calls evaluate_tick() directly.
     RunContext.step() in runtime/run_manager.py is the sole owner of
     both the plane-guard sentinel and the wall-clock stamp.
+
+LP-1 guarantee (Step 12/16):
+  MISTRAL_API_KEY and ANTHROPIC_API_KEY are NOT required for the simulator
+  to start or run.  With both absent the advisory router returns None and the
+  sim runs with the deterministic heuristic fallback.  Tests and the
+  deployed app MUST both pass without any LLM keys set.
 """
 
 from __future__ import annotations
 
+import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from runtime.run_manager import RunManager, WebSocketHub
 from api.routes import runs, ws as ws_routes
 from api.routes.scenarios import build_seeded_store
 from api.routes import scenarios as scenarios_routes
+
+# §10.2: built frontend lives two levels above this file (api/ → gridsignal_sim/ → gridsignal_sim_v2/)
+#   __file__ = .../gridsignal_sim_v2/gridsignal_sim/api/app.py
+#   dist     = .../gridsignal_sim_v2/frontend/dist/
+_FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
 
 
 @asynccontextmanager
@@ -64,15 +83,48 @@ def create_app() -> FastAPI:
 
     Used by tests (each test gets a fresh instance with a fresh lifespan)
     and by the uvicorn entry point (module-level ``app`` below).
+
+    §10.2 single-port model: API routes are registered first so they are
+    matched before the static catch-all.  The StaticFiles mount is
+    conditional on the dist/ directory existing so tests are not broken by
+    a missing frontend build.
     """
     application = FastAPI(
         title="GridSignal Simulator API",
         version="0.1.0",
         lifespan=_lifespan,
     )
+
+    # ── Health check (§10.2 / Step 16) ──────────────────────────────────
+    # /healthz is the deployment startup-probe path.  It must be reachable
+    # before the static-file mount is added, and must not require any
+    # application state — it answers immediately from the route table.
+    from fastapi.responses import JSONResponse
+
+    @application.get("/healthz", include_in_schema=False)
+    async def _healthz() -> JSONResponse:
+        return JSONResponse({"status": "ok", "version": "0.1.0"})
+
+    # ── API routes (must precede the static catch-all) ──────────────────
     application.include_router(scenarios_routes.router)
     application.include_router(runs.router)
     application.include_router(ws_routes.router)
+
+    # ── §10.2 static frontend (Step 16) ─────────────────────────────────
+    # Mount the pre-built React SPA at the root.  StaticFiles(html=True)
+    # serves index.html for any path that doesn't match a static asset,
+    # which is the standard SPA fallback pattern.
+    #
+    # This block is deliberately guarded so the unit/integration test suite
+    # continues to work without a frontend build: the test client only
+    # exercises the API routes, which are registered unconditionally above.
+    if _FRONTEND_DIST.is_dir():
+        application.mount(
+            "/",
+            StaticFiles(directory=str(_FRONTEND_DIST), html=True),
+            name="frontend",
+        )
+
     return application
 
 

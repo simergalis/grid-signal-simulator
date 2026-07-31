@@ -1,12 +1,15 @@
 kind = "api"
+# Step 16 / §10.2: In production, this artifact deploys the GridSignal Simulator v2
+# (Python FastAPI + pre-built React frontend served as static files, single port).
+# The dev run command remains the Node.js API stub used by monorepo workspace tooling.
 previewPath = "/api" # TODO - should be excluded from preview in the first place
-title = "API Server"
+title = "GridSignal Simulator"
 version = "1.0.0"
 id = "3B4_FFSkEVBkAeYMFRJ2e"
 
 [[services]]
 localPort = 8080
-name = "API Server"
+name = "GridSignal Simulator"
 paths = ["/api"]
 
 [services.development]
@@ -15,18 +18,19 @@ run = "pnpm --filter @workspace/api-server run dev"
 [services.production]
 
 [services.production.build]
-args = ["pnpm", "--filter", "@workspace/api-server", "run", "build"]
-
-[services.production.build.env]
-NODE_ENV = "production"
+# Installs npm deps and compiles the React dashboard to frontend/dist/.
+# No external database or cloud service is referenced — §22.7 / v2.5 §0.1.
+args = ["bash", "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/scripts/build_prod.sh"]
 
 [services.production.run]
-# we don't run through pnpm to make startup faster in production
-args = ["node", "--enable-source-maps", "artifacts/api-server/dist/index.mjs"]
+# §10.2 single-process, single-port: uvicorn serves FastAPI (REST/WS) +
+# the pre-built React frontend as static files.
+# LP-1: both MISTRAL_API_KEY and ANTHROPIC_API_KEY absent → heuristic fallback,
+# no crash.  The sim is fully functional without any LLM keys.
+args = ["bash", "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/scripts/start_prod.sh"]
 
 [services.production.run.env]
 PORT = "8080"
-NODE_ENV = "production"
 
 [services.production.health.startup]
-path = "/api/healthz"
+path = "/healthz"
