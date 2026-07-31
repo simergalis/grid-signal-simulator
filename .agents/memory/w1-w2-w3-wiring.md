@@ -55,6 +55,19 @@ description: Architectural decisions and traps from the W1 agent+telemetry+therm
 
 **TRAP — 409 from procurement/telemetry/thermal:** When the run completes, these return 409. The frontend clears the interval and keeps the last-seen state. Do NOT treat 409 as an error — it's the expected terminal state for a completed run.
 
-## Concurrency test notes
+## X1 — Test hang fix (three compounding bugs)
 
-The test_concurrency.py and run-starting test_api.py tests may hang under pytest's asyncio strict mode (pre-existing — asyncio.create_task inside TestClient has known issues with some Starlette versions). The tests pass when run directly via asyncio.run(). The concurrency isolation property (5 concurrent runs bit-identical) was verified directly via asyncio.run() — PASS.
+**Bug 1 — lifespan didn't cancel tasks:** `_lifespan` in `api/app.py` was a bare `yield` with no shutdown code. Runs with `end_sim_time=1e15` never completed. **Fix:** added `task.cancel()` + `asyncio.gather(*tasks, return_exceptions=True)` in the shutdown path.
+
+**Bug 2 — `finally` block drained the sink after cancel:** Even after cancellation, `_drive()`'s `finally` block called `ctx.sink.get_eval_rows()` + `get_tick_dicts()` which iterates every accumulated `TickResult`. On a max-speed run with millions of ticks, this caused a second hang. **Fix:** `_cancelled_externally` flag (set in `except asyncio.CancelledError`) + `_skip_verdict = _cancelled_externally or ctx.cancelled` guards the entire verdict block. Cleanup (registry preserve, `_contexts`/`_tasks` pop) always runs.
+
+**Bug 3 — LLM API calls during tests:** `ANTHROPIC_API_KEY` and `MISTRAL_API_KEY` are both set in this environment. `AgentRegistry(enabled=True)` was the default in `build_run_context()`. Agents fired when cadence floor was reached (~60s sim time), each LLM call adding 10-25s per test. **Fix:** call-time check in all three `build_*` factory functions: `AgentRegistry(enabled=not bool(os.environ.get('PYTEST_CURRENT_TEST')))`. MUST be call-time (not module-level) — `PYTEST_CURRENT_TEST` is set by pytest only during test execution, not during module import/collection.
+
+**Result:** 414 passed in 7.96s (was hanging indefinitely before).
+
+## X2 — demo-20mw populated-state (300s sim, 60 ticks, agents=True, playback=0)
+
+- **Proposals:** 6 total (pending) — curtailment 2.0MW (compute agent, t=60s), turbine_ramp_rate 12.0MW (storage agent, conf=0.95), plus 4 more agents at 2.0MW / conf=0.85.
+- **Energy summary:** generation=1.4006 MWh, grid_import=0.0 MWh, storage_charge=0.0726 MWh (RT_EFF proxy), duration=5 min.
+- **Procurement/thermal/network-telemetry:** all 409 after completion (expected).
+- **Tick snapshot:** compute ramps 0.55→19.96MW; turbine covers all load; BESS minimal (SOC 0.950→0.942); no reserve alert; verdict=INCONCLUSIVE (assertions empty for demo spec).

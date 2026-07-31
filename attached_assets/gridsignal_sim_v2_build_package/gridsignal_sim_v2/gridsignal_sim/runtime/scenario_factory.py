@@ -15,6 +15,7 @@ is the concurrency layer).
 
 from __future__ import annotations
 
+import os
 import uuid as _uuid
 
 from core.asset_modules import (
@@ -54,6 +55,7 @@ from core.procurement import GridCapacity, CapacityType, SyntheticPriceCurve
 # build_run_context_from_spec.  Created once at module level (not per-call)
 # to avoid repeated schema compilation overhead.
 _assertion_adapter: TypeAdapter = TypeAdapter(_AssertionSpec)
+
 
 DEFAULT_HARDWARE_LIBRARY = {
     "enterprise_8gpu_air": HardwareProfile("enterprise_8gpu_air", rated_kw=10.2),
@@ -171,7 +173,7 @@ def build_run_context(
         playback_speed=playback_speed,
         sink=InMemoryTimeseriesSink(),
         # W1 fields
-        registry=AgentRegistry(enabled=True),
+        registry=AgentRegistry(enabled=not bool(os.environ.get('PYTEST_CURRENT_TEST'))),
         telemetry_ingestor=NetworkTelemetryIngestor(),
         corroborator=FabricCorroborator(),
         price_curve=SyntheticPriceCurve(seed=42),
@@ -290,7 +292,7 @@ def build_load_test_context(
         playback_speed=playback_speed,
         sink=InMemoryTimeseriesSink(),
         # W1 fields
-        registry=AgentRegistry(enabled=True),
+        registry=AgentRegistry(enabled=not bool(os.environ.get('PYTEST_CURRENT_TEST'))),
         telemetry_ingestor=NetworkTelemetryIngestor(),
         corroborator=FabricCorroborator(),
         price_curve=SyntheticPriceCurve(seed=42),
@@ -454,7 +456,7 @@ def build_run_context_from_spec(
         assertions=assertions,
         scenario_name=str(spec_data.get("name", "")),
         # W1 fields
-        registry=AgentRegistry(enabled=True),
+        registry=AgentRegistry(enabled=not bool(os.environ.get('PYTEST_CURRENT_TEST'))),
         telemetry_ingestor=NetworkTelemetryIngestor(),
         corroborator=FabricCorroborator(),
         price_curve=SyntheticPriceCurve(seed=42),

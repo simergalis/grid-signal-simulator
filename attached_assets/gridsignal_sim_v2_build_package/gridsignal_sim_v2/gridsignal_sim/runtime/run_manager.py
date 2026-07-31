@@ -490,6 +490,9 @@ class RunManager:
                         evt.timestamp,
                     )
 
+        # Tracks external task.cancel() so finally can skip verdict drain.
+        _cancelled_externally = False
+
         try:
             while not ctx.is_complete():
                 tick_result = ctx.step()                           # sync, in-budget (Design Spec 4.3)
@@ -533,61 +536,69 @@ class RunManager:
                 sleep_s = ctx.wall_clock_sleep_seconds()
                 await asyncio.sleep(sleep_s if sleep_s > 0 else 0)  # always yield
         except asyncio.CancelledError:
+            _cancelled_externally = True
             logger.info("run %s cancelled mid-flight", ctx.run_id)
             raise
         finally:
-            # Step 9: evaluate assertions and store the completed run.
-            # Two-phase design:
-            #   1. get_eval_rows/get_tick_dicts (flushes sink queue if needed)
-            #   2. evaluate_verdict (pure, in-process)
-            #   3. finalize (writes verdict to persistence layer)
-            #   4. store CompletedRun in _completed for the results API
-            verdict_result: Optional[VerdictResult] = None
-            verdict_json: Optional[str] = None
-            dropped: int = 0
-            tick_dicts: list[dict] = []
+            # Cancelled runs (external task.cancel() or ctx.cancelled=True) skip
+            # verdict evaluation.  The sink may hold millions of rows from an
+            # end_sim_time=1e15 test run; draining them would hang shutdown.
+            _skip_verdict = _cancelled_externally or ctx.cancelled
 
-            try:
-                eval_rows = await ctx.sink.get_eval_rows(ctx.run_id)
-                dropped = ctx.sink.get_dropped_ticks()
-                # expected_last_tick_index: the tick_index of the final tick
-                # in a run that completed normally.  Equals end_sim_time / dt,
-                # because tick_index starts at 1 and increments each step.
-                expected_last = round(ctx.end_sim_time / TICK_INTERVAL_SIM_SECONDS)
-                verdict_result = evaluate_verdict(
-                    ctx.assertions,
-                    eval_rows,
+            if not _skip_verdict:
+                # Step 9: evaluate assertions and store the completed run.
+                # Two-phase design:
+                #   1. get_eval_rows/get_tick_dicts (flushes sink queue if needed)
+                #   2. evaluate_verdict (pure, in-process)
+                #   3. finalize (writes verdict to persistence layer)
+                #   4. store CompletedRun in _completed for the results API
+                verdict_result: Optional[VerdictResult] = None
+                verdict_json: Optional[str] = None
+                dropped: int = 0
+                tick_dicts: list[dict] = []
+
+                try:
+                    eval_rows = await ctx.sink.get_eval_rows(ctx.run_id)
+                    dropped = ctx.sink.get_dropped_ticks()
+                    # expected_last_tick_index: the tick_index of the final tick
+                    # in a run that completed normally.  Equals end_sim_time / dt,
+                    # because tick_index starts at 1 and increments each step.
+                    expected_last = round(ctx.end_sim_time / TICK_INTERVAL_SIM_SECONDS)
+                    verdict_result = evaluate_verdict(
+                        ctx.assertions,
+                        eval_rows,
+                        dropped_ticks=dropped,
+                        expected_last_tick_index=expected_last,
+                    )
+                    verdict_json = verdict_result.to_json()
+                except Exception:
+                    logger.exception("run %s: verdict evaluation failed", ctx.run_id)
+
+                try:
+                    tick_dicts = await ctx.sink.get_tick_dicts(ctx.run_id)
+                except Exception:
+                    logger.exception("run %s: get_tick_dicts failed", ctx.run_id)
+
+                await ctx.sink.finalize(ctx.run_id, verdict_json)
+
+                # Store for the results/playback screen.
+                self._completed[ctx.run_id] = CompletedRun(
+                    run_id=ctx.run_id,
+                    scenario_id=ctx.scenario_id,
+                    scenario_name=ctx.scenario_name,
+                    completed_at=datetime.now(timezone.utc),
+                    verdict=verdict_result or VerdictResult(
+                        overall="INCONCLUSIVE",
+                        tick_count=0,
+                        dropped_ticks=dropped,
+                        gap_count=0,
+                    ),
+                    tick_dicts=tick_dicts,
                     dropped_ticks=dropped,
-                    expected_last_tick_index=expected_last,
                 )
-                verdict_json = verdict_result.to_json()
-            except Exception:
-                logger.exception("run %s: verdict evaluation failed", ctx.run_id)
 
-            try:
-                tick_dicts = await ctx.sink.get_tick_dicts(ctx.run_id)
-            except Exception:
-                logger.exception("run %s: get_tick_dicts failed", ctx.run_id)
-
-            await ctx.sink.finalize(ctx.run_id, verdict_json)
-
-            # Store for the results/playback screen.
-            self._completed[ctx.run_id] = CompletedRun(
-                run_id=ctx.run_id,
-                scenario_id=ctx.scenario_id,
-                scenario_name=ctx.scenario_name,
-                completed_at=datetime.now(timezone.utc),
-                verdict=verdict_result or VerdictResult(
-                    overall="INCONCLUSIVE",
-                    tick_count=0,
-                    dropped_ticks=dropped,
-                    gap_count=0,
-                ),
-                tick_dicts=tick_dicts,
-                dropped_ticks=dropped,
-            )
-
-            # W1: preserve registry so /proposals endpoint works after run ends.
+            # Always: preserve registry so /proposals works after run ends,
+            # and remove the run from the active maps.
             if ctx.registry is not None:
                 self._registries[ctx.run_id] = ctx.registry
 

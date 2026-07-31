@@ -39,6 +39,7 @@ LP-1 guarantee (Step 12/16):
 
 from __future__ import annotations
 
+import asyncio
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -74,9 +75,15 @@ async def _lifespan(application: FastAPI):
     application.state.run_manager = manager
     application.state.scenario_store = scenario_store
     yield
-    # asyncio shuts down remaining run tasks on process exit.
-    # Explicit cleanup (e.g. waiting for in-flight runs) would go here
-    # in a production deployment.
+    # Cancel all in-flight run tasks so that TestClient (which waits for
+    # the event loop to drain on __exit__) and graceful uvicorn shutdown
+    # both complete promptly rather than hanging on end_sim_time=1e15 runs.
+    # _drive() catches CancelledError, runs its finally block, then exits.
+    running_tasks = list(manager._tasks.values())
+    for task in running_tasks:
+        task.cancel()
+    if running_tasks:
+        await asyncio.gather(*running_tasks, return_exceptions=True)
 
 
 def create_app() -> FastAPI:
