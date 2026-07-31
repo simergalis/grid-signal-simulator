@@ -55,6 +55,18 @@ description: Architectural decisions and traps from the W1 agent+telemetry+therm
 
 **TRAP — 409 from procurement/telemetry/thermal:** When the run completes, these return 409. The frontend clears the interval and keeps the last-seen state. Do NOT treat 409 as an error — it's the expected terminal state for a completed run.
 
+## AB1/AB2/AB3 — PMS scenario, cost model wiring, serializer audit
+
+**AB1 — demo-pms shipped:** `PmsConfigSpec` in `api/schemas.py`; wired through `build_run_context_from_spec` via `PmsConfig(TransitionMode(...))` before `SimulationState()`; `demo-pms` added to seeded store. Fast shed / open transition are injected externally at runtime — the scenario only gates whether `SimulatedPMS` is instantiated.
+
+**AB2 — CostModelEngine connected (not retired):** `compute_run_cost_from_completed()` added to `runtime/run_manager.py` (runtime→core is the allowed direction; api→core is forbidden). `energy-summary` endpoint now returns `cost_breakdown` + `cost_model_config` keys. PROTO-21-COST defaults: grid=120 £/MWh, turbine_capital=45000 £/MW/yr, turbine_variable=55 £/MWh, RT_EFF=0.88, charge=60 £/MWh, discharge=0. `turbine_rated_mw` carried on `RunContext` → `CompletedRun` (set by `build_run_context_from_spec` from `_spec_total_turbine_mw`).
+
+**AB3 — Serializer gaps added:** 5 fields added to `_tick_result_to_dict` (unrecognised_profile_alerts, curtailment_proposal_tiers, pms_fast_shed_active, pms_order_conflict, scada_commands_issued). `wall_stamp_utc` intentionally excluded — existing test asserts it must NOT appear in WebSocket payloads. `pre_staging_shift_mw` was the AA1 gap (already fixed).
+
+**TRAP: plane separation in api/:** `api/ → core/` is forbidden. `CostModelEngine` lives in `core/cost_model.py` — must go through `runtime/` bridge function. Test `test_api_gate_clean_api_passes` enforces this statically.
+
+**TRAP: wall_stamp_utc type:** `TickResult.wall_stamp_utc` is `float = 0.0` (Unix epoch), NOT `datetime`. Calling `.isoformat()` on it raises `AttributeError`, which silently kills the async run loop and makes WebSocket subscriber tests hang indefinitely.
+
 ## AA3 — Module audit: evaluate_tick / _drive call-site status
 
 **Always live (evaluate_tick):** GPUModule, CoolingModule, SolarModule, DispatchArbitrator, select_candidates, CurtailmentLadder.generate_candidates (unless PMS fast shed), CheckpointClassifier, ConfidenceEngine, SimulatedScadaLayer.

@@ -17,13 +17,41 @@ direction per §21.1; runtime/ → api/ is the forbidden direction.
 from __future__ import annotations
 
 import uuid as _uuid
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, model_validator
 
 # Step 9: AssertionSpec lives in runtime/verdict.py so that runtime/ code can
 # import it without creating a runtime/ → api/ circular dependency.
 from runtime.verdict import AssertionSpec  # noqa: F401 (re-exported for callers)
+
+
+# ---------------------------------------------------------------------------
+# Step 11: PMS config schema (AB1)
+# ---------------------------------------------------------------------------
+
+class PmsConfigSpec(BaseModel):
+    """Wire-format mirror of core.models.PmsConfig.
+
+    All fields match the dataclass fields exactly so that
+    ``PmsConfig(...)`` wiring in build_run_context_from_spec is safe
+    without any field-name translation.
+
+    transition_mode must be one of the TransitionMode string values:
+      "open_transition"   — default; brief coverage gap during reconnect
+                            (open_transition_gap_mw for open_transition_duration_s).
+      "closed_transition" — instantaneous; no coverage gap.
+
+    shed_priority_order: list of workload job_ids to shed first (highest
+    priority first).  Empty list → PMS sheds in arbitrary order.
+
+    All bounds are CHOSEN (PROTO-11).
+    """
+    shed_priority_order: list[str] = Field(default_factory=list)
+    transition_mode: Literal["open_transition", "closed_transition"] = "open_transition"
+    open_transition_gap_mw: float = Field(default=2.0, ge=0.0)
+    open_transition_duration_s: float = Field(default=5.0, gt=0.0)
+    fast_shed_duration_s: float = Field(default=30.0, gt=0.0)
 
 
 # ---------------------------------------------------------------------------
@@ -151,6 +179,13 @@ class ScenarioSpec(BaseModel):
     # Step 10: optional §8.1 pre-staging configuration.
     # None = PreStagingEngine not instantiated (SiteConfig.pre_staging_config = None).
     pre_staging_config: Optional[PreStagingConfigSpec] = None
+
+    # Step 11: optional §28.4 PMS configuration.
+    # None = SimulatedPMS not instantiated (SiteConfig.pms_config = None).
+    # fast_shed and open_transition are injected at runtime via
+    # SimulatedPMS.inject_fast_shed() / inject_transition(); the scenario only
+    # gates whether the PMS code path is active.
+    pms_config: Optional[PmsConfigSpec] = None
 
     # Step 9: optional pass/fail assertions evaluated at run completion.
     # Each element is one of the AssertionSpec union members (discriminated

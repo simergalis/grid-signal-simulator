@@ -30,6 +30,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 
 from api.schemas import (
     CreateScenarioResponse,
+    PmsConfigSpec,
     PreStagingConfigSpec,
     ScenarioDetailResponse,
     ScenarioSpec,
@@ -217,6 +218,29 @@ _TC33_MW = 600 * _ENT_KW * _PUE / 1000.0   # 6.3036 MW
 _TC33_DT_LEAD = 15.0
 
 _SEEDED: list[tuple[str, ScenarioSpec]] = [
+    (
+        "demo-pms",
+        ScenarioSpec(
+            name="demo-pms",
+            description=(
+                "demo-20mw + §28.4 PMS active (Step 11 / AB1).  "
+                "PmsConfig defaults: fast_shed=30 s, open_transition mode, "
+                "transition_gap=2.0 MW for 5 s, shed_priority_order=[].  "
+                "The scenario activates SimulatedPMS; fast shed and open transition "
+                "are injected externally via inject_fast_shed() / inject_transition() "
+                "in the TC-68 egress audit script.  "
+                "Separate from demo-20mw because PMS modifies p_dispatch_required_mw "
+                "during the shed/transition windows, changing allocation numbers."
+            ),
+            workload_events=[_evt_start("job-big", 1900)],
+            dt_lead_seconds=30.0,
+            bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
+            turbine_units=[_turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2)],
+            solar_rated_mw=_SOLAR_20MW,
+            end_sim_time=300.0,
+            pms_config=PmsConfigSpec(),   # all defaults: open_transition, fast_shed_duration_s=30
+        ),
+    ),
     (
         "demo-prestage",
         ScenarioSpec(

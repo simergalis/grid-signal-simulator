@@ -30,9 +30,11 @@ from core.models import (
     BessConfig,
     HardwareProfile,
     IslandMode,
+    PmsConfig,
     PreStagingConfig,
     SiteConfig,
     SolarConfig,
+    TransitionMode,
     TurbineConfig,
     WorkloadClass,
     WorkloadEventType,
@@ -363,6 +365,18 @@ def build_run_context_from_spec(
     if _pre_staging_raw:
         site.pre_staging_config = PreStagingConfig(**_pre_staging_raw)
 
+    # Step 11 — §28.4: wire optional PMS config from spec.
+    # Must be set before SimulationState() so __post_init__ picks it up.
+    _pms_raw = spec_data.get("pms_config")
+    if _pms_raw:
+        site.pms_config = PmsConfig(
+            shed_priority_order=list(_pms_raw.get("shed_priority_order", [])),
+            transition_mode=TransitionMode(_pms_raw.get("transition_mode", "open_transition")),
+            open_transition_gap_mw=float(_pms_raw.get("open_transition_gap_mw", 2.0)),
+            open_transition_duration_s=float(_pms_raw.get("open_transition_duration_s", 5.0)),
+            fast_shed_duration_s=float(_pms_raw.get("fast_shed_duration_s", 30.0)),
+        )
+
     hw_id = spec_data.get("hardware_profile_id", "enterprise_8gpu_air")
 
     # ── Modules ───────────────────────────────────────────────────────────
@@ -486,4 +500,6 @@ def build_run_context_from_spec(
         price_curve=SyntheticPriceCurve(seed=42),
         grid_capacity=_spec_grid_cap,
         _rated_cooling_mw=_spec_rated_cooling_mw,
+        # AB2: for §21.2 cost model in energy-summary endpoint.
+        turbine_rated_mw=_spec_total_turbine_mw,
     )

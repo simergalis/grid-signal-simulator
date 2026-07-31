@@ -150,6 +150,23 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # Step 10 — §8.1 pre-staging shift applied this tick.
         # 0.0 when PreStagingEngine is not active or gap was zero.
         "pre_staging_shift_mw": round(tick.pre_staging_shift_mw, 4),
+        # AB3 — fields present on TickResult but previously missing from the dict.
+        # Serialised so consumers (playback, energy-summary, TC-68 audit) can see them.
+        #
+        # wall_stamp_utc is intentionally excluded: the existing test
+        # test_websocket_subscriber_receives_tick_payload asserts it must NOT
+        # appear in WebSocket payloads (runtime-internal; not part of the wire format).
+        #
+        # unrecognised_profile_alerts: frozenset[str] → sorted list for JSON stability.
+        "unrecognised_profile_alerts": sorted(tick.unrecognised_profile_alerts),
+        # curtailment_proposal_tiers: tuple[str, ...] — which curtailment tiers were proposed.
+        "curtailment_proposal_tiers": list(tick.curtailment_proposal_tiers),
+        # pms_fast_shed_active: True when PMS fast shed is in effect this tick.
+        "pms_fast_shed_active": tick.pms_fast_shed_active,
+        # pms_order_conflict: None or a string describing the detected conflict.
+        "pms_order_conflict": tick.pms_order_conflict,
+        # scada_commands_issued: count of SCADA commands issued this tick (TC-68).
+        "scada_commands_issued": tick.scada_commands_issued,
     }
 
 
@@ -165,6 +182,60 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
 # ---------------------------------------------------------------------------
 
 from runtime.verdict import EvalRow, VerdictResult, evaluate_verdict  # noqa: E402 — runtime→runtime OK
+
+
+# ---------------------------------------------------------------------------
+# §21.2 cost model bridge (AB2)
+# Keeps core/ imports out of api/ (plane separation rule).
+# api/routes/runs.py calls compute_run_cost_from_completed(); runtime/ → core/
+# is the allowed direction.
+# ---------------------------------------------------------------------------
+
+_COST_CFG_DEFAULTS: dict = {
+    "grid_import_price_per_mwh":       120.0,    # CHOSEN PROTO-21-COST: representative spot
+    "turbine_capital_per_mw_year":     45_000.0, # CHOSEN PROTO-21-COST: gas turbine capex amort.
+    "turbine_variable_per_mwh":        55.0,     # CHOSEN PROTO-21-COST: fuel + variable O&M
+    "storage_roundtrip_efficiency":    0.88,     # matches RT_EFF in energy-summary
+    "storage_charge_price_per_mwh":    60.0,     # CHOSEN PROTO-21-COST: off-peak charge cost
+    "storage_discharge_price_per_mwh": 0.0,      # CHOSEN PROTO-21-COST: BESS negligible var cost
+}
+
+
+def compute_run_cost_from_completed(
+    completed: "CompletedRun",
+    generation_mwh: float,
+    grid_import_mwh: float,
+    storage_charge_mwh: float,
+    duration_hours: float,
+) -> tuple[dict, dict]:
+    """Compute §21.2 cost breakdown from a completed run.
+
+    Returns (cost_breakdown_dict, cost_model_config_dict).
+    runtime/ → core/ is the allowed import direction; api/ must not import
+    from core/ directly (plane separation rule).
+    """
+    from core.cost_model import CostModelConfig, CostModelEngine  # lazy — plane-safe
+
+    cfg = CostModelConfig(**_COST_CFG_DEFAULTS)
+    engine = CostModelEngine(cfg)
+    result = engine.compute_run_cost(
+        grid_import_mwh    = grid_import_mwh,
+        generation_mwh     = generation_mwh,
+        storage_charge_mwh = storage_charge_mwh,
+        run_duration_hours = duration_hours,
+        turbine_rated_mw   = completed.turbine_rated_mw,
+    )
+    return (
+        {
+            "grid_import_cost":         result.grid_import_cost,
+            "generation_cost":          result.generation_cost,
+            "storage_cost":             result.storage_cost,
+            "total_cost":               result.total_cost,
+            "generation_duty_fraction": result.generation_duty_fraction,
+            "grid_fraction":            result.grid_fraction,
+        },
+        _COST_CFG_DEFAULTS,
+    )
 
 
 class TimeseriesSink(Protocol):
@@ -266,6 +337,10 @@ class RunContext:
     _approach_rate_mw_s: float = 0.0     # MW/s rate of change (positive = rising)
     _rated_cooling_mw: float = 5.0       # rated cooling capacity; set by factory
 
+    # AB2: sum of all turbine rated_mw; set by build_run_context_from_spec
+    # for §21.2 cost model in the energy-summary endpoint.  0.0 = unknown.
+    turbine_rated_mw: float = 0.0
+
     def is_complete(self) -> bool:
         return self.cancelled or self.sim_time >= self.end_sim_time
 
@@ -347,6 +422,8 @@ class CompletedRun:
     verdict: VerdictResult
     tick_dicts: list[dict]   # ordered by tick_index; gap_before added by endpoint
     dropped_ticks: int
+    # AB2: turbine fleet rated capacity (MW); used by energy-summary cost model.
+    turbine_rated_mw: float = 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -598,6 +675,7 @@ class RunManager:
                     ),
                     tick_dicts=tick_dicts,
                     dropped_ticks=dropped,
+                    turbine_rated_mw=ctx.turbine_rated_mw,
                 )
 
             # Always: preserve registry so /proposals works after run ends,

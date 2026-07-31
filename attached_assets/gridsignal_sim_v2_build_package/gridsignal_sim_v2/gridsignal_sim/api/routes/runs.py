@@ -51,7 +51,7 @@ from api.schemas import (
     TimeseriesResponse,
     TimeseriesRowResponse,
 )
-from runtime.run_manager import RunManager
+from runtime.run_manager import RunManager, compute_run_cost_from_completed
 from runtime.scenario_factory import build_run_context, build_run_context_from_spec
 
 router = APIRouter(prefix="/runs", tags=["runs"])
@@ -338,6 +338,17 @@ async def get_energy_summary(
     storage_charge_mwh = discharge_mwh / RT_EFF if RT_EFF > 0 else discharge_mwh
     duration_hours     = len(completed.tick_dicts) * DT_H
 
+    # ── §21.2 cost model (AB2) ────────────────────────────────────────────
+    # compute_run_cost_from_completed lives in runtime/ so that api/ never
+    # imports from core/ (plane separation rule).
+    cost_breakdown, cost_cfg = compute_run_cost_from_completed(
+        completed,
+        generation_mwh     = generation_mwh,
+        grid_import_mwh    = grid_import_mwh,
+        storage_charge_mwh = storage_charge_mwh,
+        duration_hours     = duration_hours,
+    )
+
     return {
         "run_id":               run_id,
         "label":                completed.scenario_name or run_id,
@@ -345,6 +356,12 @@ async def get_energy_summary(
         "grid_import_mwh":      round(grid_import_mwh,      4),
         "generation_mwh":       round(generation_mwh,       4),
         "storage_charge_mwh":   round(storage_charge_mwh,   4),
+        # §21.2 cost breakdown — CostModelEngine (Python, tested) is now the
+        # authoritative implementation; ScenarioPlannerPage._computeCost is the
+        # frontend rendering layer and should call this endpoint instead of
+        # duplicating the formula.
+        "cost_breakdown":    cost_breakdown,
+        "cost_model_config": cost_cfg,
     }
 
 
