@@ -15,6 +15,16 @@ DELETE /runs/{run_id}               cancel a run
 GET    /runs/{run_id}/result        verdict + assertion details (completed runs)
 GET    /runs/{run_id}/timeseries    full tick history with gap flags (completed runs)
 
+Restart / durability scope (Step 9):
+  GET /runs/{run_id}/result and GET /runs/{run_id}/timeseries both read from
+  RunManager._completed, an in-process dict populated when _drive() finishes.
+  After a server restart that dict is empty, so BOTH endpoints return 404 for any
+  run that completed before the restart.  They behave symmetrically — the results
+  screen does not half-load (chart draws, verdict 404s); it fails uniformly.
+  This is an accepted scope boundary for Step 9.  When durability is required,
+  CompletedRun should be serialised to SQLite keyed by run_id (not scenario_id)
+  and re-hydrated in the lifespan startup handler; that work is deferred to Step 11.
+
 Invariants:
   - RunManager is retrieved from app.state (set once in the lifespan).
     No endpoint creates its own RunManager instance.
