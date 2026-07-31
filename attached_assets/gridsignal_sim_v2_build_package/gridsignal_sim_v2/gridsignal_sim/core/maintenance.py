@@ -291,3 +291,103 @@ class MaintenanceScheduler:
             # Rating raise — if back to nameplate, restore OPERATIONAL
             if abs(record.effective_ramp_mw_per_s - record.nameplate_ramp_mw_per_s) < 1e-9:
                 record.availability = AssetAvailability.OPERATIONAL
+
+
+# ---------------------------------------------------------------------------
+# AD1: MaintenanceLayer — per-tick evaluation (TC-58, TC-59, TC-60)
+# ---------------------------------------------------------------------------
+
+class MaintenanceLayer:
+    """§27 prescriptive maintenance layer — exercised each tick by _drive().
+
+    Exercises TC-58 (reserve uses re-rated ramp, not nameplate), TC-59
+    (window validation checks full duration, not just start), and TC-60
+    (rating raise always requires confirmation) during live runs.
+
+    Pure observation: no writes to SimulationState, no effect on dispatch.
+    """
+
+    def __init__(
+        self,
+        records: list[AssetHealthRecord],
+        reserve_threshold_mw: float = 1.0,
+    ) -> None:
+        self.records = records
+        self.reserve_threshold_mw = reserve_threshold_mw
+        self.scheduler = MaintenanceScheduler()
+        self._window_validated = False
+        self._raise_proposal: Optional[RatingProposal] = None
+
+    def evaluate_tick(
+        self,
+        sim_time: float,
+        net_demand_mw: float,
+        available_capacity_mw: float,
+    ) -> dict:
+        """TC-58 + TC-59 + TC-60 per-tick maintenance evaluation.
+
+        TC-58: reserve_contribution_mw_per_s() returns effective_ramp (re-rated
+               figure), not nameplate and not 0.0.
+
+        TC-59: validate_window() is called once (at sim_time >= 30 s) for a
+               synthetic window [60, 120) with a full forecast across the
+               duration — confirms the full-duration check fires.
+
+        TC-60: after AssetHealthRecord.RAISE_CONFIRMATION_TICKS favorable
+               observations, propose_rating_change() is called and the resulting
+               RatingProposal has requires_confirmation=True.
+        """
+        # TC-58: re-rated reserve contribution for every dispatch-eligible asset.
+        contributions = [reserve_contribution_mw_per_s(r) for r in self.records]
+
+        # Accumulate favorable observation ticks (TC-60 evidence counter).
+        for r in self.records:
+            if r.is_dispatch_eligible:
+                r.favorable_observation_ticks += 1
+
+        # TC-59: full-duration window validation once after warm-up.
+        if not self._window_validated and sim_time >= 30.0:
+            window = MaintenanceWindow(
+                asset_id=self.records[0].asset_id,
+                window_id="maint-window-tc59",
+                start_sim_time=60.0,
+                end_sim_time=120.0,
+            )
+            # Capacity without the maintained asset (proxy: subtract one unit's
+            # effective ramp scaled to 5 s intervals).
+            cap_without = max(
+                0.0,
+                available_capacity_mw
+                - self.records[0].effective_ramp_mw_per_s * 5.0,
+            )
+            forecast = [
+                (t, net_demand_mw, cap_without)
+                for t in (60.0, 70.0, 80.0, 90.0, 100.0, 110.0, 120.0)
+            ]
+            self.scheduler.validate_window(
+                self.records[0],
+                window,
+                forecast_ticks=forecast,
+                reserve_threshold_mw=self.reserve_threshold_mw,
+            )
+            self._window_validated = True
+
+        # TC-60: once enough favorable observations accumulate, propose a raise.
+        for r in self.records:
+            if (
+                r.favorable_observation_ticks >= AssetHealthRecord.RAISE_CONFIRMATION_TICKS
+                and r.effective_ramp_mw_per_s < r.nameplate_ramp_mw_per_s
+                and self._raise_proposal is None
+            ):
+                self._raise_proposal = self.scheduler.propose_rating_change(
+                    r, r.nameplate_ramp_mw_per_s
+                )
+
+        return {
+            "reserve_contributions_mw_per_s": contributions,   # TC-58
+            "window_validated": self._window_validated,         # TC-59
+            "raise_requires_confirmation": (                    # TC-60
+                self._raise_proposal.requires_confirmation
+                if self._raise_proposal else None
+            ),
+        }

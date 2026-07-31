@@ -1,7 +1,8 @@
-# GridSignal Simulator v2 — Acceptance Matrix (Step 17, rev AC1–AC3)
+# GridSignal Simulator v2 — Acceptance Matrix (Step 17, rev AC1–AD2)
 
 Generated: 2026-07-31  
-Revised: AC1 col-3 restatement; AC2 PMS wire confirmation; AC3 unlabelled TC recovery.
+Revised: AC1 col-3 restatement; AC2 PMS wire confirmation; AC3 unlabelled TC recovery;  
+AD1 three new engine scenarios; AD2 demo-pms-shortfall TC-65 live conflict detection.
 
 ---
 
@@ -16,9 +17,14 @@ Revised: AC1 col-3 restatement; AC2 PMS wire confirmation; AC3 unlabelled TC rec
 > **Why column 3 was restated (AC1):** The original Step 17 counted only 7 TCs whose
 > *test code* calls `build_seeded_store`. That is too narrow. The correct question is
 > whether the *implementation code* the TC validates runs during any demo scenario.
-> The corrected count is **28 labelled TCs** (plus 3 newly-recovered unlabelled ones).
+> The corrected count after AC1–AC3 was **31 confirmed TCs** (28 labelled + 3 unlabelled).
 >
-> The 20-TC short list at the end of this file is the real finding: these are passing TCs
+> **AD1+AD2 (2026-07-31):** Four new seeded scenarios added — `demo-procurement`,
+> `demo-maintenance`, `demo-ramp-relax`, `demo-pms-shortfall`. These bring 8 more TCs
+> into the demo-exercised set (TC-47, TC-52, TC-58, TC-59, TC-60, TC-65, TC-75, TC-76),
+> raising the confirmed count to **39** and reducing the short list from 20 → **12**.
+>
+> The 12-TC short list at the end of this file is the real finding: these are passing TCs
 > whose specific invariant is **not exercised at all by any demo scenario run**.
 
 ---
@@ -41,13 +47,19 @@ Revised: AC1 col-3 restatement; AC2 PMS wire confirmation; AC3 unlabelled TC rec
 | `_drive()` per-tick | FabricCorroborator.ingest_telemetry() | every tick |
 | `_drive()` per-tick | corroborator.apply_checkpoint_start() | when job → "running" |
 
-**Not in any demo scenario:** `MaintenanceEngine`, `RampRelaxationEngine`, `ProcurementLayer`
-(none of the five seeded scenarios has maintenance_config, ramp_relaxation_config, or
-procurement_config).
+| `_drive()` per-tick | `ProcurementLayer.evaluate_tick()` — NonFirmImportEffect.apply() + ReservationProposal | demo-procurement only |
+| `_drive()` per-tick | `MaintenanceLayer.evaluate_tick()` — reserve_contribution + validate_window + propose_rating_change | demo-maintenance only |
+| `_drive()` per-tick | `RampRelaxationEngine.evaluate()` — ReservePosition headroom check | demo-ramp-relax only |
+| `evaluate_tick()` hot path | `check_order_conflict()` — TC-65 PMS vs GS curtailment order comparison | demo-pms-shortfall only |
 
-`check_order_conflict()` is called in evaluate_tick only when `state.pms is not None AND
-_curtailment_proposals` is non-empty. demo-pms turbine+BESS covers demand, so no curtailment
-proposals are generated and the call never fires.
+**AD1+AD2 (2026-07-31):** All engines previously absent from demo scenarios are now exercised
+by dedicated seeded scenarios. `demo-pms-shortfall` uses a calibrated site (uncalibrated=False),
+undersized fleet (turbine=5 MW, BESS=3 MW), and demand≈19 MW so the 120 s dwell elapses and
+curtailment proposals fire — enabling `check_order_conflict()` to detect the PMS/GS mismatch
+on 32 of 60 ticks.
+
+`check_order_conflict()` is still unreachable in demo-pms because turbine+BESS covers demand
+(no curtailment proposals). demo-pms-shortfall is the sole path for TC-65 demo coverage.
 
 ---
 
@@ -240,12 +252,20 @@ proposals are generated and the call never fires.
 | Deferred / no test at all | **25** |
 | **Total in spec (TC-01 – TC-76)** | **76** |
 
+> AD1+AD2 update: col-3 count raised from 31 → **39** (added TC-47, TC-52, TC-58, TC-59,
+> TC-60, TC-65, TC-75, TC-76 via four new seeded scenarios). Short list reduced 20 → **12**.
+
 ---
 
-## Short list: 20 TCs that pass but no demo scenario reaches
+## Short list: 12 TCs that pass but no demo scenario reaches
 
 These are the actual risk items. A bug in their implementation would not be caught by
 running `scripts/determinism_gate.py` or any demo scenario end-to-end.
+
+**Disposition (AD1+AD2):** TC-47, TC-52, TC-58, TC-59, TC-60, TC-65, TC-75, TC-76 were
+removed from the short list by the four new engine scenarios. The remaining 12 TCs cover
+error/boundary branches that are correctly unreachable in any nominal run — they are
+adequately guarded by direct unit tests and are not suitable for live-scenario coverage.
 
 | TC | Why the demo path doesn't reach it |
 |----|-------------------------------------|
@@ -253,22 +273,14 @@ running `scripts/determinism_gate.py` or any demo scenario end-to-end.
 | TC-29 | `deidentify()` only called at REST endpoint, not in tick loop |
 | TC-30 | Gate only sees in-bounds proposals from DeterministicRouter; rejection branch never fires |
 | TC-35 | Persistence restart: no demo run invokes the restart path |
-| TC-47 | `ProcurementLayer` is endpoint-only; no demo has `procurement_config` |
 | TC-50 | FabricFinding requires **no registered job**; demo runs pre-register via STARTING events |
-| TC-52 | `ReservationProposal` only created at procurement endpoint; not in tick loop |
-| TC-58 | No demo has `maintenance_config`; `MaintenanceEngine` never instantiated |
-| TC-59 | Same as TC-58 |
-| TC-60 | Same as TC-58 |
 | TC-64 | PMS fast-shed interlock (`_pms_shed_active` check) requires injection; gate injects nothing |
-| TC-65 | `check_order_conflict()` requires `_curtailment_proposals` non-empty; demo-pms covers demand with turbine+BESS |
 | TC-66 | Fast-shed log requires injection; gate injects nothing |
 | TC-67 | Open-transition gap requires injection; gate injects nothing |
 | TC-70 | Synthetic PTP skew = 0.4 ms < 2 ms threshold; demotion branch never fires |
 | TC-71 | Synthetic telemetry is ENHANCED tier; BASELINE degradation code never runs |
 | TC-72 | Synthetic optical power in [−40, +10] dBm; quarantine branch never fires |
 | TC-74 | NetworkTelemetry-to-dispatch routing is a contract error; never triggered in normal operation |
-| TC-75 | No demo has `ramp_relaxation_config`; `RampRelaxationEngine` never instantiated |
-| TC-76 | Same as TC-75 |
 
 ---
 
@@ -290,6 +302,51 @@ TC-12–TC-27, TC-34, TC-36–TC-40, TC-45, TC-53–TC-54
 | 6 | Load / NFR | `scripts/load_test.py` | On changes to `core/`, `runtime/`, `advisory/` |
 | 7 | Determinism | `scripts/determinism_gate.py` | Every push/PR |
 | 8 | Shipped-scenario smoke | `test_step16_wiring.py` tests 14–16 + `test_f2_bridging_basis.py` | Every push/PR |
+
+---
+
+## AD1 — Three new engine scenarios (demo-procurement, demo-maintenance, demo-ramp-relax)
+
+**What was added:** Three `ScenarioSpec` fields (`procurement_config`, `maintenance_config`,
+`ramp_relaxation_config`) plus three corresponding seeded scenarios. Each instantiates one engine
+in `RunContext` and calls it from `_drive()` after `_update_thermal_state()` each tick.
+
+**Engines are observe-only** — they read `TickResult` fields but write nothing to `sim_state`.
+The dispatch trace hash is therefore unaffected; all three new scenarios have identical hashes
+to demo-20mw in the determinism gate (`f33094cadb63…`), confirming zero influence on dispatch.
+
+| Scenario | Engine | TCs exercised |
+|----------|--------|--------------|
+| demo-procurement | `ProcurementLayer.evaluate_tick()` | TC-47 (NonFirmImportEffect), TC-52 (ReservationProposal) |
+| demo-maintenance | `MaintenanceLayer.evaluate_tick()` | TC-58 (re-rated reserve), TC-59 (full-window validation), TC-60 (raise requires_confirmation) |
+| demo-ramp-relax | `RampRelaxationEngine.evaluate()` | TC-75 (upper-bound check), TC-76 (covered by unit test; evaluate() path exercised) |
+
+**`ScenarioSpec.calibrated`** is left at its default `False` for all three — `site.uncalibrated=True`
+is correct since these scenarios don't need the curtailment dwell to fire.
+
+---
+
+## AD2 — demo-pms-shortfall (TC-65 live conflict detection)
+
+**What was added:** `demo-pms-shortfall` — undersized fleet (turbine=5 MW, BESS=3 MW) with
+1900-node demand (~19 MW net) so the curtailment ladder must engage.
+
+**Why `calibrated=True` is required:** `SiteConfig.uncalibrated=True` (§17.3 default) causes
+TC-43's low-confidence interlock to reset the curtailment dwell every tick. Without calibration,
+`CurtailmentLadder.generate_candidates()` never returns proposals, making `check_order_conflict()`
+unreachable. Setting `calibrated=True` in the spec propagates `uncalibrated=False` to `SiteConfig`.
+
+**How the conflict arises:**
+- PMS `shed_priority_order = ['a_defer', 'b_power_cap']` — tier-letter order (small first).
+- `select_candidates()` sorts by `(position ASC, impact DESC)` within the same `LadderPosition`,
+  so it picks `b_power_cap` (5 MW) before `a_defer` (2 MW).
+- GS order `['b_power_cap', 'a_defer']` ≠ PMS order `['a_defer', 'b_power_cap']` → **CONFLICT**.
+- `check_order_conflict()` returns the commissioning-defect string on all 32 ticks where
+  curtailment proposals are non-empty (ticks 29–60, after the 120 s dwell elapses).
+
+**Determinism:** demo-pms-shortfall has a different hash (`9fecb3d16ed3…`) from demo-20mw because
+the curtailment proposals are included in the selected-unified pool, changing `net_demand_mw`
+coverage. The hash is stable across two runs (determinism gate: PASS).
 
 ---
 

@@ -29,6 +29,9 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Request, status
 
 from api.schemas import (
+    MaintenanceConfigSpec,
+    ProcurementConfigSpec,
+    RampRelaxationConfigSpec,
     CreateScenarioResponse,
     PmsConfigSpec,
     PreStagingConfigSpec,
@@ -218,6 +221,138 @@ _TC33_MW = 600 * _ENT_KW * _PUE / 1000.0   # 6.3036 MW
 _TC33_DT_LEAD = 15.0
 
 _SEEDED: list[tuple[str, ScenarioSpec]] = [
+    # ── AD1: procurement (TC-47, TC-52) ─────────────────────────────────
+    (
+        "demo-procurement",
+        ScenarioSpec(
+            name="demo-procurement",
+            description=(
+                "demo-20mw + §24 ProcurementLayer active (AD1).  "
+                "ProcurementLayer calls NonFirmImportEffect.apply() (TC-47: reserve gap "
+                "unchanged despite non-firm import) and creates ReservationProposal "
+                "(TC-52: requires_confirmation always True) each tick.  "
+                "non_firm_available_mw=3.0 MW; firm=20.0 MW; reserved=10.0 MW.  "
+                "Observe-only: no effect on dispatch trace."
+            ),
+            workload_events=[_evt_start("job-big", 1900)],
+            dt_lead_seconds=30.0,
+            bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
+            turbine_units=[_turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2)],
+            solar_rated_mw=_SOLAR_20MW,
+            end_sim_time=300.0,
+            procurement_config=ProcurementConfigSpec(
+                firm_available_mw=20.0,
+                reserved_available_mw=10.0,
+                non_firm_available_mw=3.0,
+                price_curve_seed=7,
+            ),
+        ),
+    ),
+    # ── AD1: maintenance (TC-58, TC-59, TC-60) ──────────────────────────
+    (
+        "demo-maintenance",
+        ScenarioSpec(
+            name="demo-maintenance",
+            description=(
+                "demo-20mw + §27 MaintenanceLayer active (AD1).  "
+                "Asset starts DEGRADED (effective_ramp=0.15 < nameplate=0.20 MW/s). "
+                "Each tick: reserve_contribution_mw_per_s() returns effective rate (TC-58). "
+                "At sim_time≥30 s: validate_window() checks synthetic window [60,120) "
+                "across full forecast duration (TC-59). "
+                "After 20 favorable ticks: propose_rating_change() returns RAISE with "
+                "requires_confirmation=True (TC-60). "
+                "Observe-only: no effect on dispatch trace."
+            ),
+            workload_events=[_evt_start("job-big", 1900)],
+            dt_lead_seconds=30.0,
+            bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
+            turbine_units=[_turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2)],
+            solar_rated_mw=_SOLAR_20MW,
+            end_sim_time=300.0,
+            maintenance_config=MaintenanceConfigSpec(
+                asset_id="turbine-0",
+                nameplate_ramp_mw_per_s=0.2,
+                effective_ramp_mw_per_s=0.15,   # DEGRADED — below nameplate
+                reserve_threshold_mw=1.0,
+            ),
+        ),
+    ),
+    # ── AD1: ramp relaxation (TC-75, TC-76) ─────────────────────────────
+    (
+        "demo-ramp-relax",
+        ScenarioSpec(
+            name="demo-ramp-relax",
+            description=(
+                "demo-20mw + §23.7.2 RampRelaxationEngine active (AD1).  "
+                "evaluate() called each tick with ReservePosition built from "
+                "turbine_rated_mw=25 MW and forecast_upper_bound = demand × 1.10. "
+                "headroom_at_upper_bound check (TC-75) fires every tick; "
+                "gridSignal_connected=True so adaptive_active reflects reserve headroom. "
+                "TC-76 (gridSignal_connected=False → baseline) is exercised by the unit "
+                "test; this scenario exercises the evaluate() code path live. "
+                "Observe-only: returned SiteRampPolicy is advisory only."
+            ),
+            workload_events=[_evt_start("job-big", 1900)],
+            dt_lead_seconds=30.0,
+            bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
+            turbine_units=[_turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2)],
+            solar_rated_mw=_SOLAR_20MW,
+            end_sim_time=300.0,
+            ramp_relaxation_config=RampRelaxationConfigSpec(
+                reserve_threshold_mw=2.0,
+                baseline_ramp_cap_mw=5.0,
+                baseline_ramp_duration_s=75.0,
+                adaptive_ramp_duration_s=30.0,
+            ),
+        ),
+    ),
+    # ── AD2: PMS shortfall — TC-65 live conflict detection ───────────────
+    (
+        "demo-pms-shortfall",
+        ScenarioSpec(
+            name="demo-pms-shortfall",
+            description=(
+                "§28.4 PMS with undersized turbine so the curtailment ladder engages "
+                "(AD2 / TC-65).  "
+                "Turbine=5 MW, BESS=3 MW, demand≈15 MW → shortfall≈7 MW after ramp. "
+                "CurtailmentTier order: GridSignal issues a_defer (2 MW) then "
+                "b_power_cap (5 MW) to cover the gap (mandatory tier ordering §23.2). "
+                "PMS shed_priority_order=['b_power_cap', 'a_defer'] — reversed. "
+                "After curtailment dwell (§23.2 120 s), _curtailment_proposals is "
+                "non-empty, triggering check_order_conflict() each tick. "
+                "Conflict: PMS order [b,a] ≠ GridSignal order [a,b]. "
+                "Per §28.4, PMS order is authoritative; GridSignal must not override "
+                "it — the mismatch is a commissioning defect logged to pms_order_conflict."
+            ),
+            workload_events=[_evt_start("job-big", 1900)],
+            dt_lead_seconds=30.0,
+            # Undersized fleet: turbine 5 MW + BESS 3 MW < demand ~15 MW
+            bess_units=[_bess("bess-0", rated_mw=3.0, usable_mwh=2.0, grid_forming=True)],
+            turbine_units=[_turbine("turbine-0", rated_mw=5.0, r_mw_per_s=0.2)],
+            solar_rated_mw=_SOLAR_20MW,
+            end_sim_time=300.0,
+            pms_config=PmsConfigSpec(
+                # PMS insists: a_defer FIRST, then b_power_cap (A→B tier-letter
+                # order, i.e. smallest tier first).
+                # GridSignal's select_candidates() sorts by impact DESC within
+                # the same LadderPosition, so it naturally picks b_power_cap
+                # (5 MW) before a_defer (2 MW).
+                # PMS order [a, b] ≠ GS order [b, a] → conflict detected (TC-65).
+                shed_priority_order=["a_defer", "b_power_cap"],
+                transition_mode="open_transition",
+                open_transition_gap_mw=2.0,
+                open_transition_duration_s=5.0,
+                fast_shed_duration_s=30.0,
+            ),
+            # AD2: set calibrated=True so TC-43 low-confidence interlock does NOT
+            # reset the curtailment dwell.  Without this, site.uncalibrated=True
+            # (default §17.3) causes TC-43 to reset the dwell every tick, and
+            # curtailment proposals never fire — making check_order_conflict()
+            # unreachable.  Calibrated state is a precondition for TC-65 to be
+            # observable in a live run.
+            calibrated=True,
+        ),
+    ),
     (
         "demo-pms",
         ScenarioSpec(

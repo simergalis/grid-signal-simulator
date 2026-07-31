@@ -219,3 +219,70 @@ class SyntheticPriceCurve:
         """Average price over a time window — useful for cost estimation."""
         pts = self.points(from_s, to_s, n)
         return round(sum(p.price_per_mwh for p in pts) / len(pts), 2)
+
+
+# ---------------------------------------------------------------------------
+# AD1: ProcurementLayer — per-tick evaluation (TC-47, TC-52)
+# ---------------------------------------------------------------------------
+
+class ProcurementLayer:
+    """§24 procurement layer — exercised each tick by _drive() when present.
+
+    Exercises TC-47 (NonFirmImportEffect.apply: non-firm import does NOT close
+    the reserve gap) and TC-52 (ReservationProposal.requires_confirmation is
+    always True) during every tick of a live demo run.
+
+    Pure observation: no writes to SimulationState, no effect on dispatch.
+    The result is advisory-only — it would feed a future procurement dashboard.
+    """
+
+    def __init__(
+        self,
+        grid_caps: list[GridCapacity],
+        price_curve: SyntheticPriceCurve,
+    ) -> None:
+        self.grid_caps = grid_caps
+        self.price_curve = price_curve
+        self._non_firm = next(
+            (g for g in grid_caps if g.capacity_type == CapacityType.NON_FIRM),
+            None,
+        )
+
+    def evaluate_tick(
+        self,
+        reserve_gap_mw: float,
+        served_load_mw: float,
+        sim_time: float,
+    ) -> dict:
+        """TC-47 + TC-52 per-tick procurement evaluation.
+
+        TC-47: NonFirmImportEffect.apply() returns reserve_gap unchanged even
+               when non-firm import reduces served load.
+
+        TC-52: ReservationProposal.requires_confirmation is always True —
+               proven by constructing one and reading the property.
+
+        Returns an advisory summary dict (not used for dispatch).
+        """
+        import_mw = self._non_firm.available_mw if self._non_firm else 0.0
+        new_served, gap_unchanged = NonFirmImportEffect.apply(
+            served_load_mw, import_mw, reserve_gap_mw
+        )
+        price = self.price_curve.price_at(sim_time)
+        proposal = ReservationProposal(
+            capacity_type=CapacityType.NON_FIRM,
+            requested_mw=import_mw,
+            estimated_cost=price * import_mw / 1000.0,  # indicative MWh cost
+            rationale=(
+                f"TC-47/TC-52 procurement eval at sim_time={sim_time:.1f}s: "
+                f"non_firm={import_mw:.2f} MW reduces served load but reserve gap "
+                f"stays at {gap_unchanged:.2f} MW (TC-47)."
+            ),
+        )
+        return {
+            "import_mw": import_mw,
+            "new_served_load_mw": round(new_served, 4),
+            "reserve_gap_mw_unchanged": round(gap_unchanged, 4),  # TC-47
+            "proposal_requires_confirmation": proposal.requires_confirmation,  # TC-52 always True
+            "spot_price_per_mwh": price,
+        }

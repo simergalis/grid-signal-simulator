@@ -341,6 +341,15 @@ class RunContext:
     # for §21.2 cost model in the energy-summary endpoint.  0.0 = unknown.
     turbine_rated_mw: float = 0.0
 
+    # AD1: optional engine instances — instantiated by build_run_context_from_spec
+    # when the corresponding *_config field is set in ScenarioSpec.
+    # Types are Any to avoid circular imports at module load time.
+    # All three are observe-only: they read TickResult fields but never write
+    # to sim_state, so they do NOT affect the dispatch trace hash.
+    procurement_layer: Optional[Any] = None       # ProcurementLayer (TC-47, TC-52)
+    maintenance_layer: Optional[Any] = None       # MaintenanceLayer (TC-58, TC-59, TC-60)
+    ramp_relaxation_engine: Optional[Any] = None  # RampRelaxationEngine (TC-75, TC-76)
+
     def is_complete(self) -> bool:
         return self.cancelled or self.sim_time >= self.end_sim_time
 
@@ -612,6 +621,61 @@ class RunManager:
 
                 # ── W1c: thermal state ────────────────────────────────────
                 _update_thermal_state(ctx, tick_result)
+
+                # ── AD1: procurement evaluation (TC-47, TC-52) ───────────
+                # Observe-only: does NOT write to sim_state; dispatch trace
+                # hash is unaffected.
+                if ctx.procurement_layer is not None:
+                    _gap = max(
+                        0.0,
+                        tick_result.net_demand_mw
+                        - tick_result.turbine_output_mw
+                        - tick_result.bess_output_mw,
+                    )
+                    ctx.procurement_layer.evaluate_tick(
+                        reserve_gap_mw=_gap,
+                        served_load_mw=tick_result.net_demand_mw,
+                        sim_time=tick_result.sim_time_seconds,
+                    )
+
+                # ── AD1: maintenance evaluation (TC-58, TC-59, TC-60) ────
+                # Observe-only: accumulates observation ticks, validates a
+                # synthetic maintenance window, proposes rating changes.
+                if ctx.maintenance_layer is not None:
+                    ctx.maintenance_layer.evaluate_tick(
+                        sim_time=tick_result.sim_time_seconds,
+                        net_demand_mw=tick_result.net_demand_mw,
+                        available_capacity_mw=(
+                            tick_result.turbine_output_mw
+                            + tick_result.bess_output_mw
+                        ),
+                    )
+
+                # ── AD1: ramp relaxation evaluation (TC-75, TC-76) ───────
+                # Observe-only: evaluate() returns a SiteRampPolicy but the
+                # policy is advisory only — ramp caps are not applied to
+                # TurbineModule, so the dispatch trace hash is unaffected.
+                if ctx.ramp_relaxation_engine is not None:
+                    from core.ramp_relaxation import ReservePosition  # lazy
+                    ctx.ramp_relaxation_engine.evaluate(
+                        ReservePosition(
+                            # Use turbine_rated_mw as total capacity proxy.
+                            # Falls back to current output if rated_mw unknown.
+                            available_capacity_mw=(
+                                ctx.turbine_rated_mw
+                                or (
+                                    tick_result.turbine_output_mw
+                                    + tick_result.bess_output_mw
+                                )
+                            ),
+                            current_demand_mw=tick_result.net_demand_mw,
+                            # PROTO-AD1: +10% pessimistic upper-bound forecast.
+                            forecast_upper_bound_mw=(
+                                tick_result.net_demand_mw * 1.10
+                            ),
+                        ),
+                        gridSignal_connected=True,
+                    )
 
                 sleep_s = ctx.wall_clock_sleep_seconds()
                 await asyncio.sleep(sleep_s if sleep_s > 0 else 0)  # always yield

@@ -78,6 +78,68 @@ class PreStagingConfigSpec(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# AD1: Procurement config schema (TC-47, TC-52)
+# ---------------------------------------------------------------------------
+
+class ProcurementConfigSpec(BaseModel):
+    """Wire-format config for §24 grid procurement (ProcurementLayer).
+
+    Gates whether a ProcurementLayer is instantiated in the run context.
+    The layer calls NonFirmImportEffect.apply() (TC-47) and creates
+    ReservationProposal objects (TC-52) each tick when reserve_gap > 0.
+
+    All capacity values are CHOSEN (PROTO-AD1).
+    """
+    firm_available_mw: float = Field(default=20.0, ge=0.0)
+    reserved_available_mw: float = Field(default=10.0, ge=0.0)
+    non_firm_available_mw: float = Field(default=3.0, ge=0.0)
+    price_curve_seed: int = Field(default=42, ge=0)
+
+
+# ---------------------------------------------------------------------------
+# AD1: Maintenance config schema (TC-58, TC-59, TC-60)
+# ---------------------------------------------------------------------------
+
+class MaintenanceConfigSpec(BaseModel):
+    """Wire-format config for §27 prescriptive maintenance (MaintenanceLayer).
+
+    Gates whether a MaintenanceLayer is instantiated in the run context.
+    The layer calls reserve_contribution_mw_per_s() (TC-58), validate_window()
+    (TC-59), and propose_rating_change() (TC-60) during live runs.
+
+    effective_ramp_mw_per_s < nameplate_ramp_mw_per_s → asset starts DEGRADED,
+    so the first propose_rating_change() call is a RAISE (TC-60 requires
+    confirmation; reduction is immediate).
+
+    All values are CHOSEN (PROTO-AD1).
+    """
+    asset_id: str = "turbine-0"
+    nameplate_ramp_mw_per_s: float = Field(default=0.2, gt=0.0)
+    effective_ramp_mw_per_s: float = Field(default=0.15, gt=0.0)
+    reserve_threshold_mw: float = Field(default=1.0, ge=0.0)
+
+
+# ---------------------------------------------------------------------------
+# AD1: Ramp relaxation config schema (TC-75, TC-76)
+# ---------------------------------------------------------------------------
+
+class RampRelaxationConfigSpec(BaseModel):
+    """Wire-format config for §23.7.2 adaptive ramp relaxation (RampRelaxationEngine).
+
+    Gates whether a RampRelaxationEngine is instantiated in the run context.
+    The engine's evaluate() runs each tick (TC-75: upper-bound reserve check;
+    TC-76: gridSignal_connected=False reverts to baseline — tested via unit test,
+    but the evaluate() path is exercised every demo tick).
+
+    All values are CHOSEN (PROTO-AD1).
+    """
+    reserve_threshold_mw: float = Field(default=2.0, ge=0.0)
+    baseline_ramp_cap_mw: float = Field(default=5.0, gt=0.0)
+    baseline_ramp_duration_s: float = Field(default=75.0, gt=0.0)
+    adaptive_ramp_duration_s: float = Field(default=30.0, gt=0.0)
+
+
+# ---------------------------------------------------------------------------
 # Step 8: Scenario schemas
 # ---------------------------------------------------------------------------
 
@@ -186,6 +248,35 @@ class ScenarioSpec(BaseModel):
     # SimulatedPMS.inject_fast_shed() / inject_transition(); the scenario only
     # gates whether the PMS code path is active.
     pms_config: Optional[PmsConfigSpec] = None
+
+    # AD1: optional §24 procurement configuration.
+    # None = ProcurementLayer not instantiated.
+    # When set, NonFirmImportEffect.apply() (TC-47) and ReservationProposal
+    # (TC-52) are exercised each tick during the live run.
+    procurement_config: Optional[ProcurementConfigSpec] = None
+
+    # AD1: optional §27 maintenance configuration.
+    # None = MaintenanceLayer not instantiated.
+    # When set, reserve_contribution_mw_per_s (TC-58), validate_window (TC-59),
+    # and propose_rating_change (TC-60) are exercised during the live run.
+    maintenance_config: Optional[MaintenanceConfigSpec] = None
+
+    # AD1: optional §23.7.2 ramp relaxation configuration.
+    # None = RampRelaxationEngine not instantiated.
+    # When set, evaluate() is called each tick (TC-75 upper-bound reserve check;
+    # TC-76 gridSignal_connected=False revert is covered by unit test).
+    ramp_relaxation_config: Optional[RampRelaxationConfigSpec] = None
+
+    # AD2: site calibration flag.
+    # False (default) = SiteConfig.uncalibrated=True (§17.3 default: uncalibrated
+    # until explicit calibration run).  The TC-43 low-confidence interlock
+    # resets the curtailment dwell every tick while uncalibrated is True, so
+    # curtailment proposals never fire in the default state.
+    # True = SiteConfig.uncalibrated=False — site is treated as calibrated,
+    # curtailment ladder fires normally once the dwell elapses.
+    # Only set True for scenarios where the curtailment path must engage
+    # (e.g. demo-pms-shortfall for TC-65 conflict detection).
+    calibrated: bool = False
 
     # Step 9: optional pass/fail assertions evaluated at run completion.
     # Each element is one of the AssertionSpec union members (discriminated

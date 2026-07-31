@@ -53,7 +53,14 @@ from runtime.advisory_router import AdvisoryRouter, DeterministicRouter
 from advisory.agent_registry import AgentRegistry
 from core.network_telemetry import NetworkTelemetryIngestor
 from core.corroboration import FabricCorroborator
-from core.procurement import GridCapacity, CapacityType, SyntheticPriceCurve
+from core.procurement import (
+    CapacityType,
+    GridCapacity,
+    ProcurementLayer,
+    SyntheticPriceCurve,
+)
+from core.maintenance import AssetHealthRecord, MaintenanceLayer
+from core.ramp_relaxation import RampRelaxationEngine
 
 # TypeAdapter for deserialising assertion specs from plain dicts in
 # build_run_context_from_spec.  Created once at module level (not per-call)
@@ -357,6 +364,10 @@ def build_run_context_from_spec(
         site_id=f"site-for-{run_id}",
         pue_base=spec_data.get("pue_base", 1.03),
         island_mode=island,
+        # AD2: calibrated=True in spec → uncalibrated=False in SiteConfig.
+        # Required for scenarios where the TC-43 curtailment dwell must fire
+        # (e.g. demo-pms-shortfall).  Default False preserves §17.3 behaviour.
+        uncalibrated=not bool(spec_data.get("calibrated", False)),
     )
 
     # Step 10 — §8.1: wire optional pre-staging config from spec.
@@ -478,6 +489,53 @@ def build_run_context_from_spec(
         GridCapacity(CapacityType.NON_FIRM, available_mw=_spec_total_turbine_mw * 0.15, price_per_mwh=198.0, t_reserve_s=0.0),
     ]
 
+    # ── AD1: optional engine wiring ───────────────────────────────────────
+    # Each engine is instantiated only when its *_config field is present in
+    # the spec.  All three are observe-only (no writes to sim_state).
+
+    # AD1 — ProcurementLayer (TC-47, TC-52)
+    _proc_layer = None
+    _proc_raw = spec_data.get("procurement_config")
+    if _proc_raw:
+        _pc_caps = [
+            GridCapacity(CapacityType.FIRM,
+                         available_mw=float(_proc_raw.get("firm_available_mw", 20.0)),
+                         price_per_mwh=48.0, t_reserve_s=0.0),
+            GridCapacity(CapacityType.RESERVED,
+                         available_mw=float(_proc_raw.get("reserved_available_mw", 10.0)),
+                         price_per_mwh=62.0, t_reserve_s=300.0),
+            GridCapacity(CapacityType.NON_FIRM,
+                         available_mw=float(_proc_raw.get("non_firm_available_mw", 3.0)),
+                         price_per_mwh=198.0, t_reserve_s=0.0),
+        ]
+        _pc_curve = SyntheticPriceCurve(seed=int(_proc_raw.get("price_curve_seed", 42)))
+        _proc_layer = ProcurementLayer(_pc_caps, _pc_curve)
+
+    # AD1 — MaintenanceLayer (TC-58, TC-59, TC-60)
+    _maint_layer = None
+    _maint_raw = spec_data.get("maintenance_config")
+    if _maint_raw:
+        _maint_record = AssetHealthRecord(
+            asset_id=str(_maint_raw.get("asset_id", "turbine-0")),
+            nameplate_ramp_mw_per_s=float(_maint_raw.get("nameplate_ramp_mw_per_s", 0.2)),
+            effective_ramp_mw_per_s=float(_maint_raw.get("effective_ramp_mw_per_s", 0.15)),
+        )
+        _maint_layer = MaintenanceLayer(
+            records=[_maint_record],
+            reserve_threshold_mw=float(_maint_raw.get("reserve_threshold_mw", 1.0)),
+        )
+
+    # AD1 — RampRelaxationEngine (TC-75, TC-76)
+    _ramp_engine = None
+    _ramp_raw = spec_data.get("ramp_relaxation_config")
+    if _ramp_raw:
+        _ramp_engine = RampRelaxationEngine(
+            reserve_threshold_mw=float(_ramp_raw.get("reserve_threshold_mw", 2.0)),
+            baseline_ramp_cap_mw=float(_ramp_raw.get("baseline_ramp_cap_mw", 5.0)),
+            baseline_ramp_duration_s=float(_ramp_raw.get("baseline_ramp_duration_s", 75.0)),
+            adaptive_ramp_duration_s=float(_ramp_raw.get("adaptive_ramp_duration_s", 30.0)),
+        )
+
     # ── RunContext ────────────────────────────────────────────────────────
     return RunContext(
         run_id=run_id,
@@ -502,4 +560,8 @@ def build_run_context_from_spec(
         _rated_cooling_mw=_spec_rated_cooling_mw,
         # AB2: for §21.2 cost model in energy-summary endpoint.
         turbine_rated_mw=_spec_total_turbine_mw,
+        # AD1: optional engine instances.
+        procurement_layer=_proc_layer,
+        maintenance_layer=_maint_layer,
+        ramp_relaxation_engine=_ramp_engine,
     )

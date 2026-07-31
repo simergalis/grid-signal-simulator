@@ -116,6 +116,12 @@ SEEDED_SCENARIO_IDS = [
     "demo-5mw",
     "demo-prestage",
     "demo-pms",
+    # AD1: three new engine scenarios
+    "demo-procurement",
+    "demo-maintenance",
+    "demo-ramp-relax",
+    # AD2: PMS shortfall / TC-65 conflict detection
+    "demo-pms-shortfall",
 ]
 
 
