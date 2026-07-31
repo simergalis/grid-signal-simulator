@@ -1,9 +1,19 @@
 /**
  * ProcurementPage — §19.8 Grid & Procurement console.
  *
- * The reservation authorization control is the only place in the console
- * where an action commits money.  It is styled and confirmed differently
- * for that reason.
+ * P2 clarification (inert acceptance):
+ * Authorization today records state only — it stores reviewer_id and
+ * accepted_at_sim_time on the Proposal dataclass (O2 acceptance path) and
+ * sets the proposal to ACCEPTED in the advisory gate.  There is NO current
+ * path from an accepted ReservationProposal to GridCapacity or the control
+ * plane.  The authorization dialog is present because the confirmation
+ * architecture (TC-52) must be in place before the effect path is wired; the
+ * UI enforces the governance gate (named reviewer + explicit checkbox) even
+ * though the downstream effect is not yet connected.
+ *
+ * "The only place in the console where an action commits money" was
+ * inaccurate — replace with: "the only place that records authorization
+ * intent for a capacity reservation, pending the production effect path."
  *
  * TC-47: Non-firm spot import is shown as reducing served load, but the
  *        reserve gap indicator is NOT updated — non-firm does not close

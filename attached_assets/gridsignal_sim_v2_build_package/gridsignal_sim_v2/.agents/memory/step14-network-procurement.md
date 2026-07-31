@@ -51,12 +51,45 @@ TC-74: assert_not_in_dispatch_path() raises NetworkTelemetryDispatchError (TypeE
 It is a @property returning True, not a dataclass field. Assigning to it raises AttributeError.
 Do not try to unset it via tier logic or advisory gate.
 
+## P1 correction (HardwareClassMap)
+
+Old behavior: per-call random shuffle — each deidentify() call reshuffled class indices.
+New behavior: HardwareClassMap created once at AgentRegistry init; passed through run_all() → maybe_run() → deidentify(hardware_class_map=).
+
+Within session: stable (required for CalibrationAgent and reviewer correlation).
+Across sessions: different RNG seed → different mapping (§21.4 unlinkability).
+
+Reviewer resolution: `registry.hardware_class_map.resolve("profile_B")` → rated_kw_per_unit.
+The rated_kw_per_unit is already on the wire entry — power reasoning needs no further resolution.
+For SKU-level resolution, the operator reads the session map (stored alongside advisory session record).
+
+## P2 clarification (accepted reservation is inert)
+
+Accepting a ReservationProposal today: records reviewer_id + accepted_at_sim_time on the Proposal dataclass only.
+No path from accepted proposal to GridCapacity or control plane.
+ProcurementPage.tsx comment updated — "commits money" was wrong. Now: "records authorization intent only, pending the production effect path."
+TC-52 governance gate (named reviewer + checkbox) is in place so the effect path can be wired without architectural change.
+
 ## TRAP: gate API
 
 gate.validate(proposal) is the entry point — stores proposal AND validates bounds.
 gate.accept(id) transitions to ACCEPTED.
 There is no gate.submit() or gate.enqueue().
 make_proposal() requires `created_at_sim_time` (positional, not keyword-only).
+
+## Frontend additions (Step 15)
+
+- ThermalCoolingPage.tsx — §19.6, read-only. Thermal headroom in MW + time-to-limit (both required). Per-zone utilisation bars. TC-55 inlet comfort band reference line (no dispatch interlock here).
+- ScenarioPlannerPage.tsx — §19.1 Page 9, §18.5 FR-4.4. §21.2 cost model mirrors core/cost_model.py (client-side). Three cost streams: grid import, on-site gen (amortised capital vs duty cycle), storage RT. Commits nothing.
+
+## Step 15 key decisions
+
+TC-58: `reserve_contribution_mw_per_s(record)` → 0.0 for MAINTENANCE/FAILED; `effective_ramp_mw_per_s` for OPERATIONAL/DEGRADED.
+TC-59: `validate_window()` iterates ALL ticks with sim_time in [start, end]. Empty forecast → vacuous accept.
+TC-60: `proposed <= effective` → LOWER (no confirmation). `proposed > effective` → RAISE (requires_confirmation always True).
+TC-75: `headroom_at_upper_bound = available - forecast_upper_bound`. Must be >= threshold. "No warning at current demand" is not sufficient.
+TC-76: `gridSignal_connected=False` → returns baseline policy (adaptive_active=False). `baseline_ramp_cap_mw=0` raises ValueError at construction.
+Cost model: duty_fraction = min(1.0, gen_mwh / (rated_mw × hours)). Capital = capital_per_mw_year × rated_mw × (hours/8760).
 
 ## Frontend additions (Step 14)
 

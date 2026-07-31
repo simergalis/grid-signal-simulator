@@ -1,0 +1,29 @@
+Two items, then Step 15.
+
+P1 — class index stability scope. Per-call reshuffling means a proposal referencing "profile_B"
+is unresolvable by the time a reviewer reads it, and two proposals from different cycles that
+both say "profile_B" refer to different hardware. Calibration derives per-profile parameters, so
+this is load-bearing for it specifically.
+§21.4 requires the mapping not leak outward; it does not require instability within a session.
+Make the mapping stable per advisory session (fresh salt at session start, held for the session,
+discarded at end), not per call. Keep the unlinkability test but scope it to across-sessions
+rather than across-calls. Then confirm: can a reviewer reading a stored proposal resolve which
+hardware class it refers to? If not, say how they would.
+
+P2 — where does an accepted reservation go? TC-52 proves requires_confirmation cannot be
+overridden, and the Authorize dialog requires a named reviewer plus a checkbox. But O2
+established that accepting a proposal is inert with respect to dispatch. So what does
+authorizing a reservation actually do today — record state only, or is there a path to
+GridCapacity? Say plainly. Inert is the right answer for this step; I want it stated rather than
+assumed, because "the only place in the console that commits money" implies an effect.
+
+Then STEP 15 from v2.2 — maintenance, adaptive ramp relaxation, Scenario Planner. Stop after it.
+
+Three items. §23.7.2 is the one to get right: relaxation requires a reserve check passing against
+the confidence band's LOWER BOUND, not merely the absence of a warning (TC-75). On loss of
+GridSignal the relaxation lapses and the site baseline ramp policy resumes — the failure
+direction is toward conservative pre-installation behaviour, never toward an unramped start
+(TC-76). That is §23.7's own strongest self-criticism: a static scheduler ramp policy is the
+honest baseline competitor, and the spec says to recommend it.
+
+Gates: TC-58, TC-59, TC-60, TC-75, TC-76.

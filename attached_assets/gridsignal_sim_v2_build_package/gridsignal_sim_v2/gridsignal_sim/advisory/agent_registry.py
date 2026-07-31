@@ -19,6 +19,7 @@ from __future__ import annotations
 import logging
 from typing import Optional, Sequence
 
+from core.deident import HardwareClassMap
 from core.models import TickResult
 from runtime.advisory_gate import AdvisoryGate, Proposal
 from runtime.advisory_router import AdvisoryRouter
@@ -62,13 +63,21 @@ class AgentRegistry:
     def __init__(
         self,
         *,
-        gate:    Optional[AdvisoryGate]   = None,
-        router:  Optional[AdvisoryRouter] = None,
-        enabled: bool = True,
+        gate:              Optional[AdvisoryGate]   = None,
+        router:            Optional[AdvisoryRouter] = None,
+        enabled:           bool = True,
+        hardware_profiles: Optional[dict[str, float]] = None,
     ) -> None:
         self._gate   = gate   or AdvisoryGate()
         self._router = router or AdvisoryRouter()
         self._enabled = enabled
+        # P1: create a single session-stable HardwareClassMap if profiles provided.
+        # The map lives for the lifetime of this AgentRegistry (= one advisory session).
+        self._hw_class_map: Optional[HardwareClassMap] = (
+            HardwareClassMap(hardware_profiles)
+            if hardware_profiles
+            else None
+        )
 
         _agent_kwargs = dict(gate=self._gate, router=self._router)
         self._agents: list[BaseAdvisoryAgent] = [
@@ -95,6 +104,15 @@ class AgentRegistry:
 
     # ── Per-tick entry point ──────────────────────────────────────────────
 
+    @property
+    def hardware_class_map(self) -> Optional[HardwareClassMap]:
+        """P1: session-stable hardware class map (None if no profiles provided).
+
+        Reviewers can call map.resolve(class_index) to look up rated_kw_per_unit
+        for a class index seen in a stored proposal.
+        """
+        return self._hw_class_map
+
     def run_all(
         self,
         recent_ticks: Sequence[TickResult],
@@ -104,7 +122,7 @@ class AgentRegistry:
         site_id: str = "",
         job_id: str  = "",
         hardware_profile_ids: frozenset[str] = frozenset(),  # kept for compat
-        hardware_profiles: Optional[dict[str, float]] = None,  # §21.4 O1
+        hardware_profiles: Optional[dict[str, float]] = None,  # backward compat
     ) -> list[Proposal]:
         """Run all agents that are due and return any proposals generated.
 
@@ -132,6 +150,7 @@ class AgentRegistry:
                     job_id=job_id,
                     hardware_profile_ids=hardware_profile_ids,
                     hardware_profiles=hardware_profiles,
+                    hardware_class_map=self._hw_class_map,  # P1: session-stable map
                 )
                 if p is not None:
                     proposals.append(p)

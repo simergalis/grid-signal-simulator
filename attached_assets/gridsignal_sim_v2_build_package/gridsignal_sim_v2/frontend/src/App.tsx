@@ -31,11 +31,13 @@ import { ResultsScreen }     from './components/ResultsScreen'
 import { ProposalsPage }          from './components/ProposalsPage'
 import { NetworkTelemetryPage }  from './components/NetworkTelemetryPage'
 import { ProcurementPage }       from './components/ProcurementPage'
+import { ThermalCoolingPage }    from './components/ThermalCoolingPage'
+import { ScenarioPlannerPage }   from './components/ScenarioPlannerPage'
 import { useTickStore }      from './store/tickStore'
 import { useScenarioStore }  from './store/scenarioStore'
 import { useTickStream }     from './ws/useTickStream'
 
-type PageView = 'overview' | 'proposals' | 'procurement' | 'network'
+type PageView = 'overview' | 'proposals' | 'procurement' | 'network' | 'thermal' | 'scenarios'
 
 const FRAME_INTERVAL_MS = 250   // 4 Hz render loop
 
@@ -140,6 +142,8 @@ export default function App() {
           ['proposals',   'Proposals & Learning'],
           ['procurement', 'Grid & Procurement'],
           ['network',     'Network Telemetry'],
+          ['thermal',     'Thermal & Cooling'],
+          ['scenarios',   'Scenario Planner'],
         ] as const).map(([page, label]) => (
           <button
             key={page}
@@ -192,10 +196,20 @@ export default function App() {
         <main className="flex-1 overflow-hidden">
           <ProcurementPage runId={runId ?? lastRunId} />
         </main>
-      ) : (
+      ) : currentPage === 'network' ? (
         /* §19.9 Network Telemetry page — read-only by design (TC-74) */
         <main className="flex-1 overflow-hidden">
           <NetworkTelemetryPage runId={runId ?? lastRunId} />
+        </main>
+      ) : currentPage === 'thermal' ? (
+        /* §19.6 Thermal & Cooling page */
+        <main className="flex-1 overflow-hidden">
+          <ThermalCoolingPage runId={runId ?? lastRunId} />
+        </main>
+      ) : (
+        /* §19.1 Scenario Planner — §18.5 FR-4.4 */
+        <main className="flex-1 overflow-hidden">
+          <ScenarioPlannerPage runId={runId ?? lastRunId} />
         </main>
       )}
 

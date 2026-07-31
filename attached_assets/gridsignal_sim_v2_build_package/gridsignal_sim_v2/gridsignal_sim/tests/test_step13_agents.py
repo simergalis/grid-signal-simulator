@@ -887,23 +887,67 @@ class TestO2AcceptancePathDispatchUnchanged:
             assert "nextgen" not in entry.class_index.lower()
             assert entry.rated_kw_per_unit > 0
 
-    def test_o1_hardware_classes_not_stable_across_calls(self) -> None:
-        """O1: class_index assignment is randomised per deidentify() call — not stable."""
-        from core.deident import deidentify
-        ticks = _make_ticks(10)
+    def test_o1_hardware_class_maps_not_stable_across_sessions(self) -> None:
+        """P1: class_index assignment is stable within a session but NOT across sessions.
+
+        Two different HardwareClassMap instances (= two advisory sessions) must
+        eventually produce different mappings for the same profile_ids.
+        §21.4 requires unlinkability cross-session, not per-call.
+        """
+        from core.deident import HardwareClassMap
         hw = {"enterprise_8gpu_air": 10.2, "nextgen_rack_liquid": 126.0}
-        # Make many calls; at least one pair of results should differ in ordering.
-        results = []
-        for _ in range(20):
-            w = deidentify(ticks, site_id=SITE_ID, job_id=JOB_ID, hardware_profiles=hw)
-            mapping = {e.rated_kw_per_unit: e.class_index for e in w.hardware_classes}
-            results.append(mapping)
-        # If all 20 results were identical, the shuffle is not working.
-        unique_mappings = {str(sorted(m.items())) for m in results}
-        assert len(unique_mappings) > 1, (
-            "O1: hardware class indices should not be stable across calls — "
-            "the same SKU must not always get the same letter."
+        # Create 20 independent sessions; at least two must differ.
+        mappings = [
+            HardwareClassMap(hw).class_index("enterprise_8gpu_air")
+            for _ in range(20)
+        ]
+        unique_indices = set(mappings)
+        assert len(unique_indices) > 1, (
+            "P1: hardware class indices must vary across sessions — "
+            "the same SKU must not always get the same letter in different sessions."
         )
+
+    def test_o1_within_session_class_index_is_stable(self) -> None:
+        """P1: within one advisory session, the same profile_id always maps to
+        the same class_index — required for reviewer correlation and CalibrationAgent."""
+        from core.deident import HardwareClassMap, deidentify
+        hw = {"enterprise_8gpu_air": 10.2, "nextgen_rack_liquid": 126.0}
+        hw_map = HardwareClassMap(hw)
+
+        # Class index is stable on the map object itself.
+        idx_1 = hw_map.class_index("enterprise_8gpu_air")
+        idx_2 = hw_map.class_index("enterprise_8gpu_air")
+        assert idx_1 == idx_2, "P1: within-session class index must be stable"
+
+        # deidentify() called multiple times with the same map → same indices.
+        ticks = _make_ticks(10)
+        w1 = deidentify(ticks, site_id=SITE_ID, job_id=JOB_ID, hardware_class_map=hw_map)
+        w2 = deidentify(ticks, site_id=SITE_ID, job_id=JOB_ID, hardware_class_map=hw_map)
+        map1 = {e.rated_kw_per_unit: e.class_index for e in w1.hardware_classes}
+        map2 = {e.rated_kw_per_unit: e.class_index for e in w2.hardware_classes}
+        assert map1 == map2, (
+            "P1: deidentify() with the same HardwareClassMap must produce identical "
+            f"class indices.\n  Call 1: {map1}\n  Call 2: {map2}"
+        )
+
+    def test_o1_reviewer_can_resolve_class_index(self) -> None:
+        """P1: reviewer resolution — resolve(class_index) returns rated_kw_per_unit."""
+        from core.deident import HardwareClassMap
+        hw = {"enterprise_8gpu_air": 10.2, "nextgen_rack_liquid": 126.0}
+        hw_map = HardwareClassMap(hw)
+        for profile_id, rated_kw in hw.items():
+            class_idx = hw_map.class_index(profile_id)
+            resolved = hw_map.resolve(class_idx)
+            assert resolved is not None, f"P1: resolve({class_idx!r}) returned None"
+            assert abs(resolved - rated_kw) < 0.001, (
+                f"P1: resolve({class_idx!r}) = {resolved}, expected {rated_kw}"
+            )
+
+    def test_o1_unknown_class_index_resolves_to_none(self) -> None:
+        """P1: resolve() with an unknown class_index returns None (no key error)."""
+        from core.deident import HardwareClassMap
+        hw_map = HardwareClassMap({"sku-a": 10.0})
+        assert hw_map.resolve("profile_Z") is None
 
     def test_o1_no_pii_in_wire_with_hardware_profiles(self) -> None:
         """O1 + TC-29: hardware_profiles provided → class entries in window; no PII in wire."""
