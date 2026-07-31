@@ -170,6 +170,7 @@ class BaseAdvisoryAgent:
             try:
                 proposal = self._router.route(
                     evidence, sim_time=sim_time, system_prompt=prompt,
+                    agent_name=self.AGENT_NAME,
                 )
             except Exception as exc:
                 _log.warning("%s: router.route() raised (%s).", self.AGENT_NAME, exc)

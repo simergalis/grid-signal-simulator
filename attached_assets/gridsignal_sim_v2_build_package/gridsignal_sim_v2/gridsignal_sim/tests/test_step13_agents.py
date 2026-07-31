@@ -42,7 +42,7 @@ from runtime.advisory_gate import (
     DEFAULT_PROPOSAL_LIFETIME_S, AdvisoryGate, Proposal, ProposalState,
     make_proposal,
 )
-from runtime.advisory_router import AdvisoryRouter
+from runtime.advisory_router import AdvisoryRouter, DeterministicRouter
 from runtime.scenario_factory import build_run_context
 
 
@@ -65,39 +65,10 @@ def _hash_trace(rows) -> str:
     return hashlib.sha256(trace.encode()).hexdigest()
 
 
-class _DeterministicRouter(AdvisoryRouter):
-    """Transport-mocked router that returns a fast deterministic proposal.
-
-    has_agent is always True (pretends keys are present) but never makes
-    a real network call.  Used for TC-48: agents fire and produce proposals,
-    but proposals are never actioned — the dispatch trace must be identical.
-    """
-    _has_agent = True
-    _backend   = "test"
-
-    def __init__(self) -> None:
-        # Skip super().__init__() to avoid reading real env vars.
-        self._mistral_key   = "test-fake-key"
-        self._anthropic_key = None
-
-    @property
-    def has_agent(self) -> bool:
-        return True
-
-    @property
-    def backend(self) -> str:
-        return "test"
-
-    def route(self, evidence, sim_time: float, **kwargs) -> Optional[Proposal]:
-        """Return a deterministic proposal without any network call."""
-        return make_proposal(
-            kind="curtailment",
-            estimated_impact_mw=1.0,
-            confidence=0.5,
-            reasoning="tc48_deterministic_test_proposal",
-            created_at_sim_time=sim_time,
-            suggested_tier="a_defer",
-        )
+# _DeterministicRouter is the public DeterministicRouter from runtime.advisory_router.
+# Using an alias rather than a local subclass ensures all test call sites pick up
+# the agent-aware kind mapping (Z2) without duplicating the implementation here.
+_DeterministicRouter = DeterministicRouter
 
 
 class _AlwaysRaisingRouter(AdvisoryRouter):
@@ -210,13 +181,23 @@ class TestTC48BitIdenticalTrace:
             f"  tick count: {len(rows)}"
         )
 
-        # Companion non-vacuity check: the "agents active" side must have
-        # actually generated proposals, so the hash comparison is meaningful.
-        # If this assertion fails the wall_time_offset or agent floors are wrong.
+        # Companion non-vacuity check A: agents must have actually fired.
         assert len(registry.all_proposals()) > 0, (
             "TC-48 companion: no proposals generated on the 'agents active' side — "
             "hash equality is vacuous. Check _run_scenario wall_time_offset and "
             "agent FLOOR_WALL_S values."
+        )
+
+        # Companion non-vacuity check B: proposals must span ≥ 3 distinct kinds,
+        # proving each agent produced its own kind rather than all funnelling
+        # through one static return value.  With wall_time_offset=9999.0 all six
+        # agents fire on tick 1, so we expect all six distinct kinds; ≥ 3 is the
+        # conservative bound that survives partial-tick scenarios.
+        observed_kinds = {p.kind for p in registry.all_proposals()}
+        assert len(observed_kinds) >= 3, (
+            f"TC-48 companion B: only {len(observed_kinds)} distinct proposal kind(s) "
+            f"observed ({observed_kinds!r}) — DeterministicRouter is not agent-aware "
+            "or fewer than 3 agents fired. All six should fire given wall_time_offset=9999."
         )
 
     def test_tc48_proposals_were_actually_generated(self) -> None:

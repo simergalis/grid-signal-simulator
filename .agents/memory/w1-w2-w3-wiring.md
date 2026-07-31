@@ -55,6 +55,20 @@ description: Architectural decisions and traps from the W1 agent+telemetry+therm
 
 **TRAP — 409 from procurement/telemetry/thermal:** When the run completes, these return 409. The frontend clears the interval and keeps the last-seen state. Do NOT treat 409 as an error — it's the expected terminal state for a completed run.
 
+## Z1 — Cooling plant sizing and thermal→dispatch isolation
+
+**Z1(a) sizing formula:** All three factory functions set `_rated_cooling_mw = site.alpha_max × peak_compute_mw` — both **derived** (not a constant). `alpha_max=0.20` is a hardcoded class constant in `SiteConfig`; peak_compute is reverse-engineered from `solar_rated_mw / 0.25` (PROTO-7). Bug: formula accounts for pure compute thermal load only; BESS charging and PUE-base overhead applied to total IT load add ~2-4% excess that immediately saturates the system at peak. **Fix: multiply by 1.15 (PROTO-10-MARGIN)** in all three factory functions — applied July 2026.
+
+**Z1(b) PreStagingEngine isolation:** `PreStagingEngine` in `core/dispatch.py` owns its own `_current_temp_c` state (from `config.initial_temp_c`) and advances it from `gap_mw` alone. It never reads `absorbable_mw` or `time_to_limit_s` — those are computed from `CoolingModule` state and exist only in the thermal API endpoint response. The two systems are **completely decoupled**. demo-20mw has no `pre_staging_config` in spec, so the engine is inactive (None) — `absorbable_mw` has no path into dispatch.
+
+## Z2 — DeterministicRouter must be agent-aware
+
+**Rule:** The private `_DeterministicRouter` in `tests/test_step13_agents.py` is now an alias for the public `DeterministicRouter` from `runtime/advisory_router.py`. The TC-48 companion B assertion (`len(observed_kinds) >= 3`) caught the bug — alias all future private test copies the same way.
+
+**Kind map (in `DeterministicRouter._KIND_MAP`):** compute→curtailment/a_defer, storage→bess_reserve_adjust, generation→turbine_ramp_rate, renewable→pre_staging, thermal→load_defer, calibration→calibration. Unknown agents fall back to curtailment.
+
+**How to apply:** Any new agent added to the registry needs a `_KIND_MAP` entry in `DeterministicRouter`. Without it the fallback is curtailment, which won't break TC-48 but will mask kind-mapping bugs in new agents.
+
 ## Y1 — Gate the transport, not the capability
 
 **Rule:** Under pytest (`PYTEST_CURRENT_TEST` set), inject `DeterministicRouter` (in `runtime/advisory_router.py`) as the router — never disable the registry. `AgentRegistry(router=DeterministicRouter() if os.environ.get('PYTEST_CURRENT_TEST') else AdvisoryRouter(), enabled=True)`. The full five-phase loop (qualify → deidentify → route → gate.validate → provenance-stamp) executes; only the network call is bypassed.

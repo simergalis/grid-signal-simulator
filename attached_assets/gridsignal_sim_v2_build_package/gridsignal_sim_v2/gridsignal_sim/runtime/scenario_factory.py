@@ -153,9 +153,13 @@ def build_run_context(
     ]
 
     # ── W1 advisory, telemetry, procurement wiring ────────────────────────
-    # Rated cooling MW: alpha_max (fraction of compute) × peak compute MW.
-    _peak_compute_mw = node_count * _solar_profile.rated_kw / 1000.0
-    _rated_cooling_mw = site.alpha_max * _peak_compute_mw
+    # Rated cooling MW: alpha_max (fraction of compute) × peak compute MW,
+    # plus 15 % headroom for BESS-charge and PUE-base overhead on total IT
+    # load (PROTO-10-MARGIN).  Without this the cooling plant saturates the
+    # moment any non-compute IT load is added at peak compute.
+    _COOLING_MARGIN   = 1.15
+    _peak_compute_mw  = node_count * _solar_profile.rated_kw / 1000.0
+    _rated_cooling_mw = site.alpha_max * _peak_compute_mw * _COOLING_MARGIN
 
     # Grid capacity scaled to turbine fleet (static for the demo run).
     _total_turbine_mw = turbine_rated_mw * turbine_count
@@ -281,7 +285,7 @@ def build_load_test_context(
     _lt_peak_compute_mw  = (
         gpu_module_count * nodes_per_gpu_module * _lt_profile.rated_kw / 1000.0
     )
-    _lt_rated_cooling_mw = site.alpha_max * _lt_peak_compute_mw
+    _lt_rated_cooling_mw = site.alpha_max * _lt_peak_compute_mw * 1.15  # PROTO-10-MARGIN
     _lt_grid_cap = [
         GridCapacity(CapacityType.FIRM,     available_mw=_lt_total_turbine_mw * 0.80, price_per_mwh=48.0, t_reserve_s=0.0),
         GridCapacity(CapacityType.RESERVED, available_mw=_lt_total_turbine_mw * 0.40, price_per_mwh=62.0, t_reserve_s=300.0),
@@ -446,7 +450,7 @@ def build_run_context_from_spec(
     _spec_peak_compute_mw  = float(spec_data.get("solar_rated_mw", 0.0)) / 0.25  # reverse PROTO-7
     if _spec_peak_compute_mw <= 0:
         _spec_peak_compute_mw = 20.0  # safe fallback when solar is absent
-    _spec_rated_cooling_mw = site.alpha_max * _spec_peak_compute_mw
+    _spec_rated_cooling_mw = site.alpha_max * _spec_peak_compute_mw * 1.15  # PROTO-10-MARGIN
     _spec_grid_cap = [
         GridCapacity(CapacityType.FIRM,     available_mw=_spec_total_turbine_mw * 0.80, price_per_mwh=48.0, t_reserve_s=0.0),
         GridCapacity(CapacityType.RESERVED, available_mw=_spec_total_turbine_mw * 0.40, price_per_mwh=62.0, t_reserve_s=300.0),

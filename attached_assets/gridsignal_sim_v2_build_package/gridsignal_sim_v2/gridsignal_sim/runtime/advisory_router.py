@@ -113,8 +113,13 @@ class AdvisoryRouter:
         *,
         lifetime_s: float = DEFAULT_PROPOSAL_LIFETIME_S,
         system_prompt: Optional[str] = None,
+        agent_name: str = "",
     ) -> Optional[Proposal]:
         """Route evidence to the active model backend and return a Proposal.
+
+        ``agent_name`` is the calling agent's AGENT_NAME (e.g. "compute").
+        Subclasses may use it to customise the returned proposal; the base
+        implementation ignores it — the LLM response determines the kind.
 
         LP-1: returns None immediately if has_agent is False.
         Returns None on any network or parse error (never raises).
@@ -286,6 +291,18 @@ class DeterministicRouter(AdvisoryRouter):
     def backend(self) -> str:
         return "deterministic"
 
+    # Agent name → (proposal_kind, suggested_tier, requires_confirmation_override)
+    # requires_confirmation_override=True forces confirmation regardless of tier;
+    # None means let the agent's own _requires_confirmation() decide.
+    _KIND_MAP: dict[str, tuple[str, Optional[str], Optional[bool]]] = {
+        "compute":     ("curtailment",         "a_defer", None),   # A/B → agent decides (False)
+        "storage":     ("bess_reserve_adjust",  None,     None),
+        "generation":  ("turbine_ramp_rate",    None,     None),
+        "renewable":   ("pre_staging",          None,     None),
+        "thermal":     ("load_defer",           None,     None),
+        "calibration": ("calibration",          None,     True),   # TC-57: always True
+    }
+
     def route(
         self,
         evidence: EvidenceWindow,
@@ -293,14 +310,23 @@ class DeterministicRouter(AdvisoryRouter):
         *,
         lifetime_s: float = DEFAULT_PROPOSAL_LIFETIME_S,
         system_prompt: Optional[str] = None,
+        agent_name: str = "",
     ) -> Optional[Proposal]:
-        """Return a deterministic proposal without any network call."""
+        """Return a deterministic, agent-aware proposal without any network call.
+
+        ``agent_name`` selects the correct kind from ``_KIND_MAP``.  Unknown
+        agents fall back to ``curtailment`` so the router is never a test
+        blocker for new agents added in future steps.
+        """
+        kind, tier, _req_conf = self._KIND_MAP.get(
+            agent_name, ("curtailment", "a_defer", None)
+        )
         return make_proposal(
-            kind="curtailment",
+            kind=kind,
             estimated_impact_mw=1.0,
             confidence=0.5,
-            reasoning="deterministic_router_no_network",
+            reasoning=f"deterministic_router_no_network_{agent_name or 'unknown'}",
             created_at_sim_time=sim_time,
-            suggested_tier="a_defer",
+            suggested_tier=tier,
             lifetime_s=lifetime_s,
         )
