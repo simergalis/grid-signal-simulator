@@ -55,6 +55,16 @@ description: Architectural decisions and traps from the W1 agent+telemetry+therm
 
 **TRAP — 409 from procurement/telemetry/thermal:** When the run completes, these return 409. The frontend clears the interval and keeps the last-seen state. Do NOT treat 409 as an error — it's the expected terminal state for a completed run.
 
+## Y1 — Gate the transport, not the capability
+
+**Rule:** Under pytest (`PYTEST_CURRENT_TEST` set), inject `DeterministicRouter` (in `runtime/advisory_router.py`) as the router — never disable the registry. `AgentRegistry(router=DeterministicRouter() if os.environ.get('PYTEST_CURRENT_TEST') else AdvisoryRouter(), enabled=True)`. The full five-phase loop (qualify → deidentify → route → gate.validate → provenance-stamp) executes; only the network call is bypassed.
+
+**Why:** Disabling the registry with `enabled=False` makes TC-48's hash comparison vacuous — both sides are "agents off" and the test is green regardless of whether the agent code executes. Gating the transport lets TC-48 prove the invariant non-trivially.
+
+**How to apply:** Check is call-time (inside the factory function body), not module-level — `PYTEST_CURRENT_TEST` is set by pytest during test execution, not during collection/import. Module-level assignment always gets False.
+
+**TC-48 companion assertion:** `test_tc48_hash_identical_agents_stopped_vs_active` now asserts `len(registry.all_proposals()) > 0` after the hash check — prevents green-because-vacuous regressions.
+
 ## X1 — Test hang fix (three compounding bugs)
 
 **Bug 1 — lifespan didn't cancel tasks:** `_lifespan` in `api/app.py` was a bare `yield` with no shutdown code. Runs with `end_sim_time=1e15` never completed. **Fix:** added `task.cancel()` + `asyncio.gather(*tasks, return_exceptions=True)` in the shutdown path.

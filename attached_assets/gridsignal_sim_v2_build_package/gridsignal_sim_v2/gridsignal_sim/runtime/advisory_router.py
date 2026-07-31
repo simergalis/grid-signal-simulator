@@ -143,6 +143,7 @@ class AdvisoryRouter:
 
     # ── Backend calls ─────────────────────────────────────────────────────
 
+
     def _call_mistral(self, user_message: str, *, system_prompt: str = _SYSTEM_PROMPT) -> str:
         """HTTP POST to Mistral chat completions. Returns raw assistant content."""
         import urllib.request
@@ -247,5 +248,59 @@ class AdvisoryRouter:
             reasoning=reason,
             created_at_sim_time=sim_time,
             suggested_tier=str(tier) if tier else None,
+            lifetime_s=lifetime_s,
+        )
+
+
+# ---------------------------------------------------------------------------
+# DeterministicRouter — transport mock for testing
+# ---------------------------------------------------------------------------
+
+class DeterministicRouter(AdvisoryRouter):
+    """Transport-mocked router for use under pytest and fast demo scripts.
+
+    The full five-phase agent loop executes (qualify → deidentify → route →
+    gate.validate → provenance-stamp) but ``route()`` returns a fixed
+    curtailment proposal instantly — no network call, no API key required.
+
+    ``has_agent`` is True so agents do not fall back to heuristics;
+    ``backend`` is ``"deterministic"`` so provenance records are identifiable
+    in test assertions.
+
+    Design note: identical in structure to ``_DeterministicRouter`` in
+    tests/test_step13_agents.py.  This public copy is imported by
+    ``runtime/scenario_factory.py`` so the gate-the-transport pattern applies
+    to every context built by the factory (not just TC-48 scenarios).
+    """
+
+    def __init__(self) -> None:
+        # Bypass super().__init__() — avoid reading real env vars in tests.
+        self._mistral_key   = "test-fake-key"
+        self._anthropic_key = None
+
+    @property
+    def has_agent(self) -> bool:
+        return True
+
+    @property
+    def backend(self) -> str:
+        return "deterministic"
+
+    def route(
+        self,
+        evidence: EvidenceWindow,
+        sim_time: float,
+        *,
+        lifetime_s: float = DEFAULT_PROPOSAL_LIFETIME_S,
+        system_prompt: Optional[str] = None,
+    ) -> Optional[Proposal]:
+        """Return a deterministic proposal without any network call."""
+        return make_proposal(
+            kind="curtailment",
+            estimated_impact_mw=1.0,
+            confidence=0.5,
+            reasoning="deterministic_router_no_network",
+            created_at_sim_time=sim_time,
+            suggested_tier="a_defer",
             lifetime_s=lifetime_s,
         )

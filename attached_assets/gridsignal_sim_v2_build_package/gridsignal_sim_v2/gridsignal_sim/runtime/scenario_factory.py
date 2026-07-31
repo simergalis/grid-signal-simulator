@@ -46,6 +46,7 @@ from runtime.verdict import AssertionSpec as _AssertionSpec
 # W1 — advisory, telemetry, and procurement wiring.
 # Imported here (runtime/) not in run_manager (would create circular import
 # because advisory/ imports from runtime/advisory_gate).
+from runtime.advisory_router import AdvisoryRouter, DeterministicRouter
 from advisory.agent_registry import AgentRegistry
 from core.network_telemetry import NetworkTelemetryIngestor
 from core.corroboration import FabricCorroborator
@@ -173,7 +174,11 @@ def build_run_context(
         playback_speed=playback_speed,
         sink=InMemoryTimeseriesSink(),
         # W1 fields
-        registry=AgentRegistry(enabled=not bool(os.environ.get('PYTEST_CURRENT_TEST'))),
+        registry=AgentRegistry(
+            router=DeterministicRouter() if os.environ.get('PYTEST_CURRENT_TEST')
+                   else AdvisoryRouter(),
+            enabled=True,
+        ),
         telemetry_ingestor=NetworkTelemetryIngestor(),
         corroborator=FabricCorroborator(),
         price_curve=SyntheticPriceCurve(seed=42),
@@ -292,7 +297,11 @@ def build_load_test_context(
         playback_speed=playback_speed,
         sink=InMemoryTimeseriesSink(),
         # W1 fields
-        registry=AgentRegistry(enabled=not bool(os.environ.get('PYTEST_CURRENT_TEST'))),
+        registry=AgentRegistry(
+            router=DeterministicRouter() if os.environ.get('PYTEST_CURRENT_TEST')
+                   else AdvisoryRouter(),
+            enabled=True,
+        ),
         telemetry_ingestor=NetworkTelemetryIngestor(),
         corroborator=FabricCorroborator(),
         price_curve=SyntheticPriceCurve(seed=42),
@@ -456,7 +465,11 @@ def build_run_context_from_spec(
         assertions=assertions,
         scenario_name=str(spec_data.get("name", "")),
         # W1 fields
-        registry=AgentRegistry(enabled=not bool(os.environ.get('PYTEST_CURRENT_TEST'))),
+        registry=AgentRegistry(
+            router=DeterministicRouter() if os.environ.get('PYTEST_CURRENT_TEST')
+                   else AdvisoryRouter(),
+            enabled=True,
+        ),
         telemetry_ingestor=NetworkTelemetryIngestor(),
         corroborator=FabricCorroborator(),
         price_curve=SyntheticPriceCurve(seed=42),

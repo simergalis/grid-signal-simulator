@@ -210,6 +210,15 @@ class TestTC48BitIdenticalTrace:
             f"  tick count: {len(rows)}"
         )
 
+        # Companion non-vacuity check: the "agents active" side must have
+        # actually generated proposals, so the hash comparison is meaningful.
+        # If this assertion fails the wall_time_offset or agent floors are wrong.
+        assert len(registry.all_proposals()) > 0, (
+            "TC-48 companion: no proposals generated on the 'agents active' side — "
+            "hash equality is vacuous. Check _run_scenario wall_time_offset and "
+            "agent FLOOR_WALL_S values."
+        )
+
     def test_tc48_proposals_were_actually_generated(self) -> None:
         """TC-48 companion: the test is non-trivial — agents DID fire."""
         gate = AdvisoryGate()
