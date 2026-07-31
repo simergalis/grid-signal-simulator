@@ -5,3 +5,4 @@
 - [d14-allocation-design](d14-allocation-design.md) — equal-share-then-cap replaces proportional-by-ceiling; power-limited guard pattern required in 3 places.
 - [step9-verdict-design](step9-verdict-design.md) — AssertionSpec in runtime/verdict.py (not api/); demo-20mw needs bess_rated_mw=18.0 for PASS; H1 gap rules.
 - [step10-arbitration-design](step10-arbitration-design.md) — Phase 0 insertion point; CurtailmentLadder hold analysis; TC-49 permutation trap; OperatingTier/PreStagingConfig shape.
+- [step11-scada-pms-design](step11-scada-pms-design.md) — K1/K2/K3 unified pool wiring; generate_candidates() live path; TC-64–TC-68 patterns; TRAP: never call both tick() and generate_candidates() in same tick.

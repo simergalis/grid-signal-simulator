@@ -21,9 +21,11 @@ from .asset_modules import BessModule, CoolingModule, GPUModule, SolarModule, Tu
 
 _log = logging.getLogger(__name__)
 from .dispatch import (
-    CheckpointClassifier, ConfidenceEngine, CurtailmentLadder,
-    DispatchArbitrator, InsufficientReserveAlert, PreStagingEngine,
+    CandidateResponse, CheckpointClassifier, ConfidenceEngine, CurtailmentLadder,
+    CurtailmentProposal, CurtailmentTier, DispatchArbitrator, InsufficientReserveAlert,
+    LadderPosition, PreStagingEngine, select_candidates,
 )
+from .scada_layer import CommandType, SimulatedPMS, SimulatedScadaLayer
 from .models import DataQualityTag, GENERIC_FALLBACK_PROFILE, SiteConfig, TickResult, WorkloadEventType, WorkloadSignal
 from ._plane_guard import _EVALUATE_TICK_PERMITTED
 from .sim_clock import SimClock
@@ -68,6 +70,10 @@ class SimulationState:
     curtailment_ladder: CurtailmentLadder = field(init=False)
     # Step 10: §8.1 pre-staging engine (None when site has no shiftable load).
     pre_staging_engine: PreStagingEngine | None = field(default=None, init=False)
+    # Step 11: §4.6 SCADA layer (always created; protocol map can be empty).
+    scada_layer: SimulatedScadaLayer = field(init=False)
+    # Step 11: §28.4 PMS (None when site has no pms_config).
+    pms: SimulatedPMS | None = field(default=None, init=False)
 
     def __post_init__(self) -> None:
         # Step 3 Item 4: arbitrator now holds a reference to site so it can
@@ -78,6 +84,10 @@ class SimulationState:
         self.curtailment_ladder = CurtailmentLadder()
         if self.site.pre_staging_config is not None:
             self.pre_staging_engine = PreStagingEngine(self.site.pre_staging_config)
+        # Step 11: SCADA layer (seeded, deterministic) and optional PMS.
+        self.scada_layer = SimulatedScadaLayer(seed=42)
+        if self.site.pms_config is not None:
+            self.pms = SimulatedPMS(self.site.pms_config)
 
     def _owning_gpu_module(self, signal: WorkloadSignal) -> GPUModule:
         """A WorkloadSignal targets exactly one GPU module -- the real
@@ -318,10 +328,28 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         p_dispatch_required_mw = max(0.0, p_dispatch_required_mw - pre_staging_shift_mw)
         net_demand_mw = p_dispatch_required_mw
 
+    # 3b. Step 11 — §28 PMS tick (before arbitration).
+    # fast_shed: TC-64 interlock gates the curtailment ladder; TC-66 records it.
+    # transition_gap: TC-67 open-transition adds a temporary coverage discontinuity
+    # to P_dispatch_required so dispatchable assets must bridge the gap.
+    _pms_shed_active = False
+    _transition_gap_mw = 0.0
+    if state.pms is not None:
+        _pms_fast_shed_mw, _transition_gap_mw = state.pms.tick(sim_time, dt_seconds)
+        _pms_shed_active = state.pms.is_fast_shed_active
+        if _transition_gap_mw > 0.0:
+            # TC-67: open-transition coverage gap is a discontinuity to ride through.
+            p_dispatch_required_mw = p_dispatch_required_mw + _transition_gap_mw
+            net_demand_mw = p_dispatch_required_mw
+            _log.info(
+                "PMS open-transition gap at sim_time=%.1f — "
+                "+%.2f MW to P_dispatch_required (TC-67).", sim_time, _transition_gap_mw,
+            )
+
     # 4. Turbine ramp + BESS shortfall coverage, sized against P_dispatch_required
     for turbine in state.turbines:
         turbine.advance(sim_time, dt_seconds)
-    turbine_output_mw, bess_output_mw = state.arbitrator.tick(p_dispatch_required_mw, dt_seconds)
+    turbine_output_mw, bess_output_mw, _arb_candidates = state.arbitrator.tick(p_dispatch_required_mw, dt_seconds)
 
     # 4b. dt_lead_next_s: minimum remaining ramp time across all in-flight GPU jobs.
     # C2 correction: min(), not sum().  Two jobs with 10 s and 30 s remaining →
@@ -390,15 +418,16 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         else:
             bess_bridging_seconds = 0.0
 
-    # 4d. Curtailment ladder observation (§23.2 / Step 10).
-    # Called after turbine + BESS have done their best.  The remaining gap is
-    # what the curtailment system must address via the §26.4 ladder.
+    # 4d. §26.4 unified selection + §23.2 curtailment ladder (Step 10/11).
     #
-    # is_low_confidence: True when any DataQualityTag is active this tick.
-    # Pre-computed here (before step 6's ConfidenceEngine) so TC-43's
-    # low_confidence interlock can gate the curtailment ladder without waiting
-    # for the full confidence band computation.  The tags checked are identical
-    # to step 6's inputs so the ladder and the band see the same quality signal.
+    # Step 11 K1/K3: build one pool from all candidate sources and pass to
+    # select_candidates() — the TC-49 live path.  Pool members:
+    #   _arb_candidates: BESS (pos=0) + turbine (pos=1) from arbitrator.tick()
+    #   _curtailment_candidates: tiers A-D (pos=4,5) from generate_candidates()
+    #
+    # is_low_confidence: pre-computed from GPU state and site.uncalibrated so
+    # TC-43's low_confidence interlock can block the ladder before ConfidenceEngine
+    # runs (step 6).  Same tags as step 6 — they cannot disagree.
     _is_low_confidence = (
         any(g.has_active_unmapped_jobs() for g in state.gpu_modules)
         or state.site.uncalibrated
@@ -406,15 +435,86 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     _remaining_gap_mw = max(
         0.0, p_dispatch_required_mw - turbine_output_mw - bess_output_mw
     )
-    _curtailment_proposals = state.curtailment_ladder.tick(
-        gap_mw=_remaining_gap_mw,
-        is_low_confidence=_is_low_confidence,
-        operating_tier=state.site.operating_tier,
-        sim_time=sim_time,
+
+    # TC-64: if PMS fast shed is active, curtailment is bypassed entirely.
+    # GridSignal must not curtail in response to a PMS-driven load reduction.
+    # TC-66: the event is already in pms.fast_shed_log for forecast-error attribution.
+    if _pms_shed_active:
+        _log.info(
+            "PMS fast shed active at sim_time=%.1f — "
+            "curtailment ladder bypassed (TC-64). "
+            "Event recorded for forecast-error attribution (TC-66).",
+            sim_time,
+        )
+        _curtailment_candidates: list[CandidateResponse] = []
+    else:
+        _curtailment_candidates = state.curtailment_ladder.generate_candidates(
+            gap_mw=_remaining_gap_mw,
+            is_low_confidence=_is_low_confidence,
+            operating_tier=state.site.operating_tier,
+            sim_time=sim_time,
+        )
+
+    # K1 unified pool: storage + turbine (dispatched) + curtailment (proposed).
+    # select_candidates() sorts by total order (position ASC, impact DESC, id ASC)
+    # and greedily selects until the gap is covered — TC-49 live path.
+    _unified_pool: list[CandidateResponse] = _arb_candidates + _curtailment_candidates
+    _selected_unified: list[CandidateResponse] = select_candidates(
+        _unified_pool, p_dispatch_required_mw
     )
+
+    # Convert selected curtailment entries to CurtailmentProposal for TickResult.
+    _curtailment_ladder_positions = frozenset({
+        LadderPosition.CURTAILMENT_A_B, LadderPosition.CURTAILMENT_C_D
+    })
+    _curtailment_proposals: list[CurtailmentProposal] = [
+        CurtailmentProposal(
+            tier=CurtailmentTier(c.response_kind),
+            estimated_impact_mw=c.estimated_impact_mw,
+            requires_confirmation=c.requires_confirmation,
+            expires_at_sim_time=sim_time + state.curtailment_ladder.MAX_HOLD_S,
+            bounded_by_gap=True,
+        )
+        for c in _selected_unified
+        if c.ladder_position in _curtailment_ladder_positions
+    ]
     _curtailment_proposal_tiers: tuple[str, ...] = tuple(
         p.tier.value for p in _curtailment_proposals
     )
+
+    # TC-65: detect PMS/GridSignal shed order conflict (commissioning defect).
+    _pms_order_conflict: str | None = None
+    if state.pms is not None and _curtailment_proposals:
+        _gs_shed_order = [
+            c.response_kind for c in _selected_unified
+            if c.ladder_position in _curtailment_ladder_positions
+        ]
+        _pms_order_conflict = state.pms.check_order_conflict(_gs_shed_order)
+        if _pms_order_conflict:
+            _log.warning("SCADA %s", _pms_order_conflict)
+
+    # Step 11 — SCADA command recording (TC-68 egress boundary).
+    # Only TURBINE_SETPOINT, BESS_DISPATCH, LOAD_CURTAILMENT may appear.
+    # Protection commands (islanding, droop, etc.) must never be issued by GridSignal.
+    _scada_commands_issued = 0
+    if turbine_output_mw > 1e-9:
+        state.scada_layer.issue_command(
+            CommandType.TURBINE_SETPOINT, "turbine-fleet", 64, sim_time, dt_seconds,
+        )
+        _scada_commands_issued += 1
+    if bess_output_mw > 1e-9:
+        state.scada_layer.issue_command(
+            CommandType.BESS_DISPATCH, "bess-fleet", 64, sim_time, dt_seconds,
+        )
+        _scada_commands_issued += 1
+    for _cp in _curtailment_proposals:
+        if not _cp.requires_confirmation:
+            state.scada_layer.issue_command(
+                CommandType.LOAD_CURTAILMENT, f"curtail-{_cp.tier.value}",
+                64, sim_time, dt_seconds,
+            )
+            _scada_commands_issued += 1
+    state.scada_layer.deliver_pending(sim_time)
 
     # 5. Checkpoint classification, per active training job.
     # Step 3 Item 1: use gpu.per_job_compute_mw(job_id) — the draw for THIS job
@@ -477,4 +577,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         bridging_basis=bridging_basis,
         pre_staging_shift_mw=pre_staging_shift_mw,
         curtailment_proposal_tiers=_curtailment_proposal_tiers,
+        pms_fast_shed_active=_pms_shed_active,
+        pms_order_conflict=_pms_order_conflict,
+        scada_commands_issued=_scada_commands_issued,
     )

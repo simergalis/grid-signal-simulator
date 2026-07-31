@@ -500,8 +500,10 @@ class DispatchArbitrator:
             fires_at_sim_time=sim_time,
         )
 
-    def tick(self, p_dispatch_required_mw: float, dt_seconds: float) -> tuple[float, float]:
-        """Called every tick.  Returns (turbine_output_mw, bess_output_mw).
+    def tick(
+        self, p_dispatch_required_mw: float, dt_seconds: float
+    ) -> tuple[float, float, list[CandidateResponse]]:
+        """Called every tick.  Returns (turbine_output_mw, bess_output_mw, candidates).
 
         p_dispatch_required_mw = P_total(t) − P_renewable(t) per §7.1.1.
         The renewable offset is applied by the caller (evaluate_tick) before
@@ -523,16 +525,24 @@ class DispatchArbitrator:
           level — passed to cover_shortfall for taper logic.  A unit with zero
           allocation (depleted or anchored) must not advance its own taper timer
           while the fleet still has a shortfall.
+
+        Step 11 (K1): the returned candidates list is a third element — a
+        list[CandidateResponse] reflecting what this arbitrator actually dispatched
+        this tick (storage and turbine entries).  evaluate_tick assembles these
+        alongside curtailment candidates from CurtailmentLadder.generate_candidates()
+        into a single unified §26.4 pool and passes it to select_candidates().
+        This makes the selection total-order-sorted over the full pool (TC-49
+        live path).
+
+        Candidates represent actual dispatch (not headroom capacity) — BESS at
+        LadderPosition.STORAGE_DISCHARGE (=0), turbine at TURBINE_RAMP (=1).
+        Neither requires human confirmation.
         """
         turbine_output_mw = sum(t.output_mw() for t in self.turbines)
         fleet_shortfall = max(0.0, p_dispatch_required_mw - turbine_output_mw)
         fleet_covered = fleet_shortfall <= 0.0
 
         # P4: hoist island_mode and per-unit bridging ceilings once per tick.
-        # Both are invariant within a tick; computing them inside cover_shortfall
-        # previously re-read self.site.island_mode and called bridging_available_mw
-        # N extra times per tick (N = BESS count).  The pre-computed ceilings are
-        # passed directly to cover_shortfall, which uses them as the power cap.
         island_mode = self.site.island_mode
         ceilings = [b.bridging_available_mw(island_mode) for b in self.bess_units]
         allocations = self._capped_equal_share_allocations(fleet_shortfall, ceilings)
@@ -540,7 +550,30 @@ class DispatchArbitrator:
         bess_output_mw = 0.0
         for bess, alloc, ceiling in zip(self.bess_units, allocations, ceilings):
             bess_output_mw += bess.cover_shortfall(alloc, fleet_covered, dt_seconds, ceiling)
-        return turbine_output_mw, bess_output_mw
+
+        # K1: build CandidateResponse entries for the dispatched resources.
+        # BESS ranks below turbine in §26.4 priority (position 0 vs 1) but
+        # the arbitrator dispatches turbine first then BESS covers the shortfall;
+        # the CandidateResponse positions faithfully represent the §26.4 order
+        # for the unified pool's planning/attribution record.
+        candidates: list[CandidateResponse] = []
+        if bess_output_mw > 1e-9:
+            candidates.append(CandidateResponse(
+                ladder_position=LadderPosition.STORAGE_DISCHARGE,
+                estimated_impact_mw=bess_output_mw,
+                candidate_id="bess-fleet",
+                response_kind="storage_discharge",
+                requires_confirmation=False,
+            ))
+        if turbine_output_mw > 1e-9:
+            candidates.append(CandidateResponse(
+                ladder_position=LadderPosition.TURBINE_RAMP,
+                estimated_impact_mw=turbine_output_mw,
+                candidate_id="turbine-fleet",
+                response_kind="turbine_ramp",
+                requires_confirmation=False,
+            ))
+        return turbine_output_mw, bess_output_mw, candidates
 
 
 # ---------------------------------------------------------------------------
@@ -815,8 +848,28 @@ class CurtailmentLadder:
         if elapsed_dwell < self.DWELL_BEFORE_ESCALATION_S:
             return []   # TC-44: dwell not met; no proposals yet
 
-        # Dwell met — build minimum tier set needed to close gap (TC-41).
-        # Never skip a tier while it still has headroom.
+        # Dwell met — hand off to generate_candidates() which builds the
+        # CandidateResponse list (K1 unified pool) and applies K2 operating_tier
+        # branching.  tick() is now a thin wrapper; the inline loop is retired.
+        return self._build_proposals(gap_mw, operating_tier, sim_time)
+
+    def _build_proposals(
+        self,
+        gap_mw: float,
+        operating_tier: OperatingTier,
+        sim_time: float,
+    ) -> list[CurtailmentProposal]:
+        """Convert the gap into CurtailmentProposal list after dwell is met.
+
+        Internal helper shared by tick() and generate_candidates().
+        The inline greedy loop formerly in tick() lives here so there is exactly
+        one ordering implementation — no divergence risk (K1 retirement goal).
+
+        K2 — operating_tier governs requires_confirmation for A/B:
+            AUTONOMOUS:          requires_confirmation = False
+            SUPERVISED/OPERATOR: requires_confirmation = True
+        C/D: always requires_confirmation = True (TC-42).
+        """
         proposals: list[CurtailmentProposal] = []
         remaining = gap_mw
         for tier in _CURTAILMENT_TIER_ORDER:
@@ -824,12 +877,17 @@ class CurtailmentLadder:
                 break
             capacity = _TIER_CAPACITY_MW[tier]
             actual_impact = min(capacity, remaining)
+            # K2: A/B confirmation depends on authority tier.
+            if tier in (CurtailmentTier.A_DEFER, CurtailmentTier.B_POWER_CAP):
+                req_confirm = (operating_tier != OperatingTier.AUTONOMOUS)
+            else:
+                req_confirm = True   # C/D always require confirmation (TC-42)
             proposals.append(CurtailmentProposal(
                 tier=tier,
                 estimated_impact_mw=actual_impact,
-                requires_confirmation=_REQUIRES_CONFIRMATION[tier],
+                requires_confirmation=req_confirm,
                 expires_at_sim_time=sim_time + self.MAX_HOLD_S,
-                bounded_by_gap=True,   # §23.6: curtailment sized to gap, not present state
+                bounded_by_gap=True,
             ))
             remaining -= actual_impact
 
@@ -837,6 +895,120 @@ class CurtailmentLadder:
             self._activated_t = sim_time
 
         return proposals
+
+    def generate_candidates(
+        self,
+        gap_mw: float,
+        is_low_confidence: bool,
+        operating_tier: OperatingTier,
+        sim_time: float,
+    ) -> list[CandidateResponse]:
+        """Generate §26.4 CandidateResponse entries for the curtailment rungs.
+
+        Replaces the retired inline greedy loop as the authoritative selection
+        source.  Returns CandidateResponse objects so evaluate_tick can assemble
+        a unified §26.4 pool (storage + turbine + curtailment) and pass it to
+        select_candidates() in one call — the TC-49 live path (K3).
+
+        K2 — operating_tier determines requires_confirmation for A/B:
+            AUTONOMOUS:          A=False, B=False
+            SUPERVISED/OPERATOR: A=True,  B=True
+        C/D: always True (TC-42).
+
+        Stateful: advances the dwell timer, dead-man, and restoration margin
+        (same guard logic as tick()).  Callers must invoke this exactly once per
+        tick — calling both generate_candidates() and tick() on the same tick
+        would advance state twice.
+
+        LadderPosition assignment:
+            A_DEFER / B_POWER_CAP → CURTAILMENT_A_B (=4)
+            C_SUSPEND / D_PREEMPT → CURTAILMENT_C_D (=5)
+        candidate_id is stable across ticks (keyed by tier name) so the
+        TC-49 total order has no random component.
+        """
+        # Run the same state-machine guard as tick() — reuse _run_guards()
+        # pattern by calling tick() and converting; but that would double-state.
+        # Instead, copy the guards inline (they are short) and call _build_proposals
+        # after dwell check — exactly what tick() does, just with different output.
+
+        # TC-43: low_confidence resets dwell and returns nothing.
+        if is_low_confidence:
+            _log.debug(
+                "CurtailmentLadder.generate_candidates: low_confidence interlock "
+                "(TC-43). sim_time=%.1f gap=%.3f MW", sim_time, gap_mw,
+            )
+            self._reset()
+            return []
+
+        # TC-46: dead-man expiry.
+        if (
+            self._activated_t is not None
+            and (sim_time - self._activated_t) > self.MAX_HOLD_S
+        ):
+            _log.warning(
+                "CurtailmentLadder.generate_candidates: dead-man expiry "
+                "sim_time=%.1f, activated_at=%.1f, MAX_HOLD_S=%.0fs (TC-46).",
+                sim_time, self._activated_t, self.MAX_HOLD_S,
+            )
+            self._reset()
+            return []
+
+        # §23.3 restoration margin.
+        if (
+            self._activated_t is not None
+            and self._trigger_gap_mw > 0.0
+            and gap_mw <= self._trigger_gap_mw * (1.0 - self.RESTORATION_MARGIN_FRACTION)
+        ):
+            self._reset()
+
+        if gap_mw <= 1e-9:
+            self._reset()
+            return []
+
+        if self._required_highest_tier(gap_mw) is None:
+            self._reset()
+            return []
+
+        # Start or continue the 120 s dwell timer (TC-44).
+        if self._dwell_started_t is None:
+            self._dwell_started_t = sim_time
+            self._trigger_gap_mw = gap_mw
+
+        elapsed_dwell = sim_time - self._dwell_started_t
+        if elapsed_dwell < self.DWELL_BEFORE_ESCALATION_S:
+            return []
+
+        # Dwell met — build CandidateResponse entries (K1 unified pool).
+        candidates: list[CandidateResponse] = []
+        remaining = gap_mw
+        for tier in _CURTAILMENT_TIER_ORDER:
+            if remaining <= 1e-9:
+                break
+            capacity = _TIER_CAPACITY_MW[tier]
+            actual_impact = min(capacity, remaining)
+            ladder_pos = (
+                LadderPosition.CURTAILMENT_A_B
+                if tier in (CurtailmentTier.A_DEFER, CurtailmentTier.B_POWER_CAP)
+                else LadderPosition.CURTAILMENT_C_D
+            )
+            # K2: A/B confirmation depends on authority tier.
+            if tier in (CurtailmentTier.A_DEFER, CurtailmentTier.B_POWER_CAP):
+                req_confirm = (operating_tier != OperatingTier.AUTONOMOUS)
+            else:
+                req_confirm = True
+            candidates.append(CandidateResponse(
+                ladder_position=ladder_pos,
+                estimated_impact_mw=actual_impact,
+                candidate_id=f"curtailment-{tier.value}",
+                response_kind=tier.value,
+                requires_confirmation=req_confirm,
+            ))
+            remaining -= actual_impact
+
+        if self._activated_t is None:
+            self._activated_t = sim_time
+
+        return candidates
 
     @property
     def is_active(self) -> bool:

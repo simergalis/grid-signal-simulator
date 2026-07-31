@@ -939,7 +939,7 @@ def test_item4_small_unit_capped_to_ceiling_under_equal_share():
     turbine = TurbineModule(TurbineConfig(asset_id="t0", r_asset_mw_per_s=0.0, rated_mw=0.0))
     arb = DispatchArbitrator([turbine], [bess_a, bess_b], site)
 
-    turbine_mw, bess_mw = arb.tick(p_dispatch_required_mw=4.0, dt_seconds=5.0)
+    turbine_mw, bess_mw, _ = arb.tick(p_dispatch_required_mw=4.0, dt_seconds=5.0)
     # D14 equal-share-then-cap: A(ceiling=2) → 2 MW (full), B → 2 MW.
     assert math.isclose(bess_a.output_mw(), 2.0, abs_tol=1e-9), (
         f"unit-A (rated 2 MW) should be fully utilised at 2.0 MW (D14); "

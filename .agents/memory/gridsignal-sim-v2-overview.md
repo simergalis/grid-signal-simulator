@@ -13,52 +13,45 @@ description: Location, four verification commands, and status of all completed i
 **Four verification commands (run from codebase root with PYTHONPATH=.):**
 1. `python -m pytest tests/ -v`
 2. `python -m pytest ../audit_tests/ -v`
-3. `python runtime/example_usage.py`
-4. `python scripts/load_test.py --matrix`
+3. `PYTHONPATH=. python runtime/example_usage.py`   ← must run from codebase root with PYTHONPATH set
+4. `PYTHONPATH=. python scripts/load_test.py`
 
 **Frontend typecheck (from frontend/):**
 `node_modules/.bin/tsc -p tsconfig.json --noEmit`
 
-**Items completed:**
+**Items completed through Step 11:**
 - D11 — BessModule.max_sustainable_seconds() power ceiling (returns 0.0 when discharge > rated)
 - PROTO-8 — example_usage.py config corrections (demo-20mw bess 18MW/8MWh after P5; demo-alert 2.5MWh)
-- Step 3 Item 1 — GPUModule.per_job_compute_mw() substrate; evaluate_tick step 5 uses per-job draw
-- Step 3 Item 2 — GPUModule ramp (ramp_seconds=45s, piecewise PROTO-1 curve, advance() updates progress)
-- Step 3 Item 3 — CoolingModule per-job superposition (_LoadEnvelope, simulation/scalar paths, retention rule)
-- P1 — deque + absolute cursor for O(1) lagged-sample lookup in CoolingModule
-- P2 — three new Item 3 tests (concurrent rise, job-end persistence, cursor corruption)
-- P3 — retention rule explicit: envelope retained dt_thermal + 5τ after end_t; load_mw never zeroed on close
-- Step 3 Item 4 — BESS fleet split, anchor constraint, reserve aggregation (see bess-anchor-reserve.md)
-- D13 — reserve aggregation: min() not sum(); see bess-anchor-reserve.md for counter-example and why
-- P4 — hoist island_mode + bridging ceilings once per tick; cover_shortfall takes power_ceiling_mw
-- P5 — demo-20mw BESS resized 15→18 MW; bridging 17 MW; 21.7% margin over ~13.97 MW shortfall
-- Step 4 — control-plane purity gate (see plane-separation-guard.md)
-- Step 5 — SimClock + two clock domains (see clock-domains.md)
-- Step 6 — FastAPI wiring (see fastapi-wiring.md)
-- Q5 — Static gate extended to api/ (see fastapi-wiring.md)
-- C1 — bess_bridging_seconds in TickResult (from max_sustainable_seconds, not MW/MW ratio); fleet = min()
-- C2 — dt_lead_next_s = min() across in-flight ramp remaining times (not sum()); field named _next_s
-- Step 7 — p_renewable_mw, bess_bridging_seconds, dt_lead_next_s in TickResult + WS payload;
-           back-pressure _SEND_TIMEOUT_S=0.25 in _safe_send; frontend at ../frontend/
+- Step 3 Items 1-4 — GPUModule, ramp, CoolingModule, BESS fleet split/anchor/reserve aggregation
+- P1-P5 — deque cursor, test coverage, bridging ceilings hoisted, demo-20mw BESS resize
+- Step 4 — control-plane purity gate
+- Step 5 — SimClock + two clock domains
+- Step 6 — FastAPI wiring; Q5 static gate extended to api/
+- C1/C2 — bess_bridging_seconds (fleet=min()), dt_lead_next_s (min() across in-flight ramps)
+- Step 7 — p_renewable_mw, bess_bridging_seconds, dt_lead_next_s in TickResult + WS payload
+- Step 8 — SimClock snapshots, WS resync, alert acknowledge
+- Step 9 — AssertionSpec verdicts, demo-20mw gates, H1 gap rules
+- Step 10 — §26.4 dispatch arbitration: CandidateResponse, LadderPosition, OperatingTier,
+             select_candidates() TC-49 total order, CurtailmentLadder with dead-man/dwell/
+             restoration, PreStagingEngine, InsufficientReserveAlert
+- Step 11 — K1/K2/K3 unified §26.4 pool live path; SCADA + PMS (§28):
+             DispatchArbitrator.tick() → 3-tuple + CandidateResponse;
+             CurtailmentLadder.generate_candidates() (K2 operating_tier branching);
+             tick() thin wrapper; SimulatedScadaLayer + SimulatedPMS in core/scada_layer.py;
+             TransitionMode + PmsConfig in models.py; evaluate_tick unified pool path;
+             TC-49 live path, TC-64/65/66/67/68 all tested.
 
 **Audit gate status:** 13/13 passing (all closed)
 
-**Test counts:** 78 unit tests (tests/), 13 audit tests (audit_tests/)
+**Test counts:** 217 pytest (tests/ + audit_tests/), 19 vitest
 
 **Demo scenario alerts_seen (stable):**
 - demo-20mw: False, demo-alert: True, demo-5mw: False, demo-baseline: False
 
-**Performance (1x load test — 100 GPU / 16 turbine / 8 BESS / 8 solar):**
-- compute p50: 1886.6 µs  ← evaluate_tick() hot path only
-- delivery p50: 4.010 ms  ← compute + sink.append + broadcast
-- NOTE: the Step 6 "844 µs" was compute p50 from the demo-20mw micro-scenario (1 turbine, 1 BESS);
-  the Q5 "2.1 ms" was compute p50 from the full 1x load test (100 GPU). Different scenario sizes,
-  not a regression. Static gate runs at test-collection time, does not touch the hot path.
-- 2x: compute p50 ~3700 µs, wall clock 58 s — FAIL (pre-existing 4h-wall-clock NFR)
-- 4x: FAIL (pre-existing, out of scope)
-
-**Step 7 known boundaries (document in code):**
-- Back-pressure drop: subscriber removed after _SEND_TIMEOUT_S; no auto-recovery until Step 8 resync
-- Alert acknowledge: local (Zustand) only; POST /api/alerts/{id}/acknowledge deferred to Step 8
-- Turbine rated capacity not in tick payload; AssetReservePanel shows current output only (Step 8)
-- No snapshot-on-connect / WS resync protocol (Step 8)
+**Gate baseline at Step 11 completion:**
+- pytest: 217 passed
+- plane separation: CLEAN (9 core/ + 7 api/)
+- tsc: 0 errors
+- vitest: 19/19
+- example_usage: 4/4 demos
+- load-test 1×: PASS (17.6 s / 30 s budget, p50 compute 1081 µs)

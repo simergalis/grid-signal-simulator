@@ -279,7 +279,7 @@ class TestCurtailmentConfirmation:
         )
 
     def test_tc42_b_does_not_require_confirmation(self) -> None:
-        """TC-42 complement: B does NOT require confirmation."""
+        """TC-42 complement: B does NOT require confirmation at AUTONOMOUS."""
         ladder = CurtailmentLadder()
         for t in range(0, 130, 5):
             proposals = ladder.tick(
@@ -291,6 +291,42 @@ class TestCurtailmentConfirmation:
         b_proposals = [p for p in proposals if p.tier == CurtailmentTier.B_POWER_CAP]
         assert b_proposals
         assert all(not p.requires_confirmation for p in b_proposals)
+
+    def test_tc42_a_requires_ack_at_supervised_tier(self) -> None:
+        """K2/TC-42 complement: A requires acknowledgment at SUPERVISED.
+        A at SUPERVISED must differ from A at AUTONOMOUS — the field is not inert.
+        """
+        proposals = self._proposals_for_large_gap(OperatingTier.SUPERVISED)
+        a_proposals = [p for p in proposals if p.tier == CurtailmentTier.A_DEFER]
+        assert a_proposals, "A must be proposed for gap=15 MW at SUPERVISED tier"
+        assert all(p.requires_confirmation for p in a_proposals), (
+            "K2: A at SUPERVISED must have requires_confirmation=True "
+            "(differs from AUTONOMOUS where it is False)"
+        )
+
+    def test_tc42_b_requires_ack_at_supervised_tier(self) -> None:
+        """K2/TC-42 complement: B requires acknowledgment at SUPERVISED.
+        B at SUPERVISED must differ from B at AUTONOMOUS.
+        """
+        proposals = self._proposals_for_large_gap(OperatingTier.SUPERVISED)
+        b_proposals = [p for p in proposals if p.tier == CurtailmentTier.B_POWER_CAP]
+        assert b_proposals, "B must be proposed for gap=15 MW at SUPERVISED tier"
+        assert all(p.requires_confirmation for p in b_proposals), (
+            "K2: B at SUPERVISED must have requires_confirmation=True"
+        )
+
+    def test_tc42_operator_tier_same_as_supervised(self) -> None:
+        """K2: OPERATOR tier behaves identically to SUPERVISED for A/B (both require ack)."""
+        proposals_sup = self._proposals_for_large_gap(OperatingTier.SUPERVISED)
+        proposals_op  = self._proposals_for_large_gap(OperatingTier.OPERATOR)
+        for tier_cls in (CurtailmentTier.A_DEFER, CurtailmentTier.B_POWER_CAP):
+            sup = [p.requires_confirmation for p in proposals_sup if p.tier == tier_cls]
+            op  = [p.requires_confirmation for p in proposals_op  if p.tier == tier_cls]
+            assert sup and op
+            assert sup == op, (
+                f"K2: OPERATOR and SUPERVISED must agree on requires_confirmation "
+                f"for {tier_cls.value}; got SUPERVISED={sup}, OPERATOR={op}"
+            )
 
 
 # ---------------------------------------------------------------------------

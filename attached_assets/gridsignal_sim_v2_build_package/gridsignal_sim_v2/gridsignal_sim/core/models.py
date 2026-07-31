@@ -149,6 +149,54 @@ class OperatingTier(str, Enum):
     OPERATOR   = "operator"
 
 
+class TransitionMode(str, Enum):
+    """§28.3 mode used when utility supply fails.
+
+    OPEN_TRANSITION (default): a brief coverage gap exists between utility loss
+    and island stabilisation.  The gap is a discontinuity to be ridden through
+    by dispatchable assets, not a smooth capacity reduction (TC-67).
+
+    CLOSED_TRANSITION: supply handoff is seamless (requires a make-before-break
+    transfer switch).  Not modelled in detail; placeholder for a future step.
+
+    Default OPEN_TRANSITION: conservative and representative of most sites that
+    do not have synchronised transfer gear.
+    """
+    OPEN_TRANSITION   = "open_transition"
+    CLOSED_TRANSITION = "closed_transition"
+
+
+@dataclass
+class PmsConfig:
+    """§28.4 simulated Power Management System configuration.
+
+    The PMS holds its own shed priority order, independent of GridSignal's
+    curtailment priority (TC-65).  Where the two disagree a commissioning defect
+    is reported — the PMS order is authoritative and GridSignal does not override
+    it.
+
+    Hold analysis (D1/D2/D4 pattern):
+      Fast shed bound:    fast_shed_duration_s — CHOSEN (PROTO-11).
+      Fast shed terminal: duration elapses; no external release needed.
+      Fast shed no-release: auto-clears; PMS retains physical authority
+          regardless of GridSignal connectivity.
+      Transition bound:   open_transition_duration_s — CHOSEN (PROTO-11).
+      Transition terminal: duration elapses.
+      Transition no-release: auto-clears; conservative simplification (PROTO-11).
+
+    All numeric values are CHOSEN (no measured basis, PROTO-11).
+    """
+    # Ordered list of asset / load IDs the PMS would shed first (index 0 first).
+    shed_priority_order: list = field(default_factory=list)
+    transition_mode: TransitionMode = TransitionMode.OPEN_TRANSITION
+    # MW increase in P_dispatch_required during open-transition coverage gap (TC-67).
+    open_transition_gap_mw: float = 2.0     # CHOSEN (PROTO-11)
+    # Duration of the open-transition coverage gap.
+    open_transition_duration_s: float = 5.0  # CHOSEN (PROTO-11)
+    # How long a fast shed event persists before auto-clearing.
+    fast_shed_duration_s: float = 30.0       # CHOSEN (PROTO-11)
+
+
 @dataclass
 class PreStagingConfig:
     """§8.1 shiftable thermal load parameters (Step 10).
@@ -168,6 +216,7 @@ class PreStagingConfig:
     All numeric values are CHOSEN (no measured basis, PROTO-10).
     """
     max_shift_mw: float = 1.0              # CHOSEN (PROTO-10)
+
     inlet_temp_low_c: float = 18.0         # CHOSEN (PROTO-10)
     inlet_temp_high_c: float = 24.0        # CHOSEN (PROTO-10)
     # °C drop per MW of additional cooling per second of dt.
@@ -205,6 +254,10 @@ class SiteConfig:
     # Step 10 — §8.1: optional shiftable thermal load parameters.
     # None = no pre-staging capability on this site.
     pre_staging_config: Optional[PreStagingConfig] = None
+    # Step 11 — §28.4: optional simulated PMS configuration.
+    # None = no PMS integration on this site (SCADA layer still active;
+    # PMS-specific features — fast shed, order conflict, transition — are skipped).
+    pms_config: Optional[PmsConfig] = None
 
 
 @dataclass
@@ -368,3 +421,13 @@ class TickResult:
     # every tier the curtailment ladder proposed this tick (empty = no proposal).
     # Proposals do not guarantee execution: C/D require human confirmation (TC-42).
     curtailment_proposal_tiers: tuple[str, ...] = field(default_factory=tuple)
+    # Step 11: §28 PMS / SCADA state for this tick.
+    # pms_fast_shed_active: True when PMS fast shed is in effect this tick.
+    #   GridSignal must not curtail while this is True (TC-64).
+    pms_fast_shed_active: bool = False
+    # pms_order_conflict: non-None when GridSignal's curtailment order disagrees
+    #   with the PMS shed priority order (TC-65 commissioning defect).
+    pms_order_conflict: Optional[str] = None
+    # scada_commands_issued: count of commands issued to the egress boundary
+    #   this tick (informational; TC-68 inspects the egress log directly).
+    scada_commands_issued: int = 0
