@@ -135,15 +135,16 @@ def _build_sim_state_with_solar(solar_mw: float = 0.0) -> SimulationState:
     """Build a minimal SimulationState for TC-33 tests.
 
     BESS is deliberately tiny (usable_mwh=0.01) so that max_sustainable_seconds
-    is short enough for both the compute gap (≈16.5 s) and the renewable gap
-    (≈31.5 s) to exceed it — confirming stage_for_predicted_step fires an
-    InsufficientReserveAlert in both cases.
+    is short enough for the compute gap (≈16.5 s) to exceed it.  The renewable
+    alert fires via the D14 power-limited check (peak_shortfall > fleet ceiling).
 
     Arithmetic (grid_forming=False → no anchor deduction, ceiling=5.0 MW):
       compute case:  peak_shortfall = 6.3036 - 0.2×15 = 3.3036 MW
+                     3.3036 ≤ fleet ceiling 5.0 → endurance check:
                      max_sustainable = 0.01/3.3036 × 3600 = 10.9 s < gap=16.5 s → ALERT ✓
-      renewable case: peak_shortfall = 6.3036 MW, allocation=5.0 MW (capped)
-                     max_sustainable = 0.01/5.0 × 3600 = 7.2 s < gap=31.5 s → ALERT ✓
+      renewable case: peak_shortfall = 6.3036 MW > fleet ceiling 5.0 MW
+                     → power-limited early-return (D14) → ALERT ✓
+                     (usable_mwh is irrelevant for this path)
     """
     site = _build_site()
     solar_arrays = []

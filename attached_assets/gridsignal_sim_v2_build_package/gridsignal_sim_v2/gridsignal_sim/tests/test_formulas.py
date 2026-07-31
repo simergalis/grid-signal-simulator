@@ -899,14 +899,22 @@ def test_item4_fleet_covers_shortfall_above_single_unit_rating():
 
 
 def test_item4_heterogeneous_fleet_proportional_split():
-    """Step 3 Item 4 (b): verify the proportional split itself.
+    """Step 3 Item 4 (b): verify the D14-corrected equal-share-then-cap allocation.
 
-    Fleet: unit-A rated=2 MW (25% weight), unit-B rated=6 MW (75% weight).
-    Fleet shortfall = 4 MW.  Expected allocations: A=1 MW, B=3 MW.
+    Fleet: unit-A rated=2 MW, unit-B rated=6 MW.  Fleet shortfall = 4 MW.
 
-    tick() must deliver these allocations to cover_shortfall so each unit
-    discharges in proportion to its bridging capacity.  We confirm by checking
-    each unit's output_mw() after one tick.
+    D14 equal-share-then-cap algorithm:
+      Round 1: equal share = 4/2 = 2 MW each.
+               A: 2 MW == ceiling (2 MW) → capped at 2 MW.
+               B: 2 MW < ceiling (6 MW) → allocated 2 MW.  No remaining demand.
+      Result: A=2 MW (fully utilised), B=2 MW.  sum=4 MW ✓.
+
+    Pre-D14 proportional-by-ceiling gave A=1 MW (50% utilisation), B=3 MW.
+    The D14 fix ensures the small unit is used to its ceiling before the large
+    unit absorbs remaining demand.
+
+    tick() must deliver these allocations to cover_shortfall; we confirm by
+    checking each unit's output_mw() after one tick.
     """
     from core.dispatch import DispatchArbitrator
     from core.models import BessConfig, IslandMode, SiteConfig, TurbineConfig
@@ -919,13 +927,13 @@ def test_item4_heterogeneous_fleet_proportional_split():
     arb = DispatchArbitrator([turbine], [bess_a, bess_b], site)
 
     turbine_mw, bess_mw = arb.tick(p_dispatch_required_mw=4.0, dt_seconds=5.0)
-    # Proportional: A gets 4×(2/8)=1 MW, B gets 4×(6/8)=3 MW.
-    assert math.isclose(bess_a.output_mw(), 1.0, abs_tol=1e-9), (
-        f"unit-A (rated 2 MW, weight 25%) should get 1.0 MW; got {bess_a.output_mw():.4f} MW. "
-        "Equal share (2 MW each) would saturate unit-A and waste its capacity."
+    # D14 equal-share-then-cap: A(ceiling=2) → 2 MW (full), B → 2 MW.
+    assert math.isclose(bess_a.output_mw(), 2.0, abs_tol=1e-9), (
+        f"unit-A (rated 2 MW) should be fully utilised at 2.0 MW (D14); "
+        f"got {bess_a.output_mw():.4f} MW.  Pre-D14 proportional gave 1.0 MW (50%)."
     )
-    assert math.isclose(bess_b.output_mw(), 3.0, abs_tol=1e-9), (
-        f"unit-B (rated 6 MW, weight 75%) should get 3.0 MW; got {bess_b.output_mw():.4f} MW."
+    assert math.isclose(bess_b.output_mw(), 2.0, abs_tol=1e-9), (
+        f"unit-B (rated 6 MW) should get the remaining 2.0 MW; got {bess_b.output_mw():.4f} MW."
     )
     assert math.isclose(bess_mw, 4.0, abs_tol=1e-9), (
         f"fleet BESS output should equal shortfall 4.0 MW; got {bess_mw:.4f} MW."
@@ -1036,6 +1044,66 @@ def test_item4_demo_scenarios_alert_behavior():
         f"demo-alert (5 MW BESS, anchor, bridging=4 MW) must alert; "
         f"peak shortfall ≈ 13.97 MW > 4 MW → reserve check fails. "
         f"If not alerting, anchor reserve deduction is not being applied."
+    )
+
+
+def test_d14_capped_allocation_sum_invariant():
+    """D14: _proportional_allocations must satisfy sum == min(demand, sum(ceilings)).
+
+    No allocation may exceed its unit's ceiling.  Two sub-cases:
+      (a) demand < fleet capacity → sum(allocs) == demand, small unit fully used.
+      (b) demand > fleet capacity → sum(allocs) == sum(ceilings), all units capped.
+
+    User D14 example: 5 MW + 20 MW fleet, shortfall = 12 MW.
+      Pre-D14 proportional-by-ceiling: [2.4, 9.6] — small unit at 48%.
+      D14 equal-share-then-cap:         [5.0, 7.0] — small unit fully used.
+    """
+    from core.dispatch import DispatchArbitrator
+    from core.models import BessConfig, SiteConfig, TurbineConfig
+
+    site = SiteConfig(site_id="s-d14")
+    bess_a = BessModule(BessConfig(asset_id="a-d14", rated_mw=5.0,  usable_mwh=10.0))
+    bess_b = BessModule(BessConfig(asset_id="b-d14", rated_mw=20.0, usable_mwh=10.0))
+    turbine = TurbineModule(TurbineConfig(asset_id="t-d14", r_asset_mw_per_s=0.0, rated_mw=0.0))
+    arb = DispatchArbitrator([turbine], [bess_a, bess_b], site)
+    ceilings = [5.0, 20.0]
+
+    # (a) demand 12 MW < fleet ceiling 25 MW: full demand must be met.
+    allocs = arb._proportional_allocations(12.0, ceilings)
+    assert all(a <= c + 1e-9 for a, c in zip(allocs, ceilings)), (
+        f"no allocation may exceed its ceiling; got {allocs} vs ceilings {ceilings}"
+    )
+    assert math.isclose(sum(allocs), 12.0, abs_tol=1e-9), (
+        f"sum(allocs)={sum(allocs):.6f} must equal demand 12.0"
+    )
+    assert math.isclose(allocs[0], 5.0, abs_tol=1e-9), (
+        f"small unit (5 MW ceiling) must be fully used; got {allocs[0]:.4f}. "
+        "Pre-D14 proportional gave 2.4 MW (48%)."
+    )
+    assert math.isclose(allocs[1], 7.0, abs_tol=1e-9), (
+        f"large unit gets remainder 7 MW; got {allocs[1]:.4f}."
+    )
+
+    # (b) demand 30 MW > fleet ceiling 25 MW: every unit capped, remainder unmet.
+    allocs_over = arb._proportional_allocations(30.0, ceilings)
+    assert all(a <= c + 1e-9 for a, c in zip(allocs_over, ceilings)), (
+        "over-demand: no allocation may exceed ceiling"
+    )
+    assert math.isclose(sum(allocs_over), sum(ceilings), abs_tol=1e-9), (
+        f"power-limited: sum(allocs)={sum(allocs_over):.4f} must equal "
+        f"fleet ceiling {sum(ceilings):.4f}"
+    )
+
+    # (c) homogeneous fleet: equal split, both well below ceiling.
+    bess_c = BessModule(BessConfig(asset_id="c-d14", rated_mw=5.0, usable_mwh=10.0))
+    bess_d = BessModule(BessConfig(asset_id="d-d14", rated_mw=5.0, usable_mwh=10.0))
+    arb2 = DispatchArbitrator([turbine], [bess_c, bess_d], site)
+    allocs_hom = arb2._proportional_allocations(6.0, [5.0, 5.0])
+    assert math.isclose(sum(allocs_hom), 6.0, abs_tol=1e-9)
+    assert all(a <= 5.0 + 1e-9 for a in allocs_hom)
+    # Equal split of 6 MW: each gets 3 MW (both below ceiling of 5 MW).
+    assert math.isclose(allocs_hom[0], 3.0, abs_tol=1e-9), (
+        f"homogeneous fleet equal-split: each should get 3.0 MW; got {allocs_hom[0]:.4f}"
     )
 
 

@@ -188,17 +188,21 @@ def test_bess_bridging_seconds_above_power_ceiling_returns_zero():
         f"expected 0.0 s above power ceiling, got {result}"
     )
 
-    # Confirm the same result flows through _proportional_allocations + min().
+    # D14: _proportional_allocations caps at the ceiling; max_sustainable no longer
+    # returns 0.0 from this path.  Power-limited cases are detected by comparing
+    # demand to sum(ceilings) — the same guard used by stage_for_predicted_step
+    # and evaluate_tick — not by relying on D11's max_sustainable 0.0 return.
     island_mode = site.island_mode
-    ceilings = [bess.bridging_available_mw(island_mode)]
+    ceilings = [bess.bridging_available_mw(island_mode)]  # [5.0 MW]
     allocs = state.arbitrator._proportional_allocations(demand_mw, ceilings)
-    fleet_min = min(
-        b.max_sustainable_seconds(a, island_mode)
-        for b, a in zip(state.bess_units, allocs)
+    assert allocs == pytest.approx([5.0], abs=1e-9), (
+        f"D14: allocation capped at ceiling 5.0 MW; got {allocs}"
     )
-    assert fleet_min == pytest.approx(0.0), (
-        f"fleet_min expected 0.0 (above power ceiling), got {fleet_min}"
-    )
+    # Power-limited check: demand (10 MW) > fleet ceiling (5 MW) → bess_bridging = 0.
+    assert demand_mw > sum(ceilings), "test pre-condition: demand exceeds fleet ceiling"
+    # (fleet_min from max_sustainable_seconds(5.0) is now a finite positive —
+    # the endurance at the ceiling power level — but this value is no longer used
+    # to detect the power-limited case; the sum(ceilings) guard is used instead.)
 
 
 def test_bess_bridging_seconds_within_power_ceiling():

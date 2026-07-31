@@ -318,13 +318,21 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         if state.bess_units:
             _bbs_island_mode = state.site.island_mode
             _bbs_ceilings = [b.bridging_available_mw(_bbs_island_mode) for b in state.bess_units]
-            _bbs_allocs = state.arbitrator._proportional_allocations(
-                _binding_demand_mw, _bbs_ceilings
-            )
-            bess_bridging_seconds = min(
-                b.max_sustainable_seconds(alloc, _bbs_island_mode)
-                for b, alloc in zip(state.bess_units, _bbs_allocs)
-            )
+            # D14: if binding demand exceeds total fleet ceiling the fleet is
+            # power-limited — it cannot sustain the demand regardless of stored
+            # energy.  Report 0.0 immediately; do not compute an endurance for
+            # a sub-ceiling allocation (the allocation is capped but that does
+            # not mean the fleet CAN cover the demand).
+            if _binding_demand_mw > sum(_bbs_ceilings):
+                bess_bridging_seconds = 0.0
+            else:
+                _bbs_allocs = state.arbitrator._proportional_allocations(
+                    _binding_demand_mw, _bbs_ceilings
+                )
+                bess_bridging_seconds = min(
+                    b.max_sustainable_seconds(alloc, _bbs_island_mode)
+                    for b, alloc in zip(state.bess_units, _bbs_allocs)
+                )
         else:
             bess_bridging_seconds = 0.0
 

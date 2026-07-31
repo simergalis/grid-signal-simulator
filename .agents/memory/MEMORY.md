@@ -1,4 +1,5 @@
-- [gridsignal-sim-v2 overview](gridsignal-sim-v2-overview.md) — codebase root, four verification commands, completed items through Step 3 Item 4.
+- [gridsignal-sim-v2 overview](gridsignal-sim-v2-overview.md) — codebase root, four verification commands, completed items through D14.
 - [bess-anchor-reserve](bess-anchor-reserve.md) — IslandMode + grid_forming design; why sum-of-durations not min(); THE TRAP with cover_shortfall taper flag.
 - [cooling-envelope-cursor](cooling-envelope-cursor.md) — deque + absolute cursor design; THE TRAP with popleft() shifting plain integer indices.
 - [sim-clock-convention](sim-clock-convention.md) — sim_time = interval START; TickResult state is at sim_time+dt; Step 8 must use convention (A) consistently.
+- [d14-allocation-design](d14-allocation-design.md) — equal-share-then-cap replaces proportional-by-ceiling; power-limited guard pattern required in 3 places.

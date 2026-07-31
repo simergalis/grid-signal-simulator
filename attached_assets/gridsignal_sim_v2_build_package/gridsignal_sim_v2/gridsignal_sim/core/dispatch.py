@@ -313,33 +313,68 @@ class DispatchArbitrator:
     def _proportional_allocations(
         self, demand_mw: float, weights: list[float]
     ) -> list[float]:
-        """Split demand_mw across BESS units proportional to pre-computed weights.
+        """Capped equal-share allocation with iterative redistribution (D14).
 
-        weights — bridging_available_mw values aligned with self.bess_units,
-        computed once by the caller (tick or stage_for_predicted_step) and
-        reused here.  This avoids a redundant self.site.island_mode read and N
-        redundant bridging_available_mw() calls per tick (P4 hoisting fix).
+        weights — bridging_available_mw values (per-unit power ceilings),
+        aligned with self.bess_units, computed once by the caller (P4 hoisting).
 
-        When all units are identical this reduces to equal sharing.  For a
-        heterogeneous fleet it prevents equal-share over-allocation to weak
-        units, which would cause D11's power-ceiling guard to return 0.0 for
-        those units and understate total fleet capability.
+        Algorithm:
+          Round 1: give each active unit an equal share of the remaining demand.
+          Any unit whose share reaches its ceiling is capped there; the
+          remainder is redistributed equally among units still with headroom.
+          Repeat until the demand is fully met or every unit is at its ceiling.
 
-        If total bridging capacity is zero (all units depleted or anchored
-        to zero), each unit gets a proportional share of demand_mw based on
-        rated_mw so the taper/SoC logic still sees the correct demand signal
-        and drains gracefully — none of them can deliver, but the call path
-        stays well-defined.
+        Guarantee: sum(result) == min(demand_mw, sum(weights)) and
+        result[i] <= weights[i] for all i.  D11's guard (max_sustainable_seconds
+        returns 0.0 above ceiling) must never fire from this code path after D14
+        — no allocation may exceed its unit's ceiling.
 
-        Returns a list aligned with self.bess_units.
+        Why equal-share rather than proportional-by-ceiling:
+          Proportional-by-ceiling gives a small unit (5 MW) only 2.4 MW of a
+          12 MW fleet shortfall alongside a large unit (20 MW), leaving it at
+          48% utilisation.  Equal-share caps the small unit at its ceiling
+          (5 MW) first and sends the remaining 7 MW to the large unit — the
+          small unit is fully used and D11 is never invoked.  This is the
+          D14-corrected behaviour.
+
+        If total bridging capacity is zero (all units depleted or anchored to
+        zero), fall back to rated_mw-proportional so the taper/SoC logic still
+        sees a correct demand signal and drains gracefully.
         """
+        n = len(weights)
         total_w = sum(weights)
         if total_w <= 0:
-            # Fallback to rated_mw weights so the call path is always defined.
+            # Fallback: use rated_mw weights so the call path is always defined.
             rated_weights = [b.config.rated_mw for b in self.bess_units]
-            total_w = sum(rated_weights) or 1.0
-            return [demand_mw * w / total_w for w in rated_weights]
-        return [demand_mw * w / total_w for w in weights]
+            total_rw = sum(rated_weights) or 1.0
+            return [demand_mw * w / total_rw for w in rated_weights]
+
+        allocations = [0.0] * n
+        remaining = demand_mw
+
+        while remaining > 1e-9:
+            # Units that still have headroom below their ceiling.
+            active = [i for i in range(n) if weights[i] - allocations[i] > 1e-9]
+            if not active:
+                break  # every unit at ceiling; remainder is genuinely unmet
+
+            share = remaining / len(active)
+            capped_any = False
+
+            for i in active:
+                headroom = weights[i] - allocations[i]
+                if share >= headroom - 1e-9:
+                    allocations[i] = weights[i]  # cap exactly at ceiling
+                    capped_any = True
+                else:
+                    allocations[i] += share
+
+            remaining = demand_mw - sum(allocations)
+
+            if not capped_any:
+                break  # converged; no unit hit its ceiling this round
+
+        return allocations
 
     def stage_for_predicted_step(
         self, delta_p_mw: float, dt_lead_seconds: float, sim_time: float
@@ -401,9 +436,24 @@ class DispatchArbitrator:
         # proportional split and max_sustainable_seconds.
         island_mode = self.site.island_mode
         ceilings = [b.bridging_available_mw(island_mode) for b in self.bess_units]
+
+        # D14 power-limited check: if the peak shortfall exceeds the total fleet
+        # power ceiling, no allocation scheme can meet the demand — alert
+        # immediately before computing endurance.  This is a genuine physical
+        # shortfall (the fleet cannot produce the required MW) rather than an
+        # energy-exhaustion shortfall.  The renewable TC-33 case exercises this
+        # path: 6.3036 MW shortfall > 5.0 MW fleet ceiling.
+        fleet_power_ceiling = sum(ceilings)
+        if peak_shortfall_mw > fleet_power_ceiling:
+            return InsufficientReserveAlert(
+                shortfall_mw=peak_shortfall_mw,
+                gap_duration_s=gap_s,
+                fires_at_sim_time=sim_time,
+            )
+
         allocations = self._proportional_allocations(peak_shortfall_mw, ceilings)
 
-        # D13: min over proportional shares, not sum.
+        # D13: min over capped shares, not sum.
         fleet_min_s = min(
             (b.max_sustainable_seconds(alloc, island_mode)
              for b, alloc in zip(self.bess_units, allocations)),
