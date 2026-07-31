@@ -30,6 +30,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 
 from api.schemas import (
     CreateScenarioResponse,
+    PreStagingConfigSpec,
     ScenarioDetailResponse,
     ScenarioSpec,
     ScenarioSummary,
@@ -216,6 +217,28 @@ _TC33_MW = 600 * _ENT_KW * _PUE / 1000.0   # 6.3036 MW
 _TC33_DT_LEAD = 15.0
 
 _SEEDED: list[tuple[str, ScenarioSpec]] = [
+    (
+        "demo-prestage",
+        ScenarioSpec(
+            name="demo-prestage",
+            description=(
+                "demo-20mw + §8.1 pre-staging (Step 10).  "
+                "PreStagingConfig defaults: max_shift=1.0 MW, initial_temp=21.0 °C, "
+                "band [18–24 °C], gain=0.05 °C/MW/s, warmup=0.002 °C/s.  "
+                "Pre-staging fires from tick 1; temperature headroom exhausts at "
+                "≈t=62 s (12–13 ticks); engine then idles until warmup recovers.  "
+                "Separate from demo-20mw because pre-staging shifts p_dispatch_required "
+                "and changes turbine/BESS allocation numbers."
+            ),
+            workload_events=[_evt_start("job-big", 1900)],
+            dt_lead_seconds=30.0,
+            bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
+            turbine_units=[_turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2)],
+            solar_rated_mw=_SOLAR_20MW,
+            end_sim_time=300.0,
+            pre_staging_config=PreStagingConfigSpec(),   # all defaults
+        ),
+    ),
     (
         "demo-20mw",
         ScenarioSpec(

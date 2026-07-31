@@ -30,6 +30,7 @@ from core.models import (
     BessConfig,
     HardwareProfile,
     IslandMode,
+    PreStagingConfig,
     SiteConfig,
     SolarConfig,
     TurbineConfig,
@@ -355,6 +356,12 @@ def build_run_context_from_spec(
         pue_base=spec_data.get("pue_base", 1.03),
         island_mode=island,
     )
+
+    # Step 10 — §8.1: wire optional pre-staging config from spec.
+    # Must be set before SimulationState() so __post_init__ picks it up.
+    _pre_staging_raw = spec_data.get("pre_staging_config")
+    if _pre_staging_raw:
+        site.pre_staging_config = PreStagingConfig(**_pre_staging_raw)
 
     hw_id = spec_data.get("hardware_profile_id", "enterprise_8gpu_air")
 

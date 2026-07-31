@@ -55,6 +55,22 @@ description: Architectural decisions and traps from the W1 agent+telemetry+therm
 
 **TRAP — 409 from procurement/telemetry/thermal:** When the run completes, these return 409. The frontend clears the interval and keeps the last-seen state. Do NOT treat 409 as an error — it's the expected terminal state for a completed run.
 
+## AA3 — Module audit: evaluate_tick / _drive call-site status
+
+**Always live (evaluate_tick):** GPUModule, CoolingModule, SolarModule, DispatchArbitrator, select_candidates, CurtailmentLadder.generate_candidates (unless PMS fast shed), CheckpointClassifier, ConfidenceEngine, SimulatedScadaLayer.
+
+**Conditional in evaluate_tick (SiteConfig gates):**
+- `PreStagingEngine.compute_shift()` — requires `SiteConfig.pre_staging_config`; no shipped scenario had it until AA1 added `demo-prestage`. ScenarioSpec now has `pre_staging_config: Optional[PreStagingConfigSpec]` wired through build_run_context_from_spec.
+- `SimulatedPMS.tick()` — requires `SiteConfig.pms_config`; NO shipped scenario provides it; `ScenarioSpec` has no `pms_config` field; PMS branch has **never executed** in any live run. Same pattern as PreStagingEngine pre-AA1.
+
+**Always live (_drive via W1):** AgentRegistry.tick/run_all, NetworkTelemetryIngestor, FabricCorroborator, _update_thermal_state.
+
+**Indirect live (_drive via agents):** deidentify() — called by BaseAdvisoryAgent._fire_proposal().
+
+**Dead code (no call site outside own file):** CostModelEngine (core/cost_model.py) — compute_run_cost() and compare() have zero imports in runtime/ or api/. Not wired to any run path.
+
+**Serializer gap fixed:** `pre_staging_shift_mw` was missing from `_tick_result_to_dict()` — added in AA1. Check Step 17 traceability sweep for other TickResult fields not in the dict.
+
 ## Z1 — Cooling plant sizing and thermal→dispatch isolation
 
 **Z1(a) sizing formula:** All three factory functions set `_rated_cooling_mw = site.alpha_max × peak_compute_mw` — both **derived** (not a constant). `alpha_max=0.20` is a hardcoded class constant in `SiteConfig`; peak_compute is reverse-engineered from `solar_rated_mw / 0.25` (PROTO-7). Bug: formula accounts for pure compute thermal load only; BESS charging and PUE-base overhead applied to total IT load add ~2-4% excess that immediately saturates the system at peak. **Fix: multiply by 1.15 (PROTO-10-MARGIN)** in all three factory functions — applied July 2026.

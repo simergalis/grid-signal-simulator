@@ -27,6 +27,29 @@ from runtime.verdict import AssertionSpec  # noqa: F401 (re-exported for callers
 
 
 # ---------------------------------------------------------------------------
+# Step 10: Pre-staging config schema (AA1)
+# ---------------------------------------------------------------------------
+
+class PreStagingConfigSpec(BaseModel):
+    """Wire-format mirror of core.models.PreStagingConfig.
+
+    All fields match the dataclass fields exactly so that
+    ``PreStagingConfig(**spec_data["pre_staging_config"])`` is safe in
+    build_run_context_from_spec without any field-name translation.
+
+    All values are CHOSEN (PROTO-10).  See core/models.py PreStagingConfig
+    for the hold-analysis and design rationale.
+    """
+    max_shift_mw: float = Field(default=1.0, ge=0.0, le=50.0)
+    inlet_temp_low_c: float = Field(default=18.0, ge=10.0, le=30.0)
+    inlet_temp_high_c: float = Field(default=24.0, ge=15.0, le=35.0)
+    cooling_gain_c_per_mw_s: float = Field(default=0.05, gt=0.0)
+    warmup_rate_c_per_s: float = Field(default=0.002, ge=0.0)
+    initial_temp_c: float = Field(default=21.0, ge=10.0, le=35.0)
+    bms_override: bool = False
+
+
+# ---------------------------------------------------------------------------
 # Step 8: Scenario schemas
 # ---------------------------------------------------------------------------
 
@@ -124,6 +147,10 @@ class ScenarioSpec(BaseModel):
     island_mode: bool = True
     pue_base: float = Field(default=1.03, ge=1.0, le=2.0)
     end_sim_time: float = Field(default=300.0, ge=60.0, le=86400.0)
+
+    # Step 10: optional §8.1 pre-staging configuration.
+    # None = PreStagingEngine not instantiated (SiteConfig.pre_staging_config = None).
+    pre_staging_config: Optional[PreStagingConfigSpec] = None
 
     # Step 9: optional pass/fail assertions evaluated at run completion.
     # Each element is one of the AssertionSpec union members (discriminated

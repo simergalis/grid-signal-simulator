@@ -1048,6 +1048,33 @@ class PreStagingEngine:
     The BMS retains unconditional override (TC-56): when bms_override=True on
     a call, the engine returns 0.0 MW shifted and only applies ambient warmup.
 
+    ── Two-model separation (AA2) ──────────────────────────────────────────
+    PreStagingEngine maintains its OWN self-contained temperature state
+    (``_current_temp_c``, initialised from ``config.initial_temp_c``).  This
+    is NOT the plant temperature reported by CoolingModule.  The two models
+    evolve independently and are never synchronised:
+
+      • ``PreStagingEngine._current_temp_c``
+            A bounded control model used solely to limit how much pre-cooling
+            the engine can perform before reaching the lower comfort bound
+            (TC-55).  It advances by ``warmup_rate_c_per_s × dt`` each tick
+            and decreases by ``cooling_gain_c_per_mw_s × shift_mw × dt`` when
+            pre-cooling is applied.  It has no measurement basis.
+
+      • ``CoolingModule`` (core/asset_modules.py) + derived API fields
+            The actual simulated plant thermal state, driven by compute load
+            and the CoolingEnvelope deque.  ``absorbable_mw`` and
+            ``time_to_limit_s`` are computed from CoolingModule state in the
+            API layer (api/routes/advisory.py) and are available only in the
+            thermal endpoint response — they have NO path into evaluate_tick()
+            or _drive() and do not feed back into PreStagingEngine.
+
+    Unifying these two models is a §8.1 design question (whether pre-staging
+    should read measured plant state or keep its own bounded control model) and
+    requires the cooling-model owner's decision.  Do not wire them together
+    here without that decision.
+    ────────────────────────────────────────────────────────────────────────
+
     Hold analysis:
       Bound:    inlet_temp_low_c — cannot cool below the lower comfort bound.
       Terminal: temperature reaches lower bound; BMS override; gap closes.
