@@ -127,6 +127,60 @@ class IslandMode(str, Enum):
     ISLANDED  = "islanded"
 
 
+class OperatingTier(str, Enum):
+    """§26.2 authority tier — minimum machinery for Step 10.
+
+    Same pattern as IslandMode (Step 3 Item 4): a field on SiteConfig, read
+    each tick by the curtailment ladder.  Full authority-role machinery
+    (operator vs. approver vs. admin) is deferred to a later step.
+
+    AUTONOMOUS: A/B curtailment may execute without human confirmation.
+               C/D are STILL blocked (TC-42 — requires_confirmation is set
+               at tier construction, independent of operating_tier).
+    SUPERVISED: conservative default.  A/B autonomous within bounds; C/D
+               require explicit human confirmation.  Low-confidence segments
+               block all autonomous curtailment (TC-43).
+    OPERATOR:   explicit human confirmation required for every tier above A.
+
+    Default: SUPERVISED — conservative, same rationale as ISLANDED.
+    """
+    AUTONOMOUS = "autonomous"
+    SUPERVISED = "supervised"
+    OPERATOR   = "operator"
+
+
+@dataclass
+class PreStagingConfig:
+    """§8.1 shiftable thermal load parameters (Step 10).
+
+    Pre-staging pre-cools the data hall within the inlet-temperature band
+    (TC-55), reducing P_dispatch_required ahead of a dispatchable demand peak.
+    The BMS retains unconditional override (TC-56): when bms_override is True
+    on any tick the engine returns 0.0 MW shifted.
+
+    Hold analysis (D1/D2/D4 pattern):
+      Bound:    inlet_temp_low_c — cannot cool below the lower comfort bound.
+      Terminal: temperature reaches lower bound; BMS override; gap closes.
+      No-release: if gap never closes, temperature-bound acts as the hard cap —
+                  shift naturally drops to 0.0 as temp approaches low_c.  The
+                  physics provides the bound; no separate dead-man is needed.
+
+    All numeric values are CHOSEN (no measured basis, PROTO-10).
+    """
+    max_shift_mw: float = 1.0              # CHOSEN (PROTO-10)
+    inlet_temp_low_c: float = 18.0         # CHOSEN (PROTO-10)
+    inlet_temp_high_c: float = 24.0        # CHOSEN (PROTO-10)
+    # °C drop per MW of additional cooling per second of dt.
+    cooling_gain_c_per_mw_s: float = 0.05  # CHOSEN (PROTO-10)
+    # Ambient warming rate per second when not actively cooling.
+    warmup_rate_c_per_s: float = 0.002     # CHOSEN (PROTO-10)
+    # Starting inlet temperature; default is midpoint of the comfort band.
+    initial_temp_c: float = 21.0           # midpoint of [18.0, 24.0]
+    # BMS override flag.  In the real system this arrives as a per-tick
+    # telemetry signal; here it is on the config so tests can set it.
+    bms_override: bool = False
+
+
 # ---------------------------------------------------------------------------
 # Asset configuration (Design Spec Section 6 / functional spec Section 8.1)
 # ---------------------------------------------------------------------------
@@ -144,6 +198,13 @@ class SiteConfig:
     # Step 11 (§28) will add the transition machinery; for now we expose the
     # field so the arbitrator can read it each tick.
     island_mode: IslandMode = IslandMode.ISLANDED
+    # Step 10 — §26.2: authority tier, read each tick by the curtailment ladder.
+    # Default SUPERVISED: conservative, same rationale as ISLANDED.
+    # Full tier machinery deferred to a later step.
+    operating_tier: OperatingTier = OperatingTier.SUPERVISED
+    # Step 10 — §8.1: optional shiftable thermal load parameters.
+    # None = no pre-staging capability on this site.
+    pre_staging_config: Optional[PreStagingConfig] = None
 
 
 @dataclass
@@ -300,3 +361,10 @@ class TickResult:
     #   "current_demand" — current net_demand_mw is the binding figure.
     #   "no_load"        — net demand is zero; bridging is not required.
     bridging_basis: str = "current_demand"
+    # Step 10: §8.1 pre-staging — MW of gap reduced by Phase 0 shiftable load.
+    # 0.0 when no pre-staging engine is configured or gap is 0.
+    pre_staging_shift_mw: float = 0.0
+    # Step 10: §23.2 curtailment proposals — tuple of tier name strings for
+    # every tier the curtailment ladder proposed this tick (empty = no proposal).
+    # Proposals do not guarantee execution: C/D require human confirmation (TC-42).
+    curtailment_proposal_tiers: tuple[str, ...] = field(default_factory=tuple)

@@ -4,3 +4,4 @@
 - [sim-clock-convention](sim-clock-convention.md) — sim_time = interval START; TickResult state is at sim_time+dt; Step 8 must use convention (A) consistently.
 - [d14-allocation-design](d14-allocation-design.md) — equal-share-then-cap replaces proportional-by-ceiling; power-limited guard pattern required in 3 places.
 - [step9-verdict-design](step9-verdict-design.md) — AssertionSpec in runtime/verdict.py (not api/); demo-20mw needs bess_rated_mw=18.0 for PASS; H1 gap rules.
+- [step10-arbitration-design](step10-arbitration-design.md) — Phase 0 insertion point; CurtailmentLadder hold analysis; TC-49 permutation trap; OperatingTier/PreStagingConfig shape.

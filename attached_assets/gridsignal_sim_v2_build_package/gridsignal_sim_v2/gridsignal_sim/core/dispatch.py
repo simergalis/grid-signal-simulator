@@ -14,10 +14,13 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
+from typing import Optional, Sequence
 
 from .asset_modules import BessModule, GPUModule, TurbineModule
-from .models import ConfidenceBand, DataQualityTag, IslandMode, SiteConfig
+from .models import (
+    ConfidenceBand, DataQualityTag, IslandMode, OperatingTier,
+    PreStagingConfig, SiteConfig,
+)
 
 _log = logging.getLogger(__name__)
 
@@ -538,6 +541,395 @@ class DispatchArbitrator:
         for bess, alloc, ceiling in zip(self.bess_units, allocations, ceilings):
             bess_output_mw += bess.cover_shortfall(alloc, fleet_covered, dt_seconds, ceiling)
         return turbine_output_mw, bess_output_mw
+
+
+# ---------------------------------------------------------------------------
+# §26.4 Deterministic selector
+# ---------------------------------------------------------------------------
+
+class LadderPosition(int, Enum):
+    """Fixed §26.4 priority ordering.
+
+    Ordered by reliability sufficiency first, then reversibility, then cost.
+    Cost ranks last deliberately: optimising cost ahead of reversibility
+    selects an irreversible cheap option at the exact moment a forecast is
+    wrong.
+    """
+    STORAGE_DISCHARGE      = 0   # BESS (handled by DispatchArbitrator)
+    TURBINE_RAMP           = 1   # Turbine ramp (handled by DispatchArbitrator)
+    FIRM_GRID_IMPORT       = 2   # Not yet modelled; placeholder for Step 11+
+    RESERVED_GRID_PURCHASE = 3   # Not yet modelled; placeholder
+    CURTAILMENT_A_B        = 4   # §23.2 tiers A (defer) and B (power-cap)
+    CURTAILMENT_C_D        = 5   # §23.2 tiers C (suspend) and D (preempt)
+
+
+@dataclass(frozen=True)
+class CandidateResponse:
+    """One candidate response for §26.4 selection.
+
+    TC-49: selection must be reproducible from the recommendation set alone,
+    regardless of input ordering.  Two candidates with the same response_kind
+    must have DIFFERENT candidate_ids.  Do NOT key candidates by response_kind:
+    a dict silently drops one when two agents publish the same kind, making
+    selection input-order-dependent.
+
+    Total sort order:
+        ladder_position ASC → estimated_impact_mw DESC → candidate_id ASC.
+    This is a STRICT total order — no ties possible when candidate_id is unique.
+    """
+    ladder_position: int            # LadderPosition value
+    estimated_impact_mw: float      # positive MW of gap this closes
+    candidate_id: str               # globally unique stable identifier (TC-49)
+    response_kind: str              # human-readable label
+    requires_confirmation: bool = False   # True for C/D (TC-42)
+
+
+def select_candidates(
+    candidates: Sequence[CandidateResponse],
+    gap_mw: float,
+) -> list[CandidateResponse]:
+    """§26.4 deterministic greedy selector.
+
+    Selects the minimum prefix of the total-ordered candidate sequence
+    sufficient to close gap_mw.
+
+    TC-49: the result is a pure function of (candidates, gap_mw).
+    Input ordering does not matter — candidates are sorted by total order
+    before selection.  MUST be tested over ALL PERMUTATIONS of any candidate
+    set to verify this (a single ordering proves nothing).
+
+    Candidates requiring human confirmation (requires_confirmation=True) are
+    included in proposals.  The caller decides whether to execute them.
+    Filtering by authority tier is the caller's responsibility, not this
+    function's — conflating selection with authority loses the TC-49 invariant.
+
+    Same-kind candidates are ranked by their individual candidate_ids and
+    share that kind's ladder position; they are NOT dropped.
+    """
+    if gap_mw <= 1e-9:
+        return []
+    # Total order: position ASC, impact DESC, id ASC.
+    # Strictly deterministic regardless of input ordering (TC-49).
+    ordered = sorted(
+        candidates,
+        key=lambda c: (c.ladder_position, -c.estimated_impact_mw, c.candidate_id),
+    )
+    selected: list[CandidateResponse] = []
+    remaining = gap_mw
+    for c in ordered:
+        if remaining <= 1e-9:
+            break
+        selected.append(c)
+        remaining -= c.estimated_impact_mw
+    return selected
+
+
+# ---------------------------------------------------------------------------
+# §23.2 Curtailment ladder
+# ---------------------------------------------------------------------------
+
+class CurtailmentTier(str, Enum):
+    A_DEFER     = "a_defer"      # §23.2: defer new job submissions
+    B_POWER_CAP = "b_power_cap"  # §23.2: cap running-job power
+    C_SUSPEND   = "c_suspend"    # §23.2: checkpoint + pause (requires confirmation)
+    D_PREEMPT   = "d_preempt"    # §23.2: terminate without checkpoint (req. confirmation)
+
+
+_CURTAILMENT_TIER_ORDER: list[CurtailmentTier] = [
+    CurtailmentTier.A_DEFER,
+    CurtailmentTier.B_POWER_CAP,
+    CurtailmentTier.C_SUSPEND,
+    CurtailmentTier.D_PREEMPT,
+]
+
+# Requires human confirmation at EVERY invocation (TC-42).
+# C/D are never autonomous regardless of OperatingTier.
+_REQUIRES_CONFIRMATION: dict[CurtailmentTier, bool] = {
+    CurtailmentTier.A_DEFER:     False,
+    CurtailmentTier.B_POWER_CAP: False,
+    CurtailmentTier.C_SUSPEND:   True,
+    CurtailmentTier.D_PREEMPT:   True,
+}
+
+# CHOSEN capacity per tier (PROTO-11) — MW of GPU load addressable by this
+# tier alone.  Real values depend on workload mix; these are simulation
+# defaults pending design-partner calibration.
+_TIER_CAPACITY_MW: dict[CurtailmentTier, float] = {
+    CurtailmentTier.A_DEFER:      2.0,   # CHOSEN (PROTO-11)
+    CurtailmentTier.B_POWER_CAP:  5.0,   # CHOSEN (PROTO-11)
+    CurtailmentTier.C_SUSPEND:   10.0,   # CHOSEN (PROTO-11)
+    CurtailmentTier.D_PREEMPT:   20.0,   # CHOSEN (PROTO-11)
+}
+
+
+@dataclass
+class CurtailmentProposal:
+    """A proposed curtailment action from the §23.2 ladder.
+
+    requires_confirmation — always True for C/D tiers (TC-42).
+    expires_at_sim_time   — dead-man boundary (TC-46, §23.6): the proposal
+                            must be refreshed before this time or it expires.
+    bounded_by_gap        — True: curtailment is sized to the predicted gap,
+                            not to present-state load (§23.6 interlock).
+    """
+    tier: CurtailmentTier
+    estimated_impact_mw: float
+    requires_confirmation: bool
+    expires_at_sim_time: float
+    bounded_by_gap: bool = True
+
+
+class CurtailmentLadder:
+    """§23.2 curtailment ladder with §23.3 hysteresis and §23.6 interlocks.
+
+    Hold analysis (D1/D2/D4 pattern from build history):
+      Bound:    120 s escalation dwell (TC-44) + MAX_HOLD_S dead-man (TC-46)
+                + 20% restoration margin (TC-44, §23.3).
+      Terminal: gap closes past restoration threshold → reset; dead-man fires.
+      No-release: dead-man fires after MAX_HOLD_S of continuous curtailment,
+                  auto-releases, and logs a control anomaly (the same failure
+                  class as §23.6 "a partitioned controller must not hold a
+                  customer's fleet down indefinitely").
+
+    TC-41: mandatory ordering — never invoke B while A still has headroom.
+    TC-42: C/D always have requires_confirmation=True; never executed autonomously.
+    TC-43: low_confidence segment blocks ALL autonomous curtailment proposals.
+    TC-44: 120 s dwell before proposing any tier; 20% restoration margin.
+    TC-46: dead-man — auto-release after MAX_HOLD_S if gap persists without refresh.
+    """
+
+    DWELL_BEFORE_ESCALATION_S: float = 120.0    # §23.3 — spec-given value
+    RESTORATION_MARGIN_FRACTION: float = 0.20   # §23.3: de-escalate at ≤80% of trigger gap
+    MAX_HOLD_S: float = 300.0                   # §23.6 dead-man — CHOSEN (PROTO-11)
+
+    def __init__(self) -> None:
+        # _dwell_started_t: when gap was first observed (starts the 120s dwell).
+        # _trigger_gap_mw:  gap at dwell start; restoration margin is 80% of this.
+        # _activated_t:     when curtailment was first proposed (starts dead-man).
+        self._dwell_started_t: Optional[float] = None
+        self._trigger_gap_mw: float = 0.0
+        self._activated_t: Optional[float] = None
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _reset(self) -> None:
+        """Release all curtailment state — full de-escalation."""
+        self._dwell_started_t = None
+        self._trigger_gap_mw = 0.0
+        self._activated_t = None
+
+    def _required_highest_tier(self, gap_mw: float) -> Optional[CurtailmentTier]:
+        """Highest tier needed to close gap_mw (TC-41: cumulative from A up)."""
+        if gap_mw <= 1e-9:
+            return None
+        cumulative = 0.0
+        for tier in _CURTAILMENT_TIER_ORDER:
+            cumulative += _TIER_CAPACITY_MW[tier]
+            if cumulative >= gap_mw:
+                return tier
+        return CurtailmentTier.D_PREEMPT  # all tiers still cannot cover gap
+
+    # ------------------------------------------------------------------
+    # Per-tick entry point
+    # ------------------------------------------------------------------
+
+    def tick(
+        self,
+        gap_mw: float,
+        is_low_confidence: bool,
+        operating_tier: OperatingTier,
+        sim_time: float,
+    ) -> list[CurtailmentProposal]:
+        """Evaluate the curtailment ladder for one tick.
+
+        Returns a (possibly empty) list of CurtailmentProposals.
+        Proposals describe WHAT should happen; the caller decides whether
+        to execute confirmed-only proposals (TC-42).
+
+        §23.6 interlock — TC-43: a low_confidence segment (any DataQualityTag
+        active) never triggers autonomous curtailment.  When is_low_confidence
+        is True this method returns [] and resets all dwell state.  A human
+        must confirm any action when forecast quality is degraded.
+
+        TC-41 satisfied: the loop below stops at the highest tier needed;
+        tiers above that are never included.
+        TC-42 satisfied: _REQUIRES_CONFIRMATION[tier] is set at tier
+        construction and is independent of operating_tier.
+        TC-46 satisfied: dead-man releases after MAX_HOLD_S.
+        """
+        # §23.6 interlock: degraded forecasts never curtail autonomously (TC-43).
+        if is_low_confidence:
+            _log.debug(
+                "CurtailmentLadder: low_confidence interlock — no proposal "
+                "(TC-43). sim_time=%.1f gap=%.3f MW",
+                sim_time, gap_mw,
+            )
+            self._reset()
+            return []
+
+        # TC-46 dead-man: auto-release if curtailment has been active > MAX_HOLD_S.
+        if (
+            self._activated_t is not None
+            and (sim_time - self._activated_t) > self.MAX_HOLD_S
+        ):
+            _log.warning(
+                "CurtailmentLadder: dead-man expiry at sim_time=%.1f — "
+                "curtailment auto-released after %.0fs > MAX_HOLD_S=%.0fs "
+                "(CHOSEN, PROTO-11).  Control anomaly: no release signal arrived.  "
+                "activated_at=%.1f",
+                sim_time,
+                sim_time - self._activated_t,
+                self.MAX_HOLD_S,
+                self._activated_t,
+            )
+            self._reset()
+            return []
+
+        # §23.3 restoration margin: de-escalate when gap has recovered ≥20%.
+        if (
+            self._activated_t is not None
+            and self._trigger_gap_mw > 0.0
+            and gap_mw <= self._trigger_gap_mw * (1.0 - self.RESTORATION_MARGIN_FRACTION)
+        ):
+            self._reset()
+            # Fall through: gap may be 0 or may have recovered enough;
+            # if still positive it starts a fresh dwell cycle below.
+
+        if gap_mw <= 1e-9:
+            self._reset()
+            return []
+
+        needed_tier = self._required_highest_tier(gap_mw)
+        if needed_tier is None:
+            self._reset()
+            return []
+
+        # Start or continue the 120 s dwell timer (TC-44).
+        if self._dwell_started_t is None:
+            self._dwell_started_t = sim_time
+            self._trigger_gap_mw = gap_mw
+
+        elapsed_dwell = sim_time - self._dwell_started_t
+        if elapsed_dwell < self.DWELL_BEFORE_ESCALATION_S:
+            return []   # TC-44: dwell not met; no proposals yet
+
+        # Dwell met — build minimum tier set needed to close gap (TC-41).
+        # Never skip a tier while it still has headroom.
+        proposals: list[CurtailmentProposal] = []
+        remaining = gap_mw
+        for tier in _CURTAILMENT_TIER_ORDER:
+            if remaining <= 1e-9:
+                break
+            capacity = _TIER_CAPACITY_MW[tier]
+            actual_impact = min(capacity, remaining)
+            proposals.append(CurtailmentProposal(
+                tier=tier,
+                estimated_impact_mw=actual_impact,
+                requires_confirmation=_REQUIRES_CONFIRMATION[tier],
+                expires_at_sim_time=sim_time + self.MAX_HOLD_S,
+                bounded_by_gap=True,   # §23.6: curtailment sized to gap, not present state
+            ))
+            remaining -= actual_impact
+
+        if self._activated_t is None:
+            self._activated_t = sim_time
+
+        return proposals
+
+    @property
+    def is_active(self) -> bool:
+        return self._activated_t is not None
+
+
+# ---------------------------------------------------------------------------
+# §8.1 Pre-staging engine (shiftable thermal load)
+# ---------------------------------------------------------------------------
+
+class PreStagingEngine:
+    """§8.1 shiftable thermal load pre-staging (Step 10).
+
+    Reduces P_dispatch_required_mw by pre-cooling the data hall within the
+    inlet-temperature comfort band (TC-55), ahead of an anticipated dispatchable
+    demand peak.
+
+    The BMS retains unconditional override (TC-56): when bms_override=True on
+    a call, the engine returns 0.0 MW shifted and only applies ambient warmup.
+
+    Hold analysis:
+      Bound:    inlet_temp_low_c — cannot cool below the lower comfort bound.
+      Terminal: temperature reaches lower bound; BMS override; gap closes.
+      No-release: the temperature bound IS the hard cap.  As temp approaches
+                  low_c the maximum shift drops toward 0.0 automatically.
+                  No separate dead-man is needed — physics provides the bound.
+    """
+
+    def __init__(self, config: PreStagingConfig) -> None:
+        self.config = config
+        self._current_temp_c: float = config.initial_temp_c
+
+    def compute_shift(
+        self,
+        gap_mw: float,
+        bms_override: bool,
+        sim_time: float,
+        dt_seconds: float,
+    ) -> float:
+        """Compute and apply one tick of pre-staging.
+
+        Returns MW of gap reduction achieved by pre-cooling.
+        Advances internal temperature state regardless of outcome.
+
+        TC-56: bms_override=True → 0.0 returned, warmup still applied.
+        TC-55: shift capped by (current_temp - inlet_temp_low_c) headroom.
+        """
+        warmup_delta = self.config.warmup_rate_c_per_s * dt_seconds
+
+        # TC-56: BMS override is unconditional — no pre-staging.
+        if bms_override or self.config.bms_override:
+            self._current_temp_c = min(
+                self.config.inlet_temp_high_c,
+                self._current_temp_c + warmup_delta,
+            )
+            return 0.0
+
+        if gap_mw <= 1e-9:
+            self._current_temp_c = min(
+                self.config.inlet_temp_high_c,
+                self._current_temp_c + warmup_delta,
+            )
+            return 0.0
+
+        # TC-55: thermal headroom above the lower comfort limit.
+        headroom_c = self._current_temp_c - self.config.inlet_temp_low_c
+        if headroom_c <= 0.0:
+            # Already at or below lower bound; pre-cooling not possible.
+            self._current_temp_c = max(
+                self.config.inlet_temp_low_c,
+                min(self.config.inlet_temp_high_c,
+                    self._current_temp_c + warmup_delta),
+            )
+            return 0.0
+
+        # Max shift before hitting lower temp bound.
+        gain_per_tick = self.config.cooling_gain_c_per_mw_s * dt_seconds
+        max_from_temp = (headroom_c / gain_per_tick) if gain_per_tick > 0.0 else 0.0
+
+        shift_mw = min(gap_mw, self.config.max_shift_mw, max_from_temp)
+        shift_mw = max(0.0, shift_mw)
+
+        # Apply temperature change: pre-cooling lowers temp; ambient warms it.
+        delta_temp = -shift_mw * gain_per_tick + warmup_delta
+        self._current_temp_c = max(
+            self.config.inlet_temp_low_c,
+            min(self.config.inlet_temp_high_c, self._current_temp_c + delta_temp),
+        )
+        return shift_mw
+
+    @property
+    def current_temp_c(self) -> float:
+        return self._current_temp_c
 
 
 # ---------------------------------------------------------------------------

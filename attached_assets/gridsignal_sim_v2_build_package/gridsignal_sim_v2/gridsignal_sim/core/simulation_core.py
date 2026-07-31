@@ -20,7 +20,10 @@ from dataclasses import dataclass, field
 from .asset_modules import BessModule, CoolingModule, GPUModule, SolarModule, TurbineModule
 
 _log = logging.getLogger(__name__)
-from .dispatch import CheckpointClassifier, ConfidenceEngine, DispatchArbitrator, InsufficientReserveAlert
+from .dispatch import (
+    CheckpointClassifier, ConfidenceEngine, CurtailmentLadder,
+    DispatchArbitrator, InsufficientReserveAlert, PreStagingEngine,
+)
 from .models import DataQualityTag, GENERIC_FALLBACK_PROFILE, SiteConfig, TickResult, WorkloadEventType, WorkloadSignal
 from ._plane_guard import _EVALUATE_TICK_PERMITTED
 from .sim_clock import SimClock
@@ -61,12 +64,20 @@ class SimulationState:
     #   cleared by evaluate_tick() before returning TickResult.
     _unmapped_profile_alerted: set[str] = field(default_factory=set)
     _pending_unrecognised_alerts: set[str] = field(default_factory=set)
+    # Step 10: §23.2 curtailment ladder (stateful; created in __post_init__).
+    curtailment_ladder: CurtailmentLadder = field(init=False)
+    # Step 10: §8.1 pre-staging engine (None when site has no shiftable load).
+    pre_staging_engine: PreStagingEngine | None = field(default=None, init=False)
 
     def __post_init__(self) -> None:
         # Step 3 Item 4: arbitrator now holds a reference to site so it can
         # read island_mode each tick (mode changes with operating state —
         # Step 11 will flip it; holding the reference keeps the tick path O(1)).
         self.arbitrator = DispatchArbitrator(self.turbines, self.bess_units, self.site)
+        # Step 10: curtailment ladder and pre-staging engine.
+        self.curtailment_ladder = CurtailmentLadder()
+        if self.site.pre_staging_config is not None:
+            self.pre_staging_engine = PreStagingEngine(self.site.pre_staging_config)
 
     def _owning_gpu_module(self, signal: WorkloadSignal) -> GPUModule:
         """A WorkloadSignal targets exactly one GPU module -- the real
@@ -183,7 +194,10 @@ class SimulationState:
 def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     """The fixed-order tick evaluation (Design Spec Section 5 / 10.1):
 
-        GPU -> Cooling -> Solar (renewable offset) -> Turbine/BESS (arbitration)
+        GPU -> Cooling -> Solar (renewable offset)
+        -> [Phase 0: pre-staging §8.1]          ← Step 10 insertion point
+        -> Turbine/BESS (arbitration)
+        -> Curtailment ladder (§23.2 observation)← Step 10 insertion point
         -> Checkpoint classifier -> Confidence engine
 
     Solar moves before arbitration (Step 3 Item 0): P_dispatch_required(t) =
@@ -191,6 +205,20 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     P_dispatch_required, not P_total.  Renewables have no lead-time signal and
     are structurally absent from the ramp-capability calculation inside
     DispatchArbitrator (§7.1.1 asymmetry 1 & 2).
+
+    Step 10 — Phase 0 insertion (§8.1 pre-staging):
+        Inserted AFTER P_dispatch_required is computed (step 3) and BEFORE
+        arbitrator.tick() (step 4).  Pre-staging reduces the SIZE of the gap
+        rather than closing an existing one, so it sits ahead of the ladder —
+        it is a gap-reduction phase, not a gap-closure rung.  Existing stages
+        are preserved in their original order; this is a new stage at a defined
+        point, not a reordering of existing stages.
+
+    Step 10 — Curtailment ladder observation:
+        Inserted after arbitrator.tick() (step 4) has done its best.  The
+        remaining gap (if any) is passed to CurtailmentLadder.tick(), which
+        applies the 120 s dwell, TC-43 low-confidence interlock, dead-man
+        expiry, and mandatory tier ordering before returning proposals.
 
     Deterministic: same inputs, same order, every time -- no dict/set
     iteration order dependency (all module lists are plain lists).
@@ -264,6 +292,32 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     p_dispatch_required_mw = max(0.0, p_total_mw - p_renewable_mw)
     net_demand_mw = p_dispatch_required_mw
 
+    # 3a. Phase 0 — GAP REDUCTION: §8.1 pre-staging (shiftable thermal load).
+    #
+    # INSERTION POINT (Step 10): placed here — after P_dispatch_required is
+    # computed (step 3) and before turbine/BESS arbitration (step 4).
+    # Pre-staging reduces the SIZE of the gap before the §26.4 ladder tries
+    # to close it; it is not a rung in the ladder.  The BMS retains
+    # unconditional override (TC-56).  Bounded by inlet temperature band (TC-55).
+    #
+    # net_demand_mw is kept as a synonym so downstream fields that reference
+    # the pre-staging-adjusted demand are consistent.
+    pre_staging_shift_mw = 0.0
+    if state.pre_staging_engine is not None:
+        _bms_override = (
+            state.site.pre_staging_config.bms_override
+            if state.site.pre_staging_config is not None
+            else False
+        )
+        pre_staging_shift_mw = state.pre_staging_engine.compute_shift(
+            gap_mw=p_dispatch_required_mw,
+            bms_override=_bms_override,
+            sim_time=sim_time,
+            dt_seconds=dt_seconds,
+        )
+        p_dispatch_required_mw = max(0.0, p_dispatch_required_mw - pre_staging_shift_mw)
+        net_demand_mw = p_dispatch_required_mw
+
     # 4. Turbine ramp + BESS shortfall coverage, sized against P_dispatch_required
     for turbine in state.turbines:
         turbine.advance(sim_time, dt_seconds)
@@ -336,6 +390,32 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         else:
             bess_bridging_seconds = 0.0
 
+    # 4d. Curtailment ladder observation (§23.2 / Step 10).
+    # Called after turbine + BESS have done their best.  The remaining gap is
+    # what the curtailment system must address via the §26.4 ladder.
+    #
+    # is_low_confidence: True when any DataQualityTag is active this tick.
+    # Pre-computed here (before step 6's ConfidenceEngine) so TC-43's
+    # low_confidence interlock can gate the curtailment ladder without waiting
+    # for the full confidence band computation.  The tags checked are identical
+    # to step 6's inputs so the ladder and the band see the same quality signal.
+    _is_low_confidence = (
+        any(g.has_active_unmapped_jobs() for g in state.gpu_modules)
+        or state.site.uncalibrated
+    )
+    _remaining_gap_mw = max(
+        0.0, p_dispatch_required_mw - turbine_output_mw - bess_output_mw
+    )
+    _curtailment_proposals = state.curtailment_ladder.tick(
+        gap_mw=_remaining_gap_mw,
+        is_low_confidence=_is_low_confidence,
+        operating_tier=state.site.operating_tier,
+        sim_time=sim_time,
+    )
+    _curtailment_proposal_tiers: tuple[str, ...] = tuple(
+        p.tier.value for p in _curtailment_proposals
+    )
+
     # 5. Checkpoint classification, per active training job.
     # Step 3 Item 1: use gpu.per_job_compute_mw(job_id) — the draw for THIS job
     # on THIS module — not the site-wide p_compute_mw sum.  A 20% checkpoint dip
@@ -395,4 +475,6 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         bess_bridging_seconds=bess_bridging_seconds,
         dt_lead_next_s=dt_lead_next_s,
         bridging_basis=bridging_basis,
+        pre_staging_shift_mw=pre_staging_shift_mw,
+        curtailment_proposal_tiers=_curtailment_proposal_tiers,
     )
