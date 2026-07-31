@@ -1,0 +1,41 @@
+Pre-publish. Two fixes, then publish, then a live verification.
+
+PUB-1 — the approved UI/UX pass was never built. Two items from it before publishing:
+  (a) DQ legend chips render fully coloured on an idle site with no run. Four apparent
+      warnings that mean nothing is the first thing anyone sees. Mute them to grey borders
+      until a tag is present in the current tick; label the row "Legend".
+  (b) ProposalsPage shows a requires_confirmation BADGE but Approve is still a direct POST.
+      Ladder C/D and reservation authorization are one click. Add the type-to-confirm modal:
+      it names the affected jobs and requires typing to enable the confirm button. Do NOT
+      compute lost job-hours with estimated_impact_mw x job_count x remaining_ramp_s / 3600 —
+      that does not resolve to job-hours. Show affected job count and restoration cost
+      (Delta_t_lead per job) and label it as such.
+The rest of the UI pass (sliders/radios, thermal field serialisation, hero row reorder) can
+follow after publish.
+
+PUB-2 — record these known gaps in the repo README so they are on file, not surprises.
+Do not fix them now:
+  - Token budget (soft 2.2M / hard 15M per site-day) specified, never implemented
+  - Token spend not tracked; router discards body["usage"]
+  - Six agent calls run serially on synchronous urllib inside one tick — the dashboard
+    freezes ~6s early in every run with keys present
+  - Verdicts live in RunManager._completed (memory). After a restart both
+    /runs/{id}/result and /runs/{id}/timeseries return 404. Symmetric, documented
+  - No authentication. reviewer_id is caller-supplied and unverified. This is why the
+    deployment must stay INVITE ONLY
+  - favicon.svg 404 on every page load
+
+Then PUBLISH with: Invite only, feedback widget OFF.
+
+POST-PUBLISH — verify on the live URL and report what you SEE, not what returns 200:
+  1. /healthz returns {"status":"ok","version":"0.1.0"}
+  2. the SPA index renders (if 404, frontend/dist did not survive the build step)
+  3. start demo-alert: does the countdown tick DOWN, or sit static?
+  4. do all four traces draw on the forecast chart?
+  5. does the amber alert banner LATCH? It fires at tick 0 and clears at tick 1 — if the
+     F4 latch did not survive the build you will see it flash and vanish
+  6. does the bridging readout read "0 s — cannot bridge at predicted peak shortfall"?
+  7. flip Agents: OFF mid-run — does dispatch change? It must not
+  8. any console errors beyond the favicon
+Items 3, 5 and 7 have never been verified in a real browser. They cannot be checked from a
+static screenshot or a curl.
