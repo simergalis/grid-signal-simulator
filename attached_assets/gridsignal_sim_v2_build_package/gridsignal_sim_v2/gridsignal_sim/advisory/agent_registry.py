@@ -103,7 +103,8 @@ class AgentRegistry:
         sim_time: float,
         site_id: str = "",
         job_id: str  = "",
-        hardware_profile_ids: frozenset[str] = frozenset(),
+        hardware_profile_ids: frozenset[str] = frozenset(),  # kept for compat
+        hardware_profiles: Optional[dict[str, float]] = None,  # §21.4 O1
     ) -> list[Proposal]:
         """Run all agents that are due and return any proposals generated.
 
@@ -130,6 +131,7 @@ class AgentRegistry:
                     site_id=site_id,
                     job_id=job_id,
                     hardware_profile_ids=hardware_profile_ids,
+                    hardware_profiles=hardware_profiles,
                 )
                 if p is not None:
                     proposals.append(p)

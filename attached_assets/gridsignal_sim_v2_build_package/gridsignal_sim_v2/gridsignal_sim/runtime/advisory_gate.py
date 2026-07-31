@@ -55,7 +55,9 @@ VALID_PROPOSAL_KINDS: frozenset[str] = frozenset({
     "bess_reserve_adjust",
     "turbine_ramp_rate",
     "load_defer",
-    "calibration",        # Step 13 — CalibrationAgent (§21.6); TC-57
+    "calibration",    # Step 13 — CalibrationAgent (§21.6); TC-57
+    "reservation",    # Step 14 — ProcurementAgent (§24.3); TC-52
+                      # ReservationProposal: NEVER autonomous at any tier
 })
 
 
@@ -130,6 +132,9 @@ class Proposal:
     evidence_digest:      str  = ""
     generated_by:         str  = "model"    # "model" | "fallback"
     requires_confirmation: bool = True       # TC-32, TC-57
+    # O2: reviewer identity recorded when accepted (Step 13 correction).
+    reviewer_id:          str  = ""
+    accepted_at_sim_time: Optional[float] = None
 
     @property
     def is_terminal(self) -> bool:
@@ -227,8 +232,20 @@ class AdvisoryGate:
                 newly_expired.append(p)
         return newly_expired
 
-    def accept(self, proposal_id: str) -> None:
-        """Transition proposal to ACCEPTED.  Raises if terminal or not found."""
+    def accept(
+        self,
+        proposal_id: str,
+        *,
+        reviewer_id: str = "",
+        accepted_at_sim_time: Optional[float] = None,
+    ) -> None:
+        """Transition proposal to ACCEPTED.  Raises if terminal or not found.
+
+        reviewer_id and accepted_at_sim_time are recorded for the O2 audit
+        trail.  Accepting a proposal does NOT alter dispatch in this step —
+        nothing in the control plane reads accepted proposals yet.  TC-48
+        confirms this: dispatch hash is identical before and after acceptance.
+        """
         p = self._get_or_raise(proposal_id)
         if p.is_terminal:
             raise ValueError(
@@ -236,6 +253,8 @@ class AdvisoryGate:
                 f"cannot accept."
             )
         p.state = ProposalState.ACCEPTED
+        p.reviewer_id = reviewer_id
+        p.accepted_at_sim_time = accepted_at_sim_time
 
     def reject(self, proposal_id: str, reason: str = "") -> None:
         """Transition proposal to REJECTED (reviewer decision).  Raises if terminal."""

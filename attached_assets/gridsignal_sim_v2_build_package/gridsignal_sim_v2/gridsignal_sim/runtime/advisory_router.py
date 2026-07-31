@@ -153,6 +153,11 @@ class AdvisoryRouter:
                 {"role": "user",    "content": user_message},
             ],
             "max_tokens": _MAX_TOKENS,
+            # temperature=0.0 reduces output variance but does NOT make a
+            # hosted model deterministic or reproducible — most vendors document
+            # this explicitly.  TC-48 holds because proposals are never actioned
+            # (the architectural guarantee), not because model output is
+            # reproducible.  Do not rely on temperature for replay fidelity.
             "temperature": 0.0,
         }).encode()
         req = urllib.request.Request(
@@ -178,6 +183,9 @@ class AdvisoryRouter:
         payload = json.dumps({
             "model": _ANTHROPIC_MODEL,
             "max_tokens": _MAX_TOKENS,
+            # temperature=0.0: reduces variance, does NOT guarantee determinism
+            # on hosted Anthropic endpoints.  TC-48 is architectural, not model-based.
+            "temperature": 0.0,
             "system": system_prompt,
             "messages": [{"role": "user", "content": user_message}],
         }).encode()

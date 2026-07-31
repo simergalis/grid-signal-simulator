@@ -28,12 +28,14 @@ import { AlertDock }         from './components/AlertDock'
 import { RunControlBar }     from './components/RunControlBar'
 import { ScenarioBuilder }   from './components/ScenarioBuilder'
 import { ResultsScreen }     from './components/ResultsScreen'
-import { ProposalsPage }     from './components/ProposalsPage'
+import { ProposalsPage }          from './components/ProposalsPage'
+import { NetworkTelemetryPage }  from './components/NetworkTelemetryPage'
+import { ProcurementPage }       from './components/ProcurementPage'
 import { useTickStore }      from './store/tickStore'
 import { useScenarioStore }  from './store/scenarioStore'
 import { useTickStream }     from './ws/useTickStream'
 
-type PageView = 'overview' | 'proposals'
+type PageView = 'overview' | 'proposals' | 'procurement' | 'network'
 
 const FRAME_INTERVAL_MS = 250   // 4 Hz render loop
 
@@ -134,8 +136,10 @@ export default function App() {
       {/* Page navigation tabs */}
       <div className="flex gap-px border-b border-border bg-border flex-shrink-0">
         {([
-          ['overview',   'Overview'],
-          ['proposals',  'Proposals & Learning'],
+          ['overview',    'Overview'],
+          ['proposals',   'Proposals & Learning'],
+          ['procurement', 'Grid & Procurement'],
+          ['network',     'Network Telemetry'],
         ] as const).map(([page, label]) => (
           <button
             key={page}
@@ -174,7 +178,7 @@ export default function App() {
             <AlertDock />
           </div>
         </main>
-      ) : (
+      ) : currentPage === 'proposals' ? (
         /* §19.10 Proposals & Learning page */
         <main className="flex-1 overflow-hidden">
           <ProposalsPage
@@ -182,6 +186,16 @@ export default function App() {
             agentsEnabled={agentsEnabled}
             onToggleAgents={handleToggleAgents}
           />
+        </main>
+      ) : currentPage === 'procurement' ? (
+        /* §19.8 Grid & Procurement page */
+        <main className="flex-1 overflow-hidden">
+          <ProcurementPage runId={runId ?? lastRunId} />
+        </main>
+      ) : (
+        /* §19.9 Network Telemetry page — read-only by design (TC-74) */
+        <main className="flex-1 overflow-hidden">
+          <NetworkTelemetryPage runId={runId ?? lastRunId} />
         </main>
       )}
 

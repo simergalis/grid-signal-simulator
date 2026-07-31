@@ -103,7 +103,8 @@ class BaseAdvisoryAgent:
         sim_time: float,
         site_id: str = "",
         job_id: str  = "",
-        hardware_profile_ids: frozenset[str] = frozenset(),
+        hardware_profile_ids: frozenset[str] = frozenset(),  # kept for compat
+        hardware_profiles: Optional[dict[str, float]] = None,  # §21.4 O1
     ) -> Optional[Proposal]:
         """Five-phase loop entry point.
 
@@ -118,8 +119,10 @@ class BaseAdvisoryAgent:
             Current wall-clock time (time.monotonic() or injected for testing).
         sim_time:
             Current simulated time in seconds.
-        site_id, job_id, hardware_profile_ids:
+        site_id, job_id, hardware_profile_ids, hardware_profiles:
             Passed to deidentify() (TC-29) and consumed; never stored.
+            hardware_profiles: dict[str, float] (profile_id → rated_kw) adds
+            §21.4 hardware class entries to the evidence window when provided.
         """
         # ── Phase 0: cadence gate ─────────────────────────────────────────
         elapsed = wall_time - self._last_run_wall
@@ -138,6 +141,7 @@ class BaseAdvisoryAgent:
                 site_id=site_id,
                 job_id=job_id,
                 hardware_profile_ids=hardware_profile_ids,
+                hardware_profiles=hardware_profiles,  # §21.4 O1
             )
         except Exception as exc:
             _log.warning("%s: deidentify failed (%s).", self.AGENT_NAME, exc)

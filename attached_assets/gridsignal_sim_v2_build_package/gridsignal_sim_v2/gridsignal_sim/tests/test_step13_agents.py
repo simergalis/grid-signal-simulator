@@ -742,3 +742,198 @@ class TestProvenanceStamping:
         assert p.generated_by == "fallback", (
             "No-key path must produce generated_by='fallback'."
         )
+
+
+# ---------------------------------------------------------------------------
+# O2: Acceptance path — PENDING → ACCEPTED with reviewer; dispatch unchanged
+# ---------------------------------------------------------------------------
+
+class TestO2AcceptancePathDispatchUnchanged:
+    """O2: Accept a proposal through PENDING → ACCEPTED with reviewer identity;
+    assert the dispatch trace hash is STILL identical to the no-agents run.
+
+    Accepting a proposal does not alter dispatch in this step — nothing in the
+    control plane reads accepted proposals yet.  This is worth asserting rather
+    than assuming.  TC-48 proves the same invariant; this test makes it concrete
+    against the acceptance path specifically.
+    """
+
+    def _make_pending(self, gate: AdvisoryGate, **kw) -> Proposal:
+        """Helper: create a PENDING proposal in gate via validate()."""
+        kw.setdefault("created_at_sim_time", 0.0)
+        p = make_proposal(**kw)
+        gate.validate(p)
+        assert p.state == ProposalState.PENDING
+        return p
+
+    def test_accept_records_reviewer_id(self) -> None:
+        """Reviewer identity is stored on the accepted proposal."""
+        gate = AdvisoryGate()
+        p = self._make_pending(
+            gate,
+            kind="curtailment",
+            estimated_impact_mw=3.0,
+            confidence=0.8,
+            reasoning="curtail compute tier A",
+        )
+        gate.accept(p.proposal_id, reviewer_id="lead-ops@example.com",
+                    accepted_at_sim_time=300.0)
+        assert p.state == ProposalState.ACCEPTED
+        assert p.reviewer_id == "lead-ops@example.com"
+        assert p.accepted_at_sim_time == pytest.approx(300.0)
+
+    def test_accept_without_reviewer_allowed(self) -> None:
+        """Reviewer fields are optional — acceptance succeeds without them."""
+        gate = AdvisoryGate()
+        p = self._make_pending(
+            gate,
+            kind="curtailment", estimated_impact_mw=1.0, confidence=0.5,
+            reasoning="test minimal accept",
+        )
+        gate.accept(p.proposal_id)   # no reviewer_id, no accepted_at_sim_time
+        assert p.state == ProposalState.ACCEPTED
+        assert p.reviewer_id == ""
+        assert p.accepted_at_sim_time is None
+
+    def test_accept_terminal_proposal_raises(self) -> None:
+        """Accepting an already-terminal proposal raises ValueError."""
+        gate = AdvisoryGate()
+        p = self._make_pending(
+            gate,
+            kind="curtailment", estimated_impact_mw=1.0, confidence=0.5,
+            reasoning="reject then accept should fail",
+        )
+        gate.reject(p.proposal_id)
+        with pytest.raises(ValueError, match="terminal"):
+            gate.accept(p.proposal_id, reviewer_id="ops@example.com")
+
+    def test_dispatch_hash_unchanged_after_acceptance(self) -> None:
+        """O2 (TC-48 companion): accepting proposals does NOT alter dispatch trace.
+
+        Method:
+          1. Run scenario with no agents → hash_no_agents.
+          2. Run scenario with agents; collect proposals.
+          3. Accept all generated proposals with a reviewer.
+          4. Run ANOTHER scenario with the same registry (proposals now accepted).
+          5. Compare all three dispatch hashes — they must be identical.
+        """
+        hash_no_agents, _ = asyncio.run(_run_scenario(registry=None))
+
+        # Run with agents; accept every proposal.
+        gate = AdvisoryGate()
+        router = _DeterministicRouter()
+        registry = AgentRegistry(gate=gate, router=router, enabled=True)
+        hash_with_agents, _ = asyncio.run(_run_scenario(registry=registry))
+
+        all_proposals = registry.all_proposals()
+        assert len(all_proposals) > 0, "O2: no proposals generated — test is vacuous."
+
+        for p in list(all_proposals):
+            if not p.is_terminal:
+                gate.accept(p.proposal_id,
+                            reviewer_id="ci-reviewer@example.com",
+                            accepted_at_sim_time=300.0)
+
+        accepted = [p for p in registry.all_proposals()
+                    if p.state == ProposalState.ACCEPTED]
+        assert len(accepted) > 0, "O2: no proposals reached ACCEPTED state."
+
+        # Run a THIRD scenario with the same registry (accepted proposals in gate).
+        hash_after_acceptance, _ = asyncio.run(_run_scenario(registry=registry))
+
+        assert hash_no_agents == hash_with_agents == hash_after_acceptance, (
+            "O2 FAIL: dispatch trace changed after proposal acceptance.\n"
+            f"  no_agents:        {hash_no_agents}\n"
+            f"  with_agents:      {hash_with_agents}\n"
+            f"  after_acceptance: {hash_after_acceptance}\n"
+            "Accepting proposals must NEVER alter dispatch in this step."
+        )
+
+    def test_accepted_proposals_do_not_appear_in_pending(self) -> None:
+        """ACCEPTED proposals are removed from the pending set."""
+        gate = AdvisoryGate()
+        p = make_proposal(
+            kind="calibration", estimated_impact_mw=0.5, confidence=0.6,
+            reasoning="calibration proposal", created_at_sim_time=0.0,
+        )
+        gate.validate(p)
+        assert p in gate.pending_proposals()
+        gate.accept(p.proposal_id, reviewer_id="calib-reviewer@example.com")
+        assert p not in gate.pending_proposals()
+
+    def test_o2_hardware_profile_in_evidence_window(self) -> None:
+        """O1: deidentify() with hardware_profiles produces §21.4 class entries."""
+        from core.deident import deidentify, assert_no_pii, HardwareClassEntry
+        ticks = _make_ticks(20)
+        hw_profiles = {"enterprise_8gpu_air": 10.2, "nextgen_rack_liquid": 126.0}
+        window = deidentify(
+            ticks,
+            site_id=SITE_ID,
+            job_id=JOB_ID,
+            hardware_profiles=hw_profiles,
+        )
+        # §21.4: hardware_classes is non-empty when profiles provided.
+        assert len(window.hardware_classes) == 2, (
+            f"O1: expected 2 hardware class entries, got {len(window.hardware_classes)}"
+        )
+        # class_index must be a randomised letter label, NOT the SKU name.
+        for entry in window.hardware_classes:
+            assert entry.class_index.startswith("profile_"), (
+                f"O1: class_index must start with 'profile_'; got {entry.class_index!r}"
+            )
+            assert "enterprise" not in entry.class_index.lower(), (
+                f"O1: SKU name leaked into class_index: {entry.class_index!r}"
+            )
+            assert "nextgen" not in entry.class_index.lower()
+            assert entry.rated_kw_per_unit > 0
+
+    def test_o1_hardware_classes_not_stable_across_calls(self) -> None:
+        """O1: class_index assignment is randomised per deidentify() call — not stable."""
+        from core.deident import deidentify
+        ticks = _make_ticks(10)
+        hw = {"enterprise_8gpu_air": 10.2, "nextgen_rack_liquid": 126.0}
+        # Make many calls; at least one pair of results should differ in ordering.
+        results = []
+        for _ in range(20):
+            w = deidentify(ticks, site_id=SITE_ID, job_id=JOB_ID, hardware_profiles=hw)
+            mapping = {e.rated_kw_per_unit: e.class_index for e in w.hardware_classes}
+            results.append(mapping)
+        # If all 20 results were identical, the shuffle is not working.
+        unique_mappings = {str(sorted(m.items())) for m in results}
+        assert len(unique_mappings) > 1, (
+            "O1: hardware class indices should not be stable across calls — "
+            "the same SKU must not always get the same letter."
+        )
+
+    def test_o1_no_pii_in_wire_with_hardware_profiles(self) -> None:
+        """O1 + TC-29: hardware_profiles provided → class entries in window; no PII in wire."""
+        from core.deident import deidentify, assert_no_pii
+        ticks = _make_ticks(20)
+        hw = {"enterprise_8gpu_air": 10.2}
+        window = deidentify(
+            ticks, site_id=SITE_ID, job_id=JOB_ID, hardware_profiles=hw,
+        )
+        # TC-29: no PII in the serialised wire.
+        assert_no_pii(
+            window, site_id=SITE_ID, job_id=JOB_ID, hardware_profiles=hw,
+        )
+        # Also verify that "enterprise" (part of SKU) is NOT in the wire.
+        import dataclasses, json
+        wire = json.dumps(dataclasses.asdict(window))
+        assert "enterprise" not in wire.lower(), (
+            "O1 TC-29: SKU fragment 'enterprise' found in serialised EvidenceWindow."
+        )
+
+    def test_o3_temperature_comment_present(self) -> None:
+        """O3: advisory_router.py must document that temperature=0.0 does NOT guarantee
+        determinism — TC-48 is architectural, not model-based."""
+        import inspect
+        from runtime import advisory_router
+        source = inspect.getsource(advisory_router)
+        assert "does NOT" in source or "does not" in source, (
+            "O3: advisory_router.py must explicitly state that temperature=0.0 "
+            "does not guarantee determinism on hosted models."
+        )
+        assert "TC-48" in source, (
+            "O3: advisory_router.py should reference TC-48 near the temperature setting."
+        )
