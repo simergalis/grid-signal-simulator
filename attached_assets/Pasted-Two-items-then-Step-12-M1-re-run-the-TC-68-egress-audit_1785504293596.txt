@@ -1,0 +1,37 @@
+Two items, then Step 12.
+
+M1 — re-run the TC-68 egress audit on demo-20mw (1900 nodes, real load, BESS and turbine both
+active), not an empty scenario. Inject the fast shed and the open transition at the same points.
+Report the same five counts plus the total allowed-command count. Zero protection commands
+across a run where the dispatch path is fully exercised is the assertion; zero across a run
+where nothing dispatched is not.
+
+M2 — record K1's actual scope in the source. select_candidates() runs every tick but orders
+candidates produced by decisions already made; it does not determine dispatch. That is correct
+for a deterministic-only control plane, and it becomes load-bearing in Step 12 when agents
+publish competing candidates for the same shortfall. Put that in the function docstring so the
+next reader does not assume selection drives dispatch today.
+
+Then STEP 12 from v2.2 — advisory scaffolding. Stop after it.
+
+Build order matters and is not negotiable: deident.py FIRST, so no model client can predate the
+egress filter. Then router, then gate, then principal.
+
+The single most important acceptance criterion is the one needing no agents at all: with both
+MISTRAL_API_KEY and ANTHROPIC_API_KEY absent, the entire application must run as a deterministic
+simulator with no agents and NO ERRORS. Verify it explicitly and report it. That is LP-1
+exercised through configuration rather than failure, and it is the fastest smoke test in the
+project.
+
+The de-identifier is also the aggregation layer — raw series downsampled to at most 60 bins
+carrying min/mean/max plus summary statistics and flagged anomalies, targeting ~1500 input
+tokens per evidence window. Not raw samples.
+
+Gates: TC-29 (no site_id, job_id, customer identifier, or hardware SKU name in any outbound
+request body — capture at the wire, not the call site), TC-30 (out-of-bounds proposal
+auto-rejected at generation, never reaching a reviewer).
+
+Hold questions apply to the gate: what bounds a proposal's lifetime, what makes a state
+terminal, what happens if the reviewing event never arrives.
+
+Report the full eight-gate set plus the keys-absent result.

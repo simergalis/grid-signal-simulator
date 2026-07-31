@@ -638,6 +638,25 @@ def select_candidates(
 
     Same-kind candidates are ranked by their individual candidate_ids and
     share that kind's ladder position; they are NOT dropped.
+
+    ── K1 scope note (Step 11) ────────────────────────────────────────────
+    select_candidates() runs every tick but ORDERS candidates produced by
+    decisions already made; it does not determine dispatch.  Turbine ramp
+    and BESS shortfall coverage both complete before this function is called.
+    The unified pool that arrives here is the *record* of what was dispatched
+    (arbitrator candidates) plus what the curtailment ladder proposes; this
+    function ranks and prunes that record for attribution and TickResult
+    population.  Dispatch is already done.
+
+    This is correct for a deterministic-only control plane.  It becomes
+    LOAD-BEARING in Step 12: advisory agents publish competing CandidateResponse
+    entries for the same shortfall, and the §26.4 total order is the
+    arbitration rule that chooses among them before any physical action is
+    taken.  At that point the function transitions from attribution bookkeeping
+    to the actual dispatch decision point.  The docstring, the TC-49 permutation
+    test, and the requires_confirmation contract all remain intact — they are
+    written for Step 12, not Step 11.
+    ── end K1 scope note ──────────────────────────────────────────────────
     """
     if gap_mw <= 1e-9:
         return []

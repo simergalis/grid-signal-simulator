@@ -48,7 +48,14 @@ description: Location, four verification commands, and status of all completed i
 **Demo scenario alerts_seen (stable):**
 - demo-20mw: False, demo-alert: True, demo-5mw: False, demo-baseline: False
 
-**Gate baseline at Step 11 completion:**
+**Step 12 added:**
+- core/deident.py (EvidenceWindow, deidentify(), assert_no_pii() — TC-29 egress filter)
+- runtime/advisory_gate.py (AdvisoryGate, Proposal, ProposalState, make_proposal — TC-30 + lifecycle)
+- runtime/advisory_router.py (AdvisoryRouter, LP-1 short-circuit, Mistral/Anthropic HTTP calls)
+- runtime/advisory_principal.py (AdvisoryPrincipal, orchestration, tick() expiry loop)
+- tests/test_step12_advisory.py (43 new tests: TC-29, TC-30, LP-1, hold questions, structure)
+
+**Gate baseline at Step 12 completion:**
 - pytest: 217 passed
 - plane separation: CLEAN (9 core/ + 7 api/)
 - tsc: 0 errors
