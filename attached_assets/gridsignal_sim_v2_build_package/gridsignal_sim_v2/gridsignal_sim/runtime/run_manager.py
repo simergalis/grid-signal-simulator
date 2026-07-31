@@ -31,7 +31,7 @@ import logging
 import time as _time_module
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Awaitable, Callable, Optional, Protocol
+from typing import Any, Awaitable, Callable, Optional, Protocol
 
 from core.models import TickResult, WorkloadSignal
 from core.sim_clock import SimClock
@@ -39,6 +39,14 @@ from core.simulation_core import SimulationState, evaluate_tick
 from core._plane_guard import _EVALUATE_TICK_PERMITTED
 
 logger = logging.getLogger("gridsignal.run_manager")
+
+# Maximum number of recent TickResult objects kept in RunContext.tick_history.
+# 120 ticks × 5 s = 10 min of simulated history — enough for all six agents.
+_TICK_HISTORY_MAXLEN: int = 120
+
+# Inlet temperature bounds (PreStagingConfig defaults, PROTO-10).
+_INLET_LO_C: float = 18.0
+_INLET_HI_C: float = 24.0
 
 
 # ---------------------------------------------------------------------------
@@ -235,6 +243,26 @@ class RunContext:
     scenario_name: str = ""
     scenario_id: Optional[str] = None
 
+    # W1 — advisory, telemetry, procurement wiring (all Optional so existing
+    # tests that call build_run_context() directly are unaffected).
+    # Types are Any to avoid circular runtime/ → advisory/ imports at module
+    # load time; the concrete types are instantiated in scenario_factory.py.
+    registry: Optional[Any] = None            # AgentRegistry
+    tick_history: list = field(default_factory=list)  # recent TickResults for agents
+
+    telemetry_ingestor: Optional[Any] = None  # NetworkTelemetryIngestor
+    corroborator: Optional[Any] = None        # FabricCorroborator
+
+    price_curve: Optional[Any] = None         # SyntheticPriceCurve
+    grid_capacity: list = field(default_factory=list)  # list[GridCapacity]
+
+    # Thermal state — updated each tick by _update_thermal_state().
+    # Preserved on RunContext so the /thermal endpoint can read it at any tick.
+    _inlet_temp_c: float = 21.0          # synthetic inlet temperature (°C)
+    _last_cooling_mw: float = 0.0        # cooling load at previous tick
+    _approach_rate_mw_s: float = 0.0     # MW/s rate of change (positive = rising)
+    _rated_cooling_mw: float = 5.0       # rated cooling capacity; set by factory
+
     def is_complete(self) -> bool:
         return self.cancelled or self.sim_time >= self.end_sim_time
 
@@ -322,6 +350,78 @@ class CompletedRun:
 # RunManager
 # ---------------------------------------------------------------------------
 
+def _ingest_synthetic_telemetry(ctx: RunContext, tick: TickResult) -> None:
+    """W1b: synthesise fabric switch telemetry from the current compute load
+    and pass it through NetworkTelemetryIngestor + FabricCorroborator.
+
+    Scale: 1 MW compute ≈ 200 Mbps RX throughput (CHOSEN — PROTO-W1).
+    At 5+ MW the spine port exceeds the 1 Gbps FabricCorroborator.TRAFFIC_RISE_THRESHOLD_BPS,
+    which triggers fabric-rise detection and allows corroboration to proceed.
+
+    Imports are lazy to avoid a circular runtime/ → advisory/ dependency at
+    module load time (advisory/ imports from runtime/advisory_gate, not run_manager).
+    """
+    from core.network_telemetry import NetworkTelemetry, ClockDiscipline  # local — lazy
+
+    rx_bps = max(0.0, tick.p_compute_mw * 200_000_000.0)   # 200 Mbps per MW
+    tx_bps = rx_bps * 0.93
+    t = tick.tick_index  # unique per tick — used for deduplication event_id
+
+    spine = NetworkTelemetry(
+        event_id=f"nt-spine-{t}",
+        switch_id="sw-spine-01",
+        site_id=ctx.sim_state.site.site_id,
+        interface_id="Ethernet1/1",
+        throughput_rx_bps=rx_bps,
+        throughput_tx_bps=tx_bps,
+        error_counters={},
+        optical_power_tx_dbm=-3.2,
+        optical_power_rx_dbm=-5.1,
+        sample_interval_ms=5000.0,
+        timestamp=tick.sim_time_seconds,
+        clock_discipline=ClockDiscipline.PTP,
+        observed_skew_ms=0.4,
+    )
+    leaf = NetworkTelemetry(
+        event_id=f"nt-leaf-{t}",
+        switch_id="sw-leaf-01",
+        site_id=ctx.sim_state.site.site_id,
+        interface_id="Ethernet1/5",
+        throughput_rx_bps=rx_bps * 0.38,
+        throughput_tx_bps=tx_bps * 0.38,
+        error_counters={},
+        optical_power_tx_dbm=-6.0,
+        optical_power_rx_dbm=-8.2,
+        sample_interval_ms=5000.0,
+        timestamp=tick.sim_time_seconds,
+        clock_discipline=ClockDiscipline.NTP,
+        observed_skew_ms=320.0,
+    )
+    for rec in (spine, leaf):
+        ctx.telemetry_ingestor.ingest(rec, tick.sim_time_seconds)
+        if ctx.corroborator is not None:
+            ctx.corroborator.ingest_telemetry(rec, tick.sim_time_seconds)
+
+
+def _update_thermal_state(ctx: RunContext, tick: TickResult) -> None:
+    """W1c: update the in-RunContext thermal state after each tick.
+
+    Computes approach_rate from the delta between consecutive ticks and
+    tracks a synthetic inlet temperature that rises linearly with cooling
+    utilisation (18°C–24°C band, PROTO-10 defaults).
+    """
+    current_mw = tick.p_cooling_mw
+    ctx._approach_rate_mw_s = (current_mw - ctx._last_cooling_mw) / TICK_INTERVAL_SIM_SECONDS
+    ctx._last_cooling_mw = current_mw
+
+    if ctx._rated_cooling_mw > 0:
+        utilisation = min(1.0, current_mw / ctx._rated_cooling_mw)
+    else:
+        utilisation = 0.5
+    # Temperature rises to 85% of the comfort band ceiling at full utilisation.
+    ctx._inlet_temp_c = _INLET_LO_C + utilisation * (_INLET_HI_C - _INLET_LO_C) * 0.85
+
+
 class RunManager:
     """Owns one asyncio.Task per active run. This is the component that
     satisfies the >=5-concurrent-users NFR (functional spec Section 11)
@@ -329,6 +429,8 @@ class RunManager:
 
     Step 9: _completed holds finished runs for GET /runs/{id}/result
     and GET /runs/{id}/timeseries.
+    W1: _registries holds AgentRegistry instances preserved after run
+    completion so that GET /proposals/{run_id} works for completed runs.
     """
 
     def __init__(self, ws_hub: WebSocketHub) -> None:
@@ -338,12 +440,26 @@ class RunManager:
         self._run_id_counter = itertools.count(1)
         # Step 9: completed runs stored for results/playback screen.
         self._completed: dict[str, CompletedRun] = {}
+        # W1: advisorry registries preserved post-run for /proposals endpoint.
+        self._registries: dict[str, Any] = {}
 
     def active_run_ids(self) -> list[str]:
         return list(self._contexts.keys())
 
     def get_context(self, run_id: str) -> Optional[RunContext]:
         return self._contexts.get(run_id)
+
+    def get_registry(self, run_id: str) -> Optional[Any]:
+        """Return the AgentRegistry for a run (active or completed).
+
+        Active runs: read from the RunContext directly.
+        Completed runs: read from _registries (preserved in _drive's finally block).
+        Returns None if the run has no registry (test-only contexts) or is unknown.
+        """
+        ctx = self._contexts.get(run_id)
+        if ctx is not None:
+            return ctx.registry
+        return self._registries.get(run_id)
 
     def get_completed(self, run_id: str) -> Optional[CompletedRun]:
         """Return a completed run's data, or None if not found."""
@@ -364,14 +480,58 @@ class RunManager:
             await task  # let _drive's own cleanup (finally block) run
 
     async def _drive(self, ctx: RunContext) -> None:
+        # W1b: pre-register all STARTING events with the corroborator so
+        # fabric traffic rises can be matched against known predicted starts.
+        if ctx.corroborator is not None:
+            for evt in ctx.events:
+                if getattr(evt.event_type, "value", str(evt.event_type)) == "starting":
+                    ctx.corroborator.register_predicted_start(
+                        evt.job_id,
+                        evt.timestamp,
+                    )
+
         try:
             while not ctx.is_complete():
-                tick_result = ctx.step()                          # sync, in-budget (Design Spec 4.3)
-                await ctx.sink.append(tick_result)                  # I/O -- yields to sibling runs
-                await self._ws_hub.broadcast(ctx.run_id, tick_result)  # I/O -- yields to sibling runs
+                tick_result = ctx.step()                           # sync, in-budget (Design Spec 4.3)
+                await ctx.sink.append(tick_result)                 # I/O -- yields to sibling runs
+                await self._ws_hub.broadcast(ctx.run_id, tick_result)  # I/O -- yields
+
+                # ── W1a: advisory agents ──────────────────────────────────
+                # Keep tick_history bounded; agents call run_all() on the
+                # recent window.  TC-48 guarantee: agents write only to the
+                # gate (proposals), never to sim_state, so dispatch is
+                # bit-identical whether agents are on or off.
+                if ctx.registry is not None:
+                    ctx.tick_history.append(tick_result)
+                    if len(ctx.tick_history) > _TICK_HISTORY_MAXLEN:
+                        ctx.tick_history.pop(0)
+                    ctx.registry.tick(tick_result.sim_time_seconds)
+                    _job_id = ctx.events[0].job_id if ctx.events else ""
+                    ctx.registry.run_all(
+                        ctx.tick_history,
+                        wall_time=_time_module.time(),
+                        sim_time=tick_result.sim_time_seconds,
+                        site_id=ctx.sim_state.site.site_id,
+                        job_id=_job_id,
+                    )
+
+                # ── W1b: network telemetry + corroboration ────────────────
+                if ctx.telemetry_ingestor is not None:
+                    _ingest_synthetic_telemetry(ctx, tick_result)
+                if ctx.corroborator is not None:
+                    # checkpoint_states: job_id → state string from TickResult.
+                    # "running" = scheduler confirmed the job started (TC-51).
+                    for _jid, _st in tick_result.checkpoint_states.items():
+                        if _st == "running":
+                            ctx.corroborator.apply_checkpoint_start(
+                                _jid, tick_result.sim_time_seconds
+                            )
+
+                # ── W1c: thermal state ────────────────────────────────────
+                _update_thermal_state(ctx, tick_result)
 
                 sleep_s = ctx.wall_clock_sleep_seconds()
-                await asyncio.sleep(sleep_s if sleep_s > 0 else 0)   # always yield at least once
+                await asyncio.sleep(sleep_s if sleep_s > 0 else 0)  # always yield
         except asyncio.CancelledError:
             logger.info("run %s cancelled mid-flight", ctx.run_id)
             raise
@@ -426,6 +586,10 @@ class RunManager:
                 tick_dicts=tick_dicts,
                 dropped_ticks=dropped,
             )
+
+            # W1: preserve registry so /proposals endpoint works after run ends.
+            if ctx.registry is not None:
+                self._registries[ctx.run_id] = ctx.registry
 
             self._contexts.pop(ctx.run_id, None)
             self._tasks.pop(ctx.run_id, None)

@@ -11,10 +11,14 @@
  *                      it runs against what it costs to own)
  *   • Storage RT:     charge cost + round-trip loss cost
  *
+ * W3: run history fetched from GET /runs/{run_id}/energy-summary (completed runs
+ * only — the endpoint returns 409 for active runs).  Each new run_id arriving
+ * via props is polled until it completes, then added to the run history list.
+ *
  * This page is a what-if surface over actual run history.  It commits nothing.
  * Reservations and capacity changes are proposed via the advisory gate.
  */
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -104,27 +108,8 @@ function _computeCost(
 }
 
 // ---------------------------------------------------------------------------
-// Stub data
+// Asset mix options (what-if parameterisation)
 // ---------------------------------------------------------------------------
-
-const STUB_RUNS: RunHistoryEntry[] = [
-  {
-    run_id: 'run-demo-20mw',
-    label:  'Demo 20 MW (60 ticks)',
-    duration_hours:     0.0833,   // 5 minutes
-    grid_import_mwh:    0.50,
-    generation_mwh:     1.40,
-    storage_charge_mwh: 0.20,
-  },
-  {
-    run_id: 'run-demo-5mw',
-    label:  'Demo 5 MW (60 ticks)',
-    duration_hours:     0.0833,
-    grid_import_mwh:    0.08,
-    generation_mwh:     0.42,
-    storage_charge_mwh: 0.05,
-  },
-]
 
 const ASSET_MIXES: AssetMixSpec[] = [
   { turbine_rated_mw: 20.0, bess_rated_mwh: 4.0,  bess_rated_mw: 4.0,  label: 'Baseline (20 MW turbine + 4 MWh BESS)' },
@@ -137,14 +122,58 @@ const ASSET_MIXES: AssetMixSpec[] = [
 // Component
 // ---------------------------------------------------------------------------
 
-export function ScenarioPlannerPage({ runId: _runId }: ScenarioPlannerPageProps) {
+export function ScenarioPlannerPage({ runId }: ScenarioPlannerPageProps) {
+  // Live run history — fetched from /runs/{run_id}/energy-summary as runs complete.
+  const [runs, setRuns] = useState<RunHistoryEntry[]>([])
+  const [fetchingIds, setFetchingIds] = useState<Set<string>>(new Set())
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
   const [selectedRunIdx, setSelectedRunIdx] = useState(0)
   const [baselineMixIdx, setBaselineMixIdx] = useState(0)
   const [altMixIdx,      setAltMixIdx]      = useState(1)
   const [result, setResult] = useState<ScenarioResult | null>(null)
 
+  // When runId changes, poll energy-summary until the run completes.
+  // (409 = still active; 200 = sealed — add to history.)
+  useEffect(() => {
+    if (!runId) return
+    if (fetchingIds.has(runId)) return
+
+    setFetchingIds(prev => new Set([...prev, runId!]))
+
+    let alive = true
+    async function poll() {
+      try {
+        const r = await fetch(`/runs/${runId}/energy-summary`)
+        if (!alive) return
+        if (r.status === 409) return          // still active — keep polling
+        if (!r.ok) {
+          if (pollRef.current) clearInterval(pollRef.current)
+          return
+        }
+        const entry: RunHistoryEntry = await r.json()
+        setRuns(prev => {
+          if (prev.some(e => e.run_id === entry.run_id)) return prev
+          return [...prev, entry]
+        })
+        if (pollRef.current) clearInterval(pollRef.current)
+      } catch { /* network error — keep polling */ }
+    }
+
+    pollRef.current = setInterval(poll, 3000)
+    poll()   // immediate first attempt
+
+    return () => {
+      alive = false
+      if (pollRef.current) clearInterval(pollRef.current)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [runId])
+
   const runScenario = useCallback(() => {
-    const entry    = STUB_RUNS[selectedRunIdx]
+    if (runs.length === 0) return
+    const idx   = Math.min(selectedRunIdx, runs.length - 1)
+    const entry    = runs[idx]
     const baseline = _computeCost(entry, ASSET_MIXES[baselineMixIdx])
     const alt      = _computeCost(entry, ASSET_MIXES[altMixIdx])
     const delta    = alt.total_cost - baseline.total_cost
@@ -159,7 +188,7 @@ export function ScenarioPlannerPage({ runId: _runId }: ScenarioPlannerPageProps)
       cost_delta_pct:  +deltaPct.toFixed(2),
       grid_fraction_delta: +(alt.grid_fraction - baseline.grid_fraction).toFixed(4),
     })
-  }, [selectedRunIdx, baselineMixIdx, altMixIdx])
+  }, [runs, selectedRunIdx, baselineMixIdx, altMixIdx])
 
   const deltaColour = result
     ? (result.cost_delta < 0 ? '#22c55e' : result.cost_delta > 0 ? '#ef4444' : '#94a3b8')
@@ -184,63 +213,73 @@ export function ScenarioPlannerPage({ runId: _runId }: ScenarioPlannerPageProps)
           Scenario Parameters
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
-          <div>
-            <label style={{ fontSize: '11px', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
-              Run History
-            </label>
-            <select
-              value={selectedRunIdx}
-              onChange={e => setSelectedRunIdx(+e.target.value)}
-              style={{ width: '100%', background: '#0f172a', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '4px', padding: '6px', fontSize: '12px' }}
-            >
-              {STUB_RUNS.map((r, i) => (
-                <option key={r.run_id} value={i}>{r.label}</option>
-              ))}
-            </select>
+        {runs.length === 0 ? (
+          <div style={{ color: '#475569', fontSize: '12px', padding: '8px 0' }}>
+            {runId
+              ? 'Waiting for run to complete — energy summary will appear here.'
+              : 'No completed runs yet. Start and finish a run to unlock scenario planning.'}
           </div>
+        ) : (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+              <div>
+                <label style={{ fontSize: '11px', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+                  Run History ({runs.length} completed)
+                </label>
+                <select
+                  value={Math.min(selectedRunIdx, runs.length - 1)}
+                  onChange={e => setSelectedRunIdx(+e.target.value)}
+                  style={{ width: '100%', background: '#0f172a', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '4px', padding: '6px', fontSize: '12px' }}
+                >
+                  {runs.map((r, i) => (
+                    <option key={r.run_id} value={i}>{r.label}</option>
+                  ))}
+                </select>
+              </div>
 
-          <div>
-            <label style={{ fontSize: '11px', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
-              Baseline Asset Mix
-            </label>
-            <select
-              value={baselineMixIdx}
-              onChange={e => setBaselineMixIdx(+e.target.value)}
-              style={{ width: '100%', background: '#0f172a', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '4px', padding: '6px', fontSize: '12px' }}
+              <div>
+                <label style={{ fontSize: '11px', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+                  Baseline Asset Mix
+                </label>
+                <select
+                  value={baselineMixIdx}
+                  onChange={e => setBaselineMixIdx(+e.target.value)}
+                  style={{ width: '100%', background: '#0f172a', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '4px', padding: '6px', fontSize: '12px' }}
+                >
+                  {ASSET_MIXES.map((m, i) => (
+                    <option key={i} value={i}>{m.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+                  Alternative Asset Mix
+                </label>
+                <select
+                  value={altMixIdx}
+                  onChange={e => setAltMixIdx(+e.target.value)}
+                  style={{ width: '100%', background: '#0f172a', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '4px', padding: '6px', fontSize: '12px' }}
+                >
+                  {ASSET_MIXES.map((m, i) => (
+                    <option key={i} value={i}>{m.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <button
+              onClick={runScenario}
+              style={{
+                padding: '8px 20px', background: '#3b82f6', color: '#fff',
+                border: 'none', borderRadius: '4px', fontSize: '12px', cursor: 'pointer',
+                fontFamily: 'monospace',
+              }}
             >
-              {ASSET_MIXES.map((m, i) => (
-                <option key={i} value={i}>{m.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label style={{ fontSize: '11px', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
-              Alternative Asset Mix
-            </label>
-            <select
-              value={altMixIdx}
-              onChange={e => setAltMixIdx(+e.target.value)}
-              style={{ width: '100%', background: '#0f172a', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '4px', padding: '6px', fontSize: '12px' }}
-            >
-              {ASSET_MIXES.map((m, i) => (
-                <option key={i} value={i}>{m.label}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <button
-          onClick={runScenario}
-          style={{
-            padding: '8px 20px', background: '#3b82f6', color: '#fff',
-            border: 'none', borderRadius: '4px', fontSize: '12px', cursor: 'pointer',
-            fontFamily: 'monospace',
-          }}
-        >
-          Run Scenario →
-        </button>
+              Run Scenario →
+            </button>
+          </>
+        )}
       </div>
 
       {/* ── Result ── */}
@@ -282,7 +321,7 @@ export function ScenarioPlannerPage({ runId: _runId }: ScenarioPlannerPageProps)
           {/* Side-by-side breakdown */}
           <div style={{ background: '#1e293b', borderRadius: '8px', padding: '16px' }}>
             <div style={{ fontSize: '11px', color: '#94a3b8', marginBottom: '12px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-              §21.2 Cost Breakdown
+              §21.2 Cost Breakdown — {result.run_id}
             </div>
 
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
@@ -320,7 +359,7 @@ export function ScenarioPlannerPage({ runId: _runId }: ScenarioPlannerPageProps)
         </>
       )}
 
-      {!result && (
+      {!result && runs.length > 0 && (
         <div style={{ textAlign: 'center', padding: '48px', color: '#475569', fontSize: '14px' }}>
           Select a run and two asset mixes, then click <strong>Run Scenario →</strong>
         </div>

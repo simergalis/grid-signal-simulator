@@ -12,8 +12,11 @@
  *  3. Clock discipline and demotion status (§11.4 — TC-70)
  *  4. Corroboration record — per-job fabric matching (TC-50, TC-51)
  *  5. Quarantine log (TC-72)
+ *
+ * W3: live data from GET /network-telemetry?run_id=... (active runs only;
+ * endpoint returns 409 for completed runs).
  */
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 // ---------------------------------------------------------------------------
 // Types (mirroring core/network_telemetry.py wire shapes)
@@ -61,70 +64,11 @@ interface TelemetryState {
 }
 
 // ---------------------------------------------------------------------------
-// Stub data (until API endpoints are wired)
+// Empty state (no stub data — live API only)
 // ---------------------------------------------------------------------------
 
-function _stubState(): TelemetryState {
-  return {
-    capability: 'enhanced',
-    switches: [
-      {
-        switch_id: 'sw-spine-01', interface_id: 'Ethernet1/1',
-        throughput_rx_mbps: 8420, throughput_tx_mbps: 7890,
-        optical_power_tx_dbm: -3.2, optical_power_rx_dbm: -5.1,
-        clock_discipline: 'ptp', effective_discipline: 'ptp',
-        observed_skew_ms: 0.4, error_count: 0, sample_time_s: 295,
-      },
-      {
-        switch_id: 'sw-leaf-02', interface_id: 'Ethernet1/5',
-        throughput_rx_mbps: 3210, throughput_tx_mbps: 3100,
-        optical_power_tx_dbm: -6.0, optical_power_rx_dbm: -8.2,
-        clock_discipline: 'ptp', effective_discipline: 'ntp',  // demoted TC-70
-        observed_skew_ms: 5.8, error_count: 2, sample_time_s: 295,
-      },
-      {
-        switch_id: 'sw-tor-04', interface_id: 'Ethernet1/12',
-        throughput_rx_mbps: 940, throughput_tx_mbps: 920,
-        optical_power_tx_dbm: -4.8, optical_power_rx_dbm: -7.3,
-        clock_discipline: 'ntp', effective_discipline: 'ntp',
-        observed_skew_ms: 320, error_count: 0, sample_time_s: 290,
-      },
-    ],
-    corroboration: [
-      {
-        job_id: '8c3f1a…',
-        predicted_start_sim_time: 60,
-        result: 'authoritative_start',
-        authoritative_event: 'checkpoint_start',
-        fabric_rise_observed: true,
-        fabric_rise_sim_time: 63,
-      },
-      {
-        job_id: 'd4e72b…',
-        predicted_start_sim_time: 120,
-        result: 'corroborated',
-        authoritative_event: null,
-        fabric_rise_observed: true,
-        fabric_rise_sim_time: 118,
-      },
-      {
-        job_id: 'f9a05c…',
-        predicted_start_sim_time: 180,
-        result: 'missed',
-        authoritative_event: null,
-        fabric_rise_observed: false,
-        fabric_rise_sim_time: null,
-      },
-    ],
-    quarantine: [
-      {
-        event_id: 'nt-q-001',
-        reason: 'optical_power_tx_dbm=15.0 dBm is outside physical range [-40, +10] dBm — likely sensor fault',
-        sim_time: 145,
-      },
-    ],
-    last_updated_s: 295,
-  }
+function _empty(): TelemetryState {
+  return { capability: 'baseline', switches: [], corroboration: [], quarantine: [], last_updated_s: 0 }
 }
 
 // ---------------------------------------------------------------------------
@@ -203,16 +147,56 @@ interface NetworkTelemetryPageProps {
   runId: string | null
 }
 
-export function NetworkTelemetryPage({ runId: _runId }: NetworkTelemetryPageProps) {
-  const [state] = useState<TelemetryState>(_stubState())
+export function NetworkTelemetryPage({ runId }: NetworkTelemetryPageProps) {
+  const [state, setState] = useState<TelemetryState>(_empty())
+  const [status, setStatus] = useState<'idle' | 'loading' | 'live' | 'completed' | 'error'>('idle')
+  const [errorMsg, setErrorMsg] = useState('')
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // In a live implementation this would poll GET /network-telemetry?runId=...
-  // For now, stub data is shown.
+  useEffect(() => {
+    if (!runId) { setState(_empty()); setStatus('idle'); return }
+
+    let alive = true
+    async function fetchTelemetry() {
+      try {
+        const r = await fetch(`/network-telemetry?run_id=${encodeURIComponent(runId!)}`)
+        if (!alive) return
+        if (r.status === 409) {
+          // Run completed — stop polling, keep last state.
+          setStatus('completed')
+          if (pollRef.current) clearInterval(pollRef.current)
+          return
+        }
+        if (!r.ok) { setStatus('error'); setErrorMsg(`HTTP ${r.status}`); return }
+        const data: TelemetryState = await r.json()
+        setState(data)
+        setStatus('live')
+      } catch (e: unknown) {
+        if (alive) { setStatus('error'); setErrorMsg(String(e)) }
+      }
+    }
+
+    setStatus('loading')
+    fetchTelemetry()
+    pollRef.current = setInterval(fetchTelemetry, 2000)
+    return () => {
+      alive = false
+      if (pollRef.current) clearInterval(pollRef.current)
+    }
+  }, [runId])
 
   const maxThroughput = Math.max(
     ...state.switches.flatMap(s => [s.throughput_rx_mbps, s.throughput_tx_mbps]),
     1,
   )
+
+  if (!runId) {
+    return (
+      <div className="h-full flex items-center justify-center text-sm text-text-muted">
+        Start a run to see network telemetry.
+      </div>
+    )
+  }
 
   return (
     <div className="h-full overflow-y-auto p-4 space-y-4 text-sm">
@@ -227,13 +211,22 @@ export function NetworkTelemetryPage({ runId: _runId }: NetworkTelemetryPageProp
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
+          {status === 'loading' && (
+            <span className="text-xs text-text-muted animate-pulse">connecting…</span>
+          )}
+          {status === 'completed' && (
+            <span className="text-xs text-amber-300">run complete</span>
+          )}
+          {status === 'error' && (
+            <span className="text-xs text-red-400">{errorMsg}</span>
+          )}
           <CapabilityBadge tier={state.capability} />
-          <span className="text-xs text-text-muted">t={state.last_updated_s}s</span>
+          <span className="text-xs text-text-muted">t={state.last_updated_s.toFixed(0)}s</span>
         </div>
       </div>
 
       {/* TC-71 warning for BASELINE */}
-      {state.capability === 'baseline' && (
+      {state.capability === 'baseline' && state.switches.length > 0 && (
         <div className="rounded-lg border border-amber-700/40 bg-amber-900/10 p-3">
           <p className="text-xs text-amber-300">
             <strong>BASELINE capability:</strong> Ingestion continues normally.
@@ -253,53 +246,64 @@ export function NetworkTelemetryPage({ runId: _runId }: NetworkTelemetryPageProp
         </div>
       )}
 
+      {/* Empty state */}
+      {status !== 'loading' && state.switches.length === 0 && (
+        <p className="text-xs text-text-muted px-2 py-4 text-center">
+          {status === 'completed'
+            ? 'Run completed — telemetry snapshot frozen above.'
+            : 'Waiting for first tick of telemetry data…'}
+        </p>
+      )}
+
       {/* Switch throughput table */}
-      <section className="rounded-lg border border-border bg-surface overflow-hidden">
-        <div className="px-3 py-2 border-b border-border">
-          <h3 className="text-xs font-medium text-text-muted uppercase tracking-wide">
-            Switch Interfaces
-          </h3>
-        </div>
-        <div className="divide-y divide-border">
-          {state.switches.map(sw => (
-            <div key={`${sw.switch_id}:${sw.interface_id}`} className="px-3 py-2.5 space-y-1.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs text-text">{sw.switch_id}</span>
-                  <span className="text-text-muted text-xs">{sw.interface_id}</span>
+      {state.switches.length > 0 && (
+        <section className="rounded-lg border border-border bg-surface overflow-hidden">
+          <div className="px-3 py-2 border-b border-border">
+            <h3 className="text-xs font-medium text-text-muted uppercase tracking-wide">
+              Switch Interfaces
+            </h3>
+          </div>
+          <div className="divide-y divide-border">
+            {state.switches.map(sw => (
+              <div key={`${sw.switch_id}:${sw.interface_id}`} className="px-3 py-2.5 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs text-text">{sw.switch_id}</span>
+                    <span className="text-text-muted text-xs">{sw.interface_id}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <ClockBadge
+                      discipline={sw.clock_discipline}
+                      effective={sw.effective_discipline}
+                      skew={sw.observed_skew_ms}
+                    />
+                    {sw.error_count > 0 && (
+                      <span className="px-1.5 py-0.5 text-xs rounded bg-red-900/40 text-red-400">
+                        {sw.error_count} err
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <ClockBadge
-                    discipline={sw.clock_discipline}
-                    effective={sw.effective_discipline}
-                    skew={sw.observed_skew_ms}
-                  />
-                  {sw.error_count > 0 && (
-                    <span className="px-1.5 py-0.5 text-xs rounded bg-red-900/40 text-red-400">
-                      {sw.error_count} err
-                    </span>
-                  )}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <p className="text-xs text-text-muted mb-0.5">RX</p>
+                    <ThroughputBar value={sw.throughput_rx_mbps} max={maxThroughput} />
+                  </div>
+                  <div>
+                    <p className="text-xs text-text-muted mb-0.5">TX</p>
+                    <ThroughputBar value={sw.throughput_tx_mbps} max={maxThroughput} />
+                  </div>
+                </div>
+                <div className="flex gap-4 text-xs text-text-muted">
+                  <span>TX opt: <span className="text-text">{sw.optical_power_tx_dbm.toFixed(1)} dBm</span></span>
+                  <span>RX opt: <span className="text-text">{sw.optical_power_rx_dbm.toFixed(1)} dBm</span></span>
+                  <span>Skew: <span className="text-text">{sw.observed_skew_ms.toFixed(1)} ms</span></span>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <p className="text-xs text-text-muted mb-0.5">RX</p>
-                  <ThroughputBar value={sw.throughput_rx_mbps} max={maxThroughput} />
-                </div>
-                <div>
-                  <p className="text-xs text-text-muted mb-0.5">TX</p>
-                  <ThroughputBar value={sw.throughput_tx_mbps} max={maxThroughput} />
-                </div>
-              </div>
-              <div className="flex gap-4 text-xs text-text-muted">
-                <span>TX opt: <span className="text-text">{sw.optical_power_tx_dbm.toFixed(1)} dBm</span></span>
-                <span>RX opt: <span className="text-text">{sw.optical_power_rx_dbm.toFixed(1)} dBm</span></span>
-                <span>Skew: <span className="text-text">{sw.observed_skew_ms.toFixed(1)} ms</span></span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Corroboration record */}
       <section className="rounded-lg border border-border bg-surface overflow-hidden">

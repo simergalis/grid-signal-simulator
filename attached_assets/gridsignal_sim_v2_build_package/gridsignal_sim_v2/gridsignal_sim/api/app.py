@@ -50,6 +50,7 @@ from runtime.run_manager import RunManager, WebSocketHub
 from api.routes import runs, ws as ws_routes
 from api.routes.scenarios import build_seeded_store
 from api.routes import scenarios as scenarios_routes
+from api.routes import advisory as advisory_routes
 
 # §10.2: built frontend lives two levels above this file (api/ → gridsignal_sim/ → gridsignal_sim_v2/)
 #   __file__ = .../gridsignal_sim_v2/gridsignal_sim/api/app.py
@@ -109,6 +110,7 @@ def create_app() -> FastAPI:
     application.include_router(scenarios_routes.router)
     application.include_router(runs.router)
     application.include_router(ws_routes.router)
+    application.include_router(advisory_routes.router)  # W2
 
     # ── §10.2 static frontend (Step 16) ─────────────────────────────────
     # Mount the pre-built React SPA at the root.  StaticFiles(html=True)

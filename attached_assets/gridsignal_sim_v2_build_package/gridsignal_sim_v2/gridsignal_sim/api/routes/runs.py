@@ -283,6 +283,71 @@ async def get_run_status(
     return RunStatusResponse(run_id=run_id, active=not ctx.is_complete())
 
 
+@router.get(
+    "/{run_id}/energy-summary",
+    summary="Aggregate energy totals for the Scenario Planner (§18.5 FR-4.4)",
+    responses={
+        404: {"description": "Run not found"},
+        409: {"description": "Run is still active — timeseries not yet sealed"},
+    },
+)
+async def get_energy_summary(
+    run_id: str,
+    manager: RunManager = Depends(_run_manager),
+) -> dict:
+    """Compute aggregate energy totals from the completed tick timeseries.
+
+    Used by ScenarioPlannerPage to replace stub run history with real per-run
+    energy accounting (§18.5 FR-4.4 / §21.2 cost model).
+
+    Derivation (dt = 5.0 s = TICK_INTERVAL_SIM_SECONDS):
+        generation_mwh     = Σ turbine_output_mw × dt / 3600
+        grid_import_mwh    = Σ max(0, net_demand − turbine − bess) × dt / 3600
+        storage_charge_mwh = Σ bess_output_mw × dt / (3600 × RT_EFF)
+                             (discharge / round_trip_efficiency = cost-model proxy
+                              for energy put INTO the BESS; actual charge is not
+                              tracked in TickResult)
+    """
+    if manager.get_context(run_id) is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Run {run_id!r} is still active; energy summary is not yet available.",
+        )
+    completed = manager.get_completed(run_id)
+    if completed is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Run {run_id!r} not found.",
+        )
+
+    DT_H = 5.0 / 3600.0          # one tick = 5 sim-seconds → hours
+    RT_EFF = 0.88                  # §21.2 round-trip efficiency
+
+    generation_mwh     = 0.0
+    grid_import_mwh    = 0.0
+    discharge_mwh      = 0.0
+
+    for r in completed.tick_dicts:
+        t = r.get("turbine_output_mw", 0.0)
+        b = r.get("bess_output_mw",    0.0)
+        n = r.get("net_demand_mw",     0.0)
+        generation_mwh  += t * DT_H
+        grid_import_mwh += max(0.0, n - t - b) * DT_H
+        discharge_mwh   += b * DT_H
+
+    storage_charge_mwh = discharge_mwh / RT_EFF if RT_EFF > 0 else discharge_mwh
+    duration_hours     = len(completed.tick_dicts) * DT_H
+
+    return {
+        "run_id":               run_id,
+        "label":                completed.scenario_name or run_id,
+        "duration_hours":       round(duration_hours,       4),
+        "grid_import_mwh":      round(grid_import_mwh,      4),
+        "generation_mwh":       round(generation_mwh,       4),
+        "storage_charge_mwh":   round(storage_charge_mwh,   4),
+    }
+
+
 @router.delete(
     "/{run_id}",
     status_code=status.HTTP_204_NO_CONTENT,

@@ -42,6 +42,14 @@ from pydantic import TypeAdapter
 from runtime.run_manager import InMemoryTimeseriesSink, RunContext
 from runtime.verdict import AssertionSpec as _AssertionSpec
 
+# W1 — advisory, telemetry, and procurement wiring.
+# Imported here (runtime/) not in run_manager (would create circular import
+# because advisory/ imports from runtime/advisory_gate).
+from advisory.agent_registry import AgentRegistry
+from core.network_telemetry import NetworkTelemetryIngestor
+from core.corroboration import FabricCorroborator
+from core.procurement import GridCapacity, CapacityType, SyntheticPriceCurve
+
 # TypeAdapter for deserialising assertion specs from plain dicts in
 # build_run_context_from_spec.  Created once at module level (not per-call)
 # to avoid repeated schema compilation overhead.
@@ -141,6 +149,19 @@ def build_run_context(
         )
     ]
 
+    # ── W1 advisory, telemetry, procurement wiring ────────────────────────
+    # Rated cooling MW: alpha_max (fraction of compute) × peak compute MW.
+    _peak_compute_mw = node_count * _solar_profile.rated_kw / 1000.0
+    _rated_cooling_mw = site.alpha_max * _peak_compute_mw
+
+    # Grid capacity scaled to turbine fleet (static for the demo run).
+    _total_turbine_mw = turbine_rated_mw * turbine_count
+    _grid_cap = [
+        GridCapacity(CapacityType.FIRM,     available_mw=_total_turbine_mw * 0.80, price_per_mwh=48.0, t_reserve_s=0.0),
+        GridCapacity(CapacityType.RESERVED, available_mw=_total_turbine_mw * 0.40, price_per_mwh=62.0, t_reserve_s=300.0),
+        GridCapacity(CapacityType.NON_FIRM, available_mw=_total_turbine_mw * 0.15, price_per_mwh=198.0, t_reserve_s=0.0),
+    ]
+
     return RunContext(
         run_id=run_id,
         sim_state=sim_state,
@@ -149,6 +170,13 @@ def build_run_context(
         end_sim_time=end_sim_time,
         playback_speed=playback_speed,
         sink=InMemoryTimeseriesSink(),
+        # W1 fields
+        registry=AgentRegistry(enabled=True),
+        telemetry_ingestor=NetworkTelemetryIngestor(),
+        corroborator=FabricCorroborator(),
+        price_curve=SyntheticPriceCurve(seed=42),
+        grid_capacity=_grid_cap,
+        _rated_cooling_mw=_rated_cooling_mw,
     )
 
 
@@ -241,6 +269,18 @@ def build_load_test_context(
         for i in range(gpu_module_count)
     ]
 
+    # ── W1 advisory, telemetry, procurement wiring (load-test context) ──────
+    _lt_total_turbine_mw = 10.0 * turbine_count   # default rated_mw per turbine
+    _lt_peak_compute_mw  = (
+        gpu_module_count * nodes_per_gpu_module * _lt_profile.rated_kw / 1000.0
+    )
+    _lt_rated_cooling_mw = site.alpha_max * _lt_peak_compute_mw
+    _lt_grid_cap = [
+        GridCapacity(CapacityType.FIRM,     available_mw=_lt_total_turbine_mw * 0.80, price_per_mwh=48.0, t_reserve_s=0.0),
+        GridCapacity(CapacityType.RESERVED, available_mw=_lt_total_turbine_mw * 0.40, price_per_mwh=62.0, t_reserve_s=300.0),
+        GridCapacity(CapacityType.NON_FIRM, available_mw=_lt_total_turbine_mw * 0.15, price_per_mwh=198.0, t_reserve_s=0.0),
+    ]
+
     return RunContext(
         run_id=run_id,
         sim_state=sim_state,
@@ -249,6 +289,13 @@ def build_load_test_context(
         end_sim_time=end_sim_time,
         playback_speed=playback_speed,
         sink=InMemoryTimeseriesSink(),
+        # W1 fields
+        registry=AgentRegistry(enabled=True),
+        telemetry_ingestor=NetworkTelemetryIngestor(),
+        corroborator=FabricCorroborator(),
+        price_curve=SyntheticPriceCurve(seed=42),
+        grid_capacity=_lt_grid_cap,
+        _rated_cooling_mw=_lt_rated_cooling_mw,
     )
 
 
@@ -382,6 +429,19 @@ def build_run_context_from_spec(
     raw_assertions = spec_data.get("assertions", [])
     assertions = [_assertion_adapter.validate_python(a) for a in raw_assertions]
 
+    # ── W1 advisory, telemetry, procurement wiring (spec path) ───────────
+    _spec_turbine_mws = [float(t.get("rated_mw", 10.0)) for t in spec_data.get("turbine_units", [])]
+    _spec_total_turbine_mw = sum(_spec_turbine_mws) if _spec_turbine_mws else 10.0
+    _spec_peak_compute_mw  = float(spec_data.get("solar_rated_mw", 0.0)) / 0.25  # reverse PROTO-7
+    if _spec_peak_compute_mw <= 0:
+        _spec_peak_compute_mw = 20.0  # safe fallback when solar is absent
+    _spec_rated_cooling_mw = site.alpha_max * _spec_peak_compute_mw
+    _spec_grid_cap = [
+        GridCapacity(CapacityType.FIRM,     available_mw=_spec_total_turbine_mw * 0.80, price_per_mwh=48.0, t_reserve_s=0.0),
+        GridCapacity(CapacityType.RESERVED, available_mw=_spec_total_turbine_mw * 0.40, price_per_mwh=62.0, t_reserve_s=300.0),
+        GridCapacity(CapacityType.NON_FIRM, available_mw=_spec_total_turbine_mw * 0.15, price_per_mwh=198.0, t_reserve_s=0.0),
+    ]
+
     # ── RunContext ────────────────────────────────────────────────────────
     return RunContext(
         run_id=run_id,
@@ -393,4 +453,11 @@ def build_run_context_from_spec(
         sink=InMemoryTimeseriesSink(),
         assertions=assertions,
         scenario_name=str(spec_data.get("name", "")),
+        # W1 fields
+        registry=AgentRegistry(enabled=True),
+        telemetry_ingestor=NetworkTelemetryIngestor(),
+        corroborator=FabricCorroborator(),
+        price_curve=SyntheticPriceCurve(seed=42),
+        grid_capacity=_spec_grid_cap,
+        _rated_cooling_mw=_spec_rated_cooling_mw,
     )

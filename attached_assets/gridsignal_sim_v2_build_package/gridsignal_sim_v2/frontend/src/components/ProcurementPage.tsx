@@ -27,7 +27,7 @@
  *  2. Synthetic price curve chart
  *  3. Pending ReservationProposals (TC-52: authorization only, never autonomous)
  */
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -70,38 +70,41 @@ interface ProcurementState {
 }
 
 // ---------------------------------------------------------------------------
-// Stub data
+// Empty / loading state (no stub data — live API only)
 // ---------------------------------------------------------------------------
 
-function _stubState(): ProcurementState {
-  const curve: PricePoint[] = Array.from({ length: 12 }, (_, i) => {
-    const t = i * 3600
-    const price = 55 + 22 * Math.sin(2 * Math.PI * t / 86400) + 8 * Math.sin(2 * Math.PI * t / 3600)
-    return { sim_time: t, price_per_mwh: Math.round(price * 100) / 100 }
-  })
+function _emptyState(): ProcurementState {
   return {
-    reserve_gap_mw: 4.5,
-    firm_mw: 15.0,
-    reserved_mw: 8.0,
-    non_firm_mw: 3.0,
-    served_load_mw: 23.9,
-    capacity: [
-      { capacity_type: 'firm',     available_mw: 15.0, price_per_mwh: 48.0,  t_reserve_s: 0   },
-      { capacity_type: 'reserved', available_mw: 8.0,  price_per_mwh: 62.0,  t_reserve_s: 300 },
-      { capacity_type: 'non_firm', available_mw: 3.0,  price_per_mwh: 198.0, t_reserve_s: 0   },
-    ],
-    price_curve: curve,
-    pending_reservations: [
-      {
-        proposal_id: 'res-001',
-        capacity_type: 'reserved',
-        requested_mw: 5.0,
-        estimated_cost: 62.0,
-        t_reserve_s: 300,
-        rationale: 'Predicted 6 MW shortfall in 5 min; BESS reserve insufficient for full bridging.',
-        requires_confirmation: true,
-      },
-    ],
+    reserve_gap_mw: 0, firm_mw: 0, reserved_mw: 0,
+    non_firm_mw: 0, served_load_mw: 0,
+    capacity: [], price_curve: [], pending_reservations: [],
+  }
+}
+
+// Map a raw ProposalOut from /proposals/{run_id} to a PendingReservation.
+// Only proposals with kind ~= 'reservation' and state === 'pending' are shown.
+function _proposalToReservation(
+  p: {
+    proposal_id: string; kind: string; estimated_impact_mw: number
+    state: string; reasoning: string; requires_confirmation: boolean
+    suggested_tier: string | null
+  },
+  capacityPrice: Record<string, number>,
+): PendingReservation | null {
+  if (p.state !== 'pending') return null
+  if (!p.kind.toLowerCase().includes('reserv')) return null
+  const capType: CapacityType =
+    (p.suggested_tier === 'firm' || p.suggested_tier === 'reserved' || p.suggested_tier === 'non_firm')
+      ? p.suggested_tier as CapacityType
+      : 'reserved'
+  return {
+    proposal_id:    p.proposal_id,
+    capacity_type:  capType,
+    requested_mw:   p.estimated_impact_mw,
+    estimated_cost: capacityPrice[capType] ?? 62.0,
+    t_reserve_s:    capType === 'reserved' ? 300 : 0,
+    rationale:      p.reasoning,
+    requires_confirmation: true,
   }
 }
 
@@ -164,7 +167,7 @@ function MiniPriceCurve({ points }: { points: PricePoint[] }) {
 
 interface AuthorizeDialogProps {
   reservation: PendingReservation
-  onConfirm: (id: string) => void
+  onConfirm: (id: string, reviewerId: string) => void
   onCancel:  () => void
 }
 
@@ -249,7 +252,7 @@ function AuthorizeDialog({ reservation, onConfirm, onCancel }: AuthorizeDialogPr
             Cancel
           </button>
           <button
-            onClick={() => onConfirm(reservation.proposal_id)}
+            onClick={() => onConfirm(reservation.proposal_id, reviewer.trim())}
             disabled={!reviewer.trim() || !agreed}
             className="px-3 py-1.5 text-xs rounded bg-amber-600 text-white font-medium
                        hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed
@@ -271,9 +274,71 @@ interface ProcurementPageProps {
   runId: string | null
 }
 
-export function ProcurementPage({ runId: _runId }: ProcurementPageProps) {
-  const [state, setState] = useState<ProcurementState>(_stubState())
+export function ProcurementPage({ runId }: ProcurementPageProps) {
+  const [state, setState] = useState<ProcurementState>(_emptyState())
   const [dialogId, setDialogId] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Poll procurement state + pending proposals while a run is active.
+  useEffect(() => {
+    if (!runId) { setState(_emptyState()); return }
+
+    let alive = true
+    async function fetchAll() {
+      try {
+        const [procR, propR] = await Promise.all([
+          fetch(`/procurement/${runId}`).catch(() => null),
+          fetch(`/proposals/${runId}`).catch(() => null),
+        ])
+        if (!alive) return
+
+        if (!procR || procR.status === 409) {
+          // Run completed — stop polling, keep last state.
+          if (pollRef.current) clearInterval(pollRef.current)
+          return
+        }
+        if (!procR.ok) { setError(`HTTP ${procR.status}`); return }
+
+        const proc = await procR.json()
+        const proposals = propR?.ok ? (await propR.json()).proposals : []
+        const priceByTier: Record<string, number> = {}
+        for (const c of (proc.capacity ?? [])) priceByTier[c.capacity_type] = c.price_per_mwh
+
+        const pendingRes: PendingReservation[] = (proposals as {
+          proposal_id: string; kind: string; estimated_impact_mw: number
+          state: string; reasoning: string; requires_confirmation: boolean
+          suggested_tier: string | null
+        }[])
+          .map(p => _proposalToReservation(p, priceByTier))
+          .filter((x): x is PendingReservation => x !== null)
+
+        setError(null)
+        setLoading(false)
+        setState({
+          reserve_gap_mw:      proc.reserve_gap_mw,
+          firm_mw:             proc.firm_mw,
+          reserved_mw:         proc.reserved_mw,
+          non_firm_mw:         proc.non_firm_mw,
+          served_load_mw:      proc.served_load_mw,
+          capacity:            proc.capacity,
+          price_curve:         proc.price_curve,
+          pending_reservations: pendingRes,
+        })
+      } catch (e: unknown) {
+        if (alive) setError(String(e))
+      }
+    }
+
+    setLoading(true)
+    fetchAll()
+    pollRef.current = setInterval(fetchAll, 2000)
+    return () => {
+      alive = false
+      if (pollRef.current) clearInterval(pollRef.current)
+    }
+  }, [runId])
 
   const totalMw = state.capacity.reduce((s, c) => s + c.available_mw, 0)
   const dialogReservation = state.pending_reservations.find(r => r.proposal_id === dialogId)
@@ -282,8 +347,16 @@ export function ProcurementPage({ runId: _runId }: ProcurementPageProps) {
     setDialogId(proposalId)
   }, [])
 
-  const handleConfirmAuthorize = useCallback((proposalId: string) => {
-    // In a live implementation: POST /proposals/{id}/accept with reviewer_id
+  const handleConfirmAuthorize = useCallback(async (proposalId: string, reviewerId: string) => {
+    // TC-52: POST /proposals/{id}/accept with reviewer_id.
+    // Removes from local state immediately (optimistic update); API is source of truth.
+    try {
+      await fetch(`/proposals/${proposalId}/accept`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reviewer_id: reviewerId }),
+      })
+    } catch { /* ignore — state will reconcile on next poll */ }
     setState(prev => ({
       ...prev,
       pending_reservations: prev.pending_reservations.filter(
@@ -293,9 +366,25 @@ export function ProcurementPage({ runId: _runId }: ProcurementPageProps) {
     setDialogId(null)
   }, [])
 
+  if (!runId) {
+    return (
+      <div className="h-full flex items-center justify-center text-sm text-text-muted">
+        Start a run to see grid &amp; procurement data.
+      </div>
+    )
+  }
+
   return (
     <>
       <div className="h-full overflow-y-auto p-4 space-y-4 text-sm">
+
+        {/* Status row */}
+        {loading && state.capacity.length === 0 && (
+          <p className="text-xs text-text-muted animate-pulse">Loading procurement data…</p>
+        )}
+        {error && (
+          <p className="text-xs text-red-400">Error: {error}</p>
+        )}
 
         {/* Page header */}
         <div>
