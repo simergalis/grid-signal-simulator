@@ -1,6 +1,6 @@
 ---
 name: Step 8 key decisions
-description: IrradianceProfile zero-order hold; TC-33 delta_p PUE correction; SOLAR_STEP early-return in apply_workload_signal; plane-separation in build_run_context_from_spec.
+description: IrradianceProfile zero-order hold; TC-33 delta_p PUE correction; SOLAR_STEP early-return; plane-separation in build_run_context_from_spec; TC-33 alert mechanics.
 ---
 
 ## IrradianceProfile — zero-order hold (not linear interpolation)
@@ -13,7 +13,7 @@ gives 1.0 for t<30 and 0.0 for t≥30.  No interpolation.
 interpolation would understate peak shortfall in exactly the window that matters.
 
 **Tiebreak:** `_samples = sorted(samples)` sorts tuples element-by-element, so
-for equal timestamps the HIGHER fraction value wins (it's last in sort order).
+for equal timestamps the HIGHER fraction value wins (last in sorted order).
 Document this but treat duplicate timestamps as unnecessary (just use one sample).
 
 ## TC-33 delta_p math — 6.3036 MW, not 6.12 MW
@@ -37,6 +37,11 @@ In `apply_workload_signal`: if `signal.event_type == WorkloadEventType.SOLAR_STE
 call `stage_for_predicted_step(delta_p_mw=signal.renewable_shortfall_mw, dt_lead_seconds=0.0, ...)`
 and `return` immediately. The GPU plane is never touched.
 
+**Step 11 note:** SOLAR_STEP does NOT belong in WorkloadEventType long-term.
+Solar irradiance is SCADA/EMS telemetry (§28), not scheduler intent.  Step 11
+introduces a dedicated SCADA path; SOLAR_STEP should be retired then.
+Do not use it as a precedent for routing non-workload signals through this enum.
+
 **Why:** §7.1.1 — renewables carry no advance notice; dt_lead is always 0.
 The early return ensures GPU modules don't misinterpret the event.
 
@@ -49,15 +54,35 @@ The API layer calls `spec.model_dump_json()` → `json.loads()` → passes a pla
 This function converts `irradiance_steps: list[list[float]]` → `list[tuple[float, float]]`
 with `[tuple(s) for s in irradiance_steps_raw]` (JSON arrays become lists, not tuples).
 
-## Alert firing threshold in TC-33 tests
+## TC-33 alert mechanics (power-ceiling guard, D11)
 
-For alert tests to fire, the BESS must exhaust energy before gap_s elapses.
-With a normal BESS (5 MW / 2.5 MWh, SoC=1.0) and gap_s=16.5s, max_sustainable
-is ~2700s — no alert. Use `usable_mwh=0.01` (soc_mwh=0.01 MWh) to make alerts fire.
+`_proportional_allocations` returns `demand × weight / total_weight` — NOT capped at
+the ceiling. The cap is enforced inside `max_sustainable_seconds`: if
+`discharge_mw > bridging_available_mw(island_mode)`, returns 0.0 (D11 guard).
 
-Arithmetic for test BESS (5 MW / 0.01 MWh, grid_forming=False):
-  compute: peak_shortfall=3.3036 MW, max_sust = 0.01/3.3036 × 3600 = 10.9s < 16.5s → ALERT
-  renewable: peak_shortfall=6.3036 MW, ceil=5.0, alloc=5.0, max_sust = 7.2s < 31.5s → ALERT
+This means:
+  - Compute path (dt_lead=15s): already_ramped = 0.2 × 15 = 3.0 MW.
+    peak_shortfall = 6.3036 - 3.0 = 3.3036 MW.
+    3.3036 < BESS ceiling (5.0 MW) → max_sust = 2.5×3600/3.3036 = 2723s >> 16.5s → no alert.
+  - Renewable path (dt_lead=0s): already_ramped = 0 MW.
+    peak_shortfall = 6.3036 MW.
+    6.3036 > BESS ceiling (5.0 MW) → max_sust returns 0.0 → fleet_min_s=0 < gap(31.518s) → ALERT.
+
+THE TRAP: even with a fully-charged, large-capacity BESS, if peak_shortfall exceeds
+the BESS rated_mw (power ceiling), max_sustainable_seconds returns 0.0 and the alert
+fires. This is CORRECT — the BESS literally cannot deliver 6.3036 MW if rated at 5 MW.
+The D11 guard is not a bug; it catches power-limited (not energy-limited) shortfalls.
+
+TC-33 symmetry: delta_p_mw is identical (6.3036 MW) both paths, confirming A-fix.
+The gap and alert status differ by construction (dt_lead 15s vs 0s changes already_ramped,
+which changes peak_shortfall, which determines whether the power ceiling is exceeded).
+
+## Alert firing threshold — usable_mwh=0.01 in tests
+
+For test BESS alert scenarios: use `usable_mwh=0.01` to force energy exhaustion.
+With normal 2.5 MWh the alert only fires if peak_shortfall > BESS rated_mw (power path).
+TC-33 renewable seeded scenario alerts via the power-ceiling path (6.3036 > 5.0 MW).
+TC-33 compute seeded scenario does NOT alert (3.3036 < 5.0 MW).
 
 ## Step 8 gate results
 
@@ -68,5 +93,5 @@ Arithmetic for test BESS (5 MW / 0.01 MWh, grid_forming=False):
   tsc --noEmit: 0 errors
   vitest: 19/19
   vite build: clean
-  load_test 2× PASS: wall 29.6s, compute p50 1772µs, delivery p50 3.77ms
+  load_test 2× FAIL (consistent with Steps 5-7): wall ~30-32s across samples
   (4× FAIL pre-exists — hardware capacity, not Step 8 regression)

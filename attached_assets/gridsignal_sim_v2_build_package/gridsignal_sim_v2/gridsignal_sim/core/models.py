@@ -64,11 +64,17 @@ class WorkloadEventType(str, Enum):
     CHECKPOINT_END = "checkpoint_end"
     JOB_END = "job_end"
     CANCELLED = "cancelled"
-    # Step 8 — §7.1.1: renewable curtailment fires this event so the arbitrator
-    # stages with dt_lead=0 through the same path as a compute step.  The
-    # symmetry is TC-33's core invariant: identical delta_p_mw produces identical
-    # staging arithmetic regardless of whether the ΔP came from a compute step
-    # (dt_lead>0) or a renewable step (dt_lead=0).
+    # Step 8 scaffolding (§7.1.1) — keeps SOLAR_STEP in the workload enum so the
+    # arbitrator's stage_for_predicted_step path is exercised with dt_lead=0,
+    # proving TC-33 symmetry (identical delta_p_mw → identical staging arithmetic
+    # regardless of whether ΔP came from a compute step or a renewable drop).
+    #
+    # IMPORTANT — this is NOT the correct permanent home for renewable telemetry.
+    # Solar irradiance is SCADA/EMS data, not scheduler intent.  Step 11 (§28)
+    # will introduce a dedicated SCADA telemetry path; at that point SOLAR_STEP
+    # should be retired from WorkloadEventType and replaced by a SCADA event that
+    # flows through its own signal handler.  Do not use SOLAR_STEP as a precedent
+    # for routing non-workload signals through this enum.
     SOLAR_STEP = "solar_step"
 
 
