@@ -747,3 +747,91 @@ class SqlitePersistedTimeseriesSink:
                 scenario.completed_at = now
                 scenario.verdict = verdict
         _log.debug("run %s finalized: verdict=%r", run_id, verdict)
+
+    # ------------------------------------------------------------------
+    # Step 9 — Evaluation helpers (TimeseriesSink Protocol extension)
+    # ------------------------------------------------------------------
+
+    async def get_eval_rows(self, run_id: str) -> list:
+        """Flush the write queue, then return lightweight EvalRow tuples.
+
+        Flushes via join() so all ticks appended before this call have
+        been written before the query executes.  A second join() in the
+        subsequent finalize() call is a harmless no-op on an empty queue.
+
+        Returns list[EvalRow] — typed as list to avoid importing EvalRow
+        here (the reverse import runtime/persistence.py → runtime/verdict.py
+        is safe, but deferring it keeps the import surface narrow).
+        """
+        from runtime.verdict import EvalRow  # deferred: safe, no circular dep
+        if self._write_queue is None or self._engine is None:
+            return []
+        await self._write_queue.join()
+        async with AsyncSession(self._engine) as session:
+            stmt = (
+                select(RunTimeseries)
+                .where(RunTimeseries.run_id == run_id)
+                .order_by(RunTimeseries.tick_index)
+            )
+            result = await session.execute(stmt)
+            rows = result.scalars().all()
+        return [
+            EvalRow(
+                tick_index=r.tick_index,
+                p_total_mw=r.p_total_mw,
+                bess_soc_fraction=r.bess_soc_fraction,
+                insufficient_reserve_alert=r.insufficient_reserve_alert,
+            )
+            for r in rows
+        ]
+
+    def get_dropped_ticks(self) -> int:
+        """Number of RunTimeseries rows dropped due to write-queue pressure."""
+        return self._dropped_ticks
+
+    async def get_tick_dicts(self, run_id: str) -> list[dict]:
+        """Flush the write queue, then return all tick rows as serialisation dicts.
+
+        The dict format mirrors _tick_result_to_dict() in run_manager.py
+        so the timeseries endpoint can stream rows with gap_before flags
+        without any further transformation.
+
+        Note: confidence_lower_mw / confidence_upper_mw and
+        data_quality_tags / checkpoint_states are stored in separate
+        columns / JSON columns and are re-composed here.
+        """
+        if self._write_queue is None or self._engine is None:
+            return []
+        await self._write_queue.join()
+        async with AsyncSession(self._engine) as session:
+            stmt = (
+                select(RunTimeseries)
+                .where(RunTimeseries.run_id == run_id)
+                .order_by(RunTimeseries.tick_index)
+            )
+            result = await session.execute(stmt)
+            rows = result.scalars().all()
+        return [
+            {
+                "run_id": r.run_id,
+                "tick_index": r.tick_index,
+                "sim_time_seconds": r.sim_time_seconds,
+                "p_compute_mw": r.p_compute_mw,
+                "p_cooling_mw": r.p_cooling_mw,
+                "p_total_mw": r.p_total_mw,
+                "net_demand_mw": r.net_demand_mw,
+                "turbine_output_mw": r.turbine_output_mw,
+                "bess_output_mw": r.bess_output_mw,
+                "bess_soc_fraction": r.bess_soc_fraction,
+                "confidence_lower_mw": r.confidence_lower_mw,
+                "confidence_upper_mw": r.confidence_upper_mw,
+                "data_quality_tags": json.loads(r.data_quality_tags),
+                "insufficient_reserve_alert": r.insufficient_reserve_alert,
+                "checkpoint_states": json.loads(r.checkpoint_states),
+                "p_renewable_mw": 0.0,   # not stored in RunTimeseries (Step 9 gap; Step 11 adds it)
+                "bess_bridging_seconds": 86400.0,  # not stored; sentinel = "full reserve"
+                "dt_lead_next_s": 0.0,
+                "bridging_basis": "current_demand",
+            }
+            for r in rows
+        ]

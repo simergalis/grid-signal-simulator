@@ -121,3 +121,72 @@ export type HistoryPoint = {
   confidence_lower_mw: number
   confidence_upper_mw: number
 }
+
+// ---------------------------------------------------------------------------
+// Step 9: Assertion specs + Results / playback types
+// (must stay in sync with api/schemas.py and runtime/verdict.py)
+// ---------------------------------------------------------------------------
+
+export interface NoReserveAlertAssertion {
+  check: 'no_insufficient_reserve_alert'
+}
+export interface AlertFiresAssertion {
+  check: 'alert_fires'
+}
+export interface MaxPTotalAssertion {
+  check: 'max_p_total_mw'
+  threshold_mw: number
+}
+export interface MinFinalBessSocAssertion {
+  check: 'min_final_bess_soc'
+  threshold: number
+}
+export type AssertionSpec =
+  | NoReserveAlertAssertion
+  | AlertFiresAssertion
+  | MaxPTotalAssertion
+  | MinFinalBessSocAssertion
+
+export interface AssertionResult {
+  check: string
+  status: 'PASS' | 'FAIL' | 'INCONCLUSIVE'
+  detail: string
+}
+
+export interface RunResult {
+  run_id: string
+  scenario_id: string | null
+  scenario_name: string
+  completed_at: string       // ISO-8601
+  overall: 'PASS' | 'FAIL' | 'INCONCLUSIVE'
+  tick_count: number
+  dropped_ticks: number
+  gap_count: number
+  assertions: AssertionResult[]
+}
+
+export interface TimeseriesRow {
+  tick_index: number
+  sim_time_seconds: number   // F5: interval-END; read from stored value, never re-derived
+  p_compute_mw: number
+  p_cooling_mw: number
+  p_total_mw: number
+  net_demand_mw: number
+  turbine_output_mw: number
+  bess_output_mw: number
+  bess_soc_fraction: number  // [0, 1]
+  confidence_lower_mw: number
+  confidence_upper_mw: number
+  insufficient_reserve_alert: boolean
+  p_renewable_mw: number
+  bess_bridging_seconds: number
+  dt_lead_next_s: number
+  bridging_basis: string
+  gap_before: boolean        // true when tick_index jumps > 1 from the previous row
+}
+
+export interface TimeseriesResponse {
+  run_id: string
+  gap_count: number
+  rows: TimeseriesRow[]
+}

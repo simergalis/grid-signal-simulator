@@ -4,12 +4,15 @@
  * Mounted above SimClockHeader in App.tsx.
  * Layout (left-to-right):
  *   [scenario dropdown ▼] [speed selector] [Start / Stop button] [New scenario…]
+ *   [View Results button — visible when !isRunning && lastRunId !== null]
  *
  * Props:
  *   runId          — current active run ID (null = idle)
+ *   lastRunId      — most recent run ID (set at start, kept after stop)
  *   onRunStarted   — called with (run_id, playback_speed) after POST /runs
  *   onRunStopped   — called after DELETE /runs/{id}
  *   onNewScenario  — called to open the ScenarioBuilder drawer
+ *   onViewResults  — called with run_id when "View Results" is clicked
  *
  * The component owns no server-side state; all persistent scenario state
  * lives in useScenarioStore.
@@ -28,12 +31,14 @@ const SPEED_OPTIONS = [
 
 interface Props {
   runId: string | null
+  lastRunId: string | null
   onRunStarted: (runId: string, playbackSpeed: number) => void
   onRunStopped: () => void
   onNewScenario: () => void
+  onViewResults: (runId: string) => void
 }
 
-export function RunControlBar({ runId, onRunStarted, onRunStopped, onNewScenario }: Props) {
+export function RunControlBar({ runId, lastRunId, onRunStarted, onRunStopped, onNewScenario, onViewResults }: Props) {
   const scenarios    = useScenarioStore(s => s.scenarios)
   const selectedId   = useScenarioStore(s => s.selectedId)
   const isLoading    = useScenarioStore(s => s.isLoading)
@@ -89,6 +94,7 @@ export function RunControlBar({ runId, onRunStarted, onRunStopped, onNewScenario
   }
 
   const isRunning = runId !== null
+  const canViewResults = !isRunning && lastRunId !== null
 
   return (
     <div className="flex items-center gap-2 border-b border-border bg-surface px-4 py-2 text-sm">
@@ -155,6 +161,18 @@ export function RunControlBar({ runId, onRunStarted, onRunStopped, onNewScenario
           onClick={handleStop}
         >
           {busy ? 'Stopping…' : 'Stop'}
+        </button>
+      )}
+
+      {/* View Results — visible when idle and a run has completed */}
+      {canViewResults && (
+        <button
+          className="rounded border border-accent/60 px-3 py-1 text-xs font-semibold
+                     text-accent hover:bg-accent/10 transition-colors"
+          onClick={() => onViewResults(lastRunId!)}
+          title={`View results for ${lastRunId}`}
+        >
+          View Results
         </button>
       )}
 

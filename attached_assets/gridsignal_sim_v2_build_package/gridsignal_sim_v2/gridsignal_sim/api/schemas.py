@@ -3,10 +3,15 @@ api/schemas.py — Pydantic request / response models for the HTTP API.
 
 Step 6 / v2.5 §8.1.
 Step 8: adds ScenarioSpec + related models; removes F1 scenario_preset scaffolding.
+Step 9: adds AssertionSpec (imported from runtime.verdict) + ScenarioSpec.assertions;
+        adds RunResultResponse and TimeseriesResponse for the results screen.
 
 No imports from core/ — the wire format is owned here; core/models.py
 is the authoritative in-process representation and is not exposed
 directly to callers.
+
+The import of AssertionSpec from runtime.verdict (api/ → runtime/) is an allowed
+direction per §21.1; runtime/ → api/ is the forbidden direction.
 """
 
 from __future__ import annotations
@@ -15,6 +20,10 @@ import uuid as _uuid
 from typing import Optional
 
 from pydantic import BaseModel, Field, model_validator
+
+# Step 9: AssertionSpec lives in runtime/verdict.py so that runtime/ code can
+# import it without creating a runtime/ → api/ circular dependency.
+from runtime.verdict import AssertionSpec  # noqa: F401 (re-exported for callers)
 
 
 # ---------------------------------------------------------------------------
@@ -115,6 +124,11 @@ class ScenarioSpec(BaseModel):
     island_mode: bool = True
     pue_base: float = Field(default=1.03, ge=1.0, le=2.0)
     end_sim_time: float = Field(default=300.0, ge=60.0, le=86400.0)
+
+    # Step 9: optional pass/fail assertions evaluated at run completion.
+    # Each element is one of the AssertionSpec union members (discriminated
+    # on 'check').  Empty list → verdict is INCONCLUSIVE.
+    assertions: list[AssertionSpec] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def _single_grid_forming_anchor(self) -> "ScenarioSpec":
@@ -225,3 +239,59 @@ class RunStatusResponse(BaseModel):
 
 class RunListResponse(BaseModel):
     run_ids: list[str]
+
+
+# ---------------------------------------------------------------------------
+# Step 9: Results / playback response schemas
+# ---------------------------------------------------------------------------
+
+class AssertionResultResponse(BaseModel):
+    """One assertion's evaluation outcome, as returned by GET /runs/{id}/result."""
+    check: str
+    status: str   # "PASS" | "FAIL" | "INCONCLUSIVE"
+    detail: str
+
+
+class RunResultResponse(BaseModel):
+    """Full verdict returned by GET /runs/{run_id}/result."""
+    run_id: str
+    scenario_id: Optional[str] = None
+    scenario_name: str
+    completed_at: str              # ISO-8601 UTC
+    overall: str                   # "PASS" | "FAIL" | "INCONCLUSIVE"
+    tick_count: int
+    dropped_ticks: int
+    gap_count: int
+    assertions: list[AssertionResultResponse]
+
+
+class TimeseriesRowResponse(BaseModel):
+    """One tick row returned by GET /runs/{run_id}/timeseries.
+
+    sim_time_seconds is stored from the serialisation layer (F5 convention:
+    interval-END time) and is never re-derived here.
+    """
+    tick_index: int
+    sim_time_seconds: float
+    p_compute_mw: float
+    p_cooling_mw: float
+    p_total_mw: float
+    net_demand_mw: float
+    turbine_output_mw: float
+    bess_output_mw: float
+    bess_soc_fraction: float
+    confidence_lower_mw: float
+    confidence_upper_mw: float
+    insufficient_reserve_alert: bool
+    p_renewable_mw: float
+    bess_bridging_seconds: float
+    dt_lead_next_s: float
+    bridging_basis: str
+    gap_before: bool               # True when tick_index jumps > 1 from the previous row
+
+
+class TimeseriesResponse(BaseModel):
+    """Full timeseries returned by GET /runs/{run_id}/timeseries."""
+    run_id: str
+    gap_count: int
+    rows: list[TimeseriesRowResponse]

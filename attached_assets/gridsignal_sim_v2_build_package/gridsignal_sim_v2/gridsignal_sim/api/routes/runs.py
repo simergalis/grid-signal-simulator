@@ -4,11 +4,16 @@ api/routes/runs.py — Run lifecycle REST endpoints.
 Step 6 / v2.5 §8.1.
 Step 8: removes F1 _SCENARIO_PRESETS scaffolding; adds scenario_id path that
         looks up a stored ScenarioSpec and calls build_run_context_from_spec.
+Step 9: adds GET /runs/{run_id}/result and GET /runs/{run_id}/timeseries for
+        the results / playback screen; propagates scenario_name and scenario_id
+        into RunContext when starting via a stored scenario.
 
-POST   /runs               start a new run
-GET    /runs               list active run IDs
-GET    /runs/{run_id}      status of one run
-DELETE /runs/{run_id}      cancel a run
+POST   /runs                        start a new run
+GET    /runs                        list active run IDs
+GET    /runs/{run_id}               status of one run
+DELETE /runs/{run_id}               cancel a run
+GET    /runs/{run_id}/result        verdict + assertion details (completed runs)
+GET    /runs/{run_id}/timeseries    full tick history with gap flags (completed runs)
 
 Invariants:
   - RunManager is retrieved from app.state (set once in the lifespan).
@@ -26,7 +31,16 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
-from api.schemas import RunListResponse, RunStatusResponse, StartRunRequest, StartRunResponse
+from api.schemas import (
+    AssertionResultResponse,
+    RunListResponse,
+    RunResultResponse,
+    RunStatusResponse,
+    StartRunRequest,
+    StartRunResponse,
+    TimeseriesResponse,
+    TimeseriesRowResponse,
+)
 from runtime.run_manager import RunManager
 from runtime.scenario_factory import build_run_context, build_run_context_from_spec
 
@@ -81,6 +95,9 @@ async def start_run(
             spec_data,
             playback_speed=body.playback_speed,
         )
+        # Step 9: propagate stable IDs so the results screen can display them.
+        ctx.scenario_id = body.scenario_id
+        ctx.scenario_name = record.name
     else:
         # Direct programmatic path — scenario_id absent, job_id+node_count present
         # (enforced by StartRunRequest.model_validator).
@@ -107,6 +124,129 @@ async def list_runs(
 ) -> RunListResponse:
     """Return the IDs of all runs currently held by the RunManager."""
     return RunListResponse(run_ids=manager.active_run_ids())
+
+
+@router.get(
+    "/{run_id}/result",
+    response_model=RunResultResponse,
+    summary="Get verdict and assertion results for a completed run",
+    responses={
+        404: {"description": "Run not found or not yet started"},
+        409: {"description": "Run is still active — results not yet available"},
+    },
+)
+async def get_run_result(
+    run_id: str,
+    manager: RunManager = Depends(_run_manager),
+) -> RunResultResponse:
+    """Return the verdict and per-assertion results for a completed run.
+
+    409 if the run is still active (verdict not yet computed).
+    404 if the run_id has never been seen (or was from a previous process).
+
+    The verdict is computed by runtime/verdict.py after the run loop exits
+    and is stored in RunManager._completed.  It is also persisted to the
+    Scenario ORM row via sink.finalize() for long-term durability.
+    """
+    # Check active first — must return 409 not 404 for in-flight runs.
+    if manager.get_context(run_id) is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Run {run_id!r} is still active; results are not yet available",
+        )
+    completed = manager.get_completed(run_id)
+    if completed is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                f"Run {run_id!r} not found. "
+                "It may have been started in a previous server process "
+                "or the run_id is incorrect."
+            ),
+        )
+    v = completed.verdict
+    return RunResultResponse(
+        run_id=run_id,
+        scenario_id=completed.scenario_id,
+        scenario_name=completed.scenario_name,
+        completed_at=completed.completed_at.isoformat(),
+        overall=v.overall,
+        tick_count=v.tick_count,
+        dropped_ticks=v.dropped_ticks,
+        gap_count=v.gap_count,
+        assertions=[
+            AssertionResultResponse(check=a.check, status=a.status, detail=a.detail)
+            for a in v.assertions
+        ],
+    )
+
+
+@router.get(
+    "/{run_id}/timeseries",
+    response_model=TimeseriesResponse,
+    summary="Get full tick history for a completed run",
+    responses={
+        404: {"description": "Run not found or not yet started"},
+        409: {"description": "Run is still active — timeseries not yet sealed"},
+    },
+)
+async def get_run_timeseries(
+    run_id: str,
+    manager: RunManager = Depends(_run_manager),
+) -> TimeseriesResponse:
+    """Return the full ordered tick history for a completed run.
+
+    Each row includes a gap_before flag: True when tick_index jumps by more
+    than 1 from the previous row, indicating dropped ticks between them.
+    sim_time_seconds is read from the stored value (F5 convention: interval-end
+    timestamp) and is never re-derived.
+
+    409 if the run is still active.
+    404 if the run_id is unknown.
+    """
+    if manager.get_context(run_id) is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Run {run_id!r} is still active; timeseries is not yet sealed",
+        )
+    completed = manager.get_completed(run_id)
+    if completed is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Run {run_id!r} not found",
+        )
+
+    rows_out: list[TimeseriesRowResponse] = []
+    tick_dicts = completed.tick_dicts
+    for i, r in enumerate(tick_dicts):
+        gap_before = i > 0 and r["tick_index"] > tick_dicts[i - 1]["tick_index"] + 1
+        rows_out.append(
+            TimeseriesRowResponse(
+                tick_index=r["tick_index"],
+                sim_time_seconds=r["sim_time_seconds"],
+                p_compute_mw=r["p_compute_mw"],
+                p_cooling_mw=r["p_cooling_mw"],
+                p_total_mw=r["p_total_mw"],
+                net_demand_mw=r["net_demand_mw"],
+                turbine_output_mw=r["turbine_output_mw"],
+                bess_output_mw=r["bess_output_mw"],
+                bess_soc_fraction=r["bess_soc_fraction"],
+                confidence_lower_mw=r["confidence_lower_mw"],
+                confidence_upper_mw=r["confidence_upper_mw"],
+                insufficient_reserve_alert=r["insufficient_reserve_alert"],
+                p_renewable_mw=r["p_renewable_mw"],
+                bess_bridging_seconds=r["bess_bridging_seconds"],
+                dt_lead_next_s=r["dt_lead_next_s"],
+                bridging_basis=r["bridging_basis"],
+                gap_before=gap_before,
+            )
+        )
+
+    return TimeseriesResponse(
+        run_id=run_id,
+        gap_count=completed.verdict.gap_count,
+        rows=rows_out,
+    )
 
 
 @router.get(

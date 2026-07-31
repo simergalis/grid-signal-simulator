@@ -37,7 +37,15 @@ from core.models import (
     WorkloadSignal,
 )
 from core.simulation_core import SimulationState
+from pydantic import TypeAdapter
+
 from runtime.run_manager import InMemoryTimeseriesSink, RunContext
+from runtime.verdict import AssertionSpec as _AssertionSpec
+
+# TypeAdapter for deserialising assertion specs from plain dicts in
+# build_run_context_from_spec.  Created once at module level (not per-call)
+# to avoid repeated schema compilation overhead.
+_assertion_adapter: TypeAdapter = TypeAdapter(_AssertionSpec)
 
 DEFAULT_HARDWARE_LIBRARY = {
     "enterprise_8gpu_air": HardwareProfile("enterprise_8gpu_air", rated_kw=10.2),
@@ -367,6 +375,13 @@ def build_run_context_from_spec(
         )
     events.sort(key=lambda e: e.timestamp)
 
+    # ── Assertions (Step 9) ───────────────────────────────────────────────
+    # spec_data["assertions"] is a list of plain dicts (JSON-round-trip safe).
+    # _assertion_adapter validates each dict against the AssertionSpec union
+    # so that RunContext.assertions always holds typed Pydantic objects.
+    raw_assertions = spec_data.get("assertions", [])
+    assertions = [_assertion_adapter.validate_python(a) for a in raw_assertions]
+
     # ── RunContext ────────────────────────────────────────────────────────
     return RunContext(
         run_id=run_id,
@@ -376,4 +391,6 @@ def build_run_context_from_spec(
         end_sim_time=float(spec_data.get("end_sim_time", 300.0)),
         playback_speed=playback_speed,
         sink=InMemoryTimeseriesSink(),
+        assertions=assertions,
+        scenario_name=str(spec_data.get("name", "")),
     )
