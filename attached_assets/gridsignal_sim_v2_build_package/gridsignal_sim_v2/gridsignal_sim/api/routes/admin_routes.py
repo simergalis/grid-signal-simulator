@@ -1,18 +1,21 @@
 """
 api/routes/admin_routes.py — Admin-only user management endpoints.
 
-All routes require the X-Admin-Key header to match the ADMIN_SECRET env var.
-If ADMIN_SECRET is not set the admin API is disabled (403 on every request).
+Access is granted by either:
+  • X-Admin-Key header matching ADMIN_SECRET (curl / server-side callers), or
+  • A valid session cookie with role="admin" (browser admin page).
+
+If ADMIN_SECRET is not set the header path is disabled, but session-based
+admin access still works for users whose role is "admin".
 
 POST   /api/admin/users           — create a user account; sends welcome email
 GET    /api/admin/users           — list all users
-PATCH  /api/admin/users/{user_id} — activate / deactivate an account
+PATCH  /api/admin/users/{user_id} — activate / deactivate an account or change role
 DELETE /api/admin/users/{user_id} — permanently delete an account
 
 The admin never sets a password directly.  Instead, provide a
 `temporary_password` in the create request; the user receives it via the
-welcome email and should change it on first login.  (Password-change endpoint
-is a natural follow-up but is out of scope for the initial integration.)
+welcome email and should change it on first login.
 """
 from __future__ import annotations
 
@@ -24,7 +27,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.auth_utils import hash_password
+from api.auth_utils import hash_password, COOKIE_NAME, decode_access_token
 from api.db import get_db_session
 from api.email_service import send_welcome_email
 from runtime.persistence import AuthUser
@@ -34,22 +37,37 @@ _ADMIN_SECRET: str = os.environ.get("ADMIN_SECRET", "")
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
+VALID_ROLES = ("viewer", "operator", "approver", "admin")
+
 
 # ---------------------------------------------------------------------------
 # Admin gate dependency
 # ---------------------------------------------------------------------------
 
-async def _require_admin(x_admin_key: str = Header(default="")):
-    if not _ADMIN_SECRET:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin API is disabled (ADMIN_SECRET not configured)",
-        )
-    if x_admin_key != _ADMIN_SECRET:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid admin key",
-        )
+async def _require_admin(
+    request: Request,
+    x_admin_key: str = Header(default=""),
+    db: AsyncSession = Depends(get_db_session),
+):
+    """Allow access if the caller presents a valid admin key OR is logged in as admin role."""
+    # 1. Header-based access (curl / API callers)
+    if _ADMIN_SECRET and x_admin_key == _ADMIN_SECRET:
+        return
+
+    # 2. Session-based access (browser users with role=admin)
+    token = request.cookies.get(COOKIE_NAME)
+    if token:
+        payload = decode_access_token(token)
+        if payload is not None:
+            user_id = int(payload["sub"])
+            user = await db.get(AuthUser, user_id)
+            if user and user.is_active and user.role == "admin":
+                return
+
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Admin access required",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -106,10 +124,10 @@ async def create_user(
         )
 
     # Validate role
-    if body.role not in ("viewer", "operator", "approver"):
+    if body.role not in VALID_ROLES:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="role must be one of: viewer, operator, approver",
+            detail=f"role must be one of: {', '.join(VALID_ROLES)}",
         )
 
     tmp_pw = body.temporary_password or secrets.token_urlsafe(12)
@@ -191,8 +209,8 @@ async def patch_user(
     if body.is_active is not None:
         user.is_active = body.is_active
     if body.role is not None:
-        if body.role not in ("viewer", "operator", "approver"):
-            raise HTTPException(status_code=422, detail="Invalid role")
+        if body.role not in VALID_ROLES:
+            raise HTTPException(status_code=422, detail=f"role must be one of: {', '.join(VALID_ROLES)}")
         user.role = body.role
 
     await db.commit()

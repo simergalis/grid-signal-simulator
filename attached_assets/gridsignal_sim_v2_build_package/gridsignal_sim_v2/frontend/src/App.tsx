@@ -36,11 +36,12 @@ import { NetworkTelemetryPage }    from './components/NetworkTelemetryPage'
 import { ProcurementPage }         from './components/ProcurementPage'
 import { ThermalCoolingPage }      from './components/ThermalCoolingPage'
 import { ScenarioPlannerPage }     from './components/ScenarioPlannerPage'
+import { AdminPage }               from './components/AdminPage'
 import { useTickStore }            from './store/tickStore'
 import { useScenarioStore }        from './store/scenarioStore'
 import { useTickStream }           from './ws/useTickStream'
 
-type PageView = 'readiness' | 'overview' | 'proposals' | 'procurement' | 'network' | 'thermal' | 'scenarios'
+type PageView = 'readiness' | 'overview' | 'proposals' | 'procurement' | 'network' | 'thermal' | 'scenarios' | 'admin'
 
 const FRAME_INTERVAL_MS = 250   // 4 Hz render loop
 
@@ -98,7 +99,7 @@ interface AuthAppProps {
   onLogout: () => void
 }
 
-function AuthenticatedApp({ displayName, role: _role, onLogout }: AuthAppProps) {
+function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
   const [runId,         setRunId]         = useState<string | null>(null)
   const [lastRunId,     setLastRunId]     = useState<string | null>(null)
   const [resultsRunId,  setResultsRunId]  = useState<string | null>(null)
@@ -207,7 +208,9 @@ function AuthenticatedApp({ displayName, role: _role, onLogout }: AuthAppProps) 
           runId={runId}
           onHowItWorks={() => setTopoOpen(true)}
           displayName={displayName}
+          role={role}
           onLogout={onLogout}
+          onAdmin={role === 'admin' ? () => setCurrentPage('admin') : undefined}
         />
 
         <main className="flex-1 overflow-hidden">
@@ -279,6 +282,19 @@ function AuthenticatedApp({ displayName, role: _role, onLogout }: AuthAppProps) 
             )}
           </button>
         ))}
+        {/* Admin tab — only visible to admin-role users */}
+        {role === 'admin' && (
+          <button
+            onClick={() => setCurrentPage('admin')}
+            className={`px-4 py-2 text-xs font-medium transition-colors ml-auto ${
+              currentPage === 'admin'
+                ? 'bg-surface text-text border-b-2 border-accent -mb-px'
+                : 'bg-canvas text-text-muted hover:text-text hover:bg-surface/50'
+            }`}
+          >
+            ⚙ Admin
+          </button>
+        )}
       </div>
 
       {/* Page content */}
@@ -313,6 +329,10 @@ function AuthenticatedApp({ displayName, role: _role, onLogout }: AuthAppProps) 
       ) : currentPage === 'thermal' ? (
         <main className="flex-1 overflow-hidden">
           <ThermalCoolingPage runId={runId ?? lastRunId} />
+        </main>
+      ) : currentPage === 'admin' && role === 'admin' ? (
+        <main className="flex-1 overflow-hidden">
+          <AdminPage />
         </main>
       ) : (
         <main className="flex-1 overflow-hidden">

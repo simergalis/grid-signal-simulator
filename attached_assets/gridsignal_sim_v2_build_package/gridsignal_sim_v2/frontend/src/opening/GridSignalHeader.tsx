@@ -14,7 +14,9 @@ interface Props {
   runId: string | null
   onHowItWorks: () => void
   displayName?: string
+  role?: string
   onLogout?: () => void
+  onAdmin?: () => void
 }
 
 function utcNow(): string {
@@ -27,7 +29,7 @@ function utcNow(): string {
   )
 }
 
-export function GridSignalHeader({ runId, onHowItWorks, displayName, onLogout }: Props) {
+export function GridSignalHeader({ runId, onHowItWorks, displayName, role, onLogout, onAdmin }: Props) {
   const [clock, setClock] = useState(utcNow)
 
   useEffect(() => {
@@ -94,12 +96,23 @@ export function GridSignalHeader({ runId, onHowItWorks, displayName, onLogout }:
         ⓘ &nbsp;How it works
       </button>
 
-      {/* ── Signed-in user + logout ───────────────────────────────────────── */}
+      {/* ── Signed-in user + admin + logout ──────────────────────────────── */}
       {displayName && (
         <div className="flex items-center gap-2 px-3">
           <span className="font-sans" style={{ fontSize: 11, color: '#7d8b9c' }}>
             {displayName}
           </span>
+          {role === 'admin' && onAdmin && (
+            <button
+              onClick={onAdmin}
+              className="px-2 py-1 rounded border border-border font-sans
+                         text-muted hover:text-text hover:border-muted/50 transition-colors"
+              style={{ fontSize: 10 }}
+              aria-label="Admin panel"
+            >
+              ⚙ Admin
+            </button>
+          )}
           {onLogout && (
             <button
               onClick={onLogout}
