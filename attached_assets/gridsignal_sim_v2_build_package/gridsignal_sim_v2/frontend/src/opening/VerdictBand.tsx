@@ -9,7 +9,7 @@
  * Static defaults (no tick):
  *   DISPATCHABLE  48.0 MW  — turbine (25) + BESS (18) + solar (5) rated
  *   LEAD TIME     30–60 s  — configured dt_lead window for demo scenario
- *   BRIDGE        full reserve  — BESS at 95 % SoC, no load yet
+ *   GEN-TRIP COVER  full reserve  — BESS at 95 % SoC, no load yet
  *   ATTENTION     1 subsystem   — uncalibrated_site DQ flag always present
  *
  * Running state (dt_lead_next_s > 0):
@@ -52,13 +52,21 @@ function formatBridge(s: number): string {
 }
 
 /**
- * AA2: bridging_basis === 'no_load' means the BESS has full reserve — no
- * load is being bridged. That is the OPPOSITE of "0 s" (which is the
- * cannot-bridge signal, D11). Only use formatBridge (which may return '0 s')
- * when basis is 'current_demand' or 'predicted_peak'.
+ * AB2 / AA2: bridgeDisplay answers the question
+ *   "how long could the BESS carry the WHOLE SITE if generation tripped?"
+ * — NOT "how long can BESS bridge the current shortfall (which may be zero)."
+ *
+ * The three outcomes:
+ *   no_load:         BESS has full reserve, no load present → 'full reserve'
+ *   seconds > 0:     BESS can carry site for this long if gen trips → duration
+ *   seconds ≤ 0:     BESS power ceiling (D11) — rated MW < site demand, so
+ *                    it cannot carry the site even for one second if gen trips.
+ *                    Label: 'cannot carry alone' (NOT '0 s', which reads as
+ *                    "depleted" — the BESS at 94% SoC is NOT depleted).
  */
 function bridgeDisplay(seconds: number, basis: string): string {
   if (basis === 'no_load') return 'full reserve'
+  if (seconds <= 0) return 'cannot carry alone'
   return formatBridge(seconds)
 }
 
@@ -122,12 +130,14 @@ export function VerdictBand() {
         colour: '#e0a458',
       },
       {
-        // AA2: use bridgeDisplay so 'no_load' basis renders "full reserve"
-        // instead of "0 s" (which is the cannot-bridge signal, not no-shortfall).
-        label: 'Bridge',
+        // AB2: metric answers "how long can BESS carry the whole site if gen
+        // trips?" — not "how long can it bridge the current shortfall."  Label
+        // and sub-label must reflect that question so the D11 power-ceiling
+        // reading ("cannot carry alone") is not mistaken for depleted BESS.
+        label: 'Gen-trip cover',
         value: bridgeDisplay(tick.bess_bridging_seconds, tick.bridging_basis),
         colour: '#4a9fe0',
-        sub: tick.bridging_basis === 'predicted_peak' ? 'basis: predicted peak' : undefined,
+        sub: tick.bridging_basis === 'no_load' ? undefined : 'if gen trips',
       },
       {
         label: 'Reserve',
@@ -157,10 +167,12 @@ export function VerdictBand() {
         colour: '#3fb6a8',
       },
       {
-        // AA2 (same fix): bridging_basis guards the '0 s' vs 'full reserve' split.
-        label: 'Bridge',
+        // AB2 (same fix as running branch): consistent label + sub-label so the
+        // D11 "cannot carry alone" reading is never misread as "depleted".
+        label: 'Gen-trip cover',
         value: bridgeDisplay(tick.bess_bridging_seconds, tick.bridging_basis),
         colour: '#4a9fe0',
+        sub: tick.bridging_basis === 'no_load' ? undefined : 'if gen trips',
       },
       {
         label: 'Attention',
@@ -172,8 +184,8 @@ export function VerdictBand() {
     // Static defaults — show configured site capacity before any run
     figures = [
       { label: 'Dispatchable', value: '48.0 MW',      colour: '#e0a458', sub: 'turbine + BESS + solar' },
-      { label: 'Lead Time',    value: '30–60 s',       colour: '#3fb6a8' },
-      { label: 'Bridge',       value: 'full reserve',  colour: '#4a9fe0' },
+      { label: 'Lead Time',       value: '30–60 s',       colour: '#3fb6a8' },
+      { label: 'Gen-trip cover', value: 'full reserve',  colour: '#4a9fe0' },
       { label: 'Attention',    value: '1 subsystem',   colour: '#f0883e' },
     ]
   }

@@ -12,7 +12,7 @@ description: One-line SCADA mimic diagram + VerdictBand + SystemStrip + Topology
 
 **AA1 — cooling node:** Bind "rated" label to `rated_cooling_mw`; bind "headroom" label to `absorbable_mw`. These are completely different numbers (rated ≈ 4.59 MW, headroom = rated − current_draw ≈ 0.6 MW at peak).
 
-**AA2 — BRIDGE "0 s" vs "full reserve":** Use `bridgeDisplay(seconds, basis)` wrapper. `basis === 'no_load'` → always show 'full reserve' (bess_bridging_seconds is irrelevant in that state). `current_demand`/`predicted_peak` with seconds=0 → '0 s' IS correct (D11 cannot-bridge signal). Demo-20mw timeseries: t1–t2 = no_load/86400; t3–t56 = current_demand/decreasing; t57–t60 = current_demand/0.0 (depleted BESS, genuine cannot-bridge).
+**AA2 / AB2 — BRIDGE metric:** Now labelled "Gen-trip cover" everywhere (idle, running, hasRun). `bridgeDisplay(seconds, basis)` returns: 'full reserve' when basis='no_load'; 'cannot carry alone' when seconds≤0 (D11 power-ceiling — BESS rated MW < site demand — BESS is NOT depleted; the turbine is covering the load); duration string otherwise. Sub-label "if gen trips" shown on live figures whenever basis!='no_load'. Demo-20mw timeseries: t1–t2 = no_load/86400→'full reserve'; t3–t56 = current_demand/decreasing→duration; t57–t60 = current_demand/0.0→'cannot carry alone' (turbine covers load but BESS power floor < demand).
 
 **AA3 — DISPATCHABLE:** Always `turbine_output_mw + bess_output_mw + p_renewable_mw`, sub "turbine + BESS + solar" in BOTH at-rest and hasRun states. BESS must never silently leave the sum.
 
