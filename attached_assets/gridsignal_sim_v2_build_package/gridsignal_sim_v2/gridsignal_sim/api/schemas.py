@@ -478,6 +478,21 @@ class ScenarioSpec(BaseModel):
     # (e.g. demo-pms-shortfall for TC-65 conflict detection).
     calibrated: bool = False
 
+    # Solar origin UTC hour override — demo-solar-peak uses this to anchor
+    # generate_solar_forecast() at a fixed midday UTC time (UTC 20 = 12:00 PST)
+    # regardless of when the demo is actually run.  None = use real UTC now.
+    # Valid range [0, 23]; runs.py converts to a datetime before calling
+    # generate_solar_forecast() so the Mistral prompt and physics curve both
+    # see the anchored local San Diego time.
+    solar_origin_utc_hour: Optional[int] = Field(
+        default=None, ge=0, le=23,
+        description=(
+            "Fix the UTC hour passed to generate_solar_forecast(). "
+            "Use 20 for UTC 20:00 = 12:00 PST San Diego solar noon. "
+            "None = real wall-clock UTC (default for all other scenarios)."
+        ),
+    )
+
     # Step 9: optional pass/fail assertions evaluated at run completion.
     # Each element is one of the AssertionSpec union members (discriminated
     # on 'check').  Empty list → verdict is INCONCLUSIVE.
@@ -499,7 +514,6 @@ class ScenarioSpec(BaseModel):
     def collect_c_rate_warnings(self) -> list[str]:
         """Return all non-None C-rate warnings across the BESS fleet."""
         return [w for u in self.bess_units if (w := u.c_rate_warning()) is not None]
-
 
 
 # ---------------------------------------------------------------------------

@@ -133,13 +133,35 @@ async def start_run(
         _param_cfg      = spec_data.get("param_sampling_config")
         _corruption_cfg = spec_data.get("telemetry_corruption_config")
 
+        # Build a utc_now override when solar_origin_utc_hour is set.
+        # demo-solar-peak uses hour=20 (UTC 20:00 = 12:00 PST San Diego noon)
+        # so the Mistral prompt and physics fallback always see midday,
+        # regardless of when the demo is actually triggered.
+        _utc_hour_override = spec_data.get("solar_origin_utc_hour")
+        if _utc_hour_override is not None:
+            _base = datetime.datetime.now(datetime.timezone.utc)
+            _utc_now_solar: datetime.datetime | None = _base.replace(
+                hour=int(_utc_hour_override),
+                minute=0,
+                second=0,
+                microsecond=0,
+                tzinfo=None,
+            )
+        else:
+            _utc_now_solar = None
+
         # Build coroutines for each active generator
         async def _run_solar():
             if not _is_default_irr:
                 return None
             return await _loop.run_in_executor(
                 None,
-                functools.partial(generate_solar_forecast, _sim_duration, _solar_mw),
+                functools.partial(
+                    generate_solar_forecast,
+                    _sim_duration,
+                    _solar_mw,
+                    utc_now=_utc_now_solar,
+                ),
             )
 
         async def _run_cluster():

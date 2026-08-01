@@ -565,6 +565,29 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             end_sim_time=120.0,
         ),
     ),
+    # ── Solar-peak demo — midday anchor for daytime solar variability ────
+    (
+        "demo-solar-peak",
+        ScenarioSpec(
+            name="demo-solar-peak",
+            description=(
+                "demo-20mw anchored at San Diego solar noon (UTC 20:00 = 12:00 PST). "
+                "solar_origin_utc_hour=20 overrides real wall-clock UTC so the Mistral "
+                "weather query and physics fallback both see midday regardless of when "
+                "the demo runs.  Solar output varies 0.65–0.98 across the 300-second "
+                "run, making marine-layer behaviour and Fleet-must-cover changes visible "
+                "in the Solar PV modal.  Identical fleet to demo-20mw; only the solar "
+                "origin time differs."
+            ),
+            workload_events=[_evt_start("job-big", 1900)],
+            dt_lead_seconds=30.0,
+            bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
+            turbine_units=[_turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2)],
+            solar_rated_mw=_SOLAR_20MW,
+            end_sim_time=300.0,
+            solar_origin_utc_hour=20,   # UTC 20:00 = 12:00 PST San Diego solar noon
+        ),
+    ),
     # ── Kubernetes demand layer ───────────────────────────────────────────
     (
         "demo-kube",
