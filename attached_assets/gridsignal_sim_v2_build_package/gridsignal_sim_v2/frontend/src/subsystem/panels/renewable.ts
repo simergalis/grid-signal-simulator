@@ -41,11 +41,20 @@ export const renewablePanel: PanelConfig = {
       }
     }
 
-    const solarMW  = tick.p_renewable_mw
-    const totalMW  = tick.p_total_mw
-    const sharePct = totalMW > 0 ? (solarMW / totalMW * 100).toFixed(0) : '0'
+    const solarMW    = tick.p_renewable_mw
+    const totalMW    = tick.p_total_mw          // compute + cooling (gross site draw)
+    const netDemand  = tick.net_demand_mw        // what fleet must serve after solar offset
     // "if solar vanished" line: the gap that would open without warning
     const exposureMW = solarMW
+    // Share: cap at 100% — when solar > current draw the note explains the surplus
+    const solarExceedsDraw = totalMW > 0 && solarMW >= totalMW
+    const sharePct = totalMW > 0
+      ? Math.min(100, solarMW / totalMW * 100).toFixed(0)
+      : '0'
+    const shareDisplay = solarExceedsDraw ? '≥ 100%' : `${sharePct}%`
+    const shareNote    = solarExceedsDraw
+      ? 'solar exceeds current draw · surplus absorbed by BESS'
+      : 'at current compute load'
 
     const chart = React.createElement(TimeSeries, {
       series: [
@@ -87,9 +96,11 @@ export const renewablePanel: PanelConfig = {
       chartTitle: 'CONTRIBUTION, AND EXPOSURE IF IT STOPS',
       chart,
       statRows: [
-        { label: 'Output',                  value: `${solarMW.toFixed(2)} MW`, sub: 'instantaneous' },
-        { label: 'Rated',                   value: `${solarMW > 0 ? solarMW.toFixed(2) : '—'} MW`, sub: 'nameplate · PROTO-7 sizing' },
-        { label: 'Share of site demand',    value: `${sharePct}%`, sub: 'at current compute load' },
+        { label: 'Output',                  value: `${solarMW.toFixed(2)} MW`, sub: 'real-time · instantaneous' },
+        // net_demand_mw is the live interpolated field the fleet must cover after solar
+        // offset — it changes visibly as compute ramps from idle (near 0) to full draw
+        { label: 'Fleet must cover',        value: `${netDemand.toFixed(2)} MW`, colour: netDemand > 0 ? TEAL : SOLAR, sub: 'net demand after solar offset · live' },
+        { label: 'Share of site draw',      value: shareDisplay, sub: shareNote },
         { label: 'Counted toward reserve',  value: 'never', colour: AMBER, sub: 'availability, not dispatchability · §7.1.1' },
         { label: 'Control surface',         value: 'none', sub: 'passive collector — nothing to command' },
         { label: 'Lead time on loss',       value: '0 s', colour: RED, sub: 'no advance signal exists' },
@@ -100,7 +111,7 @@ export const renewablePanel: PanelConfig = {
       why: [
         'Renewable output is subtracted from the load the fleet must serve.',
         'It is never added to ramp capability, because it cannot be commanded and carries no lead time on loss.',
-        `A ${solarMW.toFixed(1)} MW solar collapse and a ${solarMW.toFixed(1)} MW compute spike are the same event to the arbitrator.`,
+        `Fleet must cover ${netDemand.toFixed(1)} MW right now. A ${solarMW.toFixed(1)} MW solar collapse instantly adds ${solarMW.toFixed(1)} MW to that figure with no advance warning.`,
       ],
     }
   },

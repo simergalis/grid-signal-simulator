@@ -26,14 +26,18 @@ interface FigureProps {
   value: string
   colour?: string
   sub?: string
+  /** Fixed px width — prevents layout shift when value flips between short and long strings. */
+  colWidth: number
 }
 
-function HeroFigure({ label, value, colour, sub }: FigureProps) {
+function HeroFigure({ label, value, colour, sub, colWidth }: FigureProps) {
   return (
-    <div className="flex flex-col gap-0.5 min-w-[88px]">
+    // Fixed width: the column never grows or shrinks regardless of value length.
+    // whitespace-nowrap + overflow-hidden on the value ensure it never wraps.
+    <div className="flex flex-col gap-0.5 flex-shrink-0" style={{ width: colWidth }}>
       <div className="font-mono text-[9px] uppercase tracking-wider text-muted">{label}</div>
       <div
-        className="font-mono text-lg font-semibold tabular-nums leading-none"
+        className="font-mono text-lg font-semibold tabular-nums leading-none whitespace-nowrap overflow-hidden"
         style={colour ? { color: colour } : { color: '#e6edf3' }}
       >
         {value}
@@ -118,16 +122,21 @@ export function VerdictBand() {
 
   let figures: FigureProps[]
 
+  // Column widths (px) — fixed so no column ever shifts its neighbours when
+  // the value string changes length (e.g. "cannot carry alone" ↔ "16.8 h").
+  // Col 1: 140  Col 2: 104  Col 3: 204  Col 4: 140
   if (running && tick) {
     figures = [
       {
         label: 'Site Draw',
         value: `${tick.p_total_mw.toFixed(2)} MW`,
+        colWidth: 140,
       },
       {
         label: 'Predicted Peak',
         value: `${tick.confidence_upper_mw.toFixed(2)} MW`,
         colour: '#e0a458',
+        colWidth: 104,
       },
       {
         // AB2: metric answers "how long can BESS carry the whole site if gen
@@ -138,11 +147,13 @@ export function VerdictBand() {
         value: bridgeDisplay(tick.bess_bridging_seconds, tick.bridging_basis),
         colour: '#4a9fe0',
         sub: tick.bridging_basis === 'no_load' ? undefined : 'if gen trips',
+        colWidth: 204,
       },
       {
         label: 'Reserve',
         value: hasAlert ? 'insufficient' : 'sufficient',
         colour: hasAlert ? '#f0883e' : '#3fb6a8',
+        colWidth: 140,
       },
     ]
   } else if (hasRun && tick) {
@@ -156,6 +167,7 @@ export function VerdictBand() {
         value: `${(tick.turbine_output_mw + tick.bess_output_mw + tick.p_renewable_mw).toFixed(1)} MW`,
         colour: '#e0a458',
         sub: 'turbine + BESS + solar',
+        colWidth: 140,
       },
       {
         // AA4: bind to dt_lead_next_s directly. In this branch dt_lead_next_s
@@ -167,6 +179,7 @@ export function VerdictBand() {
         label: 'Δt_lead',
         value: `${tick.dt_lead_next_s.toFixed(0)} s`,
         colour: '#3fb6a8',
+        colWidth: 104,
       },
       {
         // AB2 (same fix as running branch): consistent label + sub-label so the
@@ -175,20 +188,22 @@ export function VerdictBand() {
         value: bridgeDisplay(tick.bess_bridging_seconds, tick.bridging_basis),
         colour: '#4a9fe0',
         sub: tick.bridging_basis === 'no_load' ? undefined : 'if gen trips',
+        colWidth: 204,
       },
       {
         label: 'Attention',
         value: dqCount > 0 ? `${dqCount} subsystem` : '—',
         colour: dqCount > 0 ? '#f0883e' : undefined,
+        colWidth: 140,
       },
     ]
   } else {
     // Static defaults — show configured site capacity before any run
     figures = [
-      { label: 'Dispatchable', value: '48.0 MW',      colour: '#e0a458', sub: 'turbine + BESS + solar' },
-      { label: 'Δt_lead',          value: '30–60 s',       colour: '#3fb6a8' },
-      { label: 'Gen-trip cover', value: 'full reserve',  colour: '#4a9fe0' },
-      { label: 'Attention',    value: '1 subsystem',   colour: '#f0883e' },
+      { label: 'Dispatchable', value: '48.0 MW',     colour: '#e0a458', sub: 'turbine + BESS + solar', colWidth: 140 },
+      { label: 'Δt_lead',      value: '30–60 s',     colour: '#3fb6a8',                                colWidth: 104 },
+      { label: 'Gen-trip cover', value: 'full reserve', colour: '#4a9fe0',                             colWidth: 204 },
+      { label: 'Attention',    value: '1 subsystem', colour: '#f0883e',                                colWidth: 140 },
     ]
   }
 

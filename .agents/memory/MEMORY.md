@@ -11,3 +11,4 @@
 - [ui-implementation-u1-u4](ui-implementation-u1-u4.md) — chart primitives + Readiness screen + 9 subsystem modals + tick wiring; getByText multiple-match trap; ComposedChart for mixed Line+Area.
 - [ui-opening-screen-v1-v4](ui-opening-screen-v1-v4.md) — one-line mimic (SVG foreignObject), VerdictBand, SystemStrip, TopologyExplainer; key traps with TS casts and CSS flowDash animation.
 - [websockets-install](websockets-install.md) — uvicorn needs `websockets` pkg (.pythonlibs); load-test 1× regression: LLM calls on tick 1 block event loop.
+- [solar-sim-mistral](solar-sim-mistral.md) — Mistral solar injection in runs.py (not factory); THE TRAP: restarting wrong server leaves old code running.

@@ -36,6 +36,8 @@ Invariants:
 
 from __future__ import annotations
 
+import asyncio
+import functools
 import json
 import uuid
 
@@ -53,6 +55,7 @@ from api.schemas import (
 )
 from runtime.run_manager import RunManager, compute_run_cost_from_completed
 from runtime.scenario_factory import build_run_context, build_run_context_from_spec
+from runtime.solar_sim import generate_irradiance_samples
 
 router = APIRouter(prefix="/runs", tags=["runs"])
 
@@ -100,6 +103,39 @@ async def start_run(
             )
         scenario_store.link_run(body.scenario_id, run_id)
         spec_data = json.loads(record.spec_json)
+
+        # ── Mistral solar injection ───────────────────────────────────────
+        # Replace the bare default irradiance profile [(0,1)] with a
+        # Mistral-simulated San Diego solar curve (physics fallback when
+        # MISTRAL_API_KEY is absent or the call fails).
+        #
+        # The check isolates only the bare default — any scenario that
+        # explicitly provides irradiance_steps (e.g. TC-33 step-drop) keeps
+        # its scripted profile untouched.
+        #
+        # The call is off-loaded to a thread executor so the async event
+        # loop stays responsive for other requests while Mistral responds.
+        _solar_mw    = float(spec_data.get("solar_rated_mw", 0.0))
+        _steps_raw   = spec_data.get("irradiance_steps", [[0.0, 1.0]])
+        _is_default  = (
+            _solar_mw > 0.0
+            and len(_steps_raw) == 1
+            and abs(float(_steps_raw[0][0])) < 1e-9
+            and abs(float(_steps_raw[0][1]) - 1.0) < 1e-9
+        )
+        if _is_default:
+            _sim_duration = float(spec_data.get("end_sim_time", 300.0))
+            _samples = await asyncio.get_event_loop().run_in_executor(
+                None,
+                functools.partial(
+                    generate_irradiance_samples,
+                    _sim_duration,
+                    _solar_mw,
+                ),
+            )
+            # Store as list-of-lists (JSON-safe) so the factory tuple cast works
+            spec_data["irradiance_steps"] = [[t, f] for t, f in _samples]
+
         ctx = build_run_context_from_spec(
             run_id,
             spec_data,
