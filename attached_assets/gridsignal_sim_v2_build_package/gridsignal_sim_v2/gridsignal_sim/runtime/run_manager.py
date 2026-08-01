@@ -199,6 +199,10 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # per run).  Empty strings when solar is absent or run started via direct path.
         "solar_weather":    tick.solar_weather,
         "solar_conditions": tick.solar_conditions,
+        # W2a: advisory telemetry — None when no registry is active (LP-1 / tests).
+        # Keys: backend, agents_armed, proposals_total, proposals_pending,
+        #        last_proposal_sim_time, per_agent (dict[str, float]).
+        "advisory_telemetry": tick.advisory_telemetry,
         # GT-1: §7.4 contingency coverage — computed per tick after dispatch arbitration.
         # null when absent (legacy path); otherwise a dict with all ContingencyCoverage fields.
         "contingency_coverage": (
@@ -749,6 +753,13 @@ class RunManager:
                     # a separate endpoint.  Empty strings on direct job-id path.
                     solar_weather=ctx.solar_weather,
                     solar_conditions=ctx.solar_conditions,
+                    # W2a: advisory telemetry — snapshot from the gate *before* this
+                    # tick's run_all() (section E).  Reflects proposals from ticks 0…t−1.
+                    # None when no registry is wired (LP-1 / headless tests).
+                    advisory_telemetry=(
+                        ctx.registry.telemetry_snapshot()
+                        if ctx.registry is not None else None
+                    ),
                 )
                 if _profiling: _sec.setdefault("B_thermal_update", []).append(_time_module.perf_counter() - _t0)
 

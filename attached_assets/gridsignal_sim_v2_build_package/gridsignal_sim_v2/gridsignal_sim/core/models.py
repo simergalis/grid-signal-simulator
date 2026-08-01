@@ -587,3 +587,9 @@ class TickResult:
     # arbitration.  None only when the tick is produced by a code path that
     # predates the contingency engine (should not occur in normal operation).
     contingency_coverage: Optional[ContingencyCoverage] = None
+
+    # W2a: advisory telemetry — stamped before broadcast from AgentRegistry.telemetry_snapshot().
+    # None when no registry is active (LP-1 / tests that build TickResult without a registry).
+    # Keys: backend, agents_armed, proposals_total, proposals_pending,
+    #        last_proposal_sim_time, per_agent (dict[str, float]).
+    advisory_telemetry: Optional[dict] = None

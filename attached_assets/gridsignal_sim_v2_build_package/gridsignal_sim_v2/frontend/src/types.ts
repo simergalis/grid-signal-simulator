@@ -66,6 +66,36 @@ export interface TickPayload {
   // GT-1: §7.4 contingency coverage — quantitative N−1 gen-trip assessment.
   // null on legacy ticks that predate the engine (should not occur in normal runs).
   contingency_coverage: ContingencyCoverage | null
+
+  // W2a: advisory telemetry — null when no AgentRegistry is active (LP-1 / no API keys).
+  // Reflects proposals from ticks 0…t−1 (stamped before this tick's run_all()).
+  advisory_telemetry: AdvisoryTelemetry | null
+}
+
+/**
+ * W2a §26 — live advisory agent telemetry stamped onto every tick payload.
+ *
+ * backend              : active LLM backend ("mistral" | "anthropic" | "deterministic") or null (LP-1)
+ * agents_armed         : 6 if LLM configured + registry enabled, else 0
+ * proposals_total      : cumulative proposals generated this run (all lifecycle states)
+ * proposals_pending    : proposals currently awaiting human review
+ * last_proposal_sim_time : sim_time of the most recent proposal; -1 if none yet
+ * per_agent            : per-domain last proposal sim_time (-1 if that agent hasn't fired yet)
+ */
+export interface AdvisoryTelemetry {
+  backend:                  string | null
+  agents_armed:             number
+  proposals_total:          number
+  proposals_pending:        number
+  last_proposal_sim_time:   number   // -1.0 = no proposals yet
+  per_agent: {
+    compute:     number
+    storage:     number
+    generation:  number
+    renewable:   number
+    thermal:     number
+    calibration: number
+  }
 }
 
 /**
