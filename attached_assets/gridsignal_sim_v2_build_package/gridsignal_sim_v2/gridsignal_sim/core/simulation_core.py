@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import logging
 import math
+import dataclasses
 from dataclasses import dataclass, field
 
 from .asset_modules import BessModule, CoolingModule, GPUModule, SolarModule, TurbineModule, TurbineState
@@ -304,6 +305,29 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # to full TDP in a single tick.
     for gpu in state.gpu_modules:
         gpu.advance(sim_time, dt_seconds)
+
+    # Node-count ramp patch (§9 cosmetic fix, Task #39):
+    # kube_agent.tick() computes node_count = max(min_nodes, admitted_nodes)
+    # using the raw scheduler admission count — it fires before gpu.advance()
+    # so it has no visibility into the per-job ramp_progress values.  After
+    # gpu.advance() has updated ramp_progress we recompute node_count using
+    # GPUModule.effective_node_count() which applies the same _ramp_multiplier
+    # curve as the power path.  This makes the COMPUTE RACKS tile rise
+    # gradually alongside P_compute instead of snapping to admitted_nodes the
+    # moment a STARTING signal is received.
+    #
+    # admitted_nodes is intentionally left unchanged — it reflects the
+    # scheduler's raw allocation and is used for capacity planning / eviction
+    # decisions that must see the full committed count, not the ramped view.
+    if _kube_metrics is not None and state.gpu_modules and state.kube_agent is not None:
+        _effective_admitted = sum(g.effective_node_count() for g in state.gpu_modules)
+        _effective_total = max(state.kube_agent.config.min_nodes, _effective_admitted)
+        _kube_metrics = dataclasses.replace(
+            _kube_metrics,
+            node_count=_effective_total,
+            utilization=_effective_total / state.kube_agent.config.max_nodes,
+        )
+
     # Step 3 Item 3: per-job cooling superposition.
     # Build the per-job draw dict from all GPU modules (each job lives in exactly
     # one module via _job_owner_index, so no double-counting).  Pass this to

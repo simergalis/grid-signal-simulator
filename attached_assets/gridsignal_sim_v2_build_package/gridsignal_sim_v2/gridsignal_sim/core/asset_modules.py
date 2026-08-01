@@ -214,6 +214,31 @@ class GPUModule(AssetModule):
         """
         return sum(self.per_job_target_mw(job_id) for job_id in self._node_counts)
 
+    def effective_node_count(self) -> int:
+        """Node count weighted by current ramp progress, matching the power curve.
+
+        During the Δt_lead ramp window, newly admitted jobs haven't reached full
+        TDP.  For UI consistency the reported node count is scaled by the same
+        _ramp_multiplier used for power so the COMPUTE RACKS tile rises in
+        lock-step with P_compute rather than snapping to the admitted count the
+        moment a STARTING signal is processed.
+
+        PROTO-1 note: _ramp_multiplier is a chosen piecewise curve (no measured
+        basis).  Effective node count therefore inherits the same prototype
+        caveat — it is a display-only metric, not used for dispatch sizing.
+
+        Fully-ramped jobs (progress == 1.0) always contribute their full
+        node_count so that steady-state runs produce no rounding artefacts.
+        """
+        total = 0
+        for job_id, nodes in self._node_counts.items():
+            progress = self._ramp_progress.get(job_id, 1.0)
+            if progress >= 1.0:
+                total += nodes
+            else:
+                total += round(nodes * self._ramp_multiplier(progress))
+        return total
+
     def active_training_jobs(self) -> list[str]:
         return [
             job_id
