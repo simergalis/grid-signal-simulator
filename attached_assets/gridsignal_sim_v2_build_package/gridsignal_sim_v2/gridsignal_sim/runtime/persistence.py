@@ -329,6 +329,39 @@ class Principal(Base):
     )
 
 
+# ---------------------------------------------------------------------------
+# Authentication — user accounts
+# ---------------------------------------------------------------------------
+
+class AuthUser(Base):
+    """Authenticated user accounts for the GridSignal operator interface.
+
+    Login requires all three: email + phone + password.
+    Accounts are created by the admin (POST /api/admin/users); there is no
+    self-registration flow.
+
+    phone is stored as-entered and normalised for comparison in the login
+    route (strips spaces, dashes, leading +).
+    """
+
+    __tablename__ = "auth_user"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    email: Mapped[str] = mapped_column(String, nullable=False, unique=True, index=True)
+    phone: Mapped[str] = mapped_column(String, nullable=False)
+    display_name: Mapped[str] = mapped_column(String, nullable=False)
+    role: Mapped[str] = mapped_column(String, nullable=False, default="operator")
+    password_hash: Mapped[str] = mapped_column(String, nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    __table_args__ = (
+        CheckConstraint(
+            "role IN ('viewer', 'operator', 'approver')",
+            name="ck_auth_user_role",
+        ),
+    )
+
+
 class Recommendation(Base):
     """§21.6 / §26.3: agent-generated parameter change proposal.
 

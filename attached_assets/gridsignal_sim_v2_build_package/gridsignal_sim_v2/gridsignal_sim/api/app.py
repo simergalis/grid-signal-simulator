@@ -44,7 +44,8 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from runtime.run_manager import RunManager, WebSocketHub
@@ -54,6 +55,9 @@ from api.routes import scenarios as scenarios_routes
 from api.routes import advisory as advisory_routes
 from api.routes import fabric as fabric_routes
 from api.routes import solar as solar_routes
+from api.routes import auth_routes, admin_routes
+from api.auth_utils import COOKIE_NAME, decode_access_token
+from api.db import create_auth_tables
 
 # §10.2: built frontend lives two levels above this file (api/ → gridsignal_sim/ → gridsignal_sim_v2/)
 #   __file__ = .../gridsignal_sim_v2/gridsignal_sim/api/app.py
@@ -70,6 +74,9 @@ async def _lifespan(application: FastAPI):
       built-in demo scenarios.  Step 9 replaces this with a SqliteScenarioStore
       using the same Scenario ORM entity (runtime/persistence.py) + spec_json.
     """
+    # Ensure AuthUser table exists before any requests arrive.
+    await create_auth_tables()
+
     hub = WebSocketHub()
     manager = RunManager(hub)
     scenario_store = build_seeded_store()
@@ -109,13 +116,36 @@ def create_app() -> FastAPI:
     # /healthz is the deployment startup-probe path.  It must be reachable
     # before the static-file mount is added, and must not require any
     # application state — it answers immediately from the route table.
-    from fastapi.responses import JSONResponse
-
     @application.get("/healthz", include_in_schema=False)
     async def _healthz() -> JSONResponse:
         return JSONResponse({"status": "ok", "version": "0.1.0"})
 
+    # ── Auth middleware ──────────────────────────────────────────────────
+    # All /api/* requests are protected except the login endpoint and
+    # /healthz.  WebSocket upgrades carry the cookie too so the WS hub
+    # is covered.  Returning 401 (not 403) lets the frontend detect an
+    # unauthenticated session and redirect to the login page.
+    _UNPROTECTED = {"/api/auth/login", "/healthz"}
+
+    @application.middleware("http")
+    async def _auth_middleware(request: Request, call_next):
+        path = request.url.path
+        # Pass through: unprotected API paths and all non-/api/ paths
+        # (static assets, SPA index.html, WebSocket upgrade — WS auth is
+        # handled by the WS route itself after the HTTP upgrade).
+        if not path.startswith("/api/") or path in _UNPROTECTED:
+            return await call_next(request)
+        token = request.cookies.get(COOKIE_NAME)
+        if not token or decode_access_token(token) is None:
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "Not authenticated"},
+            )
+        return await call_next(request)
+
     # ── API routes (must precede the static catch-all) ──────────────────
+    application.include_router(auth_routes.router)   # /api/auth/*
+    application.include_router(admin_routes.router)  # /api/admin/*
     application.include_router(scenarios_routes.router)
     application.include_router(runs.router)
     application.include_router(ws_routes.router)

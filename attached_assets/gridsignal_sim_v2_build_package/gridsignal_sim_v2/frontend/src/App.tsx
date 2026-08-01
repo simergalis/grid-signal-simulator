@@ -19,6 +19,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { LoginPage }               from './components/LoginPage'
 import { GridSignalHeader }        from './opening/GridSignalHeader'
 import { DemoBar }                 from './opening/DemoBar'
 import { TopologyExplainer }       from './opening/TopologyExplainer'
@@ -44,6 +45,60 @@ type PageView = 'readiness' | 'overview' | 'proposals' | 'procurement' | 'networ
 const FRAME_INTERVAL_MS = 250   // 4 Hz render loop
 
 export default function App() {
+  // ── Auth state ─────────────────────────────────────────────────────────────
+  // null = not yet checked, false = unauthenticated, string = display name
+  const [authUser,      setAuthUser]      = useState<string | false | null>(null)
+  const [userRole,      setUserRole]      = useState<string>('operator')
+
+  // Check session on mount by calling /api/auth/me
+  useEffect(() => {
+    fetch('/api/auth/me', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then((data: { display_name: string; role: string } | null) => {
+        if (data) {
+          setAuthUser(data.display_name)
+          setUserRole(data.role)
+        } else {
+          setAuthUser(false)
+        }
+      })
+      .catch(() => setAuthUser(false))
+  }, [])
+
+  const handleAuthenticated = useCallback((displayName: string, role: string) => {
+    setAuthUser(displayName)
+    setUserRole(role)
+  }, [])
+
+  const handleLogout = useCallback(async () => {
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+    setAuthUser(false)
+  }, [])
+
+  // ── Auth gate ──────────────────────────────────────────────────────────────
+  if (authUser === null) {
+    // Still checking session — show minimal loading state
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#0b1017' }}>
+        <span className="font-sans" style={{ color: '#4b5764', fontSize: 13 }}>Loading…</span>
+      </div>
+    )
+  }
+  if (authUser === false) {
+    return <LoginPage onAuthenticated={handleAuthenticated} />
+  }
+
+  // ── Authenticated — render the main interface ──────────────────────────────
+  return <AuthenticatedApp displayName={authUser} role={userRole} onLogout={handleLogout} />
+}
+
+interface AuthAppProps {
+  displayName: string
+  role: string
+  onLogout: () => void
+}
+
+function AuthenticatedApp({ displayName, role: _role, onLogout }: AuthAppProps) {
   const [runId,         setRunId]         = useState<string | null>(null)
   const [lastRunId,     setLastRunId]     = useState<string | null>(null)
   const [resultsRunId,  setResultsRunId]  = useState<string | null>(null)
@@ -151,6 +206,8 @@ export default function App() {
         <GridSignalHeader
           runId={runId}
           onHowItWorks={() => setTopoOpen(true)}
+          displayName={displayName}
+          onLogout={onLogout}
         />
 
         <main className="flex-1 overflow-hidden">

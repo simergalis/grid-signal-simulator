@@ -13,6 +13,8 @@ import { useEffect, useState } from 'react'
 interface Props {
   runId: string | null
   onHowItWorks: () => void
+  displayName?: string
+  onLogout?: () => void
 }
 
 function utcNow(): string {
@@ -25,7 +27,7 @@ function utcNow(): string {
   )
 }
 
-export function GridSignalHeader({ runId, onHowItWorks }: Props) {
+export function GridSignalHeader({ runId, onHowItWorks, displayName, onLogout }: Props) {
   const [clock, setClock] = useState(utcNow)
 
   useEffect(() => {
@@ -91,6 +93,26 @@ export function GridSignalHeader({ runId, onHowItWorks }: Props) {
       >
         ⓘ &nbsp;How it works
       </button>
+
+      {/* ── Signed-in user + logout ───────────────────────────────────────── */}
+      {displayName && (
+        <div className="flex items-center gap-2 px-3">
+          <span className="font-sans" style={{ fontSize: 11, color: '#7d8b9c' }}>
+            {displayName}
+          </span>
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="px-2 py-1 rounded border border-border font-sans
+                         text-muted hover:text-text hover:border-muted/50 transition-colors"
+              style={{ fontSize: 10 }}
+              aria-label="Sign out"
+            >
+              Sign out
+            </button>
+          )}
+        </div>
+      )}
 
       {/* ── Status badge ──────────────────────────────────────────────────── */}
       <div className="flex items-center gap-2 px-5">
