@@ -9,15 +9,26 @@
  *   · Passive nodes (Distribution, PDU) have no chevron and no pointer cursor.
  *   · Grid connection is dashed + grey: islanded by design, never red.
  *   · A coloured state dot appears next to the MW value when active.
+ *   · Solar PV node shows a weather badge when solarPreview is provided.
  */
 
 import type { NodeDef } from './plantLayout'
 import type { TickPayload } from '../types'
 
+/** Weather preview data from GET /solar-preview */
+export interface SolarPreview {
+  weather:    string   // "clear" | "partly_cloudy" | "overcast" | "marine_layer" | "physics_estimate"
+  conditions: string   // human-readable sentence
+  source:     string   // "mistral" | "physics"
+  local_time: string   // "HH:MM" San Diego local time
+}
+
 interface PlantNodeProps {
   def: NodeDef
   tick: TickPayload | null
   onClick?: (nodeId: string) => void
+  /** Optional solar forecast preview — only consumed by the solar-pv node. */
+  solarPreview?: SolarPreview | null
 }
 
 function getMwValue(def: NodeDef, tick: TickPayload | null): number | null {
@@ -78,12 +89,74 @@ function nodeDetail(def: NodeDef, tick: TickPayload | null): string {
   }
 }
 
-export function PlantNode({ def, tick, onClick }: PlantNodeProps) {
+/** Human-readable label for a weather code. */
+function weatherLabel(weather: string): string {
+  switch (weather) {
+    case 'clear':            return 'clear'
+    case 'partly_cloudy':    return 'partly cloudy'
+    case 'overcast':         return 'overcast'
+    case 'marine_layer':     return 'marine layer'
+    case 'physics_estimate': return 'est.'
+    default:                 return weather.replace(/_/g, ' ')
+  }
+}
+
+/**
+ * WeatherBadge — compact weather chip shown on the Solar PV node before a run.
+ * Disappears once a tick arrives (live run takes over the display).
+ */
+function WeatherBadge({ preview }: { preview: SolarPreview }) {
+  const label = weatherLabel(preview.weather)
+
+  // Colour varies by condition for quick scanning
+  const color =
+    preview.weather === 'clear'            ? '#e0a458' :
+    preview.weather === 'partly_cloudy'    ? '#a8c5da' :
+    preview.weather === 'overcast'         ? '#6a7d8e' :
+    preview.weather === 'marine_layer'     ? '#7ab8d4' :
+    /* physics_estimate */                   '#4b5764'
+
+  return (
+    <div style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 3,
+      marginTop: 2,
+      padding: '1px 5px',
+      borderRadius: 3,
+      border: `1px solid ${color}33`,
+      background: `${color}14`,
+    }}>
+      {/* Source dot — dim for physics, coloured for Mistral */}
+      <div style={{
+        width: 4,
+        height: 4,
+        borderRadius: '50%',
+        background: preview.source === 'mistral' ? color : '#3a4a58',
+        flexShrink: 0,
+      }} />
+      <span style={{
+        fontFamily: "'SF Mono','Roboto Mono',Menlo,Consolas,monospace",
+        fontSize: 8,
+        color,
+        letterSpacing: '0.04em',
+        lineHeight: 1.4,
+      }}>
+        {label} · {preview.local_time} PST
+      </span>
+    </div>
+  )
+}
+
+export function PlantNode({ def, tick, onClick, solarPreview }: PlantNodeProps) {
   const mwValue = getMwValue(def, tick)
   const isIdle  = mwValue === null || Math.abs(mwValue) < 0.01
   const detail  = nodeDetail(def, tick)
   const isGrid  = !!def.gridStyle
   const canClick = def.clickable && !def.passive
+
+  // Show weather badge on solar-pv only before a run starts (no tick yet)
+  const showWeather = def.id === 'solar-pv' && !tick && solarPreview != null
 
   // Border colour: teal when active, dim when idle, grey when grid/passive
   const borderColor = isGrid
@@ -201,6 +274,9 @@ export function PlantNode({ def, tick, onClick }: PlantNodeProps) {
             <span style={{ fontSize: 9, fontWeight: 400, marginLeft: 2, color: '#5a6a78' }}>MW</span>
           </div>
         )}
+
+        {/* Weather badge — solar-pv only, pre-run */}
+        {showWeather && <WeatherBadge preview={solarPreview!} />}
 
         {/* Detail line (bottom) */}
         {detail && (

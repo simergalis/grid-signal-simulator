@@ -17,9 +17,10 @@
  *   System strip tiles → SubsystemModal
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { VerdictBand }      from './VerdictBand'
 import { PlantDiagram }     from './PlantDiagram'
+import type { SolarPreview } from './PlantNode'
 import { SubsystemModal }   from '../subsystem/SubsystemModal'
 import { SubsystemTile }    from '../readiness/SubsystemTile'
 import type { TileState }   from '../readiness/SubsystemTile'
@@ -46,9 +47,11 @@ interface OpeningScreenProps {
 }
 
 export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
-  const [windowWidth, setWindowWidth] = useState(() => window.innerWidth)
-  const [activeModal, setActiveModal] = useState<string | null>(null)
-  const [compact,     setCompact]     = useState(false)
+  const [windowWidth,   setWindowWidth]   = useState(() => window.innerWidth)
+  const [activeModal,   setActiveModal]   = useState<string | null>(null)
+  const [compact,       setCompact]       = useState(false)
+  const [solarPreview,  setSolarPreview]  = useState<SolarPreview | null>(null)
+  const solarFetched = useRef(false)
 
   const data = useSubsystemData()
 
@@ -60,6 +63,17 @@ export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
     onResize()
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  // Fetch the solar forecast preview once on mount so the Solar PV node shows
+  // today's Mistral weather label before the user starts a run.
+  useEffect(() => {
+    if (solarFetched.current) return
+    solarFetched.current = true
+    fetch('/solar-preview')
+      .then(r => r.ok ? r.json() : null)
+      .then((d: SolarPreview | null) => { if (d) setSolarPreview(d) })
+      .catch(() => { /* silently ignore — endpoint is best-effort */ })
   }, [])
 
   // ── Below 768 px: fall back to the proven tile-grid layout ──────────────
@@ -100,7 +114,7 @@ export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
         </div>
 
         <div className="w-full h-full pt-6">
-          <PlantDiagram onNodeClick={handleNodeClick} compact={compact} />
+          <PlantDiagram onNodeClick={handleNodeClick} compact={compact} solarPreview={solarPreview} />
         </div>
       </div>
 

@@ -16,6 +16,7 @@ import { useTickStore } from '../store/tickStore'
 import { NODES, FLOWS, LEADTIME_BOX, DIAGRAM_W, DIAGRAM_H } from './plantLayout'
 import { FlowLine, FlowMarkers } from './FlowLine'
 import { PlantNode } from './PlantNode'
+import type { SolarPreview } from './PlantNode'
 import type { TickPayload } from '../types'
 
 interface PlantDiagramProps {
@@ -23,6 +24,8 @@ interface PlantDiagramProps {
   onNodeClick: (nodeId: string) => void
   /** True when horizontal space is constrained (1024–1440 px). */
   compact?: boolean
+  /** Solar forecast preview from GET /solar-preview — shown on the Solar PV node before a run. */
+  solarPreview?: SolarPreview | null
 }
 
 function getMwForFlow(
@@ -228,7 +231,7 @@ function LeadTimeCallout({
   )
 }
 
-export function PlantDiagram({ onNodeClick, compact }: PlantDiagramProps) {
+export function PlantDiagram({ onNodeClick, compact, solarPreview }: PlantDiagramProps) {
   const tick = useTickStore(s => s.latestTick)
 
   return (
@@ -260,6 +263,7 @@ export function PlantDiagram({ onNodeClick, compact }: PlantDiagramProps) {
           def={node}
           tick={tick}
           onClick={onNodeClick}
+          solarPreview={node.id === 'solar-pv' ? solarPreview : null}
         />
       ))}
 
