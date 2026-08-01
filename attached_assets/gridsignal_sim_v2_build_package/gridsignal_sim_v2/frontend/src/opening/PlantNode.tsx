@@ -33,9 +33,10 @@ function nodeDetail(def: NodeDef, tick: TickPayload | null): string {
   switch (def.id) {
     case 'gas-turbine': {
       const mw = tick?.turbine_output_mw ?? 0
-      return mw > 0.1
-        ? `ramping · 25.0 MW rated`
-        : `standby · 25.0 MW rated`
+      const online = mw > 0.1 ? 1 : 0
+      return online > 0
+        ? `${online} unit online · N−1 firm 30.0 MW`
+        : `3 units · 0 online · N−1 firm 30.0 MW`
     }
     case 'solar-pv': {
       const mw = tick?.p_renewable_mw ?? 0

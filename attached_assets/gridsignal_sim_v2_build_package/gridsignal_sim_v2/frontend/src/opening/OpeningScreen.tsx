@@ -29,7 +29,7 @@ import { SUBSYSTEMS }       from '../readiness/subsystems'
 
 /** Map from plant node id → subsystem modal id or tabRoute */
 const NODE_MODAL_MAP: Record<string, { modalId?: string; tabRoute?: string }> = {
-  'gas-turbine':     { modalId: 'generation' },
+  'gas-turbine':     { modalId: 'gas-turbine-fleet' },
   'solar-pv':        { modalId: 'renewable' },
   'battery-bess':    { modalId: 'storage' },
   'grid-connection': { modalId: 'grid' },

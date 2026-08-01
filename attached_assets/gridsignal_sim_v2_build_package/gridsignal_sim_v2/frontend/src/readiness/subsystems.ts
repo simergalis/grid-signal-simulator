@@ -58,6 +58,14 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
 
   // ── POWER SOURCES ─────────────────────────────────────────────────────────
   {
+    id: 'gas-turbine-fleet',
+    name: 'Gas Turbine Fleet',
+    group: 'supply',
+    accentColor: '#e0a458',
+    identityLine: '3 × 15 MW aeroderivative · synchronous · islanded primary generation',
+    tabId: 'overview',
+  },
+  {
     id: 'generation',
     name: 'Generation',
     group: 'supply',

@@ -181,10 +181,12 @@ export function SubsystemModal({
           <div className="flex flex-col md:flex-row gap-6">
             {/* Chart area (left / top on small screens) */}
             <div className="md:w-[58%]">
-              <div className="font-mono text-[9px] uppercase tracking-[0.14em] mb-2"
-                   style={{ color: '#4b5764' }}>
-                {panelData.chartTitle}
-              </div>
+              {panelData.chartTitle && (
+                <div className="font-mono text-[9px] uppercase tracking-[0.14em] mb-2"
+                     style={{ color: '#4b5764' }}>
+                  {panelData.chartTitle}
+                </div>
+              )}
               {panelData.chart}
             </div>
 

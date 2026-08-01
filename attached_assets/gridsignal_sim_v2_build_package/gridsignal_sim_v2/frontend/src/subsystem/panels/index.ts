@@ -31,6 +31,7 @@ export interface PanelConfig {
 }
 
 import { generationPanel }      from './generation'
+import { turbineFleetPanel }    from './turbineFleet'
 import { storagePanel }         from './storage'
 import { renewablePanel }       from './renewable'
 import { thermalPanel }         from './thermal'
@@ -41,13 +42,14 @@ import { networkPanel }         from './network'
 import { agentsPanel }          from './agents'
 
 export const PANEL_CONFIGS: Record<string, PanelConfig> = {
-  generation:          generationPanel,
-  storage:             storagePanel,
-  renewable:           renewablePanel,
-  thermal:             thermalPanel,
-  compute:             computePanel,
-  grid:                gridPanel,
-  'forecast-quality':  forecastQualityPanel,
-  network:             networkPanel,
-  agents:              agentsPanel,
+  generation:           generationPanel,
+  'gas-turbine-fleet':  turbineFleetPanel,
+  storage:              storagePanel,
+  renewable:            renewablePanel,
+  thermal:              thermalPanel,
+  compute:              computePanel,
+  grid:                 gridPanel,
+  'forecast-quality':   forecastQualityPanel,
+  network:              networkPanel,
+  agents:               agentsPanel,
 }

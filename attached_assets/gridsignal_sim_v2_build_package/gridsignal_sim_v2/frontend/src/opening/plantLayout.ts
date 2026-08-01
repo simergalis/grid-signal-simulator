@@ -83,10 +83,10 @@ export const NODES: NodeDef[] = [
   {
     id: 'gas-turbine',
     x: 0, y: 10, w: 155, h: 72,
-    label: 'GAS TURBINE',
+    label: 'GAS TURBINE', label2: 'FLEET',
     mwField: 'turbine_output_mw',
     staticMW: 0,   // at rest: standby, 0 MW
-    clickable: true, modalId: 'generation',
+    clickable: true, modalId: 'gas-turbine-fleet',
     accentColor: '#e0a458',
   },
   {
