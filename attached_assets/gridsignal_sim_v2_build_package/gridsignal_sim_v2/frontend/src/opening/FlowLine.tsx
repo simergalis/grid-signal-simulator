@@ -29,7 +29,7 @@ export function FlowLine({ d, mwValue, maxMW, color, isGrid, marker }: FlowLineP
 
   const strokeColor = (isGrid || isIdle) ? '#3a4a58' : color
   const strokeWidth = mwToStroke(mwValue, maxMW)
-  const dashArray   = (isGrid || isIdle) ? '5 7' : undefined
+  const dashArray   = (isGrid || isIdle) ? '5 7' : '12 0'  // solid when active
   const opacity     = isIdle ? 0.45 : 1.0
 
   return (
@@ -37,15 +37,19 @@ export function FlowLine({ d, mwValue, maxMW, color, isGrid, marker }: FlowLineP
       d={d}
       fill="none"
       stroke={strokeColor}
-      strokeWidth={strokeWidth}
       strokeDasharray={dashArray}
       strokeLinecap="round"
       strokeLinejoin="round"
-      opacity={opacity}
       markerEnd={marker ? `url(#${marker})` : undefined}
-      style={isActive ? {
-        animation: 'flowDash 1.2s linear infinite',
-      } : undefined}
+      style={{
+        // stroke-width and opacity via style so CSS transition applies.
+        // Presentation attributes (strokeWidth, opacity as attr) bypass the
+        // transition engine; only style-applied properties animate smoothly.
+        strokeWidth,
+        opacity,
+        transition: 'stroke-width 0.22s ease-out, opacity 0.22s ease-out',
+        ...(isActive && { animation: 'flowDash 1.2s linear infinite' }),
+      }}
     />
   )
 }

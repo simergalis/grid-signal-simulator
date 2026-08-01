@@ -145,12 +145,14 @@ export const useTickStore = create<TickState>((set, get) => ({
     const pending = s.pendingTicks
 
     if (pending.length === 0) {
-      // ── 0 ticks: interpolate for smooth animation ─────────────────────────
-      // Only possible when we have two confirmed ticks to interpolate between.
-      if (s.latestTick && s.prevTick && !s.isInterpolated) {
-        // Estimate how far through the next tick interval we are.
-        // TICK_INTERVAL_SIM_SECONDS is 5 s; at rate=1 that is 5 real seconds.
-        // Cap at 0.99 so we don't overshoot the next tick's values.
+      // ── 0 ticks: interpolate on EVERY drain frame for smooth display ───────
+      // Re-run each 250 ms call so the display value continuously slides from
+      // prevTick toward latestTick rather than snapping to a single midpoint.
+      // The !isInterpolated guard was removed: one-shot interpolation caused a
+      // visible stutter (display jumped once then froze until the next real tick).
+      // _lastFrameWall is NOT updated here so elapsed grows monotonically from
+      // the last real-tick wall time — giving a correct t in [0, 0.99].
+      if (s.prevTick && s.latestTick) {
         const elapsed = (now - s._lastFrameWall) / 1000
         const rate = s.runMeta?.playback_speed ?? 1.0
         const simInterval = rate > 0 ? 5.0 / rate : 5.0  // wall seconds between ticks
