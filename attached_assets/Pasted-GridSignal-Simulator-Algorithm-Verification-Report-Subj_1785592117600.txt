@@ -1,0 +1,161 @@
+GridSignal Simulator — Algorithm Verification Report
+
+Subject: ALGORITHM.md (Replit implementation reference) Verified against: Forecast Engine Functional Specification v2.5; Simulator Parameter Reference v0.1 Date: 1 August 2026 Method: Line-by-line comparison of documented behaviour against spec sections, invariants INV-1…INV-10, and the v0.1 worked-example fixture. This audits the document; findings marked VERIFY may be implemented correctly and merely undocumented.
+
+Summary
+
+The arbitration core is in good shape. Every invariant that the specification was rewritten to protect — anchor propagation, band-evaluated reserve checks, min() fleet endurance, unit discipline, per-job cooling superposition — is correctly implemented and, in several cases, implemented more carefully than the spec strictly requires.
+
+Three defects are load-bearing. All three sit on paths added after the core arbitration was validated, which is the expected place to find them.
+
+Severity	Count	Findings
+Critical	3	F1, F2, F3
+Major	3	F4, F5, F6
+Minor / reconcile	6	F7 … F12
+Verified correct	11	Section 4
+Critical findings
+F1 — dt_lead_seconds = 0 on the Kubernetes path inverts the product thesis and reintroduces resolved defect #5
+
+Location: Step 0, item 6 (line 37) · core/kube_demand.py Spec refs: v2.5 §2, §6.1, §9, §7.3; resolution-log item 5; INV-5
+
+The document states that WorkloadSignals from the Kubernetes agent are emitted with dt_lead_seconds = 0, annotated: "Kubernetes gives no advance notice to the grid. This is the key GridSignal value proposition: the BESS must bridge every ramp with zero warning."
+
+That annotation is backwards. Bridging every ramp with zero warning is what a site does without GridSignal — it is the incumbent reactive behaviour the product exists to replace. §9 defines Δt_lead as "time from scheduler allocating a job to GPUs reaching full TDP." The whole premise of §2 and §6.1 is that this window is 30–60 s and that observing the admission event is what captures it.
+
+The defect is an internal inconsistency, not a modelling choice. Step 1 already models the physical lead correctly: ramp_seconds = 45 s with a three-phase ρ(progress) curve. So in the simulation the turbine genuinely does have 45 s before full TDP arrives. But the arbitrator is told it has zero. ramp_seconds and dt_lead_seconds are the same physical quantity under §9 and have been split into two parameters that disagree.
+
+Consequence, traced through Step 4 pre-event:
+
+already_ramped_mw = total_r_asset × dt_lead_seconds = 0.2 × 0 = 0
+peak_shortfall_mw = delta_p_mw − 0 = delta_p_mw          ← full ΔP
+
+The BESS shortfall becomes a flat full-ΔP draw rather than a peak declining from ΔP − r_asset·Δt_lead. This is precisely resolution-log item 5 and the §7.3 worked example — the error the specification was rewritten to correct — reintroduced on the Kubernetes path only.
+
+Two further consequences: the Kubernetes path can never reproduce TC-10 or the v0.1 fixture (which require peak_shortfall = 13.98 MW, not 19.98 MW), and the alert fires systematically more often than physics warrants. The direction is conservative, so this will not look like a bug in a demo — it will look like the product does not work.
+
+Fix: Collapse to one parameter. Emit dt_lead_seconds = ramp_seconds (default 45 s, range 30–60 per PARAM-01). If a zero-lead case is wanted, it belongs in the scenario library as an explicit stressor — lead_time_collapse — not as the default on the primary ingestion path.
+
+F2 — SCALE events snap ramp progress to 1.0, producing a physically impossible instantaneous step
+
+Location: Step 1, final paragraph (line 61) Spec refs: v2.5 §6.1, §11.1; INV-9
+
+"A SCALE event snaps progress to 1.0 (already-live node count change, no cold-start delay)."
+
+True for scale-down. False for scale-up. Nodes added to a running job are cold: they perform container init, weight load, and collective re-formation exactly as at job start. A scale-up from 100 → 200 nodes currently doubles P_compute within one tick.
+
+This compounds F1. On the Kubernetes path a scale-up is a zero-lead, zero-ramp, full-magnitude step — the single most punishing input the arbitrator can receive, and it is an artefact.
+
+It also violates INV-9 in spirit: the added nodes are a distinct cohort with their own t₀, not a modification of the existing envelope.
+
+Fix: On scale-up, retain the existing envelope at its current progress and open a new envelope for the delta node count, seeded at progress 0. On scale-down, reduce node count against the existing envelope with no progress change. This also feeds Step 2 correctly, since the new cohort needs its own cooling t₀.
+
+F3 — Pre-staging subtracts energy without ever adding it, modelling curtailment rather than shifting
+
+Location: Step 3a (lines 121–131) · core/dispatch.py · PreStagingEngine Spec ref: v2.5 §8.1
+
+P_dispatch_required -= min(max_shift_mw, available_cooling_headroom)
+
+Pre-cooling consumes power earlier in exchange for consuming less later. The current formula only ever subtracts, so the shifted energy is never drawn. Energy is not conserved, and pre-staging appears free.
+
+§8.1 is explicit on exactly this distinction: "Curtailment removes energy from the forecast; shifting moves it earlier. They are not interchangeable." As written, the implementation models curtailment and calls it shifting — which also means a scenario cannot show pre-staging's real cost, and cannot show it failing (thermal mass exhausted before the peak arrives).
+
+Fix: Two-phase model with a thermal state of charge, structured as the direct analogue of BESS:
+
+charge phase (pre-peak):   P_dispatch_required += P_precool
+                           thermal_soc_mwh     += P_precool × dt/3600 × η
+discharge phase (peak):    P_dispatch_required -= P_shift
+                           thermal_soc_mwh     -= P_shift × dt/3600
+bound:  thermal_soc_mwh ≥ 0, and inlet temp within [18 °C, 24 °C] at all times
+
+bms_override → 0 is correct as implemented and must survive the change: the BMS retains unconditional authority (§19.6).
+
+Major findings
+F4 — Checkpoint duration window (5–30 s) appears to be absent from the shape heuristic — VERIFY
+
+Location: Step 5, item 2 (line 326) Spec refs: v2.5 §6.2; TC-06…TC-09
+
+The documented heuristic is: 15 % drop → IN_VALLEY; ≥90 % recovery within 45 s → CHECKPOINT. The duration bound is missing. §6.2 requires all three conditions, inclusive: drop ≥ 15 %, duration 5 s ≤ d ≤ 30 s, recovery ≥ 90 % within 45 s.
+
+Without the bound, a 2-second transient and a 40-second valley both classify as checkpoints if they recover. TC-07 exists to catch this.
+
+If the bound is implemented and merely undocumented, add it to the document. If not, add the check — and note it must be inclusive, not strict.
+
+F5 — UNCERTAIN → JOB_END after a 30-second grace is not in the specification
+
+Location: Step 5, item 2 (line 326) Spec ref: v2.5 §6.2
+
+§6.2 says an unresolved valley is held with an uncertain flag. It does not specify auto-resolution to JOB_END. The implementation releases staging 75 s after valley onset (45 s + 30 s grace) on ambiguity, and since JOB_END is terminal (correctly, per B-3), the decision cannot be revisited if the job resumes.
+
+Ambiguity resolving toward release is the less safe direction. Either specify the grace period in §6.2 with a rationale, or invert it so UNCERTAIN holds until positively resolved by a scheduler event.
+
+F6 — Checkpoint baseline is a 5-minute trailing median; the spec says pre-drop level
+
+Location: Step 5, item 2 (line 326) Spec ref: v2.5 §6.2
+
+A trailing median is arguably the better estimator — it resists single-tick noise. But it is a different quantity from "pre-drop P_compute", and it shifts the effective threshold whenever load has been trending. The v0.1 fixture derives 2.997 MW from the pre-drop level; a trailing median will not reproduce it under a ramping load.
+
+This is a spec amendment, not a code fix: write the median definition and window into §6.2, and re-derive the TC-06…TC-09 expected values against it.
+
+Minor findings and reconciliations
+ID	Finding	Action
+F7	p_anchor_reserve_mw = 1.0 MW absolute (PROTO-9); PARAM-09 defines it as 8 % of rated. On a 15 MW pack these differ (1.0 vs 1.2 MW) and diverge on any other pack size.	Reconcile. Percentage-of-rated scales with the fleet; absolute does not. Pick one and update both artefacts.
+F8	Band multipliers compose multiplicatively: uncalibrated and unmapped gives 4 % × 2.0 × 1.5 = 12 %. This composition rule appears in neither v2.5 §12 nor the v0.1 parameter file.	Record the rule. Confirm 12 % is intended rather than an emergent product.
+F9	Latitude 32.72 °N (San Diego) is hard-coded in the physics fallback.	Site coordinates are site configuration, not a constant. Move to SiteConfig.
+F10	Line 5 claims runs are "byte-for-byte reproducible from its scenario spec alone." True only after Mistral output is materialised into irradiance_steps. Two runs from the same scenario definition differ.	Qualify the claim. Distinguish scenario definition from materialised spec.
+F11	Ladder positions 0, 1, 4, 5 are defined; 2 and 3 are unexplained.	Document the reserved positions or renumber contiguously.
+F12	P_dispatch_required = max(0, …) discards surplus. The clamp is acknowledged as lossy and p_renewable_mw is preserved, but export/curtailment state is not representable.	Acceptable for now. Record as a limitation — surplus is a real operating state at a solar-heavy islanded site.
+Verified correct
+
+These were checked specifically and are right. Several are subtle enough to be worth protecting with tests if they are not already.
+
+#	Behaviour	Ref
+1	Anchor reserve deducted before allocation, endurance, and the reserve check	INV-3, §7.1.2
+2	Reserve check evaluates the band-widened shortfall, not the point estimate	INV-2, TC-17
+3	min() over units for fleet endurance, not sum() (D13)	§7.2 step 4
+4	Power-limited check compares MW to MW; energy check compares seconds to seconds	INV-6 — the exact error §7.2 step 4 warns against
+5	Solar removed by the caller before arbitration; structurally absent from ramp capability	INV-4, §7.1.1
+6	Per-job cooling envelopes seeded from event t₀, never inferred from aggregate draw shape	§8
+7	Envelope retention Δt_thermal + 5τ = 190 s after job end — heat stays in the room	§8
+8	Staging uses target TDP, not current ramped draw	§7.2 step 1
+9	Confidence tags evaluated per segment, not sticky run-global	§5.1, §12
+10	Interval-end timestamps on stored rows; unbiased MAPE attribution	FR-1.5
+11	SCADA egress restricted to three command types; no protection commands	TC-68, §28.4
+
+Item 4 deserves specific note: this is the one place where a plausible-looking implementation silently produces an unsafe pass, and it is correct here.
+
+Not covered by this document — VERIFY
+
+Absent from ALGORITHM.md; may exist in code.
+
+§17.1 idempotency — event_id dedupe on (site_id, job_id, event_type, event_id). Step 0 documents the reorder buffer but no dedupe.
+§17.2 quarantine — schema/domain validation and the invalid_payload confidence widening.
+NFR-2 — the 2-second decision-to-command budget appears nowhere.
+§11.4 clock classes — PARAM-25's declared_ptp_actual_ntp case (TC-70).
+§5.1 fallback reachability — generic_fallback is tagged, but nothing shows how an unmapped profile arises on the Kubernetes path, since node count and profile are supplied directly (OI-4).
+Recommended sequence
+F1 — one parameter, not two. Everything else on the Kubernetes path is measured against a wrong lead time until this is fixed.
+F2 — cohort envelopes on scale-up. Same subsystem, same test surface.
+F4 — restore the duration bound, or document that it exists.
+F3 — two-phase pre-staging with thermal SOC. Largest change; isolated from the above.
+F5, F6 — spec amendments to §6.2, then re-derive TC-06…TC-09.
+F7, F8 — reconcile against gridsignal_parameters.json and re-run the v0.1 fixture.
+
+After 1 and 2, the Kubernetes path should reproduce the v0.1 worked-example fixture exactly. That it currently cannot is the clearest single indicator that F1 is real.
+
+Project content
+GridSignal
+Created by you
+GridSignal-Forecast-Engine-Functional-Spec_v2.5.md
+
+1,683 lines
+
+MD
+
+PDF
+
+PDF
+
+Content
+ALGORITHM.md
+
+MD
