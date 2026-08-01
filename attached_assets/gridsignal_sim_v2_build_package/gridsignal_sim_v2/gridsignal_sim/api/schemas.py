@@ -730,6 +730,8 @@ class StartRunRequest(BaseModel):
 
 class StartRunResponse(BaseModel):
     run_id: str
+    soc_floor_pct: float = 10.0   # operator-set BESS lower display bound
+    soc_ceil_pct: float  = 95.0   # operator-set BESS upper display bound
 
 
 class RunStatusResponse(BaseModel):

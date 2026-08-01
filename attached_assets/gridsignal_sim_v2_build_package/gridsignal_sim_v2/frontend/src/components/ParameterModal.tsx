@@ -77,6 +77,14 @@ export interface PhysicsParams {
   band_pct_calibrated: number
   band_mult_uncalibrated: number
   band_mult_unmapped_hw: number
+  // Operator-adjustable site / advisory settings
+  site_latitude: number
+  site_utc_offset_h: number
+  ambient_temp_base_c: number
+  soc_floor_pct: number
+  soc_ceil_pct: number
+  advisory_interval_s: number
+  advisory_max_mw: number
 }
 
 /** Build default PhysicsParams from JSON (authoritative). */
@@ -98,6 +106,13 @@ export function defaultPhysicsParams(): PhysicsParams {
     band_pct_calibrated:       def('PARAM-13'),
     band_mult_uncalibrated:    def('PARAM-14'),
     band_mult_unmapped_hw:     def('PARAM-15'),
+    site_latitude:             def('PARAM-28'),
+    site_utc_offset_h:         def('PARAM-29'),
+    ambient_temp_base_c:       def('PARAM-30'),
+    soc_floor_pct:             def('PARAM-31'),
+    soc_ceil_pct:              def('PARAM-32'),
+    advisory_interval_s:       def('PARAM-33'),
+    advisory_max_mw:           def('PARAM-34'),
   }
 }
 
@@ -327,13 +342,22 @@ const PARAM_MAP: Record<string, [keyof PhysicsParams, keyof PhysicsParams | null
   'PARAM-13': ['band_pct_calibrated',    null],
   'PARAM-14': ['band_mult_uncalibrated', null],
   'PARAM-15': ['band_mult_unmapped_hw',  null],
+  'PARAM-28': ['site_latitude',          null],
+  'PARAM-29': ['site_utc_offset_h',      null],
+  'PARAM-30': ['ambient_temp_base_c',    null],
+  'PARAM-31': ['soc_floor_pct',          null],
+  'PARAM-32': ['soc_ceil_pct',           null],
+  'PARAM-33': ['advisory_interval_s',    null],
+  'PARAM-34': ['advisory_max_mw',        null],
 }
 
-const GROUP_ORDER = ['timing', 'thermal', 'storage', 'confidence']
+const GROUP_ORDER = ['site', 'timing', 'thermal', 'storage', 'advisory', 'confidence']
 const GROUP_LABELS: Record<string, string> = {
+  site:        'Site',
   timing:      'Timing',
   thermal:     'Thermal',
   storage:     'Storage',
+  advisory:    'Advisory Agents',
   confidence:  'Confidence Band (INV-2)',
 }
 const LOCKED_GROUPS = ['classifier', 'engine', 'storage', 'integrity']

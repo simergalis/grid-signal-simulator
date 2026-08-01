@@ -126,12 +126,12 @@ function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
   }, [drainFrame])
 
   // Run lifecycle callbacks
-  const handleRunStarted = useCallback((id: string, speed: number) => {
+  const handleRunStarted = useCallback((id: string, speed: number, socFloor?: number, socCeil?: number) => {
     reset()
     setRunId(id)
     setLastRunId(id)
     setResultsRunId(null)
-    setRunMeta({ run_id: id, playback_speed: speed })
+    setRunMeta({ run_id: id, playback_speed: speed, soc_floor_pct: socFloor, soc_ceil_pct: socCeil })
     // Stay on opening screen — flow lines thicken as the turbine ramps.
     // User navigates to Overview via the tab strip or a modal link.
   }, [reset, setRunMeta])

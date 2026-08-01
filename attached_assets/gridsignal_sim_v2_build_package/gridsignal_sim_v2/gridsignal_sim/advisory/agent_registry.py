@@ -67,8 +67,9 @@ class AgentRegistry:
         router:            Optional[AdvisoryRouter] = None,
         enabled:           bool = True,
         hardware_profiles: Optional[dict[str, float]] = None,
+        max_proposal_mw:   float = 20.0,
     ) -> None:
-        self._gate   = gate   or AdvisoryGate()
+        self._gate   = gate   or AdvisoryGate(max_proposal_mw=max_proposal_mw)
         self._router = router or AdvisoryRouter()
         self._enabled = enabled
         # P1: create a single session-stable HardwareClassMap if profiles provided.

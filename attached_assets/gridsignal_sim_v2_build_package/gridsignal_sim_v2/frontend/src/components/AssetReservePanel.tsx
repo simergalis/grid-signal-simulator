@@ -19,8 +19,8 @@
 import { useTickStore } from '../store/tickStore'
 import { DataQualityBadge } from './DataQualityBadge'
 
-const SOC_MIN = 0.10   // §3.3 usable lower bound
-const SOC_MAX = 0.95   // §3.3 usable upper bound
+const SOC_FLOOR_DEFAULT = 0.10   // §3.3 usable lower bound
+const SOC_CEIL_DEFAULT  = 0.95   // §3.3 usable upper bound
 const BRIDGING_FULL_RESERVE = 86400  // server cap for math.inf
 
 function formatBridging(seconds: number, basis: string): string {
@@ -47,9 +47,12 @@ interface SocBarProps {
 }
 
 function SocBar({ fraction }: SocBarProps) {
+  const runMeta = useTickStore(s => s.runMeta)
+  const socMin  = (runMeta?.soc_floor_pct ?? SOC_FLOOR_DEFAULT * 100) / 100
+  const socMax  = (runMeta?.soc_ceil_pct  ?? SOC_CEIL_DEFAULT  * 100) / 100
   const pct     = Math.max(0, Math.min(1, fraction)) * 100
-  const usable  = (SOC_MAX - SOC_MIN) * 100
-  const socColor = fraction < SOC_MIN + 0.05
+  const usable  = (socMax - socMin) * 100
+  const socColor = fraction < socMin + 0.05
     ? 'bg-danger'
     : fraction < 0.35
       ? 'bg-warn'
@@ -60,7 +63,7 @@ function SocBar({ fraction }: SocBarProps) {
       {/* Usable window indicator */}
       <div
         className="absolute top-0 h-full bg-border/40"
-        style={{ left: `${SOC_MIN * 100}%`, width: `${usable}%` }}
+        style={{ left: `${socMin * 100}%`, width: `${usable}%` }}
       />
       {/* SoC fill */}
       <div

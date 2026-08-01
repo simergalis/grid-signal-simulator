@@ -158,7 +158,8 @@ class AdvisoryGate:
     Thread-safety: not thread-safe; designed for single-threaded sim loop.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, max_proposal_mw: float = MAX_PROPOSAL_MW) -> None:
+        self._max_proposal_mw = max_proposal_mw
         # All proposals seen this session, keyed by proposal_id.
         self._proposals: dict[str, Proposal] = {}
 
@@ -190,10 +191,10 @@ class AdvisoryGate:
                 f"unknown kind {proposal.kind!r}; "
                 f"must be one of {sorted(VALID_PROPOSAL_KINDS)}"
             )
-        if not (MIN_PROPOSAL_MW <= proposal.estimated_impact_mw <= MAX_PROPOSAL_MW):
+        if not (MIN_PROPOSAL_MW <= proposal.estimated_impact_mw <= self._max_proposal_mw):
             violations.append(
                 f"estimated_impact_mw={proposal.estimated_impact_mw:.3f} MW "
-                f"outside [{MIN_PROPOSAL_MW}, {MAX_PROPOSAL_MW}] MW"
+                f"outside [{MIN_PROPOSAL_MW}, {self._max_proposal_mw}] MW"
             )
         if not (MIN_CONFIDENCE <= proposal.confidence <= MAX_CONFIDENCE):
             violations.append(

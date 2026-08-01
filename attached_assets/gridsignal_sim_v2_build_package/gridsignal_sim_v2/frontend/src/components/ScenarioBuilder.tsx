@@ -246,6 +246,14 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
           band_pct_calibrated:       loaded.band_pct_calibrated       ?? defaults.band_pct_calibrated,
           band_mult_uncalibrated:    loaded.band_mult_uncalibrated    ?? defaults.band_mult_uncalibrated,
           band_mult_unmapped_hw:     loaded.band_mult_unmapped_hw     ?? defaults.band_mult_unmapped_hw,
+          // Site / advisory (new operator-adjustable params)
+          site_latitude:             loaded.site_latitude       ?? defaults.site_latitude,
+          site_utc_offset_h:         loaded.site_utc_offset_h   ?? defaults.site_utc_offset_h,
+          ambient_temp_base_c:       loaded.ambient_temp_base_c ?? defaults.ambient_temp_base_c,
+          soc_floor_pct:             loaded.soc_floor_pct       ?? defaults.soc_floor_pct,
+          soc_ceil_pct:              loaded.soc_ceil_pct        ?? defaults.soc_ceil_pct,
+          advisory_interval_s:       loaded.advisory_interval_s ?? defaults.advisory_interval_s,
+          advisory_max_mw:           loaded.advisory_max_mw     ?? defaults.advisory_max_mw,
         })
       })
       .catch(e => setErr(String(e)))
@@ -331,6 +339,16 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
         band_pct_calibrated:      physicsParams.band_pct_calibrated,
         band_mult_uncalibrated:   physicsParams.band_mult_uncalibrated,
         band_mult_unmapped_hw:    physicsParams.band_mult_unmapped_hw,
+        // Site
+        site_latitude:            physicsParams.site_latitude,
+        site_utc_offset_h:        physicsParams.site_utc_offset_h,
+        ambient_temp_base_c:      physicsParams.ambient_temp_base_c,
+        // Storage display bounds
+        soc_floor_pct:            physicsParams.soc_floor_pct,
+        soc_ceil_pct:             physicsParams.soc_ceil_pct,
+        // Advisory agents
+        advisory_interval_s:      physicsParams.advisory_interval_s,
+        advisory_max_mw:          physicsParams.advisory_max_mw,
       }
       const result = editId
         ? await updateScenario(editId, specWithPhysics)

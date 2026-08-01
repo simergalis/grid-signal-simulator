@@ -39,7 +39,7 @@ const RUNNING_COPY = {
 interface Props {
   runId:        string | null
   lastRunId:    string | null
-  onRunStarted: (id: string, speed: number) => void
+  onRunStarted: (id: string, speed: number, socFloor?: number, socCeil?: number) => void
   onRunStopped: () => void
   onViewResults:(id: string) => void
   onNewScenario:() => void
@@ -70,8 +70,8 @@ export function DemoBar({
         body: JSON.stringify({ scenario_id: selectedId, playback_speed: speed }),
       })
       if (!resp.ok) throw new Error(`POST /runs → ${resp.status}: ${await resp.text()}`)
-      const data = await resp.json() as { run_id: string }
-      onRunStarted(data.run_id, speed)
+      const data = await resp.json() as { run_id: string; soc_floor_pct?: number; soc_ceil_pct?: number }
+      onRunStarted(data.run_id, speed, data.soc_floor_pct, data.soc_ceil_pct)
     } catch (e) {
       setError(String(e))
     } finally {

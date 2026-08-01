@@ -191,6 +191,8 @@ export interface FabricModalView {
 export interface RunMeta {
   run_id: string
   playback_speed: number   // 0 = max-speed sentinel; >0 = simulated-s per real-s
+  soc_floor_pct?: number   // operator-configured BESS lower display bound (default 10)
+  soc_ceil_pct?: number    // operator-configured BESS upper display bound (default 95)
 }
 
 // ---------------------------------------------------------------------------
@@ -260,6 +262,19 @@ export interface ScenarioSpec {
   band_pct_calibrated?: number        // ±% of peak_shortfall; 0 = disabled
   band_mult_uncalibrated?: number     // × multiplier for uncalibrated sites
   band_mult_unmapped_hw?: number      // × multiplier for unmapped hardware
+
+  // ── Site parameters ──────────────────────────────────────────────────────
+  site_latitude?: number              // degrees N (default 32.72 = San Diego)
+  site_utc_offset_h?: number          // UTC offset hours (default -8.0 = PST)
+  ambient_temp_base_c?: number        // nighttime dry-bulb base °C (default 14.0)
+
+  // ── Storage display bounds (display only — do not affect physics) ─────────
+  soc_floor_pct?: number              // BESS usable SoC lower bound % (default 10)
+  soc_ceil_pct?: number               // BESS usable SoC upper bound % (default 95)
+
+  // ── Advisory agent tuning ─────────────────────────────────────────────────
+  advisory_interval_s?: number        // advisory poll cadence in simulated seconds
+  advisory_max_mw?: number            // TC-30 cap on any single proposal MW
 }
 
 export interface ScenarioSummary {

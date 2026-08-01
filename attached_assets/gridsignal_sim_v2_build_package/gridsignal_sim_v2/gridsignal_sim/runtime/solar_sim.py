@@ -103,10 +103,14 @@ Ambient temperature is physically correlated with solar fraction — generate th
 
 # ── Physics-based fallback ─────────────────────────────────────────────────────
 
-def _solar_fraction_at(utc_dt: datetime.datetime) -> float:
-    """Compute flat-mount panel output fraction from sun-position physics for San Diego."""
+def _solar_fraction_at(
+    utc_dt: datetime.datetime,
+    lat_deg: float = _LAT_DEG,
+    utc_offset_h: float = _UTC_OFFSET_H,
+) -> float:
+    """Compute flat-mount panel output fraction from sun-position physics."""
     local_h = (
-        utc_dt.hour + utc_dt.minute / 60.0 + utc_dt.second / 3600.0 + _UTC_OFFSET_H
+        utc_dt.hour + utc_dt.minute / 60.0 + utc_dt.second / 3600.0 + utc_offset_h
     ) % 24.0
 
     # Solar hour angle: 0 at solar noon, ±15°/h
@@ -118,7 +122,7 @@ def _solar_fraction_at(utc_dt: datetime.datetime) -> float:
         23.45 * math.sin(math.radians(360.0 / 365.0 * (day_of_year - 81)))
     )
 
-    lat_rad = math.radians(_LAT_DEG)
+    lat_rad = math.radians(lat_deg)
     sin_elev = (
         math.sin(lat_rad) * math.sin(decl_rad)
         + math.cos(lat_rad) * math.cos(decl_rad) * math.cos(hour_angle_rad)
@@ -133,6 +137,8 @@ def _solar_fraction_at(utc_dt: datetime.datetime) -> float:
 def _physics_samples(
     sim_duration_s: float,
     utc_now: datetime.datetime,
+    lat_deg: float = _LAT_DEG,
+    utc_offset_h: float = _UTC_OFFSET_H,
 ) -> list[tuple[float, float]]:
     """Build irradiance samples from pure sun-position math — no API call."""
     n = max(20, min(120, int(sim_duration_s / 30)))
@@ -140,34 +146,39 @@ def _physics_samples(
     samples: list[tuple[float, float]] = []
     for i in range(n + 1):
         t = i * step
-        f = _solar_fraction_at(utc_now + datetime.timedelta(seconds=t))
+        f = _solar_fraction_at(
+            utc_now + datetime.timedelta(seconds=t),
+            lat_deg=lat_deg,
+            utc_offset_h=utc_offset_h,
+        )
         samples.append((round(t, 1), round(f, 4)))
     _log.info(
-        "solar_sim: physics profile for San Diego — %d samples, "
+        "solar_sim: physics profile (lat=%.2f, utc%+.1f) — %d samples, "
         "t=0 fraction=%.3f, t=end fraction=%.3f",
-        len(samples), samples[0][1], samples[-1][1],
+        lat_deg, utc_offset_h, len(samples), samples[0][1], samples[-1][1],
     )
     return samples
 
 
 
 
-def _ambient_fraction_to_temp(solar_fraction: float, local_h: float) -> tuple[float, float]:
+def _ambient_fraction_to_temp(
+    solar_fraction: float,
+    local_h: float,
+    base_temp_c: float = 14.0,
+) -> tuple[float, float]:
     """Compute dry-bulb and wet-bulb ambient temperature from solar fraction and hour.
 
-    Correlation model for San Diego:
-    - Night (solar=0): 14 C base
-    - Marine-layer mornings: +3 C offset (reduced by solar absence)
-    - Clear afternoons: up to +10 C above night base correlated with solar output
+    Correlation model:
+    - Night (solar=0): base_temp_c
+    - Marine-layer mornings: +2 C above base (reduced by solar absence)
+    - Clear afternoons: up to +10 C above base correlated with solar output
     Wet-bulb ≈ dry-bulb − 3 C (coastal humidity approximation).
     """
-    # Night base + solar heating component
-    drybulb = 14.0 + solar_fraction * 10.0
-    # Marine-layer morning effect: mornings with low solar tend to be warmer than
-    # nights but cooler than clear afternoons
+    drybulb = base_temp_c + solar_fraction * 10.0
     if 6.0 <= local_h <= 11.0 and solar_fraction < 0.4:
         drybulb += 2.0
-    drybulb = round(min(30.0, max(10.0, drybulb)), 2)
+    drybulb = round(min(base_temp_c + 20.0, max(base_temp_c - 4.0, drybulb)), 2)
     wetbulb = round(drybulb - 3.0, 2)
     return drybulb, wetbulb
 
@@ -175,6 +186,9 @@ def _ambient_fraction_to_temp(solar_fraction: float, local_h: float) -> tuple[fl
 def _physics_ambient_steps(
     sim_duration_s: float,
     utc_now: "datetime.datetime",
+    lat_deg: float = _LAT_DEG,
+    utc_offset_h: float = _UTC_OFFSET_H,
+    base_temp_c: float = 14.0,
 ) -> list[tuple[float, float, float]]:
     """Physics-based ambient temperature timeline correlated with solar output."""
     n = max(20, min(120, int(sim_duration_s / 30)))
@@ -184,24 +198,31 @@ def _physics_ambient_steps(
         t = i * step
         dt = utc_now + datetime.timedelta(seconds=t)
         local_h = (
-            dt.hour + dt.minute / 60.0 + dt.second / 3600.0 + _UTC_OFFSET_H
+            dt.hour + dt.minute / 60.0 + dt.second / 3600.0 + utc_offset_h
         ) % 24.0
-        solar_f = _solar_fraction_at(dt)
-        drybulb, wetbulb = _ambient_fraction_to_temp(solar_f, local_h)
+        solar_f = _solar_fraction_at(dt, lat_deg=lat_deg, utc_offset_h=utc_offset_h)
+        drybulb, wetbulb = _ambient_fraction_to_temp(solar_f, local_h, base_temp_c=base_temp_c)
         result.append((round(t, 1), drybulb, wetbulb))
     return result
+
 
 def _physics_forecast(
     sim_duration_s: float,
     utc_now: datetime.datetime,
+    lat_deg: float = _LAT_DEG,
+    utc_offset_h: float = _UTC_OFFSET_H,
+    base_temp_c: float = 14.0,
 ) -> "SolarForecast":
     """Physics fallback: same samples as _physics_samples but wrapped in SolarForecast."""
-    samples = _physics_samples(sim_duration_s, utc_now)
-    ambient = _physics_ambient_steps(sim_duration_s, utc_now)
+    samples = _physics_samples(sim_duration_s, utc_now, lat_deg=lat_deg, utc_offset_h=utc_offset_h)
+    ambient = _physics_ambient_steps(
+        sim_duration_s, utc_now,
+        lat_deg=lat_deg, utc_offset_h=utc_offset_h, base_temp_c=base_temp_c,
+    )
     return SolarForecast(
         samples=samples,
         weather="physics_estimate",
-        conditions="Physics estimate (San Diego)",
+        conditions=f"Physics estimate (lat={lat_deg:.1f}°, UTC{utc_offset_h:+.1f})",
         source="physics",
         ambient_steps=ambient,
     )
@@ -333,11 +354,14 @@ def generate_solar_forecast(
     rated_mw: float = 4.99,
     *,
     utc_now: Optional[datetime.datetime] = None,
+    site_latitude: float = _LAT_DEG,
+    site_utc_offset_h: float = _UTC_OFFSET_H,
+    ambient_temp_base_c: float = 14.0,
 ) -> SolarForecast:
     """
-    Generate a San Diego solar forecast (samples + weather metadata) for one run.
+    Generate a solar forecast (samples + weather metadata) for one run.
 
-    Calls Mistral (mistral-small-latest) once with the current local San Diego time
+    Calls Mistral (mistral-small-latest) once with the current local time
     and simulation duration to produce a weather-aware irradiance curve.
 
     Returns a ``SolarForecast`` namedtuple with:
@@ -346,11 +370,7 @@ def generate_solar_forecast(
     - ``conditions`` — one sentence describing current conditions
     - ``source``     — "mistral" or "physics"
 
-    The caller is expected to store ``forecast.samples`` in
-    ``spec_data["irradiance_steps"]`` and ``forecast.weather`` /
-    ``forecast.conditions`` on ``RunContext`` for tick stamping.
-
-    Falls back silently to a physics-based San Diego solar curve if:
+    Falls back silently to a physics-based solar curve if:
     - ``MISTRAL_API_KEY`` is not set in the environment
     - The API call fails or times out
     - The response cannot be parsed into valid samples
@@ -358,22 +378,38 @@ def generate_solar_forecast(
     Parameters
     ----------
     sim_duration_s : float
-        Total simulation duration in seconds (e.g. 300 for demo-20mw).
+        Total simulation duration in seconds.
     rated_mw : float
         Panel rated capacity in MW — included in the Mistral prompt for context.
     utc_now : datetime.datetime | None
-        Current UTC time. Defaults to ``datetime.datetime.utcnow()``.
-        Override in tests for a deterministic physics-only result.
+        Current UTC time. Defaults to now. Override in tests for determinism.
+    site_latitude : float
+        Site latitude in degrees North (default 32.72 = San Diego).
+        Used by the physics fallback for solar elevation calculations.
+    site_utc_offset_h : float
+        UTC offset in hours (default -8.0 = PST). Used to compute local solar time.
+    ambient_temp_base_c : float
+        Nighttime dry-bulb base temperature in °C (default 14.0).
+        Used by the physics fallback ambient model.
     """
     if utc_now is None:
         utc_now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
 
     api_key: Optional[str] = os.environ.get("MISTRAL_API_KEY") or None
     if not api_key:
-        _log.info("solar_sim: MISTRAL_API_KEY absent — using physics-based San Diego curve")
-        return _physics_forecast(sim_duration_s, utc_now)
+        _log.info(
+            "solar_sim: MISTRAL_API_KEY absent — using physics-based curve "
+            "(lat=%.2f, UTC%+.1f, base_temp=%.1f C)",
+            site_latitude, site_utc_offset_h, ambient_temp_base_c,
+        )
+        return _physics_forecast(
+            sim_duration_s, utc_now,
+            lat_deg=site_latitude,
+            utc_offset_h=site_utc_offset_h,
+            base_temp_c=ambient_temp_base_c,
+        )
 
-    local_dt   = utc_now + datetime.timedelta(hours=_UTC_OFFSET_H)
+    local_dt   = utc_now + datetime.timedelta(hours=site_utc_offset_h)
     local_time = local_dt.strftime("%H:%M")
 
     user_msg = (
@@ -386,7 +422,12 @@ def generate_solar_forecast(
         raw = _call_mistral(user_msg, api_key)
     except Exception as exc:
         _log.warning("solar_sim: Mistral call failed (%s) — using physics fallback", exc)
-        return _physics_forecast(sim_duration_s, utc_now)
+        return _physics_forecast(
+            sim_duration_s, utc_now,
+            lat_deg=site_latitude,
+            utc_offset_h=site_utc_offset_h,
+            base_temp_c=ambient_temp_base_c,
+        )
 
     return _parse_forecast(raw, sim_duration_s=sim_duration_s, utc_now=utc_now)
 

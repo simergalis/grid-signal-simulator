@@ -32,7 +32,7 @@ const SPEED_OPTIONS = [
 interface Props {
   runId: string | null
   lastRunId: string | null
-  onRunStarted: (runId: string, playbackSpeed: number) => void
+  onRunStarted: (runId: string, playbackSpeed: number, socFloor?: number, socCeil?: number) => void
   onRunStopped: () => void
   onNewScenario: () => void
   onViewResults: (runId: string) => void
@@ -66,8 +66,8 @@ export function RunControlBar({ runId, lastRunId, onRunStarted, onRunStopped, on
         const text = await resp.text()
         throw new Error(`POST /runs → ${resp.status}: ${text}`)
       }
-      const data = await resp.json() as { run_id: string }
-      onRunStarted(data.run_id, speed)
+      const data = await resp.json() as { run_id: string; soc_floor_pct?: number; soc_ceil_pct?: number }
+      onRunStarted(data.run_id, speed, data.soc_floor_pct, data.soc_ceil_pct)
     } catch (e) {
       setError(String(e))
     } finally {

@@ -97,6 +97,7 @@ async def start_run(
         build_run_context kwarg interface.  Used by tests and load scripts.
     """
     run_id = f"run-{uuid.uuid4().hex[:12]}"
+    _soc_floor, _soc_ceil = 10.0, 95.0   # defaults; overridden from spec_data below
 
     if body.scenario_id is not None:
         scenario_store = request.app.state.scenario_store
@@ -133,6 +134,13 @@ async def start_run(
         _param_cfg      = spec_data.get("param_sampling_config")
         _corruption_cfg = spec_data.get("telemetry_corruption_config")
 
+        # Operator-adjustable site / advisory params (new in operator settings)
+        _site_lat       = float(spec_data.get("site_latitude",      32.72))
+        _site_utc       = float(spec_data.get("site_utc_offset_h",  -8.0))
+        _ambient_base   = float(spec_data.get("ambient_temp_base_c", 14.0))
+        _soc_floor      = float(spec_data.get("soc_floor_pct",       10.0))
+        _soc_ceil       = float(spec_data.get("soc_ceil_pct",        95.0))
+
         # Build a utc_now override when solar_origin_utc_hour is set.
         # demo-solar-peak uses hour=20 (UTC 20:00 = 12:00 PST San Diego noon)
         # so the Mistral prompt and physics fallback always see midday,
@@ -161,6 +169,9 @@ async def start_run(
                     _sim_duration,
                     _solar_mw,
                     utc_now=_utc_now_solar,
+                    site_latitude=_site_lat,
+                    site_utc_offset_h=_site_utc,
+                    ambient_temp_base_c=_ambient_base,
                 ),
             )
 
@@ -327,7 +338,7 @@ async def start_run(
         )
 
     await manager.start_run(ctx)
-    return StartRunResponse(run_id=run_id)
+    return StartRunResponse(run_id=run_id, soc_floor_pct=_soc_floor, soc_ceil_pct=_soc_ceil)
 
 
 @router.get(

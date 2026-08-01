@@ -607,6 +607,7 @@ def build_run_context_from_spec(
             router=DeterministicRouter() if os.environ.get('PYTEST_CURRENT_TEST')
                    else AdvisoryRouter(),
             enabled=True,
+            max_proposal_mw=float(spec_data.get("advisory_max_mw", 20.0)),
         ),
         telemetry_ingestor=NetworkTelemetryIngestor(),
         corroborator=FabricCorroborator(),
