@@ -277,9 +277,25 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             sim_time, dt_seconds, state._kube_grid_state
         )
         for _ks in _kube_signals:
-            # dt_lead_seconds=0: Kubernetes gives no advance notice to the grid.
-            # BESS must bridge the ramp; this is exactly the GridSignal value.
-            state.apply_workload_signal(_ks, dt_lead_seconds=0.0)
+            # §9 / resolution-log item 5: dt_lead_seconds for a Kubernetes signal
+            # equals GPUModule.ramp_seconds (default 45 s) — the physical window
+            # from scheduler allocation to GPUs reaching full TDP.
+            #
+            # Previously this was hard-coded to 0.0, which told the arbitrator
+            # the turbine had no ramp window, so already_ramped_mw = r_asset × 0
+            # = 0 MW (no turbine credit) and the BESS bridging requirement was
+            # sized against the full ΔP rather than the residual after turbine
+            # ramping.  That caused systematic over-alerts on the Kubernetes path
+            # and broke the v0.1 worked-example fixture.
+            #
+            # A zero-lead stressor scenario (Kubernetes with truly instantaneous
+            # load) must be constructed as an explicit scripted WorkloadSignal
+            # with dt_lead_seconds=0 — it is not the default.
+            _kube_ramp_s = (
+                state.gpu_modules[0].ramp_seconds
+                if state.gpu_modules else 45.0
+            )
+            state.apply_workload_signal(_ks, dt_lead_seconds=_kube_ramp_s)
 
     # 1. Compute term — advance GPU ramps first (Step 3 Item 2: Δt_lead ramp).
     # GPU advance() is no longer a no-op: it advances the per-job ramp_progress
