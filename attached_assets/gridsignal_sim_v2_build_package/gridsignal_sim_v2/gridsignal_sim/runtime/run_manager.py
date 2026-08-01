@@ -28,6 +28,8 @@ from __future__ import annotations
 import asyncio
 import itertools
 import logging
+import os as _os
+import statistics as _statistics
 import time as _time_module
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -516,6 +518,46 @@ def _update_thermal_state(ctx: RunContext, tick: TickResult) -> None:
     ctx._inlet_temp_c = _INLET_LO_C + utilisation * (_INLET_HI_C - _INLET_LO_C) * 0.85
 
 
+def _report_drive_profile(
+    run_id: str,
+    sec: dict[str, list[float]],
+    total_wall_s: float,
+) -> None:
+    """AC3: print a per-section timing table to the run_manager logger.
+
+    Activated by setting GS_PROFILE_DRIVE=1 in the environment before
+    starting the server (or load test).  Sections are named with a
+    sortable prefix so they print in hot-path order.  p50 and p95 are
+    reported to catch both the typical-case cost and the tail spike —
+    a mean-only instrument missed the ~6 s LLM-call tail for three
+    sessions.
+    """
+    n_ticks = len(sec.get("A_evaluate_tick", []))
+    lines = [
+        f"GS_PROFILE_DRIVE  run={run_id!r}  ticks={n_ticks}  "
+        f"wall={total_wall_s:.3f}s",
+        f"  {'Section':<36}  {'n':>5}  {'total':>8}  {'p50 ms':>8}  {'p95 ms':>8}",
+        f"  {'-'*36}  {'-'*5}  {'-'*8}  {'-'*8}  {'-'*8}",
+    ]
+    measured = 0.0
+    for name in sorted(sec):
+        samples = sec[name]
+        n = len(samples)
+        tot = sum(samples)
+        measured += tot
+        srt = sorted(samples)
+        p50_ms = _statistics.median(srt) * 1000
+        p95_ms = srt[min(n - 1, int(0.95 * n))] * 1000
+        lines.append(
+            f"  {name:<36}  {n:>5}  {tot:>8.3f}s  {p50_ms:>8.3f}  {p95_ms:>8.3f}"
+        )
+    lines.append(
+        f"  {'unmeasured overhead':<36}  {'':>5}  "
+        f"{total_wall_s - measured:>8.3f}s"
+    )
+    logger.info("\n".join(lines))
+
+
 class RunManager:
     """Owns one asyncio.Task per active run. This is the component that
     satisfies the >=5-concurrent-users NFR (functional spec Section 11)
@@ -587,15 +629,26 @@ class RunManager:
         # Tracks external task.cancel() so finally can skip verdict drain.
         _cancelled_externally = False
 
+        # AC3: per-section timing. Activate with GS_PROFILE_DRIVE=1.
+        # Reports p50 + p95 per section at run completion (via logger.info).
+        # Off by default — the boolean check costs ~10 ns per guard when False.
+        _profiling: bool = bool(_os.environ.get("GS_PROFILE_DRIVE"))
+        _sec: dict[str, list[float]] = {}
+        _drive_t0: float = _time_module.perf_counter()
+
         try:
             while not ctx.is_complete():
+                # ── A: evaluate_tick ──────────────────────────────────────
+                if _profiling: _t0 = _time_module.perf_counter()
                 tick_result = ctx.step()                           # sync, in-budget (Design Spec 4.3)
+                if _profiling: _sec.setdefault("A_evaluate_tick", []).append(_time_module.perf_counter() - _t0)
 
-                # ── W1c-pre: update thermal state BEFORE sink/broadcast ───
+                # ── B: thermal state (BEFORE sink/broadcast) ──────────────
                 # Stamping rated_cooling_mw / absorbable_mw / time_to_limit_s /
                 # approach_rate_mw_s onto TickResult here (not after broadcast)
                 # ensures the live WebSocket payload and the stored timeseries
                 # both carry live thermal data — Cell 3 reads from latestTick.
+                if _profiling: _t0 = _time_module.perf_counter()
                 _update_thermal_state(ctx, tick_result)
                 _th_rated     = ctx._rated_cooling_mw
                 _th_absorb    = max(0.0, _th_rated - tick_result.p_cooling_mw)
@@ -607,47 +660,71 @@ class RunManager:
                     min(_th_absorb / _th_approach, 86_400.0)
                     if _th_approach > 1e-6 else 86_400.0
                 )
+                if _profiling: _sec.setdefault("B_thermal_update", []).append(_time_module.perf_counter() - _t0)
 
+                # ── C: sink + broadcast ───────────────────────────────────
+                if _profiling: _t0 = _time_module.perf_counter()
                 await ctx.sink.append(tick_result)                 # I/O -- yields to sibling runs
-                await self._ws_hub.broadcast(ctx.run_id, tick_result)  # I/O -- yields
+                if _profiling: _sec.setdefault("C_sink_append", []).append(_time_module.perf_counter() - _t0)
 
-                # ── W1a: advisory agents ──────────────────────────────────
+                if _profiling: _t0 = _time_module.perf_counter()
+                await self._ws_hub.broadcast(ctx.run_id, tick_result)  # I/O -- yields
+                if _profiling: _sec.setdefault("C_ws_broadcast", []).append(_time_module.perf_counter() - _t0)
+
+                # ── E: advisory agents (W1a) ──────────────────────────────
                 # Keep tick_history bounded; agents call run_all() on the
                 # recent window.  TC-48 guarantee: agents write only to the
                 # gate (proposals), never to sim_state, so dispatch is
                 # bit-identical whether agents are on or off.
+                #
+                # AC1(b): run_all() may make synchronous LLM HTTP calls via
+                # requests / urllib.  Off-loading to asyncio.to_thread() keeps
+                # the event loop free so sibling runs continue to tick, WS
+                # frames are sent, and HTTP requests are served during the call.
+                # Pass list(tick_history) so the worker thread cannot see
+                # mutations made by this loop after the await returns.
                 if ctx.registry is not None:
                     ctx.tick_history.append(tick_result)
                     if len(ctx.tick_history) > _TICK_HISTORY_MAXLEN:
                         ctx.tick_history.pop(0)
+                    if _profiling: _t0 = _time_module.perf_counter()
                     ctx.registry.tick(tick_result.sim_time_seconds)
+                    if _profiling: _sec.setdefault("E_registry_tick", []).append(_time_module.perf_counter() - _t0)
                     _job_id = ctx.events[0].job_id if ctx.events else ""
-                    ctx.registry.run_all(
-                        ctx.tick_history,
+                    if _profiling: _t0 = _time_module.perf_counter()
+                    await asyncio.to_thread(
+                        ctx.registry.run_all,
+                        list(ctx.tick_history),
                         wall_time=_time_module.time(),
                         sim_time=tick_result.sim_time_seconds,
                         site_id=ctx.sim_state.site.site_id,
                         job_id=_job_id,
                     )
+                    if _profiling: _sec.setdefault("E_registry_run_all", []).append(_time_module.perf_counter() - _t0)
 
-                # ── W1b: network telemetry + corroboration ────────────────
+                # ── D: network telemetry + corroboration (W1b) ───────────
                 if ctx.telemetry_ingestor is not None:
+                    if _profiling: _t0 = _time_module.perf_counter()
                     _ingest_synthetic_telemetry(ctx, tick_result)
+                    if _profiling: _sec.setdefault("D_telemetry_ingest", []).append(_time_module.perf_counter() - _t0)
                 if ctx.corroborator is not None:
                     # checkpoint_states: job_id → state string from TickResult.
                     # "running" = scheduler confirmed the job started (TC-51).
+                    if _profiling: _t0 = _time_module.perf_counter()
                     for _jid, _st in tick_result.checkpoint_states.items():
                         if _st == "running":
                             ctx.corroborator.apply_checkpoint_start(
                                 _jid, tick_result.sim_time_seconds
                             )
+                    if _profiling: _sec.setdefault("D_corroborator", []).append(_time_module.perf_counter() - _t0)
 
                 # ── W1c: thermal state — already updated before sink/broadcast above.
 
-                # ── AD1: procurement evaluation (TC-47, TC-52) ───────────
+                # ── F: AD1 procurement evaluation (TC-47, TC-52) ─────────
                 # Observe-only: does NOT write to sim_state; dispatch trace
                 # hash is unaffected.
                 if ctx.procurement_layer is not None:
+                    if _profiling: _t0 = _time_module.perf_counter()
                     _gap = max(
                         0.0,
                         tick_result.net_demand_mw
@@ -659,11 +736,13 @@ class RunManager:
                         served_load_mw=tick_result.net_demand_mw,
                         sim_time=tick_result.sim_time_seconds,
                     )
+                    if _profiling: _sec.setdefault("F_procurement", []).append(_time_module.perf_counter() - _t0)
 
-                # ── AD1: maintenance evaluation (TC-58, TC-59, TC-60) ────
+                # ── F: AD1 maintenance evaluation (TC-58, TC-59, TC-60) ──
                 # Observe-only: accumulates observation ticks, validates a
                 # synthetic maintenance window, proposes rating changes.
                 if ctx.maintenance_layer is not None:
+                    if _profiling: _t0 = _time_module.perf_counter()
                     ctx.maintenance_layer.evaluate_tick(
                         sim_time=tick_result.sim_time_seconds,
                         net_demand_mw=tick_result.net_demand_mw,
@@ -672,8 +751,9 @@ class RunManager:
                             + tick_result.bess_output_mw
                         ),
                     )
+                    if _profiling: _sec.setdefault("F_maintenance", []).append(_time_module.perf_counter() - _t0)
 
-                # ── AD1: ramp relaxation evaluation (TC-75, TC-76) ───────
+                # ── F: AD1 ramp relaxation evaluation (TC-75, TC-76) ─────
                 # Observe-only: evaluate() returns a SiteRampPolicy but the
                 # policy is advisory only — ramp caps are not applied to
                 # TurbineModule, so the dispatch trace hash is unaffected.
@@ -685,6 +765,7 @@ class RunManager:
                 # deployment must include all dispatchable sources.  See the
                 # RampRelaxationEngine.evaluate() docstring for full rationale.
                 if ctx.ramp_relaxation_engine is not None:
+                    if _profiling: _t0 = _time_module.perf_counter()
                     from core.ramp_relaxation import ReservePosition  # lazy
                     ctx.ramp_relaxation_engine.evaluate(
                         ReservePosition(
@@ -704,9 +785,14 @@ class RunManager:
                         ),
                         gridSignal_connected=True,
                     )
+                    if _profiling: _sec.setdefault("F_ramp_relax", []).append(_time_module.perf_counter() - _t0)
 
+                # ── G: sleep / yield ──────────────────────────────────────
                 sleep_s = ctx.wall_clock_sleep_seconds()
+                if _profiling: _t0 = _time_module.perf_counter()
                 await asyncio.sleep(sleep_s if sleep_s > 0 else 0)  # always yield
+                if _profiling: _sec.setdefault("G_sleep", []).append(_time_module.perf_counter() - _t0)
+
         except asyncio.CancelledError:
             _cancelled_externally = True
             logger.info("run %s cancelled mid-flight", ctx.run_id)
@@ -768,6 +854,14 @@ class RunManager:
                     tick_dicts=tick_dicts,
                     dropped_ticks=dropped,
                     turbine_rated_mw=ctx.turbine_rated_mw,
+                )
+
+            # AC3: emit section profile if flag was set for this run.
+            if _profiling and _sec:
+                _report_drive_profile(
+                    ctx.run_id,
+                    _sec,
+                    _time_module.perf_counter() - _drive_t0,
                 )
 
             # Always: preserve registry so /proposals works after run ends,

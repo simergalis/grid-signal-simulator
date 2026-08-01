@@ -27,7 +27,14 @@ Install `websockets` via `pip3 install --target=/home/runner/workspace/.pythonli
 
 **AD1 isolation:** `build_load_test_context` does NOT wire AD1 layers (`procurement_layer`, `maintenance_layer`, `ramp_relaxation_engine` all remain `None`). The 3 AD1 blocks in `_drive()` are guarded by `if ctx.X is not None:` and never execute during load tests. AD1 is not the regression.
 
-**Fix direction (not yet applied per AB1 "measure first" instruction):** Set `enabled=False` in `build_load_test_context`. The load test measures simulation throughput, not advisory quality. Alternative: make LLM calls async (architectural change). Do NOT gate on `PYTEST_CURRENT_TEST` for `enabled` — the load test also needs agents off.
+**Fix applied (AC1):**
+- (a) `build_load_test_context` now uses `enabled=False` — load test back to 20.4 s, PASSES.
+- (b) `_drive()` wraps `ctx.registry.run_all()` in `asyncio.to_thread()` — production fix. With agents enabled, the LLM call runs in a worker thread; event loop stays free. Enabled=True load test: 26.3 s (vs 54–66 s blocked). The 6 s difference is the LLM call cost itself — that is now the lower bound when keys are set.
+- (c) `asyncio.to_thread` passes `list(ctx.tick_history)` (a snapshot copy) to prevent race conditions with the main loop mutating the list after the await.
+
+**AC2 decision (KEEP float("-inf") — deliberate tick-1 stampede):** Short demos (8 s wall at max speed) end before the 30 s cadence floor fires. Initializing to `time.monotonic()` would mean those runs produce zero proposals. The stampede on tick 1 is intentional and documented in `base.py`. With `asyncio.to_thread` in place, the stampede does not stall the event loop — it is purely a cost question.
+
+**AC3:** Section profiling wired inside `_drive()` behind `GS_PROFILE_DRIVE=1`. Reports p50 + p95 per section at run end via `logger.info`. `_report_drive_profile()` is a module-level function in `run_manager.py`. Standalone `scripts/drive_profile.py` retained as a monkey-patch alternative for pre-restart profiling.
 
 **Why previously 9.99–20.7s:** Either the registry was not yet wired into `build_load_test_context` (pre-W1), or `MISTRAL_API_KEY` / `ANTHROPIC_API_KEY` were absent. After W1 wired the registry AND the keys are present, tick 1 always fires synchronous LLM calls.
 

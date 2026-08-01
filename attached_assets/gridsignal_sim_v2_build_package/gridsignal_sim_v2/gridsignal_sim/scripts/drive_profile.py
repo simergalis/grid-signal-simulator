@@ -1,12 +1,22 @@
 """
-drive_profile.py — per-section wall-clock diagnostic for _drive().
+drive_profile.py — standalone per-section wall-clock diagnostic for _drive().
 
-Instruments every section of the _drive() hot path using monkey-patching
-(no source changes) and runs a single 4h max-speed load-test context —
-the same configuration as `load_test.py --matrix` at 1x scale.
+AC3: the same profiling is now wired INSIDE _drive() behind the
+GS_PROFILE_DRIVE=1 environment variable (see runtime/run_manager.py).
+That in-process path is the authoritative instrument for production and
+concurrent-run measurements (the flag works with the API server, load_test,
+and any other RunManager caller).
+
+This script remains useful as a self-contained, monkey-patch-based
+alternative when you want to profile without restarting the server, or
+when you need to compare before/after a code change by diffing two
+standalone runs.  It produces identical output to the in-process flag.
 
 Usage:
     PYTHONPATH=. python scripts/drive_profile.py
+
+    # In-process equivalent (works with all RunManager callers):
+    GS_PROFILE_DRIVE=1 PYTHONPATH=. python scripts/load_test.py
 
 Prints p50 / p95 / total for each section plus unmeasured overhead.
 """

@@ -89,6 +89,20 @@ class BaseAdvisoryAgent:
     ) -> None:
         self._router = router
         self._gate   = gate
+        # AC2 decision (KEEP float("-inf") — deliberate tick-1 stampede):
+        # elapsed = wall_time − (−∞) = +∞ ≥ FLOOR_WALL_S on the very first
+        # call, so all six agents fire on tick 1 of every run.
+        #
+        # Why keep it: short scenarios (demo-20mw = 8 s wall at max speed)
+        # complete before the 30 s cadence floor would ever be reached.
+        # Initialising to time.monotonic() at construction would mean those
+        # runs produce zero proposals.  The stampede ensures every run —
+        # regardless of duration — generates at least one advisory round.
+        #
+        # Cost: with asyncio.to_thread() applied (AC1b), the stampede runs
+        # in a worker thread and does NOT stall the event loop, so the only
+        # cost is the LLM call itself — acceptable for the value it provides.
+        # The CEILING_WALL_S (600 s) prevents a second stampede in long runs.
         self._last_run_wall:  float = float("-inf")
         self._prompt_text:    Optional[str] = None
         self._prompt_digest:  str = ""

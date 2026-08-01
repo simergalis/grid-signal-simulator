@@ -311,10 +311,16 @@ def build_load_test_context(
         playback_speed=playback_speed,
         sink=InMemoryTimeseriesSink(),
         # W1 fields
+        # AC1(a): load test measures simulation throughput, not advisory quality.
+        # Agents disabled so the LLM call cost (6 s / tick-1 stampede) does not
+        # count against the 30 s wall-clock NFR. Use build_run_context() or
+        # build_run_context_from_spec() for contexts that require proposals.
+        # AC1(b): even when enabled=True, run_all() is wrapped in
+        # asyncio.to_thread() in _drive() so the event loop stays free.
         registry=AgentRegistry(
             router=DeterministicRouter() if os.environ.get('PYTEST_CURRENT_TEST')
                    else AdvisoryRouter(),
-            enabled=True,
+            enabled=False,
         ),
         telemetry_ingestor=NetworkTelemetryIngestor(),
         corroborator=FabricCorroborator(),
