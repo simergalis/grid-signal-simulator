@@ -1,0 +1,9 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "Fql_lgK808AaDHKs5wH_n"
+uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/ALGORITHM.md"
+type = "text"
+title = "GridSignal Algorithm Reference"
+description = "Detailed technical summary of the GridSignal Simulator algorithm — all 11 evaluation steps, formulas, interlocks, and fixed step-order summary."
