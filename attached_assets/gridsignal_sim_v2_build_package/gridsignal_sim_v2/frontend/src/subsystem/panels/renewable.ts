@@ -101,6 +101,17 @@ export const renewablePanel: PanelConfig = {
         // offset — it changes visibly as compute ramps from idle (near 0) to full draw
         { label: 'Fleet must cover',        value: `${netDemand.toFixed(2)} MW`, colour: netDemand > 0 ? TEAL : SOLAR, sub: 'net demand after solar offset · live' },
         { label: 'Share of site draw',      value: shareDisplay, sub: shareNote },
+        // Solar weather forecast from Mistral — constant per run, stamped on every tick.
+        // weather label drives the colour: physics_estimate shown in muted grey.
+        (() => {
+          const w = tick.solar_weather
+          const c = tick.solar_conditions
+          if (!w || w === 'physics_estimate') {
+            return { label: 'Conditions', value: 'Physics estimate', sub: 'San Diego baseline — Mistral unavailable', colour: '#5a6673' }
+          }
+          const label = w.replace(/_/g, ' ')
+          return { label: 'Conditions', value: label, sub: c || 'Mistral solar forecast · San Diego', colour: SOLAR }
+        })(),
         { label: 'Counted toward reserve',  value: 'never', colour: AMBER, sub: 'availability, not dispatchability · §7.1.1' },
         { label: 'Control surface',         value: 'none', sub: 'passive collector — nothing to command' },
         { label: 'Lead time on loss',       value: '0 s', colour: RED, sub: 'no advance signal exists' },

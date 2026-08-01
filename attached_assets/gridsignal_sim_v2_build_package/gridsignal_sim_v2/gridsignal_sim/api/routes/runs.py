@@ -55,7 +55,7 @@ from api.schemas import (
 )
 from runtime.run_manager import RunManager, compute_run_cost_from_completed
 from runtime.scenario_factory import build_run_context, build_run_context_from_spec
-from runtime.solar_sim import generate_irradiance_samples
+from runtime.solar_sim import generate_solar_forecast
 
 router = APIRouter(prefix="/runs", tags=["runs"])
 
@@ -125,16 +125,16 @@ async def start_run(
         )
         if _is_default:
             _sim_duration = float(spec_data.get("end_sim_time", 300.0))
-            _samples = await asyncio.get_event_loop().run_in_executor(
+            _forecast = await asyncio.get_event_loop().run_in_executor(
                 None,
                 functools.partial(
-                    generate_irradiance_samples,
+                    generate_solar_forecast,
                     _sim_duration,
                     _solar_mw,
                 ),
             )
             # Store as list-of-lists (JSON-safe) so the factory tuple cast works
-            spec_data["irradiance_steps"] = [[t, f] for t, f in _samples]
+            spec_data["irradiance_steps"] = [[t, f] for t, f in _forecast.samples]
 
         ctx = build_run_context_from_spec(
             run_id,
@@ -144,6 +144,12 @@ async def start_run(
         # Step 9: propagate stable IDs so the results screen can display them.
         ctx.scenario_id = body.scenario_id
         ctx.scenario_name = record.name
+        # Solar weather metadata — surfaced in the Solar PV panel via tick payload.
+        # When the default irradiance was replaced by Mistral, carry the forecast
+        # label and conditions sentence; otherwise leave the empty-string defaults.
+        if _is_default:
+            ctx.solar_weather    = _forecast.weather
+            ctx.solar_conditions = _forecast.conditions
     else:
         # Direct programmatic path — scenario_id absent, job_id+node_count present
         # (enforced by StartRunRequest.model_validator).

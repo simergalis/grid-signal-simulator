@@ -56,6 +56,12 @@ export interface TickPayload {
   // Kubernetes demand agent metrics — null when kube_config is not active.
   // Non-null only on runs that have kube_config set in the ScenarioSpec.
   kube_metrics: KubeMetrics | null
+
+  // Solar weather metadata — stamped from RunContext at each tick (constant
+  // per run). Empty strings when solar is absent or run started via direct path.
+  // "physics_estimate" when Mistral was unavailable; otherwise the Mistral label.
+  solar_weather:    string
+  solar_conditions: string
 }
 
 export interface KubeMetrics {

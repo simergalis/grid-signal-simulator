@@ -485,3 +485,8 @@ class TickResult:
     # None on every tick when the standard scripted workload path is used,
     # so existing tests and displays that don't reference this field are unaffected.
     kube_metrics: Optional[KubeMetrics] = None
+    # Solar weather metadata — stamped from RunContext.solar_weather / solar_conditions
+    # at every tick (same pattern as turbine_units).  Empty strings when solar is not
+    # present in the scenario or the run was started via the direct job-id path.
+    solar_weather:    str = ""
+    solar_conditions: str = ""

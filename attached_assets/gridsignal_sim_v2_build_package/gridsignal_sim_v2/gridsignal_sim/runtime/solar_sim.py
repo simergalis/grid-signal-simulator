@@ -33,7 +33,22 @@ import math
 import os
 import urllib.error
 import urllib.request
-from typing import Optional
+from typing import NamedTuple, Optional
+
+
+class SolarForecast(NamedTuple):
+    """Return value from generate_solar_forecast().
+
+    samples    — list of (sim_time_s, fraction) pairs.
+    weather    — short label: "clear", "partly_cloudy", "overcast",
+                 "marine_layer", or "physics_estimate".
+    conditions — one human-readable sentence describing current conditions.
+    source     — "mistral" or "physics".
+    """
+    samples:    list
+    weather:    str
+    conditions: str
+    source:     str
 
 _log = logging.getLogger(__name__)
 
@@ -125,6 +140,20 @@ def _physics_samples(
     return samples
 
 
+def _physics_forecast(
+    sim_duration_s: float,
+    utc_now: datetime.datetime,
+) -> "SolarForecast":
+    """Physics fallback: same samples as _physics_samples but wrapped in SolarForecast."""
+    samples = _physics_samples(sim_duration_s, utc_now)
+    return SolarForecast(
+        samples=samples,
+        weather="physics_estimate",
+        conditions="Physics estimate (San Diego)",
+        source="physics",
+    )
+
+
 # ── Mistral call ───────────────────────────────────────────────────────────────
 
 def _call_mistral(user_message: str, api_key: str) -> str:
@@ -158,13 +187,13 @@ def _call_mistral(user_message: str, api_key: str) -> str:
         raise RuntimeError(f"Mistral HTTP {exc.code}: {exc.read()[:300]}") from exc
 
 
-def _parse_samples(
+def _parse_forecast(
     raw: str,
     *,
     sim_duration_s: float,
     utc_now: datetime.datetime,
-) -> list[tuple[float, float]]:
-    """Parse Mistral JSON → sample list. Falls back to physics on any parse error."""
+) -> "SolarForecast":
+    """Parse Mistral JSON → SolarForecast. Falls back to physics on any parse error."""
     try:
         text = raw.strip()
         # Strip markdown code fences if the model wrapped the response
@@ -199,35 +228,53 @@ def _parse_samples(
             weather, conditions, len(samples),
             samples[0][1], samples[-1][1],
         )
-        return samples
+        return SolarForecast(
+            samples=samples,
+            weather=weather,
+            conditions=conditions,
+            source="mistral",
+        )
 
     except Exception as exc:
         _log.warning(
             "solar_sim: Mistral response parse failed (%s) — using physics fallback", exc
         )
-        return _physics_samples(sim_duration_s, utc_now)
+        return _physics_forecast(sim_duration_s, utc_now)
+
+
+def _parse_samples(
+    raw: str,
+    *,
+    sim_duration_s: float,
+    utc_now: datetime.datetime,
+) -> list[tuple[float, float]]:
+    """Backward-compat shim: parse Mistral JSON → sample list only."""
+    return _parse_forecast(raw, sim_duration_s=sim_duration_s, utc_now=utc_now).samples
 
 
 # ── Public API ─────────────────────────────────────────────────────────────────
 
-def generate_irradiance_samples(
+def generate_solar_forecast(
     sim_duration_s: float,
     rated_mw: float = 4.99,
     *,
     utc_now: Optional[datetime.datetime] = None,
-) -> list[tuple[float, float]]:
+) -> SolarForecast:
     """
-    Generate San Diego solar irradiance samples for one simulation run.
+    Generate a San Diego solar forecast (samples + weather metadata) for one run.
 
     Calls Mistral (mistral-small-latest) once with the current local San Diego time
-    and simulation duration to produce a weather-aware irradiance curve, then returns
-    the sample list as ``list[tuple[sim_time_s, fraction]]``.
+    and simulation duration to produce a weather-aware irradiance curve.
 
-    The caller is expected to store these samples in ``spec_data["irradiance_steps"]``
-    before passing the spec to ``scenario_factory.build_run_context_from_spec``; the
-    factory then builds an ``IrradianceProfile`` from them normally.  This preserves
-    full determinism for runs that do NOT go through the API (determinism tests,
-    unit tests, direct factory calls).
+    Returns a ``SolarForecast`` namedtuple with:
+    - ``samples``    — list of (sim_time_s, fraction) pairs
+    - ``weather``    — short label ("clear", "partly_cloudy", …, "physics_estimate")
+    - ``conditions`` — one sentence describing current conditions
+    - ``source``     — "mistral" or "physics"
+
+    The caller is expected to store ``forecast.samples`` in
+    ``spec_data["irradiance_steps"]`` and ``forecast.weather`` /
+    ``forecast.conditions`` on ``RunContext`` for tick stamping.
 
     Falls back silently to a physics-based San Diego solar curve if:
     - ``MISTRAL_API_KEY`` is not set in the environment
@@ -250,7 +297,7 @@ def generate_irradiance_samples(
     api_key: Optional[str] = os.environ.get("MISTRAL_API_KEY") or None
     if not api_key:
         _log.info("solar_sim: MISTRAL_API_KEY absent — using physics-based San Diego curve")
-        return _physics_samples(sim_duration_s, utc_now)
+        return _physics_forecast(sim_duration_s, utc_now)
 
     local_dt   = utc_now + datetime.timedelta(hours=_UTC_OFFSET_H)
     local_time = local_dt.strftime("%H:%M")
@@ -265,6 +312,18 @@ def generate_irradiance_samples(
         raw = _call_mistral(user_msg, api_key)
     except Exception as exc:
         _log.warning("solar_sim: Mistral call failed (%s) — using physics fallback", exc)
-        return _physics_samples(sim_duration_s, utc_now)
+        return _physics_forecast(sim_duration_s, utc_now)
 
-    return _parse_samples(raw, sim_duration_s=sim_duration_s, utc_now=utc_now)
+    return _parse_forecast(raw, sim_duration_s=sim_duration_s, utc_now=utc_now)
+
+
+def generate_irradiance_samples(
+    sim_duration_s: float,
+    rated_mw: float = 4.99,
+    *,
+    utc_now: Optional[datetime.datetime] = None,
+) -> list[tuple[float, float]]:
+    """Backward-compat shim — returns samples only.  Prefer generate_solar_forecast()."""
+    return generate_solar_forecast(
+        sim_duration_s, rated_mw, utc_now=utc_now
+    ).samples

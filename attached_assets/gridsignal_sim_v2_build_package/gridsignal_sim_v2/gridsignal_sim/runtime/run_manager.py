@@ -195,6 +195,10 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
             if tick.kube_metrics is not None
             else None
         ),
+        # Solar weather metadata — stamped from RunContext at each tick (constant
+        # per run).  Empty strings when solar is absent or run started via direct path.
+        "solar_weather":    tick.solar_weather,
+        "solar_conditions": tick.solar_conditions,
     }
 
 
@@ -344,6 +348,10 @@ class RunContext:
     assertions: list = field(default_factory=list)  # list[AssertionSpec]
     scenario_name: str = ""
     scenario_id: Optional[str] = None
+    # Solar weather metadata — set by runs.py after generate_solar_forecast();
+    # empty strings on direct job-id path or when solar is absent.
+    solar_weather:    str = ""
+    solar_conditions: str = ""
 
     # W1 — advisory, telemetry, procurement wiring (all Optional so existing
     # tests that call build_run_context() directly are unaffected).
@@ -713,6 +721,11 @@ class RunManager:
                     # across ticks but stamped each tick so every TickResult in
                     # tick_history carries the data the fleet modal needs.
                     turbine_units=ctx.turbine_unit_specs,
+                    # Solar weather metadata — constant per run, stamped so the
+                    # Solar PV modal can surface the Mistral forecast label without
+                    # a separate endpoint.  Empty strings on direct job-id path.
+                    solar_weather=ctx.solar_weather,
+                    solar_conditions=ctx.solar_conditions,
                 )
                 if _profiling: _sec.setdefault("B_thermal_update", []).append(_time_module.perf_counter() - _t0)
 
