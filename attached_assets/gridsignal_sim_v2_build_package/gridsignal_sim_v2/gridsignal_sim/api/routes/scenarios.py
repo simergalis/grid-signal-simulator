@@ -552,38 +552,37 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
         ScenarioSpec(
             name="demo-kube",
             description=(
-                "Autonomous Kubernetes demand layer: stochastic GPU cluster load "
-                "driven by an Ornstein-Uhlenbeck process + EMA smoother, with "
-                "utilisation-based auto-scaling and power-cap events when grid "
-                "headroom falls below 2.5 MW.  "
-                "No scripted workload events — the KubeDemandAgent emits STARTING "
-                "at tick 0 then SCALE signals as utilisation evolves between 62% "
-                "and 80% hysteresis bands (30 s cooldown).  "
-                "Peak demand ≈ 1900 nodes × 10.2 kW × 1.03 PUE ≈ 20 MW; turbine "
-                "25 MW, BESS 18 MW / 8 MWh.  dt_lead=0 throughout: Kubernetes gives "
-                "no advance notice to the grid — the scheduler decides, the microgrid "
-                "finds out when current flows.  Bridging gap fully visible on the "
-                "BESS panel.  rng_seed=42 for deterministic replay."
+                "Kubernetes gang-admission demand simulator (steps 1–2 of the "
+                "Kube-to-turbine path).  An in-cluster informer watches Kueue / "
+                "Volcano PodGroup objects; gang admission is the trigger.  Each "
+                "admitted pod group maps to a WorkloadSignal (node_count from the "
+                "spec, hardware_profile_id from node labels).  A 10-second reorder "
+                "buffer honours the NTP ordering guarantee; event_ids are deduped.  "
+                "Steps 3–8 (P_compute = Σ[nodes × kW] × PUE / 1000, thermal lag, "
+                "BESS arbitration, turbine ramp) run unchanged in the core pipeline.  "
+                "dt_lead=0 throughout: Kubernetes gives no advance notice to the grid "
+                "— the scheduler decides, the microgrid finds out when current flows.  "
+                "Power-cap holds new admissions when headroom < 2.5 MW; critical "
+                "headroom evicts the largest running job.  rng_seed=42 for replay."
             ),
-            workload_events=[],          # kube agent handles all job signals
-            dt_lead_seconds=0.0,         # no advance notice — the chasm in action
+            workload_events=[],      # gang-admission simulator handles all signals
+            dt_lead_seconds=0.0,     # no advance notice — dt_lead=0 per spec
             bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
             turbine_units=[_turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2)],
             solar_rated_mw=_SOLAR_20MW,
-            end_sim_time=600.0,          # 10 min — enough for several scale events
+            end_sim_time=600.0,      # 10 min — covers several admission / retirement cycles
             kube_config=KubeConfigSpec(
-                job_id="kube-job-0",
                 hardware_profile_id="enterprise_8gpu_air",
                 max_nodes=1900,
                 min_nodes=200,
-                target_utilization=0.72,
-                ou_theta=0.04,
-                ou_sigma=0.08,
-                ema_alpha=0.18,
-                scale_up_threshold=0.80,
-                scale_down_threshold=0.62,
-                scale_step_fraction=0.05,
-                scale_cooldown_s=30.0,
+                mean_interarrival_s=60.0,    # ~1 gang admission per minute
+                mean_job_nodes=200,
+                job_node_std=80.0,
+                min_job_nodes=50,
+                mean_job_duration_s=300.0,   # 5-min mean job length
+                min_job_duration_s=30.0,
+                reorder_window_s=10.0,
+                ntp_jitter_s=2.0,
                 headroom_threshold_mw=2.5,
                 rng_seed=42,
             ),

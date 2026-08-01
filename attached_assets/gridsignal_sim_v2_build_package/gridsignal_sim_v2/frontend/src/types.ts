@@ -59,10 +59,12 @@ export interface TickPayload {
 }
 
 export interface KubeMetrics {
-  utilization: number       // smoothed GPU utilisation [0, 1]
-  node_count: number        // current scheduled node count
-  power_cap_active: boolean // true when grid headroom forced a cap/step-down
-  headroom_mw: number       // available MW headroom at last grid reading
+  utilization: number       // admitted_nodes / max_nodes (or min_nodes/max_nodes when idle)
+  node_count: number        // max(min_nodes, admitted_nodes) — drives GPUModule
+  power_cap_active: boolean // true when headroom < headroom_threshold_mw
+  headroom_mw: number       // turbine_headroom + bess_headroom from previous tick
+  active_jobs: number       // gang-admitted workloads currently running
+  admitted_nodes: number    // sum of node_count across active jobs (pre min_nodes floor)
 }
 
 export interface RunMeta {

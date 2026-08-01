@@ -115,9 +115,11 @@ export const computePanel: PanelConfig = {
     }))
 
     const kubeRows = kube ? [
-      { label: 'K8s utilisation', value: `${(kube.utilization * 100).toFixed(1)}%`,  colour: kube.utilization > 0.78 ? AMBER : TEAL },
-      { label: 'K8s nodes',       value: fmtNodes(kube.node_count) },
-      { label: 'Power cap',       value: kube.power_cap_active ? 'ACTIVE' : '—',     colour: kube.power_cap_active ? RED : undefined },
+      { label: 'K8s utilisation', value: `${(kube.utilization * 100).toFixed(1)}%`,       colour: kube.utilization > 0.78 ? AMBER : TEAL },
+      { label: 'Active jobs',     value: kube.active_jobs.toString(),                      colour: kube.active_jobs > 0 ? TEAL : undefined },
+      { label: 'Admitted nodes',  value: fmtNodes(kube.admitted_nodes) },
+      { label: 'Total nodes',     value: fmtNodes(kube.node_count) },
+      { label: 'Power cap',       value: kube.power_cap_active ? 'ACTIVE' : '—',           colour: kube.power_cap_active ? RED : undefined },
       { label: 'Grid headroom',   value: kube.headroom_mw > 100 ? '∞' : `${kube.headroom_mw.toFixed(1)} MW` },
     ] : []
 
@@ -143,9 +145,9 @@ export const computePanel: PanelConfig = {
       ],
       secondary: undefined,
       why: kube ? [
-        'The Kubernetes demand agent drives load via an Ornstein-Uhlenbeck process smoothed with an EMA — auto-scaling on 80%/62% utilisation bands with a 30 s cooldown.',
-        'Power-cap fires when grid headroom falls below threshold — the scheduler holds or reduces node count until generation catches up.',
-        'This closes the compute-to-grid gap: generation reacts to scheduler intent, not current sensors.',
+        'Gang admission is the trigger — when Kueue or Volcano admits a pod group the node count jumps instantly. A 10-second reorder buffer and event dedup model the real NTP-timestamp guarantee.',
+        'P_compute = Σ [nodes × kW] × PUE / 1000 is computed by the GPUModule each tick; P_cooling follows with a 90-second thermal lag — steps 3–4 of the Kube-to-turbine path.',
+        'Power-cap holds new admissions when grid headroom falls below threshold; critical headroom evicts the largest running job so BESS can recover before the turbine ramps up.',
       ] : [
         'GridSignal reads the job scheduler queue, not a power meter — it knows a step-load is coming 30–60 s before any current flows.',
         'The two-stage power draw (compute at job start, cooling 90 s later) is the pattern incumbents cannot handle with a single threshold.',

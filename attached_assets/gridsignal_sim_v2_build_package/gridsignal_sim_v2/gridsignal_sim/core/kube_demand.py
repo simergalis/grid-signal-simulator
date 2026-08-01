@@ -1,34 +1,43 @@
 """
-core/kube_demand.py — Autonomous Kubernetes demand agent.
+core/kube_demand.py — Kubernetes gang-admission demand simulator (Steps 1–2).
 
-Generates stochastic GPU-cluster demand using an Ornstein-Uhlenbeck process
-(mean-reverting random walk) smoothed by an Exponential Moving Average.
+Simulates the path from pod admission to WorkloadSignal:
+  1. OBSERVE:  An in-cluster informer watches Kueue Workload / Volcano PodGroup
+     objects.  Gang admission is the trigger — the allocation decision exists,
+     but no power has been drawn yet.
+  2. MAP TO CONTRACT: Each admission is mapped to a WorkloadSignal with
+     node_count (from the admitted spec), hardware_profile_id (from node
+     labels / resource requests), workload_class, site_id, and a deterministic
+     event_id.  Timestamps hold ±ntp_jitter_s — skew eats Δt_lead directly.
 
-The agent emits WorkloadSignal(STARTING) on its first tick, then SCALE events
-whenever the smoothed utilisation crosses a hysteresis band. When grid headroom
-falls below a configurable threshold the agent enforces a power-cap by capping
-the scale target at its current node count (or forcing a step-down when headroom
-goes negative).
+Steps 3–8 (validate → translate to MW → band → net against supply → arbitrate
+→ command) are already implemented in the scheduler-agnostic core pipeline:
+  • SimulationState.apply_workload_signal  — applies node_count
+  • GPUModule.advance                     — P_compute = Σ[nodes × kW] × PUE / 1000
+  • CoolingModule.advance                 — P_cooling = α(t) × P_compute(t − Δt_thermal)
+  • BESS / turbine dispatch               — bridges the step, ramps at r_asset
 
-No LLM is used: all demand is generated from seeded random-number arithmetic.
-Pass rng_seed for deterministic replay; rng_seed=None gives time-seeded variety.
+Swapping Slurm for Kubernetes changes this file and nothing else.
 
 Design goals
 ------------
-* Closes the compute-to-grid gap: the generation side reacts to scheduler
-  decisions rather than discovering them from current sensors.
-* dt_lead = 0 for all emitted signals — Kubernetes gives no advance notice to
-  the grid.  BESS must bridge the ramp; this is exactly the GridSignal value.
-* Fully isolated from I/O: tick() is synchronous, state-only — safe to call
-  inside the evaluate_tick() purity guard.
+* Gang admission is the trigger: each job is a discrete event (node_count from
+  the pod spec), not a continuous utilisation signal.
+* 10-second reorder buffer: simulates NTP jitter and the ordering guarantee.
+* Dedup on event_id: idempotent — replaying the same admission is safe.
+* Capacity validation: admissions that would exceed max_nodes are dropped.
+* Power-cap feedback: when grid headroom < headroom_threshold_mw, new
+  admissions are held; critical headroom (< 0) evicts the largest running job.
+* dt_lead = 0 throughout: Kubernetes gives no advance notice to the grid.
+  BESS must bridge every ramp — this is the GridSignal value proposition.
+* Fully synchronous: tick() has no I/O.  Safe inside evaluate_tick().
 """
 
 from __future__ import annotations
 
 import logging
-import math
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 from .models import KubeMetrics, WorkloadClass, WorkloadEventType, WorkloadSignal
@@ -42,37 +51,40 @@ _log = logging.getLogger(__name__)
 
 @dataclass
 class KubeConfig:
-    """Configuration for the Kubernetes demand agent (one instance per run)."""
+    """Configuration for the Kubernetes gang-admission demand simulator.
 
-    # Job identity — must not collide with any scripted job_id in the scenario.
-    job_id: str = "kube-job-0"
-    hardware_profile_id: str = "enterprise_8gpu_air"
+    One instance per run; created by scenario_factory from KubeConfigSpec.
+    """
 
     # Fleet sizing
     max_nodes: int = 1900
-    min_nodes: int = 200
+    min_nodes: int = 200           # idle baseline — cluster is never fully empty
+    hardware_profile_id: str = "enterprise_8gpu_air"
 
-    # Ornstein-Uhlenbeck process parameters
-    # μ: long-run mean utilisation (targeting ~72% GPU util is a common cloud target)
-    target_utilization: float = 0.72
-    # θ: mean-reversion rate (per sim-second). θ=0.04 → half-life ≈ 17 s.
-    ou_theta: float = 0.04
-    # σ: volatility (std dev per √(sim-second))
-    ou_sigma: float = 0.08
+    # Gang-admission arrival pattern (Poisson process)
+    # mean_interarrival_s is the average simulated seconds between successive
+    # Kueue/Volcano gang admissions.  60 s → ~1 new job per minute on average.
+    mean_interarrival_s: float = 60.0
 
-    # EMA smoothing factor α ∈ (0, 1].  Lower = smoother.
-    # α=0.18 gives a ~5-tick lag at the 5-s tick cadence.
-    ema_alpha: float = 0.18
+    # Job size distribution (Gaussian, clipped to [min_job_nodes, max_nodes/2])
+    # Gaussian is a practical approximation; real GPU cluster job sizes are
+    # closer to log-normal but Gaussian is easier to reason about for demos.
+    mean_job_nodes: int = 200
+    job_node_std: float = 80.0
+    min_job_nodes: int = 50        # floor — no trivial admissions
 
-    # Hysteresis bands — avoid churn by only acting outside the dead-band
-    scale_up_threshold: float = 0.80    # scale up when smoothed util > this
-    scale_down_threshold: float = 0.62  # scale down when smoothed util < this
+    # Job duration distribution (exponential, clipped at floor)
+    mean_job_duration_s: float = 300.0   # 5 min mean — typical short GPU job
+    min_job_duration_s: float = 30.0     # floor — no sub-30 s jobs
 
-    # Step size per scale decision (fraction of max_nodes, rounded to int)
-    scale_step_fraction: float = 0.05
+    # Reorder buffer: drain events only after this window has elapsed.
+    # The real system guarantees ordering within a 10 s window; the simulator
+    # honours the same constraint.
+    reorder_window_s: float = 10.0
 
-    # Minimum sim-seconds between scale decisions (cooldown)
-    scale_cooldown_s: float = 30.0
+    # NTP jitter applied to event timestamps (±seconds, uniform).
+    # Timestamps must hold ±2 s NTP — skew here eats Δt_lead directly.
+    ntp_jitter_s: float = 2.0
 
     # Grid headroom below which power-cap activates (MW)
     headroom_threshold_mw: float = 2.5
@@ -82,15 +94,15 @@ class KubeConfig:
 
 
 # ---------------------------------------------------------------------------
-# Grid state snapshot (passed in from evaluate_tick; uses previous tick's values)
+# Grid state snapshot
 # ---------------------------------------------------------------------------
 
 @dataclass
 class KubeGridState:
-    """Snapshot of grid-side metrics passed to KubeDemandAgent each tick.
+    """Snapshot of grid-side metrics passed to the agent each tick.
 
     Values are from the *previous* tick — the scheduler reads the last known
-    grid state, mirrors the real-world latency between Kubernetes and the EMS.
+    grid state, mirroring the real-world latency between Kubernetes and the EMS.
     """
     p_dispatch_required_mw: float
     bess_soc_fraction: float
@@ -98,8 +110,31 @@ class KubeGridState:
     bess_headroom_mw: float      # available BESS discharge headroom
 
 
-# KubeMetrics is defined in core/models.py to avoid a circular import
-# (models.py ← kube_demand.py ← models.py).  It is imported above.
+# ---------------------------------------------------------------------------
+# Internal job representations
+# ---------------------------------------------------------------------------
+
+@dataclass
+class _PendingAdmission:
+    """An event sitting in the reorder buffer, not yet admitted."""
+    event_id: str
+    node_count: int
+    hardware_profile_id: str
+    # sim_time when the informer observed the Workload/PodGroup object
+    observed_at: float
+    # timestamp carried on the event (observed_at + NTP jitter); used for ordering
+    event_timestamp: float
+    duration_s: float
+
+
+@dataclass
+class _ActiveJob:
+    """A gang-admitted workload currently running."""
+    event_id: str
+    node_count: int
+    hardware_profile_id: str
+    admitted_at: float
+    ends_at: float
 
 
 # ---------------------------------------------------------------------------
@@ -107,10 +142,14 @@ class KubeGridState:
 # ---------------------------------------------------------------------------
 
 class KubeDemandAgent:
-    """Autonomous Kubernetes demand agent.
+    """Kubernetes gang-admission demand simulator — Steps 1–2 only.
 
-    Call tick() once per sim tick inside evaluate_tick().  Returns a list of
-    WorkloadSignals to apply to SimulationState and a KubeMetrics snapshot.
+    tick() is called once per sim tick from evaluate_tick() Step 0.
+    It drives the reorder buffer, admits jobs, retires completed jobs,
+    and emits WorkloadSignals whenever the total admitted node count changes.
+
+    The downstream pipeline (GPUModule → CoolingModule → dispatch) handles
+    Steps 3–8 without any knowledge of Kubernetes.
 
     Thread safety: not thread-safe; designed for single-threaded use inside
     the synchronous evaluate_tick() function.
@@ -121,21 +160,17 @@ class KubeDemandAgent:
         self.site_id = site_id
         self._rng = random.Random(config.rng_seed)
 
-        # Ornstein-Uhlenbeck state: start at target utilisation
-        self._ou_state: float = config.target_utilization
-        # EMA state: aligned with OU at t=0
-        self._ema_state: float = config.target_utilization
+        # Step 1 state — admission pipeline
+        self._reorder_buffer: list[_PendingAdmission] = []
+        self._active_jobs: list[_ActiveJob] = []
+        self._seen_event_ids: set[str] = set()
+        self._job_counter: int = 0
+        # Next sim_time at which a new job arrives at the informer
+        self._next_arrival_sim_time: float = 0.0
 
-        # Scheduling state
-        self._current_nodes: int = round(config.target_utilization * config.max_nodes)
-        self._job_started: bool = False
-        self._last_scale_sim_time: float = -9999.0
-
-        # Grid state from the previous tick (None on tick 0)
-        self._last_grid_state: Optional[KubeGridState] = None
-
-        # Metrics for the most recent tick
-        self._last_metrics: Optional[KubeMetrics] = None
+        # Signal emission state
+        self._last_total_nodes: int = -1   # -1 forces emission on tick 0
+        self._started: bool = False
 
     # ------------------------------------------------------------------
     # Public API
@@ -147,151 +182,202 @@ class KubeDemandAgent:
         dt_seconds: float,
         grid_state: Optional[KubeGridState] = None,
     ) -> tuple[list[WorkloadSignal], KubeMetrics]:
-        """Advance demand model by one tick.
+        """Advance the admission simulator by one tick.
+
+        Steps executed in order:
+          1a. Generate Poisson arrivals observed by the informer up to sim_time.
+          1b. Retire completed jobs.
+          1c. Drain the reorder buffer (events whose window has elapsed),
+              sorted by event_timestamp (ordering guarantee).
+          2.  Map each drained event to a WorkloadSignal after validation:
+              dedup → capacity check → power-cap hold.
+          2c. Critical headroom eviction (headroom < 0 → evict largest job).
+          Emit a STARTING or SCALE WorkloadSignal if node count changed.
 
         Returns:
-            signals: list of WorkloadSignals to feed into
-                     SimulationState.apply_workload_signal(signal, dt_lead=0.0).
-                     May be empty if no scale decision fires this tick.
-            metrics: KubeMetrics snapshot for this tick.
+            signals: list of WorkloadSignals for SimulationState.apply_workload_signal.
+                     Empty when no admission changes node count this tick.
+            metrics: KubeMetrics snapshot for this tick (wire + UI).
         """
-        # ── 1. Advance stochastic demand model ─────────────────────────
-        self._ou_state = self._advance_ou(dt_seconds)
-        self._ema_state = (
-            self.config.ema_alpha * self._ou_state
-            + (1.0 - self.config.ema_alpha) * self._ema_state
-        )
-        smoothed_util = max(0.10, min(1.0, self._ema_state))
-
-        # ── 2. Compute grid headroom (from last tick's grid state) ─────
+        # ── Grid headroom from previous tick ─────────────────────────────
         headroom_mw = 999.0
         power_cap_active = False
         if grid_state is not None:
             headroom_mw = grid_state.turbine_headroom_mw + grid_state.bess_headroom_mw
+            power_cap_active = headroom_mw < self.config.headroom_threshold_mw
 
-        # ── 3. First tick: emit STARTING ────────────────────────────────
-        if not self._job_started:
-            initial_nodes = _clamp(
-                round(smoothed_util * self.config.max_nodes),
-                self.config.min_nodes,
-                self.config.max_nodes,
+        # ── Step 1a: OBSERVE — advance Poisson arrivals ───────────────────
+        # Generate all jobs whose informer-observation time ≤ sim_time.
+        while self._next_arrival_sim_time <= sim_time:
+            self._job_counter += 1
+            event_id = f"kube-job-{self._job_counter}"
+
+            # Gang size: Gaussian, clipped to [min_job_nodes, max_nodes/2]
+            node_count = int(round(max(
+                float(self.config.min_job_nodes),
+                min(
+                    float(self.config.max_nodes // 2),
+                    self._rng.gauss(
+                        float(self.config.mean_job_nodes),
+                        float(self.config.job_node_std),
+                    ),
+                ),
+            )))
+
+            # Duration: exponential, clipped at floor
+            duration_s = max(
+                self.config.min_job_duration_s,
+                self._rng.expovariate(1.0 / self.config.mean_job_duration_s),
             )
-            self._current_nodes = initial_nodes
-            self._job_started = True
-            self._last_scale_sim_time = sim_time
 
-            _log.info(
-                "kube: STARTING %s — %d nodes (util=%.2f) at sim_time=%.1f",
-                self.config.job_id, initial_nodes, smoothed_util, sim_time,
-            )
+            # NTP jitter on the event timestamp (±ntp_jitter_s)
+            jitter = self._rng.uniform(-self.config.ntp_jitter_s, self.config.ntp_jitter_s)
+            event_timestamp = self._next_arrival_sim_time + jitter
 
-            metrics = KubeMetrics(
-                utilization=smoothed_util,
-                node_count=initial_nodes,
-                power_cap_active=False,
-                headroom_mw=headroom_mw,
-            )
-            self._last_metrics = metrics
-            return [self._make_signal(WorkloadEventType.STARTING, initial_nodes, sim_time)], metrics
+            self._reorder_buffer.append(_PendingAdmission(
+                event_id=event_id,
+                node_count=node_count,
+                hardware_profile_id=self.config.hardware_profile_id,
+                observed_at=self._next_arrival_sim_time,
+                event_timestamp=event_timestamp,
+                duration_s=duration_s,
+            ))
 
-        # ── 4. Power-cap logic ─────────────────────────────────────────
-        target_nodes = _clamp(
-            round(smoothed_util * self.config.max_nodes),
-            self.config.min_nodes,
-            self.config.max_nodes,
-        )
-
-        if headroom_mw < self.config.headroom_threshold_mw:
-            power_cap_active = True
-            if headroom_mw < 0.0:
-                # Critically tight: force a 10% step-down regardless of util
-                forced_nodes = max(
-                    self.config.min_nodes,
-                    round(self._current_nodes * 0.90),
-                )
-                target_nodes = min(target_nodes, forced_nodes)
-                _log.debug(
-                    "kube: power-cap CRITICAL headroom=%.2f MW → cap to %d nodes",
-                    headroom_mw, target_nodes,
-                )
-            else:
-                # Tight: hold current node count; block scale-ups
-                target_nodes = min(target_nodes, self._current_nodes)
-                _log.debug(
-                    "kube: power-cap SOFT headroom=%.2f MW → hold at %d nodes",
-                    headroom_mw, self._current_nodes,
-                )
-
-        # ── 5. Hysteresis + cooldown decision ─────────────────────────
-        cooldown_elapsed = (sim_time - self._last_scale_sim_time) >= self.config.scale_cooldown_s
-        step = max(1, round(self.config.scale_step_fraction * self.config.max_nodes))
-
-        new_nodes = self._current_nodes
-        if cooldown_elapsed:
-            if not power_cap_active and smoothed_util > self.config.scale_up_threshold:
-                # Scale up toward target in one step
-                new_nodes = min(self._current_nodes + step, target_nodes, self.config.max_nodes)
-            elif smoothed_util < self.config.scale_down_threshold or (
-                power_cap_active and target_nodes < self._current_nodes
-            ):
-                # Scale down toward target in one step
-                new_nodes = max(self._current_nodes - step, target_nodes, self.config.min_nodes)
-
-        signals: list[WorkloadSignal] = []
-        if new_nodes != self._current_nodes:
-            self._current_nodes = new_nodes
-            self._last_scale_sim_time = sim_time
-            signals.append(
-                self._make_signal(WorkloadEventType.SCALE, new_nodes, sim_time)
-            )
             _log.debug(
-                "kube: SCALE %s → %d nodes (util=%.3f, cap=%s) at sim_time=%.1f",
-                self.config.job_id, new_nodes, smoothed_util, power_cap_active, sim_time,
+                "kube: informer observed %s — %d nodes, duration=%.0f s, "
+                "event_ts=%.2f (jitter=%.2fs)",
+                event_id, node_count, duration_s, event_timestamp, jitter,
+            )
+
+            # Sample next Poisson inter-arrival time
+            iat = self._rng.expovariate(1.0 / self.config.mean_interarrival_s)
+            self._next_arrival_sim_time += iat
+
+        # ── Step 1b: Retire completed jobs ────────────────────────────────
+        before = len(self._active_jobs)
+        self._active_jobs = [j for j in self._active_jobs if j.ends_at > sim_time]
+        retired = before - len(self._active_jobs)
+        if retired:
+            _log.debug("kube: %d job(s) completed at sim_time=%.1f", retired, sim_time)
+
+        # ── Step 1c: Drain reorder buffer ─────────────────────────────────
+        # Ready = observed_at + reorder_window_s ≤ sim_time.
+        # Sort ready events by event_timestamp to honour ordering guarantee.
+        ready = sorted(
+            (pa for pa in self._reorder_buffer
+             if pa.observed_at + self.config.reorder_window_s <= sim_time),
+            key=lambda pa: pa.event_timestamp,
+        )
+        self._reorder_buffer = [
+            pa for pa in self._reorder_buffer
+            if pa.observed_at + self.config.reorder_window_s > sim_time
+        ]
+
+        # ── Step 2: MAP TO CONTRACT — validate and admit ──────────────────
+        newly_admitted: list[_ActiveJob] = []
+        for pa in ready:
+            # Dedup: idempotent on event_id
+            if pa.event_id in self._seen_event_ids:
+                _log.debug("kube: dedup drop %s", pa.event_id)
+                continue
+            self._seen_event_ids.add(pa.event_id)
+
+            # Capacity validation
+            current_nodes = (
+                sum(j.node_count for j in self._active_jobs)
+                + sum(j.node_count for j in newly_admitted)
+            )
+            if current_nodes + pa.node_count > self.config.max_nodes:
+                _log.debug(
+                    "kube: capacity reject %s (%d nodes, current=%d, max=%d)",
+                    pa.event_id, pa.node_count, current_nodes, self.config.max_nodes,
+                )
+                continue
+
+            # Power-cap hold: re-queue with a short delay; never drops the job
+            if power_cap_active:
+                retry_id = f"{pa.event_id}-retry"
+                if retry_id not in self._seen_event_ids:
+                    self._reorder_buffer.append(_PendingAdmission(
+                        event_id=retry_id,
+                        node_count=pa.node_count,
+                        hardware_profile_id=pa.hardware_profile_id,
+                        observed_at=sim_time + 5.0,   # re-enter buffer in 5 s
+                        event_timestamp=sim_time + 5.0,
+                        duration_s=pa.duration_s,
+                    ))
+                _log.debug(
+                    "kube: power-cap hold %s (headroom=%.2f MW) → queued retry",
+                    pa.event_id, headroom_mw,
+                )
+                continue
+
+            job = _ActiveJob(
+                event_id=pa.event_id,
+                node_count=pa.node_count,
+                hardware_profile_id=pa.hardware_profile_id,
+                admitted_at=sim_time,
+                ends_at=sim_time + pa.duration_s,
+            )
+            newly_admitted.append(job)
+            _log.info(
+                "kube: ADMITTED %s — %d nodes, ends_at=%.1f s",
+                pa.event_id, pa.node_count, job.ends_at,
+            )
+
+        self._active_jobs.extend(newly_admitted)
+
+        # ── Step 2c: Critical headroom eviction ───────────────────────────
+        # headroom < 0 → evict the largest running job to recover headroom fastest.
+        if headroom_mw < 0.0 and self._active_jobs:
+            self._active_jobs.sort(key=lambda j: j.node_count, reverse=True)
+            evicted = self._active_jobs.pop(0)
+            _log.warning(
+                "kube: EVICT %s (%d nodes) — critical headroom %.2f MW",
+                evicted.event_id, evicted.node_count, headroom_mw,
+            )
+
+        # ── Derive metrics ────────────────────────────────────────────────
+        admitted_nodes = sum(j.node_count for j in self._active_jobs)
+        # min_nodes is the idle baseline — cluster is never fully drained
+        total_nodes = max(self.config.min_nodes, admitted_nodes)
+        active_jobs = len(self._active_jobs)
+        utilization = total_nodes / self.config.max_nodes
+
+        # ── Emit WorkloadSignal when node count changes ───────────────────
+        # STARTING on the first emission (tick 0); SCALE on subsequent changes.
+        signals: list[WorkloadSignal] = []
+        if not self._started or total_nodes != self._last_total_nodes:
+            event_type = (
+                WorkloadEventType.STARTING if not self._started
+                else WorkloadEventType.SCALE
+            )
+            signals.append(WorkloadSignal(
+                event_id=f"kube-signal-t{int(sim_time * 10)}",
+                job_id=f"kube-admission-{self._job_counter}",
+                event_type=event_type,
+                timestamp=sim_time,
+                hardware_profile_id=self.config.hardware_profile_id,
+                node_count=total_nodes,
+                workload_class=WorkloadClass.TRAINING,
+                site_id=self.site_id,
+            ))
+            self._started = True
+            self._last_total_nodes = total_nodes
+            _log.debug(
+                "kube: signal %s → %d nodes (util=%.3f, jobs=%d) at sim_time=%.1f",
+                event_type.value, total_nodes, utilization, active_jobs, sim_time,
             )
 
         metrics = KubeMetrics(
-            utilization=smoothed_util,
-            node_count=self._current_nodes,
+            utilization=utilization,
+            node_count=total_nodes,
             power_cap_active=power_cap_active,
             headroom_mw=headroom_mw,
+            active_jobs=active_jobs,
+            admitted_nodes=admitted_nodes,
         )
-        self._last_metrics = metrics
         return signals, metrics
-
-    # ------------------------------------------------------------------
-    # Private helpers
-    # ------------------------------------------------------------------
-
-    def _advance_ou(self, dt_seconds: float) -> float:
-        """One step of the Ornstein-Uhlenbeck process.
-
-        dX = θ(μ − X)dt + σ√dt · ε,   ε ~ N(0,1)
-
-        Clamped to [0.10, 1.0] before returning (hard floor at 10% — a
-        cluster is never fully idle in this model).
-        """
-        cfg = self.config
-        mean_reversion = cfg.ou_theta * (cfg.target_utilization - self._ou_state) * dt_seconds
-        diffusion = cfg.ou_sigma * math.sqrt(dt_seconds) * self._rng.gauss(0.0, 1.0)
-        return max(0.10, min(1.0, self._ou_state + mean_reversion + diffusion))
-
-    def _make_signal(
-        self,
-        event_type: WorkloadEventType,
-        node_count: int,
-        sim_time: float,
-    ) -> WorkloadSignal:
-        cfg = self.config
-        return WorkloadSignal(
-            event_id=f"{cfg.job_id}-{event_type.value}-{round(sim_time)}",
-            job_id=cfg.job_id,
-            event_type=event_type,
-            timestamp=sim_time,
-            hardware_profile_id=cfg.hardware_profile_id,
-            node_count=node_count,
-            workload_class=WorkloadClass.TRAINING,
-            site_id=self.site_id,
-        )
 
 
 # ---------------------------------------------------------------------------

@@ -189,6 +189,8 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
                 "node_count":       tick.kube_metrics.node_count,
                 "power_cap_active": tick.kube_metrics.power_cap_active,
                 "headroom_mw":      round(tick.kube_metrics.headroom_mw, 3),
+                "active_jobs":      tick.kube_metrics.active_jobs,
+                "admitted_nodes":   tick.kube_metrics.admitted_nodes,
             }
             if tick.kube_metrics is not None
             else None

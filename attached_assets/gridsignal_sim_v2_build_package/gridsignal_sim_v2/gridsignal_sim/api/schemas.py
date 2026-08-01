@@ -206,34 +206,66 @@ class TurbineUnitSpec(BaseModel):
 
 
 class KubeConfigSpec(BaseModel):
-    """Kubernetes demand agent configuration.
+    """Kubernetes gang-admission demand simulator configuration.
 
-    When present on a ScenarioSpec, the simulator runs an autonomous
-    Ornstein-Uhlenbeck demand agent instead of (or alongside) scripted workload
-    events.  The agent emits STARTING on the first tick then SCALE events as
-    GPU utilisation evolves stochastically.  It enforces a power-cap when grid
-    headroom drops below headroom_threshold_mw.
+    When present on a ScenarioSpec, the simulator replaces the scripted
+    workload-event path with a discrete gang-admission simulator that models
+    steps 1–2 of the Kubernetes-to-turbine path:
+
+      1. OBSERVE:  Poisson-arrival jobs enter a 10-second reorder buffer,
+         simulating an in-cluster informer watching Kueue/Volcano objects.
+      2. MAP TO CONTRACT: Each admitted gang emits a WorkloadSignal with
+         node_count and hardware_profile_id.  Steps 3–8 (P_compute formula,
+         thermal lag, BESS arbitration, turbine ramp) run unchanged in the
+         scheduler-agnostic core pipeline.
+
+    dt_lead = 0 throughout — Kubernetes gives no advance notice to the grid.
 
     Use rng_seed for deterministic replay; rng_seed=None gives time-seeded variety.
     """
-    job_id: str = "kube-job-0"
     hardware_profile_id: str = "enterprise_8gpu_air"
+
+    # Fleet sizing
     max_nodes: int = Field(default=1900, ge=1)
-    min_nodes: int = Field(default=200, ge=1)
-    target_utilization: float = Field(default=0.72, ge=0.1, le=1.0)
-    ou_theta: float = Field(default=0.04, ge=0.001, le=1.0,
-                            description="OU mean-reversion rate per sim-second")
-    ou_sigma: float = Field(default=0.08, ge=0.0, le=1.0,
-                            description="OU volatility (std-dev per √(sim-second))")
-    ema_alpha: float = Field(default=0.18, ge=0.01, le=1.0,
-                             description="EMA weight on new value; lower = smoother")
-    scale_up_threshold: float = Field(default=0.80, ge=0.1, le=1.0)
-    scale_down_threshold: float = Field(default=0.62, ge=0.1, le=1.0)
-    scale_step_fraction: float = Field(default=0.05, ge=0.01, le=0.5,
-                                       description="Scale step as fraction of max_nodes")
-    scale_cooldown_s: float = Field(default=30.0, ge=5.0, le=300.0)
-    headroom_threshold_mw: float = Field(default=2.5, ge=0.0,
-                                         description="Grid headroom below which power-cap activates")
+    min_nodes: int = Field(default=200, ge=1,
+                           description="Idle-baseline nodes — cluster never fully drains")
+
+    # Gang-admission arrival pattern (Poisson process)
+    mean_interarrival_s: float = Field(
+        default=60.0, ge=5.0, le=3600.0,
+        description="Mean simulated seconds between successive gang admissions",
+    )
+
+    # Job size distribution (Gaussian, clipped)
+    mean_job_nodes: int = Field(default=200, ge=1,
+                                description="Mean gang size in nodes")
+    job_node_std: float = Field(default=80.0, ge=0.0,
+                                description="Std deviation of gang size")
+    min_job_nodes: int = Field(default=50, ge=1,
+                               description="Minimum nodes per admission")
+
+    # Job duration distribution (exponential, clipped)
+    mean_job_duration_s: float = Field(default=300.0, ge=10.0,
+                                       description="Mean job duration in sim-seconds")
+    min_job_duration_s: float = Field(default=30.0, ge=5.0,
+                                      description="Minimum job duration in sim-seconds")
+
+    # Reorder buffer and NTP jitter
+    reorder_window_s: float = Field(
+        default=10.0, ge=0.0, le=60.0,
+        description="Events drain from buffer after this many sim-seconds",
+    )
+    ntp_jitter_s: float = Field(
+        default=2.0, ge=0.0, le=10.0,
+        description="±seconds of NTP jitter added to event timestamps",
+    )
+
+    # Power-cap threshold
+    headroom_threshold_mw: float = Field(
+        default=2.5, ge=0.0,
+        description="Grid headroom below which new admissions are held",
+    )
+
     rng_seed: Optional[int] = None
 
 

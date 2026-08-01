@@ -1,38 +1,92 @@
 ---
 name: kube-demand-layer
-description: Architecture of the Kubernetes demand agent — stochastic GPU cluster load, OU process, grid headroom power-cap, and integration points.
+description: Architecture of the Kubernetes gang-admission demand simulator — steps 1-2 only; steps 3-8 are scheduler-agnostic core pipeline.
 ---
 
 ## What was built
 
-`core/kube_demand.py` — `KubeDemandAgent` with Ornstein-Uhlenbeck process + EMA smoother.
+`core/kube_demand.py` — `KubeDemandAgent`: a discrete gang-admission simulator
+replacing the earlier OU continuous process.
+
+## The design boundary
+
+**Steps 1–2 only** live in `kube_demand.py`:
+1. OBSERVE: Poisson-arrival jobs enter a 10-second reorder buffer (simulates
+   informer watching Kueue/Volcano PodGroup objects + NTP jitter).
+2. MAP TO CONTRACT: Each drained event maps to a `WorkloadSignal(node_count,
+   hardware_profile_id, workload_class, site_id, event_id)`.
+
+**Steps 3–8 are already in the scheduler-agnostic core pipeline** — unchanged:
+- `GPUModule.advance()` → P_compute = Σ[nodes × kW] × PUE / 1000
+- `CoolingModule.advance()` → P_cooling = α(t) × P_compute(t − Δt_thermal)
+- BESS/turbine dispatch → bridges the step, ramps at r_asset
+
+Swapping Slurm for Kubernetes changes `kube_demand.py` and nothing else.
 
 ## Key design rules
 
-**Import order (no circular):** `models.py` ← `kube_demand.py` ← `simulation_core.py`. `KubeMetrics` is defined in `models.py` (not `kube_demand.py`) so `TickResult` can carry it without a cycle.
+**Import order (no circular):** `models.py` ← `kube_demand.py` ← `simulation_core.py`.
+`KubeMetrics` is defined in `models.py` (not `kube_demand.py`) so `TickResult` can
+carry it without a cycle.
 
-**Opt-in:** `kube_config` in `ScenarioSpec` → `sim_state.kube_agent` is set. All existing scenarios and all 417 tests are unaffected (kube_agent=None path is the default).
+**Opt-in:** `kube_config` in `ScenarioSpec` → `sim_state.kube_agent` set. All existing
+scenarios and 417 tests are unaffected (`kube_agent=None` path is the no-op default).
 
-**Step 0 in evaluate_tick:** kube agent runs BEFORE `gpu.advance()` so demand changes affect the current tick's power calculation. Uses `state._kube_grid_state` from the PREVIOUS tick (correct — mirrors real-world EMS latency).
+**Step 0 in evaluate_tick:** kube agent runs BEFORE `gpu.advance()`. Uses
+`state._kube_grid_state` from the PREVIOUS tick (correct — mirrors real-world EMS latency).
 
-**dt_lead=0 always:** all STARTING and SCALE signals from the kube agent use `dt_lead_seconds=0.0`. Kubernetes gives no advance notice to the grid — BESS must bridge the ramp.
+**dt_lead=0 always:** STARTING and SCALE signals use `dt_lead_seconds=0.0`. Kubernetes
+gives no advance notice — BESS must bridge every ramp.
 
-**SCALE events:** first tick emits `WorkloadEventType.STARTING`, subsequent ticks emit `SCALE` (which snaps `_ramp_progress=1.0` on GPUModule — no cold-start ramp for scale events).
+**Gang admission is the trigger**: discrete events (Poisson inter-arrivals, Gaussian job
+sizes, exponential durations). NOT a continuous utilisation signal.
 
-**Stochastic model:** OU process `dX = θ(μ-X)dt + σ√dt·N(0,1)` with `θ=0.04`, `σ=0.08`, `μ=target_utilization`. EMA filter `α=0.18`. Hysteresis bands 80%/62%, cooldown 30s, step 5% of max_nodes.
+**Reorder buffer**: events drain only after `reorder_window_s` (default 10 s) has elapsed
+since observation. Sorted by `event_timestamp` (NTP-jittered) for ordering guarantee.
 
-**Power cap:** when `turbine_headroom + bess_headroom < headroom_threshold_mw`, scheduler holds node count (soft) or forces 10% step-down (critical when headroom < 0).
+**Dedup**: on `event_id` (`f"kube-job-{counter}"`) — idempotent replay.
 
-## Wire format addition
+**Capacity validation**: admissions that would exceed `max_nodes` are dropped.
 
-`_tick_result_to_dict` serializes `kube_metrics: {utilization, node_count, power_cap_active, headroom_mw}` or `null`. `TickPayload` TypeScript interface has `kube_metrics: KubeMetrics | null`.
+**Power-cap**: hold new admissions when headroom < threshold (re-queue with +5 s delay).
+Critical (headroom < 0) evicts the largest active job.
 
-## Frontend compute panel
+**min_nodes baseline**: `total_nodes = max(min_nodes, admitted_nodes)` — cluster never
+fully drains; always emits at least min_nodes worth of load.
 
-`compute.ts` shows kube utilization as hero value, K8s rows in stat table, power-cap state (red). State label: KUBE / HIGH / CAP depending on utilization and cap state.
+## KubeMetrics fields (core/models.py)
 
-## Demo scenario
+```python
+utilization: float      # total_nodes / max_nodes
+node_count: int         # max(min_nodes, admitted_nodes)
+power_cap_active: bool  # headroom < headroom_threshold_mw
+headroom_mw: float      # prev-tick turbine + bess headroom
+active_jobs: int        # gang-admitted workloads currently running
+admitted_nodes: int     # sum node_count across active jobs (pre-floor)
+```
 
-`demo-kube` in built-in `_SEEDED`: no scripted events, `dt_lead_seconds=0.0`, 600s run, `rng_seed=42`. `max_nodes=1900` (≈20 MW peak), turbine 25 MW, BESS 18 MW/8 MWh.
+## Wire serialization (runtime/run_manager.py)
 
-**Why:** `rng_seed=None` in `KubeConfigSpec` gives time-seeded variety; `rng_seed=42` is the demo default for deterministic replay.
+`_tick_result_to_dict` emits all 6 fields. Frontend `KubeMetrics` interface
+has all 6 fields. Compute panel shows `active_jobs` and `admitted_nodes` rows.
+
+## KubeConfig fields (api/schemas.py KubeConfigSpec)
+
+New fields replacing OU params:
+- `mean_interarrival_s` (Poisson arrival rate)
+- `mean_job_nodes`, `job_node_std`, `min_job_nodes` (gang size dist)
+- `mean_job_duration_s`, `min_job_duration_s` (exponential duration)
+- `reorder_window_s`, `ntp_jitter_s` (reorder buffer)
+
+Removed: `target_utilization`, `ou_theta`, `ou_sigma`, `ema_alpha`,
+`scale_up_threshold`, `scale_down_threshold`, `scale_step_fraction`, `scale_cooldown_s`.
+
+**Why:** scenario_factory uses `KubeConfig.__dataclass_fields__` intersection with spec
+dict — old field names are ignored, new fields are picked up automatically.
+
+## Demo scenario (demo-kube)
+
+Built-in seed: 60 s mean inter-arrival, 200-node mean gang, 300 s mean duration,
+10 s reorder window, 2 s NTP jitter. Turbine 25 MW, BESS 18 MW / 8 MWh, seed=42.
+At 120 ticks (600 s): 14 admission/retirement events, 0–5 concurrent jobs,
+admitted_nodes 0–981, p_compute 0.06–46.75 MW.
