@@ -181,6 +181,18 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # can drive its display (unit count, rated MW, effective ramp) without
         # a separate API call.
         "turbine_units": list(tick.turbine_units),
+        # Kubernetes demand agent metrics — null when kube_config is not active.
+        # non-null only on runs with kube_config set in the ScenarioSpec.
+        "kube_metrics": (
+            {
+                "utilization":      round(tick.kube_metrics.utilization, 4),
+                "node_count":       tick.kube_metrics.node_count,
+                "power_cap_active": tick.kube_metrics.power_cap_active,
+                "headroom_mw":      round(tick.kube_metrics.headroom_mw, 3),
+            }
+            if tick.kube_metrics is not None
+            else None
+        ),
     }
 
 

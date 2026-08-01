@@ -343,6 +343,23 @@ class ConfidenceBand:
 
 
 # ---------------------------------------------------------------------------
+# Kubernetes demand metrics (per-tick snapshot from KubeDemandAgent)
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class KubeMetrics:
+    """Per-tick snapshot of the Kubernetes demand agent state.
+
+    Carried on TickResult.kube_metrics when kube_config is active for the run.
+    None on TickResult when the standard scripted workload path is used.
+    """
+    utilization: float       # smoothed GPU utilisation, [0, 1]
+    node_count: int          # current scheduled node count
+    power_cap_active: bool   # True when grid headroom forced a cap/step-down
+    headroom_mw: float       # available MW headroom at last grid reading
+
+
+# ---------------------------------------------------------------------------
 # Tick output
 # ---------------------------------------------------------------------------
 
@@ -455,3 +472,7 @@ class TickResult:
     #   {"asset_id": str, "rated_mw": float, "r_asset_mw_per_s": float}
     # tuple (not list) because TickResult is frozen=True; tuple is immutable.
     turbine_units: tuple = field(default_factory=tuple)
+    # Kubernetes demand agent metrics — non-None when kube_config is active.
+    # None on every tick when the standard scripted workload path is used,
+    # so existing tests and displays that don't reference this field are unaffected.
+    kube_metrics: Optional[KubeMetrics] = None

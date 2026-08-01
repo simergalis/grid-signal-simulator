@@ -29,6 +29,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Request, status
 
 from api.schemas import (
+    KubeConfigSpec,
     MaintenanceConfigSpec,
     ProcurementConfigSpec,
     RampRelaxationConfigSpec,
@@ -543,6 +544,49 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             solar_rated_mw=_TC33_MW,  # exactly matches 600-node compute draw (A-fix)
             irradiance_steps=[(0.0, 1.0), (30.0, 0.0)],  # zero-order hold step
             end_sim_time=120.0,
+        ),
+    ),
+    # ── Kubernetes demand layer ───────────────────────────────────────────
+    (
+        "demo-kube",
+        ScenarioSpec(
+            name="demo-kube",
+            description=(
+                "Autonomous Kubernetes demand layer: stochastic GPU cluster load "
+                "driven by an Ornstein-Uhlenbeck process + EMA smoother, with "
+                "utilisation-based auto-scaling and power-cap events when grid "
+                "headroom falls below 2.5 MW.  "
+                "No scripted workload events — the KubeDemandAgent emits STARTING "
+                "at tick 0 then SCALE signals as utilisation evolves between 62% "
+                "and 80% hysteresis bands (30 s cooldown).  "
+                "Peak demand ≈ 1900 nodes × 10.2 kW × 1.03 PUE ≈ 20 MW; turbine "
+                "25 MW, BESS 18 MW / 8 MWh.  dt_lead=0 throughout: Kubernetes gives "
+                "no advance notice to the grid — the scheduler decides, the microgrid "
+                "finds out when current flows.  Bridging gap fully visible on the "
+                "BESS panel.  rng_seed=42 for deterministic replay."
+            ),
+            workload_events=[],          # kube agent handles all job signals
+            dt_lead_seconds=0.0,         # no advance notice — the chasm in action
+            bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
+            turbine_units=[_turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2)],
+            solar_rated_mw=_SOLAR_20MW,
+            end_sim_time=600.0,          # 10 min — enough for several scale events
+            kube_config=KubeConfigSpec(
+                job_id="kube-job-0",
+                hardware_profile_id="enterprise_8gpu_air",
+                max_nodes=1900,
+                min_nodes=200,
+                target_utilization=0.72,
+                ou_theta=0.04,
+                ou_sigma=0.08,
+                ema_alpha=0.18,
+                scale_up_threshold=0.80,
+                scale_down_threshold=0.62,
+                scale_step_fraction=0.05,
+                scale_cooldown_s=30.0,
+                headroom_threshold_mw=2.5,
+                rng_seed=42,
+            ),
         ),
     ),
 ]

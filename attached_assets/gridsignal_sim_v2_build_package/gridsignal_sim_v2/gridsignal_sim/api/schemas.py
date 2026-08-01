@@ -205,6 +205,38 @@ class TurbineUnitSpec(BaseModel):
     run_hours_h: Optional[float] = Field(default=None, ge=0)
 
 
+class KubeConfigSpec(BaseModel):
+    """Kubernetes demand agent configuration.
+
+    When present on a ScenarioSpec, the simulator runs an autonomous
+    Ornstein-Uhlenbeck demand agent instead of (or alongside) scripted workload
+    events.  The agent emits STARTING on the first tick then SCALE events as
+    GPU utilisation evolves stochastically.  It enforces a power-cap when grid
+    headroom drops below headroom_threshold_mw.
+
+    Use rng_seed for deterministic replay; rng_seed=None gives time-seeded variety.
+    """
+    job_id: str = "kube-job-0"
+    hardware_profile_id: str = "enterprise_8gpu_air"
+    max_nodes: int = Field(default=1900, ge=1)
+    min_nodes: int = Field(default=200, ge=1)
+    target_utilization: float = Field(default=0.72, ge=0.1, le=1.0)
+    ou_theta: float = Field(default=0.04, ge=0.001, le=1.0,
+                            description="OU mean-reversion rate per sim-second")
+    ou_sigma: float = Field(default=0.08, ge=0.0, le=1.0,
+                            description="OU volatility (std-dev per √(sim-second))")
+    ema_alpha: float = Field(default=0.18, ge=0.01, le=1.0,
+                             description="EMA weight on new value; lower = smoother")
+    scale_up_threshold: float = Field(default=0.80, ge=0.1, le=1.0)
+    scale_down_threshold: float = Field(default=0.62, ge=0.1, le=1.0)
+    scale_step_fraction: float = Field(default=0.05, ge=0.01, le=0.5,
+                                       description="Scale step as fraction of max_nodes")
+    scale_cooldown_s: float = Field(default=30.0, ge=5.0, le=300.0)
+    headroom_threshold_mw: float = Field(default=2.5, ge=0.0,
+                                         description="Grid headroom below which power-cap activates")
+    rng_seed: Optional[int] = None
+
+
 class ScenarioSpec(BaseModel):
     """Full scenario configuration.  Stored as spec_json in ScenarioRecord.
     Posted to POST /scenarios or PUT /scenarios/{id}.
@@ -270,6 +302,12 @@ class ScenarioSpec(BaseModel):
     # When set, evaluate() is called each tick (TC-75 upper-bound reserve check;
     # TC-76 gridSignal_connected=False revert is covered by unit test).
     ramp_relaxation_config: Optional[RampRelaxationConfigSpec] = None
+
+    # Kubernetes demand agent — autonomous stochastic GPU cluster demand.
+    # None = standard scripted workload path (default; existing tests unaffected).
+    # When set, the agent emits STARTING then SCALE signals each tick, driven by
+    # an OU process + EMA.  Power-cap fires when grid headroom < headroom_threshold_mw.
+    kube_config: Optional[KubeConfigSpec] = None
 
     # AD2: site calibration flag.
     # False (default) = SiteConfig.uncalibrated=True (§17.3 default: uncalibrated

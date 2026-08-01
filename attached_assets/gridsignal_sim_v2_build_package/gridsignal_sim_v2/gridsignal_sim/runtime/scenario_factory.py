@@ -40,6 +40,7 @@ from core.models import (
     WorkloadEventType,
     WorkloadSignal,
 )
+from core.kube_demand import KubeConfig, KubeDemandAgent
 from core.simulation_core import SimulationState
 from pydantic import TypeAdapter
 
@@ -454,6 +455,21 @@ def build_run_context_from_spec(
         solar_arrays=solar_arrays,
         cooling=cooling,
     )
+
+    # ── Kubernetes demand agent ───────────────────────────────────────────
+    # Created after SimulationState so site_id is available.
+    # Only instantiated when kube_config is present in the spec; all existing
+    # scripted scenarios (and every unit test) are unaffected.
+    _kube_raw = spec_data.get("kube_config")
+    if _kube_raw is not None:
+        _kube_cfg_fields = {
+            k: v for k, v in _kube_raw.items()
+            if k in KubeConfig.__dataclass_fields__
+        }
+        sim_state.kube_agent = KubeDemandAgent(
+            KubeConfig(**_kube_cfg_fields),
+            site_id=site.site_id,
+        )
 
     # ── Workload events ───────────────────────────────────────────────────
     events: list[WorkloadSignal] = []

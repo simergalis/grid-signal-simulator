@@ -52,6 +52,17 @@ export interface TickPayload {
   // Stamped from RunContext.turbine_unit_specs; empty array for contexts
   // without a spec (e.g. direct job-id path).  Drives the fleet modal.
   turbine_units: TurbineUnitSpec[]
+
+  // Kubernetes demand agent metrics — null when kube_config is not active.
+  // Non-null only on runs that have kube_config set in the ScenarioSpec.
+  kube_metrics: KubeMetrics | null
+}
+
+export interface KubeMetrics {
+  utilization: number       // smoothed GPU utilisation [0, 1]
+  node_count: number        // current scheduled node count
+  power_cap_active: boolean // true when grid headroom forced a cap/step-down
+  headroom_mw: number       // available MW headroom at last grid reading
 }
 
 export interface RunMeta {

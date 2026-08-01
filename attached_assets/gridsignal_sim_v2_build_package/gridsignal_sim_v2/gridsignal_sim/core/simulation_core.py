@@ -18,6 +18,7 @@ import math
 from dataclasses import dataclass, field
 
 from .asset_modules import BessModule, CoolingModule, GPUModule, SolarModule, TurbineModule
+from .kube_demand import KubeDemandAgent, KubeGridState
 
 _log = logging.getLogger(__name__)
 from .dispatch import (
@@ -26,7 +27,7 @@ from .dispatch import (
     LadderPosition, PreStagingEngine, select_candidates,
 )
 from .scada_layer import CommandType, SimulatedPMS, SimulatedScadaLayer
-from .models import DataQualityTag, GENERIC_FALLBACK_PROFILE, SiteConfig, TickResult, WorkloadEventType, WorkloadSignal
+from .models import DataQualityTag, GENERIC_FALLBACK_PROFILE, KubeMetrics, SiteConfig, TickResult, WorkloadEventType, WorkloadSignal
 from ._plane_guard import _EVALUATE_TICK_PERMITTED
 from .sim_clock import SimClock
 
@@ -46,6 +47,9 @@ class SimulationState:
     bess_units: list[BessModule]
     solar_arrays: list[SolarModule]
     cooling: CoolingModule
+    # Kubernetes demand agent — present when kube_config is set in ScenarioSpec.
+    # None = standard scripted workload path (all existing tests unaffected).
+    kube_agent: KubeDemandAgent | None = field(default=None)
     classifier: CheckpointClassifier = field(default_factory=CheckpointClassifier)
     confidence_engine: ConfidenceEngine = field(default_factory=ConfidenceEngine)
     arbitrator: DispatchArbitrator = field(init=False)
@@ -74,6 +78,10 @@ class SimulationState:
     scada_layer: SimulatedScadaLayer = field(init=False)
     # Step 11: §28.4 PMS (None when site has no pms_config).
     pms: SimulatedPMS | None = field(default=None, init=False)
+    # Grid state snapshot for the Kubernetes demand agent.
+    # Carries the previous tick's grid metrics so the agent can read headroom
+    # without accessing the current tick's in-progress values.
+    _kube_grid_state: KubeGridState | None = field(default=None, init=False)
 
     def __post_init__(self) -> None:
         # Step 3 Item 4: arbitrator now holds a reference to site so it can
@@ -257,6 +265,20 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # TickResult so the persistence layer can record both clocks per tick.
     sim_time = clock.sim_time
     dt_seconds = clock.dt_seconds
+
+    # 0. Kubernetes demand agent — must run BEFORE gpu.advance() so demand
+    #    changes driven by the scheduler take effect in the current tick's power
+    #    calculation.  Uses _kube_grid_state from the previous tick (None at t=0)
+    #    so the agent reads last-known headroom rather than in-progress values.
+    _kube_metrics: KubeMetrics | None = None
+    if state.kube_agent is not None:
+        _kube_signals, _kube_metrics = state.kube_agent.tick(
+            sim_time, dt_seconds, state._kube_grid_state
+        )
+        for _ks in _kube_signals:
+            # dt_lead_seconds=0: Kubernetes gives no advance notice to the grid.
+            # BESS must bridge the ramp; this is exactly the GridSignal value.
+            state.apply_workload_signal(_ks, dt_lead_seconds=0.0)
 
     # 1. Compute term — advance GPU ramps first (Step 3 Item 2: Δt_lead ramp).
     # GPU advance() is no longer a no-op: it advances the per-job ramp_progress
@@ -550,6 +572,21 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     unrecognised_alerts = frozenset(state._pending_unrecognised_alerts)
     state._pending_unrecognised_alerts = set()
 
+    # Store grid state for the Kubernetes demand agent on the NEXT tick.
+    # Carries the generation-side view (headroom, BESS SoC) computed this tick
+    # so the agent can enforce power-caps based on the last committed values.
+    if state.kube_agent is not None:
+        _k_turbine_rated = sum(t.config.rated_mw for t in state.turbines)
+        _k_bess_rated    = sum(b.config.rated_mw for b in state.bess_units)
+        state._kube_grid_state = KubeGridState(
+            p_dispatch_required_mw=net_demand_mw,
+            bess_soc_fraction=(
+                state.bess_units[0].soc_fraction if state.bess_units else 1.0
+            ),
+            turbine_headroom_mw=max(0.0, _k_turbine_rated - turbine_output_mw),
+            bess_headroom_mw=max(0.0, _k_bess_rated - bess_output_mw),
+        )
+
     state.tick_index += 1
     return TickResult(
         run_id=state.run_id,
@@ -580,4 +617,5 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         pms_fast_shed_active=_pms_shed_active,
         pms_order_conflict=_pms_order_conflict,
         scada_commands_issued=_scada_commands_issued,
+        kube_metrics=_kube_metrics,
     )
