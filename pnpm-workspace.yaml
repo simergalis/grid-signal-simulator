@@ -75,6 +75,15 @@ onlyBuiltDependencies:
   - unrs-resolver
 
 overrides:
+  # Pin @types/react to 18.x for packages that ship with a recharts dependency.
+  # The workspace catalog uses @types/react ^19.2.0 for React-19 artifacts;
+  # recharts 2.x is compiled against React 18 types, so TypeScript produces
+  # TS2786 "cannot be used as JSX component" errors when the two type sets meet.
+  # These scoped overrides keep recharts and its testing-library peer on 18.x
+  # without affecting the React-19 workspace packages.
+  "recharts>@types/react": "~18.3.31"
+  "@testing-library/user-event>@types/react": "~18.3.31"
+  "@testing-library/dom>@types/react": "~18.3.31"
   # replit uses linux-x64 only, we can exclude all other platforms
   "esbuild>@esbuild/darwin-arm64": "-"
   "esbuild>@esbuild/darwin-x64": "-"

@@ -16,7 +16,6 @@ import { TimeSeries } from '../../charts/TimeSeries'
 
 const TEAL  = '#3fb6a8'
 const AMBER = '#f0883e'
-const RED   = '#f85149'
 
 const DQ_LABELS: Record<string, string> = {
   unmapped_hardware:   'Unmapped hardware — +10% CI widening',

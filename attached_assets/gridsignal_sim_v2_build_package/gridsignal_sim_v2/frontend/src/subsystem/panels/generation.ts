@@ -58,7 +58,6 @@ export const generationPanel: PanelConfig = {
     const canClose   = rampCap >= demandMW
 
     // Chart series from history
-    const outputSeries = history.map(h => ({ x: h.sim_time_seconds, y: h.p_total_mw - h.p_compute_mw - h.p_cooling_mw + h.p_compute_mw }))
     // Note: turbine_output_mw not in HistoryPoint; use p_total as proxy
     const dispatchSeries = history.map(h => ({ x: h.sim_time_seconds, y: Math.max(0, h.p_total_mw - h.p_renewable_mw) }))
 

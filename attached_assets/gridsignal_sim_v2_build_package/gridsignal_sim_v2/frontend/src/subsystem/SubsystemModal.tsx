@@ -28,11 +28,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import { SUBSYSTEMS } from '../readiness/subsystems'
 import { PANEL_CONFIGS } from './panels/index'
 import { useTickStore } from '../store/tickStore'
-import { TimeSeries }   from '../charts/TimeSeries'
-import { BulletBar }    from '../charts/BulletBar'
 import { StatTable }    from '../charts/StatTable'
-import { StackBar }     from '../charts/StackBar'
-import { GaugeArc }     from '../charts/GaugeArc'
 
 export function SubsystemModal({
   subsystemId,

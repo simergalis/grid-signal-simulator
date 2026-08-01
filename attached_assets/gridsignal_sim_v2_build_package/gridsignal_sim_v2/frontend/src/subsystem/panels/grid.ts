@@ -16,10 +16,9 @@ import type { TickPayload, HistoryPoint } from '../../types'
 
 const GREY   = '#5a6673'
 const TEAL   = '#3fb6a8'
-const BATTERY = '#4a9fe0'
 
 export const gridPanel: PanelConfig = {
-  deriveData(tick: TickPayload | null, _alert, _history: HistoryPoint[]): PanelData {
+  deriveData(_tick: TickPayload | null, _alert, _history: HistoryPoint[]): PanelData {
     const chart = React.createElement('div', {
       className: 'flex flex-col items-center justify-center py-12 gap-2',
     },

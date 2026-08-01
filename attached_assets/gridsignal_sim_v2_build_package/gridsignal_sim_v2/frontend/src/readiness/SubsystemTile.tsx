@@ -12,8 +12,6 @@
  *   —  (no tick)           → muted
  */
 
-import React from 'react'
-
 export type TileState =
   | 'READY'
   | 'ACTIVE'

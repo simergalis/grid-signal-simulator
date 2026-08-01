@@ -71,6 +71,9 @@ catalogs:
       version: 3.25.76
 
 overrides:
+  recharts>@types/react: ~18.3.31
+  '@testing-library/user-event>@types/react': ~18.3.31
+  '@testing-library/dom>@types/react': ~18.3.31
   esbuild>@esbuild/darwin-arm64: '-'
   esbuild>@esbuild/darwin-x64: '-'
   esbuild>@esbuild/freebsd-arm64: '-'

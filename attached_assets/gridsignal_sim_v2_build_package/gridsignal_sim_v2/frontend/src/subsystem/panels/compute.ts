@@ -9,7 +9,6 @@ import React from 'react'
 import type { PanelConfig, PanelData } from './index'
 import type { TickPayload, HistoryPoint } from '../../types'
 import { TimeSeries } from '../../charts/TimeSeries'
-import { StatTable }  from '../../charts/StatTable'
 
 const TEAL  = '#3fb6a8'
 const AMBER = '#f0883e'
