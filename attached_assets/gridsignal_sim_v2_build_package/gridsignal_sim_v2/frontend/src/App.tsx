@@ -76,8 +76,32 @@ export default function App() {
     setLastRunId(id)
     setResultsRunId(null)
     setRunMeta({ run_id: id, playback_speed: speed })
-    setCurrentPage('overview')
+    // Stay on opening screen — flow lines thicken as the turbine ramps.
+    // User navigates to Overview via the tab strip or a modal link.
   }, [reset, setRunMeta])
+
+  // Auto-detect a run started externally (e.g. via curl / another client).
+  // Polls GET /runs every 2 s when idle; stops once a run is tracked.
+  useEffect(() => {
+    if (runId !== null) return
+    const poll = async () => {
+      try {
+        const resp = await fetch('/runs')
+        if (!resp.ok) return
+        const data = await resp.json() as { run_ids: string[] }
+        if (data.run_ids.length > 0) {
+          const id = data.run_ids[0]
+          reset()
+          setRunId(id)
+          setLastRunId(id)
+          setRunMeta({ run_id: id, playback_speed: 10 })
+        }
+      } catch { /* ignore */ }
+    }
+    poll()
+    const timer = setInterval(poll, 2000)
+    return () => clearInterval(timer)
+  }, [runId, reset, setRunMeta])
 
   const handleRunStopped = useCallback(() => {
     setRunId(null)

@@ -26,9 +26,12 @@ interface PlantDiagramProps {
 
 function getMwForFlow(
   mwField: string | undefined,
+  staticMW: number | undefined,
   tick: TickPayload | null,
 ): number {
-  if (!mwField || !tick) return 0
+  // No tick: use staticMW so solar (4.99) renders live and animated at rest.
+  if (!tick) return staticMW ?? 0
+  if (!mwField) return 0
   return Math.abs((tick as unknown as Record<string, unknown>)[mwField] as number) || 0
 }
 
@@ -152,7 +155,7 @@ export function PlantDiagram({ onNodeClick, compact }: PlantDiagramProps) {
         <FlowLine
           key={flow.id}
           d={flow.d}
-          mwValue={getMwForFlow(flow.mwField, tick)}
+          mwValue={getMwForFlow(flow.mwField, flow.staticMW, tick)}
           maxMW={flow.maxMW}
           color={flow.color}
           isGrid={flow.isGrid}

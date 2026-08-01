@@ -21,7 +21,10 @@ interface PlantNodeProps {
 }
 
 function getMwValue(def: NodeDef, tick: TickPayload | null): number | null {
-  if (!def.mwField || !tick) return null
+  if (!def.mwField) return null
+  // No tick: use staticMW if defined so nodes show configured capacity at rest.
+  // Keep "—" only for nodes that have no meaningful pre-run value (no staticMW).
+  if (!tick) return def.staticMW ?? null
   return (tick as unknown as Record<string, unknown>)[def.mwField] as number
 }
 
@@ -39,8 +42,8 @@ function nodeDetail(def: NodeDef, tick: TickPayload | null): string {
       return mw > 0.1 ? `non-dispatchable · 4.99 MW rated` : `non-dispatchable · 4.99 MW rated`
     }
     case 'battery-bess': {
-      const soc = tick?.bess_soc_fraction ?? 0
-      return tick ? `armed · ${(soc * 100).toFixed(0)}% · anchor` : `armed · 95% · anchor`
+      const soc = tick?.bess_soc_fraction ?? 0.95
+      return `armed · ${(soc * 100).toFixed(0)}% · anchor 1.0 MW`
     }
     case 'grid-connection':
       return 'islanded — no utility feed'
@@ -52,7 +55,9 @@ function nodeDetail(def: NodeDef, tick: TickPayload | null): string {
       return 'rack feeds'
     case 'compute-racks': {
       const jobs = tick ? Object.keys(tick.checkpoint_states).length : 0
-      return jobs > 0 ? `${jobs} job${jobs > 1 ? 's' : ''} · 19.96 MW at full draw` : `1,000 nodes · 19.96 MW at full draw`
+      // Node count is 1,900 — from api/routes/scenarios.py line 210:
+      // "# 1900-node peak compute (enterprise_8gpu_air, PUE 1.03) → 19.9614 MW."
+      return jobs > 0 ? `${jobs} job${jobs > 1 ? 's' : ''} · 19.96 MW at full draw` : `1,900 nodes · 19.96 MW at full draw`
     }
     case 'cooling-plant': {
       const absorbable = tick?.absorbable_mw ?? 4.59

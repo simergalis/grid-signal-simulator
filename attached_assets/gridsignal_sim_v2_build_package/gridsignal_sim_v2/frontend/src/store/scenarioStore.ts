@@ -42,9 +42,10 @@ export const useScenarioStore = create<ScenarioState>((set, get) => ({
       if (!resp.ok) throw new Error(`GET /scenarios → ${resp.status}`)
       const data = await resp.json() as ScenarioSummary[]
       set({ scenarios: data, isLoading: false })
-      // Auto-select first scenario if nothing is selected
+      // Auto-select demo-20mw (most interesting demo) then fall back to first.
       if (!get().selectedId && data.length > 0) {
-        set({ selectedId: data[0].scenario_id })
+        const preferred = data.find(s => s.scenario_id === 'demo-20mw')
+        set({ selectedId: preferred ? preferred.scenario_id : data[0].scenario_id })
       }
     } catch (e) {
       set({ error: String(e), isLoading: false })

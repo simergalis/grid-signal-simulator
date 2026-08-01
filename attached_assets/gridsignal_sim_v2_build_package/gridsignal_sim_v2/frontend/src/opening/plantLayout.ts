@@ -9,7 +9,9 @@
  */
 
 export const DIAGRAM_W = 1200
-export const DIAGRAM_H = 440
+// Height trimmed to actual content bottom (grid-connection y=310+h=72=382) + 8px margin.
+// Reduces dead space below the nodes without clipping any element.
+export const DIAGRAM_H = 390
 
 /** One node in the one-line diagram. */
 export interface NodeDef {
@@ -26,6 +28,12 @@ export interface NodeDef {
   label2?: string
   /** TickPayload field name providing the live MW value. Undefined = no MW display. */
   mwField?: string
+  /**
+   * Static MW shown at rest (no tick).  When tick is null this value is used
+   * instead of "—" so the diagram reflects configured site capacity.
+   * Example: Solar PV = 4.99 (always producing); turbine/BESS/loads = 0.
+   */
+  staticMW?: number
   /** Whether clicking this node opens a modal or navigates. */
   clickable: boolean
   /**
@@ -50,6 +58,11 @@ export interface FlowDef {
   d: string
   /** TickPayload field name for the live MW value. Undefined = static zero. */
   mwField?: string
+  /**
+   * Static MW used at rest (no tick).  Set this to make a flow visibly active
+   * before any run starts.  Solar uses 4.99 — it is the one real pre-run flow.
+   */
+  staticMW?: number
   /** Reference MW for stroke-width scaling (strokeWidth at maxMW ≈ 9). */
   maxMW: number
   /** Stroke colour when the flow is active (mwValue > 0). */
@@ -72,6 +85,7 @@ export const NODES: NodeDef[] = [
     x: 0, y: 10, w: 155, h: 72,
     label: 'GAS TURBINE',
     mwField: 'turbine_output_mw',
+    staticMW: 0,   // at rest: standby, 0 MW
     clickable: true, modalId: 'generation',
     accentColor: '#e0a458',
   },
@@ -80,6 +94,7 @@ export const NODES: NodeDef[] = [
     x: 0, y: 110, w: 155, h: 72,
     label: 'SOLAR PV',
     mwField: 'p_renewable_mw',
+    staticMW: 4.99,  // always producing before any run starts
     clickable: true, modalId: 'renewable',
     accentColor: '#f2c94c',
   },
@@ -88,6 +103,7 @@ export const NODES: NodeDef[] = [
     x: 0, y: 210, w: 155, h: 72,
     label: 'BATTERY', label2: '(BESS)',
     mwField: 'bess_output_mw',
+    staticMW: 0,   // at rest: armed, not discharging
     clickable: true, modalId: 'storage',
     accentColor: '#4a9fe0',
   },
@@ -128,6 +144,7 @@ export const NODES: NodeDef[] = [
     x: 716, y: 62, w: 165, h: 90,
     label: 'COMPUTE RACKS',
     mwField: 'p_compute_mw',
+    staticMW: 0,   // at rest: nodes idle, 0 MW
     clickable: true, modalId: 'compute',
     accentColor: '#3fb6a8',
   },
@@ -136,6 +153,7 @@ export const NODES: NodeDef[] = [
     x: 716, y: 278, w: 165, h: 78,
     label: 'COOLING PLANT',
     mwField: 'p_cooling_mw',
+    staticMW: 0,   // at rest: lags compute, 0 MW
     clickable: true, modalId: 'thermal',
     accentColor: '#4a9fe0',
   },
@@ -193,6 +211,7 @@ export const FLOWS: FlowDef[] = [
     id: 'gas-to-sw',
     d: srcPath(...GAS_RC),
     mwField: 'turbine_output_mw',
+    staticMW: 0,
     maxMW: 25,
     color: '#e0a458',
   },
@@ -200,6 +219,7 @@ export const FLOWS: FlowDef[] = [
     id: 'solar-to-sw',
     d: srcPath(...SOLAR_RC),
     mwField: 'p_renewable_mw',
+    staticMW: 4.99,  // solar is the one live flow before a run — gold + animated
     maxMW: 5,
     color: '#f2c94c',
   },
@@ -251,5 +271,5 @@ export const FLOWS: FlowDef[] = [
 
 /** Lead-time callout box geometry (rendered as HTML foreignObject). */
 export const LEADTIME_BOX = {
-  x: 910, y: 62, w: 280, h: 310,
+  x: 910, y: 62, w: 280, h: 230,
 }
