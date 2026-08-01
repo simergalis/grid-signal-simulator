@@ -1,10 +1,10 @@
 """
 runtime/solar_sim.py — Mistral-driven solar irradiance simulator for San Diego, CA.
 
-Called ONCE at run start via generate_irradiance_samples(). The result is a list of
-(sim_time_s, fraction) samples that the caller stores in spec_data["irradiance_steps"]
-before handing the spec to scenario_factory.  No blocking calls occur during
-simulation ticks.
+Called ONCE at run start via generate_solar_forecast(). The result is a SolarForecast
+namedtuple whose samples are stored in spec_data["irradiance_steps"] and whose
+ambient_steps are stored in spec_data["ambient_steps"] before the spec is handed
+to scenario_factory.  No blocking calls occur during simulation ticks.
 
 Fallback chain
 --------------
@@ -45,10 +45,11 @@ class SolarForecast(NamedTuple):
     conditions — one human-readable sentence describing current conditions.
     source     — "mistral" or "physics".
     """
-    samples:    list
-    weather:    str
-    conditions: str
-    source:     str
+    samples:        list
+    weather:        str
+    conditions:     str
+    source:         str
+    ambient_steps:  list  # list of (sim_time_s, drybulb_c, wetbulb_c) — correlated with solar
 
 _log = logging.getLogger(__name__)
 
@@ -81,13 +82,22 @@ Return ONLY valid JSON with no markdown fences and no explanation outside the JS
 {
   "weather": "<clear|partly_cloudy|overcast|marine_layer>",
   "conditions": "<one sentence describing current conditions>",
-  "samples": [[sim_time_s, fraction], ...]
+  "samples": [[sim_time_s, fraction], ...],
+  "ambient": [[sim_time_s, drybulb_c, wetbulb_c], ...]
 }
 
 Provide 15-25 samples spanning sim_time_s = 0 to sim_duration_s (inclusive).
-The first sample MUST be at sim_time_s = 0.
+The first sample in both "samples" and "ambient" MUST be at sim_time_s = 0.
 All sim_time_s values must be non-negative and <= sim_duration_s.
 Fractions must be in [0.0, 1.0].
+
+San Diego ambient dry-bulb temperatures:
+- Night: 13-16 C
+- Marine layer morning: 16-19 C
+- Clear afternoon near solar noon: 20-24 C
+- Overcast: 17-20 C
+Wet-bulb is typically 2-4 C below dry-bulb (coastal, moderate humidity).
+Ambient temperature is physically correlated with solar fraction — generate them together.
 """
 
 
@@ -140,17 +150,60 @@ def _physics_samples(
     return samples
 
 
+
+
+def _ambient_fraction_to_temp(solar_fraction: float, local_h: float) -> tuple[float, float]:
+    """Compute dry-bulb and wet-bulb ambient temperature from solar fraction and hour.
+
+    Correlation model for San Diego:
+    - Night (solar=0): 14 C base
+    - Marine-layer mornings: +3 C offset (reduced by solar absence)
+    - Clear afternoons: up to +10 C above night base correlated with solar output
+    Wet-bulb ≈ dry-bulb − 3 C (coastal humidity approximation).
+    """
+    # Night base + solar heating component
+    drybulb = 14.0 + solar_fraction * 10.0
+    # Marine-layer morning effect: mornings with low solar tend to be warmer than
+    # nights but cooler than clear afternoons
+    if 6.0 <= local_h <= 11.0 and solar_fraction < 0.4:
+        drybulb += 2.0
+    drybulb = round(min(30.0, max(10.0, drybulb)), 2)
+    wetbulb = round(drybulb - 3.0, 2)
+    return drybulb, wetbulb
+
+
+def _physics_ambient_steps(
+    sim_duration_s: float,
+    utc_now: "datetime.datetime",
+) -> list[tuple[float, float, float]]:
+    """Physics-based ambient temperature timeline correlated with solar output."""
+    n = max(20, min(120, int(sim_duration_s / 30)))
+    step = sim_duration_s / n
+    result: list[tuple[float, float, float]] = []
+    for i in range(n + 1):
+        t = i * step
+        dt = utc_now + datetime.timedelta(seconds=t)
+        local_h = (
+            dt.hour + dt.minute / 60.0 + dt.second / 3600.0 + _UTC_OFFSET_H
+        ) % 24.0
+        solar_f = _solar_fraction_at(dt)
+        drybulb, wetbulb = _ambient_fraction_to_temp(solar_f, local_h)
+        result.append((round(t, 1), drybulb, wetbulb))
+    return result
+
 def _physics_forecast(
     sim_duration_s: float,
     utc_now: datetime.datetime,
 ) -> "SolarForecast":
     """Physics fallback: same samples as _physics_samples but wrapped in SolarForecast."""
     samples = _physics_samples(sim_duration_s, utc_now)
+    ambient = _physics_ambient_steps(sim_duration_s, utc_now)
     return SolarForecast(
         samples=samples,
         weather="physics_estimate",
         conditions="Physics estimate (San Diego)",
         source="physics",
+        ambient_steps=ambient,
     )
 
 
@@ -228,11 +281,32 @@ def _parse_forecast(
             weather, conditions, len(samples),
             samples[0][1], samples[-1][1],
         )
+        # Parse correlated ambient temperature steps
+        raw_ambient: list = data.get("ambient", [])
+        ambient_steps: list[tuple[float, float, float]] = []
+        for item in raw_ambient:
+            try:
+                ta = float(item[0])
+                db = float(item[1])
+                wb = float(item[2])
+                if 0.0 <= ta <= sim_duration_s * 1.05:
+                    ambient_steps.append((round(ta, 1), round(db, 2), round(wb, 2)))
+            except (IndexError, TypeError, ValueError):
+                continue
+        # Guarantee a t=0 anchor
+        if ambient_steps and ambient_steps[0][0] > 0.0:
+            ambient_steps.insert(0, (0.0, ambient_steps[0][1], ambient_steps[0][2]))
+        ambient_steps = sorted(ambient_steps)
+        if not ambient_steps:
+            _log.info("solar_sim: no ambient steps from Mistral — using physics fallback for ambient")
+            ambient_steps = _physics_ambient_steps(sim_duration_s, utc_now)
+
         return SolarForecast(
             samples=samples,
             weather=weather,
             conditions=conditions,
             source="mistral",
+            ambient_steps=ambient_steps,
         )
 
     except Exception as exc:

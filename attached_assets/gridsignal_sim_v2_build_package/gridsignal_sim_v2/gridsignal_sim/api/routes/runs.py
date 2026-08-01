@@ -37,6 +37,7 @@ Invariants:
 from __future__ import annotations
 
 import asyncio
+import datetime
 import functools
 import json
 import uuid
@@ -45,6 +46,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from api.schemas import (
     AssertionResultResponse,
+    GenerationBlock,
     RunListResponse,
     RunResultResponse,
     RunStatusResponse,
@@ -53,9 +55,13 @@ from api.schemas import (
     TimeseriesResponse,
     TimeseriesRowResponse,
 )
+from runtime.cluster_gen import generate_cluster_forecast
+from runtime.param_sampler import sample_run_parameters
 from runtime.run_manager import RunManager, compute_run_cost_from_completed
 from runtime.scenario_factory import build_run_context, build_run_context_from_spec
 from runtime.solar_sim import generate_solar_forecast
+from runtime.stressor_gen import generate_stressor_forecast
+from runtime.telemetry_corruption import generate_corruption_schedule
 
 router = APIRouter(prefix="/runs", tags=["runs"])
 
@@ -104,37 +110,172 @@ async def start_run(
         scenario_store.link_run(body.scenario_id, run_id)
         spec_data = json.loads(record.spec_json)
 
-        # ── Mistral solar injection ───────────────────────────────────────
-        # Replace the bare default irradiance profile [(0,1)] with a
-        # Mistral-simulated San Diego solar curve (physics fallback when
-        # MISTRAL_API_KEY is absent or the call fails).
-        #
-        # The check isolates only the bare default — any scenario that
-        # explicitly provides irradiance_steps (e.g. TC-33 step-drop) keeps
-        # its scripted profile untouched.
-        #
-        # The call is off-loaded to a thread executor so the async event
-        # loop stays responsive for other requests while Mistral responds.
-        _solar_mw    = float(spec_data.get("solar_rated_mw", 0.0))
-        _steps_raw   = spec_data.get("irradiance_steps", [[0.0, 1.0]])
-        _is_default  = (
+        # ── Pre-run generation pipeline ───────────────────────────────────
+        # All generators run concurrently as parallel asyncio tasks and MUST
+        # complete before t=0.  No generator runs during the tick loop.
+        # This preserves the reproducibility property: the tick loop replays
+        # a materialised timeline, never calls a network service.
+
+        _loop         = asyncio.get_event_loop()
+        _sim_duration = float(spec_data.get("end_sim_time", 300.0))
+        _solar_mw     = float(spec_data.get("solar_rated_mw", 0.0))
+        _steps_raw    = spec_data.get("irradiance_steps", [[0.0, 1.0]])
+        _is_default_irr = (
             _solar_mw > 0.0
             and len(_steps_raw) == 1
             and abs(float(_steps_raw[0][0])) < 1e-9
             and abs(float(_steps_raw[0][1]) - 1.0) < 1e-9
         )
-        if _is_default:
-            _sim_duration = float(spec_data.get("end_sim_time", 300.0))
-            _forecast = await asyncio.get_event_loop().run_in_executor(
+
+        # Read generator configs from the stored spec (all optional)
+        _cluster_cfg    = spec_data.get("cluster_gen_config")
+        _stressor_cfg   = spec_data.get("stressor_gen_config")
+        _param_cfg      = spec_data.get("param_sampling_config")
+        _corruption_cfg = spec_data.get("telemetry_corruption_config")
+
+        # Build coroutines for each active generator
+        async def _run_solar():
+            if not _is_default_irr:
+                return None
+            return await _loop.run_in_executor(
+                None,
+                functools.partial(generate_solar_forecast, _sim_duration, _solar_mw),
+            )
+
+        async def _run_cluster():
+            if _cluster_cfg is None:
+                return None
+            return await _loop.run_in_executor(
                 None,
                 functools.partial(
-                    generate_solar_forecast,
+                    generate_cluster_forecast,
                     _sim_duration,
-                    _solar_mw,
+                    description=_cluster_cfg.get("description", "plausible weekday cluster"),
+                    hardware_profile_id=_cluster_cfg.get("hardware_profile_id", "enterprise_8gpu_air"),
+                    max_nodes=int(_cluster_cfg.get("max_nodes", 1900)),
+                    min_nodes=int(_cluster_cfg.get("min_nodes", 200)),
+                    mean_interarrival_s=float(_cluster_cfg.get("mean_interarrival_s", 60.0)),
+                    mean_job_nodes=int(_cluster_cfg.get("mean_job_nodes", 200)),
+                    job_node_std=float(_cluster_cfg.get("job_node_std", 80.0)),
+                    min_job_nodes=int(_cluster_cfg.get("min_job_nodes", 50)),
+                    mean_job_duration_s=float(_cluster_cfg.get("mean_job_duration_s", 300.0)),
+                    min_job_duration_s=float(_cluster_cfg.get("min_job_duration_s", 30.0)),
+                    rng_seed=_cluster_cfg.get("rng_seed"),
+                    use_llm=bool(_cluster_cfg.get("use_llm", True)),
                 ),
             )
-            # Store as list-of-lists (JSON-safe) so the factory tuple cast works
+
+        async def _run_stressor():
+            if _stressor_cfg is None:
+                return None
+            return await _loop.run_in_executor(
+                None,
+                functools.partial(
+                    generate_stressor_forecast,
+                    _sim_duration,
+                    description=_stressor_cfg.get("description", "compound stressor scenario"),
+                    max_solar_mw=_solar_mw,
+                    rng_seed=_stressor_cfg.get("rng_seed"),
+                    n_rng_events=int(_stressor_cfg.get("n_rng_events", 3)),
+                    use_llm=bool(_stressor_cfg.get("use_llm", True)),
+                ),
+            )
+
+        async def _run_param_sampler():
+            if _param_cfg is None:
+                return None
+            return await _loop.run_in_executor(
+                None,
+                functools.partial(
+                    sample_run_parameters,
+                    list(_param_cfg.get("keys", ["dt_thermal", "alpha_max", "tau"])),
+                    seed=_param_cfg.get("seed"),
+                    sample_plant_split=bool(_param_cfg.get("sample_plant_split", True)),
+                ),
+            )
+
+        # Run all generators concurrently — they are independent of each other
+        _forecast, _cluster_fc, _stressor_fc, _sampled = await asyncio.gather(
+            _run_solar(),
+            _run_cluster(),
+            _run_stressor(),
+            _run_param_sampler(),
+        )
+
+        # ── Materialise: solar irradiance + ambient ───────────────────────
+        if _forecast is not None:
             spec_data["irradiance_steps"] = [[t, f] for t, f in _forecast.samples]
+            if _forecast.ambient_steps:
+                spec_data["ambient_steps"] = [
+                    [t, db, wb] for t, db, wb in _forecast.ambient_steps
+                ]
+
+        # ── Materialise: cluster arrival events ───────────────────────────
+        if _cluster_fc is not None and _cluster_fc.events:
+            existing_events = list(spec_data.get("workload_events", []))
+            # Merge: LLM-generated cluster events supplement (not replace) scripted ones
+            existing_events.extend(_cluster_fc.events)
+            existing_events.sort(key=lambda e: float(e.get("timestamp", 0)))
+            spec_data["workload_events"] = existing_events
+
+        # ── Materialise: stressor (SOLAR_STEP) events ─────────────────────
+        if _stressor_fc is not None and _stressor_fc.events:
+            existing_events = list(spec_data.get("workload_events", []))
+            existing_events.extend(_stressor_fc.events)
+            existing_events.sort(key=lambda e: float(e.get("timestamp", 0)))
+            spec_data["workload_events"] = existing_events
+
+        # ── Materialise: sampled physics parameters ────────────────────────
+        if _sampled is not None and _sampled.values:
+            # Only inject keys that are valid ScenarioSpec fields (skip _sampled_ prefixed ones)
+            _allowed_spec_keys = {
+                "dt_thermal_seconds", "plant_dt_thermal_seconds",
+                "alpha_max", "plant_alpha_max",
+                "tau_seconds", "plant_tau_seconds",
+                "pue_base", "dt_lead_seconds",
+            }
+            for k, v in _sampled.values.items():
+                if k in _allowed_spec_keys and v is not None:
+                    spec_data[k] = v
+
+        # ── Materialise: telemetry corruption schedule ─────────────────────
+        # The schedule is generated and attached to the spec so run_manager can
+        # retrieve it from RunContext after the spec is built.
+        _corruption_sched = None
+        if _corruption_cfg is not None:
+            _n_ticks = max(1, int(_sim_duration / 5))  # TICK_INTERVAL_SIM_SECONDS = 5
+            _corruption_sched = generate_corruption_schedule(
+                _n_ticks,
+                seed=_corruption_cfg.get("seed"),
+                noise_sigma=float(_corruption_cfg.get("noise_sigma", 0.0)),
+                dropout_prob=float(_corruption_cfg.get("dropout_prob", 0.0)),
+                max_stale=int(_corruption_cfg.get("max_stale", 0)),
+            )
+
+        # ── Build generation block ─────────────────────────────────────────
+        _generators_used = []
+        if _forecast is not None:
+            _generators_used.append("solar")
+        if _cluster_fc is not None:
+            _generators_used.append("cluster")
+        if _stressor_fc is not None:
+            _generators_used.append("stressor")
+        if _sampled is not None:
+            _generators_used.append("param_sampler")
+        if _corruption_sched is not None:
+            _generators_used.append("telemetry_corruption")
+
+        _gen_block = GenerationBlock(
+            seed=_param_cfg.get("seed") if _param_cfg else None,
+            generated_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            generators_used=_generators_used,
+            solar_source=_forecast.source if _forecast else "none",
+            cluster_source=_cluster_fc.source if _cluster_fc else "none",
+            stressor_source=_stressor_fc.source if _stressor_fc else "none",
+            param_sampler_note=_sampled.to_generation_note() if _sampled else "",
+            corruption_note=_corruption_sched.summary() if _corruption_sched else "",
+        )
+        spec_data["generation_block"] = _gen_block.model_dump()
 
         ctx = build_run_context_from_spec(
             run_id,
@@ -145,11 +286,12 @@ async def start_run(
         ctx.scenario_id = body.scenario_id
         ctx.scenario_name = record.name
         # Solar weather metadata — surfaced in the Solar PV panel via tick payload.
-        # When the default irradiance was replaced by Mistral, carry the forecast
-        # label and conditions sentence; otherwise leave the empty-string defaults.
-        if _is_default:
+        if _forecast is not None:
             ctx.solar_weather    = _forecast.weather
             ctx.solar_conditions = _forecast.conditions
+        # Telemetry corruption schedule — available on RunContext for the tick loop.
+        if _corruption_sched is not None:
+            ctx.telemetry_corruption = _corruption_sched
     else:
         # Direct programmatic path — scenario_id absent, job_id+node_count present
         # (enforced by StartRunRequest.model_validator).

@@ -1,0 +1,31 @@
+Your Mistral solar generator is already the correct pattern, and it should be the template: generate once at run start, materialize into irradiance_steps, then replay deterministically. Agents are scenario authors, not simulation participants.
+
+Strong candidates — plant-side exogenous, pre-generated
+
+Weather (one generator, multiple outputs). Right now solar is generated alone. Ambient dry-bulb and wet-bulb are physically correlated with it, and they drive α_max, turbine derate, and cooling headroom for pre-staging. Generating them independently would be wrong. Extend the existing generator to emit a correlated weather timeline rather than adding a second agent.
+
+Cluster arrival process. This is where an LLM earns its place. Your current Poisson/Gaussian produces statistically clean traffic; real cluster traffic is bursty and correlated — overnight training batches, business-hours inference, a hyperparameter sweep that dumps 40 tiny jobs at once, a Friday afternoon deploy. An agent asked for "a plausible Tuesday on a 1900-node cluster" generates structure a Poisson cannot. Given F1 and F2, this is also where you'd surface scale-up behavior naturally instead of by injection.
+
+Fault and stressor timelines. Turbine trip, inverter trip, feeder cut, clock-skew onset, PMS shed. LLMs are good at composing plausible compound scenarios — cloud front arrives, inverter trips 90 seconds later, ambient spikes — which is exactly the correlated-failure case a hand-written scenario library under-represents.
+
+Per-run parameter sampling. Draw plant-side Δt_thermal, τ, α_max, r_asset from their ranges once per run. That is the Section 6.1 sensitivity sweep, driven by an agent instead of a nested loop.
+
+Telemetry corruption layer. The most under-used one: noise, dropout, staleness, out-of-order delivery, clock skew. Sits between plant and engine, stresses ingestion, and is where the §17.2 quarantine path finally gets exercised.
+
+Never
+Category	Why
+Any engine-side value — band widths, engine copies of split params	INV-8. No model inference in the control path, and a network call inside the 2s NFR-2 budget is disqualifying regardless
+kW per node as a random walk	Utilization modeling — the reactive signal the product is positioned against
+Conformance constants, ladder ordering, arbitration outcomes	Randomizing the thing under test
+Verdict evaluation	Assertions must be deterministic or the verdict means nothing
+Two constraints to write down
+
+Random ≠ AI. For distributions you already know — arrival times, sensor noise, SOC start — a seeded RNG is better: cheaper, reproducible by seed alone, no network dependency. Reach for a model only where the value is correlated structure over time that you can't specify as a distribution. Weather and cluster traffic qualify. Job duration doesn't.
+
+Generated values must be validated against gridsignal_parameters.json before materialization. A model returning α_max = 0.5 must be rejected against the 0.10–0.30 range, and the rejection logged — not silently clamped. Otherwise an out-of-range generation becomes an invisible parameter change.
+
+On "independently running"
+
+They can run independently and concurrently — as parallel asyncio tasks that all complete before t=0. That fits the single-process Replit constraint fine. What they can't do is run during the tick loop, because that breaks the reproducibility property and puts a network call inside the control path.
+
+This does sharpen F10 from the verification report. With one generator you could hand-wave it; with five, you need a generation block in the ScenarioSpec carrying seed, generator version, model name, and timestamp — so a scenario definition and a materialized spec are distinguishable artifacts, and a failing run is replayable exactly.

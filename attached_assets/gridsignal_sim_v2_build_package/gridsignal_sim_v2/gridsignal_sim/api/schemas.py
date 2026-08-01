@@ -426,6 +426,43 @@ class ScenarioSpec(BaseModel):
     # an OU process + EMA.  Power-cap fires when grid headroom < headroom_threshold_mw.
     kube_config: Optional[KubeConfigSpec] = None
 
+    # ── Pre-run generation architecture ────────────────────────────────────────
+    # All generators run concurrently BEFORE t=0, materialising timelines that
+    # the tick loop replays deterministically.  No generator runs during ticks.
+
+    # Correlated ambient weather: when solar_rated_mw > 0 and irradiance_steps
+    # is the bare default, generate_solar_forecast() already emits ambient_steps.
+    # This field carries those steps (injected by runs.py, not user-settable).
+    ambient_steps: list[tuple[float, float, float]] = Field(
+        default_factory=list,
+        description="Pre-generated (sim_time_s, drybulb_c, wetbulb_c) timeline. "
+                    "Populated automatically by generate_solar_forecast(); not user-settable.",
+    )
+
+    # LLM cluster arrival generator — replaces (or supplements) scripted workload events
+    # with a Mistral-generated bursty, correlated cluster traffic timeline.
+    # None = use existing workload_events and/or kube_config as-is.
+    cluster_gen_config: Optional[ClusterGenConfigSpec] = None
+
+    # LLM fault/stressor timeline generator — adds compound fault scenarios
+    # (cloud fronts, inverter trips) as SOLAR_STEP events.
+    # None = no stressor injection.
+    stressor_gen_config: Optional[StressorGenConfigSpec] = None
+
+    # Per-run seeded RNG parameter sampling — draws physics params from their
+    # documented ranges once, producing a distinct sensitivity point per run.
+    # None = no parameter sampling.
+    param_sampling_config: Optional[ParamSamplingConfigSpec] = None
+
+    # Pre-generated telemetry corruption schedule — stresses §17.2 quarantine.
+    # None = clean telemetry (default; existing tests unaffected).
+    telemetry_corruption_config: Optional[TelemetryCorruptionConfigSpec] = None
+
+    # Generation block — populated by runs.py after all generators complete.
+    # Distinguishes a scenario definition from a materialised spec and makes
+    # any failing run replayable.
+    generation_block: Optional[GenerationBlock] = None
+
     # AD2: site calibration flag.
     # False (default) = SiteConfig.uncalibrated=True (§17.3 default: uncalibrated
     # until explicit calibration run).  The TC-43 low-confidence interlock
@@ -458,6 +495,139 @@ class ScenarioSpec(BaseModel):
     def collect_c_rate_warnings(self) -> list[str]:
         """Return all non-None C-rate warnings across the BESS fleet."""
         return [w for u in self.bess_units if (w := u.c_rate_warning()) is not None]
+
+
+
+# ---------------------------------------------------------------------------
+# Generation architecture — pre-run generators (materialized before t=0)
+# ---------------------------------------------------------------------------
+
+class GenerationBlock(BaseModel):
+    """Metadata record for all pre-run generators that ran for a scenario.
+
+    Stored on RunContext and emitted in run metadata so that a scenario
+    definition and a materialised spec are distinguishable artifacts.
+    A run ID + generation_block is sufficient to replay any run exactly:
+    - physics/RNG paths replay from seed alone.
+    - LLM paths replay by re-running the generators (Mistral may vary) or by
+      reading the stored event lists from the scenario spec.
+
+    Fields
+    ------
+    seed              : master RNG seed for this run (None = time-seeded).
+    generated_at      : ISO-8601 UTC timestamp when generation ran.
+    generators_used   : list of generator names that actually ran.
+    solar_source      : "mistral" | "physics" | "none".
+    cluster_source    : "mistral" | "rng" | "none".
+    stressor_source   : "mistral" | "rng" | "none".
+    param_sampler_note: human-readable summary from param_sampler.
+    corruption_note   : human-readable summary from telemetry_corruption.
+    """
+    seed:               Optional[int]   = None
+    generated_at:       str             = ""
+    generators_used:    list[str]       = Field(default_factory=list)
+    solar_source:       str             = "none"
+    cluster_source:     str             = "none"
+    stressor_source:    str             = "none"
+    param_sampler_note: str             = ""
+    corruption_note:    str             = ""
+
+
+class ClusterGenConfigSpec(BaseModel):
+    """Configuration for the LLM-driven cluster arrival process generator.
+
+    When present on a ScenarioSpec, the generator is called ONCE at run start
+    (before the tick loop).  The resulting STARTING/JOB_END/SCALE events are
+    merged into spec_data["workload_events"] before the RunContext is built.
+
+    use_llm=True (default) calls Mistral for temporal structure — bursts,
+    business-hours patterns — that a Poisson process cannot reproduce.
+    Falls back to seeded RNG when MISTRAL_API_KEY is absent or the call fails.
+
+    use_llm=False forces the seeded RNG path.  Prefer this when the arrival
+    statistics are fully specified by the other fields (the Poisson case).
+    """
+    description:        str   = "plausible weekday on a 1900-node ML cluster"
+    hardware_profile_id: str  = "enterprise_8gpu_air"
+    max_nodes:          int   = Field(default=1900, ge=1)
+    min_nodes:          int   = Field(default=200,  ge=1)
+    mean_interarrival_s: float = Field(default=60.0, ge=5.0, le=3600.0)
+    mean_job_nodes:     int   = Field(default=200, ge=1)
+    job_node_std:       float = Field(default=80.0, ge=0.0)
+    min_job_nodes:      int   = Field(default=50, ge=1)
+    mean_job_duration_s: float = Field(default=300.0, ge=10.0)
+    min_job_duration_s: float = Field(default=30.0,  ge=5.0)
+    rng_seed:           Optional[int] = None
+    use_llm:            bool  = True
+
+
+class StressorGenConfigSpec(BaseModel):
+    """Configuration for the LLM-driven fault and stressor timeline generator.
+
+    When present on a ScenarioSpec, the generator is called ONCE at run start
+    and its output (SOLAR_STEP events) is merged into spec_data["workload_events"].
+
+    The LLM composes plausible compound fault sequences: cloud front arrives,
+    inverter trips 90 seconds later, partial recovery — the correlated-failure
+    case that a hand-written scenario library under-represents.
+
+    use_llm=False forces the seeded RNG fallback (random cloud fronts).
+    """
+    description:    str   = "compound cloud-front and inverter-trip scenario"
+    n_rng_events:   int   = Field(default=3, ge=1, le=20)
+    rng_seed:       Optional[int] = None
+    use_llm:        bool  = True
+
+
+class ParamSamplingConfigSpec(BaseModel):
+    """Configuration for per-run seeded RNG parameter sampling (§6.1 sensitivity).
+
+    When present, draws the listed physics parameters from their documented
+    [min, max] ranges once at run start and merges them into spec_data.
+
+    The seeded RNG path is always used — there is no LLM call here.  Seeded RNG
+    is the correct tool: the sampling distribution is fully specified by the
+    parameter ranges and there is no temporal structure an LLM adds value to.
+
+    keys  — parameter keys as in gridsignal_parameters.json (e.g. "alpha_max").
+            Keys not in the adjustable list or in the _NEVER_SAMPLE exclusion set
+            are silently skipped.
+    seed  — RNG seed; None = time-seeded (non-reproducible).
+    sample_plant_split — if True, split parameters draw independent plant and
+            engine values, producing natural plant/engine divergence.
+    """
+    keys:               list[str] = Field(
+        default_factory=lambda: ["dt_thermal", "alpha_max", "tau"],
+        description="Parameter keys to sample from gridsignal_parameters.json",
+    )
+    seed:               Optional[int] = None
+    sample_plant_split: bool = True
+
+
+class TelemetryCorruptionConfigSpec(BaseModel):
+    """Configuration for the pre-generated telemetry corruption schedule.
+
+    When present, a per-tick corruption manifest is generated ONCE at run start
+    from a seeded RNG.  The manifest specifies which ticks receive Gaussian noise,
+    dropout (record suppressed), or staleness (old reading substituted).
+
+    This exercises the §17.2 quarantine path, NTP-skew handling, and out-of-order
+    delivery logic.  All values default to 0.0 / 0 (no corruption) so that adding
+    the block without setting values is a safe no-op.
+    """
+    noise_sigma:  float = Field(
+        default=0.0, ge=0.0, le=0.5,
+        description="1-sigma of multiplicative Gaussian noise on readings (e.g. 0.05 = ±5%)",
+    )
+    dropout_prob: float = Field(
+        default=0.0, ge=0.0, lt=1.0,
+        description="Per-tick probability of record suppression (packet loss)",
+    )
+    max_stale:    int   = Field(
+        default=0, ge=0, le=30,
+        description="Maximum staleness in ticks (0 = no staleness injection)",
+    )
+    seed:         Optional[int] = None
 
 
 class ScenarioSummary(BaseModel):
