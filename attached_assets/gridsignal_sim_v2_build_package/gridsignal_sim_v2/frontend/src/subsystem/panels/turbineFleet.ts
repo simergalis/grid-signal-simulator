@@ -258,8 +258,8 @@ function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData
         fontFamily: 'Inter,sans-serif', fontSize: 11, color: RED, lineHeight: 1.6,
       }
     },
-      React.createElement('span', { style: { fontWeight: 700 } }, 'N−1 firm capacity: 0.0 MW. '),
-      'A unit loss takes the site down after the battery empties. This configuration has zero redundancy — any single-unit failure leaves only BESS bridge (~20 min at full load).',
+      React.createElement('span', { style: { fontWeight: 700 } }, 'N−1 firm 0.0 MW — '),
+      'a unit loss takes the site down after the battery empties.',
     ),
     ParallelingInset(units),
   )

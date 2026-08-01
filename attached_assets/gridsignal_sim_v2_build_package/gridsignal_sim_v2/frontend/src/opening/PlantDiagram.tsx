@@ -56,16 +56,22 @@ const _BIG = (color: string): React.CSSProperties => ({
 /**
  * LeadTimeCallout — four-state operational panel (ISA-101 colour discipline).
  *
- * State 1  AT REST          grey  — "NEXT LOAD EVENT / None pending"
- * State 2  COUNTING DOWN    amber — "INCOMING LOAD / 23 s / Nothing required"
- * State 3  RESERVE SHORT    red   — "INCOMING LOAD — RESERVE SHORT / Acknowledge"
- * State 4  LOAD LANDED      teal  — "LOAD LANDED / Staged X s ahead / Turbine …"
+ * Spec vocabulary: "step-load" (37× in spec), "Δt_lead".
+ * "load event" and "next load event" do not appear in the spec.
+ *
+ * State 1  AT REST       grey  — "NO STEP-LOAD INCOMING"
+ * State 2  COUNTING DOWN amber — "STEP-LOAD INCOMING / 23 s / Nothing required"
+ * State 3  RESERVE SHORT red   — "STEP-LOAD INCOMING — RESERVE SHORT / Acknowledge"
+ * State 4  LANDED        teal  — "STEP-LOAD LANDED / Staged X s ahead" (30 s hold)
  *
  * ISA-101: permanently-amber trains operators to stop seeing amber.
  * The panel is muted at rest and gains colour only when action matters.
  *
- * Pitch copy ("That gap is the product") belongs in the How-it-works explainer,
- * not on a panel an operator looks at while running a plant.
+ * "last event X min ago" in the at-rest body proves the scheduler feed is
+ * alive — a dead integration and an empty queue look identical otherwise.
+ *
+ * Pitch copy belongs in the "How it works" topology explainer (onboarding,
+ * opened deliberately). An operator running a plant should not see it.
  */
 function LeadTimeCallout({
   tick,
@@ -78,23 +84,26 @@ function LeadTimeCallout({
   const acknowledgeAlert = useTickStore(s => s.acknowledgeAlert)
 
   // ── Landing-state tracking ─────────────────────────────────────────────────
-  // When dt_lead_next_s transitions from > 0 to 0, show LOAD LANDED for 30 s.
+  // When Δt_lead transitions from > 0 to 0, show STEP-LOAD LANDED for 30 s.
   const [landedUntil,      setLandedUntil]      = useState(0)
   const [stagedSecs,       setStagedSecs]       = useState(45)
   const [turbineAtLanding, setTurbineAtLanding] = useState(0)
-  const prevDtLead = useRef(0)
-  const maxDtLead  = useRef(0)   // peak dt_lead during the current ramp cycle
+  const prevDtLead  = useRef(0)
+  const maxDtLead   = useRef(0)            // peak Δt_lead during current ramp
+  const lastLandedAt = useRef<number>(0)  // wall-clock of most recent landing
 
   useEffect(() => {
     if (!tick) return
     const cur  = tick.dt_lead_next_s
     const prev = prevDtLead.current
     if (cur > maxDtLead.current) maxDtLead.current = cur
-    // Rising-to-falling edge: load just landed
+    // Rising-to-falling edge: step-load just landed
     if (prev > 0 && cur <= 0) {
-      setLandedUntil(Date.now() + 30_000)
+      const now = Date.now()
+      setLandedUntil(now + 30_000)
       setStagedSecs(Math.round(maxDtLead.current))
       setTurbineAtLanding(tick.turbine_output_mw)
+      lastLandedAt.current = now
       maxDtLead.current = 0
     }
     prevDtLead.current = cur
@@ -114,12 +123,19 @@ function LeadTimeCallout({
   const isRunning = tick !== null && tick.dt_lead_next_s > 0
   const hasAlert  = latchedAlert !== null
 
+  // "last event X min ago" — proves scheduler feed is alive at rest
+  const lastEventStr = (() => {
+    if (!lastLandedAt.current) return 'no events this session'
+    const minsAgo = Math.floor((Date.now() - lastLandedAt.current) / 60_000)
+    return minsAgo < 1 ? 'last event < 1 min ago' : `last event ${minsAgo} min ago`
+  })()
+
   // ISA-101 colour by state
   const accent =
-    isLanded             ? '#3fb6a8' :
-    !isRunning           ? '#2a3a4a' :
-    hasAlert             ? '#f85149' :
-    /* isRunning, ok */    '#e0a458'
+    isLanded   ? '#3fb6a8' :
+    !isRunning ? '#2a3a4a' :
+    hasAlert   ? '#f85149' :
+    /* ok */    '#e0a458'
 
   // Geometry
   const box = LEADTIME_BOX
@@ -140,9 +156,9 @@ function LeadTimeCallout({
         }}
       >
 
-        {/* ── STATE 4: LOAD LANDED ─────────────────────────────────────── */}
+        {/* ── STATE 4: STEP-LOAD LANDED ────────────────────────────────── */}
         {isLanded && <>
-          <div style={_LABEL(accent)}>LOAD LANDED</div>
+          <div style={_LABEL(accent)}>STEP-LOAD LANDED</div>
           <div style={_RULE} />
           <div style={{ ..._MONO, fontSize: 20, fontWeight: 600, color: '#e6edf3', lineHeight: 1.25 }}>
             Staged {stagedSecs} s ahead of arrival
@@ -159,15 +175,15 @@ function LeadTimeCallout({
           const avail     = tick!.turbine_output_mw + tick!.bess_output_mw + tick!.p_renewable_mw
           const shortfall = Math.max(0, predicted - avail)
           return <>
-            <div style={_LABEL(accent)}>INCOMING LOAD — RESERVE SHORT</div>
+            <div style={_LABEL(accent)}>STEP-LOAD INCOMING — RESERVE SHORT</div>
             <div style={_RULE} />
             <div style={_BIG(accent)}>{secs} s</div>
-            <div style={_BODY}>until racks reach full draw</div>
-            <div style={{ ..._BODY, color: '#e6edf3' }}>+{predicted.toFixed(1)} MW predicted</div>
-            <div style={{ ..._BODY, color: accent, fontWeight: 600 }}>
-              {shortfall > 0.1
-                ? `${shortfall.toFixed(1)} MW will be uncovered`
-                : 'Insufficient reserve'}
+            <div style={{ ..._BODY, color: '#e6edf3' }}>
+              {`until racks reach full draw\n+${predicted.toFixed(1)} MW · ${
+                shortfall > 0.1
+                  ? `${shortfall.toFixed(1)} MW will be uncovered`
+                  : 'insufficient reserve'
+              }`}
             </div>
             <button
               onClick={() => latchedAlert && acknowledgeAlert(latchedAlert.tick_index)}
@@ -188,25 +204,22 @@ function LeadTimeCallout({
           const secs      = Math.max(0, Math.round(tick!.dt_lead_next_s))
           const predicted = tick!.confidence_upper_mw
           return <>
-            <div style={_LABEL(accent)}>INCOMING LOAD</div>
+            <div style={_LABEL(accent)}>STEP-LOAD INCOMING</div>
             <div style={_RULE} />
             <div style={_BIG(accent)}>{secs} s</div>
-            <div style={_BODY}>until racks reach full draw</div>
-            <div style={{ ..._BODY, color: '#e6edf3', marginTop: 2 }}>
-              +{predicted.toFixed(1)} MW predicted
+            <div style={{ ..._BODY, color: '#e6edf3' }}>
+              {`until racks reach full draw\n+${predicted.toFixed(1)} MW · turbine ramping · BESS armed`}
             </div>
-            <div style={_BODY}>Turbine ramping · BESS armed</div>
             <div style={{ ..._BODY, color: '#3fb6a8', fontWeight: 600 }}>Nothing required</div>
           </>
         })()}
 
         {/* ── STATE 1: AT REST ─────────────────────────────────────────── */}
         {!isLanded && !isRunning && <>
-          <div style={_LABEL(accent)}>NEXT LOAD EVENT</div>
+          <div style={_LABEL(accent)}>NO STEP-LOAD INCOMING</div>
           <div style={_RULE} />
-          <div style={{ ..._MONO, fontSize: 13, color: '#4b5764' }}>None pending</div>
-          <div style={{ ..._BODY, marginTop: 6, lineHeight: 1.65 }}>
-            {'Scheduler queue clear.\nNotice on next event: 30–60 s'}
+          <div style={{ ..._BODY, color: '#4b5764', lineHeight: 1.65 }}>
+            {`Scheduler feed healthy · ${lastEventStr}\nNotice on next: 30–60 s`}
           </div>
         </>}
 

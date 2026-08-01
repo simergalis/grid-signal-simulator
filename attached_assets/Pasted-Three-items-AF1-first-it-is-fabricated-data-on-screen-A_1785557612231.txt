@@ -1,0 +1,80 @@
+Three items. AF1 first — it is fabricated data on screen.
+
+AF1 — the fleet modal shows 3 units for a 1-turbine site.
+demo-20mw has one 25 MW turbine. N−1 firm capacity is therefore 0.0 MW, not 30.0 MW. Your own
+follow-up task #14 says the per-unit table is not live yet, so the node reading "3 units · 0
+online · N−1 firm 30.0 MW" and the modal's three-row table are both hardcoded.
+
+A plausible wrong number is worse than "not instrumented" — it is confidently specific and it
+survives review by looking correct. Remove the hardcoded fleet data now, before anything else.
+
+Then drive the modal from turbine_units.length:
+  1 unit  → single-unit view, plus a red line: "N−1 firm 0.0 MW — a unit loss takes the site
+            down after the battery empties"
+  N units → fleet table, N−1 bullet, ramp-vs-count bullet
+Same component, same paralleling inset — it draws N rows. That closes task #15 as a branch
+rather than a separate warning.
+
+Then seed demo-3turbine so the fleet branch has something real to render. ScenarioSpec already
+carries turbine_units: list[TurbineUnitSpec] with per-unit asset_id, rated_mw and
+r_asset_mw_per_s — the same shape demo-fleet already uses for two BESS units. Three 15 MW units
+at 0.2 MW/s, one re-rated to 0.16 MW/s. Config, not code.
+
+Also correct one sub-line: "§27.5 re-rating not yet built" is false. MaintenanceLayer shipped in
+Step 15 with TC-58/59/60 green. demo-20mw simply has no maintenance_config. Say "no maintenance
+config in this scenario".
+
+AF2 — the lead-time panel is mislabelled and self-contradicting.
+It currently reads THE LEAD TIME / 0 s, with body text saying "a power-sensor system learns about
+the load at 0 s". The same "0" means two different things in one box — our remaining countdown
+and a competitor's total warning. Read quickly it says GridSignal has no lead time either.
+
+Two problems to fix together:
+
+(a) "LEAD TIME" and "load event" are not the specification's vocabulary. The spec uses "step-load"
+    37 times; "next load event" and "predicted load event" appear zero times. Also, "NEXT" implies
+    a queue of future events that GridSignal does not have — it knows about a job the scheduler
+    has ALREADY ADMITTED, not one that might be submitted later.
+
+(b) The panel is currently a large permanently-amber box. Under ISA-101 discipline colour marks
+    abnormal conditions; a box that is always amber trains operators to stop seeing amber.
+
+Make the label change with state, and the colour with urgency:
+
+  no job committed      NO STEP-LOAD INCOMING                          muted grey
+                        Scheduler feed healthy · last event 14 min ago
+                        Notice on next: 30–60 s
+
+  counting down         STEP-LOAD INCOMING                             amber
+                        23 s until racks reach full draw
+                        +20.0 MW · turbine ramping · BESS armed
+                        Nothing required
+
+  counting, short       STEP-LOAD INCOMING — RESERVE SHORT             red
+                        23 s until racks reach full draw
+                        +20.0 MW · 9.0 MW will be uncovered
+                        [ Acknowledge ]
+
+  arrived               STEP-LOAD LANDED                               teal, hold ~30 s
+                        Staged 45 s ahead of arrival
+                        then return to the at-rest state
+
+"Nothing required" is the most useful line on the panel — it is what an operator is checking for.
+"last event 14 min ago" proves the scheduler feed is alive; without it a dead integration and an
+empty queue look identical, and that is a real failure mode.
+
+Remove the competitor comparison entirely ("A power-sensor system learns about the load at 0 s"
+and "That gap is the product"). An operator is running a plant, not evaluating a purchase. That
+copy belongs in the "How it works" topology explainer, which is onboarding and opened
+deliberately — move it there rather than deleting it.
+
+AF3 — align the same vocabulary everywhere it appears.
+Search the frontend for "lead time", "load event" and "bridge" used as UI copy. The spec's terms
+are step-load, Δt_lead, and bridging / bridging capability (§7.1.2 — the field is literally
+bess_bridging_seconds). "Gen-trip cover" reads well and is a deliberate divergence; keep it, but
+note it in a comment as a UI-only term so nobody later "corrects" it to match the field name.
+
+Do not change any backend field names. This is UI copy only.
+
+Then report the four gates with the load test labelled by scale, and screenshot the opening
+screen in all four panel states — at rest, counting down, reserve short, landed.

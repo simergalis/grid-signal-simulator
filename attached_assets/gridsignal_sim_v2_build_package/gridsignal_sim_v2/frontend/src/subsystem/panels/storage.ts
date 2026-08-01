@@ -99,7 +99,7 @@ export const storagePanel: PanelConfig = {
         { label: 'Available power',    value: `${availMW.toFixed(1)} MW`,    colour: BATTERY },
         { label: 'Current output',     value: `${outputMW.toFixed(2)} MW` },
         { label: 'Usable energy',      value: `${USABLE_MWH.toFixed(1)} MWh`, sub: 'at rated SoC' },
-        { label: 'Bridge basis',       value: tick.bridging_basis.replace('_', ' ') },
+        { label: 'Bridging basis',     value: tick.bridging_basis.replace('_', ' ') },
         { label: 'State of health',    value: 'not modelled',        sub: 'no degradation curve in this version' },
       ],
       secondary,

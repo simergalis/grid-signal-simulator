@@ -109,7 +109,7 @@ export function VerdictBand() {
     }`
   } else {
     claimWord   = 'READY'
-    claimSuffix = 'to stage a load event'
+    claimSuffix = 'to stage a step-load'
     claimColour = '#3fb6a8'
     subtitle    = '8 of 9 subsystems nominal · forecast bands widened pending calibration'
   }
@@ -160,9 +160,11 @@ export function VerdictBand() {
       {
         // AA4: bind to dt_lead_next_s directly. In this branch dt_lead_next_s
         // is 0 (otherwise we'd be in the running branch), so the value is
-        // "0 s" — the same quantity the lead-time callout in the plant
+        // "0 s" — the same quantity the Δt_lead callout in the plant
         // diagram already shows. Never '—' when the field has a real value.
-        label: 'Lead Time',
+        // "Gen-trip cover" below is a deliberate UI-only term (not from the
+        // field name bess_bridging_seconds) — do not "correct" it to match.
+        label: 'Δt_lead',
         value: `${tick.dt_lead_next_s.toFixed(0)} s`,
         colour: '#3fb6a8',
       },
@@ -184,7 +186,7 @@ export function VerdictBand() {
     // Static defaults — show configured site capacity before any run
     figures = [
       { label: 'Dispatchable', value: '48.0 MW',      colour: '#e0a458', sub: 'turbine + BESS + solar' },
-      { label: 'Lead Time',       value: '30–60 s',       colour: '#3fb6a8' },
+      { label: 'Δt_lead',          value: '30–60 s',       colour: '#3fb6a8' },
       { label: 'Gen-trip cover', value: 'full reserve',  colour: '#4a9fe0' },
       { label: 'Attention',    value: '1 subsystem',   colour: '#f0883e' },
     ]
