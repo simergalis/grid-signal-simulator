@@ -30,7 +30,6 @@ export function BulletBar({
   note,
   dense = false,
 }: BulletBarProps) {
-  const BAR_H = dense ? 8 : 9
   const TRACK_H = dense ? 8 : 9
   const LABEL_MB = dense ? 4 : 6
   const FONT = dense ? 9 : 10

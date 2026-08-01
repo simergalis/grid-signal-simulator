@@ -39,7 +39,7 @@ export function DataQualityBadge({ tag, full = false, active = true }: Props) {
   if (!meta) return null
   const colorClass = active
     ? meta.color
-    : 'bg-surface-2 text-muted border-border'
+    : 'bg-canvas text-muted border-border opacity-50'
   return (
     <span
       className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 font-mono text-xs leading-tight transition-colors ${colorClass}`}

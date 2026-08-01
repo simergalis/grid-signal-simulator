@@ -10,7 +10,6 @@
 
 import {
   ResponsiveContainer,
-  LineChart,
   Line,
   XAxis,
   YAxis,
@@ -18,7 +17,6 @@ import {
   ReferenceLine,
   Tooltip,
   Area,
-  AreaChart,
   ComposedChart,
 } from 'recharts'
 
