@@ -194,8 +194,8 @@ export function VerdictBand() {
 
   return (
     <div
-      className="flex items-center gap-4 px-6 py-4 border-b border-border flex-shrink-0 relative"
-      style={{ background: '#111821', minHeight: 100 }}
+      className="flex items-center gap-4 px-6 border-b border-border flex-shrink-0 relative"
+      style={{ background: '#111821', height: 100, overflow: 'hidden' }}
     >
       {/* Teal/amber left accent bar */}
       <div
@@ -204,29 +204,32 @@ export function VerdictBand() {
       />
 
       {/* ── Claim ────────────────────────────────────────────────────────── */}
-      <div className="pl-4 flex-1 min-w-0">
+      <div className="pl-4 flex-1 min-w-0 overflow-hidden">
         <div
           className="font-mono text-[9px] font-bold uppercase tracking-[0.16em] mb-1"
           style={{ color: '#4b5764' }}
         >
           {claimLabel}
         </div>
-        <div className="flex items-baseline gap-2 flex-wrap">
+        {/* No flex-wrap — suffix must never push to a second line.
+            Font size is fixed at 36 across all states so the band height
+            never changes when transitioning between READY / countdown / ATTENTION. */}
+        <div className="flex items-baseline gap-2 overflow-hidden">
           <span
-            className="font-mono font-bold leading-none"
+            className="font-mono font-bold leading-none flex-shrink-0"
             style={{
-              fontSize: running ? 36 : 32,
+              fontSize: 36,
               color: claimColour,
               letterSpacing: running ? '-0.03em' : '0.01em',
             }}
           >
             {claimWord}
           </span>
-          <span className="font-sans text-base text-text/90 font-light leading-tight">
+          <span className="font-sans text-base text-text/90 font-light leading-tight truncate">
             {claimSuffix}
           </span>
         </div>
-        <div className="font-mono text-[10px] text-muted mt-1 leading-snug">
+        <div className="font-mono text-[10px] text-muted mt-1 leading-snug truncate">
           {subtitle}
         </div>
       </div>
