@@ -176,6 +176,11 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         "absorbable_mw":      round(tick.absorbable_mw, 3),
         "time_to_limit_s":    round(tick.time_to_limit_s, 1),
         "approach_rate_mw_s": round(tick.approach_rate_mw_s, 6),
+        # AE2: per-unit turbine specs — list of dicts for JSON serialisation.
+        # Constant across ticks; carried on every payload so the fleet modal
+        # can drive its display (unit count, rated MW, effective ramp) without
+        # a separate API call.
+        "turbine_units": list(tick.turbine_units),
     }
 
 
@@ -349,6 +354,12 @@ class RunContext:
     # AB2: sum of all turbine rated_mw; set by build_run_context_from_spec
     # for §21.2 cost model in the energy-summary endpoint.  0.0 = unknown.
     turbine_rated_mw: float = 0.0
+
+    # AE2: per-unit turbine specs as plain dicts — stamped onto every TickResult
+    # so the fleet modal can drive its display from live data without a separate
+    # API call.  Set by build_run_context_from_spec from spec_data["turbine_units"].
+    # Empty tuple for contexts built without a spec (tests, load test).
+    turbine_unit_specs: tuple = field(default_factory=tuple)
 
     # AD1: optional engine instances — instantiated by build_run_context_from_spec
     # when the corresponding *_config field is set in ScenarioSpec.
@@ -684,6 +695,10 @@ class RunManager:
                         min(_th_absorb / _th_approach, 86_400.0)
                         if _th_approach > 1e-6 else 86_400.0
                     ),
+                    # AE2: per-unit turbine specs from RunContext — constant
+                    # across ticks but stamped each tick so every TickResult in
+                    # tick_history carries the data the fleet modal needs.
+                    turbine_units=ctx.turbine_unit_specs,
                 )
                 if _profiling: _sec.setdefault("B_thermal_update", []).append(_time_module.perf_counter() - _t0)
 

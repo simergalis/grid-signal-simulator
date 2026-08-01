@@ -32,11 +32,14 @@ function getMwValue(def: NodeDef, tick: TickPayload | null): number | null {
 function nodeDetail(def: NodeDef, tick: TickPayload | null): string {
   switch (def.id) {
     case 'gas-turbine': {
-      const mw = tick?.turbine_output_mw ?? 0
-      const online = mw > 0.1 ? 1 : 0
-      return online > 0
-        ? `${online} unit online · N−1 firm 30.0 MW`
-        : `3 units · 0 online · N−1 firm 30.0 MW`
+      const units = tick?.turbine_units ?? []
+      if (units.length === 0) return 'fleet — start a scenario to see units'
+      const installed = units.reduce((s: number, u: { rated_mw: number }) => s + u.rated_mw, 0)
+      const maxUnit   = Math.max(...units.map((u: { rated_mw: number }) => u.rated_mw))
+      const n1Firm    = installed - maxUnit
+      const mw        = tick?.turbine_output_mw ?? 0
+      const online    = mw > 0.1 ? 1 : 0
+      return `${units.length} unit${units.length === 1 ? '' : 's'} · ${online} online · N−1 firm ${n1Firm.toFixed(1)} MW`
     }
     case 'solar-pv': {
       const mw = tick?.p_renewable_mw ?? 0

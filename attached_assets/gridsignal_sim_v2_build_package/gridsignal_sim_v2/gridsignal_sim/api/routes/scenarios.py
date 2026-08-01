@@ -457,6 +457,29 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
         ),
     ),
     (
+        "demo-3turbine",
+        ScenarioSpec(
+            name="demo-3turbine",
+            description=(
+                "3 × 15 MW aeroderivative fleet — islanded primary generation. "
+                "turbine-03 re-rated to 0.160 MW/s after 2,041 h (§27, TC-58). "
+                "N−1 firm capacity 30.0 MW vs 23.95 MW peak (+25% margin). "
+                "Aggregate ramp 0.600 MW/s covers a 23.95 MW step in 45 s. "
+                "Demonstrates fleet view in the Gas Turbine Fleet modal."
+            ),
+            workload_events=[_evt_start("job-fleet3", 1900)],
+            dt_lead_seconds=30.0,
+            bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
+            turbine_units=[
+                _turbine("turbine-01", rated_mw=15.0, r_mw_per_s=0.2),
+                _turbine("turbine-02", rated_mw=15.0, r_mw_per_s=0.2),
+                _turbine("turbine-03", rated_mw=15.0, r_mw_per_s=0.16),
+            ],
+            solar_rated_mw=_SOLAR_20MW,
+            end_sim_time=300.0,
+        ),
+    ),
+    (
         "demo-fleet",
         ScenarioSpec(
             name="demo-fleet",

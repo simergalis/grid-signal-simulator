@@ -566,6 +566,15 @@ def build_run_context_from_spec(
         _rated_cooling_mw=_spec_rated_cooling_mw,
         # AB2: for §21.2 cost model in energy-summary endpoint.
         turbine_rated_mw=_spec_total_turbine_mw,
+        # AE2: per-unit specs as plain dicts for the fleet modal.
+        turbine_unit_specs=tuple(
+            {
+                "asset_id": t.get("asset_id") or f"turbine-{i}",
+                "rated_mw": float(t.get("rated_mw", 10.0)),
+                "r_asset_mw_per_s": float(t.get("r_asset_mw_per_s", 0.2)),
+            }
+            for i, t in enumerate(spec_data.get("turbine_units", []))
+        ),
         # AD1: optional engine instances.
         procurement_layer=_proc_layer,
         maintenance_layer=_maint_layer,

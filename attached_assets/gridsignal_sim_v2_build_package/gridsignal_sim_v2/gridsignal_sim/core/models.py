@@ -448,3 +448,10 @@ class TickResult:
     absorbable_mw:      float = 0.0      # max(0, rated − current) MW of headroom
     time_to_limit_s:    float = 86400.0  # s until headroom reaches 0 (86400 = ∞)
     approach_rate_mw_s: float = 0.0      # MW/s approach rate (+ = rising load)
+    # AE2 — per-unit turbine config stamped from RunContext.turbine_unit_specs.
+    # Constant across ticks for a given run; carried on every TickResult so the
+    # fleet modal can read unit count, rated MW, and effective ramp per unit
+    # without a separate API call.  Each element is a plain dict:
+    #   {"asset_id": str, "rated_mw": float, "r_asset_mw_per_s": float}
+    # tuple (not list) because TickResult is frozen=True; tuple is immutable.
+    turbine_units: tuple = field(default_factory=tuple)

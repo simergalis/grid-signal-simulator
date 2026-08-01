@@ -47,6 +47,11 @@ export interface TickPayload {
   absorbable_mw:      number  // max(0, rated - current) before thermal limit
   time_to_limit_s:    number  // seconds until headroom = 0 (86400 = effectively ∞)
   approach_rate_mw_s: number  // MW/s rate of change (positive = load rising)
+
+  // AE2 — per-unit turbine config (constant across ticks for a run).
+  // Stamped from RunContext.turbine_unit_specs; empty array for contexts
+  // without a spec (e.g. direct job-id path).  Drives the fleet modal.
+  turbine_units: TurbineUnitSpec[]
 }
 
 export interface RunMeta {
