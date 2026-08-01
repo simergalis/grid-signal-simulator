@@ -1,0 +1,67 @@
+An operator isn't evaluating a purchase; they're running a plant. A control-room panel answers three questions: is something coming, how long have I got, and is it handled?
+
+Everything about the competitor is irrelevant at the desk.
+
+Four states
+
+At rest — quiet
+
+NEXT LOAD EVENT
+───────────────
+None pending
+
+Scheduler queue clear.
+Notice on next event: 30–60 s
+
+Tells the operator what to expect. No large number, because nothing is happening.
+
+Counting down — the working state
+
+INCOMING LOAD
+─────────────
+     23 s
+until racks reach full draw
+
++20.0 MW predicted
+Turbine ramping · BESS armed
+Nothing required
+
+Nothing required is the most valuable line on the panel. It's what an operator is actually checking for.
+
+Reserve short — the exception
+
+INCOMING LOAD — RESERVE SHORT
+─────────────────────────────
+     23 s
+until racks reach full draw
+
++20.0 MW predicted
+9.0 MW will be uncovered
+         [ Acknowledge ]
+
+Same layout, different verdict line and an action. The operator's eye lands in the same place whether things are fine or not.
+
+Landed — confirmation, then quiet
+
+LOAD LANDED
+───────────
+Staged 45 s ahead of arrival
+Turbine 19.96 MW · BESS standby
+
+Hold ~30 s, then return to the at-rest state.
+
+Two things this fixes
+
+The 0 s ambiguity disappears — the countdown reaching zero now says LOAD LANDED, which is an event, not a measurement.
+
+And the panel stops being an argument. "That gap is the product" is a claim about a vendor. "Staged 45 s ahead of arrival" is a statement about the plant, and it's more persuasive to anyone technical precisely because it isn't trying to persuade.
+
+Where the pitch copy belongs
+
+Not deleted — moved. The "How it works" topology explainer is exactly the right home: it's onboarding, opened deliberately, and never sits in front of someone doing a job. That's where a sentence about power-sensor systems learning too late earns its place.
+
+Keep the operating console describing the plant. Keep the explainer explaining the product.
+
+One visual note
+
+The panel is currently a large amber box occupying a quarter of the plant band while reading 0 s. Under ISA-101 discipline it should be muted grey at rest and gain colour only when counting down or short on reserve — amber for an active countdown, red for uncovered shortfall. A permanently-amber panel trains operators to stop seeing amber.

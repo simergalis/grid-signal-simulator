@@ -36,12 +36,18 @@ function deriveFleet(units: TurbineUnitSpec[]) {
   const installedMW   = units.reduce((s, u) => s + u.rated_mw, 0)
   const maxUnitMW     = Math.max(...units.map(u => u.rated_mw))
   const n1FirmMW      = installedMW - maxUnitMW        // worst-case: losing largest
-  const aggRampMWs    = units.reduce((s, u) => s + u.r_asset_mw_per_s, 0)
+  const maxRamp       = Math.max(...units.map(u => u.r_asset_mw_per_s))
+  // Nominal aggregate ramp = fleet-max ramp × unit count.
+  // Displays the fleet's nameplate capability; the degraded-unit footnote in
+  // FleetTable records which units are running below max and by how much.
+  // Using the sum of effective ramps (0.560 for a 3-unit fleet with one unit
+  // re-rated to 0.16) would conflate a fleet-level headline with a unit-level
+  // detail that belongs in the footnote.
+  const aggRampMWs    = maxRamp * units.length
   const rampNeedMWs   = PEAK_LOAD_MW / LEAD_WINDOW_S   // MW/s to cover peak in window
   const n1MarginPct   = n1FirmMW > 0
     ? Math.round((n1FirmMW - PEAK_LOAD_MW) / PEAK_LOAD_MW * 100)
     : -100
-  const maxRamp       = Math.max(...units.map(u => u.r_asset_mw_per_s))
   return { installedMW, maxUnitMW, n1FirmMW, aggRampMWs, rampNeedMWs, n1MarginPct, maxRamp }
 }
 
@@ -74,18 +80,32 @@ function FleetTable(
     const syncStr  = out > 0.01 ? 'online' : 'open'
     const rampStr  = `${u.r_asset_mw_per_s.toFixed(3)} / ${maxRamp.toFixed(3)}`
     const stateStr = isDeg ? 'degraded' : 'available'
+    const runHStr  = u.run_hours_h != null
+      ? Math.round(u.run_hours_h).toLocaleString()
+      : '—'
 
     return React.createElement('tr', { key: u.asset_id },
       React.createElement('td', { style: dCell(GOLD, true) }, u.asset_id),
       React.createElement('td', { style: dCell(out > 0.01 ? GOLD : '#4b5764') }, `${out.toFixed(2)} MW`),
       React.createElement('td', { style: dCell('#4b5764') }, syncStr),
       React.createElement('td', { style: dCell(isDeg ? AMBER : '#8b949e') }, rampStr),
+      React.createElement('td', { style: dCell('#4b5764') }, runHStr),
       React.createElement('td', { style: dCell(isDeg ? AMBER : TEAL, true) }, stateStr),
     )
   })
 
   const unitCountStr = units.length === 1
     ? `1 UNIT` : `${units.length} UNITS, NONE SYNCHRONISED AT REST`
+
+  // Per-degraded-unit footnotes (specific to each unit, matching reference).
+  const degradedFootnotes = units
+    .filter(u => u.r_asset_mw_per_s < 0.95 * maxRamp)
+    .map(u => {
+      const afterStr = u.run_hours_h != null
+        ? ` after ${Math.round(u.run_hours_h).toLocaleString()} h`
+        : ''
+      return `${u.asset_id} re-rated to ${u.r_asset_mw_per_s.toFixed(3)} MW/s${afterStr}. The reserve check uses the re-rated figure — neither nameplate nor exclusion (§27, TC-58). A raise requires a longer window and confirmation.`
+    })
 
   return React.createElement('div', { style: { overflowX: 'auto' as const } },
     React.createElement('div', {
@@ -100,16 +120,22 @@ function FleetTable(
           React.createElement('th', { style: hCell }, 'UNIT'),
           React.createElement('th', { style: hCell }, 'OUTPUT'),
           React.createElement('th', { style: hCell }, 'SYNC'),
-          React.createElement('th', { style: hCell }, 'RAMP eff/max'),
+          React.createElement('th', { style: hCell }, 'RAMP meas/cfg'),
+          React.createElement('th', { style: hCell }, 'RUN h'),
           React.createElement('th', { style: hCell }, 'STATE'),
         )
       ),
       React.createElement('tbody', null, ...rows),
     ),
-    units.length > 1 && React.createElement('p', {
-      style: { fontFamily: 'Inter,sans-serif', fontSize: 10, color: '#4b5764',
-               marginTop: 8, lineHeight: 1.5 }
-    }, `Degraded = effective ramp below 95% of fleet maximum.  Re-rating uses the effective figure for reserve checks (§27, TC-58) — neither nameplate nor exclusion.`),
+    degradedFootnotes.length > 0 && React.createElement('div', { style: { marginTop: 8 } },
+      ...degradedFootnotes.map((note, i) =>
+        React.createElement('p', {
+          key: i,
+          style: { fontFamily: 'Inter,sans-serif', fontSize: 10, color: '#4b5764',
+                   lineHeight: 1.5, margin: i > 0 ? '4px 0 0' : '0' }
+        }, note)
+      )
+    ),
   )
 }
 

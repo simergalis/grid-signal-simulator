@@ -85,6 +85,8 @@ export interface TurbineUnitSpec {
   asset_id: string
   rated_mw: number
   r_asset_mw_per_s: number
+  /** Operating hours — null/absent when not tracked. Fleet modal shows in RUN h column. */
+  run_hours_h?: number | null
 }
 
 /** PMS wiring exposed in the Scenario Builder. */

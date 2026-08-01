@@ -195,11 +195,13 @@ def _turbine(
     asset_id: str = "turbine-0",
     rated_mw: float = 10.0,
     r_mw_per_s: float = 0.2,
+    run_hours_h: Optional[float] = None,
 ) -> TurbineUnitSpec:
     return TurbineUnitSpec(
         asset_id=asset_id,
         rated_mw=rated_mw,
         r_asset_mw_per_s=r_mw_per_s,
+        run_hours_h=run_hours_h,
     )
 
 
@@ -471,9 +473,9 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             dt_lead_seconds=30.0,
             bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
             turbine_units=[
-                _turbine("turbine-01", rated_mw=15.0, r_mw_per_s=0.2),
-                _turbine("turbine-02", rated_mw=15.0, r_mw_per_s=0.2),
-                _turbine("turbine-03", rated_mw=15.0, r_mw_per_s=0.16),
+                _turbine("turbine-01", rated_mw=15.0, r_mw_per_s=0.2,  run_hours_h=1284.0),
+                _turbine("turbine-02", rated_mw=15.0, r_mw_per_s=0.2,  run_hours_h=1197.0),
+                _turbine("turbine-03", rated_mw=15.0, r_mw_per_s=0.16, run_hours_h=2041.0),
             ],
             solar_rated_mw=_SOLAR_20MW,
             end_sim_time=300.0,

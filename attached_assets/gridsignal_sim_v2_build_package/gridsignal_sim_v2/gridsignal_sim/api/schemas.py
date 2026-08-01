@@ -199,6 +199,10 @@ class TurbineUnitSpec(BaseModel):
     asset_id: str
     rated_mw: float = Field(default=10.0, gt=0)
     r_asset_mw_per_s: float = Field(default=0.2, gt=0)
+    # Optional operating-hours counter for narrative / re-rating context.
+    # None = not tracked (most scenarios).  When set, the fleet modal shows
+    # the value in the RUN h column and names the unit in the degraded footnote.
+    run_hours_h: Optional[float] = Field(default=None, ge=0)
 
 
 class ScenarioSpec(BaseModel):

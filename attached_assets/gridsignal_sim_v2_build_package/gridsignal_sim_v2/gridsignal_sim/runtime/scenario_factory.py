@@ -572,6 +572,9 @@ def build_run_context_from_spec(
                 "asset_id": t.get("asset_id") or f"turbine-{i}",
                 "rated_mw": float(t.get("rated_mw", 10.0)),
                 "r_asset_mw_per_s": float(t.get("r_asset_mw_per_s", 0.2)),
+                # run_hours_h: None when not tracked; non-None for scenarios
+                # that carry operating-hours data (e.g. demo-3turbine).
+                "run_hours_h": float(t["run_hours_h"]) if t.get("run_hours_h") is not None else None,
             }
             for i, t in enumerate(spec_data.get("turbine_units", []))
         ),
