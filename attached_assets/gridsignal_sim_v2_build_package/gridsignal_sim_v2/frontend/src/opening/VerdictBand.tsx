@@ -22,6 +22,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTickStore } from '../store/tickStore'
 import { GenTripModal } from './GenTripModal'
+import { ReserveModal } from './ReserveModal'
 import type { ContingencyCoverage } from '../types'
 
 interface FigureProps {
@@ -121,6 +122,7 @@ export function VerdictBand() {
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false)
+  const [reserveModalOpen, setReserveModalOpen] = useState(false)
 
   // ── TC-84: log state transitions ─────────────────────────────────────────
   const prevContingencyState = useRef<string | null>(null)
@@ -206,7 +208,9 @@ export function VerdictBand() {
         label:    'Reserve',
         value:    hasAlert ? 'insufficient' : 'sufficient',
         colour:   hasAlert ? '#f0883e' : '#3fb6a8',
+        sub:      'click for details',
         colWidth: 140,
+        onClick:  () => setReserveModalOpen(true),
       },
     ]
   } else if (hasRun && tick) {
@@ -309,11 +313,19 @@ export function VerdictBand() {
         </div>
       </div>
 
-      {/* Gen-trip modal — mounted outside the band so it overlays the full screen */}
+      {/* Gen-trip modal */}
       {modalOpen && (
         <GenTripModal
           cc={tick?.contingency_coverage}
           onClose={() => setModalOpen(false)}
+        />
+      )}
+
+      {/* Reserve modal */}
+      {reserveModalOpen && (
+        <ReserveModal
+          tick={tick}
+          onClose={() => setReserveModalOpen(false)}
         />
       )}
     </>
