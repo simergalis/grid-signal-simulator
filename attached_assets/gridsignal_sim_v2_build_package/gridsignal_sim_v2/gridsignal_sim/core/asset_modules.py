@@ -87,6 +87,36 @@ class GPUModule(AssetModule):
     ramp_seconds: float = 45.0
     _ramp_progress: dict[str, float] = field(default_factory=dict)  # job_id -> [0.0, 1.0]
 
+    # Scale-up cohort tracking.
+    # When a SCALE-UP event arrives, added nodes are cold — they undergo the
+    # same container-init / weight-load ramp as a fresh STARTING event.  We
+    # split the job into the original cohort (existing key, unchanged ramp
+    # progress) and a new delta cohort (key = job_id + "-cohort-N", progress=0).
+    #
+    # _desired_node_counts — authoritative total per job (updated on every SCALE).
+    #     Delta for any SCALE is always computed against this, NOT against
+    #     _node_counts[job_id] (which only holds the base cohort's count and
+    #     is stale after scale-ups).  Without this guard, two consecutive
+    #     SCALEs would compute deltas against the original base each time,
+    #     inflating effective nodes beyond the requested total.
+    # _cohort_counters  — monotonic counter per job; ensures cohort keys are unique.
+    # _job_cohorts      — maps base job_id → ordered list of live cohort keys.
+    #     Ordered newest-last so scale-down can reduce from the newest first.
+    # _last_scale_cohort_key — set by apply_signal(SCALE-UP) so simulation_core
+    #     can register a CoolingModule envelope for the new cohort; None otherwise.
+    # _last_scale_removed_cohort_keys — set by apply_signal(SCALE-DOWN) to the
+    #     list of cohort keys whose node count was reduced to zero and therefore
+    #     removed from _node_counts.  simulation_core reads this to call
+    #     cooling.register_job_end() for each, so the cooling envelopes start
+    #     their drain countdown rather than staying elevated indefinitely.
+    #     Empty list when no cohorts were fully removed (partial reductions or
+    #     scale-down against the base only).
+    _desired_node_counts: dict[str, int] = field(default_factory=dict)
+    _cohort_counters: dict[str, int] = field(default_factory=dict)
+    _job_cohorts: dict[str, list] = field(default_factory=dict)
+    _last_scale_cohort_key: Optional[str] = field(default=None)
+    _last_scale_removed_cohort_keys: list = field(default_factory=list)
+
     # ------------------------------------------------------------------
     # Δt_lead ramp shape  (Step 3 Item 2 — PROTO-1)
     # ------------------------------------------------------------------
@@ -126,18 +156,85 @@ class GPUModule(AssetModule):
         """
         unmapped = signal.hardware_profile_id not in self.hardware_library
 
+        self._last_scale_cohort_key = None      # reset each call
+        self._last_scale_removed_cohort_keys = []  # reset each call
+
         if signal.event_type == WorkloadEventType.STARTING:
             self._node_counts[signal.job_id] = signal.node_count
             self._job_profiles[signal.job_id] = signal.hardware_profile_id
             self._ramp_progress[signal.job_id] = 0.0          # begin Δt_lead ramp
+            # Seed the authoritative desired count so SCALE deltas compute correctly.
+            self._desired_node_counts[signal.job_id] = signal.node_count
         elif signal.event_type == WorkloadEventType.SCALE:
-            self._node_counts[signal.job_id] = signal.node_count
-            self._job_profiles[signal.job_id] = signal.hardware_profile_id
-            self._ramp_progress[signal.job_id] = 1.0          # already live, no ramp
+            # Always compute the delta against _desired_node_counts, NOT against
+            # _node_counts[job_id].  After a scale-up, _node_counts[job_id] still
+            # holds the original base count; using it as the baseline would double-
+            # count the delta on every subsequent SCALE.
+            old_desired = self._desired_node_counts.get(signal.job_id, 0)
+            new_desired = signal.node_count
+
+            if old_desired == 0:
+                # No prior STARTING: snap to full (Kubernetes "already-running"
+                # injection pattern — nodes were live before monitoring began).
+                self._node_counts[signal.job_id] = new_desired
+                self._job_profiles[signal.job_id] = signal.hardware_profile_id
+                self._ramp_progress[signal.job_id] = 1.0
+                self._desired_node_counts[signal.job_id] = new_desired
+            elif new_desired > old_desired:
+                # Scale-UP on a live job: added nodes are cold.
+                # Base cohort retains its current ramp progress unchanged.
+                delta_nodes = new_desired - old_desired
+                cohort_n = self._cohort_counters.get(signal.job_id, 0) + 1
+                self._cohort_counters[signal.job_id] = cohort_n
+                cohort_key = f"{signal.job_id}-cohort-{cohort_n}"
+                self._node_counts[cohort_key] = delta_nodes
+                self._job_profiles[cohort_key] = signal.hardware_profile_id
+                self._ramp_progress[cohort_key] = 0.0         # cold-start ramp
+                self._job_cohorts.setdefault(signal.job_id, []).append(cohort_key)
+                self._desired_node_counts[signal.job_id] = new_desired
+                self._last_scale_cohort_key = cohort_key
+            elif new_desired < old_desired:
+                # Scale-DOWN: shed nodes from newest cohorts first (no ramp reset),
+                # then reduce the base entry if cohorts are exhausted.
+                # Track fully-removed cohorts so simulation_core can end their
+                # CoolingModule envelopes; without this, the envelope has no
+                # end_t and retains its last historical power level indefinitely.
+                reduction = old_desired - new_desired
+                for cohort_key in list(reversed(self._job_cohorts.get(signal.job_id, []))):
+                    if reduction <= 0:
+                        break
+                    cohort_nodes = self._node_counts.get(cohort_key, 0)
+                    if reduction >= cohort_nodes:
+                        # Remove this cohort entirely — record it for cooling cleanup.
+                        self._node_counts.pop(cohort_key, None)
+                        self._job_profiles.pop(cohort_key, None)
+                        self._ramp_progress.pop(cohort_key, None)
+                        self._job_cohorts[signal.job_id].remove(cohort_key)
+                        self._last_scale_removed_cohort_keys.append(cohort_key)
+                        reduction -= cohort_nodes
+                    else:
+                        # Partially reduce — ramp progress of surviving nodes unchanged.
+                        # Cooling for the reduced cohort will self-correct as the
+                        # lower-power samples fill in via record_job_compute().
+                        self._node_counts[cohort_key] -= reduction
+                        reduction = 0
+                # Any remaining reduction falls on the base entry.
+                if reduction > 0:
+                    base = self._node_counts.get(signal.job_id, 0)
+                    self._node_counts[signal.job_id] = max(0, base - reduction)
+                self._desired_node_counts[signal.job_id] = new_desired
+            # new_desired == old_desired: desired count already correct, no-op.
         elif signal.event_type in (WorkloadEventType.JOB_END, WorkloadEventType.CANCELLED):
             self._node_counts.pop(signal.job_id, None)
             self._job_profiles.pop(signal.job_id, None)
             self._ramp_progress.pop(signal.job_id, None)
+            # Clean up all scale-up cohorts spawned from this job.
+            for cohort_key in self._job_cohorts.pop(signal.job_id, []):
+                self._node_counts.pop(cohort_key, None)
+                self._job_profiles.pop(cohort_key, None)
+                self._ramp_progress.pop(cohort_key, None)
+            self._cohort_counters.pop(signal.job_id, None)
+            self._desired_node_counts.pop(signal.job_id, None)
         # checkpoint_start/checkpoint_end intentionally leave node_count
         # untouched -- the classifier (dispatch.py) reads the resulting
         # draw shape, it doesn't get a node-count signal of its own.

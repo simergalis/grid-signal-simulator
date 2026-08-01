@@ -139,6 +139,10 @@ class SimulationState:
             return
 
         gpu = self._owning_gpu_module(signal)
+        # Capture cohort keys before apply_signal() clears _job_cohorts on JOB_END.
+        _cohort_keys_before_end: list[str] = []
+        if signal.event_type in (WorkloadEventType.JOB_END, WorkloadEventType.CANCELLED):
+            _cohort_keys_before_end = list(gpu._job_cohorts.get(signal.job_id, []))
         new_unmapped = gpu.apply_signal(signal)
         # Unmapped-hardware confidence tagging is per-tick via evaluate_tick step 6.
         # D7 fix: §5.1 onboarding alert — fire once per unique unmapped
@@ -199,11 +203,32 @@ class SimulationState:
                 dt_lead_seconds=dt_lead_seconds,
                 sim_time=signal.timestamp,
             )
+        elif signal.event_type == WorkloadEventType.SCALE:
+            # Scale-UP: the delta cohort is cold — register its own cooling
+            # envelope seeded at the SCALE event timestamp so its cooling rises
+            # from the SCALE moment, not from job start (§8 per-job superposition).
+            # gpu._last_scale_cohort_key is None for scale-downs (no new envelope needed).
+            _cohort_key = gpu._last_scale_cohort_key
+            if _cohort_key is not None:
+                self.cooling.register_job_start(_cohort_key, signal.timestamp)
+            # Scale-DOWN: end the CoolingModule envelope for each cohort that was
+            # fully removed (node count reached zero).  Without this, the envelope
+            # has no end_t and retains its last historical compute power level
+            # indefinitely — no new samples are written once the cohort is gone, so
+            # the lagged cursor stays stuck at the last pre-scale value forever.
+            # Partially-reduced cohorts (node count > 0) self-correct as lower-power
+            # samples fill in via record_job_compute(); no intervention needed there.
+            for _removed_key in gpu._last_scale_removed_cohort_keys:
+                self.cooling.register_job_end(_removed_key, signal.timestamp)
         elif signal.event_type in (WorkloadEventType.JOB_END, WorkloadEventType.CANCELLED):
             # Step 3 Item 3: mark the envelope ended so the retention window
             # starts.  Heat is already in the room; the buffer drains over
             # dt_thermal + 5·τ — it must not drop in one tick.
             self.cooling.register_job_end(signal.job_id, signal.timestamp)
+            # Also end cooling envelopes for any scale-up cohorts that were
+            # spawned from this job (captured before apply_signal cleared them).
+            for _ck in _cohort_keys_before_end:
+                self.cooling.register_job_end(_ck, signal.timestamp)
 
         if signal.event_type == WorkloadEventType.CHECKPOINT_START:
             self.classifier.apply_explicit_event(signal.job_id, is_checkpoint_start=True, sim_time=signal.timestamp)
