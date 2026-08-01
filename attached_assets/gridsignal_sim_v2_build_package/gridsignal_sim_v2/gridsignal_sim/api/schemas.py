@@ -306,6 +306,91 @@ class ScenarioSpec(BaseModel):
     pue_base: float = Field(default=1.03, ge=1.0, le=2.0)
     end_sim_time: float = Field(default=300.0, ge=60.0, le=86400.0)
 
+    # ── Physics parameters (gridsignal_parameters.json §2) ─────────────────
+    # Generated from gridsignal_parameters.json at runtime; never hand-coded.
+    # Split parameters (split=true in JSON) have optional plant_ variants.
+    # When plant_* is None the simulation uses the engine value (linked default).
+    #
+    # §2.1 / §2.2 — Thermal response (PARAM-02/03/04)
+    dt_thermal_seconds: float = Field(
+        default=90.0, ge=0.0, le=300.0,
+        description=(
+            "Engine value: thermal-delay before cooling ramp (Δt_thermal, s). "
+            "Source: §8–9, SPEC_DEFAULT."
+        ),
+    )
+    plant_dt_thermal_seconds: Optional[float] = Field(
+        default=None, ge=0.0, le=300.0,
+        description=(
+            "Plant value for Δt_thermal. None = linked to dt_thermal_seconds. "
+            "Set explicitly to simulate a plant/engine thermal-model divergence."
+        ),
+    )
+    alpha_max: float = Field(
+        default=0.20, ge=0.0, le=1.0,
+        description=(
+            "Engine value: maximum cooling fraction (α_max). "
+            "Source: §8, SPEC_DEFAULT."
+        ),
+    )
+    plant_alpha_max: Optional[float] = Field(
+        default=None, ge=0.0, le=1.0,
+        description="Plant value for α_max. None = linked to alpha_max.",
+    )
+    tau_seconds: float = Field(
+        default=20.0, ge=1.0, le=120.0,
+        description=(
+            "Engine value: cooling time-constant (τ, s). "
+            "Source: §8, PROPOSED_HERE."
+        ),
+    )
+    plant_tau_seconds: Optional[float] = Field(
+        default=None, ge=1.0, le=120.0,
+        description="Plant value for τ. None = linked to tau_seconds.",
+    )
+
+    # §2.5 — Reserve-check parameters (PARAM-09/13/14/15)
+    # anchor_reserve_pct: % of each grid-forming BESS's rated MW withheld as
+    #   anchor reserve.  0.0 = use BessConfig.p_anchor_reserve_mw default (1.0 MW).
+    #   PROPOSED_HERE — 8% is the placeholder; calibrate against commissioning specs.
+    anchor_reserve_pct: float = Field(
+        default=0.0, ge=0.0, le=20.0,
+        description=(
+            "Anchor reserve as % of BESS rated MW (grid-forming unit only). "
+            "0 = use BessConfig default (1.0 MW). PROPOSED_HERE — pending commissioning."
+        ),
+    )
+    # Confidence band (§2.5, INV-2) — PROPOSED_HERE decisions:
+    #   band_pct_calibrated = 4%  →  uncalibrated = 4% × 2.0 = 8% = fixture
+    #   band_mult_uncalibrated = 2.0×
+    #   band_mult_unmapped_hw  = 1.5×
+    # Default 0.0 in ScenarioSpec preserves backward-compat for all seeded
+    # scenarios (which pre-date this parameter and should behave as before).
+    # Set to 4.0 in the ParameterModal default to activate INV-2 compliance.
+    band_pct_calibrated: float = Field(
+        default=0.0, ge=0.0, le=15.0,
+        description=(
+            "Confidence band ±% of peak_shortfall for reserve check (INV-2). "
+            "0 = disabled (point-estimate check only, backward-compat). "
+            "PROPOSED_HERE default: 4.0%. "
+            "Effective band = band_pct × mult_uncalib × mult_unmapped_hw."
+        ),
+    )
+    band_mult_uncalibrated: float = Field(
+        default=2.0, ge=1.0, le=4.0,
+        description=(
+            "Reserve-band multiplier for uncalibrated sites (§17.3). "
+            "PROPOSED_HERE decision: 2.0× (calibrated × 2.0 = fixture 8%)."
+        ),
+    )
+    band_mult_unmapped_hw: float = Field(
+        default=1.5, ge=1.0, le=4.0,
+        description=(
+            "Reserve-band multiplier for unmapped hardware profiles (§5.1). "
+            "PROPOSED_HERE decision: 1.5× (independent of uncalibrated mult)."
+        ),
+    )
+
     # Step 10: optional §8.1 pre-staging configuration.
     # None = PreStagingEngine not instantiated (SiteConfig.pre_staging_config = None).
     pre_staging_config: Optional[PreStagingConfigSpec] = None

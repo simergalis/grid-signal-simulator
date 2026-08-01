@@ -23,6 +23,8 @@
 import { useEffect, useState } from 'react'
 import { useScenarioStore } from '../store/scenarioStore'
 import type { BessUnitSpec, TurbineUnitSpec, ScenarioSpec } from '../types'
+import { ParameterModal, defaultPhysicsParams } from './ParameterModal'
+import type { PhysicsParams } from './ParameterModal'
 
 // ── C-rate helper ─────────────────────────────────────────────────────────────
 
@@ -208,10 +210,12 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
   const createScenario = useScenarioStore(s => s.createScenario)
   const updateScenario = useScenarioStore(s => s.updateScenario)
 
-  const [spec,     setSpec]     = useState<ScenarioSpec>(blankSpec())
-  const [busy,     setBusy]     = useState(false)
-  const [err,      setErr]      = useState<string | null>(null)
-  const [warnings, setWarnings] = useState<string[]>([])
+  const [spec,          setSpec]          = useState<ScenarioSpec>(blankSpec())
+  const [busy,          setBusy]          = useState(false)
+  const [err,           setErr]           = useState<string | null>(null)
+  const [warnings,      setWarnings]      = useState<string[]>([])
+  const [physicsOpen,   setPhysicsOpen]   = useState(false)
+  const [physicsParams, setPhysicsParams] = useState<PhysicsParams>(defaultPhysicsParams())
 
   // If editing, load the existing spec
   useEffect(() => {
@@ -225,6 +229,24 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
         const loaded = d.spec as ScenarioSpec
         setSpec({ ...loaded, pms_config: (loaded as ScenarioSpec & { pms_config?: typeof loaded.pms_config }).pms_config ?? null })
         setWarnings(d.c_rate_warnings ?? [])
+        // Re-seed physicsParams from the loaded spec so editing preserves existing values.
+        const defaults = defaultPhysicsParams()
+        setPhysicsParams({
+          dt_lead_seconds:           loaded.dt_lead_seconds          ?? defaults.dt_lead_seconds,
+          plant_dt_lead_seconds:     loaded.plant_dt_lead_seconds     ?? null,
+          dt_thermal_seconds:        loaded.dt_thermal_seconds        ?? defaults.dt_thermal_seconds,
+          plant_dt_thermal_seconds:  loaded.plant_dt_thermal_seconds  ?? null,
+          alpha_max:                 loaded.alpha_max                 ?? defaults.alpha_max,
+          plant_alpha_max:           loaded.plant_alpha_max           ?? null,
+          tau_seconds:               loaded.tau_seconds               ?? defaults.tau_seconds,
+          plant_tau_seconds:         loaded.plant_tau_seconds         ?? null,
+          pue_base:                  loaded.pue_base                  ?? defaults.pue_base,
+          plant_pue_base:            loaded.plant_pue_base            ?? null,
+          anchor_reserve_pct:        loaded.anchor_reserve_pct        ?? defaults.anchor_reserve_pct,
+          band_pct_calibrated:       loaded.band_pct_calibrated       ?? defaults.band_pct_calibrated,
+          band_mult_uncalibrated:    loaded.band_mult_uncalibrated    ?? defaults.band_mult_uncalibrated,
+          band_mult_unmapped_hw:     loaded.band_mult_unmapped_hw     ?? defaults.band_mult_unmapped_hw,
+        })
       })
       .catch(e => setErr(String(e)))
   }, [editId])
@@ -290,9 +312,29 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
     setBusy(true)
     setErr(null)
     try {
+      // Merge physicsParams into spec before saving.
+      // null plant_* values (linked) are omitted; the server uses the engine value.
+      const specWithPhysics: ScenarioSpec = {
+        ...spec,
+        // Thermal — engine values
+        dt_thermal_seconds: physicsParams.dt_thermal_seconds,
+        alpha_max:           physicsParams.alpha_max,
+        tau_seconds:         physicsParams.tau_seconds,
+        // Plant variants (null = linked = server uses engine value)
+        plant_dt_thermal_seconds: physicsParams.plant_dt_thermal_seconds ?? undefined,
+        plant_alpha_max:          physicsParams.plant_alpha_max ?? undefined,
+        plant_tau_seconds:        physicsParams.plant_tau_seconds ?? undefined,
+        plant_pue_base:           physicsParams.plant_pue_base ?? undefined,
+        plant_dt_lead_seconds:    physicsParams.plant_dt_lead_seconds ?? undefined,
+        // Reserve check
+        anchor_reserve_pct:       physicsParams.anchor_reserve_pct,
+        band_pct_calibrated:      physicsParams.band_pct_calibrated,
+        band_mult_uncalibrated:   physicsParams.band_mult_uncalibrated,
+        band_mult_unmapped_hw:    physicsParams.band_mult_unmapped_hw,
+      }
       const result = editId
-        ? await updateScenario(editId, spec)
-        : await createScenario(spec)
+        ? await updateScenario(editId, specWithPhysics)
+        : await createScenario(specWithPhysics)
       setWarnings(result.c_rate_warnings)
       onSaved(result.scenario_id)
     } catch (e) {
@@ -515,6 +557,34 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                 onChange={v => patch({ island_mode: v === 'island' })}
               />
 
+              {/* Physics Parameters button */}
+              <div className="rounded border border-border/60 px-3 py-2 space-y-1">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] text-muted block">Physics parameters</span>
+                    <span className="text-[9px] text-muted opacity-60">
+                      Thermal · cooling band · reserve check (INV-2)
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPhysicsOpen(true)}
+                    className="rounded border border-accent/50 px-2 py-1 text-[10px] text-accent
+                               hover:bg-accent/10 transition-colors font-mono"
+                  >
+                    ≡ Parameters
+                  </button>
+                </div>
+                {/* Quick summary of non-default values */}
+                {physicsParams.band_pct_calibrated > 0 && (
+                  <p className="text-[9px] text-muted font-mono">
+                    Band ±{physicsParams.band_pct_calibrated}%
+                    {physicsParams.anchor_reserve_pct > 0 && ` · anchor ${physicsParams.anchor_reserve_pct}%`}
+                    {physicsParams.plant_dt_thermal_seconds != null && ' · thermal unlinked'}
+                  </p>
+                )}
+              </div>
+
               {/* Irradiance steps table */}
               <div>
                 <div className="flex items-center justify-between mb-1">
@@ -636,6 +706,14 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
             <p className="text-xs text-danger">{err}</p>
           )}
         </div>
+
+        {/* Physics Parameters modal (rendered outside the scroll container) */}
+        <ParameterModal
+          open={physicsOpen}
+          onClose={() => setPhysicsOpen(false)}
+          initial={physicsParams}
+          onApply={setPhysicsParams}
+        />
 
         {/* Footer */}
         <div className="border-t border-border px-4 py-3 flex justify-end gap-2">

@@ -242,6 +242,45 @@ class SiteConfig:
     tau_seconds: float = 20.0         # source spec Section 8
     dt_thermal_seconds: float = 90.0  # source spec Section 8-9, 60-120s
     uncalibrated: bool = True         # source spec Section 17.3
+
+    # ── Confidence band for reserve check (gridsignal_parameters.json §2.5) ──
+    # INV-2: reserve check evaluates the band, never the point estimate.
+    # Default 0.0 preserves backward-compatibility for all existing tests and
+    # seeded scenarios; ScenarioSpec defaults to 4.0% per PROPOSED_HERE decision.
+    #
+    # Decision: band_pct_calibrated = 4%  (PROPOSED_HERE, this document)
+    #   Rationale: at 4% calibrated × 2.0 uncalibrated multiplier = 8%,
+    #   which exactly matches the worked-example fixture.  The fixture then
+    #   becomes a live regression rather than a historical illustration.
+    #
+    # Decision: band_mult_uncalibrated = 2.0× (PROPOSED_HERE, this document)
+    #   §17.3 requires widening for uncalibrated sites; 2.0× is the minimum
+    #   meaningful doubling and matches the worked-example fixture exactly.
+    #
+    # Decision: band_mult_unmapped_hw = 1.5× (PROPOSED_HERE, this document)
+    #   §5.1 requires widening for unmapped hardware; 1.5× is conservative but
+    #   avoids excessive alert fatigue when a new profile is first registered.
+    band_pct_calibrated:   float = 0.0   # ±% of peak_shortfall; 0=disabled
+    band_mult_uncalibrated: float = 2.0  # multiplier for uncalibrated site
+    band_mult_unmapped_hw:  float = 1.5  # multiplier for unmapped hardware
+
+    def reserve_band_upper(self, is_unmapped_hw: bool = False) -> float:
+        """Band fraction for the reserve check (§2.5, INV-2).
+
+        alert ⟺  peak_shortfall × (1 + reserve_band_upper()) > P_bridge_avail
+
+        Returns 0.0 when band_pct_calibrated is 0 (backward-compatible default).
+        Calibrated site: base = band_pct_calibrated / 100.
+        Uncalibrated:    base × band_mult_uncalibrated.
+        Unmapped HW:     multiply further by band_mult_unmapped_hw.
+        """
+        if self.band_pct_calibrated <= 0.0:
+            return 0.0
+        base = self.band_pct_calibrated / 100.0
+        mult = self.band_mult_uncalibrated if self.uncalibrated else 1.0
+        if is_unmapped_hw:
+            mult *= self.band_mult_unmapped_hw
+        return base * mult
     # Step 3 Item 4 — §7.1.2: anchor constraint is mode-dependent.
     # Default ISLANDED: conservative (TC-63) and representative market.
     # Step 11 (§28) will add the transition machinery; for now we expose the

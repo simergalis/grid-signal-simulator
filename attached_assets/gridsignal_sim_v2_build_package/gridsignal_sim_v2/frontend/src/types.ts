@@ -127,6 +127,24 @@ export interface ScenarioSpec {
   pue_base: number                    // [1.0, 2.0]
   end_sim_time: number                // [60, 86400] s
   pms_config: PmsConfigSpec | null    // null = PMS disabled
+
+  // ── Physics parameters (gridsignal_parameters.json §2) ────────────────
+  // Thermal response — split params have optional plant_ variants.
+  // null/absent plant_ value = linked to engine value (default).
+  dt_thermal_seconds?: number         // engine: thermal delay Δt_thermal (s)
+  plant_dt_thermal_seconds?: number | null
+  alpha_max?: number                  // engine: α_max cooling fraction
+  plant_alpha_max?: number | null
+  tau_seconds?: number                // engine: cooling time-constant τ (s)
+  plant_tau_seconds?: number | null
+  plant_pue_base?: number | null      // plant: PUE_base (engine = pue_base above)
+  plant_dt_lead_seconds?: number | null  // plant: Δt_lead (engine = dt_lead_seconds)
+
+  // Reserve check (INV-2)
+  anchor_reserve_pct?: number         // % of BESS rated MW; 0 = use BessConfig default
+  band_pct_calibrated?: number        // ±% of peak_shortfall; 0 = disabled
+  band_mult_uncalibrated?: number     // × multiplier for uncalibrated sites
+  band_mult_unmapped_hw?: number      // × multiplier for unmapped hardware
 }
 
 export interface ScenarioSummary {

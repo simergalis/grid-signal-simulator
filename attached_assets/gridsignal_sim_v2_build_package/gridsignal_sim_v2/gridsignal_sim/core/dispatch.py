@@ -476,9 +476,20 @@ class DispatchArbitrator:
         # energy-exhaustion shortfall.  The renewable TC-33 case exercises this
         # path: 6.3036 MW shortfall > 5.0 MW fleet ceiling.
         fleet_power_ceiling = sum(ceilings)
-        if peak_shortfall_mw > fleet_power_ceiling:
+
+        # INV-2 (§2.5, TC-17): reserve check evaluates the confidence band,
+        # not the point estimate.  band_upper = 0.0 when site.band_pct_calibrated
+        # is 0 (SiteConfig default) — preserves backward-compat for all existing
+        # tests and seeded scenarios that pre-date this parameter.
+        # Decisions: band_pct_calibrated=4%, band_mult_uncalibrated=2.0×,
+        # band_mult_unmapped_hw=1.5× — see gridsignal_parameters.json and
+        # SiteConfig.reserve_band_upper() docstring.
+        _band_upper      = self.site.reserve_band_upper(is_unmapped_hw=False)
+        _check_shortfall = peak_shortfall_mw * (1.0 + _band_upper)
+
+        if _check_shortfall > fleet_power_ceiling:
             return InsufficientReserveAlert(
-                shortfall_mw=peak_shortfall_mw,
+                shortfall_mw=peak_shortfall_mw,   # raw physical demand for BESS sizing
                 gap_duration_s=gap_s,
                 fires_at_sim_time=sim_time,
             )

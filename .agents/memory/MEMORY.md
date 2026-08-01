@@ -13,3 +13,4 @@
 - [websockets-install](websockets-install.md) — uvicorn needs `websockets` pkg (.pythonlibs); load-test 1× regression: LLM calls on tick 1 block event loop.
 - [solar-sim-mistral](solar-sim-mistral.md) — Mistral solar injection in runs.py (not factory); THE TRAP: restarting wrong server leaves old code running.
 - [kube-demand-layer](kube-demand-layer.md) — OU+EMA demand agent; KubeMetrics in models.py (not kube_demand.py) to break circular import; dt_lead=0 always; Step 0 in evaluate_tick.
+- [parameter-reference-system](parameter-reference-system.md) — gridsignal_parameters.json → ParameterModal + 24 regression tests; INV-2 band check; PROPOSED_HERE decisions; JSON has ui.group not group.

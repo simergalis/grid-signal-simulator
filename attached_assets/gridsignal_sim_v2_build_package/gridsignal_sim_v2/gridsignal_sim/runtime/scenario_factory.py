@@ -375,6 +375,26 @@ def build_run_context_from_spec(
         # Required for scenarios where the TC-43 curtailment dwell must fire
         # (e.g. demo-pms-shortfall).  Default False preserves §17.3 behaviour.
         uncalibrated=not bool(spec_data.get("calibrated", False)),
+        # ── Physics parameters (gridsignal_parameters.json §2) ──────────────
+        # Plant values: what the simulation actually does.
+        # plant_* present → use that; absent → use engine value (linked default).
+        alpha_max=float(
+            spec_data.get("plant_alpha_max")
+            or spec_data.get("alpha_max", 0.20)
+        ),
+        tau_seconds=float(
+            spec_data.get("plant_tau_seconds")
+            or spec_data.get("tau_seconds", 20.0)
+        ),
+        dt_thermal_seconds=float(
+            spec_data.get("plant_dt_thermal_seconds")
+            or spec_data.get("dt_thermal_seconds", 90.0)
+        ),
+        # Reserve-check confidence band (INV-2, §2.5).
+        # Default 0.0 preserves backward-compat for seeded scenarios and tests.
+        band_pct_calibrated=float(spec_data.get("band_pct_calibrated", 0.0)),
+        band_mult_uncalibrated=float(spec_data.get("band_mult_uncalibrated", 2.0)),
+        band_mult_unmapped_hw=float(spec_data.get("band_mult_unmapped_hw", 1.5)),
     )
 
     # Step 10 — §8.1: wire optional pre-staging config from spec.
@@ -418,6 +438,10 @@ def build_run_context_from_spec(
         for i, t in enumerate(spec_data.get("turbine_units", []))
     ]
 
+    # anchor_reserve_pct wires the scenario-level reserve percentage into the
+    # grid-forming unit's BessConfig.  0.0 = use BessConfig default (1.0 MW).
+    _anchor_pct = float(spec_data.get("anchor_reserve_pct", 0.0))
+
     bess_units = [
         BessModule(
             BessConfig(
@@ -426,6 +450,14 @@ def build_run_context_from_spec(
                 usable_mwh=float(b.get("usable_mwh", 2.0)),
                 initial_soc_fraction=float(b.get("initial_soc_fraction", 0.95)),
                 grid_forming=bool(b.get("grid_forming", False)),
+                # anchor_reserve_pct: only applied to the grid-forming unit.
+                # When 0.0 (default) the BessConfig default (1.0 MW) is kept
+                # so existing scenarios and tests are unaffected.
+                p_anchor_reserve_mw=(
+                    float(b.get("rated_mw", 5.0)) * _anchor_pct / 100.0
+                    if _anchor_pct > 0.0 and bool(b.get("grid_forming", False))
+                    else float(b.get("p_anchor_reserve_mw", 1.0))
+                ),
             )
         )
         for i, b in enumerate(spec_data.get("bess_units", []))
