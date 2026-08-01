@@ -24,3 +24,9 @@ body {
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track  { background: #0d1117; }
 ::-webkit-scrollbar-thumb  { background: #30363d; border-radius: 2px; }
+
+/* Flow line animation — active power flows animate dash offset */
+@keyframes flowDash {
+  from { stroke-dashoffset: 0; }
+  to   { stroke-dashoffset: -24; }
+}

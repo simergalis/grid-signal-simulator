@@ -32,7 +32,7 @@ import { NetworkTelemetryPage }  from './components/NetworkTelemetryPage'
 import { ProcurementPage }       from './components/ProcurementPage'
 import { ThermalCoolingPage }    from './components/ThermalCoolingPage'
 import { ScenarioPlannerPage }   from './components/ScenarioPlannerPage'
-import { ReadinessScreen }        from './readiness/ReadinessScreen'
+import { OpeningScreen }          from './opening/OpeningScreen'
 import { useTickStore }      from './store/tickStore'
 import { useScenarioStore }  from './store/scenarioStore'
 import { useTickStream }     from './ws/useTickStream'
@@ -167,9 +167,9 @@ export default function App() {
 
       {/* Page content */}
       {currentPage === 'readiness' ? (
-        /* Readiness landing screen — default view; hands off to overview on run start */
+        /* Opening screen (V-2) — three-band SCADA mimic; falls back to tile grid < 768 px */
         <main className="flex-1 overflow-hidden">
-          <ReadinessScreen onNavigate={(tabId) => setCurrentPage(tabId as PageView)} />
+          <OpeningScreen onNavigate={(tabId) => setCurrentPage(tabId as PageView)} />
         </main>
       ) : currentPage === 'overview' ? (
         /* Overview: full-width hero strip (4 cells) + chart / asset reserve below */

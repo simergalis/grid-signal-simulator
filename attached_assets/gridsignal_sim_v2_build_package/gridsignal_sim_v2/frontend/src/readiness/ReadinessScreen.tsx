@@ -1,5 +1,14 @@
 /**
- * ReadinessScreen.tsx — landing screen (U2).
+ * ReadinessScreen.tsx — tile-grid landing screen (U2).
+ *
+ * SUPERSEDED by OpeningScreen (src/opening/OpeningScreen.tsx) as of the
+ * UI-Hierarchy implementation (V-2).  App.tsx now routes to OpeningScreen
+ * at every breakpoint ≥ 768 px.  This tile-grid layout is retained as:
+ *   a) the fallback for < 768 px (OpeningScreen renders ReadinessScreen when
+ *      window.innerWidth < 768);
+ *   b) a direct reference in smoke_readiness.test.tsx — do not delete.
+ *
+ * ReadinessScreen.tsx
  *
  * Layout:
  *   ReadinessBanner (overall verdict + 4 hero figures)
