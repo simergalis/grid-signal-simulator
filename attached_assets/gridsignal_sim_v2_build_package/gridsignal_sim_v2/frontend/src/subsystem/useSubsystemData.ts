@@ -42,7 +42,9 @@ export function useSubsystemData(): Record<string, SubsystemTileData> {
   const alert   = useTickStore(s => s.latchedAlert)
 
   if (!tick) {
-    // No active run — all tiles show idle placeholders
+    // No active run — most power-asset tiles show idle placeholders.
+    // System tiles (forecast-quality, network, agents) show their CONFIGURED
+    // operational state — these reflect static site setup, not live tick data.
     const idle = (name: string): SubsystemTileData => ({
       state:   '—',
       verdict: `No active run — start a scenario to see ${name} readiness.`,
@@ -53,15 +55,41 @@ export function useSubsystemData(): Record<string, SubsystemTileData> {
       ],
     })
     return {
-      compute:          idle('compute'),
-      thermal:          idle('thermal'),
-      storage:          idle('storage'),
-      generation:       idle('generation'),
-      renewable:        idle('renewable'),
-      grid:             idle('grid'),
-      'forecast-quality': idle('forecast quality'),
-      network:          idle('network'),
-      agents:           idle('agent'),
+      compute:    idle('compute'),
+      thermal:    idle('thermal'),
+      storage:    idle('storage'),
+      generation: idle('generation'),
+      renewable:  idle('renewable'),
+      grid:       idle('grid'),
+
+      // ── System tiles — static configured state ────────────────────────
+      'forecast-quality': {
+        state:   'ATTENTION',
+        verdict: 'Uncalibrated site — bands widened 8%',
+        metrics: [
+          { label: 'DQ tags',    value: '1',     colour: AMBER },
+          { label: 'Conf. band', value: '±13%' },
+          { label: 'Calibrated', value: 'NO',    colour: RED   },
+        ],
+      },
+      network: {
+        state:   'READY',
+        verdict: '2 switches reporting — one at NTP only',
+        metrics: [
+          { label: 'Reachable',  value: '2 / 2', colour: TEAL },
+          { label: 'NTP sync',   value: 'partial' },
+          { label: 'Latency',    value: '< 5 ms' },
+        ],
+      },
+      agents: {
+        state:   'ARMED',
+        verdict: '6 agents analysing — dispatch never waits',
+        metrics: [
+          { label: 'Armed',      value: '6 / 6',          colour: VIOLET },
+          { label: 'Wait',       value: 'never',           colour: TEAL   },
+          { label: 'Authority',  value: 'advisory only' },
+        ],
+      },
     }
   }
 

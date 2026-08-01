@@ -1,0 +1,238 @@
+/**
+ * DemoBar.tsx — bottom demonstration controls bar for the opening screen.
+ *
+ * Matches the bottom strip in gs-01-opening-rest.svg:
+ *   [Demonstration]  [demo-20mw ▾]  [10× speed ▾]  [▶ START]  │  [WHAT THIS DEMONSTRATES + copy]
+ *
+ * During a run: shows "Running" label, scenario name, speed, and Stop button.
+ * After a run: shows a "View Results" button.
+ *
+ * All API calls mirror RunControlBar exactly — scenario fetch, POST /runs,
+ * DELETE /runs/{id}.  The two components share state via useScenarioStore.
+ */
+
+import { useEffect, useState } from 'react'
+import { useScenarioStore } from '../store/scenarioStore'
+
+const SPEED_OPTIONS = [
+  { label: '1×',  value: 1  },
+  { label: '5×',  value: 5  },
+  { label: '10×', value: 10 },
+  { label: '30×', value: 30 },
+  { label: 'MAX', value: 0  },
+]
+
+/** Demonstration copy — what the demo shows. */
+const DEMO_COPY = {
+  heading: 'WHAT THIS DEMONSTRATES',
+  line1: 'GridSignal reads the job scheduler, not the power meter. It knows a 20 MW step is coming',
+  line2: '30–60 seconds before it arrives, and stages generation and storage before the load lands.',
+}
+
+/** Running copy — what to watch during the run. */
+const RUNNING_COPY = {
+  heading: 'WHAT YOU ARE WATCHING',
+  line1: 'A 20 MW job was queued 25 seconds ago and has not reached full power yet. The turbine is',
+  line2: 'already ramping and the battery is covering the gap.',
+}
+
+interface Props {
+  runId:        string | null
+  lastRunId:    string | null
+  onRunStarted: (id: string, speed: number) => void
+  onRunStopped: () => void
+  onViewResults:(id: string) => void
+  onNewScenario:() => void
+}
+
+export function DemoBar({
+  runId, lastRunId, onRunStarted, onRunStopped, onViewResults, onNewScenario,
+}: Props) {
+  const scenarios     = useScenarioStore(s => s.scenarios)
+  const selectedId    = useScenarioStore(s => s.selectedId)
+  const isLoading     = useScenarioStore(s => s.isLoading)
+  const selectScenario = useScenarioStore(s => s.selectScenario)
+  const fetchScenarios = useScenarioStore(s => s.fetchScenarios)
+
+  const [speed, setSpeed] = useState(10)
+  const [busy,  setBusy]  = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => { fetchScenarios() }, [fetchScenarios])
+
+  const handleStart = async () => {
+    if (!selectedId) return
+    setBusy(true); setError(null)
+    try {
+      const resp = await fetch('/runs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scenario_id: selectedId, playback_speed: speed }),
+      })
+      if (!resp.ok) throw new Error(`POST /runs → ${resp.status}: ${await resp.text()}`)
+      const data = await resp.json() as { run_id: string }
+      onRunStarted(data.run_id, speed)
+    } catch (e) {
+      setError(String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleStop = async () => {
+    if (!runId) return
+    setBusy(true); setError(null)
+    try {
+      const resp = await fetch(`/runs/${runId}`, { method: 'DELETE' })
+      if (!resp.ok && resp.status !== 404)
+        throw new Error(`DELETE /runs/${runId} → ${resp.status}: ${await resp.text()}`)
+      onRunStopped()
+    } catch (e) {
+      setError(String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const isRunning = runId !== null
+  const canView   = !isRunning && lastRunId !== null
+  const selectedName = scenarios.find(s => s.scenario_id === selectedId)?.name ?? ''
+  const copy = isRunning ? RUNNING_COPY : DEMO_COPY
+
+  return (
+    <div
+      className="flex items-center gap-0 border-t border-border flex-shrink-0"
+      style={{ background: '#111821', minHeight: 74 }}
+    >
+      {/* ── Left: controls ────────────────────────────────────────────────── */}
+      <div className="flex flex-col justify-center px-5 py-3 gap-1" style={{ minWidth: 60 }}>
+        <div className="font-sans text-muted" style={{ fontSize: 11 }}>
+          {isRunning ? 'Running' : 'Demonstration'}
+        </div>
+      </div>
+
+      {/* ── Scenario row ──────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-2 px-2">
+        {/* Scenario dropdown */}
+        <div
+          className="flex items-center gap-2 rounded border border-border px-3 py-1.5"
+          style={{ background: '#16202b', minWidth: 220 }}
+        >
+          <select
+            className="bg-transparent text-text font-sans text-xs focus:outline-none disabled:opacity-50 flex-1"
+            value={selectedId ?? ''}
+            disabled={isRunning || isLoading || busy}
+            onChange={e => selectScenario(e.target.value)}
+          >
+            {scenarios.length === 0 && <option value="" disabled>Loading…</option>}
+            {scenarios.map(s => (
+              <option key={s.scenario_id} value={s.scenario_id}>{s.name}</option>
+            ))}
+          </select>
+          <span className="text-muted text-xs">▾</span>
+        </div>
+
+        {/* Speed selector */}
+        <div
+          className="flex items-center gap-1.5 rounded border border-border px-3 py-1.5"
+          style={{ background: '#16202b' }}
+        >
+          <select
+            className="bg-transparent text-text font-sans text-xs focus:outline-none disabled:opacity-50"
+            value={speed}
+            disabled={isRunning || busy}
+            onChange={e => setSpeed(Number(e.target.value))}
+          >
+            {SPEED_OPTIONS.map(o => (
+              <option key={o.value} value={o.value}>{o.label} speed</option>
+            ))}
+          </select>
+          <span className="text-muted text-xs">▾</span>
+        </div>
+
+        {/* Start / Stop */}
+        {!isRunning ? (
+          <button
+            onClick={handleStart}
+            disabled={!selectedId || busy}
+            className="flex items-center gap-2 rounded px-5 py-2 font-sans font-bold
+                       text-sm transition-colors disabled:opacity-40"
+            style={{ background: '#3fb6a8', color: '#06231f', minWidth: 100 }}
+          >
+            <span>▶</span>
+            <span>{busy ? 'Starting…' : 'START'}</span>
+          </button>
+        ) : (
+          <button
+            onClick={handleStop}
+            disabled={busy}
+            className="rounded border border-border px-5 py-2 font-sans font-bold
+                       text-sm text-text hover:border-muted/60 transition-colors disabled:opacity-40"
+          >
+            {busy ? 'Stopping…' : 'Stop'}
+          </button>
+        )}
+
+        {/* View Results */}
+        {canView && (
+          <button
+            onClick={() => onViewResults(lastRunId!)}
+            className="rounded border border-accent/50 px-3 py-1.5 font-sans text-xs
+                       font-semibold text-accent hover:bg-accent/10 transition-colors"
+          >
+            View Results
+          </button>
+        )}
+
+        {/* New scenario */}
+        {!isRunning && (
+          <button
+            onClick={onNewScenario}
+            className="rounded border border-border px-2 py-1.5 font-sans text-xs
+                       text-muted hover:text-text hover:border-muted/50 transition-colors"
+          >
+            + New
+          </button>
+        )}
+
+        {/* Inline error */}
+        {error && (
+          <span className="font-mono text-[10px] text-danger max-w-[180px] truncate" title={error}>
+            {error}
+          </span>
+        )}
+      </div>
+
+      {/* ── Separator ─────────────────────────────────────────────────────── */}
+      <div className="self-stretch w-px bg-border mx-4" />
+
+      {/* ── Right: explanatory copy ───────────────────────────────────────── */}
+      <div className="flex flex-col justify-center px-4 py-3 flex-1">
+        <div
+          className="font-sans font-bold uppercase tracking-wider mb-1"
+          style={{ fontSize: 9, color: '#4b5764', letterSpacing: '0.14em' }}
+        >
+          {copy.heading}
+        </div>
+        <div className="font-sans" style={{ fontSize: 11, color: '#e6ecf2', lineHeight: 1.5 }}>
+          {copy.line1}
+        </div>
+        <div className="font-sans" style={{ fontSize: 11, color: '#7d8b9c', lineHeight: 1.5 }}>
+          {copy.line2}
+        </div>
+      </div>
+
+      {/* Running label — scenario + speed */}
+      {isRunning && (
+        <div className="flex items-center gap-2 px-5 shrink-0">
+          <span
+            className="font-mono font-medium"
+            style={{ fontSize: 12, color: '#e6ecf2' }}
+          >
+            {selectedName} · {speed > 0 ? `${speed}×` : 'MAX'} speed
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}

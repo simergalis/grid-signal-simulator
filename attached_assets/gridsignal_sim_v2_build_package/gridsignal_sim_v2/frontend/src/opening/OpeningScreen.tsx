@@ -8,18 +8,18 @@
  *
  * Responsive:
  *   ≥ 768 px  → three-band layout (this component)
- *   < 768 px  → ReadinessScreen tile grid (nine tiles, proven fallback)
+ *   < 768 px  → ReadinessScreen tile grid (proven fallback)
+ *
+ * Topology explainer modal is managed by App.tsx (opened via GridSignalHeader).
  *
  * Click-through (V-4):
  *   Plant nodes → SubsystemModal (or tab navigation for switchgear)
  *   System strip tiles → SubsystemModal
- *   VerdictBand "ⓘ" → TopologyExplainer
  */
 
 import { useState, useEffect } from 'react'
 import { VerdictBand }      from './VerdictBand'
 import { PlantDiagram }     from './PlantDiagram'
-import { TopologyExplainer } from './TopologyExplainer'
 import { SubsystemModal }   from '../subsystem/SubsystemModal'
 import { SubsystemTile }    from '../readiness/SubsystemTile'
 import type { TileState }   from '../readiness/SubsystemTile'
@@ -46,14 +46,12 @@ interface OpeningScreenProps {
 }
 
 export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
-  const [windowWidth,   setWindowWidth]   = useState(() => window.innerWidth)
-  const [activeModal,   setActiveModal]   = useState<string | null>(null)
-  const [topoOpen,      setTopoOpen]      = useState(false)
-  const [compact,       setCompact]       = useState(false)
+  const [windowWidth, setWindowWidth] = useState(() => window.innerWidth)
+  const [activeModal, setActiveModal] = useState<string | null>(null)
+  const [compact,     setCompact]     = useState(false)
 
   const data = useSubsystemData()
 
-  // Track window width for responsive breakpoints
   useEffect(() => {
     function onResize() {
       setWindowWidth(window.innerWidth)
@@ -64,15 +62,13 @@ export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
-  // ── Below 768 px: fall back to the proven tile-grid layout ───────────────
+  // ── Below 768 px: fall back to the proven tile-grid layout ──────────────
 
   if (windowWidth < 768) {
-    return (
-      <ReadinessScreen onNavigate={onNavigate} />
-    )
+    return <ReadinessScreen onNavigate={onNavigate} />
   }
 
-  // ── Node click handler ────────────────────────────────────────────────────
+  // ── Node click handler ──────────────────────────────────────────────────
 
   const handleNodeClick = (nodeId: string) => {
     const target = NODE_MODAL_MAP[nodeId]
@@ -84,29 +80,14 @@ export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
     }
   }
 
-  // ── Modal close / page navigation ────────────────────────────────────────
-
-  const handleModalClose  = () => setActiveModal(null)
-  const handleOpenPage    = (tabId: string) => {
-    setActiveModal(null)
-    onNavigate?.(tabId)
-  }
-
-  // ── System strip tile click ───────────────────────────────────────────────
-
-  const handleStripTileClick = (id: string) => setActiveModal(id)
-
-  // ── Plant label: which section label is shown ─────────────────────────────
-
   return (
     <div className="flex flex-col h-full bg-canvas overflow-hidden">
 
-      {/* ── Band 1: Verdict ──────────────────────────────────────────────── */}
-      <VerdictBand onHowItWorks={() => setTopoOpen(true)} />
+      {/* ── Band 1: Verdict ────────────────────────────────────────────── */}
+      <VerdictBand />
 
-      {/* ── Band 2: Plant mimic ──────────────────────────────────────────── */}
+      {/* ── Band 2: Plant mimic ────────────────────────────────────────── */}
       <div className="flex-1 overflow-hidden relative">
-        {/* Section label */}
         <div
           className="absolute top-2 left-4 z-10 font-mono text-[9px] font-bold
                      uppercase tracking-[0.12em] select-none"
@@ -118,36 +99,34 @@ export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
           </span>
         </div>
 
-        {/* SVG diagram fills the band */}
         <div className="w-full h-full pt-6">
           <PlantDiagram onNodeClick={handleNodeClick} compact={compact} />
         </div>
       </div>
 
-      {/* ── Band 3: System strip ─────────────────────────────────────────── */}
+      {/* ── Band 3: System strip ───────────────────────────────────────── */}
       <SystemStrip
         ids={SYSTEM_STRIP_IDS}
         data={data}
-        onTileClick={handleStripTileClick}
+        onTileClick={(id) => setActiveModal(id)}
       />
 
-      {/* ── Modals ───────────────────────────────────────────────────────── */}
+      {/* ── Modals ─────────────────────────────────────────────────────── */}
       {activeModal && (
         <SubsystemModal
           subsystemId={activeModal}
-          onClose={handleModalClose}
-          onOpenPage={handleOpenPage}
+          onClose={() => setActiveModal(null)}
+          onOpenPage={(tabId) => {
+            setActiveModal(null)
+            onNavigate?.(tabId)
+          }}
         />
-      )}
-
-      {topoOpen && (
-        <TopologyExplainer onClose={() => setTopoOpen(false)} />
       )}
     </div>
   )
 }
 
-// ─── System strip (Band 3) ────────────────────────────────────────────────────
+// ─── System strip (Band 3) ───────────────────────────────────────────────────
 
 interface SystemStripProps {
   ids: string[]
@@ -161,23 +140,21 @@ function SystemStrip({ ids, data, onTileClick }: SystemStripProps) {
       className="flex-shrink-0 border-t border-border"
       style={{ background: '#0a0e13' }}
     >
-      {/* Section label */}
       <div
         className="px-4 pt-2 pb-1 font-mono text-[9px] font-bold
                    uppercase tracking-[0.12em]"
         style={{ color: '#4b5764' }}
       >
         SYSTEM
-        <span className="font-normal ml-2" style={{ color: '#4b5764' }}>
+        <span className="font-normal ml-2">
           not power assets — how much to trust the forecast, and what is analysing it
         </span>
       </div>
 
-      {/* Three strip tiles */}
       <div className="flex gap-px px-4 pb-3" style={{ height: 106 }}>
         {ids.map(id => {
-          const cfg  = SUBSYSTEMS.find(s => s.id === id)
-          const d    = data[id]
+          const cfg = SUBSYSTEMS.find(s => s.id === id)
+          const d   = data[id]
           if (!cfg || !d) return null
 
           return (

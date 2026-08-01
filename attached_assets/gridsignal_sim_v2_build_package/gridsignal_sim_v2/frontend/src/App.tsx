@@ -1,41 +1,43 @@
 /**
- * App.tsx — Page 1: Site Overview (§7.1 / §19.2).
+ * App.tsx — Root routing and run lifecycle (Step 8 / UI-Hierarchy V-2).
  *
- * Layout (Step 8):
- *   RunControlBar      (scenario selector + speed + start/stop + view results)
- *   SimClockHeader     (sim clock, decimation badge)
- *   ┌──────────────┬──────────────────────────┐
- *   │  HeroPanel   │  ForecastChart           │
- *   ├──────────────┼──────────────────────────┤
- *   │  AssetReserve│  AlertDock               │
- *   └──────────────┴──────────────────────────┘
+ * Two distinct layouts:
  *
- * Step 9: when resultsRunId is set, the 2×2 grid is replaced by
- * <ResultsScreen> which shows verdict, playback chart, and scrubber.
- * The "View Results" button in RunControlBar becomes visible once a run
- * completes (lastRunId set; runId cleared).
+ * OPENING LAYOUT  (currentPage === 'readiness' and no resultsRunId)
+ *   GridSignalHeader  — brand bar, STANDBY/LIVE badge, UTC clock, "How it works"
+ *   OpeningScreen     — three-band SCADA mimic (V-2)
+ *   DemoBar           — demo controls (scenario + speed + START)
+ *   TopologyExplainer — modal, opened by GridSignalHeader "How it works"
  *
- * Render loop: 4 Hz setInterval (250 ms) calls drainFrame() so the store
- * moves pending WS ticks into display state.
+ * INNER PAGE LAYOUT  (all other pages / results screen)
+ *   RunControlBar  — scenario picker + speed + start/stop + view results
+ *   SimClockHeader — sim clock, decimation badge, DQ legend
+ *   Tab navigation — Readiness | Overview | Proposals | … | Scenario Planner
+ *   Page content
+ *
+ * Render loop: 4 Hz setInterval (250 ms) drains pending WS ticks.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { SimClockHeader }    from './components/SimClockHeader'
-import { HeroPanel }         from './components/HeroPanel'
-import { ForecastChart }     from './components/ForecastChart'
-import { AssetReservePanel } from './components/AssetReservePanel'
-import { RunControlBar }     from './components/RunControlBar'
-import { ScenarioBuilder }   from './components/ScenarioBuilder'
-import { ResultsScreen }     from './components/ResultsScreen'
-import { ProposalsPage }          from './components/ProposalsPage'
-import { NetworkTelemetryPage }  from './components/NetworkTelemetryPage'
-import { ProcurementPage }       from './components/ProcurementPage'
-import { ThermalCoolingPage }    from './components/ThermalCoolingPage'
-import { ScenarioPlannerPage }   from './components/ScenarioPlannerPage'
-import { OpeningScreen }          from './opening/OpeningScreen'
-import { useTickStore }      from './store/tickStore'
-import { useScenarioStore }  from './store/scenarioStore'
-import { useTickStream }     from './ws/useTickStream'
+import { GridSignalHeader }        from './opening/GridSignalHeader'
+import { DemoBar }                 from './opening/DemoBar'
+import { TopologyExplainer }       from './opening/TopologyExplainer'
+import { OpeningScreen }           from './opening/OpeningScreen'
+import { SimClockHeader }          from './components/SimClockHeader'
+import { HeroPanel }               from './components/HeroPanel'
+import { ForecastChart }           from './components/ForecastChart'
+import { AssetReservePanel }       from './components/AssetReservePanel'
+import { RunControlBar }           from './components/RunControlBar'
+import { ScenarioBuilder }         from './components/ScenarioBuilder'
+import { ResultsScreen }           from './components/ResultsScreen'
+import { ProposalsPage }           from './components/ProposalsPage'
+import { NetworkTelemetryPage }    from './components/NetworkTelemetryPage'
+import { ProcurementPage }         from './components/ProcurementPage'
+import { ThermalCoolingPage }      from './components/ThermalCoolingPage'
+import { ScenarioPlannerPage }     from './components/ScenarioPlannerPage'
+import { useTickStore }            from './store/tickStore'
+import { useScenarioStore }        from './store/scenarioStore'
+import { useTickStream }           from './ws/useTickStream'
 
 type PageView = 'readiness' | 'overview' | 'proposals' | 'procurement' | 'network' | 'thermal' | 'scenarios'
 
@@ -49,13 +51,13 @@ export default function App() {
   const [editId,        setEditId]        = useState<string | null>(null)
   const [currentPage,   setCurrentPage]   = useState<PageView>('readiness')
   const [agentsEnabled, setAgentsEnabled] = useState(true)
+  const [topoOpen,      setTopoOpen]      = useState(false)
 
-  const drainFrame = useTickStore(s => s.drainFrame)
-  const setRunMeta = useTickStore(s => s.setRunMeta)
-  const reset      = useTickStore(s => s.reset)
+  const drainFrame     = useTickStore(s => s.drainFrame)
+  const setRunMeta     = useTickStore(s => s.setRunMeta)
+  const reset          = useTickStore(s => s.reset)
   const selectScenario = useScenarioStore(s => s.selectScenario)
 
-  // Subscribe to the WS tick stream for the active run.
   useTickStream(runId)
 
   // 4 Hz render loop — drains pending WS ticks into display state.
@@ -67,21 +69,19 @@ export default function App() {
     }
   }, [drainFrame])
 
-  // RunControlBar callbacks
+  // Run lifecycle callbacks
   const handleRunStarted = useCallback((id: string, speed: number) => {
     reset()
     setRunId(id)
     setLastRunId(id)
-    setResultsRunId(null)   // close any open results screen
+    setResultsRunId(null)
     setRunMeta({ run_id: id, playback_speed: speed })
-    // Hand off from Readiness landing screen to live overview.
     setCurrentPage('overview')
   }, [reset, setRunMeta])
 
   const handleRunStopped = useCallback(() => {
     setRunId(null)
     reset()
-    // lastRunId stays — "View Results" button remains available.
   }, [reset])
 
   const handleViewResults = useCallback((id: string) => {
@@ -101,15 +101,14 @@ export default function App() {
   const handleToggleAgents = useCallback(() => {
     const next = !agentsEnabled
     setAgentsEnabled(next)
-    // Best-effort API call — fire-and-forget; LP-1 guarantees dispatch is unaffected.
     fetch('/api/agents/toggle', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ enabled: next }),
-    }).catch(() => { /* ignore network errors */ })
+    }).catch(() => {})
   }, [agentsEnabled])
 
-  // Show results screen if a completed run is selected for viewing.
+  // ── Results screen (any page) ──────────────────────────────────────────────
   if (resultsRunId !== null) {
     return (
       <div className="flex h-screen flex-col bg-canvas text-text overflow-hidden">
@@ -121,10 +120,47 @@ export default function App() {
     )
   }
 
+  // ── Opening layout — no tab nav, brand header, demo bar ───────────────────
+  if (currentPage === 'readiness') {
+    return (
+      <div className="flex h-screen flex-col bg-canvas text-text overflow-hidden">
+        <GridSignalHeader
+          runId={runId}
+          onHowItWorks={() => setTopoOpen(true)}
+        />
+
+        <main className="flex-1 overflow-hidden">
+          <OpeningScreen onNavigate={(tabId) => setCurrentPage(tabId as PageView)} />
+        </main>
+
+        <DemoBar
+          runId={runId}
+          lastRunId={lastRunId}
+          onRunStarted={handleRunStarted}
+          onRunStopped={handleRunStopped}
+          onViewResults={handleViewResults}
+          onNewScenario={handleNewScenario}
+        />
+
+        {topoOpen && (
+          <TopologyExplainer onClose={() => setTopoOpen(false)} />
+        )}
+
+        {drawerOpen && (
+          <ScenarioBuilder
+            editId={editId}
+            onClose={() => setDrawerOpen(false)}
+            onSaved={handleDrawerSaved}
+          />
+        )}
+      </div>
+    )
+  }
+
+  // ── Inner page layout — RunControlBar + SimClockHeader + tabs ─────────────
   return (
     <div className="flex h-screen flex-col bg-canvas text-text overflow-hidden">
 
-      {/* Run controls — scenario picker, speed, start/stop, view results */}
       <RunControlBar
         runId={runId}
         lastRunId={lastRunId}
@@ -134,7 +170,6 @@ export default function App() {
         onViewResults={handleViewResults}
       />
 
-      {/* Persistent sim-clock header */}
       <SimClockHeader />
 
       {/* Page navigation tabs */}
@@ -166,20 +201,11 @@ export default function App() {
       </div>
 
       {/* Page content */}
-      {currentPage === 'readiness' ? (
-        /* Opening screen (V-2) — three-band SCADA mimic; falls back to tile grid < 768 px */
-        <main className="flex-1 overflow-hidden">
-          <OpeningScreen onNavigate={(tabId) => setCurrentPage(tabId as PageView)} />
-        </main>
-      ) : currentPage === 'overview' ? (
-        /* Overview: full-width hero strip (4 cells) + chart / asset reserve below */
+      {currentPage === 'overview' ? (
         <main className="flex-1 grid grid-cols-2 grid-rows-[auto_1fr] gap-px bg-border overflow-hidden">
-          {/* Row 1 — HeroPanel spans full width (4 cells: Δt_lead, bridge, thermal, alerts) */}
           <div className="col-span-2 bg-surface overflow-auto">
             <HeroPanel />
           </div>
-
-          {/* Row 2 — left: chart; right: asset reserve */}
           <div className="bg-surface overflow-hidden">
             <ForecastChart />
           </div>
@@ -188,7 +214,6 @@ export default function App() {
           </div>
         </main>
       ) : currentPage === 'proposals' ? (
-        /* §19.10 Proposals & Learning page */
         <main className="flex-1 overflow-hidden">
           <ProposalsPage
             runId={runId ?? lastRunId}
@@ -197,28 +222,23 @@ export default function App() {
           />
         </main>
       ) : currentPage === 'procurement' ? (
-        /* §19.8 Grid & Procurement page */
         <main className="flex-1 overflow-hidden">
           <ProcurementPage runId={runId ?? lastRunId} />
         </main>
       ) : currentPage === 'network' ? (
-        /* §19.9 Network Telemetry page — read-only by design (TC-74) */
         <main className="flex-1 overflow-hidden">
           <NetworkTelemetryPage runId={runId ?? lastRunId} />
         </main>
       ) : currentPage === 'thermal' ? (
-        /* §19.6 Thermal & Cooling page */
         <main className="flex-1 overflow-hidden">
           <ThermalCoolingPage runId={runId ?? lastRunId} />
         </main>
       ) : (
-        /* §19.1 Scenario Planner — §18.5 FR-4.4 */
         <main className="flex-1 overflow-hidden">
           <ScenarioPlannerPage runId={runId ?? lastRunId} />
         </main>
       )}
 
-      {/* Scenario Builder drawer */}
       {drawerOpen && (
         <ScenarioBuilder
           editId={editId}
