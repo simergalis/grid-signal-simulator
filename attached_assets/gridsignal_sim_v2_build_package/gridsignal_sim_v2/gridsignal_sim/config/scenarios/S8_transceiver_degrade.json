@@ -1,0 +1,37 @@
+{
+  "scenario_id": "S8_transceiver_degrade",
+  "seed": 42,
+  "duration_s": 30.0,
+  "dt_s": 0.25,
+  "capability_tier": "current",
+  "asset_class": "turbine",
+  "profiles": "workload_traffic_profiles.json",
+  "fixture": "fabric_fixture_default.json",
+  "constants": "fabric_constants.json",
+  "jobs": [
+    {
+      "job_id": "job-alpha",
+      "start_s": 0.0,
+      "phases": [
+        {"name": "training", "duration_s": 30.0}
+      ]
+    }
+  ],
+  "stressors": [
+    {
+      "kind": "degraded_transceiver",
+      "link_id": "compute/leaf5/up2",
+      "severity": 0.8,
+      "start_s": 5.0,
+      "end_s": 30.0
+    }
+  ],
+  "assertions": [
+    {
+      "id": "S8-A1",
+      "check": "crc_errors_present",
+      "link_id": "compute/leaf5/up2",
+      "description": "degraded transceiver produces non-zero CRC error counters"
+    }
+  ]
+}

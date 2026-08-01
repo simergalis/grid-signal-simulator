@@ -203,6 +203,9 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # Keys: backend, agents_armed, proposals_total, proposals_pending,
         #        last_proposal_sim_time, per_agent (dict[str, float]).
         "advisory_telemetry": tick.advisory_telemetry,
+        # Phase 10: fabric model modal-view — six plant-plane fields + link utilisation.
+        # null when FabricEngine is not wired (headless tests, direct job-id path).
+        "fabric": tick.fabric_modal,
         # GT-1: §7.4 contingency coverage — computed per tick after dispatch arbitration.
         # null when absent (legacy path); otherwise a dict with all ContingencyCoverage fields.
         "contingency_coverage": (
@@ -418,6 +421,9 @@ class RunContext:
     procurement_layer: Optional[Any] = None       # ProcurementLayer (TC-47, TC-52)
     maintenance_layer: Optional[Any] = None       # MaintenanceLayer (TC-58, TC-59, TC-60)
     ramp_relaxation_engine: Optional[Any] = None  # RampRelaxationEngine (TC-75, TC-76)
+
+    # Phase 10: FabricEngine — None when not wired (headless tests, direct path).
+    fabric_engine: Optional[Any] = None            # FabricEngine
 
     def is_complete(self) -> bool:
         return self.cancelled or self.sim_time >= self.end_sim_time
@@ -762,6 +768,22 @@ class RunManager:
                     ),
                 )
                 if _profiling: _sec.setdefault("B_thermal_update", []).append(_time_module.perf_counter() - _t0)
+
+                # ── B2: fabric model tick (Phase 10) ──────────────────────
+                # Runs synchronously; the fabric model is pure arithmetic over
+                # a seeded PRNG and returns in <1 ms for the 608-link topology.
+                # Non-blocking by design (Engine §22.7 — no I/O in this path).
+                if ctx.fabric_engine is not None:
+                    if _profiling: _t0 = _time_module.perf_counter()
+                    ctx.fabric_engine.update_from_tick(tick_result)
+                    _fab_result = ctx.fabric_engine.step(
+                        sim_time_s=tick_result.sim_time_seconds,
+                        dt_s=TICK_INTERVAL_SIM_SECONDS,
+                        asset_class="turbine",
+                    )
+                    _fabric_modal = ctx.fabric_engine.modal_view() if _fab_result else None
+                    tick_result = _dc_replace(tick_result, fabric_modal=_fabric_modal)
+                    if _profiling: _sec.setdefault("B2_fabric_tick", []).append(_time_module.perf_counter() - _t0)
 
                 # ── C: sink + broadcast ───────────────────────────────────
                 if _profiling: _t0 = _time_module.perf_counter()

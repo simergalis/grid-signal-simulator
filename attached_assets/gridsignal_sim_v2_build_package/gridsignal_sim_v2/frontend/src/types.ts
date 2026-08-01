@@ -70,6 +70,10 @@ export interface TickPayload {
   // W2a: advisory telemetry — null when no AgentRegistry is active (LP-1 / no API keys).
   // Reflects proposals from ticks 0…t−1 (stamped before this tick's run_all()).
   advisory_telemetry: AdvisoryTelemetry | null
+
+  // Phase 10: fabric model modal-view — null when FabricEngine not wired.
+  // Six plant-plane fields + control decomposition + per-link utilisation map.
+  fabric: FabricModalView | null
 }
 
 /**
@@ -135,6 +139,53 @@ export interface KubeMetrics {
   headroom_mw: number       // turbine_headroom + bess_headroom from previous tick
   active_jobs: number       // gang-admitted workloads currently running
   admitted_nodes: number    // sum of node_count across active jobs (pre min_nodes floor)
+}
+
+/**
+ * Phase 10 — fabric model modal-view fields.
+ *
+ * Six plant-plane fields (mirrors FabricModel.TickResult.modal_view()):
+ *   topology_nodes          : total link count across all fabrics
+ *   congested_links         : links with u ≥ 0.85 for ≥ 2 ticks
+ *   bandwidth_headroom_frac : (total_headroom / total_capacity)
+ *   packet_loss             : weighted-average packet loss probability
+ *   retransmit_rate         : weighted-average retransmit rate
+ *   control_latency_ms      : total NFR-2 control path latency
+ *
+ * Plus:
+ *   control     : decomposed latency terms + breach flag
+ *   discrimination : phase-discrimination verdict block
+ *   link_utilisation : map of link_id → u (for heat strip; omits links with u=0)
+ */
+export interface FabricControlPath {
+  l_fabric_ms:     number
+  l_gateway_ms:    number
+  l_retransmit_ms: number
+  l_asset_ack_ms:  number
+  breached:        boolean
+  dominant_term:   string
+  budget_ms:       number
+}
+
+export interface FabricDiscrimination {
+  verdict:                      string   // checkpoint_corroborated | no_corroboration | not_applicable | unavailable
+  phase_discrimination_available: boolean
+  capability_tier:              string
+  compute_quiesced:             boolean
+  storage_elephant_sustained:   boolean
+  precedence_note:              string
+}
+
+export interface FabricModalView {
+  topology_nodes:          number
+  congested_links:         number
+  bandwidth_headroom_frac: number
+  packet_loss:             number
+  retransmit_rate:         number
+  control_latency_ms:      number
+  control:                 FabricControlPath
+  discrimination:          FabricDiscrimination
+  link_utilisation:        Record<string, number>   // link_id → u
 }
 
 export interface RunMeta {

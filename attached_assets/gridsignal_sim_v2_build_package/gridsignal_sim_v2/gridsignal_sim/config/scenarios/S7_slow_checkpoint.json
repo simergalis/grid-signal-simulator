@@ -1,0 +1,47 @@
+{
+  "scenario_id": "S7_slow_checkpoint",
+  "seed": 42,
+  "duration_s": 100.0,
+  "dt_s": 0.25,
+  "capability_tier": "current",
+  "asset_class": "turbine",
+  "profiles": "workload_traffic_profiles_slow_checkpoint.json",
+  "fixture": "fabric_fixture_default.json",
+  "constants": "fabric_constants.json",
+  "jobs": [
+    {
+      "job_id": "job-alpha",
+      "start_s": 0.0,
+      "phases": [
+        {"name": "training",    "duration_s": 20.0},
+        {"name": "checkpoint",  "duration_s": 60.0},
+        {"name": "training",    "duration_s": 20.0}
+      ]
+    }
+  ],
+  "stressors": [],
+  "assertions": [
+    {
+      "id": "S7-A1",
+      "check": "phase_exists",
+      "phase": "checkpoint",
+      "description": "checkpoint phase present"
+    },
+    {
+      "id": "S7-A2",
+      "check": "metric_in_phase",
+      "phase": "checkpoint",
+      "metric": "mean_u.compute",
+      "op": "<",
+      "value": 0.05,
+      "aggregate": "max",
+      "description": "compute quiesces during slow checkpoint"
+    },
+    {
+      "id": "S7-A3",
+      "check": "verdict_exists",
+      "verdict": "checkpoint_corroborated",
+      "description": "corroboration eventually fires despite slower elephant ramp (longer ELEPHANT_SUSTAIN_S)"
+    }
+  ]
+}

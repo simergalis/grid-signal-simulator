@@ -1,0 +1,44 @@
+{
+  "scenario_id": "S1_baseline_training",
+  "seed": 42,
+  "duration_s": 60.0,
+  "dt_s": 0.25,
+  "capability_tier": "current",
+  "asset_class": "turbine",
+  "profiles": "workload_traffic_profiles.json",
+  "fixture": "fabric_fixture_default.json",
+  "constants": "fabric_constants.json",
+  "jobs": [
+    {
+      "job_id": "job-alpha",
+      "start_s": 0.0,
+      "phases": [
+        {"name": "starting.weight_load", "duration_s": 15.0},
+        {"name": "training",             "duration_s": 45.0}
+      ]
+    }
+  ],
+  "stressors": [],
+  "assertions": [
+    {
+      "id": "S1-A1",
+      "check": "phase_exists",
+      "phase": "starting.weight_load",
+      "description": "weight_load phase is present in the timeline"
+    },
+    {
+      "id": "S1-A2",
+      "check": "verdict_never",
+      "verdict": "checkpoint_corroborated",
+      "description": "weight-load storage READ does not trigger checkpoint corroboration (TC-82b)"
+    },
+    {
+      "id": "S1-A3",
+      "check": "metric_always",
+      "metric": "control_latency_ms",
+      "op": "<",
+      "value": 1000.0,
+      "description": "unstressed control latency < 1000 ms (TC-84b)"
+    }
+  ]
+}

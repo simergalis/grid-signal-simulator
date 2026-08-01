@@ -1,0 +1,65 @@
+{
+  "scenario_id": "S2_checkpoint_hotspot",
+  "seed": 42,
+  "duration_s": 80.0,
+  "dt_s": 0.25,
+  "capability_tier": "current",
+  "asset_class": "turbine",
+  "profiles": "workload_traffic_profiles.json",
+  "fixture": "fabric_fixture_default.json",
+  "constants": "fabric_constants.json",
+  "jobs": [
+    {
+      "job_id": "job-alpha",
+      "start_s": 0.0,
+      "phases": [
+        {"name": "training",    "duration_s": 20.0},
+        {"name": "checkpoint",  "duration_s": 40.0},
+        {"name": "training",    "duration_s": 20.0}
+      ]
+    }
+  ],
+  "stressors": [],
+  "assertions": [
+    {
+      "id": "S2-A1",
+      "check": "phase_exists",
+      "phase": "checkpoint",
+      "description": "checkpoint phase present"
+    },
+    {
+      "id": "S2-A2",
+      "check": "metric_in_phase",
+      "phase": "checkpoint",
+      "metric": "congested_links.storage",
+      "op": ">=",
+      "value": 1,
+      "aggregate": "max",
+      "description": "at least one storage uplink congests from ECMP collision during checkpoint (TC-81)"
+    },
+    {
+      "id": "S2-A3",
+      "check": "metric_in_phase",
+      "phase": "checkpoint",
+      "metric": "mean_u.compute",
+      "op": "<",
+      "value": 0.05,
+      "aggregate": "max",
+      "description": "compute fabric quiesces during checkpoint (TC-81)"
+    },
+    {
+      "id": "S2-A4",
+      "check": "verdict_exists",
+      "verdict": "checkpoint_corroborated",
+      "description": "discrimination verdict reaches checkpoint_corroborated (TC-81)"
+    },
+    {
+      "id": "S2-A5",
+      "check": "telemetry_field_in_phase",
+      "phase": "checkpoint",
+      "field": "elephant_flow_present",
+      "value": true,
+      "description": "elephant_flow_present emitted at current capability tier (TC-81)"
+    }
+  ]
+}

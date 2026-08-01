@@ -593,3 +593,12 @@ class TickResult:
     # Keys: backend, agents_armed, proposals_total, proposals_pending,
     #        last_proposal_sim_time, per_agent (dict[str, float]).
     advisory_telemetry: Optional[dict] = None
+
+    # Phase 10: fabric model modal-view — six plant-plane fields derived from
+    # the Network Fabric model.  None when FabricEngine is not wired (headless
+    # tests, direct job-id path without a spec).
+    # Keys mirror FabricModel.TickResult.modal_view():
+    #   topology_nodes, congested_links, bandwidth_headroom_frac,
+    #   packet_loss, retransmit_rate, control_latency_ms
+    # Plus per-link utilisation vector (link_id → u) for the heat strip.
+    fabric_modal: Optional[dict] = None

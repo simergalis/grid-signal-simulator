@@ -1,0 +1,46 @@
+{
+  "scenario_id": "S3_job_end_withholds",
+  "seed": 42,
+  "duration_s": 60.0,
+  "dt_s": 0.25,
+  "capability_tier": "current",
+  "asset_class": "turbine",
+  "profiles": "workload_traffic_profiles.json",
+  "fixture": "fabric_fixture_default.json",
+  "constants": "fabric_constants.json",
+  "jobs": [
+    {
+      "job_id": "job-alpha",
+      "start_s": 0.0,
+      "phases": [
+        {"name": "training",  "duration_s": 20.0},
+        {"name": "job_end",   "duration_s": 40.0}
+      ]
+    }
+  ],
+  "stressors": [],
+  "assertions": [
+    {
+      "id": "S3-A1",
+      "check": "phase_exists",
+      "phase": "job_end",
+      "description": "job_end phase present"
+    },
+    {
+      "id": "S3-A2",
+      "check": "metric_in_phase",
+      "phase": "job_end",
+      "metric": "mean_u.compute",
+      "op": "<",
+      "value": 0.05,
+      "aggregate": "max",
+      "description": "compute quiesces during job_end (TC-82)"
+    },
+    {
+      "id": "S3-A3",
+      "check": "verdict_never",
+      "verdict": "checkpoint_corroborated",
+      "description": "corroboration never fires in a scenario with no checkpoint (TC-82)"
+    }
+  ]
+}

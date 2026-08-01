@@ -1,0 +1,40 @@
+{
+  "scenario_id": "S6_baseline_tier_degradation",
+  "seed": 42,
+  "duration_s": 30.0,
+  "dt_s": 0.25,
+  "capability_tier": "degraded",
+  "asset_class": "turbine",
+  "profiles": "workload_traffic_profiles.json",
+  "fixture": "fabric_fixture_default.json",
+  "constants": "fabric_constants.json",
+  "jobs": [
+    {
+      "job_id": "job-alpha",
+      "start_s": 0.0,
+      "phases": [
+        {"name": "training", "duration_s": 30.0}
+      ]
+    }
+  ],
+  "stressors": [],
+  "assertions": [
+    {
+      "id": "S6-A1",
+      "check": "capability_tier_assertion",
+      "tier": "degraded",
+      "description": "discrimination block reports the degraded capability tier"
+    },
+    {
+      "id": "S6-A2",
+      "check": "phase_discrimination_false",
+      "description": "phase discrimination is unavailable at degraded tier"
+    },
+    {
+      "id": "S6-A3",
+      "check": "verdict_never",
+      "verdict": "checkpoint_corroborated",
+      "description": "no corroboration verdict emitted at degraded tier"
+    }
+  ]
+}

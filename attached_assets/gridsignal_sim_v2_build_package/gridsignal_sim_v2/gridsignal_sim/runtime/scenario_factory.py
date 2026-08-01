@@ -631,4 +631,25 @@ def build_run_context_from_spec(
         procurement_layer=_proc_layer,
         maintenance_layer=_maint_layer,
         ramp_relaxation_engine=_ramp_engine,
+        # Phase 10: FabricEngine — always wired for spec-path runs so the
+        # Network Fabric modal shows live data from the first tick.
+        fabric_engine=_build_fabric_engine(run_id),
     )
+
+
+def _build_fabric_engine(run_id: str):
+    """
+    Instantiate a FabricEngine for a spec-path run.  Failures are caught and
+    logged; a None return leaves the tick payload's fabric field null rather
+    than crashing the run.
+    """
+    try:
+        from runtime.fabric_engine import FabricEngine  # lazy — avoids startup cost
+        seed = hash(run_id) % (2 ** 31)  # deterministic per run_id
+        return FabricEngine(seed=seed, capability_tier="current")
+    except Exception:
+        import logging as _log
+        _log.getLogger("gridsignal.scenario_factory").exception(
+            "FabricEngine init failed for run %s — fabric data will be absent", run_id
+        )
+        return None
