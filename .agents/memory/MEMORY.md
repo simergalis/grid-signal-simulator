@@ -15,3 +15,4 @@
 - [kube-demand-layer](kube-demand-layer.md) — OU+EMA demand agent; KubeMetrics in models.py (not kube_demand.py) to break circular import; dt_lead=0 always; Step 0 in evaluate_tick.
 - [parameter-reference-system](parameter-reference-system.md) — gridsignal_parameters.json → ParameterModal + 24 regression tests; INV-2 band check; PROPOSED_HERE decisions; JSON has ui.group not group.
 - [generation-architecture](generation-architecture.md) — 5 pre-run generators (solar+ambient, cluster, stressor, param_sampler, telemetry_corruption); asyncio.gather before t=0; validate-not-clamp constraint; GenerationBlock for F10 fix.
+- [gen-trip-cover-fix](gen-trip-cover-fix.md) — D-1/D-2/D-3 fix; ContingencyState+Coverage in models.py, PlantState+evaluate_contingency in contingency.py; demo-20mw → 5×7 MW fleet; hot_standby pattern.

@@ -203,6 +203,10 @@ class TurbineUnitSpec(BaseModel):
     # None = not tracked (most scenarios).  When set, the fleet modal shows
     # the value in the RUN h column and names the unit in the degraded footnote.
     run_hours_h: Optional[float] = Field(default=None, ge=0)
+    # hot_standby: True when this unit is commissioned but not synchronized.
+    # Hot-standby units are excluded from dispatch staging and contribute zero
+    # to contingency ramp capability (§7.4 / TC-83).  Default False.
+    hot_standby: bool = False
 
 
 class KubeConfigSpec(BaseModel):

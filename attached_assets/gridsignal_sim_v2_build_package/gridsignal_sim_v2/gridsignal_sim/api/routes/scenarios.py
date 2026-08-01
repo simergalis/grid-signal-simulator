@@ -197,12 +197,14 @@ def _turbine(
     rated_mw: float = 10.0,
     r_mw_per_s: float = 0.2,
     run_hours_h: Optional[float] = None,
+    hot_standby: bool = False,
 ) -> TurbineUnitSpec:
     return TurbineUnitSpec(
         asset_id=asset_id,
         rated_mw=rated_mw,
         r_asset_mw_per_s=r_mw_per_s,
         run_hours_h=run_hours_h,
+        hot_standby=hot_standby,
     )
 
 
@@ -405,13 +407,30 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
         "demo-20mw",
         ScenarioSpec(
             name="demo-20mw",
-            description="1900-node 20 MW GPU ramp — single BESS (grid-forming), "
-                        "large turbine.  Turbine covers full load; BESS provides "
-                        "bridging only during the ramp.  alerts_seen=False.",
+            description=(
+                "1900-node 20 MW GPU ramp — 5 × 7 MW gas turbine fleet "
+                "(4 synchronized online + 1 hot standby), single grid-forming BESS "
+                "(18 MW / 8 MWh).  "
+                "N−1 firm generation: 3 × 7 MW = 21 MW vs 23.95 MW peak load. "
+                "At full TDP each online unit produces ~6 MW: tripping one leaves "
+                "3 × 1 MW = 3 MW surviving headroom against a 6 MW deficit "
+                "(shed_required ≈ 3 MW → COVERED_WITH_SHED). "
+                "Early in the ramp, deficit is small and BESS can bridge: state "
+                "transitions COVERED → COVERED_WITH_SHED as turbines load up. "
+                "BESS power test: 18 − 1 = 17 MW bridging ≥ deficit. "
+                "The hot-standby unit (turbine-4) contributes zero to dispatch "
+                "and zero to r_surviving (§7.4 / TC-83)."
+            ),
             workload_events=[_evt_start("job-big", 1900)],
             dt_lead_seconds=30.0,
             bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
-            turbine_units=[_turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2)],
+            turbine_units=[
+                _turbine("turbine-0", rated_mw=7.0, r_mw_per_s=0.2),
+                _turbine("turbine-1", rated_mw=7.0, r_mw_per_s=0.2),
+                _turbine("turbine-2", rated_mw=7.0, r_mw_per_s=0.2),
+                _turbine("turbine-3", rated_mw=7.0, r_mw_per_s=0.2),
+                _turbine("turbine-4", rated_mw=7.0, r_mw_per_s=0.2, hot_standby=True),
+            ],
             solar_rated_mw=_SOLAR_20MW,
             end_sim_time=300.0,
         ),

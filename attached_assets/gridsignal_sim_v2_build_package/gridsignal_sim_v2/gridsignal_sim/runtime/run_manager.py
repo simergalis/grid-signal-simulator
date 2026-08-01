@@ -199,6 +199,29 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # per run).  Empty strings when solar is absent or run started via direct path.
         "solar_weather":    tick.solar_weather,
         "solar_conditions": tick.solar_conditions,
+        # GT-1: §7.4 contingency coverage — computed per tick after dispatch arbitration.
+        # null when absent (legacy path); otherwise a dict with all ContingencyCoverage fields.
+        "contingency_coverage": (
+            {
+                "state":                     tick.contingency_coverage.state.value,
+                "tripped_unit_id":           tick.contingency_coverage.tripped_unit_id,
+                "deficit_mw":                round(tick.contingency_coverage.deficit_mw, 3),
+                "headroom_surviving_mw":     round(tick.contingency_coverage.headroom_surviving_mw, 3),
+                "r_surviving_mw_per_s":      round(tick.contingency_coverage.r_surviving_mw_per_s, 4),
+                "bess_bridging_available_mw": round(tick.contingency_coverage.bess_bridging_available_mw, 3),
+                "bess_usable_energy_mwh":    round(tick.contingency_coverage.bess_usable_energy_mwh, 3),
+                "power_test_passes":         tick.contingency_coverage.power_test_passes,
+                "energy_test_passes":        tick.contingency_coverage.energy_test_passes,
+                "closable":                  tick.contingency_coverage.closable,
+                "time_to_close_s":           round(min(tick.contingency_coverage.time_to_close_s, 86400.0), 1),
+                "shed_required_mw":          round(tick.contingency_coverage.shed_required_mw, 3),
+                "ride_through_s":            round(min(tick.contingency_coverage.ride_through_s, 86400.0), 1),
+                "dispatchable_mw":           round(tick.contingency_coverage.dispatchable_mw, 3),
+                "renewable_mw":              round(tick.contingency_coverage.renewable_mw, 3),
+            }
+            if tick.contingency_coverage is not None
+            else None
+        ),
     }
 
 

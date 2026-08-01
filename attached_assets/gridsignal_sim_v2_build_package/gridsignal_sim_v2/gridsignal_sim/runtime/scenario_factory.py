@@ -433,6 +433,7 @@ def build_run_context_from_spec(
                 asset_id=t.get("asset_id") or f"turbine-{i}",
                 r_asset_mw_per_s=float(t.get("r_asset_mw_per_s", 0.2)),
                 rated_mw=float(t.get("rated_mw", 10.0)),
+                hot_standby=bool(t.get("hot_standby", False)),
             )
         )
         for i, t in enumerate(spec_data.get("turbine_units", []))

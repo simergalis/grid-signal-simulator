@@ -544,7 +544,14 @@ class TurbineModule(AssetModule):
     def stage_target(self, target_mw: float) -> None:
         """Dispatch arbitrator calls this at a job's `starting` event
         (source spec Section 7.2 step 1) to begin ramping immediately,
-        using the full available lead time."""
+        using the full available lead time.
+
+        Hot-standby units are excluded: they are not synchronized to the bus
+        and must not receive automatic dispatch orders.  Their start time is
+        a separate, operator-initiated action.
+        """
+        if self.config.hot_standby:
+            return
         self._target_mw = min(target_mw, self.config.rated_mw)
         if self.state == TurbineState.OFFLINE:
             self.state = TurbineState.RAMPING

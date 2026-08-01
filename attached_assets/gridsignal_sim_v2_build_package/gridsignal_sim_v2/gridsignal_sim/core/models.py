@@ -304,6 +304,12 @@ class TurbineConfig:
     asset_id: str
     r_asset_mw_per_s: float = 0.2     # source spec Section 7.1 MVP default
     rated_mw: float = 10.0
+    # hot_standby: True when this unit is commissioned but not synchronized to the
+    # bus.  A hot-standby unit is ready to start but contributes zero to the
+    # dispatch fleet and zero to contingency ramp capability (§7.4 / TC-83).
+    # Its start time is a separate quantity and must never be folded into a ramp
+    # rate.  False = default (synchronized online).
+    hot_standby: bool = False
 
 
 @dataclass
@@ -353,6 +359,54 @@ class SolarConfig:
     """Extension E-1 -- not in the source spec; simulator-only."""
     asset_id: str
     rated_mw: float = 4.0
+
+
+# ---------------------------------------------------------------------------
+# Contingency coverage (§7.4, §7.5)
+# ---------------------------------------------------------------------------
+
+class ContingencyState(str, Enum):
+    """Three-state N−1 gen-trip coverage readout per §7.4.
+
+    COVERED          — power test ∧ energy test ∧ closable.
+    COVERED_WITH_SHED — ¬closable but shed_required ≤ curtailable capacity.
+    CANNOT_CARRY     — shed_required exceeds curtailable capacity.
+    """
+    COVERED           = "COVERED"
+    COVERED_WITH_SHED = "COVERED_WITH_SHED"
+    CANNOT_CARRY      = "CANNOT_CARRY"
+
+
+@dataclass(frozen=True)
+class ContingencyCoverage:
+    """Per-tick output of evaluate_contingency() (core/contingency.py).
+
+    All intermediate results are preserved so display layers and tests can
+    inspect them independently.  The two BESS tests (power and energy) are
+    kept separate per TC-78 — do not collapse them before returning.
+    """
+    # Contingency selection
+    tripped_unit_id: Optional[str]      # None when fleet has no online units
+    deficit_mw: float                    # current output of the tripped unit (TC-77)
+    headroom_surviving_mw: float         # Σ(rated_i − output_i) for surviving units
+    r_surviving_mw_per_s: float          # Σ r_asset_i for synchronized online survivors
+    # BESS fleet (anchor-adjusted per §7.1.2)
+    bess_bridging_available_mw: float    # total anchor-adj power ceiling across BESS fleet
+    bess_usable_energy_mwh: float        # Σ soc_mwh across BESS fleet
+    # Independent tests (TC-78)
+    power_test_passes: bool              # bess_bridging_available ≥ deficit
+    energy_test_passes: bool             # E_usable ≥ 0.5 × deficit × t_close / 3600
+    # Closability
+    closable: bool                       # headroom_surviving ≥ deficit
+    time_to_close_s: float               # deficit / r_surviving; math.inf when not closable
+    # Shed + ride-through
+    shed_required_mw: float              # max(0, deficit − headroom_surviving)
+    ride_through_s: float                # soc_mwh × 3600 / deficit; math.inf when no deficit
+    # Three-state verdict
+    state: ContingencyState
+    # §7.5 header-strip figures
+    dispatchable_mw: float               # online turbine rated + anchor-adj BESS bridging
+    renewable_mw: float                  # solar output — displayed separately, never in coverage arithmetic
 
 
 # ---------------------------------------------------------------------------
@@ -529,3 +583,7 @@ class TickResult:
     # present in the scenario or the run was started via the direct job-id path.
     solar_weather:    str = ""
     solar_conditions: str = ""
+    # GT-1: §7.4 contingency coverage — computed each tick after dispatch
+    # arbitration.  None only when the tick is produced by a code path that
+    # predates the contingency engine (should not occur in normal operation).
+    contingency_coverage: Optional[ContingencyCoverage] = None

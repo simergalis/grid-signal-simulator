@@ -765,6 +765,11 @@ class CurtailmentLadder:
     RESTORATION_MARGIN_FRACTION: float = 0.20   # §23.3: de-escalate at ≤80% of trigger gap
     MAX_HOLD_S: float = 300.0                   # §23.6 dead-man — CHOSEN (PROTO-11)
 
+    def total_capacity_mw(self) -> float:
+        """Sum of all tier capacities (A+B+C+D) — used by the §7.4 contingency
+        engine to determine whether shed_required falls within curtailable range."""
+        return sum(_TIER_CAPACITY_MW.values())
+
     def __init__(self) -> None:
         # _dwell_started_t: when gap was first observed (starts the 120s dwell).
         # _trigger_gap_mw:  gap at dwell start; restoration margin is 80% of this.

@@ -62,6 +62,40 @@ export interface TickPayload {
   // "physics_estimate" when Mistral was unavailable; otherwise the Mistral label.
   solar_weather:    string
   solar_conditions: string
+
+  // GT-1: §7.4 contingency coverage — quantitative N−1 gen-trip assessment.
+  // null on legacy ticks that predate the engine (should not occur in normal runs).
+  contingency_coverage: ContingencyCoverage | null
+}
+
+/**
+ * GT-1 §7.4 — N−1 contingency coverage per tick.
+ *
+ * All intermediate results are preserved so display layers can inspect them
+ * independently (TC-78: power and energy tests are separate).
+ *
+ * state:
+ *   COVERED          — power ∧ energy ∧ closable
+ *   COVERED_WITH_SHED — ¬closable, shed_required ≤ curtailable capacity
+ *   CANNOT_CARRY     — shed_required exceeds curtailable capacity
+ */
+export interface ContingencyCoverage {
+  state: 'COVERED' | 'COVERED_WITH_SHED' | 'CANNOT_CARRY'
+  tripped_unit_id: string | null   // asset_id of the hypothetically tripped unit
+  deficit_mw: number               // current output of the tripped unit (TC-77: output, not nameplate)
+  headroom_surviving_mw: number    // Σ(rated − output) for surviving synchronized units
+  r_surviving_mw_per_s: number     // Σ ramp rate for surviving synchronized units (TC-83: standby excluded)
+  bess_bridging_available_mw: number  // anchor-adjusted BESS power ceiling (TC-79)
+  bess_usable_energy_mwh: number   // current SoC across all BESS units
+  power_test_passes: boolean       // bess_bridging ≥ deficit (TC-78: independent of energy test)
+  energy_test_passes: boolean      // soc_mwh ≥ E_required (TC-78: independent of power test)
+  closable: boolean                // surviving headroom ≥ deficit
+  time_to_close_s: number          // deficit / r_surviving; 86400 when not closable
+  shed_required_mw: number         // max(0, deficit − headroom_surviving) (TC-80)
+  ride_through_s: number           // soc_mwh × 3600 / deficit; 86400 when no deficit
+  // §7.5 header-strip figures
+  dispatchable_mw: number          // online turbine rated + anchor-adj BESS bridging (TC-82: solar excluded)
+  renewable_mw: number             // solar output as separate non-firm term (TC-81, TC-82)
 }
 
 export interface KubeMetrics {

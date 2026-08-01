@@ -17,7 +17,8 @@ import logging
 import math
 from dataclasses import dataclass, field
 
-from .asset_modules import BessModule, CoolingModule, GPUModule, SolarModule, TurbineModule
+from .asset_modules import BessModule, CoolingModule, GPUModule, SolarModule, TurbineModule, TurbineState
+from .contingency import BessSnapshot, PlantState, TurbineSnapshot, evaluate_contingency
 from .kube_demand import KubeDemandAgent, KubeGridState
 
 _log = logging.getLogger(__name__)
@@ -538,6 +539,40 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             _scada_commands_issued += 1
     state.scada_layer.deliver_pending(sim_time)
 
+    # GT-1: §7.4 contingency coverage — pure function, no I/O, no mutation.
+    # Build a frozen PlantState snapshot from the current simulation state
+    # (after dispatch arbitration and SCADA recording are complete) and call
+    # evaluate_contingency().  The result is stamped onto TickResult so the
+    # WS payload carries quantitative gen-trip figures to the dashboard every tick.
+    _plant_state = PlantState(
+        turbine_snapshots=tuple(
+            TurbineSnapshot(
+                asset_id=t.config.asset_id,
+                current_output_mw=t.output_mw(),
+                rated_mw=t.config.rated_mw,
+                r_asset_mw_per_s=t.config.r_asset_mw_per_s,
+                # Synchronized = RAMPING or AT_TARGET; OFFLINE = hot standby or uncommissioned.
+                is_synchronized=(t.state != TurbineState.OFFLINE),
+            )
+            for t in state.turbines
+        ),
+        bess_snapshots=tuple(
+            BessSnapshot(
+                asset_id=b.config.asset_id,
+                rated_mw=b.config.rated_mw,
+                soc_mwh=b.soc_mwh,
+                usable_mwh=b.config.usable_mwh,
+                p_anchor_reserve_mw=b.config.p_anchor_reserve_mw,
+                grid_forming=b.config.grid_forming,
+            )
+            for b in state.bess_units
+        ),
+        island_mode=state.site.island_mode,
+        curtailable_capacity_mw=state.curtailment_ladder.total_capacity_mw(),
+        renewable_mw=p_renewable_mw,
+    )
+    _contingency_coverage = evaluate_contingency(_plant_state)
+
     # 5. Checkpoint classification, per active training job.
     # Step 3 Item 1: use gpu.per_job_compute_mw(job_id) — the draw for THIS job
     # on THIS module — not the site-wide p_compute_mw sum.  A 20% checkpoint dip
@@ -618,4 +653,5 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         pms_order_conflict=_pms_order_conflict,
         scada_commands_issued=_scada_commands_issued,
         kube_metrics=_kube_metrics,
+        contingency_coverage=_contingency_coverage,
     )

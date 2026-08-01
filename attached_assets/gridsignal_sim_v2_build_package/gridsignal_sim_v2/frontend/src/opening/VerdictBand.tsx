@@ -4,22 +4,29 @@
  * Left: one computed claim about plant readiness — not equipment status.
  * Right: four hero figures, sourced from the live tick or static defaults.
  *
- * The "ⓘ How it works" button lives in GridSignalHeader, not here.
+ * GT-1 / GT-2: Gen-trip cover tile now shows quantitative figures per §7.4.
+ * GT-2: Dispatchable tile now excludes solar (§7.5); Renewable is a separate
+ *        non-firm term displayed in place of Δt_lead (which is 0 in the at-rest
+ *        state anyway).
+ * GT-2 TC-84: state transitions are logged to console with timestamp and
+ *        triggering plant-state figures.
  *
  * Static defaults (no tick):
- *   DISPATCHABLE  48.0 MW  — turbine (25) + BESS (18) + solar (5) rated
- *   LEAD TIME     30–60 s  — configured dt_lead window for demo scenario
- *   GEN-TRIP COVER  full reserve  — BESS at 95 % SoC, no load yet
- *   ATTENTION     1 subsystem   — uncalibrated_site DQ flag always present
+ *   DISPATCHABLE  45.0 MW  — 4×7 MW online turbines + BESS 17 MW (18−1 anchor)
+ *   RENEWABLE      ~5.0 MW — solar (non-firm)
+ *   GEN-TRIP COVER  covered · awaiting run
+ *   ATTENTION      —
  *
  * Running state (dt_lead_next_s > 0):
- *   Site draw / Predicted peak / Bridge duration / Reserve status
+ *   Site Draw / Predicted Peak / Gen-trip cover (quantitative) / Reserve status
  *
- * Alert latched:
- *   Claim turns amber, suffix describes the reserve shortfall.
+ * At-rest (tick present, no active ramp):
+ *   Dispatchable / Renewable / Gen-trip cover (quantitative) / Attention
  */
 
+import { useEffect, useRef } from 'react'
 import { useTickStore } from '../store/tickStore'
+import type { ContingencyCoverage } from '../types'
 
 interface FigureProps {
   label: string
@@ -32,8 +39,6 @@ interface FigureProps {
 
 function HeroFigure({ label, value, colour, sub, colWidth }: FigureProps) {
   return (
-    // Fixed width: the column never grows or shrinks regardless of value length.
-    // whitespace-nowrap + overflow-hidden on the value ensure it never wraps.
     <div className="flex flex-col gap-0.5 flex-shrink-0" style={{ width: colWidth }}>
       <div className="font-mono text-[9px] uppercase tracking-wider text-muted">{label}</div>
       <div
@@ -47,31 +52,46 @@ function HeroFigure({ label, value, colour, sub, colWidth }: FigureProps) {
   )
 }
 
-function formatBridge(s: number): string {
-  if (s >= 86400) return 'full reserve'
-  if (s <= 0) return '0 s'
-  if (s >= 3600) return `${(s / 3600).toFixed(1)} h`
-  if (s >= 60) return `${Math.floor(s / 60)}m ${Math.round(s % 60)}s`
-  return `${s.toFixed(0)} s`
-}
+// ---------------------------------------------------------------------------
+// Gen-trip cover: quantitative readout per §7.4
+// ---------------------------------------------------------------------------
 
 /**
- * AB2 / AA2: bridgeDisplay answers the question
- *   "how long could the BESS carry the WHOLE SITE if generation tripped?"
- * — NOT "how long can BESS bridge the current shortfall (which may be zero)."
+ * Return a quantitative one-line value for the gen-trip cover tile.
  *
- * The three outcomes:
- *   no_load:         BESS has full reserve, no load present → 'full reserve'
- *   seconds > 0:     BESS can carry site for this long if gen trips → duration
- *   seconds ≤ 0:     BESS power ceiling (D11) — rated MW < site demand, so
- *                    it cannot carry the site even for one second if gen trips.
- *                    Label: 'cannot carry alone' (NOT '0 s', which reads as
- *                    "depleted" — the BESS at 94% SoC is NOT depleted).
+ * COVERED:           "covered · 6.9 MW · closes in 35 s"
+ * COVERED_WITH_SHED: "3.1 MW shed · 41 s ride-through"
+ * CANNOT_CARRY:      "22.6 MW uncov · 9 s ride-through"
  */
-function bridgeDisplay(seconds: number, basis: string): string {
-  if (basis === 'no_load') return 'full reserve'
-  if (seconds <= 0) return 'cannot carry alone'
-  return formatBridge(seconds)
+function genTripValue(cc: ContingencyCoverage | null | undefined): string {
+  if (!cc) return 'awaiting data'
+  const rt = cc.ride_through_s >= 86400 ? '∞' : `${Math.round(cc.ride_through_s)} s`
+  if (cc.state === 'COVERED') {
+    const close =
+      cc.time_to_close_s >= 86400
+        ? '∞'
+        : `closes in ${Math.round(cc.time_to_close_s)} s`
+    return `covered · ${cc.deficit_mw.toFixed(1)} MW · ${close}`
+  }
+  if (cc.state === 'COVERED_WITH_SHED') {
+    return `${cc.shed_required_mw.toFixed(1)} MW shed · ${rt} ride-through`
+  }
+  // CANNOT_CARRY
+  return `${cc.deficit_mw.toFixed(1)} MW uncov · ${rt} ride-through`
+}
+
+function genTripColour(cc: ContingencyCoverage | null | undefined): string {
+  if (!cc) return '#4a9fe0'
+  if (cc.state === 'COVERED') return '#3fb6a8'           // teal
+  if (cc.state === 'COVERED_WITH_SHED') return '#f0883e' // amber
+  return '#e05252'                                        // red
+}
+
+function genTripSub(cc: ContingencyCoverage | null | undefined): string | undefined {
+  if (!cc) return undefined
+  if (cc.state === 'COVERED') return 'N−1 gen-trip covered'
+  if (cc.state === 'COVERED_WITH_SHED') return `shed ${cc.shed_required_mw.toFixed(1)} MW to cover`
+  return 'insufficient generation + shed'
 }
 
 export function VerdictBand() {
@@ -81,6 +101,24 @@ export function VerdictBand() {
   const running  = tick !== null && tick.dt_lead_next_s > 0
   const hasAlert = alert !== null
   const hasRun   = tick !== null
+
+  // ── TC-84: log state transitions ─────────────────────────────────────────
+  const prevContingencyState = useRef<string | null>(null)
+  useEffect(() => {
+    const cc = tick?.contingency_coverage
+    if (!cc) return
+    const newState = cc.state
+    if (prevContingencyState.current !== null && prevContingencyState.current !== newState) {
+      console.log(
+        `[VerdictBand] gen-trip cover transition: ${prevContingencyState.current} → ${newState}`,
+        `| deficit=${cc.deficit_mw.toFixed(2)} MW`,
+        `| headroom=${cc.headroom_surviving_mw.toFixed(2)} MW`,
+        `| shed=${cc.shed_required_mw.toFixed(2)} MW`,
+        `| t=${tick?.sim_time_seconds?.toFixed(0)} s`,
+      )
+    }
+    prevContingencyState.current = newState
+  }, [tick?.contingency_coverage?.state, tick?.sim_time_seconds])
 
   // ── Claim ────────────────────────────────────────────────────────────────
 
@@ -123,9 +161,10 @@ export function VerdictBand() {
   let figures: FigureProps[]
 
   // Column widths (px) — fixed so no column ever shifts its neighbours when
-  // the value string changes length (e.g. "cannot carry alone" ↔ "16.8 h").
+  // the value string changes length.
   // Col 1: 140  Col 2: 104  Col 3: 204  Col 4: 140
   if (running && tick) {
+    const cc = tick.contingency_coverage
     figures = [
       {
         label: 'Site Draw',
@@ -139,14 +178,12 @@ export function VerdictBand() {
         colWidth: 104,
       },
       {
-        // AB2: metric answers "how long can BESS carry the whole site if gen
-        // trips?" — not "how long can it bridge the current shortfall."  Label
-        // and sub-label must reflect that question so the D11 power-ceiling
-        // reading ("cannot carry alone") is not mistaken for depleted BESS.
+        // GT-2: quantitative gen-trip readout per §7.4.
+        // Three states, each with figures.  Colour follows state.
         label: 'Gen-trip cover',
-        value: bridgeDisplay(tick.bess_bridging_seconds, tick.bridging_basis),
-        colour: '#4a9fe0',
-        sub: tick.bridging_basis === 'no_load' ? undefined : 'if gen trips',
+        value: genTripValue(cc),
+        colour: genTripColour(cc),
+        sub: genTripSub(cc),
         colWidth: 204,
       },
       {
@@ -157,37 +194,35 @@ export function VerdictBand() {
       },
     ]
   } else if (hasRun && tick) {
+    const cc = tick.contingency_coverage
     const dqCount = tick.data_quality_tags.length + (hasAlert ? 1 : 0)
+    // GT-2: §7.5 dispatchable excludes solar; renewable displayed separately.
+    // Dispatchable = online turbine rated + anchor-adj BESS (from contingency_coverage).
+    // Renewable replaces the Δt_lead tile (which is always 0 here anyway).
+    const dispMw = cc?.dispatchable_mw ?? (tick.turbine_output_mw + tick.bess_output_mw)
+    const renMw  = cc?.renewable_mw    ?? tick.p_renewable_mw
     figures = [
       {
-        // AA3: include bess_output_mw so the arithmetic matches the label.
-        // At rest: 48 MW = turbine(25) + BESS(18) + solar(5). Same three
-        // sources, live values, same label — consistent definition both states.
         label: 'Dispatchable',
-        value: `${(tick.turbine_output_mw + tick.bess_output_mw + tick.p_renewable_mw).toFixed(1)} MW`,
+        value: `${dispMw.toFixed(1)} MW`,
         colour: '#e0a458',
-        sub: 'turbine + BESS + solar',
+        sub: 'turbine + BESS (anchor-adj)',
         colWidth: 140,
       },
       {
-        // AA4: bind to dt_lead_next_s directly. In this branch dt_lead_next_s
-        // is 0 (otherwise we'd be in the running branch), so the value is
-        // "0 s" — the same quantity the Δt_lead callout in the plant
-        // diagram already shows. Never '—' when the field has a real value.
-        // "Gen-trip cover" below is a deliberate UI-only term (not from the
-        // field name bess_bridging_seconds) — do not "correct" it to match.
-        label: 'Δt_lead',
-        value: `${tick.dt_lead_next_s.toFixed(0)} s`,
+        // GT-2: separate Renewable term per §7.5 — non-firm, never credited toward coverage.
+        label: 'Renewable',
+        value: `${renMw.toFixed(1)} MW`,
         colour: '#3fb6a8',
+        sub: 'non-firm · solar',
         colWidth: 104,
       },
       {
-        // AB2 (same fix as running branch): consistent label + sub-label so the
-        // D11 "cannot carry alone" reading is never misread as "depleted".
+        // GT-2: same quantitative gen-trip readout as running branch.
         label: 'Gen-trip cover',
-        value: bridgeDisplay(tick.bess_bridging_seconds, tick.bridging_basis),
-        colour: '#4a9fe0',
-        sub: tick.bridging_basis === 'no_load' ? undefined : 'if gen trips',
+        value: genTripValue(cc),
+        colour: genTripColour(cc),
+        sub: genTripSub(cc),
         colWidth: 204,
       },
       {
@@ -198,12 +233,14 @@ export function VerdictBand() {
       },
     ]
   } else {
-    // Static defaults — show configured site capacity before any run
+    // Static defaults — show configured site capacity before any run.
+    // GT-3 fleet: 4×7 MW online + BESS 17 MW (18−1 anchor) = 45 MW dispatchable
+    // Renewable: ~5 MW PROTO-7 solar (non-firm, displayed separately)
     figures = [
-      { label: 'Dispatchable', value: '48.0 MW',     colour: '#e0a458', sub: 'turbine + BESS + solar', colWidth: 140 },
-      { label: 'Δt_lead',      value: '30–60 s',     colour: '#3fb6a8',                                colWidth: 104 },
-      { label: 'Gen-trip cover', value: 'full reserve', colour: '#4a9fe0',                             colWidth: 204 },
-      { label: 'Attention',    value: '1 subsystem', colour: '#f0883e',                                colWidth: 140 },
+      { label: 'Dispatchable',   value: '45.0 MW',  colour: '#e0a458', sub: 'turbine + BESS (anchor-adj)', colWidth: 140 },
+      { label: 'Renewable',      value: '~5.0 MW',  colour: '#3fb6a8', sub: 'non-firm · solar',             colWidth: 104 },
+      { label: 'Gen-trip cover', value: 'N−1 ready', colour: '#4a9fe0',                                      colWidth: 204 },
+      { label: 'Attention',      value: '1 subsystem', colour: '#f0883e',                                    colWidth: 140 },
     ]
   }
 
@@ -226,9 +263,7 @@ export function VerdictBand() {
         >
           {claimLabel}
         </div>
-        {/* No flex-wrap — suffix must never push to a second line.
-            Font size is fixed at 36 across all states so the band height
-            never changes when transitioning between READY / countdown / ATTENTION. */}
+        {/* No flex-wrap — suffix must never push to a second line. */}
         <div className="flex items-baseline gap-2 overflow-hidden">
           <span
             className="font-mono font-bold leading-none flex-shrink-0"
