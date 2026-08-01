@@ -26,12 +26,14 @@ Step 9 additions:
 from __future__ import annotations
 
 import asyncio
+import functools
 import itertools
 import logging
 import os as _os
 import statistics as _statistics
 import time as _time_module
-from dataclasses import dataclass, field
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass, field, replace as _dc_replace
 from datetime import datetime, timezone
 from typing import Any, Awaitable, Callable, Optional, Protocol
 
@@ -518,6 +520,23 @@ def _update_thermal_state(ctx: RunContext, tick: TickResult) -> None:
     ctx._inlet_temp_c = _INLET_LO_C + utilisation * (_INLET_HI_C - _INLET_LO_C) * 0.85
 
 
+# AD2: dedicated bounded executor for advisory (LLM) calls.
+#
+# asyncio.to_thread() uses the loop's default ThreadPoolExecutor
+# (min(32, cpu_count+4)).  With 5 concurrent runs and 6 agents each,
+# tick 1 can submit up to 30 tasks simultaneously — enough to saturate
+# the default pool on a Replit container and exhaust available HTTP
+# sockets.  A dedicated 4-worker pool keeps the LLM call count bounded:
+# cadence floors (FLOOR_WALL_S / CEILING_WALL_S) mean steady-state
+# throughput is far below 4/s, and the tick-1 stampede (6 agents × N
+# runs) queues harmlessly rather than saturating shared infrastructure.
+# thread_name_prefix makes advisory threads identifiable in thread dumps.
+_ADVISORY_EXECUTOR = ThreadPoolExecutor(
+    max_workers=4,
+    thread_name_prefix="advisory",
+)
+
+
 def _report_drive_profile(
     run_id: str,
     sec: dict[str, list[float]],
@@ -644,21 +663,27 @@ class RunManager:
                 if _profiling: _sec.setdefault("A_evaluate_tick", []).append(_time_module.perf_counter() - _t0)
 
                 # ── B: thermal state (BEFORE sink/broadcast) ──────────────
-                # Stamping rated_cooling_mw / absorbable_mw / time_to_limit_s /
-                # approach_rate_mw_s onto TickResult here (not after broadcast)
-                # ensures the live WebSocket payload and the stored timeseries
-                # both carry live thermal data — Cell 3 reads from latestTick.
+                # Enrich the frozen TickResult with thermal fields via
+                # dataclasses.replace() — TickResult is frozen=True so direct
+                # attribute assignment would raise FrozenInstanceError.
+                # The replaced instance replaces the local name; the original
+                # object emitted by evaluate_tick() is discarded.  This happens
+                # BEFORE sink.append() / broadcast() so both the stored
+                # timeseries row and the live WebSocket payload carry thermal data.
                 if _profiling: _t0 = _time_module.perf_counter()
                 _update_thermal_state(ctx, tick_result)
-                _th_rated     = ctx._rated_cooling_mw
-                _th_absorb    = max(0.0, _th_rated - tick_result.p_cooling_mw)
-                _th_approach  = ctx._approach_rate_mw_s
-                tick_result.rated_cooling_mw   = _th_rated
-                tick_result.absorbable_mw      = _th_absorb
-                tick_result.approach_rate_mw_s = _th_approach
-                tick_result.time_to_limit_s    = (
-                    min(_th_absorb / _th_approach, 86_400.0)
-                    if _th_approach > 1e-6 else 86_400.0
+                _th_rated    = ctx._rated_cooling_mw
+                _th_absorb   = max(0.0, _th_rated - tick_result.p_cooling_mw)
+                _th_approach = ctx._approach_rate_mw_s
+                tick_result  = _dc_replace(
+                    tick_result,
+                    rated_cooling_mw=_th_rated,
+                    absorbable_mw=_th_absorb,
+                    approach_rate_mw_s=_th_approach,
+                    time_to_limit_s=(
+                        min(_th_absorb / _th_approach, 86_400.0)
+                        if _th_approach > 1e-6 else 86_400.0
+                    ),
                 )
                 if _profiling: _sec.setdefault("B_thermal_update", []).append(_time_module.perf_counter() - _t0)
 
@@ -691,14 +716,21 @@ class RunManager:
                     ctx.registry.tick(tick_result.sim_time_seconds)
                     if _profiling: _sec.setdefault("E_registry_tick", []).append(_time_module.perf_counter() - _t0)
                     _job_id = ctx.events[0].job_id if ctx.events else ""
+                    # AD2: use the bounded _ADVISORY_EXECUTOR (max_workers=4) rather
+                    # than the default pool.  asyncio.to_thread() has no executor
+                    # parameter so we use loop.run_in_executor() + functools.partial
+                    # to forward keyword arguments.
                     if _profiling: _t0 = _time_module.perf_counter()
-                    await asyncio.to_thread(
-                        ctx.registry.run_all,
-                        list(ctx.tick_history),
-                        wall_time=_time_module.time(),
-                        sim_time=tick_result.sim_time_seconds,
-                        site_id=ctx.sim_state.site.site_id,
-                        job_id=_job_id,
+                    await asyncio.get_running_loop().run_in_executor(
+                        _ADVISORY_EXECUTOR,
+                        functools.partial(
+                            ctx.registry.run_all,
+                            list(ctx.tick_history),
+                            wall_time=_time_module.time(),
+                            sim_time=tick_result.sim_time_seconds,
+                            site_id=ctx.sim_state.site.site_id,
+                            job_id=_job_id,
+                        ),
                     )
                     if _profiling: _sec.setdefault("E_registry_run_all", []).append(_time_module.perf_counter() - _t0)
 

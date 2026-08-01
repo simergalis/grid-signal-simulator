@@ -346,11 +346,18 @@ class ConfidenceBand:
 # Tick output
 # ---------------------------------------------------------------------------
 
-@dataclass
+@dataclass(frozen=True)
 class TickResult:
     """One row of RunTimeseries (functional spec Section 6.5). This is
     the object that flows: evaluate_tick() -> persistence -> WebSocket
-    broadcast, per Design Spec Section 4.2/4.4."""
+    broadcast, per Design Spec Section 4.2/4.4.
+
+    frozen=True: TickResult is a value object — once emitted by evaluate_tick()
+    it must never be mutated in place.  The control plane (run_manager._drive)
+    may enrich a fresh instance with thermal fields via dataclasses.replace()
+    BEFORE appending it to tick_history; after that the object is shared between
+    the main coroutine and advisory worker threads and must not change.
+    This makes the invariant structural rather than reasoning-based."""
     run_id: str
     tick_index: int
     # F5: interval-END timestamp — the simulated instant this TickResult describes.
