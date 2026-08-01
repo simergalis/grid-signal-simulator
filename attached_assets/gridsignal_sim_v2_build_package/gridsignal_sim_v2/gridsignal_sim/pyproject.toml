@@ -1,3 +1,15 @@
+[project]
+name = "gridsignal-sim"
+version = "0.1.0"
+requires-python = ">=3.11"
+# AA6: websockets is required by uvicorn for WebSocket upgrade support.
+# Without it uvicorn logs "No supported WebSocket library detected" and
+# returns HTTP 404 for every WS request.  start_prod.sh also runs a
+# pip3 --target guard as a belt-and-suspenders install into .pythonlibs.
+dependencies = [
+    "websockets>=11.0",
+]
+
 [tool.pytest.ini_options]
 # asyncio_mode = "strict" requires every async test function to carry
 # @pytest.mark.asyncio explicitly.  This is the pytest-asyncio 1.x default

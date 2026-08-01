@@ -60,8 +60,14 @@ function nodeDetail(def: NodeDef, tick: TickPayload | null): string {
       return jobs > 0 ? `${jobs} job${jobs > 1 ? 's' : ''} · 19.96 MW at full draw` : `1,900 nodes · 19.96 MW at full draw`
     }
     case 'cooling-plant': {
-      const absorbable = tick?.absorbable_mw ?? 4.59
-      return `lags compute by 90 s · ${absorbable.toFixed(2)} MW rated`
+      // AA1: bind "rated" to rated_cooling_mw, not absorbable_mw.
+      // absorbable_mw is headroom (rated − current draw) — very different numbers.
+      const rated = tick?.rated_cooling_mw ?? 4.59
+      if (tick) {
+        const headroom = tick.absorbable_mw
+        return `lags compute by 90 s · ${rated.toFixed(2)} MW rated · ${headroom.toFixed(2)} MW headroom`
+      }
+      return `lags compute by 90 s · ${rated.toFixed(2)} MW rated`
     }
     default:
       return ''

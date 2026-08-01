@@ -44,6 +44,15 @@ echo ""
 
 cd "$BACKEND_DIR"
 
+# AA6: uvicorn requires the `websockets` (or `wsproto`) library to handle
+# WebSocket upgrades.  Without it every WS request returns HTTP 404.
+# The Nix store is read-only, so we install into .pythonlibs — the same
+# writable directory that uvicorn itself lives in.  The check is a fast
+# no-op when the package is already present.
+PYTHONLIBS_SITE="/home/runner/workspace/.pythonlibs/lib/python3.13/site-packages"
+python3 -c "import websockets" 2>/dev/null || \
+  pip3 install --target="$PYTHONLIBS_SITE" websockets --quiet 2>&1 | tail -1 || true
+
 # Use `python3 -m uvicorn` rather than bare `uvicorn` so the module is found
 # via the Python path (.pythonlibs) rather than requiring uvicorn on $PATH.
 # PYTHONPATH must include the backend root so `from core.xxx import ...` resolves.

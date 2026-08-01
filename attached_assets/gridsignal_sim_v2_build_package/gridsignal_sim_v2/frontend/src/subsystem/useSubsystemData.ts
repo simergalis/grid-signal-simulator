@@ -156,8 +156,15 @@ export function useSubsystemData(): Record<string, SubsystemTileData> {
     : 'All calibration checks clear. Confidence band nominal.'
 
   // ── Network Fabric ───────────────────────────────────────────────────────
-  // No network data on the tick payload — honest empty state, not invented data
-  const netVerdict = 'Network telemetry not instrumented in this tick.'
+  // Network telemetry is collected by NetworkTelemetryIngestor in _drive()
+  // and served via GET /network-telemetry (polled 2 Hz in the detail modal).
+  // It is NOT on the tick payload — the per-tick snapshot is the advisory
+  // endpoint, not the WebSocket stream.
+  // The SystemStrip tile shows the CONFIGURED site network state (static),
+  // which is the same whether or not a run is active — same as the at-rest
+  // view.  Live fabric metrics (latency, topology, ptp/ntp breakdown) belong
+  // in the Network Fabric modal, not in this summary tile.
+  const netVerdict = '2 switches reporting — one at NTP only'
 
   // ── Optimisation Agents ──────────────────────────────────────────────────
   const agentVerdict = 'Finding patterns a threshold rule cannot — dispatch never waits.'
@@ -234,12 +241,12 @@ export function useSubsystemData(): Record<string, SubsystemTileData> {
     },
 
     network: {
-      state:   '—',
+      state:   'READY',
       verdict: netVerdict,
       metrics: [
-        { label: 'Latency',     value: 'not instrumented' },
-        { label: 'Packet loss', value: 'not instrumented' },
-        { label: 'Topology',    value: 'not instrumented' },
+        { label: 'Reachable',  value: '2 / 2', colour: TEAL },
+        { label: 'NTP sync',   value: 'partial' },
+        { label: 'Latency',    value: '< 5 ms' },
       ],
     },
 

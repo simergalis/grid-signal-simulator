@@ -51,6 +51,17 @@ function formatBridge(s: number): string {
   return `${s.toFixed(0)} s`
 }
 
+/**
+ * AA2: bridging_basis === 'no_load' means the BESS has full reserve — no
+ * load is being bridged. That is the OPPOSITE of "0 s" (which is the
+ * cannot-bridge signal, D11). Only use formatBridge (which may return '0 s')
+ * when basis is 'current_demand' or 'predicted_peak'.
+ */
+function bridgeDisplay(seconds: number, basis: string): string {
+  if (basis === 'no_load') return 'full reserve'
+  return formatBridge(seconds)
+}
+
 export function VerdictBand() {
   const tick  = useTickStore(s => s.latestTick)
   const alert = useTickStore(s => s.latchedAlert)
@@ -111,8 +122,10 @@ export function VerdictBand() {
         colour: '#e0a458',
       },
       {
+        // AA2: use bridgeDisplay so 'no_load' basis renders "full reserve"
+        // instead of "0 s" (which is the cannot-bridge signal, not no-shortfall).
         label: 'Bridge',
-        value: formatBridge(tick.bess_bridging_seconds),
+        value: bridgeDisplay(tick.bess_bridging_seconds, tick.bridging_basis),
         colour: '#4a9fe0',
         sub: tick.bridging_basis === 'predicted_peak' ? 'basis: predicted peak' : undefined,
       },
@@ -126,19 +139,27 @@ export function VerdictBand() {
     const dqCount = tick.data_quality_tags.length + (hasAlert ? 1 : 0)
     figures = [
       {
+        // AA3: include bess_output_mw so the arithmetic matches the label.
+        // At rest: 48 MW = turbine(25) + BESS(18) + solar(5). Same three
+        // sources, live values, same label — consistent definition both states.
         label: 'Dispatchable',
-        value: `${(tick.turbine_output_mw + tick.p_renewable_mw).toFixed(1)} MW`,
+        value: `${(tick.turbine_output_mw + tick.bess_output_mw + tick.p_renewable_mw).toFixed(1)} MW`,
         colour: '#e0a458',
-        sub: 'turbine + solar',
+        sub: 'turbine + BESS + solar',
       },
       {
+        // AA4: bind to dt_lead_next_s directly. In this branch dt_lead_next_s
+        // is 0 (otherwise we'd be in the running branch), so the value is
+        // "0 s" — the same quantity the lead-time callout in the plant
+        // diagram already shows. Never '—' when the field has a real value.
         label: 'Lead Time',
-        value: tick.dt_lead_next_s > 0 ? `${tick.dt_lead_next_s.toFixed(0)} s` : '—',
+        value: `${tick.dt_lead_next_s.toFixed(0)} s`,
         colour: '#3fb6a8',
       },
       {
+        // AA2 (same fix): bridging_basis guards the '0 s' vs 'full reserve' split.
         label: 'Bridge',
-        value: formatBridge(tick.bess_bridging_seconds),
+        value: bridgeDisplay(tick.bess_bridging_seconds, tick.bridging_basis),
         colour: '#4a9fe0',
       },
       {

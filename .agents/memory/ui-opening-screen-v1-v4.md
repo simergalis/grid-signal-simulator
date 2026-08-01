@@ -8,6 +8,18 @@ description: One-line SCADA mimic diagram + VerdictBand + SystemStrip + Topology
 
 **Why:** The UI-Hierarchy spec replaces the nine-tile grid with a three-band one-line mimic. ReadinessScreen is imported by smoke_readiness.test.tsx directly and is rendered inside OpeningScreen when windowWidth < 768.
 
+## AA-series binding rules (VerdictBand / PlantNode / useSubsystemData)
+
+**AA1 — cooling node:** Bind "rated" label to `rated_cooling_mw`; bind "headroom" label to `absorbable_mw`. These are completely different numbers (rated ≈ 4.59 MW, headroom = rated − current_draw ≈ 0.6 MW at peak).
+
+**AA2 — BRIDGE "0 s" vs "full reserve":** Use `bridgeDisplay(seconds, basis)` wrapper. `basis === 'no_load'` → always show 'full reserve' (bess_bridging_seconds is irrelevant in that state). `current_demand`/`predicted_peak` with seconds=0 → '0 s' IS correct (D11 cannot-bridge signal). Demo-20mw timeseries: t1–t2 = no_load/86400; t3–t56 = current_demand/decreasing; t57–t60 = current_demand/0.0 (depleted BESS, genuine cannot-bridge).
+
+**AA3 — DISPATCHABLE:** Always `turbine_output_mw + bess_output_mw + p_renewable_mw`, sub "turbine + BESS + solar" in BOTH at-rest and hasRun states. BESS must never silently leave the sum.
+
+**AA4 — LEAD TIME in hasRun branch:** Always show `dt_lead_next_s.toFixed(0) + ' s'`. In this branch dt_lead_next_s = 0 so value is "0 s" — matching the lead-time callout in the plant diagram. Never '—' when the field has a real value.
+
+**AA5 — Network Fabric tile during run:** Show static configured site state (same as at-rest): "2 switches reporting — one at NTP only", READY, metrics [Reachable 2/2, NTP sync partial, Latency < 5 ms]. Live telemetry is in the modal which polls `/network-telemetry`. Do NOT show "not instrumented" just because the field is absent from the tick payload.
+
 ## Architecture
 - Band 1 (VerdictBand): claim + 4 hero figures + "ⓘ How it works" button.
 - Band 2 (PlantDiagram): SVG viewBox 0 0 1200 440, `preserveAspectRatio="xMidYMid meet"`.  
