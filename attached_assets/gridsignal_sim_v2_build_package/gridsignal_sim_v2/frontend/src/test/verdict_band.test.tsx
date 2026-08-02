@@ -489,3 +489,103 @@ describe('VerdictBand — gen-trip modal: Branch 3 (at-rest after run)', () => {
     expect(screen.queryByTestId('gen-trip-modal-stub')).not.toBeInTheDocument()
   })
 })
+
+// ---------------------------------------------------------------------------
+// Reserve tile — sufficient / insufficient states (running branch only)
+// ---------------------------------------------------------------------------
+
+describe('VerdictBand — Reserve tile: no alert (running)', () => {
+  it('shows "sufficient" when no alert is active', () => {
+    seedTick(makeTick(CC_COVERED, 40.0))
+    render(<VerdictBand />)
+    expect(screen.getByText('sufficient')).toBeInTheDocument()
+  })
+
+  it('Reserve tile value rendered in teal (#3fb6a8) when no alert', () => {
+    seedTick(makeTick(CC_COVERED, 40.0))
+    render(<VerdictBand />)
+    const valueEl = screen.getByText('sufficient')
+    expect(valueEl).toHaveStyle({ color: '#3fb6a8' })
+  })
+
+  it('Reserve tile is clickable (renders as a button) even without an alert', () => {
+    seedTick(makeTick(CC_COVERED, 40.0))
+    render(<VerdictBand />)
+    const btn = screen.getByRole('button', {
+      name: /Reserve.*click for plain-English explanation/i,
+    })
+    expect(btn).toBeInTheDocument()
+  })
+
+  it('opens ReserveModal when Reserve tile is clicked without an alert', () => {
+    seedTick(makeTick(CC_COVERED, 40.0))
+    render(<VerdictBand />)
+    expect(screen.queryByTestId('reserve-modal-stub')).not.toBeInTheDocument()
+    fireEvent.click(
+      screen.getByRole('button', { name: /Reserve.*click for plain-English explanation/i }),
+    )
+    expect(screen.getByTestId('reserve-modal-stub')).toBeInTheDocument()
+  })
+})
+
+describe('VerdictBand — Reserve tile: insufficient_reserve_alert=true', () => {
+  /** Helper: make a running tick that carries the alert flag. */
+  function makeAlertTick(): TickPayload {
+    return { ...makeTick(CC_COVERED, 40.0), insufficient_reserve_alert: true }
+  }
+
+  it('shows "insufficient" when the alert is latched', () => {
+    seedTick(makeAlertTick())
+    render(<VerdictBand />)
+    expect(screen.getByText('insufficient')).toBeInTheDocument()
+  })
+
+  it('Reserve tile value rendered in amber (#f0883e) when alert is latched', () => {
+    seedTick(makeAlertTick())
+    render(<VerdictBand />)
+    const valueEl = screen.getByText('insufficient')
+    expect(valueEl).toHaveStyle({ color: '#f0883e' })
+  })
+
+  it('Reserve tile renders as a button when alert is latched', () => {
+    seedTick(makeAlertTick())
+    render(<VerdictBand />)
+    const btn = screen.getByRole('button', {
+      name: /Reserve.*click for plain-English explanation/i,
+    })
+    expect(btn).toBeInTheDocument()
+  })
+
+  it('ReserveModal is not shown before the tile is clicked', () => {
+    seedTick(makeAlertTick())
+    render(<VerdictBand />)
+    expect(screen.queryByTestId('reserve-modal-stub')).not.toBeInTheDocument()
+  })
+
+  it('opens ReserveModal when the Reserve tile is clicked during an alert', () => {
+    seedTick(makeAlertTick())
+    render(<VerdictBand />)
+    fireEvent.click(
+      screen.getByRole('button', { name: /Reserve.*click for plain-English explanation/i }),
+    )
+    expect(screen.getByTestId('reserve-modal-stub')).toBeInTheDocument()
+  })
+
+  it('tile reverts to "sufficient" after acknowledgeAlert() is called', async () => {
+    const alertTick = makeAlertTick()
+    seedTick(alertTick)
+    render(<VerdictBand />)
+
+    // Alert is latched — tile reads "insufficient"
+    expect(screen.getByText('insufficient')).toBeInTheDocument()
+
+    // Operator acknowledges the alert
+    await act(async () => {
+      useTickStore.getState().acknowledgeAlert(alertTick.tick_index)
+    })
+
+    // latchedAlert is now null → tile reverts to "sufficient"
+    expect(screen.getByText('sufficient')).toBeInTheDocument()
+    expect(screen.queryByText('insufficient')).not.toBeInTheDocument()
+  })
+})
