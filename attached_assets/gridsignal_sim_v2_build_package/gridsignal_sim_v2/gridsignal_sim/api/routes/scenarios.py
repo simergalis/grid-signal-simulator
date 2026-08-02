@@ -386,13 +386,15 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
         ScenarioSpec(
             name="demo-prestage",
             description=(
-                "demo-20mw + §8.1 pre-staging (Step 10).  "
-                "PreStagingConfig defaults: max_shift=1.0 MW, initial_temp=21.0 °C, "
-                "band [18–24 °C], gain=0.05 °C/MW/s, warmup=0.002 °C/s.  "
-                "Pre-staging fires from tick 1; temperature headroom exhausts at "
-                "≈t=62 s (12–13 ticks); engine then idles until warmup recovers.  "
-                "Separate from demo-20mw because pre-staging shifts p_dispatch_required "
-                "and changes turbine/BESS allocation numbers."
+                "demo-20mw + §8.1 pre-staging (Step 10) — two-phase load-shifting model.  "
+                "Charge phase (early ticks, gap ≤ 0): engine draws up to 1.0 MW of extra "
+                "cooling load, lowering inlet temp and banking thermal energy (η=0.9).  "
+                "Discharge phase (gap > 0): stored thermal energy offsets up to 1.0 MW "
+                "of p_dispatch_required; shift tapers to 0 once thermal_soc is exhausted.  "
+                "Energy shifted ≤ energy pre-cooled × η (observable energy balance).  "
+                "BMS override (TC-56) blocks both phases; inlet band [18–24 °C] bounds "
+                "the charge rate (TC-55).  "
+                "Separate from demo-20mw because pre-staging changes dispatch numbers."
             ),
             workload_events=[_evt_start("job-big", 1900)],
             dt_lead_seconds=30.0,
@@ -400,7 +402,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             turbine_units=[_turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2)],
             solar_rated_mw=_SOLAR_20MW,
             end_sim_time=300.0,
-            pre_staging_config=PreStagingConfigSpec(),   # all defaults
+            pre_staging_config=PreStagingConfigSpec(),   # defaults: max_shift=1.0 MW, eta=0.9
         ),
     ),
     (

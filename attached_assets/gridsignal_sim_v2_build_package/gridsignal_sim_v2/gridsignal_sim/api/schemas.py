@@ -75,6 +75,12 @@ class PreStagingConfigSpec(BaseModel):
     warmup_rate_c_per_s: float = Field(default=0.002, ge=0.0)
     initial_temp_c: float = Field(default=21.0, ge=10.0, le=35.0)
     bms_override: bool = False
+    # Two-phase thermal SoC fields (§8.1 load-shifting, not curtailment).
+    # thermal_soc_initial_mwh: pre-charged thermal energy at run start (MWh).
+    #   0.0 = no stored energy; engine must charge before it can discharge.
+    # eta: charge-phase efficiency (dimensionless, 0 < η ≤ 1).
+    thermal_soc_initial_mwh: float = Field(default=0.0, ge=0.0)
+    eta: float = Field(default=0.9, gt=0.0, le=1.0)
 
 
 # ---------------------------------------------------------------------------

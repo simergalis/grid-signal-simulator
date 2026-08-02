@@ -712,3 +712,218 @@ class TestPreStagingBMSOverride:
         assert shift_normal > 0.0, (
             "TC-56: once BMS override clears, pre-staging must resume"
         )
+
+
+# ---------------------------------------------------------------------------
+# Two-phase thermal-SoC model -- compute_tick() (S8.1 load-shifting)
+# ---------------------------------------------------------------------------
+
+class TestPreStagingComputeTick:
+    """Tests for the two-phase compute_tick() method (S8.1 load-shifting).
+
+    The two-phase model distinguishes load-shifting from curtailment:
+      * Charge phase (gap_mw <= 0): draws extra load now, stores thermal energy.
+      * Discharge phase (gap_mw > 0): uses stored energy to reduce the gap.
+
+    Energy balance invariant:
+      integral(shift_mw) <= integral(precool_mw) * eta
+    """
+
+    def _engine(
+        self,
+        initial_temp_c: float = 22.0,
+        max_shift_mw: float = 2.0,
+        thermal_soc_initial_mwh: float = 0.0,
+        eta: float = 0.9,
+        bms_override: bool = False,
+    ) -> PreStagingEngine:
+        config = PreStagingConfig(
+            max_shift_mw=max_shift_mw,
+            inlet_temp_low_c=18.0,
+            inlet_temp_high_c=24.0,
+            cooling_gain_c_per_mw_s=0.05,
+            warmup_rate_c_per_s=0.002,
+            initial_temp_c=initial_temp_c,
+            bms_override=bms_override,
+            thermal_soc_initial_mwh=thermal_soc_initial_mwh,
+            eta=eta,
+        )
+        return PreStagingEngine(config)
+
+    # -- Charge phase --------------------------------------------------------
+
+    def test_charge_phase_returns_zero_shift_and_positive_precool(self) -> None:
+        """Charge phase (gap=0): shift_mw=0, precool_mw>0, SoC rises."""
+        engine = self._engine(initial_temp_c=22.0)
+        shift_mw, precool_mw = engine.compute_tick(
+            gap_mw=0.0, bms_override=False, sim_time=0.0, dt_seconds=5.0
+        )
+        assert shift_mw == 0.0, "Charge phase must produce zero shift"
+        assert precool_mw > 0.0, "Charge phase must draw positive precool load"
+
+    def test_charge_phase_raises_thermal_soc(self) -> None:
+        """Charge phase: thermal_soc_mwh increases by precool_mw * dt/3600 * eta."""
+        engine = self._engine(initial_temp_c=22.0, eta=0.9)
+        soc_before = engine.thermal_soc_mwh
+        _, precool_mw = engine.compute_tick(
+            gap_mw=0.0, bms_override=False, sim_time=0.0, dt_seconds=300.0
+        )
+        expected_delta = precool_mw * (300.0 / 3600.0) * 0.9
+        assert engine.thermal_soc_mwh > soc_before, "SoC must rise after a charge tick"
+        assert abs(engine.thermal_soc_mwh - (soc_before + expected_delta)) < 1e-9, (
+            "SoC delta must equal precool_mw * dt/3600 * eta"
+        )
+
+    def test_charge_phase_sets_pre_cooling_active(self) -> None:
+        """pre_cooling_active flag is True during a charge-phase tick."""
+        engine = self._engine(initial_temp_c=22.0)
+        engine.compute_tick(gap_mw=0.0, bms_override=False, sim_time=0.0, dt_seconds=5.0)
+        assert engine.pre_cooling_active, (
+            "pre_cooling_active must be True after a charge tick"
+        )
+
+    def test_charge_phase_lowers_temperature(self) -> None:
+        """Charge phase: inlet temperature drops (extra cooling applied)."""
+        engine = self._engine(initial_temp_c=22.0)
+        temp_before = engine.current_temp_c
+        engine.compute_tick(gap_mw=0.0, bms_override=False, sim_time=0.0, dt_seconds=5.0)
+        assert engine.current_temp_c < temp_before, (
+            "Pre-cooling must lower inlet temperature during charge phase"
+        )
+
+    def test_charge_phase_blocked_at_lower_temp_bound(self) -> None:
+        """Charge phase returns (0.0, 0.0) when inlet temp is at lower bound."""
+        engine = self._engine(initial_temp_c=18.0)  # at lower bound
+        shift_mw, precool_mw = engine.compute_tick(
+            gap_mw=0.0, bms_override=False, sim_time=0.0, dt_seconds=5.0
+        )
+        assert shift_mw == 0.0
+        assert precool_mw == 0.0, (
+            "Charge phase must be blocked when temperature is at lower comfort limit"
+        )
+
+    # -- Discharge phase -----------------------------------------------------
+
+    def test_discharge_phase_returns_positive_shift_and_zero_precool(self) -> None:
+        """Discharge phase (gap>0, SoC>0): shift_mw>0, precool_mw=0."""
+        engine = self._engine(thermal_soc_initial_mwh=1.0)
+        shift_mw, precool_mw = engine.compute_tick(
+            gap_mw=5.0, bms_override=False, sim_time=0.0, dt_seconds=300.0
+        )
+        assert shift_mw > 0.0, "Discharge phase must reduce the gap"
+        assert precool_mw == 0.0, "precool_mw must be zero during discharge"
+
+    def test_discharge_reduces_thermal_soc(self) -> None:
+        """Discharge phase: thermal_soc_mwh decreases by shift_mw * dt/3600."""
+        engine = self._engine(thermal_soc_initial_mwh=1.0)
+        soc_before = engine.thermal_soc_mwh
+        shift_mw, _ = engine.compute_tick(
+            gap_mw=5.0, bms_override=False, sim_time=0.0, dt_seconds=300.0
+        )
+        expected_soc = soc_before - shift_mw * (300.0 / 3600.0)
+        assert abs(engine.thermal_soc_mwh - max(0.0, expected_soc)) < 1e-9, (
+            "SoC must decrease by shift_mw * dt/3600 during discharge"
+        )
+
+    def test_discharge_exhausted_soc_returns_zero_shift(self) -> None:
+        """When thermal_soc is exhausted, discharge returns 0.0 shift."""
+        engine = self._engine(thermal_soc_initial_mwh=0.0)
+        shift_mw, precool_mw = engine.compute_tick(
+            gap_mw=5.0, bms_override=False, sim_time=0.0, dt_seconds=5.0
+        )
+        assert shift_mw == 0.0, (
+            "No discharge possible when thermal_soc is empty"
+        )
+
+    def test_discharge_clears_pre_cooling_active_flag(self) -> None:
+        """pre_cooling_active is False during a discharge tick."""
+        engine = self._engine(thermal_soc_initial_mwh=1.0)
+        engine.pre_cooling_active = True  # simulate prior charge tick
+        engine.compute_tick(gap_mw=5.0, bms_override=False, sim_time=0.0, dt_seconds=5.0)
+        assert not engine.pre_cooling_active, (
+            "pre_cooling_active must be cleared during discharge phase"
+        )
+
+    # -- BMS override blocks both phases -------------------------------------
+
+    def test_bms_override_blocks_charge_phase(self) -> None:
+        """BMS override returns (0.0, 0.0) during charge phase."""
+        engine = self._engine(initial_temp_c=22.0)
+        shift_mw, precool_mw = engine.compute_tick(
+            gap_mw=0.0, bms_override=True, sim_time=0.0, dt_seconds=5.0
+        )
+        assert shift_mw == 0.0
+        assert precool_mw == 0.0, (
+            "BMS override must block charge phase unconditionally"
+        )
+
+    def test_bms_override_blocks_discharge_phase(self) -> None:
+        """BMS override returns (0.0, 0.0) during discharge phase even with SoC."""
+        engine = self._engine(thermal_soc_initial_mwh=2.0)
+        shift_mw, precool_mw = engine.compute_tick(
+            gap_mw=5.0, bms_override=True, sim_time=0.0, dt_seconds=5.0
+        )
+        assert shift_mw == 0.0
+        assert precool_mw == 0.0, (
+            "BMS override must block discharge phase unconditionally"
+        )
+
+    def test_bms_override_does_not_drain_soc(self) -> None:
+        """BMS override must not change thermal_soc_mwh."""
+        engine = self._engine(thermal_soc_initial_mwh=1.5)
+        soc_before = engine.thermal_soc_mwh
+        engine.compute_tick(gap_mw=5.0, bms_override=True, sim_time=0.0, dt_seconds=5.0)
+        assert engine.thermal_soc_mwh == soc_before, (
+            "BMS override must not modify thermal_soc_mwh"
+        )
+
+    # -- Energy balance ------------------------------------------------------
+
+    def test_energy_balance_shift_leq_precool_times_eta(self) -> None:
+        """Integral of shift_mw <= integral of precool_mw * eta (S8.1 invariant)."""
+        engine = self._engine(initial_temp_c=22.0, eta=0.9)
+        dt = 300.0  # 5-minute ticks
+
+        # Charge: run until SoC builds up or temperature bound reached.
+        total_precool_energy_mwh = 0.0
+        for i in range(10):
+            _, precool_mw = engine.compute_tick(
+                gap_mw=0.0, bms_override=False,
+                sim_time=float(i * dt), dt_seconds=dt,
+            )
+            total_precool_energy_mwh += precool_mw * (dt / 3600.0)
+
+        # Discharge: run against a gap until SoC is exhausted.
+        total_shift_energy_mwh = 0.0
+        for i in range(10):
+            shift_mw, _ = engine.compute_tick(
+                gap_mw=5.0, bms_override=False,
+                sim_time=float((10 + i) * dt), dt_seconds=dt,
+            )
+            total_shift_energy_mwh += shift_mw * (dt / 3600.0)
+
+        assert total_shift_energy_mwh <= total_precool_energy_mwh * 0.9 + 1e-6, (
+            "Energy shifted must not exceed energy pre-cooled * eta"
+        )
+
+    def test_charge_then_discharge_full_cycle(self) -> None:
+        """A full charge->discharge cycle: SoC rises then falls back to 0."""
+        engine = self._engine(initial_temp_c=23.0, max_shift_mw=2.0, eta=1.0)
+        dt = 300.0
+
+        # Charge until temperature bound prevents further cooling.
+        for i in range(20):
+            engine.compute_tick(
+                gap_mw=0.0, bms_override=False,
+                sim_time=float(i * dt), dt_seconds=dt,
+            )
+        soc_after_charge = engine.thermal_soc_mwh
+        assert soc_after_charge > 0.0, "SoC must be positive after charge phase"
+
+        # Discharge until empty.
+        for i in range(20):
+            engine.compute_tick(
+                gap_mw=10.0, bms_override=False,
+                sim_time=float((20 + i) * dt), dt_seconds=dt,
+            )
+        assert engine.thermal_soc_mwh == 0.0, "SoC must reach 0 after full discharge"

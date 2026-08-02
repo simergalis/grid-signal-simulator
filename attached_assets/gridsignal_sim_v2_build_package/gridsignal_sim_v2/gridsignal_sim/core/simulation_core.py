@@ -401,19 +401,27 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # net_demand_mw is kept as a synonym so downstream fields that reference
     # the pre-staging-adjusted demand are consistent.
     pre_staging_shift_mw = 0.0
+    pre_staging_precool_mw = 0.0
     if state.pre_staging_engine is not None:
         _bms_override = (
             state.site.pre_staging_config.bms_override
             if state.site.pre_staging_config is not None
             else False
         )
-        pre_staging_shift_mw = state.pre_staging_engine.compute_shift(
-            gap_mw=p_dispatch_required_mw,
-            bms_override=_bms_override,
-            sim_time=sim_time,
-            dt_seconds=dt_seconds,
+        pre_staging_shift_mw, pre_staging_precool_mw = (
+            state.pre_staging_engine.compute_tick(
+                gap_mw=p_dispatch_required_mw,
+                bms_override=_bms_override,
+                sim_time=sim_time,
+                dt_seconds=dt_seconds,
+            )
         )
-        p_dispatch_required_mw = max(0.0, p_dispatch_required_mw - pre_staging_shift_mw)
+        # Discharge phase reduces the gap; charge phase draws extra load NOW.
+        # The two are mutually exclusive each tick (compute_tick guarantee).
+        p_dispatch_required_mw = (
+            max(0.0, p_dispatch_required_mw - pre_staging_shift_mw)
+            + pre_staging_precool_mw
+        )
         net_demand_mw = p_dispatch_required_mw
 
     # 3b. Step 11 — §28 PMS tick (before arbitration).
@@ -713,6 +721,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         dt_lead_next_s=dt_lead_next_s,
         bridging_basis=bridging_basis,
         pre_staging_shift_mw=pre_staging_shift_mw,
+        pre_staging_precool_mw=pre_staging_precool_mw,
         curtailment_proposal_tiers=_curtailment_proposal_tiers,
         pms_fast_shed_active=_pms_shed_active,
         pms_order_conflict=_pms_order_conflict,

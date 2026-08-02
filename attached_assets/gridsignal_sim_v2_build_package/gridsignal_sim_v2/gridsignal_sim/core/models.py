@@ -228,6 +228,14 @@ class PreStagingConfig:
     # BMS override flag.  In the real system this arrives as a per-tick
     # telemetry signal; here it is on the config so tests can set it.
     bms_override: bool = False
+    # Two-phase thermal SoC model (§8.1 load-shifting, not curtailment).
+    # thermal_soc_initial_mwh: pre-charged thermal energy at run start (MWh).
+    #   0.0 = no stored energy; engine must charge before it can discharge.
+    # eta: charge-phase efficiency (dimensionless, 0 < η ≤ 1).
+    #   Energy stored = P_precool × dt/3600 × eta.
+    # CHOSEN values — no measured basis (PROTO-10).
+    thermal_soc_initial_mwh: float = 0.0   # CHOSEN (PROTO-10)
+    eta: float = 0.9                        # CHOSEN (PROTO-10)
 
 
 # ---------------------------------------------------------------------------
@@ -540,9 +548,14 @@ class TickResult:
     #   "current_demand" — current net_demand_mw is the binding figure.
     #   "no_load"        — net demand is zero; bridging is not required.
     bridging_basis: str = "current_demand"
-    # Step 10: §8.1 pre-staging — MW of gap reduced by Phase 0 shiftable load.
-    # 0.0 when no pre-staging engine is configured or gap is 0.
+    # Step 10: §8.1 pre-staging — two-phase load-shifting fields.
+    # pre_staging_shift_mw: MW of gap REDUCED this tick (discharge phase).
+    #   0.0 when no pre-staging engine is configured, gap is 0, or thermal_soc
+    #   is exhausted.
     pre_staging_shift_mw: float = 0.0
+    # pre_staging_precool_mw: MW of EXTRA load drawn this tick to charge the
+    #   thermal store (charge phase).  0.0 during discharge or when BMS overrides.
+    pre_staging_precool_mw: float = 0.0
     # Step 10: §23.2 curtailment proposals — tuple of tier name strings for
     # every tier the curtailment ladder proposed this tick (empty = no proposal).
     # Proposals do not guarantee execution: C/D require human confirmation (TC-42).

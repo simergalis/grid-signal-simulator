@@ -151,9 +151,11 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         #   "current_demand" — current net_demand_mw is binding.
         #   "no_load"        — net demand is zero; no bridging required.
         "bridging_basis": tick.bridging_basis,
-        # Step 10 — §8.1 pre-staging shift applied this tick.
-        # 0.0 when PreStagingEngine is not active or gap was zero.
+        # Step 10 — §8.1 pre-staging two-phase fields.
+        # pre_staging_shift_mw: MW of gap reduced (discharge phase).
+        # pre_staging_precool_mw: MW of extra load drawn to charge thermal store.
         "pre_staging_shift_mw": round(tick.pre_staging_shift_mw, 4),
+        "pre_staging_precool_mw": round(tick.pre_staging_precool_mw, 4),
         # AB3 — fields present on TickResult but previously missing from the dict.
         # Serialised so consumers (playback, energy-summary, TC-68 audit) can see them.
         #

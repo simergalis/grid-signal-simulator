@@ -337,14 +337,25 @@ async def test_energy_summary_returns_required_fields_for_completed_run():
 # 14 ────────────────────────────────────────────────────────────────────────
 @pytest.mark.asyncio
 async def test_demo_prestage_column3_tc55_tc56():
-    """TC-55/TC-56 column-3: PreStagingEngine engagement via the shipped
-    demo-prestage scenario (build_seeded_store → build_run_context_from_spec).
+    """TC-55/TC-56 column-3 — two-phase load-shifting via demo-prestage scenario.
 
-    TC-55: temperature-bound limits shift — headroom exhausts so the shift
-           tapers from the full 1.0 MW ceiling toward the warmup floor
-           (~0.04 MW) within the 300 s run.
-    TC-56: bms_override=False (default) → PreStagingEngine engages at all;
-           at least one tick must have pre_staging_shift_mw > 0.
+    Tests the §8.1 two-phase model (charge before peak, discharge at peak):
+
+    TC-56: bms_override=False (default) → engine engages in at least one phase.
+           Either pre_staging_precool_mw > 0 (charge) or pre_staging_shift_mw > 0
+           (discharge) must appear somewhere in the run.
+
+    Two-phase check: early-run charge phase (precool > 0, shift == 0) must appear
+           before any discharge tick (shift > 0, precool == 0), demonstrating that
+           load is moved EARLIER rather than erased (§8.1 distinction).
+
+    Mutual exclusivity: no tick may have both precool > 0 and shift > 0 (compute_tick
+           guarantee: the two phases cannot fire simultaneously).
+
+    TC-55: charge rate bounded by temperature headroom — precool never exceeds
+           max_shift_mw=1.0; total precool is finite (temp bound limits duration).
+
+    Energy balance (§8.1 invariant): total shift energy ≤ total precool energy × η.
     """
     store = build_seeded_store()
     rec = store.get("demo-prestage")
@@ -363,33 +374,56 @@ async def test_demo_prestage_column3_tc55_tc56():
     completed = manager._completed.get("col3-prestage")
     assert completed is not None, "run must complete and be stored"
 
-    shifts = [
-        float(row.get("pre_staging_shift_mw", 0.0))
-        for row in completed.tick_dicts
-    ]
-    assert len(shifts) > 0, "must have at least one tick"
+    ticks = completed.tick_dicts
+    assert len(ticks) > 0, "must have at least one tick"
 
-    # TC-56 (col-3): engine engages — at least one positive shift
-    assert any(s > 0.0 for s in shifts), (
+    shifts   = [float(row.get("pre_staging_shift_mw",   0.0)) for row in ticks]
+    precools = [float(row.get("pre_staging_precool_mw", 0.0)) for row in ticks]
+
+    # TC-56 (col-3): engine engages in at least one phase.
+    assert any(s > 0.0 for s in shifts) or any(p > 0.0 for p in precools), (
         "TC-56/col-3: bms_override=False must allow PreStagingEngine to engage; "
-        "no tick had pre_staging_shift_mw > 0"
+        "no tick had pre_staging_shift_mw > 0 or pre_staging_precool_mw > 0"
     )
 
-    # TC-55 (col-3): shift is bounded by temperature headroom — tapers over run
-    # Peak is at most max_shift_mw=1.0; later ticks should drop toward the
-    # warmup-replenishment floor once the lower-band 18 °C is approached.
-    peak = max(shifts)
-    assert peak <= 1.001, (
-        f"TC-55/col-3: shift must never exceed max_shift_mw=1.0; peak={peak:.4f}"
+    # Two-phase check: at least one charge tick (precool > 0, shift == 0).
+    has_charge_tick = any(
+        p > 0.0 and s == 0.0 for p, s in zip(precools, shifts)
     )
-    # After the first 30 ticks the engine is in steady-state floor territory.
-    late = [s for s in shifts[30:] if s >= 0.0]
-    if late:
-        late_max = max(late)
-        assert late_max < peak or late_max < 1.0, (
-            f"TC-55/col-3: late-run shift ({late_max:.4f}) not bounded below peak "
-            f"({peak:.4f}); headroom taper did not fire"
+    assert has_charge_tick, (
+        "Two-phase/col-3: no charge-phase tick found (pre_staging_precool_mw > 0 "
+        "with pre_staging_shift_mw == 0); engine must draw load BEFORE the peak"
+    )
+
+    # Mutual exclusivity: both fields > 0 on the same tick is a logic error.
+    for i, (s, p) in enumerate(zip(shifts, precools)):
+        assert not (s > 0.0 and p > 0.0), (
+            f"Mutual-exclusivity/col-3: tick {i} has both shift={s:.4f} and "
+            f"precool={p:.4f}; compute_tick must not fire both phases at once"
         )
+
+    # TC-55 (col-3): charge rate bounded by max_shift_mw=1.0.
+    peak_precool = max(precools)
+    assert peak_precool <= 1.001, (
+        f"TC-55/col-3: precool_mw must never exceed max_shift_mw=1.0; "
+        f"peak_precool={peak_precool:.4f}"
+    )
+    peak_shift = max(shifts)
+    assert peak_shift <= 1.001, (
+        f"TC-55/col-3: shift_mw must never exceed max_shift_mw=1.0; "
+        f"peak_shift={peak_shift:.4f}"
+    )
+
+    # Energy balance (§8.1): integral shift ≤ integral precool × η.
+    # dt is consistent across ticks; using count as a proxy (dt cancels out).
+    dt_hours = 5.0 / 3600.0  # 5-second ticks
+    eta = spec_data.get("pre_staging_config", {}).get("eta", 0.9)
+    total_shift_mwh   = sum(shifts)   * dt_hours
+    total_precool_mwh = sum(precools) * dt_hours
+    assert total_shift_mwh <= total_precool_mwh * eta + 1e-6, (
+        f"Energy-balance/col-3: shift energy ({total_shift_mwh:.6f} MWh) exceeds "
+        f"precool energy × η ({total_precool_mwh * eta:.6f} MWh)"
+    )
 
 
 # 15 ────────────────────────────────────────────────────────────────────────

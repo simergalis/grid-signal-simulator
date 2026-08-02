@@ -1102,6 +1102,97 @@ class PreStagingEngine:
     def __init__(self, config: PreStagingConfig) -> None:
         self.config = config
         self._current_temp_c: float = config.initial_temp_c
+        # Two-phase thermal SoC state.
+        # thermal_soc_mwh: stored thermal energy available for discharge (MWh).
+        self.thermal_soc_mwh: float = config.thermal_soc_initial_mwh
+        # pre_cooling_active: True while a charge-phase tick drew extra load.
+        self.pre_cooling_active: bool = False
+
+    def compute_tick(
+        self,
+        gap_mw: float,
+        bms_override: bool,
+        sim_time: float,
+        dt_seconds: float,
+    ) -> tuple[float, float]:
+        """Two-phase pre-staging tick (§8.1 load-shifting, not curtailment).
+
+        Returns ``(shift_mw, precool_mw)``:
+          shift_mw   — MW of gap reduction from thermal-SoC discharge (≥ 0).
+          precool_mw — MW of extra load drawn NOW to charge thermal store (≥ 0).
+
+        The two phases are mutually exclusive each tick:
+          Charge phase  (gap_mw ≤ 0): pre-cool NOW; temp drops; SoC rises.
+          Discharge phase (gap_mw > 0): use stored cold; temp warms; SoC falls.
+
+        TC-56: bms_override=True → (0.0, 0.0), warmup still applied.
+        TC-55: both phases bounded by (current_temp − inlet_temp_low_c) headroom.
+        """
+        warmup_delta = self.config.warmup_rate_c_per_s * dt_seconds
+        dt_hours = dt_seconds / 3600.0
+
+        # TC-56: BMS override is unconditional — blocks both phases.
+        if bms_override or self.config.bms_override:
+            self._current_temp_c = min(
+                self.config.inlet_temp_high_c,
+                self._current_temp_c + warmup_delta,
+            )
+            self.pre_cooling_active = False
+            return 0.0, 0.0
+
+        # ── Discharge phase ──────────────────────────────────────────────────
+        if gap_mw > 1e-9:
+            self.pre_cooling_active = False
+            # Thermal SoC limits how much can be discharged this tick.
+            max_from_soc = (
+                self.thermal_soc_mwh / dt_hours if dt_hours > 0.0 else 0.0
+            )
+            shift_mw = min(gap_mw, self.config.max_shift_mw, max_from_soc)
+            shift_mw = max(0.0, shift_mw)
+            # During discharge the hall warms naturally (no extra cooling).
+            self._current_temp_c = max(
+                self.config.inlet_temp_low_c,
+                min(
+                    self.config.inlet_temp_high_c,
+                    self._current_temp_c + warmup_delta,
+                ),
+            )
+            self.thermal_soc_mwh = max(
+                0.0, self.thermal_soc_mwh - shift_mw * dt_hours
+            )
+            return shift_mw, 0.0
+
+        # ── Charge phase ─────────────────────────────────────────────────────
+        # No current gap — pre-cool now to build the thermal store.
+        # TC-55: headroom above the lower comfort limit bounds the charge rate.
+        headroom_c = self._current_temp_c - self.config.inlet_temp_low_c
+        if headroom_c <= 0.0:
+            # Already at lower bound; can't pre-cool further.
+            self._current_temp_c = max(
+                self.config.inlet_temp_low_c,
+                min(
+                    self.config.inlet_temp_high_c,
+                    self._current_temp_c + warmup_delta,
+                ),
+            )
+            self.pre_cooling_active = False
+            return 0.0, 0.0
+
+        gain_per_tick = self.config.cooling_gain_c_per_mw_s * dt_seconds
+        max_from_temp = (headroom_c / gain_per_tick) if gain_per_tick > 0.0 else 0.0
+        precool_mw = min(self.config.max_shift_mw, max_from_temp)
+        precool_mw = max(0.0, precool_mw)
+
+        # Charge: extra cooling lowers inlet temp; ambient warms it.
+        delta_temp = -precool_mw * gain_per_tick + warmup_delta
+        self._current_temp_c = max(
+            self.config.inlet_temp_low_c,
+            min(self.config.inlet_temp_high_c, self._current_temp_c + delta_temp),
+        )
+        # Store energy with charge-phase efficiency η.
+        self.thermal_soc_mwh += precool_mw * dt_hours * self.config.eta
+        self.pre_cooling_active = precool_mw > 0.0
+        return 0.0, precool_mw
 
     def compute_shift(
         self,
@@ -1110,13 +1201,19 @@ class PreStagingEngine:
         sim_time: float,
         dt_seconds: float,
     ) -> float:
-        """Compute and apply one tick of pre-staging.
+        """Legacy temperature-only model (original §8.1 behaviour).
+
+        Kept for direct test use (TC-55, TC-56).  Does NOT use the thermal-SoC
+        store; shift is bounded only by the inlet-temperature headroom and
+        max_shift_mw.  This is the *curtailment* model — it reduces the gap
+        without pre-charging.
+
+        Callers that need the full load-shifting (charge + discharge) behaviour
+        should use compute_tick() instead.
 
         Returns MW of gap reduction achieved by pre-cooling.
-        Advances internal temperature state regardless of outcome.
-
-        TC-56: bms_override=True → 0.0 returned, warmup still applied.
-        TC-55: shift capped by (current_temp - inlet_temp_low_c) headroom.
+        TC-56: bms_override=True → 0.0, warmup still applied.
+        TC-55: shift capped by (current_temp − inlet_temp_low_c) headroom.
         """
         warmup_delta = self.config.warmup_rate_c_per_s * dt_seconds
 
