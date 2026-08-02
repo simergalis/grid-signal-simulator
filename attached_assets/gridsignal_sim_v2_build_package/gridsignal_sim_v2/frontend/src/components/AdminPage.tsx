@@ -140,6 +140,129 @@ function AddUserModal({ onClose, onCreated }: AddUserModalProps) {
   )
 }
 
+// ── Reset password modal ──────────────────────────────────────────────────────
+
+interface ResetPasswordModalProps {
+  user: User
+  onClose: () => void
+  onDone: () => void
+}
+
+function ResetPasswordModal({ user, onClose, onDone }: ResetPasswordModalProps) {
+  const [password,  setPassword]  = useState('')
+  const [confirm,   setConfirm]   = useState('')
+  const [error,     setError]     = useState<string | null>(null)
+  const [loading,   setLoading]   = useState(false)
+  const [success,   setSuccess]   = useState(false)
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters')
+      return
+    }
+    if (password !== confirm) {
+      setError('Passwords do not match')
+      return
+    }
+    setLoading(true)
+    try {
+      const resp = await fetch(`/api/admin/users/${user.id}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      })
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ detail: 'Unknown error' }))
+        throw new Error(err.detail ?? 'Failed to reset password')
+      }
+      setSuccess(true)
+      setTimeout(onDone, 1200)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : String(err))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.7)' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+    >
+      <div
+        className="rounded-lg border border-border"
+        style={{ background: '#151d26', width: 400, padding: '28px 28px 24px' }}
+      >
+        <div className="flex items-center justify-between mb-1">
+          <h2 className="font-sans font-semibold" style={{ fontSize: 15, color: '#e6ecf2' }}>
+            Reset password
+          </h2>
+          <button onClick={onClose} style={{ color: '#7d8b9c', fontSize: 18, lineHeight: 1 }}>✕</button>
+        </div>
+        <p className="font-sans mb-4" style={{ fontSize: 12, color: '#7d8b9c' }}>
+          Setting a new password for <span style={{ color: '#e6ecf2' }}>{user.display_name}</span> ({user.email})
+        </p>
+
+        {success ? (
+          <div className="rounded px-3 py-2 font-sans"
+               style={{ fontSize: 13, color: '#4ade80', background: '#4ade8015', border: '1px solid #4ade8030' }}>
+            ✓ Password updated successfully
+          </div>
+        ) : (
+          <form onSubmit={submit} className="flex flex-col gap-3">
+            <label className="flex flex-col gap-1">
+              <span className="font-sans" style={{ fontSize: 11, color: '#7d8b9c' }}>New password *</span>
+              <input
+                type="password" required value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="Minimum 8 characters"
+                autoFocus
+                className="rounded border border-border bg-canvas px-3 py-2 font-sans outline-none focus:border-accent"
+                style={{ fontSize: 13, color: '#e6ecf2' }}
+              />
+            </label>
+
+            <label className="flex flex-col gap-1">
+              <span className="font-sans" style={{ fontSize: 11, color: '#7d8b9c' }}>Confirm password *</span>
+              <input
+                type="password" required value={confirm}
+                onChange={e => setConfirm(e.target.value)}
+                placeholder="Repeat new password"
+                className="rounded border border-border bg-canvas px-3 py-2 font-sans outline-none focus:border-accent"
+                style={{ fontSize: 13, color: '#e6ecf2' }}
+              />
+            </label>
+
+            {error && (
+              <div className="rounded px-3 py-2 font-sans"
+                   style={{ fontSize: 12, color: '#f87171', background: '#f8717115', border: '1px solid #f8717130' }}>
+                {error}
+              </div>
+            )}
+
+            <div className="flex gap-2 justify-end mt-1">
+              <button type="button" onClick={onClose}
+                      className="px-4 py-2 rounded border border-border font-sans text-muted hover:text-text transition-colors"
+                      style={{ fontSize: 12 }}>
+                Cancel
+              </button>
+              <button type="submit" disabled={loading}
+                      className="px-4 py-2 rounded font-sans font-medium transition-opacity"
+                      style={{ fontSize: 12, background: '#3fb6a8', color: '#0b1017', opacity: loading ? 0.6 : 1 }}>
+                {loading ? 'Saving…' : 'Set password'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Created confirmation banner ───────────────────────────────────────────────
 
 function CreatedBanner({ user, onDismiss }: { user: User; onDismiss: () => void }) {
@@ -190,6 +313,7 @@ export function AdminPage() {
   const [created,    setCreated]    = useState<User | null>(null)
   const [busy,       setBusy]       = useState<number | null>(null)   // id of row being patched
   const [deleteConf, setDeleteConf] = useState<number | null>(null)   // id awaiting delete confirm
+  const [resetPwUser, setResetPwUser] = useState<User | null>(null)   // user whose password is being reset
   const abortRef = useRef<AbortController | null>(null)
 
   const load = useCallback(async () => {
@@ -406,15 +530,26 @@ export function AdminPage() {
                           </button>
                         </span>
                       ) : (
-                        <button
-                          disabled={busy === u.id}
-                          onClick={() => setDeleteConf(u.id)}
-                          className="font-sans hover:text-red-400 transition-colors"
-                          style={{ fontSize: 11, color: '#4b5764' }}
-                          aria-label="Delete account"
-                        >
-                          Delete
-                        </button>
+                        <span className="flex items-center gap-3 justify-end">
+                          <button
+                            disabled={busy === u.id}
+                            onClick={() => setResetPwUser(u)}
+                            className="font-sans hover:text-accent transition-colors"
+                            style={{ fontSize: 11, color: '#4b5764' }}
+                            aria-label="Reset password"
+                          >
+                            Reset pw
+                          </button>
+                          <button
+                            disabled={busy === u.id}
+                            onClick={() => setDeleteConf(u.id)}
+                            className="font-sans hover:text-red-400 transition-colors"
+                            style={{ fontSize: 11, color: '#4b5764' }}
+                            aria-label="Delete account"
+                          >
+                            Delete
+                          </button>
+                        </span>
                       )}
                     </td>
                   </tr>
@@ -434,6 +569,15 @@ export function AdminPage() {
             setCreated(u)
             setShowAdd(false)
           }}
+        />
+      )}
+
+      {/* Reset password modal */}
+      {resetPwUser && (
+        <ResetPasswordModal
+          user={resetPwUser}
+          onClose={() => setResetPwUser(null)}
+          onDone={() => setResetPwUser(null)}
         />
       )}
     </div>

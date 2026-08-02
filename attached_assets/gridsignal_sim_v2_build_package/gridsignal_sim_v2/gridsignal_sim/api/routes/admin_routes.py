@@ -201,6 +201,7 @@ class UserResponse(BaseModel):
 class PatchUserRequest(BaseModel):
     is_active: bool | None = None
     role: str | None = None
+    password: str | None = None   # non-empty → replace hash; None/empty → no change
 
 
 # ---------------------------------------------------------------------------
@@ -305,7 +306,7 @@ async def patch_user(
     body: PatchUserRequest,
     db: AsyncSession = Depends(get_db_session),
 ):
-    """Activate/deactivate a user or change their role."""
+    """Activate/deactivate a user, change their role, or reset their password."""
     user = await db.get(AuthUser, user_id)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
@@ -316,6 +317,13 @@ async def patch_user(
         if body.role not in VALID_ROLES:
             raise HTTPException(status_code=422, detail=f"role must be one of: {', '.join(VALID_ROLES)}")
         user.role = body.role
+    if body.password is not None and body.password.strip():
+        user.password_hash = hash_password(body.password)
+        _log.info(
+            "Admin reset password for user %s (id=%s)",
+            user.email,
+            user_id,
+        )
 
     await db.commit()
     await db.refresh(user)
