@@ -23,6 +23,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useTickStore } from '../store/tickStore'
 import { GenTripModal } from './GenTripModal'
 import { ReserveModal } from './ReserveModal'
+import { LocationPicker } from './LocationPicker'
 import type { ContingencyCoverage } from '../types'
 
 interface FigureProps {
@@ -112,7 +113,11 @@ function genTripSub(cc: ContingencyCoverage | null | undefined): string | undefi
 // Component
 // ---------------------------------------------------------------------------
 
-export function VerdictBand() {
+interface VerdictBandProps {
+  onLocationChanged?: () => void
+}
+
+export function VerdictBand({ onLocationChanged }: VerdictBandProps = {}) {
   const tick  = useTickStore(s => s.latestTick)
   const alert = useTickStore(s => s.latchedAlert)
 
@@ -298,6 +303,12 @@ export function VerdictBand() {
             {subtitle}
           </div>
         </div>
+
+        {/* ── Divider ──────────────────────────────────────────────────────── */}
+        <div className="self-stretch w-px bg-border mx-2 flex-shrink-0" />
+
+        {/* ── Location picker ──────────────────────────────────────────────── */}
+        <LocationPicker onLocationChanged={onLocationChanged} />
 
         {/* ── Divider ──────────────────────────────────────────────────────── */}
         <div className="self-stretch w-px bg-border mx-2 flex-shrink-0" />

@@ -21,7 +21,6 @@ import { useState, useEffect, useRef } from 'react'
 import { VerdictBand }      from './VerdictBand'
 import { PlantDiagram }     from './PlantDiagram'
 import type { SolarPreview } from './PlantNode'
-import { LocationPicker }   from './LocationPicker'
 import { SubsystemModal }   from '../subsystem/SubsystemModal'
 import { SubsystemTile }    from '../readiness/SubsystemTile'
 import type { TileState }   from '../readiness/SubsystemTile'
@@ -99,27 +98,25 @@ export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
     <div className="flex flex-col h-full bg-canvas overflow-hidden">
 
       {/* ── Band 1: Verdict ────────────────────────────────────────────── */}
-      <VerdictBand />
+      <VerdictBand onLocationChanged={() => {
+        solarFetched.current = false
+        fetch('/solar-preview')
+          .then(r => r.ok ? r.json() : null)
+          .then((d: SolarPreview | null) => { if (d) setSolarPreview(d) })
+          .catch(() => {})
+      }} />
 
       {/* ── Band 2: Plant mimic ────────────────────────────────────────── */}
       <div className="flex-1 overflow-hidden relative">
         <div
-          className="absolute top-2 left-4 right-4 z-10 flex items-center justify-between select-none"
+          className="absolute top-2 left-4 z-10 font-mono text-[9px] font-bold
+                     uppercase tracking-[0.12em] select-none"
+          style={{ color: '#3fb6a8' }}
         >
-          <div className="font-mono text-[9px] font-bold uppercase tracking-[0.12em]" style={{ color: '#3fb6a8' }}>
-            PLANT
-            <span className="font-normal ml-2" style={{ color: '#4b5764' }}>
-              Islanded microgrid · every element opens its detail view
-            </span>
-          </div>
-          <LocationPicker onLocationChanged={() => {
-            // Refresh the solar-preview badge for the new location
-            solarFetched.current = false
-            fetch('/solar-preview')
-              .then(r => r.ok ? r.json() : null)
-              .then((d: SolarPreview | null) => { if (d) setSolarPreview(d) })
-              .catch(() => {})
-          }} />
+          PLANT
+          <span className="font-normal ml-2" style={{ color: '#4b5764' }}>
+            Islanded microgrid · every element opens its detail view
+          </span>
         </div>
 
         <div className="w-full h-full pt-6">
