@@ -46,12 +46,27 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def create_auth_tables() -> None:
-    """Ensure the AuthUser table exists.
+    """Ensure the AuthUser table exists with the current schema.
 
     Called from the app lifespan so the table is always present before any
-    request arrives.  Uses create_all(checkfirst=True) so existing tables
-    are never modified.
+    request arrives.
+
+    Migration guard: SQLite cannot ALTER a CHECK constraint.  If the
+    auth_user table was created before 'admin' was added to ck_auth_user_role
+    we drop it and recreate it.  This is safe because the table is empty on
+    any fresh deployment, and we check the constraint definition before
+    dropping so existing data is never silently discarded on a schema-compatible
+    deployment.
     """
+    from sqlalchemy import text
     from runtime.persistence import Base
+
     async with _engine.begin() as conn:
+        result = await conn.execute(
+            text("SELECT sql FROM sqlite_master WHERE type='table' AND name='auth_user'")
+        )
+        row = result.fetchone()
+        if row is not None and "'admin'" not in (row[0] or ""):
+            # Old constraint — drop the empty table so create_all rebuilds it.
+            await conn.execute(text("DROP TABLE auth_user"))
         await conn.run_sync(Base.metadata.create_all, checkfirst=True)

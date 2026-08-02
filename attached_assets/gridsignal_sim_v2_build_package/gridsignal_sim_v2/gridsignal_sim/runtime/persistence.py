@@ -351,12 +351,13 @@ class AuthUser(Base):
     phone: Mapped[str] = mapped_column(String, nullable=False)
     display_name: Mapped[str] = mapped_column(String, nullable=False)
     role: Mapped[str] = mapped_column(String, nullable=False, default="operator")
+    # NOTE: 'admin' must appear here — ck_auth_user_role is enforced by SQLite.
     password_hash: Mapped[str] = mapped_column(String, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     __table_args__ = (
         CheckConstraint(
-            "role IN ('viewer', 'operator', 'approver')",
+            "role IN ('viewer', 'operator', 'approver', 'admin')",
             name="ck_auth_user_role",
         ),
     )
