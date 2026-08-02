@@ -43,7 +43,7 @@ def _portal_url() -> str:
     intentionally ignored — it is the internal dev tunnel, not the public URL.
     """
     explicit = os.environ.get("APP_PORTAL_URL", "").strip()
-    return explicit.rstrip("/") if explicit else "https://gridsgnl.com"
+    return explicit.rstrip("/") if explicit else "https://app.gridsgnl.com"
 
 
 def _get_client():
@@ -74,37 +74,51 @@ def send_welcome_email(to_email: str, display_name: str) -> bool:
 
     url    = _portal_url()
     sender = _from_email()
-    subject = f"Your {_APP_NAME} account is ready"
+    subject = f"Welcome to {_APP_NAME}"
     body = f"""\
-<div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0b1017;color:#e6ecf2;padding:32px;border-radius:8px">
-  <p style="color:#3fb6a8;font-size:20px;font-weight:700;letter-spacing:0.1em;margin-bottom:4px">GRIDSIGNAL</p>
-  <p style="color:#4b5764;font-size:12px;margin-top:0">Predictive power management</p>
-  <hr style="border:none;border-top:1px solid #1e2a38;margin:20px 0">
-  <p>Hello {display_name},</p>
-  <p>An account has been created for you on <strong>{_APP_NAME}</strong>.</p>
-  <p style="background:#111821;border-radius:6px;padding:12px 16px;font-size:13px">
-    <strong style="color:#3fb6a8">Your login email:</strong><br>
-    <span style="font-family:monospace">{to_email}</span>
+<div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0b1017;color:#e6ecf2;padding:40px 32px;border-radius:8px">
+
+  <!-- Header -->
+  <p style="color:#3fb6a8;font-size:22px;font-weight:700;letter-spacing:0.12em;margin:0 0 2px">GRIDSIGNAL</p>
+  <p style="color:#4b5764;font-size:12px;margin:0 0 24px">Predictive power management</p>
+  <hr style="border:none;border-top:1px solid #1e2a38;margin:0 0 28px">
+
+  <!-- Greeting -->
+  <p style="margin:0 0 16px">Hi {display_name},</p>
+  <p style="margin:0 0 16px">
+    Welcome to GridSignal. Your account is ready and you can sign in right now
+    — no password required.
   </p>
-  <p>To sign in, click the button below, enter your email address, and we'll
-     send you a one-time code. No password needed — just check your inbox
-     each time you log in.</p>
-  <div style="text-align:center;margin:28px 0">
+
+  <!-- Login email callout -->
+  <div style="background:#111821;border-left:3px solid #3fb6a8;border-radius:0 6px 6px 0;padding:14px 18px;margin:0 0 20px">
+    <p style="color:#7d8b9c;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 4px">Your sign-in email</p>
+    <p style="font-family:monospace;font-size:15px;color:#e6ecf2;margin:0">{to_email}</p>
+  </div>
+
+  <!-- How to sign in -->
+  <p style="margin:0 0 8px;font-weight:600;color:#c8d6e5">How to sign in</p>
+  <ol style="margin:0 0 24px;padding-left:20px;line-height:1.8;color:#c8d6e5">
+    <li>Go to <a href="{url}" style="color:#3fb6a8;text-decoration:none">{url}</a></li>
+    <li>Enter your email address above</li>
+    <li>Check your inbox for a 6-digit code and enter it</li>
+  </ol>
+
+  <!-- CTA -->
+  <div style="text-align:center;margin:32px 0 28px">
     <a href="{url}"
        style="display:inline-block;background:#3fb6a8;color:#0b1017;font-weight:700;
-              font-size:15px;text-decoration:none;padding:14px 32px;border-radius:6px;
+              font-size:15px;text-decoration:none;padding:14px 36px;border-radius:6px;
               letter-spacing:0.04em">
-      Go to GridSignal dashboard
+      Open GridSignal
     </a>
   </div>
-  <p style="font-size:13px;color:#7d8b9c;text-align:center;word-break:break-all">
-    Or copy this link:<br>
-    <a href="{url}" style="color:#3fb6a8">{url}</a>
-  </p>
-  <hr style="border:none;border-top:1px solid #1e2a38;margin:20px 0">
-  <p style="color:#7d8b9c;font-size:12px">
-    If you did not expect this email, you can safely ignore it.
-    No action is needed unless you want to use this account.
+
+  <hr style="border:none;border-top:1px solid #1e2a38;margin:0 0 20px">
+
+  <p style="color:#7d8b9c;font-size:12px;margin:0">
+    If you weren't expecting this invitation, you can safely ignore this email.
+    Your account will remain inactive until you first sign in.
   </p>
 </div>
 """
