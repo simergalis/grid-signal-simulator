@@ -133,7 +133,9 @@ def create_app() -> FastAPI:
         # Pass through: unprotected API paths and all non-/api/ paths
         # (static assets, SPA index.html, WebSocket upgrade — WS auth is
         # handled by the WS route itself after the HTTP upgrade).
-        if not path.startswith("/api/") or path in _UNPROTECTED:
+        # Admin routes have their own key/session auth (_require_admin) so
+        # the cookie middleware must not block them before they are reached.
+        if not path.startswith("/api/") or path in _UNPROTECTED or path.startswith("/api/admin"):
             return await call_next(request)
         token = request.cookies.get(COOKIE_NAME)
         if not token or decode_access_token(token) is None:
