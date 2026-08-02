@@ -116,6 +116,10 @@ function feederStateColour(state: string): string {
 // Defined outside deriveData so the React reference is stable across ticks and
 // the useEffect polling timer is not torn down and recreated on every tick.
 
+// ── BankFleetPanel renders the live bank/feeder rows only.
+// The BulletBars above it are rendered by deriveData using tick.p_renewable_mw
+// (already the correct physics-overridden value) so they stay in sync with the
+// hero value and verdict text.
 function BankFleetPanel(): React.ReactElement {
   const [solar, setSolar]         = useState<SolarState | null>(null)
   const [error, setError]         = useState(false)
@@ -179,42 +183,12 @@ function BankFleetPanel(): React.ReactElement {
   }
 
   if (!solar) {
-    return React.createElement('div', { className: 'space-y-0' },
-      // Placeholder bars while snapshot loads
-      React.createElement('div', { className: 'space-y-2 mb-3' },
-        React.createElement(BulletBar, { label: 'Current output against rated', value: 0, max: 5, colour: SOLAR, unit: ' MW', note: 'loading…' }),
-        React.createElement(BulletBar, { label: 'If solar stopped this second',  value: 0, max: 5, colour: RED,   unit: ' MW', note: 'loading…' }),
-      ),
-      React.createElement('div', {
-        className: 'font-mono text-[10px] text-muted py-2 text-center animate-pulse',
-      }, 'Loading bank fleet…'),
-    )
+    return React.createElement('div', {
+      className: 'font-mono text-[10px] text-muted py-2 text-center animate-pulse',
+    }, 'Loading bank fleet…')
   }
 
-  const { power, feeders, banks, exposure, reserve, advisories } = solar
-
-  // ── Live output bars — always read from snapshot so operator bank shutdowns
-  // are reflected immediately, independent of tick.p_renewable_mw which carries
-  // the Mistral forecast and may lag operator actions.
-  const liveMW = power.p_renewable_mw
-  const liveOutputBars = React.createElement('div', { className: 'space-y-2 mb-3' },
-    React.createElement(BulletBar, {
-      label:  'Current output against rated',
-      value:  liveMW,
-      max:    Math.max(liveMW, 5),
-      colour: SOLAR,
-      unit:   ' MW',
-      note:   liveMW > 0 ? 'contributing at rated output' : 'zero output — full load falls to dispatchable sources',
-    }),
-    React.createElement(BulletBar, {
-      label:  'If solar stopped this second',
-      value:  liveMW,
-      max:    Math.max(liveMW, 5),
-      colour: RED,
-      unit:   ' MW',
-      note:   'an inverter trip is a step change with Δt_lead = 0 — no advance warning',
-    }),
-  )
+  const { feeders, banks, exposure, reserve, advisories } = solar
 
   // Build a map from bank ID → BankSnap for quick lookup
   const bankMap: Record<string, BankSnap> = {}
@@ -483,7 +457,6 @@ function BankFleetPanel(): React.ReactElement {
   )
 
   return React.createElement('div', { className: 'mt-2 pt-2 space-y-0' },
-    liveOutputBars,
     // Section header
     React.createElement('div', {
       className: 'flex items-baseline justify-between mb-1',
@@ -556,12 +529,28 @@ export const renewablePanel: PanelConfig = {
       height:  200,
     })
 
-    // ── Secondary: BankFleetPanel owns the live output bars + bank fleet.
-    // BankFleetPanel polls /api/solar/state at 1.5 Hz and renders the two
-    // BulletBars using power.p_renewable_mw from the snapshot — correct even
-    // when operator bank shutdowns reduce output below the Mistral forecast
-    // carried on tick.p_renewable_mw.
-    const secondary = React.createElement(BankFleetPanel)
+    // ── Secondary: bars use solarMW (tick.p_renewable_mw — already the
+    // physics-overridden value that matches the hero/verdict), then the live
+    // bank fleet panel below.
+    const secondary = React.createElement('div', { className: 'space-y-2' },
+      React.createElement(BulletBar, {
+        label:  'Current output against rated',
+        value:  solarMW,
+        max:    Math.max(solarMW, 5),
+        colour: SOLAR,
+        unit:   ' MW',
+        note:   solarMW > 0 ? 'contributing at rated output' : 'zero output — full load falls to dispatchable sources',
+      }),
+      React.createElement(BulletBar, {
+        label:  'If solar stopped this second',
+        value:  solarMW,
+        max:    Math.max(solarMW, 5),
+        colour: RED,
+        unit:   ' MW',
+        note:   'an inverter trip is a step change with Δt_lead = 0 — no advance warning',
+      }),
+      React.createElement(BankFleetPanel),
+    )
 
     return {
       stateLabel:  'ADVISORY',
