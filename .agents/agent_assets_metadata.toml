@@ -7,3 +7,10 @@ uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/
 type = "text"
 title = "GridSignal Algorithm Reference"
 description = "Detailed technical summary of the GridSignal Simulator algorithm — all 11 evaluation steps, formulas, interlocks, and fixed step-order summary."
+
+[[outputs]]
+id = "bbSoaYbi1zBIhexCcTHpZ"
+uri = "file://attached_assets/gridsignal_auth_spec.md"
+type = "text"
+title = "GridSignal Auth System Specification"
+description = "Complete specification of the existing single-tenant auth DB, logic, and UI — ready for Claude to design a multi-tenant version from."
