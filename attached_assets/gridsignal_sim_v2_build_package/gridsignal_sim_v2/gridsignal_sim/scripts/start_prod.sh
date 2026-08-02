@@ -53,6 +53,12 @@ PYTHONLIBS_SITE="/home/runner/workspace/.pythonlibs/lib/python3.13/site-packages
 python3 -c "import websockets" 2>/dev/null || \
   pip3 install --target="$PYTHONLIBS_SITE" websockets --quiet 2>&1 | tail -1 || true
 
+# asyncpg is required when DATABASE_URL is set (Replit managed PostgreSQL).
+# Without it user accounts are stored in a SQLite file inside the container
+# image and are wiped on every publish.
+python3 -c "import asyncpg" 2>/dev/null || \
+  pip3 install --target="$PYTHONLIBS_SITE" asyncpg --quiet 2>&1 | tail -1 || true
+
 # Use `python3 -m uvicorn` rather than bare `uvicorn` so the module is found
 # via the Python path (.pythonlibs) rather than requiring uvicorn on $PATH.
 # PYTHONPATH must include the backend root so `from core.xxx import ...` resolves.
