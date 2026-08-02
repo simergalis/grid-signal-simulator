@@ -1,5 +1,5 @@
 """
-tests/test_timezone_boundary.py — TZ-1 through TZ-14
+tests/test_timezone_boundary.py — TZ-1 through TZ-20
 
 Regression tests for the UTC-vs-local-time timezone bug in solar_sim.py.
 
@@ -43,6 +43,8 @@ import pytest
 
 from runtime.solar_sim import (
     SolarForecast,
+    _ambient_fraction_to_temp,
+    _physics_ambient_steps,
     _physics_forecast,
     _physics_samples,
     _solar_fraction_at,
@@ -443,4 +445,235 @@ def test_tz14_singapore_utc_afternoon_physics_fallback():
         f"Singapore 02:00 UTC (= 10:00 local) physics fallback must have non-zero "
         f"solar samples; got all-zero. "
         "The site utc_offset was not propagated to _parse_forecast()."
+    )
+
+
+# ---------------------------------------------------------------------------
+# TZ-15  _physics_ambient_steps() — Auckland afternoon UTC is warmer than pre-dawn
+# ---------------------------------------------------------------------------
+
+def test_tz15_auckland_afternoon_ambient_warmer_than_predawn():
+    """_physics_ambient_steps() for Auckland must produce warmer dry-bulb temps
+    when UTC time corresponds to local afternoon than when it corresponds to pre-dawn.
+
+    04:00 UTC = 16:00 Auckland local (June solstice afternoon, solar fraction > 0)
+    16:00 UTC = 04:00 Auckland local (pre-dawn, solar fraction = 0)
+
+    The ambient model is: drybulb = base_temp + solar_fraction * 10.
+    Afternoon has positive solar fraction → strictly warmer than pre-dawn (zero solar).
+
+    If utc_offset_h is ignored (the pre-fix bug), both UTC times fall in the night
+    band (4 and 16 are both outside local daylight) and return equal base temperatures.
+    This test would fail immediately on a regression.
+    """
+    afternoon_utc = _utc(_JUN_SOLSTICE, 4)   # 04:00 UTC = 16:00 Auckland
+    predawn_utc   = _utc(_JUN_SOLSTICE, 16)  # 16:00 UTC = 04:00 Auckland
+
+    afternoon_steps = _physics_ambient_steps(
+        300.0, afternoon_utc, lat_deg=_AUCKLAND_LAT, utc_offset_h=_AUCKLAND_UTC
+    )
+    predawn_steps = _physics_ambient_steps(
+        300.0, predawn_utc, lat_deg=_AUCKLAND_LAT, utc_offset_h=_AUCKLAND_UTC
+    )
+
+    avg_afternoon = sum(db for _, db, _ in afternoon_steps) / len(afternoon_steps)
+    avg_predawn   = sum(db for _, db, _ in predawn_steps) / len(predawn_steps)
+
+    assert avg_afternoon > avg_predawn, (
+        f"Auckland afternoon (04:00 UTC = 16:00 local) avg dry-bulb ({avg_afternoon:.2f} °C) "
+        f"must exceed pre-dawn (16:00 UTC = 04:00 local) avg dry-bulb ({avg_predawn:.2f} °C). "
+        "If they are equal, utc_offset_h is not being applied in _physics_ambient_steps()."
+    )
+
+
+# ---------------------------------------------------------------------------
+# TZ-16  Without the UTC offset, Auckland afternoon and pre-dawn are both cold
+# ---------------------------------------------------------------------------
+
+def test_tz16_auckland_ambient_offset_zero_inverts_the_relationship():
+    """With utc_offset_h=0, the UTC clock hour is used as local time, inverting
+    the warm/cold relationship from TZ-15.
+
+    With the CORRECT offset (+12):
+      04:00 UTC → local_h = 16 (afternoon) → WARM
+      16:00 UTC → local_h =  4 (pre-dawn)  → COLD
+
+    With offset=0 (the broken baseline — UTC treated as local):
+      04:00 UTC → local_h =  4 (pre-dawn)  → COLD
+      16:00 UTC → local_h = 16 (afternoon) → WARM
+
+    The relationship is exactly inverted, confirming TZ-15 measures the real fix
+    and that the ambient pipeline is sensitive to which offset is supplied.
+    """
+    utc_04 = _utc(_JUN_SOLSTICE, 4)   # afternoon with +12, pre-dawn with 0
+    utc_16 = _utc(_JUN_SOLSTICE, 16)  # pre-dawn  with +12, afternoon with 0
+
+    # With offset=0: 04:00 UTC is treated as 04:00 local (cold)
+    steps_04_broken = _physics_ambient_steps(
+        300.0, utc_04, lat_deg=_AUCKLAND_LAT, utc_offset_h=0.0
+    )
+    # With offset=0: 16:00 UTC is treated as 16:00 local (warm)
+    steps_16_broken = _physics_ambient_steps(
+        300.0, utc_16, lat_deg=_AUCKLAND_LAT, utc_offset_h=0.0
+    )
+
+    avg_04_broken = sum(db for _, db, _ in steps_04_broken) / len(steps_04_broken)
+    avg_16_broken = sum(db for _, db, _ in steps_16_broken) / len(steps_16_broken)
+
+    # Broken: 16:00 UTC (misread as warm afternoon) > 04:00 UTC (misread as cold pre-dawn)
+    assert avg_16_broken > avg_04_broken, (
+        f"With offset=0: 16:00 UTC (misidentified as 16:00 local/afternoon) avg "
+        f"dry-bulb ({avg_16_broken:.2f} °C) must exceed 04:00 UTC (misidentified as "
+        f"04:00 local/pre-dawn) avg dry-bulb ({avg_04_broken:.2f} °C). "
+        "This is the INVERSE of TZ-15 — confirms the offset flips the relationship."
+    )
+
+    # And 04:00 UTC with offset=0 is cold (pre-dawn misread)
+    _BASE = 14.0
+    assert avg_04_broken <= _BASE + 0.2, (
+        f"With offset=0, Auckland 04:00 UTC is misread as 04:00 local (pre-dawn) → "
+        f"should be cold (≤ base+0.2 °C); got {avg_04_broken:.2f} °C."
+    )
+
+
+# ---------------------------------------------------------------------------
+# TZ-17  Singapore morning (02:00 UTC) is warmer than Singapore night (14:00 UTC)
+# ---------------------------------------------------------------------------
+
+def test_tz17_singapore_morning_ambient_warmer_than_night():
+    """_physics_ambient_steps() for Singapore must produce warmer temps at local morning
+    than at local night.
+
+    02:00 UTC = 10:00 Singapore local (UTC+8) — mid-morning, high solar fraction
+    14:00 UTC = 22:00 Singapore local — well past sunset, zero solar
+
+    Singapore is near the equator (lat=1.35°), so it has strong midday sun
+    and a clear day/night cycle regardless of season.
+    """
+    morning_utc = _utc(_JUN_SOLSTICE, 2)   # 02:00 UTC = 10:00 Singapore local
+    night_utc   = _utc(_JUN_SOLSTICE, 14)  # 14:00 UTC = 22:00 Singapore local
+
+    morning_steps = _physics_ambient_steps(
+        300.0, morning_utc, lat_deg=_SINGAPORE_LAT, utc_offset_h=_SINGAPORE_UTC
+    )
+    night_steps = _physics_ambient_steps(
+        300.0, night_utc, lat_deg=_SINGAPORE_LAT, utc_offset_h=_SINGAPORE_UTC
+    )
+
+    avg_morning = sum(db for _, db, _ in morning_steps) / len(morning_steps)
+    avg_night   = sum(db for _, db, _ in night_steps) / len(night_steps)
+
+    assert avg_morning > avg_night, (
+        f"Singapore morning (02:00 UTC = 10:00 local) avg dry-bulb ({avg_morning:.2f} °C) "
+        f"must exceed night (14:00 UTC = 22:00 local) avg dry-bulb ({avg_night:.2f} °C). "
+        "Singapore has strong midday solar — if equal, offset is not applied."
+    )
+
+
+# ---------------------------------------------------------------------------
+# TZ-18  Nighttime Auckland samples have no solar heating above base_temp_c
+# ---------------------------------------------------------------------------
+
+def test_tz18_nighttime_ambient_at_base_temperature():
+    """At Auckland pre-dawn (16:00 UTC = 04:00 local), solar fraction is zero,
+    so all dry-bulb values must equal base_temp_c (no solar heating contribution).
+
+    The marine-layer adjustment only applies between 06:00–11:00 local and only
+    when solar_fraction < 0.4 — it does not apply at 04:00 local.
+    """
+    predawn_utc = _utc(_JUN_SOLSTICE, 16)  # 16:00 UTC = 04:00 Auckland local
+    _BASE = 14.0
+
+    steps = _physics_ambient_steps(
+        300.0, predawn_utc, lat_deg=_AUCKLAND_LAT, utc_offset_h=_AUCKLAND_UTC,
+        base_temp_c=_BASE,
+    )
+
+    for t, db, wb in steps:
+        assert db == pytest.approx(_BASE, abs=0.02), (
+            f"Auckland pre-dawn (04:00 local): dry-bulb at t={t} should be base_temp_c "
+            f"({_BASE} °C) with no solar heating; got {db} °C."
+        )
+        assert wb == pytest.approx(_BASE - 3.0, abs=0.02), (
+            f"Auckland pre-dawn wet-bulb should be base_temp_c - 3 = {_BASE-3.0} °C; "
+            f"got {wb} °C at t={t}."
+        )
+
+
+# ---------------------------------------------------------------------------
+# TZ-19  _parse_forecast() fallback ambient — site offset produces warmer temps
+# ---------------------------------------------------------------------------
+
+def test_tz19_parse_forecast_ambient_uses_site_utc_offset():
+    """When _parse_forecast() falls back to physics, its ambient_steps must reflect
+    the site's local time — not UTC.
+
+    Auckland 04:00 UTC (= 16:00 local, afternoon) with correct offset must produce
+    a warmer average dry-bulb than the same call with utc_offset_h=0 (which treats
+    04:00 UTC as 04:00 local = pre-dawn cold).
+    """
+    dt = _utc(_JUN_SOLSTICE, 4)  # 04:00 UTC
+
+    fc_correct = _parse_forecast(
+        "bad json",
+        sim_duration_s=300.0,
+        utc_now=dt,
+        lat_deg=_AUCKLAND_LAT,
+        utc_offset_h=_AUCKLAND_UTC,   # correct: +12
+    )
+    fc_broken = _parse_forecast(
+        "bad json",
+        sim_duration_s=300.0,
+        utc_now=dt,
+        lat_deg=_AUCKLAND_LAT,
+        utc_offset_h=0.0,             # broken: treats UTC as local
+    )
+
+    assert fc_correct.source == "physics"
+    assert fc_broken.source == "physics"
+
+    avg_correct = sum(db for _, db, _ in fc_correct.ambient_steps) / len(fc_correct.ambient_steps)
+    avg_broken  = sum(db for _, db, _ in fc_broken.ambient_steps)  / len(fc_broken.ambient_steps)
+
+    assert avg_correct > avg_broken, (
+        f"Auckland 04:00 UTC with correct offset (+12): avg dry-bulb {avg_correct:.2f} °C. "
+        f"With offset=0 (UTC-as-local): avg dry-bulb {avg_broken:.2f} °C. "
+        "Correct offset must be warmer (afternoon > pre-dawn). "
+        "If equal, _parse_forecast() is not propagating utc_offset_h to the ambient fallback."
+    )
+
+
+# ---------------------------------------------------------------------------
+# TZ-20  _physics_forecast() — Auckland afternoon drybulb exceeds pre-dawn
+# ---------------------------------------------------------------------------
+
+def test_tz20_physics_forecast_ambient_higher_at_local_afternoon():
+    """_physics_forecast() wraps both solar samples and ambient_steps.
+
+    For Auckland, a run starting at 04:00 UTC (= 16:00 local) must carry
+    higher average ambient dry-bulb values than a run starting at 16:00 UTC
+    (= 04:00 local), confirming the timezone offset flows correctly through
+    the full physics fallback path all the way to SolarForecast.ambient_steps.
+    """
+    afternoon_utc = _utc(_JUN_SOLSTICE, 4)   # 04:00 UTC = 16:00 Auckland
+    predawn_utc   = _utc(_JUN_SOLSTICE, 16)  # 16:00 UTC = 04:00 Auckland
+
+    fc_afternoon = _physics_forecast(
+        300.0, afternoon_utc, lat_deg=_AUCKLAND_LAT, utc_offset_h=_AUCKLAND_UTC
+    )
+    fc_predawn = _physics_forecast(
+        300.0, predawn_utc, lat_deg=_AUCKLAND_LAT, utc_offset_h=_AUCKLAND_UTC
+    )
+
+    assert isinstance(fc_afternoon, SolarForecast)
+    assert len(fc_afternoon.ambient_steps) > 0
+
+    avg_afternoon = sum(db for _, db, _ in fc_afternoon.ambient_steps) / len(fc_afternoon.ambient_steps)
+    avg_predawn   = sum(db for _, db, _ in fc_predawn.ambient_steps)   / len(fc_predawn.ambient_steps)
+
+    assert avg_afternoon > avg_predawn, (
+        f"_physics_forecast() for Auckland: afternoon run avg dry-bulb ({avg_afternoon:.2f} °C) "
+        f"must exceed pre-dawn run avg dry-bulb ({avg_predawn:.2f} °C). "
+        "If equal, the timezone offset is not flowing through _physics_forecast() → "
+        "_physics_ambient_steps() → ambient_steps on SolarForecast."
     )
