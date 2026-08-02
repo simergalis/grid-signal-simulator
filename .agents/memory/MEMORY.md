@@ -18,4 +18,5 @@
 - [gen-trip-cover-fix](gen-trip-cover-fix.md) — D-1/D-2/D-3 fix; ContingencyState+Coverage in models.py, PlantState+evaluate_contingency in contingency.py; demo-20mw → 5×7 MW fleet; hot_standby pattern.
 - [advisory-telemetry-wiring](advisory-telemetry-wiring.md) — W2a: telemetry_snapshot() on AgentRegistry; advisory_telemetry dict on TickResult; stamped in _dc_replace block (section B, before broadcast); agents.ts fully live.
 - [sendgrid-auth-system](sendgrid-auth-system.md) — JWT cookie auth + admin panel; roles: viewer/operator/approver/admin; admin API accepts X-Admin-Key header OR session cookie with role=admin.
+- [auth-system-quirks](auth-system-quirks.md) — bcrypt 4.x/passlib break; /api/admin middleware pass-through; ck_auth_user_role must include 'admin'; migration guard pattern.
 - [operator-adjustable-params](operator-adjustable-params.md) — PARAM-28–34 in parameters.json; site/advisory/storage groups added to ParameterModal; soc limits flow from POST /runs into runMeta; advisory_interval_s stored but not yet wired to per-agent cadence.
