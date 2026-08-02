@@ -123,18 +123,23 @@
   .blk{border:1px solid var(--line); background:var(--surface-2); border-radius:2px; padding:10px 11px;
     cursor:pointer; transition:border-color .15s}
   .blk:hover{border-color:#3a444b}
-  .blk[data-st="fault"]{border-color:#4d2320}
-  .blk[data-st="derated"]{border-color:#4a3d13}
+  .blk[data-st="out"]{border-color:#4d2320}
+  .blk[data-st="degraded"]{border-color:#4a3d13}
+  .blk[data-st="no_comms"]{border-color:#2e3166}
   .blk .id{font-size:11px; letter-spacing:.08em; display:flex; justify-content:space-between; align-items:center}
   .blk .out{font-size:18px; margin-top:7px; font-variant-numeric:tabular-nums}
   .blk .of{font-size:10px; color:var(--ink-3)}
   .blk .mini{height:5px; background:#1d2226; margin-top:8px; border-radius:1px; overflow:hidden}
   .blk .mini i{display:block; height:100%; background:var(--teal); transition:width .5s}
-  .blk[data-st="fault"] .mini i{background:var(--coral)}
-  .blk[data-st="derated"] .mini i{background:var(--amber)}
+  .blk[data-st="out"] .mini i{background:var(--coral)}
+  .blk[data-st="degraded"] .mini i{background:var(--amber)}
+  .blk[data-st="no_comms"] .mini i{background:var(--violet)}
   .blk .meta{font-size:9.5px; color:var(--ink-3); margin-top:7px; line-height:1.5}
   .dot{width:5px;height:5px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle}
-  .dot.ok{background:var(--teal)} .dot.warn{background:var(--amber)} .dot.bad{background:var(--coral)}
+  .dot.ok{background:var(--teal)} .dot.warn{background:var(--amber)} .dot.bad{background:var(--coral)} .dot.dim{background:var(--violet)}
+  .feeder-hdr{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);
+    padding:10px 0 4px; grid-column:1/-1; border-top:1px solid var(--line-soft); margin-top:4px}
+  .feeder-hdr:first-child{border-top:0; margin-top:0; padding-top:0}
   .st{font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3)}
   .st.ok{color:var(--teal)} .st.warn{color:var(--amber)} .st.bad{color:var(--coral)}
 
@@ -253,7 +258,7 @@
         <div class="ph"><span class="eyebrow">Exposure &middot; what a loss would cost right now</span></div>
         <div class="pb">
           <div class="bar">
-            <div class="bl"><span>N&minus;1 &middot; largest inverter block trips</span><span class="amt" id="e1">0.86 MW</span></div>
+            <div class="bl"><span>N&minus;1 &middot; largest feeder trips</span><span class="amt" id="e1">1.07 MW</span></div>
             <div class="track"><i class="fill amber" id="e1f" style="width:17%"></i></div>
             <div class="note" id="e1n">step change, &Delta;t_lead = 0 &middot; covered by BESS bridging</div>
           </div>
@@ -265,7 +270,7 @@
           <div class="bar">
             <div class="bl"><span>Cloud transient &middot; ramp-limited by array diversity</span><span class="amt" id="e3">&minus;0.42 MW/s</span></div>
             <div class="track"><i class="fill violet" id="e3f" style="width:38%"></i></div>
-            <div class="note">not a step &mdash; spatial diversity across 5 blocks bounds the plant-wide ramp. Forecastable at reduced confidence from sky-imager data.</div>
+            <div class="note">not a step &mdash; spatial diversity across 20 banks on 4 feeders bounds the plant-wide ramp. Forecastable at reduced confidence from sky-imager data.</div>
           </div>
           <div class="why">
             <p>The three rows above are different physics and must not be summed into one number. Only the first two are step changes the reserve check sizes against.</p>
@@ -276,8 +281,8 @@
     </div>
 
     <div class="panel" style="margin-top:14px">
-      <div class="ph"><span class="eyebrow">Inverter blocks &middot; <span id="blkcount">5 online / 5</span></span><span class="spacer"></span>
-        <span class="cap">click a block for string detail &middot; no control surface exists on this page</span></div>
+      <div class="ph"><span class="eyebrow">Banks &middot; <span id="blkcount">20 online / 20</span></span><span class="spacer"></span>
+        <span class="cap">click a bank for string detail &middot; no control surface exists on this page</span></div>
       <div class="pb">
         <div class="array" id="array"></div>
         <div id="blkDetail" style="margin-top:14px"></div>
@@ -294,7 +299,7 @@
         <div class="pb">
           <div class="btnrow">
             <button class="btn" data-inj="cloud">Cloud transient</button>
-            <button class="btn" data-inj="trip">Trip inverter block</button>
+            <button class="btn" data-inj="trip">Trip a bank</button>
             <button class="btn" data-inj="poi">Lose plant at POI</button>
             <button class="btn" data-inj="soil">Soiling event</button>
             <button class="btn" data-inj="spike">Compute step-load +6 MW</button>
@@ -480,7 +485,7 @@
     <div class="mh">
       <div>
         <div class="mt" id="mtitle">Renewable supply <span class="adv">&bull; advisory</span></div>
-        <div class="cap" style="margin-top:5px" id="msub">solar-0 &middot; fixed-mount PV &middot; 5 &times; 1.00 MW blocks &middot; non-dispatchable</div>
+        <div class="cap" style="margin-top:5px" id="msub">solar-0 &middot; fixed-mount PV &middot; 20 &times; 0.25 MW banks &middot; 4 feeders &middot; non-dispatchable</div>
       </div>
       <button class="x" id="closeX" aria-label="Close">&times;</button>
     </div>
@@ -512,7 +517,7 @@
             <div class="note" id="m1n">85.8% of AC nameplate &middot; not clipping</div>
           </div>
           <div class="bar">
-            <div class="bl"><span>Gap if the largest block trips (N&minus;1)</span><span class="amt" id="m2">0.86 MW</span></div>
+            <div class="bl"><span>Gap if the largest feeder trips (N&minus;1)</span><span class="amt" id="m2">1.07 MW</span></div>
             <div class="track"><i class="fill violet" id="m2f" style="width:17%"></i></div>
             <div class="note">the probable contingency &middot; one inverter, &Delta;t_lead = 0</div>
           </div>
@@ -548,12 +553,16 @@
 
   // ---------------- site configuration ----------------
   var CFG = {
-    blocks: 5,
-    blockRatedAC: 1.00,          // MW per inverter block
+    banks: 20,                   // 20 × 0.25 MW banks across 4 feeders
+    bankRatedAC: 0.25,           // MW per bank
+    get blocks(){ return this.banks; },          // backward-compat alias
+    get blockRatedAC(){ return this.bankRatedAC; },
     dcacRatio: 1.30,
     plantRatedAC: 5.00,
     plantRatedDC: 6.50,
-    stringsPerBlock: 24,
+    stringsPerBank: 6,           // strings per bank
+    get stringsPerBlock(){ return this.stringsPerBank; },
+    feederIds: ['fdr-A', 'fdr-B', 'fdr-C', 'fdr-D'],  // 5 banks per feeder
     turbines: [{id:'gt-01', mw:5.0, online:true, r:0.2},
                {id:'gt-02', mw:5.0, online:true, r:0.2},
                {id:'gt-03', mw:5.0, online:false, r:0.2}],
@@ -570,14 +579,18 @@
     poa: 969, clearSkyPoa: 1005, moduleC: 48,
     soiling: 0.030, cloudFactor: 1.0, cloudTarget: 1.0,
     pCompute: 10.40, pComputeTarget: 10.40,
-    blocks: [], hist: [], fault: null, log: []
+    blocks: [], feeders: [], hist: [], fault: null, log: []
   };
 
-  for (var i = 0; i < CFG.blocks; i++) {
+  for (var i = 0; i < CFG.banks; i++) {
+    var _fdrIdx = Math.floor(i / (CFG.banks / CFG.feederIds.length));
     S.blocks.push({
-      id: 'inv-0' + (i+1), rated: CFG.blockRatedAC, state: 'ok',
-      derate: 1.0, stringsOut: 0, invC: 41 + i, avail: 1.0,
-      soilBias: 1 + (i - 2) * 0.006
+      id: 'bnk-' + (i < 9 ? '0' : '') + (i+1),
+      feederId: CFG.feederIds[_fdrIdx],
+      rated: CFG.bankRatedAC,
+      state: 'nominal',          // four states: nominal/degraded/out/no_comms
+      derate: 1.0, stringsOut: 0, invC: 41 + (i % 5), avail: 1.0,
+      soilBias: 1 + ((i % 5) - 2) * 0.006
     });
   }
 
@@ -598,10 +611,24 @@
     CFG.bessSoC = d.fleet.bess_soc;
     CFG.turbines = d.fleet.turbines.map(function(t){
       return { id:t.id, mw:t.mw, online:t.online, r:t.ramp_mw_per_s }; });
-    S.blocks = d.blocks.map(function(b){
-      return { id:b.id, rated:b.rated_mw, state:(b.state==='fault'?'fault':'ok'),
-               derate:(b.state==='derated'?0.999:1.0), stringsOut:b.strings_out,
-               invC:b.inverter_temp_c, soilBias:1, srvOut:b.output_mw, srvCs:b.expected_mw }; });
+    // Consume `banks` (new contract); fall back to `blocks` for compat.
+    var bankList = d.banks || d.blocks || [];
+    S.blocks = bankList.map(function(b){
+      // Four-state classifier: nominal / degraded / out / no_comms.
+      // Legacy snapshots may still send 'fault' or 'derated' — map them.
+      var st = b.state || 'nominal';
+      if (st === 'fault')   st = 'out';
+      if (st === 'derated') st = 'degraded';
+      if (st === 'ok')      st = 'nominal';
+      return { id:b.id, feederId:b.feeder_id||'', rated:b.rated_mw, state:st,
+               derate:1.0, stringsOut:b.strings_out||0,
+               invC:b.inverter_temp_c||40, soilBias:1,
+               srvOut:b.counted_output_mw,  // counted_output_mw = 0 for out/no_comms
+               srvCs:b.expected_mw,
+               fault:b.fault||null, reason:b.reason||null,
+               telemetryAge:b.telemetry_age_s||0 }; });
+    // Feeder subtotals for feeder-level N−1 and the feeder status row.
+    S.feeders = d.feeders || [];
     S.log = d.log.slice();
   }
 
@@ -632,11 +659,11 @@
 
   // ---------------- physics ----------------
   function blockOutput(b){
-    if (b.srvOut !== undefined) return b.srvOut;
-    if (b.state === 'fault') return 0;
+    if (b.srvOut !== undefined) return b.srvOut;  // server provides counted_output_mw (0 for out/no_comms)
+    if (b.state === 'out' || b.state === 'no_comms' || b.state === 'fault') return 0;
     var irr = S.poa * S.cloudFactor / 1000;
     var tempDerate = 1 - 0.0038 * Math.max(0, S.moduleC - 25);
-    var stringLoss = 1 - (b.stringsOut / CFG.stringsPerBlock);
+    var stringLoss = 1 - (b.stringsOut / CFG.stringsPerBank);
     var raw = b.rated * irr * (1 - S.soiling) * tempDerate * stringLoss * b.derate * b.soilBias;
     return clamp(raw, 0, b.rated);           // AC clip at inverter nameplate
   }
@@ -663,9 +690,28 @@
     return CFG.bessMWh * CFG.bessSoC * 0.9;
   }
 
-  function largestBlockMW(){
+  // N−1 is sized on the largest FEEDER loss (§5), not the largest individual bank.
+  function largestFeederMW(){
+    // Server path: read from reserve snapshot (most accurate).
+    if (SRV && SRV.reserve && SRV.reserve.n1_feeder)
+      return SRV.reserve.n1_feeder.delta_p_mw;
+    // Server path fallback: sum feeder output_mw array.
+    if (S.feeders && S.feeders.length){
+      var m=0; S.feeders.forEach(function(fd){ if(fd.output_mw>m) m=fd.output_mw; }); return m;
+    }
+    // Offline fallback: sum banks by feeder_id, return the largest group.
+    var feederSums = {};
+    S.blocks.forEach(function(b){
+      var fid = b.feederId || 'fdr-X';
+      feederSums[fid] = (feederSums[fid]||0) + blockOutput(b);
+    });
+    var mx=0; for(var k in feederSums){ if(feederSums[k]>mx) mx=feederSums[k]; } return mx;
+  }
+  function largestBankMW(){
     var m = 0; S.blocks.forEach(function(b){ var o = blockOutput(b); if (o > m) m = o; }); return m;
   }
+  // Backward-compat alias: kept so old call-sites still resolve.
+  function largestBlockMW(){ return largestBankMW(); }
 
   // Reserve check per 7.2 step 4, with dt_lead = 0 for a supply-side step.
   function reserveCheck(dP, dtLead){
@@ -851,23 +897,46 @@
   function renderArray(){
     var el = $('array'), html='';
     var online = 0;
+    // Group banks by feeder for display.
+    var feederOrder = [];
+    var feederMap = {};
     S.blocks.forEach(function(b){
-      var o = blockOutput(b), cs = clearSkyBlock(b);
-      var st = b.state==='fault' ? 'fault' : (b.derate<1 || b.stringsOut>0 ? 'derated' : 'ok');
-      if (b.state !== 'fault') online++;
-      var stl = st==='fault' ? '<span class="st bad"><span class="dot bad"></span>trip</span>'
-              : st==='derated' ? '<span class="st warn"><span class="dot warn"></span>derated</span>'
-              : '<span class="st ok"><span class="dot ok"></span>online</span>';
-      html += '<div class="blk" data-st="'+st+'" data-id="'+b.id+'" tabindex="0">'
-        + '<div class="id"><span>'+b.id+'</span>'+stl+'</div>'
-        + '<div class="out num">'+f(o)+' <span class="of">MW</span></div>'
-        + '<div class="of">expected '+f(cs)+' &middot; PR '+f(pct(o,cs),0)+'%</div>'
-        + '<div class="mini"><i style="width:'+f(clamp(pct(o,b.rated),0,100),0)+'%"></i></div>'
-        + '<div class="meta">'+(CFG.stringsPerBlock-b.stringsOut)+'/'+CFG.stringsPerBlock+' strings &middot; '
-        + f(b.invC,0)+' &deg;C<br>'+f(b.rated)+' MW AC &middot; '+f(b.rated*CFG.dcacRatio)+' MWp DC</div></div>';
+      var fid = b.feederId || 'fdr-?';
+      if (!feederMap[fid]){ feederMap[fid]=[]; feederOrder.push(fid); }
+      feederMap[fid].push(b);
+    });
+    feederOrder.forEach(function(fid, fi){
+      // Feeder header row (spans all 5 columns via CSS .feeder-hdr).
+      var fdrOutput = 0;
+      feederMap[fid].forEach(function(b){ fdrOutput += blockOutput(b); });
+      html += '<div class="feeder-hdr'+(fi===0?' first-feeder-hdr':'')+'">'+fid
+            + ' &nbsp;&middot;&nbsp; '+f(fdrOutput)+' MW</div>';
+      feederMap[fid].forEach(function(b){
+        var o = blockOutput(b), cs = clearSkyBlock(b);
+        // Four-state classifier: nominal/degraded/out/no_comms.
+        var st = b.state || 'nominal';
+        var isActive = (st === 'nominal' || st === 'degraded');
+        if (isActive) online++;
+        var stl;
+        if (st === 'out')
+          stl = '<span class="st bad"><span class="dot bad"></span>out</span>';
+        else if (st === 'no_comms')
+          stl = '<span class="st" style="color:var(--violet)"><span class="dot dim"></span>no comms</span>';
+        else if (st === 'degraded')
+          stl = '<span class="st warn"><span class="dot warn"></span>degraded</span>';
+        else
+          stl = '<span class="st ok"><span class="dot ok"></span>nominal</span>';
+        html += '<div class="blk" data-st="'+st+'" data-id="'+b.id+'" tabindex="0">'
+          + '<div class="id"><span>'+b.id+'</span>'+stl+'</div>'
+          + '<div class="out num">'+f(o)+' <span class="of">MW</span></div>'
+          + '<div class="of">exp '+f(cs)+' &middot; PR '+f(pct(o,cs),0)+'%</div>'
+          + '<div class="mini"><i style="width:'+f(clamp(pct(o,b.rated),0,100),0)+'%"></i></div>'
+          + '<div class="meta">'+(CFG.stringsPerBank-b.stringsOut)+'/'+CFG.stringsPerBank+' strings &middot; '
+          + f(b.invC,0)+' &deg;C<br>'+f(b.rated)+' MW &middot; '+fid+'</div></div>';
+      });
     });
     el.innerHTML = html;
-    $('blkcount').textContent = online + ' online / ' + CFG.blocks;
+    $('blkcount').textContent = online + ' nominal+degraded / ' + CFG.banks;
     Array.prototype.forEach.call(el.querySelectorAll('.blk'), function(n){
       n.addEventListener('click', function(){ selectedBlock = n.dataset.id; renderBlockDetail(); });
       n.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault();
@@ -878,23 +947,32 @@
 
   function renderBlockDetail(){
     var el = $('blkDetail');
-    if (!selectedBlock){ el.innerHTML='<div class="cap">No block selected.</div>'; return; }
+    if (!selectedBlock){ el.innerHTML='<div class="cap">No bank selected.</div>'; return; }
     var b = S.blocks.filter(function(x){return x.id===selectedBlock;})[0];
     if (!b){ el.innerHTML=''; return; }
     var o = blockOutput(b), cs = clearSkyBlock(b);
+    var stateNote = '';
+    if (b.state === 'no_comms')
+      stateNote = '<div class="cap" style="color:var(--violet);margin-top:6px">No telemetry for '
+        + f(b.telemetryAge||0,1)+' s &mdash; counted as zero until comms restored (&sect;27.4).</div>';
+    else if (b.state === 'out')
+      stateNote = '<div class="cap" style="color:var(--coral);margin-top:6px">Bank tripped'
+        + (b.fault?' &mdash; '+b.fault:'')+'. Counted as zero.</div>';
     var rows = '';
-    for (var s=1; s<=CFG.stringsPerBlock; s++){
+    for (var s=1; s<=CFG.stringsPerBank; s++){
       var out = s <= b.stringsOut;
       rows += '<span title="string '+s+'" style="width:13px;height:13px;display:inline-block;margin:2px;'
            + 'background:'+(out?'#4d2320':'#26463f')+';border:1px solid '+(out?'#ef5a4c':'#2f5a52')+'"></span>';
     }
     el.innerHTML = '<div class="panel" style="background:var(--surface-2)"><div class="ph">'
-      + '<span class="eyebrow">'+b.id+' &middot; string health</span><span class="spacer"></span>'
-      + '<span class="cap">'+f(o)+' MW of '+f(cs)+' MW expected &middot; DC input '+f(o*1.012)+' MW</span></div>'
+      + '<span class="eyebrow">'+b.id+' &middot; '+b.feederId+' &middot; string health</span><span class="spacer"></span>'
+      + '<span class="cap">'+f(o)+' MW counted &middot; '+f(cs)+' MW expected</span></div>'
       + '<div class="pb"><div>'+rows+'</div>'
+      + stateNote
       + '<div class="cap" style="margin-top:9px">'+(b.stringsOut? b.stringsOut+' string(s) open &mdash; dispatch a technician; '
-        + 'the block is counted at its re-rated capability, not excluded and not at nameplate (&sect;27.4).'
-        : 'All strings reporting. Nothing to action.')+'</div></div></div>';
+        + 'the bank is counted at its re-rated capability, not excluded and not at nameplate (&sect;27.4).'
+        : (b.state==='out'||b.state==='no_comms'?'':'All strings reporting. Nothing to action.'))
+      +'</div></div></div>';
   }
 
   // ---------------- rendering: ledgers ----------------
@@ -923,7 +1001,8 @@
   function renderReserve(){
     var solar = pRenewable();
     var rc = reserveCheck(solar, 0);
-    var rcN1 = reserveCheck(largestBlockMW(), 0);
+    var n1 = largestFeederMW();           // N−1 is feeder-level (§5)
+    var rcN1 = reserveCheck(n1, 0);
     var compound = reserveCheck(solar + 6.0, 0);
 
     $('rvVerdict').textContent = rc.pass ? 'pass' : 'fail';
@@ -938,8 +1017,8 @@
           'BESS is grid-forming while islanded &middot; &sect;7.1.2', 'num')
     + row('Bridging available', f(bessBridging(),2)+' MW', 'anchor-adjusted &mdash; this is the figure the check uses',
           'num')
-    + row('N&minus;1 block loss', f(rcN1.dP)+' MW &rarr; ' + (rcN1.pass?'covered':'shortfall'),
-          'ramp time '+f(rcN1.rampTime,1)+' s &middot; bridge for '+f(rcN1.gap,1)+' s',
+    + row('N&minus;1 feeder loss', f(rcN1.dP)+' MW &rarr; ' + (rcN1.pass?'covered':'shortfall'),
+          'largest feeder (~5 banks) trips &middot; ramp time '+f(rcN1.rampTime,1)+' s &middot; bridge for '+f(rcN1.gap,1)+' s',
           rcN1.pass?'':'coral')
     + row('Full plant loss', f(rc.dP)+' MW &rarr; ' + (rc.pass?'covered':'shortfall'),
           'ramp time '+f(rc.rampTime,1)+' s &middot; bridge for '+f(rc.gap,1)+' s',
@@ -985,7 +1064,7 @@
     var solar = pRenewable(), tot = pTotal();
     var rc = reserveCheck(solar, 0);
     $('mledger').innerHTML =
-      row('Output', f(solar)+' MW', 'real-time &middot; instantaneous &middot; '+S.blocks.filter(function(b){return b.state!=='fault';}).length+' of '+CFG.blocks+' blocks reporting','num')
+      row('Output', f(solar)+' MW', 'real-time &middot; instantaneous &middot; '+S.blocks.filter(function(b){return b.state==='nominal'||b.state==='degraded';}).length+' of '+CFG.banks+' banks reporting','num')
     + row('Rated', f(CFG.plantRatedAC)+' MW AC', f(CFG.plantRatedDC)+' MWp DC &middot; DC/AC 1.30','num')
     + row('Against expectation', f(pct(solar,pClearSky()),1)+'%', 'measured vs clear-sky model &mdash; performance ratio','num')
     + row('Fleet must cover', f(pNet())+' MW', 'net demand after solar offset &middot; live','num teal')
@@ -993,7 +1072,7 @@
     + row('Counted toward reserve', 'never', 'availability, not dispatchability &middot; &sect;7.1.1')
     + row('Control surface', 'none', 'passive collector &mdash; nothing to command')
     + row('Lead time on loss', '0 s', 'no advance signal exists for an electrical fault')
-    + row('Cloud ramp bound', '&minus;'+f(CFG.cloudRampBound,2)+' MW/s', 'spatial diversity across 5 blocks &mdash; a transient is not a step')
+    + row('Cloud ramp bound', '&minus;'+f(CFG.cloudRampBound,2)+' MW/s', 'spatial diversity across 20 banks on 4 feeders &mdash; a transient is not a step')
     + row('Forecast treatment', 'subtracted', 'reduces demand, never closes a gap')
     + row('If lost now', rc.pass ? 'bridged' : 'shortfall', rc.pass
         ? 'BESS covers a '+f(rc.peak)+' MW declining shortfall for '+f(rc.gap,1)+' s'
@@ -1022,7 +1101,7 @@
     $('k-net').textContent = f(pNet());
     $('k-prsub').textContent = solar < cs*0.9 ? 'below clear-sky model' : 'measured vs clear-sky model';
 
-    var n1 = largestBlockMW();
+    var n1 = largestFeederMW();             // feeder-level N−1 (§5)
     $('e1').textContent = f(n1)+' MW';
     $('e1f').style.width = clamp(pct(n1,CFG.plantRatedAC),0,100)+'%';
     $('e2').textContent = f(solar)+' MW';
@@ -1044,7 +1123,7 @@
   function renderModalVerdict(){
     var solar = pRenewable();
     var rc = reserveCheck(solar,0);
-    var n1 = largestBlockMW();
+    var n1 = largestFeederMW();             // feeder-level N−1 for modal bars
     $('vbig').textContent = f(solar);
     $('verdict').className = 'verdict' + (rc.pass ? '' : ' bad');
     $('vtext').innerHTML = solar <= 0.01
@@ -1060,8 +1139,8 @@
     $('m3f').style.width = clamp(pct(solar,CFG.plantRatedAC),0,100)+'%';
     $('m3n').innerHTML = 'the sizing contingency &middot; &Delta;t_lead = 0 &middot; '
       + (rc.pass?'reserve check passes':'<span style="color:var(--coral)">reserve check FAILS</span>');
-    $('msub').innerHTML = 'solar-0 &middot; fixed-mount PV &middot; '+CFG.blocks+' &times; '+f(CFG.blockRatedAC)
-      + ' MW blocks &middot; non-dispatchable';
+    $('msub').innerHTML = 'solar-0 &middot; fixed-mount PV &middot; '+CFG.banks+' &times; '+f(CFG.bankRatedAC)
+      + ' MW banks &middot; '+CFG.feederIds.length+' feeders &middot; non-dispatchable';
   }
 
   // ---------------- tick ----------------
@@ -1115,22 +1194,23 @@
       setTimeout(function(){ S.cloudTarget = 1.0; log('Cloud field cleared. Output recovering.',''); }, 14000);
     }
     if (kind === 'trip'){
-      var live = S.blocks.filter(function(b){ return b.state!=='fault'; });
-      if (!live.length){ log('All blocks already offline.','bad'); return; }
+      var live = S.blocks.filter(function(b){ return b.state==='nominal'||b.state==='degraded'; });
+      if (!live.length){ log('All banks already out or no-comms.','bad'); return; }
       var b = live[Math.floor(Math.random()*live.length)];
-      b.state = 'fault';
-      log(b.id+' tripped \u2014 DC arc-fault. '+f(b.rated)+' MW step change, \u0394t_lead = 0. BESS bridging engaged.','bad');
+      b.state = 'out';
+      b.fault = 'arc_fault';
+      log(b.id+' ('+b.feederId+') tripped \u2014 DC arc-fault. '+f(b.rated)+' MW step change, \u0394t_lead = 0. BESS bridging engaged.','bad');
     }
     if (kind === 'poi'){
-      S.blocks.forEach(function(b){ b.state='fault'; });
+      S.blocks.forEach(function(b){ b.state='out'; b.fault='poi'; });
       log('POI breaker open \u2014 entire array disconnected. This is the sizing contingency: '
         + 'a step change with no advance signal.','bad');
     }
     if (kind === 'soil'){
       S.soiling = clamp(S.soiling + 0.035, 0, 0.25);
       S.blocks[Math.floor(Math.random()*S.blocks.length)].stringsOut += 2;
-      log('Soiling stepped to '+f(S.soiling*100,1)+'% and two strings opened. Degraded, not unavailable \u2014 '
-        + 'the block is counted at re-rated capability (\u00a727.4).','warn');
+      log('Soiling stepped to '+f(S.soiling*100,1)+'% and two strings opened. Bank state moves to degraded \u2014 '
+        + 'counted at re-rated capability (\u00a727.4).','warn');
     }
     if (kind === 'spike'){
       S.pComputeTarget = S.pCompute + 6.0;
@@ -1149,7 +1229,7 @@
         CFG.bessSoC<0.4?'bad':'');
     }
     if (kind === 'reset'){
-      S.blocks.forEach(function(b){ b.state='ok'; b.stringsOut=0; b.derate=1.0; });
+      S.blocks.forEach(function(b){ b.state='nominal'; b.stringsOut=0; b.derate=1.0; b.fault=null; b.reason=null; b.telemetryAge=0; });
       CFG.turbines.forEach(function(t,i){ t.online = i < 2; });
       S.cloudTarget = 1.0; S.soiling = 0.030; S.pComputeTarget = 10.40; CFG.bessSoC = 0.82;
       log('Reset to nominal seed state.','');
@@ -1193,7 +1273,7 @@
     S.t += 1;
     S.hist.push({ t:S.t, sol:pRenewable(), tot:pTotal(), net:pNet(), cs:pClearSky() });
   }
-  log('Session started. Seed: clear afternoon, 5 blocks online, islanded with BESS as grid-forming anchor.','');
+  log('Session started. Seed: clear afternoon, 20 banks across 4 feeders, all nominal, islanded with BESS as grid-forming anchor.','');
   render(); renderHistory(); renderForecast();
 
   // Prefer the server. Fall back silently to the in-browser model if it is not there,

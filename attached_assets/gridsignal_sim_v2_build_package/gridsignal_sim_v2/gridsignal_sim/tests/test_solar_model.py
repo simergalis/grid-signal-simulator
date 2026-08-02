@@ -5,17 +5,24 @@ arithmetic.
 The seed-point tests exist so that any change to renewable/config.py that
 silently moves the reference operating point fails loudly rather than quietly
 invalidating every screenshot and every number in the spec.
+
+TC-SOL-01 through TC-SOL-09 cover the bank/feeder model introduced in spec §3–§5.
 """
 
+import json
 import math
 
 import pytest
 
 from renewable.config import SiteConfig
 from renewable.solar import (
-    SolarSim, PlantState, BlockState,
+    SolarSim, PlantState, BankState, BlockState,
+    bank_output_mw, bank_expected_mw, bank_clear_sky_mw,
+    counted_output_mw, _update_bank_classifier, _raw_state,
     p_renewable_mw, p_clear_sky_mw, p_total_mw, p_dispatch_required_mw,
-    largest_block_mw, fleet_ramp_mw_per_s, bess_bridging_mw, bess_usable_mwh,
+    largest_bank_mw, largest_feeder_mw, _largest_feeder_id,
+    largest_block_mw,   # compat alias
+    fleet_ramp_mw_per_s, bess_bridging_mw, bess_usable_mwh,
     reserve_check, temp_derate,
 )
 
@@ -57,29 +64,42 @@ def test_performance_ratio_exposes_soiling(sim):
 
 
 # ---------------------------------------------------------------------------
-# block-level physics
+# bank-level physics
 # ---------------------------------------------------------------------------
 
 def test_output_clips_at_inverter_nameplate(sim):
     sim.state.poa = 1400          # unphysical, to force the clip
-    for b in sim.state.blocks:
-        assert b.rated_mw >= 0
     assert p_renewable_mw(sim.cfg, sim.state) <= sim.cfg.plant_rated_ac_mw + 1e-9
 
 
-def test_faulted_block_produces_nothing(sim):
+def test_faulted_bank_produces_nothing(sim):
+    """Tripping a bank drops output by approximately one bank's rated contribution."""
     before = p_renewable_mw(sim.cfg, sim.state)
-    sim.state.blocks[0].state = "fault"
+    b = sim.state.blocks[0]
+    b.state = "out"
+    b.fault = "arc_fault"
     after = p_renewable_mw(sim.cfg, sim.state)
     assert after < before
-    assert after == pytest.approx(before - 0.85, abs=0.02)
+    # One bank ≈ 0.215 MW at seed (0.25 MW rated × 96.9% × soiling etc.)
+    assert after == pytest.approx(before - 0.215, abs=0.01)
+
+
+# Backward-compat name used in some older references
+def test_faulted_block_produces_nothing(sim):
+    """Alias — BlockState == BankState, same assertion."""
+    before = p_renewable_mw(sim.cfg, sim.state)
+    b = sim.state.blocks[0]
+    b.state = "out"
+    b.fault = "arc_fault"
+    after = p_renewable_mw(sim.cfg, sim.state)
+    assert after < before
 
 
 def test_open_strings_derate_rather_than_exclude(sim):
-    """§27.4 — a degraded block is counted at re-rated capability, not zero."""
+    """§27.4 — a degraded bank is counted at re-rated capability, not zero."""
     b = sim.state.blocks[2]
     full = p_renewable_mw(sim.cfg, sim.state)
-    b.strings_out = 6                       # a quarter of the block
+    b.strings_out = 3                       # half the bank's strings open
     partial = p_renewable_mw(sim.cfg, sim.state)
     assert 0 < partial < full
     assert partial > full - b.rated_mw      # not excluded entirely
@@ -90,14 +110,15 @@ def test_temperature_derate_direction(sim):
     assert temp_derate(sim.cfg, 60) < temp_derate(sim.cfg, 40) < 1.0
 
 
-def test_n1_is_the_largest_producing_block(sim):
-    outs = sorted(_b_out(sim, b) for b in sim.state.blocks)
-    assert largest_block_mw(sim.cfg, sim.state) == pytest.approx(outs[-1])
+def test_n1_is_the_largest_producing_bank(sim):
+    outs = sorted(counted_output_mw(sim.cfg, sim.state, b) for b in sim.state.blocks)
+    assert largest_bank_mw(sim.cfg, sim.state) == pytest.approx(outs[-1])
 
 
-def _b_out(sim, b):
-    from renewable.solar import block_output_mw
-    return block_output_mw(sim.cfg, sim.state, b)
+def test_largest_block_mw_alias(sim):
+    """largest_block_mw is a backward-compat alias for largest_bank_mw."""
+    assert largest_block_mw(sim.cfg, sim.state) == pytest.approx(
+        largest_bank_mw(sim.cfg, sim.state))
 
 
 # ---------------------------------------------------------------------------
@@ -204,7 +225,7 @@ def test_solar_never_contributes_to_ramp_capability(sim):
     """§7.1.1 — bridging must be identical whether or not the sun is shining."""
     with_sun = bess_bridging_mw(sim.cfg, sim.state)
     for b in sim.state.blocks:
-        b.state = "fault"
+        b.state = "out"
     assert bess_bridging_mw(sim.cfg, sim.state) == pytest.approx(with_sun)
 
 
@@ -213,7 +234,7 @@ def test_solar_never_contributes_to_ramp_capability(sim):
 # ---------------------------------------------------------------------------
 
 @pytest.mark.parametrize("kind", ["cloud", "trip", "poi", "soil",
-                                  "spike", "turbine", "bess", "reset"])
+                                   "spike", "turbine", "bess", "reset"])
 def test_every_stressor_applies_cleanly(sim, kind):
     assert sim.inject(kind)["ok"] is True
     snap = sim.snapshot()
@@ -240,11 +261,16 @@ def test_reset_restores_the_seed_point(sim):
 
 def test_snapshot_has_the_keys_the_console_consumes(sim):
     snap = sim.snapshot()
-    for key in ("site", "atmosphere", "power", "fleet", "blocks",
-                "exposure", "reserve", "log"):
-        assert key in snap
-    assert len(snap["blocks"]) == sim.cfg.blocks
-    for k in ("n1", "plant", "compound"):
+    for key in ("site", "atmosphere", "power", "fleet",
+                "banks", "blocks",      # both keys present
+                "feeders", "exposure", "reserve", "log"):
+        assert key in snap, f"missing key: {key}"
+    # blocks is an alias for banks
+    assert len(snap["blocks"]) == sim.cfg.banks
+    assert len(snap["banks"])  == sim.cfg.banks
+    # reserve has both new keys and the compat alias
+    for k in ("n1_feeder", "n1_bank", "n1", "plant", "compound"):
+        assert k in snap["reserve"], f"missing reserve key: {k}"
         assert "passes" in snap["reserve"][k]
 
 
@@ -257,9 +283,448 @@ def test_ticking_keeps_output_physical(sim):
 
 def test_snapshot_is_json_safe_with_no_generation(sim):
     """Infinity is not valid JSON. A dark plant with no shortfall produces it."""
-    import json
     sim.inject("poi")
     for t in sim.cfg.turbines:
         t.online = False
     json.dumps(sim.snapshot())          # must not raise
     assert sim.snapshot()["reserve"]["plant"]["ramp_time_s"] is None
+
+
+# ---------------------------------------------------------------------------
+# TC-SOL-01  Bank sum == p_renewable_mw == SLD tile value (AC-INV-1)
+# ---------------------------------------------------------------------------
+
+def test_sol01_conservation_bank_sum_equals_p_renewable(sim):
+    """AC-INV-1: p_renewable_mw == sum of counted_output_mw per bank."""
+    cfg, st = sim.cfg, sim.state
+    bank_sum = sum(counted_output_mw(cfg, st, b) for b in st.blocks)
+    assert bank_sum == pytest.approx(p_renewable_mw(cfg, st), abs=1e-9)
+
+
+def test_sol01_snapshot_power_equals_bank_sum(sim):
+    """Snapshot power.p_renewable_mw == sum of banks[].counted_output_mw."""
+    snap = sim.snapshot()
+    bank_sum = sum(b["counted_output_mw"] for b in snap["banks"])
+    assert bank_sum == pytest.approx(snap["power"]["p_renewable_mw"], abs=1e-9)
+
+
+# ---------------------------------------------------------------------------
+# TC-SOL-02  Feeder subtotals sum to plant total
+# ---------------------------------------------------------------------------
+
+def test_sol02_feeder_subtotals_sum_to_plant(sim):
+    """Feeder output_mw values must sum to p_renewable_mw."""
+    snap = sim.snapshot()
+    feeder_sum = sum(f["output_mw"] for f in snap["feeders"])
+    assert feeder_sum == pytest.approx(snap["power"]["p_renewable_mw"], abs=1e-9)
+
+
+# ---------------------------------------------------------------------------
+# TC-SOL-03  60 % POA reduction leaves all banks nominal
+# ---------------------------------------------------------------------------
+
+def test_sol03_sixty_pct_poa_leaves_all_banks_nominal(sim):
+    """Expected and measured both drop proportionally — ratio stays ~97 %."""
+    st = sim.state
+    st.cloud_factor = 0.4   # 60 % reduction
+    # Run 3 ticks so the hysteresis clock settles (ratio still > 0.92 so
+    # no transition would occur, but we run them to confirm stability).
+    for _ in range(3):
+        # Don't call sim.tick() — it would drift poa; just re-run classifier.
+        for b in st.blocks:
+            from renewable.solar import _update_bank_classifier
+            _update_bank_classifier(sim.cfg, st, b)
+
+    for b in st.blocks:
+        assert b.state == "nominal", (
+            f"bank {b.id} is {b.state} after 60% POA reduction — "
+            f"expected nominal (ratio should stay at ~97%)")
+
+
+# ---------------------------------------------------------------------------
+# TC-SOL-04  Degraded bank counted at measured, not nameplate, not zero (§27.4)
+# ---------------------------------------------------------------------------
+
+def test_sol04_degraded_bank_counted_at_measured(sim):
+    """A bank with strings open is counted at its actual (reduced) output."""
+    cfg, st = sim.cfg, sim.state
+    b = st.blocks[0]
+
+    # Manually set to degraded (skip hysteresis for this unit test).
+    b.state = "degraded"
+    b.strings_out = 3   # half strings open
+
+    measured = bank_output_mw(cfg, st, b)    # reduced output
+    counted  = counted_output_mw(cfg, st, b) # must equal measured
+
+    assert counted == pytest.approx(measured, abs=1e-9), (
+        "degraded bank counted_output_mw must equal its actual measured output")
+    assert counted > 0.0, "degraded bank must not be counted as zero"
+    assert counted < b.rated_mw, "degraded bank must not be counted at nameplate"
+
+
+# ---------------------------------------------------------------------------
+# TC-SOL-05  State change requires 3 consecutive ticks; 2 ticks does not flip
+# ---------------------------------------------------------------------------
+
+def test_sol05_hysteresis_3_ticks_to_degrade(sim):
+    """Opening strings degrades output below 0.92× expected; state must not
+    flip until 3 consecutive classifier ticks confirm the new state."""
+    cfg, st = sim.cfg, sim.state
+    b = st.blocks[5]   # pick a mid-plant bank
+
+    # Confirm nominal at seed.
+    assert b.state == "nominal"
+
+    # Open 3 of 6 strings → ratio ≈ 0.485 (well below 0.92 threshold).
+    b.strings_out = 3
+
+    # After 1 tick: must still be nominal.
+    _update_bank_classifier(cfg, st, b)
+    assert b.state == "nominal", "state must not flip after only 1 tick"
+
+    # After 2 ticks: must still be nominal.
+    _update_bank_classifier(cfg, st, b)
+    assert b.state == "nominal", "state must not flip after only 2 ticks"
+
+    # After 3 ticks: must be degraded.
+    _update_bank_classifier(cfg, st, b)
+    assert b.state == "degraded", "state must flip to degraded after 3 ticks"
+    assert b.reason == "strings_open"
+
+
+def test_sol05_hysteresis_resets_on_interruption(sim):
+    """If the condition disappears on tick 2, the counter resets."""
+    cfg, st = sim.cfg, sim.state
+    b = st.blocks[5]
+
+    # Tick 1 with fault condition.
+    b.strings_out = 3
+    _update_bank_classifier(cfg, st, b)
+    assert b.state == "nominal"
+
+    # Tick 2: restore strings — counter should reset.
+    b.strings_out = 0
+    _update_bank_classifier(cfg, st, b)
+    assert b.state == "nominal"
+
+    # Tick 3 with fault condition again: counter restarts, must NOT flip yet.
+    b.strings_out = 3
+    _update_bank_classifier(cfg, st, b)
+    assert b.state == "nominal", (
+        "counter must restart after an interruption; state must not flip")
+
+
+# ---------------------------------------------------------------------------
+# TC-SOL-06  no_comms counted at zero and flagged separately from out
+# ---------------------------------------------------------------------------
+
+def test_sol06_no_comms_counted_at_zero(sim):
+    cfg, st = sim.cfg, sim.state
+    b = st.blocks[0]
+    b.telemetry_age_s = 15.0   # > 10 s threshold
+    _update_bank_classifier(cfg, st, b)
+
+    assert b.state == "no_comms"
+    assert counted_output_mw(cfg, st, b) == pytest.approx(0.0)
+
+
+def test_sol06_no_comms_immediate_no_hysteresis(sim):
+    """no_comms is asserted on the first tick (no 3-tick wait)."""
+    cfg, st = sim.cfg, sim.state
+    b = st.blocks[0]
+    b.telemetry_age_s = 11.0
+
+    _update_bank_classifier(cfg, st, b)     # single tick
+    assert b.state == "no_comms", "no_comms must be immediate, not 3-tick"
+
+
+def test_sol06_no_comms_distinct_from_out(sim):
+    """A no_comms bank and an out bank both count as zero but have different state."""
+    cfg, st = sim.cfg, sim.state
+    b_comms = st.blocks[0]
+    b_out   = st.blocks[1]
+
+    b_comms.telemetry_age_s = 15.0
+    _update_bank_classifier(cfg, st, b_comms)
+    b_out.state = "out"
+
+    assert b_comms.state == "no_comms"
+    assert b_out.state   == "out"
+    # Both count zero
+    assert counted_output_mw(cfg, st, b_comms) == 0.0
+    assert counted_output_mw(cfg, st, b_out)   == 0.0
+
+
+# ---------------------------------------------------------------------------
+# TC-SOL-10  Repaired bank (strings restored, fault cleared) recovers to nominal
+# ---------------------------------------------------------------------------
+
+def test_sol10_out_bank_recovers_when_fault_cleared(sim):
+    """A bank tripped via stressor (fault latched) stays out until fault is cleared.
+    Once cleared, 3 classifier ticks must return it to nominal.
+    """
+    cfg, st = sim.cfg, sim.state
+    b = st.blocks[3]
+
+    # Simulate a stressor trip (latched fault).
+    b.state = "out"
+    b.fault = "arc_fault"
+
+    # Running 10 ticks with the fault set must keep it out.
+    for _ in range(10):
+        _update_bank_classifier(cfg, st, b)
+    assert b.state == "out", "latched fault must hold bank out indefinitely"
+
+    # Maintenance: clear the fault (e.g. reset stressor or breaker reclosed).
+    b.fault = None
+
+    # After clearing fault, 3 ticks required to confirm recovery.
+    _update_bank_classifier(cfg, st, b)
+    assert b.state == "out", "must not flip on first tick after fault clear"
+    _update_bank_classifier(cfg, st, b)
+    assert b.state == "out", "must not flip on second tick after fault clear"
+    _update_bank_classifier(cfg, st, b)
+    assert b.state == "nominal", "must recover to nominal on third tick after fault clear"
+
+
+def test_sol10_classifier_out_without_fault_recovers(sim):
+    """An 'out' state assigned by the classifier (no explicit fault) can recover
+    to nominal when the physical cause is removed — e.g. shading clears.
+
+    Entry: strings_out=6 (all strings open) → ratio=0 → 3 ticks → out.
+    Exit:  strings restored (strings_out=0) → ratio≈97% → 3 ticks → nominal.
+    """
+    cfg, st = sim.cfg, sim.state
+    b = st.blocks[4]
+    assert b.fault is None, "precondition: no latched fault"
+
+    # Force all strings open → classifier assigns out after 3 ticks.
+    b.strings_out = b.strings_total   # ratio = 0
+    for _ in range(3):
+        _update_bank_classifier(cfg, st, b)
+    assert b.state == "out", f"expected 'out' after all strings open, got '{b.state}'"
+    assert b.fault is None, "no fault should be latched by the classifier"
+
+    # Restore strings.
+    b.strings_out = 0
+
+    # Recovery requires 3 ticks.
+    _update_bank_classifier(cfg, st, b)
+    assert b.state == "out", "must not recover on tick 1 after string restore"
+    _update_bank_classifier(cfg, st, b)
+    assert b.state == "out", "must not recover on tick 2 after string restore"
+    _update_bank_classifier(cfg, st, b)
+    assert b.state == "nominal", "must recover to nominal on tick 3 after string restore"
+
+
+# ---------------------------------------------------------------------------
+# TC-SOL-11  no_comms clears immediately when telemetry is restored
+# ---------------------------------------------------------------------------
+
+def test_sol11_no_comms_exits_immediately_when_telemetry_restored(sim):
+    """no_comms is asserted immediately and also cleared immediately.
+
+    On the tick that telemetry_age_s drops back to ≤ 10, the bank re-enters
+    the normal hysteresis loop.  If its physical output is nominal, it becomes
+    nominal on the same tick (coming from no_comms the hysteresis starts fresh,
+    and a fresh evaluation of a nominal bank sets state=nominal immediately
+    because candidate == new state after the reset).
+    """
+    cfg, st = sim.cfg, sim.state
+    b = st.blocks[6]
+
+    # Enter no_comms.
+    b.telemetry_age_s = 15.0
+    _update_bank_classifier(cfg, st, b)
+    assert b.state == "no_comms"
+
+    # Restore comms.
+    b.telemetry_age_s = 0.0
+
+    # First tick after telemetry restored: state must NOT be no_comms.
+    _update_bank_classifier(cfg, st, b)
+    assert b.state != "no_comms", (
+        "no_comms must exit immediately when telemetry is restored")
+    # With all strings healthy, physical output is nominal → should be nominal.
+    assert b.state == "nominal", (
+        f"bank with healthy strings should be nominal after comms restore, got '{b.state}'")
+
+
+def test_sol11_no_comms_hysteresis_resets_on_restore(sim):
+    """After exiting no_comms, the hysteresis counter must start clean.
+
+    If the bank's physical condition warrants 'degraded', it must still take
+    3 ticks to arrive at 'degraded' after comms are restored — not zero.
+    """
+    cfg, st = sim.cfg, sim.state
+    b = st.blocks[7]
+
+    # Enter no_comms.
+    b.telemetry_age_s = 15.0
+    _update_bank_classifier(cfg, st, b)
+    assert b.state == "no_comms"
+
+    # Open 3 strings so physical ratio ≈ 50% (degraded territory) but not 'out'.
+    b.strings_out = 3
+    b.telemetry_age_s = 0.0  # restore comms
+
+    # Tick 1 post-restore: exits no_comms, becomes nominal (fresh hysteresis
+    # starts at nominal; 'degraded' candidate starts accumulating from tick 1).
+    _update_bank_classifier(cfg, st, b)
+    assert b.state == "nominal", (
+        "first tick after comms restore must be nominal (hysteresis starts fresh)")
+
+    # Tick 2: still nominal (1 tick toward degraded so far).
+    _update_bank_classifier(cfg, st, b)
+    assert b.state == "nominal", "second tick — not yet 3 ticks toward degraded"
+
+    # Tick 3: 3 consecutive degraded readings → transition.
+    _update_bank_classifier(cfg, st, b)
+    assert b.state == "degraded", "must transition to degraded after 3 ticks"
+
+
+# ---------------------------------------------------------------------------
+# TC-SOL-12  Latched fault stays out even when strings are repaired
+# ---------------------------------------------------------------------------
+
+def test_sol12_latched_fault_blocks_recovery(sim):
+    """If b.fault is set, the bank stays 'out' regardless of physical output.
+
+    This prevents an arc-faulted inverter from being mistakenly re-classified
+    as nominal just because the physics model says it should be producing power.
+    Only an explicit maintenance reset (clearing b.fault) allows recovery.
+    """
+    cfg, st = sim.cfg, sim.state
+    b = st.blocks[9]
+
+    # Latch a fault and put the bank in out state.
+    b.state = "out"
+    b.fault = "arc_fault"
+
+    # Physically the bank looks fine (all strings healthy, good irradiance).
+    assert b.strings_out == 0
+    assert st.poa > 500    # enough sun
+
+    # 10 ticks of the classifier must not change the state.
+    for tick_n in range(10):
+        _update_bank_classifier(cfg, st, b)
+        assert b.state == "out", (
+            f"latched fault must block recovery at tick {tick_n+1}: "
+            f"state is '{b.state}'")
+
+    # Physical output is still non-zero in the physics model (not counted though).
+    from renewable.solar import _bank_physical_mw
+    physical = _bank_physical_mw(cfg, st, b)
+    assert physical > 0.0, "physical model shows output, but fault keeps it latched"
+    assert counted_output_mw(cfg, st, b) == 0.0, "counted output must stay zero"
+
+
+# ---------------------------------------------------------------------------
+# TC-SOL-07  largest_feeder_mw > largest_bank_mw at seed
+# ---------------------------------------------------------------------------
+
+def test_sol07_feeder_mw_exceeds_bank_mw_at_seed(sim):
+    """AC-RES-1: seed feeder ≈ 1.07 MW, seed bank ≈ 0.215 MW."""
+    cfg, st = sim.cfg, sim.state
+    f_mw = largest_feeder_mw(cfg, st)
+    b_mw = largest_bank_mw(cfg, st)
+
+    assert f_mw > b_mw, (
+        f"largest_feeder_mw ({f_mw:.4f}) must exceed largest_bank_mw ({b_mw:.4f})")
+    assert f_mw == pytest.approx(1.07, abs=0.02), (
+        f"largest_feeder_mw should be ~1.07 MW at seed; got {f_mw:.4f}")
+    assert b_mw == pytest.approx(0.215, abs=0.01), (
+        f"largest_bank_mw should be ~0.215 MW at seed; got {b_mw:.4f}")
+
+
+# ---------------------------------------------------------------------------
+# TC-SOL-08  N−1 reserve row uses the feeder figure
+# ---------------------------------------------------------------------------
+
+def test_sol08_n1_reserve_uses_feeder_figure(sim):
+    """reserve.n1 delta_p_mw must equal largest_feeder_mw, not largest_bank_mw."""
+    cfg, st = sim.cfg, sim.state
+    snap = sim.snapshot()
+    feeder_mw = largest_feeder_mw(cfg, st)
+    bank_mw   = largest_bank_mw(cfg, st)
+
+    n1_delta = snap["reserve"]["n1"]["delta_p_mw"]
+    assert n1_delta == pytest.approx(feeder_mw, abs=1e-9), (
+        "N−1 row must be sized on the feeder, not the bank")
+    assert n1_delta > bank_mw, (
+        "N−1 feeder figure must exceed the bank figure at seed")
+
+
+# ---------------------------------------------------------------------------
+# TC-SOL-09  No-feeder config reproduces bank-level N−1 exactly
+# ---------------------------------------------------------------------------
+
+def test_sol09_no_feeder_config_gives_bank_level_n1():
+    """With no feeder topology, each bank is its own contingency group.
+    largest_feeder_mw must equal largest_bank_mw (degenerate case, spec §5)."""
+    cfg = SiteConfig(feeder_ids=[])   # no feeder grouping
+    sim = SolarSim(cfg, seed=1)
+
+    f_mw = largest_feeder_mw(cfg, sim.state)
+    b_mw = largest_bank_mw(cfg, sim.state)
+
+    assert f_mw == pytest.approx(b_mw, abs=1e-9), (
+        f"Without feeders, largest_feeder_mw ({f_mw:.6f}) must equal "
+        f"largest_bank_mw ({b_mw:.6f})")
+
+
+# ---------------------------------------------------------------------------
+# TC-SOL-14  Plant dark at night: all nominal, expected 0.00, no alarms
+# ---------------------------------------------------------------------------
+
+def test_sol14_night_zero_expected_all_nominal(sim):
+    """Zero output must be unremarkable when expectation is also zero (night).
+
+    TC-SOL-14 matters more than its position suggests — if the classifier
+    raises alarms at night, operators will stop trusting it.
+    """
+    st = sim.state
+    # Simulate night: no irradiance.
+    st.poa = 0.0
+    st.cloud_factor = 1.0    # clear night sky, just no sun
+
+    for b in st.blocks:
+        _update_bank_classifier(sim.cfg, st, b)
+
+    for b in st.blocks:
+        assert b.state == "nominal", (
+            f"bank {b.id} is {b.state} at night — zero output with zero "
+            f"expected should be nominal, not alarming")
+        assert bank_expected_mw(sim.cfg, st, b) == pytest.approx(0.0, abs=1e-9)
+
+    assert p_renewable_mw(sim.cfg, sim.state) == pytest.approx(0.0, abs=1e-9)
+
+
+# ---------------------------------------------------------------------------
+# Additional seed-config sanity: 20 banks × 0.25 MW = 5.00 MW plant
+# ---------------------------------------------------------------------------
+
+def test_seed_config_has_20_banks():
+    cfg = SiteConfig()
+    assert cfg.banks == 20
+    assert cfg.bank_rated_ac_mw == pytest.approx(0.25)
+    assert cfg.plant_rated_ac_mw == pytest.approx(5.00)
+
+
+def test_seed_config_has_4_feeders():
+    cfg = SiteConfig()
+    assert len(cfg.feeder_ids) == 4
+    assert cfg.banks_per_feeder == 5
+
+
+def test_compat_aliases_on_config():
+    cfg = SiteConfig()
+    assert cfg.blocks == cfg.banks
+    assert cfg.block_rated_ac_mw == cfg.bank_rated_ac_mw
+    assert cfg.strings_per_block == cfg.strings_per_bank
+
+
+def test_blockstate_is_bankstate_alias():
+    """BlockState must be the same class as BankState (backward compat)."""
+    assert BlockState is BankState

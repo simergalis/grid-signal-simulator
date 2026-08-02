@@ -54,21 +54,31 @@ else:
     _using_postgres = False
     _connect_args = {"check_same_thread": False}
 
+_pg_kwargs: dict = (
+    {
+        # pool_pre_ping: test each connection before handing it to a request.
+        # Neon (and most managed PostgreSQL) silently closes idle connections after
+        # ~5 minutes.  Without this, the pool hands out a closed connection and the
+        # request fails with asyncpg InterfaceError: connection is closed.
+        # With it, SQLAlchemy issues a lightweight SELECT 1 first; on failure it
+        # transparently reconnects, so the request never sees the error.
+        "pool_pre_ping": True,
+        # pool_recycle: retire connections after 4 minutes regardless of use.
+        # Belt-and-suspenders with pool_pre_ping — keeps the pool healthy even
+        # during traffic lulls without waiting for Neon to close the connection.
+        "pool_recycle": 240,
+    }
+    if _using_postgres
+    else {}
+    # aiosqlite does not benefit from pool_pre_ping and pool_recycle spawns a
+    # background task that conflicts with pytest's event-loop teardown in tests.
+)
+
 _engine = create_async_engine(
     _DATABASE_URL,
     echo=False,
     connect_args=_connect_args,
-    # pool_pre_ping: test each connection before handing it to a request.
-    # Neon (and most managed PostgreSQL) silently closes idle connections after
-    # ~5 minutes.  Without this, the pool hands out a closed connection and the
-    # request fails with asyncpg InterfaceError: connection is closed.
-    # With it, SQLAlchemy issues a lightweight SELECT 1 first; on failure it
-    # transparently reconnects, so the request never sees the error.
-    pool_pre_ping=True,
-    # pool_recycle: retire connections after 4 minutes regardless of use.
-    # Belt-and-suspenders with pool_pre_ping — keeps the pool healthy even
-    # during traffic lulls without waiting for Neon to close the connection.
-    pool_recycle=240,
+    **_pg_kwargs,
 )
 
 _SessionLocal = async_sessionmaker(

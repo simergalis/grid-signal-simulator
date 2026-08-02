@@ -7,8 +7,10 @@ GET  /solar-preview
     Mistral → physics → flat profile.  Intended for the opening screen.
 
 GET  /api/solar/state
-    Full PV plant snapshot: atmosphere, power, fleet, inverter blocks,
+    Full PV plant snapshot: atmosphere, power, fleet, banks[], feeders[],
     exposure, reserve arithmetic (§7.2 step 4), and event log.
+    Bank states: nominal | degraded | out | no_comms (four-state classifier).
+    N−1 is sized on the largest feeder (~5 banks × 0.25 MW ≈ 1.07 MW at seed).
     The Renewable Supply Console polls this at 1 Hz.
 
 GET  /api/solar/config
@@ -110,9 +112,13 @@ def _get_sim(request: Request):
 async def solar_state(request: Request) -> JSONResponse:
     """Full PV plant snapshot consumed by the Renewable Supply Console.
 
-    Returns atmosphere, power, fleet, inverter blocks, exposure, and the
+    Returns atmosphere, power, fleet, banks[], feeders[], exposure, and the
     §7.2 step 4 reserve check results for three contingency cases:
-    N−1 inverter block, plant loss at POI, and compound event (plant + 6 MW).
+    N−1 feeder loss (~5 banks, §5), plant loss at POI, and compound event (plant + 6 MW).
+
+    Bank states: nominal | degraded | out | no_comms.
+    reserve.n1 and reserve.n1_feeder are both present and sized on the largest
+    feeder (§5); reserve.n1_bank holds the largest individual bank figure.
     """
     return JSONResponse(_get_sim(request).snapshot())
 
