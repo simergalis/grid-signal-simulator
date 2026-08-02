@@ -20,6 +20,13 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Native <select> dropdowns: force dark colour-scheme so the OS renders the
+   popup list with a dark background and readable text, not the light-mode
+   default that makes light-coloured option text invisible. */
+select {
+  color-scheme: dark;
+}
+
 /* Thin scrollbar for operational feel */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track  { background: #0d1117; }
