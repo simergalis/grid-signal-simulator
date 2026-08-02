@@ -30,18 +30,12 @@ def _portal_url() -> str:
     """
     Resolve the public URL of the GridSignal portal for use in emails.
 
-    Priority:
-      1. APP_PORTAL_URL env var  — set this in Replit Secrets for the deployed URL
-      2. REPLIT_DEV_DOMAIN       — automatically present in Replit dev environment
-      3. Hard fallback           — used only if neither is configured
+    Defaults to https://gridsgnl.com.  Set APP_PORTAL_URL in Replit Secrets
+    to override (e.g. for a staging environment).  REPLIT_DEV_DOMAIN is
+    intentionally ignored — it is the internal dev tunnel, not the public URL.
     """
     explicit = os.environ.get("APP_PORTAL_URL", "").strip()
-    if explicit:
-        return explicit.rstrip("/")
-    dev_domain = os.environ.get("REPLIT_DEV_DOMAIN", "").strip()
-    if dev_domain:
-        return f"https://{dev_domain}"
-    return "https://gridsgnl.com"
+    return explicit.rstrip("/") if explicit else "https://gridsgnl.com"
 
 
 def _get_client():
