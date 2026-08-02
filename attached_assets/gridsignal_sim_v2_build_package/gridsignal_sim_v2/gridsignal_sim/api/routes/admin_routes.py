@@ -115,14 +115,33 @@ async def create_user(
     """Create a new user account and send a welcome email."""
     from sqlalchemy import select
 
-    # Unique-email guard
-    existing = await db.execute(
+    # Unique-email guard — if an inactive account with this email exists, reactivate
+    # and update it rather than rejecting (handles the delete+recreate pattern).
+    existing_result = await db.execute(
         select(AuthUser).where(AuthUser.email == body.email.lower())
     )
-    if existing.scalar_one_or_none() is not None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"A user with email '{body.email}' already exists",
+    existing_user: AuthUser | None = existing_result.scalar_one_or_none()
+    if existing_user is not None:
+        if existing_user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"A user with email '{body.email}' already exists",
+            )
+        # Inactive — reactivate with fresh credentials
+        existing_user.phone        = body.phone.strip()
+        existing_user.display_name = body.display_name.strip()
+        existing_user.role         = body.role
+        existing_user.password_hash = hash_password(body.password or secrets.token_urlsafe(12))
+        existing_user.is_active    = True
+        await db.commit()
+        await db.refresh(existing_user)
+        return UserResponse(
+            id=existing_user.id,
+            email=existing_user.email,
+            phone=existing_user.phone,
+            display_name=existing_user.display_name,
+            role=existing_user.role,
+            is_active=existing_user.is_active,
         )
 
     # Validate role
