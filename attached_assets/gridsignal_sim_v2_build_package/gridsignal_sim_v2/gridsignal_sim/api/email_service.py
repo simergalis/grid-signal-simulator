@@ -41,7 +41,7 @@ def _portal_url() -> str:
     dev_domain = os.environ.get("REPLIT_DEV_DOMAIN", "").strip()
     if dev_domain:
         return f"https://{dev_domain}"
-    return "https://gridsignal.app"
+    return "https://gridsgnl.com"
 
 
 def _get_client():
