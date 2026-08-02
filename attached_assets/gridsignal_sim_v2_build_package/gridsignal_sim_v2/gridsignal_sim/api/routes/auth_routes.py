@@ -96,6 +96,20 @@ async def login(
         if user else False
     )
 
+    # --- trace (remove after debugging) ---
+    _log.warning(
+        "LOGIN TRACE email=%s found=%s active=%s pw_ok=%s phone_ok=%s "
+        "stored_phone=%r supplied_phone=%r",
+        body.email.lower(),
+        user is not None,
+        user.is_active if user else None,
+        pw_ok,
+        phone_ok,
+        _normalise(user.phone) if user else None,
+        _normalise(body.phone),
+    )
+    # --- end trace ---
+
     if not user or not pw_ok or not phone_ok or not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
