@@ -57,8 +57,18 @@ function nodeDetail(def: NodeDef, tick: TickPayload | null): string {
       return mw > 0.1 ? `non-dispatchable · 4.99 MW rated` : `non-dispatchable · 4.99 MW rated`
     }
     case 'battery-bess': {
-      const soc = tick?.bess_soc_fraction ?? 0.95
-      return `armed · ${(soc * 100).toFixed(0)}% · anchor 1.0 MW`
+      const soc     = tick?.bess_soc_fraction ?? 0.95
+      const socPct  = (soc * 100).toFixed(0)
+      if (!tick) return `armed · ${socPct}% SoC · anchor 1.0 MW`
+      const disch   = tick.bess_output_mw ?? 0
+      // Excess generation (turbine + solar over current load) flows into BESS as charging
+      const excess  = Math.max(0,
+        (tick.turbine_output_mw ?? 0) + (tick.p_renewable_mw ?? 0)
+        - (tick.p_total_mw ?? 0) - disch
+      )
+      if (disch > 0.1)  return `discharging · ${disch.toFixed(1)} MW · ${socPct}% SoC · anchor 1.0 MW`
+      if (excess > 0.1) return `absorbing · ${excess.toFixed(1)} MW · ${socPct}% SoC · anchor 1.0 MW`
+      return `standby · ${socPct}% SoC · anchor 1.0 MW`
     }
     case 'grid-connection':
       return 'islanded — no utility feed'
@@ -150,10 +160,24 @@ function WeatherBadge({ preview }: { preview: SolarPreview }) {
 
 export function PlantNode({ def, tick, onClick, solarPreview }: PlantNodeProps) {
   const mwValue = getMwValue(def, tick)
-  const isIdle  = mwValue === null || Math.abs(mwValue) < 0.01
   const detail  = nodeDetail(def, tick)
   const isGrid  = !!def.gridStyle
   const canClick = def.clickable && !def.passive
+
+  // BESS charging flow: excess generation (turbine + solar − load − discharge) absorbed by battery
+  const isBess = def.id === 'battery-bess'
+  const bessExcess = isBess && tick
+    ? Math.max(0,
+        (tick.turbine_output_mw ?? 0) + (tick.p_renewable_mw ?? 0)
+        - (tick.p_total_mw ?? 0) - (tick.bess_output_mw ?? 0)
+      )
+    : 0
+  const bessIsCharging = isBess && bessExcess > 0.1 && (mwValue ?? 0) <= 0.1
+  const bessIsDischarging = isBess && (mwValue ?? 0) > 0.1
+
+  // When BESS is absorbing, show charging flow as the primary MW figure
+  const displayMw   = bessIsCharging ? bessExcess : mwValue
+  const isIdle      = displayMw === null || Math.abs(displayMw) < 0.01
 
   // Show weather badge on solar-pv only before a run starts (no tick yet)
   const showWeather = def.id === 'solar-pv' && !tick && solarPreview != null
@@ -262,16 +286,30 @@ export function PlantNode({ def, tick, onClick, solarPreview }: PlantNodeProps) 
 
         {/* MW value (middle) */}
         {def.mwField !== undefined && (
-          <div style={{
-            fontFamily: "'SF Mono','Roboto Mono',Menlo,Consolas,monospace",
-            fontSize: mwValue !== null && mwValue >= 10 ? 16 : 18,
-            fontWeight: 500,
-            color: isGrid ? '#3a4a58' : isIdle ? '#4b5764' : def.accentColor,
-            letterSpacing: '-0.01em',
-            lineHeight: 1,
-          }}>
-            {mwValue !== null ? `${Math.abs(mwValue).toFixed(2)}` : '—'}
-            <span style={{ fontSize: 9, fontWeight: 400, marginLeft: 2, color: '#5a6a78' }}>MW</span>
+          <div style={{ lineHeight: 1 }}>
+            <div style={{
+              fontFamily: "'SF Mono','Roboto Mono',Menlo,Consolas,monospace",
+              fontSize: displayMw !== null && Math.abs(displayMw) >= 10 ? 16 : 18,
+              fontWeight: 500,
+              color: isGrid ? '#3a4a58' : isIdle ? '#4b5764' : def.accentColor,
+              letterSpacing: '-0.01em',
+              lineHeight: 1,
+            }}>
+              {displayMw !== null ? `${Math.abs(displayMw).toFixed(2)}` : '—'}
+              <span style={{ fontSize: 9, fontWeight: 400, marginLeft: 2, color: '#5a6a78' }}>MW</span>
+            </div>
+            {/* BESS direction badge */}
+            {isBess && tick && (
+              <div style={{
+                fontFamily: "'SF Mono','Roboto Mono',Menlo,Consolas,monospace",
+                fontSize: 8,
+                marginTop: 2,
+                color: bessIsCharging ? '#4a9fe0' : bessIsDischarging ? '#e0a458' : '#3a4a58',
+                letterSpacing: '0.04em',
+              }}>
+                {bessIsCharging ? '↓ absorbing' : bessIsDischarging ? '↑ discharging' : '◦ standby'}
+              </div>
+            )}
           </div>
         )}
 
