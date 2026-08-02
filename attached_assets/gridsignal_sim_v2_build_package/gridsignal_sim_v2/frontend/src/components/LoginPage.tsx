@@ -168,9 +168,16 @@ export function LoginPage({ onAuthenticated, adminMode = false }: Props) {
         </button>
 
         <p className="font-sans text-center" style={{ fontSize: 11, color: '#4b5764' }}>
-          {adminMode
-            ? 'Administrator accounts only.'
-            : 'Contact your administrator to request access.'}
+          {adminMode ? (
+            <>
+              Administrator accounts only.{' '}
+              <a href="/" style={{ color: '#3fb6a8', textDecoration: 'none' }}>
+                Operator sign-in →
+              </a>
+            </>
+          ) : (
+            'Contact your administrator to request access.'
+          )}
         </p>
       </form>
     </div>
