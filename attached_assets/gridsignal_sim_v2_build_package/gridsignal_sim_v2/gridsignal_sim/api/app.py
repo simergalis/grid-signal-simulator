@@ -45,7 +45,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from runtime.run_manager import RunManager, WebSocketHub
@@ -154,19 +154,26 @@ def create_app() -> FastAPI:
     application.include_router(solar_routes.router)     # Task-20 solar preview
 
     # ── §10.2 static frontend (Step 16) ─────────────────────────────────
-    # Mount the pre-built React SPA at the root.  StaticFiles(html=True)
-    # serves index.html for any path that doesn't match a static asset,
-    # which is the standard SPA fallback pattern.
+    # Catch-all GET route: serve real static assets by file path, then fall
+    # back to index.html so React Router handles all SPA paths (e.g. /admin).
     #
-    # This block is deliberately guarded so the unit/integration test suite
-    # continues to work without a frontend build: the test client only
-    # exercises the API routes, which are registered unconditionally above.
+    # Why not StaticFiles(html=True)? Starlette's html mode falls back to
+    # 404.html (served with HTTP 404), not index.html — direct navigation to
+    # /admin returns {"detail":"Not Found"} instead of the SPA shell.
+    #
+    # This block is guarded so the test suite works without a frontend build.
     if _FRONTEND_DIST.is_dir():
-        application.mount(
-            "/",
-            StaticFiles(directory=str(_FRONTEND_DIST), html=True),
-            name="frontend",
-        )
+        _index_html = _FRONTEND_DIST / "index.html"
+
+        @application.get("/{full_path:path}", include_in_schema=False)
+        async def _spa_catchall(full_path: str) -> Response:
+            # Unknown /api/* paths should remain JSON 404, not the SPA shell.
+            if full_path.startswith("api/"):
+                return JSONResponse({"detail": "Not Found"}, status_code=404)
+            candidate = _FRONTEND_DIST / full_path
+            if candidate.is_file():
+                return FileResponse(str(candidate))
+            return FileResponse(str(_index_html))
 
     return application
 
