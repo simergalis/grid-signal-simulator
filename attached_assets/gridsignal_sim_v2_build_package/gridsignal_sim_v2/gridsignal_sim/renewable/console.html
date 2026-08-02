@@ -117,7 +117,82 @@
   .fill.teal{background:var(--teal)} .fill.violet{background:var(--violet)}
   .bar .note{font-size:10px; color:var(--ink-3)}
 
-  /* ---------- array tiles ---------- */
+  /* ---------- Layer 1: coverage bar ---------- */
+  #coverageWrap{
+    border:1px solid var(--line); background:var(--surface); border-radius:3px;
+    padding:14px 18px; margin-bottom:14px;
+  }
+  .cvg-headline{font-size:15px; line-height:1.5; color:var(--ink); margin-bottom:3px}
+  .cvg-subline{font-size:11.5px; color:var(--ink-2); margin-bottom:12px; line-height:1.6}
+  .cvg-bar-outer{position:relative; height:24px; background:#1d2226; border-radius:2px;
+    overflow:hidden; margin-bottom:8px; display:flex}
+  .cvg-seg{height:100%; transition:width .6s ease; flex-shrink:0}
+  .cvg-seg.solar{background:repeating-linear-gradient(45deg,
+    #f2c14e 0,#f2c14e 3px,#2a1d04 3px,#2a1d04 7px)}
+  .cvg-seg.turbine{background:var(--teal)}
+  .cvg-seg.bess{background:var(--violet)}
+  .cvg-seg.gap{background:repeating-linear-gradient(45deg,
+    #4d2320 0,#4d2320 3px,#120808 3px,#120808 7px);
+    outline:1px solid var(--coral); outline-offset:-1px}
+  .cvg-bar-legend{display:flex; gap:16px; font-size:10px; color:var(--ink-3); flex-wrap:wrap}
+  .cvg-bar-legend span i{
+    display:inline-block; width:13px; height:10px; margin-right:5px; vertical-align:middle;
+    border-radius:1px;
+  }
+  .cvg-gap-msg{font-size:11px; margin-top:6px; display:none}
+  .cvg-gap-msg.on{display:block}
+  .cvg-gap-msg.ok{color:var(--teal)}
+  .cvg-gap-msg.bad{color:var(--coral)}
+  .cvg-sim-row{margin-top:10px; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+
+  /* ---------- Layer 2: bank list ---------- */
+  .bank-list{display:flex; flex-direction:column}
+  .bank-col-hdr{display:grid; grid-template-columns:72px 1fr 54px 84px 1fr;
+    gap:8px; padding:2px 6px 6px; border-bottom:1px solid var(--line-soft); margin-bottom:2px}
+  .bank-col-hdr span{font-size:9px; letter-spacing:.13em; text-transform:uppercase; color:var(--ink-3)}
+  .bank-col-hdr .r{text-align:right}
+  .fdr-group{margin-bottom:2px}
+  .fdr-group-hdr{
+    display:flex; align-items:baseline; gap:9px; padding:7px 6px 5px;
+    border-top:1px solid var(--line-soft); margin-top:4px; cursor:pointer;
+  }
+  .fdr-group-hdr:first-child{border-top:0; margin-top:0}
+  .fdr-id{font-size:9.5px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--ink-3); font-weight:500; white-space:nowrap}
+  .fdr-sub{font-size:11px; color:var(--ink-2)}
+  .fdr-cc-badge{
+    font-size:9px; letter-spacing:.1em; text-transform:uppercase; padding:2px 7px;
+    border-radius:1px; background:#1a1509; color:var(--amber); border:1px solid #463a12;
+    margin-left:auto; white-space:nowrap;
+  }
+  .fdr-group.common-cause{
+    border-left:3px solid var(--amber); padding-left:9px; margin-left:-9px;
+  }
+  .bank-row{
+    display:grid; grid-template-columns:72px 1fr 54px 84px 1fr;
+    align-items:center; gap:8px; padding:6px 6px; border-bottom:1px solid #141a1d;
+    cursor:pointer; transition:background .12s;
+  }
+  .bank-row:hover{background:#0f1416}
+  .bank-row.selected{background:#111618}
+  .br-id{font-size:11px; color:var(--ink-2); font-variant-numeric:tabular-nums}
+  .br-track{height:6px; background:#1d2226; border-radius:1px; overflow:hidden}
+  .br-fill{height:100%; transition:width .5s ease; background:var(--teal)}
+  .bank-row[data-st="degraded"] .br-fill{background:var(--amber)}
+  .bank-row[data-st="out"] .br-fill{background:var(--coral)}
+  .bank-row[data-st="no_comms"] .br-fill{background:var(--violet)}
+  .br-mw{font-size:12px; font-variant-numeric:tabular-nums; text-align:right}
+  .br-state{font-size:9px; letter-spacing:.1em; text-transform:uppercase}
+  .br-state.ok{color:var(--teal)} .br-state.warn{color:var(--amber)}
+  .br-state.bad{color:var(--coral)} .br-state.dim{color:var(--violet)}
+  .br-reason{font-size:10px; color:var(--ink-3)}
+  .bank-detail{
+    background:var(--surface-2); border-left:2px solid var(--line-soft);
+    padding:10px 14px; margin:0 0 4px; display:none;
+  }
+  .bank-detail.on{display:block}
+
+  /* ---------- legacy array tiles (kept for backward-compat, unused by new list) ---------- */
   .array{display:grid; grid-template-columns:repeat(5,1fr); gap:9px}
   @media(max-width:900px){ .array{grid-template-columns:repeat(2,1fr)} }
   .blk{border:1px solid var(--line); background:var(--surface-2); border-radius:2px; padding:10px 11px;
@@ -248,12 +323,35 @@
   <!-- ============================ PLANT ============================ -->
   <section class="screen on" id="s-plant">
     <div class="kpis">
-      <div class="kpi"><div class="eyebrow">Output</div><div class="v amber num" id="k-out">4.29</div><div class="s">MW AC &middot; instantaneous</div></div>
+      <div class="kpi"><div class="eyebrow">Output</div><div class="v amber num" id="k-out">4.29</div><div class="s" id="k-outsub">MW AC &middot; instantaneous</div></div>
       <div class="kpi"><div class="eyebrow">Of rated</div><div class="v num" id="k-pct">85.8%</div><div class="s" id="k-rated">5.00 MW AC &middot; 6.50 MWp DC</div></div>
       <div class="kpi"><div class="eyebrow">Performance ratio</div><div class="v teal num" id="k-pr">93.5%</div><div class="s" id="k-prsub">measured vs clear-sky model</div></div>
       <div class="kpi"><div class="eyebrow">POA irradiance</div><div class="v num" id="k-poa">969</div><div class="s" id="k-poasub">W/m&sup2; &middot; module 48 &deg;C</div></div>
-      <div class="kpi"><div class="eyebrow">Share of net demand</div><div class="v violet num" id="k-share">35.6%</div><div class="s">of P_total(t) &middot; live</div></div>
-      <div class="kpi"><div class="eyebrow">Fleet must cover</div><div class="v teal num" id="k-net">7.76</div><div class="s">MW &middot; P_dispatch_required</div></div>
+      <div class="kpi"><div class="eyebrow">Share of what site uses</div><div class="v violet num" id="k-share">35.6%</div><div class="s" id="k-sharesub">of site draw P_total &middot; live</div></div>
+      <div class="kpi"><div class="eyebrow">Generators &amp; battery covering</div><div class="v teal num" id="k-net">7.76</div><div class="s" id="k-netsub">MW &middot; dispatch requirement</div></div>
+    </div>
+
+    <!-- Layer 1: plain-language headline + coverage bar -->
+    <div id="coverageWrap">
+      <div class="cvg-headline" id="cvg-headline">The sun is covering — of the — MW this site is using.</div>
+      <div class="cvg-subline" id="cvg-subline">Generators and battery are covering the rest.</div>
+      <div class="cvg-bar-outer" id="cvgBar" title="Full bar width = total site draw (P_total)">
+        <div class="cvg-seg solar"   id="cvg-solar"   style="width:0%"></div>
+        <div class="cvg-seg turbine" id="cvg-turbine" style="width:0%"></div>
+        <div class="cvg-seg bess"    id="cvg-bess"    style="width:0%"></div>
+        <div class="cvg-seg gap"     id="cvg-gap"     style="width:0%"></div>
+      </div>
+      <div class="cvg-bar-legend">
+        <span><i style="background:repeating-linear-gradient(45deg,#f2c14e 0,#f2c14e 3px,#2a1d04 3px,#2a1d04 7px)"></i>Solar PV (non-dispatchable)</span>
+        <span><i style="background:var(--teal)"></i>Gas turbines</span>
+        <span><i style="background:var(--violet)"></i>Battery (BESS)</span>
+        <span id="cvg-gap-legend" style="display:none"><i style="background:repeating-linear-gradient(45deg,#4d2320 0,#4d2320 3px,#120808 3px,#120808 7px);outline:1px solid var(--coral)"></i>Uncovered gap</span>
+      </div>
+      <div class="cvg-gap-msg" id="cvgGapMsg"></div>
+      <div class="cvg-sim-row">
+        <button class="btn" id="solarStopBtn">If solar stopped this second</button>
+        <span class="cap" id="solarStopHint">Animate what happens to the supply bar</span>
+      </div>
     </div>
 
     <div class="grid g-32">
@@ -266,7 +364,7 @@
             <span><i style="background:#f2c14e"></i>measured</span>
             <span><i style="background:#3fbfae"></i>clear-sky model</span>
             <span><i style="background:#8b8fd6;height:0;border-top:2px dashed #8b8fd6"></i>forecast T+60 s</span>
-            <span><i style="background:#ef5a4c"></i>net demand on fleet</span>
+            <span><i style="background:#ef5a4c"></i>net demand after solar</span>
           </div>
         </div>
       </div>
@@ -275,12 +373,12 @@
         <div class="ph"><span class="eyebrow">Exposure &middot; what a loss would cost right now</span></div>
         <div class="pb">
           <div class="bar">
-            <div class="bl"><span>N&minus;1 &middot; largest feeder trips</span><span class="amt" id="e1">1.07 MW</span></div>
+            <div class="bl"><span id="e1label">N&minus;1 &middot; largest feeder trips</span><span class="amt" id="e1">1.07 MW</span></div>
             <div class="track"><i class="fill amber" id="e1f" style="width:17%"></i></div>
             <div class="note" id="e1n">step change, &Delta;t_lead = 0 &middot; covered by BESS bridging</div>
           </div>
           <div class="bar">
-            <div class="bl"><span>Plant loss &middot; POI or plant-controller trip</span><span class="amt" id="e2">4.29 MW</span></div>
+            <div class="bl"><span>If solar stopped this second (POI or plant-controller trip)</span><span class="amt" id="e2">4.29 MW</span></div>
             <div class="track"><i class="fill coral" id="e2f" style="width:86%"></i></div>
             <div class="note" id="e2n">step change, &Delta;t_lead = 0 &middot; worst credible electrical contingency</div>
           </div>
@@ -297,15 +395,20 @@
       </div>
     </div>
 
+    <!-- Layer 2: bank list (feeder-grouped rows) -->
     <div class="panel" style="margin-top:14px">
-      <div class="ph"><span class="eyebrow">Banks &middot; <span id="blkcount">20 online / 20</span></span><span class="spacer"></span>
-        <span class="cap">click a bank for string detail &middot; no control surface exists on this page</span></div>
-      <div class="pb">
-        <div class="array" id="array"></div>
-        <div id="blkDetail" style="margin-top:14px"></div>
+      <div class="ph">
+        <span class="eyebrow">Banks &middot; <span id="blkcount">20 online / 20</span></span>
+        <span class="spacer"></span>
+        <span class="cap" id="bankCommonCauseHdr"></span>
+        <span class="cap" style="margin-left:6px">click a bank for string detail &middot; read-only</span>
+      </div>
+      <div class="pb" style="padding-top:8px">
+        <div class="bank-list" id="bankList"></div>
       </div>
     </div>
 
+    <!-- Layer 3: plant conditions + stressor injection -->
     <div class="grid g-2" style="margin-top:14px">
       <div class="panel">
         <div class="ph"><span class="eyebrow">Plant conditions</span></div>
@@ -383,7 +486,7 @@
             <p>This calculation is a planning instrument. It runs continuously, but a compound failure is an
               advisory rather than an alarm &mdash; the alarm fires when the contingency the site is actually exposed to
               right now cannot be covered.</p>
-            <p>Solar is subtracted from the load the fleet must serve and is never added to ramp capability.
+            <p>Solar is subtracted from the load the generators and battery must serve and is never added to ramp capability.
               Turbine ramp rate and anchor-adjusted BESS discharge are the only terms that close a gap.</p>
             <p class="ref">Availability, not dispatchability &sect;7.1.1 &middot; anchor constraint &sect;7.1.2</p>
           </div>
@@ -452,7 +555,7 @@
             <thead><tr><th>Tier</th><th>Resolution</th><th>Window</th><th>Store</th></tr></thead>
             <tbody>
               <tr><td>Tier 0</td><td>1 s, per inverter</td><td>72 h</td><td>edge appliance, local</td></tr>
-              <tr><td>Tier 1</td><td>10 s, plant + per block</td><td>90 d</td><td>site learning store</td></tr>
+              <tr><td>Tier 1</td><td>10 s, plant + per bank</td><td>90 d</td><td>site learning store</td></tr>
               <tr><td>Tier 2</td><td>1 min rollup + events</td><td>7 y</td><td>S3-compatible object store</td></tr>
               <tr><td>Events</td><td>full fidelity, &plusmn;5 min</td><td>7 y</td><td>Tier 2, never downsampled</td></tr>
             </tbody>
@@ -490,8 +593,8 @@
           <div class="why">
             <p>The June 14 row is the one worth reading twice. A comms loss to the plant controller presents identically to a
               generation loss and was handled as one &mdash; correctly, but at the cost of 2.1 MW of curtailed compute that the
-              array was still producing power to serve.</p>
-            <p class="ref">Curtailment ladder &sect;23.2 &middot; asset state on comms loss &sect;27.4</p>
+              arbitrator staged down before confirming the source.</p>
+            <p class="ref">Comms loss vs generation loss &sect;4.4 &middot; FR-SOL-1 reconciliation check</p>
           </div>
         </div>
       </div>
@@ -517,7 +620,7 @@
         </div>
         <div>
           <div class="big num" id="vbig">4.29</div>
-          <div class="biglab">MW, uncounted</div>
+          <div class="biglab">MW, non-dispatchable</div>
         </div>
       </div>
 
@@ -528,7 +631,7 @@
           <div class="legend">
             <span><i style="background:#f2c14e"></i>solar output</span>
             <span><i style="background:#3fbfae"></i>site total draw</span>
-            <span><i style="background:#ef5a4c"></i>net demand on fleet</span>
+            <span><i style="background:#ef5a4c"></i>net demand after solar</span>
           </div>
 
           <div class="bar">
@@ -537,14 +640,14 @@
             <div class="note" id="m1n">85.8% of AC nameplate &middot; not clipping</div>
           </div>
           <div class="bar">
-            <div class="bl"><span>Gap if the largest feeder trips (N&minus;1)</span><span class="amt" id="m2">1.07 MW</span></div>
+            <div class="bl"><span id="m2label">If the largest feeder trips (N&minus;1)</span><span class="amt" id="m2">1.07 MW</span></div>
             <div class="track"><i class="fill violet" id="m2f" style="width:17%"></i></div>
-            <div class="note">the probable contingency &middot; one inverter, &Delta;t_lead = 0</div>
+            <div class="note" id="m2note">probable contingency &middot; one feeder, &Delta;t_lead = 0</div>
           </div>
           <div class="bar">
-            <div class="bl"><span>Gap if the plant is lost at the POI</span><span class="amt" id="m3">4.29 MW</span></div>
+            <div class="bl"><span>If solar stopped this second (POI trip)</span><span class="amt" id="m3">4.29 MW</span></div>
             <div class="track"><i class="fill coral" id="m3f" style="width:86%"></i></div>
-            <div class="note" id="m3n">the sizing contingency &middot; breaker or controller trip, &Delta;t_lead = 0</div>
+            <div class="note" id="m3n">sizing contingency &middot; &Delta;t_lead = 0</div>
           </div>
         </div>
 
@@ -553,7 +656,7 @@
 
       <div class="why">
         <div class="eyebrow" style="margin-bottom:8px">Why this matters</div>
-        <p>Renewable output is subtracted from the load the fleet must serve. It is never added to ramp capability,
+        <p>Renewable output is subtracted from the load the generators and battery must serve. It is never added to ramp capability,
           because it cannot be commanded and carries no lead time on loss.</p>
         <p>Nothing on this panel is a control. Solar is a passive collector, and a control that does nothing is worse
           than no control at all.</p>
@@ -599,8 +702,13 @@
     poa: 969, clearSkyPoa: 1005, moduleC: 48,
     soiling: 0.030, cloudFactor: 1.0, cloudTarget: 1.0,
     pCompute: 10.40, pComputeTarget: 10.40,
-    blocks: [], feeders: [], hist: [], fault: null, log: []
+    blocks: [], feeders: [], hist: [], fault: null, log: [],
+    advisories: []
   };
+
+  // Layer 1 "if solar stops" simulation state
+  var _solarStopSim = false;
+  var _solarStopTimer = null;
 
   for (var i = 0; i < CFG.banks; i++) {
     var _fdrIdx = Math.floor(i / (CFG.banks / CFG.feederIds.length));
@@ -615,10 +723,6 @@
   }
 
   // ---------------- server mode ----------------
-  // The FastAPI process is authoritative when reachable. The client keeps its own
-  // physics so the page still runs opened straight from disk, but in server mode it
-  // consumes the scalars the server computed rather than recomputing them, so there
-  // is exactly one implementation deciding what the numbers are.
   var SRV = null, SERVER_MODE = false, srvBusy = false;
 
   function applySnapshot(d){
@@ -635,7 +739,6 @@
     var bankList = d.banks || d.blocks || [];
     S.blocks = bankList.map(function(b){
       // Four-state classifier: nominal / degraded / out / no_comms.
-      // Legacy snapshots may still send 'fault' or 'derated' — map them.
       var st = b.state || 'nominal';
       if (st === 'fault')   st = 'out';
       if (st === 'derated') st = 'degraded';
@@ -643,7 +746,7 @@
       return { id:b.id, feederId:b.feeder_id||'', rated:b.rated_mw, state:st,
                derate:1.0, stringsOut:b.strings_out||0,
                invC:b.inverter_temp_c||40, soilBias:1,
-               srvOut:b.counted_output_mw,  // counted_output_mw = 0 for out/no_comms
+               srvOut:b.counted_output_mw,   // 0 for out/no_comms
                srvCs:b.expected_mw,
                fault:b.fault||null, reason:b.reason||null,
                telemetryAge:b.telemetry_age_s||0 }; });
@@ -700,6 +803,30 @@
   function pCooling(){ return SRV ? SRV.power.p_cooling_mw : S.pCompute * 0.158; }
   function pTotal(){ return S.pCompute + pCooling(); }
   function pNet(){ return pTotal() - pRenewable(); }
+  function pExpected(){
+    if (SRV && SRV.power && SRV.power.p_expected_mw !== undefined) return SRV.power.p_expected_mw;
+    return pClearSky();
+  }
+  function banksReporting(){
+    if (SRV && SRV.power && SRV.power.banks_reporting !== undefined) return SRV.power.banks_reporting;
+    return S.blocks.filter(function(b){ return b.state !== 'no_comms'; }).length;
+  }
+  function banksTotal(){
+    if (SRV && SRV.power && SRV.power.banks_total !== undefined) return SRV.power.banks_total;
+    return CFG.banks;
+  }
+  function largestFeederId(){
+    if (SRV && SRV.exposure && SRV.exposure.largest_feeder_id) return SRV.exposure.largest_feeder_id;
+    // offline fallback: find feeder with max output
+    var feederSums = {};
+    S.blocks.forEach(function(b){
+      var fid = b.feederId || 'fdr-?';
+      feederSums[fid] = (feederSums[fid]||0) + blockOutput(b);
+    });
+    var mx=0, mxId='fdr-?';
+    for (var k in feederSums){ if(feederSums[k]>mx){ mx=feederSums[k]; mxId=k; } }
+    return mxId;
+  }
 
   function onlineTurbines(){ return CFG.turbines.filter(function(t){ return t.online; }); }
   function fleetRamp(){ var r=0; onlineTurbines().forEach(function(t){ r+=t.r; }); return r; }   // MW/s
@@ -714,14 +841,11 @@
 
   // N−1 is sized on the largest FEEDER loss (§5), not the largest individual bank.
   function largestFeederMW(){
-    // Server path: read from reserve snapshot (most accurate).
     if (SRV && SRV.reserve && SRV.reserve.n1_feeder)
       return SRV.reserve.n1_feeder.delta_p_mw;
-    // Server path fallback: sum feeder output_mw array.
     if (S.feeders && S.feeders.length){
       var m=0; S.feeders.forEach(function(fd){ if(fd.output_mw>m) m=fd.output_mw; }); return m;
     }
-    // Offline fallback: sum banks by feeder_id, return the largest group.
     var feederSums = {};
     S.blocks.forEach(function(b){
       var fid = b.feederId || 'fdr-X';
@@ -732,18 +856,16 @@
   function largestBankMW(){
     var m = 0; S.blocks.forEach(function(b){ var o = blockOutput(b); if (o > m) m = o; }); return m;
   }
-  // Backward-compat alias: kept so old call-sites still resolve.
   function largestBlockMW(){ return largestBankMW(); }
 
-  // Reserve check per 7.2 step 4, with dt_lead = 0 for a supply-side step.
+  // Reserve check per §7.2 step 4, with dt_lead = 0 for a supply-side step.
   function reserveCheck(dP, dtLead){
     var r = fleetRamp();
     var rampTime = r > 0 ? dP / r : Infinity;
-    var gap = Math.max(0, rampTime - dtLead);
+    var gap = Math.max(0, rampTime - (dtLead||0));
     var bridge = bessBridging();
-    var peakShortfall = Math.max(0, dP - r * dtLead);
-    // declining shortfall -> energy is roughly the triangle
-    var energyNeeded = peakShortfall * gap / 2 / 3600;                 // MWh
+    var peakShortfall = Math.max(0, dP - r * (dtLead||0));
+    var energyNeeded = peakShortfall * gap / 2 / 3600;
     var sustainSec = peakShortfall > 0 ? (bessUsableMWh() / peakShortfall) * 3600 : Infinity;
     var powerOK = peakShortfall <= bridge;
     var energyOK = energyNeeded <= bessUsableMWh();
@@ -819,19 +941,17 @@
     axes(svg,x0,y0,w,h,ymin,ymax,4,
       [[-600,'T\u221210m'],[-300,'T\u22125m'],[0,'now'],[300,'T+5m'],[600,'T+10m'],[900,'T+15m']],xmin,xmax);
 
-    // past: reconstruct a plausible afternoon curve ending at current output
     var cur = pRenewable(), past=[];
     for (var s=-600;s<=0;s+=20){
       var wob = Math.sin(s/97)*0.07 + Math.sin(s/211)*0.05;
       past.push([s, clamp(cur*(1+wob) + s*0.00008*cur, 0, CFG.plantRatedAC*CFG.blocks)]);
     }
-    // forecast: declining afternoon sun + widening band
     var mean=[], hi=[], lo=[];
     for (var q=0;q<=900;q+=30){
       var decay = 1 - q*0.000075;
       var m = cur*decay*S.cloudTarget/Math.max(S.cloudFactor,0.01);
       m = clamp(m,0,CFG.plantRatedAC*CFG.blocks);
-      var sigma = 0.018 + q*0.000115;                // widens with horizon
+      var sigma = 0.018 + q*0.000115;
       mean.push([q,m]); hi.push([q, clamp(m*(1+sigma*1.9),0,6)]); lo.push([q, Math.max(0,m*(1-sigma*2.6))]);
     }
     var band='';
@@ -841,7 +961,6 @@
       Y2=y0+h-(clamp(lo[j][1],ymin,ymax))/(ymax-ymin)*h; band+='L'+f(X2,1)+' '+f(Y2,1)+' '; }
     svg.appendChild(ns('path',{d:band+'Z', fill:'#3a3d63', opacity:'.38', stroke:'none'}));
 
-    // clear-sky ceiling
     var cs = pClearSky(), ceil=[];
     for (var k=-600;k<=900;k+=50) ceil.push([k, cs*(1-Math.max(0,k)*0.00009)]);
     drawLine(svg, ceil, x0,y0,w,h,xmin,xmax,ymin,ymax,'#2a6b64','3 3',1.3);
@@ -850,7 +969,6 @@
     var nx = x0 + (0-xmin)/(xmax-xmin)*w;
     svg.appendChild(ns('line',{x1:nx,y1:y0,x2:nx,y2:y0+h,stroke:'#4a545c','stroke-width':1}));
 
-    // ladder table
     var rows='', hs=[[60,'T+60 s','persistence + POA slope',0.018,'high'],
                      [300,'T+5 min','sky imager advection',0.052,'high'],
                      [900,'T+15 min','imager + satellite blend',0.108,'medium'],
@@ -901,7 +1019,6 @@
     var xmin=H[0].t, xmax=Math.max(H[H.length-1].t, xmin+30);
     var xl=[]; for(var s=Math.ceil(xmin/15)*15;s<=xmax;s+=15) xl.push([s,String(s)]);
     axes(svg,x0,y0,w,h,0,ymax,4,xl,xmin,xmax);
-    // shaded band = the solar contribution that is uncounted in reserve
     var band='';
     H.forEach(function(p,i){ var X=x0+(p.t-xmin)/(xmax-xmin)*w, Y=y0+h-clamp(p.sol,0,ymax)/ymax*h;
       band+=(i?'L':'M')+f(X,1)+' '+f(Y,1)+' '; });
@@ -914,87 +1031,227 @@
     t.textContent='seconds from session start'; svg.appendChild(t);
   }
 
-  // ---------------- rendering: array ----------------
-  var selectedBlock = null;
-  function renderArray(){
-    var el = $('array'), html='';
-    var online = 0;
-    // Group banks by feeder for display.
-    var feederOrder = [];
-    var feederMap = {};
+  // ---------------- rendering: Layer 1 headline + coverage bar ----------------
+  function renderLayer1(){
+    var solar = pRenewable(), tot = pTotal();
+    var bridge = bessBridging();
+    var simOn = _solarStopSim;
+
+    // Headline (AC-UI-1 honesty: zero output is unremarkable at night)
+    var hl = $('cvg-headline'), sl = $('cvg-subline');
+    if (hl){
+      if (solar < 0.05){
+        hl.textContent = 'Solar is not contributing right now. Generators and battery are carrying the full ' + f(tot) + ' MW.';
+      } else {
+        hl.textContent = 'The sun is covering ' + f(solar) + ' MW of the ' + f(tot) + ' MW this site is using.';
+      }
+    }
+    if (sl){
+      if (solar < 0.05){
+        sl.textContent = 'Zero solar output is expected at night or after a plant-level trip. No action required.';
+      } else {
+        sl.textContent = 'Generators and battery are covering the remaining ' + f(pNet(),2)
+          + ' MW. Solar is non-dispatchable and carries no lead time on loss.';
+      }
+    }
+
+    // Coverage bar segments — full width = P_total
+    // Layout: [solar][turbines][bess][gap if sim + insufficient reserve]
+    var solarFrac, turbineFrac, bessFrac, gapFrac;
+    if (!simOn){
+      solarFrac   = tot > 0 ? clamp(solar / tot, 0, 1) : 0;
+      bessFrac    = tot > 0 ? clamp(bridge / tot, 0, 1 - solarFrac) : 0;
+      turbineFrac = clamp(1 - solarFrac - bessFrac, 0, 1);
+      gapFrac     = 0;
+    } else {
+      // Simulate solar going to zero; reserve tries to fill
+      var rc = reserveCheck(solar, 0);
+      solarFrac   = 0;
+      if (rc.pass){
+        bessFrac    = tot > 0 ? clamp(bridge / tot, 0, 1) : 0;
+        turbineFrac = clamp(1 - bessFrac, 0, 1);
+        gapFrac     = 0;
+      } else {
+        gapFrac     = tot > 0 ? clamp(rc.deficitMW / tot, 0, 1) : 0;
+        bessFrac    = tot > 0 ? clamp(bridge / tot, 0, 1 - gapFrac) : 0;
+        turbineFrac = clamp(1 - bessFrac - gapFrac, 0, 1);
+      }
+    }
+
+    var segSolar   = $('cvg-solar'), segTurbine = $('cvg-turbine');
+    var segBess    = $('cvg-bess'),  segGap = $('cvg-gap');
+    var gapLegend  = $('cvg-gap-legend'), gapMsg = $('cvgGapMsg');
+    if (segSolar)   segSolar.style.width   = f(solarFrac   * 100, 1) + '%';
+    if (segTurbine) segTurbine.style.width = f(turbineFrac * 100, 1) + '%';
+    if (segBess)    segBess.style.width    = f(bessFrac    * 100, 1) + '%';
+    if (segGap)     segGap.style.width     = f(gapFrac     * 100, 1) + '%';
+    if (gapLegend)  gapLegend.style.display = (gapFrac > 0) ? '' : 'none';
+
+    // Gap message below bar
+    if (gapMsg){
+      if (!simOn){
+        gapMsg.className = 'cvg-gap-msg';
+        gapMsg.textContent = '';
+      } else {
+        var rc2 = reserveCheck(solar, 0);
+        if (rc2.pass){
+          gapMsg.className = 'cvg-gap-msg on ok';
+          gapMsg.textContent = 'Reserve covers the loss. BESS bridges a ' + f(rc2.peak, 2)
+            + ' MW peak shortfall for ' + f(rc2.gap, 1) + ' s while turbines ramp up.';
+        } else {
+          gapMsg.className = 'cvg-gap-msg on bad';
+          gapMsg.textContent = 'Gap: ' + f(rc2.deficitMW, 2) + ' MW uncovered \u2014 '
+            + (isFinite(rc2.sustainSec) ? f(rc2.sustainSec, 0) + ' s at current BESS SoC'
+                                        : 'BESS SoC too low to bridge')
+            + '. Stage a turbine or ladder curtailment (\u00a723.2).';
+        }
+      }
+    }
+
+    // Button label
+    var btn = $('solarStopBtn'), hint = $('solarStopHint');
+    if (btn){
+      btn.className = 'btn' + (simOn ? ' on' : '');
+      btn.textContent = simOn ? 'Restore solar' : 'If solar stopped this second';
+    }
+    if (hint && !simOn){
+      hint.textContent = 'Animate what happens to the supply bar';
+    }
+  }
+
+  // ---------------- rendering: bank list (Layer 2) ----------------
+  var _selectedBank = null;
+  function renderBankList(){
+    var el = $('bankList'); if (!el) return;
+    var online = 0, reporting = 0;
+
+    // Build feeder map maintaining insertion order
+    var feederOrder = [], feederMap = {};
     S.blocks.forEach(function(b){
       var fid = b.feederId || 'fdr-?';
       if (!feederMap[fid]){ feederMap[fid]=[]; feederOrder.push(fid); }
       feederMap[fid].push(b);
     });
-    feederOrder.forEach(function(fid, fi){
-      // Feeder header row (spans all 5 columns via CSS .feeder-hdr).
-      var fdrOutput = 0;
-      feederMap[fid].forEach(function(b){ fdrOutput += blockOutput(b); });
-      html += '<div class="feeder-hdr'+(fi===0?' first-feeder-hdr':'')+'">'+fid
-            + ' &nbsp;&middot;&nbsp; '+f(fdrOutput)+' MW</div>';
-      feederMap[fid].forEach(function(b){
+
+    // Which feeders have a common_cause advisory
+    var ccFeeders = {};
+    (S.advisories || []).forEach(function(a){
+      if (a.code === 'common_cause' && a.feeder) ccFeeders[a.feeder] = true;
+    });
+
+    var html = '';
+
+    // Column headers
+    html += '<div class="bank-col-hdr">'
+          + '<span>Bank</span><span>Output vs expected</span>'
+          + '<span class="r">MW</span><span>State</span><span>Reason</span></div>';
+
+    feederOrder.forEach(function(fid){
+      var banks = feederMap[fid];
+      var fdrOut = 0, fdrExp = 0, fdrOnline = 0, fdrReporting = 0;
+      banks.forEach(function(b){
+        fdrOut += blockOutput(b);
+        fdrExp += clearSkyBlock(b);
+        if (b.state === 'nominal' || b.state === 'degraded'){ fdrOnline++; online++; }
+        if (b.state !== 'no_comms') fdrReporting++;
+        reporting++;
+      });
+      var isCC = !!ccFeeders[fid];
+      html += '<div class="fdr-group' + (isCC ? ' common-cause' : '') + '">';
+      // Feeder header
+      html += '<div class="fdr-group-hdr" data-fdr="' + fid + '">'
+            + '<span class="fdr-id">' + fid + '</span>'
+            + '<span class="fdr-sub">' + f(fdrOut) + ' MW &middot; '
+            + fdrOnline + '/' + banks.length + ' banks &middot; exp ' + f(fdrExp) + ' MW</span>'
+            + (isCC ? '<span class="fdr-cc-badge">common cause</span>' : '')
+            + '</div>';
+
+      // Bank rows
+      banks.forEach(function(b){
         var o = blockOutput(b), cs = clearSkyBlock(b);
-        // Four-state classifier: nominal/degraded/out/no_comms.
         var st = b.state || 'nominal';
-        var isActive = (st === 'nominal' || st === 'degraded');
-        if (isActive) online++;
-        var stl;
-        if (st === 'out')
-          stl = '<span class="st bad"><span class="dot bad"></span>out</span>';
-        else if (st === 'no_comms')
-          stl = '<span class="st" style="color:var(--violet)"><span class="dot dim"></span>no comms</span>';
-        else if (st === 'degraded')
-          stl = '<span class="st warn"><span class="dot warn"></span>degraded</span>';
-        else
-          stl = '<span class="st ok"><span class="dot ok"></span>nominal</span>';
-        html += '<div class="blk" data-st="'+st+'" data-id="'+b.id+'" tabindex="0">'
-          + '<div class="id"><span>'+b.id+'</span>'+stl+'</div>'
-          + '<div class="out num">'+f(o)+' <span class="of">MW</span></div>'
-          + '<div class="of">exp '+f(cs)+' &middot; PR '+f(pct(o,cs),0)+'%</div>'
-          + '<div class="mini"><i style="width:'+f(clamp(pct(o,b.rated),0,100),0)+'%"></i></div>'
-          + '<div class="meta">'+(CFG.stringsPerBank-b.stringsOut)+'/'+CFG.stringsPerBank+' strings &middot; '
-          + f(b.invC,0)+' &deg;C<br>'+f(b.rated)+' MW &middot; '+fid+'</div></div>';
+        var fillPct = (cs > 0) ? clamp(o / cs * 100, 0, 100) : (o > 0 ? 100 : 0);
+        var stCls, stLabel;
+        if (st === 'out')         { stCls='bad';  stLabel='out'; }
+        else if (st === 'no_comms'){ stCls='dim';  stLabel='no comms'; }
+        else if (st === 'degraded'){ stCls='warn'; stLabel='degraded'; }
+        else                      { stCls='ok';   stLabel='nominal'; }
+        var reasonStr = b.reason ? String(b.reason).replace(/_/g,'\u00a0') : (b.fault ? String(b.fault).replace(/_/g,'\u00a0') : '\u2014');
+        var isSelected = (b.id === _selectedBank);
+        html += '<div class="bank-row' + (isSelected?' selected':'') + '" data-st="' + st + '" data-id="' + b.id + '" tabindex="0">'
+              + '<span class="br-id">' + b.id + '</span>'
+              + '<div class="br-track"><div class="br-fill" style="width:' + f(fillPct,0) + '%"></div></div>'
+              + '<span class="br-mw num">' + f(o) + '</span>'
+              + '<span class="br-state ' + stCls + '">' + stLabel + '</span>'
+              + '<span class="br-reason">' + reasonStr + '</span>'
+              + '</div>';
+        // Expandable detail panel
+        html += '<div class="bank-detail' + (isSelected?' on':'') + '" id="bd-' + b.id + '">';
+        if (isSelected) html += buildBankDetail(b, o, cs);
+        html += '</div>';
+      });
+      html += '</div>'; // fdr-group
+    });
+
+    el.innerHTML = html;
+
+    // Summary header
+    var totalBanks = S.blocks.length;
+    var reportingCount = banksReporting(), totalCount = banksTotal();
+    $('blkcount').textContent = online + ' of ' + totalBanks + ' online \u00b7 '
+      + reportingCount + ' of ' + totalCount + ' reporting';
+
+    // Common-cause hint in panel header
+    var ccHdr = $('bankCommonCauseHdr');
+    if (ccHdr){
+      var ccAdv = (S.advisories || []).filter(function(a){ return a.code === 'common_cause'; });
+      ccHdr.textContent = ccAdv.length ? ccAdv.length + ' feeder(s) with simultaneous bank trips' : '';
+      ccHdr.style.color = ccAdv.length ? 'var(--amber)' : '';
+    }
+
+    // Wire click handlers
+    Array.prototype.forEach.call(el.querySelectorAll('.bank-row'), function(n){
+      n.addEventListener('click', function(){
+        _selectedBank = (_selectedBank === n.dataset.id) ? null : n.dataset.id;
+        renderBankList();
+      });
+      n.addEventListener('keydown', function(e){
+        if (e.key==='Enter'||e.key===' '){ e.preventDefault();
+          _selectedBank = (_selectedBank === n.dataset.id) ? null : n.dataset.id;
+          renderBankList(); }
       });
     });
-    el.innerHTML = html;
-    $('blkcount').textContent = online + ' nominal+degraded / ' + CFG.banks;
-    Array.prototype.forEach.call(el.querySelectorAll('.blk'), function(n){
-      n.addEventListener('click', function(){ selectedBlock = n.dataset.id; renderBlockDetail(); });
-      n.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault();
-        selectedBlock = n.dataset.id; renderBlockDetail(); } });
-    });
-    renderBlockDetail();
   }
 
-  function renderBlockDetail(){
-    var el = $('blkDetail');
-    if (!selectedBlock){ el.innerHTML='<div class="cap">No bank selected.</div>'; return; }
-    var b = S.blocks.filter(function(x){return x.id===selectedBlock;})[0];
-    if (!b){ el.innerHTML=''; return; }
-    var o = blockOutput(b), cs = clearSkyBlock(b);
+  function buildBankDetail(b, o, cs){
     var stateNote = '';
     if (b.state === 'no_comms')
-      stateNote = '<div class="cap" style="color:var(--violet);margin-top:6px">No telemetry for '
-        + f(b.telemetryAge||0,1)+' s &mdash; counted as zero until comms restored (&sect;27.4).</div>';
+      stateNote = '<div class="cap" style="color:var(--violet);margin-top:5px">No telemetry for '
+        + f(b.telemetryAge||0,1)+' s \u2014 counted as zero until comms restored (\u00a727.4).</div>';
     else if (b.state === 'out')
-      stateNote = '<div class="cap" style="color:var(--coral);margin-top:6px">Bank tripped'
-        + (b.fault?' &mdash; '+b.fault:'')+'. Counted as zero.</div>';
+      stateNote = '<div class="cap" style="color:var(--coral);margin-top:5px">Bank tripped'
+        + (b.fault?' \u2014 '+b.fault:'')+'. Counted as zero.</div>';
     var rows = '';
     for (var s=1; s<=CFG.stringsPerBank; s++){
       var out = s <= b.stringsOut;
       rows += '<span title="string '+s+'" style="width:13px;height:13px;display:inline-block;margin:2px;'
            + 'background:'+(out?'#4d2320':'#26463f')+';border:1px solid '+(out?'#ef5a4c':'#2f5a52')+'"></span>';
     }
-    el.innerHTML = '<div class="panel" style="background:var(--surface-2)"><div class="ph">'
-      + '<span class="eyebrow">'+b.id+' &middot; '+b.feederId+' &middot; string health</span><span class="spacer"></span>'
-      + '<span class="cap">'+f(o)+' MW counted &middot; '+f(cs)+' MW expected</span></div>'
-      + '<div class="pb"><div>'+rows+'</div>'
+    return '<div style="display:flex;gap:18px;flex-wrap:wrap;font-size:11px">'
+      + '<div><div class="cap" style="margin-bottom:4px">Strings ('+(CFG.stringsPerBank-b.stringsOut)+'/'+CFG.stringsPerBank+' active)</div>'+rows+'</div>'
+      + '<div class="ledger" style="min-width:220px">'
+      + '<div class="lrow"><div class="k">Measured output</div><div class="r"><div class="val num">'+f(o)+' MW</div></div></div>'
+      + '<div class="lrow"><div class="k">Expected now</div><div class="r"><div class="val num">'+f(cs)+' MW</div><div class="sub">clear-sky model</div></div></div>'
+      + '<div class="lrow"><div class="k">Inverter temp</div><div class="r"><div class="val num">'+f(b.invC||40,0)+' \u00b0C</div></div></div>'
+      + '<div class="lrow"><div class="k">Telemetry age</div><div class="r"><div class="val num">'+f(b.telemetryAge||0,1)+' s</div></div></div>'
+      + (b.fault ? '<div class="lrow"><div class="k">Fault code</div><div class="r"><div class="val" style="color:var(--coral)">'+b.fault+'</div></div></div>' : '')
+      + '</div>'
+      + '</div>'
       + stateNote
-      + '<div class="cap" style="margin-top:9px">'+(b.stringsOut? b.stringsOut+' string(s) open &mdash; dispatch a technician; '
-        + 'the bank is counted at its re-rated capability, not excluded and not at nameplate (&sect;27.4).'
-        : (b.state==='out'||b.state==='no_comms'?'':'All strings reporting. Nothing to action.'))
-      +'</div></div></div>';
+      + '<div class="cap" style="margin-top:7px">'
+      + (b.stringsOut ? b.stringsOut+' string(s) open \u2014 bank counted at re-rated capability, not excluded (\u00a727.4).'
+         : (b.state==='out'||b.state==='no_comms'?'':'All strings reporting. Nothing to action.'))
+      + '</div>';
   }
 
   // ---------------- rendering: ledgers ----------------
@@ -1007,8 +1264,7 @@
     var cs = pClearSky(), cur = pRenewable();
     var sky = S.cloudFactor > 0.94 ? 'clear' : (S.cloudFactor > 0.7 ? 'scattered cloud' : 'heavy cloud');
     $('conditions').innerHTML =
-      row('Sky condition', sky, 'derived from POA vs clear-sky model, not from a weather feed',
-          S.cloudFactor>0.94?'':'')
+      row('Sky condition', sky, 'derived from POA vs clear-sky model, not from a weather feed', '')
     + row('POA irradiance', f(S.poa*S.cloudFactor,0)+' W/m&sup2;', 'clear-sky reference '+f(S.clearSkyPoa,0)+' W/m&sup2;')
     + row('Module temperature', f(S.moduleC,0)+' &deg;C', 'derate 0.38%/K above 25 &deg;C &middot; costs '
           + f((cs-cur)*0.4,2)+' MW at present')
@@ -1016,49 +1272,67 @@
     + row('Inverter clipping', cur >= CFG.plantRatedAC*0.995 ? 'active' : 'none',
           'DC/AC 1.30 &middot; clipping begins near '+f(CFG.plantRatedAC,2)+' MW AC')
     + row('Mount type', 'fixed', 'no tracker faults to report; no tracker to stow')
-    + row('Control surface', 'none', 'passive collector &mdash; nothing to command', '')
-    + row('Agent authority', 'advisory only', 'by construction &mdash; no dispatch path exists to this asset');
+    + row('Control surface', 'none', 'passive collector \u2014 nothing to command', '')
+    + row('Agent authority', 'advisory only', 'by construction \u2014 no dispatch path exists to this asset');
   }
 
   function renderReserve(){
     var solar = pRenewable();
     var rc = reserveCheck(solar, 0);
-    var n1 = largestFeederMW();           // N−1 is feeder-level (§5)
+    var n1 = largestFeederMW();
+    var n1Id = largestFeederId();
     var rcN1 = reserveCheck(n1, 0);
     var compound = reserveCheck(solar + 6.0, 0);
 
     $('rvVerdict').textContent = rc.pass ? 'pass' : 'fail';
     $('rvVerdict').className = 'st ' + (rc.pass ? 'ok' : 'bad');
 
+    // Update exposure panel N−1 label with feeder id
+    var e1label = $('e1label');
+    if (e1label) e1label.textContent = 'N\u22121 \u00b7 ' + n1Id + ' trips';
+
+    // Update modal N−1 label too
+    var m2label = $('m2label');
+    if (m2label) m2label.textContent = 'If the largest feeder trips (N\u22121 \u00b7 ' + n1Id + ')';
+    var m2note = $('m2note');
+    if (m2note) m2note.textContent = 'probable contingency \u00b7 ' + n1Id + ', \u0394t_lead = 0';
+
     $('reserve').innerHTML =
-      row('Net dispatch requirement', f(pNet())+' MW', 'P_total '+f(pTotal())+' &minus; P_renewable '+f(solar), 'num')
+      row('Net dispatch requirement', f(pNet())+' MW',
+          'P_total '+f(pTotal())+' \u2212 P_renewable '+f(solar), 'num')
+    + row('Expected now', f(pExpected())+' MW',
+          'clear-sky model \u00b7 what the plant would produce at current irradiance with all banks online', 'num')
+    + row('Banks reporting', banksReporting()+' of '+banksTotal(),
+          S.blocks.filter(function(b){ return b.state==='no_comms'; }).length + ' in no-comms state')
     + row('Turbines online', onlineTurbines().length + ' / ' + CFG.turbines.length,
-          'fleet ramp '+f(fleetRamp(),2)+' MW/s &middot; '+f(onlineTurbines().reduce(function(a,t){return a+t.mw;},0),1)+' MW capacity')
-    + row('BESS rated', f(CFG.bessRatedMW,1)+' MW / '+f(CFG.bessMWh,1)+' MWh', 'state of charge '+f(CFG.bessSoC*100,0)+'%')
-    + row('Anchor reserve withheld', '&minus;'+f(CFG.anchorReserveMW,1)+' MW',
-          'BESS is grid-forming while islanded &middot; &sect;7.1.2', 'num')
-    + row('Bridging available', f(bessBridging(),2)+' MW', 'anchor-adjusted &mdash; this is the figure the check uses',
-          'num')
-    + row('N&minus;1 feeder loss', f(rcN1.dP)+' MW &rarr; ' + (rcN1.pass?'covered':'shortfall'),
-          'largest feeder (~5 banks) trips &middot; ramp time '+f(rcN1.rampTime,1)+' s &middot; bridge for '+f(rcN1.gap,1)+' s',
+          'ramp '+f(fleetRamp(),2)+' MW/s \u00b7 '
+          + f(onlineTurbines().reduce(function(a,t){return a+t.mw;},0),1)+' MW capacity')
+    + row('BESS rated', f(CFG.bessRatedMW,1)+' MW / '+f(CFG.bessMWh,1)+' MWh',
+          'state of charge '+f(CFG.bessSoC*100,0)+'%')
+    + row('Anchor reserve withheld', '\u2212'+f(CFG.anchorReserveMW,1)+' MW',
+          'BESS is grid-forming while islanded \u00b7 \u00a77.1.2', 'num')
+    + row('Bridging available', f(bessBridging(),2)+' MW',
+          'anchor-adjusted \u2014 this is the figure the check uses', 'num')
+    + row('N\u22121 \u00b7 ' + n1Id, f(rcN1.dP)+' MW \u2192 '+(rcN1.pass?'covered':'shortfall'),
+          n1Id+' trips \u00b7 ramp time '+f(rcN1.rampTime,1)+' s \u00b7 bridge for '+f(rcN1.gap,1)+' s',
           rcN1.pass?'':'coral')
-    + row('Full plant loss', f(rc.dP)+' MW &rarr; ' + (rc.pass?'covered':'shortfall'),
-          'ramp time '+f(rc.rampTime,1)+' s &middot; bridge for '+f(rc.gap,1)+' s',
+    + row('If solar stopped this second', f(rc.dP)+' MW \u2192 '+(rc.pass?'covered':'shortfall'),
+          'ramp time '+f(rc.rampTime,1)+' s \u00b7 bridge for '+f(rc.gap,1)+' s',
           rc.pass?'':'coral')
-    + row('Compound worst case', f(compound.dP)+' MW &rarr; ' + (compound.pass?'covered':'shortfall'),
-          'plant loss coincident with a 6 MW compute step &middot; additive, and the case the reserve must size against',
+    + row('Compound worst case', f(compound.dP)+' MW \u2192 '+(compound.pass?'covered':'shortfall'),
+          'solar loss + 6 MW compute step \u00b7 additive, the case the reserve must size against',
           compound.pass?'':'coral');
 
     var w = compound;
     $('worked').innerHTML =
-      '<div style="color:var(--ink-3)">Plant loss at the POI, coincident with a 6 MW compute step-load.</div>'
-    + '<div>&Delta;P = '+f(solar)+' MW solar + 6.00 MW compute = <b>'+f(w.dP)+' MW</b></div>'
-    + '<div>&Delta;t_lead = <b>0 s</b> &mdash; the supply term carries no advance signal, so the compute term\u2019s 30 s of queue warning does not apply to the combined event</div>'
+      '<div style="color:var(--ink-3)">If solar stopped this second, coincident with a 6 MW compute step-load.</div>'
+    + '<div>\u0394P = '+f(solar)+' MW solar + 6.00 MW compute = <b>'+f(w.dP)+' MW</b></div>'
+    + '<div>\u0394t_lead = <b>0 s</b> \u2014 the supply term carries no advance signal, so the compute term\u2019s 30 s of queue warning does not apply to the combined event</div>'
     + '<div>Turbine ramp time = '+f(w.dP)+' / '+f(fleetRamp(),2)+' MW/s = <b>'+f(w.rampTime,1)+' s</b></div>'
-    + '<div>Gap the BESS must bridge = '+f(w.rampTime,1)+' &minus; 0 = <b>'+f(w.gap,1)+' s</b>, shortfall declining from '
+    + '<div>Gap the BESS must bridge = '+f(w.rampTime,1)+' \u2212 0 = <b>'+f(w.gap,1)+' s</b>, shortfall declining from '
       + f(w.peak)+' MW to zero</div>'
     + '<div>Bridging available = min('+f(CFG.bessRatedMW,1)+', '+f(CFG.bessRatedMW*CFG.bessSoC,2)
-      + ') &minus; '+f(CFG.anchorReserveMW,1)+' = <b>'+f(w.bridge,2)+' MW</b></div>'
+      + ') \u2212 '+f(CFG.anchorReserveMW,1)+' = <b>'+f(w.bridge,2)+' MW</b></div>'
     + '<div>Sustainable duration at '+f(w.peak)+' MW = <b>'+(isFinite(w.sustainSec)?f(w.sustainSec,0):'\u221e')+' s</b>'
       + ' vs a '+f(w.gap,1)+' s gap</div>'
     + '<div style="margin-top:8px;color:'+(w.pass?'var(--teal)':'var(--coral)')+'">'
@@ -1067,18 +1341,18 @@
                   + (w.deficitSec>0? ' and '+f(w.deficitSec,0)+' s':'')+'. Alert raised at staging time, not after the fact.')
       + '</div>';
 
-    // banner: hard alert on the real-time contingency, advisory on the planning compound case
+    // banner
     var b = $('alertBanner');
     if (!rc.pass){
       b.className='banner on';
-      b.innerHTML='<b>INSUFFICIENT RESERVE &middot; hard alert</b> &mdash; a full plant loss right now would leave '
-        + f(rc.deficitMW)+' MW uncovered'+(rc.deficitSec>0?' for '+f(rc.deficitSec,0)+' s':'')
-        + '. Turbine ramp cannot close it and solar cannot be commanded to. Stage gt-03 or ladder curtailment (&sect;23.2).';
+      b.innerHTML='<b>INSUFFICIENT RESERVE \u00b7 hard alert</b> \u2014 if solar stopped this second, '
+        + f(rc.deficitMW)+' MW would be uncovered'+(rc.deficitSec>0?' for '+f(rc.deficitSec,0)+' s':'')
+        + '. Turbine ramp cannot close it and solar cannot be commanded. Stage gt-03 or ladder curtailment (\u00a723.2).';
     } else if (!compound.pass){
       b.className='banner on advisory';
-      b.innerHTML='<b>COMPOUND EXPOSURE &middot; advisory</b> &mdash; the site is covered for a plant loss alone, but a '
-        + 'plant loss coincident with a 6 MW compute step would leave '+f(compound.deficitMW)
-        + ' MW uncovered. This is a planning figure, not a dispatch alarm &mdash; nothing is wrong right now.';
+      b.innerHTML='<b>COMPOUND EXPOSURE \u00b7 advisory</b> \u2014 the site is covered for a solar loss alone, but a '
+        + 'solar loss coincident with a 6 MW compute step would leave '+f(compound.deficitMW)
+        + ' MW uncovered. This is a planning figure, not a dispatch alarm \u2014 nothing is wrong right now.';
     } else { b.className='banner'; }
   }
 
@@ -1086,21 +1360,35 @@
     var solar = pRenewable(), tot = pTotal();
     var rc = reserveCheck(solar, 0);
     $('mledger').innerHTML =
-      row('Output', f(solar)+' MW', 'real-time &middot; instantaneous &middot; '+S.blocks.filter(function(b){return b.state==='nominal'||b.state==='degraded';}).length+' of '+CFG.banks+' banks reporting','num')
-    + row('Rated', f(CFG.plantRatedAC)+' MW AC', f(CFG.plantRatedDC)+' MWp DC &middot; DC/AC 1.30','num')
-    + row('Against expectation', f(pct(solar,pClearSky()),1)+'%', 'measured vs clear-sky model &mdash; performance ratio','num')
-    + row('Fleet must cover', f(pNet())+' MW', 'net demand after solar offset &middot; live','num teal')
-    + row('Share of site draw', f(pct(solar,tot),1)+'%', 'of P_total(t) = '+f(tot)+' MW at current compute load','num')
-    + row('Counted toward reserve', 'never', 'availability, not dispatchability &middot; &sect;7.1.1')
-    + row('Control surface', 'none', 'passive collector &mdash; nothing to command')
-    + row('Lead time on loss', '0 s', 'no advance signal exists for an electrical fault')
-    + row('Cloud ramp bound', '&minus;'+f(CFG.cloudRampBound,2)+' MW/s', 'spatial diversity across 20 banks on 4 feeders &mdash; a transient is not a step')
-    + row('Forecast treatment', 'subtracted', 'reduces demand, never closes a gap')
-    + row('If lost now', rc.pass ? 'bridged' : 'shortfall', rc.pass
-        ? 'BESS covers a '+f(rc.peak)+' MW declining shortfall for '+f(rc.gap,1)+' s'
-        : 'short by '+f(rc.deficitMW)+' MW &mdash; insufficient-reserve alert active',
-        rc.pass?'':'coral')
-    + row('Agent authority', 'advisory only', 'by construction &mdash; no dispatch path');
+      row('Output', f(solar)+' MW',
+          'real-time \u00b7 ' + banksReporting() + ' of ' + banksTotal() + ' banks reporting', 'num')
+    + row('Expected now', f(pExpected())+' MW',
+          'clear-sky model at current irradiance, all banks online', 'num')
+    + row('Rated', f(CFG.plantRatedAC)+' MW AC',
+          f(CFG.plantRatedDC)+' MWp DC \u00b7 DC/AC 1.30', 'num')
+    + row('Against expectation', f(pct(solar,pClearSky()),1)+'%',
+          'measured vs clear-sky model \u2014 performance ratio', 'num')
+    + row('Generators and battery covering', f(pNet())+' MW',
+          'net demand after solar offset \u00b7 live', 'num teal')
+    + row(f(pct(solar,tot),1)+'% of what the site is using',
+          f(tot)+' MW total', 'P_total at current compute load', 'num')
+    + row('Counted toward reserve', 'never',
+          'availability, not dispatchability \u00b7 \u00a77.1.1')
+    + row('Control surface', 'none',
+          'passive collector \u2014 nothing to command')
+    + row('Lead time on loss', '0 s',
+          'no advance signal exists for an electrical fault')
+    + row('Cloud ramp bound', '\u2212'+f(CFG.cloudRampBound,2)+' MW/s',
+          'spatial diversity across 20 banks on 4 feeders \u2014 a transient is not a step')
+    + row('Forecast treatment', 'subtracted',
+          'reduces demand, never closes a gap')
+    + row('If solar stopped this second', rc.pass ? 'bridged' : 'shortfall',
+          rc.pass
+            ? 'BESS covers a '+f(rc.peak)+' MW declining shortfall for '+f(rc.gap,1)+' s'
+            : 'short by '+f(rc.deficitMW)+' MW \u2014 insufficient-reserve alert active',
+          rc.pass?'':'coral')
+    + row('Agent authority', 'advisory only',
+          'by construction \u2014 no dispatch path');
   }
 
   function renderLog(){
@@ -1112,7 +1400,6 @@
   }
 
   // Advisory panel — FR-SOL-1 reconciliation_divergence / FR-SOL-2 common_cause.
-  // Only shown in server mode (requires snapshot.advisories from the backend).
   function renderAdvisories(){
     var el = $('advisoryPanel'); if(!el) return;
     var advs = (SRV && S.advisories) ? S.advisories : [];
@@ -1122,7 +1409,7 @@
       var isCritical = a.code === 'reconciliation_divergence';
       var itemCls  = 'adv-item' + (isCritical ? ' critical' : '');
       var codeCls  = 'adv-code' + (isCritical ? ' critical' : '');
-      var label    = a.code.replace(/_/g, '\u00a0');   // nbsp for line-break control
+      var label    = a.code.replace(/_/g, '\u00a0');
       var feederLine = a.feeder
         ? '<div class="adv-sub">Feeder: ' + a.feeder + '</div>'
         : '';
@@ -1148,21 +1435,32 @@
     $('k-net').textContent = f(pNet());
     $('k-prsub').textContent = solar < cs*0.9 ? 'below clear-sky model' : 'measured vs clear-sky model';
 
-    var n1 = largestFeederMW();             // feeder-level N−1 (§5)
+    // k-outsub: expected + banks reporting (SLD tile sub-field per §7 spec)
+    var outsub = $('k-outsub');
+    if (outsub) outsub.textContent = 'exp ' + f(pExpected()) + ' MW \u00b7 '
+      + banksReporting() + ' of ' + banksTotal() + ' banks reporting';
+
+    var n1 = largestFeederMW();
+    var n1Id = largestFeederId();
     $('e1').textContent = f(n1)+' MW';
     $('e1f').style.width = clamp(pct(n1,CFG.plantRatedAC),0,100)+'%';
     $('e2').textContent = f(solar)+' MW';
     $('e2f').style.width = clamp(pct(solar,CFG.plantRatedAC),0,100)+'%';
-    $('e3').innerHTML = '&minus;'+f(CFG.cloudRampBound,2)+' MW/s';
+    $('e3').innerHTML = '\u2212'+f(CFG.cloudRampBound,2)+' MW/s';
     var rcN1 = reserveCheck(n1,0);
-    $('e1n').innerHTML = 'step change, &Delta;t_lead = 0 &middot; '+(rcN1.pass?'covered by BESS bridging in '+f(rcN1.gap,1)+' s':'NOT covered');
+    $('e1n').innerHTML = 'step change, \u0394t_lead = 0 \u00b7 '+(rcN1.pass?'covered by BESS bridging in '+f(rcN1.gap,1)+' s':'NOT covered');
     var rcAll = reserveCheck(solar,0);
-    $('e2n').innerHTML = 'step change, &Delta;t_lead = 0 &middot; '+(rcAll.pass?'bridged in '+f(rcAll.gap,1)+' s':'shortfall '+f(rcAll.deficitMW)+' MW');
+    $('e2n').innerHTML = 'step change, \u0394t_lead = 0 \u00b7 '+(rcAll.pass?'bridged in '+f(rcAll.gap,1)+' s':'shortfall '+f(rcAll.deficitMW)+' MW');
 
     $('trendnote').textContent = solar < cs*0.85 ? 'measured below clear-sky \u2014 cloud attenuation'
       : 'measured tracking clear-sky within band';
 
-    renderLive(); renderArray(); renderConditions(); renderReserve(); renderAdvisories();
+    renderLayer1();
+    renderLive();
+    renderBankList();
+    renderConditions();
+    renderReserve();
+    renderAdvisories();
     if ($('s-forecast').classList.contains('on')) renderForecast();
     if ($('scrim').classList.contains('on')){ renderModalChart(); renderModalVerdict(); renderModalLedger(); }
   }
@@ -1170,24 +1468,26 @@
   function renderModalVerdict(){
     var solar = pRenewable();
     var rc = reserveCheck(solar,0);
-    var n1 = largestFeederMW();             // feeder-level N−1 for modal bars
+    var n1 = largestFeederMW();
+    var n1Id = largestFeederId();
     $('vbig').textContent = f(solar);
     $('verdict').className = 'verdict' + (rc.pass ? '' : ' bad');
     $('vtext').innerHTML = solar <= 0.01
-      ? 'Contributing nothing. The fleet is carrying the entire site.'
-      : 'Contributing '+f(solar)+' MW &mdash; and '+f(solar)+' MW of it can vanish with no warning.';
+      ? 'Contributing nothing. Generators and battery are carrying the entire site.'
+      : 'Contributing '+f(solar)+' MW \u2014 and '+f(solar)+' MW of it can vanish with no warning.';
     $('m1').textContent = f(solar)+' / '+f(CFG.plantRatedAC)+' MW';
     $('m1f').style.width = clamp(pct(solar,CFG.plantRatedAC),0,100)+'%';
-    $('m1n').innerHTML = f(pct(solar,CFG.plantRatedAC),1)+'% of AC nameplate &middot; '
+    $('m1n').innerHTML = f(pct(solar,CFG.plantRatedAC),1)+'% of AC nameplate \u00b7 '
       + (solar>=CFG.plantRatedAC*0.995?'clipping':'not clipping');
     $('m2').textContent = f(n1)+' MW';
     $('m2f').style.width = clamp(pct(n1,CFG.plantRatedAC),0,100)+'%';
     $('m3').textContent = f(solar)+' MW';
     $('m3f').style.width = clamp(pct(solar,CFG.plantRatedAC),0,100)+'%';
-    $('m3n').innerHTML = 'the sizing contingency &middot; &Delta;t_lead = 0 &middot; '
+    $('m3n').innerHTML = 'sizing contingency \u00b7 \u0394t_lead = 0 \u00b7 '
       + (rc.pass?'reserve check passes':'<span style="color:var(--coral)">reserve check FAILS</span>');
-    $('msub').innerHTML = 'solar-0 &middot; fixed-mount PV &middot; '+CFG.banks+' &times; '+f(CFG.bankRatedAC)
-      + ' MW banks &middot; '+CFG.feederIds.length+' feeders &middot; non-dispatchable';
+    $('msub').innerHTML = 'solar-0 \u00b7 fixed-mount PV \u00b7 '
+      + banksReporting() + ' of ' + banksTotal() + ' banks reporting \u00b7 expected '
+      + f(pExpected()) + ' MW \u00b7 non-dispatchable';
   }
 
   // ---------------- tick ----------------
@@ -1207,12 +1507,9 @@
     }
 
     S.t += 1;
-    // cloud factor eases toward target
     S.cloudFactor += (S.cloudTarget - S.cloudFactor) * 0.12;
     if (Math.abs(S.cloudTarget - S.cloudFactor) < 0.004) S.cloudFactor = S.cloudTarget;
-    // compute eases toward target
     S.pCompute += (S.pComputeTarget - S.pCompute) * 0.18;
-    // gentle afternoon decline + measurement noise
     S.poa = clamp(S.poa - 0.06 + (Math.random()-0.5)*1.6, 300, 1050);
     S.clearSkyPoa = clamp(S.clearSkyPoa - 0.06, 320, 1100);
     S.moduleC = clamp(S.moduleC + (S.cloudFactor>0.9?0.01:-0.05) + (Math.random()-0.5)*0.1, 20, 70);
@@ -1240,24 +1537,21 @@
         + f(CFG.cloudRampBound,2)+' MW/s by array diversity; this is not a step change.', 'warn');
       setTimeout(function(){ S.cloudTarget = 1.0; log('Cloud field cleared. Output recovering.',''); }, 14000);
     }
-    if (kind === 'trip'){
+    if (kind === 'trip' || kind === 'bank_trip'){
       var live = S.blocks.filter(function(b){ return b.state==='nominal'||b.state==='degraded'; });
       if (!live.length){ log('All banks already out or no-comms.','bad'); return; }
       var b = live[Math.floor(Math.random()*live.length)];
-      b.state = 'out';
-      b.fault = 'arc_fault';
+      b.state = 'out'; b.fault = 'arc_fault';
       log(b.id+' ('+b.feederId+') tripped \u2014 DC arc-fault. '+f(b.rated)+' MW step change, \u0394t_lead = 0. BESS bridging engaged.','bad');
     }
     if (kind === 'poi'){
       S.blocks.forEach(function(b){ b.state='out'; b.fault='poi'; });
-      log('POI breaker open \u2014 entire array disconnected. This is the sizing contingency: '
-        + 'a step change with no advance signal.','bad');
+      log('POI breaker open \u2014 entire array disconnected. Sizing contingency: step change, no advance signal.','bad');
     }
     if (kind === 'soil'){
       S.soiling = clamp(S.soiling + 0.035, 0, 0.25);
       S.blocks[Math.floor(Math.random()*S.blocks.length)].stringsOut += 2;
-      log('Soiling stepped to '+f(S.soiling*100,1)+'% and two strings opened. Bank state moves to degraded \u2014 '
-        + 'counted at re-rated capability (\u00a727.4).','warn');
+      log('Soiling stepped to '+f(S.soiling*100,1)+'% and two strings opened. Bank moves to degraded \u2014 counted at re-rated capability (\u00a727.4).','warn');
     }
     if (kind === 'spike'){
       S.pComputeTarget = S.pCompute + 6.0;
@@ -1267,18 +1561,37 @@
       var on = CFG.turbines.filter(function(t){ return t.online; });
       if (on.length <= 1){ log('Cannot take the last turbine offline while islanded.','bad'); return; }
       on[on.length-1].online = false;
-      log(on[on.length-1].id+' offline. Fleet ramp now '+f(fleetRamp(),2)+' MW/s \u2014 every gap window lengthens.','bad');
+      log(on[on.length-1].id+' offline. Ramp now '+f(fleetRamp(),2)+' MW/s \u2014 every gap window lengthens.','bad');
     }
     if (kind === 'bess'){
       CFG.bessSoC = CFG.bessSoC > 0.4 ? 0.30 : 0.82;
       log('BESS state of charge set to '+f(CFG.bessSoC*100,0)+'%. Anchor-adjusted bridging is now '
-        + f(bessBridging(),2)+' MW \u2014 the anchor duty is withheld first, so usable bridging falls faster than SoC.',
+        + f(bessBridging(),2)+' MW \u2014 anchor duty is withheld first, so bridging falls faster than SoC.',
         CFG.bessSoC<0.4?'bad':'');
     }
+    if (kind === 'feeder_open'){
+      var fdBanks = S.blocks.filter(function(b){ return b.feederId==='fdr-B'; });
+      fdBanks.forEach(function(b){ b.state='out'; b.fault='feeder_open'; });
+      log('fdr-B breaker opened \u2014 all 5 banks on fdr-B now out. Common-cause advisory would fire in server mode (FR-SOL-2).','bad');
+    }
+    if (kind === 'comms_loss'){
+      S.blocks.filter(function(b){ return b.feederId==='fdr-A'; })
+        .forEach(function(b){ b.state='no_comms'; b.telemetryAge=15; });
+      log('fdr-A telemetry lost \u2014 banks counted as zero. Physical output continues. Reconciliation advisory fires after 5 ticks in server mode (FR-SOL-1).','warn');
+    }
+    if (kind === 'bank_derate'){
+      var candidates = S.blocks.filter(function(b){ return b.state==='nominal'; });
+      if (!candidates.length){ log('No nominal banks to derate.','bad'); return; }
+      var bd = candidates[Math.floor(Math.random()*candidates.length)];
+      bd.state = 'degraded'; bd.reason = 'inverter_overtemp'; bd.stringsOut = 1;
+      log(bd.id+' ('+bd.feederId+') derated \u2014 inverter overtemp. Counted at measured capability (\u00a727.4).','warn');
+    }
     if (kind === 'reset'){
-      S.blocks.forEach(function(b){ b.state='nominal'; b.stringsOut=0; b.derate=1.0; b.fault=null; b.reason=null; b.telemetryAge=0; });
+      S.blocks.forEach(function(b){ b.state='nominal'; b.stringsOut=0; b.derate=1.0;
+        b.fault=null; b.reason=null; b.telemetryAge=0; if(b.srvOut!==undefined) delete b.srvOut; });
       CFG.turbines.forEach(function(t,i){ t.online = i < 2; });
       S.cloudTarget = 1.0; S.soiling = 0.030; S.pComputeTarget = 10.40; CFG.bessSoC = 0.82;
+      S.advisories = [];
       log('Reset to nominal seed state.','');
     }
     render();
@@ -1315,6 +1628,21 @@
     document.querySelector('.tickdot').classList.toggle('beat', S.running);
   });
 
+  // Layer 1 "if solar stops" simulation toggle
+  $('solarStopBtn').addEventListener('click', function(){
+    _solarStopSim = !_solarStopSim;
+    if (_solarStopSim){
+      // Auto-cancel after 8 s so the bar resets even if they forget
+      if (_solarStopTimer) clearTimeout(_solarStopTimer);
+      _solarStopTimer = setTimeout(function(){
+        _solarStopSim = false; _solarStopTimer = null; renderLayer1();
+      }, 8000);
+    } else {
+      if (_solarStopTimer){ clearTimeout(_solarStopTimer); _solarStopTimer = null; }
+    }
+    renderLayer1();
+  });
+
   // ---------------- boot ----------------
   for (var w=0; w<40; w++){
     S.t += 1;
@@ -1323,8 +1651,6 @@
   log('Session started. Seed: clear afternoon, 20 banks across 4 feeders, all nominal, islanded with BESS as grid-forming anchor.','');
   render(); renderHistory(); renderForecast();
 
-  // Prefer the server. Fall back silently to the in-browser model if it is not there,
-  // so this file still works opened directly from disk.
   pollServer().then(function(ok){
     if (ok){
       SERVER_MODE = true;
