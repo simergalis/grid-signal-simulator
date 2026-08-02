@@ -248,6 +248,23 @@ export function LocationPicker({ onLocationChanged }: LocationPickerProps) {
     }
   }, [draft, editing])
 
+  // Live local clock — ticks every second using the site's UTC offset
+  const [localTime, setLocalTime] = useState<string>('')
+  useEffect(() => {
+    function tick() {
+      const utcOffset = location?.utc_offset_h ?? null
+      if (utcOffset === null) { setLocalTime(''); return }
+      const localMs  = Date.now() + utcOffset * 3_600_000
+      const d        = new Date(localMs)
+      const hh       = String(d.getUTCHours()).padStart(2, '0')
+      const mm       = String(d.getUTCMinutes()).padStart(2, '0')
+      setLocalTime(`${hh}${mm}`)
+    }
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [location?.utc_offset_h])
+
   async function submit(value: string) {
     const v = value.trim()
     if (!v || loading) return
@@ -300,28 +317,41 @@ export function LocationPicker({ onLocationChanged }: LocationPickerProps) {
   // ── DISPLAY MODE ────────────────────────────────────────────────────────────
   if (!editing) {
     return (
-      <div className="flex flex-col gap-0.5 flex-shrink-0" style={{ width: 160 }}>
+      <div className="flex flex-col gap-0.5 flex-shrink-0" style={{ width: 240 }}>
         <div
           className="font-mono text-[9px] uppercase tracking-wider"
           style={{ color: '#4b5764' }}
         >
           DATA CENTRE
         </div>
+
+        {/* City + live local time on the same row */}
         <button
           onClick={openEdit}
-          className="text-left group flex items-center gap-1.5"
+          className="text-left group flex items-center justify-between gap-2"
           title="Click to change data-centre location"
           aria-label="Change data-centre location"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, width: '100%' }}
         >
-          <span style={{ fontSize: 11, lineHeight: 1 }}>📍</span>
-          <span
-            className="font-mono text-sm font-semibold leading-none whitespace-nowrap overflow-hidden"
-            style={{ color: '#e6edf3', maxWidth: 130 }}
-          >
-            {location?.name ?? '…'}
+          <span className="flex items-center gap-1.5 min-w-0">
+            <span style={{ fontSize: 11, lineHeight: 1, flexShrink: 0 }}>📍</span>
+            <span
+              className="font-mono text-sm font-semibold leading-none truncate"
+              style={{ color: '#e6edf3' }}
+            >
+              {location?.name ?? '…'}
+            </span>
           </span>
+          {localTime && (
+            <span
+              className="font-mono font-bold leading-none flex-shrink-0"
+              style={{ fontSize: 18, color: '#3fb6a8', letterSpacing: '0.04em' }}
+            >
+              {localTime}
+            </span>
+          )}
         </button>
+
         {utc !== null && (
           <div className="font-mono text-[9px] mt-0.5" style={{ color: '#4b5764' }}>
             {utcLabel(utc)}
@@ -343,7 +373,7 @@ export function LocationPicker({ onLocationChanged }: LocationPickerProps) {
 
   // ── EDIT MODE ───────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col gap-0.5 flex-shrink-0 relative" style={{ width: 220 }}>
+    <div className="flex flex-col gap-0.5 flex-shrink-0 relative" style={{ width: 240 }}>
       <div
         className="font-mono text-[9px] uppercase tracking-wider"
         style={{ color: '#4b5764' }}
