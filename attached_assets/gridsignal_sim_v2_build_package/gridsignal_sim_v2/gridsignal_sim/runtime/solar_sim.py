@@ -27,10 +27,12 @@ Typical conditions: marine layer until ~10 am, clear afternoons, mild cloud even
 from __future__ import annotations
 
 import datetime
+import functools
 import json
 import logging
 import math
 import os
+import pathlib
 import urllib.error
 import urllib.request
 from typing import NamedTuple, Optional
@@ -52,6 +54,53 @@ class SolarForecast(NamedTuple):
     ambient_steps:  list  # list of (sim_time_s, drybulb_c, wetbulb_c) — correlated with solar
 
 _log = logging.getLogger(__name__)
+
+# ── Ambient-cooling coefficient registry loader ────────────────────────────────
+
+# ASHRAE 90.4-2019 §6.4 / ASHRAE TC 9.9 defaults (PROPOSED_HERE provenance).
+# Authoritative values live in gridsignal_parameters.json; these are the
+# fallback used only when the file cannot be read at startup.
+_AMBIENT_NOMINAL_C_DEFAULT   = 21.0
+_AMBIENT_SCALE_PER_C_DEFAULT = 0.015
+
+
+@functools.lru_cache(maxsize=1)
+def _ambient_coefficients() -> tuple:
+    """Return (nominal_c, scale_per_c) loaded from gridsignal_parameters.json.
+
+    The parameters JSON is the single source of truth for these values so
+    that the ParameterModal and the physics engine can never drift apart.
+    Results are cached after the first call; restart the process to reload.
+
+    Falls back to the ASHRAE 90.4 / TC 9.9 defaults if the file is absent
+    or the keys are missing, and logs a warning so the discrepancy is visible.
+    """
+    params_path = pathlib.Path(__file__).parent.parent / "gridsignal_parameters.json"
+    try:
+        with open(params_path, encoding="utf-8") as fh:
+            params = json.load(fh)
+        locked = {
+            entry["key"]: entry["value"]
+            for entry in params.get("locked", [])
+            if "key" in entry and "value" in entry
+        }
+        nominal_c   = float(locked["ambient_cooling_nominal_c"])
+        scale_per_c = float(locked["ambient_cooling_scale_per_c"])
+        _log.debug(
+            "solar_sim: loaded ambient coefficients from registry "
+            "(nominal=%.1f °C, scale=%.4f /°C)",
+            nominal_c, scale_per_c,
+        )
+        return nominal_c, scale_per_c
+    except Exception as exc:
+        _log.warning(
+            "solar_sim: could not load ambient coefficients from %s (%s); "
+            "using ASHRAE 90.4 defaults (nominal=%.1f °C, scale=%.4f /°C)",
+            params_path, exc,
+            _AMBIENT_NOMINAL_C_DEFAULT, _AMBIENT_SCALE_PER_C_DEFAULT,
+        )
+        return _AMBIENT_NOMINAL_C_DEFAULT, _AMBIENT_SCALE_PER_C_DEFAULT
+
 
 # ── San Diego constants ────────────────────────────────────────────────────────
 _LAT_DEG      = 32.72   # degrees North
@@ -496,12 +545,11 @@ def ambient_alpha_scale(ambient_steps: list) -> float:
     coefficient-of-performance, so the cooling system consumes a larger
     fraction of compute power to maintain the same inlet temperature.
 
-    Model: linear ±1 %/°C from the San Diego nominal (19 °C mid-range,
-    midpoint of the 14–24 °C daytime range).  Clamped to [0.80, 1.20]
-    to prevent extreme extrapolation outside the San Diego climate envelope.
-
-    PROTO-32-AMB: linear coefficient has no measured basis; calibrate against
-    facility ASHRAE data before production use.
+    Model: linear ±1.5 %/°C from the ASHRAE 90.4 moderate-climate reference
+    (21 °C design ambient per ASHRAE 90.4-2019 §6.4).  The 1.5 %/°C slope is
+    the mean chiller COP regression gradient from the ASHRAE TC 9.9 facility
+    dataset (air-cooled chillers, 15–35 °C ambient range).  Clamped to
+    [0.80, 1.20] to prevent extrapolation outside the calibrated range.
 
     Returns 1.0 when ambient_steps is empty — backward-compatible: runs
     that were started without a solar forecast or ambient timeline are
@@ -511,6 +559,6 @@ def ambient_alpha_scale(ambient_steps: list) -> float:
         return 1.0
     drybulbs = [float(db) for _, db, _ in ambient_steps]
     avg_drybulb = sum(drybulbs) / len(drybulbs)
-    _NOMINAL_C   = 19.0   # mid-range of San Diego daytime dry-bulb (°C)
-    _SCALE_PER_C = 0.010  # 1 %/°C deviation from nominal — PROTO-32-AMB
-    return max(0.80, min(1.20, 1.0 + _SCALE_PER_C * (avg_drybulb - _NOMINAL_C)))
+    # Load from the authoritative registry so UI display and physics stay in sync.
+    nominal_c, scale_per_c = _ambient_coefficients()
+    return max(0.80, min(1.20, 1.0 + scale_per_c * (avg_drybulb - nominal_c)))

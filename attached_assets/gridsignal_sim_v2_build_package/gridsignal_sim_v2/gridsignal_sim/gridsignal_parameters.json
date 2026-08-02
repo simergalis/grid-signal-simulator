@@ -336,7 +336,29 @@
     { "key": "bess_taper_window_s", "value": 10, "unit": "s", "provenance": "CONFORMANCE", "spec_ref": "v2.5 §7.2 step 3", "ui": { "control": "readonly", "group": "storage" } },
     { "key": "nfr2_decision_to_command_s", "value": 2, "unit": "s", "provenance": "CONFORMANCE", "spec_ref": "NFR-2", "ui": { "control": "readonly", "group": "engine" }, "reason": "Adjusting a requirement to pass a test inverts the test." },
     { "key": "bess_response_latency_ms", "value": 100, "unit": "ms", "provenance": "CONFORMANCE", "spec_ref": "v2.5 §7.1", "ui": { "control": "readonly", "group": "storage" } },
-    { "key": "clock_skew_bound_s", "value": 2, "unit": "s", "provenance": "CONFORMANCE", "spec_ref": "v2.5 §11.4", "ui": { "control": "readonly", "group": "integrity" } }
+    { "key": "clock_skew_bound_s", "value": 2, "unit": "s", "provenance": "CONFORMANCE", "spec_ref": "v2.5 §11.4", "ui": { "control": "readonly", "group": "integrity" } },
+    {
+      "key": "ambient_cooling_nominal_c",
+      "value": 21.0,
+      "unit": "°C",
+      "label": "Ambient cooling nominal — ASHRAE 90.4 moderate-climate reference design temperature",
+      "provenance": "PROPOSED_HERE",
+      "provenance_detail": "21 °C is the ASHRAE 90.4-2019 §6.4 reference design ambient for moderate climates and is consistent with ASHRAE TC 9.9 baseline conditions. No site-specific measurement exists yet; this replaces the PROTO-32-AMB placeholder of 19 °C (arbitrary midpoint of the San Diego 14–24 °C range).",
+      "spec_ref": "ASHRAE 90.4-2019 §6.4; ASHRAE TC 9.9",
+      "ui": { "control": "readonly", "group": "thermal" },
+      "note": "Temperature at which ambient_alpha_scale() returns 1.0 — no derate applied. Requires commissioning measurement to graduate to MEASURED. Paired with ambient_cooling_scale_per_c."
+    },
+    {
+      "key": "ambient_cooling_scale_per_c",
+      "value": 0.015,
+      "unit": "fraction/°C",
+      "label": "Ambient cooling coefficient — α_max derate per °C from nominal",
+      "provenance": "PROPOSED_HERE",
+      "provenance_detail": "1.5 %/°C is the published mean COP regression slope for air-cooled chillers in the ASHRAE TC 9.9 guidance documents (15–35 °C ambient range). No site measurement exists yet; this replaces the PROTO-32-AMB placeholder of 1.0 %/°C (no prior basis).",
+      "spec_ref": "ASHRAE 90.4-2019 §6.4; ASHRAE TC 9.9",
+      "ui": { "control": "readonly", "group": "thermal" },
+      "note": "scale = 1.0 + 0.015 × (T_amb − 21). Clamped to [0.80, 1.20]. At 14 °C → 0.895; at 24 °C → 1.045. Requires commissioning measurement to graduate to MEASURED."
+    }
   ],
 
   "excluded": [

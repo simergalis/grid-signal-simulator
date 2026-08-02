@@ -405,11 +405,39 @@ def test_ambient_alpha_scale_empty_returns_one():
 
 
 def test_ambient_alpha_scale_nominal_temp():
-    """ambient_alpha_scale at 19 °C (nominal) must return 1.0 (no adjustment)."""
+    """ambient_alpha_scale at 21 °C (ASHRAE 90.4 moderate-climate nominal) must return 1.0."""
     from runtime.solar_sim import ambient_alpha_scale
-    steps = [(0.0, 19.0, 16.0), (60.0, 19.0, 16.0)]
+    steps = [(0.0, 21.0, 18.0), (60.0, 21.0, 18.0)]
     result = ambient_alpha_scale(steps)
-    assert abs(result - 1.0) < 1e-9, f"expected 1.0 at nominal temp, got {result}"
+    assert abs(result - 1.0) < 1e-9, f"expected 1.0 at nominal temp (21 °C), got {result}"
+
+
+def test_ambient_alpha_scale_at_14c_ashrae_boundary():
+    """ambient_alpha_scale at 14 °C must match ASHRAE coefficient: 1.5 %/°C below 21 °C nominal.
+
+    Expected: 1.0 + 0.015 × (14 − 21) = 0.895
+    """
+    from runtime.solar_sim import ambient_alpha_scale
+    steps = [(0.0, 14.0, 11.0), (60.0, 14.0, 11.0)]
+    result = ambient_alpha_scale(steps)
+    expected = 1.0 + 0.015 * (14.0 - 21.0)  # 0.895
+    assert abs(result - expected) < 1e-9, (
+        f"expected {expected:.4f} at 14 °C (ASHRAE lower boundary), got {result:.6f}"
+    )
+
+
+def test_ambient_alpha_scale_at_24c_ashrae_boundary():
+    """ambient_alpha_scale at 24 °C must match ASHRAE coefficient: 1.5 %/°C above 21 °C nominal.
+
+    Expected: 1.0 + 0.015 × (24 − 21) = 1.045
+    """
+    from runtime.solar_sim import ambient_alpha_scale
+    steps = [(0.0, 24.0, 21.0), (60.0, 24.0, 21.0)]
+    result = ambient_alpha_scale(steps)
+    expected = 1.0 + 0.015 * (24.0 - 21.0)  # 1.045
+    assert abs(result - expected) < 1e-9, (
+        f"expected {expected:.4f} at 24 °C (ASHRAE upper boundary), got {result:.6f}"
+    )
 
 
 def test_ambient_alpha_scale_hot_day_above_one():
@@ -437,6 +465,43 @@ def test_ambient_alpha_scale_clamped_to_bounds():
     # Extreme cold
     very_cold = [(0.0, -30.0, -35.0)]
     assert ambient_alpha_scale(very_cold) >= 0.80, "cold clamp violated"
+
+
+def test_ambient_alpha_scale_registry_matches_runtime():
+    """The coefficient values in gridsignal_parameters.json must equal what ambient_alpha_scale() uses.
+
+    Guards against the ParameterModal showing an ASHRAE coefficient that differs
+    from what the physics engine actually applies to alpha_max each run.
+    """
+    import json, pathlib
+    from runtime.solar_sim import _ambient_coefficients
+
+    params_path = (
+        pathlib.Path(__file__).parent.parent / "gridsignal_parameters.json"
+    )
+    with open(params_path, encoding="utf-8") as fh:
+        params = json.load(fh)
+    locked = {
+        entry["key"]: entry["value"]
+        for entry in params.get("locked", [])
+        if "key" in entry and "value" in entry
+    }
+
+    registry_nominal = locked["ambient_cooling_nominal_c"]
+    registry_scale   = locked["ambient_cooling_scale_per_c"]
+
+    # Clear the cache so this test always re-reads from disk.
+    _ambient_coefficients.cache_clear()
+    runtime_nominal, runtime_scale = _ambient_coefficients()
+
+    assert abs(registry_nominal - runtime_nominal) < 1e-9, (
+        f"Registry nominal ({registry_nominal} °C) != runtime nominal ({runtime_nominal} °C); "
+        "update solar_sim.py defaults to match gridsignal_parameters.json"
+    )
+    assert abs(registry_scale - runtime_scale) < 1e-9, (
+        f"Registry scale ({registry_scale} /°C) != runtime scale ({runtime_scale} /°C); "
+        "update solar_sim.py defaults to match gridsignal_parameters.json"
+    )
 
 
 # ---------------------------------------------------------------------------
