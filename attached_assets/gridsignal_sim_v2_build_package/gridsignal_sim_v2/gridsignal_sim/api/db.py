@@ -46,20 +46,27 @@ async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def create_auth_tables() -> None:
-    """Ensure the AuthUser table exists with the current schema.
+    """Ensure auth tables exist and seed a default admin if the DB is empty.
 
-    Called from the app lifespan so the table is always present before any
+    Called from the app lifespan so tables are always present before any
     request arrives.
 
-    Migration guard: SQLite cannot ALTER a CHECK constraint.  If the
-    auth_user table was created before 'admin' was added to ck_auth_user_role
-    we drop it and recreate it.  This is safe because the table is empty on
-    any fresh deployment, and we check the constraint definition before
-    dropping so existing data is never silently discarded on a schema-compatible
-    deployment.
+    Schema migration guard
+    ----------------------
+    SQLite cannot ALTER a CHECK constraint.  If auth_user was created before
+    'admin' was added to ck_auth_user_role we drop and recreate the table.
+    The guard reads sqlite_master to confirm the constraint before dropping, so
+    existing data is never discarded on a schema-compatible deployment.
+
+    Default admin seeding
+    ---------------------
+    When INITIAL_ADMIN_EMAIL is set and no users exist yet, a single admin
+    account is created automatically.  This makes the DB self-initialising
+    after a fresh clone or any workspace restore that resets the file.
+    The DB file must NOT be tracked in git — see gridsignal_sim/.gitignore.
     """
-    from sqlalchemy import text
-    from runtime.persistence import Base
+    from sqlalchemy import text, select
+    from runtime.persistence import Base, AuthUser
 
     async with _engine.begin() as conn:
         result = await conn.execute(
@@ -67,6 +74,39 @@ async def create_auth_tables() -> None:
         )
         row = result.fetchone()
         if row is not None and "'admin'" not in (row[0] or ""):
-            # Old constraint — drop the empty table so create_all rebuilds it.
+            # Old schema without 'admin' role — drop and recreate.
+            # Safe: the guard only fires when 'admin' is absent from the
+            # constraint, which means either the table is empty or was created
+            # by an older code version before admin role was added.
             await conn.execute(text("DROP TABLE auth_user"))
         await conn.run_sync(Base.metadata.create_all, checkfirst=True)
+
+    # Seed default admin from environment if no users exist yet.
+    # This covers fresh installs and workspace restores where the DB file
+    # was not preserved (because it is not tracked in git).
+    admin_email = os.environ.get("INITIAL_ADMIN_EMAIL", "").strip().lower()
+    admin_name  = os.environ.get("INITIAL_ADMIN_NAME", "Admin").strip()
+    if admin_email:
+        async with _SessionLocal() as session:
+            count_result = await session.execute(
+                text("SELECT COUNT(*) FROM auth_user")
+            )
+            user_count = count_result.scalar_one()
+            if user_count == 0:
+                from sqlalchemy import select as _select
+                import logging as _logging
+                _log = _logging.getLogger(__name__)
+                new_admin = AuthUser(
+                    email=admin_email,
+                    phone="",
+                    display_name=admin_name,
+                    role="admin",
+                    password_hash="",
+                    is_active=True,
+                )
+                session.add(new_admin)
+                await session.commit()
+                _log.info(
+                    "Seeded default admin account: %s (name=%r) from INITIAL_ADMIN_EMAIL",
+                    admin_email, admin_name,
+                )
