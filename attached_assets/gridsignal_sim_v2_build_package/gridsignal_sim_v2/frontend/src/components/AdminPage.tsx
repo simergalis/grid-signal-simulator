@@ -46,7 +46,7 @@ function AddUserModal({ onClose, onCreated }: AddUserModalProps) {
     setLoading(true)
     try {
       const body: Record<string, string> = { email, phone, display_name: name, role }
-      if (tmpPw.trim()) body.temporary_password = tmpPw.trim()
+      if (tmpPw.trim()) body.password = tmpPw.trim()
 
       const resp = await fetch('/api/admin/users', {
         method: 'POST',

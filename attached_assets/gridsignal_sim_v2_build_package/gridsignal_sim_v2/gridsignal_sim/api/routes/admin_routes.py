@@ -75,11 +75,13 @@ async def _require_admin(
 # ---------------------------------------------------------------------------
 
 class CreateUserRequest(BaseModel):
+    # Field accepted as "password" in the API body (was "temporary_password" —
+    # renamed so the standard curl / UI payload is intuitive).
     email: EmailStr
     phone: str           # mobile phone number — required credential
     display_name: str
     role: str = "operator"   # viewer | operator | approver
-    temporary_password: str | None = None   # auto-generated if omitted
+    password: str | None = None   # auto-generated if omitted
 
 
 class UserResponse(BaseModel):
@@ -130,7 +132,7 @@ async def create_user(
             detail=f"role must be one of: {', '.join(VALID_ROLES)}",
         )
 
-    tmp_pw = body.temporary_password or secrets.token_urlsafe(12)
+    tmp_pw = body.password or secrets.token_urlsafe(12)
 
     user = AuthUser(
         email=body.email.lower(),
