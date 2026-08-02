@@ -1,0 +1,404 @@
+# GridSignal — Solar Array Console
+## Replit implementation specification
+
+**Replaces:** the `RENEWABLE SUPPLY` modal and the `solar-0` plant-level abstraction
+**Preserves:** the single aggregate `P_renewable(t)` feeding the Switchgear / PMS node on the main simulation
+**Version:** 1.0 · draft for build
+**Spec anchors:** §7.1.1 non-dispatchable supply · §7.1.2 anchor constraint · §7.2 step 4 reserve check · §19.5 generation page · §22.1–22.2 retention · §27.4 asset state
+
+---
+
+## 1. Why this change
+
+The current panel treats the array as one asset called `solar-0`. That abstraction cannot answer the two questions an operator actually has when the number is low:
+
+1. **Is this number correct?** A plant-level MW figure with no expectation attached is identical whether the sun is behind a marine layer or a feeder breaker is open.
+2. **How much could still fail at once?** N−1 is currently computed as the largest single inverter block. Where banks share a feeder, the credible single contingency is the *feeder*, which at the seed site is 4.7× larger. The reserve check therefore understates exposure, and it does so silently, because a wrongly-small contingency passes the check right up until the day it doesn't.
+
+The replacement exposes bank-level structure, measures every bank against what it *should* be producing right now, and computes N−1 over electrical groups rather than individual banks.
+
+**Non-goals.** This is not a PV asset-management product. No work orders, no technician assignment, no parts inventory, no warranty tracking, no cleaning scheduler (§27.6). Soiling enters as a re-rating input to the arithmetic; the work order belongs to the CMMS this system interfaces with. There is no control surface on any solar screen, by construction.
+
+---
+
+## 2. The invariant this change must not break
+
+The main simulation renders solar as a single node feeding Switchgear / PMS. **That contract is unchanged.**
+
+```
+P_renewable(t) = Σ counted_output_mw(bank) over all banks
+```
+
+This one scalar is:
+- the value shown on the `SOLAR PV` tile in the single-line diagram,
+- the value subtracted in `P_dispatch_required(t) = P_total(t) − P_renewable(t)`,
+- the value the Dispatch Arbitrator consumes.
+
+**AC-INV-1.** A conservation test shall assert that the SLD tile value, the value returned by
+`p_renewable_mw()`, and the sum of the per-bank `counted_output_mw` in the same snapshot are
+equal to within 1e-9 MW. This test is the reason the refactor is safe to merge.
+
+The SLD tile gains two sub-fields and no new behaviour:
+
+```
+SOLAR PV                                    4.29 MW
+non-dispatchable · 5.00 MW rated
+expected 4.29 MW · 20 of 20 banks reporting
+```
+
+When banks are out, the tile reads `15 of 20 banks reporting` and the expected figure diverges
+from the measured one. That divergence is the Auckland fix: zero output at midday with twenty
+banks reporting is a very different fact from zero output at midnight.
+
+---
+
+## 3. Site configuration
+
+The seed operating point is **deliberately preserved** so that no existing test, screenshot, or
+spec figure moves. The plant is the same 5.00 MW AC producing 4.29 MW at seed; only its internal
+structure becomes visible.
+
+| Quantity | Value | Note |
+|---|---|---|
+| Banks | 20 | was 5 blocks |
+| Bank rated AC | 0.25 MW | combiner-group granularity |
+| Plant rated AC | 5.00 MW | unchanged |
+| Plant rated DC | 6.50 MWp | DC/AC 1.30, unchanged |
+| Feeders | 4 | `fdr-A` … `fdr-D` |
+| Banks per feeder | 5 | 1.25 MW per feeder |
+| Strings per bank | 6 | 120 strings plant-wide, unchanged |
+| Mount | fixed | no tracker |
+| Seed output | 4.29 MW | ~0.215 MW per bank |
+
+**N−1 consequence.** Largest single contingency moves from 0.215 MW (one bank) to ~1.07 MW
+(one feeder at seed irradiance). Plant loss remains 4.29 MW.
+
+```python
+@dataclass
+class Feeder:
+    id: str                  # "fdr-A"
+    label: str               # "Feeder A"
+    bank_ids: List[str]
+
+@dataclass
+class BankState:
+    id: str                  # "bank-01"
+    feeder_id: str
+    rated_mw: float
+    strings_total: int
+    strings_out: int = 0
+    derate: float = 1.0
+    inverter_temp_c: float = 41.0
+    soil_bias: float = 1.0
+    telemetry_age_s: float = 0.0
+    fault: Optional[str] = None      # "arc_fault" | "overtemp" | "feeder_open" | None
+```
+
+---
+
+## 4. Expected output, and the state classifier
+
+### 4.1 Expected output
+
+Every bank carries an expectation computed from **measured** plane-of-array irradiance, not from
+a clear-sky model:
+
+```
+expected_mw(bank) = rated_mw × (POA_measured / 1000) × temp_derate(module_temp_c)
+```
+
+Soiling, string faults, and inverter derates are **excluded** from the expectation on purpose, so
+they surface as shortfall rather than being absorbed into the target.
+
+**The consequence, which is the point of the whole screen:** weather moves every bank's expectation
+together, so a hazy afternoon leaves all twenty bars full and only the plant total falls. A fault
+moves one bank's actual against an unchanged expectation, so it is the only short bar on screen.
+
+Retain the clear-sky model separately for the performance-ratio figure on the history screen.
+It answers a different question (how is the plant doing against its design) on a different horizon.
+
+### 4.2 Classifier thresholds
+
+| State | Condition | Reserve treatment |
+|---|---|---|
+| `nominal` | `measured ≥ 0.92 × expected` | counted at measured |
+| `degraded` | `0.05 × expected ≤ measured < 0.92 × expected` | counted at measured — **not** at nameplate, **not** excluded (§27.4) |
+| `out` | `measured < 0.05 × expected`, telemetry fresh | counted at 0 |
+| `no_comms` | `telemetry_age_s > 10` | counted at 0, flagged separately |
+
+**Hysteresis.** A state change requires the condition to hold for **3 consecutive ticks (3 s)**.
+Without it, banks flap between `nominal` and `degraded` on cloud edges and the screen becomes noise.
+The `no_comms` transition is exempt — a comms loss is asserted immediately.
+
+**Degraded reason codes.** `strings_open` · `soiling` · `inverter_derate` · `shading` · `unknown`.
+Derived, not authored: `strings_open` when `strings_out > 0`; `inverter_derate` when
+`inverter_temp_c > 70`; `soiling` when the shortfall is persistent across ≥ 30 min and the bank
+reports no faults; `shading` when the shortfall is time-of-day periodic; else `unknown`.
+`unknown` is a legitimate output and shall not be suppressed.
+
+### 4.3 Comms loss is not generation loss
+
+`no_comms` counts as zero in `P_renewable(t)`, which is conservative on the demand side: the fleet
+is sized to cover load the array may in fact still be serving. It is **not** conservative to assume
+the reverse, and the June 14 loss event in the history table is precisely this failure — 2.1 MW of
+compute curtailed while the array was still producing.
+
+**FR-SOL-1 — reconciliation check.** Each tick, compare PMS-measured site net demand against the
+modelled `P_dispatch_required(t)`. If they differ by more than **0.15 MW for 5 consecutive ticks**,
+raise a `reconciliation_divergence` advisory naming the suspected stale banks. This is how a comms
+loss is distinguished from a generation loss without a second sensor.
+
+### 4.4 Common-cause detection
+
+**FR-SOL-2.** When ≥ 3 banks on the same feeder enter `out` or `no_comms` within a 5-second window,
+the system shall classify the event as `common_cause` at feeder scope, emit one event rather than
+N, and label it in the UI as one fault. Independent inverter faults do not arrive in threes.
+
+---
+
+## 5. Reserve check over contingency groups
+
+Replaces per-bank N−1. The contingency set is:
+
+| Contingency | ΔP | Δt_lead |
+|---|---|---|
+| Largest single bank | `max(counted_output_mw)` | 0 s |
+| **Largest single feeder** | `max(Σ counted_output_mw per feeder)` | 0 s |
+| Whole plant (POI / plant controller) | `P_renewable(t)` | 0 s |
+| Cloud transient | ramp-bounded, not a step | ~90 s, low confidence |
+| Compound: plant loss + 6 MW compute step | additive | 0 s |
+
+**The sizing contingency for the N−1 row is the feeder, not the bank.** Where a site has no feeder
+grouping configured, the feeder set degenerates to one bank per group and the arithmetic is
+unchanged from today.
+
+Everything else in `reserve_check()` is untouched: shortfall declines linearly as turbines ramp,
+bridging is anchor-adjusted per §7.1.2, and sustainable discharge is compared as a duration against
+the gap window.
+
+**AC-RES-1.** With the seed config, `largest_feeder_mw()` returns ~1.07 MW and
+`largest_bank_mw()` returns ~0.215 MW, and the N−1 row on the UI reports the feeder figure.
+
+---
+
+## 6. API contract
+
+### `GET /api/solar/state`
+
+Additive. Existing keys keep their meaning; `blocks` is renamed to `banks` with a deprecation
+alias retained for one release.
+
+```jsonc
+{
+  "power": {
+    "p_renewable_mw": 4.29,
+    "p_expected_mw": 4.29,
+    "banks_reporting": 20,
+    "banks_total": 20
+  },
+  "feeders": [
+    { "id": "fdr-A", "label": "Feeder A",
+      "output_mw": 1.07, "expected_mw": 1.07,
+      "bank_ids": ["bank-01", "..."],
+      "state": "nominal" }
+  ],
+  "banks": [
+    { "id": "bank-01", "feeder_id": "fdr-A",
+      "rated_mw": 0.25, "output_mw": 0.215, "expected_mw": 0.215,
+      "counted_output_mw": 0.215,
+      "state": "nominal", "reason": null,
+      "strings_out": 0, "strings_total": 6,
+      "inverter_temp_c": 41.2, "telemetry_age_s": 0.9 }
+  ],
+  "exposure": {
+    "largest_bank_mw": 0.215,
+    "largest_feeder_mw": 1.07,
+    "largest_feeder_id": "fdr-A",
+    "plant_loss_mw": 4.29,
+    "cloud_ramp_mw_per_s": 0.42
+  },
+  "reserve": { "n1_feeder": {}, "n1_bank": {}, "plant": {}, "compound": {} },
+  "advisories": [
+    { "code": "common_cause", "scope": "fdr-B", "banks": 5,
+      "message": "5 banks out together on feeder B — this is one fault, not five" }
+  ]
+}
+```
+
+### `POST /api/solar/inject/{kind}`
+
+Existing stressors retained. New:
+
+| Stressor | Effect |
+|---|---|
+| `feeder_open` | opens `fdr-B` — all 5 banks to `no_comms` simultaneously |
+| `bank_trip` | trips one random bank to `out` |
+| `bank_derate` | pushes one bank to `degraded` via inverter overtemp |
+| `comms_loss` | one feeder to `no_comms` while generation continues, to exercise FR-SOL-1 |
+
+`comms_loss` is the important one: it is the only stressor where the modelled and physical states
+deliberately diverge, and it is how the reconciliation check gets tested.
+
+---
+
+## 7. User interface
+
+Three layers, top to bottom, in one scrollable panel. **Not a simple/expert toggle** — two modes
+become two products and they drift. A non-specialist stops reading after Layer 1; an operator
+continues to Layer 3.
+
+### 7.1 Layer 1 — plain language and the coverage bar
+
+- Headline, one sentence, no jargon: *"The sun is covering 4.29 MW of the 12.05 MW this site is using."*
+- Subline: what happens if it stops, in plain terms.
+- **Coverage bar:** a single horizontal bar the width of `P_total(t)`, segmented into solar
+  (hatched fill), turbine (solid), battery (solid). The hatching carries non-dispatchability —
+  a colour cannot, because it has to be taught; a broken fill pattern reads as provisional immediately.
+- **"Show what happens if solar stops" control.** Animates the solar segment to zero and the
+  reserve sliding in to fill.
+
+**AC-UI-1 — the control must be honest.** When the reserve cannot cover the loss, the simulated
+state shall render a visible unfilled gap in the bar with the shortfall in MW and seconds. A
+control that only ever demonstrates success is a sales toy and operators will stop trusting it.
+
+### 7.2 Layer 2 — the bank list
+
+- **Header line:** `15 of 20 banks online · 12.15 MW of 17.20 MW expected`, plus a
+  common-cause line when FR-SOL-2 has fired.
+- **Grouped by feeder in physical order — not sorted by severity.** Sorting faults to the top
+  scatters a feeder failure into an arbitrary list where five separate faults and one feeder
+  fault look identical. Contiguity is the diagnosis.
+- **One row per bank:** id · bar · MW · state and reason.
+- **Bars measured against expected, not nameplate.** Non-negotiable; see §4.1.
+- **Three states, distinctly rendered.** `degraded` must not read as a milder `out`.
+- Feeder subtotals on each group header. A feeder in common-cause carries a left accent rule and
+  a group-level state.
+- Row click opens string-level detail for that bank.
+
+**AC-UI-2.** With 20 banks and a healthy plant, no row is shorter than 92% fill regardless of
+irradiance. Reducing POA by 60% shall leave every bar full and reduce only the plant total.
+
+### 7.3 Layer 3 — the instrument
+
+Unchanged in substance from the current panel and not softened for the Layer 1 audience:
+the ledger, exposure split by loss mode, worked §7.2 arithmetic, spec citations, agent authority.
+
+Two edits:
+- N−1 row reports the **feeder**, with the feeder id named.
+- Add `Expected now` and `Banks reporting` rows to the ledger.
+
+### 7.4 Vocabulary
+
+Plain word primary, technical term as provenance caption. Applied consistently across all screens.
+
+| Current | Replacement | Caption |
+|---|---|---|
+| Fleet must cover 1.70 MW | Generators and battery are covering 1.70 MW | `P_dispatch_required(t) · §7.1.1` |
+| Share of site draw 6% | 6% of what the site is using | `of P_total(t)` |
+| Lead time on loss 0 s | No warning before it stops | `Δt_lead = 0` |
+| Gap if output is lost instantaneously | If solar stopped this second | — |
+| Block | Bank | — |
+
+"Fleet" is the worst offender — outside power engineering it suggests vehicles.
+
+---
+
+## 8. Build phases
+
+Each phase is a separate prompt to the coding agent and must leave the app running and the test
+suite green before the next begins.
+
+### Phase 0 — data model
+Add `Feeder`, extend `BankState`, rename `blocks` → `banks` with alias, reconfigure the seed to
+20 banks × 0.25 MW across 4 feeders.
+**Accept:** `pytest` green including all existing seed-point tests; `p_renewable_mw()` still returns
+4.29; AC-INV-1 conservation test passes.
+
+### Phase 1 — expected output and classifier
+Implement `expected_mw()` from measured POA, the four-state classifier with 3-tick hysteresis, and
+reason-code derivation.
+**Accept:** all banks `nominal` at seed; reducing POA 60% leaves all banks `nominal`; opening 3 of
+6 strings on one bank yields `degraded` + `strings_open` within 3 ticks and not before.
+
+### Phase 2 — contingency groups
+Add `largest_feeder_mw()`, extend the contingency set, wire the N−1 row to the feeder figure.
+**Accept:** AC-RES-1; a test asserts the feeder figure exceeds the bank figure at seed; a site
+configured with no feeders produces bank-level N−1 identical to the pre-change value.
+
+### Phase 3 — comms and common cause
+`no_comms` handling, FR-SOL-1 reconciliation, FR-SOL-2 common-cause detection, the four new stressors.
+**Accept:** `feeder_open` emits exactly one `common_cause` advisory naming `fdr-B`, not five bank
+events; `comms_loss` raises `reconciliation_divergence` within 5 ticks and the plant total drops
+while PMS-measured demand does not.
+
+### Phase 4 — Layer 2 bank list
+Build the grouped list, replacing the array card grid.
+**Accept:** AC-UI-2; feeder subtotals sum to the plant total; five contiguous out banks are visually
+grouped under one feeder header.
+
+### Phase 5 — Layer 1 coverage bar
+Build the headline, subline, coverage bar, and the "if solar stops" control.
+**Accept:** AC-UI-1 — with BESS drained to 30% SoC, the simulated stop renders an unfilled gap with
+MW and seconds, not a full bar.
+
+### Phase 6 — SLD tile and vocabulary pass
+Update the `SOLAR PV` tile to carry expected and reporting counts. Apply §7.4 across all four screens.
+**Accept:** AC-INV-1 re-run against the live SLD render; no screen contains the word "fleet" in a
+Layer 1 position; a full acceptance matrix run.
+
+---
+
+## 9. Test additions
+
+| ID | Assertion |
+|---|---|
+| `TC-SOL-01` | Bank sum equals `p_renewable_mw()` equals SLD tile value (AC-INV-1) |
+| `TC-SOL-02` | Feeder subtotals sum to plant total |
+| `TC-SOL-03` | 60% POA reduction leaves all banks `nominal` |
+| `TC-SOL-04` | Degraded bank counted at measured, not nameplate, not zero (§27.4) |
+| `TC-SOL-05` | State change requires 3 consecutive ticks; 2 ticks does not flip |
+| `TC-SOL-06` | `no_comms` counted at zero and flagged separately from `out` |
+| `TC-SOL-07` | `largest_feeder_mw()` > `largest_bank_mw()` at seed |
+| `TC-SOL-08` | N−1 reserve row consumes the feeder figure |
+| `TC-SOL-09` | No-feeder config reproduces pre-change bank-level N−1 exactly |
+| `TC-SOL-10` | `feeder_open` emits one `common_cause` advisory, not five |
+| `TC-SOL-11` | `comms_loss` triggers `reconciliation_divergence` within 5 ticks |
+| `TC-SOL-12` | Solar contributes nothing to bridging under every bank state |
+| `TC-SOL-13` | Snapshot remains JSON-safe with all banks out and no turbines online |
+| `TC-SOL-14` | Plant dark at night: all banks `nominal`, expected 0.00, no advisories |
+
+`TC-SOL-14` matters more than its position suggests. Zero output must be unremarkable when
+expectation is also zero, or the screen cries wolf every night.
+
+---
+
+## 10. Retention
+
+Per §22.1–22.2, with bank granularity added:
+
+| Tier | Resolution | Window |
+|---|---|---|
+| Tier 0 | 1 s, per bank | 72 h |
+| Tier 1 | 10 s, per bank + per feeder | 90 d |
+| Tier 2 | 1 min rollup, per feeder; plant only below that | 7 y |
+| Events | full fidelity, per bank, ±5 min around the step | 7 y |
+
+Loss events are never downsampled. A downsampled record of a step change cannot answer whether
+the reserve held.
+
+---
+
+## 11. Open items
+
+- **SA-1 — Irradiance measurement granularity.** §4.1 assumes one plant pyranometer. A 5 MW array
+  with meaningful spatial extent may need per-feeder POA before per-bank expectation is trustworthy.
+  Until measured, shading and cloud-edge effects will present as `degraded` with reason `unknown`.
+- **SA-2 — Feeder topology is configuration, not discovery.** The mapping is authored at
+  commissioning. A wrong mapping produces a wrong N−1 and nothing detects it. Worth a
+  commissioning-time check that correlates historical trip co-occurrence against the configured groups.
+- **SA-3 — Soiling reason code needs a window.** The 30-minute persistence threshold in §4.2 is
+  a guess and should be calibrated against a real soiling event.
+- **SA-4 — Reconciliation threshold.** The 0.15 MW / 5-tick threshold in FR-SOL-1 is unmeasured
+  and will produce false positives at sites with poor PMS metering accuracy.
+- **SA-5 — The cloud ramp bound is still a constant.** 0.42 MW/s should be derived from array
+  geometry and observed transients rather than configured.
