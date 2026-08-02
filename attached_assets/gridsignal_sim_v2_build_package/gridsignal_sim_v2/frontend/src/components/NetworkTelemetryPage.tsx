@@ -187,7 +187,7 @@ function LatencyBar({ cp }: { cp: FabricControlPath | undefined }) {
       <div className="flex flex-wrap gap-x-3 gap-y-1">
         {TERMS.map(t => {
           const val = (cp[t.key] as number) || 0
-          const isDominant = t.label.toLowerCase() === cp.dominant_term
+          const isDominant = t.key === `l_${cp.dominant_term}_ms`
           return (
             <span key={t.key} className="flex items-center gap-1 text-xs">
               <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: t.colour }} />
