@@ -662,11 +662,71 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
 ]
 
 
+def _seed_fabric_scenarios(store: ScenarioStore) -> None:
+    """Seed the eight fabric stress scenarios (S1–S8) into the store.
+
+    Each scenario is backed by a JSON file in config/scenarios/.  The
+    ScenarioSpec here is a minimal carrier (1 node, 1 turbine, 1 BESS) —
+    just enough to pass the run-loop preconditions.  The actual fabric
+    behaviour (jobs, stressors, capability_tier, assertions) is driven by
+    the FabricEngine once it sees the fabric_scenario_id field.
+
+    Descriptive names and durations come from the scenario JSON headers.
+    """
+    import json as _json
+    from pathlib import Path as _Path
+
+    # Map from stable store key → (display_name, end_sim_time, fabric_scenario_id,
+    #                               capability_tier).
+    # capability_tier is "degraded" for S6 only.
+    FABRIC_ENTRIES: list[tuple[str, str, float, str, str]] = [
+        ("fabric-s1", "S1: Baseline Training",         60.0,  "S1_baseline_training",          "current"),
+        ("fabric-s2", "S2: Checkpoint ECMP Hotspot",   80.0,  "S2_checkpoint_hotspot",         "current"),
+        ("fabric-s3", "S3: Job-End Withholds",         60.0,  "S3_job_end_withholds",          "current"),
+        ("fabric-s4", "S4: NFR-2 Control-Path Breach", 20.0,  "S4_control_path_nfr2_breach",   "current"),
+        ("fabric-s5", "S5: Gray Failure",              30.0,  "S5_gray_failure",               "current"),
+        ("fabric-s6", "S6: Baseline Tier Degradation", 30.0,  "S6_baseline_tier_degradation",  "degraded"),
+        ("fabric-s7", "S7: Slow Checkpoint",          100.0,  "S7_slow_checkpoint",            "current"),
+        ("fabric-s8", "S8: Transceiver Degradation",   30.0,  "S8_transceiver_degrade",        "current"),
+    ]
+
+    _cfg_dir = _Path("config/scenarios")
+
+    for store_id, display_name, duration, fab_id, _cap_tier in FABRIC_ENTRIES:
+        # Load the fabric scenario JSON to extract the description.
+        _desc = ""
+        _jpath = _cfg_dir / f"{fab_id}.json"
+        try:
+            _raw = _json.loads(_jpath.read_text())
+            # Use the first assertion description as a summary when available.
+            if _raw.get("assertions"):
+                _descs = [a.get("description", "") for a in _raw["assertions"]]
+                _desc = "; ".join(d for d in _descs if d)
+        except Exception:
+            pass  # missing file handled gracefully; run will get 503 later
+
+        _spec = ScenarioSpec(
+            name=display_name,
+            description=_desc,
+            workload_events=[_evt_start("job-fabric", 1)],   # minimal 1-node job
+            dt_lead_seconds=0.0,
+            bess_units=[_bess("bess-0", rated_mw=5.0, usable_mwh=2.5, grid_forming=True)],
+            turbine_units=[_turbine("turbine-0", rated_mw=10.0, r_mw_per_s=0.2)],
+            solar_rated_mw=0.0,
+            # Run duration matches the fabric scenario; minimum is the fabric duration.
+            # We pad to at least 60 s so the run clock has enough room.
+            end_sim_time=max(duration, 60.0),
+            fabric_scenario_id=fab_id,
+        )
+        store._seed(store_id, _spec)
+
+
 def build_seeded_store() -> ScenarioStore:
     """Return a ScenarioStore pre-loaded with all built-in demo scenarios."""
     store = ScenarioStore()
     for sid, spec in _SEEDED:
         store._seed(sid, spec)
+    _seed_fabric_scenarios(store)
     return store
 
 

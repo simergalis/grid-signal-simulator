@@ -1119,6 +1119,32 @@ class RunManager:
                         dropped_ticks=dropped,
                         expected_last_tick_index=expected_last,
                     )
+                    # Phase 10: if the run has a fabric stress scenario, merge its
+                    # fabric-specific assertion results into the overall verdict.
+                    if ctx.fabric_engine is not None:
+                        try:
+                            fabric_results = ctx.fabric_engine.evaluate_scenario_assertions()
+                            if fabric_results:
+                                # Merge: add fabric assertion results and recompute overall.
+                                all_results = list(verdict_result.assertions) + fabric_results
+                                statuses = {r.status for r in all_results}
+                                if "FAIL" in statuses:
+                                    new_overall = "FAIL"
+                                elif "INCONCLUSIVE" in statuses or not all_results:
+                                    new_overall = "INCONCLUSIVE"
+                                else:
+                                    new_overall = "PASS"
+                                verdict_result = VerdictResult(
+                                    overall=new_overall,
+                                    tick_count=verdict_result.tick_count,
+                                    dropped_ticks=verdict_result.dropped_ticks,
+                                    gap_count=verdict_result.gap_count,
+                                    assertions=all_results,
+                                )
+                        except Exception:
+                            logger.exception(
+                                "run %s: fabric assertion evaluation failed", ctx.run_id
+                            )
                     verdict_json = verdict_result.to_json()
                 except Exception:
                     logger.exception("run %s: verdict evaluation failed", ctx.run_id)

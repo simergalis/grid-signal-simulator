@@ -507,6 +507,19 @@ class ScenarioSpec(BaseModel):
     # on 'check').  Empty list → verdict is INCONCLUSIVE.
     assertions: list[AssertionSpec] = Field(default_factory=list)
 
+    # Phase 10: fabric stress scenario reference.
+    # When set, the FabricEngine loads the named S1–S8 scenario JSON from
+    # config/scenarios/, using its jobs/stressors/capability_tier, and
+    # evaluates the scenario's fabric-specific assertions at run completion.
+    # The value is the scenario_id field from the JSON file (e.g. "S2_checkpoint_hotspot").
+    fabric_scenario_id: Optional[str] = Field(
+        default=None,
+        description=(
+            "ID of a fabric stress scenario JSON file to drive the FabricEngine. "
+            "Set to the scenario_id value from one of the config/scenarios/S*.json files."
+        ),
+    )
+
     @model_validator(mode="after")
     def _single_grid_forming_anchor(self) -> "ScenarioSpec":
         """§7.1.2: only one BESS unit may be the grid-forming anchor."""

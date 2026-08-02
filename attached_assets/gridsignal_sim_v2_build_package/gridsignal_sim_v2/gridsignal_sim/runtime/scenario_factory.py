@@ -655,22 +655,65 @@ def build_run_context_from_spec(
         ramp_relaxation_engine=_ramp_engine,
         # Phase 10: FabricEngine — always wired for spec-path runs so the
         # Network Fabric modal shows live data from the first tick.
-        fabric_engine=_build_fabric_engine(run_id),
+        # When fabric_scenario_id is present, the engine uses the named
+        # scenario's job timelines, stressors, and capability_tier.
+        fabric_engine=_build_fabric_engine(
+            run_id,
+            fabric_scenario_id=spec_data.get("fabric_scenario_id"),
+        ),
     )
 
 
-def _build_fabric_engine(run_id: str):
+def _build_fabric_engine(run_id: str, fabric_scenario_id: str | None = None):
     """
     Instantiate a FabricEngine for a spec-path run.  Failures are caught and
     logged; a None return leaves the tick payload's fabric field null rather
     than crashing the run.
+
+    When fabric_scenario_id is provided, the engine loads the named scenario
+    JSON from config/scenarios/ and uses its job timelines, stressors,
+    capability_tier, and assertions.
     """
+    import json as _json
+    import logging as _log
+    _logger = _log.getLogger("gridsignal.scenario_factory")
     try:
         from runtime.fabric_engine import FabricEngine  # lazy — avoids startup cost
         seed = hash(run_id) % (2 ** 31)  # deterministic per run_id
-        return FabricEngine(seed=seed, capability_tier="current")
+
+        scenario_data = None
+        if fabric_scenario_id:
+            from pathlib import Path as _Path
+            _cfg_dir = _Path("config/scenarios")
+            _candidates = [
+                _cfg_dir / f"{fabric_scenario_id}.json",
+            ]
+            for _path in _candidates:
+                if _path.exists():
+                    try:
+                        scenario_data = _json.loads(_path.read_text())
+                        _logger.info(
+                            "FabricEngine: loaded scenario file %s for run %s",
+                            _path, run_id,
+                        )
+                    except Exception:
+                        _logger.exception(
+                            "FabricEngine: failed to parse scenario file %s", _path
+                        )
+                    break
+            else:
+                _logger.warning(
+                    "FabricEngine: fabric_scenario_id=%r — file not found; "
+                    "using default engine",
+                    fabric_scenario_id,
+                )
+
+        cap_tier = "current"
+        if scenario_data:
+            cap_tier = scenario_data.get("capability_tier", "current")
+
+        return FabricEngine(seed=seed, capability_tier=cap_tier, scenario_data=scenario_data)
     except Exception:
-        import logging as _log
         _log.getLogger("gridsignal.scenario_factory").exception(
             "FabricEngine init failed for run %s — fabric data will be absent", run_id
         )
