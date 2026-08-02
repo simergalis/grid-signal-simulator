@@ -1,0 +1,128 @@
+Fix: solar aggregate is not derived from bank state
+
+Two independent bugs. Fix P0 items before anything else; they are producing wrong numbers on the operator-facing panel.
+
+P0-1 — P_renewable(t) must be the sum of the banks
+
+Observed: 19 of 20 banks disabled. Bank list sums to 0.213 MW. The verdict, the Output ledger row, and both exposure bars all read 3.39 MW.
+
+Cause: the plant-level formula (rated × irradiance × losses) is still live and is being used for the aggregate, while the bank list computes independently. Two implementations of the same quantity.
+
+Fix: delete the plant-level path entirely. There must be exactly one derivation:
+
+python
+def p_renewable_mw(cfg, st) -> float:
+    return sum(counted_output_mw(cfg, st, b) for b in st.banks)
+
+Every consumer — verdict, Output row, exposure bars, the SLD SOLAR PV tile, and the subtraction in P_dispatch_required(t) — reads that one function. No consumer recomputes from irradiance.
+
+Test (blocking):
+
+python
+def test_aggregate_equals_bank_sum_under_every_state(sim):
+    for n_off in (0, 1, 5, 19, 20):
+        sim.reset()
+        for b in sim.state.banks[:n_off]:
+            b.operator_enabled = False
+        snap = sim.snapshot()
+        assert snap["power"]["p_renewable_mw"] == pytest.approx(
+            sum(b["counted_output_mw"] for b in snap["banks"]), abs=1e-9)
+
+Add the 19-of-20 case explicitly. It is the case that failed.
+
+P0-2 — the ledger and the chart are reading different P_total
+
+Observed: ledger shows Generators and battery covering 0.00 MW and Share of what the site is using ≥ 100%, while the chart on the same panel shows site draw rising to ~18 MW against ~4 MW of solar. Correct share is ~20%.
+
+Fix: both must read P_total(t) from the same snapshot object in the same tick. Trace where the ledger sources it — most likely a separate call that runs before compute load is populated, so it sees P_total = 0 and clamps net demand to zero.
+
+Also remove the unconditional claim surplus absorbed by BESS. Surplus absorption is bounded by BESS charge rate and SoC headroom; beyond that, surplus is curtailed at the inverters. Only render that line when P_renewable > P_total and the absorption is actually within those bounds, and name the bound when it isn't.
+
+Test:
+
+python
+def test_share_and_net_demand_use_the_same_p_total(sim):
+    snap = sim.snapshot()
+    p = snap["power"]
+    assert p["p_dispatch_required_mw"] == pytest.approx(
+        p["p_total_mw"] - p["p_renewable_mw"], abs=1e-9)
+    assert p["share_of_site_draw_pct"] == pytest.approx(
+        p["p_renewable_mw"] / p["p_total_mw"] * 100, abs=0.01)
+P1-1 — reporting denominator must be total banks
+
+Observed: 1 / 1 reporting · 19 operator-offline.
+
+Fix: the denominator is always banks_total, never the count of enabled banks. Correct render is 1 / 20 reporting · 19 operator-offline. The whole point of the line is to make the scale of an outage visible; excluding the missing banks from the denominator hides it.
+
+P1-2 — operator_offline is a fifth state and needs defining
+
+It is currently being emitted but is not in the classifier spec (§4.2 defines nominal, degraded, out, no_comms). It differs from all four because it is intentional, not a fault.
+
+Required behaviour:
+
+Aspect	Rule
+counted_output_mw	0.0
+expected_mw	unchanged — full irradiance-derived expectation
+Fault advisories	none — this is not a fault and must not raise one
+Common-cause detection (FR-SOL-2)	excluded — 19 banks disabled by an operator is not one fault
+Reconciliation check (FR-SOL-1)	excluded — the divergence is known and intentional
+UI	visually distinct from out; grey rather than red
+
+Add to the state enum, the classifier, and the type union in the API contract.
+
+P2-1 — expected_mw must not be zeroed by state
+
+Observed: Feeder A reports 1.096 MW expected (all five banks) while bank-02 reports 0.000 expected. The two are computed differently.
+
+Fix: expected_mw is a function of irradiance, module temperature, and nameplate only. It is never a function of bank state. A disabled, faulted, or comms-lost bank still has a non-zero expectation, and that is precisely what makes the shortfall legible.
+
+Test:
+
+python
+def test_expected_is_independent_of_state(sim):
+    b = sim.state.banks[0]
+    before = expected_mw(sim.cfg, sim.state, b)
+    for mutation in ("operator_offline", "fault", "no_comms"):
+        apply_state(b, mutation)
+        assert expected_mw(sim.cfg, sim.state, b) == pytest.approx(before)
+
+def test_feeder_expected_equals_sum_of_bank_expected(sim):
+    snap = sim.snapshot()
+    for f in snap["feeders"]:
+        banks = [b for b in snap["banks"] if b["feeder_id"] == f["id"]]
+        assert f["expected_mw"] == pytest.approx(
+            sum(b["expected_mw"] for b in banks), abs=1e-9)
+P2-2 — wrong caption on the plant-loss bar
+
+Observed: the IF SOLAR STOPPED THIS SECOND bar (whole-plant contingency, 3.39 MW) is captioned an inverter trip is a step change with Δt_lead = 0.
+
+An inverter trip is the N−1 contingency, not the plant contingency. Correct captions:
+
+N−1 feeder bar: one feeder opens · step change · Δt_lead = 0
+Plant-loss bar: POI breaker or plant-controller trip · step change · Δt_lead = 0
+P2-3 — state the denominator on CURRENT OUTPUT AGAINST RATED
+
+The bar has no denominator label. Render it as 3.39 / 5.00 MW with the fill fraction matching that ratio. Confirm the fill is computed against plant_rated_ac_mw and not against some other quantity — the rendered fill does not currently look like 68%.
+
+Order of work
+P0-1 and its blocking test. Do not proceed until the 19-of-20 case passes.
+P0-2.
+P1-1, P1-2 together — they touch the same state enum.
+P2-1, P2-2, P2-3.
+
+Re-run the full suite after each. If any pre-existing test starts failing after P0-1, that test was asserting against the plant-level formula and needs to be re-pointed at the bank sum, not relaxed.
+
+Project content
+GridSignal
+Created by you
+GridSignal-Forecast-Engine-Functional-Spec_v2.5.md
+
+1,683 lines
+
+MD
+
+PDF
+
+PDF
+
+Content

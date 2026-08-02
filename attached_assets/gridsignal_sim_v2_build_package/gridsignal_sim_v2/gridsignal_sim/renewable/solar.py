@@ -194,10 +194,15 @@ def bank_clear_sky_mw(cfg: SiteConfig, st: PlantState, b: BankState) -> float:
 def counted_output_mw(cfg: SiteConfig, st: PlantState, b: BankState) -> float:
     """Contribution of one bank to P_renewable(t).
 
-    §27.4 / §4.3: degraded banks counted at measured (not nameplate, not zero);
-    out and no_comms banks counted at zero (conservative).
+    §27.4 / §4.3 + operator control:
+      - operator_shutdown: counted at zero immediately, regardless of classifier
+        state.  The classifier may lag by up to one tick; checking the flag
+        directly ensures p_renewable_mw reflects the operator's action as soon
+        as bank_off() is called, not one tick later.
+      - out / no_comms: counted at zero (conservative).
+      - degraded: counted at measured output.
     """
-    if b.state in ("out", "no_comms"):
+    if b.operator_shutdown or b.state in ("out", "no_comms"):
         return 0.0
     return bank_output_mw(cfg, st, b)
 
