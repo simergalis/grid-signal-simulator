@@ -178,6 +178,21 @@ def _evt_solar_step(t: float, shortfall_mw: float) -> WorkloadEventSpec:
     )
 
 
+def _evt_unit_trip(t: float, asset_id: str) -> WorkloadEventSpec:
+    """TC-84: turbine trip event — forces the named unit offline immediately.
+
+    asset_id is carried in job_id (non-job event); node_count and
+    hardware_profile_id are ignored by apply_workload_signal().
+    """
+    return WorkloadEventSpec(
+        event_id=f"evt-unit-trip-{asset_id}-{int(t)}s",
+        job_id=asset_id,          # carries the turbine asset_id to the runtime
+        event_type="unit_trip",
+        timestamp=t,
+        node_count=0,
+    )
+
+
 def _bess(
     asset_id: str,
     rated_mw: float,
@@ -413,17 +428,29 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
                 "1900-node 20 MW GPU ramp — 5 × 7 MW gas turbine fleet "
                 "(4 synchronized online + 1 hot standby), single grid-forming BESS "
                 "(18 MW / 8 MWh).  "
-                "N−1 firm generation: 3 × 7 MW = 21 MW vs 23.95 MW peak load. "
-                "At full TDP each online unit produces ~6 MW: tripping one leaves "
-                "3 × 1 MW = 3 MW surviving headroom against a 6 MW deficit "
-                "(shed_required ≈ 3 MW → COVERED_WITH_SHED). "
-                "Early in the ramp, deficit is small and BESS can bridge: state "
-                "transitions COVERED → COVERED_WITH_SHED as turbines load up. "
-                "BESS power test: 18 − 1 = 17 MW bridging ≥ deficit. "
+                "Staging distributes demand across the 4 active (non-standby) units: "
+                "each stages to ≈ 4.99 MW.  "
+                "Before trip (4 online): N−1 leaves 3 survivors with "
+                "3 × 2.01 MW = 6.03 MW headroom ≥ 4.99 MW deficit → COVERED. "
+                "TC-84 live trip: turbine-1 trips at t=120 s → 3 online remain; "
+                "N−1 now leaves 2 survivors with 2 × 2.01 MW = 4.02 MW headroom "
+                "< 4.99 MW deficit → NOT CLOSABLE → shed_required ≈ 0.97 MW "
+                "→ COVERED_WITH_SHED.  Dashboard gen-trip indicator changes state "
+                "on screen. "
+                "BESS power test: 18 − 1 = 17 MW bridging ≥ any single-turbine "
+                "deficit throughout the run. "
                 "The hot-standby unit (turbine-4) contributes zero to dispatch "
                 "and zero to r_surviving (§7.4 / TC-83)."
             ),
-            workload_events=[_evt_start("job-big", 1900)],
+            workload_events=[
+                _evt_start("job-big", 1900),
+                # TC-84: trip turbine-1 at t=120 s — mid-run, after the GPU
+                # ramp has completed (ramp_seconds=45 s) and all turbines are
+                # at or near full output.  Removing one of the four online units
+                # shrinks surviving capacity from 4 × ~6 MW to 3 × ~6 MW,
+                # changing the contingency readout visible on the dashboard.
+                _evt_unit_trip(t=120.0, asset_id="turbine-1"),
+            ],
             dt_lead_seconds=30.0,
             bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
             turbine_units=[

@@ -156,6 +156,9 @@ class WorkloadEventSpec(BaseModel):
       "starting"   — GPU job ramp begins; staging fires with dt_lead_seconds.
       "job_end"    — GPU job finishes.
       "solar_step" — Renewable curtailment; staging fires with dt_lead=0 (§7.1.1).
+      "unit_trip"  — Force a generating unit offline immediately (TC-84).
+                     job_id carries the turbine asset_id; node_count and
+                     hardware_profile_id are ignored.
       Any other WorkloadEventType value is forwarded as-is.
 
     For solar_step events job_id, node_count, and hardware_profile_id are

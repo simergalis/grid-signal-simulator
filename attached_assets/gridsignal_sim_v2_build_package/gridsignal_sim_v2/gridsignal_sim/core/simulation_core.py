@@ -138,6 +138,34 @@ class SimulationState:
             )
             return
 
+        if signal.event_type == WorkloadEventType.UNIT_TRIP:
+            # TC-84: force the named generating unit offline immediately.
+            # asset_id is carried in signal.job_id (non-job event, no GPU state
+            # is touched).  Unknown asset_ids are logged and silently ignored so
+            # a misconfigured scenario does not crash a live run.
+            _tripped_asset_id = signal.job_id
+            _matched = False
+            for _t in self.turbines:
+                if _t.config.asset_id == _tripped_asset_id:
+                    _t.state = TurbineState.OFFLINE
+                    _t._current_output_mw = 0.0
+                    _t._target_mw = 0.0
+                    _matched = True
+                    _log.info(
+                        "UNIT_TRIP: turbine %r forced OFFLINE at sim_time=%.1f (TC-84).",
+                        _tripped_asset_id,
+                        signal.timestamp,
+                    )
+                    break
+            if not _matched:
+                _log.warning(
+                    "UNIT_TRIP: asset_id %r not found in turbine fleet "
+                    "(known: %s); event ignored.",
+                    _tripped_asset_id,
+                    [_t.config.asset_id for _t in self.turbines],
+                )
+            return
+
         gpu = self._owning_gpu_module(signal)
         # Capture cohort keys before apply_signal() clears _job_cohorts on JOB_END.
         _cohort_keys_before_end: list[str] = []

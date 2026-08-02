@@ -76,6 +76,12 @@ class WorkloadEventType(str, Enum):
     # flows through its own signal handler.  Do not use SOLAR_STEP as a precedent
     # for routing non-workload signals through this enum.
     SOLAR_STEP = "solar_step"
+    # TC-84: Turbine trip event — forces the named generating unit offline
+    # immediately so the gen-trip indicator on the operator dashboard transitions
+    # state (COVERED → COVERED_WITH_SHED → CANNOT_CARRY) during a live run.
+    # The tripped asset_id is carried in WorkloadSignal.job_id (no GPU or job
+    # state is touched; apply_workload_signal() early-returns after the trip).
+    UNIT_TRIP = "unit_trip"
 
 
 class WorkloadClass(str, Enum):

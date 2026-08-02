@@ -447,13 +447,24 @@ class DispatchArbitrator:
         is invariant within a call and is consumed by both the proportional split
         and max_sustainable_seconds.
         """
-        if not self.turbines:
+        # D15 fix: exclude hot-standby turbines from staging distribution and
+        # ramp-rate accounting.  A hot-standby unit ignores stage_target() (it
+        # returns immediately), so including it in len(self.turbines) reduces
+        # each active turbine's allocation to delta_p_mw / N_total instead of
+        # delta_p_mw / N_active.  Including it in total_r_asset also inflates
+        # the apparent fleet ramp rate, making required_ramp_s too small and
+        # potentially suppressing an alert that should fire.
+        # Both bugs are corrected by filtering to non-standby turbines before
+        # either calculation.  Scenarios with no standby unit are unaffected
+        # (filter returns the full list).
+        _active_turbines = [t for t in self.turbines if not t.config.hot_standby]
+        if not _active_turbines:
             required_ramp_s = float("inf")
         else:
-            per_turbine_target = delta_p_mw / len(self.turbines)
-            for turbine in self.turbines:
+            per_turbine_target = delta_p_mw / len(_active_turbines)
+            for turbine in _active_turbines:
                 turbine.stage_target(turbine.output_mw() + per_turbine_target)
-            total_r_asset = sum(t.config.r_asset_mw_per_s for t in self.turbines)
+            total_r_asset = sum(t.config.r_asset_mw_per_s for t in _active_turbines)
             required_ramp_s = delta_p_mw / total_r_asset if total_r_asset else float("inf")
 
         gap_s = required_ramp_s - dt_lead_seconds
