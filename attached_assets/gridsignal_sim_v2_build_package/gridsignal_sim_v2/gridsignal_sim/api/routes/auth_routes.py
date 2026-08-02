@@ -51,6 +51,22 @@ def _otp_entry(email: str) -> dict | None:
     return None
 
 
+def inject_otp(email: str, code: str) -> None:
+    """Inject a pre-generated OTP code directly into the in-memory store.
+
+    Used by the bootstrap endpoint to create a usable one-time sign-in
+    credential without going through the SendGrid email path.  The injected
+    code expires after the standard TTL and is consumed on first use.
+    """
+    now = time.monotonic()
+    _otp_store[email.lower()] = {
+        "code":       code,
+        "expires_at": now + _OTP_TTL_SECS,
+        "attempts":   0,
+        "last_sent":  now,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Pydantic schemas
 # ---------------------------------------------------------------------------

@@ -8,6 +8,7 @@ Access is granted by either:
 If ADMIN_SECRET is not set the header path is disabled, but session-based
 admin access still works for users whose role is "admin".
 
+GET    /api/admin/bootstrap        — break-glass recovery (X-Admin-Key only)
 POST   /api/admin/users           — create a user account; sends welcome email
 GET    /api/admin/users           — list all users
 PATCH  /api/admin/users/{user_id} — activate / deactivate an account or change role
@@ -22,14 +23,16 @@ from __future__ import annotations
 
 import logging
 import os
+import secrets
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.auth_utils import COOKIE_NAME, decode_access_token
+from api.auth_utils import COOKIE_NAME, decode_access_token, hash_password
 from api.db import get_db_session
 from api.email_service import send_welcome_email
+from api.routes.auth_routes import inject_otp
 from runtime.persistence import AuthUser
 
 _log = logging.getLogger(__name__)
@@ -68,6 +71,112 @@ async def _require_admin(
         status_code=status.HTTP_403_FORBIDDEN,
         detail="Admin access required",
     )
+
+
+# ---------------------------------------------------------------------------
+# Break-glass bootstrap endpoint  (X-Admin-Key only — no session fallback)
+# ---------------------------------------------------------------------------
+
+_RECOVERY_EMAIL = "recovery@gridsignal.io"
+_RECOVERY_DISPLAY_NAME = "Recovery Admin"
+
+
+@router.get("/bootstrap")
+async def bootstrap_admin(
+    x_admin_key: str = Header(default=""),
+    db: AsyncSession = Depends(get_db_session),
+    response: Response = None,
+):
+    """Break-glass recovery: create a one-time sign-in code when no active admin exists.
+
+    This endpoint is intentionally protected by the admin key header ONLY —
+    not by session cookies — because its purpose is to restore access when
+    every admin account has been deactivated or deleted and no one can log in.
+
+    Responses
+    ---------
+    200  {"status": "ok",      "admin_exists": true}
+         At least one active admin account already exists; no action taken.
+
+    200  {"status": "created", "admin_exists": false,
+          "email": ..., "one_time_code": ..., "login_path": "/api/auth/login"}
+         No active admin existed.  A recovery account has been created and a
+         single-use 6-digit OTP has been injected into the live auth store.
+         POST {email, code} to /api/auth/login to receive a session cookie,
+         then change the password via POST /api/auth/change-password.
+         The code expires in 10 minutes and is consumed on first use.
+
+    403  ADMIN_SECRET is not configured or the supplied key does not match.
+    """
+    from sqlalchemy import select
+
+    if not _ADMIN_SECRET or x_admin_key != _ADMIN_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Valid X-Admin-Key required for bootstrap",
+        )
+
+    # Both response paths carry credentials or admin-state information — never
+    # allow caches to store or replay the response.
+    response.headers["Cache-Control"] = "no-store, private"
+    response.headers["Pragma"] = "no-cache"
+
+    # Check whether any active admin account already exists.
+    # Use .limit(1) so the query succeeds even when multiple active admins exist
+    # (scalar_one_or_none() raises MultipleResultsFound in that case).
+    result = await db.execute(
+        select(AuthUser)
+        .where(AuthUser.role == "admin", AuthUser.is_active.is_(True))
+        .limit(1)
+    )
+    existing_admin = result.scalars().first()
+
+    if existing_admin is not None:
+        return {"status": "ok", "admin_exists": True}
+
+    # No active admin — create/reactivate the well-known recovery account.
+    existing_result = await db.execute(
+        select(AuthUser).where(AuthUser.email == _RECOVERY_EMAIL)
+    )
+    recovery_user: AuthUser | None = existing_result.scalars().first()
+
+    if recovery_user is not None:
+        recovery_user.is_active = True
+        recovery_user.role = "admin"
+        recovery_user.display_name = _RECOVERY_DISPLAY_NAME
+        # Clear any old password hash — login must go through the OTP code below.
+        recovery_user.password_hash = ""
+    else:
+        recovery_user = AuthUser(
+            email=_RECOVERY_EMAIL,
+            phone="",
+            display_name=_RECOVERY_DISPLAY_NAME,
+            role="admin",
+            password_hash="",   # OTP-only — no standing password
+            is_active=True,
+        )
+        db.add(recovery_user)
+
+    await db.commit()
+
+    # Inject a one-time OTP code into the live auth store so the caller can
+    # POST /api/auth/login immediately without waiting for an email.
+    one_time_code = f"{secrets.randbelow(1_000_000):06d}"
+    inject_otp(_RECOVERY_EMAIL, one_time_code)
+
+    _log.warning(
+        "Bootstrap: no active admin found — recovery account created (%s); "
+        "one-time code issued (not logged)",
+        _RECOVERY_EMAIL,
+    )
+
+    return {
+        "status": "created",
+        "admin_exists": False,
+        "email": _RECOVERY_EMAIL,
+        "one_time_code": one_time_code,
+        "login_path": "/api/auth/login",
+    }
 
 
 # ---------------------------------------------------------------------------
