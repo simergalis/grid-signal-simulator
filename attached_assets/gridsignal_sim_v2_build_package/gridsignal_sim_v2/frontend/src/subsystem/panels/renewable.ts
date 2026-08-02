@@ -457,7 +457,15 @@ function BankFleetPanel(): React.ReactElement {
       }, 'BANK FLEET — LIVE'),
       React.createElement('div', {
         className: 'font-mono text-[9px] text-muted',
-      }, `${banks.filter(b => b.state !== 'no_comms').length} / ${banks.length} reporting`),
+      }, (() => {
+        const offlineCount = banks.filter(b => b.operator_shutdown).length
+        const activeCount  = banks.length - offlineCount
+        const reporting    = banks.filter(b => !b.operator_shutdown && b.state !== 'no_comms').length
+        if (offlineCount > 0) {
+          return `${reporting} / ${activeCount} reporting · ${offlineCount} operator-offline`
+        }
+        return `${reporting} / ${activeCount} reporting`
+      })()),
     ),
     ...feederRows,
     n1Footer,
