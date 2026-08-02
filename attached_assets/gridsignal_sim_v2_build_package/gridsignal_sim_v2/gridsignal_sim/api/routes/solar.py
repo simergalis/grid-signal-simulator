@@ -49,8 +49,19 @@ _PREVIEW_DURATION_S = 60.0
 _CONSOLE_HTML = Path(__file__).resolve().parents[2] / "renewable" / "console.html"
 
 # Valid stressors the console may inject.
-_VALID_STRESSORS = {"cloud", "cloud_clear", "trip", "poi", "soil",
-                    "spike", "turbine", "bess", "reset"}
+_VALID_STRESSORS = {
+    "cloud", "cloud_clear",
+    "trip",  "bank_trip",   # trip / bank_trip — single-bank arc-fault (aliases)
+    "poi",
+    "soil",
+    "spike",
+    "turbine",
+    "bess",
+    "feeder_open",          # fdr-B breaker opens — common_cause advisory (FR-SOL-2)
+    "comms_loss",           # fdr-A telemetry loss — reconciliation_divergence (FR-SOL-1)
+    "bank_derate",          # single-bank inverter overtemp → degraded
+    "reset",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -133,7 +144,8 @@ async def solar_config(request: Request) -> JSONResponse:
 async def solar_inject(kind: str, request: Request) -> JSONResponse:
     """Inject a stressor into the live PV plant model.
 
-    Valid kinds: cloud, cloud_clear, trip, poi, soil, spike, turbine, bess, reset.
+    Valid kinds: cloud, cloud_clear, trip, bank_trip, poi, soil, spike, turbine, bess,
+    feeder_open, comms_loss, bank_derate, reset.
 
     A cloud stressor auto-clears after 14 s (matching the console behaviour).
     """

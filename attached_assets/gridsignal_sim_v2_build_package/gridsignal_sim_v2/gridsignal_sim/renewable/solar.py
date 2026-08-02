@@ -54,6 +54,8 @@ class BankState:
     # private hysteresis state (excluded from JSON output)
     _cand_state: str = field(default="nominal", init=False, repr=False, compare=False)
     _cand_ticks: int  = field(default=0,         init=False, repr=False, compare=False)
+    # tick number when bank last transitioned TO out/no_comms (for common-cause detection)
+    _state_changed_t: int = field(default=-999,  init=False, repr=False, compare=False)
 
 
 # Backward-compat alias — external code that imports BlockState still works.
@@ -269,6 +271,7 @@ def _update_bank_classifier(cfg: SiteConfig, st: PlantState, b: BankState) -> No
             # First tick of comms loss: reset candidate so no stale ticks carry over.
             b._cand_state = "no_comms"
             b._cand_ticks = 0
+            b._state_changed_t = st.t   # record transition tick for common-cause detection
         b.state = "no_comms"
         b.reason = None
         return
@@ -283,6 +286,11 @@ def _update_bank_classifier(cfg: SiteConfig, st: PlantState, b: BankState) -> No
 
     # ── 2. Latched fault — stays out until fault is explicitly cleared ───────
     if b.fault is not None:
+        if b.state != "out":
+            # First tick the classifier locks a bank into the latched-fault path —
+            # record it so the common-cause detector can catch simultaneous trips
+            # (e.g. a POI trip that was set outside the classifier).
+            b._state_changed_t = st.t
         b.state = "out"
         b.reason = None
         return
@@ -306,9 +314,13 @@ def _update_bank_classifier(cfg: SiteConfig, st: PlantState, b: BankState) -> No
             b._cand_ticks = 1
 
         if b._cand_ticks >= 3:
+            old_state = b.state
             b.state = candidate
             b._cand_state = candidate
             b._cand_ticks = 0
+            # Record when a bank first enters 'out' (for common-cause detection FR-SOL-2)
+            if candidate == "out" and old_state != "out":
+                b._state_changed_t = st.t
 
     b.reason = _derive_reason(b)
 
@@ -320,6 +332,17 @@ def _update_bank_classifier(cfg: SiteConfig, st: PlantState, b: BankState) -> No
 def p_renewable_mw(cfg: SiteConfig, st: PlantState) -> float:
     """P_renewable(t) = Σ counted_output_mw(bank) — spec invariant §2."""
     return sum(counted_output_mw(cfg, st, b) for b in st.blocks)
+
+
+def _pms_p_renewable(cfg: SiteConfig, st: PlantState) -> float:
+    """PMS-visible solar: physical output regardless of telemetry state.
+
+    Used by the reconciliation check (FR-SOL-1) to detect situations where the
+    physics engine shows generation that comms-loss banks are hiding from the
+    counted value.  A sustained gap between this and p_renewable_mw() (> 0.15 MW
+    for 5 consecutive ticks) raises a reconciliation_divergence advisory.
+    """
+    return sum(_bank_physical_mw(cfg, st, b) for b in st.blocks)
 
 
 def p_clear_sky_mw(cfg: SiteConfig, st: PlantState) -> float:
@@ -518,6 +541,9 @@ class SolarSim:
         self.rng = random.Random(seed)
         self.log: List[Dict] = []
         self.state = self._seed_state()
+        # Advisory state (FR-SOL-1 / FR-SOL-2)
+        self._advisories: List[Dict] = []
+        self._recon_diverge_ticks: int = 0
         self._log(
             "Session started. Seed: clear afternoon, %d banks online, %s."
             % (cfg.banks,
@@ -564,6 +590,8 @@ class SolarSim:
         for t in self.cfg.turbines:
             t.online = t.id in ("gt-01", "gt-02")
         self.state = self._seed_state()
+        self._advisories = []
+        self._recon_diverge_ticks = 0
         self._log("Reset to nominal seed state.", "")
 
     # -- tick --------------------------------------------------------------
@@ -592,6 +620,79 @@ class SolarSim:
         for b in st.blocks:
             _update_bank_classifier(cfg, st, b)
 
+        # Advisory checks run after the full tick so classifiers are settled.
+        self._run_advisory_checks()
+
+    # -- advisory engine ---------------------------------------------------
+
+    def _run_advisory_checks(self) -> None:
+        """Rebuild self._advisories after each tick.
+
+        FR-SOL-2  Common-cause detection
+            If ≥ 3 banks on the same feeder transitioned to out or no_comms
+            within the last 5 ticks, emit exactly ONE common_cause advisory
+            at feeder scope rather than N individual bank events.
+
+        FR-SOL-1  Reconciliation check
+            PMS-visible solar (physical output regardless of telemetry state)
+            vs. modelled counted solar.  If they diverge by > 0.15 MW for 5
+            consecutive ticks, raise a reconciliation_divergence advisory
+            naming the suspected stale banks.
+        """
+        cfg, st = self.cfg, self.state
+        advisories: List[Dict] = []
+
+        # ── FR-SOL-2: Common-cause detection ────────────────────────────────
+        feeder_fails: Dict[str, List[BankState]] = {}
+        for b in st.blocks:
+            if b.state in ("out", "no_comms") and (st.t - b._state_changed_t) <= 5:
+                key = b.feeder_id if b.feeder_id else b.id
+                feeder_fails.setdefault(key, []).append(b)
+
+        for feeder_id, banks in feeder_fails.items():
+            if len(banks) >= 3:
+                advisories.append({
+                    "code":    "common_cause",
+                    "scope":   "feeder",
+                    "feeder":  feeder_id,
+                    "banks":   [b.id for b in banks],
+                    "message": (
+                        "%d banks on %s entered a failed state within 5 ticks"
+                        " — likely feeder fault, not independent bank trips"
+                        " (FR-SOL-2)." % (len(banks), feeder_id)
+                    ),
+                })
+
+        # ── FR-SOL-1: Reconciliation check ──────────────────────────────────
+        pms_solar     = _pms_p_renewable(cfg, st)
+        counted_solar = p_renewable_mw(cfg, st)
+        divergence    = pms_solar - counted_solar
+
+        if divergence > 0.15:
+            self._recon_diverge_ticks += 1
+        else:
+            self._recon_diverge_ticks = 0
+
+        if self._recon_diverge_ticks >= 5:
+            suspect = [b.id for b in st.blocks
+                       if b.state == "no_comms"
+                       and _bank_physical_mw(cfg, st, b) > 0.01]
+            advisories.append({
+                "code":    "reconciliation_divergence",
+                "scope":   "plant",
+                "banks":   suspect,
+                "message": (
+                    "PMS net-demand diverges from model by %.2f MW for %d "
+                    "consecutive ticks — suspected stale telemetry on: %s "
+                    "(FR-SOL-1)." % (
+                        divergence, self._recon_diverge_ticks,
+                        ", ".join(suspect) if suspect else "unknown",
+                    )
+                ),
+            })
+
+        self._advisories = advisories
+
     # -- stressors ---------------------------------------------------------
 
     def inject(self, kind: str) -> Dict:
@@ -618,6 +719,7 @@ class SolarSim:
                 b.fault    = "arc_fault"
                 b._cand_state = "out"
                 b._cand_ticks = 0
+                b._state_changed_t = st.t   # record for common-cause window
                 self._log(
                     "%s tripped — DC arc-fault. %.2f MW step change, "
                     "Δt_lead = 0. BESS bridging engaged." % (b.id, b.rated_mw), "bad")
@@ -628,6 +730,7 @@ class SolarSim:
                 b.fault    = "feeder_open"
                 b._cand_state = "out"
                 b._cand_ticks = 0
+                b._state_changed_t = st.t   # simultaneous trip — common-cause per feeder
             self._log(
                 "POI breaker open — entire array disconnected. This is the sizing "
                 "contingency: a step change with no advance signal.", "bad")
@@ -664,6 +767,80 @@ class SolarSim:
                 "falls faster than SoC."
                 % (st.bess_soc * 100, bess_bridging_mw(cfg, st)),
                 "bad" if st.bess_soc < 0.4 else "")
+
+        elif kind == "feeder_open":
+            # Trip entire fdr-B: feeder breaker opens, telemetry drops AND power stops.
+            # Setting derate=0 models the open feeder (no current flow); telemetry_age_s
+            # keeps classifier in no_comms.  Sets _state_changed_t so the common-cause
+            # advisory fires on the next tick (FR-SOL-2).
+            fdr_b = [b for b in st.blocks if b.feeder_id == "fdr-B"]
+            if not fdr_b:
+                return {"ok": False, "error": "no banks on fdr-B in current config"}
+            for b in fdr_b:
+                b.telemetry_age_s = 999.0
+                b.derate = 0.0          # feeder open → no physical output
+                b.state = "no_comms"
+                b._cand_state = "no_comms"
+                b._cand_ticks = 0
+                b._state_changed_t = st.t   # for FR-SOL-2 common-cause window
+            self._log(
+                "fdr-B feeder breaker opened — %d banks disconnected. "
+                "Telemetry and output both zero. Common-cause advisory expected."
+                % len(fdr_b), "bad")
+
+        elif kind == "bank_trip":
+            # Same as 'trip': one random bank trips to out (arc-fault latch).
+            live = [b for b in st.blocks if b.state not in ("out", "no_comms")]
+            if not live:
+                self._log("All banks already offline.", "bad")
+            else:
+                b = self.rng.choice(live)
+                b.state = "out"
+                b.fault = "arc_fault"
+                b._cand_state = "out"
+                b._cand_ticks = 0
+                b._state_changed_t = st.t
+                self._log(
+                    "%s bank-trip — DC arc-fault. %.2f MW step, Δt_lead=0."
+                    % (b.id, b.rated_mw), "bad")
+
+        elif kind == "bank_derate":
+            # Push one bank into degraded via inverter overtemp.  The bank continues
+            # to produce, but at reduced capability (~80% due to thermal derate).
+            live = [b for b in st.blocks if b.state not in ("out", "no_comms")]
+            if not live:
+                self._log("No live banks to derate.", "bad")
+            else:
+                b = self.rng.choice(live)
+                b.inverter_temp_c = 82.0    # sustained overtemp → reason=inverter_derate
+                b.derate = 0.80             # 20% nameplate reduction
+                b.state = "degraded"
+                b.reason = "inverter_derate"
+                b._cand_state = "degraded"
+                b._cand_ticks = 0
+                self._log(
+                    "%s inverter overtemp — derated to 80%%. Counted at measured, not "
+                    "zero (§27.4)." % b.id, "warn")
+
+        elif kind == "comms_loss":
+            # Telemetry loss on fdr-A: banks are still generating but we can't see them.
+            # derate is deliberately left at 1.0 so _pms_p_renewable() shows output while
+            # counted_output_mw() returns 0 (no_comms) → triggers reconciliation_divergence
+            # after 5 consecutive ticks (FR-SOL-1).
+            fdr_a = [b for b in st.blocks if b.feeder_id == "fdr-A"]
+            if not fdr_a:
+                return {"ok": False, "error": "no banks on fdr-A in current config"}
+            for b in fdr_a:
+                b.telemetry_age_s = 999.0   # comms drop
+                b.state = "no_comms"
+                b._cand_state = "no_comms"
+                b._cand_ticks = 0
+                b._state_changed_t = st.t
+                # derate unchanged — physical output continues (FR-SOL-1 trigger)
+            self._log(
+                "fdr-A comms loss — %d banks invisible to model but still generating. "
+                "Reconciliation divergence expected within 5 ticks (FR-SOL-1)."
+                % len(fdr_a), "warn")
 
         elif kind == "reset":
             self.reset()
@@ -767,7 +944,8 @@ class SolarSim:
                 "plant":      rc_plant.to_dict(),
                 "compound":   rc_compound.to_dict(),
             },
-            "log": self.log[:40],
+            "log":        self.log[:40],
+            "advisories": list(self._advisories),
         }
 
     # -- internals ---------------------------------------------------------

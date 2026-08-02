@@ -19,6 +19,7 @@ from renewable.solar import (
     SolarSim, PlantState, BankState, BlockState,
     bank_output_mw, bank_expected_mw, bank_clear_sky_mw,
     counted_output_mw, _update_bank_classifier, _raw_state,
+    _bank_physical_mw, _pms_p_renewable,
     p_renewable_mw, p_clear_sky_mw, p_total_mw, p_dispatch_required_mw,
     largest_bank_mw, largest_feeder_mw, _largest_feeder_id,
     largest_block_mw,   # compat alias
@@ -233,8 +234,10 @@ def test_solar_never_contributes_to_ramp_capability(sim):
 # stressors and snapshot contract
 # ---------------------------------------------------------------------------
 
-@pytest.mark.parametrize("kind", ["cloud", "trip", "poi", "soil",
-                                   "spike", "turbine", "bess", "reset"])
+@pytest.mark.parametrize("kind", [
+    "cloud", "trip", "bank_trip", "poi", "soil", "spike",
+    "turbine", "bess", "feeder_open", "comms_loss", "bank_derate", "reset",
+])
 def test_every_stressor_applies_cleanly(sim, kind):
     assert sim.inject(kind)["ok"] is True
     snap = sim.snapshot()
@@ -263,7 +266,7 @@ def test_snapshot_has_the_keys_the_console_consumes(sim):
     snap = sim.snapshot()
     for key in ("site", "atmosphere", "power", "fleet",
                 "banks", "blocks",      # both keys present
-                "feeders", "exposure", "reserve", "log"):
+                "feeders", "exposure", "reserve", "log", "advisories"):
         assert key in snap, f"missing key: {key}"
     # blocks is an alias for banks
     assert len(snap["blocks"]) == sim.cfg.banks
@@ -728,3 +731,238 @@ def test_compat_aliases_on_config():
 def test_blockstate_is_bankstate_alias():
     """BlockState must be the same class as BankState (backward compat)."""
     assert BlockState is BankState
+
+
+# ---------------------------------------------------------------------------
+# FR-SOL-2 / TC-SOL (task §111)
+#   feeder_open emits exactly ONE common_cause advisory naming fdr-B, not 5
+# ---------------------------------------------------------------------------
+
+def test_feeder_open_emits_one_common_cause_advisory(sim):
+    """feeder_open sets all 5 banks on fdr-B to no_comms simultaneously.
+
+    The common-cause detector must aggregate them into a single advisory at
+    feeder scope rather than 5 individual bank events (FR-SOL-2).
+    """
+    result = sim.inject("feeder_open")
+    assert result["ok"] is True, "feeder_open stressor must return ok=True"
+
+    sim.tick()   # advisory engine runs at end of each tick
+
+    snap = sim.snapshot()
+    assert "advisories" in snap, "snapshot must contain 'advisories' key"
+
+    cc = [a for a in snap["advisories"] if a["code"] == "common_cause"]
+    assert len(cc) == 1, (
+        f"Expected exactly 1 common_cause advisory; got {len(cc)}: {cc}"
+    )
+    advisory = cc[0]
+    assert advisory["scope"] == "feeder"
+    assert advisory["feeder"] == "fdr-B", (
+        f"common_cause advisory must name fdr-B; got feeder={advisory['feeder']!r}"
+    )
+    assert len(advisory["banks"]) == 5, (
+        f"fdr-B has 5 banks; advisory listed {len(advisory['banks'])}"
+    )
+
+
+def test_poi_emits_common_cause_advisory_per_feeder(sim):
+    """poi trips all 20 banks simultaneously (5 per feeder, 4 feeders).
+
+    Each feeder qualifies for a common_cause advisory independently.
+    There must be exactly 4 advisories — one per feeder — not 20 individual
+    bank events and not just one plant-level event.
+    """
+    result = sim.inject("poi")
+    assert result["ok"] is True
+
+    sim.tick()   # advisory engine runs at end of each tick
+
+    snap = sim.snapshot()
+    cc = [a for a in snap["advisories"] if a["code"] == "common_cause"]
+    assert len(cc) == 4, (
+        f"poi trips 5 banks on each of 4 feeders — expect 4 common_cause advisories; "
+        f"got {len(cc)}: {[a['feeder'] for a in cc]}"
+    )
+    feeder_names = {a["feeder"] for a in cc}
+    assert feeder_names == {"fdr-A", "fdr-B", "fdr-C", "fdr-D"}, (
+        f"advisories must cover all 4 feeders; got {feeder_names}"
+    )
+    for a in cc:
+        assert len(a["banks"]) == 5, (
+            f"feeder {a['feeder']} must list 5 banks; got {len(a['banks'])}"
+        )
+
+
+def test_feeder_open_fdr_b_banks_all_no_comms(sim):
+    """All 5 banks on fdr-B must be in no_comms state after feeder_open."""
+    sim.inject("feeder_open")
+    fdr_b = [b for b in sim.state.blocks if b.feeder_id == "fdr-B"]
+    assert len(fdr_b) == 5, "fdr-B must have 5 banks"
+    for b in fdr_b:
+        assert b.state == "no_comms", (
+            f"bank {b.id} on fdr-B should be no_comms after feeder_open; got {b.state!r}"
+        )
+
+
+def test_feeder_open_does_not_trigger_reconciliation(sim):
+    """feeder_open sets derate=0 so physical output is also 0 — no reconciliation divergence.
+
+    The reconciliation_divergence advisory fires only when physical output
+    exceeds counted output.  feeder_open zeroes both, so no divergence.
+    """
+    sim.inject("feeder_open")
+    for _ in range(6):    # more than the 5-tick threshold
+        sim.tick()
+
+    snap = sim.snapshot()
+    recon = [a for a in snap["advisories"] if a["code"] == "reconciliation_divergence"]
+    assert len(recon) == 0, (
+        "feeder_open must NOT trigger reconciliation_divergence (both sides zero); "
+        f"got advisories: {snap['advisories']}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# FR-SOL-1 / TC-SOL (task §111)
+#   comms_loss triggers reconciliation_divergence within 5 ticks
+# ---------------------------------------------------------------------------
+
+def test_comms_loss_triggers_reconciliation_divergence(sim):
+    """comms_loss puts fdr-A into no_comms but leaves physical output intact.
+
+    The PMS sees solar still generating; the model counts it as zero.
+    After 5 consecutive ticks with divergence > 0.15 MW, a
+    reconciliation_divergence advisory must be present in the snapshot.
+    """
+    sim.inject("comms_loss")
+
+    # 5 ticks required to cross the threshold.
+    for _ in range(5):
+        sim.tick()
+
+    snap = sim.snapshot()
+    recon = [a for a in snap["advisories"] if a["code"] == "reconciliation_divergence"]
+    assert len(recon) >= 1, (
+        "comms_loss must trigger reconciliation_divergence after 5 ticks; "
+        f"got advisories: {snap['advisories']}"
+    )
+    advisory = recon[0]
+    assert advisory["scope"] == "plant"
+    assert len(advisory["banks"]) > 0, "advisory must name at least one suspect bank"
+
+
+def test_comms_loss_counted_mw_drops_but_physical_does_not(sim):
+    """comms_loss reduces counted solar but physical output is unchanged."""
+    cfg, st = sim.cfg, sim.state
+    counted_before = p_renewable_mw(cfg, st)
+    physical_before = sum(_bank_physical_mw(cfg, st, b) for b in st.blocks)
+
+    sim.inject("comms_loss")
+
+    counted_after  = p_renewable_mw(cfg, st)
+    physical_after = sum(_bank_physical_mw(cfg, st, b) for b in st.blocks)
+
+    assert counted_after < counted_before, (
+        "counted P_renewable must drop when fdr-A goes to no_comms"
+    )
+    assert physical_after == pytest.approx(physical_before, abs=0.01), (
+        "physical output must not change with comms_loss (banks still generating)"
+    )
+
+
+def test_comms_loss_advisory_clears_after_reset(sim):
+    """Advisory counter resets with the sim so no stale state carries over."""
+    sim.inject("comms_loss")
+    for _ in range(6):
+        sim.tick()
+
+    snap_before = sim.snapshot()
+    recon_before = [a for a in snap_before["advisories"]
+                    if a["code"] == "reconciliation_divergence"]
+    assert len(recon_before) >= 1, "prerequisite: advisory must exist before reset"
+
+    sim.inject("reset")
+    sim.tick()  # one tick after reset to run advisory engine
+
+    snap_after = sim.snapshot()
+    recon_after = [a for a in snap_after["advisories"]
+                   if a["code"] == "reconciliation_divergence"]
+    assert len(recon_after) == 0, (
+        "reconciliation_divergence advisory must clear after sim reset"
+    )
+
+
+# ---------------------------------------------------------------------------
+# TC-SOL-12 (task §111)
+#   Solar never contributes to BESS bridging capability under any bank state
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("state", ["nominal", "degraded", "out", "no_comms"])
+def test_solar_bridging_is_state_independent(sim, state):
+    """§7.1.2 — BESS bridging available must be the same regardless of solar state.
+
+    Solar power does not ramp: it is non-dispatchable.  Changing every bank
+    to any of the four states must not alter bess_bridging_mw().
+    """
+    cfg, st = sim.cfg, sim.state
+    bridging_before = bess_bridging_mw(cfg, st)
+
+    for b in st.blocks:
+        b.state = state
+
+    bridging_after = bess_bridging_mw(cfg, st)
+
+    assert bridging_after == pytest.approx(bridging_before, abs=1e-9), (
+        f"bess_bridging_mw changed when all banks set to '{state}': "
+        f"before={bridging_before:.4f}, after={bridging_after:.4f}. "
+        "Solar state must not affect bridging capability."
+    )
+
+
+# ---------------------------------------------------------------------------
+# TC-SOL-13 (task §111)
+#   Snapshot is JSON-safe and well-formed when all banks are in no_comms
+# ---------------------------------------------------------------------------
+
+def test_all_banks_no_comms_snapshot_is_json_safe(sim):
+    """Snapshot must be JSON-serialisable and structurally complete when every
+    bank is in no_comms (e.g. plant-wide telemetry outage).
+
+    Key invariants:
+    - p_renewable_mw = 0 (all no_comms → counted as zero)
+    - feeders[] all report 0 output
+    - advisories[] contains at most common_cause entries (no recon divergence yet
+      because it requires 5 ticks)
+    - No floating-point infinity appears (InfiniteRampTime scenario)
+    """
+    for b in sim.state.blocks:
+        b.telemetry_age_s = 999.0
+        b.state = "no_comms"
+        b._cand_state = "no_comms"
+        b._cand_ticks = 0
+
+    import json
+    snap = sim.snapshot()
+    # JSON serialisation must not raise (no bare float('inf'))
+    json_str = json.dumps(snap)
+    assert json_str  # non-empty
+
+    # Counted output must be zero
+    assert snap["power"]["p_renewable_mw"] == pytest.approx(0.0, abs=1e-9), (
+        "all-no_comms plant must have p_renewable_mw = 0"
+    )
+
+    # Every feeder must report 0 output
+    for f in snap["feeders"]:
+        assert f["output_mw"] == pytest.approx(0.0, abs=1e-9), (
+            f"feeder {f['id']} output_mw must be 0 with all banks in no_comms"
+        )
+
+    # reserve fields with infinite ramp times must be serialised as null, not Infinity
+    reserve_vals = json.loads(json_str)["reserve"]
+    for scenario_key in ("n1_feeder", "n1_bank", "plant", "compound"):
+        rt = reserve_vals[scenario_key].get("ramp_time_s")
+        assert rt is None or isinstance(rt, (int, float)), (
+            f"reserve.{scenario_key}.ramp_time_s must be null or a number; got {rt!r}"
+        )

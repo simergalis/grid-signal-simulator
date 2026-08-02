@@ -205,6 +205,21 @@
   .banner.advisory{border-color:#4a3d13; background:#161206}
   .banner.advisory b{color:var(--amber)}
 
+  /* ---------- advisory panel (FR-SOL-1 / FR-SOL-2) ---------- */
+  .adv-item{
+    border:1px solid #4a3d13; background:#161206; border-radius:3px;
+    padding:9px 13px; font-size:12px; margin-bottom:6px;
+    display:flex; gap:12px; align-items:flex-start;
+  }
+  .adv-item.critical{border-color:#4d2320; background:#170c0b}
+  .adv-code{
+    font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--amber); font-weight:500; white-space:nowrap; min-width:190px; padding-top:1px;
+  }
+  .adv-code.critical{color:var(--coral)}
+  .adv-msg{color:var(--ink-2); flex:1}
+  .adv-sub{font-size:10.5px; color:var(--ink-3); margin-top:3px}
+
   @media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important} }
 </style>
 
@@ -227,6 +242,8 @@
 
 <main>
   <div class="banner" id="alertBanner"></div>
+  <!-- advisory panel: FR-SOL-1 reconciliation_divergence / FR-SOL-2 common_cause -->
+  <div id="advisoryPanel"></div>
 
   <!-- ============================ PLANT ============================ -->
   <section class="screen on" id="s-plant">
@@ -305,6 +322,9 @@
             <button class="btn" data-inj="spike">Compute step-load +6 MW</button>
             <button class="btn" data-inj="turbine">Take a turbine offline</button>
             <button class="btn" data-inj="bess">Drain BESS to 30% SoC</button>
+            <button class="btn" data-inj="feeder_open" title="Trips all 5 banks on fdr-B simultaneously — raises one common-cause advisory (FR-SOL-2)">Open fdr-B feeder</button>
+            <button class="btn" data-inj="comms_loss" title="Drops telemetry on fdr-A while banks keep generating — raises reconciliation_divergence after 5 ticks (FR-SOL-1)">fdr-A comms loss</button>
+            <button class="btn" data-inj="bank_derate" title="Inverter overtemp on one random bank — bank moves to degraded state, counted at measured capability">Derate a bank</button>
             <button class="btn" data-inj="reset">Reset to nominal</button>
           </div>
           <div class="why"><p>Renewable output is an engine input, so every scenario above is seed data rather than a
@@ -630,6 +650,8 @@
     // Feeder subtotals for feeder-level N−1 and the feeder status row.
     S.feeders = d.feeders || [];
     S.log = d.log.slice();
+    // Advisory list (FR-SOL-1 reconciliation_divergence / FR-SOL-2 common_cause)
+    S.advisories = d.advisories || [];
   }
 
   function pollServer(){
@@ -1089,6 +1111,31 @@
     }).join('');
   }
 
+  // Advisory panel — FR-SOL-1 reconciliation_divergence / FR-SOL-2 common_cause.
+  // Only shown in server mode (requires snapshot.advisories from the backend).
+  function renderAdvisories(){
+    var el = $('advisoryPanel'); if(!el) return;
+    var advs = (SRV && S.advisories) ? S.advisories : [];
+    if (!advs.length){ el.innerHTML = ''; return; }
+
+    el.innerHTML = advs.map(function(a){
+      var isCritical = a.code === 'reconciliation_divergence';
+      var itemCls  = 'adv-item' + (isCritical ? ' critical' : '');
+      var codeCls  = 'adv-code' + (isCritical ? ' critical' : '');
+      var label    = a.code.replace(/_/g, '\u00a0');   // nbsp for line-break control
+      var feederLine = a.feeder
+        ? '<div class="adv-sub">Feeder: ' + a.feeder + '</div>'
+        : '';
+      var banksLine = (a.banks && a.banks.length)
+        ? '<div class="adv-sub">Banks: ' + a.banks.join(', ') + '</div>'
+        : '';
+      return '<div class="' + itemCls + '">'
+        + '<div class="' + codeCls + '">' + label + '</div>'
+        + '<div class="adv-msg">' + a.message + feederLine + banksLine + '</div>'
+        + '</div>';
+    }).join('');
+  }
+
   // ---------------- top-level render ----------------
   function render(){
     var solar = pRenewable(), tot = pTotal(), cs = pClearSky();
@@ -1115,7 +1162,7 @@
     $('trendnote').textContent = solar < cs*0.85 ? 'measured below clear-sky \u2014 cloud attenuation'
       : 'measured tracking clear-sky within band';
 
-    renderLive(); renderArray(); renderConditions(); renderReserve();
+    renderLive(); renderArray(); renderConditions(); renderReserve(); renderAdvisories();
     if ($('s-forecast').classList.contains('on')) renderForecast();
     if ($('scrim').classList.contains('on')){ renderModalChart(); renderModalVerdict(); renderModalLedger(); }
   }
