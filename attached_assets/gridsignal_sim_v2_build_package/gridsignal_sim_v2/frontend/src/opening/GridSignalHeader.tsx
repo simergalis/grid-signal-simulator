@@ -185,6 +185,19 @@ export function GridSignalHeader({ runId, onHowItWorks, displayName, role, onLog
       {/* ── Spacer ────────────────────────────────────────────────────────── */}
       <div className="flex-1" />
 
+      {/* ── Renewable Console link ────────────────────────────────────────── */}
+      <a
+        href="/solar-console"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-border
+                   font-sans text-muted hover:text-text hover:border-muted/50 transition-colors"
+        style={{ fontSize: 10, textDecoration: 'none' }}
+        aria-label="Open Renewable Supply Console"
+      >
+        ☀ &nbsp;Renewable Console
+      </a>
+
       {/* ── "How it works" button ─────────────────────────────────────────── */}
       <button
         onClick={onHowItWorks}

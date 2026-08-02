@@ -295,6 +295,17 @@ function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
             )}
           </button>
         ))}
+        {/* Renewable Console — external link to /solar-console */}
+        <a
+          href="/solar-console"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-4 py-2 text-xs font-medium transition-colors text-text-muted hover:text-text hover:bg-surface/50"
+          style={{ textDecoration: 'none' }}
+        >
+          ☀ Renewable Console ↗
+        </a>
+
         {/* Admin tab — only visible to admin-role users */}
         {role === 'admin' && (
           <button
