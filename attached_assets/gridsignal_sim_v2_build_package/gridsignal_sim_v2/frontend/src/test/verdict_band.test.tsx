@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, cleanup, act } from '@testing-library/react'
+import { render, screen, cleanup, act, fireEvent } from '@testing-library/react'
 import { useTickStore } from '../store/tickStore'
 import { VerdictBand } from '../opening/VerdictBand'
 import type { TickPayload, ContingencyCoverage } from '../types'
@@ -22,7 +22,11 @@ import type { TickPayload, ContingencyCoverage } from '../types'
 // ---------------------------------------------------------------------------
 
 vi.mock('../opening/GenTripModal', () => ({
-  GenTripModal: () => <div data-testid="gen-trip-modal-stub" />,
+  GenTripModal: ({ onClose }: { onClose: () => void }) => (
+    <div data-testid="gen-trip-modal-stub">
+      <button onClick={onClose} aria-label="close-gen-trip-modal">close</button>
+    </div>
+  ),
 }))
 
 vi.mock('../opening/ReserveModal', () => ({
@@ -389,5 +393,99 @@ describe('VerdictBand — TC-84: gen-trip state-transition log', () => {
     expect(logLine).toMatch(/deficit=/)
 
     logSpy.mockRestore()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Modal open/close — clicking gen-trip tile opens GenTripModal; onClose closes it
+// ---------------------------------------------------------------------------
+
+describe('VerdictBand — gen-trip modal: Branch 1 (static)', () => {
+  it('modal is not shown before click', () => {
+    render(<VerdictBand />)
+    expect(screen.queryByTestId('gen-trip-modal-stub')).not.toBeInTheDocument()
+  })
+
+  it('opens GenTripModal when gen-trip tile is clicked', () => {
+    render(<VerdictBand />)
+    const btn = screen.getByRole('button', {
+      name: /Gen-trip cover.*click for plain-English explanation/i,
+    })
+    fireEvent.click(btn)
+    expect(screen.getByTestId('gen-trip-modal-stub')).toBeInTheDocument()
+  })
+
+  it('closes GenTripModal when onClose is called', () => {
+    render(<VerdictBand />)
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Gen-trip cover.*click for plain-English explanation/i,
+      }),
+    )
+    expect(screen.getByTestId('gen-trip-modal-stub')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /close-gen-trip-modal/i }))
+    expect(screen.queryByTestId('gen-trip-modal-stub')).not.toBeInTheDocument()
+  })
+})
+
+describe('VerdictBand — gen-trip modal: Branch 2 (running tick)', () => {
+  it('modal is not shown before click', () => {
+    seedTick(makeTick(CC_COVERED, 40.0))
+    render(<VerdictBand />)
+    expect(screen.queryByTestId('gen-trip-modal-stub')).not.toBeInTheDocument()
+  })
+
+  it('opens GenTripModal when gen-trip tile is clicked while running', () => {
+    seedTick(makeTick(CC_COVERED, 40.0))
+    render(<VerdictBand />)
+    const btn = screen.getByRole('button', {
+      name: /Gen-trip cover.*click for plain-English explanation/i,
+    })
+    fireEvent.click(btn)
+    expect(screen.getByTestId('gen-trip-modal-stub')).toBeInTheDocument()
+  })
+
+  it('closes GenTripModal when onClose is called (running)', () => {
+    seedTick(makeTick(CC_COVERED, 40.0))
+    render(<VerdictBand />)
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Gen-trip cover.*click for plain-English explanation/i,
+      }),
+    )
+    expect(screen.getByTestId('gen-trip-modal-stub')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /close-gen-trip-modal/i }))
+    expect(screen.queryByTestId('gen-trip-modal-stub')).not.toBeInTheDocument()
+  })
+})
+
+describe('VerdictBand — gen-trip modal: Branch 3 (at-rest after run)', () => {
+  it('modal is not shown before click', () => {
+    seedTick(makeTick(CC_COVERED, 0.0))
+    render(<VerdictBand />)
+    expect(screen.queryByTestId('gen-trip-modal-stub')).not.toBeInTheDocument()
+  })
+
+  it('opens GenTripModal when gen-trip tile is clicked at-rest', () => {
+    seedTick(makeTick(CC_COVERED, 0.0))
+    render(<VerdictBand />)
+    const btn = screen.getByRole('button', {
+      name: /Gen-trip cover.*click for plain-English explanation/i,
+    })
+    fireEvent.click(btn)
+    expect(screen.getByTestId('gen-trip-modal-stub')).toBeInTheDocument()
+  })
+
+  it('closes GenTripModal when onClose is called (at-rest)', () => {
+    seedTick(makeTick(CC_COVERED, 0.0))
+    render(<VerdictBand />)
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: /Gen-trip cover.*click for plain-English explanation/i,
+      }),
+    )
+    expect(screen.getByTestId('gen-trip-modal-stub')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /close-gen-trip-modal/i }))
+    expect(screen.queryByTestId('gen-trip-modal-stub')).not.toBeInTheDocument()
   })
 })
