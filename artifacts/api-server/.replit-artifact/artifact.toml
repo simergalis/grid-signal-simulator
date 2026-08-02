@@ -29,8 +29,5 @@ args = ["bash", "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_
 # no crash.  The sim is fully functional without any LLM keys.
 args = ["bash", "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/scripts/start_prod.sh"]
 
-[services.production.run.env]
-PORT = "8080"
-
 [services.production.health.startup]
 path = "/healthz"
