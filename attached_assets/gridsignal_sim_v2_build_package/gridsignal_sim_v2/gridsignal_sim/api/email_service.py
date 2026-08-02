@@ -76,50 +76,94 @@ def send_welcome_email(to_email: str, display_name: str) -> bool:
     sender = _from_email()
     subject = f"Welcome to {_APP_NAME}"
     body = f"""\
-<div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0b1017;color:#e6ecf2;padding:40px 32px;border-radius:8px">
-
+<div style="font-family:sans-serif;max-width:500px;margin:0 auto;background:#0b1017;color:#e6ecf2;border-radius:10px;overflow:hidden">
+  <!-- Top accent bar -->
+  <div style="background:#3fb6a8;height:4px;line-height:4px;font-size:0">&nbsp;</div>
   <!-- Header -->
-  <p style="color:#3fb6a8;font-size:22px;font-weight:700;letter-spacing:0.12em;margin:0 0 2px">GRIDSIGNAL</p>
-  <p style="color:#4b5764;font-size:12px;margin:0 0 24px">Predictive power management</p>
-  <hr style="border:none;border-top:1px solid #1e2a38;margin:0 0 28px">
-
-  <!-- Greeting -->
-  <p style="margin:0 0 16px">Hi {display_name},</p>
-  <p style="margin:0 0 16px">
-    Welcome to GridSignal. Your account is ready and you can sign in right now
-    — no password required.
-  </p>
-
-  <!-- Login email callout -->
-  <div style="background:#111821;border-left:3px solid #3fb6a8;border-radius:0 6px 6px 0;padding:14px 18px;margin:0 0 20px">
-    <p style="color:#7d8b9c;font-size:11px;text-transform:uppercase;letter-spacing:0.08em;margin:0 0 4px">Your sign-in email</p>
-    <p style="font-family:monospace;font-size:15px;color:#e6ecf2;margin:0">{to_email}</p>
+  <div style="padding:36px 36px 0">
+    <p style="margin:0 0 3px;color:#3fb6a8;font-size:22px;font-weight:700;letter-spacing:0.12em">GRIDSIGNAL</p>
+    <p style="margin:0;color:#8a97a6;font-size:12px;letter-spacing:0.02em">Predictive power management</p>
   </div>
-
-  <!-- How to sign in -->
-  <p style="margin:0 0 8px;font-weight:600;color:#c8d6e5">How to sign in</p>
-  <ol style="margin:0 0 24px;padding-left:20px;line-height:1.8;color:#c8d6e5">
-    <li>Go to <a href="{url}" style="color:#3fb6a8;text-decoration:none">{url}</a></li>
-    <li>Enter your email address above</li>
-    <li>Check your inbox for a 6-digit code and enter it</li>
-  </ol>
-
-  <!-- CTA -->
-  <div style="text-align:center;margin:32px 0 28px">
-    <a href="{url}"
-       style="display:inline-block;background:#3fb6a8;color:#0b1017;font-weight:700;
-              font-size:15px;text-decoration:none;padding:14px 36px;border-radius:6px;
-              letter-spacing:0.04em">
-      Open GridSignal
-    </a>
+  <!-- Divider -->
+  <div style="padding:24px 36px 0"><div style="border-top:1px solid #1e2a38"></div></div>
+  <!-- Body -->
+  <div style="padding:28px 36px 0">
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.65">
+      Hi <strong>{display_name}</strong>,
+    </p>
+    <p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#c8d6e5">
+      Your GridSignal account is ready. GridSignal reads job-scheduler
+      activity to forecast power demand 30&ndash;60 seconds ahead, so
+      generators, batteries, and cooling stage before a load spike
+      instead of chasing it.
+    </p>
+    <p style="margin:0 0 24px;font-size:15px;line-height:1.65;color:#c8d6e5">
+      There's no password to create. Every sign-in uses a one-time
+      code sent to your email.
+    </p>
+    <!-- Sign-in email callout -->
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+           style="background:#111821;border-left:3px solid #3fb6a8;margin-bottom:26px">
+      <tr><td style="padding:14px 18px">
+        <p style="margin:0 0 6px;color:#8a97a6;font-size:11px;text-transform:uppercase;letter-spacing:0.08em">
+          Sign in with this address
+        </p>
+        <p style="margin:0;font-family:monospace;font-size:15px;color:#e6ecf2">{to_email}</p>
+      </td></tr>
+    </table>
+    <!-- How to sign in -->
+    <p style="margin:0 0 12px;font-size:14px;font-weight:600;color:#e6ecf2;letter-spacing:0.02em">How to sign in</p>
+    <table cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:28px">
+      <tr>
+        <td style="padding:5px 0;vertical-align:top">
+          <span style="display:inline-block;width:22px;height:22px;background:#1e2a38;border-radius:50%;text-align:center;line-height:22px;font-size:12px;font-weight:700;color:#3fb6a8;margin-right:12px">1</span>
+        </td>
+        <td style="padding:5px 0;font-size:14px;color:#c8d6e5;line-height:1.6;vertical-align:top">
+          Go to <a href="{url}" style="color:#3fb6a8;text-decoration:none">app.gridsgnl.com</a>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:5px 0;vertical-align:top">
+          <span style="display:inline-block;width:22px;height:22px;background:#1e2a38;border-radius:50%;text-align:center;line-height:22px;font-size:12px;font-weight:700;color:#3fb6a8;margin-right:12px">2</span>
+        </td>
+        <td style="padding:5px 0;font-size:14px;color:#c8d6e5;line-height:1.6;vertical-align:top">
+          Enter the address above
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:5px 0;vertical-align:top">
+          <span style="display:inline-block;width:22px;height:22px;background:#1e2a38;border-radius:50%;text-align:center;line-height:22px;font-size:12px;font-weight:700;color:#3fb6a8;margin-right:12px">3</span>
+        </td>
+        <td style="padding:5px 0;font-size:14px;color:#c8d6e5;line-height:1.6;vertical-align:top">
+          We'll send a 6-digit code in a <span style="color:#e6ecf2">separate email</span>.
+          Enter it to finish. Codes expire after 10 minutes.
+        </td>
+      </tr>
+    </table>
+    <!-- CTA button -->
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:32px">
+      <tr><td align="center">
+        <a href="{url}"
+           style="display:inline-block;background:#3fb6a8;color:#0b1017;font-weight:700;
+                  font-size:15px;text-decoration:none;padding:14px 40px;
+                  border-radius:6px;letter-spacing:0.04em">
+          Open GridSignal
+        </a>
+      </td></tr>
+    </table>
   </div>
-
-  <hr style="border:none;border-top:1px solid #1e2a38;margin:0 0 20px">
-
-  <p style="color:#7d8b9c;font-size:12px;margin:0">
-    If you weren't expecting this invitation, you can safely ignore this email.
-    Your account will remain inactive until you first sign in.
-  </p>
+  <!-- Divider -->
+  <div style="padding:0 36px"><div style="border-top:1px solid #1e2a38"></div></div>
+  <!-- Footer -->
+  <div style="padding:20px 36px 36px">
+    <p style="margin:0 0 10px;color:#8a97a6;font-size:12px;line-height:1.6">
+      Trouble signing in? Reply to this email and we'll sort it out.
+    </p>
+    <p style="margin:0;color:#8a97a6;font-size:12px;line-height:1.6">
+      Didn't expect this invitation? You can ignore this email. The
+      account stays inactive until someone signs in for the first time.
+    </p>
+  </div>
 </div>
 """
     try:
