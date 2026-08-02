@@ -397,6 +397,18 @@ def build_run_context_from_spec(
         band_mult_unmapped_hw=float(spec_data.get("band_mult_unmapped_hw", 1.5)),
     )
 
+    # PROTO-32-AMB: ambient temperature adjustment to alpha_max.
+    # When generate_solar_forecast() has been called before run start,
+    # spec_data["ambient_steps"] carries correlated dry-bulb temperatures.
+    # Hotter ambient → HVAC operates less efficiently → higher cooling fraction.
+    # Absent on tests and runs without a solar forecast (ambient_steps=[] → no-op).
+    # Applied after the explicit alpha_max / plant_alpha_max read so that the
+    # spec-level value is always the baseline and ambient modulates around it.
+    _ambient_steps_raw = spec_data.get("ambient_steps", [])
+    if _ambient_steps_raw:
+        from runtime.solar_sim import ambient_alpha_scale  # lazy — runtime→runtime OK
+        site.alpha_max = site.alpha_max * ambient_alpha_scale(_ambient_steps_raw)
+
     # Step 10 — §8.1: wire optional pre-staging config from spec.
     # Must be set before SimulationState() so __post_init__ picks it up.
     _pre_staging_raw = spec_data.get("pre_staging_config")

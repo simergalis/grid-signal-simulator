@@ -301,3 +301,299 @@ def test_mistral_bad_json_falls_back_to_physics():
     assert forecast.source == "physics", (
         f"expected physics fallback on bad JSON, got source={forecast.source!r}"
     )
+
+
+# ---------------------------------------------------------------------------
+# T4 — ambient_steps structural integrity
+# ---------------------------------------------------------------------------
+# UTC times that produce clearly distinct San Diego local times:
+#   UTC 20:00  →  local 12:00 (solar noon, high irradiance, high ambient)
+#   UTC 08:00  →  local 00:00 (solar midnight, zero irradiance, low ambient)
+_NOON_UTC     = datetime.datetime(2026, 6, 21, 20, 0, 0)   # summer solstice noon local
+_MIDNIGHT_UTC = datetime.datetime(2026, 6, 21,  8, 0, 0)   # local midnight
+
+
+def test_ambient_steps_starts_at_t0():
+    """Physics ambient_steps must have first entry at sim_time_s == 0."""
+    with _no_mistral_key():
+        forecast = generate_solar_forecast(300.0, utc_now=_NOON_UTC)
+
+    assert len(forecast.ambient_steps) > 0, "ambient_steps must be non-empty"
+    first_t = forecast.ambient_steps[0][0]
+    assert first_t == 0.0, (
+        f"ambient_steps must start at t=0; got first t={first_t}"
+    )
+
+
+def test_ambient_steps_sorted():
+    """Physics ambient_steps sim_time_s values must be non-decreasing."""
+    with _no_mistral_key():
+        forecast = generate_solar_forecast(300.0, utc_now=_NOON_UTC)
+
+    times = [t for t, _db, _wb in forecast.ambient_steps]
+    assert times == sorted(times), (
+        f"ambient_steps must be sorted by sim_time_s; found out-of-order entry"
+    )
+
+
+def test_ambient_steps_drybulb_in_san_diego_range_noon():
+    """Noon dry-bulb values must lie within the physically plausible 10–30 °C band."""
+    with _no_mistral_key():
+        forecast = generate_solar_forecast(300.0, utc_now=_NOON_UTC)
+
+    for t, db, _wb in forecast.ambient_steps:
+        assert 10.0 <= db <= 30.0, (
+            f"drybulb out of plausible San Diego range at t={t}: {db} °C"
+        )
+
+
+def test_ambient_steps_drybulb_in_san_diego_range_midnight():
+    """Midnight dry-bulb values must also lie within the 10–30 °C band."""
+    with _no_mistral_key():
+        forecast = generate_solar_forecast(300.0, utc_now=_MIDNIGHT_UTC)
+
+    for t, db, _wb in forecast.ambient_steps:
+        assert 10.0 <= db <= 30.0, (
+            f"drybulb out of plausible San Diego range at t={t}: {db} °C"
+        )
+
+
+def test_ambient_steps_wetbulb_in_san_diego_range():
+    """Wet-bulb values must lie within 10–30 °C for both noon and midnight."""
+    with _no_mistral_key():
+        for utc in (_NOON_UTC, _MIDNIGHT_UTC):
+            forecast = generate_solar_forecast(300.0, utc_now=utc)
+            for t, _db, wb in forecast.ambient_steps:
+                assert 10.0 <= wb <= 30.0, (
+                    f"wetbulb out of plausible San Diego range at t={t}: {wb} °C"
+                )
+
+
+def test_ambient_steps_wetbulb_below_drybulb():
+    """Wet-bulb must be strictly below dry-bulb (coastal humidity model)."""
+    with _no_mistral_key():
+        forecast = generate_solar_forecast(300.0, utc_now=_NOON_UTC)
+
+    for t, db, wb in forecast.ambient_steps:
+        assert wb < db, (
+            f"wetbulb ({wb} °C) must be < drybulb ({db} °C) at t={t}"
+        )
+
+
+def test_noon_drybulb_higher_than_midnight():
+    """Physics model: noon San Diego ambient must exceed midnight ambient."""
+    with _no_mistral_key():
+        noon_fc = generate_solar_forecast(300.0, utc_now=_NOON_UTC)
+        midnight_fc = generate_solar_forecast(300.0, utc_now=_MIDNIGHT_UTC)
+
+    noon_avg = sum(db for _, db, _ in noon_fc.ambient_steps) / len(noon_fc.ambient_steps)
+    midnight_avg = sum(db for _, db, _ in midnight_fc.ambient_steps) / len(midnight_fc.ambient_steps)
+    assert noon_avg > midnight_avg, (
+        f"noon avg drybulb ({noon_avg:.2f} °C) must exceed "
+        f"midnight avg ({midnight_avg:.2f} °C)"
+    )
+
+
+# ---------------------------------------------------------------------------
+# T4e — ambient_alpha_scale unit tests
+# ---------------------------------------------------------------------------
+
+def test_ambient_alpha_scale_empty_returns_one():
+    """ambient_alpha_scale([]) must return exactly 1.0 (no-op for runs without solar)."""
+    from runtime.solar_sim import ambient_alpha_scale
+    assert ambient_alpha_scale([]) == 1.0
+
+
+def test_ambient_alpha_scale_nominal_temp():
+    """ambient_alpha_scale at 19 °C (nominal) must return 1.0 (no adjustment)."""
+    from runtime.solar_sim import ambient_alpha_scale
+    steps = [(0.0, 19.0, 16.0), (60.0, 19.0, 16.0)]
+    result = ambient_alpha_scale(steps)
+    assert abs(result - 1.0) < 1e-9, f"expected 1.0 at nominal temp, got {result}"
+
+
+def test_ambient_alpha_scale_hot_day_above_one():
+    """ambient_alpha_scale for a hot day (drybulb > 19 °C) must exceed 1.0."""
+    from runtime.solar_sim import ambient_alpha_scale
+    hot_steps = [(0.0, 22.0, 19.0), (60.0, 22.0, 19.0)]
+    result = ambient_alpha_scale(hot_steps)
+    assert result > 1.0, f"hot-day scale should exceed 1.0; got {result}"
+
+
+def test_ambient_alpha_scale_cold_night_below_one():
+    """ambient_alpha_scale for a cool night (drybulb < 19 °C) must be below 1.0."""
+    from runtime.solar_sim import ambient_alpha_scale
+    cold_steps = [(0.0, 14.0, 11.0), (60.0, 14.0, 11.0)]
+    result = ambient_alpha_scale(cold_steps)
+    assert result < 1.0, f"cold-night scale should be below 1.0; got {result}"
+
+
+def test_ambient_alpha_scale_clamped_to_bounds():
+    """ambient_alpha_scale must be clamped to [0.80, 1.20] for extreme temps."""
+    from runtime.solar_sim import ambient_alpha_scale
+    # Extreme hot
+    very_hot = [(0.0, 60.0, 55.0)]
+    assert ambient_alpha_scale(very_hot) <= 1.20, "hot clamp violated"
+    # Extreme cold
+    very_cold = [(0.0, -30.0, -35.0)]
+    assert ambient_alpha_scale(very_cold) >= 0.80, "cold clamp violated"
+
+
+# ---------------------------------------------------------------------------
+# T5 — ambient temperature shapes p_cooling_mw end-to-end
+# ---------------------------------------------------------------------------
+
+def _make_ambient_steps(drybulb_c: float, duration_s: float = 300.0) -> list:
+    """Synthetic flat ambient_steps at a fixed drybulb temperature."""
+    wetbulb_c = drybulb_c - 3.0
+    n = 10
+    step = duration_s / n
+    return [(round(i * step, 1), round(drybulb_c, 2), round(wetbulb_c, 2))
+            for i in range(n + 1)]
+
+
+def _build_spec(ambient_drybulb_c: float, run_id: str) -> dict:
+    """Build a minimal ScenarioSpec dict with the given constant ambient temperature.
+
+    Uses:
+    - dt_thermal_seconds=5.0   so cooling appears after just 1 tick (5 s)
+    - tau_seconds=5.0          so alpha settles quickly (≈1 – e^-1 per tau)
+    - alpha_max=0.20           baseline before ambient adjustment
+    - 50 nodes                 so compute load is large enough to make
+                               cooling clearly non-zero within a few ticks
+    - turbine rated 30 MW      ample headroom; no reserve constraint fires
+    - grid_tie (island=False)  avoids anchor-reserve complications in this test
+    """
+    return {
+        "name": f"ambient-cooling-test-{run_id}",
+        "end_sim_time": 300.0,
+        "dt_thermal_seconds": 5.0,
+        "tau_seconds": 5.0,
+        "alpha_max": 0.20,
+        "island_mode": False,
+        "turbine_units": [
+            {"asset_id": "t-0", "rated_mw": 30.0, "r_asset_mw_per_s": 10.0}
+        ],
+        "bess_units": [
+            {
+                "asset_id": "b-0", "rated_mw": 5.0, "usable_mwh": 2.0,
+                "initial_soc_fraction": 1.0, "grid_forming": False,
+            }
+        ],
+        "workload_events": [
+            {
+                "event_type": "starting",
+                "timestamp": 0.0,
+                "job_id": "job-ambient",
+                "node_count": 50,
+                "hardware_profile_id": "enterprise_8gpu_air",
+            }
+        ],
+        "ambient_steps": _make_ambient_steps(ambient_drybulb_c),
+    }
+
+
+def _run_n_ticks(ctx, n: int) -> list:
+    """Advance RunContext by n ticks; return list of TickResult objects."""
+    from core._plane_guard import _EVALUATE_TICK_PERMITTED
+    results = []
+    for _ in range(n):
+        token = _EVALUATE_TICK_PERMITTED.set(True)
+        try:
+            results.append(ctx.step())
+        finally:
+            _EVALUATE_TICK_PERMITTED.reset(token)
+    return results
+
+
+def test_ambient_alpha_max_higher_in_hot_run():
+    """Hot ambient_steps must produce a higher site.alpha_max than cold ambient_steps
+    when both pass through build_run_context_from_spec().
+
+    This directly tests the PROTO-32-AMB wiring in scenario_factory.
+    """
+    from runtime.scenario_factory import build_run_context_from_spec
+
+    hot_ctx  = build_run_context_from_spec("amb-hot",  _build_spec(22.0, "hot"))
+    cold_ctx = build_run_context_from_spec("amb-cold", _build_spec(14.0, "cold"))
+
+    hot_alpha  = hot_ctx.sim_state.cooling.site.alpha_max
+    cold_alpha = cold_ctx.sim_state.cooling.site.alpha_max
+
+    assert hot_alpha > cold_alpha, (
+        f"hot ambient (22 °C) should yield higher alpha_max than cold (14 °C); "
+        f"got hot={hot_alpha:.4f}, cold={cold_alpha:.4f}"
+    )
+
+
+def test_p_cooling_mw_higher_in_hot_ambient_run():
+    """Runs with hot ambient_steps must produce higher p_cooling_mw than cold runs.
+
+    Drives two short RunContexts past the thermal lag (dt_thermal=5 s, so
+    cooling is active from tick 2 onward) and asserts that the hot run's
+    final p_cooling_mw exceeds the cold run's — confirming the ambient_steps
+    pipeline (SolarForecast → spec_data → factory → alpha_max → cooling) is live.
+    """
+    from runtime.scenario_factory import build_run_context_from_spec
+
+    hot_ctx  = build_run_context_from_spec("p-hot",  _build_spec(22.0, "hot2"))
+    cold_ctx = build_run_context_from_spec("p-cold", _build_spec(14.0, "cold2"))
+
+    # 12 ticks = 60 s simulated; thermal lag is 5 s, tau is 5 s → alpha is at
+    # ~99 % of alpha_max by tick 12 (elapsed since threshold ≈ 55 s ≈ 11·τ).
+    n_ticks = 12
+    hot_ticks  = _run_n_ticks(hot_ctx,  n_ticks)
+    cold_ticks = _run_n_ticks(cold_ctx, n_ticks)
+
+    hot_last  = hot_ticks[-1].p_cooling_mw
+    cold_last = cold_ticks[-1].p_cooling_mw
+
+    assert hot_last > 0.0, (
+        f"hot run must produce non-zero cooling by tick {n_ticks}; got {hot_last}"
+    )
+    assert cold_last > 0.0, (
+        f"cold run must produce non-zero cooling by tick {n_ticks}; got {cold_last}"
+    )
+    assert hot_last > cold_last, (
+        f"hot ambient run (22 °C) must produce higher p_cooling_mw than cold (14 °C); "
+        f"got hot={hot_last:.5f} MW, cold={cold_last:.5f} MW"
+    )
+
+
+def test_p_cooling_mw_differs_between_noon_and_midnight_physics_forecast():
+    """End-to-end pipeline: physics SolarForecast.ambient_steps at noon vs midnight
+    must produce different p_cooling_mw after a few ticks, confirming the full chain
+    (generate_solar_forecast → spec_data["ambient_steps"] → factory → ticks) is live.
+    """
+    from runtime.scenario_factory import build_run_context_from_spec
+
+    with _no_mistral_key():
+        noon_fc     = generate_solar_forecast(300.0, utc_now=_NOON_UTC)
+        midnight_fc = generate_solar_forecast(300.0, utc_now=_MIDNIGHT_UTC)
+
+    def _spec_from_forecast(fc, tag: str) -> dict:
+        spec = _build_spec(0.0, tag)   # drybulb placeholder; overwritten below
+        spec["ambient_steps"] = [[t, db, wb] for t, db, wb in fc.ambient_steps]
+        return spec
+
+    noon_ctx     = build_run_context_from_spec(
+        "pf-noon",     _spec_from_forecast(noon_fc,     "noon"))
+    midnight_ctx = build_run_context_from_spec(
+        "pf-midnight", _spec_from_forecast(midnight_fc, "midnight"))
+
+    n_ticks  = 12
+    noon_ticks     = _run_n_ticks(noon_ctx,     n_ticks)
+    midnight_ticks = _run_n_ticks(midnight_ctx, n_ticks)
+
+    noon_cooling     = noon_ticks[-1].p_cooling_mw
+    midnight_cooling = midnight_ticks[-1].p_cooling_mw
+
+    # Noon San Diego (summer) is hotter than local midnight → noon cooling > midnight.
+    assert noon_cooling != midnight_cooling, (
+        f"p_cooling_mw must differ between noon and midnight ambient runs; "
+        f"both returned {noon_cooling:.5f} MW"
+    )
+    assert noon_cooling > midnight_cooling, (
+        f"noon (high-ambient) run must have higher p_cooling_mw than midnight; "
+        f"got noon={noon_cooling:.5f} MW, midnight={midnight_cooling:.5f} MW"
+    )

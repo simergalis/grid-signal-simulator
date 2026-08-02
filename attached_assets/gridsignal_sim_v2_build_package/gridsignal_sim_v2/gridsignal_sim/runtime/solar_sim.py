@@ -442,3 +442,30 @@ def generate_irradiance_samples(
     return generate_solar_forecast(
         sim_duration_s, rated_mw, utc_now=utc_now
     ).samples
+
+
+def ambient_alpha_scale(ambient_steps: list) -> float:
+    """Compute a scaling factor for SiteConfig.alpha_max from ambient temperature.
+
+    Physical rationale: higher ambient dry-bulb temperature reduces HVAC
+    coefficient-of-performance, so the cooling system consumes a larger
+    fraction of compute power to maintain the same inlet temperature.
+
+    Model: linear ±1 %/°C from the San Diego nominal (19 °C mid-range,
+    midpoint of the 14–24 °C daytime range).  Clamped to [0.80, 1.20]
+    to prevent extreme extrapolation outside the San Diego climate envelope.
+
+    PROTO-32-AMB: linear coefficient has no measured basis; calibrate against
+    facility ASHRAE data before production use.
+
+    Returns 1.0 when ambient_steps is empty — backward-compatible: runs
+    that were started without a solar forecast or ambient timeline are
+    unaffected (alpha_max stays at its spec-defined default).
+    """
+    if not ambient_steps:
+        return 1.0
+    drybulbs = [float(db) for _, db, _ in ambient_steps]
+    avg_drybulb = sum(drybulbs) / len(drybulbs)
+    _NOMINAL_C   = 19.0   # mid-range of San Diego daytime dry-bulb (°C)
+    _SCALE_PER_C = 0.010  # 1 %/°C deviation from nominal — PROTO-32-AMB
+    return max(0.80, min(1.20, 1.0 + _SCALE_PER_C * (avg_drybulb - _NOMINAL_C)))
