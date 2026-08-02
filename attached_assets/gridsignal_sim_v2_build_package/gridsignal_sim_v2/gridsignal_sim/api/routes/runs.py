@@ -338,6 +338,11 @@ async def start_run(
         )
         spec_data["generation_block"] = _gen_block.model_dump()
 
+        # Propagate the resolved duration back into spec_data so that
+        # build_run_context_from_spec honours the operator's UI choice rather
+        # than the scenario's stored default (which is typically 300 s).
+        spec_data["end_sim_time"] = _sim_duration
+
         ctx = build_run_context_from_spec(
             run_id,
             spec_data,
