@@ -13,8 +13,8 @@ GET    /api/admin/users           — list all users
 PATCH  /api/admin/users/{user_id} — activate / deactivate an account or change role
 DELETE /api/admin/users/{user_id} — permanently delete an account
 
-The admin never sets a password directly.  Instead, provide a
-`temporary_password` in the create request; the user receives it via the
+Users sign in with email + one-time code (SendGrid); no password is stored.
+The admin creates accounts by email + display name + role only.  The first
 welcome email and should change it on first login.
 """
 from __future__ import annotations
@@ -27,7 +27,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.auth_utils import hash_password, COOKIE_NAME, decode_access_token
+from api.auth_utils import COOKIE_NAME, decode_access_token
 from api.db import get_db_session
 from api.email_service import send_welcome_email
 from runtime.persistence import AuthUser
@@ -75,19 +75,15 @@ async def _require_admin(
 # ---------------------------------------------------------------------------
 
 class CreateUserRequest(BaseModel):
-    # Field accepted as "password" in the API body (was "temporary_password" —
-    # renamed so the standard curl / UI payload is intuitive).
     email: EmailStr
-    phone: str           # mobile phone number — required credential
     display_name: str
-    role: str = "operator"   # viewer | operator | approver
-    password: str | None = None   # auto-generated if omitted
+    role: str = "operator"   # viewer | operator | approver | admin
+    phone: str = ""          # optional — kept for display only, not used for auth
 
 
 class UserResponse(BaseModel):
     id: int
     email: str
-    phone: str
     display_name: str
     role: str
     is_active: bool
@@ -127,18 +123,15 @@ async def create_user(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"A user with email '{body.email}' already exists",
             )
-        # Inactive — reactivate with fresh credentials
-        existing_user.phone        = body.phone.strip()
+        # Inactive — reactivate with updated details
         existing_user.display_name = body.display_name.strip()
         existing_user.role         = body.role
-        existing_user.password_hash = hash_password(body.password or secrets.token_urlsafe(12))
         existing_user.is_active    = True
         await db.commit()
         await db.refresh(existing_user)
         return UserResponse(
             id=existing_user.id,
             email=existing_user.email,
-            phone=existing_user.phone,
             display_name=existing_user.display_name,
             role=existing_user.role,
             is_active=existing_user.is_active,
@@ -151,37 +144,22 @@ async def create_user(
             detail=f"role must be one of: {', '.join(VALID_ROLES)}",
         )
 
-    tmp_pw = body.password or secrets.token_urlsafe(12)
-
     user = AuthUser(
         email=body.email.lower(),
-        phone=body.phone.strip(),
+        phone=body.phone,
         display_name=body.display_name.strip(),
         role=body.role,
-        password_hash=hash_password(tmp_pw),
+        password_hash="",   # OTP auth — no password stored
         is_active=True,
     )
     db.add(user)
     await db.commit()
     await db.refresh(user)
 
-    email_sent = send_welcome_email(
-        to_email=user.email,
-        display_name=user.display_name,
-        temporary_password=tmp_pw,
-    )
-    if not email_sent:
-        _log.warning(
-            "Welcome email could not be sent for %s — check SENDGRID_API_KEY "
-            "and SENDGRID_FROM_EMAIL.  The account was created successfully.",
-            user.email,
-        )
-
-    _log.info("Admin created user %s (id=%s, email_sent=%s)", user.email, user.id, email_sent)
+    _log.info("Admin created user %s (id=%s)", user.email, user.id)
     return UserResponse(
         id=user.id,
         email=user.email,
-        phone=user.phone,
         display_name=user.display_name,
         role=user.role,
         is_active=user.is_active,
@@ -200,14 +178,8 @@ async def list_users(db: AsyncSession = Depends(get_db_session)):
     result = await db.execute(select(AuthUser).order_by(AuthUser.id))
     users = result.scalars().all()
     return [
-        UserResponse(
-            id=u.id,
-            email=u.email,
-            phone=u.phone,
-            display_name=u.display_name,
-            role=u.role,
-            is_active=u.is_active,
-        )
+        UserResponse(id=u.id, email=u.email, display_name=u.display_name,
+                     role=u.role, is_active=u.is_active)
         for u in users
     ]
 
@@ -236,14 +208,8 @@ async def patch_user(
 
     await db.commit()
     await db.refresh(user)
-    return UserResponse(
-        id=user.id,
-        email=user.email,
-        phone=user.phone,
-        display_name=user.display_name,
-        role=user.role,
-        is_active=user.is_active,
-    )
+    return UserResponse(id=user.id, email=user.email, display_name=user.display_name,
+                        role=user.role, is_active=user.is_active)
 
 
 @router.delete(

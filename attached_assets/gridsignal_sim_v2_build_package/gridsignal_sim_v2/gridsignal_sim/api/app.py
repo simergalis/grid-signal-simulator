@@ -125,7 +125,7 @@ def create_app() -> FastAPI:
     # /healthz.  WebSocket upgrades carry the cookie too so the WS hub
     # is covered.  Returning 401 (not 403) lets the frontend detect an
     # unauthenticated session and redirect to the login page.
-    _UNPROTECTED = {"/api/auth/login", "/healthz"}
+    _UNPROTECTED = {"/healthz"}
 
     @application.middleware("http")
     async def _auth_middleware(request: Request, call_next):
@@ -135,7 +135,8 @@ def create_app() -> FastAPI:
         # handled by the WS route itself after the HTTP upgrade).
         # Admin routes have their own key/session auth (_require_admin) so
         # the cookie middleware must not block them before they are reached.
-        if not path.startswith("/api/") or path in _UNPROTECTED or path.startswith("/api/admin"):
+        if not path.startswith("/api/") or path in _UNPROTECTED \
+                or path.startswith("/api/auth/") or path.startswith("/api/admin"):
             return await call_next(request)
         token = request.cookies.get(COOKIE_NAME)
         if not token or decode_access_token(token) is None:

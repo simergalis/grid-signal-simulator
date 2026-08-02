@@ -1,53 +1,44 @@
 /**
- * LoginPage.tsx — Authentication gate for the GridSignal operator interface.
+ * LoginPage.tsx — Two-step email OTP authentication.
  *
- * Users must supply their registered email address, mobile phone number,
- * and password.  All three fields must match what the admin registered.
- *
- * On success the server sets an httpOnly session cookie; the page calls
- * onAuthenticated() so App.tsx can unmount this component and show the
- * main interface.
+ * Step 1: enter email → "Send code"   (POST /api/auth/request-code)
+ * Step 2: enter 6-digit code → "Sign in"  (POST /api/auth/login)
  */
 
 import { FormEvent, useState } from 'react'
 
 interface Props {
   onAuthenticated: (displayName: string, role: string) => void
-  /** When true the form is the admin-only entry point (/admin path). */
   adminMode?: boolean
 }
 
-export function LoginPage({ onAuthenticated, adminMode = false }: Props) {
-  const [email,    setEmail]    = useState('')
-  const [phone,    setPhone]    = useState('')
-  const [password, setPassword] = useState('')
-  const [error,    setError]    = useState<string | null>(null)
-  const [loading,  setLoading]  = useState(false)
+type Step = 'email' | 'code'
 
-  async function handleSubmit(e: FormEvent) {
+export function LoginPage({ onAuthenticated, adminMode = false }: Props) {
+  const [step,    setStep]    = useState<Step>('email')
+  const [email,   setEmail]   = useState('')
+  const [code,    setCode]    = useState('')
+  const [error,   setError]   = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [resendIn, setResendIn] = useState(0)
+
+  // ── Step 1: request a code ──────────────────────────────────────────────
+  async function handleRequestCode(e: FormEvent) {
     e.preventDefault()
     setError(null)
     setLoading(true)
     try {
-      const resp = await fetch('/api/auth/login', {
+      const resp = await fetch('/api/auth/request-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, phone, password }),
-        credentials: 'include',
+        body: JSON.stringify({ email }),
       })
       if (resp.ok) {
-        const data = await resp.json() as { display_name: string; role: string }
-        if (adminMode && data.role !== 'admin') {
-          // Clear the session immediately — non-admins must not stay logged in
-          // via this entry point.
-          await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {})
-          setError('Admin access required. Use the main login page for operator access.')
-        } else {
-          onAuthenticated(data.display_name, data.role)
-        }
+        setStep('code')
+        startResendCountdown()
       } else {
         const body = await resp.json().catch(() => ({})) as { detail?: string }
-        setError(body.detail ?? 'Login failed — please check your credentials.')
+        setError(body.detail ?? 'Could not send code — please try again.')
       }
     } catch {
       setError('Network error — please try again.')
@@ -55,6 +46,77 @@ export function LoginPage({ onAuthenticated, adminMode = false }: Props) {
       setLoading(false)
     }
   }
+
+  // ── Step 2: verify code ─────────────────────────────────────────────────
+  async function handleVerifyCode(e: FormEvent) {
+    e.preventDefault()
+    setError(null)
+    setLoading(true)
+    try {
+      const resp = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code }),
+        credentials: 'include',
+      })
+      if (resp.ok) {
+        const data = await resp.json() as { display_name: string; role: string }
+        if (adminMode && data.role !== 'admin') {
+          await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {})
+          setError('Admin access required. Use the main sign-in page for operator access.')
+        } else {
+          onAuthenticated(data.display_name, data.role)
+        }
+      } else {
+        const body = await resp.json().catch(() => ({})) as { detail?: string }
+        setError(body.detail ?? 'Incorrect code — please try again.')
+      }
+    } catch {
+      setError('Network error — please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ── Resend cooldown ─────────────────────────────────────────────────────
+  function startResendCountdown(secs = 60) {
+    setResendIn(secs)
+    const id = setInterval(() => {
+      setResendIn(prev => {
+        if (prev <= 1) { clearInterval(id); return 0 }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  async function handleResend() {
+    if (resendIn > 0) return
+    setError(null)
+    setLoading(true)
+    try {
+      const resp = await fetch('/api/auth/request-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      if (resp.ok) {
+        startResendCountdown()
+        setCode('')
+      } else {
+        const body = await resp.json().catch(() => ({})) as { detail?: string }
+        setError(body.detail ?? 'Could not resend code.')
+      }
+    } catch {
+      setError('Network error — please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ── Shared chrome ───────────────────────────────────────────────────────
+  const inputCls = `rounded border border-border px-3 py-2 font-sans outline-none
+                    focus:border-[#3fb6a8] transition-colors w-full`
+  const inputStyle = { background: '#0b1017', color: '#e6ecf2', fontSize: 13 } as const
 
   return (
     <div
@@ -67,10 +129,8 @@ export function LoginPage({ onAuthenticated, adminMode = false }: Props) {
           <path d="M14 2L2 14h8l-2 10 12-14h-8z" fill="#3fb6a8" strokeLinejoin="round" />
         </svg>
         <div>
-          <div
-            className="font-sans font-bold tracking-[0.1em]"
-            style={{ fontSize: 20, color: '#e6ecf2', letterSpacing: '0.1em' }}
-          >
+          <div className="font-sans font-bold tracking-[0.1em]"
+               style={{ fontSize: 20, color: '#e6ecf2', letterSpacing: '0.1em' }}>
             GRIDSIGNAL
           </div>
           <div className="font-sans" style={{ fontSize: 11, color: '#4b5764', marginTop: 2 }}>
@@ -79,107 +139,128 @@ export function LoginPage({ onAuthenticated, adminMode = false }: Props) {
         </div>
       </div>
 
-      {/* Login card */}
-      <form
-        onSubmit={handleSubmit}
-        className="flex flex-col gap-5 w-full max-w-sm rounded-lg border border-border p-8"
-        style={{ background: '#111821' }}
-      >
-        <h1
-          className="font-sans font-semibold text-center"
-          style={{ fontSize: 15, color: '#e6ecf2', marginBottom: 4 }}
-        >
+      <div className="flex flex-col gap-5 w-full max-w-sm rounded-lg border border-border p-8"
+           style={{ background: '#111821' }}>
+
+        <h1 className="font-sans font-semibold text-center"
+            style={{ fontSize: 15, color: '#e6ecf2', marginBottom: 4 }}>
           {adminMode ? 'Admin sign-in' : 'Operator sign-in'}
         </h1>
 
-        {/* Email */}
-        <div className="flex flex-col gap-1.5">
-          <label className="font-sans" style={{ fontSize: 11, color: '#7d8b9c' }}>
-            Email address
-          </label>
-          <input
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            className="rounded border border-border px-3 py-2 font-sans outline-none
-                       focus:border-[#3fb6a8] transition-colors"
-            style={{ background: '#0b1017', color: '#e6ecf2', fontSize: 13 }}
-          />
-        </div>
+        {/* ── Step 1: email ── */}
+        {step === 'email' && (
+          <form onSubmit={handleRequestCode} className="flex flex-col gap-5">
+            <div className="flex flex-col gap-1.5">
+              <label className="font-sans" style={{ fontSize: 11, color: '#7d8b9c' }}>
+                Email address
+              </label>
+              <input
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className={inputCls}
+                style={inputStyle}
+              />
+            </div>
 
-        {/* Phone */}
-        <div className="flex flex-col gap-1.5">
-          <label className="font-sans" style={{ fontSize: 11, color: '#7d8b9c' }}>
-            Mobile phone number
-          </label>
-          <input
-            type="tel"
-            autoComplete="tel"
-            required
-            value={phone}
-            onChange={e => setPhone(e.target.value)}
-            placeholder="+1 555 000 0000"
-            className="rounded border border-border px-3 py-2 font-sans outline-none
-                       focus:border-[#3fb6a8] transition-colors"
-            style={{ background: '#0b1017', color: '#e6ecf2', fontSize: 13 }}
-          />
-        </div>
+            {error && <ErrorBox message={error} />}
 
-        {/* Password */}
-        <div className="flex flex-col gap-1.5">
-          <label className="font-sans" style={{ fontSize: 11, color: '#7d8b9c' }}>
-            Password
-          </label>
-          <input
-            type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            placeholder="••••••••"
-            className="rounded border border-border px-3 py-2 font-sans outline-none
-                       focus:border-[#3fb6a8] transition-colors"
-            style={{ background: '#0b1017', color: '#e6ecf2', fontSize: 13 }}
-          />
-        </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="rounded px-4 py-2.5 font-sans font-semibold tracking-wide
+                         transition-opacity disabled:opacity-50"
+              style={{ background: '#3fb6a8', color: '#0b1017', fontSize: 13 }}
+            >
+              {loading ? 'Sending…' : 'Send code'}
+            </button>
 
-        {/* Error */}
-        {error && (
-          <div
-            className="rounded px-3 py-2 font-sans text-center"
-            style={{ background: '#2a1a1a', color: '#e05a5a', fontSize: 12, border: '1px solid #5a2020' }}
-          >
-            {error}
-          </div>
+            <p className="font-sans text-center" style={{ fontSize: 11, color: '#4b5764' }}>
+              {adminMode ? (
+                <>Administrator accounts only.{' '}
+                  <a href="/" style={{ color: '#3fb6a8', textDecoration: 'none' }}>
+                    Operator sign-in →
+                  </a>
+                </>
+              ) : 'Contact your administrator to request access.'}
+            </p>
+          </form>
         )}
 
-        {/* Submit */}
-        <button
-          type="submit"
-          disabled={loading}
-          className="rounded px-4 py-2.5 font-sans font-semibold tracking-wide
-                     transition-opacity disabled:opacity-50"
-          style={{ background: '#3fb6a8', color: '#0b1017', fontSize: 13 }}
-        >
-          {loading ? 'Signing in…' : 'Sign in'}
-        </button>
+        {/* ── Step 2: code ── */}
+        {step === 'code' && (
+          <form onSubmit={handleVerifyCode} className="flex flex-col gap-5">
+            <p className="font-sans text-center" style={{ fontSize: 12, color: '#7d8b9c' }}>
+              A 6-digit code was sent to<br />
+              <span style={{ color: '#e6ecf2' }}>{email}</span>
+            </p>
 
-        <p className="font-sans text-center" style={{ fontSize: 11, color: '#4b5764' }}>
-          {adminMode ? (
-            <>
-              Administrator accounts only.{' '}
-              <a href="/" style={{ color: '#3fb6a8', textDecoration: 'none' }}>
-                Operator sign-in →
-              </a>
-            </>
-          ) : (
-            'Contact your administrator to request access.'
-          )}
-        </p>
-      </form>
+            <div className="flex flex-col gap-1.5">
+              <label className="font-sans" style={{ fontSize: 11, color: '#7d8b9c' }}>
+                Sign-in code
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                required
+                autoFocus
+                value={code}
+                onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="000000"
+                className={inputCls}
+                style={{ ...inputStyle, fontSize: 22, letterSpacing: '0.25em', textAlign: 'center' }}
+              />
+            </div>
+
+            {error && <ErrorBox message={error} />}
+
+            <button
+              type="submit"
+              disabled={loading || code.length < 6}
+              className="rounded px-4 py-2.5 font-sans font-semibold tracking-wide
+                         transition-opacity disabled:opacity-50"
+              style={{ background: '#3fb6a8', color: '#0b1017', fontSize: 13 }}
+            >
+              {loading ? 'Verifying…' : 'Sign in'}
+            </button>
+
+            <div className="flex justify-between items-center">
+              <button
+                type="button"
+                onClick={() => { setStep('email'); setCode(''); setError(null) }}
+                className="font-sans"
+                style={{ fontSize: 11, color: '#4b5764', background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                ← Change email
+              </button>
+              <button
+                type="button"
+                disabled={resendIn > 0}
+                onClick={handleResend}
+                className="font-sans transition-opacity disabled:opacity-40"
+                style={{ fontSize: 11, color: '#3fb6a8', background: 'none', border: 'none',
+                         cursor: resendIn > 0 ? 'default' : 'pointer' }}
+              >
+                {resendIn > 0 ? `Resend in ${resendIn}s` : 'Resend code'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ErrorBox({ message }: { message: string }) {
+  return (
+    <div className="rounded px-3 py-2 font-sans text-center"
+         style={{ background: '#2a1a1a', color: '#e05a5a', fontSize: 12, border: '1px solid #5a2020' }}>
+      {message}
     </div>
   )
 }

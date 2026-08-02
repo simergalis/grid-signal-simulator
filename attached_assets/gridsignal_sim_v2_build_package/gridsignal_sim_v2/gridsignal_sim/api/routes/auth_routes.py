@@ -1,23 +1,25 @@
 """
 api/routes/auth_routes.py — Authentication endpoints.
 
-POST /api/auth/login   — validate email + phone + password, set session cookie
-POST /api/auth/logout  — clear session cookie
-GET  /api/auth/me      — return current user info (requires valid session)
+POST /api/auth/request-code  — email a 6-digit sign-in code to the address
+POST /api/auth/login          — verify the code and set a session cookie
+POST /api/auth/logout         — clear the session cookie
+GET  /api/auth/me             — return current user info (requires valid session)
 
-Login requires ALL THREE: email, phone, and password.  If any field is wrong
-the endpoint returns 401 with a generic "invalid credentials" message to avoid
-leaking which field was incorrect.
+Codes expire after 10 minutes and are invalidated after 5 wrong guesses.
+A new code can only be requested once every 60 seconds per address.
 """
 from __future__ import annotations
 
 import logging
+import random
+import time
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from api.auth_utils import COOKIE_NAME, create_access_token, decode_access_token, verify_password
+from api.auth_utils import COOKIE_NAME, create_access_token, decode_access_token
 from api.db import get_db_session
 from runtime.persistence import AuthUser
 
@@ -25,22 +27,46 @@ _log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
+# ---------------------------------------------------------------------------
+# In-memory OTP store  {email -> {code, expires_at, attempts, last_sent}}
+# ---------------------------------------------------------------------------
+
+_OTP_TTL_SECS          = 600   # code valid for 10 minutes
+_OTP_MAX_ATTEMPTS      = 5     # invalidate after this many wrong guesses
+_OTP_RESEND_COOLDOWN_S = 60    # minimum seconds between resend requests
+
+_otp_store: dict[str, dict] = {}
+
+
+def _make_code() -> str:
+    return f"{random.SystemRandom().randint(0, 999999):06d}"
+
+
+def _otp_entry(email: str) -> dict | None:
+    entry = _otp_store.get(email)
+    if entry and entry["expires_at"] > time.monotonic():
+        return entry
+    _otp_store.pop(email, None)
+    return None
+
 
 # ---------------------------------------------------------------------------
 # Pydantic schemas
 # ---------------------------------------------------------------------------
 
+class RequestCodeRequest(BaseModel):
+    email: EmailStr
+
+
 class LoginRequest(BaseModel):
     email: EmailStr
-    phone: str
-    password: str
+    code: str
 
 
 class MeResponse(BaseModel):
     user_id: int
     email: str
     display_name: str
-    phone: str
     role: str
 
 
@@ -69,52 +95,97 @@ async def get_current_user(
 # Routes
 # ---------------------------------------------------------------------------
 
+@router.post("/request-code", status_code=status.HTTP_200_OK)
+async def request_code(
+    body: RequestCodeRequest,
+    db: AsyncSession = Depends(get_db_session),
+):
+    """
+    Email a 6-digit sign-in code to the supplied address.
+
+    Returns 200 whether or not the email is registered (avoids enumeration).
+    Returns 429 if a code was already sent within the cooldown window.
+    """
+    from sqlalchemy import select
+    from api.email_service import send_otp_email
+
+    email = body.email.lower()
+
+    # Cooldown check
+    existing = _otp_entry(email)
+    if existing:
+        elapsed = time.monotonic() - existing.get("last_sent", 0)
+        if elapsed < _OTP_RESEND_COOLDOWN_S:
+            wait = int(_OTP_RESEND_COOLDOWN_S - elapsed) + 1
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail=f"Please wait {wait} seconds before requesting another code.",
+            )
+
+    # Look up user (we send the email regardless, but only actually mail
+    # registered+active accounts to avoid leaking registrations).
+    result = await db.execute(select(AuthUser).where(AuthUser.email == email))
+    user: AuthUser | None = result.scalar_one_or_none()
+
+    code = _make_code()
+    now  = time.monotonic()
+    _otp_store[email] = {
+        "code":       code,
+        "expires_at": now + _OTP_TTL_SECS,
+        "attempts":   0,
+        "last_sent":  now,
+    }
+
+    if user and user.is_active:
+        sent = send_otp_email(email, user.display_name, code)
+        if not sent:
+            _log.warning("OTP email delivery failed for %s — code still stored", email)
+    else:
+        _log.info("request-code for unknown/inactive email %s — no email sent", email)
+
+    return {"ok": True}
+
+
 @router.post("/login")
 async def login(
     body: LoginRequest,
     response: Response,
     db: AsyncSession = Depends(get_db_session),
 ):
-    """Authenticate with email + phone + password.  Sets an httpOnly session cookie."""
+    """Verify the 6-digit code and set an httpOnly session cookie."""
     from sqlalchemy import select
 
-    # Look up by email first (indexed), then verify phone + password
-    result = await db.execute(
-        select(AuthUser).where(AuthUser.email == body.email.lower())
-    )
-    user: AuthUser | None = result.scalar_one_or_none()
+    email = body.email.lower()
+    code  = body.code.strip()
 
-    # Normalise phone for comparison (strip spaces and leading +)
-    def _normalise(p: str) -> str:
-        return p.replace(" ", "").replace("-", "").lstrip("+")
-
-    # Use a constant-time check pattern: always verify_password even on miss
-    # to avoid timing-based email enumeration.
-    pw_ok = verify_password(body.password, user.password_hash) if user else False
-    phone_ok = (
-        _normalise(user.phone) == _normalise(body.phone)
-        if user else False
-    )
-
-    # --- trace (remove after debugging) ---
-    _log.warning(
-        "LOGIN TRACE email=%s found=%s active=%s pw_ok=%s phone_ok=%s "
-        "stored_phone=%r supplied_phone=%r",
-        body.email.lower(),
-        user is not None,
-        user.is_active if user else None,
-        pw_ok,
-        phone_ok,
-        _normalise(user.phone) if user else None,
-        _normalise(body.phone),
-    )
-    # --- end trace ---
-
-    if not user or not pw_ok or not phone_ok or not user.is_active:
+    # Generic failure to use in all error paths (avoids leaking detail)
+    def _fail():
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            detail="Invalid or expired code.",
         )
+
+    entry = _otp_entry(email)
+    if not entry:
+        _fail()
+
+    # Increment attempts before checking so brute-force counts correctly
+    entry["attempts"] += 1
+    if entry["attempts"] > _OTP_MAX_ATTEMPTS:
+        _otp_store.pop(email, None)
+        _fail()
+
+    if entry["code"] != code:
+        _log.warning("Wrong OTP attempt %d/%d for %s", entry["attempts"], _OTP_MAX_ATTEMPTS, email)
+        _fail()
+
+    # Code matches — consume it immediately (single-use)
+    _otp_store.pop(email, None)
+
+    result = await db.execute(select(AuthUser).where(AuthUser.email == email))
+    user: AuthUser | None = result.scalar_one_or_none()
+    if not user or not user.is_active:
+        _fail()
 
     token = create_access_token(user.id, user.email)
     response.set_cookie(
@@ -122,10 +193,10 @@ async def login(
         value=token,
         httponly=True,
         samesite="lax",
-        max_age=86400,    # 24 h
+        max_age=86400,
         path="/",
     )
-    _log.info("User %s logged in", user.email)
+    _log.info("User %s signed in via OTP", user.email)
     return {"ok": True, "display_name": user.display_name, "role": user.role}
 
 
@@ -143,6 +214,5 @@ async def me(current_user: AuthUser = Depends(get_current_user)):
         user_id=current_user.id,
         email=current_user.email,
         display_name=current_user.display_name,
-        phone=current_user.phone,
         role=current_user.role,
     )
