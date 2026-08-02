@@ -991,6 +991,15 @@ class RunManager:
                     if _profiling: _sec.setdefault("B2_fabric_tick", []).append(_time_module.perf_counter() - _t0)
 
                 # ── C: sink + broadcast ───────────────────────────────────
+                # If the operator has shut down solar banks, reduce
+                # p_renewable_mw to the actual physics output so the SLD tile
+                # and all downstream consumers (history, WS, stat rows) reflect
+                # the real capacity, not the Mistral forecast for a full fleet.
+                if self.solar_sim is not None:
+                    _op_solar = self.solar_sim.operator_override_mw()
+                    if _op_solar is not None:
+                        tick_result = _dc_replace(tick_result, p_renewable_mw=_op_solar)
+
                 if _profiling: _t0 = _time_module.perf_counter()
                 await ctx.sink.append(tick_result)                 # I/O -- yields to sibling runs
                 if _profiling: _sec.setdefault("C_sink_append", []).append(_time_module.perf_counter() - _t0)
