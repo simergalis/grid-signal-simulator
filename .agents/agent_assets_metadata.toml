@@ -14,3 +14,10 @@ uri = "file://attached_assets/gridsignal_auth_spec.md"
 type = "text"
 title = "GridSignal Auth System Specification"
 description = "Complete specification of the existing single-tenant auth DB, logic, and UI — ready for Claude to design a multi-tenant version from."
+
+[[outputs]]
+id = "BGHUDbgkt769Ce1kLxjPO"
+uri = "file://attached_assets/welcome_email_template.html"
+type = "unspecified"
+title = "Welcome Email Template"
+description = "Standalone HTML email template for new GridSignal operator accounts."
