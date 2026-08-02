@@ -597,3 +597,174 @@ def test_p_cooling_mw_differs_between_noon_and_midnight_physics_forecast():
         f"noon (high-ambient) run must have higher p_cooling_mw than midnight; "
         f"got noon={noon_cooling:.5f} MW, midnight={midnight_cooling:.5f} MW"
     )
+
+
+# ---------------------------------------------------------------------------
+# T6 — param-sampler × ambient_steps interaction
+#
+# These tests guard the PROTO-32-AMB wiring in scenario_factory.py against two
+# specific failure modes that a future re-ordering of writes could introduce:
+#
+#   (a) Double-adjustment: ambient scale applied on top of a value that was
+#       already pre-scaled (e.g. if someone pre-multiplied alpha_max before
+#       storing it in spec_data).  site.alpha_max must NOT equal
+#       sampled_alpha × scale × scale.
+#
+#   (b) Scale skipped: ambient_steps present but site.alpha_max equals the raw
+#       sampled value with no scaling applied.
+#
+# The param_sampler writes alpha_max / plant_alpha_max into spec_data as plain
+# floats; build_run_context_from_spec() then reads whichever is present and
+# multiplies by ambient_alpha_scale() ONCE.  These tests confirm that contract.
+# ---------------------------------------------------------------------------
+
+# Hot ambient at 25 °C — scale will be > 1.0 and clearly != 1.0
+_HOT_AMB_C = 25.0
+_HOT_AMB_STEPS = _make_ambient_steps(_HOT_AMB_C)
+
+
+def _base_spec_no_ambient(alpha_max_engine: float) -> dict:
+    """Minimal spec without ambient_steps; sets alpha_max to simulate param_sampler output."""
+    return {
+        "name": "param-sampler-ambient-test",
+        "end_sim_time": 60.0,
+        "alpha_max": alpha_max_engine,
+        "island_mode": False,
+        "turbine_units": [
+            {"asset_id": "t-0", "rated_mw": 30.0, "r_asset_mw_per_s": 10.0}
+        ],
+        "bess_units": [
+            {
+                "asset_id": "b-0", "rated_mw": 5.0, "usable_mwh": 2.0,
+                "initial_soc_fraction": 1.0, "grid_forming": False,
+            }
+        ],
+        "workload_events": [],
+    }
+
+
+def test_param_sampler_alpha_max_with_ambient_steps_applies_scale_once():
+    """spec_data with a sampled alpha_max + hot ambient_steps must yield
+    site.alpha_max == sampled_alpha × ambient_scale (applied exactly once).
+
+    Verifies the PROTO-32-AMB wiring does not skip the ambient adjustment
+    when alpha_max was written by the param_sampler.
+    """
+    from runtime.scenario_factory import build_run_context_from_spec
+    from runtime.solar_sim import ambient_alpha_scale
+
+    sampled_alpha = 0.23   # value as if drawn by sample_run_parameters(["alpha_max"])
+    spec = _base_spec_no_ambient(sampled_alpha)
+    spec["ambient_steps"] = _HOT_AMB_STEPS
+
+    ctx = build_run_context_from_spec("ps-amb-once", spec)
+    actual_alpha = ctx.sim_state.site.alpha_max
+
+    scale = ambient_alpha_scale(_HOT_AMB_STEPS)
+    expected = sampled_alpha * scale
+
+    assert abs(actual_alpha - expected) < 1e-9, (
+        f"site.alpha_max should be sampled_alpha × scale = "
+        f"{sampled_alpha} × {scale:.6f} = {expected:.6f}; got {actual_alpha:.6f}"
+    )
+
+
+def test_param_sampler_alpha_max_with_ambient_steps_not_unscaled():
+    """site.alpha_max must NOT equal the raw sampled value when ambient_steps is present.
+
+    Guards against the scale being silently skipped (e.g. ambient_steps block
+    moved after the site construction without updating site.alpha_max).
+    """
+    from runtime.scenario_factory import build_run_context_from_spec
+
+    sampled_alpha = 0.23
+    spec = _base_spec_no_ambient(sampled_alpha)
+    spec["ambient_steps"] = _HOT_AMB_STEPS
+
+    ctx = build_run_context_from_spec("ps-amb-not-raw", spec)
+    actual_alpha = ctx.sim_state.site.alpha_max
+
+    assert abs(actual_alpha - sampled_alpha) > 1e-6, (
+        f"site.alpha_max ({actual_alpha:.6f}) must not equal the raw sampled value "
+        f"({sampled_alpha}) when hot ambient_steps are present — ambient scale was skipped"
+    )
+
+
+def test_param_sampler_alpha_max_with_ambient_steps_not_double_scaled():
+    """site.alpha_max must NOT equal sampled_alpha × scale × scale.
+
+    Guards against a double-application where both the param_sampler pre-adjusts
+    alpha and scenario_factory also applies ambient_alpha_scale(), or the factory
+    applies the scale twice.
+    """
+    from runtime.scenario_factory import build_run_context_from_spec
+    from runtime.solar_sim import ambient_alpha_scale
+
+    sampled_alpha = 0.23
+    spec = _base_spec_no_ambient(sampled_alpha)
+    spec["ambient_steps"] = _HOT_AMB_STEPS
+
+    ctx = build_run_context_from_spec("ps-amb-no-double", spec)
+    actual_alpha = ctx.sim_state.site.alpha_max
+
+    scale = ambient_alpha_scale(_HOT_AMB_STEPS)
+    double_scaled = sampled_alpha * scale * scale
+
+    assert abs(actual_alpha - double_scaled) > 1e-6, (
+        f"site.alpha_max ({actual_alpha:.6f}) equals sampled_alpha × scale² = "
+        f"{double_scaled:.6f}, indicating the ambient scale was applied twice"
+    )
+
+
+def test_plant_alpha_max_with_ambient_steps_applies_scale_once():
+    """When plant_alpha_max is explicitly set in spec_data alongside ambient_steps,
+    site.alpha_max must equal plant_alpha_max × ambient_scale (plant side wins,
+    scale applied once).
+
+    Covers the edge case from the task spec: plant_alpha_max explicitly present.
+    """
+    from runtime.scenario_factory import build_run_context_from_spec
+    from runtime.solar_sim import ambient_alpha_scale
+
+    plant_alpha = 0.26   # plant-side value (as if drawn by param_sampler plant split)
+    engine_alpha = 0.21  # engine-side value — must NOT be used for site.alpha_max
+    spec = _base_spec_no_ambient(engine_alpha)
+    spec["plant_alpha_max"] = plant_alpha
+    spec["ambient_steps"] = _HOT_AMB_STEPS
+
+    ctx = build_run_context_from_spec("ps-plant-amb", spec)
+    actual_alpha = ctx.sim_state.site.alpha_max
+
+    scale = ambient_alpha_scale(_HOT_AMB_STEPS)
+    expected = plant_alpha * scale
+
+    assert abs(actual_alpha - expected) < 1e-9, (
+        f"site.alpha_max should be plant_alpha_max × scale = "
+        f"{plant_alpha} × {scale:.6f} = {expected:.6f}; got {actual_alpha:.6f}"
+    )
+
+
+def test_plant_alpha_max_takes_priority_over_engine_alpha_max():
+    """When both plant_alpha_max and alpha_max are in spec_data (as param_sampler
+    writes for a split parameter), plant_alpha_max must win and be used as the
+    baseline for ambient scaling — not the engine-side alpha_max.
+    """
+    from runtime.scenario_factory import build_run_context_from_spec
+    from runtime.solar_sim import ambient_alpha_scale
+
+    plant_alpha = 0.26
+    engine_alpha = 0.21
+    spec = _base_spec_no_ambient(engine_alpha)
+    spec["plant_alpha_max"] = plant_alpha
+    spec["ambient_steps"] = _HOT_AMB_STEPS
+
+    ctx = build_run_context_from_spec("ps-plant-priority", spec)
+    actual_alpha = ctx.sim_state.site.alpha_max
+
+    scale = ambient_alpha_scale(_HOT_AMB_STEPS)
+    engine_scaled = engine_alpha * scale
+
+    assert abs(actual_alpha - engine_scaled) > 1e-6, (
+        f"site.alpha_max ({actual_alpha:.6f}) equals engine_alpha × scale = "
+        f"{engine_scaled:.6f}; plant_alpha_max ({plant_alpha}) should have taken priority"
+    )
