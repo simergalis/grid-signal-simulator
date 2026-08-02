@@ -56,23 +56,33 @@ _VALID_STRESSORS = {"cloud", "cloud_clear", "trip", "poi", "soil",
 # ---------------------------------------------------------------------------
 
 @router.get("/solar-preview", tags=["solar"])
-async def get_solar_preview() -> JSONResponse:
-    """Return the current Mistral solar forecast label for San Diego.
+async def get_solar_preview(request: Request) -> JSONResponse:
+    """Return the current Mistral solar forecast label for the active site location.
 
-    Calls generate_solar_forecast() with a minimal duration (60 s) so the
-    Mistral prompt receives the current local San Diego time.  Only the
-    weather metadata is returned; the irradiance samples are discarded.
+    Uses the location stored at app.state.site_location (set by PUT /api/location;
+    defaults to San Diego, CA).  Calls generate_solar_forecast() with a minimal
+    duration (60 s) so the Mistral prompt receives the correct local time for
+    the selected site.  Only the weather metadata is returned; samples are discarded.
 
-    Falls back silently to physics estimate when MISTRAL_API_KEY is absent
+    Falls back silently to a physics estimate when MISTRAL_API_KEY is absent
     or the API call fails.
     """
-    utc_now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
-    local_dt = utc_now + datetime.timedelta(hours=_UTC_OFFSET_H)
+    from api.routes.location import SiteLocation as _SiteLocation
+    loc: _SiteLocation = getattr(request.app.state, "site_location", _SiteLocation())
+
+    utc_now  = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+    local_dt = utc_now + datetime.timedelta(hours=loc.utc_offset_h)
     local_time = local_dt.strftime("%H:%M")
 
     forecast = generate_solar_forecast(
         sim_duration_s=_PREVIEW_DURATION_S,
         utc_now=utc_now,
+        site_latitude=loc.lat,
+        site_longitude=loc.lon,
+        site_utc_offset_h=loc.utc_offset_h,
+        site_name=loc.name,
+        climate_hint=loc.climate_hint,
+        ambient_temp_base_c=loc.ambient_temp_base_c,
     )
 
     return JSONResponse({
@@ -80,6 +90,7 @@ async def get_solar_preview() -> JSONResponse:
         "conditions": forecast.conditions,
         "source":     forecast.source,
         "local_time": local_time,
+        "site_name":  loc.name,
     })
 
 

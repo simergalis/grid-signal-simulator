@@ -55,6 +55,8 @@ from api.routes import scenarios as scenarios_routes
 from api.routes import advisory as advisory_routes
 from api.routes import fabric as fabric_routes
 from api.routes import solar as solar_routes
+from api.routes import location as location_routes
+from api.routes.location import SiteLocation
 from api.routes import auth_routes, admin_routes
 from api.auth_utils import COOKIE_NAME, decode_access_token
 from api.db import create_auth_tables
@@ -107,6 +109,10 @@ async def _lifespan(application: FastAPI):
     solar_sim = SolarSim()
     application.state.solar_sim = solar_sim
     _solar_ticker = asyncio.create_task(_solar_tick_loop(solar_sim))
+
+    # Operator-configurable data-centre location (default = San Diego).
+    # Consumed by /solar-preview and POST /runs to seed the Mistral solar prompt.
+    application.state.site_location = SiteLocation()
 
     yield
 
@@ -164,7 +170,8 @@ def create_app() -> FastAPI:
         # the cookie middleware must not block them before they are reached.
         if not path.startswith("/api/") or path in _UNPROTECTED \
                 or path.startswith("/api/auth/") or path.startswith("/api/admin") \
-                or path.startswith("/api/solar/"):
+                or path.startswith("/api/solar/") \
+                or path.startswith("/api/location"):
             return await call_next(request)
         token = request.cookies.get(COOKIE_NAME)
         if not token or decode_access_token(token) is None:
@@ -183,6 +190,7 @@ def create_app() -> FastAPI:
     application.include_router(advisory_routes.router)  # W2
     application.include_router(fabric_routes.router)    # Phase 10
     application.include_router(solar_routes.router)     # Task-20 solar preview
+    application.include_router(location_routes.router)  # operator location picker
 
     # ── §10.2 static frontend (Step 16) ─────────────────────────────────
     # Catch-all GET route: serve real static assets by file path, then fall

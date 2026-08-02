@@ -62,43 +62,54 @@ _MISTRAL_ENDPOINT  = "https://api.mistral.ai/v1/chat/completions"
 _MISTRAL_MODEL     = "mistral-small-latest"
 _REQUEST_TIMEOUT_S = 10.0
 
-_SYSTEM_PROMPT = """\
-You are a solar irradiance simulator for a fixed-mount photovoltaic installation
-in San Diego, California (latitude 32.72 N, longitude 117.16 W).
+def _build_system_prompt(
+    site_name: str = "San Diego, CA",
+    lat: float = 32.72,
+    lon: float = -117.16,
+    climate_hint: str = "",
+) -> str:
+    """Build a location-specific Mistral system prompt for the solar agent.
 
-You receive the current local San Diego time and a simulation duration in seconds,
-and you must output realistic solar panel output fractions for that period.
-
-Fraction = actual_output / rated_capacity, range [0.0, 1.0].
-
-San Diego solar behaviour:
-- Marine layer ("June Gloom") common in mornings before 10:00 — reduces output 25-45%
-- Clear afternoons near solar noon: fraction 0.85-0.98
-- Partly cloudy: intermittent dips of 0.15-0.40 for 20-90 s bursts
-- Overcast: 0.08-0.25 sustained
-- Night (sun below horizon): 0.0
-
-Return ONLY valid JSON with no markdown fences and no explanation outside the JSON:
-{
-  "weather": "<clear|partly_cloudy|overcast|marine_layer>",
-  "conditions": "<one sentence describing current conditions>",
-  "samples": [[sim_time_s, fraction], ...],
-  "ambient": [[sim_time_s, drybulb_c, wetbulb_c], ...]
-}
-
-Provide 15-25 samples spanning sim_time_s = 0 to sim_duration_s (inclusive).
-The first sample in both "samples" and "ambient" MUST be at sim_time_s = 0.
-All sim_time_s values must be non-negative and <= sim_duration_s.
-Fractions must be in [0.0, 1.0].
-
-San Diego ambient dry-bulb temperatures:
-- Night: 13-16 C
-- Marine layer morning: 16-19 C
-- Clear afternoon near solar noon: 20-24 C
-- Overcast: 17-20 C
-Wet-bulb is typically 2-4 C below dry-bulb (coastal, moderate humidity).
-Ambient temperature is physically correlated with solar fraction — generate them together.
-"""
+    When a climate_hint is supplied (from the geocoder) it is injected directly
+    so Mistral uses real local conditions.  Without a hint Mistral falls back to
+    its own training knowledge for the named location and coordinates.
+    """
+    lat_dir = "N" if lat >= 0 else "S"
+    lon_dir = "E" if lon >= 0 else "W"
+    loc_line = (
+        f"in {site_name} "
+        f"(latitude {abs(lat):.2f}°{lat_dir}, longitude {abs(lon):.2f}°{lon_dir})"
+    )
+    if climate_hint:
+        climate_section = f"\n{site_name} solar/climate behaviour:\n{climate_hint}\n"
+    else:
+        climate_section = (
+            f"\nGenerate realistic solar output fractions appropriate for {site_name} "
+            f"at latitude {abs(lat):.1f}°{lat_dir}. Reflect the local climate accurately "
+            f"(cloud cover patterns, humidity, seasonal insolation, any regional phenomena).\n"
+        )
+    return (
+        f"You are a solar irradiance simulator for a fixed-mount photovoltaic installation\n"
+        f"{loc_line}.\n\n"
+        f"You receive the current local {site_name} time and a simulation duration in "
+        f"seconds, and you must output realistic solar panel output fractions for that period.\n\n"
+        f"Fraction = actual_output / rated_capacity, range [0.0, 1.0].\n"
+        f"{climate_section}\n"
+        f"Return ONLY valid JSON with no markdown fences and no explanation outside the JSON:\n"
+        f"{{\n"
+        f'  "weather": "<clear|partly_cloudy|overcast|marine_layer|rain|fog|thunderstorm>",\n'
+        f'  "conditions": "<one sentence describing current conditions>",\n'
+        f'  "samples": [[sim_time_s, fraction], ...],\n'
+        f'  "ambient": [[sim_time_s, drybulb_c, wetbulb_c], ...]\n'
+        f"}}\n\n"
+        f"Provide 15-25 samples spanning sim_time_s = 0 to sim_duration_s (inclusive).\n"
+        f"The first sample in both \"samples\" and \"ambient\" MUST be at sim_time_s = 0.\n"
+        f"All sim_time_s values must be non-negative and <= sim_duration_s.\n"
+        f"Fractions must be in [0.0, 1.0].\n\n"
+        f"Ambient dry-bulb temperatures must be physically realistic for {site_name}.\n"
+        f"Ambient temperature is physically correlated with solar fraction — generate them together.\n"
+        f"Wet-bulb is typically 2-6 C below dry-bulb (adjust for local humidity).\n"
+    )
 
 
 # ── Physics-based fallback ─────────────────────────────────────────────────────
@@ -230,12 +241,12 @@ def _physics_forecast(
 
 # ── Mistral call ───────────────────────────────────────────────────────────────
 
-def _call_mistral(user_message: str, api_key: str) -> str:
+def _call_mistral(user_message: str, api_key: str, system_prompt: str = "") -> str:
     """Synchronous HTTP POST to Mistral chat completions. Returns raw assistant text."""
     payload = json.dumps({
         "model": _MISTRAL_MODEL,
         "messages": [
-            {"role": "system", "content": _SYSTEM_PROMPT},
+            {"role": "system", "content": system_prompt or _build_system_prompt()},
             {"role": "user",   "content": user_message},
         ],
         "max_tokens": 700,
@@ -355,7 +366,10 @@ def generate_solar_forecast(
     *,
     utc_now: Optional[datetime.datetime] = None,
     site_latitude: float = _LAT_DEG,
+    site_longitude: float = -117.16,
     site_utc_offset_h: float = _UTC_OFFSET_H,
+    site_name: str = "San Diego, CA",
+    climate_hint: str = "",
     ambient_temp_base_c: float = 14.0,
 ) -> SolarForecast:
     """
@@ -413,13 +427,20 @@ def generate_solar_forecast(
     local_time = local_dt.strftime("%H:%M")
 
     user_msg = (
-        f"Current San Diego local time: {local_time}\n"
+        f"Current {site_name} local time: {local_time}\n"
         f"Simulation duration: {sim_duration_s:.0f} seconds\n"
         f"Panel rated capacity: {rated_mw:.2f} MW\n"
     )
 
+    _sys_prompt = _build_system_prompt(
+        site_name=site_name,
+        lat=site_latitude,
+        lon=site_longitude,
+        climate_hint=climate_hint,
+    )
+
     try:
-        raw = _call_mistral(user_msg, api_key)
+        raw = _call_mistral(user_msg, api_key, system_prompt=_sys_prompt)
     except Exception as exc:
         _log.warning("solar_sim: Mistral call failed (%s) — using physics fallback", exc)
         return _physics_forecast(

@@ -134,10 +134,24 @@ async def start_run(
         _param_cfg      = spec_data.get("param_sampling_config")
         _corruption_cfg = spec_data.get("telemetry_corruption_config")
 
-        # Operator-adjustable site / advisory params (new in operator settings)
-        _site_lat       = float(spec_data.get("site_latitude",      32.72))
-        _site_utc       = float(spec_data.get("site_utc_offset_h",  -8.0))
-        _ambient_base   = float(spec_data.get("ambient_temp_base_c", 14.0))
+        # Operator-adjustable site / advisory params.
+        # Default values come from the stored site location (PUT /api/location)
+        # so an operator who switches to Tokyo sees Tokyo solar without touching
+        # the scenario JSON.  Explicit spec_data keys still override.
+        _stored_loc     = getattr(request.app.state, "site_location", None)
+        _def_lat        = _stored_loc.lat              if _stored_loc else 32.72
+        _def_lon        = _stored_loc.lon              if _stored_loc else -117.16
+        _def_utc        = _stored_loc.utc_offset_h     if _stored_loc else -8.0
+        _def_name       = _stored_loc.name             if _stored_loc else "San Diego, CA"
+        _def_climate    = _stored_loc.climate_hint     if _stored_loc else ""
+        _def_amb_base   = _stored_loc.ambient_temp_base_c if _stored_loc else 14.0
+
+        _site_lat       = float(spec_data.get("site_latitude",      _def_lat))
+        _site_lon       = float(spec_data.get("site_longitude",     _def_lon))
+        _site_utc       = float(spec_data.get("site_utc_offset_h",  _def_utc))
+        _site_name      = str(  spec_data.get("site_name",          _def_name))
+        _climate_hint   = str(  spec_data.get("climate_hint",       _def_climate))
+        _ambient_base   = float(spec_data.get("ambient_temp_base_c",_def_amb_base))
         _soc_floor      = float(spec_data.get("soc_floor_pct",       10.0))
         _soc_ceil       = float(spec_data.get("soc_ceil_pct",        95.0))
 
@@ -170,7 +184,10 @@ async def start_run(
                     _solar_mw,
                     utc_now=_utc_now_solar,
                     site_latitude=_site_lat,
+                    site_longitude=_site_lon,
                     site_utc_offset_h=_site_utc,
+                    site_name=_site_name,
+                    climate_hint=_climate_hint,
                     ambient_temp_base_c=_ambient_base,
                 ),
             )
