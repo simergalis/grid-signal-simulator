@@ -261,7 +261,8 @@ export function LocationPicker({ onLocationChanged }: LocationPickerProps) {
       const d        = new Date(localMs)
       const hh       = String(d.getUTCHours()).padStart(2, '0')
       const mm       = String(d.getUTCMinutes()).padStart(2, '0')
-      setLocalTime(`${hh}${mm}`)
+      const ss       = String(d.getUTCSeconds()).padStart(2, '0')
+      setLocalTime(`${hh}:${mm}:${ss}`)
     }
     tick()
     const id = setInterval(tick, 1000)
