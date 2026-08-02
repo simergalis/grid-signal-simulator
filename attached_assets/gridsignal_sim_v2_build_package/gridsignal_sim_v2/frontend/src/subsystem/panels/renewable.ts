@@ -8,9 +8,14 @@
  * Solar is subtracted from demand (reduces the load the fleet must serve).
  * It is NEVER counted toward ramp capability. An inverter trip is a step change
  * with Δt_lead = 0. This is the "availability vs dispatchability" argument.
+ *
+ * Secondary section: BankFleetPanel polls GET /api/solar/state at 1.5 Hz and
+ * renders the 4-feeder × 5-bank list (feeder grouping, per-bank bullet bars,
+ * state classifier chips, N−1 footer).  The component is defined once outside
+ * deriveData so the React reference is stable across ticks.
  */
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import type { PanelConfig, PanelData } from './index'
 import type { TickPayload, HistoryPoint } from '../../types'
 import { TimeSeries } from '../../charts/TimeSeries'
@@ -20,6 +25,329 @@ const SOLAR  = '#f2c94c'
 const TEAL   = '#3fb6a8'
 const RED    = '#f85149'
 const AMBER  = '#f0883e'
+const MUTED  = '#5a6673'
+
+// ── Types from GET /api/solar/state ─────────────────────────────────────────
+
+interface BankSnap {
+  id: string
+  feeder_id: string
+  rated_mw: number
+  output_mw: number
+  expected_mw: number
+  counted_output_mw: number
+  state: 'nominal' | 'degraded' | 'out' | 'no_comms'
+  reason: string | null
+  strings_out: number
+  strings_total: number
+  inverter_temp_c: number
+  telemetry_age_s: number
+}
+
+interface FeederSnap {
+  id: string
+  label: string
+  output_mw: number
+  expected_mw: number
+  bank_ids: string[]
+  state: string
+}
+
+interface Advisory {
+  code: string
+  scope: string
+  feeder?: string
+  banks?: string[]
+  message: string
+}
+
+interface SolarState {
+  t: number
+  feeders: FeederSnap[]
+  banks: BankSnap[]
+  exposure: {
+    largest_feeder_mw: number
+    largest_feeder_id: string
+    largest_bank_mw: number
+    plant_loss_mw: number
+  }
+  reserve: {
+    n1_feeder: { passes: boolean; delta_p_mw: number }
+    n1_bank:   { passes: boolean; delta_p_mw: number }
+  }
+  advisories: Advisory[]
+}
+
+// ── State colour helpers ─────────────────────────────────────────────────────
+
+function stateColour(state: BankSnap['state']): string {
+  switch (state) {
+    case 'nominal':  return SOLAR
+    case 'degraded': return AMBER
+    case 'out':      return RED
+    case 'no_comms': return MUTED
+  }
+}
+
+function stateLabel(state: BankSnap['state'], reason: string | null): string {
+  switch (state) {
+    case 'nominal':  return 'nominal'
+    case 'degraded': return reason ? reason.replace(/_/g, '\u00a0') : 'degraded'
+    case 'out':      return 'out'
+    case 'no_comms': return 'no\u00a0comms'
+  }
+}
+
+function feederStateColour(state: string): string {
+  if (state === 'nominal') return SOLAR
+  if (state === 'all_out') return RED
+  return AMBER
+}
+
+// ── BankFleetPanel component ─────────────────────────────────────────────────
+// Defined outside deriveData so the React reference is stable across ticks and
+// the useEffect polling timer is not torn down and recreated on every tick.
+
+function BankFleetPanel(): React.ReactElement {
+  const [solar, setSolar] = useState<SolarState | null>(null)
+  const [error, setError] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    const poll = async () => {
+      try {
+        const resp = await fetch('/api/solar/state')
+        if (resp.ok && active) {
+          const data = await resp.json() as SolarState
+          setSolar(data)
+          setError(false)
+        } else if (active) {
+          setError(true)
+        }
+      } catch {
+        if (active) setError(true)
+      }
+    }
+    poll()
+    const timer = setInterval(poll, 1500)
+    return () => { active = false; clearInterval(timer) }
+  }, [])
+
+  if (error) {
+    return React.createElement('div', {
+      className: 'font-mono text-[10px] text-muted py-2 text-center',
+    }, 'Solar Array Console — server unreachable')
+  }
+
+  if (!solar) {
+    return React.createElement('div', {
+      className: 'font-mono text-[10px] text-muted py-2 text-center animate-pulse',
+    }, 'Loading bank fleet…')
+  }
+
+  const { feeders, banks, exposure, reserve, advisories } = solar
+
+  // Build a map from bank ID → BankSnap for quick lookup
+  const bankMap: Record<string, BankSnap> = {}
+  for (const b of banks) bankMap[b.id] = b
+
+  // ── Feeder + bank rows ────────────────────────────────────────────────────
+
+  const feederRows = feeders.map(feeder => {
+    const feederBanks = feeder.bank_ids.map(id => bankMap[id]).filter(Boolean)
+
+    // Feeder header
+    const feederHeader = React.createElement('div', {
+      key: `fdr-hdr-${feeder.id}`,
+      className: 'flex items-center justify-between pt-2 pb-1',
+    },
+      React.createElement('div', {
+        className: 'flex items-center gap-1.5',
+      },
+        // Feeder state dot
+        React.createElement('div', {
+          style: {
+            width: 6,
+            height: 6,
+            borderRadius: '50%',
+            background: feederStateColour(feeder.state),
+            flexShrink: 0,
+          },
+        }),
+        React.createElement('span', {
+          className: 'font-mono text-[10px] font-bold uppercase tracking-widest',
+          style: { color: feederStateColour(feeder.state) },
+        }, feeder.label),
+      ),
+      // Feeder subtotal
+      React.createElement('div', {
+        className: 'flex items-baseline gap-2',
+      },
+        React.createElement('span', {
+          className: 'font-mono text-[10px]',
+          style: { color: feeder.state === 'nominal' ? SOLAR : feederStateColour(feeder.state) },
+        }, `${feeder.output_mw.toFixed(3)} MW`),
+        feeder.expected_mw > 0
+          ? React.createElement('span', { className: 'font-mono text-[9px] text-muted' },
+              `/ ${feeder.expected_mw.toFixed(3)} exp`,
+            )
+          : null,
+      ),
+    )
+
+    // Bank rows
+    const bankRows = feederBanks.map(bank => {
+      const isNoComms = bank.state === 'no_comms'
+      const maxMW     = Math.max(bank.expected_mw, bank.output_mw, 0.001)
+      const dotColour = stateColour(bank.state)
+      const chipLabel = stateLabel(bank.state, bank.reason)
+
+      return React.createElement('div', {
+        key: bank.id,
+        className: 'flex items-center gap-2 py-0.5',
+        style: isNoComms
+          ? { border: '1px dashed rgba(90,102,115,0.4)', borderRadius: 3, padding: '2px 4px', marginBottom: 1 }
+          : {},
+      },
+        // State dot
+        React.createElement('div', {
+          style: {
+            width: 5,
+            height: 5,
+            borderRadius: '50%',
+            background: dotColour,
+            flexShrink: 0,
+          },
+        }),
+
+        // Bank ID
+        React.createElement('span', {
+          className: 'font-mono text-[9px] text-muted w-[42px] shrink-0',
+        }, bank.id),
+
+        // Bullet bar (expands to fill remaining width)
+        React.createElement('div', { className: 'flex-1 min-w-0' },
+          isNoComms
+            ? React.createElement('div', {
+                style: {
+                  height: 6,
+                  borderRadius: 2,
+                  background: 'rgba(90,102,115,0.15)',
+                  border: '1px dashed rgba(90,102,115,0.3)',
+                },
+              })
+            : React.createElement(BulletBar, {
+                label:  '',
+                value:  bank.output_mw,
+                max:    maxMW,
+                colour: dotColour,
+                unit:   '',
+                dense:  true,
+              }),
+        ),
+
+        // MW value
+        React.createElement('span', {
+          className: 'font-mono text-[9px] w-[38px] text-right shrink-0',
+          style: { color: isNoComms ? MUTED : dotColour },
+        }, isNoComms ? '—' : `${bank.output_mw.toFixed(3)}`),
+
+        // State chip
+        React.createElement('span', {
+          className: 'font-mono text-[8px] w-[58px] text-right shrink-0',
+          style: { color: dotColour },
+        }, chipLabel),
+      )
+    })
+
+    return React.createElement('div', {
+      key: feeder.id,
+      className: 'border-t border-border',
+    },
+      feederHeader,
+      ...bankRows,
+    )
+  })
+
+  // ── N−1 footer ────────────────────────────────────────────────────────────
+
+  const n1Label = exposure.largest_feeder_id
+    ? exposure.largest_feeder_id.replace('fdr-', 'Feeder ')
+    : 'largest feeder'
+
+  const n1Passes  = reserve.n1_feeder?.passes ?? true
+  const n1MW      = exposure.largest_feeder_mw ?? 0
+
+  const n1Footer = React.createElement('div', {
+    className: 'border-t border-border mt-1 pt-2 flex items-center justify-between',
+  },
+    React.createElement('div', { className: 'flex items-center gap-1' },
+      React.createElement('span', {
+        className: 'font-mono text-[9px] uppercase tracking-wider text-muted',
+      }, 'N\u22121 exposure:'),
+      React.createElement('span', {
+        className: 'font-mono text-[9px]',
+        style: { color: n1Passes ? SOLAR : RED },
+      }, `${n1Label} · ${n1MW.toFixed(3)} MW`),
+    ),
+    React.createElement('span', {
+      className: 'font-mono text-[8px] rounded px-1.5 py-0.5',
+      style: {
+        background: n1Passes ? 'rgba(63,182,168,0.12)' : 'rgba(248,81,73,0.12)',
+        color:      n1Passes ? TEAL : RED,
+        border: `1px solid ${n1Passes ? 'rgba(63,182,168,0.3)' : 'rgba(248,81,73,0.3)'}`,
+      },
+    }, n1Passes ? 'reserve OK' : 'reserve gap'),
+  )
+
+  // ── Advisory strip ────────────────────────────────────────────────────────
+
+  const advisoryStrip = advisories.length > 0
+    ? React.createElement('div', {
+        className: 'border-t border-border mt-1 pt-2 space-y-1',
+      },
+        ...advisories.map((adv, i) =>
+          React.createElement('div', {
+            key: i,
+            className: 'flex items-start gap-1.5',
+          },
+            React.createElement('span', {
+              className: 'font-mono text-[8px] px-1 py-0.5 rounded shrink-0',
+              style: {
+                background: 'rgba(240,136,62,0.12)',
+                border: '1px solid rgba(240,136,62,0.3)',
+                color: AMBER,
+              },
+            }, adv.code === 'common_cause' ? 'COMMON CAUSE' : 'RECON'),
+            React.createElement('span', {
+              className: 'font-mono text-[9px] leading-relaxed',
+              style: { color: AMBER },
+            }, adv.message),
+          ),
+        ),
+      )
+    : null
+
+  return React.createElement('div', { className: 'mt-2 pt-2 space-y-0' },
+    // Section header
+    React.createElement('div', {
+      className: 'flex items-baseline justify-between mb-1',
+    },
+      React.createElement('div', {
+        className: 'font-mono text-[9px] font-bold uppercase tracking-[0.14em]',
+        style: { color: MUTED },
+      }, 'BANK FLEET — LIVE'),
+      React.createElement('div', {
+        className: 'font-mono text-[9px] text-muted',
+      }, `${banks.filter(b => b.state !== 'no_comms').length} / ${banks.length} reporting`),
+    ),
+    ...feederRows,
+    n1Footer,
+    advisoryStrip,
+  )
+}
+
+// ── Panel config ─────────────────────────────────────────────────────────────
 
 export const renewablePanel: PanelConfig = {
   deriveData(tick: TickPayload | null, _alert, history: HistoryPoint[]): PanelData {
@@ -66,6 +394,7 @@ export const renewablePanel: PanelConfig = {
       height:  200,
     })
 
+    // ── Secondary: two summary bullets + live bank fleet ──────────────────────
     const secondary = React.createElement('div', { className: 'space-y-2' },
       React.createElement(BulletBar, {
         label:  'Current output against rated',
@@ -83,6 +412,8 @@ export const renewablePanel: PanelConfig = {
         unit:   ' MW',
         note:   'an inverter trip is a step change with Δt_lead = 0 — no advance warning',
       }),
+      // Live bank fleet panel — polls /api/solar/state independently
+      React.createElement(BankFleetPanel),
     )
 
     return {
