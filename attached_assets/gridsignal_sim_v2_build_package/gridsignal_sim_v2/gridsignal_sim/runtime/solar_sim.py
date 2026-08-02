@@ -277,8 +277,18 @@ def _parse_forecast(
     *,
     sim_duration_s: float,
     utc_now: datetime.datetime,
+    lat_deg: float = _LAT_DEG,
+    utc_offset_h: float = _UTC_OFFSET_H,
+    base_temp_c: float = 14.0,
 ) -> "SolarForecast":
-    """Parse Mistral JSON → SolarForecast. Falls back to physics on any parse error."""
+    """Parse Mistral JSON → SolarForecast. Falls back to physics on any parse error.
+
+    lat_deg / utc_offset_h / base_temp_c must be the *site* values, not the
+    San Diego defaults.  They are forwarded to _physics_forecast and
+    _physics_ambient_steps so that a parse failure for a Tokyo or Auckland site
+    still produces a geographically correct physics curve rather than silently
+    reverting to the San Diego night-time baseline.
+    """
     try:
         text = raw.strip()
         # Strip markdown code fences if the model wrapped the response
@@ -331,7 +341,10 @@ def _parse_forecast(
         ambient_steps = sorted(ambient_steps)
         if not ambient_steps:
             _log.info("solar_sim: no ambient steps from Mistral — using physics fallback for ambient")
-            ambient_steps = _physics_ambient_steps(sim_duration_s, utc_now)
+            ambient_steps = _physics_ambient_steps(
+                sim_duration_s, utc_now,
+                lat_deg=lat_deg, utc_offset_h=utc_offset_h, base_temp_c=base_temp_c,
+            )
 
         return SolarForecast(
             samples=samples,
@@ -343,9 +356,13 @@ def _parse_forecast(
 
     except Exception as exc:
         _log.warning(
-            "solar_sim: Mistral response parse failed (%s) — using physics fallback", exc
+            "solar_sim: Mistral response parse failed (%s) — using physics fallback "
+            "(lat=%.2f, utc%+.1f)", exc, lat_deg, utc_offset_h,
         )
-        return _physics_forecast(sim_duration_s, utc_now)
+        return _physics_forecast(
+            sim_duration_s, utc_now,
+            lat_deg=lat_deg, utc_offset_h=utc_offset_h, base_temp_c=base_temp_c,
+        )
 
 
 def _parse_samples(
@@ -450,7 +467,14 @@ def generate_solar_forecast(
             base_temp_c=ambient_temp_base_c,
         )
 
-    return _parse_forecast(raw, sim_duration_s=sim_duration_s, utc_now=utc_now)
+    return _parse_forecast(
+        raw,
+        sim_duration_s=sim_duration_s,
+        utc_now=utc_now,
+        lat_deg=site_latitude,
+        utc_offset_h=site_utc_offset_h,
+        base_temp_c=ambient_temp_base_c,
+    )
 
 
 def generate_irradiance_samples(

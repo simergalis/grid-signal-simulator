@@ -1,0 +1,33 @@
+Why would a data center Auckland, New Zealand not have any solar contribution right now?
+
+
+Diagnosed timezone bug causing solar generation underreporting at peak daylight hours
+Diagnosed timezone bug causing solar generation underreporting at peak daylight hours
+Short answer: it shouldn't be zero, and the most likely cause is a timezone bug in the irradiance model.
+
+The arithmetic
+
+The header reads 04:00:20 UTC and the site badge reads UTC+12. New Zealand is on NZST (UTC+12) in August — daylight saving runs late September to early April — so local time at that site is 16:00, four in the afternoon.
+
+Auckland sits at −36.85° latitude. On August 1, roughly six weeks past the winter solstice, sunrise is around 07:20 and sunset around 17:35 NZST. At 16:00 the sun is still up, maybe 10–13° elevation. A 4.99 MW fixed-mount array at that elevation should be producing something in the range of 0.3–0.8 MW depending on sky and orientation — low, declining fast, but distinctly not zero.
+
+Three candidate explanations, ranked
+
+The model is keyed off UTC hour. 04:00 read as local time is pre-dawn, which returns exactly 0.00. This is the classic failure and it fits perfectly: the number isn't approximately zero, it's identically zero. Check whether your solar function takes the site's local time or the process clock.
+The scenario deliberately seeds solar at zero. demo-pms-shortfall is a turbine-and-battery story, and zeroing the array keeps the arbitration narrative clean. Defensible — but then the site metadata shouldn't say Auckland at 16:00 local, because a technically literate viewer will do exactly the arithmetic above during your demo.
+The plant is genuinely faulted or unreachable. Possible, and the most interesting case, because the UI gives you no way to tell.
+The deeper problem is that the panel can't distinguish them
+
+SOLAR PV · 0.00 MW · non-dispatchable · 4.99 MW rated is true in all three cases. There's no expected-output figure, no irradiance, no block count, no timestamp of last telemetry. An operator looking at this cannot answer "is that zero correct?" — and that's the same §19.5 gap we hit on the modal, showing up here in its most consequential form. A wrongly-zero solar reading is conservative for dispatch (you over-provision), so it fails silently, which is exactly how it survives to a demo.
+
+Minimum fix on the tile
+
+Add expected-vs-actual and the reason code:
+
+SOLAR PV                          0.00 MW
+expected 0.61 MW · sun 11° above horizon
+5/5 blocks online · telemetry 2 s old
+Now zero at night reads expected 0.00 · sun below horizon and is obviously fine, while zero in daylight reads expected 0.61 against five healthy blocks and is obviously wrong. Same tile, same space, and it turns an ambiguous number into a diagnosis.
+
+If it turns out to be option 1, worth grepping for other places the process clock stands in for site-local time — the cooling lag and any diurnal load pattern would have the same bug and would be much harder to spot.
+
