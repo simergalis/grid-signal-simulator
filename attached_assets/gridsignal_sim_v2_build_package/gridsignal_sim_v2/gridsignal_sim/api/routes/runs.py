@@ -141,7 +141,12 @@ async def start_run(
         _stored_loc     = getattr(request.app.state, "site_location", None)
         _def_lat        = _stored_loc.lat              if _stored_loc else 32.72
         _def_lon        = _stored_loc.lon              if _stored_loc else -117.16
-        _def_utc        = _stored_loc.utc_offset_h     if _stored_loc else -8.0
+        # Use DST-aware offset so solar peak times are correct year-round.
+        if _stored_loc:
+            from api.routes.location import current_utc_offset_h as _live_offset
+            _def_utc = _live_offset(_stored_loc)
+        else:
+            _def_utc = -8.0
         _def_name       = _stored_loc.name             if _stored_loc else "San Diego, CA"
         _def_climate    = _stored_loc.climate_hint     if _stored_loc else ""
         _def_amb_base   = _stored_loc.ambient_temp_base_c if _stored_loc else 14.0

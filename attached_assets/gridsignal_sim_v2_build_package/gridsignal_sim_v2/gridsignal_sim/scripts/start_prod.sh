@@ -59,6 +59,13 @@ python3 -c "import websockets" 2>/dev/null || \
 python3 -c "import asyncpg" 2>/dev/null || \
   pip3 install --target="$PYTHONLIBS_SITE" asyncpg --quiet 2>&1 | tail -1 || true
 
+# tzdata is required by Python's zoneinfo module (stdlib ≥ 3.9) on systems
+# that don't ship IANA timezone data (e.g. minimal Linux containers).
+# Without it current_utc_offset_h() silently falls back to the standard-time
+# offset, breaking the DST correction for the location clock and solar model.
+python3 -c "import zoneinfo; zoneinfo.ZoneInfo('America/Los_Angeles')" 2>/dev/null || \
+  pip3 install --target="$PYTHONLIBS_SITE" tzdata --quiet 2>&1 | tail -1 || true
+
 # Use `python3 -m uvicorn` rather than bare `uvicorn` so the module is found
 # via the Python path (.pythonlibs) rather than requiring uvicorn on $PATH.
 # PYTHONPATH must include the backend root so `from core.xxx import ...` resolves.

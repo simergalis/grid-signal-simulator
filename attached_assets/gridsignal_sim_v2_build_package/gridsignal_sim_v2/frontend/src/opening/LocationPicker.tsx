@@ -24,12 +24,13 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 // ---------------------------------------------------------------------------
 
 interface Location {
-  name:               string
-  lat:                number
-  lon:                number
-  utc_offset_h:       number
-  climate_hint:       string
-  ambient_temp_base_c: number
+  name:                 string
+  lat:                  number
+  lon:                  number
+  utc_offset_h:         number   // standard-time offset (never changes)
+  current_utc_offset_h: number   // DST-aware live offset — use this for display/clocks
+  climate_hint:         string
+  ambient_temp_base_c:  number
 }
 
 export interface LocationPickerProps {
@@ -248,11 +249,13 @@ export function LocationPicker({ onLocationChanged }: LocationPickerProps) {
     }
   }, [draft, editing])
 
-  // Live local clock — ticks every second using the site's UTC offset
+  // Live local clock — ticks every second using the DST-aware offset from the API.
+  // current_utc_offset_h is computed server-side at request time via zoneinfo.
   const [localTime, setLocalTime] = useState<string>('')
   useEffect(() => {
     function tick() {
-      const utcOffset = location?.utc_offset_h ?? null
+      // Prefer current_utc_offset_h (DST-aware) over utc_offset_h (standard-time only)
+      const utcOffset = location?.current_utc_offset_h ?? location?.utc_offset_h ?? null
       if (utcOffset === null) { setLocalTime(''); return }
       const localMs  = Date.now() + utcOffset * 3_600_000
       const d        = new Date(localMs)
@@ -263,7 +266,7 @@ export function LocationPicker({ onLocationChanged }: LocationPickerProps) {
     tick()
     const id = setInterval(tick, 1000)
     return () => clearInterval(id)
-  }, [location?.utc_offset_h])
+  }, [location?.current_utc_offset_h, location?.utc_offset_h])
 
   async function submit(value: string) {
     const v = value.trim()
@@ -312,7 +315,8 @@ export function LocationPicker({ onLocationChanged }: LocationPickerProps) {
     }
   }
 
-  const utc = location?.utc_offset_h ?? null
+  // Use DST-aware offset for the UTC label (e.g. "UTC-7" in summer, not "UTC-8")
+  const utc = location?.current_utc_offset_h ?? location?.utc_offset_h ?? null
 
   // ── DISPLAY MODE ────────────────────────────────────────────────────────────
   if (!editing) {
