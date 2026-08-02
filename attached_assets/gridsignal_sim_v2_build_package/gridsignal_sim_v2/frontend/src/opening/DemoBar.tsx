@@ -22,6 +22,16 @@ const SPEED_OPTIONS = [
   { label: 'MAX', value: 0  },
 ]
 
+/** Sim-seconds for each duration option.  1e15 ≈ unlimited (31 M sim-years). */
+const DURATION_OPTIONS = [
+  { label: '5 min',    value: 300 },
+  { label: '15 min',   value: 900 },
+  { label: '30 min',   value: 1800 },
+  { label: '1 hour',   value: 3600 },
+  { label: '4 hours',  value: 14400 },
+  { label: 'No limit', value: 1e15 },
+]
+
 /** Demonstration copy — what the demo shows. */
 const DEMO_COPY = {
   heading: 'WHAT THIS DEMONSTRATES',
@@ -54,9 +64,10 @@ export function DemoBar({
   const selectScenario = useScenarioStore(s => s.selectScenario)
   const fetchScenarios = useScenarioStore(s => s.fetchScenarios)
 
-  const [speed, setSpeed] = useState(10)
-  const [busy,  setBusy]  = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [speed,    setSpeed]    = useState(10)
+  const [duration, setDuration] = useState(300)
+  const [busy,     setBusy]     = useState(false)
+  const [error,    setError]    = useState<string | null>(null)
 
   useEffect(() => { fetchScenarios() }, [fetchScenarios])
 
@@ -67,7 +78,7 @@ export function DemoBar({
       const resp = await fetch('/runs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scenario_id: selectedId, playback_speed: speed }),
+        body: JSON.stringify({ scenario_id: selectedId, playback_speed: speed, end_sim_time: duration }),
       })
       if (!resp.ok) throw new Error(`POST /runs → ${resp.status}: ${await resp.text()}`)
       const data = await resp.json() as { run_id: string; soc_floor_pct?: number; soc_ceil_pct?: number }
@@ -127,6 +138,24 @@ export function DemoBar({
             {scenarios.length === 0 && <option value="" disabled>Loading…</option>}
             {scenarios.map(s => (
               <option key={s.scenario_id} value={s.scenario_id}>{s.name}</option>
+            ))}
+          </select>
+          <span className="text-muted text-xs">▾</span>
+        </div>
+
+        {/* Duration selector */}
+        <div
+          className="flex items-center gap-1.5 rounded border border-border px-3 py-1.5"
+          style={{ background: '#16202b' }}
+        >
+          <select
+            className="bg-transparent text-text font-sans text-xs focus:outline-none disabled:opacity-50"
+            value={duration}
+            disabled={isRunning || busy}
+            onChange={e => setDuration(Number(e.target.value))}
+          >
+            {DURATION_OPTIONS.map(o => (
+              <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
           <span className="text-muted text-xs">▾</span>

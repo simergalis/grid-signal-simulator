@@ -66,6 +66,12 @@ export interface TickPayload {
   ambient_avg_c:       number  // average dry-bulb °C across the run window
   ambient_alpha_scale: number  // scale applied to site.alpha_max (>1 = hotter than nominal)
 
+  // §7.4 solar bank telemetry — stamped each tick from the renewable snapshot.
+  // p_expected_mw: what all banks should produce at current measured POA.
+  // banks_reporting: count of banks NOT in no_comms state.
+  p_expected_mw:   number  // rated × (POA_measured / 1000) × temp_derate, summed over banks
+  banks_reporting: number  // banks with live telemetry (not no_comms)
+
   // GT-1: §7.4 contingency coverage — quantitative N−1 gen-trip assessment.
   // null on legacy ticks that predate the engine (should not occur in normal runs).
   contingency_coverage: ContingencyCoverage | null

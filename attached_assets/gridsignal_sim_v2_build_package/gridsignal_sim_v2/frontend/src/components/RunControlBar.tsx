@@ -29,6 +29,16 @@ const SPEED_OPTIONS = [
   { label: 'MAX',  value: 0 },
 ]
 
+/** Sim-seconds for each duration option.  1e15 ≈ unlimited (31 M sim-years). */
+const DURATION_OPTIONS = [
+  { label: '5 min',    value: 300 },
+  { label: '15 min',   value: 900 },
+  { label: '30 min',   value: 1800 },
+  { label: '1 hour',   value: 3600 },
+  { label: '4 hours',  value: 14400 },
+  { label: 'No limit', value: 1e15 },
+]
+
 interface Props {
   runId: string | null
   lastRunId: string | null
@@ -45,9 +55,10 @@ export function RunControlBar({ runId, lastRunId, onRunStarted, onRunStopped, on
   const selectScenario = useScenarioStore(s => s.selectScenario)
   const fetchScenarios = useScenarioStore(s => s.fetchScenarios)
 
-  const [speed, setSpeed]       = useState(10)
-  const [busy,  setBusy]        = useState(false)
-  const [error, setError]       = useState<string | null>(null)
+  const [speed,    setSpeed]    = useState(10)
+  const [duration, setDuration] = useState(300)
+  const [busy,     setBusy]     = useState(false)
+  const [error,    setError]    = useState<string | null>(null)
 
   // Fetch scenario list on mount
   useEffect(() => { fetchScenarios() }, [fetchScenarios])
@@ -60,7 +71,7 @@ export function RunControlBar({ runId, lastRunId, onRunStarted, onRunStopped, on
       const resp = await fetch('/runs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ scenario_id: selectedId, playback_speed: speed }),
+        body: JSON.stringify({ scenario_id: selectedId, playback_speed: speed, end_sim_time: duration }),
       })
       if (!resp.ok) {
         const text = await resp.text()
@@ -128,6 +139,20 @@ export function RunControlBar({ runId, lastRunId, onRunStarted, onRunStopped, on
       >
         + New
       </button>
+
+      {/* Duration selector */}
+      <label className="text-xs text-muted shrink-0">Duration</label>
+      <select
+        className="rounded border border-border bg-canvas px-2 py-1 text-xs text-text
+                   focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
+        value={duration}
+        disabled={isRunning || busy}
+        onChange={e => setDuration(Number(e.target.value))}
+      >
+        {DURATION_OPTIONS.map(o => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
 
       {/* Speed selector */}
       <label className="text-xs text-muted shrink-0">Speed</label>

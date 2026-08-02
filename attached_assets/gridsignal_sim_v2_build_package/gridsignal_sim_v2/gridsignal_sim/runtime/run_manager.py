@@ -95,6 +95,33 @@ class WebSocketHub:
             if not subs:
                 del self._subscribers[run_id]
 
+    async def notify_run_complete(self, run_id: str) -> None:
+        """Send a run_complete sentinel to every subscriber then close their sockets.
+
+        Called by _drive() when the run exits normally (sim_time >= end_sim_time).
+        Without this, the WS handler (ws.py receive_text loop) keeps the connection
+        open indefinitely and the client freezes on the last tick.
+
+        Cancelled runs are NOT notified — the frontend's Stop button already
+        calls handleRunStopped directly, which unmounts useTickStream cleanly.
+        """
+        subs = list(self._subscribers.pop(run_id, ()))
+        if not subs:
+            return
+        payload = {"type": "run_complete", "run_id": run_id}
+
+        async def _send_and_close(ws: WebSocketLike) -> None:
+            try:
+                await asyncio.wait_for(ws.send_json(payload), timeout=_SEND_TIMEOUT_S)
+            except Exception:  # noqa: BLE001
+                pass
+            try:
+                await asyncio.wait_for(ws.close(), timeout=_SEND_TIMEOUT_S)
+            except Exception:  # noqa: BLE001
+                pass
+
+        await asyncio.gather(*(_send_and_close(ws) for ws in subs))
+
     async def broadcast(self, run_id: str, tick_result: TickResult) -> None:
         subs = list(self._subscribers.get(run_id, ()))
         if not subs:
@@ -221,6 +248,11 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # Phase 10: fabric model modal-view — six plant-plane fields + link utilisation.
         # null when FabricEngine is not wired (headless tests, direct job-id path).
         "fabric": tick.fabric_modal,
+        # §7.4 solar bank telemetry — SLD tile sub-field.
+        # p_expected_mw: what the plant should produce at current measured POA.
+        # banks_reporting: banks with live telemetry (20 = all, old model default).
+        "p_expected_mw":   round(tick.p_expected_mw, 4),
+        "banks_reporting": tick.banks_reporting,
         # GT-1: §7.4 contingency coverage — computed per tick after dispatch arbitration.
         # null when absent (legacy path); otherwise a dict with all ContingencyCoverage fields.
         "contingency_coverage": (
@@ -1197,3 +1229,14 @@ class RunManager:
 
             self._contexts.pop(ctx.run_id, None)
             self._tasks.pop(ctx.run_id, None)
+
+            # Notify WS subscribers that the run finished naturally.
+            # Done AFTER verdict/CompletedRun are stored so the client's
+            # immediate GET /runs/{id}/result call finds the data ready.
+            # Cancelled runs skip this — the Stop button already called
+            # handleRunStopped on the frontend side.
+            if not _skip_verdict:
+                try:
+                    await self._ws_hub.notify_run_complete(ctx.run_id)
+                except Exception:  # noqa: BLE001
+                    logger.warning("run %s: notify_run_complete failed", ctx.run_id)

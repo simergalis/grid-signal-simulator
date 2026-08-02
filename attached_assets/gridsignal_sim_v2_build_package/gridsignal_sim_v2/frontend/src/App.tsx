@@ -119,8 +119,6 @@ function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
   const reset          = useTickStore(s => s.reset)
   const selectScenario = useScenarioStore(s => s.selectScenario)
 
-  useTickStream(runId)
-
   // 4 Hz render loop — drains pending WS ticks into display state.
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   useEffect(() => {
@@ -168,6 +166,11 @@ function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
     setRunId(null)
     reset()
   }, [reset])
+
+  // WS tick stream — must be called after handleRunStopped so the run_complete
+  // sentinel from the server transitions the UI to the completed state instead
+  // of spinning in a reconnect loop.
+  useTickStream(runId, handleRunStopped)
 
   const handleViewResults = useCallback((id: string) => {
     setResultsRunId(id)

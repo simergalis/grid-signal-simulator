@@ -4,10 +4,14 @@
  * Connects to WS /ws/{runId}, deserialises each message as TickPayload,
  * and pushes it to the Zustand store via pushTick().
  *
- * Reconnect behaviour: on close (including network errors) the hook
- * schedules a reconnect after RECONNECT_DELAY_MS.  Reconnect is aborted
- * if the component unmounts (the effect cleanup clears the timer and
- * closes the socket).
+ * Run-complete handling: the server sends {"type":"run_complete"} as its
+ * final message when the scenario's end_sim_time is reached, then closes
+ * the socket.  On receipt the hook calls onRunComplete() (if provided)
+ * instead of scheduling a reconnect — the run is done, not dropped.
+ *
+ * Reconnect behaviour: on any other close (network errors, server restart)
+ * the hook schedules a reconnect after RECONNECT_DELAY_MS.  Reconnect is
+ * aborted if the component unmounts.
  *
  * KNOWN BOUNDARY (Step 7): a dropped server-side subscriber (due to the
  * _SEND_TIMEOUT_S back-pressure mechanism) is NOT auto-recovered here.
@@ -23,15 +27,18 @@ import { useTickStore } from '../store/tickStore'
 
 const RECONNECT_DELAY_MS = 2_000
 
-export function useTickStream(runId: string | null) {
+export function useTickStream(runId: string | null, onRunComplete?: () => void) {
   const pushTick = useTickStore(s => s.pushTick)
   const wsRef = useRef<WebSocket | null>(null)
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Track whether the WS closed because the run completed (not a network error).
+  const runCompletedRef = useRef(false)
 
   useEffect(() => {
     if (!runId) return
 
     let destroyed = false
+    runCompletedRef.current = false
 
     function connect() {
       if (destroyed) return
@@ -41,7 +48,20 @@ export function useTickStream(runId: string | null) {
 
       ws.onmessage = (event: MessageEvent<string>) => {
         try {
-          const tick = JSON.parse(event.data) as TickPayload
+          const msg = JSON.parse(event.data) as Record<string, unknown>
+
+          // Run-complete sentinel — server sends this when end_sim_time is reached.
+          // Do NOT reconnect; call the parent callback so the UI transitions to
+          // the completed state and shows the View Results button.
+          if (msg.type === 'run_complete') {
+            console.info(`[useTickStream] run ${runId} completed naturally`)
+            runCompletedRef.current = true
+            ws.close()
+            onRunComplete?.()
+            return
+          }
+
+          const tick = msg as unknown as TickPayload
           pushTick(tick)
           // Phase 10 §12.10 — echo t_emit_ns back so the server can record
           // the round-trip latency in InstrumentPlane.observe_tick().
@@ -62,13 +82,16 @@ export function useTickStream(runId: string | null) {
 
       ws.onclose = () => {
         if (destroyed) return
+        // If the run completed normally the onmessage handler already called
+        // onRunComplete() — do not schedule a reconnect loop.
+        if (runCompletedRef.current) return
         console.info(`[useTickStream] closed for run ${runId}; reconnecting in ${RECONNECT_DELAY_MS}ms`)
         reconnectTimer.current = setTimeout(connect, RECONNECT_DELAY_MS)
       }
 
       ws.onerror = (err) => {
         console.warn('[useTickStream] error', err)
-        ws.close()  // triggers onclose → scheduled reconnect
+        ws.close()  // triggers onclose → scheduled reconnect (unless run completed)
       }
     }
 
@@ -79,5 +102,5 @@ export function useTickStream(runId: string | null) {
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current)
       wsRef.current?.close()
     }
-  }, [runId, pushTick])
+  }, [runId, pushTick, onRunComplete])
 }

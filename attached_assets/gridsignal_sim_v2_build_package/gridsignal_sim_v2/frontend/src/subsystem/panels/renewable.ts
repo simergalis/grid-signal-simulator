@@ -34,7 +34,7 @@ export const renewablePanel: PanelConfig = {
         chart: React.createElement('div', { className: 'font-mono text-xs text-muted py-12 text-center' }, 'No data'),
         statRows: [],
         why: [
-          'Renewable output is subtracted from the load the fleet must serve.',
+          'Renewable output is subtracted from the load generators and the battery must serve.',
           'It is never added to ramp capability — it cannot be commanded, and carries no lead time on loss.',
           'A 5 MW solar collapse and a 5 MW compute spike are the same event to the arbitrator.',
         ],
@@ -76,7 +76,7 @@ export const renewablePanel: PanelConfig = {
         note:   solarMW > 0 ? 'contributing at rated output' : 'zero output — full load falls to dispatchable sources',
       }),
       React.createElement(BulletBar, {
-        label:  'Gap if output is lost instantaneously',
+        label:  'If solar stopped this second',
         value:  exposureMW,
         max:    Math.max(exposureMW, 5),
         colour: RED,
@@ -99,8 +99,8 @@ export const renewablePanel: PanelConfig = {
         { label: 'Output',                  value: `${solarMW.toFixed(2)} MW`, sub: 'real-time · instantaneous' },
         // net_demand_mw is the live interpolated field the fleet must cover after solar
         // offset — it changes visibly as compute ramps from idle (near 0) to full draw
-        { label: 'Fleet must cover',        value: `${netDemand.toFixed(2)} MW`, colour: netDemand > 0 ? TEAL : SOLAR, sub: 'net demand after solar offset · live' },
-        { label: 'Share of site draw',      value: shareDisplay, sub: shareNote },
+        { label: 'Generators and battery covering', value: `${netDemand.toFixed(2)} MW`, colour: netDemand > 0 ? TEAL : SOLAR, sub: 'net demand after solar offset · live' },
+        { label: 'Share of what the site is using', value: shareDisplay, sub: shareNote },
         // Solar weather forecast from Mistral — constant per run, stamped on every tick.
         // weather label drives the colour: physics_estimate shown in muted grey.
         (() => {
@@ -130,9 +130,9 @@ export const renewablePanel: PanelConfig = {
       ],
       secondary,
       why: [
-        'Renewable output is subtracted from the load the fleet must serve.',
+        'Renewable output is subtracted from the load generators and the battery must serve.',
         'It is never added to ramp capability, because it cannot be commanded and carries no lead time on loss.',
-        `Fleet must cover ${netDemand.toFixed(1)} MW right now. A ${solarMW.toFixed(1)} MW solar collapse instantly adds ${solarMW.toFixed(1)} MW to that figure with no advance warning.`,
+        `Generators and battery are covering ${netDemand.toFixed(1)} MW right now. A ${solarMW.toFixed(1)} MW solar collapse instantly adds ${solarMW.toFixed(1)} MW to that figure with no advance warning.`,
       ],
     }
   },

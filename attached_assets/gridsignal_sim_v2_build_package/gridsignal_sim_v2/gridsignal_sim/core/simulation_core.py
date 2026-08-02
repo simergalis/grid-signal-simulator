@@ -745,6 +745,12 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         checkpoint_states=checkpoint_states,
         wall_stamp_utc=clock.wall_stamp_utc,
         p_renewable_mw=p_renewable_mw,
+        # §7.4 SLD tile sub-fields.  The run-loop solar model is a single
+        # healthy array — output ≈ expected and all 20 banks are reporting.
+        # The bank-level console (renewable/solar.py SolarSim) holds the
+        # detailed per-bank breakdown; these are the SLD-tile summary values.
+        p_expected_mw=p_renewable_mw,
+        banks_reporting=20,
         bess_bridging_seconds=bess_bridging_seconds,
         dt_lead_next_s=dt_lead_next_s,
         bridging_basis=bridging_basis,

@@ -53,8 +53,12 @@ function nodeDetail(def: NodeDef, tick: TickPayload | null): string {
       return `${units.length} unit${units.length === 1 ? '' : 's'} · ${online} online · N−1 firm ${n1Firm.toFixed(1)} MW`
     }
     case 'solar-pv': {
-      const mw = tick?.p_renewable_mw ?? 0
-      return mw > 0.1 ? `non-dispatchable · 4.99 MW rated` : `non-dispatchable · 4.99 MW rated`
+      if (tick) {
+        const exp       = (tick as unknown as Record<string, number>).p_expected_mw ?? 0
+        const reporting = (tick as unknown as Record<string, number>).banks_reporting ?? 0
+        return `exp ${exp.toFixed(2)} MW · ${reporting} of 20 banks reporting`
+      }
+      return 'non-dispatchable · 4.99 MW rated'
     }
     case 'battery-bess': {
       const soc     = tick?.bess_soc_fraction ?? 0.95

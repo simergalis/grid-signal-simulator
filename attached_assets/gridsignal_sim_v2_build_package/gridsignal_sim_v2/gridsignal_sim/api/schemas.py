@@ -727,7 +727,14 @@ class StartRunRequest(BaseModel):
         description="Number of GPU nodes; required when scenario_id is not set.",
     )
     hardware_profile_id: str = "enterprise_8gpu_air"
-    end_sim_time: float = Field(default=300.0, gt=0, description="Simulated seconds to run")
+    end_sim_time: Optional[float] = Field(
+        default=None,
+        gt=0,
+        description=(
+            "Simulated seconds to run.  None (default) means use the scenario's own "
+            "end_sim_time.  Pass 1e15 for an effectively unlimited run."
+        ),
+    )
     playback_speed: float = Field(
         default=0.0,
         ge=0,

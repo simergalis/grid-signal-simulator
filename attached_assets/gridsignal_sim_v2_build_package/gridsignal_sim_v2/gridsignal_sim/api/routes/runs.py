@@ -118,7 +118,13 @@ async def start_run(
         # a materialised timeline, never calls a network service.
 
         _loop         = asyncio.get_event_loop()
-        _sim_duration = float(spec_data.get("end_sim_time", 300.0))
+        # body.end_sim_time overrides the scenario spec when the operator
+        # explicitly picks a duration in the UI; None means "use the spec".
+        _sim_duration = (
+            float(body.end_sim_time)
+            if body.end_sim_time is not None
+            else float(spec_data.get("end_sim_time", 300.0))
+        )
         _solar_mw     = float(spec_data.get("solar_rated_mw", 0.0))
         _steps_raw    = spec_data.get("irradiance_steps", [[0.0, 1.0]])
         _is_default_irr = (
@@ -355,7 +361,7 @@ async def start_run(
             job_id=body.job_id,
             node_count=body.node_count,
             hardware_profile_id=body.hardware_profile_id,
-            end_sim_time=body.end_sim_time,
+            end_sim_time=body.end_sim_time if body.end_sim_time is not None else 300.0,
             playback_speed=body.playback_speed,
         )
 

@@ -626,3 +626,12 @@ class TickResult:
     #   packet_loss, retransmit_rate, control_latency_ms
     # Plus per-link utilisation vector (link_id → u) for the heat strip.
     fabric_modal: Optional[dict] = None
+
+    # §7.4 solar bank telemetry — wired to the SLD tile sub-field.
+    # p_expected_mw: what the array should produce at current measured POA
+    #   (rated × cloud_factor — soiling excluded so faults surface as shortfall).
+    #   For the run-loop old model this equals p_renewable_mw (one healthy array).
+    # banks_reporting: banks with live telemetry.  Old model has no per-bank
+    #   telemetry; 20 = all banks reporting (safe default, honest for normal runs).
+    p_expected_mw:   float = 0.0
+    banks_reporting: int   = 20
