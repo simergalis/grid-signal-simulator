@@ -427,6 +427,16 @@ class RunContext:
     # Phase 10: FabricEngine — None when not wired (headless tests, direct path).
     fabric_engine: Optional[Any] = None            # FabricEngine
 
+    # GT-2: telemetry corruption wiring.
+    # telemetry_corruption is set by api/routes/runs.py after build_run_context_from_spec()
+    # when the spec includes a telemetry_corruption_config block.  None = clean run (default).
+    # _corruption_rng: per-run Random instance for noise draws (seeded from schedule seed).
+    # _bess_soc_history: rolling list of clean SoC MWh values used to satisfy staleness
+    # lookbacks (entry.staleness > 0 needs the reading from N ticks ago).
+    telemetry_corruption: Optional[Any] = None          # TelemetryCorruptionSchedule
+    _corruption_rng: Optional[Any] = field(default=None, repr=False)
+    _bess_soc_history: list = field(default_factory=list)  # clean SoC MWh, chronological
+
     def is_complete(self) -> bool:
         return self.cancelled or self.sim_time >= self.end_sim_time
 
@@ -588,6 +598,128 @@ def _update_thermal_state(ctx: RunContext, tick: TickResult) -> None:
     ctx._inlet_temp_c = _INLET_LO_C + utilisation * (_INLET_HI_C - _INLET_LO_C) * 0.85
 
 
+# ---------------------------------------------------------------------------
+# GT-2: telemetry corruption — recompute contingency_coverage with noisy SoC
+# ---------------------------------------------------------------------------
+
+def _apply_soc_corruption(ctx: "RunContext", tick_result: "TickResult") -> "TickResult":
+    """Apply the pre-generated corruption schedule to BESS SoC and recompute
+    contingency_coverage.  Returns a new TickResult (via _dc_replace) with the
+    corrupted ContingencyCoverage.
+
+    Design:
+    - The clean physics SoC drives dispatch (unchanged).  Corruption is applied at
+      the reporting layer only, simulating a noisy meter or stale sensor reading.
+    - bess_soc_fraction on TickResult is NOT altered (that's the physics value used
+      by agents and the verdict engine).  Only contingency_coverage.bess_usable_energy_mwh
+      and the downstream energy-test / state fields change.
+    - Dropout (entry.dropout=True) → suppress the corrupted re-computation entirely;
+      the tick carries the last clean contingency_coverage without update.
+    """
+    # Lazy imports — core/ and runtime/ are allowed; avoid import cycles with api/
+    from runtime.telemetry_corruption import apply_corruption   # runtime → runtime OK
+    from core.contingency import (                               # runtime → core OK
+        BessSnapshot, PlantState, TurbineSnapshot, evaluate_contingency,
+    )
+    from core.asset_modules import TurbineState                 # runtime → core OK
+
+    # tick_index is 1-based; schedule is 0-based.
+    entry = ctx.telemetry_corruption.for_tick(tick_result.tick_index - 1)  # type: ignore[union-attr]
+
+    # Fast path — no corruption scheduled for this tick.
+    if entry.noise_sigma == 0.0 and not entry.dropout and entry.staleness == 0:
+        _update_soc_history(ctx, tick_result)
+        return tick_result
+
+    # Initialise the per-run noise RNG on first use.
+    if ctx._corruption_rng is None:
+        import random as _random
+        ctx._corruption_rng = _random.Random(
+            ctx.telemetry_corruption.seed  # type: ignore[union-attr]
+        )
+
+    # Current clean BESS SoC (MWh) — sum across all units (single-unit common case).
+    clean_soc_mwh: float = sum(b.soc_mwh for b in ctx.sim_state.bess_units)
+
+    # Stale value: reading from N ticks ago, or None if history is too short.
+    stale_val: Optional[float] = (
+        ctx._bess_soc_history[-entry.staleness]
+        if entry.staleness > 0 and len(ctx._bess_soc_history) >= entry.staleness
+        else None
+    )
+
+    # Record clean value BEFORE applying (so the caller doesn't see today's value
+    # when looking back 1 tick — they should see last tick's clean reading).
+    _update_soc_history(ctx, tick_result)
+
+    corrupted_soc_mwh, suppressed = apply_corruption(
+        clean_soc_mwh,
+        entry,
+        stale_value=stale_val,
+        rng=ctx._corruption_rng,
+    )
+
+    if suppressed or corrupted_soc_mwh is None:
+        # Dropout: leave contingency_coverage untouched.
+        return tick_result
+
+    # Clamp to [0, total_usable_mwh]: a noisy meter can't report < 0 or > nameplate.
+    total_usable: float = sum(b.config.usable_mwh for b in ctx.sim_state.bess_units)
+    corrupted_soc_mwh = max(0.0, min(total_usable, corrupted_soc_mwh))
+
+    if abs(corrupted_soc_mwh - clean_soc_mwh) < 1e-9:
+        return tick_result  # No effective change after clamping.
+
+    # Scale each BESS unit's SoC proportionally so sum == corrupted_soc_mwh.
+    # Single-unit case: trivial.  Multi-unit: proportional split preserves relative charge.
+    scale: float = corrupted_soc_mwh / clean_soc_mwh if clean_soc_mwh > 0.0 else 0.0
+    corrupted_bess: tuple = tuple(
+        BessSnapshot(
+            asset_id=b.config.asset_id,
+            rated_mw=b.config.rated_mw,
+            soc_mwh=(b.soc_mwh * scale if clean_soc_mwh > 0.0 else 0.0),
+            usable_mwh=b.config.usable_mwh,
+            p_anchor_reserve_mw=b.config.p_anchor_reserve_mw,
+            grid_forming=b.config.grid_forming,
+        )
+        for b in ctx.sim_state.bess_units
+    )
+
+    # Rebuild turbine snapshots from current sim_state (valid between ticks).
+    turbine_snaps: tuple = tuple(
+        TurbineSnapshot(
+            asset_id=t.config.asset_id,
+            current_output_mw=t.output_mw(),
+            rated_mw=t.config.rated_mw,
+            r_asset_mw_per_s=t.config.r_asset_mw_per_s,
+            is_synchronized=(t.state != TurbineState.OFFLINE),
+        )
+        for t in ctx.sim_state.turbines
+    )
+
+    corrupted_plant = PlantState(
+        turbine_snapshots=turbine_snaps,
+        bess_snapshots=corrupted_bess,
+        island_mode=ctx.sim_state.site.island_mode,
+        curtailable_capacity_mw=ctx.sim_state.curtailment_ladder.total_capacity_mw(),
+        renewable_mw=tick_result.p_renewable_mw,
+    )
+
+    corrupted_coverage = evaluate_contingency(corrupted_plant)
+    return _dc_replace(tick_result, contingency_coverage=corrupted_coverage)
+
+
+def _update_soc_history(ctx: "RunContext", tick_result: "TickResult") -> None:
+    """Append the current clean BESS SoC MWh to the rolling staleness history.
+    Bounded to 60 entries (5 minutes at 5 s/tick) — more than any realistic
+    max_stale setting.
+    """
+    clean_soc_mwh: float = sum(b.soc_mwh for b in ctx.sim_state.bess_units)
+    ctx._bess_soc_history.append(clean_soc_mwh)
+    if len(ctx._bess_soc_history) > 60:
+        ctx._bess_soc_history.pop(0)
+
+
 # AD2: dedicated bounded executor for advisory (LLM) calls.
 #
 # asyncio.to_thread() uses the loop's default ThreadPoolExecutor
@@ -729,6 +861,22 @@ class RunManager:
                 if _profiling: _t0 = _time_module.perf_counter()
                 tick_result = ctx.step()                           # sync, in-budget (Design Spec 4.3)
                 if _profiling: _sec.setdefault("A_evaluate_tick", []).append(_time_module.perf_counter() - _t0)
+
+                # ── A2: telemetry corruption (GT-2) ───────────────────────
+                # Recompute contingency_coverage with a noisy BESS SoC reading
+                # when a TelemetryCorruptionSchedule is attached to the context.
+                # The clean physics SoC used for dispatch is preserved; only the
+                # contingency_coverage field is replaced on tick_result.
+                # Runs only when telemetry_corruption is set (spec-path runs with
+                # telemetry_corruption_config); all other runs (tests, load tests,
+                # direct job-id path) are unaffected.
+                if ctx.telemetry_corruption is not None and tick_result.contingency_coverage is not None:
+                    if _profiling: _t0 = _time_module.perf_counter()
+                    tick_result = _apply_soc_corruption(ctx, tick_result)
+                    if _profiling: _sec.setdefault("A2_soc_corruption", []).append(_time_module.perf_counter() - _t0)
+                elif ctx.telemetry_corruption is not None:
+                    # contingency_coverage is None (no turbines) — still track history.
+                    _update_soc_history(ctx, tick_result)
 
                 # ── B: thermal state (BEFORE sink/broadcast) ──────────────
                 # Enrich the frozen TickResult with thermal fields via
