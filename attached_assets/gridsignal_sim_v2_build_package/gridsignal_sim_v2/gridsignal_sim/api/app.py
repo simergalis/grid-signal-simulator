@@ -65,6 +65,20 @@ from api.db import create_auth_tables
 _FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
 
 
+async def _solar_tick_loop(sim) -> None:
+    """Drive the SolarSim at 1 Hz from a background task.
+
+    A bad tick must not kill the loop — matches the behaviour of the
+    standalone renewable console's _tick_loop() in main.py.
+    """
+    while True:
+        await asyncio.sleep(1.0)
+        try:
+            sim.tick()
+        except Exception as exc:
+            sim._log("Tick error: %s" % exc, "bad")
+
+
 @asynccontextmanager
 async def _lifespan(application: FastAPI):
     """Create process-lifetime singletons and attach them to app.state.
@@ -73,6 +87,10 @@ async def _lifespan(application: FastAPI):
       scenario_store — in-memory ScenarioStore pre-seeded with the seven
       built-in demo scenarios.  Step 9 replaces this with a SqliteScenarioStore
       using the same Scenario ORM entity (runtime/persistence.py) + spec_json.
+
+    Renewable console addition:
+      solar_sim — SolarSim singleton ticked at 1 Hz so /api/solar/state
+      always returns fresh data without a run being active.
     """
     # Ensure AuthUser table exists before any requests arrive.
     await create_auth_tables()
@@ -83,11 +101,20 @@ async def _lifespan(application: FastAPI):
     application.state.ws_hub = hub
     application.state.run_manager = manager
     application.state.scenario_store = scenario_store
+
+    # Renewable Supply Console — one SolarSim per process, ticked continuously.
+    from renewable.solar import SolarSim
+    solar_sim = SolarSim()
+    application.state.solar_sim = solar_sim
+    _solar_ticker = asyncio.create_task(_solar_tick_loop(solar_sim))
+
     yield
+
     # Cancel all in-flight run tasks so that TestClient (which waits for
     # the event loop to drain on __exit__) and graceful uvicorn shutdown
     # both complete promptly rather than hanging on end_sim_time=1e15 runs.
     # _drive() catches CancelledError, runs its finally block, then exits.
+    _solar_ticker.cancel()
     running_tasks = list(manager._tasks.values())
     for task in running_tasks:
         task.cancel()
@@ -136,7 +163,8 @@ def create_app() -> FastAPI:
         # Admin routes have their own key/session auth (_require_admin) so
         # the cookie middleware must not block them before they are reached.
         if not path.startswith("/api/") or path in _UNPROTECTED \
-                or path.startswith("/api/auth/") or path.startswith("/api/admin"):
+                or path.startswith("/api/auth/") or path.startswith("/api/admin") \
+                or path.startswith("/api/solar/"):
             return await call_next(request)
         token = request.cookies.get(COOKIE_NAME)
         if not token or decode_access_token(token) is None:
