@@ -163,7 +163,7 @@ export function VerdictBand() {
     claimColour = '#3fb6a8'
     subtitle    = 'turbine ramping · battery bridging the gap · nothing waited for a sensor'
   } else if (hasRun) {
-    claimWord   = 'READY'
+    claimWord   = '0 s'
     claimSuffix = '— all systems armed and dispatchable'
     claimColour = '#3fb6a8'
     subtitle    = `confidence band nominal · ${
