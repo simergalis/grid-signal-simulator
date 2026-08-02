@@ -112,6 +112,16 @@ export const renewablePanel: PanelConfig = {
           const label = w.replace(/_/g, ' ')
           return { label: 'Conditions', value: label, sub: c || 'Mistral solar forecast · San Diego', colour: SOLAR }
         })(),
+        // PROTO-32-AMB: ambient temperature row — hidden when ambient_avg_c is 0
+        // (no solar forecast was generated for this run, so the adjustment is absent).
+        ...(tick.ambient_avg_c > 0 ? [(() => {
+          const pct = (tick.ambient_alpha_scale - 1) * 100
+          const sign = pct >= 0 ? '+' : ''
+          const adj = Math.abs(pct) < 0.1
+            ? 'cooling nominal (19 °C baseline)'
+            : `cooling ${sign}${pct.toFixed(0)} % vs 19 °C baseline`
+          return { label: 'Ambient temp', value: `${tick.ambient_avg_c.toFixed(1)} °C avg`, sub: adj, colour: pct > 0 ? AMBER : TEAL }
+        })()] : []),
         { label: 'Counted toward reserve',  value: 'never', colour: AMBER, sub: 'availability, not dispatchability · §7.1.1' },
         { label: 'Control surface',         value: 'none', sub: 'passive collector — nothing to command' },
         { label: 'Lead time on loss',       value: '0 s', colour: RED, sub: 'no advance signal exists' },

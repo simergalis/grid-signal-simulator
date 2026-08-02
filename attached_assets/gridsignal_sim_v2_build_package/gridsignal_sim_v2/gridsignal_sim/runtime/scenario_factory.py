@@ -405,9 +405,15 @@ def build_run_context_from_spec(
     # Applied after the explicit alpha_max / plant_alpha_max read so that the
     # spec-level value is always the baseline and ambient modulates around it.
     _ambient_steps_raw = spec_data.get("ambient_steps", [])
+    _ambient_avg_c:   float = 0.0
+    _ambient_scale:   float = 1.0
     if _ambient_steps_raw:
         from runtime.solar_sim import ambient_alpha_scale  # lazy — runtime→runtime OK
-        site.alpha_max = site.alpha_max * ambient_alpha_scale(_ambient_steps_raw)
+        _scale = ambient_alpha_scale(_ambient_steps_raw)
+        _drybulbs = [float(db) for _, db, _ in _ambient_steps_raw]
+        _ambient_avg_c = sum(_drybulbs) / len(_drybulbs)
+        _ambient_scale = _scale
+        site.alpha_max = site.alpha_max * _scale
 
     # Step 10 — §8.1: wire optional pre-staging config from spec.
     # Must be set before SimulationState() so __post_init__ picks it up.
@@ -628,6 +634,9 @@ def build_run_context_from_spec(
         _rated_cooling_mw=_spec_rated_cooling_mw,
         # AB2: for §21.2 cost model in energy-summary endpoint.
         turbine_rated_mw=_spec_total_turbine_mw,
+        # PROTO-32-AMB: ambient temperature metadata for the Solar PV modal.
+        ambient_avg_c=_ambient_avg_c,
+        ambient_alpha_scale=_ambient_scale,
         # AE2: per-unit specs as plain dicts for the fleet modal.
         turbine_unit_specs=tuple(
             {

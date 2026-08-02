@@ -201,6 +201,10 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # per run).  Empty strings when solar is absent or run started via direct path.
         "solar_weather":    tick.solar_weather,
         "solar_conditions": tick.solar_conditions,
+        # PROTO-32-AMB: ambient temperature metadata — constant per run.
+        # 0.0 / 1.0 when ambient_steps were absent (no solar forecast).
+        "ambient_avg_c":       round(tick.ambient_avg_c, 2),
+        "ambient_alpha_scale": round(tick.ambient_alpha_scale, 4),
         # W2a: advisory telemetry — None when no registry is active (LP-1 / tests).
         # Keys: backend, agents_armed, proposals_total, proposals_pending,
         #        last_proposal_sim_time, per_agent (dict[str, float]).
@@ -384,6 +388,10 @@ class RunContext:
     # empty strings on direct job-id path or when solar is absent.
     solar_weather:    str = ""
     solar_conditions: str = ""
+    # PROTO-32-AMB: ambient temperature metadata — set by build_run_context_from_spec
+    # when ambient_steps are present.  0.0 / 1.0 on direct path or runs without solar.
+    ambient_avg_c:      float = 0.0   # average dry-bulb °C across the run window
+    ambient_alpha_scale: float = 1.0  # factor applied to site.alpha_max (>1 = hotter)
 
     # W1 — advisory, telemetry, procurement wiring (all Optional so existing
     # tests that call build_run_context() directly are unaffected).
@@ -909,6 +917,9 @@ class RunManager:
                     # a separate endpoint.  Empty strings on direct job-id path.
                     solar_weather=ctx.solar_weather,
                     solar_conditions=ctx.solar_conditions,
+                    # PROTO-32-AMB: ambient temperature — constant per run.
+                    ambient_avg_c=ctx.ambient_avg_c,
+                    ambient_alpha_scale=ctx.ambient_alpha_scale,
                     # W2a: advisory telemetry — snapshot from the gate *before* this
                     # tick's run_all() (section E).  Reflects proposals from ticks 0…t−1.
                     # None when no registry is wired (LP-1 / headless tests).

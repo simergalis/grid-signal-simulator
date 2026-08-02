@@ -62,6 +62,9 @@ export interface TickPayload {
   // "physics_estimate" when Mistral was unavailable; otherwise the Mistral label.
   solar_weather:    string
   solar_conditions: string
+  // PROTO-32-AMB: ambient temperature — constant per run; 0.0 / 1.0 when absent.
+  ambient_avg_c:       number  // average dry-bulb °C across the run window
+  ambient_alpha_scale: number  // scale applied to site.alpha_max (>1 = hotter than nominal)
 
   // GT-1: §7.4 contingency coverage — quantitative N−1 gen-trip assessment.
   // null on legacy ticks that predate the engine (should not occur in normal runs).

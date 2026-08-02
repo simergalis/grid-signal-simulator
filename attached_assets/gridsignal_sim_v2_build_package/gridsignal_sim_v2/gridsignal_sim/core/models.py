@@ -602,6 +602,11 @@ class TickResult:
     # present in the scenario or the run was started via the direct job-id path.
     solar_weather:    str = ""
     solar_conditions: str = ""
+    # PROTO-32-AMB: ambient temperature metadata — constant per run, stamped so the
+    # Solar PV modal can surface the weather-to-cooling link without a separate endpoint.
+    # 0.0 / 1.0 on runs without a solar forecast or direct job-id path.
+    ambient_avg_c:       float = 0.0  # average dry-bulb °C across the run window
+    ambient_alpha_scale: float = 1.0  # scale applied to site.alpha_max (>1 = hotter)
     # GT-1: §7.4 contingency coverage — computed each tick after dispatch
     # arbitration.  None only when the tick is produced by a code path that
     # predates the contingency engine (should not occur in normal operation).
