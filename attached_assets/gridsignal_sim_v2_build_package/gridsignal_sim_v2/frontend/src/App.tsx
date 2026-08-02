@@ -37,6 +37,7 @@ import { ProcurementPage }         from './components/ProcurementPage'
 import { ThermalCoolingPage }      from './components/ThermalCoolingPage'
 import { ScenarioPlannerPage }     from './components/ScenarioPlannerPage'
 import { AdminPage }               from './components/AdminPage'
+import { ChangePasswordModal }     from './components/ChangePasswordModal'
 import { useTickStore }            from './store/tickStore'
 import { useScenarioStore }        from './store/scenarioStore'
 import { useTickStream }           from './ws/useTickStream'
@@ -109,8 +110,9 @@ function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
   const [currentPage,   setCurrentPage]   = useState<PageView>(() =>
     role === 'admin' && window.location.pathname === '/admin' ? 'admin' : 'readiness'
   )
-  const [agentsEnabled, setAgentsEnabled] = useState(true)
-  const [topoOpen,      setTopoOpen]      = useState(false)
+  const [agentsEnabled,       setAgentsEnabled]       = useState(true)
+  const [topoOpen,            setTopoOpen]            = useState(false)
+  const [changePasswordOpen,  setChangePasswordOpen]  = useState(false)
 
   const drainFrame     = useTickStore(s => s.drainFrame)
   const setRunMeta     = useTickStore(s => s.setRunMeta)
@@ -214,6 +216,7 @@ function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
           role={role}
           onLogout={onLogout}
           onAdmin={role === 'admin' ? () => setCurrentPage('admin') : undefined}
+          onChangePassword={() => setChangePasswordOpen(true)}
         />
 
         <main className="flex-1 overflow-hidden">
@@ -231,6 +234,10 @@ function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
 
         {topoOpen && (
           <TopologyExplainer onClose={() => setTopoOpen(false)} />
+        )}
+
+        {changePasswordOpen && (
+          <ChangePasswordModal onClose={() => setChangePasswordOpen(false)} />
         )}
 
         {drawerOpen && (

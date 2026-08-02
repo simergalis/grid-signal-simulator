@@ -1,10 +1,11 @@
 """
 api/routes/auth_routes.py — Authentication endpoints.
 
-POST /api/auth/request-code  — email a 6-digit sign-in code to the address
-POST /api/auth/login          — verify the code and set a session cookie
-POST /api/auth/logout         — clear the session cookie
-GET  /api/auth/me             — return current user info (requires valid session)
+POST /api/auth/request-code      — email a 6-digit sign-in code to the address
+POST /api/auth/login             — verify the code and set a session cookie
+POST /api/auth/logout            — clear the session cookie
+GET  /api/auth/me                — return current user info (requires valid session)
+POST /api/auth/change-password   — change the authenticated user's password
 
 Codes expire after 10 minutes and are invalidated after 5 wrong guesses.
 A new code can only be requested once every 60 seconds per address.
@@ -68,6 +69,11 @@ class MeResponse(BaseModel):
     email: str
     display_name: str
     role: str
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str | None = None  # None when no password has been set yet
+    new_password: str
 
 
 # ---------------------------------------------------------------------------
@@ -216,3 +222,52 @@ async def me(current_user: AuthUser = Depends(get_current_user)):
         display_name=current_user.display_name,
         role=current_user.role,
     )
+
+
+@router.get("/password-status")
+async def password_status(current_user: AuthUser = Depends(get_current_user)):
+    """Return whether the authenticated user has a password set."""
+    has_pw = bool(current_user.password_hash)
+    return {"has_password": has_pw}
+
+
+@router.post("/change-password", status_code=status.HTTP_200_OK)
+async def change_password(
+    body: ChangePasswordRequest,
+    current_user: AuthUser = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db_session),
+):
+    """
+    Update the authenticated user's password.
+
+    - If the account has no password set (hash is empty string), *current_password*
+      is ignored — this is the first-time password-set path.
+    - If a password is already set, *current_password* must match before the new
+      one is stored.
+    - New password must be at least 8 characters.
+    """
+    from api.auth_utils import hash_password, verify_password
+
+    if len(body.new_password) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="New password must be at least 8 characters.",
+        )
+
+    has_existing = bool(current_user.password_hash)
+    if has_existing:
+        if not body.current_password:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Current password is required.",
+            )
+        if not verify_password(body.current_password, current_user.password_hash):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Current password is incorrect.",
+            )
+
+    current_user.password_hash = hash_password(body.new_password)
+    await db.commit()
+    _log.info("User %s changed their password", current_user.email)
+    return {"ok": True}

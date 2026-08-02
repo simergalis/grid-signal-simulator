@@ -17,6 +17,7 @@ interface Props {
   role?: string
   onLogout?: () => void
   onAdmin?: () => void
+  onChangePassword?: () => void
 }
 
 function utcNow(): string {
@@ -29,7 +30,7 @@ function utcNow(): string {
   )
 }
 
-export function GridSignalHeader({ runId, onHowItWorks, displayName, role, onLogout, onAdmin }: Props) {
+export function GridSignalHeader({ runId, onHowItWorks, displayName, role, onLogout, onAdmin, onChangePassword }: Props) {
   const [clock, setClock] = useState(utcNow)
 
   useEffect(() => {
@@ -111,6 +112,17 @@ export function GridSignalHeader({ runId, onHowItWorks, displayName, role, onLog
               aria-label="Admin panel"
             >
               ⚙ Admin
+            </button>
+          )}
+          {onChangePassword && (
+            <button
+              onClick={onChangePassword}
+              className="px-2 py-1 rounded border border-border font-sans
+                         text-muted hover:text-text hover:border-muted/50 transition-colors"
+              style={{ fontSize: 10 }}
+              aria-label="Change password"
+            >
+              Change password
             </button>
           )}
           {onLogout && (
