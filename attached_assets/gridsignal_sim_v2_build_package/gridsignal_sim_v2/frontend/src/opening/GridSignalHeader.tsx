@@ -8,7 +8,7 @@
  * Inner pages (Overview, Proposals, …) use the existing RunControlBar + SimClockHeader.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface Props {
   runId: string | null
@@ -30,8 +30,63 @@ function utcNow(): string {
   )
 }
 
+const DEFAULT_SITE_NAME = 'Riverbend DC-West'
+
 export function GridSignalHeader({ runId, onHowItWorks, displayName, role, onLogout, onAdmin, onChangePassword }: Props) {
   const [clock, setClock] = useState(utcNow)
+
+  // ── Site name (editable) ──────────────────────────────────────────────────
+  const [siteName, setSiteName]   = useState(DEFAULT_SITE_NAME)
+  const [hovering, setHovering]   = useState(false)
+  const [editing, setEditing]     = useState(false)
+  const [editValue, setEditValue] = useState(DEFAULT_SITE_NAME)
+  const [saving, setSaving]       = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // Fetch on mount
+  useEffect(() => {
+    fetch('/api/site/settings')
+      .then(r => r.ok ? r.json() : null)
+      .then((d: { site_name?: string } | null) => {
+        if (d?.site_name) setSiteName(d.site_name)
+      })
+      .catch(() => {})
+  }, [])
+
+  // Focus input when editing starts
+  useEffect(() => {
+    if (editing) inputRef.current?.select()
+  }, [editing])
+
+  const startEdit = () => {
+    setEditValue(siteName)
+    setEditing(true)
+  }
+
+  const cancelEdit = () => {
+    setEditing(false)
+    setHovering(false)
+  }
+
+  const commitEdit = async () => {
+    const trimmed = editValue.trim()
+    if (!trimmed || trimmed === siteName) { cancelEdit(); return }
+    setSaving(true)
+    try {
+      const resp = await fetch('/api/site/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ site_name: trimmed }),
+      })
+      if (resp.ok) {
+        const d = await resp.json() as { site_name: string }
+        setSiteName(d.site_name)
+      }
+    } catch { /* keep previous name */ }
+    setSaving(false)
+    setEditing(false)
+    setHovering(false)
+  }
 
   useEffect(() => {
     const id = setInterval(() => setClock(utcNow()), 1000)
@@ -73,11 +128,55 @@ export function GridSignalHeader({ runId, onHowItWorks, displayName, role, onLog
       {/* ── Separator ─────────────────────────────────────────────────────── */}
       <div className="self-stretch w-px bg-border mx-0" />
 
-      {/* ── Site info ─────────────────────────────────────────────────────── */}
+      {/* ── Site info (click name to rename) ─────────────────────────────── */}
       <div className="flex flex-col justify-center px-5" style={{ minWidth: 200 }}>
-        <div className="font-sans font-medium" style={{ fontSize: 13, color: '#e6ecf2' }}>
-          Riverbend DC-West
-        </div>
+        {editing ? (
+          <input
+            ref={inputRef}
+            value={editValue}
+            onChange={e => setEditValue(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') { e.preventDefault(); void commitEdit() }
+              if (e.key === 'Escape') cancelEdit()
+            }}
+            onBlur={() => { void commitEdit() }}
+            disabled={saving}
+            maxLength={80}
+            className="font-sans font-medium bg-transparent border-b outline-none"
+            style={{
+              fontSize: 13,
+              color: '#e6ecf2',
+              borderColor: '#3fb6a8',
+              width: '100%',
+              paddingBottom: 1,
+            }}
+          />
+        ) : (
+          <button
+            onClick={startEdit}
+            onMouseEnter={() => setHovering(true)}
+            onMouseLeave={() => setHovering(false)}
+            className="flex items-center gap-1.5 text-left bg-transparent border-none p-0 cursor-text"
+            title="Click to rename"
+            style={{ fontFamily: 'inherit' }}
+          >
+            <span className="font-sans font-medium" style={{ fontSize: 13, color: '#e6ecf2' }}>
+              {siteName}
+            </span>
+            <span
+              style={{
+                fontSize: 10,
+                color: '#3fb6a8',
+                opacity: hovering ? 1 : 0,
+                transition: 'opacity 0.15s',
+                userSelect: 'none',
+              }}
+              aria-hidden="true"
+            >
+              ✎
+            </span>
+          </button>
+        )}
         <div className="font-sans" style={{ fontSize: 10, color: '#7d8b9c', marginTop: 2 }}>
           Islanded microgrid · supervised tier
         </div>

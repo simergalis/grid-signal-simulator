@@ -47,10 +47,12 @@ class BankState:
     inverter_temp_c: float = 41.0
     soil_bias: float = 1.0                  # per-bank soiling/mismatch spread
     telemetry_age_s: float = 0.0
-    fault: Optional[str] = None             # "arc_fault" | "overtemp" | "feeder_open" | None
+    fault: Optional[str] = None             # "arc_fault" | "overtemp" | "feeder_open" | "operator_shutdown" | None
     # classifier outputs — managed by _update_bank_classifier
     state: str = "nominal"                  # nominal | degraded | out | no_comms
     reason: Optional[str] = None           # strings_open | inverter_derate | unknown | None
+    # operator-commanded shutdown — distinct from a fault; reversible via bank_on / feeder_on
+    operator_shutdown: bool = False
     # private hysteresis state (excluded from JSON output)
     _cand_state: str = field(default="nominal", init=False, repr=False, compare=False)
     _cand_ticks: int  = field(default=0,         init=False, repr=False, compare=False)
@@ -498,12 +500,14 @@ def _build_feeder_snapshots(cfg: SiteConfig, st: PlantState) -> List[Dict]:
             f_state = "nominal"
 
         result.append({
-            "id":          fid,
-            "label":       label,
-            "output_mw":   output,
-            "expected_mw": expected,
-            "bank_ids":    [b.id for b in banks],
-            "state":       f_state,
+            "id":               fid,
+            "label":            label,
+            "output_mw":        output,
+            "expected_mw":      expected,
+            "bank_ids":         [b.id for b in banks],
+            "state":            f_state,
+            # True only when every bank in the feeder was shut down by the operator
+            "operator_shutdown": all(b.operator_shutdown for b in banks),
         })
     return result
 
@@ -522,6 +526,7 @@ def _build_bank_snapshots(cfg: SiteConfig, st: PlantState) -> List[Dict]:
         "strings_total":     b.strings_total,
         "inverter_temp_c":   b.inverter_temp_c,
         "telemetry_age_s":   b.telemetry_age_s,
+        "operator_shutdown": b.operator_shutdown,
     } for b in st.blocks]
 
 
@@ -720,7 +725,7 @@ class SolarSim:
 
     # -- stressors ---------------------------------------------------------
 
-    def inject(self, kind: str) -> Dict:
+    def inject(self, kind: str, target: Optional[str] = None) -> Dict:
         st, cfg = self.state, self.cfg
 
         if kind == "cloud":
@@ -869,6 +874,76 @@ class SolarSim:
 
         elif kind == "reset":
             self.reset()
+
+        elif kind == "bank_off":
+            if not target:
+                return {"ok": False, "error": "bank_off requires ?target=<bank_id>"}
+            b = next((b for b in st.blocks if b.id == target), None)
+            if b is None:
+                return {"ok": False, "error": "unknown bank: %s" % target}
+            b.operator_shutdown = True
+            b.fault = "operator_shutdown"
+            b.state = "out"
+            b._cand_state = "out"
+            b._cand_ticks = 0
+            b.derate = 0.0
+            b._state_changed_t = st.t
+            self._log("%s shut down by operator. Output: 0 MW." % target, "warn")
+            return {"ok": True, "kind": kind, "message": "%s offline" % target}
+
+        elif kind == "bank_on":
+            if not target:
+                return {"ok": False, "error": "bank_on requires ?target=<bank_id>"}
+            b = next((b for b in st.blocks if b.id == target), None)
+            if b is None:
+                return {"ok": False, "error": "unknown bank: %s" % target}
+            b.operator_shutdown = False
+            b.fault = None
+            b.state = "nominal"
+            b._cand_state = "nominal"
+            b._cand_ticks = 0
+            b.derate = 1.0
+            b.telemetry_age_s = 0.0
+            self._log("%s restored by operator. Returning to nominal." % target, "")
+            return {"ok": True, "kind": kind, "message": "%s online" % target}
+
+        elif kind == "feeder_off":
+            if not target:
+                return {"ok": False, "error": "feeder_off requires ?target=<feeder_id>"}
+            banks = [b for b in st.blocks if b.feeder_id == target]
+            if not banks:
+                return {"ok": False, "error": "no banks found on feeder: %s" % target}
+            for b in banks:
+                b.operator_shutdown = True
+                b.fault = "operator_shutdown"
+                b.state = "out"
+                b._cand_state = "out"
+                b._cand_ticks = 0
+                b.derate = 0.0
+                b._state_changed_t = st.t
+            self._log(
+                "%s shut down by operator — %d banks offline." % (target, len(banks)), "warn")
+            return {"ok": True, "kind": kind,
+                    "message": "%s offline (%d banks)" % (target, len(banks))}
+
+        elif kind == "feeder_on":
+            if not target:
+                return {"ok": False, "error": "feeder_on requires ?target=<feeder_id>"}
+            banks = [b for b in st.blocks if b.feeder_id == target]
+            if not banks:
+                return {"ok": False, "error": "no banks found on feeder: %s" % target}
+            for b in banks:
+                b.operator_shutdown = False
+                b.fault = None
+                b.state = "nominal"
+                b._cand_state = "nominal"
+                b._cand_ticks = 0
+                b.derate = 1.0
+                b.telemetry_age_s = 0.0
+            self._log(
+                "%s restored by operator — %d banks returning to nominal." % (target, len(banks)), "")
+            return {"ok": True, "kind": kind,
+                    "message": "%s online (%d banks)" % (target, len(banks))}
 
         else:
             return {"ok": False, "error": "unknown stressor: %s" % kind}

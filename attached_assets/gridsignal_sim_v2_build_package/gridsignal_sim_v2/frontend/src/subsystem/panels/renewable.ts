@@ -42,6 +42,7 @@ interface BankSnap {
   strings_total: number
   inverter_temp_c: number
   telemetry_age_s: number
+  operator_shutdown: boolean
 }
 
 interface FeederSnap {
@@ -51,6 +52,7 @@ interface FeederSnap {
   expected_mw: number
   bank_ids: string[]
   state: string
+  operator_shutdown: boolean
 }
 
 interface Advisory {
@@ -141,12 +143,16 @@ function BankFleetPanel(): React.ReactElement {
     return () => { activeRef.current = false; clearInterval(timer) }
   }, [poll])
 
-  const inject = useCallback(async (kind: string) => {
+  const inject = useCallback(async (kind: string, target?: string) => {
+    const busyKey = target ? `${kind}:${target}` : kind
     if (busy) return
-    setBusy(kind)
+    setBusy(busyKey)
     setFlash(null)
     try {
-      const resp = await fetch(`/api/solar/inject/${kind}`, { method: 'POST' })
+      const url = target
+        ? `/api/solar/inject/${kind}?target=${encodeURIComponent(target)}`
+        : `/api/solar/inject/${kind}`
+      const resp = await fetch(url, { method: 'POST' })
       const data = await resp.json() as { ok: boolean; kind?: string; message?: string; error?: string }
       setFlash(data.message ?? data.error ?? (data.ok ? 'done' : 'failed'))
       // Immediate refresh so state reflects the injection without waiting 1.5 s
@@ -206,19 +212,38 @@ function BankFleetPanel(): React.ReactElement {
           style: { color: feederStateColour(feeder.state) },
         }, feeder.label),
       ),
-      // Feeder subtotal
-      React.createElement('div', {
-        className: 'flex items-baseline gap-2',
-      },
-        React.createElement('span', {
-          className: 'font-mono text-[10px]',
-          style: { color: feeder.state === 'nominal' ? SOLAR : feederStateColour(feeder.state) },
-        }, `${feeder.output_mw.toFixed(3)} MW`),
-        feeder.expected_mw > 0
-          ? React.createElement('span', { className: 'font-mono text-[9px] text-muted' },
-              `/ ${feeder.expected_mw.toFixed(3)} exp`,
-            )
-          : null,
+      // Feeder subtotal + operator toggle
+      React.createElement('div', { className: 'flex items-center gap-2' },
+        React.createElement('div', { className: 'flex items-baseline gap-1' },
+          React.createElement('span', {
+            className: 'font-mono text-[10px]',
+            style: { color: feeder.state === 'nominal' ? SOLAR : feederStateColour(feeder.state) },
+          }, `${feeder.output_mw.toFixed(3)} MW`),
+          feeder.expected_mw > 0
+            ? React.createElement('span', { className: 'font-mono text-[9px] text-muted' },
+                `/ ${feeder.expected_mw.toFixed(3)} exp`,
+              )
+            : null,
+        ),
+        // Feeder-level operator shutdown toggle
+        (() => {
+          const isOff    = feeder.operator_shutdown
+          const nextKind = isOff ? 'feeder_on' : 'feeder_off'
+          const bKey     = `${nextKind}:${feeder.id}`
+          return React.createElement('button', {
+            title: isOff ? `Restore ${feeder.label}` : `Shut down ${feeder.label}`,
+            disabled: busy !== null,
+            onClick: () => { void inject(nextKind, feeder.id) },
+            className: 'font-mono text-[8px] rounded px-1 py-0.5 shrink-0 transition-opacity',
+            style: {
+              background: isOff ? 'rgba(63,182,168,0.10)' : 'rgba(90,102,115,0.08)',
+              border:     `1px solid ${isOff ? 'rgba(63,182,168,0.30)' : 'rgba(90,102,115,0.25)'}`,
+              color:      isOff ? TEAL : MUTED,
+              cursor:     busy !== null ? 'not-allowed' : 'pointer',
+              opacity:    busy !== null && busy !== bKey ? 0.4 : 1,
+            },
+          }, busy === bKey ? '…' : (isOff ? '▶ on' : '■ off'))
+        })(),
       ),
     )
 
@@ -281,9 +306,30 @@ function BankFleetPanel(): React.ReactElement {
 
         // State chip
         React.createElement('span', {
-          className: 'font-mono text-[8px] w-[58px] text-right shrink-0',
-          style: { color: dotColour },
-        }, chipLabel),
+          className: 'font-mono text-[8px] w-[46px] text-right shrink-0',
+          style: { color: bank.operator_shutdown ? MUTED : dotColour },
+        }, bank.operator_shutdown ? 'offline' : chipLabel),
+
+        // Per-bank operator shutdown toggle
+        (() => {
+          const isOff    = bank.operator_shutdown
+          const nextKind = isOff ? 'bank_on' : 'bank_off'
+          const bKey     = `${nextKind}:${bank.id}`
+          return React.createElement('button', {
+            title:    isOff ? `Restore ${bank.id}` : `Shut down ${bank.id}`,
+            disabled: busy !== null,
+            onClick:  () => { void inject(nextKind, bank.id) },
+            className: 'font-mono text-[8px] rounded px-1 py-0.5 shrink-0 transition-opacity',
+            style: {
+              background: isOff ? 'rgba(63,182,168,0.10)' : 'rgba(90,102,115,0.07)',
+              border:     `1px solid ${isOff ? 'rgba(63,182,168,0.30)' : 'rgba(90,102,115,0.22)'}`,
+              color:      isOff ? TEAL : MUTED,
+              cursor:     busy !== null ? 'not-allowed' : 'pointer',
+              opacity:    busy !== null && busy !== bKey ? 0.35 : 1,
+              minWidth:   22,
+            },
+          }, busy === bKey ? '…' : (isOff ? '▶' : '■'))
+        })(),
       )
     })
 

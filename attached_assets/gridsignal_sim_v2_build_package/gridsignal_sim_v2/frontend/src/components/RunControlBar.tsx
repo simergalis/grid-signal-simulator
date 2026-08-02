@@ -55,7 +55,7 @@ export function RunControlBar({ runId, lastRunId, onRunStarted, onRunStopped, on
   const selectScenario = useScenarioStore(s => s.selectScenario)
   const fetchScenarios = useScenarioStore(s => s.fetchScenarios)
 
-  const [speed,    setSpeed]    = useState(10)
+  const [speed,    setSpeed]    = useState(1)
   const [duration, setDuration] = useState(300)
   const [busy,     setBusy]     = useState(false)
   const [error,    setError]    = useState<string | null>(null)

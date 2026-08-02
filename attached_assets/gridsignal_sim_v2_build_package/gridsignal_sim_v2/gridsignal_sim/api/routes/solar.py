@@ -32,8 +32,9 @@ import asyncio
 import datetime
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import FileResponse, JSONResponse
+from typing import Optional
 
 from runtime.solar_sim import generate_solar_forecast
 
@@ -60,6 +61,10 @@ _VALID_STRESSORS = {
     "feeder_open",          # fdr-B breaker opens — common_cause advisory (FR-SOL-2)
     "comms_loss",           # fdr-A telemetry loss — reconciliation_divergence (FR-SOL-1)
     "bank_derate",          # single-bank inverter overtemp → degraded
+    "bank_off",             # operator-commanded bank shutdown  (?target=bank-id)
+    "bank_on",              # operator-commanded bank restore   (?target=bank-id)
+    "feeder_off",           # operator-commanded feeder shutdown (?target=feeder-id)
+    "feeder_on",            # operator-commanded feeder restore  (?target=feeder-id)
     "reset",
 }
 
@@ -141,12 +146,18 @@ async def solar_config(request: Request) -> JSONResponse:
 
 
 @router.post("/api/solar/inject/{kind}", tags=["solar"])
-async def solar_inject(kind: str, request: Request) -> JSONResponse:
+async def solar_inject(
+    kind: str,
+    request: Request,
+    target: Optional[str] = Query(None, description="Bank id (bank_off/bank_on) or feeder id (feeder_off/feeder_on)"),
+) -> JSONResponse:
     """Inject a stressor into the live PV plant model.
 
     Valid kinds: cloud, cloud_clear, trip, bank_trip, poi, soil, spike, turbine, bess,
-    feeder_open, comms_loss, bank_derate, reset.
+    feeder_open, comms_loss, bank_derate, bank_off, bank_on, feeder_off, feeder_on, reset.
 
+    bank_off / bank_on require ?target=<bank-id>  (e.g. ?target=bank-01).
+    feeder_off / feeder_on require ?target=<feeder-id> (e.g. ?target=fdr-A).
     A cloud stressor auto-clears after 14 s (matching the console behaviour).
     """
     if kind not in _VALID_STRESSORS:
@@ -155,7 +166,7 @@ async def solar_inject(kind: str, request: Request) -> JSONResponse:
             detail="unknown stressor '%s'; valid: %s" % (kind, sorted(_VALID_STRESSORS)),
         )
     sim = _get_sim(request)
-    result = sim.inject(kind)
+    result = sim.inject(kind, target=target)
     if kind == "cloud":
         asyncio.create_task(_clear_cloud_later(sim))
     return JSONResponse(result)

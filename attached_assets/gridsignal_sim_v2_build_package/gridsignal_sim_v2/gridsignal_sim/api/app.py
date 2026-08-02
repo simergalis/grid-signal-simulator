@@ -117,6 +117,10 @@ async def _lifespan(application: FastAPI):
     # Consumed by /solar-preview and POST /runs to seed the Mistral solar prompt.
     application.state.site_location = SiteLocation()
 
+    # Operator-editable site display name (default = "Riverbend DC-West").
+    from api.routes.location import SiteSettings
+    application.state.site_settings = SiteSettings()
+
     yield
 
     # Cancel all in-flight run tasks so that TestClient (which waits for

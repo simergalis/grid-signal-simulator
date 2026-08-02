@@ -313,3 +313,52 @@ async def set_location(request: Request) -> JSONResponse:
 
     request.app.state.site_location = loc
     return JSONResponse({**asdict(loc), "current_utc_offset_h": current_utc_offset_h(loc), "source": source})
+
+
+# ---------------------------------------------------------------------------
+# Site settings — name editable by operators
+# ---------------------------------------------------------------------------
+
+@dataclass
+class SiteSettings:
+    """Operator-editable site display settings.
+
+    Stored on app.state.site_settings (in-process).  Default matches the
+    hard-coded name previously shown in GridSignalHeader.
+    """
+    site_name: str = "Riverbend DC-West"
+
+
+def _get_settings(request: Request) -> SiteSettings:
+    return getattr(request.app.state, "site_settings", SiteSettings())
+
+
+@router.get("/api/site/settings", tags=["site"])
+async def get_site_settings(request: Request) -> JSONResponse:
+    """Return current operator-editable site settings."""
+    s = _get_settings(request)
+    return JSONResponse({"site_name": s.site_name})
+
+
+@router.patch("/api/site/settings", tags=["site"])
+async def patch_site_settings(request: Request) -> JSONResponse:
+    """Update operator-editable site settings.
+
+    Request body: { "site_name": "New Name" }
+
+    Only fields present in the body are updated.  site_name must be
+    1–80 characters after stripping whitespace.
+    """
+    body = await request.json()
+    s = _get_settings(request)
+
+    if "site_name" in body:
+        name = str(body["site_name"]).strip()
+        if not name:
+            return JSONResponse({"error": "site_name cannot be empty"}, status_code=422)
+        if len(name) > 80:
+            return JSONResponse({"error": "site_name must be 80 characters or fewer"}, status_code=422)
+        s.site_name = name
+
+    request.app.state.site_settings = s
+    return JSONResponse({"site_name": s.site_name})
