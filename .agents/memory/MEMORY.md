@@ -20,3 +20,4 @@
 - [sendgrid-auth-system](sendgrid-auth-system.md) — OTP email login (no password); SENDGRID_FROM_EMAIL must be verified sender; all /api/auth/* bypass middleware.
 - [auth-system-quirks](auth-system-quirks.md) — bcrypt 4.x/passlib break; /api/admin middleware pass-through; ck_auth_user_role must include 'admin'; migration guard pattern.
 - [operator-adjustable-params](operator-adjustable-params.md) — PARAM-28–34 in parameters.json; site/advisory/storage groups added to ParameterModal; soc limits flow from POST /runs into runMeta; advisory_interval_s stored but not yet wired to per-agent cadence.
+- [sqlite-to-postgres-migration](sqlite-to-postgres-migration.md) — auth_user wipe-on-publish fix; asyncpg URL conversion trap; connect_args SQLite-only trap; INITIAL_ADMIN_EMAIL seeding for fresh Neon DB.
