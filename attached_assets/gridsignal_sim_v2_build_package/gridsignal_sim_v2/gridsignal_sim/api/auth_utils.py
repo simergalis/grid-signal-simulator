@@ -2,7 +2,9 @@
 api/auth_utils.py — JWT creation/validation and password hashing utilities.
 
 Authentication design:
-  - Passwords hashed with bcrypt (passlib).
+  - Passwords hashed with bcrypt (direct — passlib's bcrypt backend is
+    incompatible with bcrypt 4.x which removed the __about__ attribute and
+    changed its internal API; we call bcrypt directly to avoid the mismatch).
   - Sessions encoded as JWT (HS256) with a 24-hour expiry.
   - Token carried in an httpOnly cookie named "gs_session".
   - JWT secret read from JWT_SECRET env var; falls back to SESSION_SECRET;
@@ -20,8 +22,8 @@ import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
+import bcrypt as _bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -39,18 +41,21 @@ _COOKIE_NAME = "gs_session"
 _TOKEN_TTL   = timedelta(hours=24)
 
 # ---------------------------------------------------------------------------
-# Password helpers
+# Password helpers  (bcrypt direct — no passlib)
 # ---------------------------------------------------------------------------
-
-_pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def hash_password(plain: str) -> str:
-    return _pwd_ctx.hash(plain)
+    """Return a bcrypt hash of *plain* as a str (the $2b$... format)."""
+    return _bcrypt.hashpw(plain.encode("utf-8"), _bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return _pwd_ctx.verify(plain, hashed)
+    """Return True if *plain* matches the stored bcrypt *hashed* string."""
+    try:
+        return _bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
+    except Exception:
+        return False
 
 
 # ---------------------------------------------------------------------------
