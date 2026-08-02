@@ -109,6 +109,9 @@ async def _lifespan(application: FastAPI):
     solar_sim = SolarSim()
     application.state.solar_sim = solar_sim
     _solar_ticker = asyncio.create_task(_solar_tick_loop(solar_sim))
+    # Task #122: give the run manager a reference so _drive() can push each
+    # tick's p_renewable_mw into SolarSim and keep the bank panel in sync.
+    manager.solar_sim = solar_sim
 
     # Operator-configurable data-centre location (default = San Diego).
     # Consumed by /solar-preview and POST /runs to seed the Mistral solar prompt.

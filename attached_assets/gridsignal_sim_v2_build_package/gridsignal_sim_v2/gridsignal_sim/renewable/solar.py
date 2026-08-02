@@ -544,6 +544,9 @@ class SolarSim:
         # Advisory state (FR-SOL-1 / FR-SOL-2)
         self._advisories: List[Dict] = []
         self._recon_diverge_ticks: int = 0
+        # Run-loop sync: set by update_from_run() each tick while a run is
+        # active so snapshot() reports the same plant total as the SLD tile.
+        self._run_p_renewable_mw: Optional[float] = None
         self._log(
             "Session started. Seed: clear afternoon, %d banks online, %s."
             % (cfg.banks,
@@ -592,7 +595,29 @@ class SolarSim:
         self.state = self._seed_state()
         self._advisories = []
         self._recon_diverge_ticks = 0
+        self._run_p_renewable_mw = None
         self._log("Reset to nominal seed state.", "")
+
+    # -- run-loop sync --------------------------------------------------------
+
+    def update_from_run(self, p_renewable_mw: float) -> None:
+        """Called each tick by the run loop so snapshot() reports the same
+        plant total as the SLD tile.
+
+        When set, snapshot() scales per-bank outputs proportionally so the bank
+        panel and the SLD tile show an identical headline.  Fault-injected banks
+        (state=out or no_comms) suppress the scaling so operator-injected events
+        remain authoritative.
+        """
+        self._run_p_renewable_mw = p_renewable_mw
+
+    def clear_run_sync(self) -> None:
+        """Clear the run-loop sync value when a run ends or is cancelled.
+
+        Restores snapshot() to its standalone physics output so the panel
+        continues to show live irradiance-derived numbers between runs.
+        """
+        self._run_p_renewable_mw = None
 
     # -- tick --------------------------------------------------------------
 
@@ -872,6 +897,32 @@ class SolarSim:
 
         bank_snaps   = _build_bank_snapshots(cfg, st)
         feeder_snaps = _build_feeder_snapshots(cfg, st)
+
+        # Run-loop sync: when a run is active and no fault injections are
+        # present, scale per-bank/feeder outputs so the panel total matches
+        # the SLD tile exactly.  Faults (state=out or no_comms, or latched
+        # fault flag) suppress the scaling so injected events stay authoritative.
+        _run_sync = self._run_p_renewable_mw
+        if _run_sync is not None and solar > 1e-6:
+            _has_faults = any(
+                b.fault or b.state in ("out", "no_comms")
+                for b in st.blocks
+            )
+            if not _has_faults:
+                _scale = _run_sync / solar
+                for _bs in bank_snaps:
+                    _bs["output_mw"]         = round(_bs["output_mw"]         * _scale, 6)
+                    _bs["counted_output_mw"] = round(_bs["counted_output_mw"] * _scale, 6)
+                for _fs in feeder_snaps:
+                    _fs["output_mw"] = round(_fs["output_mw"] * _scale, 6)
+                solar        = _run_sync
+                n1_feeder_mw = n1_feeder_mw * _scale
+                n1_bank_mw   = n1_bank_mw   * _scale
+                # Recompute reserve checks with the scaled contingency sizes.
+                rc_n1_feeder = reserve_check(cfg, st, n1_feeder_mw, 0.0)
+                rc_n1_bank   = reserve_check(cfg, st, n1_bank_mw,   0.0)
+                rc_plant     = reserve_check(cfg, st, solar,        0.0)
+                rc_compound  = reserve_check(cfg, st, solar + 6.0,  0.0)
 
         return {
             "t": st.t,

@@ -15,7 +15,7 @@
  * deriveData so the React reference is stable across ticks.
  */
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import type { PanelConfig, PanelData } from './index'
 import type { TickPayload, HistoryPoint } from '../../types'
 import { TimeSeries } from '../../charts/TimeSeries'
@@ -109,29 +109,56 @@ function feederStateColour(state: string): string {
 // the useEffect polling timer is not torn down and recreated on every tick.
 
 function BankFleetPanel(): React.ReactElement {
-  const [solar, setSolar] = useState<SolarState | null>(null)
-  const [error, setError] = useState(false)
+  const [solar, setSolar]         = useState<SolarState | null>(null)
+  const [error, setError]         = useState(false)
+  const [busy, setBusy]           = useState<string | null>(null)   // kind currently in-flight
+  const [flash, setFlash]         = useState<string | null>(null)   // brief result message
+  const activeRef                 = useRef(true)
+  const pollRef                   = useRef<() => void>(() => {})
+
+  const poll = useCallback(async () => {
+    try {
+      const resp = await fetch('/api/solar/state')
+      if (resp.ok && activeRef.current) {
+        const data = await resp.json() as SolarState
+        setSolar(data)
+        setError(false)
+      } else if (activeRef.current) {
+        setError(true)
+      }
+    } catch {
+      if (activeRef.current) setError(true)
+    }
+  }, [])
+
+  // Keep pollRef current so inject() can call it without stale closure
+  pollRef.current = poll
 
   useEffect(() => {
-    let active = true
-    const poll = async () => {
-      try {
-        const resp = await fetch('/api/solar/state')
-        if (resp.ok && active) {
-          const data = await resp.json() as SolarState
-          setSolar(data)
-          setError(false)
-        } else if (active) {
-          setError(true)
-        }
-      } catch {
-        if (active) setError(true)
-      }
-    }
+    activeRef.current = true
     poll()
     const timer = setInterval(poll, 1500)
-    return () => { active = false; clearInterval(timer) }
-  }, [])
+    return () => { activeRef.current = false; clearInterval(timer) }
+  }, [poll])
+
+  const inject = useCallback(async (kind: string) => {
+    if (busy) return
+    setBusy(kind)
+    setFlash(null)
+    try {
+      const resp = await fetch(`/api/solar/inject/${kind}`, { method: 'POST' })
+      const data = await resp.json() as { ok: boolean; kind?: string; message?: string; error?: string }
+      setFlash(data.message ?? data.error ?? (data.ok ? 'done' : 'failed'))
+      // Immediate refresh so state reflects the injection without waiting 1.5 s
+      await pollRef.current()
+    } catch {
+      setFlash('network error')
+    } finally {
+      setBusy(null)
+      // Auto-clear flash after 4 s
+      setTimeout(() => setFlash(null), 4000)
+    }
+  }, [busy])
 
   if (error) {
     return React.createElement('div', {
@@ -328,6 +355,51 @@ function BankFleetPanel(): React.ReactElement {
       )
     : null
 
+  // ── Fault injection strip ──────────────────────────────────────────────────
+
+  type Btn = { kind: string; label: string; colour: string; bg: string; border: string }
+  const INJECT_BUTTONS: Btn[] = [
+    { kind: 'bank_trip',   label: 'Trip bank',      colour: AMBER, bg: 'rgba(240,136,62,0.10)', border: 'rgba(240,136,62,0.35)' },
+    { kind: 'feeder_open', label: 'Open Feeder B',  colour: AMBER, bg: 'rgba(240,136,62,0.10)', border: 'rgba(240,136,62,0.35)' },
+    { kind: 'comms_loss',  label: 'Comms loss',     colour: AMBER, bg: 'rgba(240,136,62,0.10)', border: 'rgba(240,136,62,0.35)' },
+    { kind: 'reset',       label: 'Reset',          colour: TEAL,  bg: 'rgba(63,182,168,0.10)', border: 'rgba(63,182,168,0.35)' },
+  ]
+
+  const injectionStrip = React.createElement('div', {
+    className: 'border-t border-border mt-1 pt-2',
+  },
+    // Label row
+    React.createElement('div', {
+      className: 'font-mono text-[8px] uppercase tracking-widest mb-1.5',
+      style: { color: MUTED },
+    }, 'Fault injection'),
+    // Button row
+    React.createElement('div', { className: 'flex flex-wrap gap-1' },
+      ...INJECT_BUTTONS.map(btn =>
+        React.createElement('button', {
+          key: btn.kind,
+          disabled: busy !== null,
+          onClick: () => { void inject(btn.kind) },
+          className: 'font-mono text-[9px] rounded px-2 py-0.5 transition-opacity',
+          style: {
+            background: btn.bg,
+            border: `1px solid ${btn.border}`,
+            color: busy === btn.kind ? MUTED : btn.colour,
+            cursor: busy !== null ? 'not-allowed' : 'pointer',
+            opacity: busy !== null && busy !== btn.kind ? 0.45 : 1,
+          },
+        }, busy === btn.kind ? '…' : btn.label),
+      ),
+    ),
+    // Flash message
+    flash
+      ? React.createElement('div', {
+          className: 'font-mono text-[9px] mt-1.5 leading-snug',
+          style: { color: flash.includes('error') || flash.includes('fail') ? RED : TEAL },
+        }, flash)
+      : null,
+  )
+
   return React.createElement('div', { className: 'mt-2 pt-2 space-y-0' },
     // Section header
     React.createElement('div', {
@@ -343,6 +415,7 @@ function BankFleetPanel(): React.ReactElement {
     ),
     ...feederRows,
     n1Footer,
+    injectionStrip,
     advisoryStrip,
   )
 }

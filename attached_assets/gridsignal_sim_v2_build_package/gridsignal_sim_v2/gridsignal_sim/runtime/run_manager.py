@@ -846,6 +846,9 @@ class RunManager:
         self._completed: dict[str, CompletedRun] = {}
         # W1: advisorry registries preserved post-run for /proposals endpoint.
         self._registries: dict[str, Any] = {}
+        # Task #122: wired by app.py lifespan so _drive() can push the run's
+        # p_renewable_mw into SolarSim each tick.
+        self.solar_sim: Any = None
 
     def active_run_ids(self) -> list[str]:
         return list(self._contexts.keys())
@@ -996,6 +999,13 @@ class RunManager:
                 await self._ws_hub.broadcast(ctx.run_id, tick_result)  # I/O -- yields
                 if _profiling: _sec.setdefault("C_ws_broadcast", []).append(_time_module.perf_counter() - _t0)
 
+                # ── C2: solar-sim run sync (Task #122) ────────────────────
+                # Push the run's aggregate p_renewable_mw into the standalone
+                # SolarSim so the bank-fleet panel and the SLD tile show the
+                # same plant total.  Pure in-process call (<1 µs); no I/O.
+                if self.solar_sim is not None:
+                    self.solar_sim.update_from_run(tick_result.p_renewable_mw)
+
                 # ── E: advisory agents (W1a) ──────────────────────────────
                 # Keep tick_history bounded; agents call run_all() on the
                 # recent window.  TC-48 guarantee: agents write only to the
@@ -1130,6 +1140,12 @@ class RunManager:
             logger.info("run %s cancelled mid-flight", ctx.run_id)
             raise
         finally:
+            # Task #122: restore SolarSim to standalone physics output now that
+            # the run is over, so the bank panel keeps showing live numbers
+            # between runs rather than the last tick's run-loop value.
+            if self.solar_sim is not None:
+                self.solar_sim.clear_run_sync()
+
             # Cancelled runs (external task.cancel() or ctx.cancelled=True) skip
             # verdict evaluation.  The sink may hold millions of rows from an
             # end_sim_time=1e15 test run; draining them would hang shutdown.
