@@ -100,6 +100,15 @@ class WebSocketHub:
         if not subs:
             return
         payload = _tick_result_to_dict(tick_result)
+        # Phase 10 §12.10 — stamp wall-clock emit time so the frontend can
+        # return it to POST /api/session/observe-tick for a server-side round-trip
+        # measurement.  Stamped once here (not in _tick_result_to_dict) so the
+        # timestamp is as close as possible to the actual send.  All subscribers
+        # share the same payload dict — the stamp must be set before the gather.
+        # Serialised as a *string* to avoid JavaScript safe-integer loss on
+        # long-running hosts (monotonic_ns > 2^53 after ~104 days of uptime).
+        import time as _t
+        payload["t_emit_ns"] = str(_t.monotonic_ns())
 
         async def _safe_send(ws: WebSocketLike) -> None:
             try:

@@ -77,6 +77,21 @@ export interface TickPayload {
   // Phase 10: fabric model modal-view — null when FabricEngine not wired.
   // Six plant-plane fields + control decomposition + per-link utilisation map.
   fabric: FabricModalView | null
+
+  // Phase 10 §12.10 — session transport instrument plane.
+  // Monotonic nanosecond timestamp stamped by broadcast() in run_manager.py
+  // immediately before the payload is sent over the WebSocket.  The frontend
+  // echoes this value back to POST /api/session/observe-tick so the server
+  // can compute the round-trip latency without clock-skew between client and
+  // server monotonic clocks.
+  //
+  // Serialised as a STRING (not a number) to avoid JavaScript safe-integer
+  // loss: monotonic_ns exceeds Number.MAX_SAFE_INTEGER (2^53) after ~104
+  // days of host uptime.  Pass the raw string value straight through to the
+  // POST body without numeric conversion.
+  //
+  // Absent on playback / headless test payloads.
+  t_emit_ns?: string
 }
 
 /**

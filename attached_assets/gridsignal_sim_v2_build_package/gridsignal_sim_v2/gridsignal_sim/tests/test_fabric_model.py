@@ -299,6 +299,8 @@ def test_tc85_session_transport_is_measured_not_simulated():
     # Simulation is not running at all. The instrument plane must not care.
     for _ in range(12):
         payload = inst.stamp_tick({"tick": 0})
+        # t_emit_ns is now a string (JS-safe serialisation); observe_tick accepts both.
+        assert isinstance(payload["t_emit_ns"], str), "stamp_tick must return a string"
         time.sleep(0.002)
         inst.observe_tick(payload["t_emit_ns"])
         inst.observe_api(3.5)
@@ -308,6 +310,50 @@ def test_tc85_session_transport_is_measured_not_simulated():
     assert view["samples"]["ws"] == 12
     assert view["ws_tick_latency_ms"] is not None
     assert view["ws_tick_latency_ms"] > 0.0, "a zero here is a synthesised value"
+
+
+def test_observe_tick_rejects_future_timestamp():
+    """A t_emit_ns in the future must be rejected (fabrication / clock skew)."""
+    inst = InstrumentPlane()
+    future_ns = time.monotonic_ns() + 5_000_000_000  # 5 s in the future
+    accepted = inst.observe_tick(future_ns)
+    assert accepted is False
+    assert inst.modal_view()["samples"]["ws"] == 0
+
+
+def test_observe_tick_rejects_stale_timestamp():
+    """A t_emit_ns older than 30 s must be rejected (stale / old nonce)."""
+    inst = InstrumentPlane()
+    stale_ns = time.monotonic_ns() - 31_000_000_000  # 31 s ago
+    accepted = inst.observe_tick(stale_ns)
+    assert accepted is False
+    assert inst.modal_view()["samples"]["ws"] == 0
+
+
+def test_observe_tick_rejects_replay():
+    """The same nonce must be accepted at most once (replay protection)."""
+    inst = InstrumentPlane()
+    payload = inst.stamp_tick({"tick": 0})
+    time.sleep(0.002)
+    t = payload["t_emit_ns"]
+
+    first = inst.observe_tick(t)
+    second = inst.observe_tick(t)
+
+    assert first is True, "first observation of a valid nonce must be accepted"
+    assert second is False, "replayed nonce must be rejected"
+    assert inst.modal_view()["samples"]["ws"] == 1, "only one sample from one nonce"
+
+
+def test_observe_tick_accepts_string_input():
+    """stamp_tick serialises t_emit_ns as a string; observe_tick must accept it."""
+    inst = InstrumentPlane()
+    payload = inst.stamp_tick({"tick": 0})
+    assert isinstance(payload["t_emit_ns"], str)
+    time.sleep(0.001)
+    accepted = inst.observe_tick(payload["t_emit_ns"])  # string, not int
+    assert accepted is True
+    assert inst.modal_view()["samples"]["ws"] == 1
 
 
 def test_tc85b_instrument_plane_cannot_read_the_simulation_clock():

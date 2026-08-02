@@ -183,6 +183,47 @@ async def get_session_transport():
 
 
 # ---------------------------------------------------------------------------
+# POST /api/session/observe-tick
+# ---------------------------------------------------------------------------
+
+@router.post("/session/observe-tick")
+async def post_observe_tick(request: Request):
+    """
+    Record a WS tick round-trip latency sample.
+
+    The frontend sends back the t_emit_ns value stamped on the tick payload
+    by broadcast() in run_manager.py.  The server calls observe_tick() here
+    (using its own monotonic clock) to compute the server→client→server
+    elapsed time and accumulate it into the InstrumentPlane ring buffer.
+
+    Body: {"t_emit_ns": <int>}
+
+    Returns 200 with {"recorded": true} on success.
+    Returns 400 when t_emit_ns is missing or not an integer.
+    """
+    try:
+        body = await request.json()
+        t_emit_ns = int(body["t_emit_ns"])
+    except (Exception, KeyError, ValueError):  # noqa: BLE001
+        return JSONResponse(
+            {"recorded": False, "error": "t_emit_ns must be an integer"},
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+    inst = _get_instrument()
+    accepted = inst.observe_tick(t_emit_ns)
+    if not accepted:
+        # The timestamp was future, stale (> 30 s old), or already consumed.
+        # Return 400 so the client knows this observation was not recorded.
+        # This is NOT an error condition for well-behaved clients — a tab
+        # backgrounded > 30 s will simply not contribute latency samples.
+        return JSONResponse(
+            {"recorded": False, "error": "timestamp rejected: future, stale, or replayed"},
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+    return JSONResponse({"recorded": True})
+
+
+# ---------------------------------------------------------------------------
 # POST /api/fabric/stressor?run_id=X  (Phase 10 stub)
 # ---------------------------------------------------------------------------
 

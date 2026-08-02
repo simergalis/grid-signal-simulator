@@ -171,7 +171,8 @@ def create_app() -> FastAPI:
         if not path.startswith("/api/") or path in _UNPROTECTED \
                 or path.startswith("/api/auth/") or path.startswith("/api/admin") \
                 or path.startswith("/api/solar/") \
-                or path.startswith("/api/location"):
+                or path.startswith("/api/location") \
+                or path.startswith("/api/session/"):
             return await call_next(request)
         token = request.cookies.get(COOKIE_NAME)
         if not token or decode_access_token(token) is None:

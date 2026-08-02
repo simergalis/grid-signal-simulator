@@ -31,6 +31,8 @@ interfere with siblings.
 
 from __future__ import annotations
 
+import time
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -210,3 +212,109 @@ def test_websocket_subscriber_receives_tick_payload() -> None:
         "wall_stamp_utc is a runtime-internal field and must not appear "
         "in WebSocket tick payloads"
     )
+
+    # Phase 10 §12.10 — t_emit_ns must be present and serialised as a string.
+    # String serialisation prevents JavaScript safe-integer loss on long-lived hosts.
+    assert "t_emit_ns" in data, "WS tick payload must include t_emit_ns for latency measurement"
+    assert isinstance(data["t_emit_ns"], str), (
+        "t_emit_ns must be a string in the WS payload (JS-safe: monotonic_ns "
+        "exceeds Number.MAX_SAFE_INTEGER after ~104 days of host uptime)"
+    )
+
+
+# ---------------------------------------------------------------------------
+# GET /api/session/transport — returns 200 even with no active run (TC-85)
+# ---------------------------------------------------------------------------
+
+def test_session_transport_returns_200_when_no_run_active() -> None:
+    """GET /api/session/transport must return HTTP 200 with a valid response
+    body even when no simulation is running (TC-85 invariant)."""
+    with TestClient(create_app()) as client:
+        resp = client.get("/api/session/transport")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "measured" in body
+    assert "samples" in body
+    assert "ws" in body["samples"]
+    assert "api" in body["samples"]
+
+
+# ---------------------------------------------------------------------------
+# POST /api/session/observe-tick — validation tests
+# ---------------------------------------------------------------------------
+
+def test_observe_tick_returns_400_on_missing_field() -> None:
+    """POST /api/session/observe-tick with no t_emit_ns field must return 400."""
+    with TestClient(create_app()) as client:
+        resp = client.post("/api/session/observe-tick", json={})
+    assert resp.status_code == 400
+    assert resp.json()["recorded"] is False
+
+
+def test_observe_tick_returns_400_on_non_integer_value() -> None:
+    """POST /api/session/observe-tick with a non-numeric t_emit_ns must return 400."""
+    with TestClient(create_app()) as client:
+        resp = client.post("/api/session/observe-tick", json={"t_emit_ns": "not-a-number"})
+    assert resp.status_code == 400
+    assert resp.json()["recorded"] is False
+
+
+def test_observe_tick_returns_400_on_future_timestamp() -> None:
+    """A t_emit_ns in the future (server not yet at that clock value) must be rejected."""
+    future_ns = time.monotonic_ns() + 5_000_000_000  # 5 s in the future
+    with TestClient(create_app()) as client:
+        resp = client.post("/api/session/observe-tick", json={"t_emit_ns": str(future_ns)})
+    assert resp.status_code == 400
+    assert resp.json()["recorded"] is False
+
+
+def test_observe_tick_returns_400_on_stale_timestamp() -> None:
+    """A t_emit_ns older than 30 s must be rejected (stale nonce / old value)."""
+    stale_ns = time.monotonic_ns() - 31_000_000_000  # 31 s ago
+    with TestClient(create_app()) as client:
+        resp = client.post("/api/session/observe-tick", json={"t_emit_ns": str(stale_ns)})
+    assert resp.status_code == 400
+    assert resp.json()["recorded"] is False
+
+
+# ---------------------------------------------------------------------------
+# End-to-end: WS tick → observe-tick → GET /api/session/transport
+# ---------------------------------------------------------------------------
+
+def test_observe_tick_e2e_broadcast_to_histogram() -> None:
+    """A t_emit_ns stamped on a live WS tick must be accepted by
+    POST /api/session/observe-tick and increment the ws sample count
+    returned by GET /api/session/transport.
+
+    This is the end-to-end path the frontend takes:
+      broadcast() stamps t_emit_ns → client echoes via POST → GET reports samples.
+    """
+    with TestClient(create_app()) as client:
+        # Start a run at max speed so a WS tick arrives quickly.
+        run_id = client.post("/runs", json=_long_run_body()).json()["run_id"]
+
+        with client.websocket_connect(f"/ws/{run_id}") as ws:
+            data = ws.receive_json()
+
+        t_emit_ns = data.get("t_emit_ns")
+        assert t_emit_ns is not None, "WS tick must carry t_emit_ns"
+        assert isinstance(t_emit_ns, str), "t_emit_ns must be a string in the WS payload"
+
+        # Baseline sample count before we echo the nonce back.
+        before = client.get("/api/session/transport").json()["samples"]["ws"]
+
+        # Simulate what the frontend does: echo the nonce to observe-tick.
+        obs_resp = client.post("/api/session/observe-tick", json={"t_emit_ns": t_emit_ns})
+        assert obs_resp.status_code == 200, f"observe-tick rejected: {obs_resp.json()}"
+        assert obs_resp.json()["recorded"] is True
+
+        # The transport endpoint must now show exactly one more sample.
+        after = client.get("/api/session/transport").json()["samples"]["ws"]
+        assert after == before + 1, (
+            f"Expected {before + 1} ws samples after observe-tick, got {after}"
+        )
+
+        # Replaying the same nonce must be rejected.
+        replay_resp = client.post("/api/session/observe-tick", json={"t_emit_ns": t_emit_ns})
+        assert replay_resp.status_code == 400, "replayed nonce must be rejected with 400"
+        assert replay_resp.json()["recorded"] is False

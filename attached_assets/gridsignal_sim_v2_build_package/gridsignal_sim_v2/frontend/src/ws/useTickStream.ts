@@ -43,6 +43,18 @@ export function useTickStream(runId: string | null) {
         try {
           const tick = JSON.parse(event.data) as TickPayload
           pushTick(tick)
+          // Phase 10 §12.10 — echo t_emit_ns back so the server can record
+          // the round-trip latency in InstrumentPlane.observe_tick().
+          // Fire-and-forget: latency instrumentation must never block tick ingestion.
+          if (tick.t_emit_ns != null) {
+            fetch('/api/session/observe-tick', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ t_emit_ns: tick.t_emit_ns }),
+            }).catch(() => {
+              // Silently drop observe errors — latency measurement is best-effort.
+            })
+          }
         } catch {
           console.warn('[useTickStream] malformed message:', event.data)
         }
