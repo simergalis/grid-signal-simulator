@@ -37,11 +37,12 @@ def _get_client():
         return None
 
 
-def send_welcome_email(to_email: str, display_name: str, temporary_password: str) -> bool:
+def send_welcome_email(to_email: str, display_name: str) -> bool:
     """
-    Send a welcome email with login credentials to a newly created user.
+    Send a welcome email to a newly created user explaining the OTP sign-in flow.
 
     Returns True on success, False if delivery failed or is not configured.
+    No password is included — users sign in with their email and a one-time code.
     """
     client = _get_client()
     if not client:
@@ -52,19 +53,24 @@ def send_welcome_email(to_email: str, display_name: str, temporary_password: str
 
     subject = f"Your {_APP_NAME} account is ready"
     body = f"""\
-<p>Hello {display_name},</p>
-
-<p>An account has been created for you on <strong>{_APP_NAME}</strong>.</p>
-
-<p><strong>Email:</strong> {to_email}<br>
-<strong>Temporary password:</strong> <code>{temporary_password}</code></p>
-
-<p>Please log in and change your password as soon as possible.</p>
-
-<p>You will be asked for your registered email address, mobile phone number,
-and password when signing in.</p>
-
-<p>— The {_APP_NAME} team</p>
+<div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0b1017;color:#e6ecf2;padding:32px;border-radius:8px">
+  <p style="color:#3fb6a8;font-size:20px;font-weight:700;letter-spacing:0.1em;margin-bottom:4px">GRIDSIGNAL</p>
+  <p style="color:#4b5764;font-size:12px;margin-top:0">Predictive power management</p>
+  <hr style="border:none;border-top:1px solid #1e2a38;margin:20px 0">
+  <p>Hello {display_name},</p>
+  <p>An account has been created for you on <strong>{_APP_NAME}</strong>.</p>
+  <p style="background:#111821;border-radius:6px;padding:12px 16px;font-size:13px">
+    <strong style="color:#3fb6a8">Your login email:</strong><br>
+    <span style="font-family:monospace">{to_email}</span>
+  </p>
+  <p>To sign in, go to the GridSignal dashboard, enter your email address, and
+     we'll send you a one-time code. No password needed — just check your inbox
+     each time you log in.</p>
+  <p style="color:#7d8b9c;font-size:12px">
+    If you did not expect this email, you can safely ignore it.
+    No action is needed unless you want to use this account.
+  </p>
+</div>
 """
     try:
         from sendgrid.helpers.mail import Mail

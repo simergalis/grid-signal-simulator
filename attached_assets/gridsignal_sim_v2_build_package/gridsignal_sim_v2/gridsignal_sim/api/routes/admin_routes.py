@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import logging
 import os
-import secrets
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr
@@ -129,6 +128,7 @@ async def create_user(
         existing_user.is_active    = True
         await db.commit()
         await db.refresh(existing_user)
+        send_welcome_email(existing_user.email, existing_user.display_name)
         return UserResponse(
             id=existing_user.id,
             email=existing_user.email,
@@ -157,6 +157,7 @@ async def create_user(
     await db.refresh(user)
 
     _log.info("Admin created user %s (id=%s)", user.email, user.id)
+    send_welcome_email(user.email, user.display_name)
     return UserResponse(
         id=user.id,
         email=user.email,
