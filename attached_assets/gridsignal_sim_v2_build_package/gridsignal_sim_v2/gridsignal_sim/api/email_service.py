@@ -121,8 +121,13 @@ def send_welcome_email(to_email: str, display_name: str) -> bool:
         if success:
             _log.info("Welcome email sent to %s (status=%s)", to_email, resp.status_code)
         else:
+            try:
+                body_text = resp.body.decode() if isinstance(resp.body, (bytes, bytearray)) else str(resp.body)
+            except Exception:
+                body_text = "<unreadable>"
             _log.warning(
-                "SendGrid returned status %s for %s", resp.status_code, to_email
+                "SendGrid returned status %s for welcome email to %s — body: %s",
+                resp.status_code, to_email, body_text,
             )
         return success
     except Exception as exc:  # noqa: BLE001
@@ -171,7 +176,16 @@ def send_otp_email(to_email: str, display_name: str, code: str) -> bool:
         if success:
             _log.info("OTP email sent to %s (status=%s)", to_email, resp.status_code)
         else:
-            _log.warning("SendGrid returned status %s for %s", resp.status_code, to_email)
+            # Log the response body so operators can diagnose "unverified sender" (403),
+            # "invalid API key" (401), or domain-authentication failures from server logs.
+            try:
+                body_text = resp.body.decode() if isinstance(resp.body, (bytes, bytearray)) else str(resp.body)
+            except Exception:
+                body_text = "<unreadable>"
+            _log.warning(
+                "SendGrid returned status %s for OTP to %s — body: %s",
+                resp.status_code, to_email, body_text,
+            )
         return success
     except Exception as exc:  # noqa: BLE001
         _log.error("Failed to send OTP email to %s: %s", to_email, exc)

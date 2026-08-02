@@ -12,6 +12,7 @@ POST   /api/admin/users           — create a user account; sends welcome email
 GET    /api/admin/users           — list all users
 PATCH  /api/admin/users/{user_id} — activate / deactivate an account or change role
 DELETE /api/admin/users/{user_id} — permanently delete an account
+GET    /api/admin/email-check     — diagnostic: verify email delivery configuration
 
 Users sign in with email + one-time code (SendGrid); no password is stored.
 The admin creates accounts by email + display name + role only.  The first
@@ -228,3 +229,53 @@ async def delete_user(
         raise HTTPException(status_code=404, detail="User not found")
     await db.delete(user)
     await db.commit()
+
+
+# ---------------------------------------------------------------------------
+# Email delivery diagnostic
+# ---------------------------------------------------------------------------
+
+_DEFAULT_FROM = "noreply@gridsignal.app"
+
+@router.get("/email-check", dependencies=[Depends(_require_admin)])
+async def email_check():
+    """Diagnostic: verify that email delivery is likely to work.
+
+    Returns a JSON object the admin can inspect without needing server logs:
+      api_key_set      — SENDGRID_API_KEY is present in env
+      from_email       — the current SENDGRID_FROM_EMAIL value (safe to expose)
+      is_default       — True when still using the unverified default address
+      sendgrid_pkg     — True when the sendgrid Python package is importable
+
+    A working configuration requires api_key_set=true, is_default=false,
+    and the from_email address must be a verified SendGrid sender identity.
+    """
+    api_key_set = bool(os.environ.get("SENDGRID_API_KEY"))
+    from_email  = os.environ.get("SENDGRID_FROM_EMAIL", _DEFAULT_FROM) or _DEFAULT_FROM
+    is_default  = from_email == _DEFAULT_FROM
+
+    try:
+        import sendgrid as _sg  # noqa: F401
+        sendgrid_pkg = True
+    except ImportError:
+        sendgrid_pkg = False
+
+    issues: list[str] = []
+    if not api_key_set:
+        issues.append("SENDGRID_API_KEY is not set — add it to Replit Secrets")
+    if is_default:
+        issues.append(
+            f"SENDGRID_FROM_EMAIL is still the unverified default ({_DEFAULT_FROM}) — "
+            "set it to a verified SendGrid sender address in Replit Secrets"
+        )
+    if not sendgrid_pkg:
+        issues.append("sendgrid Python package is not installed")
+
+    return {
+        "ok":           len(issues) == 0,
+        "api_key_set":  api_key_set,
+        "from_email":   from_email,
+        "is_default":   is_default,
+        "sendgrid_pkg": sendgrid_pkg,
+        "issues":       issues,
+    }

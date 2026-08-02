@@ -142,14 +142,20 @@ async def request_code(
         "last_sent":  now,
     }
 
+    email_sent = False
     if user and user.is_active:
-        sent = send_otp_email(email, user.display_name, code)
-        if not sent:
-            _log.warning("OTP email delivery failed for %s — code still stored", email)
+        email_sent = send_otp_email(email, user.display_name, code)
+        if not email_sent:
+            _log.warning(
+                "OTP email delivery failed for %s — code stored but not delivered. "
+                "Check SENDGRID_FROM_EMAIL is a verified SendGrid sender and "
+                "SENDGRID_API_KEY is valid.",
+                email,
+            )
     else:
         _log.info("request-code for unknown/inactive email %s — no email sent", email)
 
-    return {"ok": True}
+    return {"ok": True, "email_sent": email_sent}
 
 
 @router.post("/login")

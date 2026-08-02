@@ -15,12 +15,13 @@ interface Props {
 type Step = 'email' | 'code'
 
 export function LoginPage({ onAuthenticated, adminMode = false }: Props) {
-  const [step,    setStep]    = useState<Step>('email')
-  const [email,   setEmail]   = useState('')
-  const [code,    setCode]    = useState('')
-  const [error,   setError]   = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [resendIn, setResendIn] = useState(0)
+  const [step,         setStep]         = useState<Step>('email')
+  const [email,        setEmail]        = useState('')
+  const [code,         setCode]         = useState('')
+  const [error,        setError]        = useState<string | null>(null)
+  const [loading,      setLoading]      = useState(false)
+  const [resendIn,     setResendIn]     = useState(0)
+  const [emailWarning, setEmailWarning] = useState(false)
 
   // ── Step 1: request a code ──────────────────────────────────────────────
   async function handleRequestCode(e: FormEvent) {
@@ -34,6 +35,8 @@ export function LoginPage({ onAuthenticated, adminMode = false }: Props) {
         body: JSON.stringify({ email }),
       })
       if (resp.ok) {
+        const body = await resp.json().catch(() => ({})) as { ok?: boolean; email_sent?: boolean }
+        setEmailWarning(body.email_sent === false)
         setStep('code')
         startResendCountdown()
       } else {
@@ -100,6 +103,8 @@ export function LoginPage({ onAuthenticated, adminMode = false }: Props) {
         body: JSON.stringify({ email }),
       })
       if (resp.ok) {
+        const body = await resp.json().catch(() => ({})) as { ok?: boolean; email_sent?: boolean }
+        setEmailWarning(body.email_sent === false)
         startResendCountdown()
         setCode('')
       } else {
@@ -193,10 +198,19 @@ export function LoginPage({ onAuthenticated, adminMode = false }: Props) {
         {/* ── Step 2: code ── */}
         {step === 'code' && (
           <form onSubmit={handleVerifyCode} className="flex flex-col gap-5">
-            <p className="font-sans text-center" style={{ fontSize: 12, color: '#7d8b9c' }}>
-              A 6-digit code was sent to<br />
-              <span style={{ color: '#e6ecf2' }}>{email}</span>
-            </p>
+            {emailWarning ? (
+              <div className="rounded px-3 py-2 font-sans text-center"
+                   style={{ background: '#1a1e14', color: '#c9a84c', fontSize: 12,
+                            border: '1px solid #4a3e18', lineHeight: 1.5 }}>
+                ⚠ Email delivery may not be configured.<br />
+                Contact your administrator — the sign-in code was not sent.
+              </div>
+            ) : (
+              <p className="font-sans text-center" style={{ fontSize: 12, color: '#7d8b9c' }}>
+                A 6-digit code was sent to<br />
+                <span style={{ color: '#e6ecf2' }}>{email}</span>
+              </p>
+            )}
 
             <div className="flex flex-col gap-1.5">
               <label className="font-sans" style={{ fontSize: 11, color: '#7d8b9c' }}>
