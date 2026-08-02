@@ -21,9 +21,17 @@ from typing import Optional
 
 _log = logging.getLogger(__name__)
 
-_SENDGRID_API_KEY: Optional[str] = os.environ.get("SENDGRID_API_KEY")
-_FROM_EMAIL: str = os.environ.get("SENDGRID_FROM_EMAIL", "noreply@gridsignal.app")
 _APP_NAME: str = "GridSignal Simulator"
+
+
+def _api_key() -> Optional[str]:
+    """Read SENDGRID_API_KEY fresh each call so secrets added after startup work."""
+    return os.environ.get("SENDGRID_API_KEY") or None
+
+
+def _from_email() -> str:
+    """Read SENDGRID_FROM_EMAIL fresh each call so secrets added after startup work."""
+    return os.environ.get("SENDGRID_FROM_EMAIL", "noreply@gridsignal.app")
 
 
 def _portal_url() -> str:
@@ -39,11 +47,12 @@ def _portal_url() -> str:
 
 
 def _get_client():
-    if not _SENDGRID_API_KEY:
+    key = _api_key()
+    if not key:
         return None
     try:
         from sendgrid import SendGridAPIClient
-        return SendGridAPIClient(_SENDGRID_API_KEY)
+        return SendGridAPIClient(key)
     except ImportError:
         _log.warning("sendgrid package not installed — email delivery disabled")
         return None
@@ -63,7 +72,8 @@ def send_welcome_email(to_email: str, display_name: str) -> bool:
         )
         return False
 
-    url = _portal_url()
+    url    = _portal_url()
+    sender = _from_email()
     subject = f"Your {_APP_NAME} account is ready"
     body = f"""\
 <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0b1017;color:#e6ecf2;padding:32px;border-radius:8px">
@@ -101,7 +111,7 @@ def send_welcome_email(to_email: str, display_name: str) -> bool:
     try:
         from sendgrid.helpers.mail import Mail
         message = Mail(
-            from_email=_FROM_EMAIL,
+            from_email=sender,
             to_emails=to_email,
             subject=subject,
             html_content=body,
@@ -151,7 +161,7 @@ def send_otp_email(to_email: str, display_name: str, code: str) -> bool:
     try:
         from sendgrid.helpers.mail import Mail
         message = Mail(
-            from_email=_FROM_EMAIL,
+            from_email=_from_email(),
             to_emails=to_email,
             subject=subject,
             html_content=body,
@@ -187,7 +197,7 @@ def send_password_reset_email(to_email: str, reset_token: str, base_url: str) ->
     try:
         from sendgrid.helpers.mail import Mail
         message = Mail(
-            from_email=_FROM_EMAIL,
+            from_email=_from_email(),
             to_emails=to_email,
             subject=subject,
             html_content=body,
