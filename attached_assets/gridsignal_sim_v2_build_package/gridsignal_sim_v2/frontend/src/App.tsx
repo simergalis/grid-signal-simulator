@@ -86,7 +86,8 @@ export default function App() {
     )
   }
   if (authUser === false) {
-    return <LoginPage onAuthenticated={handleAuthenticated} />
+    const isAdminPath = window.location.pathname === '/admin'
+    return <LoginPage onAuthenticated={handleAuthenticated} adminMode={isAdminPath} />
   }
 
   // ── Authenticated — render the main interface ──────────────────────────────
@@ -105,7 +106,9 @@ function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
   const [resultsRunId,  setResultsRunId]  = useState<string | null>(null)
   const [drawerOpen,    setDrawerOpen]    = useState(false)
   const [editId,        setEditId]        = useState<string | null>(null)
-  const [currentPage,   setCurrentPage]   = useState<PageView>('readiness')
+  const [currentPage,   setCurrentPage]   = useState<PageView>(() =>
+    role === 'admin' && window.location.pathname === '/admin' ? 'admin' : 'readiness'
+  )
   const [agentsEnabled, setAgentsEnabled] = useState(true)
   const [topoOpen,      setTopoOpen]      = useState(false)
 

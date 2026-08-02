@@ -13,9 +13,11 @@ import { FormEvent, useState } from 'react'
 
 interface Props {
   onAuthenticated: (displayName: string, role: string) => void
+  /** When true the form is the admin-only entry point (/admin path). */
+  adminMode?: boolean
 }
 
-export function LoginPage({ onAuthenticated }: Props) {
+export function LoginPage({ onAuthenticated, adminMode = false }: Props) {
   const [email,    setEmail]    = useState('')
   const [phone,    setPhone]    = useState('')
   const [password, setPassword] = useState('')
@@ -35,7 +37,14 @@ export function LoginPage({ onAuthenticated }: Props) {
       })
       if (resp.ok) {
         const data = await resp.json() as { display_name: string; role: string }
-        onAuthenticated(data.display_name, data.role)
+        if (adminMode && data.role !== 'admin') {
+          // Clear the session immediately — non-admins must not stay logged in
+          // via this entry point.
+          await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' }).catch(() => {})
+          setError('Admin access required. Use the main login page for operator access.')
+        } else {
+          onAuthenticated(data.display_name, data.role)
+        }
       } else {
         const body = await resp.json().catch(() => ({})) as { detail?: string }
         setError(body.detail ?? 'Login failed — please check your credentials.')
@@ -80,7 +89,7 @@ export function LoginPage({ onAuthenticated }: Props) {
           className="font-sans font-semibold text-center"
           style={{ fontSize: 15, color: '#e6ecf2', marginBottom: 4 }}
         >
-          Operator sign-in
+          {adminMode ? 'Admin sign-in' : 'Operator sign-in'}
         </h1>
 
         {/* Email */}
@@ -159,7 +168,9 @@ export function LoginPage({ onAuthenticated }: Props) {
         </button>
 
         <p className="font-sans text-center" style={{ fontSize: 11, color: '#4b5764' }}>
-          Contact your administrator to request access.
+          {adminMode
+            ? 'Administrator accounts only.'
+            : 'Contact your administrator to request access.'}
         </p>
       </form>
     </div>
