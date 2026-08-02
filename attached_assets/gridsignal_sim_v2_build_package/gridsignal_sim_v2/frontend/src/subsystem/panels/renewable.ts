@@ -65,6 +65,12 @@ interface Advisory {
 
 interface SolarState {
   t: number
+  power: {
+    p_renewable_mw:  number
+    p_expected_mw:   number
+    banks_reporting: number
+    banks_total:     number
+  }
   feeders: FeederSnap[]
   banks: BankSnap[]
   exposure: {
@@ -173,12 +179,42 @@ function BankFleetPanel(): React.ReactElement {
   }
 
   if (!solar) {
-    return React.createElement('div', {
-      className: 'font-mono text-[10px] text-muted py-2 text-center animate-pulse',
-    }, 'Loading bank fleet…')
+    return React.createElement('div', { className: 'space-y-0' },
+      // Placeholder bars while snapshot loads
+      React.createElement('div', { className: 'space-y-2 mb-3' },
+        React.createElement(BulletBar, { label: 'Current output against rated', value: 0, max: 5, colour: SOLAR, unit: ' MW', note: 'loading…' }),
+        React.createElement(BulletBar, { label: 'If solar stopped this second',  value: 0, max: 5, colour: RED,   unit: ' MW', note: 'loading…' }),
+      ),
+      React.createElement('div', {
+        className: 'font-mono text-[10px] text-muted py-2 text-center animate-pulse',
+      }, 'Loading bank fleet…'),
+    )
   }
 
-  const { feeders, banks, exposure, reserve, advisories } = solar
+  const { power, feeders, banks, exposure, reserve, advisories } = solar
+
+  // ── Live output bars — always read from snapshot so operator bank shutdowns
+  // are reflected immediately, independent of tick.p_renewable_mw which carries
+  // the Mistral forecast and may lag operator actions.
+  const liveMW = power.p_renewable_mw
+  const liveOutputBars = React.createElement('div', { className: 'space-y-2 mb-3' },
+    React.createElement(BulletBar, {
+      label:  'Current output against rated',
+      value:  liveMW,
+      max:    Math.max(liveMW, 5),
+      colour: SOLAR,
+      unit:   ' MW',
+      note:   liveMW > 0 ? 'contributing at rated output' : 'zero output — full load falls to dispatchable sources',
+    }),
+    React.createElement(BulletBar, {
+      label:  'If solar stopped this second',
+      value:  liveMW,
+      max:    Math.max(liveMW, 5),
+      colour: RED,
+      unit:   ' MW',
+      note:   'an inverter trip is a step change with Δt_lead = 0 — no advance warning',
+    }),
+  )
 
   // Build a map from bank ID → BankSnap for quick lookup
   const bankMap: Record<string, BankSnap> = {}
@@ -447,6 +483,7 @@ function BankFleetPanel(): React.ReactElement {
   )
 
   return React.createElement('div', { className: 'mt-2 pt-2 space-y-0' },
+    liveOutputBars,
     // Section header
     React.createElement('div', {
       className: 'flex items-baseline justify-between mb-1',
@@ -499,8 +536,6 @@ export const renewablePanel: PanelConfig = {
     const solarMW    = tick.p_renewable_mw
     const totalMW    = tick.p_total_mw          // compute + cooling (gross site draw)
     const netDemand  = tick.net_demand_mw        // what fleet must serve after solar offset
-    // "if solar vanished" line: the gap that would open without warning
-    const exposureMW = solarMW
     // Share: cap at 100% — when solar > current draw the note explains the surplus
     const solarExceedsDraw = totalMW > 0 && solarMW >= totalMW
     const sharePct = totalMW > 0
@@ -521,27 +556,12 @@ export const renewablePanel: PanelConfig = {
       height:  200,
     })
 
-    // ── Secondary: two summary bullets + live bank fleet ──────────────────────
-    const secondary = React.createElement('div', { className: 'space-y-2' },
-      React.createElement(BulletBar, {
-        label:  'Current output against rated',
-        value:  solarMW,
-        max:    Math.max(solarMW, 5),
-        colour: SOLAR,
-        unit:   ' MW',
-        note:   solarMW > 0 ? 'contributing at rated output' : 'zero output — full load falls to dispatchable sources',
-      }),
-      React.createElement(BulletBar, {
-        label:  'If solar stopped this second',
-        value:  exposureMW,
-        max:    Math.max(exposureMW, 5),
-        colour: RED,
-        unit:   ' MW',
-        note:   'an inverter trip is a step change with Δt_lead = 0 — no advance warning',
-      }),
-      // Live bank fleet panel — polls /api/solar/state independently
-      React.createElement(BankFleetPanel),
-    )
+    // ── Secondary: BankFleetPanel owns the live output bars + bank fleet.
+    // BankFleetPanel polls /api/solar/state at 1.5 Hz and renders the two
+    // BulletBars using power.p_renewable_mw from the snapshot — correct even
+    // when operator bank shutdowns reduce output below the Mistral forecast
+    // carried on tick.p_renewable_mw.
+    const secondary = React.createElement(BankFleetPanel)
 
     return {
       stateLabel:  'ADVISORY',
