@@ -26,6 +26,24 @@ _FROM_EMAIL: str = os.environ.get("SENDGRID_FROM_EMAIL", "noreply@gridsignal.app
 _APP_NAME: str = "GridSignal Simulator"
 
 
+def _portal_url() -> str:
+    """
+    Resolve the public URL of the GridSignal portal for use in emails.
+
+    Priority:
+      1. APP_PORTAL_URL env var  — set this in Replit Secrets for the deployed URL
+      2. REPLIT_DEV_DOMAIN       — automatically present in Replit dev environment
+      3. Hard fallback           — used only if neither is configured
+    """
+    explicit = os.environ.get("APP_PORTAL_URL", "").strip()
+    if explicit:
+        return explicit.rstrip("/")
+    dev_domain = os.environ.get("REPLIT_DEV_DOMAIN", "").strip()
+    if dev_domain:
+        return f"https://{dev_domain}"
+    return "https://gridsignal.app"
+
+
 def _get_client():
     if not _SENDGRID_API_KEY:
         return None
@@ -51,6 +69,7 @@ def send_welcome_email(to_email: str, display_name: str) -> bool:
         )
         return False
 
+    url = _portal_url()
     subject = f"Your {_APP_NAME} account is ready"
     body = f"""\
 <div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0b1017;color:#e6ecf2;padding:32px;border-radius:8px">
@@ -63,9 +82,22 @@ def send_welcome_email(to_email: str, display_name: str) -> bool:
     <strong style="color:#3fb6a8">Your login email:</strong><br>
     <span style="font-family:monospace">{to_email}</span>
   </p>
-  <p>To sign in, go to the GridSignal dashboard, enter your email address, and
-     we'll send you a one-time code. No password needed — just check your inbox
+  <p>To sign in, click the button below, enter your email address, and we'll
+     send you a one-time code. No password needed — just check your inbox
      each time you log in.</p>
+  <div style="text-align:center;margin:28px 0">
+    <a href="{url}"
+       style="display:inline-block;background:#3fb6a8;color:#0b1017;font-weight:700;
+              font-size:15px;text-decoration:none;padding:14px 32px;border-radius:6px;
+              letter-spacing:0.04em">
+      Go to GridSignal dashboard
+    </a>
+  </div>
+  <p style="font-size:13px;color:#7d8b9c;text-align:center;word-break:break-all">
+    Or copy this link:<br>
+    <a href="{url}" style="color:#3fb6a8">{url}</a>
+  </p>
+  <hr style="border:none;border-top:1px solid #1e2a38;margin:20px 0">
   <p style="color:#7d8b9c;font-size:12px">
     If you did not expect this email, you can safely ignore it.
     No action is needed unless you want to use this account.
