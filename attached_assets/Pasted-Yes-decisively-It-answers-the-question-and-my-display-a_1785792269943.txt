@@ -1,0 +1,43 @@
+Yes — decisively. It answers the question, and my display-artifact hypothesis was wrong.
+
+The oscillation is real and it's in the model
+
+it_load_mw is a genuine two-state square wave:
+
+Low: 194.86 MW (sd 0.26), 73.3% duty
+High: 284.86 MW (sd 0.25), 26.7% duty
+Zero samples between the two states — the transition completes in under one tick
+
+So it isn't a data-source race. The load model really does pulse. What confused me was scale: this capture runs a 245 MW site, while the dashboard showed a ~25 MW site with a 19.96 MW job. Nothing here occupies the 0.13–6.30 MW range at all, so the dashboard and this CSV are different scenarios. Whatever the tile is showing, this file isn't it. That's still worth resolving, but it's a scenario-selection question, not a model bug.
+
+What got fixed — and it's substantial
+
+step_event now drives the load. Gaps take four distinct values (6, 7, 8, 9 samples), sd 0.612 ticks, period 0.746 s with CV 8.21%. That's almost exactly the 8% target, and the modulo counter is gone. Load on step ticks is 284.86 MW versus 208.71 off — the metronome is finally connected.
+
+Pulse depth is now realistic. Floor sits at 68.4% of peak, 31.6% peak-to-peak. Slightly shallower than the 40–60% I suggested, but well inside the plausible band and a vast improvement on 48×.
+
+Thermal state is modelled. compute_inlet_temp_c lag-1 autocorrelation is now +0.9907, up from +0.094. That's a real first-order thermal state.
+
+The slack-bus masking is gone. corr(grid_import, −(everything else)) fell from +0.999999 to +0.244, and balance_residual_mw now has sd 48.6 MW instead of being definitionally zero.
+
+Turbine ramp-down exists — 427 decreasing ticks against 171 increasing.
+
+Four things the new data exposes
+
+1. The residual is now real, and it's reporting a 110 MW model error. corr(residual, it_load) = −0.9925: +27.8 MW on low-load ticks, −81.1 MW on high-load ticks. The residual is a near-perfect inverse of the load pulse, which means nothing is covering the 90 MW step — it's simply going unbalanced. Peak 17.6% of site load. The instrument works; it's now telling you the plant can't serve its own load profile.
+
+2. Ramp limits aren't enforced. Up-ramp peaks at +15.5 MW/s (77× the 0.2 MW/s spec), down-ramp at −6.6 MW/s (44× the 0.15 spec), and 99% of ticks exceed ±0.2 MW/s. corr(ramp direction, load change) = +0.579 — the turbine is chasing a 0.75 s oscillation. This is the Section 28.1 band violation made concrete: sub-band content is reaching the dispatch path, and the only reason it doesn't destroy the machine is that no limiter exists. Phase 11.3b's R7 is the test for this.
+
+3. Cooling power still has no lag, even though cooling temperature now does. corr(mechanical_load_mw, it_load_mw) = +0.9968 at zero lag — best-fit lag across a 6-second sweep is 0.0 s, against Section 8's required 90 s. Mechanical load pulses 47.2% peak-to-peak in lockstep with compute. So TC-02 and TC-03 still fail: the thermal state got implemented, P_cooling(t) didn't. This is exactly the double-whammy step-load that IP claim 3 exists to prevent, currently arriving simultaneously rather than delayed.
+
+4. Transitions are instantaneous. Zero samples between states means no tau_gpu smoothing — infinite dP/dt. Real GPU power has finite rise time, and the square edge is part of why the turbine ramp is unbounded.
+
+Two regressions
+
+compute_load_mw has been dropped from the schema — it was present in the previous capture. And compute_mem_util_pct now has sd exactly 0.000000; it was already near-useless, now it's constant.
+
+Still absent: forecast_mw, bess_setpoint_mw, gt_setpoint_mw, gt_mode, binding_constraint, scenario_id, rng_seed. So Phases 11.1, 11.2, and 11.3's setpoint split haven't landed, and the forecast path — the thing Phase 11.0 was meant to diagnose — still isn't observable in telemetry.
+
+One genuinely new behaviour worth noting: islanded transitions at t = 27.6 s and 33.4 s. That's the first capture exercising island transitions at all. Residual sd is essentially identical either side (48.60 vs 48.06), so the transition isn't yet changing how the balance closes — frequency-based slack from 11.3 isn't in.
+
+Did you get a Phase 11.0 branch classification back? The forecast path is still the item that gates the most, and none of these fixes touch it.
