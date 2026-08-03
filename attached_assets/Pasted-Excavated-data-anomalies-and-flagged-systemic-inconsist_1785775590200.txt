@@ -1,0 +1,65 @@
+Excavated data anomalies and flagged systemic inconsistencies
+Excavated data anomalies and flagged systemic inconsistencies
+
+Sampling is now 10 Hz over 600 rows, and eight of the recommended channels are present. That surfaces new information — and it also makes several defects unmissable.
+
+Excavated multiple systemic issues within simulation model architecture
+Excavated multiple systemic issues within simulation model architecture
+
+The added channels did their job — they disambiguated something I got wrong, and they exposed three defects that were invisible before.
+
+First, a correction to my earlier diagnosis
+
+I called the BESS SOC integrator a sign error. With balance_residual_mw present I can now recover the plant's actual balance equation by least squares, and every coefficient comes back at unity:
+
+GT + PV + BESS + grid_import − site_load = residual
+
+In that equation negative bess_power_mw acts as a load, which means negative is charging, not discharging. Rising SOC under negative power is therefore self-consistent, and it fits a 20 MWh pack to within 0.0067 pp. The integrator is fine. The earlier log simply had no channel capable of resolving the convention, and I picked the wrong one — negative-as-discharge is the more common convention in DERMS contexts, but it isn't yours. Worth writing the convention into the schema explicitly so nobody repeats my mistake.
+
+What remains true is that the battery is at its charge rail for 96% of the window. At 50 MW into 20 MWh that's a 2.5C rate, and SOC would hit 100% about 5.7 minutes past the end of the capture. Also note the capacity constant moved from ~197 MWh in the previous run to 20 MWh here — if that wasn't deliberate, it's a config drift worth tracking.
+
+Defect 1 — generation and load differ by 125×
+
+site_total_load_mw runs 4.55–4.83 MW. Generation runs ~600 MW. The site is a ~5 MW datacenter (3.24 MW IT at PUE 1.43, which is a perfectly reasonable figure) bolted to a utility-scale power plant.
+
+Consequence: corr(compute_load_mw, gt_power_mw) = −0.011. The generation side and the demand side are causally unconnected in this model. For a product whose thesis is workload-driven dispatch, the simulator currently has no coupling between workload and dispatch at all. Every downstream conclusion about forecast value is unfalsifiable until the plant is scaled to the load, or vice versa.
+
+Defect 2 — balance_residual_mw is zero by construction and tests nothing
+
+grid_import_mw correlates with the negative of everything else at +0.999999, with max deviation 0.167 MW. It isn't measured; it's solved for. It's the slack variable, so the residual it produces can never be anything but ~0.
+
+This is precisely the failure mode the residual channel was meant to prevent. The residual's sd is 0.050 MW, which reads as 1.08% of site load but is 0.0086% of generation — the number is dominated by rounding in the logged columns, not by model error.
+
+The fix: the residual must be computed against an independently determined import. Either measure import at the PCC and let the residual absorb the mismatch, or (in the islanded case) let frequency deviate and log that. As written the assertion abs(balance_residual_mw) < tol will pass forever, including on a model that's badly wrong.
+
+Related: islanded is constant 0 while the site exports 384–542 MW. The behind-the-meter islanded scenario — GridSignal's actual market context — is never exercised in this capture.
+
+Defect 3 — step_event fires but nothing responds to it
+
+The pulse instrumentation is in, at exactly 0.7 s intervals (85 events, inter-event sd = 0.0000). But the load doesn't move with it:
+
+Load on step ticks vs. off: difference of 0.00042 MW, 0.013% of mean
+Phase-folded over the 0.7 s period: fold amplitude 0.0020 MW against residual sd 0.0417 MW — SNR 0.049
+Spectral power share at 1.429 Hz: 0.04%, against a white-noise baseline of 0.33%
+
+There is less energy at the step frequency than noise alone would produce. compute_load_mw is instead a smooth red-noise wander (autocorrelation decays monotonically from +0.97, dominant period 20 s) and correlates with compute_cpu_load_pct at +0.9994 — it's a linear rescale of the CPU channel, not an independent power model.
+
+So the marker channel and the load model are separate code paths that never meet. This is the single most important thing to fix, because 10 Hz sampling costs you 10× the data volume and currently buys nothing: there's no sub-second content to resolve.
+
+Two notes when you do wire it up. First, zero jitter is itself unphysical — real synchronous training steps vary with stragglers and network contention, so inter-step period should have a distribution, and straggler-induced jitter is part of what makes the load hard to forecast. Second, the amplitude matters more than the period: a lockstep pulse worth dispatching against is tens of percent of cluster load, not the 6.2% peak-to-peak currently present.
+
+Confirmed fixed
+
+bess_terminal_voltage_v now correlates with SOC at +0.90 — the OCV curve is in. Correlation with power is still only −0.18, so internal resistance isn't modeled yet; terminal voltage doesn't sag under load. Partial fix.
+
+Confirmed still broken
+
+compute_inlet_temp_c has a lag-1 autocorrelation of +0.094 at 10 Hz. This is now definitive rather than suggestive: any real thermal mass sampled at 10 Hz would show autocorrelation above 0.99. It's an independent uniform draw per sample, 14 distinct values across 22.0–23.3 °C. The dual-clock thermal lag model still has no observable presence at the compute boundary.
+
+gt_exhaust_temp_c residual autocorrelation is −0.036 — still algebraic in power, still no turbine thermal lag.
+
+it_load_mw is byte-identical to compute_load_mw (max difference 0.000000). One of the two is redundant; keep it_load_mw and drop the duplicate, or make them genuinely distinct.
+
+New: turbine ramp is now implausible
+
+Pre-saturation ramp averages 14.1 MW/s (846 MW/min), peaking at 26.8 MW/s — 6× faster than the previous run's 2.37 MW/s. The unit saturates at exactly 480.00 MW at t = 14.1 s and sits there with zero variance for 76.5% of the window. Same clamp-after-noise artifact as before, now affecting the majority of the capture. Whatever ramp-rate limit exists in the asset model isn't binding, and 846 MW/min doesn't correspond to any real machine.
