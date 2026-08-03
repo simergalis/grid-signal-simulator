@@ -357,6 +357,9 @@ def main() -> None:
                         help="Scheduler training-step period in seconds (default: 0.7). "
                              "step_event=1 is written whenever a step boundary falls "
                              "inside the current tick window. Set to 0 to disable.")
+    parser.add_argument("--fast", action="store_true",
+                        help="Skip inter-tick sleep — generate all rows immediately. "
+                             "Use for export/download; omit for live monitoring.")
     args = parser.parse_args()
 
     output_path = Path(args.out)
@@ -418,7 +421,8 @@ def main() -> None:
                 print(f"\nReached {args.rows} rows — stopping.")
                 break
 
-            time.sleep(args.interval)
+            if not args.fast:
+                time.sleep(args.interval)
 
     except KeyboardInterrupt:
         print(f"\nInterrupted after {count} row(s).")

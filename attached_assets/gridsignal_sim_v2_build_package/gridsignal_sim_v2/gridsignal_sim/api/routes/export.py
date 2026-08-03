@@ -58,6 +58,7 @@ async def export_telemetry_log() -> FileResponse:
             str(_LOGGER_SCRIPT),
             "--rows",     str(_TEST_ROWS),
             "--interval", str(_TEST_INTERVAL),
+            "--fast",                          # generate all rows without sleeping
             "--out",      out_path,
             # Discard stdout (progress lines) — pipe buffering would stall the
             # subprocess once the OS pipe buffer fills up.  We only need the
@@ -65,8 +66,8 @@ async def export_telemetry_log() -> FileResponse:
             stdout=asyncio.subprocess.DEVNULL,
             stderr=asyncio.subprocess.PIPE,
         )
-        # Timeout = rows × interval + 30 s headroom.
-        _timeout = _TEST_ROWS * _TEST_INTERVAL + 30
+        # --fast skips inter-tick sleep, so the script finishes in < 5 s.
+        _timeout = 30
         try:
             _unused, _stderr = await asyncio.wait_for(
                 proc.communicate(), timeout=_timeout
