@@ -19,6 +19,7 @@
 import { useState, useEffect, useRef } from 'react'
 import type { FabricModalView, FabricControlPath, FabricDiscrimination } from '../types'
 import { useTickStore } from '../store/tickStore'
+import { useScenarioStore } from '../store/scenarioStore'
 
 // ---------------------------------------------------------------------------
 // Legacy types (mirroring core/network_telemetry.py wire shapes)
@@ -84,6 +85,44 @@ interface FabricHistoryPoint {
 }
 
 const MAX_HISTORY = 120
+
+// ---------------------------------------------------------------------------
+// Fabric scenario hints — keyed by scenario display name (S1–S8)
+// ---------------------------------------------------------------------------
+
+const FABRIC_SCENARIO_HINTS: Record<string, string> = {
+  'S1: Baseline Training':          'Expect balanced compute + storage utilisation with no congestion',
+  'S2: Checkpoint ECMP Hotspot':    'Expect storage congestion during the checkpoint phase',
+  'S3: Job-End Withholds':          'Expect delayed corroboration events at job boundaries',
+  'S4: NFR-2 Control-Path Breach':  'Expect control-path latency to exceed the 2000 ms NFR-2 budget',
+  'S5: Gray Failure':               'Expect intermittent packet loss on a subset of compute links',
+  'S6: Baseline Tier Degradation':  'Expect capability tier downgrade; corroboration becomes unavailable',
+  'S7: Slow Checkpoint':            'Expect a prolonged checkpoint band with storage elephant sustained',
+  'S8: Transceiver Degradation':    'Expect rising optical-power alarms on degraded links',
+}
+
+/** Returns true when a scenario id looks like a fabric stress scenario. */
+function isFabricScenarioId(id: string): boolean {
+  return id.startsWith('fabric-')
+}
+
+// Scenario active badge — only rendered for fabric stress scenarios
+function ScenarioActiveBadge({ name }: { name: string }) {
+  const hint = FABRIC_SCENARIO_HINTS[name]
+  return (
+    <div className="flex flex-col gap-0.5 min-w-0">
+      <div className="flex items-center gap-1.5">
+        <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-900/60 text-indigo-300 border border-indigo-700/60 flex-shrink-0">
+          ACTIVE SCENARIO
+        </span>
+        <span className="text-xs font-medium text-text truncate">{name}</span>
+      </div>
+      {hint && (
+        <p className="text-[10px] text-text-muted leading-tight pl-0.5">{hint}</p>
+      )}
+    </div>
+  )
+}
 
 // ---------------------------------------------------------------------------
 // Sub-components — Phase 10
@@ -417,6 +456,13 @@ export function NetworkTelemetryPage({ runId }: NetworkTelemetryPageProps) {
   const tick = useTickStore(s => s.latestTick)
   const fabric: FabricModalView | null = tick?.fabric ?? null
 
+  // Active fabric scenario name (from scenario store — selectedId matches the launched run)
+  const scenarios   = useScenarioStore(s => s.scenarios)
+  const selectedId  = useScenarioStore(s => s.selectedId)
+  const activeScenario = (runId && selectedId && isFabricScenarioId(selectedId))
+    ? scenarios.find(s => s.scenario_id === selectedId) ?? null
+    : null
+
   // Fabric utilisation by fabric group
   const linksByFabric: Record<string, Array<{ id: string; u: number }>> = {}
   if (fabric?.link_utilisation) {
@@ -506,12 +552,17 @@ export function NetworkTelemetryPage({ runId }: NetworkTelemetryPageProps) {
     <div className="h-full overflow-y-auto p-4 space-y-4 text-sm">
 
       {/* Page header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h2 className="text-base font-semibold text-text">Network Telemetry</h2>
-          <p className="text-xs text-text-muted mt-0.5">
-            §19.9 · Read-only by design (§25.1). Fabric evidence is advisory only (TC-74).
-          </p>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1 space-y-1.5">
+          <div>
+            <h2 className="text-base font-semibold text-text">Network Telemetry</h2>
+            <p className="text-xs text-text-muted mt-0.5">
+              §19.9 · Read-only by design (§25.1). Fabric evidence is advisory only (TC-74).
+            </p>
+          </div>
+          {activeScenario && (
+            <ScenarioActiveBadge name={activeScenario.name} />
+          )}
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {fabric && (
