@@ -346,6 +346,9 @@ def test_dt_lead_next_s_in_tick_payload():
         timestamp=0.0, hardware_profile_id="profile_a", node_count=1,
         workload_class=WorkloadClass.TRAINING, site_id="test-site",
     ))
+    # Pin ramp_seconds so the arithmetic below is deterministic regardless of
+    # the production default (currently 120 s, originally 45 s).
+    state.gpu_modules[0].ramp_seconds = 45.0
     # Set progress to 0.5 so remaining = 0.5 × ramp_seconds (45) = 22.5 s.
     state.gpu_modules[0]._ramp_progress["j1"] = 0.5
     clock = _make_clock()
@@ -354,7 +357,7 @@ def test_dt_lead_next_s_in_tick_payload():
     # After evaluate_tick advances by dt=5 s, ramp_progress increases by 5/45 ≈ 0.111.
     # New progress ≈ 0.611, remaining ≈ (1 - 0.611) × 45 ≈ 17.5 s.
     assert result.dt_lead_next_s > 0.0
-    assert result.dt_lead_next_s < 45.0  # must be less than full ramp window
+    assert result.dt_lead_next_s < 45.0  # must be less than the pinned ramp window
     payload = _tick_result_to_dict(result)
     assert "dt_lead_next_s" in payload
     assert payload["dt_lead_next_s"] == pytest.approx(result.dt_lead_next_s, abs=0.01)
