@@ -119,14 +119,13 @@ function feederStateColour(state: string): string {
 // Defined outside deriveData so the React reference is stable across ticks and
 // the useEffect polling timer is not torn down and recreated on every tick.
 
-interface BankFleetPanelProps {
-  /** Plant-level solar MW from the live WS tick — same value shown in the
-   *  verdict headline.  When provided, the "Current output against rated" bar
-   *  uses this instead of power.p_renewable_mw so both displays share one
-   *  computation path (AT-9). */
-  tickSolarMW?: number
-}
-function BankFleetPanel({ tickSolarMW }: BankFleetPanelProps): React.ReactElement {
+// Module-level bridge: BankFleetPanel writes the snapshot value on every 1.5 Hz
+// poll; deriveData reads it so the verdict and the bar share one source (AT-9).
+// JS is single-threaded — no concurrency hazard.
+let _latestSnapshotSolarMW: number = 0
+
+interface BankFleetPanelProps { }
+function BankFleetPanel({ }: BankFleetPanelProps): React.ReactElement {
   const [solar, setSolar]         = useState<SolarState | null>(null)
   const [error, setError]         = useState(false)
   const [busy, setBusy]           = useState<string | null>(null)   // kind currently in-flight
@@ -197,12 +196,12 @@ function BankFleetPanel({ tickSolarMW }: BankFleetPanelProps): React.ReactElemen
   const { power, site, feeders, banks, exposure, reserve, advisories } = solar
 
   // ── Live output bars ─────────────────────────────────────────────────────
-  // barMW is the authoritative plant total for every display on this panel.
-  // When a run is active, tickSolarMW carries the WS-tick value (same source
-  // as the verdict headline) so both reads are identical — AT-9 invariant.
-  // Snapshot power.p_renewable_mw is used only when no tick is available
-  // (standalone console view, no active run).
-  const barMW    = tickSolarMW ?? power.p_renewable_mw
+  // barMW is the single authoritative plant total for this panel.
+  // Snapshot power.p_renewable_mw is the three-tier Mistral bank aggregation;
+  // write it to the module-level bridge so deriveData's verdict uses the same
+  // number rather than the independent tick.p_renewable_mw (AT-9).
+  const barMW    = power.p_renewable_mw
+  _latestSnapshotSolarMW = barMW
   const ratedMW  = site.plant_rated_ac_mw || Math.max(barMW, 5)
   const liveOutputBars = React.createElement('div', { className: 'space-y-2 mb-3' },
     React.createElement(BulletBar, {
@@ -547,7 +546,9 @@ export const renewablePanel: PanelConfig = {
       }
     }
 
-    const solarMW    = tick.p_renewable_mw        // three-tier bank aggregation (AT-9)
+    // Read from the snapshot bridge so verdict and bar share one value (AT-9).
+    // Falls back to tick.p_renewable_mw only before the first 1.5 Hz poll.
+    const solarMW    = _latestSnapshotSolarMW > 0 ? _latestSnapshotSolarMW : tick.p_renewable_mw
     const totalMW    = tick.p_total_mw            // compute + cooling (gross site draw)
     // Recompute from the aggregated solar value — do not read tick.net_demand_mw
     // which was computed pre-fix from rated_mw * fraction (AT-11).
@@ -575,8 +576,7 @@ export const renewablePanel: PanelConfig = {
 
     // BankFleetPanel owns the bars (uses snapshot physics) and the
     // live bank fleet.  Passing solarMW keeps bars in lock-step with the hero.
-    // Pass the tick-derived solarMW so the bar and the verdict share one value.
-    const secondary = React.createElement(BankFleetPanel, { tickSolarMW: solarMW })
+    const secondary = React.createElement(BankFleetPanel, {})
 
     return {
       stateLabel:  'ADVISORY',
