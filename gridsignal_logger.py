@@ -62,6 +62,13 @@ CSV_COLUMNS: list[str] = [
     "cooling_chws_temp_c",    # chilled water supply temperature
     "cooling_pump_flow_ls",   # litres per second
     "cooling_cop",            # coefficient of performance
+    # Tier 1 — Power Balance
+    "site_total_load_mw",     # total site load measured at PCC (IT + mechanical)
+    "it_load_mw",             # IT critical load only
+    "mechanical_load_mw",     # cooling, pumps, fans
+    "grid_import_mw",         # signed: positive = importing, negative = exporting
+    "islanded",               # 1 when operating in island mode, 0 = grid-connected
+    "balance_residual_mw",    # gen − load − losses; should be ~0; spikes flag bugs
     # Scheduler diagnostics
     "step_event",             # 1 when a training-step boundary falls in this tick window
 ]
@@ -116,6 +123,9 @@ class SimulatedGrid:
     COOLING_CHWS_SETPOINT = 7.0    # °C chilled-water supply setpoint
     COOLING_MAX_FLOW_LS   = 800.0  # litres per second
 
+    # ---- Power balance ------------------------------------------------------
+    SITE_LOSS_FACTOR = 0.005       # 0.5 % transmission + distribution losses
+
     def __init__(self) -> None:
         # Gas turbines — start near 60 % load
         self._gt_mw    = _FirstOrderFilter(280.0, tau=8.0)
@@ -137,6 +147,10 @@ class SimulatedGrid:
 
         # Tick counter (used for pseudo-diurnal solar curve)
         self._tick = 0
+
+        # Grid islanding state — rare simulated event
+        self._islanded        = False
+        self._islanding_timer = 0
 
     # ------------------------------------------------------------------
     def tick(self) -> dict:
@@ -204,6 +218,36 @@ class SimulatedGrid:
         cop         = round(4.5 - (chws_temp - self.COOLING_CHWS_SETPOINT) * 0.3
                             + random.gauss(0, 0.05), 2)
 
+        # -- Power Balance ------------------------------------------------
+        # IT load = compute cluster electrical draw (same source as compute_load_mw)
+        it_load_mw   = cpu_load / 100.0 * self.COMPUTE_RATED_MW
+        # Mechanical load: chiller electrical draw + pump electrical draw
+        chiller_mw   = heat_kw / 1000.0 / max(cop, 0.5)   # Q_removed / COP
+        pump_mw      = flow * 0.001                         # ~1 kW per L/s
+        mech_load_mw = chiller_mw + pump_mw
+        site_total_mw = it_load_mw + mech_load_mw
+        losses_mw    = site_total_mw * self.SITE_LOSS_FACTOR
+        # BESS: positive = discharging (source), negative = charging (sink)
+        bess_source  = max(0.0, bess_mw)
+        bess_sink    = max(0.0, -bess_mw)
+        # Grid import closes the balance; add realistic meter noise (~50 kW σ)
+        grid_import_raw = site_total_mw + bess_sink + losses_mw \
+                          - gt_mw - sol_mw - bess_source
+        grid_import_mw  = grid_import_raw + random.gauss(0, 0.05)
+        # Residual = what the balance equation says after noisy metering;
+        # should sit near 0 — spikes flag a model bug or mis-wired sign
+        balance_residual = (gt_mw + sol_mw + bess_source + grid_import_mw
+                            - site_total_mw - bess_sink - losses_mw)
+        # Islanding: rare simulated events (0.1 % chance per tick, 5–20 s duration)
+        if not self._islanded:
+            if random.random() < 0.001:
+                self._islanded        = True
+                self._islanding_timer = random.randint(50, 200)
+        else:
+            self._islanding_timer -= 1
+            if self._islanding_timer <= 0:
+                self._islanded = False
+
         return {
             "timestamp":                 datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
             "gt_power_mw":               round(gt_mw, 2),
@@ -222,6 +266,13 @@ class SimulatedGrid:
             "cooling_chws_temp_c":       round(chws_temp, 2),
             "cooling_pump_flow_ls":      flow,
             "cooling_cop":               cop,
+            # Tier 1 — Power Balance
+            "site_total_load_mw":        round(site_total_mw, 3),
+            "it_load_mw":                round(it_load_mw, 3),
+            "mechanical_load_mw":        round(mech_load_mw, 3),
+            "grid_import_mw":            round(grid_import_mw, 3),
+            "islanded":                  int(self._islanded),
+            "balance_residual_mw":       round(balance_residual, 4),
         }
 
 
