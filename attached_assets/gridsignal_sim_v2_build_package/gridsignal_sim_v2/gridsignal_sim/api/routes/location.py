@@ -347,6 +347,14 @@ async def set_location(request: Request) -> JSONResponse:
         return JSONResponse({"error": str(exc)}, status_code=422)
 
     request.app.state.site_location = loc
+    # SD-1: persist so the next server restart returns to this location instead
+    # of the San Diego default, preventing the header/physics divergence bug.
+    try:
+        import json as _json
+        import pathlib as _pathlib
+        _pathlib.Path("gridsignal_site.json").write_text(_json.dumps(asdict(loc)))
+    except Exception as _exc:
+        _log.warning("Could not persist site_location to gridsignal_site.json: %s", _exc)
     return JSONResponse({**asdict(loc), "current_utc_offset_h": current_utc_offset_h(loc), "source": source})
 
 

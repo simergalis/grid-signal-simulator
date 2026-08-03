@@ -40,7 +40,10 @@ import asyncio
 import datetime
 import functools
 import json
+import logging
 import uuid
+
+_log = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
@@ -165,6 +168,12 @@ async def start_run(
         _ambient_base   = float(spec_data.get("ambient_temp_base_c",_def_amb_base))
         _soc_floor      = float(spec_data.get("soc_floor_pct",       10.0))
         _soc_ceil       = float(spec_data.get("soc_ceil_pct",        95.0))
+        # SD-1: log the resolved site at run start so a timezone/location mismatch
+        # is a 30-second diagnosis rather than a headscratcher.
+        _log.info(
+            "run start: run_id=%s site=(name=%r, lat=%.2f, utc%+.1f)",
+            run_id, _site_name, _site_lat, _site_utc,
+        )
 
         # Build a utc_now override when solar_origin_utc_hour is set.
         # demo-solar-peak uses hour=20 (UTC 20:00 = 12:00 PST San Diego noon)

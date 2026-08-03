@@ -40,9 +40,12 @@ LP-1 guarantee (Step 12/16):
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
+
+_log = logging.getLogger(__name__)
 
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
@@ -116,6 +119,29 @@ async def _lifespan(application: FastAPI):
     # Operator-configurable data-centre location (default = San Diego).
     # Consumed by /solar-preview and POST /runs to seed the Mistral solar prompt.
     application.state.site_location = SiteLocation()
+    # SD-1: restore operator's chosen location across server restarts so the
+    # physics matches the header in a long-lived browser tab.  PUT /api/location
+    # writes gridsignal_site.json; we read it back here on every startup.
+    import json as _json
+    import pathlib as _pathlib
+    _site_state_path = _pathlib.Path("gridsignal_site.json")
+    if _site_state_path.exists():
+        try:
+            _saved = _json.loads(_site_state_path.read_text())
+            _fields = SiteLocation.__dataclass_fields__
+            application.state.site_location = SiteLocation(
+                **{k: v for k, v in _saved.items() if k in _fields}
+            )
+            _loc = application.state.site_location
+            _log.info(
+                "Restored site_location from %s: %r (lat=%.2f, utc%+.1f)",
+                _site_state_path, _loc.name, _loc.lat, _loc.utc_offset_h,
+            )
+        except Exception as _exc:
+            _log.warning(
+                "Could not restore site_location from %s: %s — using default San Diego",
+                _site_state_path, _exc,
+            )
 
     # Operator-editable site display name (default = "Riverbend DC-West").
     from api.routes.location import SiteSettings

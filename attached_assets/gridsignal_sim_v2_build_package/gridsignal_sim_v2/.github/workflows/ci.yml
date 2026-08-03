@@ -27,6 +27,9 @@ defaults:
 env:
   PYTHONPATH: .
   PYTHONDONTWRITEBYTECODE: 1
+  # CI-1: JWT_SECRET is required at import time by api/auth_utils.py.
+  # Without it every test module that imports api.app fails at collection.
+  JWT_SECRET: test-jwt-secret-for-ci-only
 
 jobs:
   # ──────────────────────────────────────────────────────────────────────────
@@ -47,9 +50,12 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -e ".[dev]" 2>/dev/null || pip install \
-            fastapi uvicorn httpx pytest pytest-asyncio anyio \
-            pydantic anthropic mistralai 2>/dev/null || true
+          pip install \
+            fastapi uvicorn httpx \
+            pytest pytest-asyncio pytest-timeout anyio \
+            pydantic anthropic mistralai \
+            sqlalchemy aiosqlite "bcrypt>=4.0" "passlib[bcrypt]" "python-jose[cryptography]" \
+            websockets python-multipart
 
       - name: "Gate 1 — full pytest suite"
         run: |
@@ -87,12 +93,15 @@ jobs:
     # Run the load test only when code that affects the run-management path
     # is touched.  The concurrency and tick-latency NFRs are only meaningful
     # for those layers; running it on every CSS or doc change is wasteful.
+    # CI-4: contains() on a GitHub array does exact-element matching — it will never
+    # match a short prefix like 'core/'.  join() converts the array to a string
+    # first so contains() does the intended substring check.
     if: >
       github.event_name == 'push' &&
       (
-        contains(github.event.head_commit.modified, 'core/') ||
-        contains(github.event.head_commit.modified, 'runtime/') ||
-        contains(github.event.head_commit.modified, 'advisory/')
+        contains(join(github.event.head_commit.modified, ' '), 'core/') ||
+        contains(join(github.event.head_commit.modified, ' '), 'runtime/') ||
+        contains(join(github.event.head_commit.modified, ' '), 'advisory/')
       )
 
     steps:
@@ -106,9 +115,12 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -e ".[dev]" 2>/dev/null || pip install \
-            fastapi uvicorn httpx pytest pytest-asyncio anyio \
-            pydantic anthropic mistralai 2>/dev/null || true
+          pip install \
+            fastapi uvicorn httpx \
+            pytest pytest-asyncio pytest-timeout anyio \
+            pydantic anthropic mistralai \
+            sqlalchemy aiosqlite "bcrypt>=4.0" "passlib[bcrypt]" "python-jose[cryptography]" \
+            websockets python-multipart
 
       - name: "Gate 6 — load test (5 concurrent, 4 h scenario, < 30 s wall)"
         run: |
@@ -146,9 +158,12 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -e ".[dev]" 2>/dev/null || pip install \
-            fastapi uvicorn httpx pytest pytest-asyncio anyio \
-            pydantic anthropic mistralai 2>/dev/null || true
+          pip install \
+            fastapi uvicorn httpx \
+            pytest pytest-asyncio pytest-timeout anyio \
+            pydantic anthropic mistralai \
+            sqlalchemy aiosqlite "bcrypt>=4.0" "passlib[bcrypt]" "python-jose[cryptography]" \
+            websockets python-multipart
 
       - name: "Gate 7 — determinism gate (all 5 seeded scenarios × 2 concurrent)"
         run: |
@@ -183,9 +198,12 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -e ".[dev]" 2>/dev/null || pip install \
-            fastapi uvicorn httpx pytest pytest-asyncio anyio \
-            pydantic anthropic mistralai 2>/dev/null || true
+          pip install \
+            fastapi uvicorn httpx \
+            pytest pytest-asyncio pytest-timeout anyio \
+            pydantic anthropic mistralai \
+            sqlalchemy aiosqlite "bcrypt>=4.0" "passlib[bcrypt]" "python-jose[cryptography]" \
+            websockets python-multipart
 
       - name: "Gate 8 — column-3 shipped-scenario tests"
         run: |
@@ -196,3 +214,37 @@ jobs:
             tests/test_f2_bridging_basis.py \
             -v --tb=short
           echo "Gate 8 PASS: shipped-scenario smoke"
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Frontend: typecheck + vitest unit tests + production build
+  # CI-5: previously absent — four vitest suites existed with no CI gate.
+  # ──────────────────────────────────────────────────────────────────────────
+  frontend:
+    name: "Frontend — tsc + vitest + vite build"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: "Typecheck"
+        run: npx tsc --noEmit
+
+      - name: "Unit tests (vitest)"
+        run: npm test
+
+      - name: "Production build"
+        run: npx vite build
+        env:
+          NODE_ENV: production

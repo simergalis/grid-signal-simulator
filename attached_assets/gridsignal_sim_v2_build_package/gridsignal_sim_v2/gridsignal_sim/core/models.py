@@ -630,8 +630,19 @@ class TickResult:
     # §7.4 solar bank telemetry — wired to the SLD tile sub-field.
     # p_expected_mw: what the array should produce at current measured POA
     #   (rated × cloud_factor — soiling excluded so faults surface as shortfall).
-    #   For the run-loop old model this equals p_renewable_mw (one healthy array).
-    # banks_reporting: banks with live telemetry.  Old model has no per-bank
-    #   telemetry; 20 = all banks reporting (safe default, honest for normal runs).
-    p_expected_mw:   float = 0.0
-    banks_reporting: int   = 20
+    #   None on the run-loop path — the run engine has no independent expectation
+    #   model and routing p_renewable_mw here would create a tautology that makes
+    #   fault detection (ratio >= 0.92 / >= 0.05 classifier) structurally unreachable.
+    #   Use SolarSim.snapshot()["power"]["p_expected_mw"] for the honest figure.
+    # banks_reporting: banks with live telemetry.
+    #   None on the run-loop path — the run engine has no per-bank telemetry.
+    #   Use SolarSim.snapshot()["power"]["banks_reporting"] for the honest figure.
+    p_expected_mw:   Optional[float] = None
+    banks_reporting: Optional[int]   = None
+
+    # SD-1: site identity stamped on every tick so the WS header cannot diverge
+    # from the physics when the server restarts under an open browser tab.
+    # Defaults match SiteLocation defaults (San Diego).
+    site_lat:          float = 32.72
+    site_utc_offset_h: float = -8.0
+    site_name:         str   = "San Diego, CA"

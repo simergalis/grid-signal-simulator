@@ -1,0 +1,29 @@
+# Runtime database — never ship in release archives or commit to version control.
+# A fresh DB is created automatically by the lifespan handler on first startup.
+# Seed the initial admin via INITIAL_ADMIN_EMAIL + INITIAL_ADMIN_NAME env vars.
+gridsignal.db
+
+# Site location override written by PUT /api/location (runtime state, not source).
+# Absence is safe — the server defaults to San Diego until an operator sets a location.
+gridsignal_site.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.pythonlibs/
+*.egg-info/
+dist/
+build/
+.venv/
+
+# Node
+node_modules/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo

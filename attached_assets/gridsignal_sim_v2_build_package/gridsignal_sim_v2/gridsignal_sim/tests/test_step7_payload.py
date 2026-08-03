@@ -428,3 +428,128 @@ async def test_stalled_subscriber_does_not_block_broadcast():
     assert len(healthy.received) == 1, (
         f"healthy subscriber expected 1 message, got {len(healthy.received)}"
     )
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Fix: honest p_expected_mw / banks_reporting (acceptance tests — SD-2)
+# ──────────────────────────────────────────────────────────────────────────────
+
+class TestPExpectedMWNotTautological:
+    """TickResult.p_expected_mw must not silently equal p_renewable_mw.
+
+    The run engine has no independent expectation model.  Routing p_renewable_mw
+    into p_expected_mw creates a tautology: measured/expected ≡ 1.0 always, which
+    makes the four-state classifier's ratio thresholds (≥ 0.92 / ≥ 0.05) and
+    FR-SOL-1 fault detection structurally unreachable.  The correct signal is None
+    (rendered as '—' in the UI), not a copy of the actual that masks any fault.
+    """
+
+    @pytest.mark.asyncio
+    async def test_p_expected_mw_is_none_on_run_path(self):
+        """evaluate_tick() must emit p_expected_mw=None."""
+        from runtime.scenario_factory import build_run_context
+        ctx = build_run_context(
+            run_id="test-pexpected-none",
+            job_id="job-1",
+            node_count=100,
+            end_sim_time=5.0,
+        )
+        tick = ctx.step()
+        assert tick.p_expected_mw is None, (
+            "p_expected_mw must be None on the run path — routing it from "
+            "p_renewable_mw creates a tautology that makes fault detection impossible. "
+            f"Got: {tick.p_expected_mw!r}  p_renewable_mw={tick.p_renewable_mw!r}"
+        )
+
+    @pytest.mark.asyncio
+    async def test_banks_reporting_is_none_on_run_path(self):
+        """evaluate_tick() must emit banks_reporting=None."""
+        from runtime.scenario_factory import build_run_context
+        ctx = build_run_context(
+            run_id="test-banks-none",
+            job_id="job-1",
+            node_count=100,
+            end_sim_time=5.0,
+        )
+        tick = ctx.step()
+        assert tick.banks_reporting is None, (
+            "banks_reporting must be None on the run path — the run engine has no "
+            "per-bank telemetry.  Use SolarSim.snapshot() for the honest figure. "
+            f"Got: {tick.banks_reporting!r}"
+        )
+
+
+class TestSolarSimBanksReportingUnderFault:
+    """SolarSim.snapshot()['power']['banks_reporting'] must reflect real bank state.
+
+    These tests protect against a hard-coded 20 creeping back in — the SolarSim
+    path (the console UI) is the only place with honest per-bank figures.
+    """
+
+    def test_banks_reporting_reflects_no_comms_bank(self):
+        """One no_comms bank reduces banks_reporting from 20 to 19."""
+        from renewable.solar import SolarSim
+        solar = SolarSim()
+
+        # Sanity: all 20 banks are reporting before any fault.
+        snap_before = solar.snapshot()
+        assert snap_before["power"]["banks_reporting"] == 20, (
+            f"Expected 20 reporting banks on a fresh SolarSim, "
+            f"got {snap_before['power']['banks_reporting']}"
+        )
+
+        # Inject a comms loss on bank 0.
+        solar.state.blocks[0].state = "no_comms"
+
+        snap_after = solar.snapshot()
+        assert snap_after["power"]["banks_reporting"] == 19, (
+            f"Expected 19 reporting banks after one no_comms fault, "
+            f"got {snap_after['power']['banks_reporting']}"
+        )
+
+    def test_out_fault_retains_telemetry_count(self):
+        """A tripped ('out') bank still has live telemetry — banks_reporting stays 20.
+
+        'out' = physical trip, telemetry still transmitting.
+        'no_comms' = comms lost, telemetry absent.
+        The distinction matters for the performance-ratio display.
+        """
+        from renewable.solar import SolarSim
+        solar = SolarSim()
+        solar.state.blocks[0].state = "out"
+        solar.state.blocks[0].fault = "arc_fault"
+        snap = solar.snapshot()
+        assert snap["power"]["banks_reporting"] == 20, (
+            f"An 'out' bank still has live telemetry; banks_reporting should remain 20, "
+            f"got {snap['power']['banks_reporting']}"
+        )
+
+    def test_p_expected_mw_differs_from_actual_under_fault(self):
+        """p_expected_mw (rated capacity) must exceed actual output when a bank is out.
+
+        This is the acceptance condition the reviewer specified:
+            'assert p_expected_mw != p_renewable_mw under an injected string fault'
+        SolarSim computes p_expected from rated capacity × cloud_factor;
+        p_renewable is the actual sum from operating banks.  When a bank is tripped,
+        actual < expected and the ratio (performance ratio) drops below 1.0.
+        """
+        from renewable.solar import SolarSim
+        solar = SolarSim()
+
+        # Trip half the banks (10 out of 20).
+        for b in solar.state.blocks[:10]:
+            b.state = "out"
+            b.fault = "arc_fault"
+
+        snap = solar.snapshot()
+        p_actual   = snap["power"]["p_renewable_mw"]
+        p_expected = snap["power"]["p_expected_mw"]
+
+        assert p_expected != p_actual, (
+            f"p_expected_mw ({p_expected:.4f}) must differ from p_renewable_mw "
+            f"({p_actual:.4f}) when half the array is tripped"
+        )
+        assert p_expected > p_actual, (
+            f"p_expected_mw ({p_expected:.4f}) must exceed p_renewable_mw "
+            f"({p_actual:.4f}) — expected is rated capacity, actual is reduced by trips"
+        )

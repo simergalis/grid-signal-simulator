@@ -251,8 +251,13 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # §7.4 solar bank telemetry — SLD tile sub-field.
         # p_expected_mw: what the plant should produce at current measured POA.
         # banks_reporting: banks with live telemetry (20 = all, old model default).
-        "p_expected_mw":   round(tick.p_expected_mw, 4),
-        "banks_reporting": tick.banks_reporting,
+        "p_expected_mw":   round(tick.p_expected_mw, 4) if tick.p_expected_mw is not None else None,
+        "banks_reporting": tick.banks_reporting,  # None = not tracked on this run path (SolarSim has the honest figure)
+        # SD-1: site identity — allows the WS header to render from the
+        # authoritative server-side tick rather than client-held state.
+        "site_lat":          tick.site_lat,
+        "site_utc_offset_h": tick.site_utc_offset_h,
+        "site_name":         tick.site_name,
         # GT-1: §7.4 contingency coverage — computed per tick after dispatch arbitration.
         # null when absent (legacy path); otherwise a dict with all ContingencyCoverage fields.
         "contingency_coverage": (
@@ -463,6 +468,14 @@ class RunContext:
     # API call.  Set by build_run_context_from_spec from spec_data["turbine_units"].
     # Empty tuple for contexts built without a spec (tests, load test).
     turbine_unit_specs: tuple = field(default_factory=tuple)
+
+    # SD-1: site identity — stamped onto every TickResult so the WS header
+    # physically cannot drift from the physics after a server restart or
+    # sleep/wake cycle.  Defaults match SiteLocation defaults (San Diego).
+    # Set from spec_data["site_latitude/utc_offset_h/name"] by scenario_factory.
+    site_lat:          float = 32.72
+    site_utc_offset_h: float = -8.0
+    site_name:         str   = "San Diego, CA"
 
     # AD1: optional engine instances — instantiated by build_run_context_from_spec
     # when the corresponding *_config field is set in ScenarioSpec.
@@ -964,6 +977,12 @@ class RunManager:
                     # PROTO-32-AMB: ambient temperature — constant per run.
                     ambient_avg_c=ctx.ambient_avg_c,
                     ambient_alpha_scale=ctx.ambient_alpha_scale,
+                    # SD-1: site identity — constant per run, stamped so the WS header
+                    # renders from authoritative server-side data rather than
+                    # client-held state that diverges silently after a server restart.
+                    site_lat=ctx.site_lat,
+                    site_utc_offset_h=ctx.site_utc_offset_h,
+                    site_name=ctx.site_name,
                     # W2a: advisory telemetry — snapshot from the gate *before* this
                     # tick's run_all() (section E).  Reflects proposals from ticks 0…t−1.
                     # None when no registry is wired (LP-1 / headless tests).

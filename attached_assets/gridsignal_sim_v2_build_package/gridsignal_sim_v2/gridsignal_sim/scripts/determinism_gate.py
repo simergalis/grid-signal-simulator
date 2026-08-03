@@ -219,6 +219,28 @@ async def _main_async(args: argparse.Namespace) -> int:
     passed = sum(1 for r in results if r.passed)
     print(f"\n  {passed}/{total} scenarios passed")
 
+    # Distinct-hash check: scenarios that differ in features (maintenance
+    # derating, ramp relaxation, etc.) must produce different dispatch traces.
+    # Identical hashes across scenarios mean those features are NOT reaching
+    # dispatch in the seeded configuration — a silent regression, not a pass.
+    passing_hash_pairs = [(r.scenario_id, r.hash_run_a) for r in results if r.passed and r.hash_run_a]
+    if len(passing_hash_pairs) > 1:
+        from collections import Counter as _Counter
+        _hash_to_scenarios: dict = {}
+        for _sid, _h in passing_hash_pairs:
+            _hash_to_scenarios.setdefault(_h, []).append(_sid)
+        _collisions = {_h: _sids for _h, _sids in _hash_to_scenarios.items() if len(_sids) > 1}
+        if _collisions:
+            all_passed = False
+            print("\n  [FAIL] Distinct-hash check — identical dispatch traces across scenarios:")
+            for _h, _sids in _collisions.items():
+                print(f"    hash {_h[:12]}…  shared by: {', '.join(_sids)}")
+            print("    These scenarios should produce different traces; their feature")
+            print("    branches are not reaching dispatch in the seeded configuration.")
+        else:
+            _n_distinct = len(set(_h for _, _h in passing_hash_pairs))
+            print(f"  [PASS] Distinct-hash check: {_n_distinct}/{len(passing_hash_pairs)} distinct traces")
+
     if args.report_json:
         with open(args.report_json, "w") as f:
             json.dump([asdict(r) for r in results], f, indent=2)

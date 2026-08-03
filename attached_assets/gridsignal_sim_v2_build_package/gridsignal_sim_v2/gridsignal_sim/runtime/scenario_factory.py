@@ -661,6 +661,12 @@ def build_run_context_from_spec(
             run_id,
             fabric_scenario_id=spec_data.get("fabric_scenario_id"),
         ),
+        # SD-1: site identity stamped onto every TickResult so the WS header
+        # renders from authoritative server-side state, not client-held state
+        # that diverges silently after a server restart.
+        site_lat=float(spec_data.get("site_latitude", 32.72)),
+        site_utc_offset_h=float(spec_data.get("site_utc_offset_h", -8.0)),
+        site_name=str(spec_data.get("site_name", "San Diego, CA")),
     )
 
 
