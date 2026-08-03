@@ -521,12 +521,13 @@ def reserve_check(cfg: SiteConfig, st: PlantState,
 # ---------------------------------------------------------------------------
 
 def _build_feeder_snapshots(cfg: SiteConfig, st: PlantState,
-                            fraction: float = 1.0) -> List[Dict]:
+                            fraction: Optional[float] = None) -> List[Dict]:
     """Build per-feeder snapshot entries for GET /api/solar/state.
 
-    Three-tier Mistral aggregation: feeder.output_mw = Σ mistral_bank_mw for
-    enabled banks on that feeder.  Never independently recomputed from the
-    fraction — always the exact sum of the bank values computed below.
+    When fraction is not None (a run is active): uses the three-tier Mistral
+    aggregation (mistral_bank_mw) so feeder values are exact tier sums.
+    When fraction is None (cold start / no run): falls back to POA physics
+    (counted_output_mw) so the panel shows real physics output, not zeros.
     """
     feeder_banks: Dict[str, List[BankState]] = {}
     for b in st.blocks:
@@ -536,8 +537,10 @@ def _build_feeder_snapshots(cfg: SiteConfig, st: PlantState,
     result = []
     for fid, banks in feeder_banks.items():
         label = ("Feeder " + fid[4:]) if fid.startswith("fdr-") else fid
-        # Tier 2: feeder = Σ bank tier values — never recomputed from fraction.
-        output   = sum(mistral_bank_mw(fraction, b) for b in banks)
+        if fraction is None:
+            output = sum(counted_output_mw(cfg, st, b) for b in banks)
+        else:
+            output = sum(mistral_bank_mw(fraction, b) for b in banks)
         expected = sum(bank_expected_mw(cfg, st, b) for b in banks)
 
         states = {b.state for b in banks}
@@ -562,21 +565,26 @@ def _build_feeder_snapshots(cfg: SiteConfig, st: PlantState,
 
 
 def _build_bank_snapshots(cfg: SiteConfig, st: PlantState,
-                          fraction: float = 1.0) -> List[Dict]:
+                          fraction: Optional[float] = None) -> List[Dict]:
     """Build per-bank snapshot entries.
 
-    output_mw and counted_output_mw both use the three-tier Mistral formula
-    (mistral_bank_mw) so they are always consistent with feeder and plant
-    totals.  expected_mw and the classifier fields (state, reason) retain their
-    POA-based values for diagnostic display.
+    When fraction is not None (a run is active): output_mw and counted_output_mw
+    use mistral_bank_mw so they are consistent with feeder and plant totals.
+    When fraction is None (cold start / no run): falls back to POA physics
+    (counted_output_mw) so banks show real physics output, not zeros.
     """
+    def _bank_mw(b: BankState) -> float:
+        if fraction is None:
+            return counted_output_mw(cfg, st, b)
+        return mistral_bank_mw(fraction, b)
+
     return [{
         "id":                b.id,
         "feeder_id":         b.feeder_id,
         "rated_mw":          b.rated_mw,
-        "output_mw":         mistral_bank_mw(fraction, b),
+        "output_mw":         _bank_mw(b),
         "expected_mw":       bank_expected_mw(cfg, st, b),
-        "counted_output_mw": mistral_bank_mw(fraction, b),
+        "counted_output_mw": _bank_mw(b),
         "state":             b.state,
         "reason":            b.reason,
         "strings_out":       b.strings_out,
@@ -673,16 +681,19 @@ class SolarSim:
     # -- run-loop sync --------------------------------------------------------
 
     def live_aggregate_mw(self) -> float:
-        """Plant-tier output under the three-tier Mistral aggregation.
+        """Plant-tier output — Mistral three-tier when a run is active, POA
+        physics fallback when no fraction has been received (cold start).
 
         Tier 1: bank_mw   = fraction × b.rated_mw  (or 0.0 if not enabled)
         Tier 2: feeder_mw = Σ bank_mw for banks on that feeder
         Tier 3: plant_mw  = Σ feeder_mw  (= Σ all enabled bank_mw)
 
-        Called by RunManager._drive() every tick after set_mistral_fraction()
-        updates the fraction.  Returns 0.0 until the first fraction is received
-        (cold-start safe).  No RNG touches this path — AT-7 invariant.
+        Cold start (no run / fraction never set): returns POA physics output
+        so the bank fleet panel is not stuck at 0 MW before a run starts.
+        No RNG touches this path — AT-7 invariant.
         """
+        if self._mistral_fraction_received_at is None:
+            return p_renewable_mw(self.cfg, self.state)
         fraction = self._current_mistral_fraction()
         return sum(mistral_bank_mw(fraction, b) for b in self.state.blocks)
 
@@ -1099,11 +1110,12 @@ class SolarSim:
     def snapshot(self) -> Dict:
         cfg, st = self.cfg, self.state
 
-        # Use the three-tier Mistral fraction as the single input for all
-        # bank/feeder/plant MW values.  This guarantees strict summation
-        # invariants: abs(plant_mw − Σ feeder_mw) < 1e-9 on every tick.
-        fraction = self._current_mistral_fraction()
-        solar      = self.live_aggregate_mw()       # plant tier (Σ all feeder tiers)
+        # fraction is None at cold start (no run active) — helpers fall back to
+        # POA physics so banks show real output instead of zeros.  During a run
+        # fraction is the current Mistral value; helpers use mistral_bank_mw.
+        fraction = (self._current_mistral_fraction()
+                    if self._mistral_fraction_received_at is not None else None)
+        solar      = self.live_aggregate_mw()       # plant tier (POA or Mistral)
         clear_sky  = p_clear_sky_mw(cfg, st)
         total      = p_total_mw(cfg, st)
         p_expected = sum(bank_expected_mw(cfg, st, b) for b in st.blocks)
