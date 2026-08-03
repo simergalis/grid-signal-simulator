@@ -232,7 +232,11 @@ def open_csv(path: Path) -> csv.DictWriter:
     Raises OSError if the directory is not writable.
     """
     fh = path.open("w", newline="", encoding="utf-8")
-    writer = csv.DictWriter(fh, fieldnames=CSV_COLUMNS)
+    # QUOTE_NONNUMERIC forces string fields (including timestamp) to be quoted.
+    # Excel/Sheets then treats them as plain text and shows the full
+    # HH:MM:SS value rather than silently dropping the seconds.
+    writer = csv.DictWriter(fh, fieldnames=CSV_COLUMNS,
+                            quoting=csv.QUOTE_NONNUMERIC)
     writer.writeheader()
     fh.flush()
     return writer, fh
