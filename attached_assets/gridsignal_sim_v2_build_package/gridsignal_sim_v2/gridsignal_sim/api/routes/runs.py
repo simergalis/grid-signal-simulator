@@ -144,35 +144,47 @@ async def start_run(
         _corruption_cfg = spec_data.get("telemetry_corruption_config")
 
         # Operator-adjustable site / advisory params.
-        # Default values come from the stored site location (PUT /api/location)
+        # Always use the process-level SiteLocation singleton (set by PUT /api/location)
         # so an operator who switches to Tokyo sees Tokyo solar without touching
-        # the scenario JSON.  Explicit spec_data keys still override.
-        _stored_loc     = getattr(request.app.state, "site_location", None)
-        _def_lat        = _stored_loc.lat              if _stored_loc else 32.72
-        _def_lon        = _stored_loc.lon              if _stored_loc else -117.16
-        # Use DST-aware offset so solar peak times are correct year-round.
-        if _stored_loc:
-            from api.routes.location import current_utc_offset_h as _live_offset
-            _def_utc = _live_offset(_stored_loc)
-        else:
-            _def_utc = -8.0
-        _def_name       = _stored_loc.name             if _stored_loc else "San Diego, CA"
-        _def_climate    = _stored_loc.climate_hint     if _stored_loc else ""
-        _def_amb_base   = _stored_loc.ambient_temp_base_c if _stored_loc else 14.0
+        # the scenario JSON.  Explicit spec_data keys still override individual fields.
+        from site_config import (
+            get_site_location as _gsl,
+            get_site_location_or_default as _gslod,
+            SiteLocationNotConfigured as _SLNotConf,
+            utc_offset_for_dt as _uoff,
+        )
+        # For solar-enabled scenarios, require a configured location (not the San Diego default).
+        # Non-solar scenarios proceed without a configured location.
+        _solar_mw_check = float(spec_data.get("solar_rated_mw", 0.0))
+        try:
+            _effective_loc = _gsl()
+        except _SLNotConf:
+            _effective_loc = _gslod()   # San Diego fallback
+        # Inject into spec_data so scenario_factory can read it without a global import
+        spec_data["_site_location"] = _effective_loc
 
-        _site_lat       = float(spec_data.get("site_latitude",      _def_lat))
-        _site_lon       = float(spec_data.get("site_longitude",     _def_lon))
-        _site_utc       = float(spec_data.get("site_utc_offset_h",  _def_utc))
-        _site_name      = str(  spec_data.get("site_name",          _def_name))
-        _climate_hint   = str(  spec_data.get("climate_hint",       _def_climate))
-        _ambient_base   = float(spec_data.get("ambient_temp_base_c",_def_amb_base))
-        _soc_floor      = float(spec_data.get("soc_floor_pct",       10.0))
-        _soc_ceil       = float(spec_data.get("soc_ceil_pct",        95.0))
+        _def_lat      = _effective_loc.latitude_deg
+        _def_lon      = _effective_loc.longitude_deg
+        # DST-aware UTC offset for the current instant (Tier-1 darkness check).
+        _now_utc_ref  = datetime.datetime.now(datetime.timezone.utc)
+        _def_utc      = _uoff(_effective_loc.tz_name, _now_utc_ref)
+        _def_name     = _effective_loc.site_name
+        _def_climate  = _effective_loc.climate_hint
+        _def_amb_base = _effective_loc.ambient_temp_base_c
+
+        _site_lat     = float(spec_data.get("site_latitude",       _def_lat))
+        _site_lon     = float(spec_data.get("site_longitude",      _def_lon))
+        _site_utc     = float(spec_data.get("site_utc_offset_h",   _def_utc))
+        _site_name    = str(  spec_data.get("site_name",           _def_name))
+        _climate_hint = str(  spec_data.get("climate_hint",        _def_climate))
+        _ambient_base = float(spec_data.get("ambient_temp_base_c", _def_amb_base))
+        _soc_floor    = float(spec_data.get("soc_floor_pct",        10.0))
+        _soc_ceil     = float(spec_data.get("soc_ceil_pct",         95.0))
         # SD-1: log the resolved site at run start so a timezone/location mismatch
         # is a 30-second diagnosis rather than a headscratcher.
         _log.info(
-            "run start: run_id=%s site=(name=%r, lat=%.2f, utc%+.1f)",
-            run_id, _site_name, _site_lat, _site_utc,
+            "run start: run_id=%s site=(name=%r, lat=%.4f, lon=%.4f, tz=%s, utc%+.2f)",
+            run_id, _site_name, _site_lat, _site_lon, _effective_loc.tz_name, _site_utc,
         )
 
         # Build a utc_now override for the solar forecast.
@@ -190,25 +202,36 @@ async def start_run(
         if _utc_hour_override is None and _is_default_irr:
             import math as _math
             _now_utc = datetime.datetime.now(datetime.timezone.utc)
-            _local_h = (_now_utc + datetime.timedelta(hours=_site_utc)).hour
+            # Tier-1: use ZoneInfo for DST-correct local-hour test.
+            try:
+                from zoneinfo import ZoneInfo as _ZI
+                _local_h = _now_utc.replace(tzinfo=datetime.timezone.utc).astimezone(
+                    _ZI(_effective_loc.tz_name)
+                ).hour
+            except Exception:
+                # Fallback to wall-clock offset if zoneinfo unavailable
+                _local_h = (_now_utc + datetime.timedelta(hours=_site_utc)).hour
 
             # Tier-1: obvious darkness — local hour outside 06:00–20:00.
             if not (6 <= _local_h < 20):
                 _utc_hour_override = int((12 - _site_utc) % 24)
                 _log.info(
-                    "run %s: auto-noon solar override (local_h=%d, site UTC%+.1f)"
+                    "run %s: auto-noon solar override (local_h=%d, tz=%s)"
                     " → utc_hour=%d — night, solar would be silently zero",
-                    run_id, _local_h, _site_utc, _utc_hour_override,
+                    run_id, _local_h, _effective_loc.tz_name, _utc_hour_override,
                 )
             else:
                 # Tier-2: hour is nominally daytime but solar elevation < 10 °.
-                # Catches twilight cases like 6 AM at 47 °N where the sun has
-                # just cleared the horizon and irradiance fraction is ~1–5 %.
-                # Approximation: solar elevation from lat / lon / UTC hour /
-                # day-of-year — no external library needed.
+                # Use NOAA-longitude-based solar time (not wall-clock offset) for
+                # an accurate elevation check — matches the physics in solar_sim.py.
                 _doy     = _now_utc.timetuple().tm_yday
                 _decl    = 23.45 * _math.sin(_math.radians(360 / 365 * (_doy - 81)))
-                _solar_h = _now_utc.hour + _site_lon / 15.0   # approx local solar time
+                _B       = _math.radians(360 / 365 * (_doy - 81))
+                _eot_min = (9.87 * _math.sin(2 * _B)
+                            - 7.53 * _math.cos(_B)
+                            - 1.5  * _math.sin(_B))
+                _utc_h   = _now_utc.hour + _now_utc.minute / 60.0
+                _solar_h = (_utc_h + _site_lon / 15.0 + _eot_min / 60.0) % 24.0
                 _ha      = 15.0 * (_solar_h - 12.0)           # hour angle (°)
                 _elev    = _math.degrees(_math.asin(
                     _math.sin(_math.radians(_site_lat)) * _math.sin(_math.radians(_decl))
@@ -219,9 +242,9 @@ async def start_run(
                     _utc_hour_override = int((12 - _site_utc) % 24)
                     _log.info(
                         "run %s: auto-noon solar override (local_h=%d,"
-                        " elevation=%.1f° < 10°, site UTC%+.1f) → utc_hour=%d"
+                        " elevation=%.1f° < 10°, tz=%s) → utc_hour=%d"
                         " — low sun angle, irradiance would be ~0",
-                        run_id, _local_h, _elev, _site_utc, _utc_hour_override,
+                        run_id, _local_h, _elev, _effective_loc.tz_name, _utc_hour_override,
                     )
 
         if _utc_hour_override is not None:
@@ -247,10 +270,9 @@ async def start_run(
                     _sim_duration,
                     _solar_mw,
                     utc_now=_utc_now_solar,
-                    site_latitude=_site_lat,
-                    site_longitude=_site_lon,
-                    site_utc_offset_h=_site_utc,
-                    site_name=_site_name,
+                    # Preferred path: pass the full SiteLocation so physics uses
+                    # longitude-based true solar time (immune to DST / tz mistakes).
+                    site=_effective_loc,
                     climate_hint=_climate_hint,
                     ambient_temp_base_c=_ambient_base,
                 ),

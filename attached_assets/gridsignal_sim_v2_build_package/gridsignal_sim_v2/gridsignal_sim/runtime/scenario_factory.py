@@ -664,9 +664,18 @@ def build_run_context_from_spec(
         # SD-1: site identity stamped onto every TickResult so the WS header
         # renders from authoritative server-side state, not client-held state
         # that diverges silently after a server restart.
-        site_lat=float(spec_data.get("site_latitude", 32.72)),
-        site_utc_offset_h=float(spec_data.get("site_utc_offset_h", -8.0)),
-        site_name=str(spec_data.get("site_name", "San Diego, CA")),
+        site_lat=float(spec_data.get("site_latitude",
+                       (spec_data["_site_location"].latitude_deg
+                        if "_site_location" in spec_data else 0.0))),
+        site_lon=float(spec_data.get("site_longitude",
+                       (spec_data["_site_location"].longitude_deg
+                        if "_site_location" in spec_data else 0.0))),
+        site_utc_offset_h=float(spec_data.get("site_utc_offset_h",
+                       (spec_data["_site_location"].longitude_deg / 15.0
+                        if "_site_location" in spec_data else 0.0))),
+        site_name=str(spec_data.get("site_name",
+                      (spec_data["_site_location"].site_name
+                       if "_site_location" in spec_data else ""))),
         # Three-tier Mistral aggregation: supply the irradiance_profile to the
         # run context so _drive() can call fraction_at(sim_time) each tick.
         # None when solar_rated_mw == 0 (no solar in this scenario).

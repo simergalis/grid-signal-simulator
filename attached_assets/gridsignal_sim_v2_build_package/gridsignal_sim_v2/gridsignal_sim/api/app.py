@@ -59,7 +59,7 @@ from api.routes import advisory as advisory_routes
 from api.routes import fabric as fabric_routes
 from api.routes import solar as solar_routes
 from api.routes import location as location_routes
-from api.routes.location import SiteLocation
+from site_config import SiteLocation, set_site_location
 from api.routes import auth_routes, admin_routes
 from api.auth_utils import COOKIE_NAME, decode_access_token
 from api.db import create_auth_tables
@@ -116,39 +116,31 @@ async def _lifespan(application: FastAPI):
     # tick's p_renewable_mw into SolarSim and keep the bank panel in sync.
     manager.solar_sim = solar_sim
 
-    # Operator-configurable data-centre location (default = San Diego).
-    # Consumed by /solar-preview and POST /runs to seed the Mistral solar prompt.
-    application.state.site_location = SiteLocation()
-    # SD-1: restore operator's chosen location across server restarts so the
-    # physics matches the header in a long-lived browser tab.  PUT /api/location
-    # writes gridsignal_site.json; we read it back here on every startup.
-    import json as _json
-    import pathlib as _pathlib
-    _site_state_path = _pathlib.Path("gridsignal_site.json")
-    if _site_state_path.exists():
-        try:
-            _saved = _json.loads(_site_state_path.read_text())
-            _fields = SiteLocation.__dataclass_fields__
-            application.state.site_location = SiteLocation(
-                **{k: v for k, v in _saved.items() if k in _fields}
-            )
-            _loc = application.state.site_location
-            _log.info(
-                "Restored site_location from %s: %r (lat=%.2f, utc%+.1f)",
-                _site_state_path, _loc.name, _loc.lat, _loc.utc_offset_h,
-            )
-        except Exception as _exc:
-            _log.warning(
-                "Could not restore site_location from %s: %s — using default San Diego",
-                _site_state_path, _exc,
-            )
+    # SD-1: restore operator's chosen location across server restarts.
+    # load_site_location() handles both schema_version 1 (new) and legacy field names.
+    from api.routes.location import load_site_location as _load_loc
+    from site_config import get_site_location_or_default as _gslod
+    _restored = _load_loc()
+    if _restored is not None:
+        application.state.site_location = _restored
+        set_site_location(_restored)
+        _loc = _restored
+        _log.info(
+            "Restored site_location: %r (lat=%.2f, lon=%.2f, tz=%s)",
+            _loc.site_name, _loc.latitude_deg, _loc.longitude_deg, _loc.tz_name,
+        )
+    else:
+        _default = _gslod()
+        application.state.site_location = _default
+        set_site_location(_default)
+        _log.info("No gridsignal_site.json found — using default location: %r", _default.site_name)
 
     # Sync SolarSim's site_id label to the restored operator location so the
     # /api/solar/state response shows the real site name, not "wenatchee-02".
     import re as _re
     def _loc_slug(name: str) -> str:
         return _re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "datacenter-01"
-    solar_sim.cfg.site_id = _loc_slug(application.state.site_location.name)
+    solar_sim.cfg.site_id = _loc_slug(application.state.site_location.site_name)
 
     # Operator-editable site display name (default = "Riverbend DC-West").
     from api.routes.location import SiteSettings

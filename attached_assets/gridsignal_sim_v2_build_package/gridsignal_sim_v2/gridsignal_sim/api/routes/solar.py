@@ -40,9 +40,6 @@ from runtime.solar_sim import generate_solar_forecast
 
 router = APIRouter()
 
-# San Diego UTC offset (PST, simplified — no DST)
-_UTC_OFFSET_H = -8.0
-
 # Short simulation duration just to get weather metadata.
 _PREVIEW_DURATION_S = 60.0
 
@@ -85,22 +82,19 @@ async def get_solar_preview(request: Request) -> JSONResponse:
     Falls back silently to a physics estimate when MISTRAL_API_KEY is absent
     or the API call fails.
     """
-    from api.routes.location import SiteLocation as _SiteLocation
-    loc: _SiteLocation = getattr(request.app.state, "site_location", _SiteLocation())
+    from site_config import get_site_location_or_default as _gslod, utc_offset_for_dt as _uoff
+    loc = getattr(request.app.state, "site_location", None) or _gslod()
 
     utc_now  = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
-    local_dt = utc_now + datetime.timedelta(hours=loc.utc_offset_h)
+    # DST-aware local time for the display badge
+    _utc_off = _uoff(loc.tz_name, datetime.datetime.now(datetime.timezone.utc))
+    local_dt = utc_now + datetime.timedelta(hours=_utc_off)
     local_time = local_dt.strftime("%H:%M")
 
     forecast = generate_solar_forecast(
         sim_duration_s=_PREVIEW_DURATION_S,
         utc_now=utc_now,
-        site_latitude=loc.lat,
-        site_longitude=loc.lon,
-        site_utc_offset_h=loc.utc_offset_h,
-        site_name=loc.name,
-        climate_hint=loc.climate_hint,
-        ambient_temp_base_c=loc.ambient_temp_base_c,
+        site=loc,           # preferred: longitude-based true solar time
     )
 
     return JSONResponse({
@@ -108,7 +102,7 @@ async def get_solar_preview(request: Request) -> JSONResponse:
         "conditions": forecast.conditions,
         "source":     forecast.source,
         "local_time": local_time,
-        "site_name":  loc.name,
+        "site_name":  loc.site_name,
     })
 
 

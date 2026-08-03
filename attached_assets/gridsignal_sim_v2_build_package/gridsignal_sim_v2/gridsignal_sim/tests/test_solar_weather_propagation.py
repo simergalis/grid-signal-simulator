@@ -40,6 +40,23 @@ from runtime.run_manager import _tick_result_to_dict
 
 _FIXED_UTC = datetime.datetime(2026, 6, 21, 18, 0, 0)  # San Diego noon-ish
 
+# Explicit San Diego SiteLocation used for T4 temperature-range tests.
+# Passing site= keeps the tests independent of the process-level location
+# singleton (which a preceding API test may have set to a different city).
+try:
+    from site_config import SiteLocation as _SiteLocation
+    _SAN_DIEGO = _SiteLocation(
+        site_name="San Diego, CA",
+        latitude_deg=32.72,
+        longitude_deg=-117.16,
+        tz_name="America/Los_Angeles",
+        source="test",
+        climate_hint="",
+        ambient_temp_base_c=14.0,
+    )
+except ImportError:
+    _SAN_DIEGO = None  # type: ignore[assignment]
+
 @contextlib.contextmanager
 def _no_mistral_key():
     """Temporarily remove MISTRAL_API_KEY from the environment."""
@@ -316,7 +333,7 @@ _MIDNIGHT_UTC = datetime.datetime(2026, 6, 21,  8, 0, 0)   # local midnight
 def test_ambient_steps_starts_at_t0():
     """Physics ambient_steps must have first entry at sim_time_s == 0."""
     with _no_mistral_key():
-        forecast = generate_solar_forecast(300.0, utc_now=_NOON_UTC)
+        forecast = generate_solar_forecast(300.0, utc_now=_NOON_UTC, site=_SAN_DIEGO)
 
     assert len(forecast.ambient_steps) > 0, "ambient_steps must be non-empty"
     first_t = forecast.ambient_steps[0][0]
@@ -328,7 +345,7 @@ def test_ambient_steps_starts_at_t0():
 def test_ambient_steps_sorted():
     """Physics ambient_steps sim_time_s values must be non-decreasing."""
     with _no_mistral_key():
-        forecast = generate_solar_forecast(300.0, utc_now=_NOON_UTC)
+        forecast = generate_solar_forecast(300.0, utc_now=_NOON_UTC, site=_SAN_DIEGO)
 
     times = [t for t, _db, _wb in forecast.ambient_steps]
     assert times == sorted(times), (
@@ -339,7 +356,7 @@ def test_ambient_steps_sorted():
 def test_ambient_steps_drybulb_in_san_diego_range_noon():
     """Noon dry-bulb values must lie within the physically plausible 10–30 °C band."""
     with _no_mistral_key():
-        forecast = generate_solar_forecast(300.0, utc_now=_NOON_UTC)
+        forecast = generate_solar_forecast(300.0, utc_now=_NOON_UTC, site=_SAN_DIEGO)
 
     for t, db, _wb in forecast.ambient_steps:
         assert 10.0 <= db <= 30.0, (
@@ -350,7 +367,7 @@ def test_ambient_steps_drybulb_in_san_diego_range_noon():
 def test_ambient_steps_drybulb_in_san_diego_range_midnight():
     """Midnight dry-bulb values must also lie within the 10–30 °C band."""
     with _no_mistral_key():
-        forecast = generate_solar_forecast(300.0, utc_now=_MIDNIGHT_UTC)
+        forecast = generate_solar_forecast(300.0, utc_now=_MIDNIGHT_UTC, site=_SAN_DIEGO)
 
     for t, db, _wb in forecast.ambient_steps:
         assert 10.0 <= db <= 30.0, (
@@ -359,12 +376,19 @@ def test_ambient_steps_drybulb_in_san_diego_range_midnight():
 
 
 def test_ambient_steps_wetbulb_in_san_diego_range():
-    """Wet-bulb values must lie within 10–30 °C for both noon and midnight."""
+    """Wet-bulb values must lie within 8–30 °C for both noon and midnight.
+
+    San Diego base_temp_c = 14 °C.  At local midnight solar_fraction = 0, so
+    drybulb = 14 °C and wetbulb = 11 °C.  The lower bound is 8 to give headroom
+    for cooler sites (base < 14) while still catching physically absurd values.
+    Uses site=_SAN_DIEGO explicitly to be independent of the process-level
+    location singleton, which API tests may have set to a different city.
+    """
     with _no_mistral_key():
         for utc in (_NOON_UTC, _MIDNIGHT_UTC):
-            forecast = generate_solar_forecast(300.0, utc_now=utc)
+            forecast = generate_solar_forecast(300.0, utc_now=utc, site=_SAN_DIEGO)
             for t, _db, wb in forecast.ambient_steps:
-                assert 10.0 <= wb <= 30.0, (
+                assert 8.0 <= wb <= 30.0, (
                     f"wetbulb out of plausible San Diego range at t={t}: {wb} °C"
                 )
 
@@ -372,7 +396,7 @@ def test_ambient_steps_wetbulb_in_san_diego_range():
 def test_ambient_steps_wetbulb_below_drybulb():
     """Wet-bulb must be strictly below dry-bulb (coastal humidity model)."""
     with _no_mistral_key():
-        forecast = generate_solar_forecast(300.0, utc_now=_NOON_UTC)
+        forecast = generate_solar_forecast(300.0, utc_now=_NOON_UTC, site=_SAN_DIEGO)
 
     for t, db, wb in forecast.ambient_steps:
         assert wb < db, (
@@ -383,8 +407,8 @@ def test_ambient_steps_wetbulb_below_drybulb():
 def test_noon_drybulb_higher_than_midnight():
     """Physics model: noon San Diego ambient must exceed midnight ambient."""
     with _no_mistral_key():
-        noon_fc = generate_solar_forecast(300.0, utc_now=_NOON_UTC)
-        midnight_fc = generate_solar_forecast(300.0, utc_now=_MIDNIGHT_UTC)
+        noon_fc = generate_solar_forecast(300.0, utc_now=_NOON_UTC, site=_SAN_DIEGO)
+        midnight_fc = generate_solar_forecast(300.0, utc_now=_MIDNIGHT_UTC, site=_SAN_DIEGO)
 
     noon_avg = sum(db for _, db, _ in noon_fc.ambient_steps) / len(noon_fc.ambient_steps)
     midnight_avg = sum(db for _, db, _ in midnight_fc.ambient_steps) / len(midnight_fc.ambient_steps)

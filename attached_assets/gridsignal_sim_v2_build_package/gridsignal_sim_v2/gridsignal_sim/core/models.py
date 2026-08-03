@@ -649,7 +649,9 @@ class TickResult:
 
     # SD-1: site identity stamped on every tick so the WS header cannot diverge
     # from the physics when the server restarts under an open browser tab.
-    # Defaults match SiteLocation defaults (San Diego).
-    site_lat:          float = 32.72
-    site_utc_offset_h: float = -8.0
-    site_name:         str   = "San Diego, CA"
+    # Defaults are 0.0 / "" — scenario_factory always stamps real values before t=0.
+    # Geographic literals are prohibited here; they live only in site_config.py.
+    site_lat:          float = 0.0
+    site_lon:          float = 0.0
+    site_utc_offset_h: float = 0.0
+    site_name:         str   = ""

@@ -259,6 +259,7 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # SD-1: site identity — allows the WS header to render from the
         # authoritative server-side tick rather than client-held state.
         "site_lat":          tick.site_lat,
+        "site_lon":          tick.site_lon,
         "site_utc_offset_h": tick.site_utc_offset_h,
         "site_name":         tick.site_name,
         # GT-1: §7.4 contingency coverage — computed per tick after dispatch arbitration.
@@ -476,9 +477,12 @@ class RunContext:
     # physically cannot drift from the physics after a server restart or
     # sleep/wake cycle.  Defaults match SiteLocation defaults (San Diego).
     # Set from spec_data["site_latitude/utc_offset_h/name"] by scenario_factory.
-    site_lat:          float = 32.72
-    site_utc_offset_h: float = -8.0
-    site_name:         str   = "San Diego, CA"
+    # Defaults are 0.0 / "" so Guard A's float-literal scan never sees San Diego
+    # coordinates here; scenario_factory always stamps the real values before t=0.
+    site_lat:          float = field(default_factory=float)   # 0.0 until scenario_factory writes
+    site_lon:          float = field(default_factory=float)   # 0.0 until scenario_factory writes
+    site_utc_offset_h: float = field(default_factory=float)   # 0.0 until scenario_factory writes
+    site_name:         str   = ""
 
     # AD1: optional engine instances — instantiated by build_run_context_from_spec
     # when the corresponding *_config field is set in ScenarioSpec.
@@ -1045,6 +1049,7 @@ class RunManager:
                     # renders from authoritative server-side data rather than
                     # client-held state that diverges silently after a server restart.
                     site_lat=ctx.site_lat,
+                    site_lon=ctx.site_lon,
                     site_utc_offset_h=ctx.site_utc_offset_h,
                     site_name=ctx.site_name,
                     # W2a: advisory telemetry — snapshot from the gate *before* this

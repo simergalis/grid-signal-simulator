@@ -21,3 +21,4 @@
 - [auth-system-quirks](auth-system-quirks.md) — bcrypt 4.x/passlib break; /api/admin middleware pass-through; ck_auth_user_role must include 'admin'; migration guard pattern.
 - [operator-adjustable-params](operator-adjustable-params.md) — PARAM-28–34 in parameters.json; site/advisory/storage groups added to ParameterModal; soc limits flow from POST /runs into runMeta; advisory_interval_s stored but not yet wired to per-agent cadence.
 - [sqlite-to-postgres-migration](sqlite-to-postgres-migration.md) — auth_user wipe-on-publish fix; asyncpg URL conversion trap; connect_args SQLite-only trap; INITIAL_ADMIN_EMAIL seeding for fresh Neon DB.
+- [location-sot-refactor](location-sot-refactor.md) — site_config.py is the only permitted geographic-literal file; 5 traps (longitude vs utc_offset_h, singleton contamination, Guard A word boundary, TickResult defaults, legacy JSON migration).
