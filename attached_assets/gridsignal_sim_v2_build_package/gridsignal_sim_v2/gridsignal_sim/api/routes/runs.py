@@ -175,11 +175,31 @@ async def start_run(
             run_id, _site_name, _site_lat, _site_utc,
         )
 
-        # Build a utc_now override when solar_origin_utc_hour is set.
-        # demo-solar-peak uses hour=20 (UTC 20:00 = 12:00 PST San Diego noon)
-        # so the Mistral prompt and physics fallback always see midday,
-        # regardless of when the demo is actually triggered.
+        # Build a utc_now override for the solar forecast.
+        #
+        # Priority 1 — explicit scenario field (demo-solar-peak uses 20):
+        #   solar_origin_utc_hour in spec_data → use exactly that UTC hour.
+        #
+        # Priority 2 — auto-noon fallback for all other solar scenarios:
+        #   When the site is currently in darkness (local hour < 6 or >= 20),
+        #   anchor to local solar noon so Mistral / physics fallback see midday
+        #   rather than returning fraction=0 for the entire run.  Scenarios that
+        #   genuinely need nighttime solar must set irradiance_steps explicitly
+        #   (which bypasses generate_solar_forecast entirely via _is_default_irr).
         _utc_hour_override = spec_data.get("solar_origin_utc_hour")
+        if _utc_hour_override is None and _is_default_irr:
+            _now_utc = datetime.datetime.now(datetime.timezone.utc)
+            _local_h = (_now_utc + datetime.timedelta(hours=_site_utc)).hour
+            if not (6 <= _local_h < 20):
+                # UTC hour that maps to local noon: (12 − utc_offset) mod 24.
+                _utc_hour_override = int((12 - _site_utc) % 24)
+                _log.info(
+                    "run %s: auto-noon solar override "
+                    "(local_h=%d, site UTC%+.1f) → utc_hour=%d "
+                    "so solar is not silently zero at night",
+                    run_id, _local_h, _site_utc, _utc_hour_override,
+                )
+
         if _utc_hour_override is not None:
             _base = datetime.datetime.now(datetime.timezone.utc)
             _utc_now_solar: datetime.datetime | None = _base.replace(
