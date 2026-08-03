@@ -588,6 +588,13 @@ class DispatchArbitrator:
         ceilings = [b.bridging_available_mw(island_mode) for b in self.bess_units]
         allocations = self._capped_equal_share_allocations(fleet_shortfall, ceilings)
 
+        # Phase 11.3: capture the BESS setpoint (what was commanded to the fleet)
+        # BEFORE cover_shortfall() may clip it due to SOC or power limits.
+        # bess_setpoint_mw = the fleet shortfall handed to the BESS this tick.
+        # bess_output_mw   = the actual measured output after all constraints apply.
+        # The difference (bess_setpoint_mw − bess_output_mw) contributes to
+        # balance_residual_mw computed in evaluate_tick().
+        bess_setpoint_mw = fleet_shortfall
         bess_output_mw = 0.0
         for bess, alloc, ceiling in zip(self.bess_units, allocations, ceilings):
             bess_output_mw += bess.cover_shortfall(alloc, fleet_covered, dt_seconds, ceiling)
@@ -614,7 +621,10 @@ class DispatchArbitrator:
                 response_kind="turbine_ramp",
                 requires_confirmation=False,
             ))
-        return turbine_output_mw, bess_output_mw, candidates
+        # Return 4-tuple: existing consumers use positional unpack, so adding
+        # bess_setpoint_mw at position 2 (before candidates) requires the one
+        # call-site in simulation_core.py to be updated accordingly.
+        return turbine_output_mw, bess_output_mw, bess_setpoint_mw, candidates
 
 
 # ---------------------------------------------------------------------------
@@ -1319,10 +1329,19 @@ class ConfidenceEngine:
     DEFAULT_WIDENING: float = 0.15   # CHOSEN — no measured basis (PROTO-4)
 
     WIDENING_PER_TAG = {
-        DataQualityTag.UNMAPPED_HARDWARE: 0.10,   # chosen value — no measured basis
-        DataQualityTag.UNCALIBRATED_SITE: 0.08,   # chosen value — no measured basis
-        DataQualityTag.INVALID_PAYLOAD: 0.15,     # chosen value — no measured basis
-        DataQualityTag.STALE_PROFILE: 0.12,       # chosen value — no measured basis (v2.5 §5.3)
+        DataQualityTag.UNMAPPED_HARDWARE:       0.10,  # chosen value — no measured basis
+        DataQualityTag.UNCALIBRATED_SITE:       0.08,  # chosen value — no measured basis
+        DataQualityTag.INVALID_PAYLOAD:         0.15,  # chosen value — no measured basis
+        DataQualityTag.STALE_PROFILE:           0.12,  # chosen value — no measured basis (v2.5 §5.3)
+        # Phase 11.2 — workload signal quality widening.
+        # stale:  +20% — mirrors uncalibrated_site order-of-magnitude; stale data
+        #   degrades forecast similarly to an uncalibrated site.
+        #   CHOSEN — no measured basis; revisit when field telemetry is available.
+        # absent: +50% — absence is structurally worse than staleness; 50% chosen
+        #   to force a visibly wide band even on small (sub-1 MW) forecasts.
+        #   CHOSEN — no measured basis.
+        DataQualityTag.WORKLOAD_SIGNAL_STALE:   0.20,  # CHOSEN — no measured basis
+        DataQualityTag.WORKLOAD_SIGNAL_ABSENT:  0.50,  # CHOSEN — no measured basis
     }
 
     def __init__(self) -> None:

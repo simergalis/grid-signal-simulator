@@ -290,6 +290,30 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
             if tick.contingency_coverage is not None
             else None
         ),
+        # ── Phase 11.1: Forecast path (single source of truth) ───────────────
+        # forecast_mw: queue-derived compute forecast (Section 4 formula).
+        # Used by the Forecast Quality panel as the displayed predicted peak;
+        # the header PREDICTED PEAK should also read this field so that the
+        # two displays are bit-identical (F4 criterion).
+        "forecast_mw": round(tick.forecast_mw, 4),
+        # ── Phase 11.3: Dispatch truthfulness ────────────────────────────────
+        # bess_setpoint_mw: commanded BESS output before SOC/power clipping.
+        # gt_setpoint_mw:   total dispatch requirement handed to turbine fleet.
+        # balance_residual_mw: (turbine + bess + renewable) − total_load.
+        # frequency_hz: 50 Hz nominal ± swing-equation deviation (islanded only).
+        "bess_setpoint_mw":    round(tick.bess_setpoint_mw, 4),
+        "gt_setpoint_mw":      round(tick.gt_setpoint_mw, 4),
+        "balance_residual_mw": round(tick.balance_residual_mw, 5),
+        "frequency_hz":        round(tick.frequency_hz, 4),
+        # ── Phase 11.6: Cooling thermal lag (Section 8 thermal model) ────────
+        # compute_inlet_temp_c: inlet air temperature derived from lagged
+        # cooling output; inherits dt_thermal lag (≥ 0.99 lag-1 autocorr C3).
+        "compute_inlet_temp_c": round(tick.compute_inlet_temp_c, 3),
+        # ── Task #174: Stochastic step timing (kube path only) ───────────────
+        # step_phase: fractional position within the current ML training step.
+        # step_kind: "training" or "checkpoint".
+        "step_phase": round(tick.step_phase, 4),
+        "step_kind":  tick.step_kind,
     }
 
 

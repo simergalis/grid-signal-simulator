@@ -29,7 +29,7 @@ from .dispatch import (
     LadderPosition, PreStagingEngine, select_candidates,
 )
 from .scada_layer import CommandType, SimulatedPMS, SimulatedScadaLayer
-from .models import DataQualityTag, GENERIC_FALLBACK_PROFILE, KubeMetrics, SiteConfig, TickResult, WorkloadEventType, WorkloadSignal
+from .models import DataQualityTag, GENERIC_FALLBACK_PROFILE, IslandMode, KubeMetrics, SiteConfig, TickResult, WorkloadEventType, WorkloadSignal
 from ._plane_guard import _EVALUATE_TICK_PERMITTED
 from .sim_clock import SimClock
 
@@ -90,6 +90,35 @@ class SimulationState:
     # Carries the previous tick's grid metrics so the agent can read headroom
     # without accessing the current tick's in-progress values.
     _kube_grid_state: KubeGridState | None = field(default=None, init=False)
+
+    # Phase 11.2 — workload signal staleness / absence tracking.
+    # _last_workload_signal_sim_time: sim_time of the most recent WorkloadSignal
+    #   (STARTING, RUNNING, SCALE, JOB_END, CANCELLED, CHECKPOINT_*).
+    #   SOLAR_STEP and UNIT_TRIP are EXCLUDED — they are not workload signals.
+    #   Default -1.0 (before any signal); compared against sim_time each tick.
+    # _ever_received_workload_signal: True once the first qualifying signal
+    #   arrives; used to distinguish "never received" (absent) from "received
+    #   but gone stale" (stale).  Separate bool prevents -1.0 from being
+    #   confused with a legitimate t=0 signal.
+    _last_workload_signal_sim_time:  float = field(default=-1.0, init=False)
+    _ever_received_workload_signal:  bool  = field(default=False, init=False)
+
+    # Phase 11.3 — frequency state for the swing equation (islanded mode only).
+    # Persisted on SimulationState so df/dt integration accumulates correctly
+    # across ticks.  Starts at the nominal frequency; deviates when
+    # balance_residual_mw is non-zero in islanded mode.
+    # In grid-connected mode this field is reset to frequency_nominal_hz each
+    # tick (the grid holds the frequency reference and acts as infinite slack).
+    _frequency_hz: float = field(default=50.0, init=False)
+
+    # Phase 11.3/11.5 — running forecast MAE accumulators.
+    # Used by Phase 11.5 Forecast Quality panel to report empirical accuracy.
+    # _forecast_error_sum_mw: running sum of |forecast_mw - p_actual_mw| over
+    #   ticks where p_actual > 1e-4 (meaningful load present).
+    # _forecast_ticks: number of ticks included in the MAE sum.
+    # Both are intentionally not reset mid-run (full-run statistic).
+    _forecast_error_sum_mw: float = field(default=0.0, init=False)
+    _forecast_ticks:        int   = field(default=0,   init=False)
 
     def __post_init__(self) -> None:
         # Step 3 Item 4: arbitrator now holds a reference to site so it can
@@ -276,6 +305,13 @@ class SimulationState:
             self.classifier.apply_explicit_event(signal.job_id, is_checkpoint_start=True, sim_time=signal.timestamp)
         elif signal.event_type == WorkloadEventType.CHECKPOINT_END:
             self.classifier.apply_explicit_event(signal.job_id, is_checkpoint_start=False, sim_time=signal.timestamp)
+
+        # Phase 11.2 — workload signal staleness / absence tracking.
+        # Record the timestamp of this qualifying signal.  SOLAR_STEP and
+        # UNIT_TRIP are excluded (early-return above ensures we never reach here
+        # for those event types).
+        self._last_workload_signal_sim_time = signal.timestamp
+        self._ever_received_workload_signal = True
 
 
 def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
@@ -497,7 +533,10 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # 4. Turbine ramp + BESS shortfall coverage, sized against P_dispatch_required
     for turbine in state.turbines:
         turbine.advance(sim_time, dt_seconds)
-    turbine_output_mw, bess_output_mw, _arb_candidates = state.arbitrator.tick(p_dispatch_required_mw, dt_seconds)
+    # Phase 11.3: dispatch.tick() now returns a 4-tuple.
+    # _bess_setpoint_mw: commanded BESS output before SOC/power clipping.
+    # Unpack position 2 (before candidates) — see dispatch.DispatchArbitrator.tick().
+    turbine_output_mw, bess_output_mw, _bess_setpoint_mw, _arb_candidates = state.arbitrator.tick(p_dispatch_required_mw, dt_seconds)
 
     # 4b. dt_lead_next_s: minimum remaining ramp time across all in-flight GPU jobs.
     # C2 correction: min(), not sum().  Two jobs with 10 s and 30 s remaining →
@@ -576,9 +615,28 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # is_low_confidence: pre-computed from GPU state and site.uncalibrated so
     # TC-43's low_confidence interlock can block the ladder before ConfidenceEngine
     # runs (step 6).  Same tags as step 6 — they cannot disagree.
+    #
+    # Phase 11.2 — workload signal absence/staleness flags.
+    # Computed here (before curtailment gating) so _workload_signal_absent can
+    # be folded into _is_low_confidence and block autonomous curtailment
+    # (never-silent rule — mirrors TC-43's unmapped-hardware interlock).
+    # SOLAR_STEP and UNIT_TRIP events never update the timestamp (early-return
+    # in apply_workload_signal ensures it), so they do not reset staleness.
+    _workload_signal_absent = (
+        bool(state.gpu_modules) and not state._ever_received_workload_signal
+    )
+    _workload_signal_stale = (
+        bool(state.gpu_modules)
+        and state._ever_received_workload_signal
+        and (sim_time - state._last_workload_signal_sim_time) >= state.site.workload_signal_stale_s
+    )
+
     _is_low_confidence = (
         any(g.has_active_unmapped_jobs() for g in state.gpu_modules)
         or state.site.uncalibrated
+        # Phase 11.2: absent feed is structurally equivalent to unmapped hardware
+        # for the purposes of the curtailment interlock (TC-43 pattern).
+        or _workload_signal_absent
     )
     _remaining_gap_mw = max(
         0.0, p_dispatch_required_mw - turbine_output_mw - bess_output_mw
@@ -721,7 +779,35 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         tags.add(DataQualityTag.UNMAPPED_HARDWARE)
     if state.site.uncalibrated:
         tags.add(DataQualityTag.UNCALIBRATED_SITE)
-    confidence = state.confidence_engine.band_for(p_total_mw, tags)
+    # Phase 11.2: workload signal quality tags (flags were computed at 4d,
+    # before the curtailment interlock that uses them).
+    if _workload_signal_absent:
+        tags.add(DataQualityTag.WORKLOAD_SIGNAL_ABSENT)
+    if _workload_signal_stale:
+        tags.add(DataQualityTag.WORKLOAD_SIGNAL_STALE)
+
+    # Phase 11.1: queue-derived forecast — Section 4 formula.
+    # P_compute_forecast(t) = Σ_i Nodes_i(t) × kW_i × PUE_base / 1000
+    # No ramp multiplier: this is the full-TDP draw for all currently admitted
+    # jobs.  Sourced exclusively from WorkloadSignal; invariant to measured-draw
+    # fluctuations (F3 criterion: step change in measured draw with no new
+    # WorkloadSignal → forecast changes by exactly 0.0 MW).
+    #
+    # target_output_mw() is the existing method used by stage_for_predicted_step()
+    # to size the turbine pre-stage — we reuse it here for consistency so the
+    # confidence band and the staging computation are always aligned (F4 criterion).
+    forecast_mw = sum(g.target_output_mw() for g in state.gpu_modules)
+
+    # Never-silent rule (Phase 11.2 §12 / TC-43 pattern):
+    # When WORKLOAD_SIGNAL_ABSENT is active, the forecaster must not present a
+    # confident 0 MW.  Fall back to max(queue-forecast, measured-draw) to ensure
+    # the band never goes below what the site is visibly drawing.
+    _confidence_point_mw = (
+        max(forecast_mw, p_total_mw)
+        if _workload_signal_absent
+        else forecast_mw
+    )
+    confidence = state.confidence_engine.band_for(_confidence_point_mw, tags)
 
     alert_fired = state._pending_alert is not None and state._pending_alert.fires_at_sim_time <= sim_time
     if alert_fired:
@@ -759,6 +845,60 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     if state.kube_agent is not None:
         _step_phase = state.kube_agent.current_step_phase
         _step_kind = state.kube_agent.current_step_kind
+
+    # ── Phase 11.3: balance residual and frequency tracking ───────────────────
+    # P_gen(t) = turbines + BESS (actual measured) + renewables.
+    # balance_residual_mw = P_gen − P_load.
+    #
+    # In grid-connected steady state, BESS is the balance slack and
+    # balance_residual_mw ≈ 0 by construction.  Non-zero when:
+    #   (a) BESS is SOC-limited or power-saturated (bess_output < bess_setpoint), OR
+    #   (b) there is a true load-model error (e.g. load_error injection for B1).
+    # In islanded mode, a non-zero residual drives the swing equation below;
+    # in grid-connected mode, the grid absorbs / provides the mismatch.
+    _p_gen_mw = turbine_output_mw + bess_output_mw + p_renewable_mw
+    _balance_residual_mw = _p_gen_mw - p_total_mw
+
+    # Swing equation — islanded mode only.
+    # df/dt = balance_residual_mw / (2 × H × S_base) × f₀
+    # where H = inertia_constant_s, S_base = total turbine fleet rating (MVA),
+    # f₀ = frequency_nominal_hz.
+    # Grid-connected: frequency is held at nominal by the grid; reset each tick.
+    # (No governor droop feedback in this MVP — deferred to a later step; the
+    # turbine staging path already provides the dominant control response via
+    # stage_for_predicted_step().  Governor droop feedback would add a secondary
+    # correction proportional to f-error that can be validated with B5 once the
+    # primary swing equation is verified by B1.)
+    _s_base_mw = max(1.0, sum(t.config.rated_mw for t in state.turbines))
+    if state.site.island_mode == IslandMode.ISLANDED:
+        _df_dt = (
+            _balance_residual_mw
+            / (2.0 * state.site.inertia_constant_s * _s_base_mw)
+            * state.site.frequency_nominal_hz
+        )
+        state._frequency_hz += _df_dt * dt_seconds
+    else:
+        # Grid-connected: frequency is the grid's reference; not integrated.
+        state._frequency_hz = state.site.frequency_nominal_hz
+
+    # ── Phase 11.6: compute inlet temperature (Section 8 thermal model) ───────
+    # T_inlet = T_ambient_base + cooling_fraction × T_rise_max_c
+    # where cooling_fraction = p_cooling_mw / max_cooling_mw (0–1).
+    # max_cooling_mw = alpha_max × max(p_compute_mw, ε) — the peak steady-state
+    # cooling capacity at the current compute level.
+    # Because p_cooling_mw already carries the dt_thermal thermal lag (via
+    # CoolingModule.advance()), T_inlet inherits the same lag and automatically
+    # satisfies the C3 lag-1 autocorrelation requirement (≥ 0.99 at 10 Hz when
+    # tau_seconds=20s, since exp(−0.1/20) ≈ 0.9950).
+    _T_AMBIENT_BASE_C = 20.0  # °C — chosen; representative air-cooled ambient
+    _T_RISE_MAX_C     = 15.0  # °C — chosen; typical hot-aisle delta (PROTO-11-COOL)
+    _max_cooling_mw = state.site.alpha_max * max(p_compute_mw, 1e-6)
+    _cooling_fraction = (
+        min(1.0, p_cooling_mw / _max_cooling_mw)
+        if _max_cooling_mw > 1e-9
+        else 0.0
+    )
+    _compute_inlet_temp_c = _T_AMBIENT_BASE_C + _cooling_fraction * _T_RISE_MAX_C
 
     state.tick_index += 1
     return TickResult(
@@ -804,4 +944,13 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         contingency_coverage=_contingency_coverage,
         step_phase=_step_phase,
         step_kind=_step_kind,
+        # Phase 11.1: queue-derived forecast (single source of truth).
+        forecast_mw=forecast_mw,
+        # Phase 11.3: dispatch truthfulness.
+        bess_setpoint_mw=_bess_setpoint_mw,
+        gt_setpoint_mw=p_dispatch_required_mw,
+        balance_residual_mw=_balance_residual_mw,
+        frequency_hz=state._frequency_hz,
+        # Phase 11.6: cooling thermal lag — compute inlet temperature.
+        compute_inlet_temp_c=_compute_inlet_temp_c,
     )

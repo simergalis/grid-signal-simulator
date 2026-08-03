@@ -312,6 +312,23 @@ class SiteConfig:
     # PMS-specific features — fast shed, order conflict, transition — are skipped).
     pms_config: Optional[PmsConfig] = None
 
+    # Phase 11.2 — workload signal staleness threshold.
+    # A WorkloadSignal is considered stale when none has arrived within this many
+    # seconds for an active job.  Default 30 s (CHOSEN, no measured basis).
+    workload_signal_stale_s: float = 30.0
+
+    # Phase 11.3 — swing-equation parameters for islanded frequency tracking.
+    # These are used to compute df/dt from balance_residual_mw each tick.
+    # inertia_constant_s (H): combined inertia of all synchronous generators,
+    #   in seconds.  Default 4.0 s (typical medium diesel/gas island plant).
+    #   CHOSEN — no measured basis; calibrate against design partner specs.
+    # frequency_nominal_hz (f0): nominal system frequency.  50 Hz default.
+    # governor_droop: per-unit frequency deviation that produces 100% governor
+    #   response.  Default 4% (0.04) — typical gas turbine governor setting.
+    inertia_constant_s:    float = 4.0    # CHOSEN — no measured basis
+    frequency_nominal_hz:  float = 50.0  # CHOSEN — EU/APAC default; override for 60 Hz
+    governor_droop:        float = 0.04  # CHOSEN — no measured basis
+
 
 @dataclass
 class TurbineConfig:
@@ -432,6 +449,24 @@ class DataQualityTag(str, Enum):
     UNCALIBRATED_SITE = "uncalibrated_site"
     INVALID_PAYLOAD = "invalid_payload"
     STALE_PROFILE = "stale_profile"   # v2.5 §5.3: profile vintage is outdated
+    # Phase 11.2 — workload signal feed quality flags.
+    # Spec §12: no tag should express "normal quality" — flags must be silent
+    # when the feed is healthy and loud when it is not.
+    #
+    # workload_signal_stale: No WorkloadSignal received within
+    #   SiteConfig.workload_signal_stale_s (default 30 s) for an active job.
+    #   Widening: +20% (CHOSEN, no measured basis — mirrors uncalibrated_site order
+    #   of magnitude; stale data degrades forecast similarly to an uncalibrated site).
+    #
+    # workload_signal_absent: No WorkloadSignal ever received since run start, or
+    #   the ingest connection is confirmed down.
+    #   Widening: +50% (CHOSEN, no measured basis — absence is structurally worse
+    #   than staleness; 50% chosen to force visible band even on small forecasts).
+    #   Never-silent rule: when this flag is set, the engine must not present a
+    #   confident point forecast; it falls back to the conservative measured-draw
+    #   estimate and blocks autonomous curtailment (TC-43 pattern).
+    WORKLOAD_SIGNAL_STALE  = "workload_signal_stale"
+    WORKLOAD_SIGNAL_ABSENT = "workload_signal_absent"
 
 
 @dataclass
@@ -678,3 +713,48 @@ class TickResult:
     #   "checkpoint" aligns with the existing CheckpointClassifier's vocabulary.
     step_phase: float = 0.0
     step_kind: str = "training"
+
+    # ── Phase 11.1 — Forecast path correctness ───────────────────────────────
+    # forecast_mw: queue-derived compute forecast using the Section 4 formula
+    #   P_compute_forecast(t) = Σ_i Nodes_i(t) × kW_i × PUE_base / 1000
+    # where the sum is over all ACTIVE jobs in all GPU modules and no ramp
+    # multiplier is applied.  This is what the site WILL draw at full TDP;
+    # it is sourced exclusively from WorkloadSignal data and is therefore
+    # invariant to instantaneous measured draw fluctuations (F3 criterion).
+    #
+    # Single-source-of-truth guarantee: confidence.point_estimate_mw is set
+    # to forecast_mw (or the conservative fallback when
+    # WORKLOAD_SIGNAL_ABSENT is active).  The dashboard header and the
+    # Forecast Quality panel MUST read the same field (F4 criterion).
+    #
+    # 0.0 at run start before any STARTING signal; grows as jobs are admitted.
+    forecast_mw: float = 0.0
+
+    # ── Phase 11.3 — Dispatch truthfulness ───────────────────────────────────
+    # bess_setpoint_mw: what the dispatch arbitrator commanded the BESS fleet
+    #   to produce this tick (the fleet_shortfall before SOC / power clipping).
+    #   Differs from bess_output_mw when the fleet is SOC-limited or
+    #   power-saturated.  That difference IS the balance residual from the
+    #   BESS side.
+    # gt_setpoint_mw: net dispatch requirement handed to the turbine fleet
+    #   this tick (p_dispatch_required_mw).  Differs from turbine_output_mw
+    #   while turbines are still ramping toward their staged target.
+    # balance_residual_mw: (turbine_output + bess_output + p_renewable) − p_total.
+    #   In grid-connected steady state this is ≈ 0 (BESS is the balance slack).
+    #   Non-zero when BESS is SOC-limited or power-saturated; non-zero in
+    #   islanded mode due to measurement noise / load-model error.
+    #   In islanded mode this term drives the frequency swing equation (B1 criterion).
+    # frequency_hz: nominal system frequency (50 Hz) plus the deviation
+    #   accumulated by the swing equation in islanded mode.
+    #   In grid-connected mode: fixed at site.frequency_nominal_hz (grid is
+    #   the frequency reference and the slack variable).
+    # compute_inlet_temp_c: inlet air temperature at the compute racks, derived
+    #   from the lagged cooling output (Phase 11.6 / Section 8 thermal model).
+    #   Because the underlying cooling load already carries the dt_thermal lag,
+    #   this field exhibits the high lag-1 autocorrelation (≥ 0.99 at 10 Hz)
+    #   required by C3.  Default 20 °C (ambient baseline; rises with cooling load).
+    bess_setpoint_mw:     float = 0.0
+    gt_setpoint_mw:       float = 0.0
+    balance_residual_mw:  float = 0.0
+    frequency_hz:         float = 50.0
+    compute_inlet_temp_c: float = 20.0
