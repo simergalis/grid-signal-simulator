@@ -2,7 +2,10 @@ kind = "api"
 # Step 16 / §10.2: In production, this artifact deploys the GridSignal Simulator v2
 # (Python FastAPI + pre-built React frontend served as static files, single port).
 # The dev run command remains the Node.js API stub used by monorepo workspace tooling.
-previewPath = "/api" # TODO - should be excluded from preview in the first place
+# NOTE: path changed from "/api" to "/api-server" — "/api" was intercepting all
+# auth/admin/runs requests before they could reach the Python backend on port 22126.
+# The gridsignal artifact at "/" owns all /api/* traffic in both dev and production.
+previewPath = "/api-server"
 title = "GridSignal Simulator"
 version = "1.0.0"
 id = "3B4_FFSkEVBkAeYMFRJ2e"
@@ -10,7 +13,7 @@ id = "3B4_FFSkEVBkAeYMFRJ2e"
 [[services]]
 localPort = 8080
 name = "GridSignal Simulator"
-paths = ["/api"]
+paths = ["/api-server"]
 
 [services.development]
 run = "pnpm --filter @workspace/api-server run dev"
