@@ -119,10 +119,8 @@ function feederStateColour(state: string): string {
 // Defined outside deriveData so the React reference is stable across ticks and
 // the useEffect polling timer is not torn down and recreated on every tick.
 
-// tickSolarMW: last known tick.p_renewable_mw from the run.  Passed by
-// deriveData so bars always use the same value as the hero/verdict/stat rows.
-interface BankFleetPanelProps { tickSolarMW?: number | null }
-function BankFleetPanel({ tickSolarMW = null }: BankFleetPanelProps): React.ReactElement {
+interface BankFleetPanelProps { }
+function BankFleetPanel({ }: BankFleetPanelProps): React.ReactElement {
   const [solar, setSolar]         = useState<SolarState | null>(null)
   const [error, setError]         = useState(false)
   const [busy, setBusy]           = useState<string | null>(null)   // kind currently in-flight
@@ -192,35 +190,14 @@ function BankFleetPanel({ tickSolarMW = null }: BankFleetPanelProps): React.Reac
 
   const { power, site, feeders, banks, exposure, reserve, advisories } = solar
 
-  // ── Run-sync reconciliation ───────────────────────────────────────────────
-  // The snapshot polls at 1.5 s; the tick arrives via WS every 5 s.  On rare
-  // occasions (first tick after run start, or a tick missed by the poll) the
-  // backend scaling may not yet have zeroed the physics values in the snapshot.
-  // We reconcile here so the bank rows always agree with the hero/bars:
-  //   • tickSolarMW is null  → no run active; show raw snapshot physics (scale 1)
-  //   • snapshot total > 0   → scale = tick / snapshot total
-  //   • snapshot total = 0   → both already agree at 0; scale = 1 (no-op)
-  const snapshotSolarMW = power.p_renewable_mw
-  const runScale: number = (tickSolarMW !== null && snapshotSolarMW > 1e-3)
-    ? Math.max(0, tickSolarMW / snapshotSolarMW)
-    : (tickSolarMW !== null && snapshotSolarMW <= 1e-3)
-      ? 0   // snapshot already at zero — no-op but keeps value at 0
-      : 1   // no run active — show raw physics
-
   // ── Live output bars ─────────────────────────────────────────────────────
-  // Value: tickSolarMW when a run is active (same source as hero/verdict/stats
-  // so all four always agree); falls back to snapshot when no run yet.
-  // Max: plant_rated_ac_mw from snapshot so the fill fraction is honest.
-  //
-  // IMPORTANT: when runScale = 0 the snapshot has already dropped to zero
-  // (operator shutdown, night, or full-array trip) but the tick may still carry
-  // the last non-zero value (WS ticks arrive every 5 s; snapshot polls every
-  // 1.5 s).  Applying the same zero-gate here keeps the header bars in sync
-  // with the bank rows — prevents the "1.05 MW header / 0.00 bank" mismatch
-  // that appears when all banks are operator-offline between ticks.
-  const barMW    = tickSolarMW != null
-    ? (runScale > 0 ? tickSolarMW : 0)
-    : power.p_renewable_mw
+  // All values come directly from the snapshot (polled every 1.5 s).
+  // The snapshot is computed as a plain mathematical sum:
+  //   power.p_renewable_mw = Σ counted_output_mw(bank) for all banks
+  //   feeder.output_mw     = Σ counted_output_mw(bank) for banks in that feeder
+  //   bank.counted_output_mw = bank physics output (0 when operator-offline)
+  // No AI-derived value touches these numbers; no run-tick scaling is applied.
+  const barMW    = power.p_renewable_mw
   const ratedMW  = site.plant_rated_ac_mw || Math.max(barMW, 5)
   const liveOutputBars = React.createElement('div', { className: 'space-y-2 mb-3' },
     React.createElement(BulletBar, {
@@ -279,7 +256,7 @@ function BankFleetPanel({ tickSolarMW = null }: BankFleetPanelProps): React.Reac
           React.createElement('span', {
             className: 'font-mono text-[10px]',
             style: { color: feeder.state === 'nominal' ? SOLAR : feederStateColour(feeder.state) },
-          }, `${(feeder.output_mw * runScale).toFixed(3)} MW`),
+          }, `${feeder.output_mw.toFixed(3)} MW`),
           feeder.expected_mw > 0
             ? React.createElement('span', { className: 'font-mono text-[9px] text-muted' },
                 `/ ${feeder.expected_mw.toFixed(3)} exp`,
@@ -311,7 +288,9 @@ function BankFleetPanel({ tickSolarMW = null }: BankFleetPanelProps): React.Reac
     // Bank rows
     const bankRows = feederBanks.map(bank => {
       const isNoComms      = bank.state === 'no_comms'
-      const scaledOutputMW = bank.operator_shutdown ? 0 : bank.output_mw * runScale
+      // counted_output_mw is already 0 for operator-offline and out/no_comms banks.
+      // Using it directly means Feeder A = bank-01 + bank-02 + … by simple addition.
+      const scaledOutputMW = bank.counted_output_mw
       const maxMW          = Math.max(bank.expected_mw, scaledOutputMW, 0.001)
       const dotColour      = stateColour(bank.state)
       const chipLabel      = stateLabel(bank.state, bank.reason)
@@ -582,9 +561,9 @@ export const renewablePanel: PanelConfig = {
       height:  200,
     })
 
-    // BankFleetPanel owns the bars (uses tickSolarMW + snapshot ratedMW) and the
+    // BankFleetPanel owns the bars (uses snapshot physics) and the
     // live bank fleet.  Passing solarMW keeps bars in lock-step with the hero.
-    const secondary = React.createElement(BankFleetPanel, { tickSolarMW: solarMW })
+    const secondary = React.createElement(BankFleetPanel, {})
 
     return {
       stateLabel:  'ADVISORY',

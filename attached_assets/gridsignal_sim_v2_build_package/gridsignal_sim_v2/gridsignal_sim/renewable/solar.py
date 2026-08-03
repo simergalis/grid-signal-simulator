@@ -995,56 +995,12 @@ class SolarSim:
         bank_snaps   = _build_bank_snapshots(cfg, st)
         feeder_snaps = _build_feeder_snapshots(cfg, st)
 
-        # Run-loop sync: keep the bank-panel total in lock-step with the run's
-        # tick.p_renewable_mw value (which may differ from standalone physics
-        # when Mistral forecasts night/zero or when operator shutdowns apply).
-        #
-        # Two sub-cases:
-        #   (a) _run_sync == 0  (night-time, or Mistral forecast is zero)
-        #       → zero all bank/feeder outputs directly.  The fault guard is
-        #         bypassed because "run says zero" is authoritative regardless
-        #         of individual bank states.
-        #   (b) _run_sync > 0 and physics is positive and no fault injections
-        #       → proportional scaling so per-bank bars sum to the run total.
-        #         Faults suppress scaling here so a tripped bank's 0 MW is not
-        #         inflated by the scale factor.
-        _run_sync = self._run_p_renewable_mw
-        if _run_sync is not None and solar > 1e-6:
-            if _run_sync < 1e-6:
-                # (a) Night / zero: zero all outputs directly.
-                for _bs in bank_snaps:
-                    _bs["output_mw"]         = 0.0
-                    _bs["counted_output_mw"] = 0.0
-                for _fs in feeder_snaps:
-                    _fs["output_mw"] = 0.0
-                solar        = 0.0
-                n1_feeder_mw = 0.0
-                n1_bank_mw   = 0.0
-                rc_n1_feeder = reserve_check(cfg, st, 0.0, 0.0)
-                rc_n1_bank   = reserve_check(cfg, st, 0.0, 0.0)
-                rc_plant     = reserve_check(cfg, st, 0.0, 0.0)
-                rc_compound  = reserve_check(cfg, st, 6.0, 0.0)
-            else:
-                # (b) Positive run value: proportional scaling if no faults.
-                _has_faults = any(
-                    b.fault or b.state in ("out", "no_comms")
-                    for b in st.blocks
-                )
-                if not _has_faults:
-                    _scale = _run_sync / solar
-                    for _bs in bank_snaps:
-                        _bs["output_mw"]         = round(_bs["output_mw"]         * _scale, 6)
-                        _bs["counted_output_mw"] = round(_bs["counted_output_mw"] * _scale, 6)
-                    for _fs in feeder_snaps:
-                        _fs["output_mw"] = round(_fs["output_mw"] * _scale, 6)
-                    solar        = _run_sync
-                    n1_feeder_mw = n1_feeder_mw * _scale
-                    n1_bank_mw   = n1_bank_mw   * _scale
-                    # Recompute reserve checks with the scaled contingency sizes.
-                    rc_n1_feeder = reserve_check(cfg, st, n1_feeder_mw, 0.0)
-                    rc_n1_bank   = reserve_check(cfg, st, n1_bank_mw,   0.0)
-                    rc_plant     = reserve_check(cfg, st, solar,        0.0)
-                    rc_compound  = reserve_check(cfg, st, solar + 6.0,  0.0)
+        # No run-sync scaling.  tick_result.p_renewable_mw is now always set to
+        # live_aggregate_mw() — the same physics sum as `solar` here — so there
+        # is nothing to reconcile.  Feeder and bank values are computed directly
+        # from counted_output_mw / bank_output_mw and sum correctly by
+        # construction: feeder.output_mw = Σ bank.counted_output_mw for that
+        # feeder.  No AI-derived value touches these numbers.
 
         return {
             "t": st.t,
