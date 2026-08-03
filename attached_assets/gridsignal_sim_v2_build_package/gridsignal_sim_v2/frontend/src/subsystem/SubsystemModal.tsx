@@ -24,11 +24,12 @@
  * Body: 2-col (chart left, metrics right) ≥ 768 px; single-col below.
  */
 
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { SUBSYSTEMS } from '../readiness/subsystems'
 import { PANEL_CONFIGS } from './panels/index'
 import { useTickStore } from '../store/tickStore'
 import { StatTable }    from '../charts/StatTable'
+import type { TransportView } from '../types'
 
 export function SubsystemModal({
   subsystemId,
@@ -44,6 +45,24 @@ export function SubsystemModal({
   const tick   = useTickStore(s => s.latestTick)
   const alert  = useTickStore(s => s.latchedAlert)
   const history = useTickStore(s => s.history)
+
+  // Poll GET /api/session/transport at ~1 Hz while the network modal is open.
+  const [transportData, setTransportData] = useState<TransportView | null>(null)
+  useEffect(() => {
+    if (subsystemId !== 'network') return
+    let cancelled = false
+    const poll = () => {
+      fetch('/api/session/transport', { credentials: 'include' })
+        .then(r => r.ok ? r.json() : null)
+        .then((data: TransportView | null) => {
+          if (!cancelled) setTransportData(data)
+        })
+        .catch(() => { /* silent — transport polling is best-effort */ })
+    }
+    poll()
+    const id = setInterval(poll, 1000)
+    return () => { cancelled = true; clearInterval(id) }
+  }, [subsystemId])
 
   const dialogRef      = useRef<HTMLDivElement>(null)
   const closeBtnRef    = useRef<HTMLButtonElement>(null)
@@ -86,8 +105,9 @@ export function SubsystemModal({
 
   if (!cfg || !panel) return null
 
-  // Derive live values for the modal from the tick
-  const panelData = panel.deriveData(tick, alert, history)
+  // Derive live values for the modal from the tick.
+  // For the network panel, pass the polled transport data as the 4th arg.
+  const panelData = panel.deriveData(tick, alert, history, transportData ?? undefined)
 
   return (
     // Backdrop

@@ -26,7 +26,8 @@ export interface PanelConfig {
   deriveData: (
     tick:    TickPayload | null,
     alert:   TickPayload | null,
-    history: HistoryPoint[]
+    history: HistoryPoint[],
+    extra?:  unknown
   ) => PanelData
 }
 

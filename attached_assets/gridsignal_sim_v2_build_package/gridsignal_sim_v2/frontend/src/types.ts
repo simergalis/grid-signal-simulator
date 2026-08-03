@@ -212,6 +212,28 @@ export interface FabricModalView {
   link_utilisation:        Record<string, number>   // link_id → u
 }
 
+/**
+ * Phase 10 §12.10 — session transport view from GET /api/session/transport.
+ *
+ * Reflects InstrumentPlane.modal_view() — all ms fields are null until the
+ * ring buffer has at least one sample.
+ *
+ * samples.ws  : number of WS tick round-trip observations collected
+ * samples.api : number of API round-trip observations collected
+ */
+export interface TransportView {
+  measured:             boolean
+  samples: {
+    ws:  number
+    api: number
+  }
+  ws_tick_latency_ms:    number | null   // p50
+  ws_tick_p95_ms:        number | null   // p95
+  ws_tick_p99_ms:        number | null   // p99
+  api_roundtrip_ms:      number | null   // p50
+  api_roundtrip_p95_ms:  number | null   // p95
+}
+
 export interface RunMeta {
   run_id: string
   playback_speed: number   // 0 = max-speed sentinel; >0 = simulated-s per real-s

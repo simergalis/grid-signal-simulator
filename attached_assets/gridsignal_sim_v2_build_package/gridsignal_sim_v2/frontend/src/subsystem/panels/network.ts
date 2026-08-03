@@ -11,7 +11,7 @@
 
 import React from 'react'
 import type { PanelConfig, PanelData } from './index'
-import type { TickPayload, HistoryPoint, FabricModalView } from '../../types'
+import type { TickPayload, HistoryPoint, FabricModalView, TransportView } from '../../types'
 
 // ---------------------------------------------------------------------------
 // Helper: format latency
@@ -77,11 +77,46 @@ function LinkHeatStrip({ utilisation }: { utilisation: Record<string, number> })
 }
 
 // ---------------------------------------------------------------------------
+// SESSION TRANSPORT rows — built from polled TransportView (extra arg)
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns the SESSION TRANSPORT stat rows to append at the end of the
+ * metrics table.  When transport data has < 3 WS samples collected, rows
+ * show "measuring…" rather than dashes (task-82 spec).
+ */
+function transportRows(extra: unknown): Array<{ label: string; value: string }> {
+  const tv = extra as TransportView | null | undefined
+  if (!tv) {
+    return [
+      { label: 'WS tick latency', value: 'not instrumented' },
+      { label: 'API round-trip',  value: 'not instrumented' },
+    ]
+  }
+
+  const measuring = tv.samples.ws < 3
+  const fmtOrMeasuring = (ms: number | null): string =>
+    measuring ? 'measuring…' : fmtMs(ms)
+
+  const wsP50 = fmtOrMeasuring(tv.ws_tick_latency_ms)
+  const wsP95 = measuring ? '' : (tv.ws_tick_p95_ms != null ? ` p95 ${fmtMs(tv.ws_tick_p95_ms)}` : '')
+  const wsP99 = measuring ? '' : (tv.ws_tick_p99_ms != null ? ` p99 ${fmtMs(tv.ws_tick_p99_ms)}` : '')
+
+  const apiP50 = measuring ? 'measuring…' : fmtMs(tv.api_roundtrip_ms)
+  const apiP95 = measuring ? '' : (tv.api_roundtrip_p95_ms != null ? ` p95 ${fmtMs(tv.api_roundtrip_p95_ms)}` : '')
+
+  return [
+    { label: 'WS tick latency', value: wsP50 + wsP95 + wsP99 },
+    { label: 'API round-trip',  value: apiP50 + apiP95 },
+  ]
+}
+
+// ---------------------------------------------------------------------------
 // Panel config
 // ---------------------------------------------------------------------------
 
 export const networkPanel: PanelConfig = {
-  deriveData(tick: TickPayload | null, _alert, _history: HistoryPoint[]): PanelData {
+  deriveData(tick: TickPayload | null, _alert, _history: HistoryPoint[], extra?: unknown): PanelData {
     const fab: FabricModalView | null = tick?.fabric ?? null
 
     if (!fab) {
@@ -108,9 +143,8 @@ export const networkPanel: PanelConfig = {
           { label: 'Topology nodes',     value: 'not instrumented' },
           { label: 'Congested links',    value: 'not instrumented' },
           { label: 'Bandwidth headroom', value: 'not instrumented' },
-          { label: 'WS tick latency',    value: 'not instrumented' },
           { label: 'Retransmit rate',    value: 'not instrumented' },
-          { label: 'API round-trip',     value: 'not instrumented' },
+          ...transportRows(extra),
         ],
         secondary: undefined,
         why: [
@@ -158,6 +192,7 @@ export const networkPanel: PanelConfig = {
         { label: 'Retransmit rate',    value: fmtPct(fab.retransmit_rate) },
         { label: 'Budget',             value: fmtMs(cp?.budget_ms) },
         { label: 'Discrimination',     value: disc?.verdict ?? '—' },
+        ...transportRows(extra),
       ],
       secondary: undefined,
       why: [
