@@ -211,7 +211,16 @@ function BankFleetPanel({ tickSolarMW = null }: BankFleetPanelProps): React.Reac
   // Value: tickSolarMW when a run is active (same source as hero/verdict/stats
   // so all four always agree); falls back to snapshot when no run yet.
   // Max: plant_rated_ac_mw from snapshot so the fill fraction is honest.
-  const barMW    = tickSolarMW != null ? tickSolarMW : power.p_renewable_mw
+  //
+  // IMPORTANT: when runScale = 0 the snapshot has already dropped to zero
+  // (operator shutdown, night, or full-array trip) but the tick may still carry
+  // the last non-zero value (WS ticks arrive every 5 s; snapshot polls every
+  // 1.5 s).  Applying the same zero-gate here keeps the header bars in sync
+  // with the bank rows — prevents the "1.05 MW header / 0.00 bank" mismatch
+  // that appears when all banks are operator-offline between ticks.
+  const barMW    = tickSolarMW != null
+    ? (runScale > 0 ? tickSolarMW : 0)
+    : power.p_renewable_mw
   const ratedMW  = site.plant_rated_ac_mw || Math.max(barMW, 5)
   const liveOutputBars = React.createElement('div', { className: 'space-y-2 mb-3' },
     React.createElement(BulletBar, {
