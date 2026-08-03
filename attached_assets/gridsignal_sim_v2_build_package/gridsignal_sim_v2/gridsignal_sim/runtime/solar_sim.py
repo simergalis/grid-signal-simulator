@@ -298,7 +298,7 @@ def _call_mistral(user_message: str, api_key: str, system_prompt: str = "") -> s
             {"role": "system", "content": system_prompt or _build_system_prompt()},
             {"role": "user",   "content": user_message},
         ],
-        "max_tokens": 700,
+        "max_tokens": 1200,
         # temperature > 0 gives varied weather across runs — intentional.
         # Determinism is preserved at the run level because samples are stored once
         # and used throughout the run; they are never regenerated mid-run.
@@ -345,7 +345,36 @@ def _parse_forecast(
             lines = text.split("\n")
             text = "\n".join(ln for ln in lines if not ln.startswith("```")).strip()
 
-        data: dict = json.loads(text)
+        # Attempt to parse; if truncation caused a syntax error, try to recover
+        # by locating the outermost { … } and truncating incomplete trailing
+        # arrays/values before the last complete top-level comma.
+        try:
+            data: dict = json.loads(text)
+        except json.JSONDecodeError:
+            # Find the opening brace and attempt to close the object cleanly.
+            start = text.find("{")
+            if start != -1:
+                fragment = text[start:]
+                # Walk backwards from the end, dropping chars until we can parse
+                # a valid JSON object.  Stop after 300 attempts to avoid O(n²).
+                for trim in range(min(300, len(fragment))):
+                    candidate = fragment[:len(fragment) - trim].rstrip().rstrip(",").rstrip()
+                    # Close any open arrays/objects
+                    opens = candidate.count("[") - candidate.count("]")
+                    closes = candidate.count("{") - candidate.count("}")
+                    candidate += "]" * max(0, opens) + "}" * max(0, closes)
+                    try:
+                        data = json.loads(candidate)
+                        _log.info(
+                            "solar_sim: repaired truncated Mistral JSON (trimmed %d chars)", trim
+                        )
+                        break
+                    except json.JSONDecodeError:
+                        continue
+                else:
+                    raise json.JSONDecodeError("could not repair JSON", text, 0)
+            else:
+                raise
         raw_samples: list = data["samples"]
 
         samples: list[tuple[float, float]] = []

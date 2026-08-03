@@ -174,6 +174,41 @@ _KNOWN_LOCATIONS: dict[str, SiteLocation] = {
         climate_hint="Semi-arid; high altitude boosts insolation; 300 sunny days/year; dramatic afternoon thunderstorms in summer.",
         ambient_temp_base_c=8.0, tz_name="America/Denver",
     ),
+    "honolulu":    SiteLocation(
+        name="Honolulu, HI", lat=21.31, lon=-157.86, utc_offset_h=-10.0,
+        climate_hint="Tropical maritime; near-constant trade winds; abundant sunshine year-round; brief afternoon showers possible; no DST.",
+        ambient_temp_base_c=23.0, tz_name="Pacific/Honolulu",
+    ),
+    "hawaii":      SiteLocation(
+        name="Honolulu, HI", lat=21.31, lon=-157.86, utc_offset_h=-10.0,
+        climate_hint="Tropical maritime; near-constant trade winds; abundant sunshine year-round; brief afternoon showers possible; no DST.",
+        ambient_temp_base_c=23.0, tz_name="Pacific/Honolulu",
+    ),
+    "miami":       SiteLocation(
+        name="Miami, FL", lat=25.77, lon=-80.19, utc_offset_h=-5.0,
+        climate_hint="Tropical; abundant sunshine; brief afternoon thunderstorms Jun–Sep; high humidity; minimal seasonal variation.",
+        ambient_temp_base_c=22.0, tz_name="America/New_York",
+    ),
+    "dallas":      SiteLocation(
+        name="Dallas, TX", lat=32.78, lon=-96.80, utc_offset_h=-6.0,
+        climate_hint="Subtropical; hot sunny summers; mild winters; occasional severe spring storms; high annual insolation.",
+        ambient_temp_base_c=16.0, tz_name="America/Chicago",
+    ),
+    "austin":      SiteLocation(
+        name="Austin, TX", lat=30.27, lon=-97.74, utc_offset_h=-6.0,
+        climate_hint="Subtropical; very high insolation; hot summers; mild winters; occasional severe spring storms.",
+        ambient_temp_base_c=17.0, tz_name="America/Chicago",
+    ),
+    "portland":    SiteLocation(
+        name="Portland, OR", lat=45.52, lon=-122.68, utc_offset_h=-8.0,
+        climate_hint="Maritime; overcast and rainy Oct–May; dry sunny summers; lower insolation than most US cities.",
+        ambient_temp_base_c=9.0, tz_name="America/Los_Angeles",
+    ),
+    "auckland":    SiteLocation(
+        name="Auckland, New Zealand", lat=-36.85, lon=174.76, utc_offset_h=12.0,
+        climate_hint="Temperate maritime; mild seasons; moderate cloud cover; Southern Hemisphere seasons inverted vs North America.",
+        ambient_temp_base_c=13.0, tz_name="Pacific/Auckland",
+    ),
 }
 
 
@@ -218,7 +253,7 @@ def _geocode_via_mistral(address: str, api_key: str) -> SiteLocation:
             {"role": "system", "content": _GEO_SYSTEM},
             {"role": "user",   "content": f"Location: {address}"},
         ],
-        "max_tokens":  200,
+        "max_tokens":  350,
         "temperature": 0.0,
     }).encode()
     req = urllib.request.Request(
