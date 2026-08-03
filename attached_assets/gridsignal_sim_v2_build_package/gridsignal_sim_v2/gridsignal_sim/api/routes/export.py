@@ -29,7 +29,7 @@ router = APIRouter()
 # gridsignal_logger.py lives at the workspace root, two levels above the
 # frontend/dist directory (which is two above this file).
 #   api/routes/export.py → api/ → gridsignal_sim/ → gridsignal_sim_v2/ → (workspace root)
-_LOGGER_SCRIPT = Path(__file__).resolve().parents[4] / "gridsignal_logger.py"
+_LOGGER_SCRIPT = Path(__file__).resolve().parents[6] / "gridsignal_logger.py"
 
 # Number of rows for the quick test run; at 50 ms per row ≈ 1.5 s total.
 _TEST_ROWS     = 30
