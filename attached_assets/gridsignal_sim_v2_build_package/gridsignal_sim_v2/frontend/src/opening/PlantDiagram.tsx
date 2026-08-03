@@ -270,7 +270,7 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW }
           tick={tick}
           onClick={onNodeClick}
           solarPreview={node.id === 'solar-pv' ? solarPreview : null}
-          liveSolarMW={node.id === 'solar-pv' ? liveSolarMW : null}
+          liveSolarMW={liveSolarMW}
         />
       ))}
 

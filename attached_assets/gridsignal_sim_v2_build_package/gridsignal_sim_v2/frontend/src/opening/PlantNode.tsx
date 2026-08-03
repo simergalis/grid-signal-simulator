@@ -234,11 +234,14 @@ export function PlantNode({ def, tick, onClick, solarPreview, liveSolarMW }: Pla
   const isGrid  = !!def.gridStyle
   const canClick = def.clickable && !def.passive
 
-  // BESS charging flow: excess generation (turbine + solar − load − discharge) absorbed by battery
+  // BESS charging flow: excess generation (turbine + solar − load − discharge) absorbed by battery.
+  // Use liveSolarMW (same value shown on the solar tile) so the BESS excess
+  // stays consistent: turbine + solar_tile − load = what the operator sees.
   const isBess = def.id === 'battery-bess'
+  const solarForBess = liveSolarMW ?? tick?.p_renewable_mw ?? 0
   const bessExcess = isBess && tick
     ? Math.max(0,
-        (tick.turbine_output_mw ?? 0) + (tick.p_renewable_mw ?? 0)
+        (tick.turbine_output_mw ?? 0) + solarForBess
         - (tick.p_total_mw ?? 0) - (tick.bess_output_mw ?? 0)
       )
     : 0
