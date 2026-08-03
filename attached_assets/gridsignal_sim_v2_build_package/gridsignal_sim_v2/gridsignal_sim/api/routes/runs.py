@@ -188,17 +188,41 @@ async def start_run(
         #   (which bypasses generate_solar_forecast entirely via _is_default_irr).
         _utc_hour_override = spec_data.get("solar_origin_utc_hour")
         if _utc_hour_override is None and _is_default_irr:
+            import math as _math
             _now_utc = datetime.datetime.now(datetime.timezone.utc)
             _local_h = (_now_utc + datetime.timedelta(hours=_site_utc)).hour
+
+            # Tier-1: obvious darkness — local hour outside 06:00–20:00.
             if not (6 <= _local_h < 20):
-                # UTC hour that maps to local noon: (12 − utc_offset) mod 24.
                 _utc_hour_override = int((12 - _site_utc) % 24)
                 _log.info(
-                    "run %s: auto-noon solar override "
-                    "(local_h=%d, site UTC%+.1f) → utc_hour=%d "
-                    "so solar is not silently zero at night",
+                    "run %s: auto-noon solar override (local_h=%d, site UTC%+.1f)"
+                    " → utc_hour=%d — night, solar would be silently zero",
                     run_id, _local_h, _site_utc, _utc_hour_override,
                 )
+            else:
+                # Tier-2: hour is nominally daytime but solar elevation < 10 °.
+                # Catches twilight cases like 6 AM at 47 °N where the sun has
+                # just cleared the horizon and irradiance fraction is ~1–5 %.
+                # Approximation: solar elevation from lat / lon / UTC hour /
+                # day-of-year — no external library needed.
+                _doy     = _now_utc.timetuple().tm_yday
+                _decl    = 23.45 * _math.sin(_math.radians(360 / 365 * (_doy - 81)))
+                _solar_h = _now_utc.hour + _site_lon / 15.0   # approx local solar time
+                _ha      = 15.0 * (_solar_h - 12.0)           # hour angle (°)
+                _elev    = _math.degrees(_math.asin(
+                    _math.sin(_math.radians(_site_lat)) * _math.sin(_math.radians(_decl))
+                    + _math.cos(_math.radians(_site_lat)) * _math.cos(_math.radians(_decl))
+                      * _math.cos(_math.radians(_ha))
+                ))
+                if _elev < 10.0:
+                    _utc_hour_override = int((12 - _site_utc) % 24)
+                    _log.info(
+                        "run %s: auto-noon solar override (local_h=%d,"
+                        " elevation=%.1f° < 10°, site UTC%+.1f) → utc_hour=%d"
+                        " — low sun angle, irradiance would be ~0",
+                        run_id, _local_h, _elev, _site_utc, _utc_hour_override,
+                    )
 
         if _utc_hour_override is not None:
             _base = datetime.datetime.now(datetime.timezone.utc)
