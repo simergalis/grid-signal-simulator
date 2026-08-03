@@ -75,17 +75,44 @@ export function DemoBar({
 
   const handleLogTest = async () => {
     setLogBusy(true)
-    setLogMsg('Logging…')
+    setLogMsg('Starting…')
     try {
-      const resp = await fetch('/api/export/telemetry-log', {
+      // 1. Kick off the background job — returns immediately with a job_id.
+      const startResp = await fetch('/api/export/telemetry-log', {
         method: 'POST',
         credentials: 'include',
       })
-      if (!resp.ok) {
-        const txt = await resp.text()
-        throw new Error(`${resp.status}: ${txt}`)
+      if (!startResp.ok) {
+        const txt = await startResp.text()
+        throw new Error(`${startResp.status}: ${txt}`)
       }
-      const blob = await resp.blob()
+      const { job_id, eta_s } = await startResp.json() as { job_id: string; eta_s: number }
+
+      // 2. Poll /status every second until done or error.
+      const started = Date.now()
+      while (true) {
+        await new Promise(r => setTimeout(r, 1000))
+        const elapsed = Math.round((Date.now() - started) / 1000)
+        setLogMsg(`Logging… ${elapsed}/${Math.round(eta_s)}s`)
+
+        const pollResp = await fetch(`/api/export/telemetry-log/${job_id}/status`, {
+          credentials: 'include',
+        })
+        if (!pollResp.ok) throw new Error(`Poll failed: ${pollResp.status}`)
+        const { status, detail } = await pollResp.json() as { status: string; detail: string }
+
+        if (status === 'error') throw new Error(detail || 'Logger failed')
+        if (status === 'done')  break
+        if (elapsed > eta_s + 35) throw new Error('Timed out waiting for logger')
+      }
+
+      // 3. Fetch the finished file and trigger browser download.
+      setLogMsg('Downloading…')
+      const fileResp = await fetch(`/api/export/telemetry-log/${job_id}/file`, {
+        credentials: 'include',
+      })
+      if (!fileResp.ok) throw new Error(`Download failed: ${fileResp.status}`)
+      const blob = await fileResp.blob()
       const url  = URL.createObjectURL(blob)
       const a    = document.createElement('a')
       a.href     = url

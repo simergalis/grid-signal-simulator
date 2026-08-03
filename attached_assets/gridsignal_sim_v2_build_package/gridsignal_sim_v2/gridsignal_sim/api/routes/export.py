@@ -2,12 +2,15 @@
 api/routes/export.py — Telemetry-log export endpoint.
 
 POST /api/export/telemetry-log
-    Runs gridsignal_logger.py in fast test mode (30 rows, 50 ms interval)
-    and returns the resulting CSV file as a download.
+    Starts gridsignal_logger.py in a background asyncio task and returns a
+    job_id immediately (no blocking wait).  The 60-second subprocess runs
+    while the browser polls for completion.
 
-The script is run in a subprocess so it is isolated from the event loop
-and cannot block the WS tick stream.  asyncio.create_subprocess_exec is
-used so the FastAPI event loop is not blocked while waiting for it.
+GET  /api/export/telemetry-log/{job_id}/status
+    Returns {"status": "running"|"done"|"error", "detail": "..."}.
+
+GET  /api/export/telemetry-log/{job_id}/file
+    Returns the CSV download once status == "done".
 
 Auth: covered by the global cookie middleware in api/app.py.
 """
@@ -18,6 +21,7 @@ import asyncio
 import os
 import sys
 import tempfile
+import uuid
 from pathlib import Path
 
 from fastapi import APIRouter
@@ -26,89 +30,109 @@ from starlette.background import BackgroundTask
 
 router = APIRouter()
 
-# gridsignal_logger.py lives at the workspace root, two levels above the
-# frontend/dist directory (which is two above this file).
-#   api/routes/export.py → api/ → gridsignal_sim/ → gridsignal_sim_v2/ → (workspace root)
+# gridsignal_logger.py lives at the workspace root.
 _LOGGER_SCRIPT = Path(__file__).resolve().parents[6] / "gridsignal_logger.py"
 
 # 600 rows × 0.1 s = 60 s of logging at 10 Hz.
 _TEST_ROWS     = 600
 _TEST_INTERVAL = 0.1
 
+# In-memory job registry: job_id → {"status", "out_path", "detail"}
+_jobs: dict[str, dict] = {}
 
-@router.post("/api/export/telemetry-log", include_in_schema=True)
-async def export_telemetry_log() -> FileResponse:
-    """Run the telemetry logger in fast test mode and return the CSV download."""
 
-    if not _LOGGER_SCRIPT.exists():
-        return JSONResponse(
-            status_code=500,
-            content={"detail": f"Logger script not found at {_LOGGER_SCRIPT}"},
-        )
-
-    # Write to a temp file so concurrent requests don't clobber each other.
-    with tempfile.NamedTemporaryFile(
-        suffix=".csv", prefix="gridsignal_log_", delete=False
-    ) as tmp:
-        out_path = tmp.name
-
+async def _run_logger(job_id: str, out_path: str) -> None:
+    """Background task: run the logger subprocess and update _jobs when done."""
     try:
         proc = await asyncio.create_subprocess_exec(
             sys.executable,
             str(_LOGGER_SCRIPT),
             "--rows",     str(_TEST_ROWS),
             "--interval", str(_TEST_INTERVAL),
-            "--fast",                          # generate all rows without sleeping
             "--out",      out_path,
-            # Discard stdout (progress lines) — pipe buffering would stall the
-            # subprocess once the OS pipe buffer fills up.  We only need the
-            # CSV file that the script writes directly to disk.
+            # Discard stdout (progress lines) to avoid pipe-buffer stall.
             stdout=asyncio.subprocess.DEVNULL,
             stderr=asyncio.subprocess.PIPE,
         )
-        # --fast skips inter-tick sleep, so the script finishes in < 5 s.
-        _timeout = 30
+        timeout = _TEST_ROWS * _TEST_INTERVAL + 30   # 90 s
         try:
-            _unused, _stderr = await asyncio.wait_for(
-                proc.communicate(), timeout=_timeout
-            )
+            _, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
         except asyncio.TimeoutError:
             proc.kill()
-            return JSONResponse(
-                status_code=500,
-                content={"detail": f"Logger script timed out after {_timeout:.0f} s"},
-            )
+            _jobs[job_id].update({"status": "error", "detail": "Logger timed out"})
+            return
 
         if proc.returncode != 0:
-            err = _stderr.decode(errors="replace").strip()
-            return JSONResponse(
-                status_code=500,
-                content={"detail": f"Logger script exited {proc.returncode}: {err}"},
-            )
+            err = stderr.decode(errors="replace").strip()
+            _jobs[job_id].update({"status": "error",
+                                   "detail": f"Exit {proc.returncode}: {err}"})
+            return
 
         if not Path(out_path).exists() or Path(out_path).stat().st_size == 0:
-            return JSONResponse(
-                status_code=500,
-                content={"detail": "Logger script produced an empty file"},
-            )
+            _jobs[job_id].update({"status": "error", "detail": "Empty output file"})
+            return
 
-        def _delete_tmp() -> None:
-            try:
-                os.unlink(out_path)
-            except OSError:
-                pass
-
-        return FileResponse(
-            path=out_path,
-            media_type="text/csv",
-            filename="system_stats.csv",
-            background=BackgroundTask(_delete_tmp),
-        )
+        _jobs[job_id]["status"] = "done"
 
     except Exception as exc:
-        # Clean up the temp file on any unexpected error.
+        _jobs[job_id].update({"status": "error", "detail": str(exc)})
+
+
+@router.post("/api/export/telemetry-log", include_in_schema=True)
+async def start_telemetry_log() -> JSONResponse:
+    """Kick off the logger; return job_id and eta immediately."""
+    if not _LOGGER_SCRIPT.exists():
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Logger script not found at {_LOGGER_SCRIPT}"},
+        )
+
+    with tempfile.NamedTemporaryFile(
+        suffix=".csv", prefix="gridsignal_log_", delete=False
+    ) as tmp:
+        out_path = tmp.name
+
+    job_id = str(uuid.uuid4())
+    _jobs[job_id] = {"status": "running", "out_path": out_path, "detail": ""}
+    asyncio.create_task(_run_logger(job_id, out_path))
+
+    return JSONResponse({
+        "job_id": job_id,
+        "eta_s":  _TEST_ROWS * _TEST_INTERVAL,
+    })
+
+
+@router.get("/api/export/telemetry-log/{job_id}/status")
+async def poll_telemetry_log(job_id: str) -> JSONResponse:
+    """Return current job status."""
+    job = _jobs.get(job_id)
+    if job is None:
+        return JSONResponse(status_code=404, content={"detail": "Unknown job"})
+    return JSONResponse({"status": job["status"], "detail": job.get("detail", "")})
+
+
+@router.get("/api/export/telemetry-log/{job_id}/file", response_model=None)
+async def download_telemetry_log(job_id: str) -> FileResponse | JSONResponse:
+    """Stream the completed CSV; 409 if not done yet."""
+    job = _jobs.get(job_id)
+    if job is None:
+        return JSONResponse(status_code=404, content={"detail": "Unknown job"})
+    if job["status"] != "done":
+        return JSONResponse(status_code=409,
+                            content={"detail": f"Job not done: {job['status']}"})
+
+    out_path = job["out_path"]
+
+    def _cleanup() -> None:
         try:
             os.unlink(out_path)
         except OSError:
             pass
-        return JSONResponse(status_code=500, content={"detail": str(exc)})
+        _jobs.pop(job_id, None)
+
+    return FileResponse(
+        path=out_path,
+        media_type="text/csv",
+        filename="system_stats.csv",
+        background=BackgroundTask(_cleanup),
+    )
