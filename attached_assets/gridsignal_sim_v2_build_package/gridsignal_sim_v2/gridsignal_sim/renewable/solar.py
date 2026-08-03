@@ -610,18 +610,22 @@ class SolarSim:
 
     # -- run-loop sync --------------------------------------------------------
 
-    def operator_override_mw(self) -> "Optional[float]":
-        """Return physics solar output when any bank is operator-shut-down, else None.
+    def live_aggregate_mw(self) -> float:
+        """Direct feeder-physics aggregate: Σ counted_output_mw across all banks.
 
-        Called by RunManager._drive() before broadcasting the tick result.
-        When active, the returned value replaces tick_result.p_renewable_mw so
-        the SLD tile and all tick consumers see the reduced output rather than
-        the unmodified Mistral forecast.  Returns None in normal operation so
-        the run-sync scaling in snapshot() continues to work as designed.
+        Called by RunManager._drive() every tick to replace the Mistral forecast
+        value in tick_result.p_renewable_mw.  This is the authoritative source:
+        feeder A + feeder B + feeder C + feeder D — no AI inference involved.
+
+        Unlike the old operator_override_mw() this runs unconditionally so the
+        SLD tile, hero value, history, and WS clients always reflect the live
+        bank fleet, not a pre-run irradiance curve.
         """
-        if any(b.operator_shutdown for b in self.state.blocks):
-            return p_renewable_mw(self.cfg, self.state)
-        return None
+        return p_renewable_mw(self.cfg, self.state)
+
+    # kept for back-compat; callers should prefer live_aggregate_mw()
+    def operator_override_mw(self) -> float:
+        return self.live_aggregate_mw()
 
     def update_from_run(self, p_renewable_mw: float) -> None:
         """Called each tick by the run loop so snapshot() reports the same

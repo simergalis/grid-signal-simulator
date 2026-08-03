@@ -1010,14 +1010,16 @@ class RunManager:
                     if _profiling: _sec.setdefault("B2_fabric_tick", []).append(_time_module.perf_counter() - _t0)
 
                 # ── C: sink + broadcast ───────────────────────────────────
-                # If the operator has shut down solar banks, reduce
-                # p_renewable_mw to the actual physics output so the SLD tile
-                # and all downstream consumers (history, WS, stat rows) reflect
-                # the real capacity, not the Mistral forecast for a full fleet.
+                # Always replace p_renewable_mw with the direct feeder-physics
+                # aggregate (Σ counted_output_mw across all banks) so the SLD
+                # tile, hero value, WS clients, and history rows always reflect
+                # the live bank fleet — not a Mistral irradiance forecast.
+                # Feeder A + B + C + D, computed in software, no AI involved.
                 if self.solar_sim is not None:
-                    _op_solar = self.solar_sim.operator_override_mw()
-                    if _op_solar is not None:
-                        tick_result = _dc_replace(tick_result, p_renewable_mw=_op_solar)
+                    tick_result = _dc_replace(
+                        tick_result,
+                        p_renewable_mw=self.solar_sim.live_aggregate_mw(),
+                    )
 
                 if _profiling: _t0 = _time_module.perf_counter()
                 await ctx.sink.append(tick_result)                 # I/O -- yields to sibling runs
