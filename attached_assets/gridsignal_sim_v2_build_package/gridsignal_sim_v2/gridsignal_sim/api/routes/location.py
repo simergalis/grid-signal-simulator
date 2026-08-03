@@ -355,6 +355,15 @@ async def set_location(request: Request) -> JSONResponse:
         _pathlib.Path("gridsignal_site.json").write_text(_json.dumps(asdict(loc)))
     except Exception as _exc:
         _log.warning("Could not persist site_location to gridsignal_site.json: %s", _exc)
+
+    # Keep the SolarSim site_id label in sync so /api/solar/state reflects the
+    # actual operator location rather than the hardcoded "wenatchee-02" default.
+    import re as _re
+    _solar_sim = getattr(request.app.state, "solar_sim", None)
+    if _solar_sim is not None:
+        _slug = _re.sub(r"[^a-z0-9]+", "-", loc.name.lower()).strip("-") or "datacenter-01"
+        _solar_sim.cfg.site_id = _slug
+
     return JSONResponse({**asdict(loc), "current_utc_offset_h": current_utc_offset_h(loc), "source": source})
 
 

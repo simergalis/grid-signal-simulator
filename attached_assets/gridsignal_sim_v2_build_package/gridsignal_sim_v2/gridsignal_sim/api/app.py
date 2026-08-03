@@ -143,6 +143,13 @@ async def _lifespan(application: FastAPI):
                 _site_state_path, _exc,
             )
 
+    # Sync SolarSim's site_id label to the restored operator location so the
+    # /api/solar/state response shows the real site name, not "wenatchee-02".
+    import re as _re
+    def _loc_slug(name: str) -> str:
+        return _re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "datacenter-01"
+    solar_sim.cfg.site_id = _loc_slug(application.state.site_location.name)
+
     # Operator-editable site display name (default = "Riverbend DC-West").
     from api.routes.location import SiteSettings
     application.state.site_settings = SiteSettings()

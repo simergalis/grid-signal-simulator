@@ -33,7 +33,7 @@ class Turbine:
 
 @dataclass
 class SiteConfig:
-    site_id: str = "wenatchee-02"
+    site_id: str = "datacenter-01"
 
     # --- PV plant -------------------------------------------------------
     # Spec §3: 20 banks × 0.25 MW across 4 feeders
