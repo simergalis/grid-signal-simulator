@@ -59,6 +59,23 @@ class BankState:
     # tick number when bank last transitioned TO out/no_comms (for common-cause detection)
     _state_changed_t: int = field(default=-999,  init=False, repr=False, compare=False)
 
+    @property
+    def enabled(self) -> bool:
+        """True iff this bank contributes to the three-tier Mistral aggregation.
+
+        Depends only on deterministic operator / telemetry state — NOT on the
+        classifier (b.state), so no RNG can influence the output path.  Only
+        three conditions exclude a bank:
+          - operator_shutdown: the operator explicitly commanded it off
+          - fault is not None: an explicit stressor set a fault code
+          - telemetry_age_s > 10 s: comms loss (conservative zero contribution)
+        """
+        return (
+            not self.operator_shutdown
+            and self.fault is None
+            and self.telemetry_age_s <= 10.0
+        )
+
 
 # Backward-compat alias — external code that imports BlockState still works.
 BlockState = BankState
@@ -205,6 +222,26 @@ def counted_output_mw(cfg: SiteConfig, st: PlantState, b: BankState) -> float:
     if b.operator_shutdown or b.state in ("out", "no_comms"):
         return 0.0
     return bank_output_mw(cfg, st, b)
+
+
+def mistral_bank_mw(fraction: float, b: BankState) -> float:
+    """Bank-tier output under the three-tier Mistral aggregation.
+
+    bank_output_mw = fraction × b.rated_mw   if b.enabled
+                   = 0.0                      otherwise
+
+    `fraction` is the Mistral irradiance probability [0.0, 1.0].  It is
+    clamped before use so a caller that passes a raw API value cannot produce
+    a negative or supra-rated output.
+
+    No POA, cloud_factor, soiling, temp_derate, string_loss, b.derate, or
+    b.soil_bias is applied here.  Those fields remain on the data model as
+    inert defaults (unity/zero) for future second-stage reintroduction.
+    """
+    if not b.enabled:
+        return 0.0
+    f = max(0.0, min(1.0, fraction))
+    return f * b.rated_mw
 
 
 # Backward-compat alias
@@ -483,8 +520,14 @@ def reserve_check(cfg: SiteConfig, st: PlantState,
 # snapshot helpers
 # ---------------------------------------------------------------------------
 
-def _build_feeder_snapshots(cfg: SiteConfig, st: PlantState) -> List[Dict]:
-    """Build per-feeder snapshot entries for GET /api/solar/state."""
+def _build_feeder_snapshots(cfg: SiteConfig, st: PlantState,
+                            fraction: float = 1.0) -> List[Dict]:
+    """Build per-feeder snapshot entries for GET /api/solar/state.
+
+    Three-tier Mistral aggregation: feeder.output_mw = Σ mistral_bank_mw for
+    enabled banks on that feeder.  Never independently recomputed from the
+    fraction — always the exact sum of the bank values computed below.
+    """
     feeder_banks: Dict[str, List[BankState]] = {}
     for b in st.blocks:
         key = b.feeder_id if b.feeder_id else b.id
@@ -493,7 +536,8 @@ def _build_feeder_snapshots(cfg: SiteConfig, st: PlantState) -> List[Dict]:
     result = []
     for fid, banks in feeder_banks.items():
         label = ("Feeder " + fid[4:]) if fid.startswith("fdr-") else fid
-        output   = sum(counted_output_mw(cfg, st, b) for b in banks)
+        # Tier 2: feeder = Σ bank tier values — never recomputed from fraction.
+        output   = sum(mistral_bank_mw(fraction, b) for b in banks)
         expected = sum(bank_expected_mw(cfg, st, b) for b in banks)
 
         states = {b.state for b in banks}
@@ -517,14 +561,22 @@ def _build_feeder_snapshots(cfg: SiteConfig, st: PlantState) -> List[Dict]:
     return result
 
 
-def _build_bank_snapshots(cfg: SiteConfig, st: PlantState) -> List[Dict]:
+def _build_bank_snapshots(cfg: SiteConfig, st: PlantState,
+                          fraction: float = 1.0) -> List[Dict]:
+    """Build per-bank snapshot entries.
+
+    output_mw and counted_output_mw both use the three-tier Mistral formula
+    (mistral_bank_mw) so they are always consistent with feeder and plant
+    totals.  expected_mw and the classifier fields (state, reason) retain their
+    POA-based values for diagnostic display.
+    """
     return [{
         "id":                b.id,
         "feeder_id":         b.feeder_id,
         "rated_mw":          b.rated_mw,
-        "output_mw":         bank_output_mw(cfg, st, b),
+        "output_mw":         mistral_bank_mw(fraction, b),
         "expected_mw":       bank_expected_mw(cfg, st, b),
-        "counted_output_mw": counted_output_mw(cfg, st, b),
+        "counted_output_mw": mistral_bank_mw(fraction, b),
         "state":             b.state,
         "reason":            b.reason,
         "strings_out":       b.strings_out,
@@ -554,8 +606,14 @@ class SolarSim:
         # Advisory state (FR-SOL-1 / FR-SOL-2)
         self._advisories: List[Dict] = []
         self._recon_diverge_ticks: int = 0
-        # Run-loop sync: set by update_from_run() each tick while a run is
-        # active so snapshot() reports the same plant total as the SLD tile.
+        # Three-tier Mistral irradiance fraction — set by set_mistral_fraction()
+        # on every tick from the run loop.  Used by live_aggregate_mw() and
+        # snapshot() as the sole input to bank/feeder/plant MW computation.
+        self._mistral_fraction: float = 0.0
+        self._mistral_fraction_received_at: Optional[float] = None  # time.monotonic()
+        self._mistral_stale_warned: bool = False
+        self._MISTRAL_STALE_TIMEOUT_S: float = 5.0
+        # Kept for back-compat; no longer used internally after three-tier change.
         self._run_p_renewable_mw: Optional[float] = None
         self._log(
             "Session started. Seed: clear afternoon, %d banks online, %s."
@@ -606,45 +664,109 @@ class SolarSim:
         self._advisories = []
         self._recon_diverge_ticks = 0
         self._run_p_renewable_mw = None
+        # Reset fraction tracking so a fresh run starts clean.
+        self._mistral_fraction = 0.0
+        self._mistral_fraction_received_at = None
+        self._mistral_stale_warned = False
         self._log("Reset to nominal seed state.", "")
 
     # -- run-loop sync --------------------------------------------------------
 
     def live_aggregate_mw(self) -> float:
-        """Direct feeder-physics aggregate: Σ counted_output_mw across all banks.
+        """Plant-tier output under the three-tier Mistral aggregation.
 
-        Called by RunManager._drive() every tick to replace the Mistral forecast
-        value in tick_result.p_renewable_mw.  This is the authoritative source:
-        feeder A + feeder B + feeder C + feeder D — no AI inference involved.
+        Tier 1: bank_mw   = fraction × b.rated_mw  (or 0.0 if not enabled)
+        Tier 2: feeder_mw = Σ bank_mw for banks on that feeder
+        Tier 3: plant_mw  = Σ feeder_mw  (= Σ all enabled bank_mw)
 
-        Unlike the old operator_override_mw() this runs unconditionally so the
-        SLD tile, hero value, history, and WS clients always reflect the live
-        bank fleet, not a pre-run irradiance curve.
+        Called by RunManager._drive() every tick after set_mistral_fraction()
+        updates the fraction.  Returns 0.0 until the first fraction is received
+        (cold-start safe).  No RNG touches this path — AT-7 invariant.
         """
-        return p_renewable_mw(self.cfg, self.state)
+        fraction = self._current_mistral_fraction()
+        return sum(mistral_bank_mw(fraction, b) for b in self.state.blocks)
 
     # kept for back-compat; callers should prefer live_aggregate_mw()
     def operator_override_mw(self) -> float:
         return self.live_aggregate_mw()
 
-    def update_from_run(self, p_renewable_mw: float) -> None:
-        """Called each tick by the run loop so snapshot() reports the same
-        plant total as the SLD tile.
+    def set_mistral_fraction(self, fraction: float) -> None:
+        """Receive the current Mistral irradiance fraction from the run loop.
 
-        When set, snapshot() scales per-bank outputs proportionally so the bank
-        panel and the SLD tile show an identical headline.  Fault-injected banks
-        (state=out or no_comms) suppress the scaling so operator-injected events
-        remain authoritative.
+        Called once per tick by RunManager._drive() with the value from
+        ctx.irradiance_profile.fraction_at(sim_time).  Clamps to [0.0, 1.0].
+        Logs a single WARN on exit from stale-hold when the value resumes.
         """
-        self._run_p_renewable_mw = p_renewable_mw
+        import logging as _logging
+        fraction = max(0.0, min(1.0, float(fraction)))
+        was_stale = self._mistral_stale_warned
+        self._mistral_fraction = fraction
+        self._mistral_fraction_received_at = time.monotonic()
+        if was_stale:
+            self._mistral_stale_warned = False
+            _logging.getLogger(__name__).warning(
+                "SolarSim: Mistral fraction resumed (value=%.4f) — "
+                "stale hold cleared, new value takes effect this tick.",
+                fraction,
+            )
+            self._log(
+                "Mistral fraction resumed (%.4f). Stale hold cleared." % fraction, ""
+            )
+
+    def _current_mistral_fraction(self) -> float:
+        """Return the current Mistral fraction with stale-hold semantics.
+
+        - Cold start (never received): returns 0.0, logs WARN once.
+        - Stale (> 5 s since last set_mistral_fraction call): holds last value,
+          logs WARN once on entry to stale state.
+        - Resumed: logs WARN once on first fresh tick after a stale period
+          (handled in set_mistral_fraction).
+        """
+        import logging as _logging
+        if self._mistral_fraction_received_at is None:
+            if not self._mistral_stale_warned:
+                self._mistral_stale_warned = True
+                _logging.getLogger(__name__).warning(
+                    "SolarSim: no Mistral fraction received yet (cold start) — "
+                    "returning 0.0 for all bank/feeder/plant outputs."
+                )
+                self._log("No Mistral fraction received (cold start). Output: 0.0 MW.", "warn")
+            return 0.0
+        age = time.monotonic() - self._mistral_fraction_received_at
+        if age > self._MISTRAL_STALE_TIMEOUT_S:
+            if not self._mistral_stale_warned:
+                self._mistral_stale_warned = True
+                _logging.getLogger(__name__).warning(
+                    "SolarSim: Mistral fraction stale (age=%.1f s > %.0f s) — "
+                    "holding last value %.4f. Will log again on resume.",
+                    age, self._MISTRAL_STALE_TIMEOUT_S, self._mistral_fraction,
+                )
+                self._log(
+                    "Mistral fraction stale (%.1f s). Holding %.4f." % (
+                        age, self._mistral_fraction), "warn"
+                )
+        return self._mistral_fraction
+
+    def update_from_run(self, p_renewable_mw: float) -> None:
+        """No-op after three-tier Mistral change.
+
+        Previously scaled per-bank outputs to reconcile the tick value with
+        snapshot physics.  Now redundant because live_aggregate_mw() is the
+        single source of truth for both the tick and the snapshot.  Kept as a
+        stub so callers in run_manager.py do not need a simultaneous edit.
+        """
+        self._run_p_renewable_mw = p_renewable_mw  # retained for back-compat only
 
     def clear_run_sync(self) -> None:
         """Clear the run-loop sync value when a run ends or is cancelled.
 
-        Restores snapshot() to its standalone physics output so the panel
-        continues to show live irradiance-derived numbers between runs.
+        Also resets the Mistral fraction so a subsequent standalone tick loop
+        returns to 0.0 (cold-start safe) rather than holding the last run value.
         """
         self._run_p_renewable_mw = None
+        self._mistral_fraction = 0.0
+        self._mistral_fraction_received_at = None
+        self._mistral_stale_warned = False
 
     # -- tick --------------------------------------------------------------
 
@@ -976,7 +1098,12 @@ class SolarSim:
 
     def snapshot(self) -> Dict:
         cfg, st = self.cfg, self.state
-        solar      = p_renewable_mw(cfg, st)
+
+        # Use the three-tier Mistral fraction as the single input for all
+        # bank/feeder/plant MW values.  This guarantees strict summation
+        # invariants: abs(plant_mw − Σ feeder_mw) < 1e-9 on every tick.
+        fraction = self._current_mistral_fraction()
+        solar      = self.live_aggregate_mw()       # plant tier (Σ all feeder tiers)
         clear_sky  = p_clear_sky_mw(cfg, st)
         total      = p_total_mw(cfg, st)
         p_expected = sum(bank_expected_mw(cfg, st, b) for b in st.blocks)
@@ -992,15 +1119,10 @@ class SolarSim:
         rc_plant     = reserve_check(cfg, st, solar,        0.0)
         rc_compound  = reserve_check(cfg, st, solar + 6.0,  0.0)
 
-        bank_snaps   = _build_bank_snapshots(cfg, st)
-        feeder_snaps = _build_feeder_snapshots(cfg, st)
-
-        # No run-sync scaling.  tick_result.p_renewable_mw is now always set to
-        # live_aggregate_mw() — the same physics sum as `solar` here — so there
-        # is nothing to reconcile.  Feeder and bank values are computed directly
-        # from counted_output_mw / bank_output_mw and sum correctly by
-        # construction: feeder.output_mw = Σ bank.counted_output_mw for that
-        # feeder.  No AI-derived value touches these numbers.
+        # Pass fraction through so feeder and bank values are the exact tier
+        # sums — never independently recomputed from the fraction (AT-6).
+        bank_snaps   = _build_bank_snapshots(cfg, st, fraction)
+        feeder_snaps = _build_feeder_snapshots(cfg, st, fraction)
 
         return {
             "t": st.t,

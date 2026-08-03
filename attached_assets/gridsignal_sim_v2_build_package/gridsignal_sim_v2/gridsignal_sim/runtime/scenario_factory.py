@@ -667,6 +667,12 @@ def build_run_context_from_spec(
         site_lat=float(spec_data.get("site_latitude", 32.72)),
         site_utc_offset_h=float(spec_data.get("site_utc_offset_h", -8.0)),
         site_name=str(spec_data.get("site_name", "San Diego, CA")),
+        # Three-tier Mistral aggregation: supply the irradiance_profile to the
+        # run context so _drive() can call fraction_at(sim_time) each tick.
+        # None when solar_rated_mw == 0 (no solar in this scenario).
+        irradiance_profile=(
+            IrradianceProfile(irradiance_steps) if solar_rated_mw > 0 else None
+        ),
     )
 
 

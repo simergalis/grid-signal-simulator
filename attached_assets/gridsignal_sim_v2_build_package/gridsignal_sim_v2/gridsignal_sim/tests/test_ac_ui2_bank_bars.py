@@ -34,6 +34,7 @@ from renewable.solar import (
     bank_expected_mw,
     bank_output_mw,
     counted_output_mw,
+    mistral_bank_mw,
     p_renewable_mw,
     _update_bank_classifier,
 )
@@ -292,8 +293,14 @@ def test_ac_ui2_fill_matches_snapshot_fields():
     """The bar formula (counted_output_mw / bank_expected_mw) must agree with
     snapshot fields.  If the snapshot is wired to different physics the bars
     would show a different value than the underlying model.
+
+    Under the three-tier Mistral aggregation, counted_output_mw in the snapshot
+    is mistral_bank_mw(fraction, b) — not the POA-physics value.  expected_mw
+    remains POA-based (used for the classifier, not the output path).
     """
+    FRACTION = 0.85
     sim = SolarSim(SiteConfig(), seed=1)
+    sim.set_mistral_fraction(FRACTION)
     snap = sim.snapshot()
 
     cfg, st = sim.cfg, sim.state
@@ -301,17 +308,18 @@ def test_ac_ui2_fill_matches_snapshot_fields():
         b_id = bank_snap["id"]
         b = next(b for b in st.blocks if b.id == b_id)
 
-        expected_fill_num = bank_snap["counted_output_mw"]
-        expected_fill_den = bank_snap["expected_mw"]
+        snap_counted = bank_snap["counted_output_mw"]
+        snap_expected = bank_snap["expected_mw"]
 
-        model_out = counted_output_mw(cfg, st, b)
+        # Three-tier Mistral formula: output = fraction × rated_mw for enabled banks.
+        model_out = mistral_bank_mw(FRACTION, b)
         model_exp = bank_expected_mw(cfg, st, b)
 
-        assert expected_fill_num == pytest.approx(model_out, abs=1e-9), (
+        assert snap_counted == pytest.approx(model_out, abs=1e-9), (
             f"Bank {b_id}: snapshot counted_output_mw "
-            f"({expected_fill_num}) != model ({model_out:.6f})"
+            f"({snap_counted}) != mistral_bank_mw ({model_out:.6f})"
         )
-        assert expected_fill_den == pytest.approx(model_exp, abs=1e-9), (
+        assert snap_expected == pytest.approx(model_exp, abs=1e-9), (
             f"Bank {b_id}: snapshot expected_mw "
-            f"({expected_fill_den}) != model ({model_exp:.6f})"
+            f"({snap_expected}) != model ({model_exp:.6f})"
         )

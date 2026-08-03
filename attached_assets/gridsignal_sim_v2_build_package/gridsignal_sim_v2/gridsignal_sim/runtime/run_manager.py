@@ -489,6 +489,13 @@ class RunContext:
     # Phase 10: FabricEngine — None when not wired (headless tests, direct path).
     fabric_engine: Optional[Any] = None            # FabricEngine
 
+    # Three-tier Mistral solar aggregation: IrradianceProfile (from
+    # core.asset_modules) for the run's irradiance_steps.  Set by
+    # scenario_factory; None on direct job-id path and headless tests.
+    # _drive() calls .fraction_at(sim_time) each tick and passes the result
+    # to solar_sim.set_mistral_fraction() before live_aggregate_mw().
+    irradiance_profile: Optional[Any] = None       # IrradianceProfile
+
     # GT-2: telemetry corruption wiring.
     # telemetry_corruption is set by api/routes/runs.py after build_run_context_from_spec()
     # when the spec includes a telemetry_corruption_config block.  None = clean run (default).
@@ -1010,12 +1017,16 @@ class RunManager:
                     if _profiling: _sec.setdefault("B2_fabric_tick", []).append(_time_module.perf_counter() - _t0)
 
                 # ── C: sink + broadcast ───────────────────────────────────
-                # Always replace p_renewable_mw with the direct feeder-physics
-                # aggregate (Σ counted_output_mw across all banks) so the SLD
-                # tile, hero value, WS clients, and history rows always reflect
-                # the live bank fleet — not a Mistral irradiance forecast.
-                # Feeder A + B + C + D, computed in software, no AI involved.
+                # Three-tier Mistral aggregation: push the current fraction
+                # into solar_sim first, then read the plant total back.
+                # set_mistral_fraction() must precede live_aggregate_mw() so
+                # all three tiers (bank → feeder → plant) use the same fraction.
                 if self.solar_sim is not None:
+                    if ctx.irradiance_profile is not None:
+                        _frac = ctx.irradiance_profile.fraction_at(
+                            tick_result.sim_time_seconds
+                        )
+                        self.solar_sim.set_mistral_fraction(_frac)
                     tick_result = _dc_replace(
                         tick_result,
                         p_renewable_mw=self.solar_sim.live_aggregate_mw(),
