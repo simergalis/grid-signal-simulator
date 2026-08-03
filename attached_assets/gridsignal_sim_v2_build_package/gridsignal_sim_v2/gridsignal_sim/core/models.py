@@ -545,6 +545,17 @@ class TickResult:
     #   math.inf when net_demand_mw == 0 (no load, no bridging required);
     #   serializer caps to 86 400.0 (24 h) for JSON safety.
     bess_bridging_seconds: float = 0.0
+    # turbine_ramp_credit_mw: MW already covered by turbine ramp rate × dt_lead
+    #   at the most recent STARTING or SOLAR_STEP staging event.
+    #   0.0 when no staging event is in-flight (dt_lead_next_s == 0).
+    #   When this equals delta_p_mw, peak_shortfall_mw is 0 and the reserve check
+    #   passed without any BESS bridging ("Covered by turbine ramp").
+    turbine_ramp_credit_mw: float = 0.0
+    # peak_shortfall_mw: MW of the step that turbine ramp could NOT cover in time.
+    #   max(0, delta_p_mw − turbine_ramp_credit_mw).
+    #   0.0 when ramp credit fully covers the step or no staging is in-flight.
+    #   The BESS must sustain this amount for gap_s to avoid an alert.
+    peak_shortfall_mw: float = 0.0
     # dt_lead_next_s: seconds until the next in-flight GPU job reaches full TDP.
     #   C2 correction: min() across in-flight ramp remaining times, not sum().
     #   Two jobs with 10 s and 30 s remaining → next TDP event in 10 s.

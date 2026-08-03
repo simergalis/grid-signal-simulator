@@ -123,7 +123,7 @@ def test_tc10_insufficient_reserve_worked_example():
     turbine = TurbineModule(TurbineConfig(asset_id="t0", r_asset_mw_per_s=0.2, rated_mw=25.0))
     arbitrator = DispatchArbitrator(turbines=[turbine], bess_units=[], site=SiteConfig(site_id="s-tc10"))
 
-    alert = arbitrator.stage_for_predicted_step(delta_p_mw=20.0, dt_lead_seconds=30.0, sim_time=0.0)
+    alert, _credit, _shortfall = arbitrator.stage_for_predicted_step(delta_p_mw=20.0, dt_lead_seconds=30.0, sim_time=0.0)
 
     assert alert is not None
     assert math.isclose(alert.gap_duration_s, 70.0, abs_tol=1e-6)
@@ -136,7 +136,7 @@ def test_tc11_sufficient_reserve_no_false_alert():
     turbine = TurbineModule(TurbineConfig(asset_id="t0", r_asset_mw_per_s=0.2, rated_mw=25.0))
     arbitrator = DispatchArbitrator(turbines=[turbine], bess_units=[], site=SiteConfig(site_id="s-tc11"))
 
-    alert = arbitrator.stage_for_predicted_step(delta_p_mw=5.0, dt_lead_seconds=60.0, sim_time=0.0)
+    alert, _credit, _shortfall = arbitrator.stage_for_predicted_step(delta_p_mw=5.0, dt_lead_seconds=60.0, sim_time=0.0)
 
     assert alert is None
 
@@ -559,7 +559,7 @@ def test_d11_reserve_alert_fires_when_bess_power_insufficient():
 
     arbitrator = DispatchArbitrator(turbines=[turbine], bess_units=[bess],
                                     site=SiteConfig(site_id="s-d11"))
-    alert = arbitrator.stage_for_predicted_step(
+    alert, _credit, _shortfall = arbitrator.stage_for_predicted_step(
         delta_p_mw=20.0,
         dt_lead_seconds=30.0,
         sim_time=0.0,
@@ -896,7 +896,7 @@ def test_item4_fleet_covers_shortfall_above_single_unit_rating():
     # peak_shortfall = 8 MW, dt_lead=30s → already_ramped=6 MW → peak=2 MW
     # Use delta_p_mw large enough that peak_shortfall_mw > single unit rating.
     # r_asset=0.2, dt_lead=30 → already_ramped=6; delta_p=14 → peak=8 MW.
-    alert = arb.stage_for_predicted_step(
+    alert, _credit, _shortfall = arb.stage_for_predicted_step(
         delta_p_mw=14.0, dt_lead_seconds=30.0, sim_time=0.0
     )
     assert alert is None, (
@@ -1165,7 +1165,7 @@ def test_d13_min_not_sum_fleet_endurance():
 
     # delta_p_mw=20, dt_lead=0 → gap_s=400, already_ramped=0, peak_shortfall=20 MW
     # proportional: both get 10 MW (equal rated_mw → equal bridging weights)
-    alert = arb.stage_for_predicted_step(
+    alert, _credit, _shortfall = arb.stage_for_predicted_step(
         delta_p_mw=20.0, dt_lead_seconds=0.0, sim_time=0.0,
     )
 
@@ -1187,4 +1187,106 @@ def test_d13_min_not_sum_fleet_endurance():
     )
     assert min(dur_a, dur_b) < 400.0, (
         f"Regression guard: min={min(dur_a, dur_b):.0f} s < 400 s (min path fires correctly)"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Turbine ramp credit / peak shortfall — values returned by stage_for_predicted_step
+# ---------------------------------------------------------------------------
+
+def test_stage_ramp_credit_nonzero_with_residual_shortfall():
+    """Gap path (gap_s > 0): already_ramped_mw is positive and peak_shortfall is
+    strictly less than delta_p_mw when dt_lead > 0.
+
+    Setup: r_asset=0.2 MW/s, dt_lead=30 s, delta_p=20 MW.
+      already_ramped = 0.2 × 30 = 6.0 MW (capped to delta_p=20 → 6.0)
+      peak_shortfall = 20 - 6.0 = 14.0 MW
+    """
+    turbine = TurbineModule(TurbineConfig(asset_id="t0", r_asset_mw_per_s=0.2, rated_mw=25.0))
+    arb = DispatchArbitrator(turbines=[turbine], bess_units=[], site=SiteConfig(site_id="s-credit"))
+
+    alert, credit_mw, shortfall_mw = arb.stage_for_predicted_step(
+        delta_p_mw=20.0, dt_lead_seconds=30.0, sim_time=0.0
+    )
+    assert math.isclose(credit_mw, 6.0, abs_tol=1e-9), (
+        f"Turbine ramp credit must be r_asset × dt_lead = 6.0 MW; got {credit_mw}"
+    )
+    assert math.isclose(shortfall_mw, 14.0, abs_tol=1e-9), (
+        f"Peak shortfall must be delta_p - credit = 14.0 MW; got {shortfall_mw}"
+    )
+    # Consistency: credit + shortfall = delta_p
+    assert math.isclose(credit_mw + shortfall_mw, 20.0, abs_tol=1e-9)
+
+
+def test_stage_ramp_credit_full_coverage_zero_shortfall():
+    """Gap-free path (gap_s <= 0): turbine ramp covers the full step; peak_shortfall must be 0.
+
+    Setup: r_asset=0.2 MW/s, dt_lead=60 s, delta_p=5 MW.
+      required_ramp_s = 5 / 0.2 = 25 s < dt_lead=60 s → gap_s ≤ 0
+      credit = min(0.2 × 60, 5.0) = min(12.0, 5.0) = 5.0 MW (capped)
+      peak_shortfall = max(0, 5 - 5) = 0.0 MW
+    """
+    turbine = TurbineModule(TurbineConfig(asset_id="t0", r_asset_mw_per_s=0.2, rated_mw=25.0))
+    arb = DispatchArbitrator(turbines=[turbine], bess_units=[], site=SiteConfig(site_id="s-zero-sf"))
+
+    alert, credit_mw, shortfall_mw = arb.stage_for_predicted_step(
+        delta_p_mw=5.0, dt_lead_seconds=60.0, sim_time=0.0
+    )
+    assert alert is None, "No alert expected when lead time is sufficient"
+    assert math.isclose(credit_mw, 5.0, abs_tol=1e-9), (
+        f"Credit must be capped to delta_p=5.0 MW (not raw 12.0); got {credit_mw}"
+    )
+    assert shortfall_mw == 0.0, (
+        f"Peak shortfall must be 0.0 when ramp credit covers the full step; got {shortfall_mw}"
+    )
+
+
+def test_stage_ramp_credit_excludes_hot_standby():
+    """Hot-standby turbines must not contribute to ramp credit (D15 fix).
+
+    Setup: two turbines — one active (r_asset=0.2 MW/s), one hot-standby (r_asset=0.3 MW/s).
+    Only the active turbine's ramp rate must appear in the credit.
+
+    dt_lead=30 s, delta_p=20 MW.
+      credit from active only = 0.2 × 30 = 6.0 MW
+      credit if standby included = (0.2 + 0.3) × 30 = 15.0 MW (wrong)
+    """
+    active  = TurbineModule(TurbineConfig(
+        asset_id="t-active", r_asset_mw_per_s=0.2, rated_mw=25.0, hot_standby=False
+    ))
+    standby = TurbineModule(TurbineConfig(
+        asset_id="t-standby", r_asset_mw_per_s=0.3, rated_mw=25.0, hot_standby=True
+    ))
+    arb = DispatchArbitrator(turbines=[active, standby], bess_units=[], site=SiteConfig(site_id="s-standby-excl"))
+
+    alert, credit_mw, shortfall_mw = arb.stage_for_predicted_step(
+        delta_p_mw=20.0, dt_lead_seconds=30.0, sim_time=0.0
+    )
+    assert math.isclose(credit_mw, 6.0, abs_tol=1e-9), (
+        f"Standby turbine must not contribute to credit; expected 6.0 MW (active only), "
+        f"got {credit_mw:.3f} MW. If standby included, would be 15.0 MW."
+    )
+    assert math.isclose(shortfall_mw, 14.0, abs_tol=1e-9), (
+        f"peak_shortfall must be delta_p - active_credit = 14.0; got {shortfall_mw}"
+    )
+
+
+def test_stage_ramp_credit_capped_to_delta_p():
+    """Credit must never exceed delta_p_mw even when r_asset × dt_lead > delta_p.
+
+    Setup: r_asset=2.0 MW/s, dt_lead=100 s → raw credit = 200 MW > delta_p=10 MW.
+    Credit must be capped to 10.0 MW; shortfall = 0.0.
+    """
+    turbine = TurbineModule(TurbineConfig(asset_id="t0", r_asset_mw_per_s=2.0, rated_mw=50.0))
+    arb = DispatchArbitrator(turbines=[turbine], bess_units=[], site=SiteConfig(site_id="s-cap"))
+
+    alert, credit_mw, shortfall_mw = arb.stage_for_predicted_step(
+        delta_p_mw=10.0, dt_lead_seconds=100.0, sim_time=0.0
+    )
+    assert alert is None
+    assert math.isclose(credit_mw, 10.0, abs_tol=1e-9), (
+        f"Credit must be capped to delta_p=10.0 MW; got {credit_mw}"
+    )
+    assert shortfall_mw == 0.0, (
+        f"Shortfall must be 0.0 when credit covers the step; got {shortfall_mw}"
     )

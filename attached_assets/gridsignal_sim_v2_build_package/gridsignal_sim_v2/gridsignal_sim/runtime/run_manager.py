@@ -180,6 +180,11 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         #   math.inf (net_demand_mw == 0 → no load) is capped at 86 400 s (24 h)
         #   for JSON safety; the UI renders this as "full reserve".
         "bess_bridging_seconds": round(min(tick.bess_bridging_seconds, 86400.0), 1),
+        # turbine_ramp_credit_mw / peak_shortfall_mw: staging breakdown for
+        #   AssetReservePanel — visible while a Kube STARTING ramp is in-flight
+        #   (dt_lead_next_s > 0).  Both 0.0 between ramps.
+        "turbine_ramp_credit_mw": round(tick.turbine_ramp_credit_mw, 3),
+        "peak_shortfall_mw":      round(tick.peak_shortfall_mw, 3),
         # dt_lead_next_s: HeroPanel countdown — seconds to next GPU full-TDP.
         #   0.0 when no job is currently ramping.
         "dt_lead_next_s": round(tick.dt_lead_next_s, 2),

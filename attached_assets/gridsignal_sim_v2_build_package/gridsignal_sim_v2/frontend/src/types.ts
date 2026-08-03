@@ -35,6 +35,12 @@ export interface TickPayload {
   // Step 7 additions — required by dashboard panels
   p_renewable_mw: number         // ForecastChart 4th trace
   bess_bridging_seconds: number  // AssetReservePanel; 86400 = "full reserve"
+  // Turbine ramp credit / peak shortfall — staging breakdown for AssetReservePanel.
+  // Both are 0.0 when no STARTING ramp is in-flight (dt_lead_next_s === 0).
+  // turbine_ramp_credit_mw: MW already covered by turbine ramp rate × dt_lead.
+  // peak_shortfall_mw:      MW the BESS must bridge (delta_p − credit, ≥ 0).
+  turbine_ramp_credit_mw: number
+  peak_shortfall_mw: number
   dt_lead_next_s: number         // HeroPanel countdown; 0 = no active ramp
 
   // F2 addition — which demand figure is binding for bess_bridging_seconds

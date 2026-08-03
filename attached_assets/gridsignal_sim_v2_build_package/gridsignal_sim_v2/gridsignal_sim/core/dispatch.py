@@ -410,7 +410,7 @@ class DispatchArbitrator:
 
     def stage_for_predicted_step(
         self, delta_p_mw: float, dt_lead_seconds: float, sim_time: float
-    ) -> Optional[InsufficientReserveAlert]:
+    ) -> tuple[Optional[InsufficientReserveAlert], float, float]:
         """Called once at a job's STARTING event (§7.2 step 1) — NOT every tick.
 
         delta_p_mw is the step increase in P_dispatch_required caused by the
@@ -469,10 +469,21 @@ class DispatchArbitrator:
 
         gap_s = required_ramp_s - dt_lead_seconds
         if gap_s <= 0:
-            return None  # sufficient lead time, no alert -- TC-11
+            # Sufficient lead time — turbines ramp in time with no BESS bridging
+            # required.  Compute the credit from the active-turbines subset so it
+            # matches the ramp-rate accounting above (D15 fix: no hot-standby).
+            # Cap to delta_p_mw so displayed credit never exceeds the step size.
+            _raw_full = sum(t.config.r_asset_mw_per_s for t in _active_turbines) * dt_lead_seconds
+            _already_ramped_full = min(_raw_full, delta_p_mw)
+            _peak_shortfall_full = max(0.0, delta_p_mw - _already_ramped_full)
+            return None, _already_ramped_full, _peak_shortfall_full  # TC-11
 
         # Peak shortfall the BESS fleet must cover, per the §7.3 worked example.
-        already_ramped_mw = sum(t.config.r_asset_mw_per_s for t in self.turbines) * dt_lead_seconds
+        # D15 consistency: use the same _active_turbines subset as the ramp-rate
+        # accounting above (hot-standby units are excluded from both).
+        # Cap credit to delta_p_mw so displayed credit never exceeds the step.
+        _raw_credit = sum(t.config.r_asset_mw_per_s for t in _active_turbines) * dt_lead_seconds
+        already_ramped_mw = min(_raw_credit, delta_p_mw)
         peak_shortfall_mw = max(0.0, delta_p_mw - already_ramped_mw)
 
         # P4: compute island_mode and per-unit ceilings once; reuse for both
@@ -499,10 +510,14 @@ class DispatchArbitrator:
         _check_shortfall = peak_shortfall_mw * (1.0 + _band_upper)
 
         if _check_shortfall > fleet_power_ceiling:
-            return InsufficientReserveAlert(
-                shortfall_mw=peak_shortfall_mw,   # raw physical demand for BESS sizing
-                gap_duration_s=gap_s,
-                fires_at_sim_time=sim_time,
+            return (
+                InsufficientReserveAlert(
+                    shortfall_mw=peak_shortfall_mw,   # raw physical demand for BESS sizing
+                    gap_duration_s=gap_s,
+                    fires_at_sim_time=sim_time,
+                ),
+                already_ramped_mw,
+                peak_shortfall_mw,
             )
 
         allocations = self._capped_equal_share_allocations(peak_shortfall_mw, ceilings)
@@ -514,12 +529,16 @@ class DispatchArbitrator:
             default=0.0,
         )
         if fleet_min_s >= gap_s:
-            return None  # every unit can sustain its share for the full gap
+            return None, already_ramped_mw, peak_shortfall_mw  # every unit can sustain
 
-        return InsufficientReserveAlert(
-            shortfall_mw=peak_shortfall_mw,
-            gap_duration_s=gap_s,
-            fires_at_sim_time=sim_time,
+        return (
+            InsufficientReserveAlert(
+                shortfall_mw=peak_shortfall_mw,
+                gap_duration_s=gap_s,
+                fires_at_sim_time=sim_time,
+            ),
+            already_ramped_mw,
+            peak_shortfall_mw,
         )
 
     def tick(

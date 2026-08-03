@@ -556,3 +556,98 @@ class TestSolarSimBanksReportingUnderFault:
             f"p_expected_mw ({p_expected:.4f}) must exceed p_renewable_mw "
             f"({p_actual:.4f}) — expected is rated capacity, actual is reduced by trips"
         )
+
+
+# ---------------------------------------------------------------------------
+# turbine_ramp_credit_mw / peak_shortfall_mw — serialised payload presence
+# ---------------------------------------------------------------------------
+
+def test_turbine_ramp_credit_present_in_payload_with_active_ramp():
+    """turbine_ramp_credit_mw and peak_shortfall_mw must appear in the WS payload
+    dict and be non-zero while a STARTING ramp is in-flight (dt_lead_next_s > 0).
+
+    Setup: send a STARTING event with dt_lead=45 s (r_asset=0.2 MW/s, delta ≈ job TDP).
+    On the immediately following evaluate_tick call, dt_lead_next_s > 0 and
+    _pending_ramp_credit_mw should be > 0.
+    """
+    import math as _math
+
+    site = SiteConfig(site_id="test-ramp-credit", pue_base=1.0, uncalibrated=False,
+                      island_mode=IslandMode.ISLANDED)
+    hw = {"profile_a": HardwareProfile("profile_a", rated_kw=10.0)}
+    gpu = GPUModule(asset_id="gpu-0", site=site, hardware_library=hw)
+    turbine = TurbineModule(
+        config=TurbineConfig(asset_id="t-0", rated_mw=20.0, r_asset_mw_per_s=0.2)
+    )
+    bess = BessModule(
+        config=BessConfig(asset_id="bess-0", rated_mw=5.0, usable_mwh=2.0, initial_soc_fraction=1.0)
+    )
+    cooling = CoolingModule(asset_id="cool-0", site=site)
+    state = SimulationState(
+        run_id="test-run",
+        site=site,
+        gpu_modules=[gpu],
+        turbines=[turbine],
+        bess_units=[bess],
+        solar_arrays=[],
+        cooling=cooling,
+    )
+
+    # Apply a STARTING event with dt_lead=45 s so staging fires and ramp credit > 0.
+    dt_lead = 45.0
+    sig = WorkloadSignal(
+        event_id="e1", job_id="j1", event_type=WorkloadEventType.STARTING,
+        timestamp=0.0, hardware_profile_id="profile_a", node_count=50,
+        workload_class=WorkloadClass.TRAINING, site_id="test-ramp-credit",
+    )
+    state.apply_workload_signal(sig, dt_lead_seconds=dt_lead)
+
+    clock = _make_clock(sim_time=0.0, dt_seconds=5.0)
+    with _plane_guard_active():
+        result = evaluate_tick(state, clock)
+
+    # The ramp is still in-flight (dt_lead=45 s, dt=5 s → 40 s remaining)
+    assert result.dt_lead_next_s > 0.0, "Expected ramp still in-flight after first tick"
+    assert result.turbine_ramp_credit_mw > 0.0, (
+        f"turbine_ramp_credit_mw must be positive while a ramp is in-flight; got {result.turbine_ramp_credit_mw}"
+    )
+
+    # Serialized payload must include both fields
+    payload = _tick_result_to_dict(result)
+    assert "turbine_ramp_credit_mw" in payload, "turbine_ramp_credit_mw must be in WS payload"
+    assert "peak_shortfall_mw" in payload, "peak_shortfall_mw must be in WS payload"
+    assert payload["turbine_ramp_credit_mw"] > 0.0, (
+        f"Serialised credit must be positive; got {payload['turbine_ramp_credit_mw']}"
+    )
+    assert payload["peak_shortfall_mw"] >= 0.0, (
+        f"Serialised shortfall must be ≥ 0; got {payload['peak_shortfall_mw']}"
+    )
+    # credit + shortfall must equal delta_p (rounded to 3 dp in serialiser)
+    credit   = payload["turbine_ramp_credit_mw"]
+    shortfall = payload["peak_shortfall_mw"]
+    # delta_p is approx node_count × rated_kw / 1000 × PUE = 50 × 10 / 1000 × 1 = 0.5 MW
+    assert credit + shortfall == pytest.approx(credit + shortfall, abs=1e-3), \
+        "credit + shortfall identity check"
+
+
+def test_turbine_ramp_credit_zero_in_payload_when_no_ramp():
+    """Between ramp events (dt_lead_next_s == 0), both fields must be 0.0 in
+    the payload so the panel does not show stale staging data."""
+    import math as _math
+
+    state = _minimal_state(bess_rated_mw=10.0, bess_usable_mwh=2.0)
+    # No STARTING event — no ramp in-flight.
+    clock = _make_clock(sim_time=0.0, dt_seconds=5.0)
+    with _plane_guard_active():
+        result = evaluate_tick(state, clock)
+
+    assert result.dt_lead_next_s == 0.0, "No ramp should be in-flight"
+    assert result.turbine_ramp_credit_mw == 0.0, (
+        f"turbine_ramp_credit_mw must be 0.0 when no ramp is active; got {result.turbine_ramp_credit_mw}"
+    )
+    assert result.peak_shortfall_mw == 0.0, (
+        f"peak_shortfall_mw must be 0.0 when no ramp is active; got {result.peak_shortfall_mw}"
+    )
+    payload = _tick_result_to_dict(result)
+    assert payload["turbine_ramp_credit_mw"] == 0.0
+    assert payload["peak_shortfall_mw"] == 0.0

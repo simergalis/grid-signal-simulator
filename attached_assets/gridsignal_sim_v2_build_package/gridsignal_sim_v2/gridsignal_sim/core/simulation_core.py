@@ -62,6 +62,12 @@ class SimulationState:
     # affected segment.  evaluate_tick() now checks per-tick via
     # GPUModule.has_active_unmapped_jobs().
     _pending_alert: InsufficientReserveAlert | None = None
+    # Turbine ramp credit and peak shortfall from the most recent staging event.
+    # Carried while a STARTING event is in-flight (dt_lead_next_s > 0) so the
+    # AssetReservePanel can explain why the reserve check passed or fired.
+    # Both reset to 0.0 when no staging is pending.
+    _pending_ramp_credit_mw:   float = 0.0
+    _pending_peak_shortfall_mw: float = 0.0
     _job_owner_index: dict[str, int] = field(default_factory=dict)
     # D7 fix: §5.1 onboarding alert deduplication.
     # _unmapped_profile_alerted: profile_ids for which the one-time alert has
@@ -131,7 +137,11 @@ class SimulationState:
         bridging requirement) larger.  Early-return so the GPU plane is untouched.
         """
         if signal.event_type == WorkloadEventType.SOLAR_STEP:
-            self._pending_alert = self.arbitrator.stage_for_predicted_step(
+            (
+                self._pending_alert,
+                self._pending_ramp_credit_mw,
+                self._pending_peak_shortfall_mw,
+            ) = self.arbitrator.stage_for_predicted_step(
                 delta_p_mw=signal.renewable_shortfall_mw,
                 dt_lead_seconds=0.0,   # §7.1.1: no advance signal for renewables
                 sim_time=signal.timestamp,
@@ -226,7 +236,11 @@ class SimulationState:
                 max(0.0, _p_target_after - _p_renewable_mw)
                 - max(0.0, _p_target_before - _p_renewable_mw)
             )
-            self._pending_alert = self.arbitrator.stage_for_predicted_step(
+            (
+                self._pending_alert,
+                self._pending_ramp_credit_mw,
+                self._pending_peak_shortfall_mw,
+            ) = self.arbitrator.stage_for_predicted_step(
                 delta_p_mw=delta_p_mw,
                 dt_lead_seconds=dt_lead_seconds,
                 sim_time=signal.timestamp,
@@ -713,6 +727,12 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     if alert_fired:
         state._pending_alert = None
 
+    # Turbine ramp credit is visible while a STARTING ramp is in-flight (dt_lead_next_s > 0).
+    # Once the ramp completes (dt_lead_next_s reaches 0) reset the staging info.
+    if dt_lead_next_s <= 0.0:
+        state._pending_ramp_credit_mw   = 0.0
+        state._pending_peak_shortfall_mw = 0.0
+
     # D7 fix: §5.1 onboarding alerts — drain the pending set and clear it so
     # the frozenset is non-empty on at most one tick per unique profile_id.
     unrecognised_alerts = frozenset(state._pending_unrecognised_alerts)
@@ -770,6 +790,8 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         # p_expected_mw=None  ← default from TickResult
         # banks_reporting=None  ← default from TickResult
         bess_bridging_seconds=bess_bridging_seconds,
+        turbine_ramp_credit_mw=state._pending_ramp_credit_mw,
+        peak_shortfall_mw=state._pending_peak_shortfall_mw,
         dt_lead_next_s=dt_lead_next_s,
         bridging_basis=bridging_basis,
         pre_staging_shift_mw=pre_staging_shift_mw,

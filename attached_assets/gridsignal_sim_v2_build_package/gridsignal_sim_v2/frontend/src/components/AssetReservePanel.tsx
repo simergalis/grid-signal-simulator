@@ -95,6 +95,12 @@ export function AssetReservePanel() {
   const cannotBridge = tick.bess_bridging_seconds === 0 && bindingDemand > 0
   const socPct       = (tick.bess_soc_fraction * 100).toFixed(1)
 
+  // Turbine ramp credit — visible while a STARTING ramp is in-flight.
+  const rampInFlight       = tick.dt_lead_next_s > 0
+  const creditMw           = tick.turbine_ramp_credit_mw ?? 0
+  const shortfallMw        = tick.peak_shortfall_mw ?? 0
+  const coveredByRamp      = rampInFlight && shortfallMw === 0 && creditMw > 0
+
   return (
     <section className="flex h-full flex-col justify-between p-4 gap-3">
       <div className="font-mono text-xs uppercase tracking-wider text-muted">
@@ -115,6 +121,11 @@ export function AssetReservePanel() {
             {basis === 'predicted_peak' ? 'predicted peak shortfall' : 'current demand'}
           </div>
         )}
+        {coveredByRamp && (
+          <div className="font-mono text-xs text-ok">
+            Covered by turbine ramp — no BESS bridging required
+          </div>
+        )}
         <BasisLabel basis={basis} />
         {tags.length > 0 && (
           <div className="flex gap-1 flex-wrap">
@@ -122,6 +133,29 @@ export function AssetReservePanel() {
           </div>
         )}
       </div>
+
+      {/* Turbine ramp credit — shown while a STARTING ramp is in-flight */}
+      {rampInFlight && (
+        <div className="rounded border border-border/60 bg-surface px-3 py-2 space-y-1.5">
+          <div className="font-mono text-[10px] uppercase tracking-wider text-muted">
+            Ramp staging (job in flight)
+          </div>
+          <div className="flex items-center justify-between font-mono text-xs">
+            <span className="text-muted">Turbine ramp credit</span>
+            <span className={`tabular-nums ${creditMw > 0 ? 'text-ok' : 'text-muted'}`}>
+              {creditMw.toFixed(2)} MW
+            </span>
+          </div>
+          <div className="flex items-center justify-between font-mono text-xs">
+            <span className="text-muted">Peak shortfall</span>
+            <span className={`tabular-nums ${shortfallMw > 0 ? 'text-warn' : 'text-ok'}`}>
+              {shortfallMw === 0
+                ? '0.00 MW — covered'
+                : `${shortfallMw.toFixed(2)} MW`}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* SoC — secondary context */}
       <div className="space-y-1.5">

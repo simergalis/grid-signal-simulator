@@ -223,6 +223,82 @@ describe('Panel mounting — all four panels render without throwing', () => {
   })
 })
 
+// ── Turbine ramp credit / peak shortfall ─────────────────────────────────────
+
+/** Tick with a job actively ramping, ramp credit partially covers the step. */
+const RAMP_CREDIT_TICK: TickPayload = {
+  ...ALERT_TICK,
+  tick_index: 3,
+  sim_time_seconds: 15.0,
+  dt_lead_next_s: 35.0,           // ramp still in-flight
+  insufficient_reserve_alert: false,
+  bess_bridging_seconds: 300.0,
+  bridging_basis: 'predicted_peak',
+  turbine_ramp_credit_mw: 6.0,   // turbines already ramped 6 MW
+  peak_shortfall_mw: 8.0,        // BESS must still bridge 8 MW
+}
+
+/** Tick where ramp credit fully covers the step — zero shortfall. */
+const COVERED_BY_RAMP_TICK: TickPayload = {
+  ...ALERT_TICK,
+  tick_index: 4,
+  sim_time_seconds: 20.0,
+  dt_lead_next_s: 20.0,           // ramp still in-flight
+  insufficient_reserve_alert: false,
+  bess_bridging_seconds: 86400.0,
+  bridging_basis: 'no_load',
+  turbine_ramp_credit_mw: 5.0,
+  peak_shortfall_mw: 0.0,        // fully covered by ramp
+}
+
+/** Tick after the ramp completed — no staging data visible. */
+const POST_RAMP_TICK: TickPayload = {
+  ...DEMAND_TICK,
+  tick_index: 10,
+  sim_time_seconds: 50.0,
+  dt_lead_next_s: 0.0,            // ramp complete
+  turbine_ramp_credit_mw: 0.0,
+  peak_shortfall_mw: 0.0,
+}
+
+describe('AssetReservePanel — turbine ramp credit / peak shortfall staging', () => {
+  it('shows ramp staging block when dt_lead_next_s > 0', () => {
+    seed(RAMP_CREDIT_TICK)
+    render(<AssetReservePanel />)
+    expect(screen.getByText(/Ramp staging/i)).toBeInTheDocument()
+    expect(screen.getByText(/Turbine ramp credit/i)).toBeInTheDocument()
+    // "Peak shortfall" row label — use getAllByText because the basis label also
+    // contains the substring "predicted peak shortfall".
+    expect(screen.getAllByText(/Peak shortfall/i).length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('shows non-zero credit and shortfall values when ramp partially covers the step', () => {
+    seed(RAMP_CREDIT_TICK)
+    render(<AssetReservePanel />)
+    expect(screen.getByText(/6\.00 MW/)).toBeInTheDocument()
+    expect(screen.getByText(/8\.00 MW/)).toBeInTheDocument()
+  })
+
+  it('shows "Covered by turbine ramp" when peak_shortfall is 0 and credit > 0', () => {
+    seed(COVERED_BY_RAMP_TICK)
+    render(<AssetReservePanel />)
+    expect(screen.getByText(/Covered by turbine ramp/i)).toBeInTheDocument()
+  })
+
+  it('shows "0.00 MW — covered" for shortfall row when fully covered', () => {
+    seed(COVERED_BY_RAMP_TICK)
+    render(<AssetReservePanel />)
+    expect(screen.getByText(/0\.00 MW — covered/i)).toBeInTheDocument()
+  })
+
+  it('hides ramp staging block when dt_lead_next_s == 0 (ramp complete)', () => {
+    seed(POST_RAMP_TICK)
+    render(<AssetReservePanel />)
+    expect(screen.queryByText(/Ramp staging/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/Turbine ramp credit/i)).not.toBeInTheDocument()
+  })
+})
+
 // ── Pre-run state ─────────────────────────────────────────────────────────────
 
 describe('Pre-run state — panels show idle placeholders before any run', () => {

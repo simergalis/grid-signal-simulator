@@ -226,20 +226,18 @@ class TestKubeTurbineCredit(unittest.TestCase):
         arb = DispatchArbitrator(turbines=[turbine], bess_units=[bess], site=site)
 
         # dt_lead=45 s → already_ramped = min(0.2 × 45, delta_p) = min(9.0, 15.0) = 9.0
-        alert_fixed = arb.stage_for_predicted_step(
+        alert_fixed, _credit_fixed, shortfall_fixed = arb.stage_for_predicted_step(
             delta_p_mw=15.0,
             dt_lead_seconds=45.0,
             sim_time=0.0,
         )
-        shortfall_fixed = alert_fixed.shortfall_mw if alert_fixed else 0.0
 
         # dt_lead=0 → already_ramped=0, shortfall = max(0, 15.0 - BESS ceiling)
-        alert_zero = arb.stage_for_predicted_step(
+        alert_zero, _credit_zero, shortfall_zero = arb.stage_for_predicted_step(
             delta_p_mw=15.0,
             dt_lead_seconds=0.0,
             sim_time=0.0,
         )
-        shortfall_zero = alert_zero.shortfall_mw if alert_zero else 0.0
 
         # Fixed path must give ≤ shortfall than zero-lead path
         self.assertLessEqual(
