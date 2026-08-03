@@ -369,6 +369,82 @@ def test_tc85b_instrument_plane_cannot_read_the_simulation_clock():
         )
 
 
+# ---------------------------------------------------------------- TC-86 ----
+
+
+def test_tc86_ws_tick_latency_populates_after_run_starts() -> None:
+    """Integration test: the complete latency path populates ws_tick_latency_ms.
+
+    Supplements TC-85 (unit test) by covering the entire HTTP wiring:
+      broadcast() stamps t_emit_ns → client echoes it to
+      POST /api/session/observe-tick → GET /api/session/transport
+      returns a non-zero ws_tick_latency_ms.
+
+    Three ticks are delivered and echoed so the ring buffer has enough
+    samples to produce a non-None percentile.  This catches regressions
+    where the observe-tick endpoint is de-registered, or the WS broadcast
+    stops stamping t_emit_ns, without touching TC-85 (which stays unit-level).
+    """
+    from fastapi.testclient import TestClient
+    from api.app import create_app
+
+    with TestClient(create_app()) as client:
+        # Start a run at max speed so WS ticks arrive immediately.
+        run_body = {
+            "job_id": "tc86-latency-test",
+            "node_count": 5,
+            "end_sim_time": 1e15,   # never reached during the test
+            "playback_speed": 0.0,  # max-speed sentinel — wall_clock_sleep = 0
+        }
+        run_id = client.post("/runs", json=run_body).json()["run_id"]
+
+        # Collect 3 ticks from the WS stream, capturing t_emit_ns from each.
+        t_emit_values: list[str] = []
+        with client.websocket_connect(f"/ws/{run_id}") as ws:
+            for _ in range(3):
+                data = ws.receive_json()
+                t_emit_ns = data.get("t_emit_ns")
+                assert t_emit_ns is not None, (
+                    "WS tick must carry t_emit_ns (broadcast() must stamp it)"
+                )
+                assert isinstance(t_emit_ns, str), (
+                    "t_emit_ns must be a string in the WS payload "
+                    "(JS-safe: monotonic_ns exceeds Number.MAX_SAFE_INTEGER "
+                    "after ~104 days of host uptime)"
+                )
+                t_emit_values.append(t_emit_ns)
+
+        # Echo each nonce back to POST /api/session/observe-tick, exactly
+        # as the frontend does after receiving the tick payload.
+        for t_emit_ns in t_emit_values:
+            obs_resp = client.post(
+                "/api/session/observe-tick", json={"t_emit_ns": t_emit_ns}
+            )
+            assert obs_resp.status_code == 200, (
+                f"observe-tick rejected a valid nonce {t_emit_ns!r}: "
+                f"{obs_resp.json()}"
+            )
+            assert obs_resp.json()["recorded"] is True, (
+                f"observe-tick returned recorded=False for nonce {t_emit_ns!r}"
+            )
+
+        # GET /api/session/transport must now show the echoed samples and a
+        # non-zero ws_tick_latency_ms (p50 of the ring buffer).
+        transport = client.get("/api/session/transport").json()
+
+        assert transport["samples"]["ws"] >= 3, (
+            f"Expected at least 3 ws samples after echoing 3 ticks, "
+            f"got {transport['samples']['ws']}"
+        )
+        assert transport["ws_tick_latency_ms"] is not None, (
+            "ws_tick_latency_ms must not be None after valid observations"
+        )
+        assert transport["ws_tick_latency_ms"] > 0, (
+            f"ws_tick_latency_ms must be > 0 after real round-trips, "
+            f"got {transport['ws_tick_latency_ms']}"
+        )
+
+
 # ------------------------------------------------------- scenario suite ----
 
 
