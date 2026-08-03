@@ -393,6 +393,27 @@ def _parse_forecast(
             samples.insert(0, (0.0, samples[0][1]))
 
         samples = sorted(samples)
+
+        # Physics floor at t=0: prevent LLM hallucinations that claim "no sun"
+        # when the sun is actually well above the horizon.  Mistral occasionally
+        # returns fraction=0.0 for a mid-morning time (e.g. "San Antonio 09:32")
+        # because it confuses the local time with pre-dawn.  We only correct t=0
+        # (the sole deterministic anchor) and only when physics says elevation is
+        # significant (≥ 0.15 fraction ≈ 8° elevation).  Later samples may
+        # legitimately model clouds — we do not touch them.
+        if samples[0][0] == 0.0:
+            _physics_f0 = _solar_fraction_at(
+                utc_now, lat_deg=lat_deg, utc_offset_h=utc_offset_h
+            )
+            if samples[0][1] == 0.0 and _physics_f0 >= 0.15:
+                _log.info(
+                    "solar_sim: Mistral t=0 fraction=0.0 but physics says %.3f "
+                    "(sun is up) — applying physics floor to prevent false-zero "
+                    "at run start.",
+                    _physics_f0,
+                )
+                samples[0] = (0.0, round(_physics_f0, 4))
+
         weather    = str(data.get("weather", "unknown"))
         conditions = str(data.get("conditions", ""))
         _log.info(
