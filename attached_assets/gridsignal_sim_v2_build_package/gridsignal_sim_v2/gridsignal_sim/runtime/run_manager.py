@@ -929,6 +929,19 @@ class RunManager:
 
         try:
             while not ctx.is_complete():
+                # ── A0: three-tier solar pre-step injection ───────────────
+                # Inject the Mistral bank-aggregated MW into every SolarModule
+                # BEFORE evaluate_tick() runs so net_demand_mw and dispatch
+                # decisions use the per-bank enabled value — not rated_mw * fraction.
+                # SolarSim.set_mistral_fraction() is called here (not in section C)
+                # so the fraction is stable for the entire tick.
+                if self.solar_sim is not None and ctx.irradiance_profile is not None:
+                    _pre_frac = ctx.irradiance_profile.fraction_at(ctx.sim_time)
+                    self.solar_sim.set_mistral_fraction(_pre_frac)
+                    _pre_solar_mw = self.solar_sim.live_aggregate_mw()
+                    for _sm in ctx.sim_state.solar_arrays:
+                        _sm.override_output_mw(_pre_solar_mw)
+
                 # ── A: evaluate_tick ──────────────────────────────────────
                 if _profiling: _t0 = _time_module.perf_counter()
                 tick_result = ctx.step()                           # sync, in-budget (Design Spec 4.3)
@@ -1017,16 +1030,11 @@ class RunManager:
                     if _profiling: _sec.setdefault("B2_fabric_tick", []).append(_time_module.perf_counter() - _t0)
 
                 # ── C: sink + broadcast ───────────────────────────────────
-                # Three-tier Mistral aggregation: push the current fraction
-                # into solar_sim first, then read the plant total back.
-                # set_mistral_fraction() must precede live_aggregate_mw() so
-                # all three tiers (bank → feeder → plant) use the same fraction.
+                # Safety backstop: re-stamp p_renewable_mw from the live
+                # aggregate.  The fraction was already pushed in A0 (pre-step),
+                # so live_aggregate_mw() returns the same value that was
+                # injected into solar_arrays — no second fraction lookup needed.
                 if self.solar_sim is not None:
-                    if ctx.irradiance_profile is not None:
-                        _frac = ctx.irradiance_profile.fraction_at(
-                            tick_result.sim_time_seconds
-                        )
-                        self.solar_sim.set_mistral_fraction(_frac)
                     tick_result = _dc_replace(
                         tick_result,
                         p_renewable_mw=self.solar_sim.live_aggregate_mw(),

@@ -206,7 +206,11 @@ function BankFleetPanel({ }: BankFleetPanelProps): React.ReactElement {
       max:    ratedMW,
       colour: SOLAR,
       unit:   ` / ${ratedMW.toFixed(2)} MW`,
-      note:   barMW > 0 ? 'contributing at rated output' : 'zero output — full load falls to dispatchable sources',
+      note:   ratedMW > 0 && barMW / ratedMW >= 0.98
+        ? 'at rated output'
+        : barMW > 0
+          ? `${(barMW / ratedMW * 100).toFixed(0)}% of rated`
+          : 'zero output — full load falls to dispatchable sources',
     }),
     React.createElement(BulletBar, {
       label:  'If solar stopped this second',
@@ -538,11 +542,14 @@ export const renewablePanel: PanelConfig = {
       }
     }
 
-    const solarMW    = tick.p_renewable_mw
-    const totalMW    = tick.p_total_mw          // compute + cooling (gross site draw)
-    const netDemand  = tick.net_demand_mw        // what fleet must serve after solar offset
-    // Share: cap at 100% — when solar > current draw the note explains the surplus
-    const solarExceedsDraw = totalMW > 0 && solarMW >= totalMW
+    const solarMW    = tick.p_renewable_mw        // three-tier bank aggregation (AT-9)
+    const totalMW    = tick.p_total_mw            // compute + cooling (gross site draw)
+    // Recompute from the aggregated solar value — do not read tick.net_demand_mw
+    // which was computed pre-fix from rated_mw * fraction (AT-11).
+    const netDemand  = Math.max(0, totalMW - solarMW)
+    // Share: solar exceeds draw only when strictly greater (not >=), so that
+    // 100% = exactly equal does not fabricate a BESS-absorption message (AT-12).
+    const solarExceedsDraw = totalMW > 0 && solarMW > totalMW
     const sharePct = totalMW > 0
       ? Math.min(100, solarMW / totalMW * 100).toFixed(0)
       : '0'

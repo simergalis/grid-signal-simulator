@@ -828,14 +828,33 @@ class SolarModule(AssetModule):
     config: SolarConfig
     irradiance_profile: "IrradianceProfile"
     _current_output_mw: float = 0.0
+    _override_active: bool = False  # True once RunManager has called override_output_mw()
 
     @property
     def asset_id(self) -> str:
         return self.config.asset_id
 
     def advance(self, sim_time: float, dt_seconds: float) -> None:
+        if self._override_active:
+            # RunManager._drive() called override_output_mw() before ctx.step(),
+            # so _current_output_mw already holds the three-tier bank-aggregated
+            # value.  Do not overwrite it with rated_mw * fraction (AT-9/AT-10).
+            return
+        # Fallback: used by test paths that call evaluate_tick() directly without
+        # going through RunManager._drive().  In a live run this branch never
+        # executes because _override_active is set pre-step in A0.
         fraction = self.irradiance_profile.fraction_at(sim_time)
         self._current_output_mw = self.config.rated_mw * fraction
+
+    def override_output_mw(self, mw: float) -> None:
+        """Inject the three-tier bank-aggregated MW from RunManager (pre-step).
+
+        Sets _override_active so advance() skips the rated_mw * fraction
+        shortcut.  Never call from inside core/ — only RunManager._drive()
+        (section A0) may call this to preserve plane-separation.
+        """
+        self._override_active = True
+        self._current_output_mw = max(0.0, float(mw))
 
     def output_mw(self) -> float:
         return self._current_output_mw

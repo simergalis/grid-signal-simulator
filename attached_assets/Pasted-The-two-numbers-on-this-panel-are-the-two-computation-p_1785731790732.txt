@@ -1,0 +1,34 @@
+The two numbers on this panel are the two computation paths, side by side. 3.74 = 5.00 × 0.748 — the plant-level rated_mw * fraction shortcut, which has no concept of enabled banks. 1.86 ≈ half of that, consistent with roughly half your banks disabled and the aggregation path correctly excluding them. So the panel is displaying the defect, not a rendering bug.
+
+The contamination is wider than the verdict line. Every field derived from solar output on this panel inherits the inflated number:
+
+"Generators and battery covering 1.40 MW" — net demand computed as demand − 3.74. Site demand is therefore ~5.14 MW, and the true net is ~3.28 MW. The panel understates the generator/BESS burden by ~1.9 MW. That's the dangerous direction of error for a dispatch demo: it tells the operator the site is covered when it isn't.
+"Share of what the site is using ≥ 100% · solar exceeds current draw · surplus absorbed by BESS" — entirely fabricated. True share is 1.86 / 5.14 ≈ 36%. There is no surplus and nothing for the BESS to absorb.
+The chart series — the upper trace is almost certainly plotting the same wrong value.
+Separately, a label bug: the bar reads "contributing at rated output" at 1.86 / 5.00, which is 37% of rated. That caption is hardcoded or mis-thresholded regardless of which number feeds it.
+Instruction to paste
+
+Defect: solar panel displays two contradictory output values from two computation paths.
+
+Observed: verdict and Output field read 3.74 MW; "current output against rated" bar reads 1.86 / 5.00 MW, same tick, same asset. 3.74 is config.rated_mw * mistral_fraction (5.00 × 0.748), which ignores per-bank enabled state. 1.86 is the bank aggregation, which honors it. 1.86 is correct. 3.74 is the defect.
+
+Required:
+
+Delete RenewableModule._current_output_mw = self.config.rated_mw * fraction. There must be exactly one solar MW value in the system: plant.output_mw = Σ feeder.output_mw = Σ (enabled bank.output_mw), per the three-tier aggregation. Grep the codebase for any remaining rated_mw * fraction or rated_mw * multiplication outside _bank_physical_mw() and remove it.
+Repoint every consumer on this panel to the aggregated value: verdict headline, Output row, the large numeric readout, and the chart series. No field may compute its own solar figure.
+Recompute the derived rows from the corrected value, not by patching the display:
+"Generators and battery covering" = site_demand_mw − plant.output_mw
+"Share of what the site is using" = plant.output_mw / site_demand_mw, rendered as a percentage
+The ≥ 100% / "solar exceeds current draw · surplus absorbed by BESS" state must be conditional on plant.output_mw > site_demand_mw, evaluated live. It must not appear when solar is below demand.
+Fix the bar caption. "contributing at rated output" must be conditional on plant.output_mw / plant.rated_mw ≥ 0.98. Below that, state the actual percentage of rated.
+Verify the "if solar stopped this second" exposure row uses the same aggregated value — it appears to already, which is why the panel is self-contradictory.
+
+Acceptance criteria:
+
+AT-9: On every tick, the verdict figure, Output row, chart's current point, and the "against rated" bar numerator are the same value to within 1e-9. Assert this in an automated test, not by eye.
+AT-10: Disable 10 of 20 banks at fraction = 0.748 → all four displays read 1.87 MW; bar reads 1.87 / 5.00; caption states 37% of rated, not "at rated output."
+AT-11: With solar 1.87 MW and site demand 5.14 MW → "Generators and battery covering" reads 3.27 MW and share reads 36%. The "solar exceeds current draw" state does not render.
+AT-12: Force plant.output_mw > site_demand_mw → the ≥100% / surplus state renders. Return below demand → it clears within one tick.
+AT-13: Re-enable all banks at fraction = 1.0 → 5.00 / 5.00 MW and the "at rated output" caption renders.
+
+AT-9 is the regression guard worth keeping permanently — one panel showing two values for one asset is the failure signature you just caught by eye, and it should never be caught that way twice.
