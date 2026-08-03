@@ -26,6 +26,7 @@ Step 9 additions:
 from __future__ import annotations
 
 import asyncio
+import csv as _csv
 import functools
 import itertools
 import logging
@@ -223,12 +224,14 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # non-null only on runs with kube_config set in the ScenarioSpec.
         "kube_metrics": (
             {
-                "utilization":      round(tick.kube_metrics.utilization, 4),
-                "node_count":       tick.kube_metrics.node_count,
-                "power_cap_active": tick.kube_metrics.power_cap_active,
-                "headroom_mw":      round(tick.kube_metrics.headroom_mw, 3),
-                "active_jobs":      tick.kube_metrics.active_jobs,
-                "admitted_nodes":   tick.kube_metrics.admitted_nodes,
+                "utilization":        round(tick.kube_metrics.utilization, 4),
+                "node_count":         tick.kube_metrics.node_count,
+                "power_cap_active":   tick.kube_metrics.power_cap_active,
+                "headroom_mw":        round(tick.kube_metrics.headroom_mw, 3),
+                "active_jobs":        tick.kube_metrics.active_jobs,
+                "admitted_nodes":     tick.kube_metrics.admitted_nodes,
+                "arrivals_this_tick": tick.kube_metrics.arrivals_this_tick,
+                "requeued_this_tick": tick.kube_metrics.requeued_this_tick,
             }
             if tick.kube_metrics is not None
             else None
@@ -920,6 +923,13 @@ class RunManager:
         # Tracks external task.cancel() so finally can skip verdict drain.
         _cancelled_externally = False
 
+        # Kube debug CSV — written automatically whenever kube_metrics is present.
+        # One row per tick: sim_time, arrivals, requeued, admitted_nodes, headroom_mw,
+        # power_cap_active, p_compute_mw.  Flushed every tick so a live tail works.
+        # Path: /tmp/kube_debug_<run_id>.csv — readable without authentication.
+        _kube_csv_file = None
+        _kube_csv_writer = None
+
         # AC3: per-section timing. Activate with GS_PROFILE_DRIVE=1.
         # Reports p50 + p95 per section at run completion (via logger.info).
         # Off by default — the boolean check costs ~10 ns per guard when False.
@@ -946,6 +956,40 @@ class RunManager:
                 if _profiling: _t0 = _time_module.perf_counter()
                 tick_result = ctx.step()                           # sync, in-budget (Design Spec 4.3)
                 if _profiling: _sec.setdefault("A_evaluate_tick", []).append(_time_module.perf_counter() - _t0)
+
+                # ── A1: kube debug CSV ────────────────────────────────────
+                # Written every tick when kube_metrics is present.  One line:
+                #   sim_time, arrivals, requeued, admitted_nodes, headroom_mw,
+                #   power_cap_active, p_compute_mw
+                # Path: /tmp/kube_debug_<run_id>.csv — flushed immediately so
+                # `tail -f` works live.  Five consecutive lines reveal whether
+                # nodes decay through completion events or reassignment from
+                # scratch, which determines the correct oscillation fix.
+                if tick_result.kube_metrics is not None:
+                    if _kube_csv_writer is None:
+                        _kube_csv_path = f"/tmp/kube_debug_{ctx.run_id}.csv"
+                        _kube_csv_file = open(_kube_csv_path, "w", newline="")  # noqa: WPS515
+                        _kube_csv_writer = _csv.writer(_kube_csv_file)
+                        _kube_csv_writer.writerow([
+                            "sim_time_s", "arrivals", "requeued",
+                            "admitted_nodes", "headroom_mw",
+                            "power_cap_active", "p_compute_mw",
+                        ])
+                        logger.info(
+                            "run %s: kube debug CSV → %s",
+                            ctx.run_id, _kube_csv_path,
+                        )
+                    _km = tick_result.kube_metrics
+                    _kube_csv_writer.writerow([
+                        round(tick_result.sim_time_seconds - 5.0, 1),
+                        _km.arrivals_this_tick,
+                        _km.requeued_this_tick,
+                        _km.admitted_nodes,
+                        round(_km.headroom_mw, 3),
+                        1 if _km.power_cap_active else 0,
+                        round(tick_result.p_compute_mw, 4),
+                    ])
+                    _kube_csv_file.flush()  # type: ignore[union-attr]
 
                 # ── A2: telemetry corruption (GT-2) ───────────────────────
                 # Recompute contingency_coverage with a noisy BESS SoC reading
@@ -1189,6 +1233,17 @@ class RunManager:
             logger.info("run %s cancelled mid-flight", ctx.run_id)
             raise
         finally:
+            # Close kube debug CSV if it was opened for this run.
+            if _kube_csv_file is not None:
+                try:
+                    _kube_csv_file.close()
+                    logger.info(
+                        "run %s: kube debug CSV closed (/tmp/kube_debug_%s.csv)",
+                        ctx.run_id, ctx.run_id,
+                    )
+                except Exception:  # noqa: BLE001
+                    pass
+
             # Task #122: restore SolarSim to standalone physics output now that
             # the run is over, so the bank panel keeps showing live numbers
             # between runs rather than the last tick's run-loop value.

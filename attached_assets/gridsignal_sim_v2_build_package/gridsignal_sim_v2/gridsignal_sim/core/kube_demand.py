@@ -208,6 +208,7 @@ class KubeDemandAgent:
 
         # ── Step 1a: OBSERVE — advance Poisson arrivals ───────────────────
         # Generate all jobs whose informer-observation time ≤ sim_time.
+        arrivals_this_tick: int = 0
         while self._next_arrival_sim_time <= sim_time:
             self._job_counter += 1
             event_id = f"kube-job-{self._job_counter}"
@@ -242,6 +243,7 @@ class KubeDemandAgent:
                 event_timestamp=event_timestamp,
                 duration_s=duration_s,
             ))
+            arrivals_this_tick += 1
 
             _log.debug(
                 "kube: informer observed %s — %d nodes, duration=%.0f s, "
@@ -275,6 +277,7 @@ class KubeDemandAgent:
 
         # ── Step 2: MAP TO CONTRACT — validate and admit ──────────────────
         newly_admitted: list[_ActiveJob] = []
+        requeued_this_tick: int = 0
         for pa in ready:
             # Dedup: idempotent on event_id
             if pa.event_id in self._seen_event_ids:
@@ -306,6 +309,7 @@ class KubeDemandAgent:
                         event_timestamp=sim_time + 5.0,
                         duration_s=pa.duration_s,
                     ))
+                requeued_this_tick += 1
                 _log.debug(
                     "kube: power-cap hold %s (headroom=%.2f MW) → queued retry",
                     pa.event_id, headroom_mw,
@@ -376,6 +380,8 @@ class KubeDemandAgent:
             headroom_mw=headroom_mw,
             active_jobs=active_jobs,
             admitted_nodes=admitted_nodes,
+            arrivals_this_tick=arrivals_this_tick,
+            requeued_this_tick=requeued_this_tick,
         )
         return signals, metrics
 

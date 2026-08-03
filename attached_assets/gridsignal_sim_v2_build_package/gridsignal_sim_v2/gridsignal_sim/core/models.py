@@ -460,12 +460,17 @@ class KubeMetrics:
     Carried on TickResult.kube_metrics when kube_config is active for the run.
     None on TickResult when the standard scripted workload path is used.
 
-    utilization    — admitted_nodes / max_nodes (or min_nodes/max_nodes when idle).
-    node_count     — max(min_nodes, admitted_nodes): total nodes powering compute.
-    power_cap_active — True when grid headroom < headroom_threshold_mw.
-    headroom_mw    — turbine_headroom + bess_headroom from the previous tick.
-    active_jobs    — number of gang-admitted workloads currently running.
-    admitted_nodes — sum of node_count across all active jobs (before min_nodes floor).
+    utilization       — admitted_nodes / max_nodes (or min_nodes/max_nodes when idle).
+    node_count        — max(min_nodes, admitted_nodes): total nodes powering compute.
+    power_cap_active  — True when grid headroom < headroom_threshold_mw.
+    headroom_mw       — turbine_headroom + bess_headroom from the previous tick.
+    active_jobs       — number of gang-admitted workloads currently running.
+    admitted_nodes    — sum of node_count across active jobs (before min_nodes floor).
+    arrivals_this_tick — new Poisson arrivals observed by the informer this tick.
+    requeued_this_tick — admissions held by the power-cap and re-queued this tick.
+                         A non-zero value every tick signals the §6.2 oscillation
+                         pathology: the 5 s re-queue delay equals TICK_INTERVAL_SIM_SECONDS,
+                         locking the cap toggle to the tick rate.
     """
     utilization: float       # [0, 1] — total_nodes / max_nodes
     node_count: int          # max(min_nodes, admitted_nodes)
@@ -473,6 +478,8 @@ class KubeMetrics:
     headroom_mw: float       # MW headroom at last grid reading
     active_jobs: int         # count of running gang-admitted workloads
     admitted_nodes: int      # sum of node_count across active jobs (pre-floor)
+    arrivals_this_tick: int  # new Poisson arrivals observed this tick
+    requeued_this_tick: int  # admissions held by power-cap and re-queued this tick
 
 
 # ---------------------------------------------------------------------------
