@@ -119,8 +119,14 @@ function feederStateColour(state: string): string {
 // Defined outside deriveData so the React reference is stable across ticks and
 // the useEffect polling timer is not torn down and recreated on every tick.
 
-interface BankFleetPanelProps { }
-function BankFleetPanel({ }: BankFleetPanelProps): React.ReactElement {
+interface BankFleetPanelProps {
+  /** Plant-level solar MW from the live WS tick — same value shown in the
+   *  verdict headline.  When provided, the "Current output against rated" bar
+   *  uses this instead of power.p_renewable_mw so both displays share one
+   *  computation path (AT-9). */
+  tickSolarMW?: number
+}
+function BankFleetPanel({ tickSolarMW }: BankFleetPanelProps): React.ReactElement {
   const [solar, setSolar]         = useState<SolarState | null>(null)
   const [error, setError]         = useState(false)
   const [busy, setBusy]           = useState<string | null>(null)   // kind currently in-flight
@@ -191,13 +197,12 @@ function BankFleetPanel({ }: BankFleetPanelProps): React.ReactElement {
   const { power, site, feeders, banks, exposure, reserve, advisories } = solar
 
   // ── Live output bars ─────────────────────────────────────────────────────
-  // All values come directly from the snapshot (polled every 1.5 s).
-  // The snapshot is computed as a plain mathematical sum:
-  //   power.p_renewable_mw = Σ counted_output_mw(bank) for all banks
-  //   feeder.output_mw     = Σ counted_output_mw(bank) for banks in that feeder
-  //   bank.counted_output_mw = bank physics output (0 when operator-offline)
-  // No AI-derived value touches these numbers; no run-tick scaling is applied.
-  const barMW    = power.p_renewable_mw
+  // barMW is the authoritative plant total for every display on this panel.
+  // When a run is active, tickSolarMW carries the WS-tick value (same source
+  // as the verdict headline) so both reads are identical — AT-9 invariant.
+  // Snapshot power.p_renewable_mw is used only when no tick is available
+  // (standalone console view, no active run).
+  const barMW    = tickSolarMW ?? power.p_renewable_mw
   const ratedMW  = site.plant_rated_ac_mw || Math.max(barMW, 5)
   const liveOutputBars = React.createElement('div', { className: 'space-y-2 mb-3' },
     React.createElement(BulletBar, {
@@ -570,7 +575,8 @@ export const renewablePanel: PanelConfig = {
 
     // BankFleetPanel owns the bars (uses snapshot physics) and the
     // live bank fleet.  Passing solarMW keeps bars in lock-step with the hero.
-    const secondary = React.createElement(BankFleetPanel, {})
+    // Pass the tick-derived solarMW so the bar and the verdict share one value.
+    const secondary = React.createElement(BankFleetPanel, { tickSolarMW: solarMW })
 
     return {
       stateLabel:  'ADVISORY',
