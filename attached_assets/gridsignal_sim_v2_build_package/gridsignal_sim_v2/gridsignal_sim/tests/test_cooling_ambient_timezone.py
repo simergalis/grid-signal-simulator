@@ -1,5 +1,5 @@
 """
-tests/test_cooling_ambient_timezone.py — CA-1 through CA-7
+tests/test_cooling_ambient_timezone.py — CA-1 through CA-8
 
 Audit and regression suite for task #76: confirm the cooling model and load
 patterns correctly use site local time, not server UTC, when applying ambient
@@ -55,6 +55,9 @@ CA-4  Broken UTC offset (offset=0) gives same scale as pre-dawn — the regressi
 CA-5  Correctly-offset afternoon run → higher site.alpha_max than broken-offset run
 CA-6  Correctly-offset afternoon run → higher p_cooling_mw per tick
 CA-7  No datetime.now() / .hour in scenario_factory.py physics block (source audit)
+CA-8  Tick-level p_cooling_mw is higher for Auckland afternoon than broken-offset run
+      (runs 60 ticks with fast thermal params; confirms the alpha_max scaling reaches
+      tick output, not just the construction-time attribute)
 """
 
 from __future__ import annotations
@@ -389,3 +392,109 @@ def test_ca7_scenario_factory_physics_block_has_no_wall_clock_usage():
             "UTC offset qualification is forbidden in physics paths. "
             "Use (dt.hour + site_utc_offset_h) % 24 as in solar_sim.py."
         )
+
+
+# ---------------------------------------------------------------------------
+# CA-8  Tick-level p_cooling_mw is higher for Auckland afternoon than broken run
+# ---------------------------------------------------------------------------
+
+# CA-8 uses a longer run and fast thermal params so the cooling response
+# reaches tick output within the test window.
+_CA8_RUN_DURATION_S = 300.0   # 60 ticks at 5 s — thermal signal settles well
+_CA8_TAU_S         = 5.0      # fast exponential rise (default 20 s)
+_CA8_DT_THERMAL_S  = 5.0      # short lag before envelope opens (default 90 s)
+
+
+def _make_ambient_steps_ca8(utc_now: datetime.datetime, utc_offset_h: float) -> list:
+    """Generate ambient steps sized for the CA-8 run window."""
+    return _physics_ambient_steps(
+        _CA8_RUN_DURATION_S, utc_now,
+        lat_deg=_AUCKLAND_LAT,
+        utc_offset_h=utc_offset_h,
+        base_temp_c=_BASE_TEMP,
+    )
+
+
+def _ca8_spec(ambient_steps: list, tag: str) -> dict:
+    """Spec with fast thermal parameters so p_cooling_mw diverges within 60 ticks."""
+    return {
+        "name": f"ca8-cooling-tick-tz-{tag}",
+        "end_sim_time": _CA8_RUN_DURATION_S,
+        "alpha_max": 0.20,
+        # Fast thermal params: cooling signal visible well before tick 20
+        "plant_tau_seconds":        _CA8_TAU_S,
+        "plant_dt_thermal_seconds": _CA8_DT_THERMAL_S,
+        "island_mode": False,
+        "turbine_units": [
+            {"asset_id": "t-0", "rated_mw": 20.0, "r_asset_mw_per_s": 5.0}
+        ],
+        "bess_units": [
+            {
+                "asset_id": "b-0", "rated_mw": 5.0, "usable_mwh": 2.0,
+                "initial_soc_fraction": 1.0, "grid_forming": False,
+            }
+        ],
+        "workload_events": [
+            {
+                "event_type": "starting",
+                "timestamp": 0.0,
+                "job_id": "job-ca8",
+                "node_count": 100,
+                "hardware_profile_id": "enterprise_8gpu_air",
+            }
+        ],
+        "ambient_steps": [[t, db, wb] for t, db, wb in ambient_steps],
+    }
+
+
+def test_ca8_tick_level_cooling_mw_higher_for_correct_utc_offset():
+    """Tick-level p_cooling_mw must be higher when ambient_steps are generated
+    with the correct UTC+12 offset (Auckland afternoon, warm) than when the
+    offset is 0 (broken: 04:00 UTC misread as 04:00 local, cold ambient).
+
+    This test runs 60 actual simulation ticks with fast thermal parameters
+    (tau=5 s, dt_thermal=5 s) so the cooling envelope opens quickly and
+    p_cooling_mw values diverge within the test window.  It confirms that
+    the ambient_steps → alpha_max scaling pipeline flows all the way through
+    to tick output, not just to the RunContext construction-time attribute.
+
+    The assertion checks average p_cooling_mw across ticks 20-60 (after the
+    envelope has fully settled) rather than peak, making it robust to the
+    ramp-up phase where both runs start from zero.
+    """
+    steps_correct = _make_ambient_steps_ca8(_AFTERNOON_UTC, _AUCKLAND_UTC)
+    steps_broken  = _make_ambient_steps_ca8(_AFTERNOON_UTC, 0.0)
+
+    ctx_correct = build_run_context_from_spec(
+        "ca8-correct", _ca8_spec(steps_correct, "correct")
+    )
+    ctx_broken = build_run_context_from_spec(
+        "ca8-broken", _ca8_spec(steps_broken, "broken")
+    )
+
+    # Sanity: confirm the alpha_max divergence that drives the tick-level result
+    assert ctx_correct.sim_state.site.alpha_max > ctx_broken.sim_state.site.alpha_max, (
+        "Precondition failed: correct-offset alpha_max must exceed broken-offset. "
+        "If this fails, the ambient_steps → alpha_max path is broken upstream of ticks."
+    )
+
+    # Run 60 ticks on each context independently
+    _N_TICKS = 60
+    ticks_correct = _run_n_ticks(ctx_correct, _N_TICKS)
+    ticks_broken  = _run_n_ticks(ctx_broken,  _N_TICKS)
+
+    # Average p_cooling_mw from tick 20 onward (envelope fully settled by then
+    # given dt_thermal=5 s and tau=5 s: ~5 × tau = 25 s ≈ 5 ticks to settle)
+    settled_correct = [t.p_cooling_mw for t in ticks_correct[20:]]
+    settled_broken  = [t.p_cooling_mw for t in ticks_broken[20:]]
+
+    avg_correct = sum(settled_correct) / len(settled_correct)
+    avg_broken  = sum(settled_broken)  / len(settled_broken)
+
+    assert avg_correct > avg_broken, (
+        f"Auckland afternoon tick-level avg p_cooling_mw ({avg_correct:.4f} MW) "
+        f"must exceed broken-offset run ({avg_broken:.4f} MW) across ticks 20-60. "
+        "The UTC+12 ambient correction must flow all the way through alpha_max to "
+        "tick output.  If equal, the ambient_alpha_scale multiplication in "
+        "build_run_context_from_spec() is not reaching CoolingModule.advance()."
+    )
