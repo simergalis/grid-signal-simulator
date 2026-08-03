@@ -288,8 +288,11 @@ def main() -> None:
                 row = sim.tick()
             except Exception as exc:          # pragma: no cover
                 print(f"[WARN] Simulation error at tick {count}: {exc}", file=sys.stderr)
-                time.sleep(1)
+                time.sleep(args.interval)
                 continue
+
+            # Replace wall-clock timestamp with elapsed time "xx.y s"
+            row["timestamp"] = f"{count * args.interval:.1f}"
 
             # Write to CSV
             try:
