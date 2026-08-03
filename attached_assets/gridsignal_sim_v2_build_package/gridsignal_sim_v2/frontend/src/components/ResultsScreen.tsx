@@ -32,13 +32,14 @@ import { PlaybackScrubber } from './PlaybackScrubber'
 import { TickDetail }       from './TickDetail'
 
 interface Props {
-  runId:   string
-  onClose: () => void
+  runId:    string
+  onClose:  () => void
+  onRerun?: (scenarioId: string) => void
 }
 
 type LoadState = 'loading' | 'error' | 'ready'
 
-export function ResultsScreen({ runId, onClose }: Props) {
+export function ResultsScreen({ runId, onClose, onRerun }: Props) {
   const [loadState,  setLoadState]  = useState<LoadState>('loading')
   const [error,      setError]      = useState<string | null>(null)
   const [result,     setResult]     = useState<RunResult | null>(null)
@@ -124,7 +125,7 @@ export function ResultsScreen({ runId, onClose }: Props) {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
 
-      {/* Header: back button + verdict banner */}
+      {/* Header: back button + verdict banner + re-run button */}
       <div className="flex items-center gap-2 border-b border-border bg-surface px-4 py-2">
         <button
           className="shrink-0 rounded border border-border px-2 py-1 text-xs text-muted
@@ -136,6 +137,16 @@ export function ResultsScreen({ runId, onClose }: Props) {
         <div className="flex-1 min-w-0">
           <VerdictBanner result={result} />
         </div>
+        {onRerun && result.scenario_id?.startsWith('fabric-s') && (
+          <button
+            className="shrink-0 rounded border border-accent/60 px-3 py-1 text-xs font-semibold
+                       text-accent hover:bg-accent/10 transition-colors"
+            onClick={() => onRerun(result.scenario_id!)}
+            title={`Re-run ${result.scenario_id}`}
+          >
+            ↺ Re-run
+          </button>
+        )}
       </div>
 
       {/* Body: two-column layout */}

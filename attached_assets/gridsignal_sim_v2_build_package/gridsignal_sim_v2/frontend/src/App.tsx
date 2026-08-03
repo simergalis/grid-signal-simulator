@@ -176,6 +176,13 @@ function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
     setResultsRunId(id)
   }, [])
 
+  const handleRerun = useCallback((scenarioId: string) => {
+    setResultsRunId(null)
+    selectScenario(scenarioId)
+    // Ensure the RunControlBar is visible (inner page layout).
+    setCurrentPage(prev => prev === 'readiness' ? 'overview' : prev)
+  }, [selectScenario])
+
   const handleNewScenario = useCallback(() => {
     setEditId(null)
     setDrawerOpen(true)
@@ -203,6 +210,7 @@ function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
         <ResultsScreen
           runId={resultsRunId}
           onClose={() => setResultsRunId(null)}
+          onRerun={handleRerun}
         />
       </div>
     )
