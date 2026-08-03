@@ -61,6 +61,7 @@ from api.routes import solar as solar_routes
 from api.routes import location as location_routes
 from site_config import SiteLocation, set_site_location
 from api.routes import auth_routes, admin_routes
+from api.routes import export as export_routes
 from api.auth_utils import COOKIE_NAME, decode_access_token
 from api.db import create_auth_tables
 
@@ -224,6 +225,7 @@ def create_app() -> FastAPI:
     application.include_router(fabric_routes.router)    # Phase 10
     application.include_router(solar_routes.router)     # Task-20 solar preview
     application.include_router(location_routes.router)  # operator location picker
+    application.include_router(export_routes.router)    # telemetry-log CSV download
 
     # ── §10.2 static frontend (Step 16) ─────────────────────────────────
     # Catch-all GET route: serve real static assets by file path, then fall

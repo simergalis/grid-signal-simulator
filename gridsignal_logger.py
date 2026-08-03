@@ -255,6 +255,8 @@ def main() -> None:
                         help="Output CSV file path (default: system_stats.csv)")
     parser.add_argument("--rows", type=int, default=0,
                         help="Stop after N rows (0 = run until Ctrl-C)")
+    parser.add_argument("--interval", type=float, default=1.0,
+                        help="Seconds between rows (default: 1.0; use 0.05 for fast test mode)")
     args = parser.parse_args()
 
     output_path = Path(args.out)
@@ -313,7 +315,7 @@ def main() -> None:
                 print(f"\nReached {args.rows} rows — stopping.")
                 break
 
-            time.sleep(1)
+            time.sleep(args.interval)
 
     except KeyboardInterrupt:
         print(f"\nInterrupted after {count} row(s).")

@@ -69,6 +69,41 @@ export function DemoBar({
   const [busy,     setBusy]     = useState(false)
   const [error,    setError]    = useState<string | null>(null)
 
+  // Log-test button state
+  const [logBusy,  setLogBusy]  = useState(false)
+  const [logMsg,   setLogMsg]   = useState<string | null>(null)
+
+  const handleLogTest = async () => {
+    setLogBusy(true)
+    setLogMsg('Logging…')
+    try {
+      const resp = await fetch('/api/export/telemetry-log', {
+        method: 'POST',
+        credentials: 'include',
+      })
+      if (!resp.ok) {
+        const txt = await resp.text()
+        throw new Error(`${resp.status}: ${txt}`)
+      }
+      const blob = await resp.blob()
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement('a')
+      a.href     = url
+      a.download = 'system_stats.csv'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      setLogMsg('✓ Downloaded')
+      setTimeout(() => setLogMsg(null), 3000)
+    } catch (e) {
+      setLogMsg(`✗ ${String(e)}`)
+      setTimeout(() => setLogMsg(null), 5000)
+    } finally {
+      setLogBusy(false)
+    }
+  }
+
   useEffect(() => { fetchScenarios() }, [fetchScenarios])
 
   const handleStart = async () => {
@@ -262,6 +297,53 @@ export function DemoBar({
           </span>
         </div>
       )}
+
+      {/* ── Log Test button — bottom-right ────────────────────────────────── */}
+      <div className="flex flex-col items-end justify-center gap-1 px-4 py-3 shrink-0 ml-auto">
+        <button
+          onClick={handleLogTest}
+          disabled={logBusy}
+          title="Run a 30-row telemetry log test and download system_stats.csv"
+          className="flex items-center gap-1.5 rounded border px-3 py-1.5 font-sans text-xs
+                     font-semibold transition-colors disabled:opacity-50"
+          style={{
+            borderColor: logBusy ? '#3fb6a8' : '#2a3a4a',
+            color:        logBusy ? '#3fb6a8' : '#7d8b9c',
+            background:   logBusy ? 'rgba(63,182,168,0.08)' : 'transparent',
+          }}
+        >
+          {/* Spinner when busy, CSV icon otherwise */}
+          {logBusy ? (
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
+                 style={{ animation: 'spin 1s linear infinite' }}>
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4
+                       M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+          ) : (
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="12" y1="11" x2="12" y2="17"/>
+              <polyline points="9 14 12 17 15 14"/>
+            </svg>
+          )}
+          <span>{logBusy ? 'Logging…' : 'Log Test'}</span>
+        </button>
+        {logMsg && (
+          <span
+            className="font-mono max-w-[160px] truncate"
+            style={{
+              fontSize: 10,
+              color: logMsg.startsWith('✓') ? '#3fb6a8'
+                   : logMsg.startsWith('✗') ? '#e05c5c'
+                   : '#7d8b9c',
+            }}
+            title={logMsg}
+          >
+            {logMsg}
+          </span>
+        )}
+      </div>
     </div>
   )
 }
