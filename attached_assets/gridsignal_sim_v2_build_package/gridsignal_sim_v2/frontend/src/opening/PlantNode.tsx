@@ -17,10 +17,38 @@ import type { TickPayload } from '../types'
 
 /** Weather preview data from GET /solar-preview */
 export interface SolarPreview {
-  weather:    string   // "clear" | "partly_cloudy" | "overcast" | "marine_layer" | "physics_estimate"
-  conditions: string   // human-readable sentence
-  source:     string   // "mistral" | "physics"
-  local_time: string   // "HH:MM" San Diego local time
+  weather:           string   // "clear" | "partly_cloudy" | "overcast" | "marine_layer" | "physics_estimate"
+  conditions:        string   // human-readable sentence
+  source:            string   // "mistral" | "physics"
+  local_time:        string   // "HH:MM" local time
+  // Task-75 additions — sun position and expected output at preview time
+  sun_elevation_deg: number   // degrees; negative = below horizon
+  expected_fraction: number   // physics fraction [0, 1]
+  lat:               number   // site latitude degrees North
+  utc_offset_h:      number   // DST-aware UTC offset used for computation
+  plant_rated_ac_mw: number   // AC rated capacity in MW
+}
+
+/**
+ * Compute real-time sun elevation angle in degrees.
+ * Matches the Python _sun_elevation_deg() physics in api/routes/solar.py.
+ * Returns negative values when the sun is below the horizon.
+ */
+function computeSunElevationDeg(lat: number, utcOffsetH: number): number {
+  const now = new Date()
+  const utcH = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600
+  const localH = ((utcH + utcOffsetH) % 24 + 24) % 24
+  const hourAngleRad = ((localH - 12.0) * 15.0) * Math.PI / 180
+  // Day of year
+  const startOfYear = Date.UTC(now.getUTCFullYear(), 0, 1)
+  const dayOfYear = Math.floor((now.getTime() - startOfYear) / 86_400_000) + 1
+  const declRad = 23.45 * Math.sin((360.0 / 365.0 * (dayOfYear - 81)) * Math.PI / 180) * Math.PI / 180
+  const latRad = lat * Math.PI / 180
+  const sinElev = (
+    Math.sin(latRad) * Math.sin(declRad)
+    + Math.cos(latRad) * Math.cos(declRad) * Math.cos(hourAngleRad)
+  )
+  return Math.asin(Math.max(-1.0, Math.min(1.0, sinElev))) * 180 / Math.PI
 }
 
 interface PlantNodeProps {
@@ -40,7 +68,11 @@ function getMwValue(def: NodeDef, tick: TickPayload | null): number | null {
 }
 
 /** Subtle detail lines shown inside each node. */
-function nodeDetail(def: NodeDef, tick: TickPayload | null): string {
+function nodeDetail(
+  def: NodeDef,
+  tick: TickPayload | null,
+  solarPreview?: SolarPreview | null,
+): string {
   switch (def.id) {
     case 'gas-turbine': {
       const units = tick?.turbine_units ?? []
@@ -54,9 +86,25 @@ function nodeDetail(def: NodeDef, tick: TickPayload | null): string {
     }
     case 'solar-pv': {
       if (tick) {
-        const exp       = (tick as unknown as Record<string, number>).p_expected_mw ?? 0
-        const reporting = (tick as unknown as Record<string, number>).banks_reporting ?? 0
-        return `exp ${exp.toFixed(2)} MW · ${reporting} of 20 banks reporting`
+        // Live run: expected MW from bank telemetry + real-time sun elevation
+        const exp      = (tick as unknown as Record<string, number>).p_expected_mw ?? 0
+        const lat      = solarPreview?.lat ?? 32.72
+        const utcOff   = solarPreview?.utc_offset_h ?? -8.0
+        const elev     = computeSunElevationDeg(lat, utcOff)
+        const elevStr  = elev >= 0
+          ? `sun ${Math.round(elev)}° above horizon`
+          : 'sun below horizon'
+        return `exp ${exp.toFixed(2)} MW · ${elevStr}`
+      }
+      // Pre-run: expected MW and sun position from solar-preview
+      if (solarPreview) {
+        const plantMW = solarPreview.plant_rated_ac_mw ?? 4.99
+        const expMW   = solarPreview.expected_fraction * plantMW
+        const elev    = solarPreview.sun_elevation_deg
+        const elevStr = elev >= 0
+          ? `sun ${Math.round(elev)}° above horizon`
+          : 'sun below horizon'
+        return `expected ${expMW.toFixed(2)} MW · ${elevStr}`
       }
       return 'non-dispatchable · 4.99 MW rated'
     }
@@ -164,7 +212,7 @@ function WeatherBadge({ preview }: { preview: SolarPreview }) {
 
 export function PlantNode({ def, tick, onClick, solarPreview }: PlantNodeProps) {
   const mwValue = getMwValue(def, tick)
-  const detail  = nodeDetail(def, tick)
+  const detail  = nodeDetail(def, tick, solarPreview)
   const isGrid  = !!def.gridStyle
   const canClick = def.clickable && !def.passive
 
@@ -316,6 +364,38 @@ export function PlantNode({ def, tick, onClick, solarPreview }: PlantNodeProps) 
             )}
           </div>
         )}
+
+        {/* Amber warning: sun is up but output is zero during a live run */}
+        {def.id === 'solar-pv' && tick && (() => {
+          const exp    = (tick as unknown as Record<string, number>).p_expected_mw ?? 0
+          const actual = (tick as unknown as Record<string, number>).p_renewable_mw ?? 0
+          if (exp > 0.05 && actual < 0.01) {
+            return (
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 3,
+                marginTop: 2,
+                padding: '1px 5px',
+                borderRadius: 3,
+                border: '1px solid rgba(240,136,62,0.35)',
+                background: 'rgba(240,136,62,0.10)',
+              }}>
+                <div style={{
+                  width: 4, height: 4, borderRadius: '50%',
+                  background: '#f0883e', flexShrink: 0,
+                }} />
+                <span style={{
+                  fontFamily: "'SF Mono','Roboto Mono',Menlo,Consolas,monospace",
+                  fontSize: 8, color: '#f0883e', letterSpacing: '0.04em',
+                }}>
+                  sun up · zero output
+                </span>
+              </div>
+            )
+          }
+          return null
+        })()}
 
         {/* Weather badge — solar-pv only, pre-run */}
         {showWeather && <WeatherBadge preview={solarPreview!} />}

@@ -72,7 +72,11 @@ interface SolarState {
     banks_total:     number
   }
   site: {
-    plant_rated_ac_mw: number
+    plant_rated_ac_mw:  number
+    // Task-75 additions from GET /api/solar/state
+    sun_elevation_deg?: number
+    lat?:               number
+    utc_offset_h?:      number
   }
   feeders: FeederSnap[]
   banks: BankSnap[]
@@ -124,8 +128,8 @@ function feederStateColour(state: string): string {
 // JS is single-threaded — no concurrency hazard.
 let _latestSnapshotSolarMW: number = 0
 
-interface BankFleetPanelProps { }
-function BankFleetPanel({ }: BankFleetPanelProps): React.ReactElement {
+interface BankFleetPanelProps { tickSolarMW?: number | null }
+function BankFleetPanel({ tickSolarMW = null }: BankFleetPanelProps): React.ReactElement {
   const [solar, setSolar]         = useState<SolarState | null>(null)
   const [error, setError]         = useState(false)
   const [busy, setBusy]           = useState<string | null>(null)   // kind currently in-flight
@@ -195,13 +199,40 @@ function BankFleetPanel({ }: BankFleetPanelProps): React.ReactElement {
 
   const { power, site, feeders, banks, exposure, reserve, advisories } = solar
 
+  // ── Run-sync reconciliation ───────────────────────────────────────────────
+  // The snapshot polls at 1.5 s; the tick arrives via WS every 5 s.  On rare
+  // occasions (first tick after run start, or a tick missed by the poll) the
+  // backend scaling may not yet have zeroed the physics values in the snapshot.
+  // We reconcile here so the bank rows always agree with the hero/bars:
+  //   • tickSolarMW is null  → no run active; show raw snapshot physics (scale 1)
+  //   • snapshot total > 0   → scale = tick / snapshot total
+  //   • snapshot total = 0   → both already agree at 0; scale = 1 (no-op)
+  const snapshotSolarMW = power.p_renewable_mw
+  // Bridge: deriveData reads _latestSnapshotSolarMW so verdict/hero/stats all share
+  // the same Mistral-aggregated bank value (AT-9). JS single-threaded — no hazard.
+  _latestSnapshotSolarMW = snapshotSolarMW
+  const runScale: number = (tickSolarMW !== null && snapshotSolarMW > 1e-3)
+    ? Math.max(0, tickSolarMW / snapshotSolarMW)
+    : (tickSolarMW !== null && snapshotSolarMW <= 1e-3)
+      ? 0   // snapshot already at zero — no-op but keeps value at 0
+      : 1   // no run active — show raw physics
+
+  // ── Sun elevation badge (Task-75) ────────────────────────────────────────
+  // Show sun position and expected output at the top of the panel so operators
+  // can tell at a glance whether zero output means night or something wrong.
+  const sunElev    = site.sun_elevation_deg ?? null
+  const sunIsUp    = sunElev !== null && sunElev >= 0
+  const sunElevStr = sunElev === null
+    ? null
+    : sunElev >= 0
+      ? `sun ${Math.round(sunElev)}° above horizon`
+      : 'sun below horizon'
+
   // ── Live output bars ─────────────────────────────────────────────────────
-  // barMW is the single authoritative plant total for this panel.
-  // Snapshot power.p_renewable_mw is the three-tier Mistral bank aggregation;
-  // write it to the module-level bridge so deriveData's verdict uses the same
-  // number rather than the independent tick.p_renewable_mw (AT-9).
-  const barMW    = power.p_renewable_mw
-  _latestSnapshotSolarMW = barMW
+  // Value: tickSolarMW when a run is active (same source as hero/verdict/stats
+  // so all four always agree); falls back to snapshot when no run yet.
+  // Max: plant_rated_ac_mw from snapshot so the fill fraction is honest.
+  const barMW    = tickSolarMW != null ? tickSolarMW : power.p_renewable_mw
   const ratedMW  = site.plant_rated_ac_mw || Math.max(barMW, 5)
   const liveOutputBars = React.createElement('div', { className: 'space-y-2 mb-3' },
     React.createElement(BulletBar, {
@@ -210,11 +241,7 @@ function BankFleetPanel({ }: BankFleetPanelProps): React.ReactElement {
       max:    ratedMW,
       colour: SOLAR,
       unit:   ` / ${ratedMW.toFixed(2)} MW`,
-      note:   ratedMW > 0 && barMW / ratedMW >= 0.98
-        ? 'at rated output'
-        : barMW > 0
-          ? `${(barMW / ratedMW * 100).toFixed(0)}% of rated`
-          : 'zero output — full load falls to dispatchable sources',
+      note:   barMW > 0 ? 'contributing at rated output' : 'zero output — full load falls to dispatchable sources',
     }),
     React.createElement(BulletBar, {
       label:  'If solar stopped this second',
@@ -264,7 +291,7 @@ function BankFleetPanel({ }: BankFleetPanelProps): React.ReactElement {
           React.createElement('span', {
             className: 'font-mono text-[10px]',
             style: { color: feeder.state === 'nominal' ? SOLAR : feederStateColour(feeder.state) },
-          }, `${feeder.output_mw.toFixed(3)} MW`),
+          }, `${(feeder.output_mw * runScale).toFixed(3)} MW`),
           feeder.expected_mw > 0
             ? React.createElement('span', { className: 'font-mono text-[9px] text-muted' },
                 `/ ${feeder.expected_mw.toFixed(3)} exp`,
@@ -296,9 +323,7 @@ function BankFleetPanel({ }: BankFleetPanelProps): React.ReactElement {
     // Bank rows
     const bankRows = feederBanks.map(bank => {
       const isNoComms      = bank.state === 'no_comms'
-      // counted_output_mw is already 0 for operator-offline and out/no_comms banks.
-      // Using it directly means Feeder A = bank-01 + bank-02 + … by simple addition.
-      const scaledOutputMW = bank.counted_output_mw
+      const scaledOutputMW = bank.operator_shutdown ? 0 : bank.output_mw * runScale
       const maxMW          = Math.max(bank.expected_mw, scaledOutputMW, 0.001)
       const dotColour      = stateColour(bank.state)
       const chipLabel      = stateLabel(bank.state, bank.reason)
@@ -495,7 +520,43 @@ function BankFleetPanel({ }: BankFleetPanelProps): React.ReactElement {
       : null,
   )
 
+  // ── Amber warning: sun is up but actual output is zero (Task-75) ─────────
+  const isZeroButExpected = sunIsUp && power.p_expected_mw > 0.05 && power.p_renewable_mw < 0.01
+  const sunBadge = sunElevStr
+    ? React.createElement('div', {
+        className: 'flex items-center gap-1.5 mb-2 px-1 py-1 rounded',
+        style: {
+          background: isZeroButExpected
+            ? 'rgba(240,136,62,0.08)'
+            : sunIsUp ? 'rgba(242,201,76,0.06)' : 'rgba(90,102,115,0.06)',
+          border: `1px solid ${isZeroButExpected ? 'rgba(240,136,62,0.25)' : sunIsUp ? 'rgba(242,201,76,0.15)' : 'rgba(90,102,115,0.15)'}`,
+        },
+      },
+      React.createElement('div', {
+        style: {
+          width: 5, height: 5, borderRadius: '50%', flexShrink: 0,
+          background: isZeroButExpected ? AMBER : sunIsUp ? SOLAR : MUTED,
+        },
+      }),
+      React.createElement('span', {
+        className: 'font-mono text-[9px]',
+        style: { color: isZeroButExpected ? AMBER : sunIsUp ? SOLAR : MUTED },
+      }, isZeroButExpected
+        ? `${sunElevStr} · zero output — investigate`
+        : sunElevStr,
+      ),
+      // Expected MW when sun is up
+      sunIsUp
+        ? React.createElement('span', {
+            className: 'font-mono text-[9px] ml-auto',
+            style: { color: MUTED },
+          }, `exp ${power.p_expected_mw.toFixed(2)} MW`)
+        : null,
+    )
+    : null
+
   return React.createElement('div', { className: 'mt-2 pt-2 space-y-0' },
+    sunBadge,
     liveOutputBars,
     // Section header
     React.createElement('div', {
@@ -578,18 +639,33 @@ export const renewablePanel: PanelConfig = {
     // live bank fleet.  Passing solarMW keeps bars in lock-step with the hero.
     const secondary = React.createElement(BankFleetPanel, {})
 
+    // Expected MW from physics model (bank telemetry at current sun angle)
+    const expMW = (tick as unknown as Record<string, number>).p_expected_mw ?? 0
+    const isZeroWhenExpected = expMW > 0.05 && solarMW < 0.01
+
     return {
-      stateLabel:  'ADVISORY',
-      stateColour: '#5a6673',
-      verdict:     solarMW > 0
+      stateLabel:  isZeroWhenExpected ? 'CHECK ARRAY' : 'ADVISORY',
+      stateColour: isZeroWhenExpected ? AMBER : '#5a6673',
+      verdict: solarMW > 0
         ? `Contributing ${solarMW.toFixed(2)} MW — and it can vanish with no warning.`
-        : 'No renewable output. Dispatch required equals total load.',
+        : isZeroWhenExpected
+          ? `Zero output but sun is up (expected ${expMW.toFixed(2)} MW). Check the array.`
+          : 'No renewable output — sun below horizon. Dispatch required equals total load.',
       heroValue:  solarMW.toFixed(2),
       heroLabel:  'MW, uncounted',
       chartTitle: 'CONTRIBUTION, AND EXPOSURE IF IT STOPS',
       chart,
       statRows: [
         { label: 'Output',                  value: `${solarMW.toFixed(2)} MW`, sub: 'real-time · instantaneous' },
+        // Expected output from physics model at current sun angle
+        {
+          label: 'Expected output',
+          value: `${expMW.toFixed(2)} MW`,
+          sub: expMW > 0.05
+            ? (isZeroWhenExpected ? 'sun is up · zero actual output — investigate' : 'physics model at current sun angle')
+            : 'sun below horizon · night-time',
+          colour: isZeroWhenExpected ? AMBER : expMW > 0.05 ? SOLAR : MUTED,
+        },
         // net_demand_mw is the live interpolated field the fleet must cover after solar
         // offset — it changes visibly as compute ramps from idle (near 0) to full draw
         { label: 'Generators and battery covering', value: `${netDemand.toFixed(2)} MW`, colour: netDemand > 0 ? TEAL : SOLAR, sub: 'net demand after solar offset · live' },

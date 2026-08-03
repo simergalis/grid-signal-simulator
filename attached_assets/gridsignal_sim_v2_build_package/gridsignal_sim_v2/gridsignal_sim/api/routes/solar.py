@@ -30,13 +30,14 @@ from __future__ import annotations
 
 import asyncio
 import datetime
+import math
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import FileResponse, JSONResponse
 from typing import Optional
 
-from runtime.solar_sim import generate_solar_forecast
+from runtime.solar_sim import generate_solar_forecast, _solar_fraction_at
 
 router = APIRouter()
 
@@ -70,6 +71,7 @@ _VALID_STRESSORS = {
 # Existing: weather preview for the opening screen
 # ---------------------------------------------------------------------------
 
+
 @router.get("/solar-preview", tags=["solar"])
 async def get_solar_preview(request: Request) -> JSONResponse:
     """Return the current Mistral solar forecast label for the active site location.
@@ -81,14 +83,21 @@ async def get_solar_preview(request: Request) -> JSONResponse:
 
     Falls back silently to a physics estimate when MISTRAL_API_KEY is absent
     or the API call fails.
+
+    Extended fields (Task-75):
+      sun_elevation_deg  — sun elevation angle in degrees; negative = below horizon.
+      expected_fraction  — physics-model output fraction at current time [0, 1].
+      lat                — site latitude degrees North.
+      utc_offset_h       — DST-aware UTC offset used for the computation.
+      plant_rated_ac_mw  — AC rated capacity of the PV plant in MW.
     """
-    from site_config import get_site_location_or_default as _gslod, utc_offset_for_dt as _uoff
+    from api.routes.location import current_utc_offset_h as _live_offset
+    from site_config import get_site_location_or_default as _gslod
     loc = getattr(request.app.state, "site_location", None) or _gslod()
 
     utc_now  = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
-    # DST-aware local time for the display badge
-    _utc_off = _uoff(loc.tz_name, datetime.datetime.now(datetime.timezone.utc))
-    local_dt = utc_now + datetime.timedelta(hours=_utc_off)
+    live_offset = _live_offset(loc)
+    local_dt = utc_now + datetime.timedelta(hours=live_offset)
     local_time = local_dt.strftime("%H:%M")
 
     forecast = generate_solar_forecast(
@@ -97,12 +106,24 @@ async def get_solar_preview(request: Request) -> JSONResponse:
         site=loc,           # preferred: longitude-based true solar time
     )
 
+    sun_elev      = _sun_elevation_deg(utc_now, loc.latitude_deg, live_offset)
+    expected_frac = _solar_fraction_at(utc_now, lat_deg=loc.latitude_deg, utc_offset_h=live_offset)
+
+    # Plant rated MW from the live SolarSim if available, else canonical default.
+    solar_sim = getattr(request.app.state, "solar_sim", None)
+    plant_rated_mw = solar_sim.cfg.plant_rated_ac_mw if solar_sim is not None else 4.99
+
     return JSONResponse({
-        "weather":    forecast.weather,
-        "conditions": forecast.conditions,
-        "source":     forecast.source,
-        "local_time": local_time,
-        "site_name":  loc.site_name,
+        "weather":           forecast.weather,
+        "conditions":        forecast.conditions,
+        "source":            forecast.source,
+        "local_time":        local_time,
+        "site_name":         loc.site_name,
+        "sun_elevation_deg": round(sun_elev, 1),
+        "expected_fraction": round(expected_frac, 4),
+        "lat":               loc.latitude_deg,
+        "utc_offset_h":      live_offset,
+        "plant_rated_ac_mw": round(plant_rated_mw, 3),
     })
 
 
@@ -129,14 +150,46 @@ async def solar_state(request: Request) -> JSONResponse:
     Bank states: nominal | degraded | out | no_comms.
     reserve.n1 and reserve.n1_feeder are both present and sized on the largest
     feeder (§5); reserve.n1_bank holds the largest individual bank figure.
+
+    Extended fields (Task-75):
+      site.sun_elevation_deg — sun elevation angle in degrees; negative = below horizon.
+      site.lat               — site latitude in degrees North.
+      site.utc_offset_h      — DST-aware UTC offset used for the computation.
     """
-    return JSONResponse(_get_sim(request).snapshot())
+    from api.routes.location import current_utc_offset_h as _live_offset
+    from site_config import get_site_location_or_default as _gslod
+    snap = _get_sim(request).snapshot()
+
+    loc = getattr(request.app.state, "site_location", None) or _gslod()
+    utc_now    = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+    live_off   = _live_offset(loc)
+    sun_elev   = _sun_elevation_deg(utc_now, loc.latitude_deg, live_off)
+
+    snap["site"]["sun_elevation_deg"] = round(sun_elev, 1)
+    snap["site"]["lat"]               = loc.latitude_deg
+    snap["site"]["utc_offset_h"]      = live_off
+
+    return JSONResponse(snap)
 
 
 @router.get("/api/solar/config", tags=["solar"])
 async def solar_config(request: Request) -> JSONResponse:
-    """Site constants only — subset of /api/solar/state['site']."""
-    return JSONResponse(_get_sim(request).snapshot()["site"])
+    """Site constants only — subset of /api/solar/state['site'].
+
+    Includes Task-75 sun elevation fields so /config is always a superset of
+    the site keys the frontend reads from /api/solar/state.
+    """
+    from api.routes.location import current_utc_offset_h as _live_offset
+    from site_config import get_site_location_or_default as _gslod
+    site = _get_sim(request).snapshot()["site"]
+    loc = getattr(request.app.state, "site_location", None) or _gslod()
+    utc_now  = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+    live_off = _live_offset(loc)
+    sun_elev = _sun_elevation_deg(utc_now, loc.latitude_deg, live_off)
+    site["sun_elevation_deg"] = round(sun_elev, 1)
+    site["lat"]               = loc.latitude_deg
+    site["utc_offset_h"]      = live_off
+    return JSONResponse(site)
 
 
 @router.post("/api/solar/inject/{kind}", tags=["solar"])
@@ -190,3 +243,24 @@ async def solar_console() -> FileResponse:
     if not _CONSOLE_HTML.exists():
         raise HTTPException(status_code=404, detail="Console HTML not found")
     return FileResponse(str(_CONSOLE_HTML), media_type="text/html")
+
+def _sun_elevation_deg(
+    utc_dt: datetime.datetime,
+    lat_deg: float,
+    utc_offset_h: float,
+) -> float:
+    """Return sun elevation angle in degrees (negative when below horizon)."""
+    local_h = (
+        utc_dt.hour + utc_dt.minute / 60.0 + utc_dt.second / 3600.0 + utc_offset_h
+    ) % 24.0
+    hour_angle_rad = math.radians((local_h - 12.0) * 15.0)
+    day_of_year = utc_dt.timetuple().tm_yday
+    decl_rad = math.radians(
+        23.45 * math.sin(math.radians(360.0 / 365.0 * (day_of_year - 81)))
+    )
+    lat_rad = math.radians(lat_deg)
+    sin_elev = (
+        math.sin(lat_rad) * math.sin(decl_rad)
+        + math.cos(lat_rad) * math.cos(decl_rad) * math.cos(hour_angle_rad)
+    )
+    return math.degrees(math.asin(max(-1.0, min(1.0, sin_elev))))
