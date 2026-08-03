@@ -65,3 +65,20 @@ Physics fallback sets: weather="physics_estimate", conditions="Physics estimate 
 The solar code is in the FastAPI Python server (`artifacts/gridsignal: web`).
 The `artifacts/api-server` workflow is a DIFFERENT Node.js server. Restarting the
 wrong one leaves old code running — solar output stays flat at rated_mw.
+
+## THE TRAP: nighttime PST = fraction 0 for all scenarios without utc_hour override
+Only `demo-solar-peak` had `solar_origin_utc_hour=20`. Every other solar scenario
+(demo-20mw, fabric-stress variants, etc.) used real wall-clock UTC. At nighttime PST
+(roughly 20:00–06:00 local), `generate_solar_forecast` physics fallback returns
+elevation < 0 → fraction = 0.0 → p_renewable_mw = 0 for the entire run.
+**Fix (runs.py)**: auto-noon fallback — when `solar_origin_utc_hour` is absent AND
+the site's local hour is outside 06:00–20:00, compute `utc_hour = int((12 − utc_offset) % 24)`
+and apply it before calling `generate_solar_forecast`. Scenarios that need explicit
+nighttime solar must set `irradiance_steps` directly (bypasses the forecast call).
+
+## THE TRAP: cold-start zeros after any run
+`SolarSim._mistral_fraction_received_at` is set by `set_mistral_fraction()` during a
+run. After `clear_run_sync()` it resets to None — but until then (or if clear_run_sync
+is missed) the Mistral path runs with the last fraction (often 0.0). The cold-start
+POA fallback in `live_aggregate_mw()` only fires when `_mistral_fraction_received_at is
+None`. Guard: confirm `clear_run_sync()` is called on run end in run_manager.py line ~1196.
