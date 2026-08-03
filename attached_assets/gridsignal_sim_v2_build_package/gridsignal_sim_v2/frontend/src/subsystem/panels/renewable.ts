@@ -192,6 +192,21 @@ function BankFleetPanel({ tickSolarMW = null }: BankFleetPanelProps): React.Reac
 
   const { power, site, feeders, banks, exposure, reserve, advisories } = solar
 
+  // ── Run-sync reconciliation ───────────────────────────────────────────────
+  // The snapshot polls at 1.5 s; the tick arrives via WS every 5 s.  On rare
+  // occasions (first tick after run start, or a tick missed by the poll) the
+  // backend scaling may not yet have zeroed the physics values in the snapshot.
+  // We reconcile here so the bank rows always agree with the hero/bars:
+  //   • tickSolarMW is null  → no run active; show raw snapshot physics (scale 1)
+  //   • snapshot total > 0   → scale = tick / snapshot total
+  //   • snapshot total = 0   → both already agree at 0; scale = 1 (no-op)
+  const snapshotSolarMW = power.p_renewable_mw
+  const runScale: number = (tickSolarMW !== null && snapshotSolarMW > 1e-3)
+    ? Math.max(0, tickSolarMW / snapshotSolarMW)
+    : (tickSolarMW !== null && snapshotSolarMW <= 1e-3)
+      ? 0   // snapshot already at zero — no-op but keeps value at 0
+      : 1   // no run active — show raw physics
+
   // ── Live output bars ─────────────────────────────────────────────────────
   // Value: tickSolarMW when a run is active (same source as hero/verdict/stats
   // so all four always agree); falls back to snapshot when no run yet.
@@ -255,7 +270,7 @@ function BankFleetPanel({ tickSolarMW = null }: BankFleetPanelProps): React.Reac
           React.createElement('span', {
             className: 'font-mono text-[10px]',
             style: { color: feeder.state === 'nominal' ? SOLAR : feederStateColour(feeder.state) },
-          }, `${feeder.output_mw.toFixed(3)} MW`),
+          }, `${(feeder.output_mw * runScale).toFixed(3)} MW`),
           feeder.expected_mw > 0
             ? React.createElement('span', { className: 'font-mono text-[9px] text-muted' },
                 `/ ${feeder.expected_mw.toFixed(3)} exp`,
@@ -286,10 +301,11 @@ function BankFleetPanel({ tickSolarMW = null }: BankFleetPanelProps): React.Reac
 
     // Bank rows
     const bankRows = feederBanks.map(bank => {
-      const isNoComms = bank.state === 'no_comms'
-      const maxMW     = Math.max(bank.expected_mw, bank.output_mw, 0.001)
-      const dotColour = stateColour(bank.state)
-      const chipLabel = stateLabel(bank.state, bank.reason)
+      const isNoComms      = bank.state === 'no_comms'
+      const scaledOutputMW = bank.operator_shutdown ? 0 : bank.output_mw * runScale
+      const maxMW          = Math.max(bank.expected_mw, scaledOutputMW, 0.001)
+      const dotColour      = stateColour(bank.state)
+      const chipLabel      = stateLabel(bank.state, bank.reason)
 
       return React.createElement('div', {
         key: bank.id,
@@ -327,7 +343,7 @@ function BankFleetPanel({ tickSolarMW = null }: BankFleetPanelProps): React.Reac
               })
             : React.createElement(BulletBar, {
                 label:  '',
-                value:  bank.output_mw,
+                value:  scaledOutputMW,
                 max:    maxMW,
                 colour: dotColour,
                 unit:   '',
@@ -339,7 +355,7 @@ function BankFleetPanel({ tickSolarMW = null }: BankFleetPanelProps): React.Reac
         React.createElement('span', {
           className: 'font-mono text-[9px] w-[38px] text-right shrink-0',
           style: { color: isNoComms ? MUTED : dotColour },
-        }, isNoComms ? '—' : `${bank.output_mw.toFixed(3)}`),
+        }, isNoComms ? '—' : `${scaledOutputMW.toFixed(3)}`),
 
         // State chip
         React.createElement('span', {
