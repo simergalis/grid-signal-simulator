@@ -54,6 +54,7 @@ CSV_COLUMNS: list[str] = [
     "bess_power_mw",          # positive = discharging, negative = charging
     "bess_terminal_voltage_v",
     # Compute Racks
+    "compute_load_mw",            # actual MW draw (cpu_pct × rated 5 MW)
     "compute_cpu_load_pct",
     "compute_mem_util_pct",
     "compute_inlet_temp_c",
@@ -61,6 +62,8 @@ CSV_COLUMNS: list[str] = [
     "cooling_chws_temp_c",    # chilled water supply temperature
     "cooling_pump_flow_ls",   # litres per second
     "cooling_cop",            # coefficient of performance
+    # Scheduler diagnostics
+    "step_event",             # 1 when a training-step boundary falls in this tick window
 ]
 
 
@@ -105,6 +108,7 @@ class SimulatedGrid:
     BESS_RATED_V    = 1500.0   # nominal DC link voltage
 
     # ---- Compute Racks: ~5 MW total load -----------------------------------
+    COMPUTE_RATED_MW     = 5.0    # electrical nameplate for the whole cluster
     COMPUTE_LOAD_PCT_MIN = 40.0
     COMPUTE_LOAD_PCT_MAX = 98.0
 
@@ -211,6 +215,7 @@ class SimulatedGrid:
             "bess_soc_pct":              round(self._soc, 2),
             "bess_power_mw":             round(bess_mw, 2),
             "bess_terminal_voltage_v":   bess_v,
+            "compute_load_mw":           round(cpu_load / 100.0 * self.COMPUTE_RATED_MW, 3),
             "compute_cpu_load_pct":      round(cpu_load, 1),
             "compute_mem_util_pct":      round(mem_util, 1),
             "compute_inlet_temp_c":      inlet_temp,
@@ -260,7 +265,11 @@ def main() -> None:
     parser.add_argument("--rows", type=int, default=0,
                         help="Stop after N rows (0 = run until Ctrl-C)")
     parser.add_argument("--interval", type=float, default=1.0,
-                        help="Seconds between rows (default: 1.0; use 0.05 for fast test mode)")
+                        help="Seconds between rows (default: 1.0)")
+    parser.add_argument("--step-period", type=float, default=0.7,
+                        help="Scheduler training-step period in seconds (default: 0.7). "
+                             "step_event=1 is written whenever a step boundary falls "
+                             "inside the current tick window. Set to 0 to disable.")
     args = parser.parse_args()
 
     output_path = Path(args.out)
@@ -293,6 +302,18 @@ def main() -> None:
 
             # Replace wall-clock timestamp with elapsed time "xx.y s"
             row["timestamp"] = f"{count * args.interval:.1f}"
+
+            # Mark scheduler step boundaries so aliasing can be ruled out.
+            # step_event=1 when a training-step boundary falls in [t_prev, t_now).
+            if args.step_period > 0:
+                t_now  = count * args.interval
+                t_prev = max(0, count - 1) * args.interval
+                row["step_event"] = int(
+                    int(t_now  / args.step_period) >
+                    int(t_prev / args.step_period)
+                )
+            else:
+                row["step_event"] = 0
 
             # Write to CSV
             try:

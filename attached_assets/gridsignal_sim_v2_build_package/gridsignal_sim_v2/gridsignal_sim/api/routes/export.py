@@ -31,9 +31,9 @@ router = APIRouter()
 #   api/routes/export.py → api/ → gridsignal_sim/ → gridsignal_sim_v2/ → (workspace root)
 _LOGGER_SCRIPT = Path(__file__).resolve().parents[6] / "gridsignal_logger.py"
 
-# 60 rows × 0.2 s = 12 s of logging at 5 Hz.
-_TEST_ROWS     = 60
-_TEST_INTERVAL = 0.2
+# 600 rows × 0.1 s = 60 s of logging at 10 Hz.
+_TEST_ROWS     = 600
+_TEST_INTERVAL = 0.1
 
 
 @router.post("/api/export/telemetry-log", include_in_schema=True)
