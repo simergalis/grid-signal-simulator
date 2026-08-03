@@ -186,10 +186,12 @@ async def _clear_cloud_later(sim) -> None:
 async def solar_console() -> FileResponse:
     """Serve the Renewable Supply Console.
 
-    The console is a self-contained HTML file that polls /api/solar/state and
+    The console is a render-only HTML file that polls /api/solar/state and
     POSTs to /api/solar/inject/{kind}.  Both paths resolve correctly from the
-    same origin.  The page also runs entirely in-browser if the server is
-    unreachable (it carries its own physics mirror).
+    same origin.  All power scalars (blockOutput, bessBridging, pCooling,
+    pDispatchRequired) are computed here on the server; the page only renders
+    the values it receives.  A 'SERVER REQUIRED' banner is shown if the server
+    is unreachable.
     """
     if not _CONSOLE_HTML.exists():
         raise HTTPException(status_code=404, detail="Console HTML not found")

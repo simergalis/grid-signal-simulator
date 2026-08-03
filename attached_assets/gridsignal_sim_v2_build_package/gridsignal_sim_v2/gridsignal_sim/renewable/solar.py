@@ -1175,7 +1175,9 @@ class SolarSim:
                 "p_compute_mw":         st.p_compute_mw,
                 "p_cooling_mw":         p_cooling_mw(cfg, st),
                 "p_total_mw":           total,
-                "p_dispatch_required_mw": p_dispatch_required_mw(cfg, st),
+                # Use the run-synchronized `solar` so dispatch reconciles with
+                # p_renewable_mw when run-sync scaling has been applied.
+                "p_dispatch_required_mw": total - solar,
                 "share_of_site_draw_pct": (solar / total * 100.0) if total else 0.0,
                 "clipping":             solar >= cfg.plant_rated_ac_mw * 0.995,
             },

@@ -674,34 +674,25 @@
 (function(){
   "use strict";
 
-  // ---------------- site configuration ----------------
-  var CFG = {
-    banks: 20,                   // 20 × 0.25 MW banks across 4 feeders
-    bankRatedAC: 0.25,           // MW per bank
-    get blocks(){ return this.banks; },          // backward-compat alias
-    get blockRatedAC(){ return this.bankRatedAC; },
-    dcacRatio: 1.30,
-    plantRatedAC: 5.00,
-    plantRatedDC: 6.50,
-    stringsPerBank: 6,           // strings per bank
-    get stringsPerBlock(){ return this.stringsPerBank; },
-    feederIds: ['fdr-A', 'fdr-B', 'fdr-C', 'fdr-D'],  // 5 banks per feeder
-    turbines: [{id:'gt-01', mw:5.0, online:true, r:0.2},
-               {id:'gt-02', mw:5.0, online:true, r:0.2},
-               {id:'gt-03', mw:5.0, online:false, r:0.2}],
-    bessRatedMW: 10.0,
-    bessMWh: 5.0,
-    bessSoC: 0.82,
-    anchorReserveMW: 2.0,        // grid-forming duty, islanded
-    cloudRampBound: 0.42         // MW/s plant-wide, bounded by spatial diversity
+  // ---------------- site constants (populated from SRV.site on first connect) ----------------
+  // Defaults match the San Diego seed so render calls are safe before the first poll returns.
+  var SITE = {
+    plantRatedAC:    5.00,   // MW AC nameplate
+    plantRatedDC:    6.50,   // MWp DC nameplate
+    stringsPerBank:  6,
+    cloudRampBound:  0.42,   // MW/s plant-wide
+    bessRatedMW:     10.0,
+    bessMWh:         5.0,
+    anchorReserveMW: 2.0
   };
 
-  // ---------------- mutable state ----------------
+  // ---------------- mutable state (render layer only — no local physics) ----------------
   var S = {
     t: 0, running: true,
-    poa: 969, clearSkyPoa: 1005, moduleC: 48,
-    soiling: 0.030, cloudFactor: 1.0, cloudTarget: 1.0,
-    pCompute: 10.40, pComputeTarget: 10.40,
+    // atmosphere mirrors — set by applySnapshot(); read by renderConditions/renderForecast
+    poa: 0, clearSkyPoa: 0, moduleC: 25,
+    soiling: 0, cloudFactor: 1.0, cloudTarget: 1.0,
+    pCompute: 0,
     blocks: [], feeders: [], hist: [], fault: null, log: [],
     advisories: []
   };
@@ -709,18 +700,6 @@
   // Layer 1 "if solar stops" simulation state
   var _solarStopSim = false;
   var _solarStopTimer = null;
-
-  for (var i = 0; i < CFG.banks; i++) {
-    var _fdrIdx = Math.floor(i / (CFG.banks / CFG.feederIds.length));
-    S.blocks.push({
-      id: 'bnk-' + (i < 9 ? '0' : '') + (i+1),
-      feederId: CFG.feederIds[_fdrIdx],
-      rated: CFG.bankRatedAC,
-      state: 'nominal',          // four states: nominal/degraded/out/no_comms
-      derate: 1.0, stringsOut: 0, invC: 41 + (i % 5), avail: 1.0,
-      soilBias: 1 + ((i % 5) - 2) * 0.006
-    });
-  }
 
   // ---------------- server mode ----------------
   var SRV = null, SERVER_MODE = false, srvBusy = false;
@@ -732,9 +711,19 @@
     S.cloudFactor = d.atmosphere.cloud_factor; S.moduleC = d.atmosphere.module_temp_c;
     S.soiling = d.atmosphere.soiling;
     S.pCompute = d.power.p_compute_mw;
-    CFG.bessSoC = d.fleet.bess_soc;
-    CFG.turbines = d.fleet.turbines.map(function(t){
-      return { id:t.id, mw:t.mw, online:t.online, r:t.ramp_mw_per_s }; });
+    // Keep cloudTarget in sync with the actual factor so renderForecast projects
+    // from the current server-reported conditions rather than a stale local value.
+    S.cloudTarget = S.cloudFactor;
+    // Populate SITE from the server's authoritative config (replaces local CFG).
+    if (d.site) {
+      SITE.plantRatedAC    = d.site.plant_rated_ac_mw;
+      SITE.plantRatedDC    = d.site.plant_rated_dc_mwp;
+      SITE.stringsPerBank  = d.site.strings_per_bank;
+      SITE.cloudRampBound  = d.site.cloud_ramp_bound_mw_per_s;
+      SITE.bessRatedMW     = d.site.bess_rated_mw;
+      SITE.bessMWh         = d.site.bess_mwh;
+      SITE.anchorReserveMW = d.site.anchor_reserve_mw;
+    }
     // Consume `banks` (new contract); fall back to `blocks` for compat.
     var bankList = d.banks || d.blocks || [];
     S.blocks = bankList.map(function(b){
@@ -782,101 +771,64 @@
     renderLog();
   }
 
-  // ---------------- physics ----------------
-  function blockOutput(b){
-    if (b.srvOut !== undefined) return b.srvOut;  // server provides counted_output_mw (0 for out/no_comms)
-    if (b.state === 'out' || b.state === 'no_comms' || b.state === 'fault') return 0;
-    var irr = S.poa * S.cloudFactor / 1000;
-    var tempDerate = 1 - 0.0038 * Math.max(0, S.moduleC - 25);
-    var stringLoss = 1 - (b.stringsOut / CFG.stringsPerBank);
-    var raw = b.rated * irr * (1 - S.soiling) * tempDerate * stringLoss * b.derate * b.soilBias;
-    return clamp(raw, 0, b.rated);           // AC clip at inverter nameplate
-  }
-  function clearSkyBlock(b){
-    if (b.srvCs !== undefined) return b.srvCs;
-    var irr = S.clearSkyPoa / 1000;
-    var tempDerate = 1 - 0.0038 * Math.max(0, S.moduleC - 25);
-    return clamp(b.rated * irr * tempDerate, 0, b.rated);
-  }
-  function pRenewable(){ var s=0; for(var i=0;i<S.blocks.length;i++) s+=blockOutput(S.blocks[i]); return s; }
-  function pClearSky(){ var s=0; for(var i=0;i<S.blocks.length;i++) s+=clearSkyBlock(S.blocks[i]); return s; }
-  function pCooling(){ return SRV ? SRV.power.p_cooling_mw : S.pCompute * 0.158; }
-  function pTotal(){ return S.pCompute + pCooling(); }
-  function pNet(){ return pTotal() - pRenewable(); }
-  function pExpected(){
-    if (SRV && SRV.power && SRV.power.p_expected_mw !== undefined) return SRV.power.p_expected_mw;
-    return pClearSky();
-  }
-  function banksReporting(){
-    if (SRV && SRV.power && SRV.power.banks_reporting !== undefined) return SRV.power.banks_reporting;
-    return S.blocks.filter(function(b){ return b.state !== 'no_comms'; }).length;
-  }
-  function banksTotal(){
-    if (SRV && SRV.power && SRV.power.banks_total !== undefined) return SRV.power.banks_total;
-    return CFG.banks;
-  }
-  function largestFeederId(){
-    if (SRV && SRV.exposure && SRV.exposure.largest_feeder_id) return SRV.exposure.largest_feeder_id;
-    // offline fallback: find feeder with max output
-    var feederSums = {};
-    S.blocks.forEach(function(b){
-      var fid = b.feederId || 'fdr-?';
-      feederSums[fid] = (feederSums[fid]||0) + blockOutput(b);
-    });
-    var mx=0, mxId='fdr-?';
-    for (var k in feederSums){ if(feederSums[k]>mx){ mx=feederSums[k]; mxId=k; } }
-    return mxId;
-  }
+  // ---------------- render helpers (server-read; no local physics) ----------------
+  // All power and state scalars come from SRV (populated by applySnapshot).
+  // Functions return 0 / [] / '-' when the server has not yet responded.
 
-  function onlineTurbines(){ return CFG.turbines.filter(function(t){ return t.online; }); }
-  function fleetRamp(){ var r=0; onlineTurbines().forEach(function(t){ r+=t.r; }); return r; }   // MW/s
-  function bessBridging(){
-    if (SRV) return SRV.fleet.bess_bridging_mw;
-    return Math.max(0, Math.min(CFG.bessRatedMW, CFG.bessRatedMW * CFG.bessSoC) - CFG.anchorReserveMW);
+  function blockOutput(b)   { return b.srvOut !== undefined ? b.srvOut : 0; }
+  function clearSkyBlock(b) { return b.srvCs  !== undefined ? b.srvCs  : 0; }
+
+  function pRenewable()  { return SRV ? SRV.power.p_renewable_mw          : 0; }
+  function pClearSky()   { return SRV ? SRV.power.p_clear_sky_mw          : 0; }
+  function pCooling()    { return SRV ? SRV.power.p_cooling_mw            : 0; }
+  function pTotal()      { return SRV ? SRV.power.p_total_mw              : 0; }
+  function pNet()        { return SRV ? SRV.power.p_dispatch_required_mw  : 0; }
+  function pExpected()   { return SRV ? SRV.power.p_expected_mw           : 0; }
+
+  function banksReporting() { return SRV ? SRV.power.banks_reporting : 0; }
+  function banksTotal()     { return SRV ? SRV.power.banks_total     : 0; }
+
+  function largestFeederId() { return SRV && SRV.exposure ? SRV.exposure.largest_feeder_id : '-'; }
+
+  function onlineTurbines() {
+    return SRV ? SRV.fleet.turbines.filter(function(t){ return t.online; }) : [];
   }
-  function bessUsableMWh(){
-    if (SRV) return SRV.fleet.bess_usable_mwh;
-    return CFG.bessMWh * CFG.bessSoC * 0.9;
-  }
+  function fleetRamp() { return SRV ? SRV.fleet.fleet_ramp_mw_per_s : 0; }
+
+  function bessBridging()  { return SRV ? SRV.fleet.bess_bridging_mw : 0; }
+  function bessUsableMWh() { return SRV ? SRV.fleet.bess_usable_mwh  : 0; }
 
   // N−1 is sized on the largest FEEDER loss (§5), not the largest individual bank.
-  function largestFeederMW(){
-    if (SRV && SRV.reserve && SRV.reserve.n1_feeder)
-      return SRV.reserve.n1_feeder.delta_p_mw;
-    if (S.feeders && S.feeders.length){
-      var m=0; S.feeders.forEach(function(fd){ if(fd.output_mw>m) m=fd.output_mw; }); return m;
-    }
-    var feederSums = {};
-    S.blocks.forEach(function(b){
-      var fid = b.feederId || 'fdr-X';
-      feederSums[fid] = (feederSums[fid]||0) + blockOutput(b);
-    });
-    var mx=0; for(var k in feederSums){ if(feederSums[k]>mx) mx=feederSums[k]; } return mx;
+  function largestFeederMW() {
+    return SRV && SRV.reserve && SRV.reserve.n1_feeder
+      ? SRV.reserve.n1_feeder.delta_p_mw : 0;
   }
-  function largestBankMW(){
-    var m = 0; S.blocks.forEach(function(b){ var o = blockOutput(b); if (o > m) m = o; }); return m;
-  }
+  function largestBankMW() { return SRV && SRV.exposure ? SRV.exposure.largest_bank_mw : 0; }
   function largestBlockMW(){ return largestBankMW(); }
 
-  // Reserve check per §7.2 step 4, with dt_lead = 0 for a supply-side step.
-  function reserveCheck(dP, dtLead){
-    var r = fleetRamp();
-    var rampTime = r > 0 ? dP / r : Infinity;
-    var gap = Math.max(0, rampTime - (dtLead||0));
-    var bridge = bessBridging();
-    var peakShortfall = Math.max(0, dP - r * (dtLead||0));
-    var energyNeeded = peakShortfall * gap / 2 / 3600;
-    var sustainSec = peakShortfall > 0 ? (bessUsableMWh() / peakShortfall) * 3600 : Infinity;
-    var powerOK = peakShortfall <= bridge;
-    var energyOK = energyNeeded <= bessUsableMWh();
+  // Reserve check results — read from the server's authoritative pre-computed payload.
+  // The server re-runs reserve_check() after every run-sync scaling step, so these
+  // values always reconcile with p_renewable_mw.  Infinity JSON-nulls are restored.
+  function _mapRC(r) {
+    if (!r) return { pass:false, dP:0, rampTime:Infinity, gap:0, peak:0, bridge:0,
+                     energyNeeded:0, sustainSec:Infinity, deficitMW:0, deficitSec:0 };
     return {
-      dP: dP, rampTime: rampTime, gap: gap, peak: peakShortfall, bridge: bridge,
-      energyNeeded: energyNeeded, sustainSec: sustainSec,
-      pass: powerOK && energyOK,
-      deficitMW: Math.max(0, peakShortfall - bridge),
-      deficitSec: energyOK ? 0 : Math.max(0, gap - sustainSec)
+      dP:          r.delta_p_mw,
+      rampTime:    r.ramp_time_s            === null ? Infinity : r.ramp_time_s,
+      gap:         r.gap_s,
+      peak:        r.peak_shortfall_mw,
+      bridge:      r.bridging_available_mw,
+      energyNeeded: r.energy_needed_mwh,
+      sustainSec:  r.sustainable_duration_s === null ? Infinity : r.sustainable_duration_s,
+      pass:        r.passes,
+      deficitMW:   r.deficit_mw,
+      deficitSec:  r.deficit_s,
     };
   }
+  function rcPlant()    { return SRV ? _mapRC(SRV.reserve.plant)     : _mapRC(null); }
+  function rcN1Feeder() { return SRV ? _mapRC(SRV.reserve.n1_feeder) : _mapRC(null); }
+  function rcN1Bank()   { return SRV ? _mapRC(SRV.reserve.n1_bank)   : _mapRC(null); }
+  function rcCompound() { return SRV ? _mapRC(SRV.reserve.compound)  : _mapRC(null); }
 
   // ---------------- svg drawing ----------------
   function ns(tag, attrs){
@@ -944,13 +896,13 @@
     var cur = pRenewable(), past=[];
     for (var s=-600;s<=0;s+=20){
       var wob = Math.sin(s/97)*0.07 + Math.sin(s/211)*0.05;
-      past.push([s, clamp(cur*(1+wob) + s*0.00008*cur, 0, CFG.plantRatedAC*CFG.blocks)]);
+      past.push([s, clamp(cur*(1+wob) + s*0.00008*cur, 0, SITE.plantRatedAC)]);
     }
     var mean=[], hi=[], lo=[];
     for (var q=0;q<=900;q+=30){
       var decay = 1 - q*0.000075;
       var m = cur*decay*S.cloudTarget/Math.max(S.cloudFactor,0.01);
-      m = clamp(m,0,CFG.plantRatedAC*CFG.blocks);
+      m = clamp(m,0,SITE.plantRatedAC);
       var sigma = 0.018 + q*0.000115;
       mean.push([q,m]); hi.push([q, clamp(m*(1+sigma*1.9),0,6)]); lo.push([q, Math.max(0,m*(1-sigma*2.6))]);
     }
@@ -1065,7 +1017,7 @@
       gapFrac     = 0;
     } else {
       // Simulate solar going to zero; reserve tries to fill
-      var rc = reserveCheck(solar, 0);
+      var rc = rcPlant();
       solarFrac   = 0;
       if (rc.pass){
         bessFrac    = tot > 0 ? clamp(bridge / tot, 0, 1) : 0;
@@ -1093,7 +1045,7 @@
         gapMsg.className = 'cvg-gap-msg';
         gapMsg.textContent = '';
       } else {
-        var rc2 = reserveCheck(solar, 0);
+        var rc2 = rcPlant();
         if (rc2.pass){
           gapMsg.className = 'cvg-gap-msg on ok';
           gapMsg.textContent = 'Reserve covers the loss. BESS bridges a ' + f(rc2.peak, 2)
@@ -1232,13 +1184,13 @@
       stateNote = '<div class="cap" style="color:var(--coral);margin-top:5px">Bank tripped'
         + (b.fault?' \u2014 '+b.fault:'')+'. Counted as zero.</div>';
     var rows = '';
-    for (var s=1; s<=CFG.stringsPerBank; s++){
+    for (var s=1; s<=SITE.stringsPerBank; s++){
       var out = s <= b.stringsOut;
       rows += '<span title="string '+s+'" style="width:13px;height:13px;display:inline-block;margin:2px;'
            + 'background:'+(out?'#4d2320':'#26463f')+';border:1px solid '+(out?'#ef5a4c':'#2f5a52')+'"></span>';
     }
     return '<div style="display:flex;gap:18px;flex-wrap:wrap;font-size:11px">'
-      + '<div><div class="cap" style="margin-bottom:4px">Strings ('+(CFG.stringsPerBank-b.stringsOut)+'/'+CFG.stringsPerBank+' active)</div>'+rows+'</div>'
+      + '<div><div class="cap" style="margin-bottom:4px">Strings ('+(SITE.stringsPerBank-b.stringsOut)+'/'+SITE.stringsPerBank+' active)</div>'+rows+'</div>'
       + '<div class="ledger" style="min-width:220px">'
       + '<div class="lrow"><div class="k">Measured output</div><div class="r"><div class="val num">'+f(o)+' MW</div></div></div>'
       + '<div class="lrow"><div class="k">Expected now</div><div class="r"><div class="val num">'+f(cs)+' MW</div><div class="sub">clear-sky model</div></div></div>'
@@ -1269,8 +1221,8 @@
     + row('Module temperature', f(S.moduleC,0)+' &deg;C', 'derate 0.38%/K above 25 &deg;C &middot; costs '
           + f((cs-cur)*0.4,2)+' MW at present')
     + row('Soiling loss', f(S.soiling*100,1)+'%', '26 days since last wash &middot; proposed coefficient revision pending review')
-    + row('Inverter clipping', cur >= CFG.plantRatedAC*0.995 ? 'active' : 'none',
-          'DC/AC 1.30 &middot; clipping begins near '+f(CFG.plantRatedAC,2)+' MW AC')
+    + row('Inverter clipping', cur >= SITE.plantRatedAC*0.995 ? 'active' : 'none',
+          'DC/AC 1.30 &middot; clipping begins near '+f(SITE.plantRatedAC,2)+' MW AC')
     + row('Mount type', 'fixed', 'no tracker faults to report; no tracker to stow')
     + row('Control surface', 'none', 'passive collector \u2014 nothing to command', '')
     + row('Agent authority', 'advisory only', 'by construction \u2014 no dispatch path exists to this asset');
@@ -1278,11 +1230,11 @@
 
   function renderReserve(){
     var solar = pRenewable();
-    var rc = reserveCheck(solar, 0);
+    var rc = rcPlant();
     var n1 = largestFeederMW();
     var n1Id = largestFeederId();
-    var rcN1 = reserveCheck(n1, 0);
-    var compound = reserveCheck(solar + 6.0, 0);
+    var rcN1 = rcN1Feeder();
+    var compound = rcCompound();
 
     $('rvVerdict').textContent = rc.pass ? 'pass' : 'fail';
     $('rvVerdict').className = 'st ' + (rc.pass ? 'ok' : 'bad');
@@ -1304,12 +1256,12 @@
           'clear-sky model \u00b7 what the plant would produce at current irradiance with all banks online', 'num')
     + row('Banks reporting', banksReporting()+' of '+banksTotal(),
           S.blocks.filter(function(b){ return b.state==='no_comms'; }).length + ' in no-comms state')
-    + row('Turbines online', onlineTurbines().length + ' / ' + CFG.turbines.length,
+    + row('Turbines online', onlineTurbines().length + ' / ' + (SRV ? SRV.fleet.turbines.length : 0),
           'ramp '+f(fleetRamp(),2)+' MW/s \u00b7 '
           + f(onlineTurbines().reduce(function(a,t){return a+t.mw;},0),1)+' MW capacity')
-    + row('BESS rated', f(CFG.bessRatedMW,1)+' MW / '+f(CFG.bessMWh,1)+' MWh',
-          'state of charge '+f(CFG.bessSoC*100,0)+'%')
-    + row('Anchor reserve withheld', '\u2212'+f(CFG.anchorReserveMW,1)+' MW',
+    + row('BESS rated', f(SITE.bessRatedMW,1)+' MW / '+f(SITE.bessMWh,1)+' MWh',
+          'state of charge '+f((SRV?SRV.fleet.bess_soc:0)*100,0)+'%')
+    + row('Anchor reserve withheld', '\u2212'+f(SITE.anchorReserveMW,1)+' MW',
           'BESS is grid-forming while islanded \u00b7 \u00a77.1.2', 'num')
     + row('Bridging available', f(bessBridging(),2)+' MW',
           'anchor-adjusted \u2014 this is the figure the check uses', 'num')
@@ -1331,8 +1283,8 @@
     + '<div>Turbine ramp time = '+f(w.dP)+' / '+f(fleetRamp(),2)+' MW/s = <b>'+f(w.rampTime,1)+' s</b></div>'
     + '<div>Gap the BESS must bridge = '+f(w.rampTime,1)+' \u2212 0 = <b>'+f(w.gap,1)+' s</b>, shortfall declining from '
       + f(w.peak)+' MW to zero</div>'
-    + '<div>Bridging available = min('+f(CFG.bessRatedMW,1)+', '+f(CFG.bessRatedMW*CFG.bessSoC,2)
-      + ') \u2212 '+f(CFG.anchorReserveMW,1)+' = <b>'+f(w.bridge,2)+' MW</b></div>'
+    + '<div>Bridging available = min('+f(SITE.bessRatedMW,1)+', '+f(SITE.bessRatedMW*(SRV?SRV.fleet.bess_soc:0),2)
+      + ') \u2212 '+f(SITE.anchorReserveMW,1)+' = <b>'+f(w.bridge,2)+' MW</b></div>'
     + '<div>Sustainable duration at '+f(w.peak)+' MW = <b>'+(isFinite(w.sustainSec)?f(w.sustainSec,0):'\u221e')+' s</b>'
       + ' vs a '+f(w.gap,1)+' s gap</div>'
     + '<div style="margin-top:8px;color:'+(w.pass?'var(--teal)':'var(--coral)')+'">'
@@ -1358,14 +1310,14 @@
 
   function renderModalLedger(){
     var solar = pRenewable(), tot = pTotal();
-    var rc = reserveCheck(solar, 0);
+    var rc = rcPlant();
     $('mledger').innerHTML =
       row('Output', f(solar)+' MW',
           'real-time \u00b7 ' + banksReporting() + ' of ' + banksTotal() + ' banks reporting', 'num')
     + row('Expected now', f(pExpected())+' MW',
           'clear-sky model at current irradiance, all banks online', 'num')
-    + row('Rated', f(CFG.plantRatedAC)+' MW AC',
-          f(CFG.plantRatedDC)+' MWp DC \u00b7 DC/AC 1.30', 'num')
+    + row('Rated', f(SITE.plantRatedAC)+' MW AC',
+          f(SITE.plantRatedDC)+' MWp DC \u00b7 DC/AC 1.30', 'num')
     + row('Against expectation', f(pct(solar,pClearSky()),1)+'%',
           'measured vs clear-sky model \u2014 performance ratio', 'num')
     + row('Generators and battery covering', f(pNet())+' MW',
@@ -1378,7 +1330,7 @@
           'passive collector \u2014 nothing to command')
     + row('Lead time on loss', '0 s',
           'no advance signal exists for an electrical fault')
-    + row('Cloud ramp bound', '\u2212'+f(CFG.cloudRampBound,2)+' MW/s',
+    + row('Cloud ramp bound', '\u2212'+f(SITE.cloudRampBound,2)+' MW/s',
           'spatial diversity across 20 banks on 4 feeders \u2014 a transient is not a step')
     + row('Forecast treatment', 'subtracted',
           'reduces demand, never closes a gap')
@@ -1427,7 +1379,7 @@
   function render(){
     var solar = pRenewable(), tot = pTotal(), cs = pClearSky();
     $('k-out').textContent = f(solar);
-    $('k-pct').textContent = f(pct(solar,CFG.plantRatedAC),1)+'%';
+    $('k-pct').textContent = f(pct(solar,SITE.plantRatedAC),1)+'%';
     $('k-pr').textContent  = f(pct(solar,cs),1)+'%';
     $('k-poa').textContent = f(S.poa*S.cloudFactor,0);
     $('k-poasub').innerHTML = 'W/m&sup2; &middot; module '+f(S.moduleC,0)+' &deg;C';
@@ -1443,13 +1395,13 @@
     var n1 = largestFeederMW();
     var n1Id = largestFeederId();
     $('e1').textContent = f(n1)+' MW';
-    $('e1f').style.width = clamp(pct(n1,CFG.plantRatedAC),0,100)+'%';
+    $('e1f').style.width = clamp(pct(n1,SITE.plantRatedAC),0,100)+'%';
     $('e2').textContent = f(solar)+' MW';
-    $('e2f').style.width = clamp(pct(solar,CFG.plantRatedAC),0,100)+'%';
-    $('e3').innerHTML = '\u2212'+f(CFG.cloudRampBound,2)+' MW/s';
-    var rcN1 = reserveCheck(n1,0);
+    $('e2f').style.width = clamp(pct(solar,SITE.plantRatedAC),0,100)+'%';
+    $('e3').innerHTML = '\u2212'+f(SITE.cloudRampBound,2)+' MW/s';
+    var rcN1 = rcN1Feeder();
     $('e1n').innerHTML = 'step change, \u0394t_lead = 0 \u00b7 '+(rcN1.pass?'covered by BESS bridging in '+f(rcN1.gap,1)+' s':'NOT covered');
-    var rcAll = reserveCheck(solar,0);
+    var rcAll = rcPlant();
     $('e2n').innerHTML = 'step change, \u0394t_lead = 0 \u00b7 '+(rcAll.pass?'bridged in '+f(rcAll.gap,1)+' s':'shortfall '+f(rcAll.deficitMW)+' MW');
 
     $('trendnote').textContent = solar < cs*0.85 ? 'measured below clear-sky \u2014 cloud attenuation'
@@ -1467,7 +1419,7 @@
 
   function renderModalVerdict(){
     var solar = pRenewable();
-    var rc = reserveCheck(solar,0);
+    var rc = rcPlant();
     var n1 = largestFeederMW();
     var n1Id = largestFeederId();
     $('vbig').textContent = f(solar);
@@ -1475,14 +1427,14 @@
     $('vtext').innerHTML = solar <= 0.01
       ? 'Contributing nothing. Generators and battery are carrying the entire site.'
       : 'Contributing '+f(solar)+' MW \u2014 and '+f(solar)+' MW of it can vanish with no warning.';
-    $('m1').textContent = f(solar)+' / '+f(CFG.plantRatedAC)+' MW';
-    $('m1f').style.width = clamp(pct(solar,CFG.plantRatedAC),0,100)+'%';
-    $('m1n').innerHTML = f(pct(solar,CFG.plantRatedAC),1)+'% of AC nameplate \u00b7 '
-      + (solar>=CFG.plantRatedAC*0.995?'clipping':'not clipping');
+    $('m1').textContent = f(solar)+' / '+f(SITE.plantRatedAC)+' MW';
+    $('m1f').style.width = clamp(pct(solar,SITE.plantRatedAC),0,100)+'%';
+    $('m1n').innerHTML = f(pct(solar,SITE.plantRatedAC),1)+'% of AC nameplate \u00b7 '
+      + (solar>=SITE.plantRatedAC*0.995?'clipping':'not clipping');
     $('m2').textContent = f(n1)+' MW';
-    $('m2f').style.width = clamp(pct(n1,CFG.plantRatedAC),0,100)+'%';
+    $('m2f').style.width = clamp(pct(n1,SITE.plantRatedAC),0,100)+'%';
     $('m3').textContent = f(solar)+' MW';
-    $('m3f').style.width = clamp(pct(solar,CFG.plantRatedAC),0,100)+'%';
+    $('m3f').style.width = clamp(pct(solar,SITE.plantRatedAC),0,100)+'%';
     $('m3n').innerHTML = 'sizing contingency \u00b7 \u0394t_lead = 0 \u00b7 '
       + (rc.pass?'reserve check passes':'<span style="color:var(--coral)">reserve check FAILS</span>');
     $('msub').innerHTML = 'solar-0 \u00b7 fixed-mount PV \u00b7 '
@@ -1496,8 +1448,14 @@
 
     if (SERVER_MODE){
       pollServer().then(function(ok){
-        if (!ok){ SERVER_MODE = false; log('Server unreachable \u2014 falling back to '
-          + 'in-browser simulation. Numbers remain valid; the authority moved.', 'warn'); return; }
+        if (!ok){
+          SERVER_MODE = false;
+          $('modePill').textContent = 'SERVER UNREACHABLE';
+          $('modePill').style.borderColor = '#5c2020';
+          $('modePill').style.color = '#ef5a4c';
+          log('Server unreachable \u2014 live data unavailable. Reload to reconnect.', 'warn');
+          return;
+        }
         S.hist.push({ t:S.t, sol:pRenewable(), tot:pTotal(), net:pNet(), cs:pClearSky() });
         if (S.hist.length > 120) S.hist.shift();
         $('clk').textContent = SRV.wall_clock;
@@ -1506,20 +1464,8 @@
       return;
     }
 
-    S.t += 1;
-    S.cloudFactor += (S.cloudTarget - S.cloudFactor) * 0.12;
-    if (Math.abs(S.cloudTarget - S.cloudFactor) < 0.004) S.cloudFactor = S.cloudTarget;
-    S.pCompute += (S.pComputeTarget - S.pCompute) * 0.18;
-    S.poa = clamp(S.poa - 0.06 + (Math.random()-0.5)*1.6, 300, 1050);
-    S.clearSkyPoa = clamp(S.clearSkyPoa - 0.06, 320, 1100);
-    S.moduleC = clamp(S.moduleC + (S.cloudFactor>0.9?0.01:-0.05) + (Math.random()-0.5)*0.1, 20, 70);
-    S.blocks.forEach(function(b){ b.invC = clamp(b.invC + (Math.random()-0.5)*0.3, 25, 85); });
-
-    S.hist.push({ t:S.t, sol:pRenewable(), tot:pTotal(), net:pNet(), cs:pClearSky() });
-    if (S.hist.length > 120) S.hist.shift();
-
-    $('clk').textContent = new Date().toTimeString().slice(0,8);
-    render();
+    // Server not yet connected — wait for the first poll (boot) to succeed.
+    // No in-browser physics fallback; the server is the single source of truth.
   }
 
   // ---------------- stressors ----------------
@@ -1532,69 +1478,7 @@
         .catch(function(){ log('Injection failed \u2014 server did not accept the stressor.', 'bad'); });
       return;
     }
-    if (kind === 'cloud'){
-      S.cloudTarget = 0.42; log('Cloud transient injected \u2014 POA falling to ~42%. Plant-wide ramp bounded at '
-        + f(CFG.cloudRampBound,2)+' MW/s by array diversity; this is not a step change.', 'warn');
-      setTimeout(function(){ S.cloudTarget = 1.0; log('Cloud field cleared. Output recovering.',''); }, 14000);
-    }
-    if (kind === 'trip' || kind === 'bank_trip'){
-      var live = S.blocks.filter(function(b){ return b.state==='nominal'||b.state==='degraded'; });
-      if (!live.length){ log('All banks already out or no-comms.','bad'); return; }
-      var b = live[Math.floor(Math.random()*live.length)];
-      b.state = 'out'; b.fault = 'arc_fault';
-      log(b.id+' ('+b.feederId+') tripped \u2014 DC arc-fault. '+f(b.rated)+' MW step change, \u0394t_lead = 0. BESS bridging engaged.','bad');
-    }
-    if (kind === 'poi'){
-      S.blocks.forEach(function(b){ b.state='out'; b.fault='poi'; });
-      log('POI breaker open \u2014 entire array disconnected. Sizing contingency: step change, no advance signal.','bad');
-    }
-    if (kind === 'soil'){
-      S.soiling = clamp(S.soiling + 0.035, 0, 0.25);
-      S.blocks[Math.floor(Math.random()*S.blocks.length)].stringsOut += 2;
-      log('Soiling stepped to '+f(S.soiling*100,1)+'% and two strings opened. Bank moves to degraded \u2014 counted at re-rated capability (\u00a727.4).','warn');
-    }
-    if (kind === 'spike'){
-      S.pComputeTarget = S.pCompute + 6.0;
-      log('Compute step-load +6.00 MW staged from queue telemetry. \u0394t_lead = 30 s on this term only.','warn');
-    }
-    if (kind === 'turbine'){
-      var on = CFG.turbines.filter(function(t){ return t.online; });
-      if (on.length <= 1){ log('Cannot take the last turbine offline while islanded.','bad'); return; }
-      on[on.length-1].online = false;
-      log(on[on.length-1].id+' offline. Ramp now '+f(fleetRamp(),2)+' MW/s \u2014 every gap window lengthens.','bad');
-    }
-    if (kind === 'bess'){
-      CFG.bessSoC = CFG.bessSoC > 0.4 ? 0.30 : 0.82;
-      log('BESS state of charge set to '+f(CFG.bessSoC*100,0)+'%. Anchor-adjusted bridging is now '
-        + f(bessBridging(),2)+' MW \u2014 anchor duty is withheld first, so bridging falls faster than SoC.',
-        CFG.bessSoC<0.4?'bad':'');
-    }
-    if (kind === 'feeder_open'){
-      var fdBanks = S.blocks.filter(function(b){ return b.feederId==='fdr-B'; });
-      fdBanks.forEach(function(b){ b.state='out'; b.fault='feeder_open'; });
-      log('fdr-B breaker opened \u2014 all 5 banks on fdr-B now out. Common-cause advisory would fire in server mode (FR-SOL-2).','bad');
-    }
-    if (kind === 'comms_loss'){
-      S.blocks.filter(function(b){ return b.feederId==='fdr-A'; })
-        .forEach(function(b){ b.state='no_comms'; b.telemetryAge=15; });
-      log('fdr-A telemetry lost \u2014 banks counted as zero. Physical output continues. Reconciliation advisory fires after 5 ticks in server mode (FR-SOL-1).','warn');
-    }
-    if (kind === 'bank_derate'){
-      var candidates = S.blocks.filter(function(b){ return b.state==='nominal'; });
-      if (!candidates.length){ log('No nominal banks to derate.','bad'); return; }
-      var bd = candidates[Math.floor(Math.random()*candidates.length)];
-      bd.state = 'degraded'; bd.reason = 'inverter_overtemp'; bd.stringsOut = 1;
-      log(bd.id+' ('+bd.feederId+') derated \u2014 inverter overtemp. Counted at measured capability (\u00a727.4).','warn');
-    }
-    if (kind === 'reset'){
-      S.blocks.forEach(function(b){ b.state='nominal'; b.stringsOut=0; b.derate=1.0;
-        b.fault=null; b.reason=null; b.telemetryAge=0; if(b.srvOut!==undefined) delete b.srvOut; });
-      CFG.turbines.forEach(function(t,i){ t.online = i < 2; });
-      S.cloudTarget = 1.0; S.soiling = 0.030; S.pComputeTarget = 10.40; CFG.bessSoC = 0.82;
-      S.advisories = [];
-      log('Reset to nominal seed state.','');
-    }
-    render();
+    log('Stressor injection requires a live server connection.', 'warn');
   }
 
   // ---------------- wiring ----------------
@@ -1644,12 +1528,8 @@
   });
 
   // ---------------- boot ----------------
-  for (var w=0; w<40; w++){
-    S.t += 1;
-    S.hist.push({ t:S.t, sol:pRenewable(), tot:pTotal(), net:pNet(), cs:pClearSky() });
-  }
-  log('Session started. Seed: clear afternoon, 20 banks across 4 feeders, all nominal, islanded with BESS as grid-forming anchor.','');
-  render(); renderHistory(); renderForecast();
+  log('Connecting to server \u2014 live data will appear on the first successful poll.', '');
+  renderHistory(); renderForecast();
 
   pollServer().then(function(ok){
     if (ok){
@@ -1660,6 +1540,11 @@
       S.hist = [];
       for (var k=0;k<40;k++) S.hist.push({ t:S.t-40+k, sol:pRenewable(), tot:pTotal(),
         net:pNet(), cs:pClearSky() });
+    } else {
+      $('modePill').textContent = 'SERVER REQUIRED';
+      $('modePill').style.borderColor = '#5c2020';
+      $('modePill').style.color = '#ef5a4c';
+      log('Server unreachable \u2014 live data unavailable. Reload to reconnect.', 'warn');
     }
     render();
   });
