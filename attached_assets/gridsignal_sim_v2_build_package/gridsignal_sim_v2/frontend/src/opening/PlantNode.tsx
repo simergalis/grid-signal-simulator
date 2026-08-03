@@ -57,6 +57,13 @@ interface PlantNodeProps {
   onClick?: (nodeId: string) => void
   /** Optional solar forecast preview — only consumed by the solar-pv node. */
   solarPreview?: SolarPreview | null
+  /**
+   * Live solar MW polled from GET /api/solar/state at 1.5 Hz.
+   * When provided, the Solar PV tile prefers this over tick.p_renewable_mw so
+   * the tile stays in sync with the Renewable Supply modal and reflects the
+   * real-time SolarSim aggregate rather than a stale WebSocket tick value.
+   */
+  liveSolarMW?: number | null
 }
 
 function getMwValue(def: NodeDef, tick: TickPayload | null): number | null {
@@ -132,9 +139,14 @@ function nodeDetail(
       return 'rack feeds'
     case 'compute-racks': {
       const jobs = tick ? Object.keys(tick.checkpoint_states).length : 0
-      // Node count is 1,900 — from api/routes/scenarios.py line 210:
-      // "# 1900-node peak compute (enterprise_8gpu_air, PUE 1.03) → 19.9614 MW."
-      return jobs > 0 ? `${jobs} job${jobs > 1 ? 's' : ''} · 19.96 MW at full draw` : `1,900 nodes · 19.96 MW at full draw`
+      // Demo scenarios: 600 nodes → 6.30 MW.  Fleet scenarios: 1,900 nodes → 19.96 MW.
+      // Use the tick's current total demand when a job is running so the label
+      // reflects the actual scenario rather than a hardcoded fallback.
+      if (jobs > 0) {
+        const currentMW = (tick?.p_total_mw ?? 0).toFixed(2)
+        return `${jobs} job${jobs > 1 ? 's' : ''} · ${currentMW} MW`
+      }
+      return '600 – 1,900 nodes · up to 19.96 MW'
     }
     case 'cooling-plant': {
       // AA1: bind "rated" to rated_cooling_mw, not absorbable_mw.
@@ -210,8 +222,14 @@ function WeatherBadge({ preview }: { preview: SolarPreview }) {
   )
 }
 
-export function PlantNode({ def, tick, onClick, solarPreview }: PlantNodeProps) {
-  const mwValue = getMwValue(def, tick)
+export function PlantNode({ def, tick, onClick, solarPreview, liveSolarMW }: PlantNodeProps) {
+  // Solar PV tile: prefer the live solar API value when available so the
+  // tile stays consistent with the Renewable Supply modal.  Both ultimately
+  // read solar_sim.live_aggregate_mw() — but after a run ends the tick value
+  // goes stale while the 1.5 Hz poll always returns the current aggregate.
+  const mwValue = (def.id === 'solar-pv' && liveSolarMW != null)
+    ? liveSolarMW
+    : getMwValue(def, tick)
   const detail  = nodeDetail(def, tick, solarPreview)
   const isGrid  = !!def.gridStyle
   const canClick = def.clickable && !def.passive

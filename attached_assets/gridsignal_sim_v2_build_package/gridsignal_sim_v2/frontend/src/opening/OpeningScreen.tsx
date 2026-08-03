@@ -51,6 +51,7 @@ export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
   const [activeModal,   setActiveModal]   = useState<string | null>(null)
   const [compact,       setCompact]       = useState(false)
   const [solarPreview,  setSolarPreview]  = useState<SolarPreview | null>(null)
+  const [liveSolarMW,   setLiveSolarMW]   = useState<number | null>(null)
   const solarFetched = useRef(false)
 
   const data = useSubsystemData()
@@ -74,6 +75,27 @@ export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
       .then(r => r.ok ? r.json() : null)
       .then((d: SolarPreview | null) => { if (d) setSolarPreview(d) })
       .catch(() => { /* silently ignore — endpoint is best-effort */ })
+  }, [])
+
+  // Poll GET /api/solar/state at 1.5 Hz so the Solar PV tile stays in sync
+  // with the Renewable Supply modal.  Both now read the same live
+  // solar_sim.live_aggregate_mw() value rather than the modal polling fresh
+  // while the tile shows a stale WebSocket tick (e.g. after a run ends and
+  // clear_run_sync() has switched the SolarSim back to standalone POA mode).
+  useEffect(() => {
+    const poll = () => {
+      fetch('/api/solar/state')
+        .then(r => r.ok ? r.json() : null)
+        .then((d: { power?: { p_renewable_mw?: number } } | null) => {
+          if (d?.power?.p_renewable_mw !== undefined) {
+            setLiveSolarMW(d.power.p_renewable_mw)
+          }
+        })
+        .catch(() => { /* silently ignore — non-critical */ })
+    }
+    poll()  // immediate first call
+    const id = setInterval(poll, 1500)
+    return () => clearInterval(id)
   }, [])
 
   // ── Below 768 px: fall back to the proven tile-grid layout ──────────────
@@ -120,7 +142,7 @@ export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
         </div>
 
         <div className="w-full h-full pt-6">
-          <PlantDiagram onNodeClick={handleNodeClick} compact={compact} solarPreview={solarPreview} />
+          <PlantDiagram onNodeClick={handleNodeClick} compact={compact} solarPreview={solarPreview} liveSolarMW={liveSolarMW} />
         </div>
       </div>
 

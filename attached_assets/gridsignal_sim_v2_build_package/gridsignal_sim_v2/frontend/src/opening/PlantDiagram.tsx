@@ -26,6 +26,12 @@ interface PlantDiagramProps {
   compact?: boolean
   /** Solar forecast preview from GET /solar-preview — shown on the Solar PV node before a run. */
   solarPreview?: SolarPreview | null
+  /**
+   * Live solar output polled from GET /api/solar/state at 1.5 Hz.
+   * Passed straight through to the solar-pv PlantNode so it stays in sync
+   * with the Renewable Supply modal regardless of WebSocket tick age.
+   */
+  liveSolarMW?: number | null
 }
 
 function getMwForFlow(
@@ -231,7 +237,7 @@ function LeadTimeCallout({
   )
 }
 
-export function PlantDiagram({ onNodeClick, compact, solarPreview }: PlantDiagramProps) {
+export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW }: PlantDiagramProps) {
   const tick = useTickStore(s => s.latestTick)
 
   return (
@@ -264,6 +270,7 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview }: PlantDiagra
           tick={tick}
           onClick={onNodeClick}
           solarPreview={node.id === 'solar-pv' ? solarPreview : null}
+          liveSolarMW={node.id === 'solar-pv' ? liveSolarMW : null}
         />
       ))}
 
