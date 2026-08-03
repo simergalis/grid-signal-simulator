@@ -1,0 +1,142 @@
+GridSignal — Location Single-Source-of-Truth Refactor
+
+Hand-off prompt for the Replit coding agent. Paste the whole document. Work the phases in order. Do not skip to Phase 7.
+
+Context you need before writing any code
+
+A location bug was traced through the solar forecast path. The observable symptom was p_renewable_mw: 0.0 at run start for a San Antonio site, because generate_solar_forecast resolved to San Diego (32.72°N, UTC−8) and computed a just-after-sunrise irradiance fraction of 0.02.
+
+Five distinct defects were found. Fix all five. Fixing only the visible one guarantees recurrence.
+
+Module-level hardcoded coordinates and UTC offset in the solar forecast module.
+Location parameters carry default values, so an omitted argument silently resolves to a fallback site instead of raising.
+A scalar utc_offset_h is persisted. This is wrong by construction — the same site is −6 in winter and −5 in summer. Any stored offset is a latent bug.
+The restore path filters incoming JSON to known fields, so a legacy record missing tz_name silently inherits the dataclass default America/Los_Angeles.
+live_aggregate_mw() and _build_bank_snapshots() compute the same per-bank power on two different code paths and disagree (0.0 vs 0.0625 MW/bank).
+
+Governing principle: location is a required injected dependency, not a value with a default. An unconfigured site must raise, never fall back to a coordinate.
+
+Phase 1 — Create the single source of truth
+
+Create site_config.py. This is the only file in the repository permitted to contain geographic literals or IANA timezone strings.
+
+Define a frozen dataclass:
+
+SiteLocation:
+    site_name: str
+    latitude_deg: float          # −90..90, validated
+    longitude_deg: float         # −180..180, validated
+    tz_name: str                 # IANA identifier, validated against zoneinfo
+    source: Literal["configured", "restored", "migrated"]
+    schema_version: int
+
+Rules:
+
+No utc_offset_h field. Delete it from the model entirely. Offsets are derived per-timestamp: ZoneInfo(tz_name).utcoffset(dt).total_seconds() / 3600.
+Expose exactly one accessor, get_site_location() -> SiteLocation, which raises SiteLocationNotConfigured when no location has been set. It must never return a default object.
+source never takes the value "default", because no default exists.
+Constructor validates tz_name by attempting ZoneInfo(tz_name) and raising on failure.
+
+Acceptance: get_site_location() on a fresh process with no persisted state raises SiteLocationNotConfigured. grep -rn "32\.7\|America/Los_Angeles\|San Diego" returns hits only in site_config.py (validation examples) and test fixtures.
+
+Phase 2 — Remove civil time from the solar physics
+
+This is the phase that eliminates the bug class rather than the bug.
+
+Solar geometry depends on the UTC timestamp and the longitude, not on the civil UTC offset. Rewrite the solar position chain to compute true solar time directly:
+
+Day-of-year and fractional UTC hour from the timestamp.
+Equation of time correction (standard NOAA approximation is fine).
+solar_time_hours = utc_hour + longitude_deg / 15.0 + eot_minutes / 60.0
+Hour angle, declination, solar zenith, then plane-of-array irradiance as today.
+
+After this phase, tz_name is presentation-only — it labels timestamps on the operator dashboard and nothing else. A wrong tz_name can no longer produce a wrong irradiance curve.
+
+Delete current_utc_offset_h() and every call site. If a display path needs a local wall-clock string, it converts a UTC datetime with ZoneInfo(tz_name) at the point of rendering.
+
+Acceptance: the solar physics module imports no timezone-offset helper. A unit test asserts identical irradiance output for the same UTC instant regardless of what tz_name is set to, with latitude and longitude held constant.
+
+Phase 3 — Make location parameters mandatory everywhere
+
+For every function that takes location — generate_solar_forecast, the internal solar helpers, the Mistral prompt builder, the physics fallback, and any others found by inspection:
+
+Remove all default values from location parameters.
+Make them keyword-only (* in the signature) so positional-argument drift cannot silently reorder latitude and longitude.
+Prefer passing the SiteLocation object itself over loose floats. Fewer parameters, no possibility of a lat/lon transposition.
+
+Callers obtain the object from get_site_location() at the top of the request or tick and pass it down. Do not call get_site_location() deep inside physics functions — the dependency must be visible in the signature.
+
+Acceptance: deleting a location argument at any call site produces a TypeError at call time. No location parameter anywhere in the repository has a default value.
+
+Phase 4 — Fix persistence and write the migration
+
+Persisted JSON gains schema_version and drops utc_offset_h.
+
+Rewrite the restore path. It currently filters to known fields, which is what let a missing tz_name become America/Los_Angeles. Replace with explicit handling:
+
+schema_version present and current: all required fields must be present. Any missing required field raises and quarantines the record. Do not backfill from defaults.
+Legacy record (no schema_version): run a migration. If tz_name is absent, derive it from lat/lon using timezonefinder. If derivation fails, quarantine the record and leave the site unconfigured — do not guess. Set source="migrated" and log at WARNING with the site name and the derived zone.
+Any stored utc_offset_h: discard it and log at INFO that a stale scalar offset was dropped. Never read it back into the model.
+Quarantined records move to <statefile>.quarantine.<timestamp>.json so nothing is lost and the operator can inspect what failed.
+
+Acceptance: a fixture representing the old San Antonio JSON (with utc_offset_h: -6 and no tz_name) restores to tz_name="America/Chicago", source="migrated", with a WARNING logged and no utc_offset_h anywhere in the resulting object. A fixture with a current schema_version and a missing latitude_deg quarantines and raises rather than restoring a partial object.
+
+Phase 5 — Collapse the duplicate aggregate path
+
+live_aggregate_mw() and _build_bank_snapshots() disagree because they compute the same quantity twice.
+
+Extract one function, bank_output_mw(bank, irradiance_fraction) -> float, that owns the per-bank calculation including the BankState.enabled gate. Both call sites call it. No other code may reimplement the per-bank arithmetic.
+
+Acceptance: a property test over randomized bank configurations asserts live_aggregate_mw() == sum(snapshot.counted_output_mw for snapshot in snapshots) to within 1e-9 MW, including cases where some banks are disabled and the all-disabled case.
+
+Phase 6 — Fail fast at the boundaries
+Startup: if no location is configured after restore, log at ERROR and refuse to start a run. The API stays up so the operator can PUT /api/location.
+Run start: starting a run with no configured location returns HTTP 409 with a message naming the missing configuration, not a 500 and not a run using fallback coordinates.
+Forecast output: every forecast payload carries site_name and tz_name so the operator dashboard can display which site the numbers describe. A forecast that cannot name its site is a forecast that cannot be trusted.
+
+Acceptance: with the state file deleted, the process starts, GET /api/health reports location: unconfigured, and POST /api/runs returns 409. After PUT /api/location, the same call succeeds.
+
+Phase 7 — CI guards so this cannot regress
+
+Add tests/test_no_hardcoded_location.py with three guards:
+
+Guard A — static scan. Walk every .py file except site_config.py and tests/fixtures/. Fail on:
+
+any string matching an IANA zone pattern (^[A-Za-z_]+/[A-Za-z_/]+$ against the zoneinfo.available_timezones() set);
+any float literal in −90.0..90.0 or −180.0..180.0 assigned to a name matching lat|lon|lng|coord|offset|tz (use ast, not regex, for the assignment check);
+the literal strings of any known city name used in fixtures.
+
+Guard B — teleport test. Parametrize over three sites: San Diego (32.72, −117.16, America/Los_Angeles), San Antonio (29.42, −98.49, America/Chicago), and Frankfurt (50.11, 8.68, Europe/Berlin). For each, sweep a full simulated day and assert solar noon — the maximum plane-of-array irradiance — occurs within ±20 minutes of the longitude-derived expected UTC instant. San Diego passing while San Antonio fails is the exact signature of the original bug.
+
+Guard C — DST boundary test. For San Antonio, assert that a January UTC instant and a July UTC instant both produce physically plausible irradiance, and that the displayed local wall-clock string differs by the expected one hour. This is the test the old scalar offset would have failed.
+
+Also add a restart-fidelity test: configure a location, persist, construct a fresh process-equivalent state object, restore, and assert field-by-field equality including tz_name.
+
+Acceptance: all three guards pass. Reintroducing lat_deg: float = 32.72 as a default anywhere outside site_config.py fails Guard A.
+
+Do not
+Do not add a "sensible default" location "for convenience." That is the defect.
+Do not persist a numeric UTC offset in any form, including as a cached or denormalized field.
+Do not resolve a missing tz_name by picking the nearest known site.
+Do not leave current_utc_offset_h() in place as a deprecated shim; delete it.
+Do not silently widen the static scan's allowlist to make Guard A pass. If a file legitimately needs a coordinate, that is a signal it should be reading SiteLocation.
+Report back
+
+When complete, provide:
+
+The full list of files that contained hardcoded location values before the refactor, with line numbers.
+The diff of generate_solar_forecast's signature, before and after.
+Confirmation that Guard B passes for all three sites, with the measured solar-noon UTC instant and the expected value for each.
+Any location literal you could not remove, with the reason.
+Project content
+GridSignal
+Created by you
+GridSignal-Forecast-Engine-Functional-Spec_v2.5.md
+
+1,683 lines
+
+MD
+
+PDF
+
+PDF
