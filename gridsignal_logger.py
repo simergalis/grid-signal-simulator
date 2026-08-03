@@ -80,6 +80,7 @@ CSV_COLUMNS: list[str] = [
     # Run metadata
     "scenario_id",            # scenario name tag
     "rng_seed",               # RNG seed used for this run (reproducibility)
+    "source",                 # always "synthetic_generator" — not real engine telemetry
 ]
 
 
@@ -111,14 +112,14 @@ class SimulatedGrid:
 
     # ---- Gas Turbine: 4-unit fleet, ~120 MW per unit rated ---------------
     GT_RATED_MW   = 480.0
-    GT_MIN_MW     = 200.0
-    GT_RAMP_MW_S  = 0.2       # max ramp rate, MW per second (Section 7.1 / Phase 11.3b)
+    GT_MIN_MW     =  80.0     # minimum stable output for the 4-unit fleet
+    GT_RAMP_MW_S  =   0.2     # max ramp rate, MW per second (Section 7.1 / Phase 11.3b)
 
     # ---- Solar PV: 200 MW DC nameplate ------------------------------------
     SOLAR_RATED_MW  = 200.0
 
-    # ---- BESS: 50 MW / 200 MWh ---------------------------------------------
-    BESS_RATED_MW   = 50.0
+    # ---- BESS: 120 MW / 200 MWh — sized to cover the 90 MW IT step ----------
+    BESS_RATED_MW   = 120.0
     BESS_MAX_SOC    = 98.0
     BESS_MIN_SOC    = 5.0
     BESS_RATED_V    = 1500.0   # nominal DC link voltage
@@ -147,13 +148,14 @@ class SimulatedGrid:
         # RNG seed — captured once for reproducibility metadata
         self._rng_seed = random.randint(0, 2**32 - 1)
 
-        # Gas turbines — start near steady-state demand (~240 MW).
-        # tau=8 s is the turbine thermal response; the ramp rate is enforced
-        # separately via GT_RAMP_MW_S (Issue 2 fix: the filter alone does not
-        # limit dP/dt — an explicit clamp is applied each tick in tick()).
-        self._gt_mw      = _FirstOrderFilter(240.0, tau=8.0)
-        # Exhaust temperature: thermal lag of exhaust plenum (tau = 60 s)
-        self._gt_exhaust = _FirstOrderFilter(568.0, tau=60.0)
+        # Gas turbines — start at ~135 MW, which is steady-state residual demand
+        # after solar contribution (~255 MW site load − ~120 MW solar = ~135 MW).
+        # GT dispatch targets (load − solar), so it doesn't over-generate against
+        # the solar fleet.  BESS then covers fast deviations that the slow GT
+        # ramp (0.2 MW/s) cannot follow.
+        self._gt_mw      = _FirstOrderFilter(135.0, tau=8.0)
+        # Exhaust temperature: at ~28 % load (135/480), target ≈ 540 °C.
+        self._gt_exhaust = _FirstOrderFilter(540.0, tau=60.0)
 
         # Solar
         self._solar_frac = _FirstOrderFilter(0.6, tau=30.0)
@@ -189,9 +191,9 @@ class SimulatedGrid:
         self._chws = _FirstOrderFilter(self.COOLING_CHWS_SETPOINT + 1.0, tau=20.0)
 
         # Grid import: PCC meter + grid response lag (tau = 2 s).
-        # Initialise near expected steady-state (~−110 MW export) so the startup
-        # transient doesn't inflate balance_residual for the first few seconds.
-        self._grid_import = _FirstOrderFilter(-110.0, tau=2.0)
+        # Initialise near 0 MW — with GT tracking (load − solar), the site
+        # runs near power-balance and the startup transient is small.
+        self._grid_import = _FirstOrderFilter(0.0, tau=2.0)
 
         # Tick counter and cumulative elapsed time
         self._tick      = 0
@@ -276,10 +278,21 @@ class SimulatedGrid:
         site_total_mw = it_load_mw + mech_load_mw
         losses_mw    = site_total_mw * self.SITE_LOSS_FACTOR
 
-        # -- Gas Turbine (demand-following; causally coupled to IT load) --
+        # -- Gas Turbine (demand-following; residual after solar) -----------
+        # GT targets (site_total − solar), not site_total alone.  Without this
+        # subtraction the GT and solar both attempt to cover the full load,
+        # causing chronic ~105 MW over-generation that saturates the BESS at
+        # max-charge and makes corr(bess, it) ≈ 0.  With the subtraction the
+        # steady-state balance is near zero and the BESS operates symmetrically
+        # around its neutral point, covering fast IT deviations in both directions.
+        #
+        # Solar is computed below, so we use the previous tick's filter value
+        # (one tick stale) — physically realistic: the dispatch controller reads
+        # last-interval telemetry, not the future.
+        sol_mw_prev = self._solar_frac.value * self.SOLAR_RATED_MW
         gt_target  = max(self.GT_MIN_MW,
                          min(self.GT_RATED_MW,
-                             site_total_mw + random.gauss(0, 5.0)))
+                             site_total_mw - sol_mw_prev + random.gauss(0, 5.0)))
         # Issue 2 fix: the _FirstOrderFilter alone does not enforce GT_RAMP_MW_S.
         # Capture the pre-step value, advance the filter, then clamp the actual
         # change to ±GT_RAMP_MW_S × dt.  This brings peak ramp from ~15 MW/s
@@ -306,7 +319,7 @@ class SimulatedGrid:
         # -- Solar PV -----------------------------------------------------
         sol_target  = max(0.0, min(1.0, self._solar_frac.value + random.gauss(0, 0.02)))
         sol_frac    = self._solar_frac.step(sol_target, dt=dt)
-        sol_mw      = round(self.SOLAR_RATED_MW * sol_frac + random.gauss(0, 0.5), 2)
+        sol_mw      = round(self.SOLAR_RATED_MW * sol_frac + random.gauss(0, 0.5), 4)
         sol_mw      = max(0.0, sol_mw)
         sol_cell_t  = round(25.0 + sol_frac * 30.0 + random.gauss(0, 0.3), 1)
 
@@ -367,40 +380,41 @@ class SimulatedGrid:
 
         return {
             "timestamp":                 datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
-            "gt_power_mw":               round(gt_mw, 2),
+            "gt_power_mw":               round(gt_mw, 4),
             "gt_heat_rate_btu_kwh":      gt_hr,
             "gt_exhaust_temp_c":         gt_exhaust,
-            "gt_setpoint_mw":            round(gt_target, 2),
+            "gt_setpoint_mw":            round(gt_target, 4),
             "gt_mode":                   gt_mode,
-            "solar_output_mw":           sol_mw,
+            "solar_output_mw":           sol_mw,          # already 4dp from compute step
             "solar_irradiance_fraction": round(sol_frac, 4),
             "solar_cell_temp_c":         sol_cell_t,
-            "bess_soc_pct":              round(self._soc, 2),
-            "bess_power_mw":             round(bess_mw, 2),
+            "bess_soc_pct":              round(self._soc, 4),
+            "bess_power_mw":             round(bess_mw, 4),
             "bess_terminal_voltage_v":   bess_v,
-            "bess_setpoint_mw":          round(bess_target, 2),
-            "compute_cpu_load_pct":      round(cpu_load, 1),
+            "bess_setpoint_mw":          round(bess_target, 4),
+            "compute_cpu_load_pct":      round(cpu_load, 4),
             "compute_mem_util_pct":      mem_util,
             "compute_inlet_temp_c":      inlet_temp,
-            "compute_load_mw":           round(it_load_mw, 3),
-            "cooling_chws_temp_c":       round(chws_temp, 2),
+            "compute_load_mw":           round(it_load_mw, 4),
+            "cooling_chws_temp_c":       round(chws_temp, 4),
             "cooling_pump_flow_ls":      flow,
             "cooling_cop":               cop,
             # Tier 1 — Power Balance
-            "site_total_load_mw":        round(site_total_mw, 3),
-            "it_load_mw":                round(it_load_mw, 3),
-            "mechanical_load_mw":        round(mech_load_mw, 3),
-            "grid_import_mw":            round(grid_import_mw, 3),
+            "site_total_load_mw":        round(site_total_mw, 4),
+            "it_load_mw":                round(it_load_mw, 4),
+            "mechanical_load_mw":        round(mech_load_mw, 4),
+            "grid_import_mw":            round(grid_import_mw, 4),
             "islanded":                  int(self._islanded),
             "balance_residual_mw":       round(balance_residual, 4),
             "binding_constraint":        binding_constraint,
             # Forecast / advisory
-            "forecast_mw":               forecast_mw,
+            "forecast_mw":               round(forecast_mw, 4),
             # Scheduler diagnostics — step_event now generated internally
             "step_event":                step_event,
             # Run metadata
             "scenario_id":               "demo_v2",
             "rng_seed":                  self._rng_seed,
+            "source":                    "synthetic_generator",
         }
 
 

@@ -1,0 +1,60 @@
+That's a clean set of answers. Three I accept outright; two need a follow-up.
+
+The two-model finding recontextualizes most of this conversation
+
+Worth being explicit about which evidence belongs to which system, because I've been mixing them:
+
+Evidence	System	Status
+CSVs (files 2, 4, 10)	gridsignal_logger.py — export generator	Findings apply to the demo artifact only
+Dashboard screenshots	Real engine via simulation_core.py	Findings apply to the product
+
+So the BESS flipping 18.92 MW in one second, the static "BESS standby / staged 35 s ahead" panel, PREDICTED PEAK at 1.128× site draw, and the 0.13 MW forecast are all real-engine findings. The slack-bus masking, the sign-convention ambiguity, the inlet-temp RNG, the missing turbine ramp-down — those were all the export generator, and whether they also exist in the real engine is unknown. Some probably do; none were verified there.
+
+The remaining decision is what the export endpoint is for. Right now /api/export/telemetry-log produces something that reads as authoritative plant telemetry but comes from a model nothing else uses. Two options, and I'd take the first: have the endpoint serialize the real engine's TickResult stream, which deletes the divergence problem permanently. Failing that, label it in-band — a source: synthetic_generator field in the CSV header, so nobody analyses it as product evidence the way I just spent several turns doing.
+
+Ramp rounding — accepted, but R7 is now unmeasurable
+
+Your arithmetic is right: 0.020 MW clamp plus ±0.005 rounding on each of two samples gives a 0.030 MW apparent maximum, hence 0.3 MW/s measured against 0.2 actual.
+
+But that means my own acceptance criterion R7 — measured down-ramp within ±5% of r_asset_down — can't be evaluated. At 0.15 MW/s the per-tick delta is 0.015 MW, and 2dp quantization is 0.01 MW. The measurement error is ~67% of the signal.
+
+Cheapest fix is measuring the rate over a window rather than per-tick: 50 ticks at 0.2 MW/s gives 1.00 MW total against 0.01 MW quantization, a 1% error. No schema change. Reword R7 as mean ramp rate over any 5-second window. If you'd rather fix it at the source, 4dp on the power channels costs almost nothing at 600 rows.
+
+Also worth confirming the corollary now that the clamp is at spec: BESS should be covering close to 100% of the 0.75 s pulse. That's checkable as corr(bess_power_mw, it_load_mw) approaching −1, with the balance residual dropping well below 13.6 MW. If it doesn't, something else is absorbing the step.
+
+tau_gpu — accepted
+
+96.3% predicted, 28.9 of 30 observed. One note: with τ = 0.06 s and dt = 0.1 s, the filter's time constant is shorter than the sample interval, so the smoothing is essentially invisible at 10 Hz. That's fine — it's the right physics and it kills the infinite-slope edge — but if you ever want to show the edge shape, it needs a faster capture. Not a defect.
+
+TC-03 — fix the test, not the threshold
+
+2.08% against a 2% threshold with 1.38% of that coming from noise means this test will pass and fail randomly across CI runs. A flaky acceptance test is worse than a missing one, because it teaches people to re-run until green.
+
+Two changes, both cheap, and I'd do both:
+
+Zero the noise for this test. TC-03 asserts a deterministic convergence property of the thermal filter. Stochastic COP and pump noise aren't part of what's under test — they're contamination. Run it in a noise-disabled mode.
+
+Settle to 7τ rather than 5τ. At 5τ you have 0.67% genuine lag residual eating a third of your 2% budget. At 7τ that drops to 0.09%. The extra sim time is free.
+
+With both, the measured gap should land near 0.1% and the threshold stops being marginal. Task #184 is the right home for it.
+
+The forecast finding is better news than it looks
+
+forecast_mw = sum(g.target_output_mw() for g in state.gpu_modules), with _node_counts populated exclusively through apply_signal() from WorkloadSignal events — that means the forecast is queue-derived via the Section 4 formula. It is not extrapolating measured draw.
+
+So this is Branch B, not Branch A. IP claim 1 is structurally implemented and F3 should pass today. The defect is a startup ordering bug, not an architectural one. That's a materially different position than where we were two turns ago, and worth recording as such.
+
+One push, though. I'd question "a single node with a near-zero profile weight." Working backwards, 0.13 MW at PUE_base 1.03 implies ~126 kW of rated node power — that's not a small node, it's roughly twelve enterprise_8gpu_air nodes. And the Forecast Quality chart showed the value climbing from ~0.10 to ~0.38 MW across 15 seconds, which reads as _node_counts being populated progressively rather than being empty-then-full.
+
+That matters because it splits the diagnosis again:
+
+If forecast_mw converges to the declared allocation after the startup gap closes, the defect is purely a race and the 0.13 MW panel was a screenshot taken 15 s into a run.
+If it settles at ~0.38 MW for a 19.96 MW job, there's a separate magnitude bug underneath the race, and fixing the ordering won't touch it.
+
+So task #183 should capture the full forecast_mw trajectory to steady state and compare the settled value against nodes_declared × kW_i × PUE_base — not just the value at first broadcast. That single comparison distinguishes the two.
+
+Still open
+F3 — assert it explicitly, even though it now looks likely to pass
+B1 — inject a 1 MW load-model error, confirm the BESS doesn't silently absorb it
+R4–R6 — min stable load, min run/down timers, unit commitment
+Export endpoint — consolidate or label
