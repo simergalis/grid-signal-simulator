@@ -37,10 +37,14 @@ from __future__ import annotations
 
 import logging
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
+import numpy as np
+
 from .models import KubeMetrics, WorkloadClass, WorkloadEventType, WorkloadSignal
+from .step_config import LoadProfileConfig, StepTimingConfig
+from .step_scheduler import StepScheduler
 
 _log = logging.getLogger(__name__)
 
@@ -91,6 +95,14 @@ class KubeConfig:
 
     # RNG seed for deterministic replay; None = time-seeded
     rng_seed: Optional[int] = 42
+
+    # ── Stochastic step timing / load coupling ────────────────────────────────
+    # step_config — when set, a StepScheduler is wired to the agent.
+    #   None = step scheduler off (default; all existing kube tests unaffected).
+    # load_config — when set, GPUModules receive within-step power profiling.
+    #   None = no load profile (default; all existing tests unaffected).
+    step_config: Optional[StepTimingConfig] = None
+    load_config: Optional[LoadProfileConfig] = None
 
 
 # ---------------------------------------------------------------------------
@@ -155,10 +167,49 @@ class KubeDemandAgent:
     the synchronous evaluate_tick() function.
     """
 
-    def __init__(self, config: KubeConfig, site_id: str = "site-0") -> None:
+    def __init__(
+        self,
+        config: KubeConfig,
+        site_id: str = "site-0",
+        rng_step: Optional[np.random.Generator] = None,
+        rng_load: Optional[np.random.Generator] = None,
+    ) -> None:
         self.config = config
         self.site_id = site_id
+        # Job-scheduling RNG: keep random.Random for backward compatibility so
+        # existing kube tests that assert specific output values continue to pass.
+        # The random.Random sequence is identical regardless of whether the step
+        # scheduler is active, preserving all existing determinism guarantees.
         self._rng = random.Random(config.rng_seed)
+
+        # ── Numpy generators for step scheduler and load noise ────────────────
+        # Created from SeedSequence.spawn(2) so the two streams are independent
+        # and adding a draw to rng_step never affects rng_load (D3 isolation).
+        # Callers may inject generators explicitly (e.g. acceptance tests).
+        _ss = np.random.SeedSequence(config.rng_seed)
+        _children = _ss.spawn(2)
+        self._rng_step: np.random.Generator = (
+            rng_step if rng_step is not None
+            else np.random.default_rng(_children[0])
+        )
+        # rng_load is public — simulation_core reads it to inject into GPUModules
+        # so the load noise stream is housed on the agent but applied per-module.
+        self.rng_load: np.random.Generator = (
+            rng_load if rng_load is not None
+            else np.random.default_rng(_children[1])
+        )
+
+        # ── StepScheduler ─────────────────────────────────────────────────────
+        # Instantiated only when step_config is set; all existing tests that
+        # construct KubeDemandAgent without step_config are unaffected.
+        self._step_scheduler: Optional[StepScheduler] = (
+            StepScheduler(config.step_config)
+            if config.step_config is not None else None
+        )
+
+        # Expose current step state so simulation_core can stamp it on TickResult.
+        self.current_step_phase: float = 0.0
+        self.current_step_kind: str = "training"
 
         # Step 1 state — admission pipeline
         self._reorder_buffer: list[_PendingAdmission] = []
@@ -372,6 +423,17 @@ class KubeDemandAgent:
                 "kube: signal %s → %d nodes (util=%.3f, jobs=%d) at sim_time=%.1f",
                 event_type.value, total_nodes, utilization, active_jobs, sim_time,
             )
+
+        # ── Step scheduler ────────────────────────────────────────────────────
+        # Tick the continuous-time step scheduler; update current_step_phase and
+        # current_step_kind so simulation_core can stamp them on TickResult and
+        # propagate step_phase to GPUModules before gpu.advance() runs.
+        if self._step_scheduler is not None:
+            _fired, _phase, _kind = self._step_scheduler.tick(
+                sim_time, dt_seconds, self._rng_step
+            )
+            self.current_step_phase = _phase
+            self.current_step_kind = _kind
 
         metrics = KubeMetrics(
             utilization=utilization,

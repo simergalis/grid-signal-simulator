@@ -41,6 +41,7 @@ from core.models import (
     WorkloadSignal,
 )
 from core.kube_demand import KubeConfig, KubeDemandAgent
+from core.step_config import LoadProfileConfig, StepTimingConfig
 from core.simulation_core import SimulationState
 from pydantic import TypeAdapter
 
@@ -517,10 +518,31 @@ def build_run_context_from_spec(
             k: v for k, v in _kube_raw.items()
             if k in KubeConfig.__dataclass_fields__
         }
+        # Convert step_config dict → StepTimingConfig dataclass (if present).
+        # The API layer passes raw JSON dicts; KubeConfig expects typed dataclasses.
+        if isinstance(_kube_cfg_fields.get("step_config"), dict):
+            _sc_raw = _kube_cfg_fields["step_config"]
+            _kube_cfg_fields["step_config"] = StepTimingConfig(**{
+                k: v for k, v in _sc_raw.items()
+                if k in StepTimingConfig.__dataclass_fields__
+            })
+        # Convert load_config dict → LoadProfileConfig dataclass (if present).
+        if isinstance(_kube_cfg_fields.get("load_config"), dict):
+            _lc_raw = _kube_cfg_fields["load_config"]
+            _kube_cfg_fields["load_config"] = LoadProfileConfig(**{
+                k: v for k, v in _lc_raw.items()
+                if k in LoadProfileConfig.__dataclass_fields__
+            })
         sim_state.kube_agent = KubeDemandAgent(
             KubeConfig(**_kube_cfg_fields),
             site_id=site.site_id,
         )
+        # Wire load_config and the agent's rng_load into every GPUModule so
+        # they all share the same noise stream and use the same profile config.
+        if sim_state.kube_agent.config.load_config is not None:
+            for _gpu in sim_state.gpu_modules:
+                _gpu.load_config = sim_state.kube_agent.config.load_config
+                _gpu.rng_load = sim_state.kube_agent.rng_load
 
     # ── Workload events ───────────────────────────────────────────────────
     events: list[WorkloadSignal] = []

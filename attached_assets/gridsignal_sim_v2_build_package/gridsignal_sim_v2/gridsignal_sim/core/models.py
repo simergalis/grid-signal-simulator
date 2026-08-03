@@ -655,3 +655,15 @@ class TickResult:
     site_lon:          float = 0.0
     site_utc_offset_h: float = 0.0
     site_name:         str   = ""
+
+    # Stochastic step timing fields — wired when kube_config is active (Part 1/2 spec).
+    # Defaults produce innocuous values for the scripted workload path; no existing
+    # code paths or tests need to change.
+    #
+    # step_phase: fractional position within the current ML training step, ∈ [0, 1).
+    #   0.0 at the instant a step fires; approaches 1.0 just before the next step.
+    #   Used by the within-step power profile in GPUModule.per_job_compute_mw().
+    # step_kind: "training" for normal steps; "checkpoint" for long-steps.
+    #   "checkpoint" aligns with the existing CheckpointClassifier's vocabulary.
+    step_phase: float = 0.0
+    step_kind: str = "training"

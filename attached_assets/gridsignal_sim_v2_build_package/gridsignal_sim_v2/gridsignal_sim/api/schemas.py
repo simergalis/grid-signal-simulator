@@ -218,6 +218,38 @@ class TurbineUnitSpec(BaseModel):
     hot_standby: bool = False
 
 
+class StepTimingConfigSpec(BaseModel):
+    """Wire-format mirror of core.step_config.StepTimingConfig.
+
+    All defaults match the spec document (SPEC_DEFAULT).  Only override fields
+    whose values differ from the default; the engine fills in the rest.
+    """
+    median_step_s: float = Field(default=0.70, gt=0.0, description="Median inter-step gap (s). SPEC_DEFAULT.")
+    step_cv: float = Field(default=0.08, ge=0.0, le=1.0, description="Lognormal CV. SPEC_DEFAULT.")
+    tau_drift_s: float = Field(default=300.0, gt=0.0, description="OU mean-reversion time (s). SPEC_DEFAULT.")
+    sigma_drift: float = Field(default=0.03, ge=0.0, description="OU diffusion (dimensionless). SPEC_DEFAULT.")
+    p_straggler: float = Field(default=0.02, ge=0.0, le=1.0, description="Straggler injection probability. SPEC_DEFAULT.")
+    straggler_scale: float = Field(default=1.5, gt=0.0, description="Exponential straggler scale. SPEC_DEFAULT.")
+    straggler_max: float = Field(default=10.0, gt=1.0, description="Hard cap on straggler multiplier. SPEC_DEFAULT.")
+    ckpt_interval_steps: int = Field(default=400, ge=1, description="Steps between checkpoint long-steps. SPEC_DEFAULT.")
+    ckpt_jitter_steps: int = Field(default=40, ge=0, description="±Uniform jitter on checkpoint interval. SPEC_DEFAULT.")
+    ckpt_min_s: float = Field(default=5.0, gt=0.0, description="Checkpoint step minimum duration (s). SPEC_DEFAULT.")
+    ckpt_max_s: float = Field(default=30.0, gt=0.0, description="Checkpoint step maximum duration (s). SPEC_DEFAULT.")
+
+
+class LoadProfileConfigSpec(BaseModel):
+    """Wire-format mirror of core.step_config.LoadProfileConfig.
+
+    Controls the within-step compute load profile that makes step events
+    physically present in compute_load_mw.  All defaults are SPEC_DEFAULT.
+    """
+    f_compute: float = Field(default=0.72, ge=0.0, le=1.0, description="Compute-phase fraction. SPEC_DEFAULT.")
+    p_comm_ratio: float = Field(default=0.55, ge=0.0, le=1.0, description="Relative power during allreduce. SPEC_DEFAULT.")
+    tau_gpu_s: float = Field(default=0.06, gt=0.0, description="GPU power transition lag (s). SPEC_DEFAULT.")
+    phase_coherence: float = Field(default=0.85, ge=0.0, le=1.0, description="Fleet phase coherence. SPEC_DEFAULT.")
+    noise_sigma_fraction: float = Field(default=0.005, ge=0.0, le=0.1, description="Noise sigma as fraction of base draw. CHOSEN.")
+
+
 class KubeConfigSpec(BaseModel):
     """Kubernetes gang-admission demand simulator configuration.
 
@@ -235,6 +267,8 @@ class KubeConfigSpec(BaseModel):
     dt_lead = 0 throughout — Kubernetes gives no advance notice to the grid.
 
     Use rng_seed for deterministic replay; rng_seed=None gives time-seeded variety.
+    Activate stochastic step timing by supplying step_config; activate the
+    within-step load profile by supplying load_config.
     """
     hardware_profile_id: str = "enterprise_8gpu_air"
 
@@ -280,6 +314,14 @@ class KubeConfigSpec(BaseModel):
     )
 
     rng_seed: Optional[int] = None
+
+    # ── Stochastic step timing (spec Part 1) ──────────────────────────────────
+    # None (default) = step scheduler off; period falls back to no step events.
+    step_config: Optional[StepTimingConfigSpec] = None
+
+    # ── Within-step load profile (spec Part 2) ───────────────────────────────
+    # None (default) = no profile modulation; compute_load_mw is a pure ramp.
+    load_config: Optional[LoadProfileConfigSpec] = None
 
 
 class ScenarioSpec(BaseModel):

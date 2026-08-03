@@ -351,6 +351,16 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             )
             state.apply_workload_signal(_ks, dt_lead_seconds=_kube_ramp_s)
 
+        # ── Propagate step_phase to GPUModules BEFORE advance() ──────────────
+        # The within-step power profile lag (GPUModule.advance()) needs the
+        # updated step_phase from the step scheduler.  Setting it here ensures
+        # the lag state update in advance() uses the current tick's phase, not
+        # the previous tick's.  This must happen between kube_agent.tick() and
+        # gpu.advance().
+        _fleet_phase = state.kube_agent.current_step_phase
+        for _g in state.gpu_modules:
+            _g.step_phase = _fleet_phase
+
     # 1. Compute term — advance GPU ramps first (Step 3 Item 2: Δt_lead ramp).
     # GPU advance() is no longer a no-op: it advances the per-job ramp_progress
     # by dt_seconds/ramp_seconds so that P_compute grows realistically from near-0
@@ -723,6 +733,13 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             bess_headroom_mw=max(0.0, _k_bess_rated - bess_output_mw),
         )
 
+    # ── Collect stochastic-step fields for TickResult ─────────────────────────
+    _step_phase = 0.0
+    _step_kind = "training"
+    if state.kube_agent is not None:
+        _step_phase = state.kube_agent.current_step_phase
+        _step_kind = state.kube_agent.current_step_kind
+
     state.tick_index += 1
     return TickResult(
         run_id=state.run_id,
@@ -763,4 +780,6 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         scada_commands_issued=_scada_commands_issued,
         kube_metrics=_kube_metrics,
         contingency_coverage=_contingency_coverage,
+        step_phase=_step_phase,
+        step_kind=_step_kind,
     )

@@ -18,7 +18,9 @@ from abc import ABC, abstractmethod
 from collections import deque
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
+from typing import Any, Optional
+
+import numpy as np
 
 from .models import (
     BessConfig,
@@ -32,6 +34,7 @@ from .models import (
     WorkloadEventType,
     WorkloadSignal,
 )
+from .step_config import LoadProfileConfig
 
 
 class AssetModule(ABC):
@@ -88,6 +91,31 @@ class GPUModule(AssetModule):
     # (process launch → NCCL/collective init → dataloader spin-up → first steps).
     ramp_seconds: float = 120.0
     _ramp_progress: dict[str, float] = field(default_factory=dict)  # job_id -> [0.0, 1.0]
+
+    # ── Within-step power profile (stochastic-step spec Part 2) ─────────────
+    # load_config — when set, per_job_compute_mw() applies a within-step power
+    #   profile (compute vs allreduce phases) with first-order GPU lag.
+    #   None (default) = pure ramp formula, preserving all existing test
+    #   behaviour.  Set by scenario_factory when kube_config.load_config is set.
+    load_config: Optional[LoadProfileConfig] = None
+
+    # step_phase — fractional position within the current ML step, ∈ [0, 1).
+    #   Set each tick by simulation_core from kube_agent.current_step_phase
+    #   BEFORE advance() is called so the lag update uses the correct phase.
+    #   Defaults to 0.0 (compute phase) so the formula is identical to the
+    #   existing formula when load_config is None.
+    step_phase: float = 0.0
+
+    # _lag_raw_profile — first-order lag state for the within-step power profile.
+    #   Smooths the sharp compute↔allreduce transition with tau_gpu_s.
+    #   Initialised to 1.0 (compute phase at power 1.0).
+    _lag_raw_profile: float = field(default=1.0, repr=False)
+
+    # rng_load — numpy Generator for per-tick load noise.
+    #   None (default) = no noise, preserving all existing test determinism.
+    #   Injected by scenario_factory from kube_agent.rng_load after the agent
+    #   is created (so all modules share the same noise stream as the agent).
+    rng_load: Any = field(default=None, repr=False)
 
     # Scale-up cohort tracking.
     # When a SCALE-UP event arrives, added nodes are cold — they undergo the
@@ -252,11 +280,32 @@ class GPUModule(AssetModule):
         progress fraction for ramping jobs increases by dt_seconds /
         ramp_seconds, clamped at 1.0 (full TDP).  Jobs with progress
         already at 1.0 skip the update so steady-state runs are free.
+
+        Stochastic-step Part 2: when load_config is set, update the
+        first-order lag on the raw power profile.  step_phase is set by
+        simulation_core from kube_agent.current_step_phase BEFORE this
+        call so the lag always tracks the current step position.
         """
         for job_id in list(self._ramp_progress):
             p = self._ramp_progress[job_id]
             if p < 1.0:
                 self._ramp_progress[job_id] = min(1.0, p + dt_seconds / self.ramp_seconds)
+
+        # Within-step power profile lag (Part 2.2 — transition smoothing).
+        # raw_profile switches between 1.0 (compute phase) and p_comm_ratio
+        # (allreduce phase) based on step_phase.  The first-order lag with
+        # tau_gpu_s smooths the sharp edge so the power signal is band-limited.
+        if self.load_config is not None:
+            raw_profile = (
+                1.0 if self.step_phase < self.load_config.f_compute
+                else self.load_config.p_comm_ratio
+            )
+            # Discrete first-order lag: alpha = 1 - exp(-dt/tau).
+            # At tau_gpu_s=0.06 s, dt=0.1 s (10 Hz): alpha ≈ 0.811 (fast).
+            alpha = 1.0 - math.exp(
+                -dt_seconds / max(self.load_config.tau_gpu_s, 1e-9)
+            )
+            self._lag_raw_profile += alpha * (raw_profile - self._lag_raw_profile)
 
     def output_mw(self) -> float:
         """Sum of current (ramped) per-job draws across all active jobs."""
@@ -282,7 +331,32 @@ class GPUModule(AssetModule):
         profile = self.hardware_library.get(profile_id, GENERIC_FALLBACK_PROFILE)
         full_kw = nodes * profile.rated_kw * self.site.pue_base / 1000.0
         progress = self._ramp_progress.get(job_id, 1.0)  # 1.0 = fully ramped
-        return full_kw * self._ramp_multiplier(progress)
+        base_draw = full_kw * self._ramp_multiplier(progress)
+
+        # ── Stochastic-step Part 2: within-step power profile ─────────────────
+        # Only applied when load_config is set (kube path with step scheduler).
+        # When load_config is None the formula reduces to the existing pure-ramp
+        # return, preserving ALL existing test behaviour with zero code change.
+        if self.load_config is not None:
+            # effective_profile = 1 + phase_coherence * (lag_state - 1)
+            #   lag_state tracks the smoothed raw_profile (compute vs allreduce).
+            #   phase_coherence = 0 → flat (fleet incoherent) → L2 criterion.
+            #   phase_coherence = 1 → full oscillation depth.
+            effective_mult = (
+                1.0
+                + self.load_config.phase_coherence * (self._lag_raw_profile - 1.0)
+            )
+            result = base_draw * effective_mult
+            # Gaussian noise: small fractional sigma so the checkpoint classifier's
+            # 15% threshold is unaffected (0.5% << 15%).
+            if self.rng_load is not None:
+                noise = self.rng_load.normal(
+                    0.0, base_draw * self.load_config.noise_sigma_fraction
+                )
+                result = max(0.0, result + noise)
+            return result
+
+        return base_draw
 
     def per_job_target_mw(self, job_id: str) -> float:
         """Full-TDP draw for job_id, regardless of ramp progress.
