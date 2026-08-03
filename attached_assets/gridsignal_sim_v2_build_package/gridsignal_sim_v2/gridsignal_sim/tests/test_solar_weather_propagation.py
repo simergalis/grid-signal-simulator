@@ -30,7 +30,12 @@ from unittest.mock import patch
 
 import pytest
 
-from runtime.solar_sim import SolarForecast, generate_solar_forecast
+from runtime.solar_sim import (
+    SolarForecast,
+    _parse_forecast,
+    _solar_fraction_at,
+    generate_solar_forecast,
+)
 from runtime.run_manager import _tick_result_to_dict
 
 
@@ -856,4 +861,123 @@ def test_plant_alpha_max_takes_priority_over_engine_alpha_max():
     assert abs(actual_alpha - engine_scaled) > 1e-6, (
         f"site.alpha_max ({actual_alpha:.6f}) equals engine_alpha × scale = "
         f"{engine_scaled:.6f}; plant_alpha_max ({plant_alpha}) should have taken priority"
+    )
+
+
+# ---------------------------------------------------------------------------
+# T7 — UTC-vs-local timezone boundary: Auckland (UTC+12)
+#
+# Auckland: lat=-36.85°S, UTC+12.
+#
+# Boundary 1 — afternoon local (sun is up):
+#   04:00 UTC  →  16:00 Auckland local  →  solar fraction must be > 0
+#
+# Boundary 2 — pre-dawn local (sun is below horizon):
+#   18:00 UTC  →  06:00 Auckland local  →  solar fraction must be 0.0
+#
+# These two times were the exact pair that exposed the original bug: the physics
+# fallback used UTC hour directly as local hour, so 04:00 UTC was treated as
+# 04:00 local (pre-dawn) and returned 0.0 even though the sun is well up in
+# Auckland at that moment.
+# ---------------------------------------------------------------------------
+
+# Auckland site parameters
+_AUCKLAND_LAT     = -36.85   # degrees South
+_AUCKLAND_UTC_OFF = +12.0    # UTC+12
+
+# 04:00 UTC on 21 June 2026 → 16:00 Auckland local (mid-afternoon, sun well up)
+_AUCKLAND_AFTERNOON_UTC = datetime.datetime(2026, 6, 21, 4, 0, 0)
+
+# 18:00 UTC on 21 June 2026 → 06:00 Auckland local (pre-dawn, sun below horizon)
+_AUCKLAND_PREDAWN_UTC   = datetime.datetime(2026, 6, 21, 18, 0, 0)
+
+
+def test_physics_fraction_auckland_afternoon_nonzero():
+    """Physics fallback for Auckland (UTC+12) at 04:00 UTC must return non-zero fraction.
+
+    04:00 UTC = 16:00 Auckland local time (mid-afternoon).  The sun is above the
+    horizon; using UTC hour as local hour would incorrectly yield 0.0 (pre-dawn).
+    """
+    fraction = _solar_fraction_at(
+        _AUCKLAND_AFTERNOON_UTC,
+        lat_deg=_AUCKLAND_LAT,
+        utc_offset_h=_AUCKLAND_UTC_OFF,
+    )
+    assert fraction > 0.0, (
+        f"Auckland at 04:00 UTC (= 16:00 local) should have non-zero solar fraction; "
+        f"got {fraction:.4f} — likely UTC hour used as local hour"
+    )
+
+
+def test_physics_fraction_auckland_predawn_is_zero():
+    """Physics fallback for Auckland (UTC+12) at 18:00 UTC must return 0.0 fraction.
+
+    18:00 UTC = 06:00 Auckland local time (pre-dawn, ~30 min before sunrise in winter).
+    The sun is below the horizon; the fraction must be exactly 0.0.
+    """
+    fraction = _solar_fraction_at(
+        _AUCKLAND_PREDAWN_UTC,
+        lat_deg=_AUCKLAND_LAT,
+        utc_offset_h=_AUCKLAND_UTC_OFF,
+    )
+    assert fraction == 0.0, (
+        f"Auckland at 18:00 UTC (= 06:00 local, pre-dawn) should have 0.0 solar fraction; "
+        f"got {fraction:.4f}"
+    )
+
+
+def test_parse_forecast_bad_json_auckland_afternoon_uses_physics_nonzero():
+    """_parse_forecast with broken JSON for a UTC+12 site at 04:00 UTC must return
+    a non-zero physics estimate.
+
+    The fallback inside _parse_forecast must use the supplied lat/utc_offset — not
+    the San Diego defaults — so that a parse failure for an Auckland site still
+    produces an afternoon solar curve rather than silently reverting to 04:00 UTC
+    treated as San Diego local time (which would also be pre-dawn there).
+    """
+    bad_json = "not valid json {{{"
+    forecast = _parse_forecast(
+        bad_json,
+        sim_duration_s=300.0,
+        utc_now=_AUCKLAND_AFTERNOON_UTC,
+        lat_deg=_AUCKLAND_LAT,
+        utc_offset_h=_AUCKLAND_UTC_OFF,
+    )
+    assert forecast.source == "physics", (
+        f"broken JSON must produce a physics fallback; got source={forecast.source!r}"
+    )
+    # t=0 sample — should reflect 16:00 local, not 04:00 local
+    first_fraction = forecast.samples[0][1]
+    assert first_fraction > 0.0, (
+        f"_parse_forecast physics fallback for Auckland at 04:00 UTC (16:00 local) "
+        f"should have non-zero t=0 fraction; got {first_fraction:.4f} — "
+        f"fallback may have used San Diego defaults or raw UTC hour"
+    )
+
+
+def test_generate_solar_forecast_no_key_auckland_afternoon_nonzero():
+    """generate_solar_forecast (no MISTRAL_API_KEY) with Auckland location at 04:00 UTC
+    must return a non-zero fraction at t=0.
+
+    This is the full end-to-end physics-fallback path.  04:00 UTC = 16:00 Auckland
+    local.  If utc_offset_h is ignored (or UTC hour used directly as local time),
+    the t=0 fraction will be 0.0 — the original production bug.
+    """
+    with _no_mistral_key():
+        forecast = generate_solar_forecast(
+            300.0,
+            utc_now=_AUCKLAND_AFTERNOON_UTC,
+            site_latitude=_AUCKLAND_LAT,
+            site_utc_offset_h=_AUCKLAND_UTC_OFF,
+            site_name="Auckland, NZ",
+        )
+
+    assert forecast.source == "physics", (
+        f"no-key path must use physics source; got {forecast.source!r}"
+    )
+    first_fraction = forecast.samples[0][1]
+    assert first_fraction > 0.0, (
+        f"generate_solar_forecast (no key) for Auckland at 04:00 UTC (16:00 local) "
+        f"should produce non-zero t=0 fraction; got {first_fraction:.4f} — "
+        f"UTC offset ({_AUCKLAND_UTC_OFF:+.1f} h) is not being applied"
     )
