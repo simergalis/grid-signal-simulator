@@ -434,10 +434,18 @@ def test_d10_demo_20mw_bess_fires_and_tapers():
     )
     cooling = CoolingModule(asset_id="cool-0", site=site)
 
+    gpu = GPUModule(asset_id="gpu-0", site=site, hardware_library=library)
+    # Pin ramp_seconds=45 s so this test keeps documenting the "fire then taper"
+    # arc at the original ramp duration.  The production default was raised to
+    # 120 s (slower, more realistic); at 120 s a 25 MW turbine pre-staged to
+    # the full draw always stays ahead of the slow load curve and BESS never
+    # fires — that's correct new behaviour, but tested separately.
+    gpu.ramp_seconds = 45.0
+
     state = SimulationState(
         run_id="run-d10",
         site=site,
-        gpu_modules=[GPUModule(asset_id="gpu-0", site=site, hardware_library=library)],
+        gpu_modules=[gpu],
         turbines=[turbine],
         bess_units=[bess],
         solar_arrays=[solar],
@@ -446,7 +454,7 @@ def test_d10_demo_20mw_bess_fires_and_tapers():
 
     # Solar has not advanced yet at t=0, so staging delta equals the full
     # compute draw (19.957 MW).  Turbine stages to 19.957 MW (fits within
-    # rated 25 MW).  Ramp time = 99.8 s; run is 300 s.
+    # rated 25 MW).  Ramp time = 45 s (pinned above); run is 300 s.
     state.apply_workload_signal(
         WorkloadSignal(
             event_id="e1",

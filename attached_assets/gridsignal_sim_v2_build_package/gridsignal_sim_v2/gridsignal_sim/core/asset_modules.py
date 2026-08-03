@@ -84,7 +84,9 @@ class GPUModule(AssetModule):
     # ramp_seconds — the window over which a newly-allocated job ramps from
     # 0 → full TDP.  §6.1 specifies "30–60 s" as the interval; the exact
     # curve inside it is PROTO-1 (CHOSEN, no measured basis — see _ramp_multiplier).
-    ramp_seconds: float = 45.0
+    # 120 s chosen so the ramp spans multiple UI frames even at high sim speeds
+    # (process launch → NCCL/collective init → dataloader spin-up → first steps).
+    ramp_seconds: float = 120.0
     _ramp_progress: dict[str, float] = field(default_factory=dict)  # job_id -> [0.0, 1.0]
 
     # Scale-up cohort tracking.

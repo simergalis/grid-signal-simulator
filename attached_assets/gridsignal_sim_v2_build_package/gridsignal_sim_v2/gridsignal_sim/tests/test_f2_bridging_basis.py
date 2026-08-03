@@ -210,7 +210,7 @@ def test_bridging_basis_current_demand_when_no_pending_alert() -> None:
         with _plane_guard_active():
             result = evaluate_tick(state, clock)
 
-    # After 10 ticks (50 s sim time), ramp is complete (45 s ramp_seconds default)
+    # After 10 ticks (50 s sim time), ramp is well underway (~42% at 120 s default)
     assert result.net_demand_mw > 0.0, (
         "After ramp completes, net demand must be positive"
     )

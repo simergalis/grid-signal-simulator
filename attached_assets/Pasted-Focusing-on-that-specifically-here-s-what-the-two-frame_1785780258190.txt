@@ -1,0 +1,42 @@
+Focusing on that specifically — here's what the two frames say about it.
+
+The spike is one job arriving at full draw
+
+The compute tile carries the same subtitle in both frames: 1 job · 19.96 MW at full draw. In image 2 that job is drawing 1.80 MW; in image 1 it's drawing 19.96 MW. Same job, same declared full-draw figure, load snapping from baseline to nameplate.
+
+So this isn't an unexplained transient. It's the scenario's injected step-load event — the thing the demo is built around. The question is why it arrives as a wall rather than a ramp, and there are two candidate mechanisms that need different fixes.
+
+Mechanism A — the job power model is binary
+
+The likely implementation is something like compute_load = idle_baseline + sum(job.full_draw for job in running). When the job's state flips to running on a tick, the sum jumps by the whole 19.96 MW at once. There's no job.current_draw interpolating from zero over a warmup window.
+
+Real distributed training jobs don't do this. Process launch, NCCL/collective init, dataloader spin-up, and the first few steps at partial utilization spread the ramp over roughly 10–60 seconds. A 20 MW job ramping over 30 s is ~0.67 MW/s — a rate a spinning turbine can partly follow. A step is a rate no generator can follow.
+
+Mechanism B — you're sampling a ramp at 1/35th of its rate
+
+The readiness counter goes 35 s → 0 s across one second of wall clock, so sim time is running roughly 35× real time. If the load ramp takes 35 sim-seconds, you'd capture it in about two frames — and it would look exactly like a step even if the underlying model ramps correctly.
+
+How to tell them apart: dump compute_load_mw at sim-tick resolution across the event. If there are intermediate values between 1.80 and 19.96, it's Mechanism B and the model is fine — the display is just aliasing it. If it goes 1.80 → 19.96 in a single sim tick, it's Mechanism A. This is a five-minute check and it decides whether you're fixing the load model or the visualization.
+
+Why it matters more than the spike itself
+
+Regardless of mechanism, the magnitude is the problem. The step is 11.1× the pre-step site load, and 19.96 MW happens to equal the plant's entire declared N-1 figure of 20.0 MW. One job consumes the whole site.
+
+Here's who actually covered the +22.89 MW site increase:
+
+Source	Change	Share
+BESS (charge → discharge)	+18.92 MW	83%
+Gas turbine	+3.67 MW	16%
+Solar	+0.30 MW	1%
+
+The turbine — the asset that was supposedly staged 35 seconds ahead — delivered 16% of the step. The battery, which the step-load panel describes as "BESS standby," delivered 83%. Since the battery is also acting as the balance slack variable, it didn't cover the step by decision; it covered it by arithmetic.
+
+That inverts the pitch. The demo currently shows a system where advance warning bought almost nothing and the battery absorbed the event reactively.
+
+There's also a lead-time realism issue worth separating out: 35 seconds only lets you ramp an already-synchronized unit. It's nowhere near enough to start a cold one — even fast-start aeroderivatives need minutes. With 1 of 5 units online, the ceiling on what 35 s of warning can deliver is however far that single unit can ramp, which caps the demonstrable benefit no matter how good the forecast is.
+
+What I'd change
+
+Sizing first: make the step a meaningful fraction of site load rather than a multiple of it — something like 20–40%, which is where real cluster steps land and where pre-staging visibly wins. An 11× step is unfollowable by construction, so it can only ever demonstrate failure.
+
+Then give jobs a ramp profile, so the forecast has a trajectory to track rather than a binary hit-or-miss, and so the turbine's head start converts into actual megawatts. Right now, even a perfect 35-second forecast can't be distinguished from no forecast at all, because the load discontinuity leaves nothing for the generator to do.

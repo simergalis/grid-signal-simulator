@@ -139,8 +139,14 @@ class ScenarioStore:
 # Seeded scenario helpers
 # ---------------------------------------------------------------------------
 
-_ENT_KW   = 10.2   # kW per node — enterprise_8gpu_air HardwareProfile
-_PUE      = 1.03   # SiteConfig.pue_base default
+_ENT_KW      = 10.2   # kW per node — enterprise_8gpu_air HardwareProfile
+_PUE         = 1.03   # SiteConfig.pue_base default
+# Demo job size: 600 nodes → ~6.3 MW (~30% of total site load).
+# Reduced from 1900 nodes (19.96 MW) which was 11× the pre-step baseline and
+# equal to the full N-1 figure — unfollowable by any generator and indistinguishable
+# from no-forecast.  600 nodes keeps the step in the 20–40% range where
+# pre-staging visibly converts lead time into covered capacity.
+_DEMO_NODES  = 600
 
 
 def _proto7_solar(nodes: int) -> float:
@@ -228,8 +234,10 @@ def _turbine(
 # ---------------------------------------------------------------------------
 
 # 1900-node peak compute (enterprise_8gpu_air, PUE 1.03) → 19.9614 MW.
+# Kept for fleet / 3-turbine scenarios that are sized around a 20 MW load.
 # PROTO-7 solar → 4.99035 MW.
-_SOLAR_20MW = _proto7_solar(1900)    # 4.99035 MW
+_SOLAR_20MW = _proto7_solar(1900)    # 4.99035 MW  (fleet scenarios only)
+_SOLAR_DEMO = _proto7_solar(_DEMO_NODES)  # 1.5759 MW  (demo scenarios, 600-node job)
 _SOLAR_5MW  = _proto7_solar(476)     # 1.250214 MW
 _SOLAR_BASE = _proto7_solar(1)       # 0.0026265 MW
 
@@ -254,11 +262,11 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
                 "non_firm_available_mw=3.0 MW; firm=20.0 MW; reserved=10.0 MW.  "
                 "Observe-only: no effect on dispatch trace."
             ),
-            workload_events=[_evt_start("job-big", 1900)],
+            workload_events=[_evt_start("job-big", _DEMO_NODES)],
             dt_lead_seconds=30.0,
             bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
             turbine_units=[_turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2)],
-            solar_rated_mw=_SOLAR_20MW,
+            solar_rated_mw=_SOLAR_DEMO,
             end_sim_time=300.0,
             procurement_config=ProcurementConfigSpec(
                 firm_available_mw=20.0,
@@ -283,11 +291,11 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
                 "requires_confirmation=True (TC-60). "
                 "Observe-only: no effect on dispatch trace."
             ),
-            workload_events=[_evt_start("job-big", 1900)],
+            workload_events=[_evt_start("job-big", _DEMO_NODES)],
             dt_lead_seconds=30.0,
             bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
             turbine_units=[_turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2)],
-            solar_rated_mw=_SOLAR_20MW,
+            solar_rated_mw=_SOLAR_DEMO,
             end_sim_time=300.0,
             maintenance_config=MaintenanceConfigSpec(
                 asset_id="turbine-0",
@@ -312,11 +320,11 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
                 "test; this scenario exercises the evaluate() code path live. "
                 "Observe-only: returned SiteRampPolicy is advisory only."
             ),
-            workload_events=[_evt_start("job-big", 1900)],
+            workload_events=[_evt_start("job-big", _DEMO_NODES)],
             dt_lead_seconds=30.0,
             bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
             turbine_units=[_turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2)],
-            solar_rated_mw=_SOLAR_20MW,
+            solar_rated_mw=_SOLAR_DEMO,
             end_sim_time=300.0,
             ramp_relaxation_config=RampRelaxationConfigSpec(
                 reserve_threshold_mw=2.0,
@@ -387,11 +395,11 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
                 "Separate from demo-20mw because PMS modifies p_dispatch_required_mw "
                 "during the shed/transition windows, changing allocation numbers."
             ),
-            workload_events=[_evt_start("job-big", 1900)],
+            workload_events=[_evt_start("job-big", _DEMO_NODES)],
             dt_lead_seconds=30.0,
             bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
             turbine_units=[_turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2)],
-            solar_rated_mw=_SOLAR_20MW,
+            solar_rated_mw=_SOLAR_DEMO,
             end_sim_time=300.0,
             pms_config=PmsConfigSpec(),   # all defaults: open_transition, fast_shed_duration_s=30
         ),
@@ -411,11 +419,11 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
                 "the charge rate (TC-55).  "
                 "Separate from demo-20mw because pre-staging changes dispatch numbers."
             ),
-            workload_events=[_evt_start("job-big", 1900)],
+            workload_events=[_evt_start("job-big", _DEMO_NODES)],
             dt_lead_seconds=30.0,
             bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
             turbine_units=[_turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2)],
-            solar_rated_mw=_SOLAR_20MW,
+            solar_rated_mw=_SOLAR_DEMO,
             end_sim_time=300.0,
             pre_staging_config=PreStagingConfigSpec(),   # defaults: max_shift=1.0 MW, eta=0.9
         ),
@@ -425,27 +433,27 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
         ScenarioSpec(
             name="demo-20mw",
             description=(
-                "1900-node 20 MW GPU ramp — 5 × 7 MW gas turbine fleet "
+                "600-node ~6.3 MW GPU ramp — 5 × 7 MW gas turbine fleet "
                 "(4 synchronized online + 1 hot standby), single grid-forming BESS "
                 "(18 MW / 8 MWh).  "
+                "Job ramps over 120 s (process launch → NCCL init → first steps), "
+                "giving the pre-staged turbines time to convert lead-time into MW. "
                 "Staging distributes demand across the 4 active (non-standby) units: "
-                "each stages to ≈ 4.99 MW.  "
-                "Before trip (4 online): N−1 leaves 3 survivors with "
-                "3 × 2.01 MW = 6.03 MW headroom ≥ 4.99 MW deficit → COVERED. "
+                "each stages to ≈ 1.58 MW.  "
+                "Ramp credit per turbine = dt_lead × r = 30 s × 0.2 MW/s = 6.0 MW "
+                ">> 1.58 MW → COVERED before and after the live trip. "
                 "TC-84 live trip: turbine-1 trips at t=120 s → 3 online remain; "
-                "N−1 now leaves 2 survivors with 2 × 2.01 MW = 4.02 MW headroom "
-                "< 4.99 MW deficit → NOT CLOSABLE → shed_required ≈ 0.97 MW "
-                "→ COVERED_WITH_SHED.  Dashboard gen-trip indicator changes state "
-                "on screen. "
+                "each now stages to 2.10 MW, still well within 6.0 MW ramp credit "
+                "→ COVERED.  Dashboard gen-trip indicator changes state on screen. "
                 "BESS power test: 18 − 1 = 17 MW bridging ≥ any single-turbine "
                 "deficit throughout the run. "
                 "The hot-standby unit (turbine-4) contributes zero to dispatch "
                 "and zero to r_surviving (§7.4 / TC-83)."
             ),
             workload_events=[
-                _evt_start("job-big", 1900),
+                _evt_start("job-big", _DEMO_NODES),
                 # TC-84: trip turbine-1 at t=120 s — mid-run, after the GPU
-                # ramp has completed (ramp_seconds=45 s) and all turbines are
+                # ramp has completed (ramp_seconds=120 s) and all turbines are
                 # at or near full output.  Removing one of the four online units
                 # shrinks surviving capacity from 4 × ~6 MW to 3 × ~6 MW,
                 # changing the contingency readout visible on the dashboard.
@@ -460,7 +468,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
                 _turbine("turbine-3", rated_mw=7.0, r_mw_per_s=0.2),
                 _turbine("turbine-4", rated_mw=7.0, r_mw_per_s=0.2, hot_standby=True),
             ],
-            solar_rated_mw=_SOLAR_20MW,
+            solar_rated_mw=_SOLAR_DEMO,
             end_sim_time=300.0,
         ),
     ),
@@ -468,14 +476,14 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
         "demo-alert",
         ScenarioSpec(
             name="demo-alert",
-            description="1900-node scenario where BESS cannot bridge the predicted "
-                        "peak — insufficient_reserve_alert fires at tick 1.  "
-                        "exercises the alert latch (F4) and basis label (F2).",
-            workload_events=[_evt_start("job-alert", 1900)],
+            description="600-node ~6.3 MW scenario where BESS cannot bridge the "
+                        "predicted peak — insufficient_reserve_alert fires at tick 1.  "
+                        "Exercises the alert latch (F4) and basis label (F2).",
+            workload_events=[_evt_start("job-alert", _DEMO_NODES)],
             dt_lead_seconds=30.0,
             bess_units=[_bess("bess-0", rated_mw=5.0, usable_mwh=2.5, grid_forming=True)],
             turbine_units=[_turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2)],
-            solar_rated_mw=_SOLAR_20MW,
+            solar_rated_mw=_SOLAR_DEMO,
             end_sim_time=300.0,
         ),
     ),
@@ -608,11 +616,11 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
                 "in the Solar PV modal.  Identical fleet to demo-20mw; only the solar "
                 "origin time differs."
             ),
-            workload_events=[_evt_start("job-big", 1900)],
+            workload_events=[_evt_start("job-big", _DEMO_NODES)],
             dt_lead_seconds=30.0,
             bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
             turbine_units=[_turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2)],
-            solar_rated_mw=_SOLAR_20MW,
+            solar_rated_mw=_SOLAR_DEMO,
             end_sim_time=300.0,
             solar_origin_utc_hour=20,   # UTC 20:00 = 12:00 PST San Diego solar noon
         ),
