@@ -349,6 +349,51 @@ async def delete_user(
 
 
 # ---------------------------------------------------------------------------
+# Manual code injection  (relay path when email delivery fails)
+# ---------------------------------------------------------------------------
+
+class InjectCodeResponse(BaseModel):
+    email: str
+    code: str
+    valid_seconds: int
+
+
+@router.post(
+    "/users/{email_address}/code",
+    response_model=InjectCodeResponse,
+    dependencies=[Depends(_require_admin)],
+)
+async def inject_code_for_user(
+    email_address: str,
+    db: AsyncSession = Depends(get_db_session),
+):
+    """Generate a sign-in code for a user and return it — no email sent.
+
+    Use when SendGrid delivery fails and the admin needs to relay a code via
+    another channel (chat, phone, etc.).  The code is valid for 10 minutes and
+    is consumed on first use, identical to the normal OTP flow.
+    """
+    from sqlalchemy import select
+
+    result = await db.execute(
+        select(AuthUser).where(AuthUser.email == email_address.lower())
+    )
+    user: AuthUser | None = result.scalar_one_or_none()
+    if user is None or not user.is_active:
+        raise HTTPException(status_code=404, detail="User not found or inactive")
+
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    inject_otp(user.email, code)
+    _log.info(
+        "Admin injected manual OTP for %s (id=%s) — code NOT logged here; "
+        "relay it to the user via a secure channel",
+        user.email,
+        user.id,
+    )
+    return InjectCodeResponse(email=user.email, code=code, valid_seconds=600)
+
+
+# ---------------------------------------------------------------------------
 # Email delivery diagnostic
 # ---------------------------------------------------------------------------
 
