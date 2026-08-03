@@ -112,7 +112,7 @@ class SimulatedGrid:
     # ---- Gas Turbine: 4-unit fleet, ~120 MW per unit rated ---------------
     GT_RATED_MW   = 480.0
     GT_MIN_MW     = 200.0
-    GT_RAMP_MW_S  = 4.0       # max ramp rate, MW per second
+    GT_RAMP_MW_S  = 0.2       # max ramp rate, MW per second (Section 7.1 / Phase 11.3b)
 
     # ---- Solar PV: 200 MW DC nameplate ------------------------------------
     SOLAR_RATED_MW  = 200.0
@@ -171,10 +171,11 @@ class SimulatedGrid:
         # Rack inlet temperature: thermal lag of air mass (tau = 30 s)
         self._inlet_temp = _FirstOrderFilter(25.8, tau=30.0)
 
-        # GPU step-spike low-pass filter — tau = 0.3 s smooths the square-wave
-        # boost so there are visible transitional samples instead of infinite
-        # dP/dt (Issue 4 fix: tau_gpu smoothing).
-        self._cpu_spike = _FirstOrderFilter(0.0, tau=0.3)
+        # GPU step-spike low-pass filter — tau = 0.06 s (Phase 10 default).
+        # Reaches 1 − e^(−0.2/0.06) ≈ 96 % of step in the 0.2 s pulse window,
+        # preserving amplitude while still eliminating the infinite-slope edge.
+        # (tau=0.3 s only reaches 49 % and artificially halves the pulse height.)
+        self._cpu_spike = _FirstOrderFilter(0.0, tau=0.06)
 
         # Cooling thermal lag — §8 / Section 8 specifies a 90 s onset delay
         # before chiller heat rises.  A first-order filter with tau = 90 s

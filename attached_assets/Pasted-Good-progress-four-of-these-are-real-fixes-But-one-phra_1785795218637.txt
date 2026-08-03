@@ -1,0 +1,42 @@
+Good progress — four of these are real fixes. But one phrase in your report is more consequential than any of the numbers.
+
+"A standalone physics simulator"
+
+If gridsignal_logger.py sits at workspace root, six levels above export.py, and generates the CSV independently, then you have two physics models. That would explain what's been puzzling us for several turns: the CSV shows a 245 MW site while the dashboard shows a ~25 MW site with a 19.96 MW job and a compute tile oscillating 0.13 ↔ 6.30 MW. Those aren't the same simulation.
+
+If that's right, the implications are serious:
+
+These six fixes improved the telemetry generator, not the system behind the dashboard. The 0.13/6.30 oscillation is very likely untouched.
+The CSVs I've been analysing aren't evidence about the product — they're evidence about a parallel model.
+Two physics implementations will drift, and every future finding will need disambiguating before it can be acted on.
+
+Worth confirming before anything else: does the dashboard read from gridsignal_logger.py, or does it have its own engine? If the latter, consolidating to one model is more valuable than any item in Phase 11.
+
+Three numbers I'd challenge
+
+GT ramp clamp at 4.0 MW/s. Section 7.1 specifies r_asset = 0.2 MW/s, and Phase 11.3b proposed 0.15 for down-ramp. 4.0 is 20× the spec value, and it appears to be a chosen constant rather than a traced one. That the 99th percentile also sits at 4.0 tells you the clamp binds essentially every tick — the command signal is still asking for far more, so sub-band content is still reaching the dispatch path. The clamp rate-limits the symptom.
+
+The more useful experiment: set it to the spec's 0.2 MW/s. The turbine will then be unable to follow the 0.75 s pulse at all, and the BESS will have to cover 100% of it. That's not a failure — it's the architecturally correct outcome under Section 28.1, and it demonstrates the band separation rather than blurring it.
+
+tau_gpu at 0.3 s against a 0.2 s pulse. The high state runs 26.7% duty on a 0.746 s period — roughly 0.2 s wide. A first-order filter with τ = 0.3 s reaches only 1 − e^(−0.2/0.3) ≈ 49% of the step before the pulse ends. So the pulse amplitude is now roughly halved by filter attenuation, not by physics. If peak-to-peak looks better in the new capture, some of that improvement is artifact. τ = 0.06 s (the Phase 10 default) reaches 96% and preserves the amplitude while still killing the infinite-slope edge.
+
+corr(mech, it) = 0.011 doesn't demonstrate the 90 s lag. With a 90 s onset delay and a 60 s capture, cooling never responds inside the window — so near-zero correlation is what you'd get from a correctly-lagged model and from a disconnected one. It satisfies TC-02 (P_cooling = 0 at t₀ + 60 s) and proves nothing beyond it.
+
+TC-03 is the test that distinguishes them: hold a constant job for ≥ Δt_thermal + 5τ and confirm convergence to α_max × P_compute within 2% of asymptote. That needs a capture of several hundred seconds, not 60. Until it runs, "cooling lag implemented" and "cooling unplugged" are observationally identical.
+
+Verified vs. asserted
+
+Confirmed from the numbers you reported: the ramp clamp binds, mem_util has variance again, compute_load_mw is back, and residual sd dropped.
+
+Not yet established — the new columns are present, which isn't the same as correct:
+
+forecast_mw exists, but F1–F5 haven't run. F3 in particular: inject a step change in measured draw with no WorkloadSignal change, and the forecast must move by exactly 0.0 MW. That's the assertable form of your first IP claim.
+bess_setpoint_mw exists, but is the BESS tracking it, or still being solved for? Residual sd of 13.6 MW is 5.5% of site load — better than 48.6, still not small. Test B1: inject a deliberate 1 MW load-model error and confirm the battery doesn't silently absorb it.
+gt_mode exists, but min stable load, min run/down timers, and unit commitment (R4–R6) aren't mentioned.
+The skipped step
+
+Phase 11.0 ended with a hard STOP pending a branch classification, and the agent went straight to fixes. So the question that gated everything — why does the forecast read 0.13 MW for a 19.96 MW job — is still open, and forecast_mw now being in the schema doesn't answer it.
+
+Worth running that diagnostic before the next round, especially given the two-simulator question. If the dashboard has its own engine, the forecast defect lives there and none of this touched it.
+
+Send the new capture and I can check the ramp clamp, the residual, and whether the BESS is commanded or derived — but the two-model question is the one I'd resolve first.
