@@ -59,17 +59,23 @@ async def export_telemetry_log() -> FileResponse:
             "--rows",     str(_TEST_ROWS),
             "--interval", str(_TEST_INTERVAL),
             "--out",      out_path,
-            stdout=asyncio.subprocess.PIPE,
+            # Discard stdout (progress lines) — pipe buffering would stall the
+            # subprocess once the OS pipe buffer fills up.  We only need the
+            # CSV file that the script writes directly to disk.
+            stdout=asyncio.subprocess.DEVNULL,
             stderr=asyncio.subprocess.PIPE,
         )
-        # Wait with a generous timeout (script should finish in ~2 s).
+        # Timeout = rows × interval + 30 s headroom.
+        _timeout = _TEST_ROWS * _TEST_INTERVAL + 30
         try:
-            _stdout, _stderr = await asyncio.wait_for(proc.communicate(), timeout=30)
+            _unused, _stderr = await asyncio.wait_for(
+                proc.communicate(), timeout=_timeout
+            )
         except asyncio.TimeoutError:
             proc.kill()
             return JSONResponse(
                 status_code=500,
-                content={"detail": "Logger script timed out after 30 s"},
+                content={"detail": f"Logger script timed out after {_timeout:.0f} s"},
             )
 
         if proc.returncode != 0:
