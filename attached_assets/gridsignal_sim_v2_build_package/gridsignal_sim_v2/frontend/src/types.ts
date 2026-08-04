@@ -24,6 +24,11 @@ export interface TickPayload {
   // Confidence band
   confidence_lower_mw: number
   confidence_upper_mw: number
+  // Phase 11.1: queue-derived compute forecast (Section 4 formula).
+  // Equals confidence.point_estimate_mw (bit-identical, test_F4 Python-level).
+  // The header PREDICTED PEAK and Forecast Quality panel centre must both read
+  // this field so the two displays agree (F4 criterion end-to-end).
+  forecast_mw: number
 
   // Data quality
   data_quality_tags: string[]  // DataQualityTag values

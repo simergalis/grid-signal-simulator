@@ -139,12 +139,12 @@ function nodeDetail(
       return 'rack feeds'
     case 'compute-racks': {
       const jobs = tick ? Object.keys(tick.checkpoint_states).length : 0
-      // Demo scenarios: 600 nodes → 6.30 MW.  Fleet scenarios: 1,900 nodes → 19.96 MW.
-      // Use the tick's current total demand when a job is running so the label
-      // reflects the actual scenario rather than a hardcoded fallback.
+      // Show p_compute_mw (GPU rack draw only), not p_total_mw (total site
+      // including cooling, BESS, renewables).  The compute-racks node should
+      // reflect what the racks themselves are drawing, not the full site balance.
       if (jobs > 0) {
-        const currentMW = (tick?.p_total_mw ?? 0).toFixed(2)
-        return `${jobs} job${jobs > 1 ? 's' : ''} · ${currentMW} MW`
+        const computeMW = (tick?.p_compute_mw ?? 0).toFixed(2)
+        return `${jobs} job${jobs > 1 ? 's' : ''} · ${computeMW} MW`
       }
       return '600 – 1,900 nodes · up to 19.96 MW'
     }

@@ -196,8 +196,12 @@ export function VerdictBand({ onLocationChanged }: VerdictBandProps = {}) {
         colWidth: 140,
       },
       {
+        // F5: must read forecast_mw (queue-derived, Section 4 formula), not
+        // confidence_upper_mw (upper band edge).  forecast_mw ==
+        // confidence.point_estimate_mw (bit-identical, test_F4 Python level),
+        // so the header and Forecast Quality panel centre are in agreement.
         label:    'Predicted Peak',
-        value:    `${tick.confidence_upper_mw.toFixed(2)} MW`,
+        value:    `${tick.forecast_mw.toFixed(2)} MW`,
         colour:   '#e0a458',
         colWidth: 104,
       },
