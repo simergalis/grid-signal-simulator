@@ -31,13 +31,16 @@ export interface TickPayload {
   forecast_mw: number
 
   // Phase 13.2: balance decomposition — three independent channels.
-  // sum(grid_exchange_mw + frequency_forcing_mw + model_error_mw) == balance_residual_mw (D4).
-  // grid_exchange_mw:     PCC flow; exactly 0 in islanded mode (D1). channel_source: derived.
-  // frequency_forcing_mw: dispatch-plan inertial pressure; 0 in grid-connected (D2). derived.
-  // model_error_mw:       asset tracking error; ~0 steady-state both modes (D3, D5). derived.
-  grid_exchange_mw:     number
-  frequency_forcing_mw: number
-  model_error_mw:       number
+  // sum(grid_exchange_mw + frequency_forcing_mw + asset_delivery_error_mw) == balance_residual_mw (D4).
+  // grid_exchange_mw:          PCC flow; exactly 0 in islanded mode (D1). channel_source: derived.
+  // frequency_forcing_mw:      dispatch-plan inertial pressure; 0 in grid-connected (D2). derived.
+  // asset_delivery_error_mw:   physical shortfall (turbine/BESS vs setpoints); ~0 steady-state (D3). derived.
+  //   Participates in swing equation (together with frequency_forcing_mw).
+  //   Renamed from model_error_mw (Phase 13.2 addendum): measures physical delivery shortfall,
+  //   not a modelling residual. A genuine model_error_mw requires independent energy accounting.
+  grid_exchange_mw:          number
+  frequency_forcing_mw:      number
+  asset_delivery_error_mw:   number
 
   // Data quality
   data_quality_tags: string[]  // DataQualityTag values

@@ -872,16 +872,25 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     #   renewable = p_renewable_mw             (solar + wind, from solar arrays)
     _p_commanded_mw = p_dispatch_required_mw + _bess_setpoint_mw + p_renewable_mw
 
-    # model_error_mw: actual dispatchable delivery minus commanded dispatch.
+    # asset_delivery_error_mw: actual dispatchable delivery minus commanded dispatch.
     #   = (turbine_output − gt_setpoint) + (bess_output − bess_setpoint)
+    # This is a PHYSICAL SHORTFALL channel — it measures how closely the turbine
+    # and BESS fleets tracked their setpoints.  Positive = over-delivered;
+    # negative = under-delivered (e.g. BESS depleted, turbine curtailed).
+    # ~0 in steady state without injected faults (D3).
+    # Participates in the swing equation below — frequency responds to actual
+    # delivery shortfall, not just to the dispatch-plan mismatch (frequency_forcing).
+    # Renamed from model_error_mw (Phase 13.2 addendum): "asset delivery error"
+    # correctly describes what the channel measures; "model error" implied it was
+    # a modelling residual (which would be the slack variable that D5 was written
+    # to prevent).  A genuine model_error_mw would require independent energy
+    # accounting and is left for a future phase.
     # Renewable is excluded: it has no setpoint in this model (not dispatchable).
-    # Positive = assets over-delivered; negative = under-delivered (BESS depleted,
-    # turbine curtailed, etc.).  ~0 in steady state without injected faults (D3).
     # D5: computed exclusively from setpoints and actual outputs — NOT derived as
     #     "balance_residual − grid_exchange − frequency_forcing", which would make
     #     it the new slack variable.
     # channel_source: derived.
-    _model_error_mw = (
+    _asset_delivery_error_mw = (
         (turbine_output_mw - p_dispatch_required_mw)
         + (bess_output_mw  - _bess_setpoint_mw)
     )
@@ -905,14 +914,23 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         _frequency_forcing_mw = 0.0                           # grid holds frequency (D2)
 
     # Swing equation — islanded mode only.
-    # df/dt = balance_residual_mw / (2 × H × S_base) × f₀
+    # df/dt = (_frequency_forcing_mw + _asset_delivery_error_mw) / (2 × H × S_base) × f₀
     # where H = inertia_constant_s, S_base = total turbine fleet rating (MVA),
     # f₀ = frequency_nominal_hz.
-    # Uses _balance_residual_mw (the ACTUAL generation−load mismatch), NOT
-    # _frequency_forcing_mw (the dispatch-plan mismatch).  The difference is
-    # _model_error_mw (asset tracking error): if an asset failed to deliver its
-    # setpoint, frequency responds to the actual generation shortfall, not the
-    # planned one.
+    #
+    # The two terms make explicit what drives frequency:
+    #   _frequency_forcing_mw: dispatch-plan mismatch (p_commanded − p_total).
+    #     This is what the operator's dispatch plan "intended" — how much the
+    #     planned generation would press or relieve inertia.
+    #   _asset_delivery_error_mw: actual delivery shortfall from turbine/BESS.
+    #     When an asset under-delivers its setpoint (e.g. depleted BESS),
+    #     frequency responds to the real shortfall, not just the planned one.
+    #
+    # Numerically identical to using _balance_residual_mw directly (D4
+    # guarantees sum == _balance_residual_mw); the explicit split leaves room
+    # for a future real model_error_mw (independent energy accounting) that
+    # could be subtracted from the swing input without touching the control path.
+    #
     # Grid-connected: frequency is held at nominal by the grid; reset each tick.
     # (No governor droop feedback in this MVP — the turbine staging path via
     # stage_for_predicted_step() provides the dominant control response.
@@ -921,7 +939,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     _s_base_mw = max(1.0, sum(t.config.rated_mw for t in state.turbines))
     if _islanded:
         _df_dt = (
-            _balance_residual_mw
+            (_frequency_forcing_mw + _asset_delivery_error_mw)
             / (2.0 * state.site.inertia_constant_s * _s_base_mw)
             * state.site.frequency_nominal_hz
         )
@@ -1004,7 +1022,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         # sum == balance_residual_mw (D4).  balance_residual_mw kept for compat.
         grid_exchange_mw=_grid_exchange_mw,
         frequency_forcing_mw=_frequency_forcing_mw,
-        model_error_mw=_model_error_mw,
+        asset_delivery_error_mw=_asset_delivery_error_mw,
         # Phase 11.6: cooling thermal lag — compute inlet temperature.
         compute_inlet_temp_c=_compute_inlet_temp_c,
     )

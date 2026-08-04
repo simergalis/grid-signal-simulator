@@ -308,13 +308,13 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         "frequency_hz":        round(tick.frequency_hz, 4),
         # ── Phase 13.2: Balance decomposition ────────────────────────────────
         # Three independent channels; sum == balance_residual_mw (D4).
-        # grid_exchange_mw:     PCC flow — exactly 0 in islanded mode (D1).
-        # frequency_forcing_mw: dispatch-plan inertial pressure — 0 grid-connected (D2).
-        # model_error_mw:       asset tracking error — ~0 in steady state (D3, D5).
+        # grid_exchange_mw:          PCC flow — exactly 0 in islanded mode (D1).
+        # frequency_forcing_mw:      dispatch-plan inertial pressure — 0 grid-connected (D2).
+        # asset_delivery_error_mw:   physical shortfall (asset setpoint tracking); ~0 steady-state (D3).
         # channel_source for all three: derived (see models.py TickResult docstring).
-        "grid_exchange_mw":     round(tick.grid_exchange_mw, 5),
-        "frequency_forcing_mw": round(tick.frequency_forcing_mw, 5),
-        "model_error_mw":       round(tick.model_error_mw, 5),
+        "grid_exchange_mw":          round(tick.grid_exchange_mw, 5),
+        "frequency_forcing_mw":      round(tick.frequency_forcing_mw, 5),
+        "asset_delivery_error_mw":   round(tick.asset_delivery_error_mw, 5),
         # ── Phase 11.6: Cooling thermal lag (Section 8 thermal model) ────────
         # compute_inlet_temp_c: inlet air temperature derived from lagged
         # cooling output; inherits dt_thermal lag (≥ 0.99 lag-1 autocorr C3).

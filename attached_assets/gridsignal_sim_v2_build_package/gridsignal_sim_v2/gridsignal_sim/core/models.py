@@ -771,13 +771,21 @@ class TickResult:
     #   Grid-connected: exactly 0.0 — grid holds frequency (D2).
     #   channel_source: derived.
     #
-    # model_error_mw: asset tracking error — actual delivery minus commanded dispatch.
+    # asset_delivery_error_mw: physical shortfall — actual dispatchable delivery
+    #   minus commanded dispatch.
     #   = (turbine_output − gt_setpoint) + (bess_output − bess_setpoint).
+    #   Positive = assets over-delivered; negative = under-delivered (e.g. BESS depleted).
     #   ~0 in steady state without injected faults in BOTH modes (D3).
+    #   PARTICIPATES in the swing equation: frequency responds to actual delivery
+    #   shortfall, not just the dispatch-plan mismatch (frequency_forcing).
+    #   Renamed from model_error_mw (Phase 13.2 addendum): the channel measures
+    #   a physical shortfall; "model error" implied a residual/slack, which D5
+    #   was written to prevent.  A genuine model_error_mw would require independent
+    #   energy accounting and is left for a future phase.
     #   D5: NOT computed as "balance_residual − grid_exchange − frequency_forcing"
     #   (that would make it the new slack variable). Uses setpoints + actual outputs
     #   exclusively — two independently modelled sources.
     #   channel_source: derived.
-    grid_exchange_mw:     float = 0.0
-    frequency_forcing_mw: float = 0.0
-    model_error_mw:       float = 0.0
+    grid_exchange_mw:          float = 0.0
+    frequency_forcing_mw:      float = 0.0
+    asset_delivery_error_mw:   float = 0.0
