@@ -247,7 +247,12 @@ def create_app() -> FastAPI:
             candidate = _FRONTEND_DIST / full_path
             if candidate.is_file():
                 return FileResponse(str(candidate))
-            return FileResponse(str(_index_html))
+            # Always serve index.html with no-cache so the browser picks up
+            # new JS/CSS filenames after a frontend rebuild without a hard-refresh.
+            return FileResponse(
+                str(_index_html),
+                headers={"Cache-Control": "no-store, no-cache, must-revalidate"},
+            )
 
     return application
 
