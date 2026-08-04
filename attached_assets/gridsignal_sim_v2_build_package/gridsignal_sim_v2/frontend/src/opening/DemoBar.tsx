@@ -11,7 +11,7 @@
  * DELETE /runs/{id}.  The two components share state via useScenarioStore.
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useScenarioStore } from '../store/scenarioStore'
 
 const SPEED_OPTIONS = [
@@ -45,6 +45,61 @@ const RUNNING_COPY = {
   line1: 'A 20 MW job was queued 25 seconds ago and has not reached full power yet. The turbine is',
   line2: 'already ramping and the battery is covering the gap.',
 }
+
+// ── Split button: "+ New" (left) + "▾" dropdown (right) ──────────────────────
+
+function ScenarioSplitButton({ onNew, onManage }: { onNew: () => void; onManage: () => void }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  return (
+    <div ref={ref} className="relative flex">
+      {/* Main: New */}
+      <button
+        onClick={onNew}
+        className="rounded-l border border-r-0 border-border px-2 py-1.5 font-sans text-xs
+                   text-muted hover:text-text hover:border-muted/50 transition-colors"
+      >
+        + New
+      </button>
+      {/* Arrow: open dropdown */}
+      <button
+        onClick={() => setOpen(v => !v)}
+        title="Manage scenario library"
+        className="rounded-r border border-border px-1.5 py-1.5 font-sans text-[10px]
+                   text-muted hover:text-accent hover:border-accent/50 transition-colors"
+      >
+        ▾
+      </button>
+      {/* Dropdown */}
+      {open && (
+        <div
+          className="absolute bottom-full mb-1 left-0 z-50 min-w-max rounded border border-border
+                     bg-surface shadow-lg py-1"
+        >
+          <button
+            onClick={() => { setOpen(false); onManage() }}
+            className="w-full px-3 py-1.5 text-left font-sans text-xs text-muted
+                       hover:text-accent hover:bg-accent/10 transition-colors"
+          >
+            Manage library (upload / download)
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 interface Props {
   runId:        string | null
@@ -276,25 +331,12 @@ export function DemoBar({
           </button>
         )}
 
-        {/* New scenario + Manage library */}
+        {/* New scenario — split button: left = New, right ▾ = Manage Library */}
         {!isRunning && (
-          <>
-            <button
-              onClick={onNewScenario}
-              className="rounded border border-border px-2 py-1.5 font-sans text-xs
-                         text-muted hover:text-text hover:border-muted/50 transition-colors"
-            >
-              + New
-            </button>
-            <button
-              onClick={onManageScenarios}
-              title="Upload, download or delete scenarios"
-              className="rounded border border-border px-2 py-1.5 font-sans text-xs
-                         text-muted hover:text-accent hover:border-accent/50 transition-colors"
-            >
-              Manage
-            </button>
-          </>
+          <ScenarioSplitButton
+            onNew={onNewScenario}
+            onManage={onManageScenarios}
+          />
         )}
 
         {/* Inline error */}
