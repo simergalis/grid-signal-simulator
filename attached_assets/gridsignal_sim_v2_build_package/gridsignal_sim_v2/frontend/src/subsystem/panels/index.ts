@@ -20,6 +20,9 @@ export interface PanelData {
   statRows:    StatRow[]
   secondary?:  ReactNode
   why:         [string, string, string]
+  /** Phase 0 §0.1: derived identity line overrides the static subsystems.ts string.
+   *  When present, SubsystemModal renders this instead of cfg.identityLine. */
+  identityLine?: string
 }
 
 export interface PanelConfig {

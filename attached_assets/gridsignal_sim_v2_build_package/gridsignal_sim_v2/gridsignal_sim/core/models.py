@@ -713,8 +713,12 @@ class TickResult:
     # Constant across ticks for a given run; carried on every TickResult so the
     # fleet modal can read unit count, rated MW, and effective ramp per unit
     # without a separate API call.  Each element is a plain dict:
-    #   {"asset_id": str, "rated_mw": float, "r_asset_mw_per_s": float}
+    #   {"asset_id": str, "rated_mw": float, "r_asset_mw_per_s": float,
+    #    "run_hours_h": float|None, "gt_mode": str, "hot_standby": bool,
+    #    "breaker_closed": bool, "no_load_mw": float, "msl_mw": float}
     # tuple (not list) because TickResult is frozen=True; tuple is immutable.
+    # Phase 0 adds breaker_closed, gt_mode, no_load_mw, msl_mw (§0.1/0.2/0.6).
+    # Old dicts without these keys are backward-compatible via .get() with defaults.
     turbine_units: tuple = field(default_factory=tuple)
     # Kubernetes demand agent metrics — non-None when kube_config is active.
     # None on every tick when the standard scripted workload path is used,

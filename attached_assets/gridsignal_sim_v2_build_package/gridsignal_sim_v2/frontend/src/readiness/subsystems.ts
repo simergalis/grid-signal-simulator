@@ -62,7 +62,10 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     name: 'Gas Turbine Fleet',
     group: 'supply',
     accentColor: '#e0a458',
-    identityLine: '3 × 15 MW aeroderivative · synchronous · islanded primary generation',
+    // Phase 0 §0.1: derived at runtime from turbine_units in the fleet modal
+    // (turbineFleet.ts _identityLine).  Static literal deleted — count, rating,
+    // and prime-mover class all come from the scenario spec via TickPayload.
+    identityLine: '',
     tabId: 'overview',
   },
   {

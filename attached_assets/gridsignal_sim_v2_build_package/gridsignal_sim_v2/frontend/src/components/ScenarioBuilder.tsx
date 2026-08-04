@@ -162,6 +162,12 @@ function defaultTurbine(index: number): TurbineUnitSpec {
     asset_id: `turbine-${index}`,
     rated_mw: 10.0,
     r_asset_mw_per_s: 0.2,
+    // Phase 0 §0.1/0.2/0.6 defaults — match scenario_factory.py defaults.
+    gt_mode:      'frame',
+    hot_standby:  false,
+    breaker_closed: true,
+    no_load_mw:   0.0,
+    msl_mw:       0.0,
   }
 }
 

@@ -225,6 +225,22 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # can drive its display (unit count, rated MW, effective ramp) without
         # a separate API call.
         "turbine_units": list(tick.turbine_units),
+        # Phase 0 §0.2/0.3: sync aggregates derived from per-unit breaker_closed flag.
+        # units_synchronised_count must equal len([u for u in turbine_units if u["breaker_closed"]]).
+        # Missing breaker_closed key defaults to True — backward-compatible with old spec dicts
+        # that predate Phase 0 (all units treated as on bus for legacy runs).
+        "units_synchronised_count": len(
+            [u for u in tick.turbine_units if u.get("breaker_closed", True)]
+        ),
+        # synchronised_output_mw: fleet output attributed to on-bus units.
+        # Phase 0 tracks fleet aggregate only; hot_standby units contribute zero output
+        # so the fleet total already equals the synchronised-unit total.
+        "synchronised_output_mw": round(
+            tick.turbine_output_mw
+            if any(u.get("breaker_closed", True) for u in tick.turbine_units)
+            else 0.0,
+            4,
+        ),
         # Kubernetes demand agent metrics — null when kube_config is not active.
         # non-null only on runs with kube_config set in the ScenarioSpec.
         "kube_metrics": (

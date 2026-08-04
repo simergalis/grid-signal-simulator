@@ -87,6 +87,12 @@ export interface TickPayload {
   // without a spec (e.g. direct job-id path).  Drives the fleet modal.
   turbine_units: TurbineUnitSpec[]
 
+  // Phase 0 §0.2/0.3: per-unit sync aggregates — derived from breaker_closed flags
+  // in turbine_units by _tick_result_to_dict().  The count equals the filtered list
+  // length; MW equals the fleet total (Phase 0 fleet-aggregate only).
+  units_synchronised_count: number   // len([u for u in turbine_units if u.breaker_closed])
+  synchronised_output_mw: number     // turbine_output_mw when count>0, else 0.0
+
   // Kubernetes demand agent metrics — null when kube_config is not active.
   // Non-null only on runs that have kube_config set in the ScenarioSpec.
   kube_metrics: KubeMetrics | null
@@ -303,6 +309,16 @@ export interface TurbineUnitSpec {
   r_asset_mw_per_s: number
   /** Operating hours — null/absent when not tracked. Fleet modal shows in RUN h column. */
   run_hours_h?: number | null
+  /** Phase 0 §0.1: prime-mover class — "frame" | "aero". Drives derived identity line. */
+  gt_mode: string
+  /** Phase 0 §0.2: commissioned but not synchronised to the AC bus (hot standby). */
+  hot_standby: boolean
+  /** Phase 0 §0.2: AC bus breaker closed. Drives SYNC column; never inferred from output. */
+  breaker_closed: boolean
+  /** Phase 0 §0.6: net output at no-load speed — distinct from MSL. */
+  no_load_mw: number
+  /** Phase 0 §0.6: minimum stable load (p_min_stable_frac × rated_mw). */
+  msl_mw: number
 }
 
 /** PMS wiring exposed in the Scenario Builder. */

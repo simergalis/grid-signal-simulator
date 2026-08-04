@@ -9,6 +9,18 @@
  *   1 unit:  single-unit view + red N−1=0 line
  *   N units: fleet table + N−1 bullet + ramp-vs-count bullet
  *   Same paralleling inset in all live states (draws one row per unit).
+ *
+ * Phase 0 field-boundary reconciliation (six contradictions fixed):
+ *   0.1 identityLine derived from turbine_units (count, rated_mw, gt_mode).
+ *   0.2 SYNC column uses unit.breaker_closed — never inferred from output MW.
+ *       FLEET header derives on-bus count from units_synchronised_count.
+ *   0.3 Units synchronised count from tick.units_synchronised_count;
+ *       contributing MW from tick.synchronised_output_mw — same filtered set.
+ *   0.4 N−1 margin subtitle states the arithmetic (firm, installed, contingency,
+ *       peak) — not a raw unit count.
+ *   0.5 Ramp-energy claim capped at installedMW; unbounded integral removed.
+ *   0.6 OUTPUT column renamed CURRENT MW; NO-LOAD / MSL column added from
+ *       named typed fields no_load_mw and msl_mw.
  */
 
 import React from 'react'
@@ -16,22 +28,35 @@ import type { PanelConfig, PanelData } from './index'
 import type { TickPayload, HistoryPoint, TurbineUnitSpec } from '../../types'
 import { BulletBar } from '../../charts/BulletBar'
 
-// ── Colour constants ────────────────────────────────────────────────────────
+// ── Colour constants ─────────────────────────────────────────────────────────
 const GOLD  = '#e0a458'
 const TEAL  = '#3fb6a8'
 const RED   = '#f85149'
 const AMBER = '#f0883e'
 
-// Site constants that come from the scenario config, not the turbine spec.
-// PEAK_LOAD_MW matches demo-20mw / demo-3turbine (1,900-node, PUE 1.03).
-const PEAK_LOAD_MW    = 23.95
-const LEAD_WINDOW_S   = 45.0   // §21 ramp window — matches dt_lead default
+// Site constant — matches demo-20mw / demo-3turbine (1 900-node, PUE 1.03).
+// compute 19.96 + cooling 3.99 = 23.95 MW.
+const PEAK_LOAD_MW  = 23.95
+const LEAD_WINDOW_S = 45.0   // §21 ramp window — matches dt_lead default
 
 const MONO: React.CSSProperties = {
   fontFamily: "'SF Mono','Roboto Mono',Menlo,Consolas,monospace",
 }
 
-// ── Derived fleet metrics from a unit list ──────────────────────────────────
+// ── 0.1: derive identity line from typed TickPayload fields ──────────────────
+// Replaces the hardcoded "3 × 15 MW aeroderivative" literal in subsystems.ts.
+// Count, rating, and prime-mover class all come from turbine_units.
+function _identityLine(units: TurbineUnitSpec[]): string {
+  if (units.length === 0) {
+    return 'gas turbine fleet · synchronous · islanded primary generation'
+  }
+  const n       = units.length
+  const ratedMW = units[0].rated_mw.toFixed(0)
+  const modeStr = units[0].gt_mode === 'aero' ? 'aeroderivative' : 'frame-class'
+  return `${n} × ${ratedMW} MW ${modeStr} · synchronous · islanded primary generation`
+}
+
+// ── Derived fleet metrics from a unit list ───────────────────────────────────
 function deriveFleet(units: TurbineUnitSpec[]) {
   const installedMW   = units.reduce((s, u) => s + u.rated_mw, 0)
   const maxUnitMW     = Math.max(...units.map(u => u.rated_mw))
@@ -40,9 +65,6 @@ function deriveFleet(units: TurbineUnitSpec[]) {
   // Nominal aggregate ramp = fleet-max ramp × unit count.
   // Displays the fleet's nameplate capability; the degraded-unit footnote in
   // FleetTable records which units are running below max and by how much.
-  // Using the sum of effective ramps (0.560 for a 3-unit fleet with one unit
-  // re-rated to 0.16) would conflate a fleet-level headline with a unit-level
-  // detail that belongs in the footnote.
   const aggRampMWs    = maxRamp * units.length
   const rampNeedMWs   = PEAK_LOAD_MW / LEAD_WINDOW_S   // MW/s to cover peak in window
   const n1MarginPct   = n1FirmMW > 0
@@ -51,15 +73,23 @@ function deriveFleet(units: TurbineUnitSpec[]) {
   return { installedMW, maxUnitMW, n1FirmMW, aggRampMWs, rampNeedMWs, n1MarginPct, maxRamp }
 }
 
-// ── Per-unit table ──────────────────────────────────────────────────────────
+// ── Per-unit table ───────────────────────────────────────────────────────────
+// syncedCount: from tick.units_synchronised_count — never derived from output.
 function FleetTable(
   units: TurbineUnitSpec[],
   aggregateOutputMW: number,
   maxRamp: number,
+  syncedCount: number,
 ): React.ReactNode {
   // Distribute aggregate output proportionally by rated_mw.
   const totalRated = units.reduce((s, u) => s + u.rated_mw, 0) || 1
   const unitOutputs = units.map(u => aggregateOutputMW * (u.rated_mw / totalRated))
+
+  // 0.2: FLEET header — on-bus count from named field, not hardcoded string.
+  const syncedStr   = syncedCount === 0 ? 'NONE ON BUS' : `${syncedCount} ON BUS`
+  const unitCountStr = units.length === 1
+    ? `1 UNIT · ${syncedStr}`
+    : `${units.length} UNITS · ${syncedStr}`
 
   const hCell: React.CSSProperties = {
     ...MONO, fontSize: 9, fontWeight: 700,
@@ -77,25 +107,29 @@ function FleetTable(
   const rows = units.map((u, i) => {
     const out      = unitOutputs[i]
     const isDeg    = u.r_asset_mw_per_s < 0.95 * maxRamp
-    const syncStr  = out > 0.01 ? 'online' : 'open'
+    // 0.2: named typed field — not inferred from proportional output threshold
+    const syncStr  = u.breaker_closed ? 'closed' : 'open'
     const rampStr  = `${u.r_asset_mw_per_s.toFixed(3)} / ${maxRamp.toFixed(3)}`
     const stateStr = isDeg ? 'degraded' : 'available'
     const runHStr  = u.run_hours_h != null
       ? Math.round(u.run_hours_h).toLocaleString()
       : '—'
+    // 0.6: no_load_mw and msl_mw from named typed fields — resolves column ambiguity
+    const noLoadMslStr = `${u.no_load_mw.toFixed(2)} / ${u.msl_mw.toFixed(2)}`
 
     return React.createElement('tr', { key: u.asset_id },
       React.createElement('td', { style: dCell(GOLD, true) }, u.asset_id),
+      // 0.6: column labelled CURRENT MW — distinct from no-load and MSL
       React.createElement('td', { style: dCell(out > 0.01 ? GOLD : '#4b5764') }, `${out.toFixed(2)} MW`),
-      React.createElement('td', { style: dCell('#4b5764') }, syncStr),
+      // 0.6: explicit NO-LOAD / MSL column from named typed fields
+      React.createElement('td', { style: dCell('#4b5764') }, noLoadMslStr),
+      // 0.2: SYNC driven by breaker_closed, not output inference
+      React.createElement('td', { style: dCell(u.breaker_closed ? GOLD : '#4b5764') }, syncStr),
       React.createElement('td', { style: dCell(isDeg ? AMBER : '#8b949e') }, rampStr),
       React.createElement('td', { style: dCell('#4b5764') }, runHStr),
       React.createElement('td', { style: dCell(isDeg ? AMBER : TEAL, true) }, stateStr),
     )
   })
-
-  const unitCountStr = units.length === 1
-    ? `1 UNIT` : `${units.length} UNITS, NONE SYNCHRONISED AT REST`
 
   // Per-degraded-unit footnotes (specific to each unit, matching reference).
   const degradedFootnotes = units
@@ -118,7 +152,8 @@ function FleetTable(
       React.createElement('thead', null,
         React.createElement('tr', null,
           React.createElement('th', { style: hCell }, 'UNIT'),
-          React.createElement('th', { style: hCell }, 'OUTPUT'),
+          React.createElement('th', { style: hCell }, 'CURRENT MW'),        // 0.6: labelled
+          React.createElement('th', { style: hCell }, 'NO-LOAD / MSL MW'), // 0.6: new column
           React.createElement('th', { style: hCell }, 'SYNC'),
           React.createElement('th', { style: hCell }, 'RAMP meas/cfg'),
           React.createElement('th', { style: hCell }, 'RUN h'),
@@ -139,7 +174,7 @@ function FleetTable(
   )
 }
 
-// ── Paralleling inset ───────────────────────────────────────────────────────
+// ── Paralleling inset ────────────────────────────────────────────────────────
 function ParallelingInset(units: TurbineUnitSpec[]): React.ReactNode {
   const genRows = units.map(u =>
     React.createElement('div', {
@@ -212,15 +247,16 @@ function ParallelingInset(units: TurbineUnitSpec[]): React.ReactNode {
   )
 }
 
-// ── No-tick panel ───────────────────────────────────────────────────────────
+// ── No-tick panel ────────────────────────────────────────────────────────────
 function noTickPanel(): PanelData {
   return {
-    stateLabel:  '—',
-    stateColour: '#30363d',
-    verdict:     'No active run. Start a scenario to see fleet readiness.',
-    heroValue:   '—',
-    heroLabel:   'MW firm, N−1',
-    chartTitle:  '',
+    stateLabel:   '—',
+    stateColour:  '#30363d',
+    verdict:      'No active run. Start a scenario to see fleet readiness.',
+    heroValue:    '—',
+    heroLabel:    'MW firm, N−1',
+    chartTitle:   '',
+    identityLine: 'gas turbine fleet · synchronous · islanded primary generation',
     chart: React.createElement('div', {
       style: { fontFamily: 'Inter,sans-serif', fontSize: 11, color: '#4b5764',
                padding: '32px 0', textAlign: 'center' as const }
@@ -241,13 +277,18 @@ function noTickPanel(): PanelData {
   }
 }
 
-// ── Single-unit panel (AE3 branch 1) ───────────────────────────────────────
+// ── Single-unit panel (AE3 branch 1) ────────────────────────────────────────
 function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData {
-  const u         = units[0]
-  const outputMW  = tick.turbine_output_mw
+  const u          = units[0]
+  const outputMW   = tick.turbine_output_mw
   const stateLabel = outputMW > 0.1 ? 'ACTIVE' : 'READY'
+  // 0.2/0.3: named tick fields — not inferred from output threshold
+  const syncedCount = tick.units_synchronised_count
+  const syncedMW    = tick.synchronised_output_mw
+  // 0.5: ramp energy bounded at rated_mw for single unit
+  const rampEnergy  = Math.min(u.r_asset_mw_per_s * LEAD_WINDOW_S, u.rated_mw)
 
-  const chart = FleetTable(units, outputMW, u.r_asset_mw_per_s)
+  const chart = FleetTable(units, outputMW, u.r_asset_mw_per_s, syncedCount)
 
   const secondary = React.createElement('div', { className: 'space-y-3' },
     // Red N−1=0 warning
@@ -266,20 +307,27 @@ function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData
 
   return {
     stateLabel,
-    stateColour: TEAL,
-    verdict:     `Single-unit site — N−1 firm capacity 0.0 MW. A unit loss leaves BESS bridge only (~20 min).`,
-    heroValue:   '0',
-    heroLabel:   'MW firm, N−1',
-    chartTitle:  '',
+    stateColour:  TEAL,
+    verdict:      `Single-unit site — N−1 firm capacity 0.0 MW. A unit loss leaves BESS bridge only (~20 min).`,
+    heroValue:    '0',
+    heroLabel:    'MW firm, N−1',
+    chartTitle:   '',
+    // 0.1: derived from typed fields — count, rating, gt_mode
+    identityLine: _identityLine(units),
     chart,
     statRows: [
       { label: 'Units installed',    value: '1',                                  sub: `${u.rated_mw.toFixed(0)} MW · ${u.asset_id}` },
-      { label: 'Units synchronised', value: outputMW > 0.1 ? '1' : '0',          colour: outputMW > 0.1 ? GOLD : undefined },
+      // 0.3: count from named field; MW from synchronised_output_mw (same filtered set)
+      { label: 'Units synchronised', value: `${syncedCount}`,
+        colour: syncedCount > 0 ? GOLD : undefined,
+        sub: syncedCount > 0 ? `contributing ${syncedMW.toFixed(2)} MW` : 'none on bus' },
       { label: 'N−1 firm capacity',  value: '0.0 MW',                             colour: RED, sub: 'single unit — no redundancy' },
-      { label: 'Peak site load',     value: `${PEAK_LOAD_MW.toFixed(2)} MW`,     sub: 'compute 19.96 + cooling 3.99' },
+      { label: 'Peak site load',     value: `${PEAK_LOAD_MW.toFixed(2)} MW`,      sub: 'compute 19.96 + cooling 3.99' },
       { label: 'N−1 margin',         value: 'none',                               colour: RED },
-      { label: 'Ramp (configured)',  value: `${u.r_asset_mw_per_s.toFixed(3)} MW/s`, sub: `${(u.r_asset_mw_per_s * LEAD_WINDOW_S).toFixed(1)} MW in ${LEAD_WINDOW_S.toFixed(0)} s window` },
-      { label: 'Rated output',       value: `${u.rated_mw.toFixed(1)} MW`,       sub: 'nameplate' },
+      // 0.5: ramp energy bounded at rated_mw — integral is not unbounded
+      { label: 'Ramp (configured)',  value: `${u.r_asset_mw_per_s.toFixed(3)} MW/s`,
+        sub: `${rampEnergy.toFixed(1)} MW in ${LEAD_WINDOW_S.toFixed(0)} s (bounded at ${u.rated_mw.toFixed(0)} MW rated)` },
+      { label: 'Rated output',       value: `${u.rated_mw.toFixed(1)} MW`,        sub: 'nameplate' },
       { label: 'Start time, cold',   value: '5–10 min',                           sub: 'a cold unit contributes nothing to a 45 s event' },
     ],
     secondary,
@@ -291,26 +339,31 @@ function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData
   }
 }
 
-// ── Fleet panel (AE3 branch 2) — N > 1 units ───────────────────────────────
+// ── Fleet panel (AE3 branch 2) — N > 1 units ────────────────────────────────
 function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData {
-  const outputMW  = tick.turbine_output_mw
-  const onlineN   = outputMW > 0.1 ? 1 : 0  // aggregate only; unit-level sync not in tick
+  const outputMW = tick.turbine_output_mw
+  // 0.3: named tick fields — not TSX-derived output inference
+  const onlineN  = tick.units_synchronised_count
+  const syncedMW = tick.synchronised_output_mw
 
   const {
     installedMW, maxUnitMW, n1FirmMW, aggRampMWs,
     rampNeedMWs, n1MarginPct, maxRamp,
   } = deriveFleet(units)
 
-  const n1Covers   = n1FirmMW >= PEAK_LOAD_MW
-  const rampCovers = aggRampMWs >= rampNeedMWs
-  const stateLabel = n1Covers && rampCovers ? 'READY' : 'ATTENTION'
+  const n1Covers    = n1FirmMW >= PEAK_LOAD_MW
+  const rampCovers  = aggRampMWs >= rampNeedMWs
+  const stateLabel  = n1Covers && rampCovers ? 'READY' : 'ATTENTION'
   const stateColour = n1Covers && rampCovers ? TEAL : AMBER
 
-  const marginStr = n1MarginPct >= 0
-    ? `+${n1MarginPct}%` : `${n1MarginPct}%`
+  const marginStr    = n1MarginPct >= 0 ? `+${n1MarginPct}%` : `${n1MarginPct}%`
   const marginColour = n1MarginPct >= 0 ? TEAL : RED
 
-  const chart = FleetTable(units, outputMW, maxRamp)
+  // 0.5: ramp-energy claim capped at installedMW — the integral cannot exceed
+  // rated capacity; removing the unbounded claim from the display.
+  const rampEnergyMW = Math.min(aggRampMWs * LEAD_WINDOW_S, installedMW)
+
+  const chart = FleetTable(units, outputMW, maxRamp, onlineN)
 
   const secondary = React.createElement('div', { className: 'space-y-3' },
     React.createElement(BulletBar, {
@@ -344,19 +397,29 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData {
     verdict: n1Covers
       ? `N−1 firm capacity ${n1FirmMW.toFixed(1)} MW covers the ${PEAK_LOAD_MW.toFixed(2)} MW peak with ${marginStr} margin.`
       : `N−1 firm capacity ${n1FirmMW.toFixed(1)} MW is below the ${PEAK_LOAD_MW.toFixed(2)} MW peak — site cannot survive a unit loss.`,
-    heroValue: n1FirmMW.toFixed(0),
-    heroLabel: 'MW firm, N−1',
-    chartTitle: '',
+    heroValue:   n1FirmMW.toFixed(0),
+    heroLabel:   'MW firm, N−1',
+    chartTitle:  '',
+    // 0.1: derived from typed fields — count, rating, gt_mode
+    identityLine: _identityLine(units),
     chart,
     statRows: [
-      { label: 'Units installed',      value: `${units.length}`,               sub: `${maxUnitMW.toFixed(0)} MW each · ${installedMW.toFixed(0)} MW total` },
-      { label: 'Units synchronised',   value: `${onlineN}`,                    sub: onlineN > 0 ? `contributing ${outputMW.toFixed(2)} MW` : 'none online at rest', colour: onlineN > 0 ? GOLD : undefined },
-      { label: 'N−1 firm capacity',    value: `${n1FirmMW.toFixed(1)} MW`,     colour: n1Covers ? GOLD : RED, sub: 'with any one unit unavailable' },
-      { label: 'Peak site load',       value: `${PEAK_LOAD_MW.toFixed(2)} MW`, sub: 'compute 19.96 + cooling 3.99' },
-      { label: 'N−1 margin',           value: marginStr,                        colour: marginColour, sub: `${units.length} units with headroom` },
-      { label: 'Aggregate ramp',       value: `${aggRampMWs.toFixed(3)} MW/s`, colour: rampCovers ? GOLD : RED, sub: `${(aggRampMWs * LEAD_WINDOW_S).toFixed(0)} MW in ${LEAD_WINDOW_S.toFixed(0)} s window` },
-      { label: 'Ramp with 1 unit',     value: `${rampWith1} MW/s`,             sub: `${(parseFloat(rampWith1) * LEAD_WINDOW_S).toFixed(0)} MW in ${LEAD_WINDOW_S.toFixed(0)} s — BESS covers the remainder` },
-      { label: 'Start time, cold',     value: '5–10 min',                      sub: 'a cold unit contributes nothing to a 45 s event' },
+      { label: 'Units installed',    value: `${units.length}`,               sub: `${maxUnitMW.toFixed(0)} MW each · ${installedMW.toFixed(0)} MW total` },
+      // 0.3: both values from the same filtered set via named tick fields
+      { label: 'Units synchronised', value: `${onlineN}`,
+        sub: onlineN > 0 ? `contributing ${syncedMW.toFixed(2)} MW` : 'none on bus',
+        colour: onlineN > 0 ? GOLD : undefined },
+      { label: 'N−1 firm capacity',  value: `${n1FirmMW.toFixed(1)} MW`,    colour: n1Covers ? GOLD : RED, sub: 'with any one unit unavailable' },
+      { label: 'Peak site load',     value: `${PEAK_LOAD_MW.toFixed(2)} MW`, sub: 'compute 19.96 + cooling 3.99' },
+      // 0.4: subtitle states the arithmetic — not a raw unit count
+      { label: 'N−1 margin',         value: marginStr,                        colour: marginColour,
+        sub: `${installedMW.toFixed(0)} MW − ${maxUnitMW.toFixed(0)} MW contingency = ${n1FirmMW.toFixed(0)} MW firm  ·  peak ${PEAK_LOAD_MW.toFixed(2)} MW` },
+      // 0.5: ramp energy capped at installed capacity
+      { label: 'Aggregate ramp',     value: `${aggRampMWs.toFixed(3)} MW/s`, colour: rampCovers ? GOLD : RED,
+        sub: `${rampEnergyMW.toFixed(0)} MW in ${LEAD_WINDOW_S.toFixed(0)} s (capped at ${installedMW.toFixed(0)} MW installed)` },
+      { label: 'Ramp with 1 unit',   value: `${rampWith1} MW/s`,
+        sub: `${(parseFloat(rampWith1) * LEAD_WINDOW_S).toFixed(0)} MW in ${LEAD_WINDOW_S.toFixed(0)} s — BESS covers the remainder` },
+      { label: 'Start time, cold',   value: '5–10 min',                      sub: 'a cold unit contributes nothing to a 45 s event' },
     ],
     secondary,
     why: [
@@ -367,7 +430,7 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData {
   }
 }
 
-// ── Panel config ────────────────────────────────────────────────────────────
+// ── Panel config ─────────────────────────────────────────────────────────────
 export const turbineFleetPanel: PanelConfig = {
   deriveData(tick: TickPayload | null, _alert: TickPayload | null, _history: HistoryPoint[]): PanelData {
     if (!tick) return noTickPanel()
@@ -375,7 +438,6 @@ export const turbineFleetPanel: PanelConfig = {
     const units = tick.turbine_units ?? []
 
     if (units.length === 0) {
-      // Spec path delivered no units — treat as "not instrumented".
       return {
         ...noTickPanel(),
         stateLabel: '—',

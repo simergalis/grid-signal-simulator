@@ -690,6 +690,25 @@ def build_run_context_from_spec(
                 # run_hours_h: None when not tracked; non-None for scenarios
                 # that carry operating-hours data (e.g. demo-3turbine).
                 "run_hours_h": float(t["run_hours_h"]) if t.get("run_hours_h") is not None else None,
+                # Phase 0 §0.1: prime-mover class — "frame" or "aero".
+                # Drives the derived identity line in the fleet modal.
+                "gt_mode": str(t.get("gt_mode", "frame")),
+                # Phase 0 §0.2: hot_standby — commissioned but not synchronised to
+                # the AC bus.  A hot-standby unit contributes zero output and is
+                # excluded from contingency ramp (TC-83).
+                "hot_standby": bool(t.get("hot_standby", False)),
+                # Phase 0 §0.2: breaker_closed — AC bus breaker closed.
+                # Derived from hot_standby for Phase 0; Phase 1 will track real-time
+                # breaker state from turbine physics.  Drives SYNC column and
+                # units_synchronised_count without inference from aggregate output.
+                "breaker_closed": not bool(t.get("hot_standby", False)),
+                # Phase 0 §0.6: no_load_mw — net output at no-load speed (shaft
+                # spinning, zero electrical delivery).  Typically 0.0 for aeroderivatives;
+                # set per OEM data sheet.  Separate from MSL.
+                "no_load_mw": float(t.get("no_load_mw", 0.0)),
+                # Phase 0 §0.6: msl_mw — minimum stable load (p_min_stable_frac ×
+                # rated_mw).  Below this the combustion regime is unstable.
+                "msl_mw": float(t.get("p_min_stable_frac", 0.0)) * float(t.get("rated_mw", 10.0)),
             }
             for i, t in enumerate(spec_data.get("turbine_units", []))
         ),

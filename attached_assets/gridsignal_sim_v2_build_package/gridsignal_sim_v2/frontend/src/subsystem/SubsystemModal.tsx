@@ -154,7 +154,9 @@ export function SubsystemModal({
                 {panelData.stateLabel}
               </span>
             </div>
-            <div className="font-mono text-xs text-muted">{cfg.identityLine}</div>
+            {/* Phase 0 §0.1: prefer panelData.identityLine (derived from tick) over
+                the static cfg.identityLine so the fleet modal never shows a hardcoded string. */}
+            <div className="font-mono text-xs text-muted">{panelData.identityLine ?? cfg.identityLine}</div>
           </div>
 
           <button
