@@ -1,0 +1,162 @@
+Why this addendum exists
+
+Phase 13.2 and its addendum are closed: the three-channel decomposition holds, asset_delivery_error_mw is correctly named and correctly participates in frequency forcing, and B1b demonstrated channel independence exactly — asset_delivery_error_mw = 0.000000000 while frequency_forcing_mw = 1.000000000 on a load-model fault.
+
+B1b also produced a result that changes the order of work: a 1 MW surplus drove frequency to 53.125 Hz in a single tick. That is a 6.25% excursion, well past any realistic over-frequency trip threshold.
+
+The arithmetic is correct for the fixture. Working back through the swing equation, Δf = 1 / (2 × 4.0 × S_base) × 50 × 5.0 reaching +3.125 Hz implies S_base ≈ 2 MW, which is the sum of turbine ratings in that fixture. The test is valid and asserts the right property.
+
+What it exposes is that frequency is being integrated at the 5-second dispatch cadence. Real frequency dynamics play out over hundreds of milliseconds. A 5-second Euler step can leap past a trip threshold entirely, and any droop response added later will act on a signal that has already moved several Hz. That has to be addressed before the droop loop, not after — otherwise the droop controller is being tuned against a numerically broken plant.
+
+Constraint: no LLM, external API, or network dependency. All computation local, seeded, deterministic. All work targets core/simulation_core.py and the live engine path. Do not modify gridsignal_logger.py.
+
+Phase 13.3b-0 — Decouple frequency integration from the dispatch tick
+
+New, and blocking 13.3b.
+
+The problem
+
+TICK_INTERVAL_SIM_SECONDS = 5.0 is traced to Section 3.1 and is the intended dispatch evaluation cadence. That is defensible for dispatch: the turbine ramps at 0.2 MW/s and nothing useful changes faster.
+
+It is not defensible for frequency. With H = 4.0 s, the electromechanical response has a time constant on the order of seconds, and a 5-second explicit Euler step is coarser than the dynamics it is integrating. Two consequences:
+
+Frequency can jump past a relay threshold between samples, so protection logic can never see the crossing.
+A proportional droop controller with a 5-second sample period against a 4-second inertia constant sits close to the regime where discrete-time control goes unstable.
+Requirements
+Integrate the swing equation on a sub-step: FREQUENCY_SUBSTEP_S, default 0.1 s, so one dispatch tick performs 50 sub-steps.
+Forcing terms (frequency_forcing_mw, asset_delivery_error_mw) are held constant across the sub-steps within a tick. They are only recomputed at dispatch cadence, which is correct — dispatch genuinely does not update faster.
+frequency_hz in TickResult reports the value at the end of the tick. Add frequency_min_hz and frequency_max_hz over the sub-steps within the tick, so an excursion that occurs and recovers between broadcasts is still visible.
+Make the substep configurable and document why it differs from the dispatch cadence.
+Acceptance criteria
+#	Criterion	Threshold
+N1	Same scenario at substep 0.1 s vs 0.01 s	end-of-tick frequency_hz differs by < 1%
+N2	B1b re-run with sub-stepping	frequency trajectory smooth; no single-sample jump > 0.5 Hz
+N3	frequency_min_hz / frequency_max_hz populated	reflect the intra-tick extremes, not the endpoint
+N4	Forcing terms constant within a tick	verified by code review — they must not be recomputed per sub-step
+
+N1 is the convergence test. If halving the substep materially changes the answer, the substep is still too coarse.
+
+Phase 13.3b — Primary frequency response
+
+Supersedes the 13.3b in Addendum A. Requirements are unchanged; the acceptance criteria gain a stability test.
+
+governor_droop = 0.04 exists on SiteConfig and is set in test fixtures but is never read in simulation_core.py. The swing equation is a pure integrator with no restoring force, so frequency never returns to nominal even after an imbalance clears. B1b's 53.125 Hz would keep climbing on the next tick.
+
+Requirements
+Read governor_droop inside evaluate_tick().
+Droop characteristic: ΔP = −Δf / (droop × f_nominal) × P_rated.
+Droop response is subject to existing ramp limits (r_asset_up 0.2 MW/s, r_asset_down 0.15 MW/s). Primary response cannot exceed what the machine can physically deliver.
+Governor deadband, default ±0.02 Hz.
+The droop command enters the turbine setpoint path, so asset_delivery_error_mw continues to measure genuine delivery shortfall.
+Acceptance criteria
+#	Criterion	Threshold
+I3	Islanded, sustained imbalance	frequency settles at a steady-state offset per the droop characteristic, not unbounded drift
+I6	Clear an injected imbalance, islanded	frequency returns to within 0.05 Hz of nominal
+I7	Island transition	accumulated frequency state preserved, not overwritten
+I8	Droop response vs ΔP = −Δf / (droop × f_nominal) × P_rated	within ±10%
+I9	Frequency within deadband	no turbine output change
+I10	Droop command exceeding ramp limit	clamps at the limit; binding_constraint populated
+I11	Closed-loop stability sweep	no divergence or sustained oscillation across H ∈ {2, 4, 8} s and substep ∈ {0.01, 0.1} s
+
+I6 cannot pass against a pure integrator — it is the criterion that catches the missing restoring force.
+
+I7 addresses line 878. The grid-connected branch overwrites state._frequency_hz with nominal every tick, discarding integration history, so re-islanding always starts clean. Hold the accumulated value and let it converge under droop.
+
+I11 is new. If the loop oscillates or diverges, report it rather than silently reducing the droop gain — instability is evidence that the substep from 13.3b-0 is still too coarse, not that the gain is wrong.
+
+Re-check B1b after this lands
+
+With droop active and realistic asset ratings, the frequency excursion in B1b will be much smaller. Confirm the assertion frequency_hz > 50.0 still discriminates against noise, and tighten it to a specific expected value if not.
+
+Phase 13.3b-1 — Type-boundary guard
+
+Ahead of 13.3c, because that phase adds fields to exactly the boundary that has already failed once.
+
+forecast_mw was broadcast from Phase 11.1 onward but was never added to TickPayload in types.ts. VerdictBand.tsx therefore substituted confidence_upper_mw — a dimensionally similar field — and PREDICTED PEAK read plausibly but wrongly for several phases with no error raised.
+
+The same pattern appears twice more: frequency_hz is serialized at run_manager.py:307 with zero frontend matches, and the compute racks tile read p_total_mw where p_compute_mw was meant.
+
+Requirements
+
+Either generate TickPayload from the backend TickResult definition, or add a test asserting that every key in the broadcast dict has a corresponding typed field. Either approach catches all three retrospectively.
+
+#	Criterion	Expected
+T1	Every key in the run_manager.py broadcast dict	has a matching field in TickPayload
+T2	Add a backend field without updating types.ts	test fails
+T3	Existing fields	no regressions; TypeScript compiles clean
+
+This phase already added three channels to that boundary, and 13.3c adds frequency_hz, frequency_min_hz, and frequency_max_hz.
+
+Phase 13.3c — Surface frequency on the dashboard
+
+Unchanged from Addendum A, with the new channels included.
+
+Display frequency_hz with nominal, warning, and trip thresholds marked. Confirm thresholds against Section 28 protection settings rather than adopting defaults.
+Show frequency_min_hz / frequency_max_hz so intra-tick excursions are visible.
+Visually distinguish islanded from grid-connected — frequency is only a meaningful health signal in the former.
+Surface asset_delivery_error_mw in the diagnostics view. A non-zero value is a delivery fault and should not be silent.
+#	Criterion	Expected
+U1	Islanded run with an imbalance	frequency deviation visible without opening a console
+U2	Frequency crossing the warning threshold	visible state change
+U3	asset_delivery_error_mw non-zero	surfaced, not discarded
+Documentation items
+
+1. Record the model-error limitation. Add to the asset_delivery_error_mw docstring: this channel intentionally participates in frequency forcing because it measures real delivery shortfall; genuine model error is not separately observable in the current architecture and would require independent energy accounting. The rename was correct, but it should not read as having closed the Phase 13.0 overloading finding — that finding is documented, not eliminated.
+
+2. Note the I4 scope change. The original I4 was "inject into model_error_mw only, frequency must not move." That is unassertable now, since no channel carries model error while staying out of the forcing path. What I4a–c actually prove is that the forcing decomposition is correct across healthy, degraded, and mode-gated cases. Valuable, but a different property — worth stating so the criterion isn't later cited as proving something it doesn't.
+
+3. Add H to the open-parameters list, alongside r_asset and bess_tau_s. inertia_constant_s = 4.0 is a chosen value with no measured basis, and it sets the entire frequency-response timescale. All three need vendor or measured data before any derived number is quoted externally.
+
+Remaining after this addendum
+Order	Item	Note
+1	13.3b-0	Frequency substep — blocks droop
+2	13.3b	Droop loop, I3, I6–I11
+3	13.3b-1	Type-boundary guard
+4	13.3c	Dashboard surfacing
+5	13.4	B2–B4 (B1a/B1b complete)
+6	13.5	TC-03 determinism, turbine constraints R4–R8
+7	#188	Section 3.1 vs 6.2 cadence contradiction — see note below
+
+On #188: a 5-second evaluation cadence cannot resolve the 5–30 s valley durations Section 6.2 specifies, since a 5-second valley is a single sample. That affects IP claim 4 — the classifier cannot discriminate regardless of threshold quality. The 13.3b-0 work establishes the precedent that ingestion and classification may run faster than dispatch evaluation, which is likely the same resolution. Worth pulling forward ahead of 13.5 rather than treating it as parallel spec work.
+
+Out of scope
+
+Unchanged. No gridsignal_logger.py changes, no Section 6.2 threshold changes, no dispatch arbitration reordering, no hardware profile library changes, no LLM or network dependency.
+
+Project content
+GridSignal
+Created by you
+GridSignal-Forecast-Engine-Functional-Spec_v2.5.md
+
+1,683 lines
+
+MD
+
+PDF
+
+PDF
+
+Content
+system_stats (2).csv
+
+CSV
+
+system_stats (4).csv
+
+CSV
+
+system_stats (10).csv
+
+CSV
+
+Good progress — four of these are real fixes. But one phrase in your report is more consequential than any of the numbers. "A standalone physics simulator" If gridsignal_logger.py sits at workspace root, six levels above export.py, and generates the CSV independently, then you have two physics mod
+
+PASTED
+
+The document says diagnostic only — no fixes, report findings and stop. I need to run A (timescale separation), B (filtered vs unfiltered residual), and C (per-step decomposition). Let me read the logger first to understand the grid_import model before writing the diagnostic. 3 actions Good. I
+
+PASTED
+
+All information gathered. Here is the full diagnostic report. Phase 13.0 Diagnostic — live engine only (simulation_core.py) 1. Does a swing equation exist in simulation_core.py? Cite line numbers. Yes. Lines 862–882, added in Phase 11.3. # lines 862–882 _s_base_mw = max(1.0, sum(t.config.
+
+PASTED

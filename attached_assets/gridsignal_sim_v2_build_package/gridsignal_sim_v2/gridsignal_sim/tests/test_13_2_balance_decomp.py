@@ -446,6 +446,20 @@ class TestI4SwingEquationExplicitInput:
 
     Swing equation formula (both modes numerically identical to _balance_residual):
       Δf = (frequency_forcing_mw + asset_delivery_error_mw) / (2 × H × S_base) × f₀ × dt
+
+    SCOPE NOTE (Phase 13.2 addendum review):
+      The original I4 criterion was stated as "inject into model_error_mw only;
+      frequency must not move."  That criterion is unassertable in the current
+      architecture: no channel carries genuine model error while staying out of
+      the forcing path (the Phase 13.0 overloading finding is documented, not
+      eliminated — see asset_delivery_error_mw docstring in models.py).
+      What I4a–I4c actually prove is that the FORCING DECOMPOSITION is correct:
+        I4a — healthy assets: delivery error ≈ 0; Δf comes from frequency_forcing alone
+        I4b — delivery fault: delivery error < 0; Δf is steeper than forcing alone
+        I4c — grid-connected: frequency invariant regardless of delivery error source
+      This is a different and valuable property, but it should not be cited as
+      evidence that a 1 MW load-model error leaves frequency unchanged — B1b
+      demonstrated the opposite (53.125 Hz on a 1 MW solar surplus).
     """
 
     # Parameters from _make_state defaults

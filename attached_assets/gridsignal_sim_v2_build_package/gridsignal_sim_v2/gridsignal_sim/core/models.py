@@ -319,15 +319,29 @@ class SiteConfig:
 
     # Phase 11.3 — swing-equation parameters for islanded frequency tracking.
     # These are used to compute df/dt from balance_residual_mw each tick.
+    #
     # inertia_constant_s (H): combined inertia of all synchronous generators,
     #   in seconds.  Default 4.0 s (typical medium diesel/gas island plant).
     #   CHOSEN — no measured basis; calibrate against design partner specs.
+    #
+    #   OPEN PARAMETER (Phase 13.2 addendum):
+    #   H sets the entire frequency-response timescale: the electromechanical
+    #   time constant is ~2H/droop, so every derived frequency criterion —
+    #   trip threshold crossing time, droop settle time, stability margin —
+    #   scales directly with this value.  It belongs on the open-parameters
+    #   list alongside r_asset_mw_per_s (TurbineConfig, no measured basis,
+    #   Section 7.1 MVP default) and bess_tau_s (not yet a first-class field
+    #   but implied by charge/discharge dynamics).  All three require vendor
+    #   or measured data before any derived frequency number is quoted externally.
+    #
     # frequency_nominal_hz (f0): nominal system frequency.  50 Hz default.
     # governor_droop: per-unit frequency deviation that produces 100% governor
     #   response.  Default 4% (0.04) — typical gas turbine governor setting.
-    inertia_constant_s:    float = 4.0    # CHOSEN — no measured basis
+    #   CHOSEN — no measured basis; read but not yet wired to control path
+    #   (Phase 13.3b will close this).
+    inertia_constant_s:    float = 4.0    # CHOSEN — no measured basis (open parameter)
     frequency_nominal_hz:  float = 50.0  # CHOSEN — EU/APAC default; override for 60 Hz
-    governor_droop:        float = 0.04  # CHOSEN — no measured basis
+    governor_droop:        float = 0.04  # CHOSEN — no measured basis (open parameter)
 
 
 @dataclass
@@ -780,8 +794,20 @@ class TickResult:
     #   shortfall, not just the dispatch-plan mismatch (frequency_forcing).
     #   Renamed from model_error_mw (Phase 13.2 addendum): the channel measures
     #   a physical shortfall; "model error" implied a residual/slack, which D5
-    #   was written to prevent.  A genuine model_error_mw would require independent
-    #   energy accounting and is left for a future phase.
+    #   was written to prevent.
+    #
+    #   MODEL-ERROR LIMITATION (Phase 13.0 finding — documented, not eliminated):
+    #   This channel intentionally participates in frequency forcing because it
+    #   measures real delivery shortfall.  Genuine model error (e.g. PUE
+    #   miscalibration, double-counted cooling load, unit-conversion bugs) is
+    #   NOT separately observable in the current architecture: it would require
+    #   an independent energy-accounting path — tracking cumulative energy in
+    #   and out per asset and comparing against integrated power — which is left
+    #   for a future phase.  The rename from model_error_mw was correct and
+    #   necessary; it does not imply that the Phase 13.0 overloading finding
+    #   has been resolved, only that the channel name now honestly describes
+    #   what it measures.
+    #
     #   D5: NOT computed as "balance_residual − grid_exchange − frequency_forcing"
     #   (that would make it the new slack variable). Uses setpoints + actual outputs
     #   exclusively — two independently modelled sources.
