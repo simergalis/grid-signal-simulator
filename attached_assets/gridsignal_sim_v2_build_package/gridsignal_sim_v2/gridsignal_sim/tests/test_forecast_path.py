@@ -42,6 +42,7 @@ from core.asset_modules import (
     BessModule,
     CoolingModule,
     GPUModule,
+    IrradianceProfile,
     SolarModule,
     TurbineModule,
 )
@@ -51,6 +52,7 @@ from core.models import (
     HardwareProfile,
     IslandMode,
     SiteConfig,
+    SolarConfig,
     TurbineConfig,
     WorkloadClass,
     WorkloadEventType,
@@ -437,38 +439,129 @@ class TestWorkloadSignalFlags:
 # ===========================================================================
 
 class TestDispatchTruthfulness:
-    """Phase 11.3 — bess_setpoint_mw, balance_residual_mw, frequency_hz."""
+    """Phase 11.3 — bess_setpoint_mw, balance_residual_mw, frequency_hz.
 
-    def test_B1_islanded_depleted_bess_causes_frequency_deviation(self):
-        """B1: In islanded mode with a depleted BESS, the turbine cannot
-        instantly cover the load; balance_residual_mw is non-zero and
-        frequency_hz deviates from 50 Hz.
+    Phase 13.2 addendum: B1 is split into two sub-tests that distinguish
+    delivery faults (visible in asset_delivery_error_mw) from load-model
+    errors (visible in frequency_forcing_mw / grid_exchange_mw, NOT in
+    the delivery channel).
+    """
+
+    def test_B1a_islanded_delivery_fault_visible_in_delivery_channel(self):
+        """B1a: A delivery fault appears in asset_delivery_error_mw.
+
+        Scenario: slow-ramping turbine in islanded mode.  The dispatch plan
+        sets gt_setpoint = p_total (turbine must cover all load), but the
+        turbine over-ramps its setpoint in the first tick — it jumped to
+        0.02 MW while the load is only ~0.003 MW.  This over-delivery
+        (positive asset_delivery_error_mw) drives frequency above 50 Hz.
+
+        The key assertion: the imbalance is in asset_delivery_error_mw, not
+        merely in balance_residual_mw.  Any non-zero delivery error (over OR
+        under) must surface in this channel.  balance_residual_mw is kept as
+        a corroboration check.
         """
-        # BESS fully depleted: usable_mwh=0 means no discharge capacity.
         state = _make_state(
             bess_soc=0.0,
             bess_mwh=0.01,    # near-zero energy so SoC drains immediately
             bess_rated_mw=5.0,
-            turbine_ramp=0.2,  # slow ramp so turbine can't instantly cover load
+            turbine_ramp=0.2,  # slow ramp — turbine over-shoots setpoint first tick
             island_mode=IslandMode.ISLANDED,
         )
         sig = _starting_signal(nodes=10, ramp_s=1.0, timestamp=0.0)
         state.apply_workload_signal(sig, dt_lead_seconds=0.0)
 
-        # Let the job reach full TDP (ramp completes in 1 s)
         tick = _run_tick(state, sim_time=5.0, dt=0.1)
 
-        # With depleted BESS and turbine still ramping up:
-        # P_gen = turbine_output + 0 (bess depleted) + 0 (no solar)
-        # balance_residual = P_gen - p_total ≠ 0 in islanded mode
-        # (could be negative since turbine may not fully cover load yet)
+        # Delivery fault is visible in the delivery channel, not just in balance_residual.
+        # Turbine over-delivered vs its setpoint → asset_delivery_error_mw > 0.
+        assert tick.asset_delivery_error_mw != pytest.approx(0.0, abs=1e-6), (
+            f"B1a: delivery fault must appear in asset_delivery_error_mw; "
+            f"got {tick.asset_delivery_error_mw:.9f}  "
+            f"(turbine_out={tick.turbine_output_mw:.6f}, "
+            f"gt_setpoint={tick.gt_setpoint_mw:.6f})"
+        )
+        # balance_residual_mw corroborates (== asset_delivery_error_mw here since
+        # frequency_forcing_mw = 0 by D2-equivalent: dispatch plan exactly matched load).
         assert tick.balance_residual_mw != pytest.approx(0.0, abs=1e-6), (
-            f"B1: balance_residual_mw should be non-zero with depleted BESS; "
+            f"B1a: balance_residual_mw should be non-zero with delivery fault; "
             f"got {tick.balance_residual_mw}"
         )
         assert tick.frequency_hz != pytest.approx(50.0, abs=1e-6), (
-            f"B1: frequency_hz should deviate from 50 Hz in islanded mode "
-            f"with non-zero residual; got {tick.frequency_hz}"
+            f"B1a: frequency_hz should deviate from 50 Hz in islanded mode "
+            f"with non-zero delivery fault; got {tick.frequency_hz}"
+        )
+
+    def test_B1b_islanded_load_model_error_not_visible_in_delivery_channel(self):
+        """B1b: A load-model error (dispatch plan ≠ actual, no asset fault)
+        appears in frequency_forcing_mw — NOT in asset_delivery_error_mw.
+
+        Scenario: 1 MW solar surplus in islanded mode.  The dispatch plan
+        correctly commands 0 MW from turbine and BESS (renewable > load), so
+        both assets deliver exactly their setpoints (asset_delivery_error ≈ 0).
+        The surplus that the dispatch plan could not absorb appears entirely in
+        frequency_forcing_mw and drives frequency up.
+
+        This is the deliberate load-model error case from the Phase 13.2
+        review: a 1 MW mismatch between the planned generation and actual load
+        does NOT show up in the delivery channel at all — it is not a delivery
+        fault.  Only frequency_forcing_mw / grid_exchange_mw carry it.
+        """
+        # Build state with a 1 MW solar override, no GPU job (load ≈ 0).
+        solar = SolarModule(
+            config=SolarConfig(asset_id="solar-b1b", rated_mw=2.0),
+            irradiance_profile=IrradianceProfile([]),  # won't be called (override is active)
+        )
+        solar.override_output_mw(1.0)   # 1 MW fixed; _override_active = True
+
+        site = SiteConfig(
+            site_id="test-b1b",
+            pue_base=1.03, alpha_max=0.20, tau_seconds=20.0,
+            dt_thermal_seconds=90.0, uncalibrated=False,
+            workload_signal_stale_s=30.0,
+            island_mode=IslandMode.ISLANDED,
+            inertia_constant_s=4.0, frequency_nominal_hz=50.0,
+            governor_droop=0.04,
+        )
+        hw = {
+            "enterprise_8gpu_air": HardwareProfile(
+                profile_id="enterprise_8gpu_air", rated_kw=10.2
+            )
+        }
+        from core.simulation_core import SimulationState
+        state = SimulationState(
+            run_id="test-b1b",
+            site=site,
+            gpu_modules=[GPUModule(asset_id="gpu-0", site=site, hardware_library=hw, ramp_seconds=1.0)],
+            turbines=[TurbineModule(TurbineConfig(asset_id="gt-1", rated_mw=10.0, r_asset_mw_per_s=5.0))],
+            bess_units=[BessModule(BessConfig(
+                asset_id="bess-1", rated_mw=5.0, usable_mwh=2.0,
+                initial_soc_fraction=1.0, p_anchor_reserve_mw=0.0, grid_forming=False,
+            ))],
+            solar_arrays=[solar],
+            cooling=CoolingModule(asset_id="cooling-0", site=site),
+        )
+        # No WorkloadSignal — no GPU load; p_total ≈ 0.
+        tick = _run_tick(state, sim_time=0.0, dt=5.0)
+
+        # 1 MW solar surplus: dispatch requested 0 from turbine and BESS,
+        # both delivered exactly 0 → asset_delivery_error must be ~0.
+        assert tick.asset_delivery_error_mw == pytest.approx(0.0, abs=1e-9), (
+            f"B1b: a 1 MW load-model error must NOT appear in "
+            f"asset_delivery_error_mw (got {tick.asset_delivery_error_mw:.9f}); "
+            f"it is not a delivery fault.  "
+            f"turbine_out={tick.turbine_output_mw:.6f} gt_setpoint={tick.gt_setpoint_mw:.6f}  "
+            f"bess_out={tick.bess_output_mw:.6f} bess_setpoint={tick.bess_setpoint_mw:.6f}"
+        )
+        # The 1 MW surplus IS visible in the forcing channel (islanded).
+        assert tick.frequency_forcing_mw > 0.5, (
+            f"B1b: 1 MW solar surplus should appear in frequency_forcing_mw; "
+            f"got {tick.frequency_forcing_mw:.9f}"
+        )
+        # Frequency rose (positive forcing drives f above nominal).
+        assert tick.frequency_hz > 50.0, (
+            f"B1b: frequency_hz should be above 50 Hz with 1 MW surplus; "
+            f"got {tick.frequency_hz:.6f}"
         )
 
     def test_B2_bess_setpoint_captured_before_soc_clipping(self):
