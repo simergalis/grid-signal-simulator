@@ -234,7 +234,14 @@ function ParallelingInset(units: TurbineUnitSpec[]): React.ReactNode {
       React.createElement('div', { style: { flex: 1, minWidth: 200 } },
         React.createElement('p', {
           style: { fontFamily: 'Inter,sans-serif', fontSize: 10, color: '#8b949e', lineHeight: 1.6, margin: 0 }
-        }, 'Synchro-check relay closes each breaker after matching voltage, frequency, phase.'),
+        }, (() => {
+          // 0.2: relay footer reads sync_relay_state — separate from the breaker_closed
+          // SYNC column. Phase 0: derived from hot_standby; Phase 1: real-time.
+          const checkingN = units.filter(u => u.sync_relay_state === 'checking').length
+          return checkingN > 0
+            ? `${checkingN} unit${checkingN > 1 ? 's' : ''} in synchro-check sequence — matching voltage, frequency, phase.`
+            : 'All units on bus — synchro-check relay at rest.'
+        })()),
         React.createElement('p', {
           style: { fontFamily: 'Inter,sans-serif', fontSize: 10, color: RED, lineHeight: 1.6,
                    margin: '4px 0 0', fontWeight: 600 }
@@ -359,8 +366,11 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData {
   const marginStr    = n1MarginPct >= 0 ? `+${n1MarginPct}%` : `${n1MarginPct}%`
   const marginColour = n1MarginPct >= 0 ? TEAL : RED
 
-  // 0.5: ramp-energy claim capped at installedMW — the integral cannot exceed
-  // rated capacity; removing the unbounded claim from the display.
+  // 0.5: ramp-energy capped at installedMW for Phase 0.
+  // Phase 0 cap: Math.min(Σr_i × H, installedMW) — a nameplate ceiling.
+  // Phase 1 formula (replaces this): Σ min(r_i × H, rated_i − output_i)
+  //   At 1.90 MW fleet output that gives 33.1 MW, not 35. Phase 1 deletes this
+  //   line and computes per-unit headroom from tick.turbine_units output fields.
   const rampEnergyMW = Math.min(aggRampMWs * LEAD_WINDOW_S, installedMW)
 
   const chart = FleetTable(units, outputMW, maxRamp, onlineN)

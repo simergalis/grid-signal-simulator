@@ -60,3 +60,18 @@ This is an instantaneous stop model. A ramp-down path is not implemented; if nee
 ## Pre-existing failures (unchanged)
 - test_d10, test_item4: BESS re-fire after taper, 3-tuple unpack of 4-tuple — pre-dates Phase 13.
 - test_f5: GPU ramp timing — pre-dates Phase 13.
+
+## Phase 0 ramp-cap Phase 1 note (added Phase 0 gate)
+
+The 0.5 ramp cap in `turbineFleet.ts` is a Phase 0 nameplate ceiling:
+```ts
+Math.min(aggRampMWs * LEAD_WINDOW_S, installedMW)
+```
+Phase 1 **deletes** this and replaces with the correct per-unit headroom formula:
+```
+Σ min(r_i × H, rated_i − output_i)
+```
+At 1.90 MW fleet output on a 5 × 7 MW (35 MW) fleet that gives **33.1 MW**, not 35.
+Phase 1 computes this from `tick.turbine_units[].turbine_output_mw` (Phase 1 adds
+per-unit output to the wire dict). Do NOT keep both clamp paths — Phase 1 deletes
+the `rampEnergyMW = Math.min(...)` line entirely.

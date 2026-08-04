@@ -192,3 +192,58 @@ def pytest_approx(value: float, abs: float = 1e-4):
     """Thin wrapper so test assertions read clearly without importing pytest at top-level."""
     import pytest
     return pytest.approx(value, abs=abs)
+
+
+# ── TC-P0-6: sync_relay_state present and correct ────────────────────────────
+
+def test_tc_p0_6_sync_relay_state_from_factory():
+    """TC-P0-6: build_run_context_from_spec populates sync_relay_state in each
+    per-unit spec dict, derived from hot_standby (Phase 0 static derivation).
+      hot_standby=False → "permissive"  (relay granted closure; unit on bus)
+      hot_standby=True  → "checking"   (relay matching V/f/θ; not yet on bus)
+
+    Uses build_run_context_from_spec (the authorised factory path) so the test
+    covers scenario_factory.py's derivation logic, not just data pass-through.
+    """
+    import sys, pathlib as _pl
+    sys.path.insert(0, str(_pl.Path(__file__).parents[1]))
+    from runtime.scenario_factory import build_run_context_from_spec
+
+    _MINIMAL_SPEC = {
+        "name": "p0-relay-test",
+        "description": "",
+        "hardware_profile_id": "hpc-datacenter",
+        "dt_lead_seconds": 30,
+        "bess_units": [
+            {"asset_id": "bess-0", "rated_mw": 10.0, "usable_mwh": 2.0,
+             "initial_soc_fraction": 0.9, "grid_forming": True}
+        ],
+        "turbine_units": [
+            {"asset_id": "gt-0", "rated_mw": 10.0, "r_asset_mw_per_s": 0.3,
+             "hot_standby": False},
+            {"asset_id": "gt-1", "rated_mw": 10.0, "r_asset_mw_per_s": 0.3,
+             "hot_standby": True},
+        ],
+        "solar_rated_mw": 0.0,
+        "irradiance_steps": [],
+        "island_mode": True,
+        "pue_base": 1.03,
+        "run_duration_s": 60,
+        "location": "Auckland",
+        "workload_events": [],
+    }
+
+    ctx   = build_run_context_from_spec("test-relay", _MINIMAL_SPEC)
+    units = list(ctx.turbine_unit_specs)
+
+    u0 = next(u for u in units if u["asset_id"] == "gt-0")
+    u1 = next(u for u in units if u["asset_id"] == "gt-1")
+
+    assert "sync_relay_state" in u0, "gt-0 missing sync_relay_state"
+    assert "sync_relay_state" in u1, "gt-1 missing sync_relay_state"
+    assert u0["sync_relay_state"] == "permissive", (
+        "gt-0: expected 'permissive' (hot_standby=False), got " + repr(u0["sync_relay_state"])
+    )
+    assert u1["sync_relay_state"] == "checking", (
+        "gt-1: expected 'checking' (hot_standby=True), got " + repr(u1["sync_relay_state"])
+    )

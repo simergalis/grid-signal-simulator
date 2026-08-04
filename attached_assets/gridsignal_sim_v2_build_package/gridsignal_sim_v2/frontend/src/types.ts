@@ -137,6 +137,35 @@ export interface TickPayload {
   // POST body without numeric conversion.
   //
   // Absent on playback / headless test payloads.
+
+  // Step 10 §8.1: pre-staging two-phase fields.
+  pre_staging_shift_mw:   number  // MW gap reduced (discharge phase)
+  pre_staging_precool_mw: number  // extra load drawn to charge thermal store
+
+  // AB3: fields present on TickResult previously absent from the wire dict.
+  unrecognised_profile_alerts: string[]   // profile ids the engine could not resolve
+  curtailment_proposal_tiers:  string[]   // curtailment tiers proposed this tick
+  pms_fast_shed_active:        boolean    // PMS fast shed in effect this tick
+  pms_order_conflict:          string | null  // detected PMS order conflict
+  scada_commands_issued:       number     // SCADA commands issued this tick (TC-68)
+
+  // SD-1: site identity — stamped from run-time config each tick.
+  site_lat:          number | null
+  site_lon:          number | null
+  site_utc_offset_h: number | null
+  site_name:         string
+
+  // Phase 11.3: dispatch truthfulness.
+  gt_setpoint_mw:      number  // total dispatch requirement handed to turbine fleet
+  balance_residual_mw: number  // (turbine+bess+renewable)−load; deprecated by Phase 13.2 channels
+
+  // Phase 11.6: cooling thermal lag.
+  compute_inlet_temp_c: number  // inlet air temp from lagged cooling output
+
+  // §174: stochastic step timing (kube path only).
+  step_phase: number   // fractional position within current ML training step [0,1]
+  step_kind:  string   // "training" | "checkpoint"
+
   t_emit_ns?: string
 }
 
@@ -319,6 +348,11 @@ export interface TurbineUnitSpec {
   no_load_mw: number
   /** Phase 0 §0.6: minimum stable load (p_min_stable_frac × rated_mw). */
   msl_mw: number
+  /** Phase 0 §0.2: synchro-check relay state.
+   *  "permissive" — relay granted closure; unit is on the AC bus.
+   *  "checking"   — relay active, matching V/f/θ before close (hot standby).
+   *  "open"       — unit offline, not in sync sequence (Phase 1+). */
+  sync_relay_state: string
 }
 
 /** PMS wiring exposed in the Scenario Builder. */

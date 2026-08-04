@@ -709,6 +709,17 @@ def build_run_context_from_spec(
                 # Phase 0 §0.6: msl_mw — minimum stable load (p_min_stable_frac ×
                 # rated_mw).  Below this the combustion regime is unstable.
                 "msl_mw": float(t.get("p_min_stable_frac", 0.0)) * float(t.get("rated_mw", 10.0)),
+                # Phase 0 §0.2: sync_relay_state — state of the synchro-check relay.
+                # Derived from hot_standby for Phase 0 static config; Phase 1 will
+                # track real-time relay state as the breaker transitions each tick.
+                # "permissive" — relay granted closure; unit is on the AC bus.
+                # "checking"   — relay active, matching V/f/θ before close (hot standby).
+                # "open"       — unit offline; not in sync sequence (Phase 1+ only).
+                "sync_relay_state": (
+                    "checking"
+                    if bool(t.get("hot_standby", False))
+                    else "permissive"
+                ),
             }
             for i, t in enumerate(spec_data.get("turbine_units", []))
         ),
