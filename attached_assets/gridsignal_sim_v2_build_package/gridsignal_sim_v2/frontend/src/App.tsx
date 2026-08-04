@@ -36,13 +36,14 @@ import { NetworkTelemetryPage }    from './components/NetworkTelemetryPage'
 import { ProcurementPage }         from './components/ProcurementPage'
 import { ThermalCoolingPage }      from './components/ThermalCoolingPage'
 import { ScenarioPlannerPage }     from './components/ScenarioPlannerPage'
+import { ScenarioManagerPage }     from './components/ScenarioManagerPage'
 import { AdminPage }               from './components/AdminPage'
 import { ChangePasswordModal }     from './components/ChangePasswordModal'
 import { useTickStore }            from './store/tickStore'
 import { useScenarioStore }        from './store/scenarioStore'
 import { useTickStream }           from './ws/useTickStream'
 
-type PageView = 'readiness' | 'overview' | 'proposals' | 'procurement' | 'network' | 'thermal' | 'scenarios' | 'admin'
+type PageView = 'readiness' | 'overview' | 'proposals' | 'procurement' | 'network' | 'thermal' | 'scenarios' | 'scenario-manager' | 'admin'
 
 const FRAME_INTERVAL_MS = 250   // 4 Hz render loop
 
@@ -188,6 +189,11 @@ function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
     setDrawerOpen(true)
   }, [])
 
+  const handleEditScenario = useCallback((id: string) => {
+    setEditId(id)
+    setDrawerOpen(true)
+  }, [])
+
   const handleDrawerSaved = useCallback((scenarioId: string) => {
     selectScenario(scenarioId)
     setDrawerOpen(false)
@@ -286,7 +292,8 @@ function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
           ['procurement', 'Grid & Procurement'],
           ['network',     'Network Telemetry'],
           ['thermal',     'Thermal & Cooling'],
-          ['scenarios',   'Scenario Planner'],
+          ['scenarios',         'Scenario Planner'],
+          ['scenario-manager',  'Scenarios'],
         ] as const).map(([page, label]) => (
           <button
             key={page}
@@ -361,6 +368,13 @@ function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
       ) : currentPage === 'thermal' ? (
         <main className="flex-1 overflow-hidden">
           <ThermalCoolingPage runId={runId ?? lastRunId} />
+        </main>
+      ) : currentPage === 'scenario-manager' ? (
+        <main className="flex-1 overflow-hidden">
+          <ScenarioManagerPage
+            onNewScenario={handleNewScenario}
+            onEditScenario={handleEditScenario}
+          />
         </main>
       ) : currentPage === 'admin' && role === 'admin' ? (
         <main className="flex-1 overflow-hidden">
