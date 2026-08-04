@@ -463,7 +463,7 @@ class DispatchArbitrator:
         else:
             per_turbine_target = delta_p_mw / len(_active_turbines)
             for turbine in _active_turbines:
-                turbine.stage_target(turbine.output_mw() + per_turbine_target)
+                turbine.stage_target(turbine.output_mw() + per_turbine_target, sim_time)
             total_r_asset = sum(t.config.r_asset_mw_per_s for t in _active_turbines)
             required_ramp_s = delta_p_mw / total_r_asset if total_r_asset else float("inf")
 

@@ -1242,21 +1242,25 @@ class RunManager:
                 # policy is advisory only — ramp caps are not applied to
                 # TurbineModule, so the dispatch trace hash is unaffected.
                 #
-                # PROTO-22 (CHOSEN, no measured basis): available_capacity_mw
-                # is set to turbine_rated_mw only, omitting BESS bridging and
-                # renewable contribution.  This overstates headroom and works
-                # against TC-75's conservative upper-bound intent.  A production
-                # deployment must include all dispatchable sources.  See the
-                # RampRelaxationEngine.evaluate() docstring for full rationale.
+                # R8 fix (Phase 13.5): available_capacity_mw now reads from
+                # contingency_coverage.dispatchable_mw — the single source of
+                # truth for (online turbine rated) + (anchor-adj BESS bridging).
+                # This resolves the prior PROTO-22 discrepancy where the header
+                # showed 38 MW (dispatchable) while the ramp-relaxation tile
+                # received 20 MW (turbine-only ctx.turbine_rated_mw).
                 if ctx.ramp_relaxation_engine is not None:
                     if _profiling: _t0 = _time_module.perf_counter()
                     from core.ramp_relaxation import ReservePosition  # lazy
                     ctx.ramp_relaxation_engine.evaluate(
                         ReservePosition(
-                            # PROTO-22: turbine_rated_mw proxy — see note above.
+                            # R8: use dispatchable_mw (turbines + BESS) from the
+                            # single contingency source; fall back to output sum
+                            # only if contingency_coverage is absent (e.g. no
+                            # online turbines).
                             available_capacity_mw=(
-                                ctx.turbine_rated_mw
-                                or (
+                                tick_result.contingency_coverage.dispatchable_mw
+                                if tick_result.contingency_coverage is not None
+                                else (
                                     tick_result.turbine_output_mw
                                     + tick_result.bess_output_mw
                                 )

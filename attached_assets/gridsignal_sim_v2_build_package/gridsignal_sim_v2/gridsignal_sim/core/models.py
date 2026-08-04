@@ -361,6 +361,32 @@ class TurbineConfig:
     # Its start time is a separate quantity and must never be folded into a ramp
     # rate.  False = default (synchronized online).
     hot_standby: bool = False
+    # R4–R6 operational constraints (Phase 13.5).  All CHOSEN (PROTO-R4); no
+    # measured basis.  A production deployment should replace these with
+    # OEM-specified values for the installed frame class.
+    #
+    # p_min_stable_frac — minimum stable load as a fraction of rated_mw.
+    #   Dispatch commands below p_min_stable_frac × rated_mw are clamped up
+    #   to this floor while the turbine is running.  Prevents operation in the
+    #   lean-extinction regime that causes combustion instability.
+    #   0.0 = constraint disabled (default — backward-compatible with scenarios
+    #   that do not model combustion stability limits).  Set to 0.45 in
+    #   demo-20mw and any scenario exercising IP claim 4.
+    p_min_stable_frac: float = 0.0
+    # t_min_run_s — minimum continuous run time (seconds) before a controlled
+    #   stop is permitted.  A stop command issued before this time elapses is
+    #   deferred: the turbine holds at p_min_stable until t_min_run_s passes.
+    #   0.0 = constraint disabled (default).  Set to 1800.0 for frame-class GT.
+    t_min_run_s: float = 0.0
+    # t_min_down_s — minimum cooling/rest period (seconds) between a controlled
+    #   stop and the next permitted restart.  A restart command while in the
+    #   cooling window is silently dropped.
+    #   0.0 = constraint disabled (default).  Set to 900.0 for frame-class GT.
+    t_min_down_s: float = 0.0
+    # gt_mode — per-unit gas turbine frame class.
+    #   "frame" = large heavy-duty frame (slow ramp, high inertia).
+    #   "aero"  = aeroderivative unit (fast ramp, lower inertia).
+    gt_mode: str = "frame"
 
 
 @dataclass

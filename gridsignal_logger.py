@@ -364,12 +364,26 @@ class SimulatedGrid:
         #   models instrument response for realistic telemetry display only.
         #   It does NOT enter the balance equation.
         #
-        # Acceptance criteria (G1–G5, verified in tests/test_balance.py):
+        # Acceptance criteria (G1–G5, listed in tests/test_balance.py):
         #   G1  balance_residual sd < 1% of site load at steady state
         #   G2  residual sd(0.75 s period) / sd(60 s period) ≤ 2
         #   G3  corr(grid_import_mw, −others) = 1.0  [slack tag present]
         #   G4  balance closes to machine epsilon every tick
         #   G5  Diagnostic-C unaccounted_mw < 0.5 MW per step event
+        #
+        # G1–G4 are satisfied by construction, not by verification.
+        # grid_import_mw is the algebraic slack: it is defined as exactly the
+        # difference between generation and load, so balance_residual (computed
+        # two lines below) is identically 0.00 MW by arithmetic.  G1–G4 cannot
+        # fail regardless of whether the underlying model is correct; they prove
+        # only that the accounting is self-consistent.  Only G5 measures a real
+        # property — it checks that the export generator accounts for each power
+        # step event rather than silently absorbing it into the slack.
+        #
+        # Note: this export generator has no capability to detect its own
+        # modelling errors by design; error detection lives in the live engine
+        # (asset_delivery_error_mw, TickResult.model_error_mw, and the G5 probe
+        # in tests/test_balance.py which exercises the generator from outside).
         #
         # B1/B2/B3/B4 require the swing equation (Phase 12.2) to be in place
         # before they are meaningful — 12.2 blocks 12.3.

@@ -30,6 +30,7 @@ from fastapi import APIRouter, HTTPException, Request, status
 
 from api.schemas import (
     KubeConfigSpec,
+    LoadProfileConfigSpec,
     MaintenanceConfigSpec,
     ProcurementConfigSpec,
     RampRelaxationConfigSpec,
@@ -470,6 +471,11 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             ],
             solar_rated_mw=_SOLAR_DEMO,
             end_sim_time=300.0,
+            # Enables compute vs allreduce phase variation on the COMPUTE RACKS
+            # tile.  Uses all LoadProfileConfig defaults: phase_coherence=0.85,
+            # f_compute=0.72, p_comm_ratio=0.55.  Step phase is self-managed by
+            # GPUModule.advance() at a 0.70 s period (StepTimingConfig default).
+            load_config=LoadProfileConfigSpec(),
         ),
     ),
     (
@@ -485,6 +491,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             turbine_units=[_turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2)],
             solar_rated_mw=_SOLAR_DEMO,
             end_sim_time=300.0,
+            load_config=LoadProfileConfigSpec(),
         ),
     ),
     (

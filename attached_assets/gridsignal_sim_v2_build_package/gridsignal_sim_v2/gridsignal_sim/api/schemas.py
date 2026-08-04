@@ -481,6 +481,17 @@ class ScenarioSpec(BaseModel):
     # an OU process + EMA.  Power-cap fires when grid headroom < headroom_threshold_mw.
     kube_config: Optional[KubeConfigSpec] = None
 
+    # ── Within-step compute load profile (scripted-event / non-kube path) ────
+    # Activates compute-phase vs allreduce-phase power variation for scenarios
+    # that use workload_events rather than kube_config.  The step phase is
+    # self-managed by GPUModule.advance() using a fixed 0.70 s step period
+    # (StepTimingConfig.median_step_s default) so tick-to-tick p_compute_mw
+    # varies realistically between ~100% TDP (compute) and ~55% TDP (allreduce).
+    #
+    # Ignored when kube_config is set — kube_config.load_config takes priority.
+    # None (default) = flat profile, preserving all existing test behaviour.
+    load_config: Optional[LoadProfileConfigSpec] = None
+
     # ── Pre-run generation architecture ────────────────────────────────────────
     # All generators run concurrently BEFORE t=0, materialising timelines that
     # the tick loop replays deterministically.  No generator runs during ticks.

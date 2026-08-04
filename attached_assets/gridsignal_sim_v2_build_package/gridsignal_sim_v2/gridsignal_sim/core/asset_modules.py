@@ -111,6 +111,16 @@ class GPUModule(AssetModule):
     #   Initialised to 1.0 (compute phase at power 1.0).
     _lag_raw_profile: float = field(default=1.0, repr=False)
 
+    # _auto_step_period_s — when > 0, advance() self-computes step_phase from
+    #   sim_time % period / period each tick.  This is the non-kube path: for
+    #   scenarios using scripted workload_events (no KubeAgent), setting this
+    #   enables compute vs allreduce phase variation without needing a kube
+    #   scheduler.  Period = StepTimingConfig.median_step_s default (0.70 s).
+    #
+    #   0.0 = disabled (kube path — simulation_core sets step_phase externally
+    #   BEFORE advance() so we must NOT overwrite it here).
+    _auto_step_period_s: float = field(default=0.0, repr=False)
+
     # rng_load — numpy Generator for per-tick load noise.
     #   None (default) = no noise, preserving all existing test determinism.
     #   Injected by scenario_factory from kube_agent.rng_load after the agent
@@ -296,6 +306,15 @@ class GPUModule(AssetModule):
         # (allreduce phase) based on step_phase.  The first-order lag with
         # tau_gpu_s smooths the sharp edge so the power signal is band-limited.
         if self.load_config is not None:
+            # Non-kube path: self-manage step_phase from sim_time.
+            # Kube path: step_phase is set externally by simulation_core BEFORE
+            # advance() so _auto_step_period_s is 0.0 there and this branch
+            # is skipped — the externally-set value is used as-is.
+            if self._auto_step_period_s > 0.0:
+                self.step_phase = (
+                    math.fmod(sim_time, self._auto_step_period_s)
+                    / self._auto_step_period_s
+                )
             raw_profile = (
                 1.0 if self.step_phase < self.load_config.f_compute
                 else self.load_config.p_comm_ratio
@@ -734,12 +753,19 @@ class TurbineModule(AssetModule):
     state: TurbineState = TurbineState.OFFLINE
     _current_output_mw: float = 0.0
     _target_mw: float = 0.0
+    # R4–R6 run-time tracking (Phase 13.5)
+    # _run_start_s: sim_time when the current run started.  math.nan = never
+    #   started (or stopped and time already recorded in _stop_time_s).
+    _run_start_s: float = math.nan
+    # _stop_time_s: sim_time of the last controlled stop.  math.nan = never
+    #   stopped.  Guards t_min_down_s enforcement on the next restart.
+    _stop_time_s: float = math.nan
 
     @property
     def asset_id(self) -> str:  # noqa: D401 -- property mirrors dataclass field name
         return self.config.asset_id
 
-    def stage_target(self, target_mw: float) -> None:
+    def stage_target(self, target_mw: float, sim_time: float = 0.0) -> None:
         """Dispatch arbitrator calls this at a job's `starting` event
         (source spec Section 7.2 step 1) to begin ramping immediately,
         using the full available lead time.
@@ -747,12 +773,59 @@ class TurbineModule(AssetModule):
         Hot-standby units are excluded: they are not synchronized to the bus
         and must not receive automatic dispatch orders.  Their start time is
         a separate, operator-initiated action.
+
+        R4 (p_min_stable_frac): positive dispatch targets below the minimum
+        stable load floor are silently clamped up to the floor.  This prevents
+        operation in the combustion-instability regime.
+
+        R5 (t_min_run_s): if a stop command (target ≤ 0) arrives before the
+        minimum run time has elapsed, the turbine is held at p_min_stable
+        instead of stopping.
+
+        R6 (t_min_down_s): a restart command (target > 0 from OFFLINE) is
+        silently dropped if the unit has not yet satisfied its cooling window
+        after a controlled stop.
         """
         if self.config.hot_standby:
             return
+
+        if target_mw > 0:
+            # ── R6: enforce minimum down-time before restart ──────────────
+            if self.state == TurbineState.OFFLINE and not math.isnan(self._stop_time_s):
+                elapsed_down = sim_time - self._stop_time_s
+                if elapsed_down < self.config.t_min_down_s:
+                    return  # cooling window not satisfied; drop restart command
+
+            # ── R4: clamp target to p_min_stable floor ────────────────────
+            p_min = self.config.p_min_stable_frac * self.config.rated_mw
+            target_mw = max(target_mw, p_min)
+
+            # ── Transition OFFLINE → RAMPING; record run start time ───────
+            if self.state == TurbineState.OFFLINE:
+                self._run_start_s = sim_time
+                self.state = TurbineState.RAMPING
+
+        else:
+            # target_mw == 0: controlled stop command
+            if self.state != TurbineState.OFFLINE:
+                # ── R5: enforce minimum run time before allowing stop ──────
+                if not math.isnan(self._run_start_s):
+                    elapsed_run = sim_time - self._run_start_s
+                    if elapsed_run < self.config.t_min_run_s:
+                        # Too early to stop — hold at p_min_stable instead
+                        target_mw = self.config.p_min_stable_frac * self.config.rated_mw
+                        self._target_mw = min(target_mw, self.config.rated_mw)
+                        return
+
+                # Minimum run time satisfied (or never tracked) — allow stop
+                self._stop_time_s = sim_time
+                self._run_start_s = math.nan
+                self._target_mw = 0.0
+                self._current_output_mw = 0.0
+                self.state = TurbineState.OFFLINE
+                return
+
         self._target_mw = min(target_mw, self.config.rated_mw)
-        if self.state == TurbineState.OFFLINE:
-            self.state = TurbineState.RAMPING
 
     def advance(self, sim_time: float, dt_seconds: float) -> None:
         if self.state != TurbineState.RAMPING:

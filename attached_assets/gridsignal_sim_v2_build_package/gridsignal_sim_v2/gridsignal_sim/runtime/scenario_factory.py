@@ -544,6 +544,28 @@ def build_run_context_from_spec(
                 _gpu.load_config = sim_state.kube_agent.config.load_config
                 _gpu.rng_load = sim_state.kube_agent.rng_load
 
+    else:
+        # ── Non-kube path: wire top-level load_config (if present) ───────────
+        # Scripted-event scenarios (workload_events, no KubeAgent) can opt in to
+        # compute vs allreduce phase variation by setting load_config in their
+        # ScenarioSpec.  GPUModule._auto_step_period_s > 0 tells advance() to
+        # self-manage step_phase from sim_time instead of waiting for the kube
+        # path to set it externally.
+        _top_lc_raw = spec_data.get("load_config")
+        if isinstance(_top_lc_raw, dict):
+            _top_lc = LoadProfileConfig(**{
+                k: v for k, v in _top_lc_raw.items()
+                if k in LoadProfileConfig.__dataclass_fields__
+            })
+            # Fixed step period = StepTimingConfig.median_step_s default (0.70 s).
+            # This is not stochastic — the phase cycles deterministically — but
+            # it produces realistic tick-to-tick power variation (compute ↔
+            # allreduce) without requiring a full KubeAgent.
+            _STEP_PERIOD_S = 0.70
+            for _gpu in sim_state.gpu_modules:
+                _gpu.load_config = _top_lc
+                _gpu._auto_step_period_s = _STEP_PERIOD_S
+
     # ── Workload events ───────────────────────────────────────────────────
     events: list[WorkloadSignal] = []
     for evt in spec_data.get("workload_events", []):
