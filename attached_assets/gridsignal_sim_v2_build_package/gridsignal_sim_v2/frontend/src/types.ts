@@ -41,6 +41,11 @@ export interface TickPayload {
   grid_exchange_mw:          number
   frequency_forcing_mw:      number
   asset_delivery_error_mw:   number
+  // Phase 13.4: setpoint/actual split.
+  // model_error_mw: load-model bias observable (B1 — 0.0 in production runs).
+  // binding_constraint: "bess_power_saturated" | null when BESS setpoint exceeds rated MW (B3).
+  model_error_mw:            number
+  binding_constraint:        string | null
 
   // Phase 13.3: live frequency measurement — 50 Hz nominal ± swing-equation deviation.
   // Islanded: integrated each tick via frequency_forcing_mw (governor droop provides restoring force).

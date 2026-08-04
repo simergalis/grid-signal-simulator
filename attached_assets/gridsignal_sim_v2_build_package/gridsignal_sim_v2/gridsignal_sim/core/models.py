@@ -342,6 +342,12 @@ class SiteConfig:
     inertia_constant_s:    float = 4.0    # CHOSEN — no measured basis (open parameter)
     frequency_nominal_hz:  float = 50.0  # CHOSEN — EU/APAC default; override for 60 Hz
     governor_droop:        float = 0.04  # CHOSEN — no measured basis (open parameter)
+    # load_model_bias_mw: deliberate load-estimation offset for test injection (B1).
+    #   Default 0.0 — the dispatch engine's load estimate matches the metered load.
+    #   When non-zero, the difference is reported as model_error_mw in TickResult
+    #   WITHOUT flowing into p_dispatch_required, bess_setpoint, or frequency_forcing.
+    #   Represents injected PUE miscalibration or load-accounting drift; test-only.
+    load_model_bias_mw:    float = 0.0
 
 
 @dataclass
@@ -782,8 +788,8 @@ class TickResult:
     #   Differs from turbine_output_mw while turbines are still ramping.
     # balance_residual_mw: (turbine_output + bess_output + p_renewable) − p_total.
     #   DEPRECATED (Phase 13.2): read grid_exchange_mw + frequency_forcing_mw +
-    #   model_error_mw instead.  Retained for backward compatibility only.
-    #   sum(grid_exchange_mw, frequency_forcing_mw, model_error_mw) == balance_residual_mw.
+    #   asset_delivery_error_mw instead.  Retained for backward compatibility only.
+    #   sum(grid_exchange_mw, frequency_forcing_mw, asset_delivery_error_mw) == balance_residual_mw.
     # frequency_hz: nominal system frequency (50 Hz) plus the deviation
     #   accumulated by the swing equation in islanded mode.
     #   In grid-connected mode: fixed at site.frequency_nominal_hz (grid is
@@ -842,3 +848,12 @@ class TickResult:
     grid_exchange_mw:          float = 0.0
     frequency_forcing_mw:      float = 0.0
     asset_delivery_error_mw:   float = 0.0
+    # ── Phase 13.4 — Setpoint/actual split ────────────────────────────────────
+    # model_error_mw: injected load-model bias (site.load_model_bias_mw).
+    #   Default 0.0.  Observable as its own channel — does NOT flow into dispatch
+    #   or frequency_forcing (B1: inject 1 MW → model_error_mw ≥ 0.9; BESS and
+    #   frequency remain at their unperturbed values).
+    model_error_mw:            float = 0.0
+    # binding_constraint: "bess_power_saturated" when bess_setpoint_mw exceeds
+    #   the BESS fleet's total rated_mw ceiling.  None in normal operation (B3).
+    binding_constraint:        Optional[str] = None

@@ -17,6 +17,7 @@ import logging
 import math
 import dataclasses
 from dataclasses import dataclass, field
+from typing import Optional
 
 from .asset_modules import BessModule, CoolingModule, GPUModule, SolarModule, TurbineModule, TurbineState
 from .contingency import BessSnapshot, PlantState, TurbineSnapshot, evaluate_contingency
@@ -477,6 +478,9 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # out of scope for this simulator release.
     p_dispatch_required_mw = max(0.0, p_total_mw - p_renewable_mw)
     net_demand_mw = p_dispatch_required_mw
+    # Phase 13.4 B1: track load-model bias as a separately observable channel.
+    # Does NOT flow into p_dispatch_required, BESS setpoint, or frequency_forcing.
+    _model_error_mw = state.site.load_model_bias_mw
 
     # 3a. Phase 0 — GAP REDUCTION: §8.1 pre-staging (shiftable thermal load).
     #
@@ -583,6 +587,13 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # Phase 13.3: pass the droop-adjusted setpoint so the turbine is staged toward
     # the frequency-corrected target and the BESS covers only the residual shortfall.
     turbine_output_mw, bess_output_mw, _bess_setpoint_mw, _arb_candidates = state.arbitrator.tick(_p_dispatch_droop_mw, dt_seconds)
+    # Phase 13.4 B3: detect when the commanded BESS output exceeds the fleet's
+    # total rated power ceiling.  Surfaced in TickResult for dashboard / alerts.
+    _binding_constraint: Optional[str] = (
+        "bess_power_saturated"
+        if _bess_setpoint_mw > sum(b.config.rated_mw for b in state.bess_units)
+        else None
+    )
 
     # 4b. dt_lead_next_s: minimum remaining ramp time across all in-flight GPU jobs.
     # C2 correction: min(), not sum().  Two jobs with 10 s and 30 s remaining →
@@ -1080,6 +1091,9 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         grid_exchange_mw=_grid_exchange_mw,
         frequency_forcing_mw=_frequency_forcing_mw,
         asset_delivery_error_mw=_asset_delivery_error_mw,
+        # Phase 13.4: setpoint/actual split.
+        model_error_mw=_model_error_mw,
+        binding_constraint=_binding_constraint,
         # Phase 11.6: cooling thermal lag — compute inlet temperature.
         compute_inlet_temp_c=_compute_inlet_temp_c,
     )

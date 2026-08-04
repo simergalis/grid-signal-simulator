@@ -120,12 +120,17 @@ function nodeDetail(
       const socPct  = (soc * 100).toFixed(0)
       if (!tick) return `armed · ${socPct}% SoC · anchor 1.0 MW`
       const disch   = tick.bess_output_mw ?? 0
+      const setpt   = tick.bess_setpoint_mw ?? 0
       // Excess generation (turbine + solar over current load) flows into BESS as charging
       const excess  = Math.max(0,
         (tick.turbine_output_mw ?? 0) + (tick.p_renewable_mw ?? 0)
         - (tick.p_total_mw ?? 0) - disch
       )
-      if (disch > 0.1)  return `discharging · ${disch.toFixed(1)} MW · ${socPct}% SoC · anchor 1.0 MW`
+      // B4: gate the "discharging" label on bess_setpoint_mw (the dispatch command),
+      // not bess_output_mw (which lags from a previous discharge due to the BESS
+      // first-order lag).  This prevents "BESS standby" while the battery still
+      // shows residual output from a frame-earlier dispatch.
+      if (setpt > 0.1)  return `discharging · ${disch.toFixed(1)} MW · ${socPct}% SoC · anchor 1.0 MW`
       if (excess > 0.1) return `absorbing · ${excess.toFixed(1)} MW · ${socPct}% SoC · anchor 1.0 MW`
       return `standby · ${socPct}% SoC · anchor 1.0 MW`
     }

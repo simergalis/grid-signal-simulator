@@ -315,6 +315,11 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         "grid_exchange_mw":          round(tick.grid_exchange_mw, 5),
         "frequency_forcing_mw":      round(tick.frequency_forcing_mw, 5),
         "asset_delivery_error_mw":   round(tick.asset_delivery_error_mw, 5),
+        # ── Phase 13.4: setpoint/actual split ────────────────────────────────
+        # model_error_mw: load-model bias observable (B1 — 0.0 in production).
+        # binding_constraint: "bess_power_saturated" when setpoint > fleet rating (B3).
+        "model_error_mw":            round(tick.model_error_mw, 5),
+        "binding_constraint":        tick.binding_constraint,
         # ── Phase 11.6: Cooling thermal lag (Section 8 thermal model) ────────
         # compute_inlet_temp_c: inlet air temperature derived from lagged
         # cooling output; inherits dt_thermal lag (≥ 0.99 lag-1 autocorr C3).
