@@ -69,9 +69,10 @@ CSV_COLUMNS: list[str] = [
     "site_total_load_mw",     # total site load measured at PCC (IT + mechanical)
     "it_load_mw",             # IT critical load only
     "mechanical_load_mw",     # cooling, pumps, fans (thermally lagged — §8)
-    "grid_import_mw",         # signed: positive = importing, negative = exporting
+    "grid_import_mw",         # channel_source: slack — instantaneous flow, closes balance exactly
+    "grid_import_metered_mw", # channel_source: metered — PCC meter with lag (τ = GRID_METER_TAU_S)
     "islanded",               # 1 when operating in island mode, 0 = grid-connected
-    "balance_residual_mw",    # gen − load − losses; should be ~0; spikes flag bugs
+    "balance_residual_mw",    # gen − load − losses (uses unfiltered flow); 0 in grid-connected; non-zero only when a model error exists
     "binding_constraint",     # "ramp_limit" | "soc_limit" | "none"
     # Forecast / advisory
     "forecast_mw",            # short-horizon site-load forecast (§11.1 aligned)
@@ -140,7 +141,8 @@ class SimulatedGrid:
     STEP_DURATION_S     = 0.12  # how long the spike lasts (s)
 
     # ---- Power balance ------------------------------------------------------
-    SITE_LOSS_FACTOR = 0.005       # 0.5 % transmission + distribution losses
+    SITE_LOSS_FACTOR    = 0.005    # 0.5 % transmission + distribution losses
+    GRID_METER_TAU_S    = 2.0      # PCC meter response time constant (s); configurable
 
     def __init__(self, step_period: float = STEP_PERIOD_S) -> None:
         self._step_period = step_period
@@ -160,8 +162,8 @@ class SimulatedGrid:
         # Solar
         self._solar_frac = _FirstOrderFilter(0.6, tau=30.0)
 
-        # BESS — tau=0.3 s so it bridges the 90 MW step within ~3 ticks and
-        # the balance_residual does not carry a standing 110 MW error (Issue 1).
+        # BESS — tau=0.3 s so it bridges the 90 MW step within ~3 ticks.
+        # Uncovered power flows to grid_import_mw (exact slack in grid-connected mode).
         self._soc     = 72.0
         self._bess_mw = _FirstOrderFilter(0.0, tau=0.3)
 
@@ -190,10 +192,13 @@ class SimulatedGrid:
         # Cooling — chilled water supply temp has thermal inertia
         self._chws = _FirstOrderFilter(self.COOLING_CHWS_SETPOINT + 1.0, tau=20.0)
 
-        # Grid import: PCC meter + grid response lag (tau = 2 s).
-        # Initialise near 0 MW — with GT tracking (load − solar), the site
-        # runs near power-balance and the startup transient is small.
-        self._grid_import = _FirstOrderFilter(0.0, tau=2.0)
+        # PCC meter (grid_import_metered_mw): models instrument lag for display.
+        # τ = GRID_METER_TAU_S (default 2 s).  This must NOT enter the balance
+        # equation — the balance is closed by the exact instantaneous flow
+        # grid_import_mw (channel_source: slack).  Phase 12.0 Diagnostic B
+        # confirmed that applying this filter to the slack term manufactures
+        # 26.5 MW of residual sd that is 100 % filter lag, not real imbalance.
+        self._grid_import = _FirstOrderFilter(0.0, tau=self.GRID_METER_TAU_S)
 
         # Tick counter and cumulative elapsed time
         self._tick      = 0
@@ -350,15 +355,30 @@ class SimulatedGrid:
             binding_constraint = "none"
 
         # -- Power Balance ------------------------------------------------
+        # Phase 12.1: flow / meter split.
+        # grid_import_mw  — the instantaneous power exchanged with the infinite
+        #   grid; closes the balance algebraically (channel_source: slack).
+        #   In grid-connected mode the grid is the balance-of-plant and this
+        #   value is always well-defined.
+        # grid_import_metered_mw — PCC meter output with lag τ = GRID_METER_TAU_S;
+        #   models instrument response for realistic telemetry display only.
+        #   It does NOT enter the balance equation.
+        #
+        # Acceptance criteria (G1–G5, verified in tests/test_balance.py):
+        #   G1  balance_residual sd < 1% of site load at steady state
+        #   G2  residual sd(0.75 s period) / sd(60 s period) ≤ 2
+        #   G3  corr(grid_import_mw, −others) = 1.0  [slack tag present]
+        #   G4  balance closes to machine epsilon every tick
+        #   G5  Diagnostic-C unaccounted_mw < 0.5 MW per step event
+        #
+        # B1/B2/B3/B4 require the swing equation (Phase 12.2) to be in place
+        # before they are meaningful — 12.2 blocks 12.3.
         bess_source = max(0.0, bess_mw)
         bess_sink   = max(0.0, -bess_mw)
-        # grid_import: independently lagged PCC meter — NOT the slack variable.
-        # Because it lags the true balance by ~2 s, the residual is non-trivially
-        # non-zero and becomes a real diagnostic signal.
-        grid_import_true = (site_total_mw + bess_sink + losses_mw
-                            - gt_mw - sol_mw - bess_source)
-        grid_import_mw = (self._grid_import.step(grid_import_true, dt=dt)
-                          + random.gauss(0, 0.1))
+        grid_import_mw = (site_total_mw + bess_sink + losses_mw
+                          - gt_mw - sol_mw - bess_source)
+        grid_import_metered_mw = (self._grid_import.step(grid_import_mw, dt=dt)
+                                  + random.gauss(0, 0.1))
         balance_residual = (gt_mw + sol_mw + bess_source + grid_import_mw
                             - site_total_mw - bess_sink - losses_mw)
 
@@ -404,6 +424,7 @@ class SimulatedGrid:
             "it_load_mw":                round(it_load_mw, 4),
             "mechanical_load_mw":        round(mech_load_mw, 4),
             "grid_import_mw":            round(grid_import_mw, 4),
+            "grid_import_metered_mw":    round(grid_import_metered_mw, 4),
             "islanded":                  int(self._islanded),
             "balance_residual_mw":       round(balance_residual, 4),
             "binding_constraint":        binding_constraint,
