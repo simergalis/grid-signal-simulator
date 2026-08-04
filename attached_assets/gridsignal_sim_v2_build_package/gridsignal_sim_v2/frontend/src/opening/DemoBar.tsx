@@ -197,9 +197,9 @@ export function DemoBar({
             disabled={isRunning || isLoading || busy}
             onChange={e => selectScenario(e.target.value)}
           >
-            {scenarios.length === 0 && <option value="" disabled>Loading…</option>}
+            {scenarios.length === 0 && <option value="" disabled style={{ background: '#1a2b3c', color: '#c8d6e5' }}>Loading…</option>}
             {scenarios.map(s => (
-              <option key={s.scenario_id} value={s.scenario_id}>{s.name}</option>
+              <option key={s.scenario_id} value={s.scenario_id} style={{ background: '#1a2b3c', color: '#c8d6e5' }}>{s.name}</option>
             ))}
           </select>
           <span className="text-muted text-xs">▾</span>
@@ -217,7 +217,7 @@ export function DemoBar({
             onChange={e => setDuration(Number(e.target.value))}
           >
             {DURATION_OPTIONS.map(o => (
-              <option key={o.value} value={o.value}>{o.label}</option>
+              <option key={o.value} value={o.value} style={{ background: '#1a2b3c', color: '#c8d6e5' }}>{o.label}</option>
             ))}
           </select>
           <span className="text-muted text-xs">▾</span>
@@ -235,7 +235,7 @@ export function DemoBar({
             onChange={e => setSpeed(Number(e.target.value))}
           >
             {SPEED_OPTIONS.map(o => (
-              <option key={o.value} value={o.value}>{o.label} speed</option>
+              <option key={o.value} value={o.value} style={{ background: '#1a2b3c', color: '#c8d6e5' }}>{o.label} speed</option>
             ))}
           </select>
           <span className="text-muted text-xs">▾</span>
