@@ -239,6 +239,8 @@ def create_app() -> FastAPI:
     if _FRONTEND_DIST.is_dir():
         _index_html = _FRONTEND_DIST / "index.html"
 
+        _NO_STORE = {"Cache-Control": "no-store, no-cache, must-revalidate"}
+
         @application.get("/{full_path:path}", include_in_schema=False)
         async def _spa_catchall(full_path: str) -> Response:
             # Unknown /api/* paths should remain JSON 404, not the SPA shell.
@@ -246,12 +248,17 @@ def create_app() -> FastAPI:
                 return JSONResponse({"detail": "Not Found"}, status_code=404)
             candidate = _FRONTEND_DIST / full_path
             if candidate.is_file():
-                return FileResponse(str(candidate))
+                # Serve static assets (JS/CSS/etc.) with no-store so the
+                # browser never indefinitely caches a stale hash after a
+                # frontend rebuild.  Vite uses content-addressed filenames so
+                # repeated fetches of the same hash are cheap (304 would be
+                # ideal but no-store is simpler and avoids ETag round-trips).
+                return FileResponse(str(candidate), headers=_NO_STORE)
             # Always serve index.html with no-cache so the browser picks up
             # new JS/CSS filenames after a frontend rebuild without a hard-refresh.
             return FileResponse(
                 str(_index_html),
-                headers={"Cache-Control": "no-store, no-cache, must-revalidate"},
+                headers=_NO_STORE,
             )
 
     return application
