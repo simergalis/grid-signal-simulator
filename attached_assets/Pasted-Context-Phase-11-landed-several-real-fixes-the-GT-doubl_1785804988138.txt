@@ -1,0 +1,57 @@
+Context
+
+Phase 11 landed several real fixes: the GT double-serving dispatch bug (both GT and solar attempting to serve full load, producing a chronic 105 MW surplus and permanent BESS saturation), the GT ramp clamp at spec (0.2 MW/s, R7 measured at 0.104 MW/s over 5 s windows), tau_gpu at 0.06 s, 4dp on power channels, and a source: synthetic_generator label on export CSVs.
+
+Two structural items remain open, and one new question was raised by the Phase 11 results.
+
+Constraint: no LLM, external API, or network dependency. All computation local, seeded, and deterministic.
+
+Applies to both models unless stated. gridsignal_logger.py (export generator) and core/simulation_core.py (live engine) are separate implementations. Every change below must state which model it was applied to. Where a defect exists in both, fix both or record explicitly why not.
+
+Phase 12.0 — Diagnostic: is the balance residual real or manufactured?
+
+Do not fix anything in this phase. Report findings and STOP.
+
+The question
+
+balance_residual_mw currently has sd 26.97 MW on a ~250 MW site — roughly 11%. The Phase 11 explanation attributes this to a transient mismatch between BESS (τ = 0.3 s) and grid_import_mw (τ = 2 s).
+
+That explanation needs testing, because grid import is a power flow, not an instrument. If site draw rises by 74 MW and neither turbine nor battery supplies it, the grid supplies it instantaneously — conservation requires it. A τ = 2 s lag applied to the term that closes the balance means the balance is closed with a filtered value while the real flow is unfiltered, which manufactures residual out of nothing.
+
+This gates test B1: injecting a deliberate 1 MW model error is undetectable inside 27 MW of noise, whether that noise is real or artifact.
+
+Diagnostic A — timescale separation
+
+Run the same scenario three times, varying only the load step period:
+
+Run	Step period	Prediction if residual is a filter artifact	Prediction if residual is real imbalance
+A1	0.75 s (current)	sd ≈ 27 MW	sd ≈ 27 MW
+A2	10 s	substantially reduced	roughly unchanged
+A3	60 s	near zero between transitions	persists between transitions
+
+A filter artifact scales with the ratio of filter time constant to event duration. A real imbalance does not.
+
+Diagnostic B — filter bypass
+
+Compute balance_residual_mw two ways on the same tick stream and log both:
+
+balance_residual_mw — using the filtered grid_import_mw as today
+balance_residual_unfiltered_mw — using the unfiltered instantaneous flow
+
+Report sd of each and the correlation between them. If the unfiltered residual collapses toward zero, the filter is the cause.
+
+Diagnostic C — where does the uncovered power go?
+
+Report, per tick, the decomposition of each load step:
+
+step_magnitude_mw
+gt_contribution_mw        (limited to 0.2 MW/s)
+bess_contribution_mw      (limited by tau)
+grid_contribution_mw
+unaccounted_mw
+
+Coverage ratio is currently 0.43 with corr(bess_setpoint, it) = 0.9673 and corr(bess_power, it) = 0.5646. Confirm whether the setpoint-to-actual gap is fully explained by the BESS time constant or whether the command is being clipped.
+
+STOP
+
+Post the three diagnostic tables and state whether the residual is physical, artifact, or mixed. Do not proceed without confirmation.
