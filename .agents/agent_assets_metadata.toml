@@ -28,3 +28,17 @@ uri = "file://gridsignal_sim_v2_release.zip"
 type = "unspecified"
 title = "GridSignal Simulator v2.2 — Release Package (reviewed)"
 description = "All five review items addressed. 3.0 MB, 293 files. No DB file, no __pycache__."
+
+[[outputs]]
+id = "B46hTnUnFvv9FvZM2SsHK"
+uri = "file://scenario_spec_schema.json"
+type = "unspecified"
+title = "ScenarioSpec JSON Schema"
+description = "Machine-readable JSON Schema (Draft 2020-12) generated directly from the Pydantic ScenarioSpec model. Use with any JSON Schema validator or code generator."
+
+[[outputs]]
+id = "sbVpgyF3Ju_Vvg-MiXl9S"
+uri = "file://scenario_spec_reference.md"
+type = "text"
+title = "ScenarioSpec API Reference"
+description = "Full field reference, validation rules, example payloads, and endpoint documentation for uploading custom scenarios to GridSignal."

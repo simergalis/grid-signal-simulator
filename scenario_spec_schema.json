@@ -1,0 +1,1321 @@
+{
+  "$defs": {
+    "AlertFiresAssertion": {
+      "description": "Assert that at least one tick fires insufficient_reserve_alert.\n\nExistential quantifier: a retained tick can satisfy it despite gaps.\nPASS when any retained tick fired; INCONCLUSIVE (not FAIL) when no\nretained tick fired but gaps exist \u2014 a dropped tick may have fired.",
+      "properties": {
+        "check": {
+          "const": "alert_fires",
+          "default": "alert_fires",
+          "title": "Check",
+          "type": "string"
+        }
+      },
+      "title": "AlertFiresAssertion",
+      "type": "object"
+    },
+    "BessUnitSpec": {
+      "description": "One BESS unit within a scenario's fleet.",
+      "properties": {
+        "asset_id": {
+          "title": "Asset Id",
+          "type": "string"
+        },
+        "rated_mw": {
+          "exclusiveMinimum": 0,
+          "title": "Rated Mw",
+          "type": "number"
+        },
+        "usable_mwh": {
+          "exclusiveMinimum": 0,
+          "title": "Usable Mwh",
+          "type": "number"
+        },
+        "initial_soc_fraction": {
+          "default": 0.95,
+          "maximum": 1.0,
+          "minimum": 0.1,
+          "title": "Initial Soc Fraction",
+          "type": "number"
+        },
+        "grid_forming": {
+          "default": false,
+          "title": "Grid Forming",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "asset_id",
+        "rated_mw",
+        "usable_mwh"
+      ],
+      "title": "BessUnitSpec",
+      "type": "object"
+    },
+    "ClusterGenConfigSpec": {
+      "description": "Configuration for the LLM-driven cluster arrival process generator.\n\nWhen present on a ScenarioSpec, the generator is called ONCE at run start\n(before the tick loop).  The resulting STARTING/JOB_END/SCALE events are\nmerged into spec_data[\"workload_events\"] before the RunContext is built.\n\nuse_llm=True (default) calls Mistral for temporal structure \u2014 bursts,\nbusiness-hours patterns \u2014 that a Poisson process cannot reproduce.\nFalls back to seeded RNG when MISTRAL_API_KEY is absent or the call fails.\n\nuse_llm=False forces the seeded RNG path.  Prefer this when the arrival\nstatistics are fully specified by the other fields (the Poisson case).",
+      "properties": {
+        "description": {
+          "default": "plausible weekday on a 1900-node ML cluster",
+          "title": "Description",
+          "type": "string"
+        },
+        "hardware_profile_id": {
+          "default": "enterprise_8gpu_air",
+          "title": "Hardware Profile Id",
+          "type": "string"
+        },
+        "max_nodes": {
+          "default": 1900,
+          "minimum": 1,
+          "title": "Max Nodes",
+          "type": "integer"
+        },
+        "min_nodes": {
+          "default": 200,
+          "minimum": 1,
+          "title": "Min Nodes",
+          "type": "integer"
+        },
+        "mean_interarrival_s": {
+          "default": 60.0,
+          "maximum": 3600.0,
+          "minimum": 5.0,
+          "title": "Mean Interarrival S",
+          "type": "number"
+        },
+        "mean_job_nodes": {
+          "default": 200,
+          "minimum": 1,
+          "title": "Mean Job Nodes",
+          "type": "integer"
+        },
+        "job_node_std": {
+          "default": 80.0,
+          "minimum": 0.0,
+          "title": "Job Node Std",
+          "type": "number"
+        },
+        "min_job_nodes": {
+          "default": 50,
+          "minimum": 1,
+          "title": "Min Job Nodes",
+          "type": "integer"
+        },
+        "mean_job_duration_s": {
+          "default": 300.0,
+          "minimum": 10.0,
+          "title": "Mean Job Duration S",
+          "type": "number"
+        },
+        "min_job_duration_s": {
+          "default": 30.0,
+          "minimum": 5.0,
+          "title": "Min Job Duration S",
+          "type": "number"
+        },
+        "rng_seed": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rng Seed"
+        },
+        "use_llm": {
+          "default": true,
+          "title": "Use Llm",
+          "type": "boolean"
+        }
+      },
+      "title": "ClusterGenConfigSpec",
+      "type": "object"
+    },
+    "GenerationBlock": {
+      "description": "Metadata record for all pre-run generators that ran for a scenario.\n\nStored on RunContext and emitted in run metadata so that a scenario\ndefinition and a materialised spec are distinguishable artifacts.\nA run ID + generation_block is sufficient to replay any run exactly:\n- physics/RNG paths replay from seed alone.\n- LLM paths replay by re-running the generators (Mistral may vary) or by\n  reading the stored event lists from the scenario spec.\n\nFields\n------\nseed              : master RNG seed for this run (None = time-seeded).\ngenerated_at      : ISO-8601 UTC timestamp when generation ran.\ngenerators_used   : list of generator names that actually ran.\nsolar_source      : \"mistral\" | \"physics\" | \"none\".\ncluster_source    : \"mistral\" | \"rng\" | \"none\".\nstressor_source   : \"mistral\" | \"rng\" | \"none\".\nparam_sampler_note: human-readable summary from param_sampler.\ncorruption_note   : human-readable summary from telemetry_corruption.",
+      "properties": {
+        "seed": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Seed"
+        },
+        "generated_at": {
+          "default": "",
+          "title": "Generated At",
+          "type": "string"
+        },
+        "generators_used": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Generators Used",
+          "type": "array"
+        },
+        "solar_source": {
+          "default": "none",
+          "title": "Solar Source",
+          "type": "string"
+        },
+        "cluster_source": {
+          "default": "none",
+          "title": "Cluster Source",
+          "type": "string"
+        },
+        "stressor_source": {
+          "default": "none",
+          "title": "Stressor Source",
+          "type": "string"
+        },
+        "param_sampler_note": {
+          "default": "",
+          "title": "Param Sampler Note",
+          "type": "string"
+        },
+        "corruption_note": {
+          "default": "",
+          "title": "Corruption Note",
+          "type": "string"
+        }
+      },
+      "title": "GenerationBlock",
+      "type": "object"
+    },
+    "KubeConfigSpec": {
+      "description": "Kubernetes gang-admission demand simulator configuration.\n\nWhen present on a ScenarioSpec, the simulator replaces the scripted\nworkload-event path with a discrete gang-admission simulator that models\nsteps 1\u20132 of the Kubernetes-to-turbine path:\n\n  1. OBSERVE:  Poisson-arrival jobs enter a 10-second reorder buffer,\n     simulating an in-cluster informer watching Kueue/Volcano objects.\n  2. MAP TO CONTRACT: Each admitted gang emits a WorkloadSignal with\n     node_count and hardware_profile_id.  Steps 3\u20138 (P_compute formula,\n     thermal lag, BESS arbitration, turbine ramp) run unchanged in the\n     scheduler-agnostic core pipeline.\n\ndt_lead = 0 throughout \u2014 Kubernetes gives no advance notice to the grid.\n\nUse rng_seed for deterministic replay; rng_seed=None gives time-seeded variety.\nActivate stochastic step timing by supplying step_config; activate the\nwithin-step load profile by supplying load_config.",
+      "properties": {
+        "hardware_profile_id": {
+          "default": "enterprise_8gpu_air",
+          "title": "Hardware Profile Id",
+          "type": "string"
+        },
+        "max_nodes": {
+          "default": 1900,
+          "minimum": 1,
+          "title": "Max Nodes",
+          "type": "integer"
+        },
+        "min_nodes": {
+          "default": 200,
+          "description": "Idle-baseline nodes \u2014 cluster never fully drains",
+          "minimum": 1,
+          "title": "Min Nodes",
+          "type": "integer"
+        },
+        "mean_interarrival_s": {
+          "default": 60.0,
+          "description": "Mean simulated seconds between successive gang admissions",
+          "maximum": 3600.0,
+          "minimum": 5.0,
+          "title": "Mean Interarrival S",
+          "type": "number"
+        },
+        "mean_job_nodes": {
+          "default": 200,
+          "description": "Mean gang size in nodes",
+          "minimum": 1,
+          "title": "Mean Job Nodes",
+          "type": "integer"
+        },
+        "job_node_std": {
+          "default": 80.0,
+          "description": "Std deviation of gang size",
+          "minimum": 0.0,
+          "title": "Job Node Std",
+          "type": "number"
+        },
+        "min_job_nodes": {
+          "default": 50,
+          "description": "Minimum nodes per admission",
+          "minimum": 1,
+          "title": "Min Job Nodes",
+          "type": "integer"
+        },
+        "mean_job_duration_s": {
+          "default": 300.0,
+          "description": "Mean job duration in sim-seconds",
+          "minimum": 10.0,
+          "title": "Mean Job Duration S",
+          "type": "number"
+        },
+        "min_job_duration_s": {
+          "default": 30.0,
+          "description": "Minimum job duration in sim-seconds",
+          "minimum": 5.0,
+          "title": "Min Job Duration S",
+          "type": "number"
+        },
+        "reorder_window_s": {
+          "default": 10.0,
+          "description": "Events drain from buffer after this many sim-seconds",
+          "maximum": 60.0,
+          "minimum": 0.0,
+          "title": "Reorder Window S",
+          "type": "number"
+        },
+        "ntp_jitter_s": {
+          "default": 2.0,
+          "description": "\u00b1seconds of NTP jitter added to event timestamps",
+          "maximum": 10.0,
+          "minimum": 0.0,
+          "title": "Ntp Jitter S",
+          "type": "number"
+        },
+        "headroom_threshold_mw": {
+          "default": 2.5,
+          "description": "Grid headroom below which new admissions are held",
+          "minimum": 0.0,
+          "title": "Headroom Threshold Mw",
+          "type": "number"
+        },
+        "rng_seed": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rng Seed"
+        },
+        "step_config": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/StepTimingConfigSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "load_config": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LoadProfileConfigSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "KubeConfigSpec",
+      "type": "object"
+    },
+    "LoadProfileConfigSpec": {
+      "description": "Wire-format mirror of core.step_config.LoadProfileConfig.\n\nControls the within-step compute load profile that makes step events\nphysically present in compute_load_mw.  All defaults are SPEC_DEFAULT.",
+      "properties": {
+        "f_compute": {
+          "default": 0.72,
+          "description": "Compute-phase fraction. SPEC_DEFAULT.",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "F Compute",
+          "type": "number"
+        },
+        "p_comm_ratio": {
+          "default": 0.55,
+          "description": "Relative power during allreduce. SPEC_DEFAULT.",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "P Comm Ratio",
+          "type": "number"
+        },
+        "tau_gpu_s": {
+          "default": 0.06,
+          "description": "GPU power transition lag (s). SPEC_DEFAULT.",
+          "exclusiveMinimum": 0.0,
+          "title": "Tau Gpu S",
+          "type": "number"
+        },
+        "phase_coherence": {
+          "default": 0.85,
+          "description": "Fleet phase coherence. SPEC_DEFAULT.",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Phase Coherence",
+          "type": "number"
+        },
+        "noise_sigma_fraction": {
+          "default": 0.005,
+          "description": "Noise sigma as fraction of base draw. CHOSEN.",
+          "maximum": 0.1,
+          "minimum": 0.0,
+          "title": "Noise Sigma Fraction",
+          "type": "number"
+        }
+      },
+      "title": "LoadProfileConfigSpec",
+      "type": "object"
+    },
+    "MaintenanceConfigSpec": {
+      "description": "Wire-format config for \u00a727 prescriptive maintenance (MaintenanceLayer).\n\nGates whether a MaintenanceLayer is instantiated in the run context.\nThe layer calls reserve_contribution_mw_per_s() (TC-58), validate_window()\n(TC-59), and propose_rating_change() (TC-60) during live runs.\n\neffective_ramp_mw_per_s < nameplate_ramp_mw_per_s \u2192 asset starts DEGRADED,\nso the first propose_rating_change() call is a RAISE (TC-60 requires\nconfirmation; reduction is immediate).\n\nAll values are CHOSEN (PROTO-AD1).",
+      "properties": {
+        "asset_id": {
+          "default": "turbine-0",
+          "title": "Asset Id",
+          "type": "string"
+        },
+        "nameplate_ramp_mw_per_s": {
+          "default": 0.2,
+          "exclusiveMinimum": 0.0,
+          "title": "Nameplate Ramp Mw Per S",
+          "type": "number"
+        },
+        "effective_ramp_mw_per_s": {
+          "default": 0.15,
+          "exclusiveMinimum": 0.0,
+          "title": "Effective Ramp Mw Per S",
+          "type": "number"
+        },
+        "reserve_threshold_mw": {
+          "default": 1.0,
+          "minimum": 0.0,
+          "title": "Reserve Threshold Mw",
+          "type": "number"
+        }
+      },
+      "title": "MaintenanceConfigSpec",
+      "type": "object"
+    },
+    "MaxPTotalAssertion": {
+      "description": "Assert that p_total_mw \u2264 threshold_mw on every tick.\n\nUniversal quantifier: gaps \u2192 INCONCLUSIVE.\nA dropped tick might have exceeded the threshold.",
+      "properties": {
+        "check": {
+          "const": "max_p_total_mw",
+          "default": "max_p_total_mw",
+          "title": "Check",
+          "type": "string"
+        },
+        "threshold_mw": {
+          "exclusiveMinimum": 0,
+          "title": "Threshold Mw",
+          "type": "number"
+        }
+      },
+      "required": [
+        "threshold_mw"
+      ],
+      "title": "MaxPTotalAssertion",
+      "type": "object"
+    },
+    "MinFinalBessSocAssertion": {
+      "description": "Assert that the final tick's bess_soc_fraction \u2265 threshold.\n\nPASS/FAIL when the final tick is retained; INCONCLUSIVE when the final\ntick is missing (dropped or the run was cancelled before end_sim_time).",
+      "properties": {
+        "check": {
+          "const": "min_final_bess_soc",
+          "default": "min_final_bess_soc",
+          "title": "Check",
+          "type": "string"
+        },
+        "threshold": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Threshold",
+          "type": "number"
+        }
+      },
+      "required": [
+        "threshold"
+      ],
+      "title": "MinFinalBessSocAssertion",
+      "type": "object"
+    },
+    "NoReserveAlertAssertion": {
+      "description": "Assert that no tick fires insufficient_reserve_alert.\n\nUniversal quantifier: gaps make verification incomplete \u2192 INCONCLUSIVE.\nA dropped tick might have fired the alert.",
+      "properties": {
+        "check": {
+          "const": "no_insufficient_reserve_alert",
+          "default": "no_insufficient_reserve_alert",
+          "title": "Check",
+          "type": "string"
+        }
+      },
+      "title": "NoReserveAlertAssertion",
+      "type": "object"
+    },
+    "ParamSamplingConfigSpec": {
+      "description": "Configuration for per-run seeded RNG parameter sampling (\u00a76.1 sensitivity).\n\nWhen present, draws the listed physics parameters from their documented\n[min, max] ranges once at run start and merges them into spec_data.\n\nThe seeded RNG path is always used \u2014 there is no LLM call here.  Seeded RNG\nis the correct tool: the sampling distribution is fully specified by the\nparameter ranges and there is no temporal structure an LLM adds value to.\n\nkeys  \u2014 parameter keys as in gridsignal_parameters.json (e.g. \"alpha_max\").\n        Keys not in the adjustable list or in the _NEVER_SAMPLE exclusion set\n        are silently skipped.\nseed  \u2014 RNG seed; None = time-seeded (non-reproducible).\nsample_plant_split \u2014 if True, split parameters draw independent plant and\n        engine values, producing natural plant/engine divergence.",
+      "properties": {
+        "keys": {
+          "description": "Parameter keys to sample from gridsignal_parameters.json",
+          "items": {
+            "type": "string"
+          },
+          "title": "Keys",
+          "type": "array"
+        },
+        "seed": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Seed"
+        },
+        "sample_plant_split": {
+          "default": true,
+          "title": "Sample Plant Split",
+          "type": "boolean"
+        }
+      },
+      "title": "ParamSamplingConfigSpec",
+      "type": "object"
+    },
+    "PmsConfigSpec": {
+      "description": "Wire-format mirror of core.models.PmsConfig.\n\nAll fields match the dataclass fields exactly so that\n``PmsConfig(...)`` wiring in build_run_context_from_spec is safe\nwithout any field-name translation.\n\ntransition_mode must be one of the TransitionMode string values:\n  \"open_transition\"   \u2014 default; brief coverage gap during reconnect\n                        (open_transition_gap_mw for open_transition_duration_s).\n  \"closed_transition\" \u2014 instantaneous; no coverage gap.\n\nshed_priority_order: list of workload job_ids to shed first (highest\npriority first).  Empty list \u2192 PMS sheds in arbitrary order.\n\nAll bounds are CHOSEN (PROTO-11).",
+      "properties": {
+        "shed_priority_order": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Shed Priority Order",
+          "type": "array"
+        },
+        "transition_mode": {
+          "default": "open_transition",
+          "enum": [
+            "open_transition",
+            "closed_transition"
+          ],
+          "title": "Transition Mode",
+          "type": "string"
+        },
+        "open_transition_gap_mw": {
+          "default": 2.0,
+          "minimum": 0.0,
+          "title": "Open Transition Gap Mw",
+          "type": "number"
+        },
+        "open_transition_duration_s": {
+          "default": 5.0,
+          "exclusiveMinimum": 0.0,
+          "title": "Open Transition Duration S",
+          "type": "number"
+        },
+        "fast_shed_duration_s": {
+          "default": 30.0,
+          "exclusiveMinimum": 0.0,
+          "title": "Fast Shed Duration S",
+          "type": "number"
+        }
+      },
+      "title": "PmsConfigSpec",
+      "type": "object"
+    },
+    "PreStagingConfigSpec": {
+      "description": "Wire-format mirror of core.models.PreStagingConfig.\n\nAll fields match the dataclass fields exactly so that\n``PreStagingConfig(**spec_data[\"pre_staging_config\"])`` is safe in\nbuild_run_context_from_spec without any field-name translation.\n\nAll values are CHOSEN (PROTO-10).  See core/models.py PreStagingConfig\nfor the hold-analysis and design rationale.",
+      "properties": {
+        "max_shift_mw": {
+          "default": 1.0,
+          "maximum": 50.0,
+          "minimum": 0.0,
+          "title": "Max Shift Mw",
+          "type": "number"
+        },
+        "inlet_temp_low_c": {
+          "default": 18.0,
+          "maximum": 30.0,
+          "minimum": 10.0,
+          "title": "Inlet Temp Low C",
+          "type": "number"
+        },
+        "inlet_temp_high_c": {
+          "default": 24.0,
+          "maximum": 35.0,
+          "minimum": 15.0,
+          "title": "Inlet Temp High C",
+          "type": "number"
+        },
+        "cooling_gain_c_per_mw_s": {
+          "default": 0.05,
+          "exclusiveMinimum": 0.0,
+          "title": "Cooling Gain C Per Mw S",
+          "type": "number"
+        },
+        "warmup_rate_c_per_s": {
+          "default": 0.002,
+          "minimum": 0.0,
+          "title": "Warmup Rate C Per S",
+          "type": "number"
+        },
+        "initial_temp_c": {
+          "default": 21.0,
+          "maximum": 35.0,
+          "minimum": 10.0,
+          "title": "Initial Temp C",
+          "type": "number"
+        },
+        "bms_override": {
+          "default": false,
+          "title": "Bms Override",
+          "type": "boolean"
+        },
+        "thermal_soc_initial_mwh": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Thermal Soc Initial Mwh",
+          "type": "number"
+        },
+        "eta": {
+          "default": 0.9,
+          "exclusiveMinimum": 0.0,
+          "maximum": 1.0,
+          "title": "Eta",
+          "type": "number"
+        }
+      },
+      "title": "PreStagingConfigSpec",
+      "type": "object"
+    },
+    "ProcurementConfigSpec": {
+      "description": "Wire-format config for \u00a724 grid procurement (ProcurementLayer).\n\nGates whether a ProcurementLayer is instantiated in the run context.\nThe layer calls NonFirmImportEffect.apply() (TC-47) and creates\nReservationProposal objects (TC-52) each tick when reserve_gap > 0.\n\nAll capacity values are CHOSEN (PROTO-AD1).",
+      "properties": {
+        "firm_available_mw": {
+          "default": 20.0,
+          "minimum": 0.0,
+          "title": "Firm Available Mw",
+          "type": "number"
+        },
+        "reserved_available_mw": {
+          "default": 10.0,
+          "minimum": 0.0,
+          "title": "Reserved Available Mw",
+          "type": "number"
+        },
+        "non_firm_available_mw": {
+          "default": 3.0,
+          "minimum": 0.0,
+          "title": "Non Firm Available Mw",
+          "type": "number"
+        },
+        "price_curve_seed": {
+          "default": 42,
+          "minimum": 0,
+          "title": "Price Curve Seed",
+          "type": "integer"
+        }
+      },
+      "title": "ProcurementConfigSpec",
+      "type": "object"
+    },
+    "RampRelaxationConfigSpec": {
+      "description": "Wire-format config for \u00a723.7.2 adaptive ramp relaxation (RampRelaxationEngine).\n\nGates whether a RampRelaxationEngine is instantiated in the run context.\nThe engine's evaluate() runs each tick (TC-75: upper-bound reserve check;\nTC-76: gridSignal_connected=False reverts to baseline \u2014 tested via unit test,\nbut the evaluate() path is exercised every demo tick).\n\nAll values are CHOSEN (PROTO-AD1).",
+      "properties": {
+        "reserve_threshold_mw": {
+          "default": 2.0,
+          "minimum": 0.0,
+          "title": "Reserve Threshold Mw",
+          "type": "number"
+        },
+        "baseline_ramp_cap_mw": {
+          "default": 5.0,
+          "exclusiveMinimum": 0.0,
+          "title": "Baseline Ramp Cap Mw",
+          "type": "number"
+        },
+        "baseline_ramp_duration_s": {
+          "default": 75.0,
+          "exclusiveMinimum": 0.0,
+          "title": "Baseline Ramp Duration S",
+          "type": "number"
+        },
+        "adaptive_ramp_duration_s": {
+          "default": 30.0,
+          "exclusiveMinimum": 0.0,
+          "title": "Adaptive Ramp Duration S",
+          "type": "number"
+        }
+      },
+      "title": "RampRelaxationConfigSpec",
+      "type": "object"
+    },
+    "StepTimingConfigSpec": {
+      "description": "Wire-format mirror of core.step_config.StepTimingConfig.\n\nAll defaults match the spec document (SPEC_DEFAULT).  Only override fields\nwhose values differ from the default; the engine fills in the rest.",
+      "properties": {
+        "median_step_s": {
+          "default": 0.7,
+          "description": "Median inter-step gap (s). SPEC_DEFAULT.",
+          "exclusiveMinimum": 0.0,
+          "title": "Median Step S",
+          "type": "number"
+        },
+        "step_cv": {
+          "default": 0.08,
+          "description": "Lognormal CV. SPEC_DEFAULT.",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Step Cv",
+          "type": "number"
+        },
+        "tau_drift_s": {
+          "default": 300.0,
+          "description": "OU mean-reversion time (s). SPEC_DEFAULT.",
+          "exclusiveMinimum": 0.0,
+          "title": "Tau Drift S",
+          "type": "number"
+        },
+        "sigma_drift": {
+          "default": 0.03,
+          "description": "OU diffusion (dimensionless). SPEC_DEFAULT.",
+          "minimum": 0.0,
+          "title": "Sigma Drift",
+          "type": "number"
+        },
+        "p_straggler": {
+          "default": 0.02,
+          "description": "Straggler injection probability. SPEC_DEFAULT.",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "P Straggler",
+          "type": "number"
+        },
+        "straggler_scale": {
+          "default": 1.5,
+          "description": "Exponential straggler scale. SPEC_DEFAULT.",
+          "exclusiveMinimum": 0.0,
+          "title": "Straggler Scale",
+          "type": "number"
+        },
+        "straggler_max": {
+          "default": 10.0,
+          "description": "Hard cap on straggler multiplier. SPEC_DEFAULT.",
+          "exclusiveMinimum": 1.0,
+          "title": "Straggler Max",
+          "type": "number"
+        },
+        "ckpt_interval_steps": {
+          "default": 400,
+          "description": "Steps between checkpoint long-steps. SPEC_DEFAULT.",
+          "minimum": 1,
+          "title": "Ckpt Interval Steps",
+          "type": "integer"
+        },
+        "ckpt_jitter_steps": {
+          "default": 40,
+          "description": "\u00b1Uniform jitter on checkpoint interval. SPEC_DEFAULT.",
+          "minimum": 0,
+          "title": "Ckpt Jitter Steps",
+          "type": "integer"
+        },
+        "ckpt_min_s": {
+          "default": 5.0,
+          "description": "Checkpoint step minimum duration (s). SPEC_DEFAULT.",
+          "exclusiveMinimum": 0.0,
+          "title": "Ckpt Min S",
+          "type": "number"
+        },
+        "ckpt_max_s": {
+          "default": 30.0,
+          "description": "Checkpoint step maximum duration (s). SPEC_DEFAULT.",
+          "exclusiveMinimum": 0.0,
+          "title": "Ckpt Max S",
+          "type": "number"
+        }
+      },
+      "title": "StepTimingConfigSpec",
+      "type": "object"
+    },
+    "StressorGenConfigSpec": {
+      "description": "Configuration for the LLM-driven fault and stressor timeline generator.\n\nWhen present on a ScenarioSpec, the generator is called ONCE at run start\nand its output (SOLAR_STEP events) is merged into spec_data[\"workload_events\"].\n\nThe LLM composes plausible compound fault sequences: cloud front arrives,\ninverter trips 90 seconds later, partial recovery \u2014 the correlated-failure\ncase that a hand-written scenario library under-represents.\n\nuse_llm=False forces the seeded RNG fallback (random cloud fronts).",
+      "properties": {
+        "description": {
+          "default": "compound cloud-front and inverter-trip scenario",
+          "title": "Description",
+          "type": "string"
+        },
+        "n_rng_events": {
+          "default": 3,
+          "maximum": 20,
+          "minimum": 1,
+          "title": "N Rng Events",
+          "type": "integer"
+        },
+        "rng_seed": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rng Seed"
+        },
+        "use_llm": {
+          "default": true,
+          "title": "Use Llm",
+          "type": "boolean"
+        }
+      },
+      "title": "StressorGenConfigSpec",
+      "type": "object"
+    },
+    "TelemetryCorruptionConfigSpec": {
+      "description": "Configuration for the pre-generated telemetry corruption schedule.\n\nWhen present, a per-tick corruption manifest is generated ONCE at run start\nfrom a seeded RNG.  The manifest specifies which ticks receive Gaussian noise,\ndropout (record suppressed), or staleness (old reading substituted).\n\nThis exercises the \u00a717.2 quarantine path, NTP-skew handling, and out-of-order\ndelivery logic.  All values default to 0.0 / 0 (no corruption) so that adding\nthe block without setting values is a safe no-op.",
+      "properties": {
+        "noise_sigma": {
+          "default": 0.0,
+          "description": "1-sigma of multiplicative Gaussian noise on readings (e.g. 0.05 = \u00b15%)",
+          "maximum": 0.5,
+          "minimum": 0.0,
+          "title": "Noise Sigma",
+          "type": "number"
+        },
+        "dropout_prob": {
+          "default": 0.0,
+          "description": "Per-tick probability of record suppression (packet loss)",
+          "exclusiveMaximum": 1.0,
+          "minimum": 0.0,
+          "title": "Dropout Prob",
+          "type": "number"
+        },
+        "max_stale": {
+          "default": 0,
+          "description": "Maximum staleness in ticks (0 = no staleness injection)",
+          "maximum": 30,
+          "minimum": 0,
+          "title": "Max Stale",
+          "type": "integer"
+        },
+        "seed": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Seed"
+        }
+      },
+      "title": "TelemetryCorruptionConfigSpec",
+      "type": "object"
+    },
+    "TurbineUnitSpec": {
+      "description": "One turbine unit within a scenario's fleet.",
+      "properties": {
+        "asset_id": {
+          "title": "Asset Id",
+          "type": "string"
+        },
+        "rated_mw": {
+          "default": 10.0,
+          "exclusiveMinimum": 0,
+          "title": "Rated Mw",
+          "type": "number"
+        },
+        "r_asset_mw_per_s": {
+          "default": 0.2,
+          "exclusiveMinimum": 0,
+          "title": "R Asset Mw Per S",
+          "type": "number"
+        },
+        "run_hours_h": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Run Hours H"
+        },
+        "hot_standby": {
+          "default": false,
+          "title": "Hot Standby",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "asset_id"
+      ],
+      "title": "TurbineUnitSpec",
+      "type": "object"
+    },
+    "WorkloadEventSpec": {
+      "description": "One scripted workload event (GPU job or renewable step) within a scenario.\n\nevent_type must be a WorkloadEventType string value:\n  \"starting\"   \u2014 GPU job ramp begins; staging fires with dt_lead_seconds.\n  \"job_end\"    \u2014 GPU job finishes.\n  \"solar_step\" \u2014 Renewable curtailment; staging fires with dt_lead=0 (\u00a77.1.1).\n  \"unit_trip\"  \u2014 Force a generating unit offline immediately (TC-84).\n                 job_id carries the turbine asset_id; node_count and\n                 hardware_profile_id are ignored.\n  Any other WorkloadEventType value is forwarded as-is.\n\nFor solar_step events job_id, node_count, and hardware_profile_id are\nignored by the runtime; renewable_shortfall_mw carries the staging delta.",
+      "properties": {
+        "event_id": {
+          "title": "Event Id",
+          "type": "string"
+        },
+        "job_id": {
+          "default": "",
+          "title": "Job Id",
+          "type": "string"
+        },
+        "event_type": {
+          "title": "Event Type",
+          "type": "string"
+        },
+        "timestamp": {
+          "minimum": 0.0,
+          "title": "Timestamp",
+          "type": "number"
+        },
+        "node_count": {
+          "default": 0,
+          "minimum": 0,
+          "title": "Node Count",
+          "type": "integer"
+        },
+        "hardware_profile_id": {
+          "default": "enterprise_8gpu_air",
+          "title": "Hardware Profile Id",
+          "type": "string"
+        },
+        "renewable_shortfall_mw": {
+          "default": 0.0,
+          "minimum": 0.0,
+          "title": "Renewable Shortfall Mw",
+          "type": "number"
+        }
+      },
+      "required": [
+        "event_type",
+        "timestamp"
+      ],
+      "title": "WorkloadEventSpec",
+      "type": "object"
+    }
+  },
+  "description": "Full scenario configuration.  Stored as spec_json in ScenarioRecord.\nPosted to POST /scenarios or PUT /scenarios/{id}.\n\nirradiance_steps convention \u2014 zero-order hold (\"value applies from t\nonward\"): [(0.0, 1.0), (30.0, 0.0)] gives 1.0 for t<30 and 0.0 for\nt\u226530.  The last sample's value applies for all time beyond it.",
+  "properties": {
+    "name": {
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+    },
+    "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+    },
+    "workload_events": {
+      "items": {
+        "$ref": "#/$defs/WorkloadEventSpec"
+      },
+      "title": "Workload Events",
+      "type": "array"
+    },
+    "hardware_profile_id": {
+      "default": "enterprise_8gpu_air",
+      "title": "Hardware Profile Id",
+      "type": "string"
+    },
+    "dt_lead_seconds": {
+      "default": 30.0,
+      "description": "Advance warning time for GPU job starts (seconds).  SOLAR_STEP events always use dt_lead=0 regardless of this value (\u00a77.1.1).",
+      "maximum": 300.0,
+      "minimum": 0.0,
+      "title": "Dt Lead Seconds",
+      "type": "number"
+    },
+    "bess_units": {
+      "items": {
+        "$ref": "#/$defs/BessUnitSpec"
+      },
+      "minItems": 1,
+      "title": "Bess Units",
+      "type": "array"
+    },
+    "turbine_units": {
+      "items": {
+        "$ref": "#/$defs/TurbineUnitSpec"
+      },
+      "minItems": 1,
+      "title": "Turbine Units",
+      "type": "array"
+    },
+    "solar_rated_mw": {
+      "default": 0.0,
+      "minimum": 0.0,
+      "title": "Solar Rated Mw",
+      "type": "number"
+    },
+    "irradiance_steps": {
+      "description": "Zero-order-hold irradiance profile. Duplicate timestamps unnecessary.",
+      "items": {
+        "maxItems": 2,
+        "minItems": 2,
+        "prefixItems": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "number"
+          }
+        ],
+        "type": "array"
+      },
+      "title": "Irradiance Steps",
+      "type": "array"
+    },
+    "island_mode": {
+      "default": true,
+      "title": "Island Mode",
+      "type": "boolean"
+    },
+    "pue_base": {
+      "default": 1.03,
+      "maximum": 2.0,
+      "minimum": 1.0,
+      "title": "Pue Base",
+      "type": "number"
+    },
+    "end_sim_time": {
+      "default": 300.0,
+      "maximum": 86400.0,
+      "minimum": 60.0,
+      "title": "End Sim Time",
+      "type": "number"
+    },
+    "dt_thermal_seconds": {
+      "default": 90.0,
+      "description": "Engine value: thermal-delay before cooling ramp (\u0394t_thermal, s). Source: \u00a78\u20139, SPEC_DEFAULT.",
+      "maximum": 300.0,
+      "minimum": 0.0,
+      "title": "Dt Thermal Seconds",
+      "type": "number"
+    },
+    "plant_dt_thermal_seconds": {
+      "anyOf": [
+        {
+          "maximum": 300.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Plant value for \u0394t_thermal. None = linked to dt_thermal_seconds. Set explicitly to simulate a plant/engine thermal-model divergence.",
+      "title": "Plant Dt Thermal Seconds"
+    },
+    "alpha_max": {
+      "default": 0.2,
+      "description": "Engine value: maximum cooling fraction (\u03b1_max). Source: \u00a78, SPEC_DEFAULT.",
+      "maximum": 1.0,
+      "minimum": 0.0,
+      "title": "Alpha Max",
+      "type": "number"
+    },
+    "plant_alpha_max": {
+      "anyOf": [
+        {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Plant value for \u03b1_max. None = linked to alpha_max.",
+      "title": "Plant Alpha Max"
+    },
+    "tau_seconds": {
+      "default": 20.0,
+      "description": "Engine value: cooling time-constant (\u03c4, s). Source: \u00a78, PROPOSED_HERE.",
+      "maximum": 120.0,
+      "minimum": 1.0,
+      "title": "Tau Seconds",
+      "type": "number"
+    },
+    "plant_tau_seconds": {
+      "anyOf": [
+        {
+          "maximum": 120.0,
+          "minimum": 1.0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Plant value for \u03c4. None = linked to tau_seconds.",
+      "title": "Plant Tau Seconds"
+    },
+    "anchor_reserve_pct": {
+      "default": 0.0,
+      "description": "Anchor reserve as % of BESS rated MW (grid-forming unit only). 0 = use BessConfig default (1.0 MW). PROPOSED_HERE \u2014 pending commissioning.",
+      "maximum": 20.0,
+      "minimum": 0.0,
+      "title": "Anchor Reserve Pct",
+      "type": "number"
+    },
+    "band_pct_calibrated": {
+      "default": 0.0,
+      "description": "Confidence band \u00b1% of peak_shortfall for reserve check (INV-2). 0 = disabled (point-estimate check only, backward-compat). PROPOSED_HERE default: 4.0%. Effective band = band_pct \u00d7 mult_uncalib \u00d7 mult_unmapped_hw.",
+      "maximum": 15.0,
+      "minimum": 0.0,
+      "title": "Band Pct Calibrated",
+      "type": "number"
+    },
+    "band_mult_uncalibrated": {
+      "default": 2.0,
+      "description": "Reserve-band multiplier for uncalibrated sites (\u00a717.3). PROPOSED_HERE decision: 2.0\u00d7 (calibrated \u00d7 2.0 = fixture 8%).",
+      "maximum": 4.0,
+      "minimum": 1.0,
+      "title": "Band Mult Uncalibrated",
+      "type": "number"
+    },
+    "band_mult_unmapped_hw": {
+      "default": 1.5,
+      "description": "Reserve-band multiplier for unmapped hardware profiles (\u00a75.1). PROPOSED_HERE decision: 1.5\u00d7 (independent of uncalibrated mult).",
+      "maximum": 4.0,
+      "minimum": 1.0,
+      "title": "Band Mult Unmapped Hw",
+      "type": "number"
+    },
+    "pre_staging_config": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PreStagingConfigSpec"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "pms_config": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PmsConfigSpec"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "procurement_config": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ProcurementConfigSpec"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "maintenance_config": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/MaintenanceConfigSpec"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "ramp_relaxation_config": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RampRelaxationConfigSpec"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "kube_config": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/KubeConfigSpec"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "load_config": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/LoadProfileConfigSpec"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "ambient_steps": {
+      "description": "Pre-generated (sim_time_s, drybulb_c, wetbulb_c) timeline. Populated automatically by generate_solar_forecast(); not user-settable.",
+      "items": {
+        "maxItems": 3,
+        "minItems": 3,
+        "prefixItems": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "number"
+          }
+        ],
+        "type": "array"
+      },
+      "title": "Ambient Steps",
+      "type": "array"
+    },
+    "cluster_gen_config": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ClusterGenConfigSpec"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "stressor_gen_config": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/StressorGenConfigSpec"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "param_sampling_config": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ParamSamplingConfigSpec"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "telemetry_corruption_config": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/TelemetryCorruptionConfigSpec"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "generation_block": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/GenerationBlock"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "calibrated": {
+      "default": false,
+      "title": "Calibrated",
+      "type": "boolean"
+    },
+    "solar_origin_utc_hour": {
+      "anyOf": [
+        {
+          "maximum": 23,
+          "minimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Fix the UTC hour passed to generate_solar_forecast(). Use 20 for UTC 20:00 = 12:00 PST San Diego solar noon. None = real wall-clock UTC (default for all other scenarios).",
+      "title": "Solar Origin Utc Hour"
+    },
+    "assertions": {
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "alert_fires": "#/$defs/AlertFiresAssertion",
+            "max_p_total_mw": "#/$defs/MaxPTotalAssertion",
+            "min_final_bess_soc": "#/$defs/MinFinalBessSocAssertion",
+            "no_insufficient_reserve_alert": "#/$defs/NoReserveAlertAssertion"
+          },
+          "propertyName": "check"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/NoReserveAlertAssertion"
+          },
+          {
+            "$ref": "#/$defs/AlertFiresAssertion"
+          },
+          {
+            "$ref": "#/$defs/MaxPTotalAssertion"
+          },
+          {
+            "$ref": "#/$defs/MinFinalBessSocAssertion"
+          }
+        ]
+      },
+      "title": "Assertions",
+      "type": "array"
+    },
+    "fabric_scenario_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "ID of a fabric stress scenario JSON file to drive the FabricEngine. Set to the scenario_id value from one of the config/scenarios/S*.json files.",
+      "title": "Fabric Scenario Id"
+    }
+  },
+  "required": [
+    "name",
+    "bess_units",
+    "turbine_units"
+  ],
+  "title": "ScenarioSpec",
+  "type": "object"
+}
