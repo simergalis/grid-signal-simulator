@@ -11,7 +11,7 @@
  * DELETE /runs/{id}.  The two components share state via useScenarioStore.
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useScenarioStore } from '../store/scenarioStore'
 
 const SPEED_OPTIONS = [
@@ -46,73 +46,17 @@ const RUNNING_COPY = {
   line2: 'already ramping and the battery is covering the gap.',
 }
 
-// ── Split button: "+ New" (left) + "▾" dropdown (right) ──────────────────────
-
-function ScenarioSplitButton({ onNew, onManage }: { onNew: () => void; onManage: () => void }) {
-  const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [open])
-
-  return (
-    <div ref={ref} className="relative flex">
-      {/* Main: New */}
-      <button
-        onClick={onNew}
-        className="rounded-l border border-r-0 border-border px-2 py-1.5 font-sans text-xs
-                   text-muted hover:text-text hover:border-muted/50 transition-colors"
-      >
-        + New
-      </button>
-      {/* Arrow: open dropdown */}
-      <button
-        onClick={() => setOpen(v => !v)}
-        title="Manage scenario library"
-        className="rounded-r border border-border px-1.5 py-1.5 font-sans text-[10px]
-                   text-muted hover:text-accent hover:border-accent/50 transition-colors"
-      >
-        ▾
-      </button>
-      {/* Dropdown */}
-      {open && (
-        <div
-          className="absolute bottom-full mb-1 left-0 z-50 min-w-max rounded border border-border
-                     bg-surface shadow-lg py-1"
-        >
-          <button
-            onClick={() => { setOpen(false); onManage() }}
-            className="w-full px-3 py-1.5 text-left font-sans text-xs text-muted
-                       hover:text-accent hover:bg-accent/10 transition-colors"
-          >
-            Manage library (upload / download)
-          </button>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-
 interface Props {
   runId:        string | null
   lastRunId:    string | null
   onRunStarted: (id: string, speed: number, socFloor?: number, socCeil?: number) => void
   onRunStopped: () => void
-  onViewResults:(id: string) => void
-  onNewScenario:    () => void
+  onViewResults:    (id: string) => void
   onManageScenarios:() => void
 }
 
 export function DemoBar({
-  runId, lastRunId, onRunStarted, onRunStopped, onViewResults, onNewScenario, onManageScenarios,
+  runId, lastRunId, onRunStarted, onRunStopped, onViewResults, onManageScenarios,
 }: Props) {
   const scenarios     = useScenarioStore(s => s.scenarios)
   const selectedId    = useScenarioStore(s => s.selectedId)
@@ -331,12 +275,15 @@ export function DemoBar({
           </button>
         )}
 
-        {/* New scenario — split button: left = New, right ▾ = Manage Library */}
+        {/* Scenarios button — opens the Scenario modal */}
         {!isRunning && (
-          <ScenarioSplitButton
-            onNew={onNewScenario}
-            onManage={onManageScenarios}
-          />
+          <button
+            onClick={onManageScenarios}
+            className="rounded border border-border px-3 py-1.5 font-sans text-xs
+                       text-muted hover:text-accent hover:border-accent/50 transition-colors"
+          >
+            Scenarios
+          </button>
         )}
 
         {/* Inline error */}

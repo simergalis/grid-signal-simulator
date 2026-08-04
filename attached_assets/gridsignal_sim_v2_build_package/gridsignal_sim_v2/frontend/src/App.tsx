@@ -37,6 +37,7 @@ import { ProcurementPage }         from './components/ProcurementPage'
 import { ThermalCoolingPage }      from './components/ThermalCoolingPage'
 import { ScenarioPlannerPage }     from './components/ScenarioPlannerPage'
 import { ScenarioManagerPage }     from './components/ScenarioManagerPage'
+import { ScenarioModal }           from './components/ScenarioModal'
 import { AdminPage }               from './components/AdminPage'
 import { ChangePasswordModal }     from './components/ChangePasswordModal'
 import { useTickStore }            from './store/tickStore'
@@ -113,6 +114,7 @@ function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
   )
   const [agentsEnabled,       setAgentsEnabled]       = useState(true)
   const [topoOpen,            setTopoOpen]            = useState(false)
+  const [scenariosOpen,       setScenariosOpen]       = useState(false)
   const [changePasswordOpen,  setChangePasswordOpen]  = useState(false)
 
   const drainFrame     = useTickStore(s => s.drainFrame)
@@ -246,8 +248,7 @@ function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
           onRunStarted={handleRunStarted}
           onRunStopped={handleRunStopped}
           onViewResults={handleViewResults}
-          onNewScenario={handleNewScenario}
-          onManageScenarios={() => setCurrentPage('scenario-manager')}
+          onManageScenarios={() => setScenariosOpen(true)}
         />
 
         {topoOpen && (
@@ -256,6 +257,14 @@ function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
 
         {changePasswordOpen && (
           <ChangePasswordModal onClose={() => setChangePasswordOpen(false)} />
+        )}
+
+        {scenariosOpen && (
+          <ScenarioModal
+            onClose={() => setScenariosOpen(false)}
+            onNew={() => { setScenariosOpen(false); handleNewScenario() }}
+            onEdit={id => { setScenariosOpen(false); handleEditScenario(id) }}
+          />
         )}
 
         {drawerOpen && (
