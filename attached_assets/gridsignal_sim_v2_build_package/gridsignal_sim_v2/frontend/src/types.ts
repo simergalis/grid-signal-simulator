@@ -19,6 +19,7 @@ export interface TickPayload {
   net_demand_mw: number       // p_total - p_renewable, clamped ≥ 0
   turbine_output_mw: number
   bess_output_mw: number
+  bess_setpoint_mw: number    // dispatch command before SoC/power clipping (B4 gate)
   bess_soc_fraction: number   // [0, 1]
 
   // Confidence band
