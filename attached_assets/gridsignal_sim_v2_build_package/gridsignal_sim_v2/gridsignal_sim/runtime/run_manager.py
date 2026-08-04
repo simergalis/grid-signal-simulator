@@ -300,11 +300,21 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # bess_setpoint_mw: commanded BESS output before SOC/power clipping.
         # gt_setpoint_mw:   total dispatch requirement handed to turbine fleet.
         # balance_residual_mw: (turbine + bess + renewable) − total_load.
+        #   DEPRECATED (Phase 13.2): read the three decomposition channels below.
         # frequency_hz: 50 Hz nominal ± swing-equation deviation (islanded only).
         "bess_setpoint_mw":    round(tick.bess_setpoint_mw, 4),
         "gt_setpoint_mw":      round(tick.gt_setpoint_mw, 4),
         "balance_residual_mw": round(tick.balance_residual_mw, 5),
         "frequency_hz":        round(tick.frequency_hz, 4),
+        # ── Phase 13.2: Balance decomposition ────────────────────────────────
+        # Three independent channels; sum == balance_residual_mw (D4).
+        # grid_exchange_mw:     PCC flow — exactly 0 in islanded mode (D1).
+        # frequency_forcing_mw: dispatch-plan inertial pressure — 0 grid-connected (D2).
+        # model_error_mw:       asset tracking error — ~0 in steady state (D3, D5).
+        # channel_source for all three: derived (see models.py TickResult docstring).
+        "grid_exchange_mw":     round(tick.grid_exchange_mw, 5),
+        "frequency_forcing_mw": round(tick.frequency_forcing_mw, 5),
+        "model_error_mw":       round(tick.model_error_mw, 5),
         # ── Phase 11.6: Cooling thermal lag (Section 8 thermal model) ────────
         # compute_inlet_temp_c: inlet air temperature derived from lagged
         # cooling output; inherits dt_thermal lag (≥ 0.99 lag-1 autocorr C3).

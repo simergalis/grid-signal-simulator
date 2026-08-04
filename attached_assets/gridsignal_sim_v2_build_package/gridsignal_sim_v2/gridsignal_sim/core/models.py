@@ -740,10 +740,9 @@ class TickResult:
     #   this tick (p_dispatch_required_mw).  Differs from turbine_output_mw
     #   while turbines are still ramping toward their staged target.
     # balance_residual_mw: (turbine_output + bess_output + p_renewable) − p_total.
-    #   In grid-connected steady state this is ≈ 0 (BESS is the balance slack).
-    #   Non-zero when BESS is SOC-limited or power-saturated; non-zero in
-    #   islanded mode due to measurement noise / load-model error.
-    #   In islanded mode this term drives the frequency swing equation (B1 criterion).
+    #   DEPRECATED (Phase 13.2): read grid_exchange_mw + frequency_forcing_mw +
+    #   model_error_mw instead.  Retained for backward compatibility only.
+    #   sum(grid_exchange_mw, frequency_forcing_mw, model_error_mw) == balance_residual_mw.
     # frequency_hz: nominal system frequency (50 Hz) plus the deviation
     #   accumulated by the swing equation in islanded mode.
     #   In grid-connected mode: fixed at site.frequency_nominal_hz (grid is
@@ -758,3 +757,27 @@ class TickResult:
     balance_residual_mw:  float = 0.0
     frequency_hz:         float = 50.0
     compute_inlet_temp_c: float = 20.0
+    # ── Phase 13.2 — Balance decomposition ───────────────────────────────────
+    # Three independently computed channels that sum to balance_residual_mw (D4).
+    # balance_residual_mw is retained for backward compatibility; prefer these.
+    #
+    # grid_exchange_mw: power crossing the PCC.
+    #   Grid-connected: _p_commanded − p_total (positive = site exports to grid).
+    #   Islanded:       exactly 0.0 — PCC is open (D1).
+    #   channel_source: derived (from commanded dispatch and total load; independent models).
+    #
+    # frequency_forcing_mw: dispatch-plan residual that presses rotating inertia.
+    #   Islanded:       _p_commanded − p_total (positive = frequency rises).
+    #   Grid-connected: exactly 0.0 — grid holds frequency (D2).
+    #   channel_source: derived.
+    #
+    # model_error_mw: asset tracking error — actual delivery minus commanded dispatch.
+    #   = (turbine_output − gt_setpoint) + (bess_output − bess_setpoint).
+    #   ~0 in steady state without injected faults in BOTH modes (D3).
+    #   D5: NOT computed as "balance_residual − grid_exchange − frequency_forcing"
+    #   (that would make it the new slack variable). Uses setpoints + actual outputs
+    #   exclusively — two independently modelled sources.
+    #   channel_source: derived.
+    grid_exchange_mw:     float = 0.0
+    frequency_forcing_mw: float = 0.0
+    model_error_mw:       float = 0.0

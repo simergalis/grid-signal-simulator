@@ -859,18 +859,67 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     _p_gen_mw = turbine_output_mw + bess_output_mw + p_renewable_mw
     _balance_residual_mw = _p_gen_mw - p_total_mw
 
+    # ── Phase 13.2: balance decomposition — three independent channels ────────
+    # Invariant (D4 — bit-identical to balance_residual_mw):
+    #   grid_exchange_mw + frequency_forcing_mw + model_error_mw == _balance_residual_mw
+    # _balance_residual_mw is retained for backward compatibility (deprecated: read
+    # individual channels instead).
+    #
+    # _p_commanded_mw: what the dispatch logic asked ALL dispatchable + renewable
+    # assets to produce this tick — three independently modelled sources:
+    #   gt_setpoint = p_dispatch_required_mw  (turbine fleet, from arbitrator)
+    #   bess_setpoint = _bess_setpoint_mw     (BESS fleet, from arbitrator)
+    #   renewable = p_renewable_mw             (solar + wind, from solar arrays)
+    _p_commanded_mw = p_dispatch_required_mw + _bess_setpoint_mw + p_renewable_mw
+
+    # model_error_mw: actual dispatchable delivery minus commanded dispatch.
+    #   = (turbine_output − gt_setpoint) + (bess_output − bess_setpoint)
+    # Renewable is excluded: it has no setpoint in this model (not dispatchable).
+    # Positive = assets over-delivered; negative = under-delivered (BESS depleted,
+    # turbine curtailed, etc.).  ~0 in steady state without injected faults (D3).
+    # D5: computed exclusively from setpoints and actual outputs — NOT derived as
+    #     "balance_residual − grid_exchange − frequency_forcing", which would make
+    #     it the new slack variable.
+    # channel_source: derived.
+    _model_error_mw = (
+        (turbine_output_mw - p_dispatch_required_mw)
+        + (bess_output_mw  - _bess_setpoint_mw)
+    )
+
+    # grid_exchange_mw / frequency_forcing_mw: both compute (_p_commanded − p_total)
+    # but only one is non-zero — selected by mode topology:
+    #   Grid-connected: infinite bus absorbs the dispatch surplus/deficit as PCC flow.
+    #     grid_exchange_mw = _p_commanded − p_total  (positive = site exports to grid)
+    #     frequency_forcing_mw = 0.0 exactly                                      (D2)
+    #   Islanded: PCC open; dispatch plan presses/relieves rotating inertia instead.
+    #     grid_exchange_mw = 0.0 exactly                                           (D1)
+    #     frequency_forcing_mw = _p_commanded − p_total  (positive = frequency rises)
+    # channel_source: derived (both channels use _p_commanded and p_total — two
+    #   independently modelled quantities, neither defined to "close the equation").
+    _islanded = (state.site.island_mode == IslandMode.ISLANDED)
+    if _islanded:
+        _grid_exchange_mw     = 0.0                           # topology — PCC open (D1)
+        _frequency_forcing_mw = _p_commanded_mw - p_total_mw
+    else:
+        _grid_exchange_mw     = _p_commanded_mw - p_total_mw
+        _frequency_forcing_mw = 0.0                           # grid holds frequency (D2)
+
     # Swing equation — islanded mode only.
     # df/dt = balance_residual_mw / (2 × H × S_base) × f₀
     # where H = inertia_constant_s, S_base = total turbine fleet rating (MVA),
     # f₀ = frequency_nominal_hz.
+    # Uses _balance_residual_mw (the ACTUAL generation−load mismatch), NOT
+    # _frequency_forcing_mw (the dispatch-plan mismatch).  The difference is
+    # _model_error_mw (asset tracking error): if an asset failed to deliver its
+    # setpoint, frequency responds to the actual generation shortfall, not the
+    # planned one.
     # Grid-connected: frequency is held at nominal by the grid; reset each tick.
-    # (No governor droop feedback in this MVP — deferred to a later step; the
-    # turbine staging path already provides the dominant control response via
-    # stage_for_predicted_step().  Governor droop feedback would add a secondary
-    # correction proportional to f-error that can be validated with B5 once the
-    # primary swing equation is verified by B1.)
+    # (No governor droop feedback in this MVP — the turbine staging path via
+    # stage_for_predicted_step() provides the dominant control response.
+    # Governor droop would add a secondary correction proportional to f-error
+    # and can be validated with B5 once the primary swing equation is verified.)
     _s_base_mw = max(1.0, sum(t.config.rated_mw for t in state.turbines))
-    if state.site.island_mode == IslandMode.ISLANDED:
+    if _islanded:
         _df_dt = (
             _balance_residual_mw
             / (2.0 * state.site.inertia_constant_s * _s_base_mw)
@@ -951,6 +1000,11 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         gt_setpoint_mw=p_dispatch_required_mw,
         balance_residual_mw=_balance_residual_mw,
         frequency_hz=state._frequency_hz,
+        # Phase 13.2: balance decomposition — three independent channels.
+        # sum == balance_residual_mw (D4).  balance_residual_mw kept for compat.
+        grid_exchange_mw=_grid_exchange_mw,
+        frequency_forcing_mw=_frequency_forcing_mw,
+        model_error_mw=_model_error_mw,
         # Phase 11.6: cooling thermal lag — compute inlet temperature.
         compute_inlet_temp_c=_compute_inlet_temp_c,
     )
