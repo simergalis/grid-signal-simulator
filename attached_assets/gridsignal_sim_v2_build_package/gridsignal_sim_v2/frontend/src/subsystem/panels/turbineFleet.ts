@@ -366,12 +366,12 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData {
   const marginStr    = n1MarginPct >= 0 ? `+${n1MarginPct}%` : `${n1MarginPct}%`
   const marginColour = n1MarginPct >= 0 ? TEAL : RED
 
-  // 0.5: ramp-energy capped at installedMW for Phase 0.
-  // Phase 0 cap: Math.min(Σr_i × H, installedMW) — a nameplate ceiling.
-  // Phase 1 formula (replaces this): Σ min(r_i × H, rated_i − output_i)
-  //   At 1.90 MW fleet output that gives 33.1 MW, not 35. Phase 1 deletes this
-  //   line and computes per-unit headroom from tick.turbine_units output fields.
-  const rampEnergyMW = Math.min(aggRampMWs * LEAD_WINDOW_S, installedMW)
+  // Phase 1b: ramp capability is now the authoritative typed backend field.
+  // ramp_capability_mw = Σ min(r_i × H, rated_i − output_i) for SYNCHRONISED/
+  //   RAMPING/AT_TARGET units, plus rated_i for STARTING units where H ≥ online_s.
+  // The Phase 0.5 display-level cap (Math.min(aggRampMWs × H, installedMW)) has
+  // been removed — the backend computation is the sole path (spec §1b).
+  const rampEnergyMW = tick.ramp_capability_mw ?? (aggRampMWs * LEAD_WINDOW_S)
 
   const chart = FleetTable(units, outputMW, maxRamp, onlineN)
 
@@ -424,9 +424,9 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData {
       // 0.4: subtitle states the arithmetic — not a raw unit count
       { label: 'N−1 margin',         value: marginStr,                        colour: marginColour,
         sub: `${installedMW.toFixed(0)} MW − ${maxUnitMW.toFixed(0)} MW contingency = ${n1FirmMW.toFixed(0)} MW firm  ·  peak ${PEAK_LOAD_MW.toFixed(2)} MW` },
-      // 0.5: ramp energy capped at installed capacity
+      // Phase 1b: ramp_capability_mw from backend replaces Phase 0.5 display cap
       { label: 'Aggregate ramp',     value: `${aggRampMWs.toFixed(3)} MW/s`, colour: rampCovers ? GOLD : RED,
-        sub: `${rampEnergyMW.toFixed(0)} MW in ${LEAD_WINDOW_S.toFixed(0)} s (capped at ${installedMW.toFixed(0)} MW installed)` },
+        sub: `${rampEnergyMW.toFixed(1)} MW capability in ${LEAD_WINDOW_S.toFixed(0)} s (per-unit headroom, Phase 1b)` },
       { label: 'Ramp with 1 unit',   value: `${rampWith1} MW/s`,
         sub: `${(parseFloat(rampWith1) * LEAD_WINDOW_S).toFixed(0)} MW in ${LEAD_WINDOW_S.toFixed(0)} s — BESS covers the remainder` },
       { label: 'Start time, cold',   value: '5–10 min',                      sub: 'a cold unit contributes nothing to a 45 s event' },

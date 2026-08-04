@@ -493,11 +493,21 @@ class TestDispatchTruthfulness:
             f"(turbine_out={tick.turbine_output_mw:.6f}, "
             f"gt_setpoint={tick.gt_setpoint_mw:.6f})"
         )
-        # balance_residual_mw corroborates (== asset_delivery_error_mw here since
-        # frequency_forcing_mw = 0 by D2-equivalent: dispatch plan exactly matched load).
-        assert tick.balance_residual_mw != pytest.approx(0.0, abs=1e-6), (
-            f"B1a: balance_residual_mw should be non-zero with delivery fault; "
-            f"got {tick.balance_residual_mw}"
+        # Branch B corroboration — balance_residual_mw removed from TickResult.
+        # Corroborate via (p_gen − p_load) computed from first principles:
+        #   p_gen = turbine_output + bess_output + p_renewable
+        # The residual should be non-zero because the turbine over-delivered vs its setpoint.
+        _p_gen = tick.turbine_output_mw + tick.bess_output_mw + tick.p_renewable_mw
+        _residual = _p_gen - tick.p_total_mw
+        # The sum of three channels must equal the residual (D4 inline assertion in evaluate_tick).
+        _channel_sum = tick.grid_exchange_mw + tick.frequency_forcing_mw + tick.asset_delivery_error_mw
+        assert abs(_channel_sum - _residual) < 1e-6, (
+            f"B1a: channel sum {_channel_sum:.9f} != p_gen−p_load residual {_residual:.9f} (D4)"
+        )
+        # The delivery fault makes p_gen non-zero even in this near-zero-load scenario.
+        assert _residual != pytest.approx(0.0, abs=1e-6), (
+            f"B1a: p_gen−p_load residual should be non-zero with delivery fault; "
+            f"got {_residual:.9f}"
         )
         # Phase 13.3: delivery faults do NOT move frequency — only the dispatch
         # PLAN (frequency_forcing_mw) drives the swing equation.  In this scenario,
@@ -962,9 +972,11 @@ class TestWsBroadcastNewFields:
             "forecast_mw",         # Phase 11.1
             "bess_setpoint_mw",    # Phase 11.3
             "gt_setpoint_mw",      # Phase 11.3
-            "balance_residual_mw", # Phase 11.3
+            # balance_residual_mw REMOVED (Branch B) — D4 asserted inline.
             "frequency_hz",        # Phase 11.3
             "compute_inlet_temp_c",# Phase 11.6
+            "sub_msl_surplus_mw",  # Phase 1b
+            "ramp_capability_mw",  # Phase 1b
         ]
         missing = [k for k in required_keys if k not in d]
         assert not missing, (

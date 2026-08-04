@@ -20,6 +20,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from .asset_modules import BessModule, CoolingModule, GPUModule, SolarModule, TurbineModule, TurbineState
+from .loading import apply_loading, ramp_capability, LEAD_WINDOW_S
 from .contingency import BessSnapshot, PlantState, TurbineSnapshot, evaluate_contingency
 from .kube_demand import KubeDemandAgent, KubeGridState
 
@@ -578,9 +579,27 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # Used by the arbitrator, the balance decomposition, and the TickResult.
     _p_dispatch_droop_mw = max(0.0, p_dispatch_required_mw + _droop_correction_mw)
 
-    # 4. Turbine ramp + BESS shortfall coverage, sized against P_dispatch_required
+    # 4. Turbine advance + Phase 1b loading layer + BESS shortfall coverage
+    #
+    # advance() ticks STARTING countdown timers and the legacy RAMPING ramp.
+    # SYNCHRONISED units are no-ops in advance() — loading layer drives them.
     for turbine in state.turbines:
         turbine.advance(sim_time, dt_seconds)
+
+    # Phase 1b: loading layer — drive SYNCHRONISED units toward their share of
+    # the droop-adjusted fleet setpoint.  Returns sub_msl_surplus_mw (> 0 only
+    # when P_allocated < Σ msl_i, which holds the floor and reports the gap).
+    # Allocated set A = SYNCHRONISED state ONLY.
+    # RAMPING and AT_TARGET (legacy pre-Phase-2 aliases) continue using
+    # advance() and the old stage_target() mechanism for backward compatibility.
+    _synchronised_units = [
+        t for t in state.turbines
+        if t.state == TurbineState.SYNCHRONISED and not t.config.hot_standby
+    ]
+    _sub_msl_surplus_mw: float = apply_loading(
+        _synchronised_units, _p_dispatch_droop_mw, dt_seconds
+    )
+
     # Phase 11.3: dispatch.tick() now returns a 4-tuple.
     # _bess_setpoint_mw: commanded BESS output before SOC/power clipping.
     # Unpack position 2 (before candidates) — see dispatch.DispatchArbitrator.tick().
@@ -792,7 +811,9 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                 rated_mw=t.config.rated_mw,
                 r_asset_mw_per_s=t.config.r_asset_mw_per_s,
                 # Synchronized = RAMPING or AT_TARGET; OFFLINE = hot standby or uncommissioned.
-                is_synchronized=(t.state != TurbineState.OFFLINE),
+                # Phase 2: use is_synchronised property to exclude STARTING/
+                # OUT_OF_SERVICE/TRANSITIONAL units from N-1 computation.
+                is_synchronized=t.is_synchronised,
             )
             for t in state.turbines
         ),
@@ -905,22 +926,20 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
 
     # ── Phase 11.3: balance residual and frequency tracking ───────────────────
     # P_gen(t) = turbines + BESS (actual measured) + renewables.
-    # balance_residual_mw = P_gen − P_load.
+    # _balance_residual_mw = P_gen − P_load  (local scratch — not broadcast).
     #
     # In grid-connected steady state, BESS is the balance slack and
-    # balance_residual_mw ≈ 0 by construction.  Non-zero when:
+    # _balance_residual_mw ≈ 0 by construction.  Non-zero when:
     #   (a) BESS is SOC-limited or power-saturated (bess_output < bess_setpoint), OR
     #   (b) there is a true load-model error (e.g. load_error injection for B1).
     # In islanded mode, a non-zero residual drives the swing equation below;
     # in grid-connected mode, the grid absorbs / provides the mismatch.
+    # Branch B: _balance_residual_mw is a local scratch variable; it is NOT on
+    # TickResult.  D4 is asserted inline below before any use in the swing eq.
     _p_gen_mw = turbine_output_mw + bess_output_mw + p_renewable_mw
     _balance_residual_mw = _p_gen_mw - p_total_mw
 
     # ── Phase 13.2: balance decomposition — three independent channels ────────
-    # Invariant (D4 — bit-identical to balance_residual_mw):
-    #   grid_exchange_mw + frequency_forcing_mw + asset_delivery_error_mw == _balance_residual_mw
-    # _balance_residual_mw is retained for backward compatibility (deprecated: read
-    # individual channels instead).
     #
     # _p_commanded_mw: what the dispatch logic ASKED all dispatchable + renewable
     # assets to produce this tick — three independently modelled sources:
@@ -978,6 +997,20 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     else:
         _grid_exchange_mw     = _p_commanded_mw - p_total_mw
         _frequency_forcing_mw = 0.0                           # grid holds frequency (D2)
+
+    # D4 inline assertion (Branch B) — three channels must sum to the scratch
+    # residual.  _balance_residual_mw is a local variable only; it is NOT on
+    # TickResult.  Asserting here validates the decomposition without exposing
+    # the scratch value in the public API.
+    _d4_sum = _grid_exchange_mw + _frequency_forcing_mw + _asset_delivery_error_mw
+    assert abs(_d4_sum - _balance_residual_mw) < 1e-6, (
+        f"D4 invariant violated: sum of channels {_d4_sum:.9f} "
+        f"!= scratch residual {_balance_residual_mw:.9f}"
+    )
+
+    # Phase 1b: ramp capability over LEAD_WINDOW_S horizon — broadcast so the
+    # frontend drawer reads this typed field instead of applying its own cap.
+    _ramp_capability_mw = ramp_capability(LEAD_WINDOW_S, state.turbines)
 
     # Swing equation — islanded mode only.
     # Phase 13.3: forcing input = frequency_forcing_mw ONLY.
@@ -1084,10 +1117,10 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         # equals p_dispatch_required_mw in steady state — B5b and similar
         # tests run at initial frequency (50 Hz) and are unaffected.
         gt_setpoint_mw=_p_dispatch_droop_mw,
-        balance_residual_mw=_balance_residual_mw,
+        # balance_residual_mw REMOVED (Branch B) — local scratch only; D4 asserted above.
         frequency_hz=state._frequency_hz,
         # Phase 13.2: balance decomposition — three independent channels.
-        # sum == balance_residual_mw (D4).  balance_residual_mw kept for compat.
+        # D4 (sum == scratch residual) is asserted inline above, not via a broadcast field.
         grid_exchange_mw=_grid_exchange_mw,
         frequency_forcing_mw=_frequency_forcing_mw,
         asset_delivery_error_mw=_asset_delivery_error_mw,
@@ -1096,4 +1129,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         binding_constraint=_binding_constraint,
         # Phase 11.6: cooling thermal lag — compute inlet temperature.
         compute_inlet_temp_c=_compute_inlet_temp_c,
+        # Phase 1b: loading-layer outputs.
+        sub_msl_surplus_mw=_sub_msl_surplus_mw,
+        ramp_capability_mw=_ramp_capability_mw,
     )

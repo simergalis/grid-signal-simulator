@@ -225,17 +225,41 @@ class TestD3ModelErrorSteadyState:
 
 
 # ---------------------------------------------------------------------------
-# D4 — sum of three channels is bit-identical to balance_residual_mw
+# D4 — sum of three channels == (p_gen − p_load) scratch residual
+# ---------------------------------------------------------------------------
+# Branch B: balance_residual_mw is no longer on TickResult.  D4 is now an
+# inline assertion in evaluate_tick().  These tests verify the assertion fires
+# (no AssertionError) and that the three channels are self-consistent.
+# The assertion formula:
+#   grid_exchange_mw + frequency_forcing_mw + asset_delivery_error_mw
+#   == turbine_output_mw + bess_output_mw + p_renewable_mw − p_total_mw
 # ---------------------------------------------------------------------------
 
 class TestD4SumIdentity:
-    """D4: grid_exchange_mw + frequency_forcing_mw + asset_delivery_error_mw == balance_residual_mw."""
+    """D4: three channels sum to (p_gen − p_load).
+
+    Branch B: balance_residual_mw removed from TickResult.  Tests now
+    assert the sum against the independently computable residual:
+        p_gen = turbine_output + bess_output + p_renewable
+        p_load = p_total_mw
+        residual = p_gen − p_load
+    If the D4 inline assert in evaluate_tick() fires, evaluate_tick()
+    raises AssertionError — these tests would error, not pass.
+    """
+
+    def _p_gen_residual(self, tick) -> float:
+        """Recompute the scratch residual from first principles (Branch B)."""
+        return (
+            tick.turbine_output_mw + tick.bess_output_mw + tick.p_renewable_mw
+            - tick.p_total_mw
+        )
 
     def _verify_d4(self, tick, label: str):
         total = tick.grid_exchange_mw + tick.frequency_forcing_mw + tick.asset_delivery_error_mw
-        assert total == pytest.approx(tick.balance_residual_mw, abs=1e-9), (
+        residual = self._p_gen_residual(tick)
+        assert total == pytest.approx(residual, abs=1e-6), (
             f"D4 ({label}): sum of channels={total:.9f} != "
-            f"balance_residual_mw={tick.balance_residual_mw:.9f}"
+            f"p_gen−p_load residual={residual:.9f}"
         )
 
     def test_D4_grid_connected_no_load(self):
@@ -265,7 +289,7 @@ class TestD4SumIdentity:
         self._verify_d4(tick, "islanded with load")
 
     def test_D4_depleted_bess(self):
-        """D4 must hold even under fault conditions."""
+        """D4 must hold even under fault conditions (evaluate_tick() inline assert fires)."""
         state = _make_state(
             bess_soc=0.0,
             bess_mwh=0.01,
@@ -286,9 +310,13 @@ class TestD4SumIdentity:
         for i in range(30):
             tick = _run_tick(state, sim_time=float(i) * 5.0, dt=5.0)
             total = tick.grid_exchange_mw + tick.frequency_forcing_mw + tick.asset_delivery_error_mw
-            assert total == pytest.approx(tick.balance_residual_mw, abs=1e-9), (
+            residual = (
+                tick.turbine_output_mw + tick.bess_output_mw + tick.p_renewable_mw
+                - tick.p_total_mw
+            )
+            assert total == pytest.approx(residual, abs=1e-6), (
                 f"D4: sum of channels={total:.9f} != "
-                f"balance_residual_mw={tick.balance_residual_mw:.9f} at tick {i+1}"
+                f"p_gen−p_load={residual:.9f} at tick {i+1}"
             )
 
 

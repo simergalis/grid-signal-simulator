@@ -220,17 +220,21 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         "absorbable_mw":      round(tick.absorbable_mw, 3),
         "time_to_limit_s":    round(tick.time_to_limit_s, 1),
         "approach_rate_mw_s": round(tick.approach_rate_mw_s, 6),
-        # AE2: per-unit turbine specs — list of dicts for JSON serialisation.
-        # Constant across ticks; carried on every payload so the fleet modal
-        # can drive its display (unit count, rated MW, effective ramp) without
-        # a separate API call.
+        # AE2 + Phase 2: per-unit turbine specs + dynamic Phase 2 state.
+        # Static fields (asset_id, rated_mw, r_asset_mw_per_s, breaker_closed,
+        # hot_standby, gt_mode, r_asset_rated_mw_per_s) come from turbine_unit_specs.
+        # Dynamic Phase 2 fields (state, time_to_online_s, thermal_state,
+        # start_phase, out_of_service_reason) are overlaid from state.turbines
+        # each tick so the fleet modal shows live unit states without a separate call.
         "turbine_units": list(tick.turbine_units),
-        # Phase 0 §0.2/0.3: sync aggregates derived from per-unit breaker_closed flag.
-        # units_synchronised_count must equal len([u for u in turbine_units if u["breaker_closed"]]).
-        # Missing breaker_closed key defaults to True — backward-compatible with old spec dicts
-        # that predate Phase 0 (all units treated as on bus for legacy runs).
-        "units_synchronised_count": len(
-            [u for u in tick.turbine_units if u.get("breaker_closed", True)]
+        # Phase 2: units_synchronised_count — derive from is_synchronised property
+        # (uses TurbineState enum, not the legacy breaker_closed flag).
+        # Backward compat: for runs where turbine_units still use breaker_closed,
+        # fall back to the breaker_closed key.
+        "units_synchronised_count": sum(
+            1 for u in tick.turbine_units
+            if u.get("state") in ("synchronised", "ramping", "at_target")
+            or (u.get("state") is None and u.get("breaker_closed", True))
         ),
         # synchronised_output_mw: fleet output attributed to on-bus units.
         # Phase 0 tracks fleet aggregate only; hot_standby units contribute zero output
@@ -315,15 +319,14 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # ── Phase 11.3: Dispatch truthfulness ────────────────────────────────
         # bess_setpoint_mw: commanded BESS output before SOC/power clipping.
         # gt_setpoint_mw:   total dispatch requirement handed to turbine fleet.
-        # balance_residual_mw: (turbine + bess + renewable) − total_load.
-        #   DEPRECATED (Phase 13.2): read the three decomposition channels below.
+        # balance_residual_mw REMOVED (Branch B): D4 asserted inline in evaluate_tick();
+        #   value not broadcast.  Read the three decomposition channels below instead.
         # frequency_hz: 50 Hz nominal ± swing-equation deviation (islanded only).
         "bess_setpoint_mw":    round(tick.bess_setpoint_mw, 4),
         "gt_setpoint_mw":      round(tick.gt_setpoint_mw, 4),
-        "balance_residual_mw": round(tick.balance_residual_mw, 5),
         "frequency_hz":        round(tick.frequency_hz, 4),
         # ── Phase 13.2: Balance decomposition ────────────────────────────────
-        # Three independent channels; sum == balance_residual_mw (D4).
+        # Three independent channels.  D4 invariant asserted in evaluate_tick().
         # grid_exchange_mw:          PCC flow — exactly 0 in islanded mode (D1).
         # frequency_forcing_mw:      dispatch-plan inertial pressure — 0 grid-connected (D2).
         # asset_delivery_error_mw:   physical shortfall (asset setpoint tracking); ~0 steady-state (D3).
@@ -340,6 +343,12 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # compute_inlet_temp_c: inlet air temperature derived from lagged
         # cooling output; inherits dt_thermal lag (≥ 0.99 lag-1 autocorr C3).
         "compute_inlet_temp_c": round(tick.compute_inlet_temp_c, 3),
+        # ── Phase 1b: loading-layer outputs ──────────────────────────────────
+        # sub_msl_surplus_mw: > 0 when fleet demand < Σ msl_i; 0 in normal operation.
+        # ramp_capability_mw: fleet ramp over 45 s horizon from loading.py.
+        #   Replaces the Phase 0.5 display-level cap in turbineFleet.ts.
+        "sub_msl_surplus_mw":  round(tick.sub_msl_surplus_mw, 4),
+        "ramp_capability_mw":  round(tick.ramp_capability_mw, 4),
         # ── Task #174: Stochastic step timing (kube path only) ───────────────
         # step_phase: fractional position within the current ML training step.
         # step_kind: "training" or "checkpoint".
@@ -1093,10 +1102,30 @@ class RunManager:
                         min(_th_absorb / _th_approach, 86_400.0)
                         if _th_approach > 1e-6 else 86_400.0
                     ),
-                    # AE2: per-unit turbine specs from RunContext — constant
-                    # across ticks but stamped each tick so every TickResult in
-                    # tick_history carries the data the fleet modal needs.
-                    turbine_units=ctx.turbine_unit_specs,
+                    # AE2 + Phase 2: per-unit turbine specs overlaid with dynamic
+                    # Phase 2 state fields (state, time_to_online_s, thermal_state,
+                    # start_phase, out_of_service_reason).  Static spec fields come
+                    # from ctx.turbine_unit_specs; dynamic fields are built from
+                    # ctx.sim_state.turbines.  The two lists share the same ordering
+                    # (both derived from the same ScenarioSpec turbine_units list).
+                    turbine_units=tuple(
+                        {
+                            **static_spec,
+                            # Phase 2 live state overlay — keys match TurbineState values.
+                            "state": t.state.value,
+                            "time_to_online_s": (
+                                round(t._time_to_online_s, 1)
+                                if t.state.value == "starting" else None
+                            ),
+                            "thermal_state": t._thermal_state.value if hasattr(t, "_thermal_state") else None,
+                            "start_phase": t._start_phase if t.state.value == "starting" else None,
+                            "out_of_service_reason": t._out_of_service_reason,
+                        }
+                        for static_spec, t in zip(ctx.turbine_unit_specs, ctx.sim_state.turbines)
+                    ) if (
+                        ctx.sim_state is not None
+                        and len(ctx.sim_state.turbines) == len(ctx.turbine_unit_specs)
+                    ) else ctx.turbine_unit_specs,
                     # Solar weather metadata — constant per run, stamped so the
                     # Solar PV modal can surface the Mistral forecast label without
                     # a separate endpoint.  Empty strings on direct job-id path.

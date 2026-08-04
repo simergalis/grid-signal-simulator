@@ -157,7 +157,18 @@ export interface TickPayload {
 
   // Phase 11.3: dispatch truthfulness.
   gt_setpoint_mw:      number  // total dispatch requirement handed to turbine fleet
-  balance_residual_mw: number  // (turbine+bess+renewable)−load; deprecated by Phase 13.2 channels
+  // balance_residual_mw REMOVED — Branch B (Phase pre-work).
+  // D4 is now asserted inline in evaluate_tick(); the value is not broadcast.
+  // Read the three decomposition channels (grid_exchange_mw, frequency_forcing_mw,
+  // asset_delivery_error_mw) instead — they sum to the removed field.
+
+  // Phase 1b: loading-layer outputs (stamped each tick).
+  // sub_msl_surplus_mw > 0 when P_fleet < Σ msl_i for SYNCHRONISED units;
+  //   fleet holds at the floor; surplus reported but not resolved.
+  // ramp_capability_mw: fleet ramp over LEAD_WINDOW_S = 45 s horizon.
+  //   Replaces the Phase 0.5 display-level cap in turbineFleet.ts.
+  sub_msl_surplus_mw:    number
+  ramp_capability_mw:    number
 
   // Phase 11.6: cooling thermal lag.
   compute_inlet_temp_c: number  // inlet air temp from lagged cooling output

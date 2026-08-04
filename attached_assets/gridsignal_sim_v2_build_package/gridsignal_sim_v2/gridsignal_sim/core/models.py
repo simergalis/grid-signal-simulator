@@ -350,6 +350,67 @@ class SiteConfig:
     load_model_bias_mw:    float = 0.0
 
 
+class TurbineState(str, Enum):
+    """Phase 2 canonical turbine unit states (five states).
+
+    RAMPING and AT_TARGET are pre-Phase-2 legacy states retained for backward
+    compatibility with existing scenarios and tests.  New code must use
+    SYNCHRONISED.  The loading layer and UnitAvailability treat RAMPING and
+    AT_TARGET as equivalent to SYNCHRONISED (they are "in A").
+    """
+    # ── Legacy (pre-Phase 2) ─────────────────────────────────────────────────
+    OFFLINE    = "offline"     # not producing; no fault; ready to start
+    RAMPING    = "ramping"     # DEPRECATED — use SYNCHRONISED; legacy ramp-to-target
+    AT_TARGET  = "at_target"  # DEPRECATED — use SYNCHRONISED; legacy at setpoint
+    # ── Phase 2 canonical ────────────────────────────────────────────────────
+    OUT_OF_SERVICE = "out_of_service"  # excluded: operator | fault | maintenance
+    STARTING       = "starting"        # start sequence running; output_mw = 0
+    TRANSITIONAL   = "transitional"    # continuous output; in T (not A); Phase 3+
+    SYNCHRONISED   = "synchronised"    # on-bus; continuous output; in A
+
+
+class ThermalState(str, Enum):
+    """Thermal classification that determines start duration (§ Phase 2).
+
+    Inferred from time offline since last synchronisation.  All thresholds
+    from TurbineConfig — no literals in the state machine.
+    """
+    COLD = "cold"
+    WARM = "warm"
+    HOT  = "hot"
+
+
+@dataclass(frozen=True)
+class UnitAvailability:
+    """Phase 2 boundary object — the interface a PMS would populate at a real site.
+
+    Provides an import-free seam between the turbine asset model and consumers
+    (reserve check, N-1 tile, commitment logic).  Build via
+    TurbineModule.unit_availability(); do not read TurbineModule fields directly
+    outside asset_modules.py.
+
+    r_asset_effective_mw_per_s: re-rated if applicable (TC-58); equal to
+        TurbineConfig.r_asset_mw_per_s in the current build.
+    time_to_online_s: 0.0 when SYNCHRONISED (including RAMPING/AT_TARGET aliases);
+        None when OUT_OF_SERVICE (no planned return to service).
+    out_of_service_reason: None unless OUT_OF_SERVICE.
+    """
+    unit_id: str
+    state: TurbineState
+    output_mw: float
+    rated_mw: float
+    msl_mw: float
+    r_asset_effective_mw_per_s: float
+    time_to_online_s: Optional[float]    # 0.0 = SYNCHRONISED; None = OUT_OF_SERVICE
+    out_of_service_reason: Optional[str] # None unless OUT_OF_SERVICE
+    hot_standby: bool = False            # True → excluded from ramp credit and dispatch
+
+    @property
+    def is_starting(self) -> bool:
+        """True when the unit is in the STARTING state (non-zero startup countdown)."""
+        return self.state == TurbineState.STARTING
+
+
 @dataclass
 class TurbineConfig:
     asset_id: str
@@ -381,12 +442,33 @@ class TurbineConfig:
     # t_min_down_s — minimum cooling/rest period (seconds) between a controlled
     #   stop and the next permitted restart.  A restart command while in the
     #   cooling window is silently dropped.
-    #   0.0 = constraint disabled (default).  Set to 900.0 for frame-class GT.
+    #   0.0 = constraint disabled (default).  Phase 2 spec constant: 600 s.
     t_min_down_s: float = 0.0
     # gt_mode — per-unit gas turbine frame class.
     #   "frame" = large heavy-duty frame (slow ramp, high inertia).
     #   "aero"  = aeroderivative unit (fast ramp, lower inertia).
     gt_mode: str = "frame"
+    # ── Phase 2: start durations — from config, no literals in state machine ─
+    # cold_start_s: time for a COLD-start unit to reach SYNCHRONISED.
+    #   TC-80 implies 900 s.  CHOSEN — no measured OEM basis.
+    cold_start_s: float = 900.0
+    # warm_start_s: time for a WARM-start unit to reach SYNCHRONISED.
+    #   CHOSEN — engineering placeholder; OEM data required.
+    warm_start_s: float = 300.0
+    # hot_start_s: time for a HOT-start unit to reach SYNCHRONISED.
+    #   CHOSEN — engineering placeholder; OEM data required.
+    hot_start_s: float = 60.0
+    # Thermal classification thresholds (time offline since last synchronisation).
+    # hot_threshold_s: elapsed ≤ this → HOT start.
+    #   CHOSEN — 1 h; OEM calibration required.
+    hot_threshold_s: float = 3600.0
+    # warm_threshold_s: hot_threshold_s < elapsed ≤ this → WARM; above → COLD.
+    #   CHOSEN — 4 h; OEM calibration required.
+    warm_threshold_s: float = 14400.0
+    # unload_tail_s: minimum dwell from stop command to OFFLINE transition.
+    #   Used by Phase 3 TRANSITIONAL entry sequences.  Defined now per spec.
+    #   Phase 2 spec constant: 60 s.  CHOSEN pending OEM data.
+    unload_tail_s: float = 60.0
 
 
 @dataclass
@@ -831,7 +913,11 @@ class TickResult:
     #   required by C3.  Default 20 °C (ambient baseline; rises with cooling load).
     bess_setpoint_mw:     float = 0.0
     gt_setpoint_mw:       float = 0.0
-    balance_residual_mw:  float = 0.0
+    # balance_residual_mw REMOVED — Branch B (Phase pre-work).
+    # Was (turbine_output + bess_output + p_renewable) − p_total.
+    # Deprecated since Phase 13.2; now deleted from the public API.
+    # D4: sum(grid_exchange_mw + frequency_forcing_mw + asset_delivery_error_mw)
+    #     == (_p_gen_mw − p_total_mw) is asserted inline in evaluate_tick().
     frequency_hz:         float = 50.0
     compute_inlet_temp_c: float = 20.0
     # ── Phase 13.2 — Balance decomposition ───────────────────────────────────
@@ -878,6 +964,16 @@ class TickResult:
     grid_exchange_mw:          float = 0.0
     frequency_forcing_mw:      float = 0.0
     asset_delivery_error_mw:   float = 0.0
+    # ── Phase 1b — Loading layer outputs ─────────────────────────────────────
+    # sub_msl_surplus_mw: non-zero when P_allocated < Σ msl_i for SYNCHRONISED
+    #   units.  Fleet holds at the floor; surplus is reported, not resolved.
+    #   0.0 in normal operation (feasible band: Σ msl ≤ P_allocated ≤ Σ rated).
+    # ramp_capability_mw: fleet ramp capability over LEAD_WINDOW_S horizon.
+    #   Σ_{i∈A} min(r_i × H, rated_i − output_i) for SYNCHRONISED/RAMPING/AT_TARGET;
+    #   rated_i for STARTING units where H ≥ time_to_online_i.
+    #   Replaces the Phase 0.5 display-level cap in turbineFleet.ts (spec §1b).
+    sub_msl_surplus_mw:        float = 0.0
+    ramp_capability_mw:        float = 0.0
     # ── Phase 13.4 — Setpoint/actual split ────────────────────────────────────
     # model_error_mw: injected load-model bias (site.load_model_bias_mw).
     #   Default 0.0.  Observable as its own channel — does NOT flow into dispatch

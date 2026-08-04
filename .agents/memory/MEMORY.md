@@ -26,3 +26,4 @@
 - [phase-13-3-frequency](phase-13-3-frequency.md) — swing eq on frequency_forcing only; droop formula; B1a/B5/I3 test traps; BESS lag clamp; pre-existing failures list.
 - [phase-13-4-setpoint-split](phase-13-4-setpoint-split.md) — model_error_mw + binding_constraint fields; cover_shortfall power_ceiling_mw trap; TurbineState.AT_TARGET lock pattern; standby label fix.
 - [phase-13-5-carried-forward](phase-13-5-carried-forward.md) — TC-03 7τ/0.5%; R4-R6 p_min_stable/t_min_run/t_min_down defaults=0 (NOT 0.45); R8 PROTO-22 fix; TurbineSnapshot r_asset required.
+- [phase-1b-p2-loading-layer](phase-1b-p2-loading-layer.md) — loading layer + UnitAvailability boundary; THE TRAP: allocated set A = SYNCHRONISED only (not is_synchronised); stray @dataclass on TurbineState enum fixed.

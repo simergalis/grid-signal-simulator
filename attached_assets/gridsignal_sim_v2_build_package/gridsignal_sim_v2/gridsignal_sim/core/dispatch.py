@@ -19,10 +19,44 @@ from typing import Optional, Sequence
 from .asset_modules import BessModule, GPUModule, TurbineModule
 from .models import (
     ConfidenceBand, DataQualityTag, IslandMode, OperatingTier,
-    PreStagingConfig, SiteConfig,
+    PreStagingConfig, SiteConfig, UnitAvailability,
 )
 
 _log = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Phase 2 boundary helper — ramp credit from UnitAvailability only
+# ---------------------------------------------------------------------------
+
+def turbine_ramp_credit_mw(
+    units: Sequence[UnitAvailability],
+    lead_window_s: float,
+    delta_p_mw: float,
+) -> float:
+    """Return the MW of a demand step that turbines can cover within *lead_window_s*.
+
+    This is the Phase-2 structural boundary: the formula is expressed purely in
+    terms of :class:`~core.models.UnitAvailability` so the reserve check and N-1
+    tile have no import path to :class:`~core.asset_modules.TurbineModule`.
+
+    Rules (§7.3 / D15):
+    - Hot-standby units are excluded (they cannot ramp to load immediately).
+    - STARTING units: ramp credit = r_asset_mw_per_s × min(time_to_online_s, lead_window_s)
+      — they contribute only the portion of lead_window_s remaining after startup.
+    - Synchronised units: ramp credit = r_asset_mw_per_s × lead_window_s.
+    - Total credit is capped to delta_p_mw (credit never exceeds the step size).
+    """
+    raw: float = 0.0
+    for ua in units:
+        if ua.hot_standby:
+            continue
+        if ua.is_starting:
+            available_s = max(0.0, lead_window_s - ua.time_to_online_s)
+        else:
+            available_s = lead_window_s
+        raw += ua.r_asset_effective_mw_per_s * available_s
+    return min(raw, delta_p_mw)
 
 
 # ---------------------------------------------------------------------------

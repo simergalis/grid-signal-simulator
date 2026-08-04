@@ -29,7 +29,10 @@ from .models import (
     IslandMode,
     SiteConfig,
     SolarConfig,
+    ThermalState,
     TurbineConfig,
+    TurbineState,
+    UnitAvailability,
     WorkloadClass,
     WorkloadEventType,
     WorkloadSignal,
@@ -741,10 +744,9 @@ class CoolingModule(AssetModule):
 # Turbine module -- source spec Section 7.1, 7.2
 # ---------------------------------------------------------------------------
 
-class TurbineState(str, Enum):
-    OFFLINE = "offline"
-    RAMPING = "ramping"
-    AT_TARGET = "at_target"
+# TurbineState is defined in models.py (Phase 2 refactor) and re-exported here
+# for backward compatibility with any code that imports from asset_modules.
+# Do not redefine it here — models.py is the single source of truth.
 
 
 @dataclass
@@ -760,10 +762,118 @@ class TurbineModule(AssetModule):
     # _stop_time_s: sim_time of the last controlled stop.  math.nan = never
     #   stopped.  Guards t_min_down_s enforcement on the next restart.
     _stop_time_s: float = math.nan
+    # Phase 2: thermal state and start sequence tracking
+    # _thermal_state: determined at command_start() from time offline since last sync.
+    _thermal_state: ThermalState = ThermalState.COLD
+    # _time_to_online_s: countdown timer while STARTING; 0 when SYNCHRONISED.
+    _time_to_online_s: float = 0.0
+    # _last_sync_stop_s: sim_time when last SYNCHRONISED → OFFLINE transition
+    #   completed.  Used to classify the next start as HOT/WARM/COLD.
+    _last_sync_stop_s: float = math.nan
+    # _out_of_service_reason: non-None only when state == OUT_OF_SERVICE.
+    _out_of_service_reason: Optional[str] = None
+    # _start_phase: human-readable label for the STARTING sub-phase (display only).
+    _start_phase: str = "purge"
 
     @property
     def asset_id(self) -> str:  # noqa: D401 -- property mirrors dataclass field name
         return self.config.asset_id
+
+    @property
+    def is_synchronised(self) -> bool:
+        """True for states that are 'in A' (the allocated set) for the loading layer.
+
+        SYNCHRONISED is the canonical Phase 2 state.  RAMPING and AT_TARGET are
+        pre-Phase-2 aliases treated as equivalent for loading and UnitAvailability.
+        STARTING, OFFLINE, OUT_OF_SERVICE, and TRANSITIONAL are not in A.
+        Hot-standby units are never in A regardless of state.
+        """
+        return self.state in (
+            TurbineState.SYNCHRONISED,
+            TurbineState.RAMPING,
+            TurbineState.AT_TARGET,
+        ) and not self.config.hot_standby
+
+    def set_output(self, new_output_mw: float) -> None:
+        """Set per-unit output MW.  Called by the loading layer for SYNCHRONISED units.
+
+        Clamps to [0, rated_mw].  Does not change state.
+        """
+        self._current_output_mw = max(0.0, min(new_output_mw, self.config.rated_mw))
+
+    def command_start(self, sim_time: float) -> None:
+        """Transition OFFLINE → STARTING.  Phase 2 commitment-logic entry point.
+
+        Determines thermal state from time since last synchronisation, selects
+        the appropriate start duration from config, and begins the countdown.
+        No literals in state machine — all durations read from TurbineConfig.
+
+        R6: minimum down-time (t_min_down_s) still enforced.  A start command
+        during the cooling window is silently dropped (same as stage_target()).
+
+        No output is produced while STARTING (_current_output_mw stays 0.0).
+        """
+        if self.config.hot_standby:
+            return
+        if self.state != TurbineState.OFFLINE:
+            return
+
+        # R6: enforce minimum down-time
+        if not math.isnan(self._stop_time_s):
+            elapsed = sim_time - self._stop_time_s
+            if elapsed < self.config.t_min_down_s:
+                return  # cooling window not yet satisfied
+
+        # Determine thermal state from time offline since last synchronisation
+        if math.isnan(self._last_sync_stop_s):
+            self._thermal_state = ThermalState.COLD
+        else:
+            elapsed_offline = sim_time - self._last_sync_stop_s
+            if elapsed_offline < self.config.hot_threshold_s:
+                self._thermal_state = ThermalState.HOT
+            elif elapsed_offline < self.config.warm_threshold_s:
+                self._thermal_state = ThermalState.WARM
+            else:
+                self._thermal_state = ThermalState.COLD
+
+        # Start duration from config — no literals in state machine
+        if self._thermal_state == ThermalState.HOT:
+            self._time_to_online_s = self.config.hot_start_s
+        elif self._thermal_state == ThermalState.WARM:
+            self._time_to_online_s = self.config.warm_start_s
+        else:
+            self._time_to_online_s = self.config.cold_start_s
+
+        self._start_phase = "purge"
+        self.state = TurbineState.STARTING
+
+    def unit_availability(self) -> "UnitAvailability":
+        """Build a UnitAvailability boundary object from current state.
+
+        Called by simulation_core.py each tick to build the availability list
+        for reserve check and N-1 computation without exposing TurbineModule
+        internals to consumers.
+        """
+        if self.state == TurbineState.OUT_OF_SERVICE:
+            time_to_online: Optional[float] = None
+        elif self.state == TurbineState.STARTING:
+            time_to_online = self._time_to_online_s
+        elif self.is_synchronised:
+            time_to_online = 0.0
+        else:
+            time_to_online = None
+
+        return UnitAvailability(
+            unit_id=self.config.asset_id,
+            state=self.state,
+            output_mw=self._current_output_mw,
+            rated_mw=self.config.rated_mw,
+            msl_mw=self.config.p_min_stable_frac * self.config.rated_mw,
+            r_asset_effective_mw_per_s=self.config.r_asset_mw_per_s,
+            time_to_online_s=time_to_online,
+            out_of_service_reason=self._out_of_service_reason,
+            hot_standby=self.config.hot_standby,
+        )
 
     def stage_target(self, target_mw: float, sim_time: float = 0.0) -> None:
         """Dispatch arbitrator calls this at a job's `starting` event
@@ -817,7 +927,10 @@ class TurbineModule(AssetModule):
                         self._target_mw = min(target_mw, self.config.rated_mw)
                         return
 
-                # Minimum run time satisfied (or never tracked) — allow stop
+                # Minimum run time satisfied (or never tracked) — allow stop.
+                # Phase 2: record last sync stop time for thermal classification.
+                if self.is_synchronised:
+                    self._last_sync_stop_s = sim_time
                 self._stop_time_s = sim_time
                 self._run_start_s = math.nan
                 self._target_mw = 0.0
@@ -828,6 +941,30 @@ class TurbineModule(AssetModule):
         self._target_mw = min(target_mw, self.config.rated_mw)
 
     def advance(self, sim_time: float, dt_seconds: float) -> None:
+        """Tick this unit's internal state forward by one interval.
+
+        Phase 2 state routing:
+          STARTING     → tick countdown; on expiry → SYNCHRONISED.
+          SYNCHRONISED → no-op; loading layer drives output via set_output().
+          RAMPING      → legacy ramp-to-target (backward compat).
+          AT_TARGET    → no-op (already at target).
+          all others   → no-op.
+        """
+        if self.state == TurbineState.STARTING:
+            # Tick the STARTING countdown timer.
+            self._time_to_online_s = max(0.0, self._time_to_online_s - dt_seconds)
+            if self._time_to_online_s <= 0.0:
+                # Timer expired — unit is now synchronised to the bus.
+                self._time_to_online_s = 0.0
+                self.state = TurbineState.SYNCHRONISED
+                self._run_start_s = sim_time   # record for R5 enforcement
+            return
+
+        if self.state == TurbineState.SYNCHRONISED:
+            # Loading layer drives output via set_output() — nothing to do here.
+            return
+
+        # ── Legacy RAMPING path (pre-Phase 2 backward compat) ────────────────
         if self.state != TurbineState.RAMPING:
             return
         max_delta = self.config.r_asset_mw_per_s * dt_seconds
