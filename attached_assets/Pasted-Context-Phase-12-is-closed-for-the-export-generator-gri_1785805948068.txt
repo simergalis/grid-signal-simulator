@@ -1,0 +1,36 @@
+Context
+
+Phase 12 is closed for the export generator. gridsignal_logger.py now separates instantaneous flow (grid_import_mw) from meter reading (grid_import_metered_mw), the misleading source comment is corrected, and G1–G5 pass. Diagnostic B established that the previous 26.5 MW residual was 100% filter artifact.
+
+Two things carry forward.
+
+First, G1–G4 are satisfied by construction, not by verification. With grid_import_mw as the algebraic slack, the residual is exactly 0.00 MW and cannot be anything else. Those criteria cannot fail regardless of model correctness. Only G5 (22.33 MW mean flow-vs-metered separation) measured something real. This is acceptable — the logger is a demo artifact carrying source: synthetic_generator — but it must be recorded so a future reader does not mistake four green criteria for a validated balance.
+
+Second, the live engine is where detection actually has to work. simulation_core.py lines 859–860:
+
+python
+_p_gen_mw            = turbine_output_mw + bess_output_mw + p_renewable_mw
+_balance_residual_mw = _p_gen_mw - p_total_mw
+
+No filter, no solved-for term — the logger's specific defect was never present here. But this single value is overloaded: it carries grid exchange, swing-equation forcing, and model error simultaneously, with no way to separate them.
+
+Grid-connected that is benign. Islanded it is not: the swing equation will integrate model error as though it were genuine power imbalance, producing frequency deviation from a bug. Because the frequency will move plausibly, the bug will look like behaviour.
+
+Constraint: no LLM, external API, or network dependency. All computation local, seeded, deterministic.
+
+All work in this phase targets core/simulation_core.py and the live engine path (evaluate_tick() → runtime/run_manager.py → WebSocket). Do not modify gridsignal_logger.py. State explicitly in every report which model a result came from.
+
+Phase 13.0 — Diagnostic: is the swing equation already consuming the residual?
+
+Report and STOP. No changes.
+
+A swing equation was mentioned in the Phase 11 report as present in simulation_core.py. Whether it is wired to _balance_residual_mw determines whether the overloading problem is live today or prospective, and that changes the priority of everything below.
+
+Report
+Does a swing equation exist in simulation_core.py? Cite line numbers.
+Is it currently wired to _balance_residual_mw, or to some other quantity?
+Is it active in islanded mode, grid-connected mode, both, or neither?
+Is frequency_hz computed, and is it broadcast to the dashboard?
+In islanded mode today, what happens to generation-load mismatch — does it drive frequency, or is it discarded?
+What consumes _balance_residual_mw downstream? List every reader.
+STOP
