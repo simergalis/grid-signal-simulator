@@ -34,13 +34,18 @@ export interface TickPayload {
   // sum(grid_exchange_mw + frequency_forcing_mw + asset_delivery_error_mw) == balance_residual_mw (D4).
   // grid_exchange_mw:          PCC flow; exactly 0 in islanded mode (D1). channel_source: derived.
   // frequency_forcing_mw:      dispatch-plan inertial pressure; 0 in grid-connected (D2). derived.
-  // asset_delivery_error_mw:   physical shortfall (turbine/BESS vs setpoints); ~0 steady-state (D3). derived.
-  //   Participates in swing equation (together with frequency_forcing_mw).
-  //   Renamed from model_error_mw (Phase 13.2 addendum): measures physical delivery shortfall,
-  //   not a modelling residual. A genuine model_error_mw requires independent energy accounting.
+  //   Phase 13.3: THE ONLY swing-equation input. Frequency is driven by this channel alone.
+  // asset_delivery_error_mw:   physical shortfall (turbine/BESS vs droop-adjusted setpoints); ~0 steady-state (D3).
+  //   Phase 13.3: does NOT participate in the swing equation. Non-zero = delivery fault (diagnostic only).
+  //   "Model error must not move frequency." Renamed from model_error_mw (Phase 13.2 addendum).
   grid_exchange_mw:          number
   frequency_forcing_mw:      number
   asset_delivery_error_mw:   number
+
+  // Phase 13.3: live frequency measurement — 50 Hz nominal ± swing-equation deviation.
+  // Islanded: integrated each tick via frequency_forcing_mw (governor droop provides restoring force).
+  // Grid-connected: held at site frequency_nominal_hz (grid is the reference; forcing term is 0).
+  frequency_hz: number
 
   // Data quality
   data_quality_tags: string[]  // DataQualityTag values

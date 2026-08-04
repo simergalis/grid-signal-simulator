@@ -779,6 +779,10 @@ class BessModule(AssetModule):
     soc_mwh: float = field(init=False)
     _current_output_mw: float = 0.0
     _sustained_catchup_seconds: float = 0.0
+    # _prev_output_mw: lag filter state — last-tick actual output.
+    # Tracks the first-order response toward the current setpoint using the
+    # inverter control-loop time constant bess_response_tau_s (Phase 13.3).
+    _prev_output_mw: float = 0.0
 
     def __post_init__(self) -> None:
         self.soc_mwh = self.config.usable_mwh * self.config.initial_soc_fraction
@@ -854,9 +858,24 @@ class BessModule(AssetModule):
 
         max_by_power = power_ceiling_mw
         max_by_energy = self.soc_mwh / (dt_seconds / 3600.0) if dt_seconds > 0 else max_by_power
-        discharge_mw = min(allocated_mw, max_by_power, max_by_energy)
+        discharge_target_mw = min(allocated_mw, max_by_power, max_by_energy)
+
+        # Phase 13.3 — first-order inverter response lag.
+        # Discrete: actual = prev + alpha × (target − prev), alpha = 1 − exp(−dt/τ).
+        # At τ=0.05 s (grid-forming inverter) and dt=0.1 s: alpha≈0.865 (fast).
+        # At τ=0.05 s and dt=5 s (live dispatch tick):     alpha≈1.000 (instant).
+        # Clamp actual output to [0, discharge_target_mw] so the lag never
+        # over-shoots (inverter cannot deliver more than the physics allows).
+        tau = self.config.bess_response_tau_s
+        if tau > 0.0 and dt_seconds > 0.0:
+            alpha = 1.0 - math.exp(-dt_seconds / tau)
+            discharge_mw = self._prev_output_mw + alpha * (discharge_target_mw - self._prev_output_mw)
+            discharge_mw = max(0.0, min(discharge_mw, discharge_target_mw))
+        else:
+            discharge_mw = discharge_target_mw
 
         self.soc_mwh = max(0.0, self.soc_mwh - discharge_mw * (dt_seconds / 3600.0))
+        self._prev_output_mw = discharge_mw
         self._current_output_mw = discharge_mw
         return discharge_mw
 

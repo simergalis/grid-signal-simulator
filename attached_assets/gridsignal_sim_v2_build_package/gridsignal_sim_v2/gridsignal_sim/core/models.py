@@ -379,6 +379,30 @@ class BessConfig:
     #   is an explicit designation, not a default assumption.
     grid_forming: bool = False
 
+    # bess_response_tau_s: first-order lag time constant for BESS power output
+    #   (seconds).  Models the inverter control-loop settling time between a
+    #   new setpoint and the achieved output.
+    #
+    #   ASSET CLASS REFERENCE (Phase 13.3 BESS tau investigation):
+    #   gridsignal_logger.py uses tau=0.3 s.  That figure is closer to a slow
+    #   droop controller (~200–500 ms) than to the grid-forming or grid-following
+    #   inverters this simulator targets (~10–100 ms).
+    #
+    #   Representative values by asset class:
+    #     Grid-forming inverter (VSM / virtual inertia): ~20–50 ms → 0.02–0.05 s
+    #     Grid-following inverter (PLL-based):           ~50–150 ms → 0.05–0.15 s
+    #     Slow droop / legacy UPS BESS:                  ~200–500 ms → 0.2–0.5 s
+    #
+    #   Default 0.05 s (50 ms) — grid-forming inverter class.  This is an
+    #   OPEN PARAMETER (no measured basis for this site); calibrate against
+    #   design partner inverter specs.
+    #
+    #   Effect on coverage: shorter tau → faster delivery → higher coverage ratio
+    #   for a given tick interval.  At dt=0.1 s, alpha = 1−exp(−0.1/tau):
+    #     tau=0.05 s → alpha≈0.865 (87% of setpoint delivered per tick)
+    #     tau=0.30 s → alpha≈0.283 (28% of setpoint delivered per tick)
+    bess_response_tau_s: float = 0.05  # CHOSEN — grid-forming inverter class (open parameter)
+
     def __post_init__(self) -> None:
         """D12 / PROTO-9: warn when C-rate is outside the 0.25–4.0 C physical
         range (chosen, no measured basis).  Deployed grid storage runs ~0.5 C;
@@ -750,9 +774,12 @@ class TickResult:
     #   Differs from bess_output_mw when the fleet is SOC-limited or
     #   power-saturated.  That difference IS the balance residual from the
     #   BESS side.
-    # gt_setpoint_mw: net dispatch requirement handed to the turbine fleet
-    #   this tick (p_dispatch_required_mw).  Differs from turbine_output_mw
-    #   while turbines are still ramping toward their staged target.
+    # gt_setpoint_mw: effective turbine dispatch setpoint this tick.
+    #   Phase 13.3: equals the droop-adjusted demand (_p_dispatch_droop_mw),
+    #   not the raw p_dispatch_required_mw.  The droop correction is zero at
+    #   nominal frequency (within deadband ±0.02 Hz), so this field equals
+    #   p_dispatch_required_mw in steady state.
+    #   Differs from turbine_output_mw while turbines are still ramping.
     # balance_residual_mw: (turbine_output + bess_output + p_renewable) − p_total.
     #   DEPRECATED (Phase 13.2): read grid_exchange_mw + frequency_forcing_mw +
     #   model_error_mw instead.  Retained for backward compatibility only.
@@ -786,27 +813,27 @@ class TickResult:
     #   channel_source: derived.
     #
     # asset_delivery_error_mw: physical shortfall — actual dispatchable delivery
-    #   minus commanded dispatch.
+    #   minus commanded dispatch (the droop-adjusted setpoint, Phase 13.3).
     #   = (turbine_output − gt_setpoint) + (bess_output − bess_setpoint).
     #   Positive = assets over-delivered; negative = under-delivered (e.g. BESS depleted).
     #   ~0 in steady state without injected faults in BOTH modes (D3).
-    #   PARTICIPATES in the swing equation: frequency responds to actual delivery
-    #   shortfall, not just the dispatch-plan mismatch (frequency_forcing).
+    #
+    #   Phase 13.3: this channel does NOT participate in the swing equation.
+    #   Frequency is driven by frequency_forcing_mw only (the dispatch-plan
+    #   mismatch).  A physical delivery fault (turbine or BESS under-delivery)
+    #   appears here for diagnostics but does not directly alter df/dt.
+    #   "Model error must not move frequency" — Phase 13.3 design principle.
+    #
     #   Renamed from model_error_mw (Phase 13.2 addendum): the channel measures
     #   a physical shortfall; "model error" implied a residual/slack, which D5
     #   was written to prevent.
     #
     #   MODEL-ERROR LIMITATION (Phase 13.0 finding — documented, not eliminated):
-    #   This channel intentionally participates in frequency forcing because it
-    #   measures real delivery shortfall.  Genuine model error (e.g. PUE
-    #   miscalibration, double-counted cooling load, unit-conversion bugs) is
-    #   NOT separately observable in the current architecture: it would require
-    #   an independent energy-accounting path — tracking cumulative energy in
-    #   and out per asset and comparing against integrated power — which is left
-    #   for a future phase.  The rename from model_error_mw was correct and
-    #   necessary; it does not imply that the Phase 13.0 overloading finding
-    #   has been resolved, only that the channel name now honestly describes
-    #   what it measures.
+    #   Genuine model error (e.g. PUE miscalibration, double-counted cooling load,
+    #   unit-conversion bugs) is NOT separately observable in the current
+    #   architecture: it would require an independent energy-accounting path.
+    #   The rename was correct and necessary; it does not imply that the Phase 13.0
+    #   overloading finding has been resolved.
     #
     #   D5: NOT computed as "balance_residual − grid_exchange − frequency_forcing"
     #   (that would make it the new slack variable). Uses setpoints + actual outputs
