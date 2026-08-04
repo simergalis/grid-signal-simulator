@@ -52,11 +52,12 @@ interface Props {
   onRunStarted: (id: string, speed: number, socFloor?: number, socCeil?: number) => void
   onRunStopped: () => void
   onViewResults:(id: string) => void
-  onNewScenario:() => void
+  onNewScenario:    () => void
+  onManageScenarios:() => void
 }
 
 export function DemoBar({
-  runId, lastRunId, onRunStarted, onRunStopped, onViewResults, onNewScenario,
+  runId, lastRunId, onRunStarted, onRunStopped, onViewResults, onNewScenario, onManageScenarios,
 }: Props) {
   const scenarios     = useScenarioStore(s => s.scenarios)
   const selectedId    = useScenarioStore(s => s.selectedId)
@@ -275,15 +276,25 @@ export function DemoBar({
           </button>
         )}
 
-        {/* New scenario */}
+        {/* New scenario + Manage library */}
         {!isRunning && (
-          <button
-            onClick={onNewScenario}
-            className="rounded border border-border px-2 py-1.5 font-sans text-xs
-                       text-muted hover:text-text hover:border-muted/50 transition-colors"
-          >
-            + New
-          </button>
+          <>
+            <button
+              onClick={onNewScenario}
+              className="rounded border border-border px-2 py-1.5 font-sans text-xs
+                         text-muted hover:text-text hover:border-muted/50 transition-colors"
+            >
+              + New
+            </button>
+            <button
+              onClick={onManageScenarios}
+              title="Upload, download or delete scenarios"
+              className="rounded border border-border px-2 py-1.5 font-sans text-xs
+                         text-muted hover:text-accent hover:border-accent/50 transition-colors"
+            >
+              Manage
+            </button>
+          </>
         )}
 
         {/* Inline error */}

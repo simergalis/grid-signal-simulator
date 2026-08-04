@@ -247,6 +247,7 @@ function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
           onRunStopped={handleRunStopped}
           onViewResults={handleViewResults}
           onNewScenario={handleNewScenario}
+          onManageScenarios={() => setCurrentPage('scenario-manager')}
         />
 
         {topoOpen && (
