@@ -331,7 +331,6 @@ function FleetTable(
     const onBus    = isOnBus(u)
     const syncStr  = onBus ? 'closed' : 'open'
     const rampStr  = `${u.r_asset_mw_per_s.toFixed(3)} / ${maxRamp.toFixed(3)}`
-    const stateStr = isDeg ? 'degraded' : 'available'
     const runHStr  = u.run_hours_h != null
       ? Math.round(u.run_hours_h).toLocaleString()
       : '—'
@@ -343,6 +342,15 @@ function FleetTable(
     // Pending: command was issued but the next tick hasn't confirmed state change yet.
     // Clear pending when the state we commanded has been reached (tick confirms it).
     const liveSt   = u.state ?? (onBus ? 'synchronised' : 'offline')
+    // State label derived from live TurbineState, not hardcoded.
+    // liveSt mirrors TurbineState.value: 'synchronised' | 'ramping' | 'at_target'
+    //   → 'online';  'starting' → 'starting';  otherwise 'degraded' | 'available'.
+    const stateStr =
+      liveSt === 'synchronised' || liveSt === 'ramping' || liveSt === 'at_target'
+        ? 'online'
+        : liveSt === 'starting'
+        ? 'starting'
+        : isDeg ? 'degraded' : 'available'
     const isPending = _pending.has(u.asset_id)
 
     // Clear stale pending entries when the tick confirms the transition.

@@ -614,7 +614,15 @@ class DispatchArbitrator:
         LadderPosition.STORAGE_DISCHARGE (=0), turbine at TURBINE_RAMP (=1).
         Neither requires human confirmation.
         """
-        turbine_output_mw = sum(t.output_mw() for t in self.turbines)
+        # Algebraic formula: P_fleet = Σ_{i ∈ A} p_i
+        # A is the allocated set — SYNCHRONISED state only (is_synchronised property).
+        # OFFLINE / STARTING / OUT_OF_SERVICE / hot-standby units contribute 0 MW;
+        # summing all turbines would include stale _current_output_mw from those units.
+        turbine_output_mw = sum(
+            t.output_mw()
+            for t in self.turbines
+            if t.is_synchronised
+        )
         fleet_shortfall = max(0.0, p_dispatch_required_mw - turbine_output_mw)
         fleet_covered = fleet_shortfall <= 0.0
 

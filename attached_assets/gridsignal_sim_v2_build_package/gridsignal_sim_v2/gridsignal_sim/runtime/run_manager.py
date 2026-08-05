@@ -228,29 +228,28 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # start_phase, out_of_service_reason) are overlaid from state.turbines
         # each tick so the fleet modal shows live unit states without a separate call.
         "turbine_units": list(tick.turbine_units),
-        # Phase 2: units_synchronised_count — derive from is_synchronised property
-        # (uses TurbineState enum, not the legacy breaker_closed flag).
-        # Backward compat: for runs where turbine_units still use breaker_closed,
-        # fall back to the breaker_closed key.
+        # Phase 2: units_synchronised_count — algebraic count of on-bus units.
+        # Only units with live state in {synchronised, ramping, at_target} count.
+        # The Phase 0 breaker_closed fallback is intentionally removed: it treated
+        # every non-hot-standby turbine as on-bus regardless of actual state,
+        # producing an inflated count when the run had no turbines yet started.
         "units_synchronised_count": sum(
             1 for u in tick.turbine_units
             if u.get("state") in ("synchronised", "ramping", "at_target")
-            or (u.get("state") is None and u.get("breaker_closed", True))
         ),
-        # synchronised_output_mw: fleet output attributed to on-bus units.
-        # Guard uses the same logic as units_synchronised_count for consistency:
-        #   Phase 2 — live state in (synchronised, ramping, at_target) → on bus.
-        #   Phase 0 fallback — breaker_closed (static spec, default True).
-        # turbine_output_mw already equals the on-bus total because the loading
-        # layer only dispatches SYNCHRONISED-state units; off-bus units produce 0.
+        # synchronised_output_mw: algebraic sum of output_mw for on-bus units only.
+        #   Formula: Σ_{i : state_i ∈ {synchronised, ramping, at_target}} output_mw_i
+        # Each unit carries its own output_mw field (stamped by the Phase 2 overlay
+        # in section B of _drive()).  Off-bus units (offline / starting / hot-standby)
+        # carry output_mw = 0.0 and are excluded by the state filter regardless.
+        # This replaces the previous pass-through of tick.turbine_output_mw which
+        # could leak stale output from a prior run whenever the fallback path fired.
         "synchronised_output_mw": round(
-            tick.turbine_output_mw
-            if any(
-                u.get("state") in ("synchronised", "ramping", "at_target")
-                or (u.get("state") is None and u.get("breaker_closed", True))
+            sum(
+                u.get("output_mw", 0.0)
                 for u in tick.turbine_units
-            )
-            else 0.0,
+                if u.get("state") in ("synchronised", "ramping", "at_target")
+            ),
             4,
         ),
         # Kubernetes demand agent metrics — null when kube_config is not active.
@@ -1274,6 +1273,12 @@ class RunManager:
                             **static_spec,
                             # Phase 2 live state overlay — keys match TurbineState values.
                             "state": t.state.value,
+                            # output_mw: algebraic per-unit MW contribution.
+                            #   Σ of these across on-bus units == synchronised_output_mw.
+                            #   Off-bus units (offline / starting / hot-standby) are 0.0;
+                            #   is_synchronised guards this so stale _current_output_mw
+                            #   from a tripped unit can never leak into the fleet total.
+                            "output_mw": round(t.output_mw() if t.is_synchronised else 0.0, 4),
                             "time_to_online_s": (
                                 round(t._time_to_online_s, 1)
                                 if t.state.value == "starting" else None
