@@ -1,0 +1,138 @@
+Task #201 — Corrections Before Phase 3
+
+Two findings from the Phase 1/2 report. Both must resolve before the nadir predictor is built, because Phase 3 derives every nadir figure from the swing equation and compares predicted against measured.
+
+Target model: core/simulation_core.py, core/models.py, api/schemas.py, runtime/scenario_factory.py, and the frequency test corpus. Out of scope: gridsignal_logger.py.
+
+Do not implement the nadir predictor, SC-20 scenarios, Phase 3 transitional loading, Phase 4 operator endpoints, or commitment logic in this task.
+
+Correction 1 — power_factor in the swing equation
+The question to answer first
+
+_s_base_mw is now divided by state.site.power_factor, changing df/dt by a factor of 1/0.85 for every event in the corpus.
+
+S_base is a per-unit normalisation constant. Its role in
+
+2H/f_n · df/dt = P_mech − P_elec
+
+is to make H dimensionally consistent with power in MW. H is conventionally expressed in MW·s per MVA, in which case S_base = rated_mw / pf is correct. If H in this codebase was specified against MW rather than MVA, the division introduces a 15% error in df/dt everywhere.
+
+The swing equation governs shaft acceleration, which responds to real power. Reactive loading does not accelerate a rotor. The division is justified only by the units H was specified in — nothing else.
+
+Required, before any code change: determine the units H was specified in. Report the finding with evidence — where H is configured, what the value is, what machine class it corresponds to, and whether that value is conventional for MVA-based or MW-based normalisation. Stop and report. Do not proceed on either branch without direction.
+
+If H is MVA-based
+
+The division is correct. The Phase 2 re-baseline stands. Report which assertions were derived from it so they can be traced.
+
+If H is MW-based
+
+Revert the division. _s_base_mw uses rated MW directly. Re-baseline the four changed assertions back, each with its mechanism.
+
+In this case power_factor still belongs on SiteConfig — it is needed for apparent-power and equipment-rating purposes — but it must not appear in the swing equation path. Add a test asserting power_factor has no effect on df/dt.
+
+Correction 2 — power_factor has a silent default
+
+SiteConfig.power_factor is required with no default, which is right. ScenarioSpec.power_factor carries Field(default=0.85), which reinstates exactly the failure mode A2 removed for frequency_nominal_hz: a wrong value that passes silently one layer above the fail-fast.
+
+DB compatibility for stored specs is a real constraint. A schema default is not the answer to it.
+
+Required change. Remove the default from ScenarioSpec.power_factor. Migrate stored specs: write a migration that sets power_factor = 0.85 on every existing persisted spec, versioned, following the SiteLocation migration precedent. New specs must supply the field or fail.
+
+Acceptance
+
+No default on ScenarioSpec.power_factor.
+A spec constructed without it fails with a named error. Prove it: construct one, show the failure, revert.
+Migration applied to stored specs, versioned, with the migration path reported.
+Correction 3 — Nadir measurement asymmetry
+Finding
+
+The predictor sub-steps the swing equation at sub_dt = 0.1 s. measured_frequency_nadir_hz is a running minimum of tick-level samples at 5 s. The report states measured is "systematically optimistic."
+
+That makes TC-89 — predicted matches observed — a comparison between a fine-grained minimum and a coarse one that will always read higher. The test either fails or its tolerance gets widened until it passes. Neither is informative.
+
+It is also wrong in front of an operator: the console shows a frequency trace that never dips as far as the predictor said it would, which reads as the predictor crying wolf.
+
+Required change
+
+Sub-step the live engine at the same sub_dt as the predictor. The physics is already a single code path, so this is bookkeeping rather than new physics. The tick broadcast carries the sub-step minimum over the tick interval, not the sampled endpoint value.
+
+measured_frequency_nadir_hz becomes the running minimum of sub-step values. Predicted and measured are then commensurable and TC-89 is a real test.
+
+If sub-stepping the live engine proves to have unacceptable tick-budget cost, stop and report the measured cost rather than falling back. The alternative — keeping tick sampling and asserting predicted ≤ measured — is defensible only if the field is renamed to reflect that it is a floor of observation rather than the nadir, and that is a decision to bring back, not to take.
+
+Acceptance
+
+Live engine and predictor use the same sub_dt.
+measured_frequency_nadir_hz is the minimum over sub-steps, not over tick samples.
+A step-load event whose true nadir falls between tick boundaries is captured. Construct one deliberately and assert the measured nadir matches the sub-step minimum, not the tick sample.
+Tick-loop timing cost reported before and after.
+Also required
+
+Register the chosen constants under §15, alongside r_asset, p_min_stable_frac, min_down_time_s, unload_tail_s, p_anchor_reserve_mw, and the protective settings:
+
+Constant	Value	Status
+sub_dt	0.1 s	CHOSEN
+n_settle	3	CHOSEN
+settle_max_s	300	CHOSEN
+power_factor	0.85	CHOSEN
+
+Report the 19 test files and 6 raw-dict helpers that received power_factor=0.85 by bulk script. Bulk edits across a corpus are where an unintended value silently propagates. Confirm each site received it as a site-appropriate value rather than a uniform default, and flag any where 0.85 is wrong for that fixture's intent.
+
+Do not
+Touch gridsignal_logger.py.
+Proceed on either H branch without direction. Report and stop.
+Leave a default on ScenarioSpec.power_factor.
+Leave the live engine and predictor on different sub_dt values.
+Widen a tolerance to make predicted and measured nadir agree.
+Implement the nadir predictor, SC-20, or any Phase 3/4 work.
+Delete advance() or migrate scenarios off RAMPING/AT_TARGET. That is #202.
+Invent a constant. If a value is needed that is not named here or already in the fixtures, stop and report rather than choosing.
+Tune a constant or tolerance to make an assertion pass.
+Edit the spec document. Report needed edits.
+Renumber or edit existing TC IDs.
+Report format
+First, and before any code: the units H was specified in, with evidence. Stop here for direction.
+Files changed, line counts.
+Each acceptance criterion quoted, PASS/FAIL, with evidence.
+Every assertion whose expected value changed, individually, with mechanism.
+Tick-loop timing before and after sub-stepping.
+The power_factor bulk-edit audit: every site, and any where 0.85 is wrong for that fixture's intent.
+The stored-spec migration path.
+Spec sections found contradictory or underspecified. State "none" explicitly if none.
+Out-of-scope temptations: list, do not do. State "none" explicitly if none.
+Full-suite result with the exclusion set stated explicitly. Any change to the seven known failures, in either direction, reported with cause.
+Project content
+GridSignal
+Created by you
+GridSignal-Forecast-Engine-Functional-Spec_v2.5.md
+
+1,683 lines
+
+MD
+
+PDF
+
+PDF
+
+Content
+
+Here’s a Replit-compatible prompt for implementing manual shutdown/startup of gas turbine generators, along with a scenario generator to simulate initial states and forced shutdowns. This assumes a Python-based simulation with a simple CLI or web interface (e.g., Flask/FastAPI for a dashboard). Pro
+
+PASTED
+
+PHASE_1B_REPORT (1).md
+
+124 lines
+
+MD
+
+PHASE_1B_REPORT.md
+
+124 lines
+
+MD
+
+I have all the data. Here is the report on all four open items. Report items i. Frequency assertions — Items 1 and 3 Neither item moved any frequency assertion, and neither should have. Item 1's _sub_msl_surplus_mw is non-zero only when the loading layer enforces an MSL floor against demand
+
+PASTED
