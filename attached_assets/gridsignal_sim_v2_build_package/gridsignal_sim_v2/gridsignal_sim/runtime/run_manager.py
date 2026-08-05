@@ -228,27 +228,26 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # start_phase, out_of_service_reason) are overlaid from state.turbines
         # each tick so the fleet modal shows live unit states without a separate call.
         "turbine_units": list(tick.turbine_units),
-        # Phase 2: units_synchronised_count — algebraic count of on-bus units.
-        # Only units with live state in {synchronised, ramping, at_target} count.
-        # The Phase 0 breaker_closed fallback is intentionally removed: it treated
-        # every non-hot-standby turbine as on-bus regardless of actual state,
-        # producing an inflated count when the run had no turbines yet started.
+        # units_synchronised_count: algebraic count — only SYNCHRONISED state.
+        # Algebraic formula: |A| where A = {i : state_i == synchronised, not hot_standby_i}
+        # RAMPING / AT_TARGET are the legacy pre-staging path (advance() drives them);
+        # they are not yet in the allocated set A managed by the loading layer.
+        # OFFLINE / STARTING / OUT_OF_SERVICE / hot-standby are never in A.
         "units_synchronised_count": sum(
             1 for u in tick.turbine_units
-            if u.get("state") in ("synchronised", "ramping", "at_target")
+            if u.get("state") == "synchronised"
         ),
-        # synchronised_output_mw: algebraic sum of output_mw for on-bus units only.
-        #   Formula: Σ_{i : state_i ∈ {synchronised, ramping, at_target}} output_mw_i
-        # Each unit carries its own output_mw field (stamped by the Phase 2 overlay
-        # in section B of _drive()).  Off-bus units (offline / starting / hot-standby)
-        # carry output_mw = 0.0 and are excluded by the state filter regardless.
-        # This replaces the previous pass-through of tick.turbine_output_mw which
-        # could leak stale output from a prior run whenever the fallback path fired.
+        # synchronised_output_mw: algebraic fleet production from the allocated set A.
+        #   Formula: P_fleet = Σ_{i ∈ A} p_i
+        #   where A = {i : state_i == synchronised, not hot_standby_i}
+        # Each unit carries its own output_mw field stamped by the Phase 2 overlay
+        # using t.state == SYNCHRONISED (loading layer output only).
+        # RAMPING / AT_TARGET / OFFLINE / STARTING units carry output_mw = 0.0.
         "synchronised_output_mw": round(
             sum(
                 u.get("output_mw", 0.0)
                 for u in tick.turbine_units
-                if u.get("state") in ("synchronised", "ramping", "at_target")
+                if u.get("state") == "synchronised"
             ),
             4,
         ),
@@ -1278,7 +1277,17 @@ class RunManager:
                             #   Off-bus units (offline / starting / hot-standby) are 0.0;
                             #   is_synchronised guards this so stale _current_output_mw
                             #   from a tripped unit can never leak into the fleet total.
-                            "output_mw": round(t.output_mw() if t.is_synchronised else 0.0, 4),
+                            # Algebraic formula: P_unit = p_i when state == SYNCHRONISED, else 0.
+                            # Only SYNCHRONISED units have their output managed by the loading
+                            # layer (apply_loading).  RAMPING / AT_TARGET use the legacy
+                            # advance() ramp path and are not yet in the allocated set A.
+                            # OFFLINE / STARTING / OUT_OF_SERVICE contribute 0 by definition.
+                            "output_mw": round(
+                                t.output_mw()
+                                if t.state == _TurbineState.SYNCHRONISED and not t.config.hot_standby
+                                else 0.0,
+                                4,
+                            ),
                             "time_to_online_s": (
                                 round(t._time_to_online_s, 1)
                                 if t.state.value == "starting" else None

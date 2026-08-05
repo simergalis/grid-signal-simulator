@@ -249,12 +249,14 @@ function deriveFleet(units: TurbineUnitSpec[], horizonS: number) {
 }
 
 // ── On-bus determination ─────────────────────────────────────────────────────
-// Phase 2: use live state overlay (synchronised / ramping / at_target = on bus).
+// Algebraic formula: unit i ∈ A ⟺ state_i == 'synchronised' (not hot_standby).
+// A is the allocated set managed by the loading layer.  RAMPING / AT_TARGET are
+// legacy pre-staging states whose output accumulates via advance(); they are NOT
+// in A and are NOT considered on-bus from the operator perspective.
 // Phase 0 fallback: static breaker_closed from spec (absent state field).
-// Never infer from output MW — that is the defect this helper replaces.
 function isOnBus(u: TurbineUnitSpec): boolean {
   if (u.state !== undefined) {
-    return u.state === 'synchronised' || u.state === 'ramping' || u.state === 'at_target'
+    return u.state === 'synchronised'
   }
   return u.breaker_closed
 }
@@ -296,13 +298,19 @@ function FleetTable(
   syncedCount: number,
   runId: string,
 ): React.ReactNode {
-  // Distribute aggregate output only among on-bus units.
-  // Off-bus units (open breaker / not synchronised) contribute zero — giving them
-  // a proportional share of the fleet total is the field-boundary defect fixed here.
+  // Algebraic per-unit output: p_i from the Phase 2 overlay output_mw field.
+  // output_mw is stamped by the server as t.output_mw() for SYNCHRONISED units (the
+  // loading layer sets this), and 0.0 for all other states (RAMPING / OFFLINE / STARTING).
+  // This replaces the proportional-distribution formula which incorrectly assigned a
+  // share of aggregateOutputMW to RAMPING turbines whose advance() ramp is internal.
+  // Legacy Phase 0 fallback (no state field): distribute aggregate proportionally.
   const onBusRated = units.reduce((s, u) => s + (isOnBus(u) ? u.rated_mw : 0), 0) || 1
-  const unitOutputs = units.map(u =>
-    isOnBus(u) ? aggregateOutputMW * (u.rated_mw / onBusRated) : 0
-  )
+  const unitOutputs = units.map((u: any) => {
+    const perUnit = u.output_mw
+    if (perUnit !== undefined) return perUnit as number
+    // Phase 0 fallback: no live state overlay — distribute proportionally
+    return isOnBus(u) ? aggregateOutputMW * (u.rated_mw / onBusRated) : 0
+  })
 
   // 0.2: FLEET header — on-bus count from named field, not hardcoded string.
   const syncedStr   = syncedCount === 0 ? 'NONE ON BUS' : `${syncedCount} ON BUS`
@@ -342,12 +350,17 @@ function FleetTable(
     // Pending: command was issued but the next tick hasn't confirmed state change yet.
     // Clear pending when the state we commanded has been reached (tick confirms it).
     const liveSt   = u.state ?? (onBus ? 'synchronised' : 'offline')
-    // State label derived from live TurbineState, not hardcoded.
-    // liveSt mirrors TurbineState.value: 'synchronised' | 'ramping' | 'at_target'
-    //   → 'online';  'starting' → 'starting';  otherwise 'degraded' | 'available'.
+    // State label derived from live TurbineState (dynamic variable, not hardcoded).
+    // 'synchronised' → 'online'   (loading layer managing output: on bus, in A)
+    // 'ramping'      → 'ramping'  (auto-staged via advance(); NOT yet in A)
+    // 'at_target'    → 'ramping'  (legacy alias; same as ramping — not in A)
+    // 'starting'     → 'starting' (command_start() sequence in progress)
+    // otherwise      → 'degraded' | 'available' (offline / out_of_service)
     const stateStr =
-      liveSt === 'synchronised' || liveSt === 'ramping' || liveSt === 'at_target'
-        ? 'online'
+      liveSt === 'synchronised'
+        ? (isDeg ? 'degraded' : 'online')
+        : liveSt === 'ramping' || liveSt === 'at_target'
+        ? 'ramping'
         : liveSt === 'starting'
         ? 'starting'
         : isDeg ? 'degraded' : 'available'
@@ -588,11 +601,11 @@ function noTickPanel(): PanelData {
 // ── Single-unit panel (AE3 branch 1) ────────────────────────────────────────
 function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData {
   const u          = units[0]
-  const outputMW   = tick.turbine_output_mw
-  const stateLabel = outputMW > 0.1 ? 'ACTIVE' : 'READY'
-  // 0.2/0.3: named tick fields — not inferred from output threshold
+  // Algebraic: use synchronised_output_mw (Σ_{i∈A} p_i) for active-state check
+  // and for the FleetTable aggregate — not turbine_output_mw (includes RAMPING path).
   const syncedCount = tick.units_synchronised_count
   const syncedMW    = tick.synchronised_output_mw
+  const stateLabel  = syncedCount > 0 ? 'ACTIVE' : 'READY'
   // Task #198 item 3: use runtime lead horizon from the dispatch arbitrator.
   // When dt_lead_next_s is 0 (no active step) the ramp figure is also 0.
   const horizonS    = tick.dt_lead_next_s ?? 0
@@ -602,7 +615,7 @@ function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData
   const thermalState = _thermalOf(u)
   const thermalLabel = thermalState.charAt(0).toUpperCase() + thermalState.slice(1)
   const chart = React.createElement(React.Fragment, null,
-    FleetTable(units, outputMW, u.r_asset_mw_per_s, syncedCount, tick.run_id),
+    FleetTable(units, syncedMW, u.r_asset_mw_per_s, syncedCount, tick.run_id),
     React.createElement(ThermalStateWidget, {
       units: [{ asset_id: u.asset_id, thermal: thermalState, ratedMW: u.rated_mw, rampMWs: u.r_asset_mw_per_s }],
     }),
@@ -661,8 +674,8 @@ function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData
 
 // ── Fleet panel (AE3 branch 2) — N > 1 units ────────────────────────────────
 function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData {
-  const outputMW = tick.turbine_output_mw
-  // 0.3: named tick fields — not TSX-derived output inference
+  // Algebraic: synchronised_output_mw = Σ_{i∈A} p_i (loading-layer-managed only).
+  // turbine_output_mw includes auto-staged RAMPING turbines; those are not in A.
   const onlineN  = tick.units_synchronised_count
   const syncedMW = tick.synchronised_output_mw
 
@@ -695,10 +708,10 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData {
   }))
   const chart = thermalUnits.length > 0
     ? React.createElement(React.Fragment, null,
-        FleetTable(units, outputMW, maxRamp, onlineN, tick.run_id),
+        FleetTable(units, syncedMW, maxRamp, onlineN, tick.run_id),
         React.createElement(ThermalStateWidget, { units: thermalUnits }),
       )
-    : FleetTable(units, outputMW, maxRamp, onlineN, tick.run_id)
+    : FleetTable(units, syncedMW, maxRamp, onlineN, tick.run_id)
 
   const secondary = React.createElement('div', { className: 'space-y-3' },
     React.createElement(BulletBar, {

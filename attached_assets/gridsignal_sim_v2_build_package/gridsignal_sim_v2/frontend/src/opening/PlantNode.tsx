@@ -87,8 +87,10 @@ function nodeDetail(
       const installed = units.reduce((s: number, u: { rated_mw: number }) => s + u.rated_mw, 0)
       const maxUnit   = Math.max(...units.map((u: { rated_mw: number }) => u.rated_mw))
       const n1Firm    = installed - maxUnit
-      const mw        = tick?.turbine_output_mw ?? 0
-      const online    = mw > 0.1 ? 1 : 0
+      // Algebraic: units_synchronised_count = |A| where A = {SYNCHRONISED, not hot_standby}.
+      // Dynamic variable — reads directly from the tick's named field rather than
+      // inferring count from an output-threshold (which conflates RAMPING with online).
+      const online    = (tick as any)?.units_synchronised_count ?? 0
       return `${units.length} unit${units.length === 1 ? '' : 's'} · ${online} online · N−1 firm ${n1Firm.toFixed(1)} MW`
     }
     case 'solar-pv': {

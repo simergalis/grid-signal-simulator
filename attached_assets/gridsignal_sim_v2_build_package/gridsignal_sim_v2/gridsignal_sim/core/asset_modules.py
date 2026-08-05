@@ -973,7 +973,11 @@ class TurbineModule(AssetModule):
         elif self._current_output_mw > self._target_mw:
             self._current_output_mw = max(self._target_mw, self._current_output_mw - max_delta)
         if math.isclose(self._current_output_mw, self._target_mw, abs_tol=1e-6):
-            self.state = TurbineState.AT_TARGET
+            # Algebraic equation: P_unit = p_i at target → unit is on-bus.
+            # Transition to SYNCHRONISED (not AT_TARGET) so the loading layer
+            # takes over dispatch.  P_fleet = Σ_{i ∈ A} p_i where A is the set
+            # of SYNCHRONISED units; AT_TARGET would keep the unit outside A.
+            self.state = TurbineState.SYNCHRONISED
 
     def output_mw(self) -> float:
         return self._current_output_mw
