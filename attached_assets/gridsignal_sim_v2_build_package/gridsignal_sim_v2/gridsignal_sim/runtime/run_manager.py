@@ -1070,6 +1070,23 @@ class RunManager:
                 "start is only valid from OFFLINE."
             )
 
+        # R6: enforce minimum down-time window for "start".
+        # The drain loop calls command_start() which silently drops the call if
+        # t_min_down_s is not yet satisfied — detect it here and return 409
+        # instead so the operator sees a clear message and the UI doesn't get
+        # stuck in "queued..." forever.
+        if action == "start":
+            import math as _math
+            if not _math.isnan(turbine._stop_time_s):
+                _elapsed_down = ctx.sim_time - turbine._stop_time_s
+                _remaining    = turbine.config.t_min_down_s - _elapsed_down
+                if _remaining > 0:
+                    return self.UNIT_CMD_BAD_STATE, (
+                        f"Unit {unit_id!r} is within its minimum down-time window — "
+                        f"{_remaining:.0f} s remaining before restart is permitted "
+                        f"(t_min_down_s={turbine.config.t_min_down_s:.0f} s)."
+                    )
+
         ctx.enqueue_unit_command(unit_id, action)
         return self.UNIT_CMD_OK, ""
 
@@ -1118,6 +1135,16 @@ class RunManager:
                     for _turb in ctx.sim_state.turbines:
                         if _turb.config.asset_id == _cmd_uid:
                             if _cmd_action == "trip":
+                                # Mirror the controlled-stop path in stage_target()
+                                # (asset_modules.py lines 932–938) so cooldown
+                                # tracking is consistent with a normal stop:
+                                #   _last_sync_stop_s → thermal state on restart
+                                #   _stop_time_s      → R6 min-down-time enforcement
+                                #   _run_start_s → nan → cleared for next run
+                                if _turb.is_synchronised:
+                                    _turb._last_sync_stop_s = ctx.sim_time
+                                _turb._stop_time_s      = ctx.sim_time
+                                _turb._run_start_s      = float('nan')
                                 _turb.state = _TurbineState.OFFLINE
                                 _turb._current_output_mw = 0.0
                                 _turb._target_mw = 0.0
