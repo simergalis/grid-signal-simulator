@@ -42,3 +42,10 @@ uri = "file://scenario_spec_reference.md"
 type = "text"
 title = "ScenarioSpec API Reference"
 description = "Full field reference, validation rules, example payloads, and endpoint documentation for uploading custom scenarios to GridSignal."
+
+[[outputs]]
+id = "ekhM0RjavOHOgDmHz-Efu"
+uri = "file://attached_assets/scenario_solar_single_turbine_300pct_surge.json"
+type = "unspecified"
+title = "GridSignal Scenario — Solar + Single Turbine, 300% Traffic Surge"
+description = "Upload via POST /scenarios or the scenario selector in GridSignal. 30-minute run, 6 staged job waves, single 15 MW turbine, 6 MW solar anchored at noon."
