@@ -38,6 +38,7 @@ from dataclasses import dataclass, field, replace as _dc_replace
 from datetime import datetime, timezone
 from typing import Any, Awaitable, Callable, Optional, Protocol
 
+from core.asset_modules import TurbineState as _TurbineState   # runtime → core OK
 from core.models import TickResult, WorkloadSignal
 from core.sim_clock import SimClock
 from core.simulation_core import SimulationState, evaluate_tick
@@ -593,8 +594,27 @@ class RunContext:
     _corruption_rng: Optional[Any] = field(default=None, repr=False)
     _bess_soc_history: list = field(default_factory=list)  # clean SoC MWh, chronological
 
+    # Operator unit command queue — list of dicts {"unit_id": str, "action": str}.
+    # Commands are enqueued by POST /runs/{run_id}/units/{unit_id}/command and
+    # drained by _drive() before each tick.  A plain list is safe here because
+    # _drive() and the endpoint handler both run in the same asyncio event loop
+    # (no true concurrency at the Python level within one loop iteration; control
+    # transfers only at await points, and the drain loop contains none).
+    _operator_commands: list = field(default_factory=list)
+
     def is_complete(self) -> bool:
         return self.cancelled or self.sim_time >= self.end_sim_time
+
+    def enqueue_unit_command(self, unit_id: str, action: str) -> None:
+        """Queue an operator unit command for the next tick.
+
+        Called by POST /runs/{run_id}/units/{unit_id}/command.
+        The command is processed by _drive() before evaluate_tick() runs,
+        so the physics engine sees the new state immediately:
+          trip  → MW drop visible in the next WebSocket broadcast.
+          start → STARTING state visible on next tick; SYNCHRONISED after ramp.
+        """
+        self._operator_commands.append({"unit_id": unit_id, "action": action})
 
     def _apply_due_events(self) -> None:
         while (
@@ -993,6 +1013,66 @@ class RunManager:
         if task:
             await task  # let _drive's own cleanup (finally block) run
 
+    # ------------------------------------------------------------------
+    # Operator unit commands — called by POST /runs/{id}/units/{id}/command
+    # ------------------------------------------------------------------
+
+    # Result codes returned by validate_and_enqueue_unit_command so the
+    # api/ layer never needs to import from core/.
+    UNIT_CMD_OK          = "ok"
+    UNIT_CMD_RUN_404     = "run_not_found"
+    UNIT_CMD_UNIT_404    = "unit_not_found"
+    UNIT_CMD_BAD_STATE   = "bad_state"
+
+    def validate_and_enqueue_unit_command(
+        self,
+        run_id: str,
+        unit_id: str,
+        action: str,
+    ) -> tuple[str, str]:
+        """Validate and queue an operator unit command.
+
+        Returns a (result_code, detail) pair.  result_code is one of the
+        UNIT_CMD_* class constants; detail is a human-readable error string
+        (empty on success).
+
+        All core/ imports are local so api/ can call this method without
+        violating the plane-separation rule.
+        """
+        ctx = self._contexts.get(run_id)
+        if ctx is None:
+            return self.UNIT_CMD_RUN_404, f"Run {run_id!r} not found or not active."
+
+        # Locate the turbine for state validation.
+        turbine = None
+        for _t in ctx.sim_state.turbines:
+            if _t.config.asset_id == unit_id:
+                turbine = _t
+                break
+
+        if turbine is None:
+            return self.UNIT_CMD_UNIT_404, f"Unit {unit_id!r} not found in run {run_id!r}."
+
+        # Validate action against current state.
+        from core.asset_modules import TurbineState as _TS   # runtime → core OK
+        _ON_BUS    = {_TS.SYNCHRONISED, _TS.RAMPING, _TS.AT_TARGET}
+        _STARTABLE = {_TS.OFFLINE}
+
+        if action == "trip" and turbine.state not in _ON_BUS:
+            return self.UNIT_CMD_BAD_STATE, (
+                f"Unit {unit_id!r} is in state {turbine.state.value!r} — "
+                "trip is only valid for on-bus units "
+                "(synchronised / ramping / at_target)."
+            )
+        if action == "start" and turbine.state not in _STARTABLE:
+            return self.UNIT_CMD_BAD_STATE, (
+                f"Unit {unit_id!r} is in state {turbine.state.value!r} — "
+                "start is only valid from OFFLINE."
+            )
+
+        ctx.enqueue_unit_command(unit_id, action)
+        return self.UNIT_CMD_OK, ""
+
     async def _drive(self, ctx: RunContext) -> None:
         # W1b: pre-register all STARTING events with the corroborator so
         # fabric traffic rises can be matched against known predicted starts.
@@ -1023,6 +1103,38 @@ class RunManager:
 
         try:
             while not ctx.is_complete():
+                # ── A-1: operator unit commands ───────────────────────────
+                # Drain commands queued by POST /runs/{id}/units/{id}/command.
+                # Applied BEFORE evaluate_tick() so the physics engine sees
+                # the state change in this tick:
+                #   trip  → fleet output drops in the same-tick broadcast.
+                #   start → unit enters STARTING; ramps to SYNCHRONISED naturally.
+                # No await points in this loop — asyncio cannot interleave
+                # another coroutine mid-drain, so no mutex is needed.
+                while ctx._operator_commands:
+                    _cmd        = ctx._operator_commands.pop(0)
+                    _cmd_uid    = _cmd.get("unit_id", "")
+                    _cmd_action = _cmd.get("action", "")
+                    for _turb in ctx.sim_state.turbines:
+                        if _turb.config.asset_id == _cmd_uid:
+                            if _cmd_action == "trip":
+                                _turb.state = _TurbineState.OFFLINE
+                                _turb._current_output_mw = 0.0
+                                _turb._target_mw = 0.0
+                                logger.info(
+                                    "operator command: TRIP turbine %r "
+                                    "at sim_time=%.1f (run=%s)",
+                                    _cmd_uid, ctx.sim_time, ctx.run_id,
+                                )
+                            elif _cmd_action == "start":
+                                _turb.command_start(ctx.sim_time)
+                                logger.info(
+                                    "operator command: START turbine %r "
+                                    "at sim_time=%.1f (run=%s)",
+                                    _cmd_uid, ctx.sim_time, ctx.run_id,
+                                )
+                            break
+
                 # ── A0: three-tier solar pre-step injection ───────────────
                 # Inject the Mistral bank-aggregated MW into every SolarModule
                 # BEFORE evaluate_tick() runs so net_demand_mw and dispatch

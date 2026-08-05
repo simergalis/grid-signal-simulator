@@ -91,6 +91,34 @@ function isOnBus(u: TurbineUnitSpec): boolean {
   return u.breaker_closed
 }
 
+// ── Operator unit command ─────────────────────────────────────────────────────
+// Module-level pending-command map: unit_id → "trip" | "start".
+// Persists across renders (modules are singletons) so the button stays disabled
+// until the next tick broadcast confirms the state has changed.
+// Cleared on state-change confirmation or on fetch error.
+const _pending: Map<string, string> = new Map()
+
+function _issueUnitCommand(runId: string, unitId: string, action: string): void {
+  if (_pending.has(unitId)) return   // already in-flight
+  _pending.set(unitId, action)
+  fetch(`/runs/${encodeURIComponent(runId)}/units/${encodeURIComponent(unitId)}/command`, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ action }),
+  })
+    .then(r => {
+      if (!r.ok) {
+        r.text().then(t => console.warn(`unit command ${action} ${unitId} → ${r.status}: ${t}`))
+        _pending.delete(unitId)
+      }
+      // On success: leave in pending until next tick shows the new state
+    })
+    .catch(err => {
+      console.warn(`unit command ${action} ${unitId} failed:`, err)
+      _pending.delete(unitId)
+    })
+}
+
 // ── Per-unit table ───────────────────────────────────────────────────────────
 // syncedCount: from tick.units_synchronised_count — never derived from output.
 function FleetTable(
@@ -98,6 +126,7 @@ function FleetTable(
   aggregateOutputMW: number,
   maxRamp: number,
   syncedCount: number,
+  runId: string,
 ): React.ReactNode {
   // Distribute aggregate output only among on-bus units.
   // Off-bus units (open breaker / not synchronised) contribute zero — giving them
@@ -141,6 +170,72 @@ function FleetTable(
     // 0.6: no_load_mw and msl_mw from named typed fields — resolves column ambiguity
     const noLoadMslStr = `${u.no_load_mw.toFixed(2)} / ${u.msl_mw.toFixed(2)}`
 
+    // ── Operator action button ────────────────────────────────────────────
+    // State machine: on-bus → Trip button; OFFLINE → Start button; STARTING → disabled.
+    // Pending: command was issued but the next tick hasn't confirmed state change yet.
+    // Clear pending when the state we commanded has been reached (tick confirms it).
+    const liveSt   = u.state ?? (onBus ? 'synchronised' : 'offline')
+    const isPending = _pending.has(u.asset_id)
+
+    // Clear stale pending entries when the tick confirms the transition.
+    if (isPending) {
+      const pendingAction = _pending.get(u.asset_id)!
+      const reachedTrip  = pendingAction === 'trip'  && liveSt === 'offline'
+      const reachedStart = pendingAction === 'start' && (liveSt === 'starting' || liveSt === 'synchronised')
+      if (reachedTrip || reachedStart) _pending.delete(u.asset_id)
+    }
+
+    let actionCell: React.ReactNode
+    const btnBase: React.CSSProperties = {
+      ...MONO, fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
+      padding: '3px 8px', borderRadius: 3, cursor: 'pointer',
+      border: 'none', outline: 'none',
+    }
+    if (liveSt === 'starting') {
+      // In-flight start — show disabled label
+      actionCell = React.createElement('span', {
+        style: { ...MONO, fontSize: 9, color: '#4b5764', fontStyle: 'italic' as const }
+      }, 'starting…')
+    } else if (onBus) {
+      // On-bus unit: offer Trip
+      const tripping = isPending && _pending.get(u.asset_id) === 'trip'
+      actionCell = React.createElement('button', {
+        style: {
+          ...btnBase,
+          background: tripping ? '#3a1a1a' : '#2a1a1a',
+          color: tripping ? '#4b5764' : RED,
+          borderColor: RED,
+          border: `1px solid ${RED}`,
+          cursor: tripping ? 'default' : 'pointer',
+          opacity: tripping ? 0.6 : 1,
+        },
+        disabled: tripping,
+        title: `Trip ${u.asset_id} — remove from dispatch immediately`,
+        onClick: tripping ? undefined : () => _issueUnitCommand(runId, u.asset_id, 'trip'),
+      }, tripping ? 'tripping…' : 'Trip')
+    } else if (liveSt === 'offline') {
+      // Off-bus OFFLINE unit: offer Start
+      const starting = isPending && _pending.get(u.asset_id) === 'start'
+      actionCell = React.createElement('button', {
+        style: {
+          ...btnBase,
+          background: starting ? '#1a2a1a' : '#142014',
+          color: starting ? '#4b5764' : TEAL,
+          border: `1px solid ${TEAL}`,
+          cursor: starting ? 'default' : 'pointer',
+          opacity: starting ? 0.6 : 1,
+        },
+        disabled: starting,
+        title: `Start ${u.asset_id} — enter start sequence and ramp onto bus`,
+        onClick: starting ? undefined : () => _issueUnitCommand(runId, u.asset_id, 'start'),
+      }, starting ? 'queued…' : 'Start')
+    } else {
+      // out_of_service or transitional — no operator action available
+      actionCell = React.createElement('span', {
+        style: { ...MONO, fontSize: 9, color: '#30363d' }
+      }, '—')
+    }
+
     return React.createElement('tr', { key: u.asset_id },
       React.createElement('td', { style: dCell(GOLD, true) }, u.asset_id),
       // 0.6: column labelled CURRENT MW — distinct from no-load and MSL.
@@ -153,6 +248,8 @@ function FleetTable(
       React.createElement('td', { style: dCell(isDeg ? AMBER : '#8b949e') }, rampStr),
       React.createElement('td', { style: dCell('#4b5764') }, runHStr),
       React.createElement('td', { style: dCell(isDeg ? AMBER : TEAL, true) }, stateStr),
+      // Operator action — Trip (on-bus) / Start (offline) / starting… / —
+      React.createElement('td', { style: { ...dCell(), paddingRight: 0 } }, actionCell),
     )
   })
 
@@ -183,6 +280,7 @@ function FleetTable(
           React.createElement('th', { style: hCell }, 'RAMP meas/cfg'),
           React.createElement('th', { style: hCell }, 'RUN h'),
           React.createElement('th', { style: hCell }, 'STATE'),
+          React.createElement('th', { style: hCell }, 'COMMAND'),           // operator Trip/Start
         )
       ),
       React.createElement('tbody', null, ...rows),
@@ -323,7 +421,7 @@ function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData
   // 0.5: ramp energy bounded at rated_mw for single unit
   const rampEnergy  = Math.min(u.r_asset_mw_per_s * horizonS, u.rated_mw)
 
-  const chart = FleetTable(units, outputMW, u.r_asset_mw_per_s, syncedCount)
+  const chart = FleetTable(units, outputMW, u.r_asset_mw_per_s, syncedCount, tick.run_id)
 
   const secondary = React.createElement('div', { className: 'space-y-3' },
     // Red N−1=0 warning
@@ -405,7 +503,7 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData {
   // The Phase 0.5 display-level cap and LEAD_WINDOW_S constant have been removed.
   const rampEnergyMW = tick.ramp_capability_mw ?? (aggRampMWs * horizonS)
 
-  const chart = FleetTable(units, outputMW, maxRamp, onlineN)
+  const chart = FleetTable(units, outputMW, maxRamp, onlineN, tick.run_id)
 
   const secondary = React.createElement('div', { className: 'space-y-3' },
     React.createElement(BulletBar, {

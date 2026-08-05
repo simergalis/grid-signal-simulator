@@ -913,3 +913,20 @@ class TimeseriesResponse(BaseModel):
     run_id: str
     gap_count: int
     rows: list[TimeseriesRowResponse]
+
+
+# ---------------------------------------------------------------------------
+# Operator unit command (Task #203)
+# ---------------------------------------------------------------------------
+
+class UnitCommandRequest(BaseModel):
+    """Body for POST /runs/{run_id}/units/{unit_id}/command.
+
+    action:
+      "trip"  — force the named unit to OFFLINE immediately; output zeroed.
+                Only valid when the unit is on-bus (synchronised / ramping /
+                at_target).
+      "start" — enter the start sequence from OFFLINE; unit ramps to
+                SYNCHRONISED naturally.  Only valid when state is OFFLINE.
+    """
+    action: Literal["trip", "start"]

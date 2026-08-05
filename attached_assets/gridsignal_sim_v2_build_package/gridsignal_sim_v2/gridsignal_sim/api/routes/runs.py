@@ -57,6 +57,7 @@ from api.schemas import (
     StartRunResponse,
     TimeseriesResponse,
     TimeseriesRowResponse,
+    UnitCommandRequest,
 )
 from runtime.cluster_gen import generate_cluster_forecast
 from runtime.param_sampler import sample_run_parameters
@@ -688,6 +689,52 @@ async def get_energy_summary(
         "cost_breakdown":    cost_breakdown,
         "cost_model_config": cost_cfg,
     }
+
+
+@router.post(
+    "/{run_id}/units/{unit_id}/command",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Issue an operator unit command (trip or start)",
+    responses={
+        404: {"description": "Run or unit not found"},
+        409: {"description": "Command not valid for current unit state"},
+    },
+)
+async def unit_command(
+    run_id: str,
+    unit_id: str,
+    body: UnitCommandRequest,
+    manager: RunManager = Depends(_run_manager),
+) -> dict:
+    """Issue a manual trip or start command for a specific turbine unit.
+
+    trip  — force unit to OFFLINE immediately; MW contribution zeroed on the
+            next tick broadcast.  Only valid for on-bus units.
+    start — enter start sequence from OFFLINE; ramps to SYNCHRONISED naturally
+            over subsequent ticks.  Only valid from OFFLINE state.
+
+    Returns 202 { queued: true } on success.
+    Returns 404 if the run is not active or unit_id is not in the fleet.
+    Returns 409 if the action is not valid for the unit's current state.
+    """
+    # Validate + enqueue via RunManager.  All core/ type checks happen inside
+    # RunManager (runtime/ → core/ is allowed); api/ never imports from core/.
+    result_code, detail = manager.validate_and_enqueue_unit_command(
+        run_id, unit_id, body.action
+    )
+
+    if result_code == manager.UNIT_CMD_RUN_404:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=detail)
+    if result_code == manager.UNIT_CMD_UNIT_404:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=detail)
+    if result_code == manager.UNIT_CMD_BAD_STATE:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=detail)
+
+    _log.info(
+        "operator command queued: run=%s unit=%s action=%s",
+        run_id, unit_id, body.action,
+    )
+    return {"queued": True, "unit_id": unit_id, "action": body.action}
 
 
 @router.delete(
