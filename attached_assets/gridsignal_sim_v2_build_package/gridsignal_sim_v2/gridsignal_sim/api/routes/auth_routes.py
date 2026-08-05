@@ -168,8 +168,30 @@ async def request_code(
                 "SENDGRID_API_KEY is valid.",
                 email,
             )
+            # Console escape hatch: when email delivery fails, print the code to the
+            # server log so an admin watching logs can relay it manually.
+            # This is intentionally at WARNING level so it appears in production logs
+            # (which are admin-only) and is trivially greppable.
+            _log.warning(
+                "OTP CONSOLE FALLBACK — sign-in code for %s: %s  "
+                "(relay this to the user; code expires in %d minutes)",
+                email, code, _OTP_TTL_SECS // 60,
+            )
     else:
-        _log.info("request-code for unknown/inactive email %s — no email sent", email)
+        # Unknown or inactive account: still store the code (avoids enumeration),
+        # but log clearly so admins know why no email went out.
+        _log.warning(
+            "request-code for unknown/inactive email %s — no email sent. "
+            "If this user should exist, create their account via POST /api/admin/users.",
+            email,
+        )
+        # Also print the code so an admin can relay it if they want to let someone in
+        # before their account is formally created (e.g. during a fresh-DB deploy).
+        _log.warning(
+            "OTP CONSOLE FALLBACK (unregistered) — code for %s: %s  "
+            "(user not in DB; relay after creating their account)",
+            email, code,
+        )
 
     return {"ok": True, "email_sent": email_sent}
 
