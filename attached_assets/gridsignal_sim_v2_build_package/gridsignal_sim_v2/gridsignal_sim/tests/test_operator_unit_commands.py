@@ -390,6 +390,42 @@ def test_tc_203_5c_trip_from_offline_returns_bad_state_code():
     assert len(ctx._operator_commands) == 0, "rejected command must not be queued"
 
 
+def test_tc_203_5c2_start_hot_standby_returns_bad_state_code():
+    """validate_and_enqueue returns UNIT_CMD_BAD_STATE for start on a hot-standby unit.
+
+    command_start() silently returns without transitioning state when
+    hot_standby=True (asset_modules.py line 816-817).  If the endpoint accepted
+    the command, the UI would get stuck in 'queued…' forever because no state
+    transition is ever broadcast.
+
+    The guard in validate_and_enqueue must detect hot_standby=True for 'start'
+    commands and return UNIT_CMD_BAD_STATE before enqueueing, regardless of the
+    unit's current state.
+    """
+    from runtime.scenario_factory import build_run_context_from_spec
+    from runtime.run_manager import RunManager, WebSocketHub
+
+    _HOT_STANDBY_SPEC = {
+        **_SPEC,
+        "turbine_units": [
+            {"asset_id": "gt-0", "rated_mw": 10.0, "r_asset_mw_per_s": 0.5,
+             "hot_standby": True},    # ← managed by arbitrator only
+        ],
+    }
+    ctx     = build_run_context_from_spec("tc-203-5c2", _HOT_STANDBY_SPEC)
+    manager = RunManager(WebSocketHub())
+    manager._contexts[ctx.run_id] = ctx
+
+    code, detail = manager.validate_and_enqueue_unit_command(ctx.run_id, "gt-0", "start")
+    assert code == manager.UNIT_CMD_BAD_STATE, (
+        f"start on hot-standby unit should be UNIT_CMD_BAD_STATE, got {code!r}: {detail!r}"
+    )
+    assert "hot-standby" in detail.lower() or "hot_standby" in detail.lower(), (
+        f"error message should mention hot-standby: {detail!r}"
+    )
+    assert len(ctx._operator_commands) == 0, "rejected command must not be queued"
+
+
 def test_tc_203_5d_start_from_offline_returns_ok_code():
     """validate_and_enqueue returns UNIT_CMD_OK for start on OFFLINE unit.
 

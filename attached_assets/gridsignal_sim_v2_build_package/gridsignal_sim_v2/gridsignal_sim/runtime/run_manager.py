@@ -1070,6 +1070,17 @@ class RunManager:
                 "start is only valid from OFFLINE."
             )
 
+        # Hot-standby units are managed by the dispatch arbitrator and cannot
+        # be started by operator command.  command_start() silently returns for
+        # hot_standby=True, which would leave the UI stuck in 'queued…'.
+        # Reject here with a clear message instead.
+        if action == "start" and turbine.config.hot_standby:
+            return self.UNIT_CMD_BAD_STATE, (
+                f"Unit {unit_id!r} is configured as a hot-standby unit and is "
+                "managed automatically by the dispatch arbitrator — operator "
+                "start is not permitted."
+            )
+
         # R6: enforce minimum down-time window for "start".
         # The drain loop calls command_start() which silently drops the call if
         # t_min_down_s is not yet satisfied — detect it here and return 409

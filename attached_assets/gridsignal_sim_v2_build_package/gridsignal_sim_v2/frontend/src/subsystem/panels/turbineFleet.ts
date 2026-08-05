@@ -213,8 +213,10 @@ function FleetTable(
         title: `Trip ${u.asset_id} — remove from dispatch immediately`,
         onClick: tripping ? undefined : () => _issueUnitCommand(runId, u.asset_id, 'trip'),
       }, tripping ? 'tripping…' : 'Trip')
-    } else if (liveSt === 'offline') {
-      // Off-bus OFFLINE unit: offer Start
+    } else if (liveSt === 'offline' && !u.hot_standby) {
+      // Off-bus OFFLINE non-standby unit: offer Start.
+      // hot_standby units are managed by the dispatch arbitrator;
+      // command_start() silently ignores them, so we never show Start.
       const starting = isPending && _pending.get(u.asset_id) === 'start'
       actionCell = React.createElement('button', {
         style: {
