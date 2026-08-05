@@ -640,8 +640,8 @@ function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData
     stateLabel,
     stateColour:  TEAL,
     verdict:      `Single-unit site — N−1 firm capacity 0.0 MW. A unit loss leaves BESS bridge only (~20 min).`,
-    heroValue:    '0',
-    heroLabel:    'MW firm, N−1',
+    heroValue:    (tick.turbine_output_mw ?? 0).toFixed(2),
+    heroLabel:    'MW output',
     chartTitle:   '',
     // 0.1: derived from typed fields — count, rating, gt_mode
     identityLine: _identityLine(units),
@@ -747,8 +747,8 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData {
     verdict: n1Covers
       ? `N−1 firm capacity ${n1FirmMW.toFixed(1)} MW covers the ${PEAK_LOAD_MW.toFixed(2)} MW peak with ${marginStr} margin.`
       : `N−1 firm capacity ${n1FirmMW.toFixed(1)} MW is below the ${PEAK_LOAD_MW.toFixed(2)} MW peak — site cannot survive a unit loss.`,
-    heroValue:   n1FirmMW.toFixed(0),
-    heroLabel:   'MW firm, N−1',
+    heroValue:   (tick.turbine_output_mw ?? 0).toFixed(2),
+    heroLabel:   'MW output',
     chartTitle:  '',
     // 0.1: derived from typed fields — count, rating, gt_mode
     identityLine: _identityLine(units),
