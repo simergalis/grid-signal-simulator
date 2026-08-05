@@ -143,7 +143,7 @@ def _make_minimal_tick_result(solar_weather: str = "", solar_conditions: str = "
     from core._plane_guard import _EVALUATE_TICK_PERMITTED
 
     site = SiteConfig(
-        frequency_nominal_hz=50.0,  # required; frequency unused in this non-frequency test
+        frequency_nominal_hz=50.0, power_factor=0.85,  # required; frequency unused in this non-frequency test
         site_id="solar-test-site", pue_base=1.03, uncalibrated=False,
         island_mode=IslandMode.ISLANDED,
     )
@@ -566,6 +566,9 @@ def _build_spec(ambient_drybulb_c: float, run_id: str) -> dict:
         "tau_seconds": 5.0,
         "alpha_max": 0.20,
         "island_mode": False,
+        # Required by SiteConfig (no default): use WECC/ERCOT 60 Hz (non-frequency test).
+        "frequency_nominal_hz": 60.0,
+        "power_factor": 0.85,  # CHOSEN — typical gas turbine; non-frequency test
         "turbine_units": [
             {"asset_id": "t-0", "rated_mw": 30.0, "r_asset_mw_per_s": 10.0}
         ],
@@ -725,6 +728,9 @@ def _base_spec_no_ambient(alpha_max_engine: float) -> dict:
         "end_sim_time": 60.0,
         "alpha_max": alpha_max_engine,
         "island_mode": False,
+        # Required by SiteConfig (no default): use WECC/ERCOT 60 Hz (non-frequency test).
+        "frequency_nominal_hz": 60.0,
+        "power_factor": 0.85,  # CHOSEN — typical gas turbine; non-frequency test
         "turbine_units": [
             {"asset_id": "t-0", "rated_mw": 30.0, "r_asset_mw_per_s": 10.0}
         ],

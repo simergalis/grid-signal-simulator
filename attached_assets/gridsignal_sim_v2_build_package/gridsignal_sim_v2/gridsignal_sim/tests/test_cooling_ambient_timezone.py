@@ -112,6 +112,9 @@ def _minimal_spec(ambient_steps: list, tag: str) -> dict:
         "end_sim_time": _RUN_DURATION_S,
         "alpha_max": 0.20,
         "island_mode": False,
+        # Required by SiteConfig (no default): use WECC/ERCOT 60 Hz (non-frequency test).
+        "frequency_nominal_hz": 60.0,
+        "power_factor": 0.85,  # CHOSEN — typical gas turbine; non-frequency test
         "turbine_units": [
             {"asset_id": "t-0", "rated_mw": 20.0, "r_asset_mw_per_s": 5.0}
         ],
@@ -425,6 +428,9 @@ def _ca8_spec(ambient_steps: list, tag: str) -> dict:
         "plant_tau_seconds":        _CA8_TAU_S,
         "plant_dt_thermal_seconds": _CA8_DT_THERMAL_S,
         "island_mode": False,
+        # Required by SiteConfig (no default): use WECC/ERCOT 60 Hz (non-frequency test).
+        "frequency_nominal_hz": 60.0,
+        "power_factor": 0.85,  # CHOSEN — typical gas turbine; non-frequency test
         "turbine_units": [
             {"asset_id": "t-0", "rated_mw": 20.0, "r_asset_mw_per_s": 5.0}
         ],

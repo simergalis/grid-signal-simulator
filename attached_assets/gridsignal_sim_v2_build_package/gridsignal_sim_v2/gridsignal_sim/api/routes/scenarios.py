@@ -503,6 +503,9 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             load_config=LoadProfileConfigSpec(),
             # A1 / Task #200: San Diego — SDG&E territory, 60 Hz (WECC).
             frequency_nominal_hz=60.0,
+            # power_factor: CHOSEN — typical gas turbine (0.85).  Calibrate against
+            # vendor nameplate for real deployments.  Raises S_base vs pf=1 by ~18%.
+            power_factor=0.85,
         ),
     ),
     (

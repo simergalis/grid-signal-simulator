@@ -45,7 +45,7 @@ def _make_tick(turbine_unit_specs: tuple, turbine_output_mw: float = 5.0):
     from core.simulation_core import SimulationState, evaluate_tick
 
     site = SiteConfig(
-        frequency_nominal_hz=50.0,  # required; frequency unused in this non-frequency test
+        frequency_nominal_hz=50.0, power_factor=0.85,  # required; frequency unused in this non-frequency test
         site_id="p0-test", pue_base=1.03, uncalibrated=False,
         island_mode=IslandMode.ISLANDED,
     )
@@ -232,6 +232,9 @@ def test_tc_p0_6_sync_relay_state_from_factory():
         "run_duration_s": 60,
         "location": "Auckland",
         "workload_events": [],
+        # Required by SiteConfig (no default): WECC/ERCOT 60 Hz (non-frequency test).
+        "frequency_nominal_hz": 60.0,
+        "power_factor": 0.85,  # CHOSEN — typical gas turbine
     }
 
     ctx   = build_run_context_from_spec("test-relay", _MINIMAL_SPEC)

@@ -128,7 +128,7 @@ class TestIrradianceZeroOrderHold:
 # ---------------------------------------------------------------------------
 
 def _build_site() -> SiteConfig:
-    return SiteConfig(frequency_nominal_hz=50.0, site_id="site-tc33")
+    return SiteConfig(frequency_nominal_hz=50.0, power_factor=0.85, site_id="site-tc33")
 
 
 def _build_sim_state_with_solar(solar_mw: float = 0.0) -> SimulationState:

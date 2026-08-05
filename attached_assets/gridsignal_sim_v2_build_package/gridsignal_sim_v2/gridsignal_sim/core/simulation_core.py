@@ -581,7 +581,10 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # ── Phase 13.3: governor droop pre-correction ─────────────────────────────
     # S_base = total synchronous generator rating (MVA), used for both droop and
     # the swing equation.  Computed here so it is available to both blocks.
-    _s_base_mw = max(1.0, sum(t.config.rated_mw for t in state.turbines))
+    # S_base in MVA = Σ rated_MW / power_factor.  pf < 1 raises the MVA base,
+    # reducing df/dt (more inertia per MW).  Without pf the base equals rated_MW,
+    # which overestimates df/dt by (1 − pf)/pf ≈ 18% for a typical 0.85 pf machine.
+    _s_base_mw = max(1.0, sum(t.config.rated_mw for t in state.turbines)) / state.site.power_factor
 
     # _islanded: topology flag, used in droop, decomposition, and swing equation.
     _islanded = (state.site.island_mode == IslandMode.ISLANDED)

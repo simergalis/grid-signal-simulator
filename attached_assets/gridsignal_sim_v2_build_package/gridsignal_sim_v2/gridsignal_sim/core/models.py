@@ -259,6 +259,10 @@ class SiteConfig:
     # Carry through ScenarioSpec → scenario_factory → SiteConfig; tests must
     # set it explicitly by intent (50 Hz = EU/APAC fixture; 60 Hz = WECC/ERCOT).
     frequency_nominal_hz: float       # REQUIRED — no default (see above)
+    power_factor: float               # REQUIRED — no default. Rated pf of the
+    # synchronous generator fleet (dimensionless). MW ≠ MVA; pf=1 silently
+    # underestimates S_base and overestimates df/dt. Typical gas turbine: 0.85.
+    # Calibrate against nameplate or vendor data; open parameter (CHOSEN at use site).
     pue_base: float = 1.03            # source spec Section 4, 1.02-1.05
     alpha_max: float = 0.20           # source spec Section 8, 0.10-0.30
     tau_seconds: float = 20.0         # source spec Section 8

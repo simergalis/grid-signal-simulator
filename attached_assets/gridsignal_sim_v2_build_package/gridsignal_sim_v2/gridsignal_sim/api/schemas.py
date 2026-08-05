@@ -382,6 +382,16 @@ class ScenarioSpec(BaseModel):
             "Drives the swing-equation denominator and all frequency-response criteria."
         ),
     )
+    power_factor: float = Field(
+        default=0.85,
+        gt=0.0, le=1.0,
+        description=(
+            "Rated power factor of the synchronous generator fleet (dimensionless).  "
+            "Converts rated_mw to MVA base: S_base = Σ rated_mw / power_factor.  "
+            "Typical gas turbine: 0.85 (CHOSEN — calibrate against nameplate or vendor data).  "
+            "Raising pf toward 1.0 lowers S_base and increases df/dt; lowering it slows frequency response."
+        ),
+    )
     pue_base: float = Field(default=1.03, ge=1.0, le=2.0)
     end_sim_time: float = Field(default=300.0, ge=60.0, le=86400.0)
 

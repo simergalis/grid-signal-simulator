@@ -40,7 +40,7 @@ def _gpu(ramp_seconds: float = 45.0) -> GPUModule:
     """Minimal GPUModule — hardware_library empty → GENERIC_FALLBACK_PROFILE."""
     return GPUModule(
         asset_id="gpu-test",
-        site=SiteConfig(frequency_nominal_hz=50.0, site_id="site-test"),
+        site=SiteConfig(frequency_nominal_hz=50.0, power_factor=0.85, site_id="site-test"),
         hardware_library={},
         ramp_seconds=ramp_seconds,
     )
@@ -423,7 +423,7 @@ class TestKubeMetricsPatch(unittest.TestCase):
         from core.kube_demand import KubeConfig, KubeDemandAgent
         from core.simulation_core import SimulationState
 
-        site = SiteConfig(frequency_nominal_hz=50.0, site_id="site-n-test")
+        site = SiteConfig(frequency_nominal_hz=50.0, power_factor=0.85, site_id="site-n-test")
         gpu = GPUModule(
             asset_id="gpu-0",
             site=site,
@@ -578,7 +578,7 @@ class TestScaleDownCoolingEnvelope(unittest.TestCase):
         from core.simulation_core import SimulationState
 
         site = SiteConfig(
-            frequency_nominal_hz=50.0,  # required; frequency unused in this non-frequency test
+            frequency_nominal_hz=50.0, power_factor=0.85,  # required; frequency unused in this non-frequency test
             site_id="site-sd-test",
             dt_thermal_seconds=dt_thermal,
             tau_seconds=tau,

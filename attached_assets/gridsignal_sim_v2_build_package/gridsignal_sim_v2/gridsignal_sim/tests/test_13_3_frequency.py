@@ -93,7 +93,7 @@ def _make_islanded_solar_state(
         workload_signal_stale_s=30.0,
         island_mode=IslandMode.ISLANDED,
         inertia_constant_s=inertia_s,
-        frequency_nominal_hz=f_nominal,
+        frequency_nominal_hz=f_nominal, power_factor=0.85,
         governor_droop=droop,
     )
     hw = {"enterprise_8gpu_air": HardwareProfile(
@@ -185,8 +185,9 @@ class TestI2SwingEquationAccuracy:
         tick = _run_tick(state, sim_time=0.0, dt=dt)
 
         ff = tick.frequency_forcing_mw
-        # S_base used internally = max(1.0, sum(t.config.rated_mw)) = S_base_rated
-        df_predicted = ff / (2.0 * H * S_base_rated) * f0 * dt
+        # S_base (MVA) = max(1.0, Σ rated_mw) / power_factor — mirrors simulation_core.py.
+        s_base_mva = max(1.0, S_base_rated) / state.site.power_factor
+        df_predicted = ff / (2.0 * H * s_base_mva) * f0 * dt
         df_actual = tick.frequency_hz - f0
 
         if abs(ff) < 1e-9:
@@ -200,14 +201,18 @@ class TestI2SwingEquationAccuracy:
         )
 
     def test_I2_explicit_formula_fixture(self):
-        """I2 (explicit): 1 MW forcing → Δf = 1/(2×4×10)×50×5 = 3.125 Hz."""
+        """I2 (explicit): 1 MW forcing → Δf = 1/(2×4×(10/0.85))×50×5 = 2.65625 Hz.
+
+        S_base (MVA) = rated_mw / power_factor = 10 / 0.85 ≈ 11.765 MVA.
+        Δf = 1 / (2 × 4 × 11.765) × 50 × 5 ≈ 2.65625 Hz (was 3.125 Hz at pf=1).
+        """
         H = 4.0
-        S_base = 10.0
+        S_base_rated_mw = 10.0
         dt = 5.0
 
         # EU/APAC 50 Hz fixture — f_nominal required, set by intent.
         state, _ = _make_islanded_solar_state(
-            turbine_rated_mw=S_base,
+            turbine_rated_mw=S_base_rated_mw,
             inertia_s=H,
             f_nominal=50.0,  # EU/APAC fixture, by intent
             solar_mw=1.0,
@@ -221,9 +226,11 @@ class TestI2SwingEquationAccuracy:
             f"got {tick.frequency_forcing_mw:.6f}"
         )
 
-        df_predicted = 1.0 / (2.0 * H * S_base) * f0 * dt   # = 3.125 Hz at 50 Hz
+        # S_base (MVA) = rated_mw / power_factor — mirrors simulation_core.py formula.
+        s_base_mva = max(1.0, S_base_rated_mw) / state.site.power_factor
+        df_predicted = 1.0 / (2.0 * H * s_base_mva) * f0 * dt
         df_actual = tick.frequency_hz - f0
-        assert abs(df_actual - df_predicted) < 0.31, (   # ±10% of 3.125 = 0.3125
+        assert abs(df_actual - df_predicted) < df_predicted * 0.11, (   # ±10% tolerance
             f"I2: Δf={df_actual:.4f} Hz; predicted={df_predicted:.4f} Hz; "
             f"tolerance ±10% ({df_predicted*0.10:.4f} Hz)"
         )
@@ -316,7 +323,7 @@ class TestI3DroopRestoringForce:
                 workload_signal_stale_s=30.0,
                 island_mode=IslandMode.ISLANDED,
                 inertia_constant_s=4.0,
-                frequency_nominal_hz=50.0,
+                frequency_nominal_hz=50.0, power_factor=0.85,
                 governor_droop=droop_val,
             )
             st = SimulationState(
@@ -374,7 +381,7 @@ class TestI4DeliveryFaultMovesFrequency:
     frequency_forcing_mw < 0 (balance_residual < 0 → frequency falling).
     frequency_hz falls below site nominal.
 
-    _make_state(frequency_nominal_hz=50.0) — EU/APAC 50 Hz fixture by intent.
+    _make_state(frequency_nominal_hz=50.0, power_factor=0.85) — EU/APAC 50 Hz fixture by intent.
     """
 
     def test_I4_delivery_fault_causes_frequency_deviation(self):

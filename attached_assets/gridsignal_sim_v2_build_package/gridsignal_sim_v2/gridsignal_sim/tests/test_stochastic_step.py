@@ -463,7 +463,7 @@ class TestLoadProfile:
             SiteConfig,
         )
 
-        site = SiteConfig(frequency_nominal_hz=50.0, site_id="test", pue_base=1.0)
+        site = SiteConfig(frequency_nominal_hz=50.0, power_factor=0.85, site_id="test", pue_base=1.0)
         profile = GENERIC_FALLBACK_PROFILE  # rated_kw known
         hw_lib = {"test_profile": profile}
 

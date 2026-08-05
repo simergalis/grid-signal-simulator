@@ -58,7 +58,7 @@ def _biased_state(bias_mw: float = 1.0, **kwargs) -> SimulationState:
         workload_signal_stale_s=30.0,
         island_mode=IslandMode.ISLANDED,
         inertia_constant_s=4.0,
-        frequency_nominal_hz=50.0,
+        frequency_nominal_hz=50.0, power_factor=0.85,
         governor_droop=0.04,
         load_model_bias_mw=bias_mw,
     )

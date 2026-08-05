@@ -43,7 +43,7 @@ from core.sim_clock import SimClock
 
 def _make_site() -> SiteConfig:
     return SiteConfig(
-        frequency_nominal_hz=50.0,  # required; frequency unused in this non-frequency test
+        frequency_nominal_hz=50.0, power_factor=0.85,  # required; frequency unused in this non-frequency test
         site_id="test-site",
         pue_base=1.03,
         dt_thermal_seconds=90.0,

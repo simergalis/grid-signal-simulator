@@ -113,7 +113,7 @@ def _minimal_tick_result():
     from core.sim_clock import SimClock
     from core.simulation_core import SimulationState, evaluate_tick
 
-    site = SiteConfig(frequency_nominal_hz=50.0, site_id="p35-test", pue_base=1.03, uncalibrated=False,
+    site = SiteConfig(frequency_nominal_hz=50.0, power_factor=0.85, site_id="p35-test", pue_base=1.03, uncalibrated=False,
                       island_mode=IslandMode.ISLANDED)
     hw = {"hw-a": HardwareProfile("hw-a", rated_kw=10.0)}
     gpu = GPUModule(asset_id="gpu-0", site=site, hardware_library=hw)

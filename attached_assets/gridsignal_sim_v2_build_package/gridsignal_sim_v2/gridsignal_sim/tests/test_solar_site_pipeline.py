@@ -80,6 +80,9 @@ def _minimal_spec(irradiance_steps: list, run_tag: str) -> dict:
         "solar_rated_mw": _SOLAR_MW,
         "irradiance_steps": irradiance_steps,
         "island_mode": False,
+        # Required by SiteConfig (no default): use WECC/ERCOT 60 Hz (non-frequency test).
+        "frequency_nominal_hz": 60.0,
+        "power_factor": 0.85,  # CHOSEN — typical gas turbine; non-frequency test
         "turbine_units": [
             {"asset_id": "t-0", "rated_mw": 20.0, "r_asset_mw_per_s": 5.0}
         ],

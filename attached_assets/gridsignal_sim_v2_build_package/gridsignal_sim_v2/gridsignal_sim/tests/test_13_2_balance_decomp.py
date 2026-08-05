@@ -586,8 +586,9 @@ class TestI4SwingEquationExplicitInput:
         # B1: Δf = frequency_forcing / (2H × S_base) × f₀ × dt.
         # frequency_forcing = balance_residual (which is already more negative than
         # a "setpoints-only" estimate because the BESS is not delivering).
+        # S_base = Σ rated_mw / power_factor — mirrors simulation_core.py formula.
         f0 = state.site.frequency_nominal_hz  # sourced from config (50.0 EU/APAC)
-        s_base = max(1.0, sum(t.config.rated_mw for t in state.turbines))
+        s_base = max(1.0, sum(t.config.rated_mw for t in state.turbines)) / state.site.power_factor
         expected_df = self._expected_df(
             tick_curr.frequency_forcing_mw,
             s_base,
@@ -648,7 +649,7 @@ class TestI4SwingEquationExplicitInput:
         )
 
         # Frequency stays at site nominal — grid absorbed the imbalance.
-        # state uses _make_state(frequency_nominal_hz=50.0) — EU/APAC fixture by intent.
+        # state uses _make_state(frequency_nominal_hz=50.0, power_factor=0.85) — EU/APAC fixture by intent.
         f_nom = state.site.frequency_nominal_hz  # sourced from config
         assert tick.frequency_hz == pytest.approx(f_nom, abs=1e-9), (
             f"I4c: frequency_hz={tick.frequency_hz:.9f} Hz should be exactly "

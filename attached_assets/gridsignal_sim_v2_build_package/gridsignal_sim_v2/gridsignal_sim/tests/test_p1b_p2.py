@@ -645,7 +645,7 @@ class TestTC82DemoPlantMSLConstraint:
         site = SiteConfig(
             site_id="test-tc82",
             island_mode=IslandMode.ISLANDED,
-            frequency_nominal_hz=60.0,
+            frequency_nominal_hz=60.0, power_factor=0.85,
             inertia_constant_s=4.0,   # SiteConfig default
         )
         f_nominal = site.frequency_nominal_hz   # 60.0 Hz — sourced from config

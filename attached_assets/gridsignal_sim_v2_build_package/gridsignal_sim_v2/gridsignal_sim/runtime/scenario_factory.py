@@ -99,9 +99,18 @@ def build_run_context(
     bess_grid_forming: bool = False,
     end_sim_time: float = 600.0,
     playback_speed: float = 0.0,  # 0 == "max" speed, no artificial delay
+    # A1: frequency_nominal_hz must be supplied by caller; 60.0 default is WECC/SDG&E
+    # territory (San Diego demo site).  Override explicitly for non-WECC fixtures.
+    frequency_nominal_hz: float = 60.0,
+    # power_factor: rated pf of the synchronous fleet.  0.85 is CHOSEN (typical gas
+    # turbine); calibrate against vendor data for real deployments.
+    power_factor: float = 0.85,
 ) -> RunContext:
-    # A1 / Task #200: 60 Hz — WECC/SDG&E territory (San Diego demo site).
-    site = SiteConfig(site_id=f"site-for-{run_id}", frequency_nominal_hz=60.0)
+    site = SiteConfig(
+        site_id=f"site-for-{run_id}",
+        frequency_nominal_hz=frequency_nominal_hz,
+        power_factor=power_factor,
+    )
 
     gpu = GPUModule(
         asset_id="gpu-0",
@@ -219,6 +228,8 @@ def build_load_test_context(
     bess_usable_mwh: float = 2.0,
     end_sim_time: float = 14400.0,   # 4 simulated hours -- functional spec Section 11
     playback_speed: float = 0.0,     # 0 == "max" speed
+    frequency_nominal_hz: float = 60.0,   # WECC/SDG&E default; override for non-WECC
+    power_factor: float = 0.85,           # CHOSEN — typical gas turbine
 ) -> RunContext:
     """Builds a RunContext at (or above, via the *_count params) the
     functional spec's NFR-ceiling configuration (Section 11: 50 GPU
@@ -231,8 +242,11 @@ def build_load_test_context(
     the load test representative of evaluate_tick()'s real per-tick
     cost (Design Spec Section 4.3), not just an idle scaffold.
     """
-    # A1 / Task #200: 60 Hz — WECC/SDG&E territory (San Diego demo site).
-    site = SiteConfig(site_id=f"site-for-{run_id}", frequency_nominal_hz=60.0)
+    site = SiteConfig(
+        site_id=f"site-for-{run_id}",
+        frequency_nominal_hz=frequency_nominal_hz,
+        power_factor=power_factor,
+    )
 
     gpu_modules = [
         GPUModule(asset_id=f"gpu-{i}", site=site, hardware_library=DEFAULT_HARDWARE_LIBRARY)
@@ -370,12 +384,25 @@ def build_run_context_from_spec(
         if spec_data.get("island_mode", True)
         else IslandMode.GRID_TIE
     )
+    # A1: frequency_nominal_hz and power_factor are REQUIRED on SiteConfig (no default).
+    # ScenarioSpec guarantees both via schema defaults (60.0 / 0.85), so these
+    # raises fire only when a raw dict without the fields is passed directly.
+    _freq_raw = spec_data.get("frequency_nominal_hz")
+    if _freq_raw is None:
+        raise ValueError(
+            f"scenario spec for run '{run_id}' is missing 'frequency_nominal_hz'. "
+            "Set it explicitly: 60.0 for WECC/ERCOT (North America), 50.0 for EU/APAC."
+        )
+    _pf_raw = spec_data.get("power_factor")
+    if _pf_raw is None:
+        raise ValueError(
+            f"scenario spec for run '{run_id}' is missing 'power_factor'. "
+            "Add it: typical gas turbine pf = 0.85 (CHOSEN — calibrate against nameplate)."
+        )
     site = SiteConfig(
         site_id=f"site-for-{run_id}",
-        # A1 / Task #200: wire frequency_nominal_hz from ScenarioSpec.
-        # Default 60.0 for backward-compat with seeded scenarios that predate
-        # this field; new scenarios should set it explicitly.
-        frequency_nominal_hz=float(spec_data.get("frequency_nominal_hz", 60.0)),
+        frequency_nominal_hz=float(_freq_raw),
+        power_factor=float(_pf_raw),
         pue_base=spec_data.get("pue_base", 1.03),
         island_mode=island,
         # AD2: calibrated=True in spec → uncalibrated=False in SiteConfig.

@@ -58,7 +58,7 @@ def _make_state(
     r_asset_mw_per_s: float = 0.2,
 ) -> SimulationState:
     """Build a minimal SimulationState suitable for Kube-path tests."""
-    site = SiteConfig(frequency_nominal_hz=50.0, site_id="site-kube-test")
+    site = SiteConfig(frequency_nominal_hz=50.0, power_factor=0.85, site_id="site-kube-test")
     gpu = GPUModule(
         asset_id="gpu-0",
         site=site,
@@ -209,7 +209,7 @@ class TestKubeTurbineCredit(unittest.TestCase):
 
         This is the worked-example fixture from §9.
         """
-        site = SiteConfig(frequency_nominal_hz=50.0, site_id="site-tc-k2")
+        site = SiteConfig(frequency_nominal_hz=50.0, power_factor=0.85, site_id="site-tc-k2")
         turbine = TurbineModule(TurbineConfig(
             asset_id="turbine-0",
             r_asset_mw_per_s=0.2,

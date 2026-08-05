@@ -89,7 +89,7 @@ def _make_state(
             workload_signal_stale_s=30.0,
             island_mode=island_mode,
             inertia_constant_s=4.0,
-            frequency_nominal_hz=50.0,
+            frequency_nominal_hz=50.0, power_factor=0.85,
             governor_droop=0.04,
         )
     if hardware_library is None:
@@ -312,7 +312,7 @@ class TestWorkloadSignalFlags:
         """
         state = _make_state(
             site=SiteConfig(
-                frequency_nominal_hz=50.0,  # required; frequency unused in this non-frequency test
+                frequency_nominal_hz=50.0, power_factor=0.85,  # required; frequency unused in this non-frequency test
                 site_id="test",
                 pue_base=1.03,
                 uncalibrated=False,
@@ -553,7 +553,7 @@ class TestDispatchTruthfulness:
             dt_thermal_seconds=90.0, uncalibrated=False,
             workload_signal_stale_s=30.0,
             island_mode=IslandMode.ISLANDED,
-            inertia_constant_s=4.0, frequency_nominal_hz=50.0,
+            inertia_constant_s=4.0, frequency_nominal_hz=50.0, power_factor=0.85,
             governor_droop=0.04,
         )
         hw = {
@@ -643,7 +643,7 @@ class TestDispatchTruthfulness:
 
         tick = _run_tick(state, sim_time=5.0)
 
-        # state uses _make_state(frequency_nominal_hz=50.0) — EU/APAC fixture by intent.
+        # state uses _make_state(frequency_nominal_hz=50.0, power_factor=0.85) — EU/APAC fixture by intent.
         assert tick.frequency_hz == pytest.approx(state.site.frequency_nominal_hz, abs=1e-9), (
             f"B3: frequency_hz must be nominal ({state.site.frequency_nominal_hz} Hz) "
             f"in grid-connected mode; got {tick.frequency_hz}"
@@ -700,7 +700,7 @@ class TestDispatchTruthfulness:
             dt_thermal_seconds=90.0, uncalibrated=False,
             workload_signal_stale_s=30.0,
             island_mode=IslandMode.ISLANDED,
-            inertia_constant_s=4.0, frequency_nominal_hz=50.0,
+            inertia_constant_s=4.0, frequency_nominal_hz=50.0, power_factor=0.85,
             governor_droop=0.04,
         )
         _hw_b5 = {"enterprise_8gpu_air": HardwareProfile(
@@ -738,7 +738,8 @@ class TestDispatchTruthfulness:
         )
 
         # Verify frequency_hz tracks the swing-equation formula within ±10%.
-        _s_base_mw = 10.0  # turbine_rated_mw
+        # S_base = rated_mw / power_factor — mirrors simulation_core.py formula.
+        _s_base_mw = 10.0 / _site_b5.power_factor  # turbine_rated_mw / pf
         _H = 4.0
         _f0 = _site_b5.frequency_nominal_hz  # sourced from config (50.0 EU/APAC)
         _dt = 0.1
@@ -778,7 +779,7 @@ class TestCoolingThermalLag:
 
     def _make_cooling(self, dt_thermal: float = 90.0, tau: float = 20.0) -> CoolingModule:
         site = SiteConfig(
-            frequency_nominal_hz=50.0,  # required; frequency unused in this non-frequency test
+            frequency_nominal_hz=50.0, power_factor=0.85,  # required; frequency unused in this non-frequency test
             site_id="cooling-test",
             alpha_max=0.20,
             tau_seconds=tau,
@@ -829,7 +830,7 @@ class TestCoolingThermalLag:
         p_compute_mw = 1.0
 
         site = SiteConfig(
-            frequency_nominal_hz=50.0,  # required; frequency unused in this non-frequency test
+            frequency_nominal_hz=50.0, power_factor=0.85,  # required; frequency unused in this non-frequency test
             site_id="cooling-test",
             alpha_max=alpha_max,
             tau_seconds=tau,
@@ -907,7 +908,7 @@ class TestCoolingThermalLag:
         tau = 20.0
         alpha_max = 0.20
         site = SiteConfig(
-            frequency_nominal_hz=50.0,  # required; frequency unused in this non-frequency test
+            frequency_nominal_hz=50.0, power_factor=0.85,  # required; frequency unused in this non-frequency test
             site_id="cooling-test",
             alpha_max=alpha_max,
             tau_seconds=tau,
