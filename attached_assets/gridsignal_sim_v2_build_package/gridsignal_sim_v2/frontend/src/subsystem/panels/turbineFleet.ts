@@ -144,14 +144,14 @@ function FleetTable(
 
   const hCell: React.CSSProperties = {
     ...MONO, fontSize: 9, fontWeight: 700,
-    letterSpacing: '0.1em', color: '#4b5764',
+    letterSpacing: '0.1em', color: '#8b949e',
     padding: '0 10px 6px 0', textTransform: 'uppercase' as const,
-    borderBottom: '1px solid #1e2a36', whiteSpace: 'nowrap' as const,
+    borderBottom: '1px solid #2a3a4a', whiteSpace: 'nowrap' as const,
   }
   const dCell = (colour?: string, bold?: boolean): React.CSSProperties => ({
     ...MONO, fontSize: 10,
-    color: colour ?? '#8b949e', fontWeight: bold ? 600 : 400,
-    padding: '5px 10px 5px 0', borderBottom: '1px solid #111821',
+    color: colour ?? '#c9d1d9', fontWeight: bold ? 600 : 400,
+    padding: '5px 10px 5px 0', borderBottom: '1px solid #161f29',
     whiteSpace: 'nowrap' as const,
   })
 
@@ -194,7 +194,7 @@ function FleetTable(
     if (liveSt === 'starting') {
       // In-flight start — show disabled label
       actionCell = React.createElement('span', {
-        style: { ...MONO, fontSize: 9, color: '#4b5764', fontStyle: 'italic' as const }
+        style: { ...MONO, fontSize: 9, color: '#8b949e', fontStyle: 'italic' as const }
       }, 'starting…')
     } else if (onBus) {
       // On-bus unit: offer Trip
@@ -203,7 +203,7 @@ function FleetTable(
         style: {
           ...btnBase,
           background: tripping ? '#3a1a1a' : '#2a1a1a',
-          color: tripping ? '#4b5764' : RED,
+          color: tripping ? '#6e7681' : RED,
           borderColor: RED,
           border: `1px solid ${RED}`,
           cursor: tripping ? 'default' : 'pointer',
@@ -222,7 +222,7 @@ function FleetTable(
         style: {
           ...btnBase,
           background: starting ? '#1a2a1a' : '#142014',
-          color: starting ? '#4b5764' : TEAL,
+          color: starting ? '#6e7681' : TEAL,
           border: `1px solid ${TEAL}`,
           cursor: starting ? 'default' : 'pointer',
           opacity: starting ? 0.6 : 1,
@@ -234,7 +234,7 @@ function FleetTable(
     } else {
       // out_of_service or transitional — no operator action available
       actionCell = React.createElement('span', {
-        style: { ...MONO, fontSize: 9, color: '#30363d' }
+        style: { ...MONO, fontSize: 9, color: '#6e7681' }
       }, '—')
     }
 
@@ -242,13 +242,13 @@ function FleetTable(
       React.createElement('td', { style: dCell(GOLD, true) }, u.asset_id),
       // 0.6: column labelled CURRENT MW — distinct from no-load and MSL.
       // Non-zero only for on-bus units; off-bus units show 0.00 MW (isOnBus fix).
-      React.createElement('td', { style: dCell(out > 0.01 ? GOLD : '#4b5764') }, `${out.toFixed(2)} MW`),
+      React.createElement('td', { style: dCell(out > 0.01 ? GOLD : '#6e7681') }, `${out.toFixed(2)} MW`),
       // 0.6: explicit NO-LOAD / MSL column from named typed fields
-      React.createElement('td', { style: dCell('#4b5764') }, noLoadMslStr),
+      React.createElement('td', { style: dCell('#8b949e') }, noLoadMslStr),
       // 0.2: SYNC driven by isOnBus() — Phase 2 live state preferred, breaker_closed fallback.
-      React.createElement('td', { style: dCell(onBus ? GOLD : '#4b5764') }, syncStr),
-      React.createElement('td', { style: dCell(isDeg ? AMBER : '#8b949e') }, rampStr),
-      React.createElement('td', { style: dCell('#4b5764') }, runHStr),
+      React.createElement('td', { style: dCell(onBus ? GOLD : '#8b949e') }, syncStr),
+      React.createElement('td', { style: dCell(isDeg ? AMBER : '#c9d1d9') }, rampStr),
+      React.createElement('td', { style: dCell('#8b949e') }, runHStr),
       React.createElement('td', { style: dCell(isDeg ? AMBER : TEAL, true) }, stateStr),
       // Operator action — Trip (on-bus) / Start (offline) / starting… / —
       React.createElement('td', { style: { ...dCell(), paddingRight: 0 } }, actionCell),
@@ -268,7 +268,7 @@ function FleetTable(
   return React.createElement('div', { style: { overflowX: 'auto' as const } },
     React.createElement('div', {
       style: { ...MONO, fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
-               color: '#4b5764', textTransform: 'uppercase' as const, marginBottom: 8 }
+               color: '#8b949e', textTransform: 'uppercase' as const, marginBottom: 8 }
     }, `FLEET — ${unitCountStr}`),
     React.createElement('table', {
       style: { width: '100%', borderCollapse: 'collapse' as const }
@@ -291,7 +291,7 @@ function FleetTable(
       ...degradedFootnotes.map((note, i) =>
         React.createElement('p', {
           key: i,
-          style: { fontFamily: 'Inter,sans-serif', fontSize: 10, color: '#4b5764',
+          style: { fontFamily: 'Inter,sans-serif', fontSize: 10, color: '#8b949e',
                    lineHeight: 1.5, margin: i > 0 ? '4px 0 0' : '0' }
         }, note)
       )
@@ -316,7 +316,7 @@ function ParallelingInset(units: TurbineUnitSpec[]): React.ReactNode {
         }
       }, 'G'),
       React.createElement('div', {
-        style: { ...MONO, fontSize: 9, color: '#4b5764', flexShrink: 0, minWidth: 76 }
+        style: { ...MONO, fontSize: 9, color: '#8b949e', flexShrink: 0, minWidth: 76 }
       }, u.asset_id),
       React.createElement('div', { style: { flex: 1, display: 'flex', alignItems: 'center', gap: 2 } },
         React.createElement('div', { style: { height: 1.5, flex: 1, background: '#2a3f52', minWidth: 10 } }),
@@ -324,7 +324,7 @@ function ParallelingInset(units: TurbineUnitSpec[]): React.ReactNode {
           style: {
             width: 16, height: 16, border: '1.5px solid #3a5060', borderRadius: 2,
             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            ...MONO, fontSize: 7, color: '#4b5764',
+            ...MONO, fontSize: 7, color: '#8b949e',
           }
         }, 'CB'),
         React.createElement('div', { style: { height: 1.5, flex: 1, background: '#2a3f52', minWidth: 6 } }),
@@ -337,7 +337,7 @@ function ParallelingInset(units: TurbineUnitSpec[]): React.ReactNode {
   },
     React.createElement('div', {
       style: { ...MONO, fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
-               color: '#4b5764', textTransform: 'uppercase' as const, marginBottom: 12 }
+               color: '#8b949e', textTransform: 'uppercase' as const, marginBottom: 12 }
     }, 'PARALLELING — AC BUS, SYNCHRO-CHECK BEFORE CLOSE'),
     React.createElement('div', {
       style: { display: 'flex', gap: 24, alignItems: 'flex-start', flexWrap: 'wrap' as const }
@@ -352,13 +352,13 @@ function ParallelingInset(units: TurbineUnitSpec[]): React.ReactNode {
             style: { ...MONO, fontSize: 9, fontWeight: 700, color: GOLD, whiteSpace: 'nowrap' as const }
           }, '13.8 kV BUS'),
           React.createElement('div', {
-            style: { ...MONO, fontSize: 9, color: '#4b5764', whiteSpace: 'nowrap' as const }
+            style: { ...MONO, fontSize: 9, color: '#8b949e', whiteSpace: 'nowrap' as const }
           }, '▶ switchgear / PMS'),
         ),
       ),
       React.createElement('div', { style: { flex: 1, minWidth: 200 } },
         React.createElement('p', {
-          style: { fontFamily: 'Inter,sans-serif', fontSize: 10, color: '#8b949e', lineHeight: 1.6, margin: 0 }
+          style: { fontFamily: 'Inter,sans-serif', fontSize: 10, color: '#b1bac4', lineHeight: 1.6, margin: 0 }
         }, (() => {
           // 0.2: relay footer reads sync_relay_state — separate from the breaker_closed
           // SYNC column. Phase 0: derived from hot_standby; Phase 1: real-time.
@@ -372,7 +372,7 @@ function ParallelingInset(units: TurbineUnitSpec[]): React.ReactNode {
                    margin: '4px 0 0', fontWeight: 600 }
         }, 'GridSignal never issues this command — TC-68'),
         React.createElement('p', {
-          style: { fontFamily: 'Inter,sans-serif', fontSize: 10, color: '#4b5764', lineHeight: 1.6, margin: '8px 0 0' }
+          style: { fontFamily: 'Inter,sans-serif', fontSize: 10, color: '#8b949e', lineHeight: 1.6, margin: '8px 0 0' }
         }, 'Synchronous generators produce AC directly. No rectifier or DC link in this path — unlike the BESS and solar inverters, which are DC-coupled and grid-following.'),
       ),
     ),
@@ -383,14 +383,14 @@ function ParallelingInset(units: TurbineUnitSpec[]): React.ReactNode {
 function noTickPanel(): PanelData {
   return {
     stateLabel:   '—',
-    stateColour:  '#30363d',
+    stateColour:  '#6e7681',
     verdict:      'No active run. Start a scenario to see fleet readiness.',
     heroValue:    '—',
     heroLabel:    'MW firm, N−1',
     chartTitle:   '',
     identityLine: 'gas turbine fleet · synchronous · islanded primary generation',
     chart: React.createElement('div', {
-      style: { fontFamily: 'Inter,sans-serif', fontSize: 11, color: '#4b5764',
+      style: { fontFamily: 'Inter,sans-serif', fontSize: 11, color: '#8b949e',
                padding: '32px 0', textAlign: 'center' as const }
     }, 'No data — start a scenario to populate the fleet table.'),
     statRows: [
