@@ -377,6 +377,9 @@ export interface TurbineUnitSpec {
    *  Authoritative source for SYNC column and CURRENT MW distribution.
    *  Falls back to breaker_closed when absent. */
   state?: string
+  /** Thermal state of the unit — "hot" | "warm" | "cold".
+   *  Determines start-sequence duration.  Null when unit has never been started. */
+  thermal_state?: string | null
 }
 
 /** PMS wiring exposed in the Scenario Builder. */

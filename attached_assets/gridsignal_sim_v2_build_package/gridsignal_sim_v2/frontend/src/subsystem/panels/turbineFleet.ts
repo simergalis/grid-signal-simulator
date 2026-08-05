@@ -46,6 +46,174 @@ const MONO: React.CSSProperties = {
   fontFamily: "'SF Mono','Roboto Mono',Menlo,Consolas,monospace",
 }
 
+// ── Thermal state ─────────────────────────────────────────────────────────────
+const THERMAL_COLOUR: Record<string, string> = {
+  hot:  AMBER,
+  warm: GOLD,
+  cold: TEAL,
+}
+
+const _THERMAL_ROWS = [
+  { state: 'hot',  label: 'Hot',  cond: 'Off < 1 hour',                syncTime: '60 s (1 min)'   },
+  { state: 'warm', label: 'Warm', cond: 'Off 1–4 hours',                syncTime: '300 s (5 min)'  },
+  { state: 'cold', label: 'Cold', cond: 'Off > 4 hours, or never run',  syncTime: '900 s (15 min)' },
+] as const
+
+// Derive thermal state from unit spec; fallback to 'cold' when field absent.
+function _thermalOf(u: TurbineUnitSpec): string {
+  return (u.thermal_state as string | null | undefined) ?? 'cold'
+}
+
+// Stat-row subtitle for the current thermal state — accurate start time.
+function _thermalSub(state: string): string {
+  if (state === 'hot')  return '60 s (1 min) to sync — recently stopped'
+  if (state === 'warm') return '300 s (5 min) to sync — partially cooled'
+  return '900 s (15 min) to sync — never run or fully cooled'
+}
+
+interface ThermalUnit { asset_id: string; thermal: string; ratedMW: number; rampMWs: number }
+
+// ── ThermalStateWidget ───────────────────────────────────────────────────────
+// Standalone React function component — has its own useState for the overlay.
+// Renders a clickable "THERMAL STATE · Cold ↗" bar below the fleet table.
+// On click: fixed-position overlay with the 3-row start-time guide, current
+// state row highlighted (left border + background tint + bold label).
+function ThermalStateWidget({ units }: { units: ThermalUnit[] }): React.ReactNode {
+  const [open, setOpen] = React.useState(false)
+  if (units.length === 0) return null
+
+  // Worst-case state across the set (cold < warm < hot in start-time severity).
+  const ORDER = ['cold', 'warm', 'hot']
+  const primaryState = units.reduce((worst, u) =>
+    ORDER.indexOf(u.thermal) < ORDER.indexOf(worst) ? u.thermal : worst
+  , units[0].thermal)
+
+  const primaryColour = THERMAL_COLOUR[primaryState] ?? '#8b949e'
+  const primaryLabel  = primaryState.charAt(0).toUpperCase() + primaryState.slice(1)
+
+  // "Ramp to full output" note uses the first unit's actual rate.
+  const u0          = units[0]
+  const timeToFullS = Math.ceil(u0.ratedMW / u0.rampMWs)
+  const rampNote    = `+ up to ${timeToFullS} s at ${u0.rampMWs.toFixed(3)} MW/s`
+
+  const thSt = {
+    ...MONO, padding: '6px 10px', textAlign: 'left' as const,
+    fontSize: 9, color: '#8b949e', fontWeight: 700,
+    letterSpacing: '0.08em', textTransform: 'uppercase' as const,
+    borderBottom: '1px solid #2a3a4a',
+  }
+  const tdSt = (active: boolean) => ({
+    ...MONO, padding: '10px 10px', fontSize: 11,
+    color: active ? '#c9d1d9' : '#8b949e', borderBottom: '1px solid #1a2535',
+  })
+  // A row is highlighted when any unit in the set has that thermal state.
+  const isActive = (rowState: string) => units.some(u => u.thermal === rowState)
+
+  return React.createElement(React.Fragment, null,
+
+    // ── Clickable bar ─────────────────────────────────────────────────────────
+    React.createElement('div', {
+      style: {
+        ...MONO, display: 'flex', alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '8px 0', marginTop: 6,
+        borderTop: '1px solid #2a3a4a',
+        cursor: 'pointer', userSelect: 'none',
+      },
+      onClick: () => setOpen(true),
+      title: 'View start-time guide',
+    },
+      React.createElement('span', {
+        style: {
+          ...MONO, fontSize: 9, fontWeight: 700,
+          letterSpacing: '0.1em', textTransform: 'uppercase' as const,
+          color: '#8b949e',
+        },
+      }, 'THERMAL STATE'),
+      React.createElement('span', {
+        style: { ...MONO, fontSize: 10, fontWeight: 600, color: primaryColour },
+      }, `${primaryLabel} \u2197`),
+    ),
+
+    // ── Fixed overlay ─────────────────────────────────────────────────────────
+    !open ? null : React.createElement('div', {
+      style: {
+        position: 'fixed', inset: 0, zIndex: 60,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'rgba(0,0,0,0.78)',
+      },
+      onClick: (e: React.MouseEvent) => { if (e.target === e.currentTarget) setOpen(false) },
+    },
+      React.createElement('div', {
+        style: {
+          background: '#0d1117', border: '1px solid #2a3a4a',
+          borderRadius: 12, padding: '24px 28px',
+          maxWidth: 580, width: '90vw',
+          boxShadow: '0 24px 64px rgba(0,0,0,0.65)',
+        },
+      },
+
+        // Header
+        React.createElement('div', {
+          style: {
+            ...MONO, fontSize: 11, fontWeight: 700,
+            letterSpacing: '0.12em', textTransform: 'uppercase' as const,
+            color: '#8b949e', marginBottom: 16,
+          },
+        }, 'Start-Time Guide'),
+
+        // Table
+        React.createElement('table', {
+          style: { width: '100%', borderCollapse: 'collapse' as const },
+        },
+          React.createElement('thead', null,
+            React.createElement('tr', null,
+              ...['Thermal state', 'Condition', 'Time to synchronised', 'Then ramp to full output'].map(h =>
+                React.createElement('th', { key: h, style: thSt }, h)
+              )
+            )
+          ),
+          React.createElement('tbody', null,
+            ..._THERMAL_ROWS.map(row => {
+              const act   = isActive(row.state)
+              const acCol = THERMAL_COLOUR[row.state]
+              return React.createElement('tr', {
+                key: row.state,
+                style: {
+                  background: act ? 'rgba(255,255,255,0.035)' : 'transparent',
+                  borderLeft: `3px solid ${act ? acCol : 'transparent'}`,
+                },
+              },
+                React.createElement('td', {
+                  style: { ...tdSt(act), fontWeight: act ? 700 : 400, color: act ? acCol : '#8b949e' },
+                }, row.label),
+                React.createElement('td', { style: tdSt(act) }, row.cond),
+                React.createElement('td', { style: tdSt(act) }, row.syncTime),
+                React.createElement('td', { style: tdSt(act) },
+                  row.state === 'hot' ? rampNote : '+ up to 50 s'
+                ),
+              )
+            })
+          )
+        ),
+
+        // Close
+        React.createElement('div', { style: { marginTop: 20, textAlign: 'right' as const } },
+          React.createElement('button', {
+            style: {
+              background: TEAL, color: '#0d1117', border: 'none',
+              borderRadius: 6, padding: '7px 22px',
+              ...MONO, fontSize: 11, fontWeight: 700,
+              cursor: 'pointer', letterSpacing: '0.04em',
+            },
+            onClick: () => setOpen(false),
+          }, 'Close'),
+        ),
+      )
+    )
+  )
+}
+
 // ── 0.1: derive identity line from typed TickPayload fields ──────────────────
 // Replaces the hardcoded "3 × 15 MW aeroderivative" literal in subsystems.ts.
 // Count, rating, and prime-mover class all come from turbine_units.
@@ -423,7 +591,14 @@ function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData
   // 0.5: ramp energy bounded at rated_mw for single unit
   const rampEnergy  = Math.min(u.r_asset_mw_per_s * horizonS, u.rated_mw)
 
-  const chart = FleetTable(units, outputMW, u.r_asset_mw_per_s, syncedCount, tick.run_id)
+  const thermalState = _thermalOf(u)
+  const thermalLabel = thermalState.charAt(0).toUpperCase() + thermalState.slice(1)
+  const chart = React.createElement(React.Fragment, null,
+    FleetTable(units, outputMW, u.r_asset_mw_per_s, syncedCount, tick.run_id),
+    React.createElement(ThermalStateWidget, {
+      units: [{ asset_id: u.asset_id, thermal: thermalState, ratedMW: u.rated_mw, rampMWs: u.r_asset_mw_per_s }],
+    }),
+  )
 
   const secondary = React.createElement('div', { className: 'space-y-3' },
     // Red N−1=0 warning
@@ -465,7 +640,7 @@ function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData
           ? `${rampEnergy.toFixed(1)} MW in ${horizonS.toFixed(0)} s (bounded at ${u.rated_mw.toFixed(0)} MW rated)`
           : `${u.rated_mw.toFixed(0)} MW rated — no active ramp event` },
       { label: 'Rated output',       value: `${u.rated_mw.toFixed(1)} MW`,        sub: 'nameplate' },
-      { label: 'Start time, cold',   value: '5–10 min',                           sub: 'a cold unit contributes nothing to a 0 s horizon event' },
+      { label: 'Thermal state',      value: thermalLabel,                          colour: THERMAL_COLOUR[thermalState], sub: _thermalSub(thermalState) },
     ],
     secondary,
     why: [
@@ -505,7 +680,17 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData {
   // The Phase 0.5 display-level cap and LEAD_WINDOW_S constant have been removed.
   const rampEnergyMW = tick.ramp_capability_mw ?? (aggRampMWs * horizonS)
 
-  const chart = FleetTable(units, outputMW, maxRamp, onlineN, tick.run_id)
+  const offlineUnits = units.filter(u => !isOnBus(u))
+  const thermalUnits = offlineUnits.map(u => ({
+    asset_id: u.asset_id, thermal: _thermalOf(u),
+    ratedMW: u.rated_mw, rampMWs: u.r_asset_mw_per_s,
+  }))
+  const chart = thermalUnits.length > 0
+    ? React.createElement(React.Fragment, null,
+        FleetTable(units, outputMW, maxRamp, onlineN, tick.run_id),
+        React.createElement(ThermalStateWidget, { units: thermalUnits }),
+      )
+    : FleetTable(units, outputMW, maxRamp, onlineN, tick.run_id)
 
   const secondary = React.createElement('div', { className: 'space-y-3' },
     React.createElement(BulletBar, {
@@ -567,7 +752,7 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData {
         sub: horizonS > 0
           ? `${(parseFloat(rampWith1) * horizonS).toFixed(0)} MW in ${horizonS.toFixed(0)} s — BESS covers the remainder`
           : 'no active ramp event' },
-      { label: 'Start time, cold',   value: '5–10 min',                      sub: 'STARTING units contribute 0 to ramp reserve (Task #198 item 2)' },
+      { label: 'Cold-start sync',    value: '900 s (15 min)',                  sub: 'STARTING units contribute 0 to ramp reserve · see thermal guide' },
     ],
     secondary,
     why: [
