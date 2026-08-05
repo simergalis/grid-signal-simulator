@@ -164,11 +164,13 @@ export interface TickPayload {
 
   // Phase 1b: loading-layer outputs (stamped each tick).
   // sub_msl_surplus_mw > 0 when P_fleet < Σ msl_i for SYNCHRONISED units;
-  //   fleet holds at the floor; surplus reported but not resolved.
-  // ramp_capability_mw: fleet ramp over LEAD_WINDOW_S = 45 s horizon.
+  //   fleet holds at the floor; in islanded mode surplus enters frequency_forcing_mw.
+  // ramp_capability_mw: fleet ramp over runtime lead horizon (dt_lead_next_s).
   //   Replaces the Phase 0.5 display-level cap in turbineFleet.ts.
+  // d4_balance_defect_mw: power balance accounting check; 0.0 in normal operation.
   sub_msl_surplus_mw:    number
   ramp_capability_mw:    number
+  d4_balance_defect_mw:  number
 
   // Phase 11.6: cooling thermal lag.
   compute_inlet_temp_c: number  // inlet air temp from lagged cooling output

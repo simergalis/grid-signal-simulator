@@ -1,0 +1,139 @@
+Task #198 — Phase 1b/2 Corrections
+
+Phase 1b and Phase 2 landed with good work — the B1a double-advance catch and preserving the D4 identity under Branch B were both correct calls. Five items need correction before Phase 3. Items 1 through 3 change numbers. Do them in order.
+
+Target model: core/simulation_core.py, core/loading.py, core/dispatch.py. Out of scope: gridsignal_logger.py.
+
+1. sub_msl_surplus_mw must not be a balance channel
+
+Finding. The D4 inline assert reads:
+
+(turbine_output + bess_output + p_renewable)
+  − (p_total + grid_exchange + frequency_forcing + model_error + sub_msl_surplus)
+
+This makes sub_msl_surplus_mw a fourth term in the power balance identity. Phase 13.2 established exactly three channels: grid_exchange_mw, frequency_forcing_mw, asset_delivery_error_mw. The instruction for Phase 1b said report the surplus and route it nowhere; appearing as a term in the balance equation is routing it.
+
+It is also physically wrong. Surplus generation with nowhere to go does not disappear into a named bucket — it accelerates the machines.
+
+Required change. Sub-MSL surplus enters frequency_forcing_mw and manifests as overfrequency. sub_msl_surplus_mw remains a reporting field only: it tells the drawer how much surplus exists and why the fleet is at its floor. It is not a term in the identity.
+
+The D4 assert returns to exactly three channels on the right-hand side.
+
+Also confirm: is model_error the same quantity as asset_delivery_error_mw? If a channel was renamed at the assert boundary, that is a field-boundary defect in a new location. Report the finding; if they are the same, use one name everywhere.
+
+Acceptance
+
+D4 identity has three channels on the RHS. sub_msl_surplus_mw does not appear in it.
+A scenario driving P_allocated below Σ msl produces a measurable positive frequency excursion, and sub_msl_surplus_mw reports the MW figure.
+One name for the asset delivery error channel across backend, assert, wire dict, and types.ts.
+2. STARTING units contribute zero ramp credit
+
+Finding. TC-80 specified: a STARTING unit contributes zero below time_to_online_s, rated above. The implementation credits r_asset × (LEAD_WINDOW_S − time_to_online_s) — pro-rated credit for a unit that has not closed its breaker.
+
+This deviated from a written acceptance criterion and was reported as a design decision rather than a deviation. Report deviations as deviations.
+
+Why zero is correct. The credit feeds a reserve number. Starts fail. A machine not yet on the bus must not be banked as reserve — the same distinction as load is currently served versus load is reliably served. With cold starts at 300–600 s the pro-rated term is almost always zero regardless, so nothing is lost.
+
+Required change. ramp_capability() credits a unit only in SYNCHRONISED. STARTING, OFFLINE, OUT_OF_SERVICE, TRANSITIONAL, and hot-standby all contribute zero.
+
+Acceptance
+
+TC-80 rewritten to the specified form: zero credit at any time_to_online_s > 0, full credit only once SYNCHRONISED.
+No pro-rating term remains in ramp_capability().
+3. One lead time, not two
+
+Finding. LEAD_WINDOW_S = 45.0 was invented. The do-not list said stop and report rather than choose a value. Surfacing it in the report is better than silence, but the deeper problem is the one the report itself identified as Contradiction 1: ramp_capability() uses a fixed 45 s while the dispatch arbitrator uses runtime dt_lead_seconds. Two independently sourced lead times producing ramp numbers that diverge is the recurring dual-path defect in a new location.
+
+Required change. ramp_capability(H) takes the horizon as a parameter. Callers pass the dispatch arbitrator's runtime dt_lead_seconds. Delete LEAD_WINDOW_S.
+
+Where the drawer needs a displayed figure, it displays capability at the current runtime lead, labelled with that horizon — not at a constant.
+
+Acceptance
+
+LEAD_WINDOW_S does not exist.
+One lead-time source in the codebase. Verify structurally: no second constant or literal supplies a ramp horizon.
+The drawer's ramp figure and the arbitrator's ramp accounting agree at every tick. Assert it.
+4. Two loading paths need a deletion plan and a mutual-exclusion guard
+
+Finding. The loading layer serves SYNCHRONISED; advance() serves RAMPING/AT_TARGET. The double-advance bug found during Phase 1b is proof the hazard is real, not evidence it is contained. Dual implementations of the same computation have appeared three times before (solar, balance decomposition, aggregate power) and the resolution has been deletion every time.
+
+Backward compatibility is a legitimate reason to defer deletion. It is not a reason to leave the coexistence unguarded or undated.
+
+Required change.
+
+Add a runtime guard asserting no unit is ever eligible for both paths in the same tick. This is the invariant the B1a bug violated; make it structural.
+Produce a written migration plan: which scenarios still emit RAMPING/AT_TARGET, what converting each requires, and a target task number for deleting advance(). Plan only — do not migrate in this task.
+
+Acceptance
+
+Guard exists and is proven able to fail: deliberately make one unit eligible for both, show the guard fires, revert.
+Migration plan written, listing every scenario still on the legacy path.
+5. D4 must not be a bare assert
+
+Finding. The D4 identity check is a bare assert inside evaluate_tick(). Bare asserts are stripped under -O, so the invariant silently disappears in an optimised run. An AssertionError mid-tick also kills the run — a 1e-3 tolerance tripping during an operator demo is a bad failure mode.
+
+Required change. Convert to an explicit check that logs the violation and surfaces it as a defect field on TickResult (magnitude and the contributing channel values). The run continues. Tests assert the field stays zero.
+
+Acceptance
+
+No bare assert remains in evaluate_tick().
+A deliberately induced imbalance populates the defect field, is logged, and does not terminate the run.
+Existing D4 tests assert against the defect field.
+Also report
+
+P_anchor_reserve = 1.0 MW is a BessConfig default with no San Diego override. Non-zero, so TC-63 holds, but no one has chosen it for that site. Register it as an open item alongside r_asset, min_down_time_s, and unload_tail_s under §15 — engineering placeholders, not validated values. Do not change the value.
+
+Report item 5 from the previous task was not addressed. Droop was already wired before Phase 1b, so Phase 1b should have moved no frequency assertion. Confirm explicitly whether any scenario assertion value changed. If none changed, state that. If any changed, enumerate each with its mechanism — a loading-layer change that perturbs frequency behaviour indicates unintended coupling.
+
+The seven pre-existing failures (test_d10, test_item4, test_f5, kube oscillation ×4) — confirm each was failing before Phase 1b, with the commit or task where it was last green. Pre-existing is a claim, not an observation, unless it is checked.
+
+Do not
+Route sub_msl_surplus_mw anywhere other than frequency_forcing_mw.
+Add a fourth balance channel under any name.
+Credit any unit toward ramp capability before it is SYNCHRONISED.
+Introduce any constant supplying a ramp horizon.
+Migrate scenarios off RAMPING/AT_TARGET in this task. Plan only.
+Delete advance() in this task.
+Change P_anchor_reserve.
+Invent a constant. If a value is needed that is not named here or already in the fixtures, stop and report rather than choosing.
+Tune a tolerance to make an assertion pass.
+Implement Phase 3 transitional sequences, operator endpoints, or commitment logic.
+Report format
+Files changed, line counts.
+Each acceptance criterion quoted, with PASS/FAIL and evidence.
+Disposition of model_error versus asset_delivery_error_mw.
+Explicit confirmation on frequency assertions: none changed, or enumerated with mechanisms.
+Pre-existing failure verification: each of the seven, with the commit or task where it was last green.
+The migration plan for RAMPING/AT_TARGET.
+Spec sections found contradictory or underspecified. State "none" explicitly if none.
+Out-of-scope temptations. State "none" explicitly if none.
+Project content
+GridSignal
+Created by you
+GridSignal-Forecast-Engine-Functional-Spec_v2.5.md
+
+1,683 lines
+
+MD
+
+PDF
+
+PDF
+
+Content
+
+Here’s a Replit-compatible prompt for implementing manual shutdown/startup of gas turbine generators, along with a scenario generator to simulate initial states and forced shutdowns. This assumes a Python-based simulation with a simple CLI or web interface (e.g., Flask/FastAPI for a dashboard). Pro
+
+PASTED
+
+PHASE_1B_REPORT (1).md
+
+124 lines
+
+MD
+
+PHASE_1B_REPORT.md
+
+124 lines
+
+MD

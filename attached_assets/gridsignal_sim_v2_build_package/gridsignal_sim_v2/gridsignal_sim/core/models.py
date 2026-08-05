@@ -966,14 +966,22 @@ class TickResult:
     asset_delivery_error_mw:   float = 0.0
     # ── Phase 1b — Loading layer outputs ─────────────────────────────────────
     # sub_msl_surplus_mw: non-zero when P_allocated < Σ msl_i for SYNCHRONISED
-    #   units.  Fleet holds at the floor; surplus is reported, not resolved.
+    #   units.  Fleet holds at the floor; surplus enters frequency_forcing_mw
+    #   (islanded → overfrequency) or is absorbed by grid (grid-connected).
+    #   sub_msl_surplus_mw is a REPORTING field only — not a balance channel.
     #   0.0 in normal operation (feasible band: Σ msl ≤ P_allocated ≤ Σ rated).
-    # ramp_capability_mw: fleet ramp capability over LEAD_WINDOW_S horizon.
-    #   Σ_{i∈A} min(r_i × H, rated_i − output_i) for SYNCHRONISED/RAMPING/AT_TARGET;
-    #   rated_i for STARTING units where H ≥ time_to_online_i.
+    # ramp_capability_mw: fleet ramp capability over the runtime lead horizon
+    #   (dt_lead_next_s from the dispatch arbitrator).
+    #   Σ_{i∈A} min(r_i × H, rated_i − output_i) for SYNCHRONISED/RAMPING/AT_TARGET.
+    #   STARTING units contribute zero (not on bus; starts fail — Task #198 item 2).
     #   Replaces the Phase 0.5 display-level cap in turbineFleet.ts (spec §1b).
     sub_msl_surplus_mw:        float = 0.0
     ramp_capability_mw:        float = 0.0
+    # d4_balance_defect_mw: |Σ channels − balance_residual|.
+    #   Zero in normal operation.  Non-zero signals a power-balance accounting
+    #   error; the run continues and the field is logged (Task #198 item 5).
+    #   Tests assert abs(d4_balance_defect_mw) < 1e-3.
+    d4_balance_defect_mw:      float = 0.0
     # ── Phase 13.4 — Setpoint/actual split ────────────────────────────────────
     # model_error_mw: injected load-model bias (site.load_model_bias_mw).
     #   Default 0.0.  Observable as its own channel — does NOT flow into dispatch

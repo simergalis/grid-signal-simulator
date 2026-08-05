@@ -24,8 +24,9 @@ from core.loading import (
     compute_loading_setpoints,
     apply_loading,
     ramp_capability,
-    LEAD_WINDOW_S,
 )
+# LEAD_WINDOW_S deliberately absent — Task #198 item 3.
+# Tests use explicit numeric horizons so there is no second constant.
 
 
 # ---------------------------------------------------------------------------
@@ -188,8 +189,10 @@ class TestTC78Terminates:
 # ---------------------------------------------------------------------------
 
 class TestTC79RampClampedByHeadroom:
-    """TC-79: Fleet at 90% of rated, 45 s horizon — capability equals remaining
-    headroom, not r × 45 × n.
+    """TC-79: Fleet at 90% of rated, 45 s explicit horizon — capability equals
+    remaining headroom, not r × 45 × n.
+
+    Item 3: horizons are explicit numeric values (no LEAD_WINDOW_S constant).
     """
 
     def test_tc79_headroom_dominates_at_90pct(self):
@@ -197,15 +200,16 @@ class TestTC79RampClampedByHeadroom:
         rated = 10.0
         r_mw_s = 0.2  # 0.2 × 45 = 9 MW uncapped ramp
         output = 9.0  # 90% → headroom = 1 MW
+        H = 45.0       # explicit horizon — matches dispatch arbitrator default
         units = [
             _turbine(rated_mw=rated, r_asset_mw_per_s=r_mw_s, output_mw=output),
             _turbine(rated_mw=rated, r_asset_mw_per_s=r_mw_s, output_mw=output),
         ]
-        cap = ramp_capability(LEAD_WINDOW_S, units)
+        cap = ramp_capability(H, units)
         expected = 2 * (rated - output)  # 2 × 1.0 = 2.0 MW
         assert cap == pytest.approx(expected, abs=1e-6), (
             f"TC-79: capability={cap:.4f} MW != headroom-capped {expected:.4f} MW "
-            f"(uncapped would be {2 * r_mw_s * LEAD_WINDOW_S:.1f} MW)"
+            f"(uncapped would be {2 * r_mw_s * H:.1f} MW)"
         )
 
     def test_tc79_ramp_dominates_when_output_near_zero(self):
@@ -213,19 +217,21 @@ class TestTC79RampClampedByHeadroom:
         rated = 10.0
         r_mw_s = 0.2
         output = 0.0
+        H = 45.0
         units = [_turbine(rated_mw=rated, r_asset_mw_per_s=r_mw_s, output_mw=output)]
-        cap = ramp_capability(LEAD_WINDOW_S, units)
-        expected = min(r_mw_s * LEAD_WINDOW_S, rated)  # 9.0 MW
+        cap = ramp_capability(H, units)
+        expected = min(r_mw_s * H, rated)  # 9.0 MW
         assert cap == pytest.approx(expected, abs=1e-6), (
             f"TC-79: capability={cap:.4f} != ramp-limited {expected:.4f} MW"
         )
 
     def test_tc79_hot_standby_excluded(self):
         """Hot-standby units must not contribute to ramp capability."""
+        H = 45.0
         standby = _turbine(rated_mw=10.0, r_asset_mw_per_s=0.2, output_mw=0.0, hot_standby=True)
         active  = _turbine(rated_mw=10.0, r_asset_mw_per_s=0.2, output_mw=0.0)
-        cap = ramp_capability(LEAD_WINDOW_S, [standby, active])
-        expected = min(0.2 * LEAD_WINDOW_S, 10.0)  # only active unit
+        cap = ramp_capability(H, [standby, active])
+        expected = min(0.2 * H, 10.0)  # only active unit
         assert cap == pytest.approx(expected, abs=1e-6), (
             f"TC-79: hot_standby contributed to ramp; cap={cap:.4f} > expected={expected:.4f}"
         )
@@ -236,7 +242,14 @@ class TestTC79RampClampedByHeadroom:
 # ---------------------------------------------------------------------------
 
 class TestTC80StartingUnitRampCapability:
-    """TC-80: STARTING unit with cold_start_s=900 contributes 0 at H<900, rated at H≥900."""
+    """TC-80 (corrected, Task #198 item 2): STARTING units contribute ZERO to
+    ramp capability regardless of the horizon.
+
+    Rationale: a unit not yet on bus must not be banked as reserve — starts fail.
+    Full credit appears only once the unit transitions to SYNCHRONISED.  The
+    old pro-rating (credit = 0 for H < timer; rated_mw for H ≥ timer) is
+    removed: the horizon is irrelevant while the breaker is open.
+    """
 
     def test_tc80_starting_zero_before_online(self):
         """H = 45 s < 900 s → starting unit contributes 0."""
@@ -248,29 +261,40 @@ class TestTC80StartingUnitRampCapability:
         )
 
     def test_tc80_starting_rated_at_online_time(self):
-        """H = 900 s == time_to_online_s → contributes rated_mw."""
+        """H = 900 s == time_to_online_s → still 0 (unit is STARTING, not SYNCHRONISED).
+
+        Corrected: the old rule credited rated_mw at H ≥ timer.  Item 2 removes
+        that branch: state == STARTING always contributes zero.
+        """
         t = _starting_turbine(rated_mw=10.0, time_to_online_s=900.0)
         cap = ramp_capability(900.0, [t])
-        assert cap == pytest.approx(10.0, abs=1e-6), (
-            f"TC-80: STARTING unit H=900 == 900 s contributed {cap:.4f} MW (should be 10.0)"
+        assert cap == pytest.approx(0.0, abs=1e-9), (
+            f"TC-80: STARTING unit H=900 == 900 s contributed {cap:.4f} MW "
+            f"(should be 0 — state is still STARTING, not SYNCHRONISED)"
         )
 
     def test_tc80_starting_rated_above_online_time(self):
-        """H > time_to_online_s → contributes rated_mw (unit is online within horizon)."""
+        """H > time_to_online_s → still 0 (unit is STARTING, not SYNCHRONISED).
+
+        Corrected: the old rule credited rated_mw when H > timer.  Item 2 removes
+        the pro-rating — STARTING units contribute zero at any horizon.
+        """
         t = _starting_turbine(rated_mw=10.0, time_to_online_s=600.0)
         cap = ramp_capability(900.0, [t])
-        assert cap == pytest.approx(10.0, abs=1e-6), (
-            f"TC-80: STARTING unit H=900 > 600 s contributed {cap:.4f} MW"
+        assert cap == pytest.approx(0.0, abs=1e-9), (
+            f"TC-80: STARTING unit H=900 > 600 s contributed {cap:.4f} MW "
+            f"(should be 0 — state is still STARTING, not SYNCHRONISED)"
         )
 
     def test_tc80_starting_plus_synchronised_fleet(self):
-        """Mixed fleet: STARTING contributes 0 (H < timer); SYNCHRONISED contributes normally."""
+        """Mixed fleet: STARTING always contributes 0; SYNCHRONISED contributes normally."""
         starting   = _starting_turbine(rated_mw=10.0, time_to_online_s=900.0)
         synced     = _turbine(rated_mw=10.0, r_asset_mw_per_s=0.2, output_mw=5.0)
         cap = ramp_capability(45.0, [starting, synced])
+        # starting: 0 MW (not on bus — Task #198 item 2)
         # synced: min(0.2 × 45, 10 − 5) = min(9, 5) = 5.0 MW
         assert cap == pytest.approx(5.0, abs=1e-6), (
-            f"TC-80: mixed fleet H=45 expected 5.0 MW; got {cap:.4f}"
+            f"TC-80: mixed fleet H=45 expected 5.0 MW (starting=0, synced=5); got {cap:.4f}"
         )
 
     def test_tc80_command_start_sets_starting_state(self):
@@ -443,21 +467,59 @@ class TestTC81UnitAvailabilityBoundary:
             hot_standby=True,
         )
 
-        lead = 45.0  # LEAD_WINDOW_S
-        # sync: 0.2 × 45 = 9.0 MW
-        # starting: 0.2 × (45 - 30) = 3.0 MW
-        # standby: excluded → 0
-        # total = 12.0 MW (delta_p_mw=20 → no cap)
+        lead = 45.0
+        # Task #198 item 2: STARTING units contribute zero (not on bus; starts fail).
+        # sync:     0.2 × 45 = 9.0 MW
+        # starting: 0.0 MW  (STARTING → zero regardless of lead_window_s)
+        # standby:  excluded → 0
+        # total = 9.0 MW (delta_p_mw=20 → no cap)
         credit = turbine_ramp_credit_mw([sync_ua, starting_ua, standby_ua], lead, 20.0)
-        assert credit == pytest.approx(12.0, abs=1e-6), (
-            f"TC-81 dispatch boundary: expected 12.0 MW credit, got {credit}"
+        assert credit == pytest.approx(9.0, abs=1e-6), (
+            f"TC-81 dispatch boundary: expected 9.0 MW credit (starting=0), got {credit}"
         )
 
-        # Cap to delta_p_mw
+        # Cap to delta_p_mw — 9.0 MW raw > 5.0 cap → 5.0
         capped = turbine_ramp_credit_mw([sync_ua, starting_ua, standby_ua], lead, 5.0)
         assert capped == pytest.approx(5.0, abs=1e-6), (
             f"TC-81 dispatch boundary cap: expected 5.0 MW, got {capped}"
         )
+
+    def test_tc81_mutual_exclusion_guard_passes_for_valid_split(self):
+        """Guard passes when SYNCHRONISED and RAMPING units are correctly separated.
+
+        Note: _turbine() derives asset_id from rated_mw, so units must have
+        distinct rated_mw values to receive distinct asset_ids.
+        """
+        from core.simulation_core import _check_loading_exclusion
+        # GT-10 in SYNCHRONISED state — in loading set
+        synced  = _turbine(rated_mw=10.0, output_mw=5.0, state=TurbineState.SYNCHRONISED)
+        # GT-15 in RAMPING state — NOT in loading set (different asset_id)
+        ramping = _turbine(rated_mw=15.0, output_mw=3.0, state=TurbineState.RAMPING)
+        # Correct usage: loading set = {GT-10}; RAMPING unit GT-15 is not in it → no error
+        _check_loading_exclusion([synced], [synced, ramping])
+
+    def test_tc81_mutual_exclusion_guard_raises_on_b1a_defect(self):
+        """Guard raises RuntimeError when a RAMPING unit is in the loading set.
+
+        This proves the guard can fire.  The B1a defect occurs when the
+        allocation filter incorrectly passes RAMPING units into the loading-
+        layer set A.  We simulate it by directly placing the RAMPING unit
+        in both the loading set and the all_turbines list.
+        """
+        from core.simulation_core import _check_loading_exclusion
+        # GT-10 in RAMPING state.  B1a defect: the filter erroneously put it
+        # into loading set A instead of filtering it out.
+        ramping = _turbine(rated_mw=10.0, output_mw=3.0, state=TurbineState.RAMPING)
+        with pytest.raises(RuntimeError, match="mutual-exclusion"):
+            _check_loading_exclusion([ramping], [ramping])
+
+    def test_tc81_mutual_exclusion_guard_raises_on_at_target_defect(self):
+        """Guard raises for AT_TARGET unit appearing in loading set."""
+        from core.simulation_core import _check_loading_exclusion
+        # Use a different rated_mw to avoid collision with any other helper-created unit
+        at_target = _turbine(rated_mw=20.0, output_mw=18.0, state=TurbineState.AT_TARGET)
+        with pytest.raises(RuntimeError, match="mutual-exclusion"):
+            _check_loading_exclusion([at_target], [at_target])
 
     def test_tc81_p_anchor_reserve_report(self):
         """Report: P_anchor_reserve at San Diego.

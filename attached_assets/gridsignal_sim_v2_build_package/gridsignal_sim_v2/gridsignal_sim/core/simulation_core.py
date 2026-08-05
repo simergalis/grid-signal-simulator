@@ -20,11 +20,50 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from .asset_modules import BessModule, CoolingModule, GPUModule, SolarModule, TurbineModule, TurbineState
-from .loading import apply_loading, ramp_capability, LEAD_WINDOW_S
+from .loading import apply_loading, ramp_capability
 from .contingency import BessSnapshot, PlantState, TurbineSnapshot, evaluate_contingency
 from .kube_demand import KubeDemandAgent, KubeGridState
 
 _log = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Mutual-exclusion guard helper (Task #198 item 4)
+# ---------------------------------------------------------------------------
+
+def _check_loading_exclusion(
+    synchronised_units: "list",
+    all_turbines: "list",
+) -> None:
+    """Raise RuntimeError if any turbine appears in both the loading-layer
+    allocated set A (SYNCHRONISED state) and the legacy advance() path
+    (RAMPING or AT_TARGET state).
+
+    This is the structural guard for the B1a double-advance defect.
+    Exported at module level so tests can call it directly without going
+    through a full evaluate_tick() invocation.
+
+    Parameters
+    ----------
+    synchronised_units : list[TurbineModule]
+        The loading-layer set A — already filtered to SYNCHRONISED-only.
+    all_turbines : list[TurbineModule]
+        The full turbine fleet from SimulationState.
+    """
+    _loading_ids = {t.config.asset_id for t in synchronised_units}
+    for t in all_turbines:
+        if t.state in (TurbineState.RAMPING, TurbineState.AT_TARGET):
+            if t.config.asset_id in _loading_ids:
+                raise RuntimeError(
+                    f"Loading-layer mutual-exclusion violated: unit "
+                    f"'{t.config.asset_id}' is in state {t.state.value} "
+                    f"(legacy advance() path) but also appears in the loading "
+                    f"layer's allocated set A (SYNCHRONISED-only filter). "
+                    f"This is the B1a double-advance defect — fix the allocation "
+                    f"filter."
+                )
+
+
 from .dispatch import (
     CandidateResponse, CheckpointClassifier, ConfidenceEngine, CurtailmentLadder,
     CurtailmentProposal, CurtailmentTier, DispatchArbitrator, InsufficientReserveAlert,
@@ -596,6 +635,11 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         t for t in state.turbines
         if t.state == TurbineState.SYNCHRONISED and not t.config.hot_standby
     ]
+
+    # Mutual-exclusion guard (Task #198 item 4): see _check_loading_exclusion().
+    # Uses RuntimeError (not assert) — survives -O optimisation.
+    _check_loading_exclusion(_synchronised_units, state.turbines)
+
     _sub_msl_surplus_mw: float = apply_loading(
         _synchronised_units, _p_dispatch_droop_mw, dt_seconds
     )
@@ -952,65 +996,63 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # frequency is above nominal and the droop pulls the setpoint below demand.
     _p_commanded_mw = _p_dispatch_droop_mw + _bess_setpoint_mw + p_renewable_mw
 
-    # asset_delivery_error_mw: actual dispatchable delivery minus commanded dispatch.
-    #   = (turbine_output − gt_setpoint) + (bess_output − bess_setpoint)
-    # Measures how closely the turbine and BESS fleets tracked their setpoints
-    # (the droop-adjusted setpoint for the turbine fleet).
-    # Positive = over-delivered; negative = under-delivered (e.g. BESS depleted,
-    # turbine curtailed).  ~0 in steady state without injected faults (D3).
+    # Phase 13.2 + Phase 1b (Task #198 item 1): mode-dependent channel routing.
     #
-    # Phase 13.3: this channel does NOT participate in the swing equation.
-    # Frequency is driven by frequency_forcing_mw only — the dispatch-plan
-    # mismatch — so that a physical delivery fault (e.g. BESS under-delivery)
-    # does not spontaneously move frequency.  Only the dispatch plan drives
-    # the inertial response.  "Model error must not move frequency."
+    # Sub-MSL floor surplus (_sub_msl_surplus_mw > 0):
+    #   Turbines held at Σ msl_i by the loading layer, so actual output >
+    #   commanded.  This is a FLOOR CONSTRAINT, not a hardware delivery fault.
+    #   Islanded: surplus accelerates machines → overfrequency → added to
+    #             frequency_forcing_mw.  Removed from the turbine delivery term
+    #             so asset_delivery_error_mw tracks hardware faults only.
+    #   Grid-connected: surplus is absorbed as additional PCC export.
+    #             asset_delivery_error_mw captures the turbine over-delivery
+    #             naturally (floor surplus is not separately routed in this mode).
     #
-    # Renamed from model_error_mw (Phase 13.2 addendum): "asset delivery error"
-    # correctly describes what the channel measures; "model error" implied it was
-    # a modelling residual (which would be the slack variable that D5 was written
-    # to prevent).  A genuine model_error_mw would require independent energy
-    # accounting and is left for a future phase.
-    # Renewable is excluded: it has no setpoint in this model (not dispatchable).
-    # D5: computed exclusively from setpoints and actual outputs — NOT derived as
-    #     "balance_residual − grid_exchange − frequency_forcing", which would make
-    #     it the new slack variable.
-    # channel_source: derived.
-    _asset_delivery_error_mw = (
-        (turbine_output_mw - _p_dispatch_droop_mw)
-        + (bess_output_mw  - _bess_setpoint_mw)
-    )
-
-    # grid_exchange_mw / frequency_forcing_mw: both compute (_p_commanded − p_total)
-    # but only one is non-zero — selected by mode topology:
-    #   Grid-connected: infinite bus absorbs the dispatch surplus/deficit as PCC flow.
-    #     grid_exchange_mw = _p_commanded − p_total  (positive = site exports to grid)
-    #     frequency_forcing_mw = 0.0 exactly                                      (D2)
-    #   Islanded: PCC open; dispatch plan presses/relieves rotating inertia instead.
-    #     grid_exchange_mw = 0.0 exactly                                           (D1)
-    #     frequency_forcing_mw = _p_commanded − p_total  (positive = frequency rises)
-    # channel_source: derived (both channels use _p_commanded and p_total — two
-    #   independently modelled quantities, neither defined to "close the equation").
-    # _islanded was already computed in the droop block above (Phase 13.3).
+    # D1: islanded → grid_exchange_mw = 0.0 exactly.
+    # D2: grid-connected → frequency_forcing_mw = 0.0 exactly.
+    # D4: grid_exchange + frequency_forcing + asset_delivery_error == balance_residual
+    #     holds in both modes (verified by _d4_balance_defect_mw below).
+    # D5: asset_delivery_error_mw is NOT derived as (balance_residual − others)
+    #     — computed independently from setpoints + actuals.
     if _islanded:
-        _grid_exchange_mw     = 0.0                           # topology — PCC open (D1)
-        _frequency_forcing_mw = _p_commanded_mw - p_total_mw
+        _grid_exchange_mw     = 0.0                           # PCC open (D1)
+        _frequency_forcing_mw = _p_commanded_mw - p_total_mw + _sub_msl_surplus_mw
+        # Sub-MSL surplus routed to frequency_forcing; subtract from turbine term
+        # so asset_delivery_error reflects hardware constraints only.
+        _asset_delivery_error_mw = (
+            (turbine_output_mw - _p_dispatch_droop_mw - _sub_msl_surplus_mw)
+            + (bess_output_mw  - _bess_setpoint_mw)
+        )
     else:
-        _grid_exchange_mw     = _p_commanded_mw - p_total_mw
-        _frequency_forcing_mw = 0.0                           # grid holds frequency (D2)
+        _grid_exchange_mw     = _p_commanded_mw - p_total_mw  # PCC flow; grid holds f (D2)
+        _frequency_forcing_mw = 0.0
+        # Grid-connected: surplus absorbed by grid as additional export.
+        # asset_delivery_error_mw captures it as turbine over-delivery.
+        _asset_delivery_error_mw = (
+            (turbine_output_mw - _p_dispatch_droop_mw)
+            + (bess_output_mw  - _bess_setpoint_mw)
+        )
 
-    # D4 inline assertion (Branch B) — three channels must sum to the scratch
-    # residual.  _balance_residual_mw is a local variable only; it is NOT on
-    # TickResult.  Asserting here validates the decomposition without exposing
-    # the scratch value in the public API.
+    # D4 check (Task #198 item 5) — converted from bare assert.
+    # A bare assert is stripped under -O and kills the run mid-tick on fault.
+    # Instead: compute defect, log if non-zero, continue.  Tests assert the
+    # field stays zero.
     _d4_sum = _grid_exchange_mw + _frequency_forcing_mw + _asset_delivery_error_mw
-    assert abs(_d4_sum - _balance_residual_mw) < 1e-6, (
-        f"D4 invariant violated: sum of channels {_d4_sum:.9f} "
-        f"!= scratch residual {_balance_residual_mw:.9f}"
-    )
+    _d4_balance_defect_mw = _d4_sum - _balance_residual_mw
+    if abs(_d4_balance_defect_mw) >= 1e-3:
+        _log.warning(
+            "D4 power balance defect: %.9f MW "
+            "(grid_exchange=%.6f, frequency_forcing=%.6f, "
+            "asset_delivery_error=%.6f, p_gen=%.6f, p_total=%.6f)",
+            _d4_balance_defect_mw,
+            _grid_exchange_mw, _frequency_forcing_mw,
+            _asset_delivery_error_mw, _p_gen_mw, p_total_mw,
+        )
 
-    # Phase 1b: ramp capability over LEAD_WINDOW_S horizon — broadcast so the
-    # frontend drawer reads this typed field instead of applying its own cap.
-    _ramp_capability_mw = ramp_capability(LEAD_WINDOW_S, state.turbines)
+    # Phase 1b (Task #198 item 3): ramp capability over the dispatch arbitrator's
+    # runtime lead time — same horizon used for staging and BESS bridging.
+    # No separate LEAD_WINDOW_S constant; one source of truth.
+    _ramp_capability_mw = ramp_capability(dt_lead_next_s, state.turbines)
 
     # Swing equation — islanded mode only.
     # Phase 13.3: forcing input = frequency_forcing_mw ONLY.
@@ -1132,4 +1174,6 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         # Phase 1b: loading-layer outputs.
         sub_msl_surplus_mw=_sub_msl_surplus_mw,
         ramp_capability_mw=_ramp_capability_mw,
+        # Task #198 item 5: D4 defect field — 0.0 in normal operation.
+        d4_balance_defect_mw=_d4_balance_defect_mw,
     )

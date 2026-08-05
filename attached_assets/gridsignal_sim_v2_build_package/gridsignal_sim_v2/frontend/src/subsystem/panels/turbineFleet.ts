@@ -36,8 +36,11 @@ const AMBER = '#f0883e'
 
 // Site constant — matches demo-20mw / demo-3turbine (1 900-node, PUE 1.03).
 // compute 19.96 + cooling 3.99 = 23.95 MW.
-const PEAK_LOAD_MW  = 23.95
-const LEAD_WINDOW_S = 45.0   // §21 ramp window — matches dt_lead default
+const PEAK_LOAD_MW = 23.95
+// No LEAD_WINDOW_S constant — Task #198 item 3.
+// The lead horizon is tick.dt_lead_next_s (the dispatch arbitrator's runtime
+// value), passed as horizonS to helpers.  When no step is in-flight the
+// horizon is 0 and no ramp requirement is displayed.
 
 const MONO: React.CSSProperties = {
   fontFamily: "'SF Mono','Roboto Mono',Menlo,Consolas,monospace",
@@ -57,7 +60,9 @@ function _identityLine(units: TurbineUnitSpec[]): string {
 }
 
 // ── Derived fleet metrics from a unit list ───────────────────────────────────
-function deriveFleet(units: TurbineUnitSpec[]) {
+// horizonS: dispatch arbitrator's runtime lead time (tick.dt_lead_next_s).
+//   When 0 (no step in-flight) rampNeedMWs = 0 — no active requirement.
+function deriveFleet(units: TurbineUnitSpec[], horizonS: number) {
   const installedMW   = units.reduce((s, u) => s + u.rated_mw, 0)
   const maxUnitMW     = Math.max(...units.map(u => u.rated_mw))
   const n1FirmMW      = installedMW - maxUnitMW        // worst-case: losing largest
@@ -66,7 +71,9 @@ function deriveFleet(units: TurbineUnitSpec[]) {
   // Displays the fleet's nameplate capability; the degraded-unit footnote in
   // FleetTable records which units are running below max and by how much.
   const aggRampMWs    = maxRamp * units.length
-  const rampNeedMWs   = PEAK_LOAD_MW / LEAD_WINDOW_S   // MW/s to cover peak in window
+  // rampNeedMWs: MW/s needed to cover peak load in the runtime lead window.
+  // 0 when no step is in-flight (horizonS = 0) — no active requirement to display.
+  const rampNeedMWs   = horizonS > 0 ? PEAK_LOAD_MW / horizonS : 0
   const n1MarginPct   = n1FirmMW > 0
     ? Math.round((n1FirmMW - PEAK_LOAD_MW) / PEAK_LOAD_MW * 100)
     : -100
@@ -292,8 +299,11 @@ function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData
   // 0.2/0.3: named tick fields — not inferred from output threshold
   const syncedCount = tick.units_synchronised_count
   const syncedMW    = tick.synchronised_output_mw
+  // Task #198 item 3: use runtime lead horizon from the dispatch arbitrator.
+  // When dt_lead_next_s is 0 (no active step) the ramp figure is also 0.
+  const horizonS    = tick.dt_lead_next_s ?? 0
   // 0.5: ramp energy bounded at rated_mw for single unit
-  const rampEnergy  = Math.min(u.r_asset_mw_per_s * LEAD_WINDOW_S, u.rated_mw)
+  const rampEnergy  = Math.min(u.r_asset_mw_per_s * horizonS, u.rated_mw)
 
   const chart = FleetTable(units, outputMW, u.r_asset_mw_per_s, syncedCount)
 
@@ -333,9 +343,11 @@ function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData
       { label: 'N−1 margin',         value: 'none',                               colour: RED },
       // 0.5: ramp energy bounded at rated_mw — integral is not unbounded
       { label: 'Ramp (configured)',  value: `${u.r_asset_mw_per_s.toFixed(3)} MW/s`,
-        sub: `${rampEnergy.toFixed(1)} MW in ${LEAD_WINDOW_S.toFixed(0)} s (bounded at ${u.rated_mw.toFixed(0)} MW rated)` },
+        sub: horizonS > 0
+          ? `${rampEnergy.toFixed(1)} MW in ${horizonS.toFixed(0)} s (bounded at ${u.rated_mw.toFixed(0)} MW rated)`
+          : `${u.rated_mw.toFixed(0)} MW rated — no active ramp event` },
       { label: 'Rated output',       value: `${u.rated_mw.toFixed(1)} MW`,        sub: 'nameplate' },
-      { label: 'Start time, cold',   value: '5–10 min',                           sub: 'a cold unit contributes nothing to a 45 s event' },
+      { label: 'Start time, cold',   value: '5–10 min',                           sub: 'a cold unit contributes nothing to a 0 s horizon event' },
     ],
     secondary,
     why: [
@@ -353,10 +365,13 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData {
   const onlineN  = tick.units_synchronised_count
   const syncedMW = tick.synchronised_output_mw
 
+  // Task #198 item 3: runtime lead horizon from the dispatch arbitrator.
+  const horizonS = tick.dt_lead_next_s ?? 0
+
   const {
     installedMW, maxUnitMW, n1FirmMW, aggRampMWs,
     rampNeedMWs, n1MarginPct, maxRamp,
-  } = deriveFleet(units)
+  } = deriveFleet(units, horizonS)
 
   const n1Covers    = n1FirmMW >= PEAK_LOAD_MW
   const rampCovers  = aggRampMWs >= rampNeedMWs
@@ -366,12 +381,11 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData {
   const marginStr    = n1MarginPct >= 0 ? `+${n1MarginPct}%` : `${n1MarginPct}%`
   const marginColour = n1MarginPct >= 0 ? TEAL : RED
 
-  // Phase 1b: ramp capability is now the authoritative typed backend field.
-  // ramp_capability_mw = Σ min(r_i × H, rated_i − output_i) for SYNCHRONISED/
-  //   RAMPING/AT_TARGET units, plus rated_i for STARTING units where H ≥ online_s.
-  // The Phase 0.5 display-level cap (Math.min(aggRampMWs × H, installedMW)) has
-  // been removed — the backend computation is the sole path (spec §1b).
-  const rampEnergyMW = tick.ramp_capability_mw ?? (aggRampMWs * LEAD_WINDOW_S)
+  // Phase 1b + Task #198 item 3: ramp_capability_mw is the sole authoritative source.
+  // It is computed by the backend at the runtime lead horizon (dt_lead_next_s).
+  // STARTING units contribute zero (item 2 — not on bus; starts fail).
+  // The Phase 0.5 display-level cap and LEAD_WINDOW_S constant have been removed.
+  const rampEnergyMW = tick.ramp_capability_mw ?? (aggRampMWs * horizonS)
 
   const chart = FleetTable(units, outputMW, maxRamp, onlineN)
 
@@ -388,11 +402,13 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData {
     React.createElement(BulletBar, {
       label:  'Aggregate ramp with all units online',
       value:  aggRampMWs,
-      max:    Math.max(aggRampMWs * 1.5, rampNeedMWs * 1.5),
+      max:    Math.max(aggRampMWs * 1.5, rampNeedMWs * 1.5 || aggRampMWs * 1.5),
       target: rampNeedMWs,
       colour: rampCovers ? GOLD : RED,
       unit:   ' MW/s',
-      note:   `red marker = ${rampNeedMWs.toFixed(3)} MW/s to cover ${PEAK_LOAD_MW.toFixed(2)} MW step in ${LEAD_WINDOW_S.toFixed(0)} s  ·  ramp scales with unit count`,
+      note:   horizonS > 0
+        ? `red marker = ${rampNeedMWs.toFixed(3)} MW/s to cover ${PEAK_LOAD_MW.toFixed(2)} MW step in ${horizonS.toFixed(0)} s  ·  ramp scales with unit count`
+        : `no active ramp event — dt_lead_next_s = 0  ·  ramp scales with unit count`,
     }),
     ParallelingInset(units),
   )
@@ -424,12 +440,16 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData {
       // 0.4: subtitle states the arithmetic — not a raw unit count
       { label: 'N−1 margin',         value: marginStr,                        colour: marginColour,
         sub: `${installedMW.toFixed(0)} MW − ${maxUnitMW.toFixed(0)} MW contingency = ${n1FirmMW.toFixed(0)} MW firm  ·  peak ${PEAK_LOAD_MW.toFixed(2)} MW` },
-      // Phase 1b: ramp_capability_mw from backend replaces Phase 0.5 display cap
+      // Phase 1b + Task #198 item 3: backend ramp_capability_mw at runtime horizon
       { label: 'Aggregate ramp',     value: `${aggRampMWs.toFixed(3)} MW/s`, colour: rampCovers ? GOLD : RED,
-        sub: `${rampEnergyMW.toFixed(1)} MW capability in ${LEAD_WINDOW_S.toFixed(0)} s (per-unit headroom, Phase 1b)` },
+        sub: horizonS > 0
+          ? `${rampEnergyMW.toFixed(1)} MW capability in ${horizonS.toFixed(0)} s (SYNCHRONISED only — starts excluded)`
+          : `${rampEnergyMW.toFixed(1)} MW capability — no active ramp event` },
       { label: 'Ramp with 1 unit',   value: `${rampWith1} MW/s`,
-        sub: `${(parseFloat(rampWith1) * LEAD_WINDOW_S).toFixed(0)} MW in ${LEAD_WINDOW_S.toFixed(0)} s — BESS covers the remainder` },
-      { label: 'Start time, cold',   value: '5–10 min',                      sub: 'a cold unit contributes nothing to a 45 s event' },
+        sub: horizonS > 0
+          ? `${(parseFloat(rampWith1) * horizonS).toFixed(0)} MW in ${horizonS.toFixed(0)} s — BESS covers the remainder`
+          : 'no active ramp event' },
+      { label: 'Start time, cold',   value: '5–10 min',                      sub: 'STARTING units contribute 0 to ramp reserve (Task #198 item 2)' },
     ],
     secondary,
     why: [

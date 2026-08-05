@@ -261,6 +261,12 @@ class TestD4SumIdentity:
             f"D4 ({label}): sum of channels={total:.9f} != "
             f"p_gen−p_load residual={residual:.9f}"
         )
+        # Task #198 item 5: d4_balance_defect_mw is the authoritative defect field.
+        # Bare assert was converted; defect must be zero in normal operation.
+        assert abs(tick.d4_balance_defect_mw) < 1e-3, (
+            f"D4 ({label}): d4_balance_defect_mw={tick.d4_balance_defect_mw:.9f} "
+            f"exceeds 1e-3 tolerance — evaluate_tick() accounting error"
+        )
 
     def test_D4_grid_connected_no_load(self):
         state = _make_state(island_mode=IslandMode.GRID_TIE)
@@ -317,6 +323,10 @@ class TestD4SumIdentity:
             assert total == pytest.approx(residual, abs=1e-6), (
                 f"D4: sum of channels={total:.9f} != "
                 f"p_gen−p_load={residual:.9f} at tick {i+1}"
+            )
+            # Task #198 item 5: defect field must stay zero
+            assert abs(tick.d4_balance_defect_mw) < 1e-3, (
+                f"D4: d4_balance_defect_mw={tick.d4_balance_defect_mw:.9f} at tick {i+1}"
             )
 
 

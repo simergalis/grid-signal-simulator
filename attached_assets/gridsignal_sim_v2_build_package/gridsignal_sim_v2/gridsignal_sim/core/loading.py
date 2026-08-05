@@ -20,10 +20,10 @@ if TYPE_CHECKING:
     from .asset_modules import TurbineModule
 
 
-# ── Constants ────────────────────────────────────────────────────────────────
-# LEAD_WINDOW_S: §21 ramp horizon used for ramp_capability_mw broadcast.
-# Matches the frontend LEAD_WINDOW_S = 45.0 in turbineFleet.ts.
-LEAD_WINDOW_S: float = 45.0
+# No module-level lead-time constant.
+# ramp_capability() takes horizon_s as a parameter so there is exactly one
+# lead-time source: the dispatch arbitrator's runtime dt_lead_seconds.
+# (Task #198 item 3 — deleted LEAD_WINDOW_S to prevent dual-path divergence.)
 
 
 # ---------------------------------------------------------------------------
@@ -141,19 +141,20 @@ def apply_loading(
 # ---------------------------------------------------------------------------
 
 def ramp_capability(horizon_s: float, turbines: "list[TurbineModule]") -> float:
-    """Fleet ramp capability over horizon H for all relevant turbines.
+    """Fleet ramp capability (MW) over horizon *horizon_s* seconds.
 
-    For SYNCHRONISED (and legacy RAMPING / AT_TARGET) units — in A:
-        contribution = min(r_i × H, max(0, rated_i − output_i))
-    For STARTING units — not in A but contribute once online:
-        contribution = 0       when H < time_to_online_i
-                     = rated_i when H ≥ time_to_online_i
-    OFFLINE, OUT_OF_SERVICE, TRANSITIONAL, and hot-standby units: 0.
+    Only units that are fully on-bus contribute; STARTING units contribute zero
+    regardless of horizon (Task #198 item 2 — a unit not yet closed its breaker
+    must not be banked as reserve; starts fail).
 
-    TC-79: when output_i ≈ 0.9 × rated_i and H = 45 s, the headroom term
-    dominates so capability equals (rated_i − output_i), not r_i × 45 × n.
-    TC-80: STARTING unit with time_to_online_s=900 contributes 0 at H=45,
-           rated_mw at H=900.
+    For SYNCHRONISED (and legacy RAMPING / AT_TARGET — in A):
+        contribution = min(r_i × horizon_s, max(0, rated_i − output_i))
+    STARTING, OFFLINE, OUT_OF_SERVICE, TRANSITIONAL, and hot-standby units: 0.
+
+    TC-79: headroom dominates when output_i ≈ 0.9 × rated_i — capability equals
+           (rated_i − output_i), not r_i × horizon_s × n.
+    TC-80 (corrected): STARTING units always contribute 0, regardless of horizon.
+           Full credit appears only once the unit transitions to SYNCHRONISED.
     """
     from .asset_modules import TurbineState   # local import — avoids circular at module level
 
@@ -162,9 +163,7 @@ def ramp_capability(horizon_s: float, turbines: "list[TurbineModule]") -> float:
         if t.config.hot_standby:
             continue
         if t.state == TurbineState.STARTING:
-            if horizon_s >= t._time_to_online_s:
-                total += t.config.rated_mw
-            # else: contributes 0 for H < time_to_online_i
+            pass   # zero — not on bus; starts fail; must not be banked as reserve
         elif t.is_synchronised:
             headroom = max(0.0, t.config.rated_mw - t.output_mw())
             total += min(t.config.r_asset_mw_per_s * horizon_s, headroom)

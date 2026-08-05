@@ -345,10 +345,14 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         "compute_inlet_temp_c": round(tick.compute_inlet_temp_c, 3),
         # ── Phase 1b: loading-layer outputs ──────────────────────────────────
         # sub_msl_surplus_mw: > 0 when fleet demand < Σ msl_i; 0 in normal operation.
-        # ramp_capability_mw: fleet ramp over 45 s horizon from loading.py.
+        #   In islanded mode surplus enters frequency_forcing_mw (overfrequency).
+        # ramp_capability_mw: fleet ramp over the runtime lead horizon (dt_lead_next_s).
         #   Replaces the Phase 0.5 display-level cap in turbineFleet.ts.
-        "sub_msl_surplus_mw":  round(tick.sub_msl_surplus_mw, 4),
-        "ramp_capability_mw":  round(tick.ramp_capability_mw, 4),
+        # d4_balance_defect_mw: D4 power balance defect; 0.0 in normal operation.
+        #   Non-zero signals an accounting error; the run continues.
+        "sub_msl_surplus_mw":    round(tick.sub_msl_surplus_mw, 4),
+        "ramp_capability_mw":    round(tick.ramp_capability_mw, 4),
+        "d4_balance_defect_mw":  round(tick.d4_balance_defect_mw, 9),
         # ── Task #174: Stochastic step timing (kube path only) ───────────────
         # step_phase: fractional position within the current ML training step.
         # step_kind: "training" or "checkpoint".

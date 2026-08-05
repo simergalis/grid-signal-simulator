@@ -47,15 +47,16 @@ def turbine_ramp_credit_mw(
     - Synchronised units: ramp credit = r_asset_mw_per_s × lead_window_s.
     - Total credit is capped to delta_p_mw (credit never exceeds the step size).
     """
+    # Task #198 item 2: STARTING units contribute zero.
+    # A unit not yet on bus must not be banked as reserve — starts fail.
     raw: float = 0.0
     for ua in units:
         if ua.hot_standby:
             continue
         if ua.is_starting:
-            available_s = max(0.0, lead_window_s - ua.time_to_online_s)
+            pass   # zero — not on bus; starts fail
         else:
-            available_s = lead_window_s
-        raw += ua.r_asset_effective_mw_per_s * available_s
+            raw += ua.r_asset_effective_mw_per_s * lead_window_s
     return min(raw, delta_p_mw)
 
 
