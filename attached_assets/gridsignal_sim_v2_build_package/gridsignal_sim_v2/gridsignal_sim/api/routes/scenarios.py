@@ -205,12 +205,20 @@ def _bess(
     rated_mw: float,
     usable_mwh: float,
     grid_forming: bool = False,
+    p_anchor_reserve_mw: float = 1.0,
 ) -> BessUnitSpec:
+    """Build a BessUnitSpec.
+
+    p_anchor_reserve_mw: explicit anchor-reserve override (MW).  Default 1.0
+    matches BessConfig.p_anchor_reserve_mw default (PROTO-9 / CHOSEN).
+    San Diego demo site uses 2.0 MW (PW-3 / §15).
+    """
     return BessUnitSpec(
         asset_id=asset_id,
         rated_mw=rated_mw,
         usable_mwh=usable_mwh,
         grid_forming=grid_forming,
+        p_anchor_reserve_mw=p_anchor_reserve_mw,
     )
 
 
@@ -220,13 +228,21 @@ def _turbine(
     r_mw_per_s: float = 0.2,
     run_hours_h: Optional[float] = None,
     hot_standby: bool = False,
+    p_min_stable_frac: float = 0.0,
 ) -> TurbineUnitSpec:
+    """Build a TurbineUnitSpec.
+
+    p_min_stable_frac: minimum stable load floor as a fraction of rated_mw.
+    Default 0.0 = constraint disabled (backward-compat).
+    demo-20mw uses 0.40 (PW-1 / §15) → MSL = 2.8 MW per 7 MW unit.
+    """
     return TurbineUnitSpec(
         asset_id=asset_id,
         rated_mw=rated_mw,
         r_asset_mw_per_s=r_mw_per_s,
         run_hours_h=run_hours_h,
         hot_standby=hot_standby,
+        p_min_stable_frac=p_min_stable_frac,
     )
 
 
@@ -461,13 +477,22 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
                 _evt_unit_trip(t=120.0, asset_id="turbine-1"),
             ],
             dt_lead_seconds=30.0,
-            bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
+            # PW-3 / §15: San Diego anchor reserve = 2.0 MW (CHOSEN; PROTO-9
+            # default is 1.0 MW — this is a deliberate site-level override for
+            # the San Diego demo plant).  BessConfig default (1.0 MW) unchanged.
+            bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0,
+                               grid_forming=True, p_anchor_reserve_mw=2.0)],
+            # PW-1 / §15: p_min_stable_frac = 0.40 on all demo plant turbines.
+            # MSL = 0.40 × 7.0 = 2.8 MW per unit; Σ msl = 14.0 MW for 5 units
+            # (4 online + 1 hot-standby).  Loading layer enforces the floor;
+            # sub_msl_surplus_mw > 0 when P_fleet < 14.0 MW.  CHOSEN (PROTO-R4).
             turbine_units=[
-                _turbine("turbine-0", rated_mw=7.0, r_mw_per_s=0.2),
-                _turbine("turbine-1", rated_mw=7.0, r_mw_per_s=0.2),
-                _turbine("turbine-2", rated_mw=7.0, r_mw_per_s=0.2),
-                _turbine("turbine-3", rated_mw=7.0, r_mw_per_s=0.2),
-                _turbine("turbine-4", rated_mw=7.0, r_mw_per_s=0.2, hot_standby=True),
+                _turbine("turbine-0", rated_mw=7.0, r_mw_per_s=0.2, p_min_stable_frac=0.40),
+                _turbine("turbine-1", rated_mw=7.0, r_mw_per_s=0.2, p_min_stable_frac=0.40),
+                _turbine("turbine-2", rated_mw=7.0, r_mw_per_s=0.2, p_min_stable_frac=0.40),
+                _turbine("turbine-3", rated_mw=7.0, r_mw_per_s=0.2, p_min_stable_frac=0.40),
+                _turbine("turbine-4", rated_mw=7.0, r_mw_per_s=0.2, hot_standby=True,
+                          p_min_stable_frac=0.40),
             ],
             solar_rated_mw=_SOLAR_DEMO,
             end_sim_time=300.0,

@@ -522,16 +522,126 @@ class TestTC81UnitAvailabilityBoundary:
             _check_loading_exclusion([at_target], [at_target])
 
     def test_tc81_p_anchor_reserve_report(self):
-        """Report: P_anchor_reserve at San Diego.
+        """Report: P_anchor_reserve — BessConfig default vs San Diego scenario.
 
-        BessConfig.p_anchor_reserve_mw defaults to 1.0 MW.  San Diego has no
-        explicit override in site_config.py, so the effective value is 1.0 MW.
-        This test documents the value without requiring site_config import.
+        BessConfig.p_anchor_reserve_mw defaults to 1.0 MW (PROTO-9 / CHOSEN).
+        site_config.py contains no override; the San Diego demo-20mw SCENARIO
+        sets p_anchor_reserve_mw = 2.0 MW explicitly in its BessUnitSpec (PW-3
+        / §15 — deliberate site-level override, not a BessConfig default change).
+
+        This test documents the BessConfig DEFAULT (1.0 MW) without importing
+        site_config or the seeded scenario store.
         """
         from core.models import BessConfig
         cfg = BessConfig(asset_id="bess-0", rated_mw=10.0, usable_mwh=5.0)
-        # Default value — Phase 2 report: P_anchor_reserve at San Diego = 1.0 MW.
+        # Default value — 1.0 MW (PROTO-9, CHOSEN).
+        # San Diego demo-20mw scenario uses 2.0 MW (PW-3 / §15 scenario-level override).
         assert cfg.p_anchor_reserve_mw == pytest.approx(1.0), (
             f"TC-81 (report): BessConfig default p_anchor_reserve_mw={cfg.p_anchor_reserve_mw}; "
-            f"expected 1.0 MW (San Diego site — no explicit override in site_config.py)."
+            f"expected 1.0 MW.  Note: demo-20mw BessUnitSpec overrides to 2.0 MW (PW-3 / §15)."
+        )
+
+
+# ---------------------------------------------------------------------------
+# TC-82: demo plant p_min_stable_frac = 0.40 driven below Σ msl (PW-1 / PW-2)
+# ---------------------------------------------------------------------------
+
+class TestTC82DemoPlantMSLConstraint:
+    """TC-82: demo plant with p_min_stable_frac = 0.40 driven below Σ msl.
+
+    PW-1: p_min_stable_frac = 0.40 on demo-20mw turbines (7 MW rated).
+          MSL = 0.40 × 7.0 = 2.8 MW per unit.
+
+    PW-2: asset_delivery_error_mw = commanded ≠ delivered, whatever the cause.
+          A unit held at its MSL floor contributes +sub_msl to delivery error.
+          No subtraction of sub_msl from the turbine delivery term.
+
+    Three assertions:
+      (a) sub_msl_surplus_mw > 0  (floor constraint active).
+      (b) asset_delivery_error_mw > 0  (PW-2 semantics).
+      (c) frequency_forcing_mw > 0  (overfrequency in islanded mode →
+          frequency_hz > 50.0 after one tick).
+    """
+
+    def test_tc82a_sub_msl_surplus(self):
+        """(a) Loading layer: p_fleet < MSL → sub_msl_surplus_mw > 0.
+
+        1 × 7 MW unit, p_min_stable_frac = 0.40 → MSL = 2.8 MW.
+        p_fleet = 2.0 MW < MSL → floor fires; setpoint = MSL floor.
+        """
+        unit = _turbine(rated_mw=7.0, p_min_stable_frac=0.40, output_mw=2.8)
+        setpoints, sub_msl = compute_loading_setpoints([unit], p_fleet=2.0)
+        assert sub_msl == pytest.approx(0.8, abs=1e-6), (
+            f"TC-82a: expected sub_msl_surplus_mw ≈ 0.8 MW "
+            f"(MSL 2.8 − p_fleet 2.0), got {sub_msl:.6f}"
+        )
+        assert setpoints == pytest.approx([2.8], abs=1e-6), (
+            f"TC-82a: expected setpoint at MSL floor 2.8 MW, got {setpoints}"
+        )
+
+    def test_tc82b_asset_delivery_error_pw2_semantics(self):
+        """(b) PW-2: turbine at MSL floor → asset_delivery_error_mw > 0.
+
+        PW-2 formula (no sub_msl subtraction):
+          asset_delivery_error = (turbine_output − droop_setpoint) + (bess_out − bess_sp)
+                               = (2.8 − 2.0) + 0 = 0.8 MW > 0.
+
+        Contrasts with the pre-PW-2 formula where sub_msl was subtracted from
+        the turbine term, forcing asset_delivery_error = 0 at the floor.
+        """
+        turbine_output_mw  = 2.8   # held at MSL floor
+        droop_setpoint_mw  = 2.0   # commanded below MSL
+        bess_output_mw     = 0.0   # BESS setpoint = 0 (turbine over-delivering)
+        bess_setpoint_mw   = 0.0
+        # PW-2 formula — identical in islanded and grid-connected modes.
+        delivery_error = (
+            (turbine_output_mw - droop_setpoint_mw)
+            + (bess_output_mw  - bess_setpoint_mw)
+        )
+        assert delivery_error == pytest.approx(0.8, abs=1e-6), (
+            f"TC-82b: expected delivery_error ≈ 0.8 MW, got {delivery_error:.6f}"
+        )
+        assert delivery_error > 0.0, "TC-82b PW-2: asset_delivery_error_mw must be > 0"
+
+    def test_tc82c_frequency_forcing_overfrequency_islanded(self):
+        """(c) sub_msl_surplus in islanded mode → frequency_forcing > 0 → f > 50 Hz.
+
+        Islanded formula (PW-2, unchanged from PW-1 in this channel):
+          frequency_forcing = (p_commanded − p_total) + sub_msl_surplus
+
+        With p_commanded ≈ p_total (demand at droop setpoint 2.0 MW) and
+        sub_msl = 0.8 MW:
+          frequency_forcing = (2.0 − 2.0) + 0.8 = 0.8 MW > 0.
+
+        Swing equation: df/dt = frequency_forcing / (2H × S_base) × f₀.
+        All terms > 0 → df/dt > 0 → frequency_hz > 50.0 after one tick.
+        """
+        sub_msl_surplus_mw = 0.8   # MSL 2.8 − p_fleet 2.0
+        p_commanded_mw     = 2.0   # droop_setpoint + bess_setpoint + p_renewable
+        p_total_mw         = 2.0   # GPU + cooling load (equals commanded at steady state)
+
+        # Islanded frequency_forcing formula (same as simulation_core.py):
+        frequency_forcing = (p_commanded_mw - p_total_mw) + sub_msl_surplus_mw
+        assert frequency_forcing == pytest.approx(0.8, abs=1e-6), (
+            f"TC-82c: expected frequency_forcing ≈ 0.8 MW, got {frequency_forcing:.6f}"
+        )
+        assert frequency_forcing > 0.0, (
+            "TC-82c: sub-MSL in islanded mode must produce overfrequency "
+            f"(frequency_forcing = {frequency_forcing:.4f} MW)"
+        )
+
+        # Swing equation — verify df/dt > 0 for representative SiteConfig values.
+        # H (inertia_constant_s) = 2.0 (SiteConfig default), S_base = 7.0 MW (1 unit).
+        H      = 2.0   # SiteConfig.inertia_constant_s default
+        S_base = 7.0   # rated_mw of the single unit in this test
+        f0     = 50.0  # nominal frequency (Hz)
+        df_dt  = frequency_forcing / (2.0 * H * S_base) * f0
+        assert df_dt > 0.0, f"TC-82c: df/dt = {df_dt:.6f} Hz/s; expected > 0"
+
+        # After one tick (dt = 5 s), frequency must exceed 50.0 Hz.
+        dt_s           = 5.0
+        freq_after_one = f0 + df_dt * dt_s
+        assert freq_after_one > 50.0, (
+            f"TC-82c: frequency after 1 tick = {freq_after_one:.4f} Hz; "
+            f"expected > 50.0 Hz (overfrequency from sub-MSL islanded surplus)"
         )

@@ -431,8 +431,8 @@ class TurbineConfig:
     #   to this floor while the turbine is running.  Prevents operation in the
     #   lean-extinction regime that causes combustion instability.
     #   0.0 = constraint disabled (default — backward-compatible with scenarios
-    #   that do not model combustion stability limits).  Set to 0.45 in
-    #   demo-20mw and any scenario exercising IP claim 4.
+    #   that do not model combustion stability limits).  Set to 0.40 in
+    #   demo-20mw (PW-1 / §15: 2.8 MW floor on 7 MW units, CHOSEN).
     p_min_stable_frac: float = 0.0
     # t_min_run_s — minimum continuous run time (seconds) before a controlled
     #   stop is permitted.  A stop command issued before this time elapses is

@@ -184,6 +184,11 @@ class BessUnitSpec(BaseModel):
     # §7.1.2: at most one unit per scenario may be the grid-forming anchor.
     # Validated at the ScenarioSpec level.
     grid_forming: bool = False
+    # PW-3 / §15: explicit per-unit anchor-reserve override (MW).
+    # When present, build_run_context_from_spec uses this value directly instead
+    # of deriving from anchor_reserve_pct.  1.0 MW is the BessConfig default
+    # (PROTO-9 / CHOSEN).  San Diego demo scenario uses 2.0 MW explicitly.
+    p_anchor_reserve_mw: float = Field(default=1.0, ge=0.0)
 
     def c_rate(self) -> float:
         return self.rated_mw / self.usable_mwh
@@ -216,6 +221,11 @@ class TurbineUnitSpec(BaseModel):
     # Hot-standby units are excluded from dispatch staging and contribute zero
     # to contingency ramp capability (§7.4 / TC-83).  Default False.
     hot_standby: bool = False
+    # PW-1 / §15: minimum stable load as a fraction of rated_mw.
+    # 0.0 = disabled (default — backward-compat with existing scenarios).
+    # Set to 0.40 on demo-20mw turbine units (2.8 MW floor on 7 MW units).
+    # CHOSEN — OEM combustion-stability data required for calibration.
+    p_min_stable_frac: float = Field(default=0.0, ge=0.0, le=1.0)
 
 
 class StepTimingConfigSpec(BaseModel):

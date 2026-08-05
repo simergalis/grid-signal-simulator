@@ -453,6 +453,10 @@ def build_run_context_from_spec(
                 r_asset_mw_per_s=float(t.get("r_asset_mw_per_s", 0.2)),
                 rated_mw=float(t.get("rated_mw", 10.0)),
                 hot_standby=bool(t.get("hot_standby", False)),
+                # PW-1: read p_min_stable_frac from spec so demo-20mw
+                # turbines enforce the 2.8 MW MSL floor (0.40 × 7 MW).
+                # Default 0.0 preserves backward-compat for all other scenarios.
+                p_min_stable_frac=float(t.get("p_min_stable_frac", 0.0)),
             )
         )
         for i, t in enumerate(spec_data.get("turbine_units", []))
