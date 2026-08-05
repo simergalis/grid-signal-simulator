@@ -6,6 +6,7 @@
  *   · Speed label: "1× real-time" / "60× accelerated" / "max speed"
  *   · Data-quality tag legend (four chips, always visible so the user
  *     knows what ⚑ badges mean before they appear on a panel)
+ *   · Change password button (right edge) — available on all inner pages
  */
 
 import { useTickStore } from '../store/tickStore'
@@ -26,7 +27,11 @@ function speedLabel(playback_speed: number): string {
   return `${playback_speed}× accelerated`
 }
 
-export function SimClockHeader() {
+interface Props {
+  onChangePassword?: () => void
+}
+
+export function SimClockHeader({ onChangePassword }: Props) {
   const tick    = useTickStore(s => s.latestTick)
   const meta    = useTickStore(s => s.runMeta)
   const isInterp = useTickStore(s => s.isInterpolated)
@@ -61,17 +66,32 @@ export function SimClockHeader() {
         )}
       </div>
 
-      {/* Right: DQ legend — chips muted at rest, lit when the tag fires this tick */}
-      <div className="flex items-center gap-1.5">
-        <span className="mr-1 font-mono text-[10px] text-muted uppercase tracking-wider">Legend</span>
-        {ALL_DQ_TAGS.map(tag => (
-          <DataQualityBadge
-            key={tag}
-            tag={tag}
-            full
-            active={tick?.data_quality_tags.includes(tag) ?? false}
-          />
-        ))}
+      {/* Right: DQ legend + change-password button */}
+      <div className="flex items-center gap-3">
+        {/* DQ legend — chips muted at rest, lit when the tag fires this tick */}
+        <div className="flex items-center gap-1.5">
+          <span className="mr-1 font-mono text-[10px] text-muted uppercase tracking-wider">Legend</span>
+          {ALL_DQ_TAGS.map(tag => (
+            <DataQualityBadge
+              key={tag}
+              tag={tag}
+              full
+              active={tick?.data_quality_tags.includes(tag) ?? false}
+            />
+          ))}
+        </div>
+
+        {/* Change password — always reachable on inner pages */}
+        {onChangePassword && (
+          <button
+            onClick={onChangePassword}
+            className="rounded border border-border px-2 py-0.5 font-mono text-[10px]
+                       text-muted hover:text-text hover:border-accent/60 transition-colors"
+            title="Change password"
+          >
+            🔑 Password
+          </button>
+        )}
       </div>
     </header>
   )

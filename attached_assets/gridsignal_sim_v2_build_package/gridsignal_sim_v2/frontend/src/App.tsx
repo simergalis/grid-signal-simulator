@@ -291,7 +291,7 @@ function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
         onViewResults={handleViewResults}
       />
 
-      <SimClockHeader />
+      <SimClockHeader onChangePassword={() => setChangePasswordOpen(true)} />
 
       {/* Page navigation tabs */}
       <div className="flex gap-px border-b border-border bg-border flex-shrink-0">
@@ -402,6 +402,10 @@ function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
           onClose={() => setDrawerOpen(false)}
           onSaved={handleDrawerSaved}
         />
+      )}
+
+      {changePasswordOpen && (
+        <ChangePasswordModal onClose={() => setChangePasswordOpen(false)} />
       )}
     </div>
   )
