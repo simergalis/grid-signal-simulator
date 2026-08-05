@@ -1010,49 +1010,64 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     #
     # D1: islanded → grid_exchange_mw = 0.0 exactly.
     # D2: grid-connected → frequency_forcing_mw = 0.0 exactly.
-    # D4 (PW-2 adjusted): see _d4_balance_defect_mw computation below.
+    # D4: grid_exchange + frequency_forcing + asset_delivery_error = balance_residual.
+    #     Holds in BOTH modes without a conditional RHS term — see proof below.
     # D5: asset_delivery_error_mw is NOT derived as (balance_residual − others)
     #     — computed independently from setpoints + actuals.
     #
-    # PW-2: asset_delivery_error_mw = commanded ≠ delivered, whatever the cause.
-    # A unit held at its MSL floor contributes its over-delivery (+sub_msl) to
-    # this channel; it also contributes to frequency_forcing_mw (islanded) because
-    # that is where the energy physically goes.  The sub_msl surplus therefore
-    # appears in BOTH channels in islanded mode.
-    # The formula is identical in both modes — no per-mode subtraction of sub_msl.
-    _asset_delivery_error_mw = (
-        (turbine_output_mw - _p_dispatch_droop_mw)
-        + (bess_output_mw  - _bess_setpoint_mw)
-    )
+    # Sub-MSL floor surplus routing (_sub_msl_surplus_mw > 0):
+    #   Turbines held at Σ msl_i by the loading layer produce more than commanded.
+    #   This is a FLOOR CONSTRAINT, not a hardware delivery fault.
+    #
+    #   Islanded: surplus is mechanical energy that cannot leave via PCC.  It
+    #             accelerates the machines → overfrequency.  Surplus is added to
+    #             frequency_forcing_mw (physics channel) and subtracted from the
+    #             turbine delivery term so asset_delivery_error_mw tracks hardware
+    #             faults only.  The subtraction ensures D4 holds cleanly.
+    #
+    #   Grid-connected: surplus is absorbed as additional PCC export (grid_exchange
+    #             captures it).  The turbine over-delivers relative to the droop
+    #             setpoint; that difference appears in asset_delivery_error_mw
+    #             naturally (no special routing needed in this mode).
+    #
+    # D4 algebra — identical structure in both modes:
+    #
+    #   Grid-connected (sub_msl = 0 always in this mode):
+    #     grid_exchange  = p_cmd − p_total
+    #     freq_forcing   = 0
+    #     delivery_error = (turb_out − droop) + (bess_out − bess_sp)
+    #     sum = (p_cmd − p_total) + (turb_out − droop + bess_out − bess_sp)
+    #         = (droop + bess_sp + p_ren − p_total) + turb_out − droop + bess_out − bess_sp
+    #         = p_gen − p_total = balance_residual  ✓
+    #
+    #   Islanded (sub_msl ≥ 0):
+    #     grid_exchange  = 0
+    #     freq_forcing   = (p_cmd − p_total) + sub_msl
+    #     delivery_error = (turb_out − droop − sub_msl) + (bess_out − bess_sp)
+    #     sum = (p_cmd − p_total + sub_msl) + (turb_out − droop − sub_msl + bess_out − bess_sp)
+    #         = p_cmd − p_total + turb_out + bess_out − droop + (sub_msl − sub_msl)
+    #         = balance_residual  ✓  (surplus cancels; no conditional needed)
     if _islanded:
         _grid_exchange_mw     = 0.0                           # PCC open (D1)
-        # sub_msl_surplus routes to frequency (overfrequency when turbines held
-        # at floor exceed commanded demand).  Energy is in the system — it goes
-        # to rotor kinetic energy; PCC is open so it cannot export.
         _frequency_forcing_mw = _p_commanded_mw - p_total_mw + _sub_msl_surplus_mw
+        _asset_delivery_error_mw = (
+            (turbine_output_mw - _p_dispatch_droop_mw - _sub_msl_surplus_mw)
+            + (bess_output_mw  - _bess_setpoint_mw)
+        )
     else:
         _grid_exchange_mw     = _p_commanded_mw - p_total_mw  # PCC flow; grid holds f (D2)
         _frequency_forcing_mw = 0.0
-        # Grid-connected: surplus absorbed by grid as additional export.
-        # No sub_msl addition here; the PCC absorbs the over-delivery naturally.
+        _asset_delivery_error_mw = (
+            (turbine_output_mw - _p_dispatch_droop_mw)
+            + (bess_output_mw  - _bess_setpoint_mw)
+        )
 
-    # D4 check (Task #198 item 5, PW-2 adjusted) — converted from bare assert.
+    # D4 check (Task #198 item 5) — converted from bare assert.
     # A bare assert is stripped under -O and kills the run mid-tick on fault.
     # Instead: compute defect, log if non-zero, continue.  Tests assert zero.
-    #
-    # PW-2 adjusted D4 identity:
-    #   grid_exchange + frequency_forcing + asset_delivery_error
-    #   = balance_residual + (sub_msl_surplus if islanded else 0)
-    # Proof (islanded, sub_msl > 0):
-    #   LHS = 0 + (p_cmd − p_total + sub_msl) + (turb_out − droop + bess_out − bess_sp)
-    #       = (droop + bess_sp + p_ren − p_total + sub_msl) + turb_out − droop + bess_out − bess_sp
-    #       = p_ren − p_total + sub_msl + turb_out + bess_out
-    #       = balance_residual + sub_msl  ✓
-    # (grid-connected: sub_msl = 0 in the formula above → standard D4 identity)
+    # No conditional term on the RHS; the algebra above guarantees balance.
     _d4_sum = _grid_exchange_mw + _frequency_forcing_mw + _asset_delivery_error_mw
-    _d4_balance_defect_mw = _d4_sum - _balance_residual_mw - (
-        _sub_msl_surplus_mw if _islanded else 0.0
-    )
+    _d4_balance_defect_mw = _d4_sum - _balance_residual_mw
     if abs(_d4_balance_defect_mw) >= 1e-3:
         _log.warning(
             "D4 power balance defect: %.9f MW "

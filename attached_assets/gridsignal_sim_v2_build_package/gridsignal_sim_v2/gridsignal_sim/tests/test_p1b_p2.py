@@ -579,69 +579,107 @@ class TestTC82DemoPlantMSLConstraint:
             f"TC-82a: expected setpoint at MSL floor 2.8 MW, got {setpoints}"
         )
 
-    def test_tc82b_asset_delivery_error_pw2_semantics(self):
-        """(b) PW-2: turbine at MSL floor → asset_delivery_error_mw > 0.
+    def test_tc82b_asset_delivery_error_zero_at_msl_floor_islanded(self):
+        """(b) Islanded mode: turbine at MSL floor → asset_delivery_error_mw = 0.
 
-        PW-2 formula (no sub_msl subtraction):
-          asset_delivery_error = (turbine_output − droop_setpoint) + (bess_out − bess_sp)
-                               = (2.8 − 2.0) + 0 = 0.8 MW > 0.
+        The sub-MSL floor constraint is NOT a hardware delivery fault.  The
+        surplus is routed entirely to frequency_forcing_mw (overfrequency
+        physics).  To keep D4 clean — grid_exchange + frequency_forcing +
+        asset_delivery_error = balance_residual (no conditional RHS term) —
+        the surplus is subtracted from the turbine delivery term in the islanded
+        branch.  The result: asset_delivery_error = 0 at the exact floor.
 
-        Contrasts with the pre-PW-2 formula where sub_msl was subtracted from
-        the turbine term, forcing asset_delivery_error = 0 at the floor.
+        Algebra (islanded, sub_msl = 0.8 MW):
+          frequency_forcing = (p_cmd − p_total) + sub_msl = 0 + 0.8 = 0.8 MW
+          delivery_error    = (turb_out − droop − sub_msl) + (bess_out − bess_sp)
+                            = (2.8 − 2.0 − 0.8) + 0 = 0.0 MW
+          D4: 0 + 0.8 + 0 = 0.8 = balance_residual  ✓
+
+        Grid-connected (for contrast): sub_msl routes to PCC via grid_exchange;
+        no subtraction needed; delivery_error = 0.8 MW (real over-delivery signal).
         """
+        sub_msl_surplus_mw = 0.8   # MSL 2.8 − p_fleet 2.0
+
+        # Islanded: surplus subtracted from turbine delivery term.
         turbine_output_mw  = 2.8   # held at MSL floor
         droop_setpoint_mw  = 2.0   # commanded below MSL
-        bess_output_mw     = 0.0   # BESS setpoint = 0 (turbine over-delivering)
+        bess_output_mw     = 0.0
         bess_setpoint_mw   = 0.0
-        # PW-2 formula — identical in islanded and grid-connected modes.
-        delivery_error = (
+        delivery_error_islanded = (
+            (turbine_output_mw - droop_setpoint_mw - sub_msl_surplus_mw)
+            + (bess_output_mw  - bess_setpoint_mw)
+        )
+        assert delivery_error_islanded == pytest.approx(0.0, abs=1e-6), (
+            f"TC-82b: islanded asset_delivery_error at MSL floor must be 0 "
+            f"(hardware-fault channel clean); got {delivery_error_islanded:.6f}"
+        )
+
+        # Grid-connected: no subtraction; over-delivery visible as signal.
+        delivery_error_grid = (
             (turbine_output_mw - droop_setpoint_mw)
             + (bess_output_mw  - bess_setpoint_mw)
         )
-        assert delivery_error == pytest.approx(0.8, abs=1e-6), (
-            f"TC-82b: expected delivery_error ≈ 0.8 MW, got {delivery_error:.6f}"
+        assert delivery_error_grid == pytest.approx(0.8, abs=1e-6), (
+            f"TC-82b: grid-connected delivery_error should be 0.8 MW "
+            f"(surplus not specially routed); got {delivery_error_grid:.6f}"
         )
-        assert delivery_error > 0.0, "TC-82b PW-2: asset_delivery_error_mw must be > 0"
 
     def test_tc82c_frequency_forcing_overfrequency_islanded(self):
-        """(c) sub_msl_surplus in islanded mode → frequency_forcing > 0 → f > 50 Hz.
+        """(c) sub_msl in islanded mode → frequency_forcing > 0 → f > f_nominal.
 
-        Islanded formula (PW-2, unchanged from PW-1 in this channel):
+        San Diego (SDG&E territory) runs at 60 Hz.  SiteConfig.frequency_nominal_hz
+        must be set to 60.0 for the demo plant; TC-82c sources its threshold from
+        site config, not from a literal, so the assertion holds at both 50 Hz and
+        60 Hz without hardcoding.
+
+        Islanded frequency_forcing formula:
           frequency_forcing = (p_commanded − p_total) + sub_msl_surplus
 
-        With p_commanded ≈ p_total (demand at droop setpoint 2.0 MW) and
+        With p_commanded ≈ p_total (load = 2.0 MW, setpoint = 2.0 MW) and
         sub_msl = 0.8 MW:
-          frequency_forcing = (2.0 − 2.0) + 0.8 = 0.8 MW > 0.
+          frequency_forcing = (2.0 − 2.0) + 0.8 = 0.8 MW > 0 → overfrequency.
 
         Swing equation: df/dt = frequency_forcing / (2H × S_base) × f₀.
-        All terms > 0 → df/dt > 0 → frequency_hz > 50.0 after one tick.
+        All denominators positive; df/dt > 0 → frequency_hz > f_nominal after dt.
         """
+        from core.models import SiteConfig, IslandMode
+
+        # San Diego demo site — SDG&E territory: 60 Hz.
+        site = SiteConfig(
+            site_id="test-tc82",
+            island_mode=IslandMode.ISLANDED,
+            frequency_nominal_hz=60.0,
+            inertia_constant_s=4.0,   # SiteConfig default
+        )
+        f_nominal = site.frequency_nominal_hz   # 60.0 Hz — sourced from config
+
         sub_msl_surplus_mw = 0.8   # MSL 2.8 − p_fleet 2.0
         p_commanded_mw     = 2.0   # droop_setpoint + bess_setpoint + p_renewable
-        p_total_mw         = 2.0   # GPU + cooling load (equals commanded at steady state)
+        p_total_mw         = 2.0   # GPU + cooling load (matches commanded, steady state)
 
-        # Islanded frequency_forcing formula (same as simulation_core.py):
+        # Islanded frequency_forcing formula (mirrors simulation_core.py):
         frequency_forcing = (p_commanded_mw - p_total_mw) + sub_msl_surplus_mw
         assert frequency_forcing == pytest.approx(0.8, abs=1e-6), (
             f"TC-82c: expected frequency_forcing ≈ 0.8 MW, got {frequency_forcing:.6f}"
         )
         assert frequency_forcing > 0.0, (
-            "TC-82c: sub-MSL in islanded mode must produce overfrequency "
-            f"(frequency_forcing = {frequency_forcing:.4f} MW)"
+            "TC-82c: sub-MSL in islanded mode must produce positive frequency_forcing; "
+            f"got {frequency_forcing:.4f} MW"
         )
 
-        # Swing equation — verify df/dt > 0 for representative SiteConfig values.
-        # H (inertia_constant_s) = 2.0 (SiteConfig default), S_base = 7.0 MW (1 unit).
-        H      = 2.0   # SiteConfig.inertia_constant_s default
-        S_base = 7.0   # rated_mw of the single unit in this test
-        f0     = 50.0  # nominal frequency (Hz)
-        df_dt  = frequency_forcing / (2.0 * H * S_base) * f0
+        # Swing equation — df/dt > 0 → frequency exceeds nominal after one tick.
+        # Uses site.inertia_constant_s (H) and site.frequency_nominal_hz (f₀).
+        S_base = 7.0   # rated_mw of single unit in this test
+        df_dt  = (
+            frequency_forcing
+            / (2.0 * site.inertia_constant_s * S_base)
+            * f_nominal
+        )
         assert df_dt > 0.0, f"TC-82c: df/dt = {df_dt:.6f} Hz/s; expected > 0"
 
-        # After one tick (dt = 5 s), frequency must exceed 50.0 Hz.
         dt_s           = 5.0
-        freq_after_one = f0 + df_dt * dt_s
-        assert freq_after_one > 50.0, (
+        freq_after_one = f_nominal + df_dt * dt_s
+        assert freq_after_one > f_nominal, (
             f"TC-82c: frequency after 1 tick = {freq_after_one:.4f} Hz; "
-            f"expected > 50.0 Hz (overfrequency from sub-MSL islanded surplus)"
+            f"expected > {f_nominal} Hz (overfrequency above site nominal)"
         )
