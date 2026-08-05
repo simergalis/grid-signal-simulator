@@ -146,11 +146,11 @@ class SimulationState:
 
     # Phase 11.3 — frequency state for the swing equation (islanded mode only).
     # Persisted on SimulationState so df/dt integration accumulates correctly
-    # across ticks.  Starts at the nominal frequency; deviates when
-    # balance_residual_mw is non-zero in islanded mode.
-    # In grid-connected mode this field is reset to frequency_nominal_hz each
-    # tick (the grid holds the frequency reference and acts as infinite slack).
-    _frequency_hz: float = field(default=50.0, init=False)
+    # across ticks.  Initialized to site.frequency_nominal_hz in __post_init__
+    # (A2 / Task #200 — no literal default); deviates in islanded mode when
+    # balance_residual_mw is non-zero.  Reset to frequency_nominal_hz each tick
+    # in grid-connected mode (the grid is the infinite-bus frequency reference).
+    _frequency_hz: float = field(default=0.0, init=False)  # set in __post_init__
 
     # Phase 11.3/11.5 — running forecast MAE accumulators.
     # Used by Phase 11.5 Forecast Quality panel to report empirical accuracy.
@@ -174,6 +174,10 @@ class SimulationState:
         self.scada_layer = SimulatedScadaLayer(seed=42)
         if self.site.pms_config is not None:
             self.pms = SimulatedPMS(self.site.pms_config)
+        # A2 / Task #200: initialise frequency from site nominal (no literal default).
+        # SiteConfig.frequency_nominal_hz is required (no default) so this always
+        # sources from a conscious per-site choice (60 Hz WECC/SDG&E; 50 Hz EU/APAC).
+        self._frequency_hz = self.site.frequency_nominal_hz
 
     def _owning_gpu_module(self, signal: WorkloadSignal) -> GPUModule:
         """A WorkloadSignal targets exactly one GPU module -- the real
@@ -996,86 +1000,68 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # frequency is above nominal and the droop pulls the setpoint below demand.
     _p_commanded_mw = _p_dispatch_droop_mw + _bess_setpoint_mw + p_renewable_mw
 
-    # Phase 13.2 + Phase 1b (Task #198 item 1): mode-dependent channel routing.
+    # Phase 13.2 + Task #200 B1/B2 — two-channel energy identity, one reporting field.
     #
-    # Sub-MSL floor surplus (_sub_msl_surplus_mw > 0):
-    #   Turbines held at Σ msl_i by the loading layer, so actual output >
-    #   commanded.  This is a FLOOR CONSTRAINT, not a hardware delivery fault.
-    #   Islanded: surplus accelerates machines → overfrequency → added to
-    #             frequency_forcing_mw.  Removed from the turbine delivery term
-    #             so asset_delivery_error_mw tracks hardware faults only.
-    #   Grid-connected: surplus is absorbed as additional PCC export.
-    #             asset_delivery_error_mw captures the turbine over-delivery
-    #             naturally (floor surplus is not separately routed in this mode).
+    # D1: islanded → grid_exchange_mw = 0.0 exactly (PCC open).
+    # D2: grid-connected → frequency_forcing_mw = 0.0 exactly (grid holds f).
+    # D4: grid_exchange + frequency_forcing = balance_residual.
+    #     Two channels only; holds in BOTH modes without any conditional or RHS term.
+    # D5: asset_delivery_error_mw is NOT a term in D4.  Computed independently
+    #     from setpoints + actuals; same formula in both modes.
     #
-    # D1: islanded → grid_exchange_mw = 0.0 exactly.
-    # D2: grid-connected → frequency_forcing_mw = 0.0 exactly.
-    # D4: grid_exchange + frequency_forcing + asset_delivery_error = balance_residual.
-    #     Holds in BOTH modes without a conditional RHS term — see proof below.
-    # D5: asset_delivery_error_mw is NOT derived as (balance_residual − others)
-    #     — computed independently from setpoints + actuals.
+    # Energy routing (B1):
+    #   Islanded:       balance_residual = p_gen − p_load routes to rotors → frequency.
+    #                   frequency_forcing_mw = balance_residual (actual supply-demand,
+    #                   not the commanded approximation).  Sub-MSL surplus is implicit:
+    #                   turb_out > droop means p_gen is higher → balance_residual is
+    #                   higher → stronger overfrequency.  No separate sub_msl term needed.
+    #   Grid-connected: balance_residual routes to PCC (import/export).
+    #                   grid_exchange_mw = balance_residual.
     #
-    # Sub-MSL floor surplus routing (_sub_msl_surplus_mw > 0):
-    #   Turbines held at Σ msl_i by the loading layer produce more than commanded.
-    #   This is a FLOOR CONSTRAINT, not a hardware delivery fault.
+    # Reporting (B2):
+    #   asset_delivery_error_mw = (turb_out − droop) + (bess_out − bess_sp).
+    #   Mode-independent: reports commanded ≠ delivered regardless of cause —
+    #   floor constraint, actuator lag, hardware fault.  Not in D4.
+    #   A unit at its MSL floor (turb_out = 2.8 MW, droop = 2.0 MW) reports
+    #   +0.8 MW in BOTH islanded and grid-connected modes.
     #
-    #   Islanded: surplus is mechanical energy that cannot leave via PCC.  It
-    #             accelerates the machines → overfrequency.  Surplus is added to
-    #             frequency_forcing_mw (physics channel) and subtracted from the
-    #             turbine delivery term so asset_delivery_error_mw tracks hardware
-    #             faults only.  The subtraction ensures D4 holds cleanly.
+    # D4 algebra:
+    #   Islanded:       0 + balance_residual = balance_residual  ✓ (trivially)
+    #   Grid-connected: balance_residual + 0 = balance_residual  ✓ (trivially)
     #
-    #   Grid-connected: surplus is absorbed as additional PCC export (grid_exchange
-    #             captures it).  The turbine over-delivers relative to the droop
-    #             setpoint; that difference appears in asset_delivery_error_mw
-    #             naturally (no special routing needed in this mode).
-    #
-    # D4 algebra — identical structure in both modes:
-    #
-    #   Grid-connected (sub_msl = 0 always in this mode):
-    #     grid_exchange  = p_cmd − p_total
-    #     freq_forcing   = 0
-    #     delivery_error = (turb_out − droop) + (bess_out − bess_sp)
-    #     sum = (p_cmd − p_total) + (turb_out − droop + bess_out − bess_sp)
-    #         = (droop + bess_sp + p_ren − p_total) + turb_out − droop + bess_out − bess_sp
-    #         = p_gen − p_total = balance_residual  ✓
-    #
-    #   Islanded (sub_msl ≥ 0):
-    #     grid_exchange  = 0
-    #     freq_forcing   = (p_cmd − p_total) + sub_msl
-    #     delivery_error = (turb_out − droop − sub_msl) + (bess_out − bess_sp)
-    #     sum = (p_cmd − p_total + sub_msl) + (turb_out − droop − sub_msl + bess_out − bess_sp)
-    #         = p_cmd − p_total + turb_out + bess_out − droop + (sub_msl − sub_msl)
-    #         = balance_residual  ✓  (surplus cancels; no conditional needed)
+    # §13.2 spec note (B3):
+    #   asset_delivery_error_mw was originally defined as an energy channel in D4
+    #   (three-channel identity: grid + forcing + delivery_error = balance_residual).
+    #   This is a deliberate re-scope: it is now a reporting field outside D4.
+    #   The §13.2 spec document needs an edit to reflect two-channel D4 and the
+    #   mode-independent delivery_error definition — reported, not edited here.
+    _asset_delivery_error_mw = (           # reporting only — NOT a D4 term
+        (turbine_output_mw - _p_dispatch_droop_mw)
+        + (bess_output_mw  - _bess_setpoint_mw)
+    )
     if _islanded:
-        _grid_exchange_mw     = 0.0                           # PCC open (D1)
-        _frequency_forcing_mw = _p_commanded_mw - p_total_mw + _sub_msl_surplus_mw
-        _asset_delivery_error_mw = (
-            (turbine_output_mw - _p_dispatch_droop_mw - _sub_msl_surplus_mw)
-            + (bess_output_mw  - _bess_setpoint_mw)
-        )
+        _grid_exchange_mw     = 0.0                    # PCC open (D1)
+        _frequency_forcing_mw = _balance_residual_mw   # actual supply-demand → rotors
     else:
-        _grid_exchange_mw     = _p_commanded_mw - p_total_mw  # PCC flow; grid holds f (D2)
-        _frequency_forcing_mw = 0.0
-        _asset_delivery_error_mw = (
-            (turbine_output_mw - _p_dispatch_droop_mw)
-            + (bess_output_mw  - _bess_setpoint_mw)
-        )
+        _grid_exchange_mw     = _balance_residual_mw   # actual supply-demand → PCC
+        _frequency_forcing_mw = 0.0                    # grid holds frequency (D2)
 
-    # D4 check (Task #198 item 5) — converted from bare assert.
+    # D4 check (Task #198 item 5, revised Task #200 B1) — two-channel identity.
     # A bare assert is stripped under -O and kills the run mid-tick on fault.
     # Instead: compute defect, log if non-zero, continue.  Tests assert zero.
-    # No conditional term on the RHS; the algebra above guarantees balance.
-    _d4_sum = _grid_exchange_mw + _frequency_forcing_mw + _asset_delivery_error_mw
+    # asset_delivery_error_mw is NOT included — it is a reporting field only.
+    _d4_sum = _grid_exchange_mw + _frequency_forcing_mw
     _d4_balance_defect_mw = _d4_sum - _balance_residual_mw
     if abs(_d4_balance_defect_mw) >= 1e-3:
         _log.warning(
             "D4 power balance defect: %.9f MW "
             "(grid_exchange=%.6f, frequency_forcing=%.6f, "
-            "asset_delivery_error=%.6f, p_gen=%.6f, p_total=%.6f)",
+            "balance_residual=%.6f, p_gen=%.6f, p_total=%.6f; "
+            "asset_delivery_error=%.6f [reporting only, not in D4])",
             _d4_balance_defect_mw,
             _grid_exchange_mw, _frequency_forcing_mw,
-            _asset_delivery_error_mw, _p_gen_mw, p_total_mw,
+            _balance_residual_mw, _p_gen_mw, p_total_mw,
+            _asset_delivery_error_mw,
         )
 
     # Phase 1b (Task #198 item 3): ramp capability over the dispatch arbitrator's
@@ -1084,16 +1070,16 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     _ramp_capability_mw = ramp_capability(dt_lead_next_s, state.turbines)
 
     # Swing equation — islanded mode only.
-    # Phase 13.3: forcing input = frequency_forcing_mw ONLY.
+    # Task #200 B1: forcing input = frequency_forcing_mw = balance_residual.
     #   df/dt = frequency_forcing_mw / (2 × H × S_base) × f₀
     # where H = inertia_constant_s, S_base = total turbine fleet rating (MVA),
-    #       f₀ = frequency_nominal_hz.
+    #       f₀ = frequency_nominal_hz (sourced from SiteConfig — no literal).
     #
-    # frequency_forcing_mw is the dispatch-plan mismatch: (p_commanded − p_total).
-    # This is the ONLY term that drives frequency.  Physical delivery faults
-    # (asset_delivery_error_mw ≠ 0) do NOT directly alter the swing equation —
-    # they appear in the delivery channel for diagnostics but model error must
-    # not move frequency (Phase 13.3 design principle).
+    # frequency_forcing_mw = _balance_residual_mw = p_gen − p_load (actual).
+    # Any real supply-demand imbalance — floor constraint, BESS lag, hardware
+    # fault — moves frequency.  asset_delivery_error_mw is a reporting field
+    # outside D4 and does NOT separately drive the swing equation; it is
+    # already implicit in balance_residual.
     #
     # Governor droop provides the restoring force: by adjusting _p_dispatch_droop_mw
     # before arbitration, the droop correction changes _p_commanded_mw each tick,

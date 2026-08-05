@@ -579,49 +579,46 @@ class TestTC82DemoPlantMSLConstraint:
             f"TC-82a: expected setpoint at MSL floor 2.8 MW, got {setpoints}"
         )
 
-    def test_tc82b_asset_delivery_error_zero_at_msl_floor_islanded(self):
-        """(b) Islanded mode: turbine at MSL floor → asset_delivery_error_mw = 0.
+    def test_tc82b_asset_delivery_error_at_msl_floor_both_modes(self):
+        """(b) TC-82b (revised — Task #200 B2): MSL floor → asset_delivery_error = 0.8 MW
+        in BOTH islanded and grid-connected modes.
 
-        The sub-MSL floor constraint is NOT a hardware delivery fault.  The
-        surplus is routed entirely to frequency_forcing_mw (overfrequency
-        physics).  To keep D4 clean — grid_exchange + frequency_forcing +
-        asset_delivery_error = balance_residual (no conditional RHS term) —
-        the surplus is subtracted from the turbine delivery term in the islanded
-        branch.  The result: asset_delivery_error = 0 at the exact floor.
+        Under B2, asset_delivery_error_mw is a MODE-INDEPENDENT reporting field:
+          delivery_error = (turb_out − droop) + (bess_out − bess_sp)
 
-        Algebra (islanded, sub_msl = 0.8 MW):
-          frequency_forcing = (p_cmd − p_total) + sub_msl = 0 + 0.8 = 0.8 MW
-          delivery_error    = (turb_out − droop − sub_msl) + (bess_out − bess_sp)
-                            = (2.8 − 2.0 − 0.8) + 0 = 0.0 MW
-          D4: 0 + 0.8 + 0 = 0.8 = balance_residual  ✓
+        A unit held at its MSL floor (2.8 MW) with droop setpoint 2.0 MW over-delivers
+        by 0.8 MW vs the commanded setpoint.  That 0.8 MW over-delivery is visible in
+        delivery_error in BOTH modes — no sub_msl subtraction.
 
-        Grid-connected (for contrast): sub_msl routes to PCC via grid_exchange;
-        no subtraction needed; delivery_error = 0.8 MW (real over-delivery signal).
+        Algebra (both modes, sub_msl = 0.8 MW):
+          delivery_error = (2.8 − 2.0) + (0 − 0) = 0.8 MW
+
+        D4 still holds (two-channel, Task #200 B1):
+          Islanded:       0 + balance_residual = balance_residual  (0.8 MW = p_gen − p_load)
+          Grid-connected: balance_residual + 0 = balance_residual
+
+        Old TC-82b assertion (islanded = 0.0 MW) was a consequence of the previous
+        sub_msl subtraction in the islanded branch (now removed as part of B1/B2).
         """
-        sub_msl_surplus_mw = 0.8   # MSL 2.8 − p_fleet 2.0
-
-        # Islanded: surplus subtracted from turbine delivery term.
         turbine_output_mw  = 2.8   # held at MSL floor
         droop_setpoint_mw  = 2.0   # commanded below MSL
         bess_output_mw     = 0.0
         bess_setpoint_mw   = 0.0
-        delivery_error_islanded = (
-            (turbine_output_mw - droop_setpoint_mw - sub_msl_surplus_mw)
-            + (bess_output_mw  - bess_setpoint_mw)
-        )
-        assert delivery_error_islanded == pytest.approx(0.0, abs=1e-6), (
-            f"TC-82b: islanded asset_delivery_error at MSL floor must be 0 "
-            f"(hardware-fault channel clean); got {delivery_error_islanded:.6f}"
-        )
 
-        # Grid-connected: no subtraction; over-delivery visible as signal.
-        delivery_error_grid = (
+        # Mode-independent formula (Task #200 B2): no sub_msl subtraction.
+        delivery_error = (
             (turbine_output_mw - droop_setpoint_mw)
             + (bess_output_mw  - bess_setpoint_mw)
         )
-        assert delivery_error_grid == pytest.approx(0.8, abs=1e-6), (
-            f"TC-82b: grid-connected delivery_error should be 0.8 MW "
-            f"(surplus not specially routed); got {delivery_error_grid:.6f}"
+        assert delivery_error == pytest.approx(0.8, abs=1e-6), (
+            f"TC-82b: asset_delivery_error at MSL floor must be 0.8 MW in both modes "
+            f"(over-delivery signal; no sub_msl subtraction under B2); "
+            f"got {delivery_error:.6f}"
+        )
+        # Same formula in grid-connected — confirm identity (no separate branch).
+        assert delivery_error == pytest.approx(0.8, abs=1e-6), (
+            f"TC-82b (grid-connected check): delivery_error must be 0.8 MW; "
+            f"got {delivery_error:.6f}"
         )
 
     def test_tc82c_frequency_forcing_overfrequency_islanded(self):
@@ -657,10 +654,18 @@ class TestTC82DemoPlantMSLConstraint:
         p_commanded_mw     = 2.0   # droop_setpoint + bess_setpoint + p_renewable
         p_total_mw         = 2.0   # GPU + cooling load (matches commanded, steady state)
 
-        # Islanded frequency_forcing formula (mirrors simulation_core.py):
-        frequency_forcing = (p_commanded_mw - p_total_mw) + sub_msl_surplus_mw
+        # Islanded frequency_forcing formula (Task #200 B1 — balance_residual):
+        #   frequency_forcing = p_gen − p_load
+        #   p_gen = turb_out + bess_out + ren = 2.8 + 0 + 0 = 2.8 MW
+        #   p_load = p_total_mw = 2.0 MW
+        #   frequency_forcing = 2.8 − 2.0 = 0.8 MW
+        # (Numerically equal to the old (p_cmd − p_total) + sub_msl formula in
+        #  steady state where p_cmd = p_total, but the source is balance_residual.)
+        turb_out_mw = 2.8   # MSL floor (= droop_setpoint 2.0 + sub_msl 0.8)
+        frequency_forcing = turb_out_mw - p_total_mw  # balance_residual = p_gen − p_load
         assert frequency_forcing == pytest.approx(0.8, abs=1e-6), (
-            f"TC-82c: expected frequency_forcing ≈ 0.8 MW, got {frequency_forcing:.6f}"
+            f"TC-82c: expected frequency_forcing (= balance_residual) ≈ 0.8 MW, "
+            f"got {frequency_forcing:.6f}"
         )
         assert frequency_forcing > 0.0, (
             "TC-82c: sub-MSL in islanded mode must produce positive frequency_forcing; "

@@ -57,7 +57,7 @@ def test_tc01_instantaneous_compute_term_single_profile():
     was a no-op.  The pre-ramp assertion is new (verifies the ramp actually
     starts low) and does not weaken the original assertion.
     """
-    site = SiteConfig(site_id="s1", pue_base=1.03)
+    site = SiteConfig(frequency_nominal_hz=50.0, site_id="s1", pue_base=1.03)
     library = {"enterprise_8gpu_air": HardwareProfile("enterprise_8gpu_air", rated_kw=10.2)}
     gpu = GPUModule(asset_id="gpu-0", site=site, hardware_library=library)
     gpu.apply_signal(
@@ -94,7 +94,7 @@ def test_tc01_instantaneous_compute_term_single_profile():
 
 def test_tc02_cooling_zero_before_thermal_delay():
     """Source spec TC-02: evaluate at t0+60s (< default dt_thermal=90s) -> P_cooling == 0."""
-    site = SiteConfig(site_id="s1", dt_thermal_seconds=90.0)
+    site = SiteConfig(frequency_nominal_hz=50.0, site_id="s1", dt_thermal_seconds=90.0)
     cooling = CoolingModule(asset_id="cool-0", site=site)
     cooling.record_compute_sample(0.0, 5.0)
     cooling.record_compute_sample(60.0, 5.0)
@@ -105,7 +105,7 @@ def test_tc02_cooling_zero_before_thermal_delay():
 def test_tc03_cooling_converges_to_alpha_max_at_steady_state():
     """Source spec TC-03: held constant >= dt_thermal + 5*tau -> P_cooling
     converges to alpha_max * P_compute within 2% of asymptote."""
-    site = SiteConfig(site_id="s1", dt_thermal_seconds=90.0, tau_seconds=20.0, alpha_max=0.20)
+    site = SiteConfig(frequency_nominal_hz=50.0, site_id="s1", dt_thermal_seconds=90.0, tau_seconds=20.0, alpha_max=0.20)
     cooling = CoolingModule(asset_id="cool-0", site=site)
     p_compute = 10.0
     t = 0.0
@@ -121,7 +121,7 @@ def test_tc10_insufficient_reserve_worked_example():
     """Source spec TC-10 / Section 7.3: 20 MW job, dt_lead=30s, single
     turbine r_asset=0.2 MW/s -> alert fires, gap ~70s, peak shortfall 14 MW."""
     turbine = TurbineModule(TurbineConfig(asset_id="t0", r_asset_mw_per_s=0.2, rated_mw=25.0))
-    arbitrator = DispatchArbitrator(turbines=[turbine], bess_units=[], site=SiteConfig(site_id="s-tc10"))
+    arbitrator = DispatchArbitrator(turbines=[turbine], bess_units=[], site=SiteConfig(frequency_nominal_hz=50.0, site_id="s-tc10"))
 
     alert, _credit, _shortfall = arbitrator.stage_for_predicted_step(delta_p_mw=20.0, dt_lead_seconds=30.0, sim_time=0.0)
 
@@ -134,7 +134,7 @@ def test_tc11_sufficient_reserve_no_false_alert():
     """Source spec TC-11: 5 MW job, dt_lead=60s, r_asset=0.2 MW/s
     -> required ramp 25s < 60s lead -> no alert."""
     turbine = TurbineModule(TurbineConfig(asset_id="t0", r_asset_mw_per_s=0.2, rated_mw=25.0))
-    arbitrator = DispatchArbitrator(turbines=[turbine], bess_units=[], site=SiteConfig(site_id="s-tc11"))
+    arbitrator = DispatchArbitrator(turbines=[turbine], bess_units=[], site=SiteConfig(frequency_nominal_hz=50.0, site_id="s-tc11"))
 
     alert, _credit, _shortfall = arbitrator.stage_for_predicted_step(delta_p_mw=5.0, dt_lead_seconds=60.0, sim_time=0.0)
 
@@ -171,7 +171,7 @@ def test_d7_onboarding_alert_fires_once_per_unique_profile_id():
         WorkloadClass, WorkloadEventType, WorkloadSignal,
     )
 
-    site = SiteConfig(site_id="site-onboard", pue_base=1.03, uncalibrated=False)
+    site = SiteConfig(frequency_nominal_hz=50.0, site_id="site-onboard", pue_base=1.03, uncalibrated=False)
     # Empty hardware_library — every profile is unmapped.
     gpu = GPUModule(asset_id="gpu-0", site=site, hardware_library={})
     turbine = TurbineModule(TurbineConfig(asset_id="t0", r_asset_mw_per_s=0.2, rated_mw=10.0))
@@ -256,7 +256,7 @@ def test_d8_staging_sizes_against_dispatch_required_not_p_total():
     SOLAR_MW = 0.060  # 60 kW — covers more than half the job's compute draw
 
     library = {PROFILE_ID: HardwareProfile(PROFILE_ID, rated_kw=RATED_KW)}
-    site = SiteConfig(site_id="site-d8", pue_base=PUE)
+    site = SiteConfig(frequency_nominal_hz=50.0, site_id="site-d8", pue_base=PUE)
 
     def _make_state(with_solar: bool) -> tuple:
         turbine = TurbineModule(TurbineConfig(asset_id="t0", r_asset_mw_per_s=0.2, rated_mw=10.0))
@@ -335,7 +335,9 @@ def test_d9_demo_20mw_produces_nonzero_bess_output():
     PUE = 1.03
 
     library = {PROFILE_ID: HardwareProfile(PROFILE_ID, rated_kw=RATED_KW)}
-    site = SiteConfig(site_id="site-demo20", pue_base=PUE)
+    from core.models import IslandMode
+    site = SiteConfig(frequency_nominal_hz=50.0, site_id="site-demo20", pue_base=PUE,
+                      island_mode=IslandMode.GRID_TIE)   # demo-20mw is grid-connected (SDG&E)
 
     peak_compute_mw = NODE_COUNT * RATED_KW * PUE / 1000.0          # ≈ 19.957 MW
     solar_rated_mw = 0.25 * peak_compute_mw                          # PROTO-7 ≈ 4.989 MW
@@ -419,7 +421,7 @@ def test_d10_demo_20mw_bess_fires_and_tapers():
     TURBINE_RATED_MW = 25.0   # PROTO-8 — CHOSEN, no measured basis
 
     library = {PROFILE_ID: HardwareProfile(PROFILE_ID, rated_kw=RATED_KW)}
-    site = SiteConfig(site_id="site-d10", pue_base=PUE)
+    site = SiteConfig(frequency_nominal_hz=50.0, site_id="site-d10", pue_base=PUE)
 
     peak_compute_mw = NODE_COUNT * RATED_KW * PUE / 1000.0     # ~19.957 MW
     solar_rated_mw = 0.25 * peak_compute_mw                     # PROTO-7 ~4.989 MW
@@ -558,7 +560,7 @@ def test_d11_reserve_alert_fires_when_bess_power_insufficient():
     ))
 
     arbitrator = DispatchArbitrator(turbines=[turbine], bess_units=[bess],
-                                    site=SiteConfig(site_id="s-d11"))
+                                    site=SiteConfig(frequency_nominal_hz=50.0, site_id="s-d11"))
     alert, _credit, _shortfall = arbitrator.stage_for_predicted_step(
         delta_p_mw=20.0,
         dt_lead_seconds=30.0,
@@ -669,7 +671,7 @@ def test_step3_item1_per_job_draw_detects_small_job_checkpoint():
     # ------------------------------------------------------------------ #
     # Sanity: per_job_compute_mw() accessor returns the right values       #
     # ------------------------------------------------------------------ #
-    site = SiteConfig(site_id="site-item1", pue_base=PUE)
+    site = SiteConfig(frequency_nominal_hz=50.0, site_id="site-item1", pue_base=PUE)
     library = {PROFILE_ID: HardwareProfile(PROFILE_ID, rated_kw=RATED_KW)}
     gpu = GPUModule(asset_id="gpu-0", site=site, hardware_library=library)
 
@@ -722,7 +724,7 @@ def test_item3_concurrent_job_cooling_no_dip_and_smooth_rise():
     (b) max single-tick delta must be below the first-order bound at tau.
     (c) steady-state identity: Σ α_k × P_k = α_max × P_compute.
     """
-    site = SiteConfig(site_id="s1", pue_base=1.03, alpha_max=0.20,
+    site = SiteConfig(frequency_nominal_hz=50.0, site_id="s1", pue_base=1.03, alpha_max=0.20,
                       tau_seconds=20.0, dt_thermal_seconds=90.0)
     cooling = CoolingModule(asset_id="c1", site=site)
 
@@ -779,7 +781,7 @@ def test_item3_job_end_cooling_persists_over_thermal_lag():
     Assert: for all ticks within dt_thermal − 2·DT seconds of job end,
     P_cooling remains ≥ 90 % of the settled value.
     """
-    site = SiteConfig(site_id="s1", pue_base=1.03, alpha_max=0.20,
+    site = SiteConfig(frequency_nominal_hz=50.0, site_id="s1", pue_base=1.03, alpha_max=0.20,
                       tau_seconds=20.0, dt_thermal_seconds=90.0)
     cooling = CoolingModule(asset_id="c1", site=site)
     DT = 5.0
@@ -828,7 +830,7 @@ def test_item3_cursor_pruning_does_not_corrupt_lagged_lookup():
     brute-force min(history, …) scan of the retained deque.  Also verify
     pruning actually happened (otherwise the cursor path was never exercised).
     """
-    site = SiteConfig(site_id="s1", pue_base=1.03, alpha_max=0.20,
+    site = SiteConfig(frequency_nominal_hz=50.0, site_id="s1", pue_base=1.03, alpha_max=0.20,
                       tau_seconds=20.0, dt_thermal_seconds=90.0)
     cooling = CoolingModule(asset_id="c1", site=site)
     DT = 5.0
@@ -885,7 +887,7 @@ def test_item4_fleet_covers_shortfall_above_single_unit_rating():
     from core.dispatch import DispatchArbitrator
     from core.models import BessConfig, IslandMode, SiteConfig, TurbineConfig
 
-    site = SiteConfig(site_id="s1")
+    site = SiteConfig(frequency_nominal_hz=50.0, site_id="s1")
     # Two heterogeneous units: 3 MW and 7 MW, fleet total = 10 MW.
     # Peak shortfall = 8 MW > 3 MW (single unit), < 10 MW (fleet).
     bess_a = BessModule(BessConfig(asset_id="bess-a", rated_mw=3.0, usable_mwh=4.0))
@@ -940,14 +942,14 @@ def test_item4_small_unit_capped_to_ceiling_under_equal_share():
     from core.dispatch import DispatchArbitrator
     from core.models import BessConfig, IslandMode, SiteConfig, TurbineConfig
 
-    site = SiteConfig(site_id="s1")
+    site = SiteConfig(frequency_nominal_hz=50.0, site_id="s1")
     bess_a = BessModule(BessConfig(asset_id="ba", rated_mw=2.0, usable_mwh=10.0))
     bess_b = BessModule(BessConfig(asset_id="bb", rated_mw=6.0, usable_mwh=10.0))
     # Turbine produces 0 MW so fleet shortfall = p_dispatch_required.
     turbine = TurbineModule(TurbineConfig(asset_id="t0", r_asset_mw_per_s=0.0, rated_mw=0.0))
     arb = DispatchArbitrator([turbine], [bess_a, bess_b], site)
 
-    turbine_mw, bess_mw, _ = arb.tick(p_dispatch_required_mw=4.0, dt_seconds=5.0)
+    turbine_mw, bess_mw, _, _ = arb.tick(p_dispatch_required_mw=4.0, dt_seconds=5.0)
     # D14 equal-share-then-cap: A(ceiling=2) → 2 MW (full), B → 2 MW.
     assert math.isclose(bess_a.output_mw(), 2.0, abs_tol=1e-9), (
         f"unit-A (rated 2 MW) should be fully utilised at 2.0 MW (D14); "
@@ -1082,7 +1084,7 @@ def test_d14_capped_allocation_sum_invariant():
     from core.dispatch import DispatchArbitrator
     from core.models import BessConfig, SiteConfig, TurbineConfig
 
-    site = SiteConfig(site_id="s-d14")
+    site = SiteConfig(frequency_nominal_hz=50.0, site_id="s-d14")
     bess_a = BessModule(BessConfig(asset_id="a-d14", rated_mw=5.0,  usable_mwh=10.0))
     bess_b = BessModule(BessConfig(asset_id="b-d14", rated_mw=20.0, usable_mwh=10.0))
     turbine = TurbineModule(TurbineConfig(asset_id="t-d14", r_asset_mw_per_s=0.0, rated_mw=0.0))
@@ -1160,7 +1162,7 @@ def test_d13_min_not_sum_fleet_endurance():
     # Unit B: plenty of energy — 3600 s at 10 MW — but cannot compensate for A's gap
     bess_b = BessModule(BessConfig(asset_id="b-d13", rated_mw=10.0, usable_mwh=10.0))
 
-    site = SiteConfig(site_id="s-d13-test")
+    site = SiteConfig(frequency_nominal_hz=50.0, site_id="s-d13-test")
     arb = DispatchArbitrator([turbine], [bess_a, bess_b], site)
 
     # delta_p_mw=20, dt_lead=0 → gap_s=400, already_ramped=0, peak_shortfall=20 MW
@@ -1203,7 +1205,7 @@ def test_stage_ramp_credit_nonzero_with_residual_shortfall():
       peak_shortfall = 20 - 6.0 = 14.0 MW
     """
     turbine = TurbineModule(TurbineConfig(asset_id="t0", r_asset_mw_per_s=0.2, rated_mw=25.0))
-    arb = DispatchArbitrator(turbines=[turbine], bess_units=[], site=SiteConfig(site_id="s-credit"))
+    arb = DispatchArbitrator(turbines=[turbine], bess_units=[], site=SiteConfig(frequency_nominal_hz=50.0, site_id="s-credit"))
 
     alert, credit_mw, shortfall_mw = arb.stage_for_predicted_step(
         delta_p_mw=20.0, dt_lead_seconds=30.0, sim_time=0.0
@@ -1227,7 +1229,7 @@ def test_stage_ramp_credit_full_coverage_zero_shortfall():
       peak_shortfall = max(0, 5 - 5) = 0.0 MW
     """
     turbine = TurbineModule(TurbineConfig(asset_id="t0", r_asset_mw_per_s=0.2, rated_mw=25.0))
-    arb = DispatchArbitrator(turbines=[turbine], bess_units=[], site=SiteConfig(site_id="s-zero-sf"))
+    arb = DispatchArbitrator(turbines=[turbine], bess_units=[], site=SiteConfig(frequency_nominal_hz=50.0, site_id="s-zero-sf"))
 
     alert, credit_mw, shortfall_mw = arb.stage_for_predicted_step(
         delta_p_mw=5.0, dt_lead_seconds=60.0, sim_time=0.0
@@ -1257,7 +1259,7 @@ def test_stage_ramp_credit_excludes_hot_standby():
     standby = TurbineModule(TurbineConfig(
         asset_id="t-standby", r_asset_mw_per_s=0.3, rated_mw=25.0, hot_standby=True
     ))
-    arb = DispatchArbitrator(turbines=[active, standby], bess_units=[], site=SiteConfig(site_id="s-standby-excl"))
+    arb = DispatchArbitrator(turbines=[active, standby], bess_units=[], site=SiteConfig(frequency_nominal_hz=50.0, site_id="s-standby-excl"))
 
     alert, credit_mw, shortfall_mw = arb.stage_for_predicted_step(
         delta_p_mw=20.0, dt_lead_seconds=30.0, sim_time=0.0
@@ -1278,7 +1280,7 @@ def test_stage_ramp_credit_capped_to_delta_p():
     Credit must be capped to 10.0 MW; shortfall = 0.0.
     """
     turbine = TurbineModule(TurbineConfig(asset_id="t0", r_asset_mw_per_s=2.0, rated_mw=50.0))
-    arb = DispatchArbitrator(turbines=[turbine], bess_units=[], site=SiteConfig(site_id="s-cap"))
+    arb = DispatchArbitrator(turbines=[turbine], bess_units=[], site=SiteConfig(frequency_nominal_hz=50.0, site_id="s-cap"))
 
     alert, credit_mw, shortfall_mw = arb.stage_for_predicted_step(
         delta_p_mw=10.0, dt_lead_seconds=100.0, sim_time=0.0

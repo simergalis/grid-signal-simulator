@@ -143,6 +143,7 @@ def _make_minimal_tick_result(solar_weather: str = "", solar_conditions: str = "
     from core._plane_guard import _EVALUATE_TICK_PERMITTED
 
     site = SiteConfig(
+        frequency_nominal_hz=50.0,  # required; frequency unused in this non-frequency test
         site_id="solar-test-site", pue_base=1.03, uncalibrated=False,
         island_mode=IslandMode.ISLANDED,
     )

@@ -79,7 +79,7 @@ def _make_clock(sim_time: float = 0.0, dt_seconds: float = 5.0) -> SimClock:
 
 def _idle_state(bess_rated_mw: float = 10.0, bess_usable_mwh: float = 2.0) -> SimulationState:
     """Minimal state with no workload — net_demand will be 0.0 on the first tick."""
-    site = SiteConfig(site_id="test-f2", pue_base=1.03, uncalibrated=False,
+    site = SiteConfig(frequency_nominal_hz=50.0, site_id="test-f2", pue_base=1.03, uncalibrated=False,
                       island_mode=IslandMode.ISLANDED)
     hw = {"hw-a": HardwareProfile("hw-a", rated_kw=10.0)}
     gpu = GPUModule(asset_id="gpu-0", site=site, hardware_library=hw)

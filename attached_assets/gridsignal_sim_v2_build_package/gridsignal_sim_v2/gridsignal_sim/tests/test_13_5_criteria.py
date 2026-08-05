@@ -36,6 +36,7 @@ from core.asset_modules import CoolingModule
 # ===========================================================================
 
 _SITE_TC03 = SiteConfig(
+    frequency_nominal_hz=50.0,  # required; frequency unused in this non-frequency test
     site_id="s-tc03",
     dt_thermal_seconds=90.0,
     tau_seconds=20.0,

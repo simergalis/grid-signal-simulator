@@ -49,6 +49,35 @@ forcing at all). Correct approach: use _make_state(island_mode=ISLANDED) + GPU j
 manually set ramp_progress["job-1"] = 1.0 for full TDP, set _frequency_hz = 52.0,
 run one tick → frequency_forcing < 0 → frequency_hz < 52.0.
 
+### THE TRAP: B1 droop-zeroing + RAMPING turbine (I3/I3b tests)
+`apply_workload_signal(dt_lead=0)` leaves the turbine in RAMPING state.
+The loading layer's allocated set is SYNCHRONISED only — RAMPING turbines are
+skipped. A RAMPING turbine advances toward its pre-staged target regardless of
+`_p_dispatch_droop`, zeroing out the balance_residual that the droop test needs.
+**Fix**: After `apply_workload_signal`, set `state.turbines[0].state = TurbineState.SYNCHRONISED`
+and `state.turbines[0]._current_output_mw = 0.0` before the test tick.
+
+### THE TRAP: island_mode=ISLANDED default hides BESS shortfall (test_d9)
+`core.models.SiteConfig.island_mode` defaults to `IslandMode.ISLANDED`. In islanded
+mode with overproduction (large solar + ramping turbine vs tiny early GPU load),
+frequency rockets via the swing equation → droop correction huge-negative →
+`_p_dispatch_droop = max(0, ...) = 0` → fleet_shortfall=0 → BESS output=0 all ticks.
+Grid-connected scenarios (e.g. demo-20mw = SDG&E datacenter) MUST pass
+`island_mode=IslandMode.GRID_TIE` explicitly. Never omit it in direct SiteConfig construction.
+
+### THE TRAP: renewable.config.SiteConfig ≠ core.models.SiteConfig (bulk-script)
+Two COMPLETELY DIFFERENT classes share the name `SiteConfig`. `renewable.config.SiteConfig`
+models the solar plant (banks, feeders, strings, islanded:bool). `core.models.SiteConfig`
+models the grid site (island_mode enum, BESS, turbines, PUE, frequency_nominal_hz).
+Any bulk script that adds `frequency_nominal_hz=50.0` to ALL `SiteConfig(...)` calls
+in the repo will break solar tests with `TypeError: unexpected keyword argument`.
+Always check the import source before patching.
+
+### arb.tick() 4-tuple carry-forward (Phase 11.3)
+`DispatchArbitrator.tick()` returns `(turbine_mw, bess_mw, bess_setpoint_mw, candidates)`.
+Tests written before Phase 11.3 that unpack 3 values will fail with ValueError.
+Pattern: `turbine_mw, bess_mw, _, _ = arb.tick(...)`.
+
 ### BESS lag clamp prevents re-fire artifacts
 cover_shortfall: `discharge_mw = max(0, min(lag_output, discharge_target))`.
 When target=0 this ALWAYS gives 0 regardless of prev_output, so "taper → stay zero"

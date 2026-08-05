@@ -501,6 +501,8 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             # f_compute=0.72, p_comm_ratio=0.55.  Step phase is self-managed by
             # GPUModule.advance() at a 0.70 s period (StepTimingConfig default).
             load_config=LoadProfileConfigSpec(),
+            # A1 / Task #200: San Diego — SDG&E territory, 60 Hz (WECC).
+            frequency_nominal_hz=60.0,
         ),
     ),
     (

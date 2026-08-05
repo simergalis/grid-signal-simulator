@@ -100,7 +100,8 @@ def build_run_context(
     end_sim_time: float = 600.0,
     playback_speed: float = 0.0,  # 0 == "max" speed, no artificial delay
 ) -> RunContext:
-    site = SiteConfig(site_id=f"site-for-{run_id}")
+    # A1 / Task #200: 60 Hz — WECC/SDG&E territory (San Diego demo site).
+    site = SiteConfig(site_id=f"site-for-{run_id}", frequency_nominal_hz=60.0)
 
     gpu = GPUModule(
         asset_id="gpu-0",
@@ -230,7 +231,8 @@ def build_load_test_context(
     the load test representative of evaluate_tick()'s real per-tick
     cost (Design Spec Section 4.3), not just an idle scaffold.
     """
-    site = SiteConfig(site_id=f"site-for-{run_id}")
+    # A1 / Task #200: 60 Hz — WECC/SDG&E territory (San Diego demo site).
+    site = SiteConfig(site_id=f"site-for-{run_id}", frequency_nominal_hz=60.0)
 
     gpu_modules = [
         GPUModule(asset_id=f"gpu-{i}", site=site, hardware_library=DEFAULT_HARDWARE_LIBRARY)
@@ -370,6 +372,10 @@ def build_run_context_from_spec(
     )
     site = SiteConfig(
         site_id=f"site-for-{run_id}",
+        # A1 / Task #200: wire frequency_nominal_hz from ScenarioSpec.
+        # Default 60.0 for backward-compat with seeded scenarios that predate
+        # this field; new scenarios should set it explicitly.
+        frequency_nominal_hz=float(spec_data.get("frequency_nominal_hz", 60.0)),
         pue_base=spec_data.get("pue_base", 1.03),
         island_mode=island,
         # AD2: calibrated=True in spec → uncalibrated=False in SiteConfig.

@@ -45,6 +45,7 @@ def _make_tick(turbine_unit_specs: tuple, turbine_output_mw: float = 5.0):
     from core.simulation_core import SimulationState, evaluate_tick
 
     site = SiteConfig(
+        frequency_nominal_hz=50.0,  # required; frequency unused in this non-frequency test
         site_id="p0-test", pue_base=1.03, uncalibrated=False,
         island_mode=IslandMode.ISLANDED,
     )

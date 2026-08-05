@@ -1,23 +1,26 @@
 """
-Phase 13.2 — Balance decomposition acceptance tests.
+Phase 13.2 — Balance decomposition acceptance tests (revised Task #200 B1/B2).
 
-Verifies that _balance_residual_mw is decomposed into three independently
-computed channels:
+Verifies that _balance_residual_mw is decomposed into two energy channels plus
+one independent reporting field:
 
   grid_exchange_mw          — power crossing the PCC; exactly 0 in islanded (D1)
-  frequency_forcing_mw      — dispatch-plan mismatch driving inertia; 0 grid-connected (D2)
-  asset_delivery_error_mw   — physical shortfall (turbine/BESS vs setpoints); ~0 steady-state (D3)
+  frequency_forcing_mw      — actual supply-demand routed to rotors; 0 grid-connected (D2)
+  asset_delivery_error_mw   — commanded ≠ delivered (reporting only, NOT in D4)
 
-Plus invariants:
-  D4: sum of three channels == balance_residual_mw (bit-identical)
-  D5: asset_delivery_error_mw is NOT a residual of the other two (code-structure criterion,
-      verified by asserting it equals the independent setpoint-tracking formula)
+Invariants:
+  D4: grid_exchange_mw + frequency_forcing_mw == balance_residual_mw  (TWO channels)
+  D5: asset_delivery_error_mw is independently computed (setpoint-tracking formula),
+      NOT a residual of the other two.
 
-Swing equation addendum (I4):
-  I4: swing equation uses (frequency_forcing_mw + asset_delivery_error_mw) explicitly.
-      a) Healthy assets: asset_delivery_error ≈ 0; frequency change = frequency_forcing only.
-      b) Delivery fault: asset_delivery_error < 0; drop is larger than frequency_forcing alone.
-      c) Grid-connected: frequency stays at 50 Hz regardless of delivery error source.
+Swing equation addendum (I4 — revised B1):
+  I4: frequency_forcing_mw = balance_residual in islanded mode.
+      Any real supply-demand imbalance moves frequency.
+      a) Healthy islanded: Δf matches swing-equation prediction from forcing alone.
+      b) Depleted BESS islanded: asset_delivery_error < 0; D4 holds (two-channel);
+         frequency_forcing still equals balance_residual (which is more negative
+         than forcing-only because the BESS delivery shortfall lowers p_gen).
+      c) Grid-connected: frequency stays at site nominal regardless of delivery fault.
 
 All tests run headless with no external I/O.  Mode is set explicitly on SiteConfig.
 """
@@ -227,42 +230,38 @@ class TestD3ModelErrorSteadyState:
 # ---------------------------------------------------------------------------
 # D4 — sum of three channels == (p_gen − p_load) scratch residual
 # ---------------------------------------------------------------------------
-# Branch B: balance_residual_mw is no longer on TickResult.  D4 is now an
-# inline assertion in evaluate_tick().  These tests verify the assertion fires
-# (no AssertionError) and that the three channels are self-consistent.
-# The assertion formula:
-#   grid_exchange_mw + frequency_forcing_mw + asset_delivery_error_mw
-#   == turbine_output_mw + bess_output_mw + p_renewable_mw − p_total_mw
+# Task #200 B1: D4 is now a TWO-channel identity.
+# grid_exchange_mw + frequency_forcing_mw == balance_residual_mw.
+# asset_delivery_error_mw is a reporting field outside D4.
+# The d4_balance_defect_mw field is authoritative (evaluate_tick() computes it inline).
 # ---------------------------------------------------------------------------
 
 class TestD4SumIdentity:
-    """D4: three channels sum to (p_gen − p_load).
+    """D4: TWO channels sum to (p_gen − p_load) — revised Task #200 B1.
 
-    Branch B: balance_residual_mw removed from TickResult.  Tests now
-    assert the sum against the independently computable residual:
-        p_gen = turbine_output + bess_output + p_renewable
-        p_load = p_total_mw
-        residual = p_gen − p_load
-    If the D4 inline assert in evaluate_tick() fires, evaluate_tick()
-    raises AssertionError — these tests would error, not pass.
+    D4: grid_exchange + frequency_forcing = balance_residual.
+    asset_delivery_error_mw is NOT in D4; it is a reporting field.
+
+    Tests verify d4_balance_defect_mw ≈ 0 (the authoritative inline check)
+    and that (grid_exchange + frequency_forcing) == recomputed residual.
     """
 
     def _p_gen_residual(self, tick) -> float:
-        """Recompute the scratch residual from first principles (Branch B)."""
+        """Recompute the scratch residual from first principles."""
         return (
             tick.turbine_output_mw + tick.bess_output_mw + tick.p_renewable_mw
             - tick.p_total_mw
         )
 
     def _verify_d4(self, tick, label: str):
-        total = tick.grid_exchange_mw + tick.frequency_forcing_mw + tick.asset_delivery_error_mw
+        # Two-channel sum (Task #200 B1): asset_delivery_error NOT included.
+        total = tick.grid_exchange_mw + tick.frequency_forcing_mw
         residual = self._p_gen_residual(tick)
         assert total == pytest.approx(residual, abs=1e-6), (
-            f"D4 ({label}): sum of channels={total:.9f} != "
+            f"D4 ({label}): two-channel sum={total:.9f} != "
             f"p_gen−p_load residual={residual:.9f}"
         )
-        # Task #198 item 5: d4_balance_defect_mw is the authoritative defect field.
-        # Bare assert was converted; defect must be zero in normal operation.
+        # d4_balance_defect_mw is the authoritative defect field (Task #198 item 5).
         assert abs(tick.d4_balance_defect_mw) < 1e-3, (
             f"D4 ({label}): d4_balance_defect_mw={tick.d4_balance_defect_mw:.9f} "
             f"exceeds 1e-3 tolerance — evaluate_tick() accounting error"
@@ -315,7 +314,8 @@ class TestD4SumIdentity:
         state.apply_workload_signal(sig, dt_lead_seconds=120.0)
         for i in range(30):
             tick = _run_tick(state, sim_time=float(i) * 5.0, dt=5.0)
-            total = tick.grid_exchange_mw + tick.frequency_forcing_mw + tick.asset_delivery_error_mw
+            # Two-channel D4 (Task #200 B1): asset_delivery_error NOT in sum.
+            total = tick.grid_exchange_mw + tick.frequency_forcing_mw
             residual = (
                 tick.turbine_output_mw + tick.bess_output_mw + tick.p_renewable_mw
                 - tick.p_total_mw
@@ -453,69 +453,53 @@ class TestD5ModelErrorNotResidual:
 # ---------------------------------------------------------------------------
 
 class TestI4SwingEquationExplicitInput:
-    """I4: The swing equation input is explicitly (frequency_forcing + asset_delivery_error).
+    """I4 (revised — Task #200 B1): frequency_forcing = balance_residual in islanded mode.
 
-    Phase 13.2 addendum: renaming model_error_mw → asset_delivery_error_mw makes the
-    physical role of each term explicit.  The swing equation comment was updated to
-    (frequency_forcing_mw + asset_delivery_error_mw); this class verifies that
-    the computed frequency change is consistent with this two-term input.
+    Under B1, the swing equation input is frequency_forcing_mw alone.
+    frequency_forcing = balance_residual = p_gen − p_load (actual actuals).
+    asset_delivery_error_mw is a reporting field; it is implicit in balance_residual,
+    not a separate swing-equation term.
 
     Three sub-tests:
 
-    I4a — Healthy islanded: asset_delivery_error ≈ 0.
-          Frequency change is driven by frequency_forcing_mw alone.
-          The "dispatch-plan mismatch" term fully accounts for the swing.
+    I4a — Healthy islanded: asset_delivery_error ≈ 0 after settling.
+          Δf = frequency_forcing / (2H × S_base) × f₀ × dt.
+          frequency_forcing ≈ balance_residual (small mismatch = normal dispatch plan).
 
     I4b — Depleted BESS islanded: asset_delivery_error < 0.
-          Frequency drop is larger than frequency_forcing_mw alone would predict.
-          The delivery shortfall amplifies the inertial response.
+          BESS commanded but delivers nothing; p_gen drops → balance_residual < forcing
+          predicted by setpoints alone.  Δf still follows swing equation using
+          frequency_forcing = balance_residual (which absorbs the delivery shortfall).
+          Removed: the old "forcing_only_df < actual_df" assertion (no longer meaningful
+          because frequency_forcing IS balance_residual; there is no separate
+          "forcing only" channel).
 
-    I4c — Grid-connected with delivery fault: frequency stays at 50 Hz.
-          "Frequency doesn't move" regardless of asset_delivery_error_mw magnitude.
-          The fault is visible in asset_delivery_error_mw, but the grid absorbs
-          the imbalance (grid_exchange_mw), not the rotating inertia.
+    I4c — Grid-connected with delivery fault: frequency stays at site nominal.
+          "Frequency doesn't move" — the grid is the infinite-bus reference.
+          D2: frequency_forcing_mw = 0 exactly; delivery fault absorbed by grid_exchange.
 
-    The "surviving distinction" (from review document):
-      A dispatch-plan mismatch (frequency_forcing ≠ 0) without asset failure
-      (asset_delivery_error ≈ 0) → frequency changes; mismatch is in frequency_forcing.
-      An asset delivery fault (asset_delivery_error ≠ 0) with depleted BESS
-      → frequency changes MORE; the fault adds to frequency_forcing.
-      In grid-connected mode, neither changes frequency (I4c).
-
-    Swing equation formula (both modes numerically identical to _balance_residual):
-      Δf = (frequency_forcing_mw + asset_delivery_error_mw) / (2 × H × S_base) × f₀ × dt
-
-    SCOPE NOTE (Phase 13.2 addendum review):
-      The original I4 criterion was stated as "inject into model_error_mw only;
-      frequency must not move."  That criterion is unassertable in the current
-      architecture: no channel carries genuine model error while staying out of
-      the forcing path (the Phase 13.0 overloading finding is documented, not
-      eliminated — see asset_delivery_error_mw docstring in models.py).
-      What I4a–I4c actually prove is that the FORCING DECOMPOSITION is correct:
-        I4a — healthy assets: delivery error ≈ 0; Δf comes from frequency_forcing alone
-        I4b — delivery fault: delivery error < 0; Δf is steeper than forcing alone
-        I4c — grid-connected: frequency invariant regardless of delivery error source
-      This is a different and valuable property, but it should not be cited as
-      evidence that a 1 MW load-model error leaves frequency unchanged — B1b
-      demonstrated the opposite (53.125 Hz on a 1 MW solar surplus).
+    Swing equation formula (islanded, one-term input):
+      Δf = frequency_forcing_mw / (2 × H × S_base) × f₀ × dt
+    where f₀ = state.site.frequency_nominal_hz  (sourced from config — no literal).
     """
 
-    # Parameters from _make_state defaults
-    _H       = 4.0    # inertia_constant_s
-    _f0      = 50.0   # frequency_nominal_hz
-    _f_nom   = 50.0
+    # H is a constant (inertia_constant_s SiteConfig default from _make_state).
+    # f₀ and f_nom are sourced from state.site.frequency_nominal_hz in each test
+    # (no class-level literals — Task #200 A3 requirement).
+    _H = 4.0    # inertia_constant_s — matches _make_state SiteConfig default
 
     def _expected_df(
         self,
         frequency_forcing_mw: float,
-        asset_delivery_error_mw: float,
         s_base_mw: float,
         dt: float,
+        f0: float,
     ) -> float:
+        """Swing-equation prediction: Δf from frequency_forcing alone (B1 one-term input)."""
         return (
-            (frequency_forcing_mw + asset_delivery_error_mw)
+            frequency_forcing_mw
             / (2.0 * self._H * s_base_mw)
-            * self._f0
+            * f0
             * dt
         )
 
@@ -543,21 +527,21 @@ class TestI4SwingEquationExplicitInput:
         )
 
         # frequency_hz at tick_curr should equal tick_prev.frequency_hz + expected_Δf
+        # B1: Δf = frequency_forcing / (2H × S_base) × f₀ × dt (one-term formula).
+        f0 = state.site.frequency_nominal_hz  # sourced from config (50.0 EU/APAC)
         s_base = max(1.0, sum(t.config.rated_mw for t in state.turbines))
         expected_df = self._expected_df(
             tick_curr.frequency_forcing_mw,
-            tick_curr.asset_delivery_error_mw,
             s_base,
             dt,
+            f0,
         )
-        # D2 sanity: frequency_forcing_mw must be non-zero in islanded mode
-        # (some dispatch plan mismatch is normal; the test is about delivery error)
         actual_df = tick_curr.frequency_hz - tick_prev.frequency_hz
         assert actual_df == pytest.approx(expected_df, abs=1e-9), (
             f"I4a: frequency Δ={actual_df:.9f} Hz does not match "
-            f"expected from (forcing + delivery_error) = {expected_df:.9f} Hz\n"
+            f"swing-equation prediction from frequency_forcing = {expected_df:.9f} Hz\n"
             f"  frequency_forcing_mw={tick_curr.frequency_forcing_mw:.6f}\n"
-            f"  asset_delivery_error_mw={tick_curr.asset_delivery_error_mw:.6f}"
+            f"  asset_delivery_error_mw={tick_curr.asset_delivery_error_mw:.6f} [reporting only]"
         )
 
     def test_I4b_depleted_bess_islanded_delivery_error_amplifies_drop(self):
@@ -599,32 +583,28 @@ class TestI4SwingEquationExplicitInput:
             f"got {tick_curr.asset_delivery_error_mw:.6f}"
         )
 
-        # Frequency change must match the explicit two-term formula
+        # B1: Δf = frequency_forcing / (2H × S_base) × f₀ × dt.
+        # frequency_forcing = balance_residual (which is already more negative than
+        # a "setpoints-only" estimate because the BESS is not delivering).
+        f0 = state.site.frequency_nominal_hz  # sourced from config (50.0 EU/APAC)
         s_base = max(1.0, sum(t.config.rated_mw for t in state.turbines))
         expected_df = self._expected_df(
             tick_curr.frequency_forcing_mw,
-            tick_curr.asset_delivery_error_mw,
             s_base,
             dt,
+            f0,
         )
         actual_df = tick_curr.frequency_hz - tick_prev.frequency_hz
         assert actual_df == pytest.approx(expected_df, abs=1e-9), (
             f"I4b: frequency Δ={actual_df:.9f} Hz does not match "
-            f"(forcing + delivery_error) = {expected_df:.9f} Hz\n"
+            f"swing-equation prediction {expected_df:.9f} Hz\n"
             f"  frequency_forcing_mw={tick_curr.frequency_forcing_mw:.6f}\n"
-            f"  asset_delivery_error_mw={tick_curr.asset_delivery_error_mw:.6f}"
+            f"  asset_delivery_error_mw={tick_curr.asset_delivery_error_mw:.6f} [reporting only]"
         )
-
-        # The combined forcing is more negative than frequency_forcing alone,
-        # making the frequency drop steeper — this is the I4b distinguishing claim.
-        forcing_only_df = self._expected_df(
-            tick_curr.frequency_forcing_mw, 0.0, s_base, dt
-        )
-        assert actual_df < forcing_only_df, (
-            f"I4b: frequency drop ({actual_df:.6f} Hz) should be steeper than "
-            f"forcing-only ({forcing_only_df:.6f} Hz) when BESS under-delivers; "
-            f"asset_delivery_error_mw={tick_curr.asset_delivery_error_mw:.6f}"
-        )
+        # Note: old I4b "forcing_only_df < actual_df" assertion is REMOVED under B1.
+        # Under B1, frequency_forcing IS balance_residual — there is no separate
+        # "forcing only" prediction vs "forcing + delivery" prediction.  The delivery
+        # shortfall is already captured in balance_residual → frequency_forcing.
 
     def test_I4c_grid_connected_delivery_fault_frequency_invariant(self):
         """I4c: Grid-connected — frequency stays at 50 Hz regardless of delivery error.
@@ -667,10 +647,12 @@ class TestI4SwingEquationExplicitInput:
             f"got {tick.asset_delivery_error_mw:.6f}"
         )
 
-        # Frequency stays at nominal — grid absorbed the imbalance
-        assert tick.frequency_hz == pytest.approx(self._f_nom, abs=1e-9), (
+        # Frequency stays at site nominal — grid absorbed the imbalance.
+        # state uses _make_state(frequency_nominal_hz=50.0) — EU/APAC fixture by intent.
+        f_nom = state.site.frequency_nominal_hz  # sourced from config
+        assert tick.frequency_hz == pytest.approx(f_nom, abs=1e-9), (
             f"I4c: frequency_hz={tick.frequency_hz:.9f} Hz should be exactly "
-            f"{self._f_nom} Hz in grid-connected mode even with delivery fault "
+            f"{f_nom} Hz in grid-connected mode even with delivery fault "
             f"(asset_delivery_error_mw={tick.asset_delivery_error_mw:.6f})"
         )
 

@@ -312,6 +312,7 @@ class TestWorkloadSignalFlags:
         """
         state = _make_state(
             site=SiteConfig(
+                frequency_nominal_hz=50.0,  # required; frequency unused in this non-frequency test
                 site_id="test",
                 pue_base=1.03,
                 uncalibrated=False,
@@ -499,29 +500,29 @@ class TestDispatchTruthfulness:
         # The residual should be non-zero because the turbine over-delivered vs its setpoint.
         _p_gen = tick.turbine_output_mw + tick.bess_output_mw + tick.p_renewable_mw
         _residual = _p_gen - tick.p_total_mw
-        # The sum of three channels must equal the residual (D4 inline assertion in evaluate_tick).
-        _channel_sum = tick.grid_exchange_mw + tick.frequency_forcing_mw + tick.asset_delivery_error_mw
-        assert abs(_channel_sum - _residual) < 1e-6, (
-            f"B1a: channel sum {_channel_sum:.9f} != p_gen−p_load residual {_residual:.9f} (D4)"
+        # Task #200 B1: D4 is a TWO-channel identity (grid_exchange + frequency_forcing).
+        # asset_delivery_error_mw is a reporting field outside D4.
+        _d4_sum = tick.grid_exchange_mw + tick.frequency_forcing_mw
+        assert abs(_d4_sum - _residual) < 1e-6, (
+            f"B1a: D4 two-channel sum {_d4_sum:.9f} != p_gen−p_load residual {_residual:.9f}"
         )
         # The delivery fault makes p_gen non-zero even in this near-zero-load scenario.
         assert _residual != pytest.approx(0.0, abs=1e-6), (
             f"B1a: p_gen−p_load residual should be non-zero with delivery fault; "
             f"got {_residual:.9f}"
         )
-        # Phase 13.3: delivery faults do NOT move frequency — only the dispatch
-        # PLAN (frequency_forcing_mw) drives the swing equation.  In this scenario,
-        # the turbine over-delivered vs its setpoint, but the dispatch plan was
-        # balanced (fleet_shortfall = 0, bess_setpoint = 0, frequency_forcing = 0).
-        # frequency_hz must REMAIN at nominal.
-        assert tick.frequency_hz == pytest.approx(50.0, abs=1e-6), (
-            f"B1a (Phase 13.3): frequency_hz must stay at nominal when only a "
-            f"delivery fault is present (no dispatch-plan imbalance); "
-            f"got {tick.frequency_hz}"
+        # Task #200 B1: in islanded mode, frequency_forcing = balance_residual.
+        # A turbine over-delivering vs setpoint increases p_gen → balance_residual > 0
+        # → frequency_forcing > 0 → frequency RISES above nominal.
+        # Old Phase 13.3 "model error must not move frequency" is superseded by B1.
+        f_nom = state.site.frequency_nominal_hz  # sourced from config (50.0 EU/APAC)
+        assert tick.frequency_forcing_mw > 0.0, (
+            f"B1a (Task #200 B1): over-delivery → balance_residual > 0 → forcing > 0; "
+            f"got frequency_forcing_mw={tick.frequency_forcing_mw:.6f}"
         )
-        assert tick.frequency_forcing_mw == pytest.approx(0.0, abs=1e-6), (
-            f"B1a: frequency_forcing_mw must be 0 when fleet_shortfall = 0; "
-            f"got {tick.frequency_forcing_mw}"
+        assert tick.frequency_hz > f_nom, (
+            f"B1a (Task #200 B1): over-delivery in islanded mode raises frequency above "
+            f"nominal {f_nom} Hz; got {tick.frequency_hz:.6f}"
         )
 
     def test_B1b_islanded_load_model_error_not_visible_in_delivery_channel(self):
@@ -591,8 +592,9 @@ class TestDispatchTruthfulness:
             f"got {tick.frequency_forcing_mw:.9f}"
         )
         # Frequency rose (positive forcing drives f above nominal).
-        assert tick.frequency_hz > 50.0, (
-            f"B1b: frequency_hz should be above 50 Hz with 1 MW surplus; "
+        # site.frequency_nominal_hz = 50.0 (EU/APAC fixture, set by intent on SiteConfig above).
+        assert tick.frequency_hz > site.frequency_nominal_hz, (
+            f"B1b: frequency_hz should be above {site.frequency_nominal_hz} Hz with 1 MW surplus; "
             f"got {tick.frequency_hz:.6f}"
         )
 
@@ -641,9 +643,10 @@ class TestDispatchTruthfulness:
 
         tick = _run_tick(state, sim_time=5.0)
 
-        assert tick.frequency_hz == pytest.approx(50.0, abs=1e-9), (
-            f"B3: frequency_hz must be nominal in grid-connected mode; "
-            f"got {tick.frequency_hz}"
+        # state uses _make_state(frequency_nominal_hz=50.0) — EU/APAC fixture by intent.
+        assert tick.frequency_hz == pytest.approx(state.site.frequency_nominal_hz, abs=1e-9), (
+            f"B3: frequency_hz must be nominal ({state.site.frequency_nominal_hz} Hz) "
+            f"in grid-connected mode; got {tick.frequency_hz}"
         )
 
     def test_B4_zero_load_zero_setpoint(self):
@@ -727,18 +730,20 @@ class TestDispatchTruthfulness:
             f"B5 precondition: frequency_forcing_mw must be ≈ 1.0 MW with "
             f"1 MW solar surplus; got {tick.frequency_forcing_mw:.6f}"
         )
-        assert tick.frequency_hz > 50.0, (
+        # _site_b5.frequency_nominal_hz = 50.0 (EU/APAC fixture, set by intent above).
+        assert tick.frequency_hz > _site_b5.frequency_nominal_hz, (
             f"B5: positive frequency_forcing_mw ({tick.frequency_forcing_mw:.4f} MW) "
-            f"should raise frequency above 50 Hz; got {tick.frequency_hz:.6f}"
+            f"should raise frequency above {_site_b5.frequency_nominal_hz} Hz; "
+            f"got {tick.frequency_hz:.6f}"
         )
 
         # Verify frequency_hz tracks the swing-equation formula within ±10%.
         _s_base_mw = 10.0  # turbine_rated_mw
         _H = 4.0
-        _f0 = 50.0
+        _f0 = _site_b5.frequency_nominal_hz  # sourced from config (50.0 EU/APAC)
         _dt = 0.1
         _df_expected = tick.frequency_forcing_mw / (2.0 * _H * _s_base_mw) * _f0 * _dt
-        _df_actual = tick.frequency_hz - 50.0
+        _df_actual = tick.frequency_hz - _f0
         assert abs(_df_actual - _df_expected) / max(abs(_df_expected), 1e-9) < 0.10, (
             f"B5: frequency deviation {_df_actual:.6f} Hz should be within "
             f"±10% of swing-equation prediction {_df_expected:.6f} Hz"
@@ -773,6 +778,7 @@ class TestCoolingThermalLag:
 
     def _make_cooling(self, dt_thermal: float = 90.0, tau: float = 20.0) -> CoolingModule:
         site = SiteConfig(
+            frequency_nominal_hz=50.0,  # required; frequency unused in this non-frequency test
             site_id="cooling-test",
             alpha_max=0.20,
             tau_seconds=tau,
@@ -823,6 +829,7 @@ class TestCoolingThermalLag:
         p_compute_mw = 1.0
 
         site = SiteConfig(
+            frequency_nominal_hz=50.0,  # required; frequency unused in this non-frequency test
             site_id="cooling-test",
             alpha_max=alpha_max,
             tau_seconds=tau,
@@ -900,6 +907,7 @@ class TestCoolingThermalLag:
         tau = 20.0
         alpha_max = 0.20
         site = SiteConfig(
+            frequency_nominal_hz=50.0,  # required; frequency unused in this non-frequency test
             site_id="cooling-test",
             alpha_max=alpha_max,
             tau_seconds=tau,

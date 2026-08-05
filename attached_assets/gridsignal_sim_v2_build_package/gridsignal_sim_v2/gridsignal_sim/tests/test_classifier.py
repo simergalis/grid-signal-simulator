@@ -22,6 +22,7 @@ from core.models import SiteConfig
 TICK_S = 5.0  # §3.1 evaluation cadence
 
 _SITE = SiteConfig(
+    frequency_nominal_hz=50.0,  # required; frequency unused in this non-frequency test
     site_id="s1",
     pue_base=1.03,
     alpha_max=0.20,

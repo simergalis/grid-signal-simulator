@@ -368,6 +368,20 @@ class ScenarioSpec(BaseModel):
     )
 
     island_mode: bool = True
+    # A1 / Task #200: site nominal grid frequency.
+    # San Diego (SDG&E territory) = 60 Hz; EU/APAC grids = 50 Hz.
+    # Default 60.0 — primary deployment site is WECC.  Override explicitly for
+    # non-WECC scenarios.  Carried through scenario_factory → SiteConfig;
+    # SiteConfig has no default so omitting this from the spec fails at startup.
+    frequency_nominal_hz: float = Field(
+        default=60.0,
+        ge=45.0, le=65.0,
+        description=(
+            "Nominal grid frequency for the site (Hz).  "
+            "60 Hz for WECC/ERCOT (North America); 50 Hz for EU/APAC. "
+            "Drives the swing-equation denominator and all frequency-response criteria."
+        ),
+    )
     pue_base: float = Field(default=1.03, ge=1.0, le=2.0)
     end_sim_time: float = Field(default=300.0, ge=60.0, le=86400.0)
 

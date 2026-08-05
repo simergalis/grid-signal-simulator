@@ -48,7 +48,7 @@ def _plane_guard_active():
 
 
 def _idle_state() -> SimulationState:
-    site = SiteConfig(site_id="f5-test", pue_base=1.03, uncalibrated=False,
+    site = SiteConfig(frequency_nominal_hz=50.0, site_id="f5-test", pue_base=1.03, uncalibrated=False,
                       island_mode=IslandMode.ISLANDED)
     hw = {"hw-a": HardwareProfile("hw-a", rated_kw=10.0)}
     gpu = GPUModule(asset_id="gpu-0", site=site, hardware_library=hw)

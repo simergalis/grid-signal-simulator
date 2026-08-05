@@ -92,7 +92,7 @@ def _minimal_state(
     turbine_rated_mw: float = 10.0,
 ) -> SimulationState:
     """Minimal SimulationState sufficient for Step 7 field tests."""
-    site = SiteConfig(site_id="test-site", pue_base=1.03, uncalibrated=False,
+    site = SiteConfig(frequency_nominal_hz=50.0, site_id="test-site", pue_base=1.03, uncalibrated=False,
                       island_mode=IslandMode.ISLANDED)
     hw = {"profile_a": HardwareProfile("profile_a", rated_kw=10.0)}
     gpu = GPUModule(asset_id="gpu-0", site=site, hardware_library=hw)
@@ -285,7 +285,7 @@ def test_dt_lead_next_s_is_min_not_sum():
     Setup: module A has job with 10 s remaining, module B has job with 30 s
     remaining.  Expected: 10.0.  Wrong answer (pre-C2): 40.0 (sum).
     """
-    site = SiteConfig(site_id="s", pue_base=1.0, uncalibrated=False)
+    site = SiteConfig(frequency_nominal_hz=50.0, site_id="s", pue_base=1.0, uncalibrated=False)
     hw = {"p": HardwareProfile("p", rated_kw=10.0)}
 
     # Module A: ramp_seconds=20, progress=0.5 → remaining = 10 s
@@ -572,7 +572,7 @@ def test_turbine_ramp_credit_present_in_payload_with_active_ramp():
     """
     import math as _math
 
-    site = SiteConfig(site_id="test-ramp-credit", pue_base=1.0, uncalibrated=False,
+    site = SiteConfig(frequency_nominal_hz=50.0, site_id="test-ramp-credit", pue_base=1.0, uncalibrated=False,
                       island_mode=IslandMode.ISLANDED)
     hw = {"profile_a": HardwareProfile("profile_a", rated_kw=10.0)}
     gpu = GPUModule(asset_id="gpu-0", site=site, hardware_library=hw)

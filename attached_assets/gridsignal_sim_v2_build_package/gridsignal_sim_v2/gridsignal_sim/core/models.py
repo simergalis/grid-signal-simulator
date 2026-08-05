@@ -251,6 +251,14 @@ class PreStagingConfig:
 @dataclass
 class SiteConfig:
     site_id: str
+    # A2 / Task #200: required field — no default.
+    # The nominal grid frequency is a site property (SDG&E territory = 60 Hz;
+    # EU/APAC grids = 50 Hz).  Omitting it at construction is a commissioning
+    # error; a wrong default that silently passes every test is worse than a
+    # missing one that fails loudly.
+    # Carry through ScenarioSpec → scenario_factory → SiteConfig; tests must
+    # set it explicitly by intent (50 Hz = EU/APAC fixture; 60 Hz = WECC/ERCOT).
+    frequency_nominal_hz: float       # REQUIRED — no default (see above)
     pue_base: float = 1.03            # source spec Section 4, 1.02-1.05
     alpha_max: float = 0.20           # source spec Section 8, 0.10-0.30
     tau_seconds: float = 20.0         # source spec Section 8
@@ -334,13 +342,12 @@ class SiteConfig:
     #   but implied by charge/discharge dynamics).  All three require vendor
     #   or measured data before any derived frequency number is quoted externally.
     #
-    # frequency_nominal_hz (f0): nominal system frequency.  50 Hz default.
+    # frequency_nominal_hz: see field declaration at top of dataclass (required).
     # governor_droop: per-unit frequency deviation that produces 100% governor
     #   response.  Default 4% (0.04) — typical gas turbine governor setting.
     #   CHOSEN — no measured basis; read but not yet wired to control path
     #   (Phase 13.3b will close this).
-    inertia_constant_s:    float = 4.0    # CHOSEN — no measured basis (open parameter)
-    frequency_nominal_hz:  float = 50.0  # CHOSEN — EU/APAC default; override for 60 Hz
+    inertia_constant_s:    float = 4.0   # CHOSEN — no measured basis (open parameter)
     governor_droop:        float = 0.04  # CHOSEN — no measured basis (open parameter)
     # load_model_bias_mw: deliberate load-estimation offset for test injection (B1).
     #   Default 0.0 — the dispatch engine's load estimate matches the metered load.
@@ -918,7 +925,7 @@ class TickResult:
     # Deprecated since Phase 13.2; now deleted from the public API.
     # D4: sum(grid_exchange_mw + frequency_forcing_mw + asset_delivery_error_mw)
     #     == (_p_gen_mw − p_total_mw) is asserted inline in evaluate_tick().
-    frequency_hz:         float = 50.0
+    frequency_hz:         float = 0.0   # always overwritten by evaluate_tick; 0 = sentinel
     compute_inlet_temp_c: float = 20.0
     # ── Phase 13.2 — Balance decomposition ───────────────────────────────────
     # Three independently computed channels that sum to balance_residual_mw (D4).
