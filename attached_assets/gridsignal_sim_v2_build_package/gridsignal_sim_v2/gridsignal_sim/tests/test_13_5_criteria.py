@@ -216,13 +216,15 @@ class TestR4PMinStable:
                                         r_asset_mw_per_s=50.0,  # fast ramp
                                         p_min_stable_frac=0.45))
         t.stage_target(2.0, sim_time=0.0)       # clamped → 4.5 MW
-        t.advance(sim_time=0.0, dt_seconds=1.0)  # ramp 50 MW/s × 1 s ≫ 4.5 → AT_TARGET
+        t.advance(sim_time=0.0, dt_seconds=1.0)  # ramp 50 MW/s × 1 s ≫ 4.5 → SYNCHRONISED
 
         assert t.output_mw() == pytest.approx(4.5, abs=1e-9), (
             f"After clamping and ramp, turbine must be at p_min_stable (4.5 MW).  "
             f"Got {t.output_mw():.4f} MW."
         )
-        assert t.state == TurbineState.AT_TARGET
+        # Phase 2: advance() transitions RAMPING → SYNCHRONISED (not AT_TARGET) so
+        # the loading layer can take over dispatch for the unit.
+        assert t.state == TurbineState.SYNCHRONISED
 
 
 # ===========================================================================

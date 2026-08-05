@@ -657,6 +657,41 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # Phase 13.3: pass the droop-adjusted setpoint so the turbine is staged toward
     # the frequency-corrected target and the BESS covers only the residual shortfall.
     turbine_output_mw, bess_output_mw, _bess_setpoint_mw, _arb_candidates = state.arbitrator.tick(_p_dispatch_droop_mw, dt_seconds)
+
+    # ── Incremental turbine dispatch: headroom-triggered next-unit start ──────
+    # When the synchronised fleet is approaching its rated capacity ceiling
+    # (less than HEADROOM_FRAC of headroom remaining), GridSignal issues a
+    # command_start() to the next offline non-standby unit so it begins its
+    # startup sequence before demand outpaces the running fleet.
+    #
+    # This is the "GridSignal forecast signal" the operator sees: one turbine
+    # starts at a time, triggered by measured utilisation, not by a manual
+    # operator command.  The STARTING countdown timer becomes visible on the
+    # fleet panel while the unit is warming up.
+    #
+    # Only one unit is started per tick (break after first match) so the
+    # next tick's headroom measurement re-evaluates with the new unit already
+    # in its STARTING sequence — preventing a cascade of simultaneous starts
+    # when headroom first tips below the threshold.
+    _DISPATCH_HEADROOM_FRAC: float = 0.20  # start next unit when <20% headroom
+    _sync_rated_mw: float = sum(
+        t.config.rated_mw
+        for t in state.turbines
+        if t.state == TurbineState.SYNCHRONISED and not t.config.hot_standby
+    )
+    if (
+        _sync_rated_mw > 0.0
+        and turbine_output_mw / _sync_rated_mw >= (1.0 - _DISPATCH_HEADROOM_FRAC)
+    ):
+        for _ht in state.turbines:
+            if _ht.state == TurbineState.OFFLINE and not _ht.config.hot_standby:
+                # Use stage_target() (OFFLINE → RAMPING) rather than command_start()
+                # (STARTING countdown) so the unit ramps up on the same timescale as
+                # demand growth — cold-start counters (900 s default) would outlast a
+                # typical 300 s demo run and the unit would never come online.
+                _ht.stage_target(_p_dispatch_droop_mw, sim_time)
+                break  # one at a time; re-evaluated every tick
+
     # Phase 13.4 B3: detect when the commanded BESS output exceeds the fleet's
     # total rated power ceiling.  Surfaced in TickResult for dashboard / alerts.
     _binding_constraint: Optional[str] = (

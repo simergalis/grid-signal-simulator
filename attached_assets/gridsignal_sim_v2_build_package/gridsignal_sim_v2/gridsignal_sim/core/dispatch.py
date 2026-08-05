@@ -12,11 +12,12 @@ layer.
 from __future__ import annotations
 
 import logging
+import math
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional, Sequence
 
-from .asset_modules import BessModule, GPUModule, TurbineModule
+from .asset_modules import BessModule, GPUModule, TurbineModule, TurbineState
 from .models import (
     ConfidenceBand, DataQualityTag, IslandMode, OperatingTier,
     PreStagingConfig, SiteConfig, UnitAvailability,
@@ -496,11 +497,54 @@ class DispatchArbitrator:
         if not _active_turbines:
             required_ramp_s = float("inf")
         else:
-            per_turbine_target = delta_p_mw / len(_active_turbines)
-            for turbine in _active_turbines:
-                turbine.stage_target(turbine.output_mw() + per_turbine_target, sim_time)
+            _offline = [t for t in _active_turbines if t.state == TurbineState.OFFLINE]
+            _on_bus  = [t for t in _active_turbines if t.state != TurbineState.OFFLINE]
+
+            # ── Incremental startup: start minimum OFFLINE units for N-1 redundancy ──
+            # Always start offline turbines when a job arrives, even when solar
+            # currently covers demand (delta_p_mw ≤ 0), so the site maintains
+            # N-1 reserve for a renewable drop with no advance signal.
+            #
+            # N_start = ceil(delta_p / rated) + 1 spare.  The +1 spare means a
+            # single-unit trip immediately after startup still leaves the fleet
+            # covered (closable=True) so the energy-test threshold is meaningful.
+            # Units beyond N_start start one-at-a-time via the per-tick headroom
+            # check in evaluate_tick() as demand grows ("GridSignal forecast dispatch").
+            if _offline:
+                _first_rated  = _offline[0].config.rated_mw or 1.0
+                _eff_delta    = max(delta_p_mw, 0.0)   # never a negative start target
+                _n_start      = min(
+                    max(1, math.ceil(_eff_delta / _first_rated) + 1),
+                    len(_offline),
+                )
+                _per_start_target = _eff_delta / _n_start if _n_start else _eff_delta
+                for _t in _offline[:_n_start]:
+                    _t.stage_target(max(_per_start_target, 0.0), sim_time)
+
+            # ── On-bus units: raise targets for positive demand increments ONLY ──
+            # A negative delta_p_mw (demand shrinking, e.g. from a SOLAR_STEP
+            # when renewable output rises) must NOT be propagated to on-bus units
+            # via stage_target(output + negative/N) — that issues simultaneous stop
+            # commands to every unit, causing the "7.5 MW → 0" oscillation.
+            # The loading layer reduces setpoints naturally as p_fleet drops.
+            if _on_bus and delta_p_mw > 0.0:
+                _per_on_target = delta_p_mw / len(_on_bus)
+                for _t in _on_bus:
+                    _t.stage_target(_t.output_mw() + _per_on_target, sim_time)
+
+            # Reserve-rate math uses the full active fleet (started + on-bus) so
+            # ramp-credit and peak-shortfall figures are accurate regardless of how
+            # many units are in their ramp sequence.
             total_r_asset = sum(t.config.r_asset_mw_per_s for t in _active_turbines)
-            required_ramp_s = delta_p_mw / total_r_asset if total_r_asset else float("inf")
+            required_ramp_s = (
+                delta_p_mw / total_r_asset if (total_r_asset and delta_p_mw > 0.0)
+                else float("inf")
+            )
+
+        # Short-circuit: if delta_p_mw ≤ 0 there is no demand increase to alert on.
+        # Offline turbines were still started above for N-1 redundancy.
+        if delta_p_mw <= 0.0:
+            return None, 0.0, 0.0
 
         gap_s = required_ramp_s - dt_lead_seconds
         if gap_s <= 0:
