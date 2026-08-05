@@ -1,0 +1,76 @@
+GAS TURBINE FLEET
+READY
+5 × 7 MW frame-class · synchronous · islanded primary generation
+✕
+VERDICT
+N−1 firm capacity 28.0 MW covers the 23.95 MW peak with +17% margin.
+
+28
+MW firm, N−1
+FLEET — 5 UNITS · 3 ON BUS
+UNIT	CURRENT MW	NO-LOAD / MSL MW	SYNC	RAMP meas/cfg	RUN h	STATE
+turbine-0	1.60 MW	0.00 / 2.80	closed	0.200 / 0.200	—	available
+turbine-1	1.60 MW	0.00 / 2.80	closed	0.200 / 0.200	—	available
+turbine-2	1.60 MW	0.00 / 2.80	closed	0.200 / 0.200	—	available
+turbine-3	1.60 MW	0.00 / 2.80	closed	0.200 / 0.200	—	available
+turbine-4	1.60 MW	0.00 / 2.80	open	0.200 / 0.200	—	available
+Units installed
+5
+7 MW each · 35 MW total
+Units synchronised
+3
+contributing 8.40 MW
+N−1 firm capacity
+28.0 MW
+with any one unit unavailable
+Peak site load
+23.95 MW
+compute 19.96 + cooling 3.99
+N−1 margin
++17%
+35 MW − 7 MW contingency = 28 MW firm · peak 23.95 MW
+Aggregate ramp
+1.000 MW/s
+0.0 MW capability in 110 s (SYNCHRONISED only — starts excluded)
+Ramp with 1 unit
+0.200 MW/s
+22 MW in 110 s — BESS covers the remainder
+Start time, cold
+5–10 min
+STARTING units contribute 0 to ramp reserve (Task #198 item 2)
+N−1 firm capacity against peak site load
+28.00 MW
+red marker = 23.95 MW peak load · +17% margin with any one unit out
+Aggregate ramp with all units online
+1.00 MW/s
+red marker = 0.218 MW/s to cover 23.95 MW step in 110 s · ramp scales with unit count
+PARALLELING — AC BUS, SYNCHRO-CHECK BEFORE CLOSE
+G
+turbine-0
+CB
+G
+turbine-1
+CB
+G
+turbine-2
+CB
+G
+turbine-3
+CB
+G
+turbine-4
+CB
+13.8 kV BUS
+▶ switchgear / PMS
+1 unit in synchro-check sequence — matching voltage, frequency, phase.
+
+GridSignal never issues this command — TC-68
+
+Synchronous generators produce AC directly. No rectifier or DC link in this path — unlike the BESS and solar inverters, which are DC-coupled and grid-following.
+
+WHY THIS MATTERS
+Installed capacity is not the number that matters — N−1 firm capacity is. 5 × 7 MW gives 28.0 MW firm against a 23.95 MW peak.
+
+Aggregate ramp scales with unit count, not megawatts: 5 units deliver 1.000 MW/s — 5× the rate of a single equivalent unit.
+
+Degraded = effective ramp below 95% of fleet maximum. The reserve check uses the effective figure (§27, TC-58) — a quietly degraded unit is decisive in a reserve calculation.

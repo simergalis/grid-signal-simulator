@@ -80,6 +80,17 @@ function deriveFleet(units: TurbineUnitSpec[], horizonS: number) {
   return { installedMW, maxUnitMW, n1FirmMW, aggRampMWs, rampNeedMWs, n1MarginPct, maxRamp }
 }
 
+// ── On-bus determination ─────────────────────────────────────────────────────
+// Phase 2: use live state overlay (synchronised / ramping / at_target = on bus).
+// Phase 0 fallback: static breaker_closed from spec (absent state field).
+// Never infer from output MW — that is the defect this helper replaces.
+function isOnBus(u: TurbineUnitSpec): boolean {
+  if (u.state !== undefined) {
+    return u.state === 'synchronised' || u.state === 'ramping' || u.state === 'at_target'
+  }
+  return u.breaker_closed
+}
+
 // ── Per-unit table ───────────────────────────────────────────────────────────
 // syncedCount: from tick.units_synchronised_count — never derived from output.
 function FleetTable(
@@ -88,9 +99,13 @@ function FleetTable(
   maxRamp: number,
   syncedCount: number,
 ): React.ReactNode {
-  // Distribute aggregate output proportionally by rated_mw.
-  const totalRated = units.reduce((s, u) => s + u.rated_mw, 0) || 1
-  const unitOutputs = units.map(u => aggregateOutputMW * (u.rated_mw / totalRated))
+  // Distribute aggregate output only among on-bus units.
+  // Off-bus units (open breaker / not synchronised) contribute zero — giving them
+  // a proportional share of the fleet total is the field-boundary defect fixed here.
+  const onBusRated = units.reduce((s, u) => s + (isOnBus(u) ? u.rated_mw : 0), 0) || 1
+  const unitOutputs = units.map(u =>
+    isOnBus(u) ? aggregateOutputMW * (u.rated_mw / onBusRated) : 0
+  )
 
   // 0.2: FLEET header — on-bus count from named field, not hardcoded string.
   const syncedStr   = syncedCount === 0 ? 'NONE ON BUS' : `${syncedCount} ON BUS`
@@ -114,8 +129,10 @@ function FleetTable(
   const rows = units.map((u, i) => {
     const out      = unitOutputs[i]
     const isDeg    = u.r_asset_mw_per_s < 0.95 * maxRamp
-    // 0.2: named typed field — not inferred from proportional output threshold
-    const syncStr  = u.breaker_closed ? 'closed' : 'open'
+    // 0.2: isOnBus() prefers live state (Phase 2) over static breaker_closed (Phase 0).
+    // Never inferred from output MW.
+    const onBus    = isOnBus(u)
+    const syncStr  = onBus ? 'closed' : 'open'
     const rampStr  = `${u.r_asset_mw_per_s.toFixed(3)} / ${maxRamp.toFixed(3)}`
     const stateStr = isDeg ? 'degraded' : 'available'
     const runHStr  = u.run_hours_h != null
@@ -126,12 +143,13 @@ function FleetTable(
 
     return React.createElement('tr', { key: u.asset_id },
       React.createElement('td', { style: dCell(GOLD, true) }, u.asset_id),
-      // 0.6: column labelled CURRENT MW — distinct from no-load and MSL
+      // 0.6: column labelled CURRENT MW — distinct from no-load and MSL.
+      // Non-zero only for on-bus units; off-bus units show 0.00 MW (isOnBus fix).
       React.createElement('td', { style: dCell(out > 0.01 ? GOLD : '#4b5764') }, `${out.toFixed(2)} MW`),
       // 0.6: explicit NO-LOAD / MSL column from named typed fields
       React.createElement('td', { style: dCell('#4b5764') }, noLoadMslStr),
-      // 0.2: SYNC driven by breaker_closed, not output inference
-      React.createElement('td', { style: dCell(u.breaker_closed ? GOLD : '#4b5764') }, syncStr),
+      // 0.2: SYNC driven by isOnBus() — Phase 2 live state preferred, breaker_closed fallback.
+      React.createElement('td', { style: dCell(onBus ? GOLD : '#4b5764') }, syncStr),
       React.createElement('td', { style: dCell(isDeg ? AMBER : '#8b949e') }, rampStr),
       React.createElement('td', { style: dCell('#4b5764') }, runHStr),
       React.createElement('td', { style: dCell(isDeg ? AMBER : TEAL, true) }, stateStr),

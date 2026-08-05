@@ -87,11 +87,14 @@ export interface TickPayload {
   // without a spec (e.g. direct job-id path).  Drives the fleet modal.
   turbine_units: TurbineUnitSpec[]
 
-  // Phase 0 §0.2/0.3: per-unit sync aggregates — derived from breaker_closed flags
-  // in turbine_units by _tick_result_to_dict().  The count equals the filtered list
-  // length; MW equals the fleet total (Phase 0 fleet-aggregate only).
-  units_synchronised_count: number   // len([u for u in turbine_units if u.breaker_closed])
-  synchronised_output_mw: number     // turbine_output_mw when count>0, else 0.0
+  // Phase 0 §0.2/0.3: per-unit sync aggregates.
+  // units_synchronised_count: derived from live state (Phase 2: state in
+  //   synchronised/ramping/at_target) or breaker_closed (Phase 0 fallback).
+  // synchronised_output_mw: turbine_output_mw when any unit is live-state on-bus,
+  //   else 0.0.  Equals the actual on-bus unit total because off-bus units produce
+  //   zero output (loading layer dispatches SYNCHRONISED state only).
+  units_synchronised_count: number
+  synchronised_output_mw: number
 
   // Kubernetes demand agent metrics — null when kube_config is not active.
   // Non-null only on runs that have kube_config set in the ScenarioSpec.
@@ -355,7 +358,9 @@ export interface TurbineUnitSpec {
   gt_mode: string
   /** Phase 0 §0.2: commissioned but not synchronised to the AC bus (hot standby). */
   hot_standby: boolean
-  /** Phase 0 §0.2: AC bus breaker closed. Drives SYNC column; never inferred from output. */
+  /** Phase 0 §0.2: AC bus breaker closed (static spec, derived from hot_standby).
+   *  Use isOnBus() in rendering code — it prefers the live `state` field (Phase 2)
+   *  and falls back to this field for Phase 0 payloads without a state overlay. */
   breaker_closed: boolean
   /** Phase 0 §0.6: net output at no-load speed — distinct from MSL. */
   no_load_mw: number
@@ -366,6 +371,12 @@ export interface TurbineUnitSpec {
    *  "checking"   — relay active, matching V/f/θ before close (hot standby).
    *  "open"       — unit offline, not in sync sequence (Phase 1+). */
   sync_relay_state: string
+  /** Phase 2 live state overlay — absent on Phase 0 payloads.
+   *  "synchronised" | "ramping" | "at_target" → on bus, delivering power.
+   *  "available" | "starting" | "off"         → not on bus, zero output.
+   *  Authoritative source for SYNC column and CURRENT MW distribution.
+   *  Falls back to breaker_closed when absent. */
+  state?: string
 }
 
 /** PMS wiring exposed in the Scenario Builder. */

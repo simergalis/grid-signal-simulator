@@ -237,11 +237,18 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
             or (u.get("state") is None and u.get("breaker_closed", True))
         ),
         # synchronised_output_mw: fleet output attributed to on-bus units.
-        # Phase 0 tracks fleet aggregate only; hot_standby units contribute zero output
-        # so the fleet total already equals the synchronised-unit total.
+        # Guard uses the same logic as units_synchronised_count for consistency:
+        #   Phase 2 — live state in (synchronised, ramping, at_target) → on bus.
+        #   Phase 0 fallback — breaker_closed (static spec, default True).
+        # turbine_output_mw already equals the on-bus total because the loading
+        # layer only dispatches SYNCHRONISED-state units; off-bus units produce 0.
         "synchronised_output_mw": round(
             tick.turbine_output_mw
-            if any(u.get("breaker_closed", True) for u in tick.turbine_units)
+            if any(
+                u.get("state") in ("synchronised", "ramping", "at_target")
+                or (u.get("state") is None and u.get("breaker_closed", True))
+                for u in tick.turbine_units
+            )
             else 0.0,
             4,
         ),
