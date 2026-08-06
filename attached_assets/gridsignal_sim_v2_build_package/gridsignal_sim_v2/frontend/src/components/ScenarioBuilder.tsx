@@ -353,13 +353,20 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
 
   // ── Demo description helpers ──────────────────────────────────────────────
 
-  const handleTts = () => {
-    const text = spec.demo_description?.trim()
-    if (!text || !('speechSynthesis' in window)) return
-    window.speechSynthesis.cancel()
-    const utt = new SpeechSynthesisUtterance(text)
-    utt.rate = 0.95
-    window.speechSynthesis.speak(utt)
+  const handleStt = () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const w = window as any
+    const SR: (new () => any) | undefined = w.SpeechRecognition ?? w.webkitSpeechRecognition
+    if (!SR) { alert('Speech recognition is not supported in this browser.'); return }
+    const rec = new SR()
+    rec.lang = 'en-US'
+    rec.interimResults = false
+    rec.maxAlternatives = 1
+    rec.onresult = (e: any) => {
+      const transcript: string = e.results[0][0].transcript
+      patch({ demo_description: (spec.demo_description ? spec.demo_description + ' ' : '') + transcript })
+    }
+    rec.start()
   }
 
   const handleImproveWithAI = async () => {
@@ -495,14 +502,12 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                   <div className="flex gap-1">
                     <button
                       type="button"
-                      onClick={handleTts}
-                      disabled={!spec.demo_description?.trim()}
-                      title="Read aloud (browser TTS)"
+                      onClick={handleStt}
+                      title="Dictate with microphone (browser STT)"
                       className="rounded border border-border px-2 py-0.5 text-[10px] text-muted
-                                 hover:border-accent hover:text-accent disabled:opacity-30
-                                 transition-colors"
+                                 hover:border-accent hover:text-accent transition-colors"
                     >
-                      🔊 TTS
+                      🎤 STT
                     </button>
                     <button
                       type="button"
