@@ -1,0 +1,125 @@
+Phase 4 — Payload extension (Class B)
+
+Follows: Phase 3 closed. Guards D1, D2, E Tier 1 green. Baseline 12 failed, 965 passed, 974 collected, 0 errors from canonical CWD gridsignal_sim/. Blocks: Phases 5–7. Scope: put four figures on the wire, restore what Phase 3 correctly reverted, and clear three labelling items. No Tier-2 work, no Phase 6 peak-load work.
+
+Phase 3's wire-format audit established that bess_units, dt_thermal_seconds and alpha_max live on ScenarioSpec and never reach TickPayload. The panels now read "not instrumented" in exactly the slots this phase fills. That is a clean seam — do not widen it.
+
+Ordering is the gate
+
+Per task #191, the types.ts entry lands before the backend emits the key. The backend/frontend field mismatch this rule exists to prevent has recurred three times in this codebase. Report the two commits, or the two edits, in order for each field.
+
+Item 1 — Four fields onto TickResult and _tick_result_to_dict
+
+Add to core/models.py TickResult and emit from runtime/run_manager.py:_tick_result_to_dict (lines 156–367):
+
+Field	Source	Note
+bess_rated_mw	sum(b.config.rated_mw for b in sim_state.bess_units)	fleet aggregate
+bess_usable_mwh	sum(b.config.usable_mwh for b in sim_state.bess_units)	fleet aggregate — the pattern already exists at run_manager.py:841
+dt_thermal_seconds	SiteConfig	
+alpha_max	SiteConfig	the base value, not the scaled one
+
+Three traps, all confirmed in the source.
+
+Do not reuse contingency_coverage.bess_usable_energy_mwh (already emitted at run_manager.py:306). It looks like the field you need and is not. run_manager.py:787-788 documents that it is altered by SOC corruption — staleness substitution rewrites it. It is a corrupted-telemetry figure for contingency assessment, not a configured nameplate. Sourcing "Usable energy" from it would put an injected fault into a static spec row.
+
+ambient_alpha_scale is already on the wire (run_manager.py:277) and is described as "factor applied to site.alpha_max". The base alpha_max is not. So the panel currently has a multiplier with nothing to multiply. Broadcast both, and make clear in the field comments which is base and which is scale — a panel that renders the scaled value while labelling it α_max will mislead during ambient stress scenarios.
+
+Fleet aggregate, not bess_units[]. Phase 3 wrote tick.bess_units?.[0]?.rated_mw, which is a per-unit read standing in for a fleet figure — the same defect Item 2 of the closeout fixed in generation.ts. Broadcast the aggregates. If a genuine per-unit BESS display is wanted later, that is a separate decision with its own array.
+
+Add bess_unit_count alongside, so a panel can state whether an aggregate covers one unit or several.
+
+Item 2 — Resolve the bess_output_mw ambiguity
+
+bess_output_mw is already broadcast and Phase 3 made it the "Current output" row. Confirm from source whether it is the fleet sum or a single unit, and state it in the field comment and the panel sub-label. With no bess_unit_count on the wire the panel currently cannot say, which is the same fleet-versus-per-unit ambiguity on the storage side.
+
+Item 3 — Restore what Phase 3 reverted
+
+storage.ts — restore the bar, now that it can be scaled against something real: max from bess_rated_mw, never from the value itself. Replace both "not instrumented" rows with the broadcast figures. Label the bar for what it shows; if it shows output against rated power, say that, not "available power" — available power is a function of rated capacity and state of charge, and remains underived until someone specifies it.
+
+thermal.ts — restore the α_max bar and the Δt_thermal row from the broadcast fields.
+
+Also at thermal.ts:105: the sub-label "includes 15% margin · PROTO-10" states a figure the panel does not compute. Derive it or remove it. It is the same class as the 45 s prose, just outside Guard E's reach because it lives in a string.
+
+Item 4 — Three labelling items from the Phase 3 review
+
+ramp_capability_mw is on-bus capability, not a commitment-aware verdict. canClose = fleetRampCap >= demandMW is now correctly backed by the authoritative backend figure — but ramp_capability() measures what units already on the bus can deliver over the horizon. The question "can the fleet close this gap" will, after the ramp-algorithm work, also involve units that could be committed but are not yet. Add a sub-label making the current scope explicit, so the verdict is not later read as commitment-aware.
+
+why[1] frames a per-unit figure as the panel's thesis. "this unit delivers X MW in the N s of warning" is correctly derived now, but a single unit is not what answers a step-load — which was the point of splitting fleet from per-unit. Either make the fleet the subject or say plainly that it describes one machine.
+
+"Ramp rate configured", sub "site parameter", is per-unit. Calling a per-unit nameplate a site parameter is the category confusion this whole refactor removes, at smaller scale. Relabel so the scope is explicit.
+
+Prohibited
+Emitting any new key before its types.ts entry exists.
+Sourcing bess_usable_mwh from contingency_coverage.bess_usable_energy_mwh.
+Broadcasting a bess_units[] array, or reading [0] as a fleet figure.
+Drawing any bar whose maximum derives from its own value.
+Labelling a figure "available power" without deriving it from rated capacity and state of charge.
+Phase 6 work — no design_peak_load_mw, no ScenarioSpec change.
+Any Tier-2 constant work.
+Fixing the 3 class C core defects, or test_tc_p0_1/2/3/5.
+Modifying gridsignal_logger.py.
+Acceptance criteria
+ Four fields on TickResult and emitted from _tick_result_to_dict, each a fleet aggregate where applicable.
+ For each field, the types.ts entry reported as landing before backend emission.
+ bess_unit_count broadcast; bess_output_mw scope confirmed from source and stated in both the field comment and the panel.
+ alpha_max base and ambient_alpha_scale both present, each commented as base or scale.
+ storage.ts bar restored, scaled from bess_rated_mw, labelled for what it shows.
+ thermal.ts α_max bar and Δt_thermal row restored from broadcast fields.
+ thermal.ts:105 "15% margin" derived or removed.
+ ramp_capability_mw sub-label states on-bus scope.
+ why[1] and "Ramp rate configured" relabelled for explicit scope.
+ Guards D1, D2, E Tier 1 green; TypeScript --noEmit clean.
+ Suite reported against 12 failed / 965 passed / 974 collected / 0 errors, any delta attributed.
+Project content
+GridSignal
+Created by you
+GridSignal-Forecast-Engine-Functional-Spec_v2.5.md
+
+1,683 lines
+
+MD
+
+PDF
+
+PDF
+
+Content
+gridsignal_source_review.zip
+
+ZIP
+
+gridsignal_ui_components.zip
+
+ZIP
+
+The gas turbine generators powered up all at once, which is not possible. One turbine shoiuld have started, increasing its oputput, and rthwen another turbine should start up Fix the logic underlying the ramp up 12 minutes ago Refining turbine startup logic Refining turbine startup logi
+
+PASTED
+
+The test_kube_oscillation docstring literally says "With the current hardcode this test FAILS — that is the point" — it's an intentional red test, pre-existing. I need to fix the 3 real regressions: test_d10, test_tc84f, and test_tc_gt2. Let me read their full failures and test code in parallel:
+
+PASTED
+
+PHASE 0 — REVERT REPORT Files changed and what was reverted File Change core/dispatch.py:503-519 Replaced single-unit staging ("stage exactly ONE") with original N_needed+1 formula: _n_start = min(max(1, ceil(delta / rated) + 1), len(_offline)), target distributed equally core/simulation_core.py
+
+PASTED
+
+PHASE 1 — STATE/WRITER TABLE Derived from asset_modules.py:962–999 (advance), simulation_core.py:638–644 (_synchronised_units filter), loading.py:116–136 (apply_loading), and asset_modules.py:810–814 (is_synchronised). State Written by advance()? Written by apply_loading() today? Physical meanin
+
+PASTED
+
+All evidence collected. Here is the complete report. PART A — Raw evidence Command 1: sed -n '625,700p' core/simulation_core.py # Used by the arbitrator, the balance decomposition, and the TickResult. _p_dispatch_droop_mw = max(0.0, p_dispatch_required_mw + _droop_correction_mw) #
+
+PASTED
+
+Triage closeout — all items settled Item 1 — TC-CL-1 and TC-CL-2 updated Both tests now assert the new three-branch contract. TC-CL-1b was added as a dedicated named test for the one-tick tolerance (as required by the instruction): Test What it asserts test_tc_cl_1_for_tick_returns_clean_beyon
+
+PASTED
+
+Phase 3 closeout — four fixes before Phase 4 Follows: Phase 3 verification (guards green, TypeScript clean, Class B fields correctly reverted). Blocks: Phase 4. Scope: four items. No Phase 4 work, no Tier-2 work. The wire-format audit was the right call and the revert was the right response — find
+
+PASTED
+
+All four items are resolved. Here is the complete closeout report. Item 1 — Line 49 content Current content of that line (it is inside the no-tick early-return branch, so the "45 s" prose never reached it): 49: secondary: undefined, The prose that originally contained the two literal
+
+PASTED

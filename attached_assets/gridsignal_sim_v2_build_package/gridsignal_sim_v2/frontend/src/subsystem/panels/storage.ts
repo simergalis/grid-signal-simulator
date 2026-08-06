@@ -15,9 +15,9 @@ import React from 'react'
 import type { PanelConfig, PanelData } from './index'
 import type { TickPayload, HistoryPoint } from '../../types'
 import { GaugeArc }  from '../../charts/GaugeArc'
-// BulletBar removed: BESS rated MW is not on the tick payload (bess_units is on
-// ScenarioSpec, not TickPayload).  A bar whose max equals its own value is
-// permanently full regardless of actual headroom.  Phase 4 restores it.
+import { BulletBar } from '../../charts/BulletBar'
+// GS-DES-CFG-001 §Phase-4: bess_rated_mw, bess_usable_mwh, bess_unit_count are now
+// broadcast per tick (TickPayload).  BulletBar restored, max from bess_rated_mw.
 
 const BATTERY = '#4a9fe0'
 const AMBER   = '#f0883e'
@@ -56,12 +56,17 @@ export const storagePanel: PanelConfig = {
     const bridgeStr = fmtBridge(bridge_s)
     const outputMW  = tick.bess_output_mw
 
-    // GS-DES-CFG-001 §Phase-3 / Item-2 correction:
-    // tick.bess_units is on ScenarioSpec, not TickPayload — absent from the wire
-    // format (_tick_result_to_dict does not emit it).  Rated power and usable
-    // energy are therefore "not instrumented" at this panel scope.
-    // Phase 4 will add bess_rated_mw + bess_usable_mwh to the TickResult and
-    // serialiser so they are broadcast per tick.
+    // GS-DES-CFG-001 §Phase-4: BESS fleet aggregates from TickPayload.
+    // bess_output_mw: FLEET-LEVEL sum — accumulated via += in BessArbitrator.tick()
+    //   over all bess_units (dispatch.py:681–683, candidate_id "bess-fleet").
+    //   Sub-label must state fleet scope so an operator reading "0.5 MW" knows
+    //   it is the total discharge across all units, not a per-unit figure.
+    // bess_rated_mw / bess_usable_mwh: config nameplate aggregates, NOT from
+    //   contingency_coverage.bess_usable_energy_mwh (fault-injected figure).
+    const ratedMW   = tick.bess_rated_mw    // FLEET: config nameplate rated power (MW)
+    const usableMWh = tick.bess_usable_mwh  // FLEET: config nameplate usable energy (MWh)
+    const unitCount = tick.bess_unit_count  // count of BESS units
+    const unitLabel = `${unitCount} unit${unitCount !== 1 ? 's' : ''}`
 
     const stateLabel  = alert ? 'ATTENTION' : bridge_s > 0 ? 'READY' : 'ATTENTION'
     const stateColour = alert ? AMBER : bridge_s > 0 ? '#3fb6a8' : RED
@@ -85,14 +90,27 @@ export const storagePanel: PanelConfig = {
       heroLabel:  'bridge duration',
       chartTitle: 'STATE OF CHARGE',
       chart,
+      secondary: React.createElement(BulletBar, {
+        // FLEET-LEVEL: value = fleet discharge (sum of all units); max = fleet rated power
+        // from config nameplate.  max comes from bess_rated_mw, never from outputMW itself
+        // (a bar whose max equals its own value is permanently full).
+        label:  'Current output vs fleet rated power',
+        value:  outputMW,
+        max:    ratedMW > 0 ? ratedMW : Math.max(outputMW, 1),
+        colour: BATTERY,
+        unit:   ' MW',
+        note:   ratedMW > 0
+          ? `Fleet discharge ${outputMW.toFixed(2)} MW of ${ratedMW.toFixed(2)} MW rated (${unitLabel}). SoC ${socPct}%.`
+          : 'Rated power not yet available on this tick',
+      }),
       statRows: [
-        { label: 'State of charge',   value: `${socPct}%`,        colour: soc < 0.2 ? RED : soc < 0.4 ? AMBER : undefined },
-        { label: 'Rated power',       value: 'not instrumented',  sub: 'bess_units not on tick payload — Phase 4 scope' },
-        { label: 'Anchor reserve',    value: '1.0 MW',            colour: AMBER, sub: 'withheld for grid-forming (§7.1.2)' },
-        { label: 'Current output',    value: `${outputMW.toFixed(2)} MW`, colour: BATTERY },
-        { label: 'Usable energy',     value: 'not instrumented',  sub: 'bess_units not on tick payload — Phase 4 scope' },
+        { label: 'State of charge',   value: `${socPct}%`,                        colour: soc < 0.2 ? RED : soc < 0.4 ? AMBER : undefined },
+        { label: 'Rated power',       value: `${ratedMW.toFixed(2)} MW`,           sub: `fleet aggregate — ${unitLabel}` },
+        { label: 'Anchor reserve',    value: '1.0 MW',                             colour: AMBER, sub: 'withheld for grid-forming (§7.1.2)' },
+        { label: 'Current output',    value: `${outputMW.toFixed(2)} MW`,          colour: BATTERY, sub: 'fleet discharge — sum across all units' },
+        { label: 'Usable energy',     value: `${usableMWh.toFixed(2)} MWh`,        sub: `fleet aggregate — ${unitLabel}` },
         { label: 'Bridging basis',    value: tick.bridging_basis.replace('_', ' ') },
-        { label: 'State of health',   value: 'not modelled',      sub: 'no degradation curve in this version' },
+        { label: 'State of health',   value: 'not modelled',                       sub: 'no degradation curve in this version' },
       ],
       why: [
         'The battery serves two purposes simultaneously: grid-forming anchor and bridge reserve.',

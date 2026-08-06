@@ -56,11 +56,25 @@ export const thermalPanel: PanelConfig = {
     const approach  = tick.approach_rate_mw_s
     const lowHdr    = fraction < 0.05
 
-    // GS-DES-CFG-001 §Phase-3 / Item-2 correction:
-    // tick.dt_thermal_seconds and tick.alpha_max are on ScenarioSpec, not TickPayload
-    // — absent from the wire format (_tick_result_to_dict does not emit them).
-    // Both are therefore "not instrumented" at this panel scope.
-    // Phase 4 will add these fields to TickResult and the serialiser.
+    // GS-DES-CFG-001 §Phase-4: thermal site parameters now on TickPayload.
+    // dt_thermal_seconds: base thermal lag — SiteConfig value, unscaled.
+    // alpha_max: base cooling fraction — SiteConfig value, NOT × ambient_alpha_scale.
+    //   ambient_alpha_scale (already on wire) is the FACTOR; a panel must keep
+    //   base and effective clearly separate to avoid misleading during heat stress.
+    const dtThermalS = tick.dt_thermal_seconds    // base thermal lag from SiteConfig (s)
+    const alphaMax   = tick.alpha_max             // base α_max from SiteConfig
+    const alphaEff   = alphaMax * tick.ambient_alpha_scale  // effective (with ambient scaling)
+
+    // Derive rated-ceiling headroom without a hardcoded literal (replaces "15% margin").
+    // rated_cooling_mw = site.alpha_max × max(p_compute_mw, 1e-6) × 1.15 in simulation_core.py.
+    // When alpha_max and p_compute_mw are available, the margin falls out of the ratio.
+    const alphaMaxCeiling = alphaMax * Math.max(tick.p_compute_mw, 1e-6)
+    const marginPct = alphaMax > 0 && alphaMaxCeiling > 0
+      ? (ratedMW / alphaMaxCeiling - 1) * 100
+      : null
+    const ratedSub = marginPct !== null
+      ? `${marginPct.toFixed(0)}% headroom over α_max × compute ceiling`
+      : 'rated ceiling from thermal model'
 
     const stateLabel  = lowHdr ? 'ATTENTION' : 'READY'
     const stateColour = lowHdr ? AMBER : '#3fb6a8'
@@ -87,12 +101,18 @@ export const thermalPanel: PanelConfig = {
           : 'rated capacity not available in this tick',
       }),
       React.createElement(BulletBar, {
+        // GS-DES-CFG-001 §Phase-4: α_max now on wire.
+        // value: effective fraction (base α_max × ambient_alpha_scale) as %.
+        // target: base fraction (α_max alone) as % — the nameplate design point.
+        // Note states both so a panel reading during heat stress does not confuse
+        // the scaled effective value with the SiteConfig base parameter.
         label:  'Steady-state cooling as fraction of compute',
-        value:  0,
+        value:  Math.round(alphaEff * 1000) / 10,    // effective % (with ambient scale)
         max:    100,
+        target: Math.round(alphaMax * 1000) / 10,    // base % (SiteConfig nameplate)
         colour: BATTERY,
         unit:   '%',
-        note:   'not instrumented — α_max not broadcast on tick payload (§Phase-4 scope)',
+        note:   `base α_max ${(alphaMax * 100).toFixed(1)}% · ambient scale ×${tick.ambient_alpha_scale.toFixed(2)} → effective ${(alphaEff * 100).toFixed(1)}%`,
       }),
     )
 
@@ -108,11 +128,11 @@ export const thermalPanel: PanelConfig = {
       chart,
       statRows: [
         { label: 'Plant load',       value: `${tick.p_cooling_mw.toFixed(2)} MW`, sub: tick.p_compute_mw === 0 ? 'no compute running' : undefined },
-        { label: 'Rated capacity',   value: ratedMW > 0 ? `${ratedMW.toFixed(2)} MW` : 'not instrumented', sub: 'includes 15% margin · PROTO-10' },
+        { label: 'Rated capacity',   value: ratedMW > 0 ? `${ratedMW.toFixed(2)} MW` : 'not instrumented', sub: ratedSub },
         { label: 'Absorbable now',   value: `${absorbMW.toFixed(2)} MW`, colour: lowHdr ? AMBER : '#3fb6a8', sub: 'additional load before approach' },
         { label: 'Time to limit',    value: fmtTime(limitTime), sub: limitTime >= 86400 ? 'no approach in progress' : 'at current approach rate' },
         { label: 'Approach rate',    value: `${approach.toFixed(3)} MW/s`, sub: 'rate of headroom consumption' },
-        { label: 'Δt_thermal',       value: 'not instrumented', sub: 'not broadcast on tick payload — Phase 4 scope' },
+        { label: 'Δt_thermal',       value: dtThermalS > 0 ? `${dtThermalS.toFixed(0)} s` : 'not populated', sub: 'base thermal lag — from SiteConfig, unscaled' },
         { label: 'τ rise constant',  value: '20 s', sub: 'first-order settling' },
         { label: 'Pre-staging',      value: 'not configured', sub: 'shiftable load unavailable in this scenario' },
       ],

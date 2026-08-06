@@ -1018,3 +1018,28 @@ class TickResult:
     # binding_constraint: "bess_power_saturated" when bess_setpoint_mw exceeds
     #   the BESS fleet's total rated_mw ceiling.  None in normal operation (B3).
     binding_constraint:        Optional[str] = None
+    # ── Phase 4 (GS-DES-CFG-001): BESS fleet aggregates + thermal site params ─
+    # Broadcast per tick so panels can display config nameplate figures without
+    # reading ScenarioSpec (which is not on the wire).
+    #
+    # bess_rated_mw:   Σ config.rated_mw across all BESS units — fleet nameplate.
+    #   NOT SOC-corrected.  The output BulletBar max must come from this field.
+    #   Source: sim_state.bess_units[i].config.rated_mw for each i.
+    # bess_usable_mwh: Σ config.usable_mwh across all BESS units — fleet nameplate
+    #   usable energy from config.  Do NOT source from
+    #   contingency_coverage.bess_usable_energy_mwh — that figure is altered by
+    #   SOC-corruption injection (run_manager.py:787–788) and would put a fault
+    #   value into a static spec row.
+    # bess_unit_count: len(sim_state.bess_units) — lets a panel state whether an
+    #   aggregate covers one unit or several, without broadcasting bess_units[].
+    # dt_thermal_seconds: SiteConfig.dt_thermal_seconds — base thermal lag (s).
+    #   The panel docstring must NOT derive this from a module-scope constant.
+    # alpha_max:    SiteConfig.alpha_max — base cooling fraction; NOT multiplied
+    #   by ambient_alpha_scale (already on wire).  Broadcast both so a panel can
+    #   show base AND scaled value.  Labelling a × ambient_alpha_scale result as
+    #   "α_max" would mislead during ambient stress scenarios.
+    bess_rated_mw:      float = 0.0                   # FLEET: Σ config.rated_mw — config nameplate
+    bess_usable_mwh:    float = 0.0                   # FLEET: Σ config.usable_mwh — config nameplate
+    bess_unit_count:    int   = 0                     # count of BESS units in fleet
+    dt_thermal_seconds: float = _sp.value("dt_thermal")  # base thermal lag; enriched from ctx.sim_state.site per tick
+    alpha_max:          float = _sp.value("alpha_max")   # base α_max; enriched from ctx.sim_state.site per tick

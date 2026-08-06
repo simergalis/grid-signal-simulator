@@ -364,6 +364,21 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # step_kind: "training" or "checkpoint".
         "step_phase": round(tick.step_phase, 4),
         "step_kind":  tick.step_kind,
+        # ── Phase 4 (GS-DES-CFG-001 §Item-1): BESS fleet aggregates ─────────
+        # bess_rated_mw / bess_usable_mwh: config nameplate aggregates, NOT from
+        #   contingency_coverage.bess_usable_energy_mwh which is rewritten by
+        #   SOC-corruption injection (run_manager.py:787–788).
+        # bess_unit_count: fleet size denominator for per-unit display.
+        "bess_rated_mw":   round(tick.bess_rated_mw,   4),
+        "bess_usable_mwh": round(tick.bess_usable_mwh, 4),
+        "bess_unit_count": tick.bess_unit_count,
+        # ── Phase 4 (GS-DES-CFG-001 §Item-1): thermal site parameters ────────
+        # alpha_max is the BASE value from SiteConfig — NOT pre-multiplied by
+        # ambient_alpha_scale.  ambient_alpha_scale is already on the wire at
+        # line 277.  A panel must display both to avoid labelling the scaled
+        # product as α_max during ambient stress scenarios.
+        "dt_thermal_seconds": round(tick.dt_thermal_seconds, 2),
+        "alpha_max":          round(tick.alpha_max, 6),
     }
 
 
@@ -1323,6 +1338,22 @@ class RunManager:
                         ctx.registry.telemetry_snapshot()
                         if ctx.registry is not None else None
                     ),
+                    # ── Phase 4 (GS-DES-CFG-001 §Item-1): BESS fleet aggregates ──────
+                    # Source: sim_state.bess_units[i].config — config nameplate, not
+                    # contingency_coverage which is rewritten by SOC-injection faults.
+                    bess_rated_mw=sum(
+                        b.config.rated_mw for b in ctx.sim_state.bess_units
+                    ),
+                    bess_usable_mwh=sum(
+                        b.config.usable_mwh for b in ctx.sim_state.bess_units
+                    ),
+                    bess_unit_count=len(ctx.sim_state.bess_units),
+                    # ── Phase 4 (GS-DES-CFG-001 §Item-1): thermal site parameters ─────
+                    # ctx.sim_state.site is the SiteConfig for this run.
+                    # dt_thermal_seconds: base thermal lag — NOT scaled.
+                    # alpha_max: base cooling fraction — NOT × ambient_alpha_scale.
+                    dt_thermal_seconds=ctx.sim_state.site.dt_thermal_seconds,
+                    alpha_max=ctx.sim_state.site.alpha_max,
                 )
                 if _profiling: _sec.setdefault("B_thermal_update", []).append(_time_module.perf_counter() - _t0)
 

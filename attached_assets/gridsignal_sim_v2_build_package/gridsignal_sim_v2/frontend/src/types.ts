@@ -22,6 +22,28 @@ export interface TickPayload {
   bess_setpoint_mw: number    // dispatch command before SoC/power clipping (B4 gate)
   bess_soc_fraction: number   // [0, 1]
 
+  // Phase 4 (GS-DES-CFG-001 §Item-1): BESS fleet aggregates — broadcast per tick.
+  // bess_rated_mw:   fleet aggregate rated power (Σ config.rated_mw across all units).
+  //                  Config nameplate; NOT SOC-corrected.  Scale the output bar against this.
+  // bess_usable_mwh: fleet aggregate usable energy (Σ config.usable_mwh across all units).
+  //                  Source: config, NOT contingency_coverage.bess_usable_energy_mwh —
+  //                  that figure is rewritten by SOC-corruption injection (run_manager.py:787–788)
+  //                  and would put a fault value into a static spec row.
+  // bess_unit_count: count of BESS units; lets a panel state whether an aggregate covers
+  //                  one unit or several without reading a bess_units[] array.
+  bess_rated_mw:   number  // FLEET aggregate — config nameplate rated power (MW)
+  bess_usable_mwh: number  // FLEET aggregate — config usable energy (MWh), not fault-injected
+  bess_unit_count: number  // count of BESS units in fleet
+
+  // Phase 4 (GS-DES-CFG-001 §Item-1): thermal site parameters — broadcast per tick.
+  // dt_thermal_seconds: thermal lag Δt_thermal (s) from SiteConfig — base, unscaled.
+  // alpha_max:          base cooling fraction α_max from SiteConfig — base, unscaled.
+  //                     Do NOT confuse with ambient_alpha_scale (already on wire):
+  //                     that is the FACTOR applied to alpha_max during ambient stress.
+  //                     Broadcast both so a panel can show the base AND the scaled product.
+  dt_thermal_seconds: number  // base thermal lag Δt_thermal from SiteConfig (s)
+  alpha_max:          number  // base cooling fraction α_max from SiteConfig (NOT × ambient_alpha_scale)
+
   // Confidence band
   confidence_lower_mw: number
   confidence_upper_mw: number

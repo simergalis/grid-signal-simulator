@@ -39,7 +39,7 @@ export const generationPanel: PanelConfig = {
         statRows: [
           { label: 'Units online',         value: '—' },
           { label: 'Rated output',         value: '—', sub: 'nameplate per unit — shown once run starts' },
-          { label: 'Ramp rate configured', value: '—', sub: 'site parameter — shown once run starts' },
+          { label: 'Ramp rate configured', value: '—', sub: 'first-unit nameplate — shown once run starts' },
           { label: 'Ramp rate measured',   value: 'not instrumented', sub: 'no maintenance config in this scenario' },
           { label: 'Time to full output',  value: '—', sub: 'derived from tick payload — shown once run starts' },
           { label: 'Runtime hours',        value: 'not instrumented' },
@@ -102,7 +102,7 @@ export const generationPanel: PanelConfig = {
         target: demandMW,
         colour: GOLD,
         unit:   ' MW',
-        note:   `red marker = predicted shortfall (${fmtMW(demandMW)}). ${canClose ? 'Fleet capability exceeds it.' : 'Shortfall exceeds fleet ramp capability.'}`,
+        note:   `red marker = predicted shortfall (${fmtMW(demandMW)}). ${canClose ? 'Fleet capability exceeds it.' : 'Shortfall exceeds fleet ramp capability.'} Measures on-bus units only — STARTING units contribute zero (not yet committed to bus).`,
       }),
       React.createElement(BulletBar, {
         label:  'Output as share of fleet rated',
@@ -127,7 +127,7 @@ export const generationPanel: PanelConfig = {
       statRows: [
         { label: 'Units online',         value: '1 of 1', sub: 'no unit in maintenance or failed' },
         { label: 'Rated output',         value: unitMW > 0 ? `${unitMW.toFixed(1)} MW` : '—', sub: 'nameplate per unit' },
-        { label: 'Ramp rate configured', value: rampMWs > 0 ? `${rampMWs.toFixed(3)} MW/s` : '—', sub: 'site parameter' },
+        { label: 'Ramp rate configured', value: rampMWs > 0 ? `${rampMWs.toFixed(3)} MW/s` : '—', sub: 'first-unit nameplate (homogeneous fleet)' },
         { label: 'Ramp rate measured',   value: 'not instrumented', sub: 'no maintenance config in this scenario' },
         { label: 'Time to full output',  value: unitMW > 0 && rampMWs > 0 ? `${Math.round(unitMW / rampMWs)} s` : '—', sub: 'from cold at configured ramp' },
         { label: 'Runtime hours',        value: 'not instrumented' },
@@ -137,8 +137,10 @@ export const generationPanel: PanelConfig = {
       secondary,
       why: [
         'Ramp rate, not capacity, is what decides whether a turbine can answer a step-load.',
-        // PER-UNIT: rampMWs and unitRampCap are both first-unit figures — "this unit" framing is intentional.
-        `At ${rampMWs.toFixed(3)} MW/s this unit delivers ${unitRampCap.toFixed(1)} MW in the ${tick.dt_lead_next_s.toFixed(0)} s of warning the scheduler gives.`,
+        // PER-UNIT: rampMWs and unitRampCap are first-unit figures.
+        // "one machine" framing is explicit — a step-load is answered by the fleet,
+        // but this row tells the operator what a single turbine contributes.
+        `At ${rampMWs.toFixed(3)} MW/s, one machine delivers ${unitRampCap.toFixed(1)} MW in the ${tick.dt_lead_next_s.toFixed(0)} s of warning the scheduler gives.`,
         // FLEET-LEVEL: canClose uses fleetRampCap (tick.ramp_capability_mw); fleetMW from installedFleetMW().
         `${canClose ? `This covers the ${fmtMW(demandMW)} shortfall.` : `This does not cover the ${fmtMW(demandMW)} shortfall — BESS bridge is required.`}${fleetMW > 0 ? ` Unused fleet nameplate: ${fmtMW(fleetMW - outputMW)}.` : ''}`,
       ],
