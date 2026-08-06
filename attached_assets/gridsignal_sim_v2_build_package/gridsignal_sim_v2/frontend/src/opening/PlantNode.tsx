@@ -246,9 +246,13 @@ export function PlantNode({ def, tick, onClick, solarPreview, liveSolarMW }: Pla
   // stays consistent: turbine + solar_tile − load = what the operator sees.
   const isBess = def.id === 'battery-bess'
   const solarForBess = liveSolarMW ?? tick?.p_renewable_mw ?? 0
+  // Use synchronised_output_mw (not turbine_output_mw) so the BESS excess
+  // matches exactly what the GT tile shows: only loading-layer-managed units.
+  // turbine_output_mw includes RAMPING/AT_TARGET auto-staged units whose output
+  // is real but not yet visible on any tile, making the BESS figure misleading.
   const bessExcess = isBess && tick
     ? Math.max(0,
-        (tick.turbine_output_mw ?? 0) + solarForBess
+        (tick.synchronised_output_mw ?? 0) + solarForBess
         - (tick.p_total_mw ?? 0) - (tick.bess_output_mw ?? 0)
       )
     : 0

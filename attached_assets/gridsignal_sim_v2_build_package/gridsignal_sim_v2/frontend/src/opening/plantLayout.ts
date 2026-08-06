@@ -214,7 +214,7 @@ export const FLOWS: FlowDef[] = [
   {
     id: 'gas-to-sw',
     d: srcPath(...GAS_RC),
-    mwField: 'turbine_output_mw',
+    mwField: 'synchronised_output_mw',
     staticMW: 0,
     maxMW: 25,
     color: '#e0a458',

@@ -1272,20 +1272,19 @@ class RunManager:
                             **static_spec,
                             # Phase 2 live state overlay — keys match TurbineState values.
                             "state": t.state.value,
-                            # output_mw: per-unit MW contribution to the site bus.
-                            #   SYNCHRONISED units: loading-layer managed value (in set A).
-                            #   RAMPING units: advance()-driven ramp value — real power on
-                            #     the bus even though not yet in the allocated set A.
-                            #     Including this here makes the per-unit table sum equal
-                            #     turbine_output_mw, so the fleet-tile hero and the table
-                            #     are consistent with the BESS energy balance.
-                            #   synchronised_output_mw is computed separately (filtered by
-                            #     state == "synchronised") so it is unaffected by this change.
-                            #   OFFLINE / STARTING / OUT_OF_SERVICE / hot-standby → 0.0.
+                            # output_mw: algebraic per-unit MW contribution.
+                            #   Σ of these across on-bus units == synchronised_output_mw.
+                            #   Off-bus units (offline / starting / hot-standby) are 0.0;
+                            #   is_synchronised guards this so stale _current_output_mw
+                            #   from a tripped unit can never leak into the fleet total.
+                            # Only SYNCHRONISED units are shown non-zero: RAMPING/AT_TARGET
+                            # units contribute to turbine_output_mw (via is_synchronised)
+                            # but are not yet loading-layer-managed, and their output is not
+                            # visible on any tile — including them here would make per-unit
+                            # rows sum to more than the hero (synchronised_output_mw).
                             "output_mw": round(
                                 t.output_mw()
-                                if t.state in (_TurbineState.SYNCHRONISED, _TurbineState.RAMPING)
-                                   and not t.config.hot_standby
+                                if t.state == _TurbineState.SYNCHRONISED and not t.config.hot_standby
                                 else 0.0,
                                 4,
                             ),
