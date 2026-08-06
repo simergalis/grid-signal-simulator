@@ -48,7 +48,7 @@ import pytest
 # ── TC-89: first-tick snapshot ────────────────────────────────────────────────
 
 @pytest.mark.xfail(
-    strict=False,
+    strict=True,
     reason=(
         "Phase D sequential-start (DR-2026-08-06 D-05); "
         "dispatch still uses N_needed+1 which starts 2 units on tick 0"
@@ -109,7 +109,7 @@ def test_tc89_first_tick_starts_at_most_one_unit():
 # ── TC-90: full-run sequential-start assertion ────────────────────────────────
 
 @pytest.mark.xfail(
-    strict=False,
+    strict=True,
     reason=(
         "Phase D sequential-start (DR-2026-08-06 D-05); "
         "N_needed+1 causes 2 simultaneous OFFLINE→non-OFFLINE transitions on tick 0"
@@ -195,7 +195,7 @@ def test_tc90_at_most_one_start_transition_per_tick():
 # ── TC-91: one unit already SYNCHRONISED ─────────────────────────────────────
 
 @pytest.mark.xfail(
-    strict=False,
+    strict=True,
     reason=(
         "Phase D + PendingStartRegister (DR-2026-08-06 D-05 §7.1.3); "
         "N_needed+1 currently starts 2 units simultaneously even with one "

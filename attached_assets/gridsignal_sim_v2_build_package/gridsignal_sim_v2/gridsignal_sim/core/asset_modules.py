@@ -793,6 +793,11 @@ class TurbineModule(AssetModule):
     _out_of_service_reason: Optional[str] = None
     # _start_phase: human-readable label for the STARTING sub-phase (display only).
     _start_phase: str = "purge"
+    # Phase B Item 2: per-interval write counter for set_output().
+    # Reset to 0 by begin_interval() at the start of each evaluation interval.
+    # Incremented by set_output(); if it reaches 2 a RuntimeError is raised,
+    # catching any code path that calls set_output() twice in one interval.
+    _output_writes: int = 0
 
     @property
     def asset_id(self) -> str:  # noqa: D401 -- property mirrors dataclass field name
@@ -813,11 +818,40 @@ class TurbineModule(AssetModule):
             TurbineState.AT_TARGET,
         ) and not self.config.hot_standby
 
+    def begin_interval(self) -> None:
+        """Reset the per-interval write counter at the start of each evaluation interval.
+
+        Called by simulation_core.evaluate_tick() before advance() so that
+        set_output()'s double-write guard (Item 2, Phase B) is fresh for the
+        new interval.  Tests that call advance() or set_output() directly and
+        do not go through evaluate_tick() do not need to call this.
+        """
+        self._output_writes = 0
+
     def set_output(self, new_output_mw: float) -> None:
         """Set per-unit output MW.  Called by the loading layer for SYNCHRONISED units.
 
         Clamps to [0, rated_mw].  Does not change state.
+
+        Phase B Item 2 — write counter guard:
+          Increments _output_writes each time this method is called within an
+          interval (i.e. between two begin_interval() calls).  If the counter
+          reaches 2 a RuntimeError is raised immediately.  This catches any code
+          path that writes to a unit's output twice in the same interval — for
+          example, if a promoted unit were included in the loading set twice or if
+          a second caller duplicated apply_loading().
         """
+        self._output_writes += 1
+        if self._output_writes > 1:
+            raise RuntimeError(
+                f"TurbineModule '{self.config.asset_id}': set_output() called "
+                f"{self._output_writes} times in one interval (limit: 1).  "
+                f"This is the Phase B double-write guard.  "
+                f"Likely cause: the unit appears in _synchronised_units more than "
+                f"once, or apply_loading() was called twice for the same unit.  "
+                f"Fix: ensure _synchronised_units contains each unit at most once "
+                f"and that begin_interval() is called at the start of each tick."
+            )
         self._current_output_mw = max(0.0, min(new_output_mw, self.config.rated_mw))
 
     def command_start(self, sim_time: float) -> None:

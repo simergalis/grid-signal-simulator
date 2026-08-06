@@ -627,6 +627,23 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
 
     # 4. Turbine advance + Phase 1b loading layer + BESS shortfall coverage
     #
+    # Phase B Item 1 — interval-entry state snapshot:
+    # Capture each unit's state BEFORE advance() runs.  A unit that promotes
+    # RAMPING → SYNCHRONISED inside advance() has entry state RAMPING and is
+    # excluded from the loaded set for this interval; its first loaded interval
+    # is the next tick.  Building the set from live state (post-advance) would
+    # include the promoted unit, causing apply_loading() to overwrite the ramp
+    # endpoint that advance() just computed — an unbounded step (TC-88 defect).
+    _entry_states: dict[str, "TurbineState"] = {
+        t.config.asset_id: t.state for t in state.turbines
+    }
+
+    # Phase B Item 2 — reset per-interval write counters before advance().
+    # begin_interval() zeros _output_writes on each TurbineModule so that
+    # set_output()'s double-write guard starts fresh for this interval.
+    for turbine in state.turbines:
+        turbine.begin_interval()
+
     # advance() ticks STARTING countdown timers and the legacy RAMPING ramp.
     # SYNCHRONISED units are no-ops in advance() — loading layer drives them.
     for turbine in state.turbines:
@@ -635,12 +652,14 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # Phase 1b: loading layer — drive SYNCHRONISED units toward their share of
     # the droop-adjusted fleet setpoint.  Returns sub_msl_surplus_mw (> 0 only
     # when P_allocated < Σ msl_i, which holds the floor and reports the gap).
-    # Allocated set A = SYNCHRONISED state ONLY.
-    # RAMPING and AT_TARGET (legacy pre-Phase-2 aliases) continue using
-    # advance() and the old stage_target() mechanism for backward compatibility.
+    #
+    # Allocated set A = SYNCHRONISED at INTERVAL ENTRY (not live state).
+    # Units that promoted to SYNCHRONISED during advance() (entry state RAMPING)
+    # are excluded; their ramp endpoint is preserved for this interval.
     _synchronised_units = [
         t for t in state.turbines
-        if t.state == TurbineState.SYNCHRONISED and not t.config.hot_standby
+        if _entry_states[t.config.asset_id] == TurbineState.SYNCHRONISED
+        and not t.config.hot_standby
     ]
 
     # Mutual-exclusion guard (Task #198 item 4): see _check_loading_exclusion().
