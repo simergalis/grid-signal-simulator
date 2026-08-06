@@ -133,6 +133,22 @@ export function DemoBar({
 
   useEffect(() => { fetchScenarios() }, [fetchScenarios])
 
+  // Auto-fill speed + duration from the scenario spec whenever the selection changes.
+  // Only fires when no run is active — during a run the controls are hidden anyway.
+  useEffect(() => {
+    if (!selectedId || runId !== null) return
+    let cancelled = false
+    fetch(`/scenarios/${selectedId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then((data: { spec: { default_playback_speed?: number; end_sim_time?: number } } | null) => {
+        if (cancelled || !data?.spec) return
+        if (data.spec.default_playback_speed != null) setSpeed(data.spec.default_playback_speed)
+        if (data.spec.end_sim_time           != null) setDuration(data.spec.end_sim_time)
+      })
+      .catch(() => {/* leave current values unchanged */})
+    return () => { cancelled = true }
+  }, [selectedId, runId])
+
   const handleStart = async () => {
     if (!selectedId) return
     setBusy(true); setError(null)
