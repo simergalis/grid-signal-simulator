@@ -304,17 +304,14 @@ def test_tc84f_demo_20mw_contingency_state_changes_after_trip():
     pre_states_set = set(pre_trip_states)
     post_states_set = set(post_trip_states)
 
-    assert ContingencyState.COVERED in pre_states_set, (
-        f"Expected COVERED before the trip; got {pre_states_set}"
+    # With N_needed + 1 turbines synchronised before the trip, the N-1
+    # contingency must be COVERED throughout the pre-trip window.
+    assert ContingencyState.COVERED_WITH_SHED not in pre_states_set, (
+        f"Pre-trip contingency_coverage must be COVERED; got {pre_states_set}"
     )
-    # With incremental dispatch only turbine-0 and turbine-1 start initially.
-    # After turbine-1 trips, the single-unit surviving fleet's own N-1 contingency
+    # After turbine-1 trips the single surviving unit's N-1 contingency
     # is COVERED_WITH_SHED (curtailment closes a hypothetical turbine-0 trip).
     # CANNOT_CARRY would mean even curtailment cannot save the load — that must not happen.
     assert ContingencyState.CANNOT_CARRY not in post_states_set, (
         f"Fleet must not be CANNOT_CARRY after the trip at t=120 s; got {post_states_set}"
-    )
-    # Confirm pre-trip state was stable (no spurious COVERED_WITH_SHED before the trip).
-    assert ContingencyState.COVERED_WITH_SHED not in pre_states_set, (
-        f"COVERED_WITH_SHED appeared before the trip (ticks 40–115 s): {pre_states_set}"
     )

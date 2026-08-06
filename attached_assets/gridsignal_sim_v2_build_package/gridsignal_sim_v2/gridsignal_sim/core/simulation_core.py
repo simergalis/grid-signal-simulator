@@ -659,19 +659,18 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     turbine_output_mw, bess_output_mw, _bess_setpoint_mw, _arb_candidates = state.arbitrator.tick(_p_dispatch_droop_mw, dt_seconds)
 
     # ── Incremental turbine dispatch: headroom-triggered next-unit start ──────
-    # When the synchronised fleet is approaching its rated capacity ceiling
+    # When the committed fleet is approaching its rated capacity ceiling
     # (less than HEADROOM_FRAC of headroom remaining), GridSignal issues a
-    # command_start() to the next offline non-standby unit so it begins its
-    # startup sequence before demand outpaces the running fleet.
+    # stage_target() to the next offline non-standby unit so it begins its
+    # ramp sequence before demand outpaces the running fleet.
     #
     # This is the "GridSignal forecast signal" the operator sees: one turbine
     # starts at a time, triggered by measured utilisation, not by a manual
-    # operator command.  The STARTING countdown timer becomes visible on the
-    # fleet panel while the unit is warming up.
+    # operator command.
     #
     # Only one unit is started per tick (break after first match) so the
     # next tick's headroom measurement re-evaluates with the new unit already
-    # in its STARTING sequence — preventing a cascade of simultaneous starts
+    # in its ramp sequence — preventing a cascade of simultaneous starts
     # when headroom first tips below the threshold.
     _DISPATCH_HEADROOM_FRAC: float = 0.20  # start next unit when <20% headroom
     _sync_rated_mw: float = sum(

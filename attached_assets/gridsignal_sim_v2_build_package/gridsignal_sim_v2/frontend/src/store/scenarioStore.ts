@@ -20,10 +20,13 @@ interface ScenarioState {
   selectedId: string | null
   isLoading: boolean
   error: string | null
+  /** Copy shown in the plant-diagram "WHAT YOU ARE WATCHING / DEMONSTRATES" box. */
+  watchingText: string | null
 
   // ── Actions ───────────────────────────────────────────────────────────
   fetchScenarios: () => Promise<void>
   selectScenario: (id: string | null) => void
+  setWatchingText: (text: string | null) => void
   createScenario: (spec: ScenarioSpec) => Promise<CreateScenarioResponse>
   updateScenario: (id: string, spec: ScenarioSpec) => Promise<CreateScenarioResponse>
   deleteScenario: (id: string) => Promise<void>
@@ -34,6 +37,8 @@ export const useScenarioStore = create<ScenarioState>((set, get) => ({
   selectedId: null,
   isLoading: false,
   error: null,
+  watchingText: null,
+  setWatchingText: (text) => set({ watchingText: text }),
 
   fetchScenarios: async () => {
     set({ isLoading: true, error: null })

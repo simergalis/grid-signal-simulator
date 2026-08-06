@@ -500,26 +500,22 @@ class DispatchArbitrator:
             _offline = [t for t in _active_turbines if t.state == TurbineState.OFFLINE]
             _on_bus  = [t for t in _active_turbines if t.state != TurbineState.OFFLINE]
 
-            # ── Incremental startup: start minimum OFFLINE units for N-1 redundancy ──
-            # Always start offline turbines when a job arrives, even when solar
-            # currently covers demand (delta_p_mw ≤ 0), so the site maintains
-            # N-1 reserve for a renewable drop with no advance signal.
-            #
-            # N_start = ceil(delta_p / rated) + 1 spare.  The +1 spare means a
-            # single-unit trip immediately after startup still leaves the fleet
-            # covered (closable=True) so the energy-test threshold is meaningful.
-            # Units beyond N_start start one-at-a-time via the per-tick headroom
-            # check in evaluate_tick() as demand grows ("GridSignal forecast dispatch").
+            # ── Stage offline turbines: N_needed + 1 N-1 spare ──────────────────
+            # N_needed = ceil(delta_p_mw / rated_mw): the minimum number of units
+            # needed to cover the demand step.  The +1 spare provides N-1 reserve:
+            # if the first online unit trips immediately after startup, the surviving
+            # fleet still has enough rated headroom to close the deficit (closable=True).
+            # Without +1, a single-turbine fleet has no N-1 survivor and contingency
+            # is CANNOT_CARRY.
             if _offline:
-                _first_rated  = _offline[0].config.rated_mw or 1.0
-                _eff_delta    = max(delta_p_mw, 0.0)   # never a negative start target
-                _n_start      = min(
-                    max(1, math.ceil(_eff_delta / _first_rated) + 1),
+                _eff_delta = max(delta_p_mw, 0.0)   # never a negative start target
+                _n_start = min(
+                    max(1, math.ceil(_eff_delta / _offline[0].config.rated_mw) + 1),
                     len(_offline),
                 )
-                _per_start_target = _eff_delta / _n_start if _n_start else _eff_delta
-                for _t in _offline[:_n_start]:
-                    _t.stage_target(max(_per_start_target, 0.0), sim_time)
+                _per_start_target = _eff_delta / _n_start if _n_start else 0.0
+                for _ht in _offline[:_n_start]:
+                    _ht.stage_target(_per_start_target, sim_time)
 
             # ── On-bus units: raise targets for positive demand increments ONLY ──
             # A negative delta_p_mw (demand shrinking, e.g. from a SOLAR_STEP

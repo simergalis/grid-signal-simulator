@@ -277,3 +277,12 @@ export const FLOWS: FlowDef[] = [
 export const LEADTIME_BOX = {
   x: 910, y: 62, w: 280, h: 230,
 }
+
+/**
+ * "What you are watching / demonstrates" copy box.
+ * Centred in the gap between Gas Turbine right edge (x=155) and
+ * Compute Racks left edge (x=716), above the Switchgear row (y=172).
+ */
+export const WATCHING_BOX = {
+  x: 210, y: 8, w: 460, h: 110,
+}

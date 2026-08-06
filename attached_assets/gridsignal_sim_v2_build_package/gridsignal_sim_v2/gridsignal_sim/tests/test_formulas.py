@@ -507,9 +507,10 @@ def test_d10_demo_20mw_bess_fires_and_tapers():
         f"BESS must taper to zero by tick 30 (t=145 s); taper not observed.\n"
         f"  bess_outputs = {bess_outputs}"
     )
+    # 3. Once tapered, BESS must not re-fire (stays at zero to run end).
     assert all(b == 0.0 for b in bess_outputs[taper_tick:]), (
-        f"Once BESS tapers it must stay at zero; re-fired after tick {taper_tick}.\n"
-        f"  bess_outputs[{taper_tick}:] = {bess_outputs[taper_tick:]}"
+        "BESS must stay at zero after taper; re-fire detected.\n"
+        f"  bess_outputs = {bess_outputs}"
     )
 
     # 3. Turbine must carry the load at the final tick.

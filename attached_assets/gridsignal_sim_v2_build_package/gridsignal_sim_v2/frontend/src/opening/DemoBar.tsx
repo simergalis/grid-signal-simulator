@@ -33,19 +33,6 @@ const DURATION_OPTIONS = [
   { label: 'No limit', value: 1e15  },
 ]
 
-/** Demonstration copy — what the demo shows. */
-const DEMO_COPY = {
-  heading: 'WHAT THIS DEMONSTRATES',
-  line1: 'GridSignal reads the job scheduler, not the power meter. It knows a 20 MW step is coming',
-  line2: '30–60 seconds before it arrives, and stages generation and storage before the load lands.',
-}
-
-/** Running copy — what to watch during the run. */
-const RUNNING_COPY = {
-  heading: 'WHAT YOU ARE WATCHING',
-  line1: 'A 20 MW job was queued 25 seconds ago and has not reached full power yet. The turbine is',
-  line2: 'already ramping and the battery is covering the gap.',
-}
 
 interface Props {
   runId:        string | null
@@ -63,11 +50,11 @@ export function DemoBar({
   const selectedId    = useScenarioStore(s => s.selectedId)
   const isLoading     = useScenarioStore(s => s.isLoading)
   const selectScenario = useScenarioStore(s => s.selectScenario)
-  const fetchScenarios = useScenarioStore(s => s.fetchScenarios)
+  const fetchScenarios    = useScenarioStore(s => s.fetchScenarios)
+  const setWatchingText   = useScenarioStore(s => s.setWatchingText)
 
   const [speed,    setSpeed]    = useState(1)
   const [duration, setDuration] = useState(1800)
-  const [demoDesc, setDemoDesc] = useState<string | null>(null)
   const [busy,     setBusy]     = useState(false)
   const [error,    setError]    = useState<string | null>(null)
 
@@ -146,7 +133,7 @@ export function DemoBar({
         if (cancelled || !data?.spec) return
         if (data.spec.default_playback_speed != null) setSpeed(data.spec.default_playback_speed)
         if (data.spec.end_sim_time           != null) setDuration(data.spec.end_sim_time)
-        setDemoDesc(data.spec.demo_description?.trim() || null)
+        setWatchingText(data.spec.demo_description?.trim() || null)
       })
       .catch(() => {/* leave current values unchanged */})
     return () => { cancelled = true }
@@ -189,7 +176,6 @@ export function DemoBar({
   const isRunning = runId !== null
   const canView   = !isRunning && lastRunId !== null
   const selectedName = scenarios.find(s => s.scenario_id === selectedId)?.name ?? ''
-  const copy = isRunning ? RUNNING_COPY : DEMO_COPY
 
   return (
     <div
@@ -358,32 +344,6 @@ export function DemoBar({
         )}
       </div>
 
-      {/* ── Separator ─────────────────────────────────────────────────────── */}
-      <div className="self-stretch w-px bg-border mx-4" />
-
-      {/* ── Right: explanatory copy ───────────────────────────────────────── */}
-      <div className="flex flex-col justify-center px-4 py-3 flex-1">
-        <div
-          className="font-sans font-bold uppercase tracking-wider mb-1"
-          style={{ fontSize: 9, color: '#4b5764', letterSpacing: '0.14em' }}
-        >
-          {copy.heading}
-        </div>
-        {demoDesc ? (
-          <div className="font-sans" style={{ fontSize: 11, color: '#e6ecf2', lineHeight: 1.5 }}>
-            {demoDesc}
-          </div>
-        ) : (
-          <>
-            <div className="font-sans" style={{ fontSize: 11, color: '#e6ecf2', lineHeight: 1.5 }}>
-              {copy.line1}
-            </div>
-            <div className="font-sans" style={{ fontSize: 11, color: '#7d8b9c', lineHeight: 1.5 }}>
-              {copy.line2}
-            </div>
-          </>
-        )}
-      </div>
 
       {/* Running label — scenario + speed */}
       {isRunning && (

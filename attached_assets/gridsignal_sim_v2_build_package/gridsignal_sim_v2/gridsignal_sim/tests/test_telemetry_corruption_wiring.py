@@ -81,9 +81,9 @@ def _make_ctx_and_warmed_tick(bess_soc_mwh: float = BESS_USABLE_MWH):
     ctx = build_run_context(
         run_id="test-corruption-run",
         job_id="job-t",
-        node_count=500,           # high load → turbines ramp fast
+        node_count=500,
         turbine_count=2,
-        turbine_rated_mw=15.0,    # large rating → closable=True after warmup
+        turbine_rated_mw=15.0,
         r_asset_mw_per_s=0.2,
         bess_rated_mw=5.0,
         bess_usable_mwh=BESS_USABLE_MWH,

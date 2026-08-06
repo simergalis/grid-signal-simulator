@@ -13,7 +13,8 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useTickStore } from '../store/tickStore'
-import { NODES, FLOWS, LEADTIME_BOX, DIAGRAM_W, DIAGRAM_H } from './plantLayout'
+import { useScenarioStore } from '../store/scenarioStore'
+import { NODES, FLOWS, LEADTIME_BOX, WATCHING_BOX, DIAGRAM_W, DIAGRAM_H } from './plantLayout'
 import { FlowLine, FlowMarkers } from './FlowLine'
 import { PlantNode } from './PlantNode'
 import type { SolarPreview } from './PlantNode'
@@ -61,6 +62,46 @@ const _LABEL = (color: string): React.CSSProperties => ({
 const _BIG = (color: string): React.CSSProperties => ({
   ..._MONO, fontSize: 48, fontWeight: 500, color, lineHeight: 1, letterSpacing: '-0.02em',
 })
+
+/**
+ * WatchingCallout — centred box between Gas Turbine and Compute Racks.
+ *
+ * Idle  → "WHAT THIS DEMONSTRATES" (teal) — what the selected scenario shows.
+ * Run   → "WHAT YOU ARE WATCHING"  (amber) — live narrative while it plays.
+ *
+ * Copy source (priority order):
+ *   1. demo_description from the selected scenario spec (stored in scenarioStore)
+ *   2. Built-in hardcoded fallback matching the default demo scenario.
+ */
+function WatchingCallout({ tick }: { tick: TickPayload | null }) {
+  const watchingText = useScenarioStore(s => s.watchingText)
+  const isRunning    = tick !== null
+  const accent       = isRunning ? '#e0a458' : '#3fb6a8'
+  const heading      = isRunning ? 'WHAT YOU ARE WATCHING' : 'WHAT THIS DEMONSTRATES'
+  const body         = watchingText || (isRunning
+    ? 'A 20 MW job was queued 25 seconds ago and has not reached full power yet. The turbine is already ramping and the battery is covering the gap.'
+    : 'GridSignal reads the job scheduler, not the power meter. It knows a step-load is coming 30–60 s before it arrives, and stages generation and storage before the load lands.')
+  const { x, y, w, h } = WATCHING_BOX
+  return (
+    <foreignObject x={x} y={y} width={w} height={h}>
+      <div
+        // @ts-expect-error — xmlns required for SVG foreignObject HTML
+        xmlns="http://www.w3.org/1999/xhtml"
+        style={{
+          width: '100%', height: '100%', boxSizing: 'border-box',
+          borderRadius: 6, border: `1.5px solid ${accent}`,
+          background: '#0d1721', padding: '9px 14px',
+          display: 'flex', flexDirection: 'column', gap: 4,
+          transition: 'border-color 0.4s',
+        }}
+      >
+        <div style={_LABEL(accent)}>{heading}</div>
+        <div style={_RULE} />
+        <div style={{ ..._BODY, color: '#c8d6e5', lineHeight: 1.55, whiteSpace: 'normal' }}>{body}</div>
+      </div>
+    </foreignObject>
+  )
+}
 
 /**
  * LeadTimeCallout — four-state operational panel (ISA-101 colour discipline).
@@ -273,6 +314,9 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW }
           liveSolarMW={liveSolarMW}
         />
       ))}
+
+      {/* ── Watching callout — centred between Gen & Compute ──────────── */}
+      <WatchingCallout tick={tick} />
 
       {/* ── Lead-time callout ─────────────────────────────────────────── */}
       <LeadTimeCallout tick={tick} compact={compact} />
