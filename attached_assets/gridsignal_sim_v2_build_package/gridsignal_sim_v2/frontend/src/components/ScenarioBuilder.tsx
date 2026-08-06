@@ -481,8 +481,8 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                 <span className="text-[10px] text-muted">Description</span>
                 <textarea
                   className="w-full rounded border border-border bg-canvas px-2 py-1 text-xs text-text
-                             focus:outline-none focus:ring-1 focus:ring-accent resize-none"
-                  rows={2}
+                             focus:outline-none focus:ring-1 focus:ring-accent resize-y"
+                  rows={5}
                   value={spec.description}
                   onChange={e => patch({ description: e.target.value })}
                 />
