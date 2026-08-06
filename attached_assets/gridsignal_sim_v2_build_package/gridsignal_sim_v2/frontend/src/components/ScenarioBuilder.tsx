@@ -436,12 +436,16 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="fixed inset-0 z-40 flex" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="flex-1" />
-
-      <aside className="relative z-50 flex h-full w-[420px] flex-col border-l border-border bg-surface shadow-xl overflow-hidden">
+    <div
+      className="fixed inset-0 z-40 flex items-center justify-center bg-black/60"
+      onClick={onClose}
+    >
+      <div
+        className="relative z-50 flex flex-col w-[820px] max-h-[92vh] rounded-xl border border-border bg-surface shadow-2xl overflow-hidden"
+        onClick={e => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4 flex-shrink-0">
           <h2 className="text-sm font-semibold text-text">
             {editId ? 'Edit Scenario' : 'New Scenario'}
           </h2>
@@ -452,8 +456,12 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
           >×</button>
         </div>
 
-        {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6 text-sm">
+        {/* Scrollable body — two-column layout */}
+        <div className="flex-1 overflow-y-auto text-sm">
+        <div className="grid grid-cols-2 gap-0 divide-x divide-border">
+
+          {/* ── Left column: Identity + Fleet ───────────────────────────── */}
+          <div className="px-6 py-4 space-y-6">
 
           {/* ── Section 1: Identity ─────────────────────────────────────── */}
           <section>
@@ -621,6 +629,11 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
               </div>
             </div>
           </section>
+
+          </div>{/* /left column */}
+
+          {/* ── Right column: Run Parameters + PMS ──────────────────────── */}
+          <div className="px-6 py-4 space-y-6">
 
           {/* ── Section 3: Run Parameters ────────────────────────────────── */}
           <section>
@@ -864,7 +877,9 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
           {err && (
             <p className="text-xs text-danger">{err}</p>
           )}
-        </div>
+          </div>{/* /right column */}
+        </div>{/* /grid */}
+        </div>{/* /scrollable body */}
 
         {/* Physics Parameters modal (rendered outside the scroll container) */}
         <ParameterModal
@@ -888,7 +903,7 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
             disabled={busy || !spec.name.trim()}
           >{busy ? 'Saving…' : (editId ? 'Update' : 'Create')}</button>
         </div>
-      </aside>
+      </div>
     </div>
   )
 }
