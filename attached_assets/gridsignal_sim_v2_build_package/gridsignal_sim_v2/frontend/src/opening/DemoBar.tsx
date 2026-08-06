@@ -180,7 +180,7 @@ export function DemoBar({
       {/* ── Left: controls ────────────────────────────────────────────────── */}
       <div className="flex flex-col justify-center px-5 py-3 gap-1" style={{ minWidth: 60 }}>
         <div className="font-sans text-muted" style={{ fontSize: 11 }}>
-          {isRunning ? 'Running' : 'Demonstration'}
+          {isRunning ? 'Running' : 'Scenario'}
         </div>
       </div>
 
