@@ -28,5 +28,6 @@
 - [phase-13-5-carried-forward](phase-13-5-carried-forward.md) — TC-03 7τ/0.5%; R4-R6 p_min_stable/t_min_run/t_min_down defaults=0 (NOT 0.45); R8 PROTO-22 fix; TurbineSnapshot r_asset required.
 - [phase-1b-p2-loading-layer](phase-1b-p2-loading-layer.md) — loading layer + UnitAvailability boundary; THE TRAP: allocated set A = SYNCHRONISED only (not is_synchronised); stray @dataclass on TurbineState enum fixed.
 - [phase-201d-power-factor](phase-201d-power-factor.md) — power_factor required on SiteConfig; S_base = Σ MW / pf; all raw-dict spec helpers need the field; re-baseline rules for swing-eq expected values.
-- [incremental-turbine-dispatch](incremental-turbine-dispatch.md) — N_needed+1 spare rule; delta≤0 guard on-bus only; 80% headroom check in evaluate_tick; test_tc84f updated; pre-existing failures catalogue.
+- [incremental-turbine-dispatch](incremental-turbine-dispatch.md) — D-05 sequential-start (1 unit per call); headroom-check SYNCHRONISED-only guard prevents same-tick double-start; TC-84f pre-trip relaxed to CANNOT_CARRY.
+- [ramp-algo-phases-status](ramp-algo-phases-status.md) — Phase tracker for ramp-algorithm replacement; A+B done (12/967/976/0); C=P0 fix+is_sync reclassify, D=payload renames, E=physical constraints last.
 - [cfg-001-phase-status](cfg-001-phase-status.md) — GS-DES-CFG-001 phase tracker; fabric CWD false-positive baseline trap; Guard D1/D2/E Tier-1 all green after Phase 3.
