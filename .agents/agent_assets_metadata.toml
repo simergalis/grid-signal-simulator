@@ -63,3 +63,10 @@ uri = "file://gridsignal_ui_components.zip"
 type = "unspecified"
 title = "GridSignal UI Components Package"
 description = "138 source files, 293 KB — all dashboard screens, modals, chart primitives, subsystem panels, state stores, and shadcn/ui primitives with build config."
+
+[[outputs]]
+id = "IGhjrhOVS16rxplbk6rYV"
+uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/PHASE6_REPORT.md"
+type = "text"
+title = "Phase 6 Completion Report"
+description = "GS-DES-CFG-001 Phase 6 — Peak load reconcile, catalogue additions, design_peak_load_mw wire field, N-1 fleet modal switch."
