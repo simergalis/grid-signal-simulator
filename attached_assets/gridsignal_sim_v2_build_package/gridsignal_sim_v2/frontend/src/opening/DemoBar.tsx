@@ -295,10 +295,11 @@ export function DemoBar({
         {!isRunning && (
           <button
             onClick={onManageScenarios}
-            className="rounded border border-border px-3 py-1.5 font-sans text-xs
-                       text-muted hover:text-accent hover:border-accent/50 transition-colors"
+            className="flex flex-col items-center rounded border border-border px-3 py-1 font-sans
+                       text-muted hover:text-accent hover:border-accent/50 transition-colors leading-tight"
           >
-            Scenarios
+            <span className="text-xs font-semibold">Scenario</span>
+            <span className="text-[9px]">Editor</span>
           </button>
         )}
 
