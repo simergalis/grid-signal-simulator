@@ -198,6 +198,7 @@ const DURATION_OPTIONS = [
   { label: '15 min',   value: 900   },
   { label: '30 min',   value: 1800  },
   { label: '1 hour',   value: 3600  },
+  { label: '3 hours',  value: 10800 },
   { label: '4 hours',  value: 14400 },
   { label: 'No limit', value: 1e15  },
 ]
