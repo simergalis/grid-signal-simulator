@@ -13,8 +13,9 @@ The property being guarded:
     schedule — regardless of whether the first run completed normally or was
     cancelled.
 
-TC-CL-1  for_tick() returns _CLEAN for any index ≥ schedule length
-TC-CL-2  for_tick() returns _CLEAN for negative indices
+TC-CL-1  for_tick() raises RuntimeError for any index more than one past schedule length
+TC-CL-1b for_tick() returns _CLEAN silently for exactly one-tick overshoot (documented tolerance)
+TC-CL-2  for_tick() raises RuntimeError for negative indices
 TC-CL-3  A freshly-created RunContext always starts with empty _bess_soc_history
 TC-CL-4  A freshly-created RunContext always has telemetry_corruption = None
 TC-CL-5  Populating _bess_soc_history on RunContext-A does not affect RunContext-B
@@ -66,51 +67,92 @@ def _make_tick_stub(soc_mwh: float = 1.5):
 
 
 # ---------------------------------------------------------------------------
-# TC-CL-1  for_tick() is safe beyond schedule length
+# TC-CL-1  for_tick() raises for any index more than one tick past schedule end
 # ---------------------------------------------------------------------------
 
 def test_tc_cl_1_for_tick_returns_clean_beyond_end():
-    """Any index ≥ schedule length must return a no-op _CLEAN entry.
+    """Indices more than one past schedule length must raise RuntimeError.
 
-    This is the critical boundary: if a run is extended or timing drifts,
-    extra ticks beyond the pre-generated schedule must not corrupt anything.
+    The contract after Phase 3:
+      [0, len)    → scheduled CorruptionEntry (normal path)
+      == len      → _CLEAN silently (one-tick tolerance; see TC-CL-1b)
+      > len       → RuntimeError (unbounded overshoot: fault injection was
+                    silently disabled; raise rather than return a false clean)
+      negative    → RuntimeError (invalid; see TC-CL-2)
+
+    The RuntimeError surfaces a misconfiguration (run longer than schedule)
+    that would otherwise silently disable fault injection without warning.
     """
     sched = _make_schedule(10)
-    assert len(sched.schedule) == 10
+    n = len(sched.schedule)   # == 10
 
-    # One past the end
-    entry = sched.for_tick(10)
-    assert entry is _CLEAN or (
-        entry.noise_sigma == 0.0 and not entry.dropout and entry.staleness == 0
-    ), f"Tick 10 (past end) should be CLEAN, got {entry}"
+    # Normal in-range path — must return the actual scheduled entry, not _CLEAN
+    entry_in = sched.for_tick(n - 1)   # last valid index
+    assert isinstance(entry_in, type(_CLEAN)), (
+        f"In-range tick {n-1} should return a CorruptionEntry; got {entry_in!r}"
+    )
 
-    # Far past the end
-    entry_far = sched.for_tick(9999)
-    assert entry_far is _CLEAN or (
-        entry_far.noise_sigma == 0.0 and not entry_far.dropout and entry_far.staleness == 0
-    ), f"Tick 9999 should be CLEAN, got {entry_far}"
+    # One past the end — the tolerated overshoot (asserted separately in TC-CL-1b)
+    entry_one = sched.for_tick(n)
+    assert entry_one is _CLEAN or (
+        entry_one.noise_sigma == 0.0 and not entry_one.dropout and entry_one.staleness == 0
+    ), f"Tick {n} (one past end) should return _CLEAN; got {entry_one}"
+
+    # Two past the end — must raise
+    with pytest.raises(RuntimeError, match="out of range"):
+        sched.for_tick(n + 1)
+
+    # Far past the end — must raise
+    with pytest.raises(RuntimeError, match="out of range"):
+        sched.for_tick(9999)
 
 
 # ---------------------------------------------------------------------------
-# TC-CL-2  for_tick() is safe for negative indices
+# TC-CL-1b  The one-tick overshoot tolerance is preserved
+# ---------------------------------------------------------------------------
+
+def test_for_tick_one_tick_overshoot_is_tolerated():
+    """tick_index == len(schedule) must return _CLEAN silently — always.
+
+    This is the documented one-tick tolerance (off-by-one at run end).
+    Gated as its own named test because it is the boundary most likely to be
+    broken by a future tightening of the overshoot guard: tightening that
+    correctly removes the two-plus-tick overshoot path must NOT remove this one.
+
+    Production call site: runtime/run_manager.py line ~801
+      for_tick(tick_result.tick_index - 1)
+    where tick_index is 1-based and runs from 1 to n_ticks inclusive.
+    The 0-based index therefore runs from 0 to n_ticks - 1 (always within range),
+    but an off-by-one in n_ticks accounting would produce exactly tick_index == n.
+    This test ensures that off-by-one produces a no-op, not a crash.
+    """
+    for n in (1, 5, 10, 100):
+        sched = _make_schedule(n)
+        assert len(sched.schedule) == n
+        entry = sched.for_tick(n)   # tick_index == len — documented tolerance
+        assert entry is _CLEAN or (
+            entry.noise_sigma == 0.0 and not entry.dropout and entry.staleness == 0
+        ), f"n={n}: for_tick({n}) (one-tick overshoot) must return _CLEAN; got {entry}"
+
+
+# ---------------------------------------------------------------------------
+# TC-CL-2  for_tick() raises for negative indices
 # ---------------------------------------------------------------------------
 
 def test_tc_cl_2_for_tick_returns_clean_for_negative_index():
-    """Negative tick indices must return _CLEAN, not wrap around the list.
+    """Negative tick indices must raise RuntimeError, not wrap around the list.
 
-    Python list[-1] would return the LAST element; for_tick must reject this.
+    Python list[-1] returns the LAST element — silently applying corruption
+    from a past tick to an unrelated tick.  for_tick must reject any negative
+    index with RuntimeError rather than return a potentially noisy entry.
     """
     sched = _make_schedule(10)
 
-    entry = sched.for_tick(-1)
-    assert entry is _CLEAN or (
-        entry.noise_sigma == 0.0 and not entry.dropout and entry.staleness == 0
-    ), f"Tick -1 should be CLEAN (no Python list wrap), got {entry}"
+    with pytest.raises(RuntimeError, match="out of range"):
+        sched.for_tick(-1)
 
-    entry_neg = sched.for_tick(-100)
-    assert entry_neg is _CLEAN or (
-        entry_neg.noise_sigma == 0.0 and not entry_neg.dropout and entry_neg.staleness == 0
-    ), f"Tick -100 should be CLEAN, got {entry_neg}"
+    with pytest.raises(RuntimeError, match="out of range"):
+        sched.for_tick(-100)
 
 
 # ---------------------------------------------------------------------------
