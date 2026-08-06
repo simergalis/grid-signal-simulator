@@ -1,575 +1,232 @@
+#!/usr/bin/env python3
+"""gridsignal_logger.py — 60-second telemetry capture for "Log Test".
+
+Usage (called by export.py):
+    python3 gridsignal_logger.py --rows 600 --interval 0.1 --out /tmp/log.csv
+
+Connects to the running GridSignal API via WebSocket, streams live tick data
+for <rows> × <interval> seconds, and writes a CSV to <out>.  Each row
+captures the latest known sim state plus wall-clock and system metrics.
+
+Exit 0 on success, non-zero on failure (export.py checks returncode).
 """
-gridsignal_logger.py
-====================
-Logs real-time statistics for five GridSignal subsystems to a CSV file
-at 1-second intervals.
-
-Systems logged
---------------
-  Gas Turbine Fleet   — aggregate power output (MW), heat rate (BTU/kWh), exhaust temp (°C)
-  Solar PV            — array output (MW), irradiance fraction (0–1), cell temp (°C)
-  Battery (BESS)      — state of charge (%), charge/discharge rate (MW), voltage (V)
-  Compute Racks       — CPU load (%), memory utilisation (%), inlet air temp (°C)
-  Cooling Plant       — chilled water supply temp (°C), pump flow (L/s), COP
-
-Usage
------
-  python gridsignal_logger.py                  # runs until Ctrl-C
-  python gridsignal_logger.py --rows 30        # stops after 30 rows
-  python gridsignal_logger.py --out my.csv     # custom output file
-
-Dependencies
-------------
-  pip install pandas
-"""
-
 from __future__ import annotations
 
 import argparse
+import asyncio
 import csv
-import math
-import random
+import datetime
+import json
+import os
 import sys
 import time
-from datetime import datetime, timezone
-from pathlib import Path
+import urllib.request
+from typing import Any
 
+# ── CLI args ─────────────────────────────────────────────────────────────────
+ap = argparse.ArgumentParser(description="GridSignal telemetry logger")
+ap.add_argument("--rows",     type=int,   default=600,  help="number of CSV rows to write")
+ap.add_argument("--interval", type=float, default=0.1,  help="seconds between samples")
+ap.add_argument("--out",      required=True,             help="output CSV path")
+args = ap.parse_args()
 
-# ---------------------------------------------------------------------------
-# CSV schema
-# Column order is the source of truth — keep in sync with _row_dict() below.
-# ---------------------------------------------------------------------------
-CSV_COLUMNS: list[str] = [
-    "timestamp",
-    # Gas Turbine Fleet
-    "gt_power_mw",
-    "gt_heat_rate_btu_kwh",
-    "gt_exhaust_temp_c",
-    "gt_setpoint_mw",         # dispatch target before ramp filter (§11.3 setpoint split)
-    "gt_mode",                # "ramping" | "at_target"
-    # Solar PV
-    "solar_output_mw",
-    "solar_irradiance_fraction",
-    "solar_cell_temp_c",
-    # Battery Energy Storage (BESS)
+PORT    = int(os.environ.get("PORT", 8080))
+HTTP    = f"http://localhost:{PORT}"
+WS_BASE = f"ws://localhost:{PORT}"
+
+# ── Optional psutil for CPU / memory rows ────────────────────────────────────
+try:
+    import psutil as _psutil  # type: ignore
+    _HAS_PSUTIL = True
+except ImportError:
+    _HAS_PSUTIL = False
+
+# ── CSV columns (in display order) ──────────────────────────────────────────
+COLUMNS = [
+    # Timing
+    "wall_time",
+    "elapsed_s",
+    "run_id",
+    "sim_time_seconds",
+    "tick_index",
+    # Gas turbine fleet
+    "synchronised_output_mw",
+    "turbine_output_mw",
+    # BESS
+    "bess_output_mw",
+    "bess_setpoint_mw",
     "bess_soc_pct",
-    "bess_power_mw",          # positive = discharging, negative = charging
-    "bess_terminal_voltage_v",
-    "bess_setpoint_mw",       # commanded BESS output before SOC/filter clipping
-    # Compute Racks
-    "compute_cpu_load_pct",
-    "compute_mem_util_pct",
-    "compute_inlet_temp_c",
-    "compute_load_mw",        # total compute electrical draw (restored field)
-    # Cooling Plant
-    "cooling_chws_temp_c",    # chilled water supply temperature
-    "cooling_pump_flow_ls",   # litres per second
-    "cooling_cop",            # coefficient of performance
-    # Tier 1 — Power Balance
-    "site_total_load_mw",     # total site load measured at PCC (IT + mechanical)
-    "it_load_mw",             # IT critical load only
-    "mechanical_load_mw",     # cooling, pumps, fans (thermally lagged — §8)
-    "grid_import_mw",         # channel_source: slack — instantaneous flow, closes balance exactly
-    "grid_import_metered_mw", # channel_source: metered — PCC meter with lag (τ = GRID_METER_TAU_S)
-    "islanded",               # 1 when operating in island mode, 0 = grid-connected
-    "balance_residual_mw",    # gen − load − losses (uses unfiltered flow); 0 in grid-connected; non-zero only when a model error exists
-    "binding_constraint",     # "ramp_limit" | "soc_limit" | "none"
-    # Forecast / advisory
-    "forecast_mw",            # short-horizon site-load forecast (§11.1 aligned)
-    # Scheduler diagnostics
-    "step_event",             # 1 when a training-step boundary falls in this tick window
-    # Run metadata
-    "scenario_id",            # scenario name tag
-    "rng_seed",               # RNG seed used for this run (reproducibility)
-    "source",                 # always "synthetic_generator" — not real engine telemetry
+    "bess_bridging_seconds",
+    # Renewables
+    "p_renewable_mw",
+    # Loads
+    "p_compute_mw",
+    "p_cooling_mw",
+    "p_total_mw",
+    "net_demand_mw",
+    # Physics
+    "balance_residual_mw",
+    "frequency_hz",
+    # Thermal headroom
+    "absorbable_mw",
+    "rated_cooling_mw",
+    # System
+    "cpu_pct",
+    "mem_pct",
 ]
 
 
-# ---------------------------------------------------------------------------
-# Physics-inspired simulation helpers
-# ---------------------------------------------------------------------------
-
-class _FirstOrderFilter:
-    """Simple IIR low-pass filter that adds inertia to a simulated signal."""
-
-    def __init__(self, initial: float, tau: float = 5.0) -> None:
-        self.value = initial
-        self.tau   = tau       # time constant in seconds
-
-    def step(self, target: float, dt: float = 1.0) -> float:
-        """Advance the filter by `dt` seconds toward `target`."""
-        alpha = 1.0 - math.exp(-dt / self.tau)
-        self.value += alpha * (target - self.value)
-        return round(self.value, 3)
+def _field(tick: dict, *keys: str) -> Any:
+    """Return the first key found in tick, or empty string."""
+    for k in keys:
+        if k in tick:
+            return tick[k]
+    return ""
 
 
-class SimulatedGrid:
-    """
-    Maintains state for all five subsystems and advances them each tick.
-
-    Each subsystem uses a random walk inside physical bounds so that
-    successive rows look like real telemetry rather than independent samples.
-    """
-
-    # ---- Gas Turbine: 4-unit fleet, ~120 MW per unit rated ---------------
-    GT_RATED_MW   = 480.0
-    GT_MIN_MW     =  80.0     # minimum stable output for the 4-unit fleet
-    GT_RAMP_MW_S  =   0.2     # max ramp rate, MW per second (Section 7.1 / Phase 11.3b)
-
-    # ---- Solar PV: 200 MW DC nameplate ------------------------------------
-    SOLAR_RATED_MW  = 200.0
-
-    # ---- BESS: 120 MW / 200 MWh — sized to cover the 90 MW IT step ----------
-    BESS_RATED_MW   = 120.0
-    BESS_MAX_SOC    = 98.0
-    BESS_MIN_SOC    = 5.0
-    BESS_RATED_V    = 1500.0   # nominal DC link voltage
-
-    # ---- Compute Racks: 300 MW hyperscale AI cluster -----------------------
-    COMPUTE_RATED_MW     = 300.0   # electrical nameplate for the whole cluster
-    COMPUTE_LOAD_PCT_MIN = 40.0
-    COMPUTE_LOAD_PCT_MAX = 98.0
-
-    # ---- Cooling: scaled for 300 MW IT load --------------------------------
-    COOLING_CHWS_SETPOINT = 7.0    # °C chilled-water supply setpoint
-    COOLING_MAX_FLOW_LS   = 5000.0 # litres per second (large chilled-water loop)
-
-    # ---- Step-event clock (drives compute load pulses) ---------------------
-    STEP_PERIOD_S       = 0.7   # mean training-step period (s)
-    STEP_JITTER_S       = 0.05  # straggler / network-contention jitter (std dev)
-    STEP_LOAD_BOOST_PCT = 30.0  # CPU % boost during the step computation window
-    STEP_DURATION_S     = 0.12  # how long the spike lasts (s)
-
-    # ---- Power balance ------------------------------------------------------
-    SITE_LOSS_FACTOR    = 0.005    # 0.5 % transmission + distribution losses
-    GRID_METER_TAU_S    = 2.0      # PCC meter response time constant (s); configurable
-
-    def __init__(self, step_period: float = STEP_PERIOD_S) -> None:
-        self._step_period = step_period
-
-        # RNG seed — captured once for reproducibility metadata
-        self._rng_seed = random.randint(0, 2**32 - 1)
-
-        # Gas turbines — start at ~135 MW, which is steady-state residual demand
-        # after solar contribution (~255 MW site load − ~120 MW solar = ~135 MW).
-        # GT dispatch targets (load − solar), so it doesn't over-generate against
-        # the solar fleet.  BESS then covers fast deviations that the slow GT
-        # ramp (0.2 MW/s) cannot follow.
-        self._gt_mw      = _FirstOrderFilter(135.0, tau=8.0)
-        # Exhaust temperature: at ~28 % load (135/480), target ≈ 540 °C.
-        self._gt_exhaust = _FirstOrderFilter(540.0, tau=60.0)
-
-        # Solar
-        self._solar_frac = _FirstOrderFilter(0.6, tau=30.0)
-
-        # BESS — tau=0.3 s so it bridges the 90 MW step within ~3 ticks.
-        # Uncovered power flows to grid_import_mw (exact slack in grid-connected mode).
-        self._soc     = 72.0
-        self._bess_mw = _FirstOrderFilter(0.0, tau=0.3)
-
-        # Compute load
-        self._cpu = _FirstOrderFilter(65.0, tau=15.0)
-        # Memory utilisation: tau=30 s with direct noise so the signal is not
-        # constant (Issue: tau=60 s + round-to-1dp → sd=0 regression fix).
-        self._mem = _FirstOrderFilter(55.0, tau=30.0)
-        # Rack inlet temperature: thermal lag of air mass (tau = 30 s)
-        self._inlet_temp = _FirstOrderFilter(25.8, tau=30.0)
-
-        # GPU step-spike low-pass filter — tau = 0.06 s (Phase 10 default).
-        # Reaches 1 − e^(−0.2/0.06) ≈ 96 % of step in the 0.2 s pulse window,
-        # preserving amplitude while still eliminating the infinite-slope edge.
-        # (tau=0.3 s only reaches 49 % and artificially halves the pulse height.)
-        self._cpu_spike = _FirstOrderFilter(0.0, tau=0.06)
-
-        # Cooling thermal lag — §8 / Section 8 specifies a 90 s onset delay
-        # before chiller heat rises.  A first-order filter with tau = 90 s
-        # approximates that: output < 63 % of steady-state for the first 90 s,
-        # and lag-1 autocorrelation ≈ 0.9989 at 10 Hz.
-        # This decouples mechanical_load_mw from the instantaneous IT square
-        # wave (Issue 3 fix: P_cooling(t) thermal lag).
-        self._chiller_heat = _FirstOrderFilter(0.0, tau=90.0)
-
-        # Cooling — chilled water supply temp has thermal inertia
-        self._chws = _FirstOrderFilter(self.COOLING_CHWS_SETPOINT + 1.0, tau=20.0)
-
-        # PCC meter (grid_import_metered_mw): models instrument lag for display.
-        # τ = GRID_METER_TAU_S (default 2 s).  This must NOT enter the balance
-        # equation — the balance is closed by the exact instantaneous flow
-        # grid_import_mw (channel_source: slack).  Phase 12.0 Diagnostic B
-        # confirmed that applying this filter to the slack term manufactures
-        # 26.5 MW of residual sd that is 100 % filter lag, not real imbalance.
-        self._grid_import = _FirstOrderFilter(0.0, tau=self.GRID_METER_TAU_S)
-
-        # Tick counter and cumulative elapsed time
-        self._tick      = 0
-        self._elapsed_t = 0.0
-
-        # Step-event clock
-        self._next_step_t          = self._step_period
-        self._step_boost_remaining = 0.0
-
-        # Grid islanding state — rare simulated event
-        self._islanded        = False
-        self._islanding_timer = 0
-
-    # ------------------------------------------------------------------
-    def tick(self, dt: float = 1.0) -> dict:
-        """Advance all subsystems by dt seconds and return a metric dict."""
-        self._tick      += 1
-        self._elapsed_t += dt
-
-        # -- Step-event clock (drives compute load pulses) ----------------
-        # Steps have jitter so the period is not perfectly regular.
-        step_event = 0
-        if self._elapsed_t >= self._next_step_t:
-            step_event = 1
-            self._step_boost_remaining = self.STEP_DURATION_S
-            jitter = random.gauss(0, self.STEP_JITTER_S)
-            self._next_step_t = self._elapsed_t + max(0.1, self._step_period + jitter)
-
-        step_boost_raw = self.STEP_LOAD_BOOST_PCT if self._step_boost_remaining > 0 else 0.0
-        self._step_boost_remaining = max(0.0, self._step_boost_remaining - dt)
-
-        # -- Compute Racks (evaluated first — IT load drives GT dispatch) -
-        # Background CPU trend is filtered (tau = 15 s).
-        # Issue 4 fix: the step spike is routed through _cpu_spike (tau = 0.3 s)
-        # so transitions have finite rise/fall time instead of infinite dP/dt.
-        # This produces visible intermediate samples at 10 Hz (the "zero samples
-        # between states" regression is resolved).
-        cpu_target = max(self.COMPUTE_LOAD_PCT_MIN,
-                         min(self.COMPUTE_LOAD_PCT_MAX,
-                             self._cpu.value + random.gauss(0, 2)))
-        cpu_base       = self._cpu.step(cpu_target, dt=dt)
-        smoothed_boost = self._cpu_spike.step(step_boost_raw, dt=dt)
-        cpu_load       = min(self.COMPUTE_LOAD_PCT_MAX, cpu_base + smoothed_boost)
-
-        # Memory utilisation: tau=30 s + direct noise so the signal is non-
-        # constant (regression fix: tau=60 s + round-to-1dp produced sd=0).
-        mem_target = max(30.0, min(95.0, self._mem.value + random.gauss(0, 3)))
-        mem_util   = round(
-            self._mem.step(mem_target, dt=dt) + random.gauss(0, 0.2), 1)
-        mem_util   = max(30.0, min(95.0, mem_util))
-
-        it_load_mw = cpu_load / 100.0 * self.COMPUTE_RATED_MW
-
-        # Inlet temperature: thermally lagged (tau = 30 s), not instantaneous.
-        # Noise sigma kept small (0.02 °C) so filter autocorrelation is visible.
-        inlet_target = 18.0 + (cpu_load / 100.0) * 12.0   # 18–30 °C range
-        inlet_temp   = round(
-            self._inlet_temp.step(inlet_target, dt=dt) + random.gauss(0, 0.02), 2)
-
-        # -- Cooling Plant ------------------------------------------------
-        # Issue 3 fix (TC-02 / TC-03): chiller heat input is thermally lagged
-        # via _chiller_heat (tau = 90 s), so mechanical_load_mw does NOT pulse
-        # in lockstep with the IT load.  lag-1 autocorr at 10 Hz ≈ 0.9989 vs.
-        # the previous 0.9968 AT ZERO LAG (which was a flat-out model error).
-        # The filter starts at 0 and rises; for the first ~90 s output is < 63 %
-        # of steady state, approximating the Section 8 onset delay.
-        it_frac          = cpu_load / 100.0
-        heat_kw_instant  = it_load_mw * 1000.0
-        heat_kw          = self._chiller_heat.step(heat_kw_instant, dt=dt)
-        chws_target      = self.COOLING_CHWS_SETPOINT + it_frac * 2.0
-        chws_temp        = self._chws.step(chws_target, dt=dt)
-        flow             = round(
-            self.COOLING_MAX_FLOW_LS * (0.4 + it_frac * 0.6) + random.gauss(0, 10), 1)
-        flow             = max(0.0, min(self.COOLING_MAX_FLOW_LS, flow))
-        cop              = round(
-            4.5 - (chws_temp - self.COOLING_CHWS_SETPOINT) * 0.3
-            + random.gauss(0, 0.05), 2)
-
-        chiller_mw   = heat_kw / 1000.0 / max(cop, 0.5)   # chiller electrical draw
-        pump_mw      = flow * 0.001                          # ~1 kW per L/s
-        mech_load_mw = chiller_mw + pump_mw
-        site_total_mw = it_load_mw + mech_load_mw
-        losses_mw    = site_total_mw * self.SITE_LOSS_FACTOR
-
-        # -- Gas Turbine (demand-following; residual after solar) -----------
-        # GT targets (site_total − solar), not site_total alone.  Without this
-        # subtraction the GT and solar both attempt to cover the full load,
-        # causing chronic ~105 MW over-generation that saturates the BESS at
-        # max-charge and makes corr(bess, it) ≈ 0.  With the subtraction the
-        # steady-state balance is near zero and the BESS operates symmetrically
-        # around its neutral point, covering fast IT deviations in both directions.
-        #
-        # Solar is computed below, so we use the previous tick's filter value
-        # (one tick stale) — physically realistic: the dispatch controller reads
-        # last-interval telemetry, not the future.
-        sol_mw_prev = self._solar_frac.value * self.SOLAR_RATED_MW
-        gt_target  = max(self.GT_MIN_MW,
-                         min(self.GT_RATED_MW,
-                             site_total_mw - sol_mw_prev + random.gauss(0, 5.0)))
-        # Issue 2 fix: the _FirstOrderFilter alone does not enforce GT_RAMP_MW_S.
-        # Capture the pre-step value, advance the filter, then clamp the actual
-        # change to ±GT_RAMP_MW_S × dt.  This brings peak ramp from ~15 MW/s
-        # back within the 4 MW/s spec (Section 28.1 band).
-        gt_prev        = self._gt_mw.value
-        gt_filtered    = self._gt_mw.step(gt_target, dt=dt)
-        max_gt_delta   = self.GT_RAMP_MW_S * dt
-        actual_gt_chg  = gt_filtered - gt_prev
-        gt_ramp_limited = abs(actual_gt_chg) > max_gt_delta
-        if gt_ramp_limited:
-            gt_mw = gt_prev + math.copysign(max_gt_delta, actual_gt_chg)
-            self._gt_mw.value = round(gt_mw, 3)
-        else:
-            gt_mw = gt_filtered
-        gt_load_f  = gt_mw / self.GT_RATED_MW
-        gt_hr      = round(9800 + (1 - gt_load_f) * 2200 + random.gauss(0, 30), 1)
-        # Exhaust temp has real thermal inertia (tau = 60 s — exhaust plenum).
-        # Noise sigma kept small (0.05 °C) so filter autocorrelation is visible.
-        gt_exhaust_target = 520.0 + gt_load_f * 80.0
-        gt_exhaust = round(
-            self._gt_exhaust.step(gt_exhaust_target, dt=dt) + random.gauss(0, 0.05), 2)
-        gt_mode = "ramping" if abs(gt_mw - gt_target) > 1.0 else "at_target"
-
-        # -- Solar PV -----------------------------------------------------
-        sol_target  = max(0.0, min(1.0, self._solar_frac.value + random.gauss(0, 0.02)))
-        sol_frac    = self._solar_frac.step(sol_target, dt=dt)
-        sol_mw      = round(self.SOLAR_RATED_MW * sol_frac + random.gauss(0, 0.5), 4)
-        sol_mw      = max(0.0, sol_mw)
-        sol_cell_t  = round(25.0 + sol_frac * 30.0 + random.gauss(0, 0.3), 1)
-
-        # -- BESS (smooths surplus/deficit between GT+solar and site load) -
-        # With tau=0.3 s the BESS responds in ~3 ticks, covering the 90 MW step
-        # and reducing balance_residual sd from 48 MW to ~1–2 MW (Issue 1 fix).
-        net_gap     = site_total_mw - gt_mw - sol_mw
-        bess_target = max(-self.BESS_RATED_MW, min(self.BESS_RATED_MW, net_gap))
-        bess_mw     = self._bess_mw.step(bess_target, dt=dt)
-        # SOC limits
-        soc_limited = (
-            (self._soc <= self.BESS_MIN_SOC + 1.0 and bess_target > 0) or
-            (self._soc >= self.BESS_MAX_SOC - 1.0 and bess_target < 0)
-        )
-        # Negative bess_mw = charging (SoC rises); positive = discharging (SoC falls)
-        self._soc  -= bess_mw / 3600.0 * dt * 100.0 / 200.0
-        self._soc   = max(self.BESS_MIN_SOC, min(self.BESS_MAX_SOC, self._soc))
-        soc_f       = self._soc / 100.0
-        bess_v      = round(
-            self.BESS_RATED_V * (0.90 + 0.12 * soc_f) + random.gauss(0, 1.0), 1)
-
-        # Binding constraint diagnostic
-        if soc_limited:
-            binding_constraint = "soc_limit"
-        elif gt_ramp_limited:
-            binding_constraint = "ramp_limit"
-        else:
-            binding_constraint = "none"
-
-        # -- Power Balance ------------------------------------------------
-        # Phase 12.1: flow / meter split.
-        # grid_import_mw  — the instantaneous power exchanged with the infinite
-        #   grid; closes the balance algebraically (channel_source: slack).
-        #   In grid-connected mode the grid is the balance-of-plant and this
-        #   value is always well-defined.
-        # grid_import_metered_mw — PCC meter output with lag τ = GRID_METER_TAU_S;
-        #   models instrument response for realistic telemetry display only.
-        #   It does NOT enter the balance equation.
-        #
-        # Acceptance criteria (G1–G5, listed in tests/test_balance.py):
-        #   G1  balance_residual sd < 1% of site load at steady state
-        #   G2  residual sd(0.75 s period) / sd(60 s period) ≤ 2
-        #   G3  corr(grid_import_mw, −others) = 1.0  [slack tag present]
-        #   G4  balance closes to machine epsilon every tick
-        #   G5  Diagnostic-C unaccounted_mw < 0.5 MW per step event
-        #
-        # G1–G4 are satisfied by construction, not by verification.
-        # grid_import_mw is the algebraic slack: it is defined as exactly the
-        # difference between generation and load, so balance_residual (computed
-        # two lines below) is identically 0.00 MW by arithmetic.  G1–G4 cannot
-        # fail regardless of whether the underlying model is correct; they prove
-        # only that the accounting is self-consistent.  Only G5 measures a real
-        # property — it checks that the export generator accounts for each power
-        # step event rather than silently absorbing it into the slack.
-        #
-        # Note: this export generator has no capability to detect its own
-        # modelling errors by design; error detection lives in the live engine
-        # (asset_delivery_error_mw, TickResult.model_error_mw, and the G5 probe
-        # in tests/test_balance.py which exercises the generator from outside).
-        #
-        # B1/B2/B3/B4 require the swing equation (Phase 12.2) to be in place
-        # before they are meaningful — 12.2 blocks 12.3.
-        bess_source = max(0.0, bess_mw)
-        bess_sink   = max(0.0, -bess_mw)
-        grid_import_mw = (site_total_mw + bess_sink + losses_mw
-                          - gt_mw - sol_mw - bess_source)
-        grid_import_metered_mw = (self._grid_import.step(grid_import_mw, dt=dt)
-                                  + random.gauss(0, 0.1))
-        balance_residual = (gt_mw + sol_mw + bess_source + grid_import_mw
-                            - site_total_mw - bess_sink - losses_mw)
-
-        # Forecast: expected site load at the next step boundary, using lagged
-        # cooling + current compute as the short-horizon prediction (§11.1).
-        forecast_mw = round(
-            cpu_target / 100.0 * self.COMPUTE_RATED_MW
-            + self._chiller_heat.value / 1000.0, 3)
-
-        # Islanding: rare simulated events (0.1 % chance / tick, 5–20 s)
-        if not self._islanded:
-            if random.random() < 0.001:
-                self._islanded        = True
-                self._islanding_timer = random.randint(50, 200)
-        else:
-            self._islanding_timer -= 1
-            if self._islanding_timer <= 0:
-                self._islanded = False
-
-        return {
-            "timestamp":                 datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
-            "gt_power_mw":               round(gt_mw, 4),
-            "gt_heat_rate_btu_kwh":      gt_hr,
-            "gt_exhaust_temp_c":         gt_exhaust,
-            "gt_setpoint_mw":            round(gt_target, 4),
-            "gt_mode":                   gt_mode,
-            "solar_output_mw":           sol_mw,          # already 4dp from compute step
-            "solar_irradiance_fraction": round(sol_frac, 4),
-            "solar_cell_temp_c":         sol_cell_t,
-            "bess_soc_pct":              round(self._soc, 4),
-            "bess_power_mw":             round(bess_mw, 4),
-            "bess_terminal_voltage_v":   bess_v,
-            "bess_setpoint_mw":          round(bess_target, 4),
-            "compute_cpu_load_pct":      round(cpu_load, 4),
-            "compute_mem_util_pct":      mem_util,
-            "compute_inlet_temp_c":      inlet_temp,
-            "compute_load_mw":           round(it_load_mw, 4),
-            "cooling_chws_temp_c":       round(chws_temp, 4),
-            "cooling_pump_flow_ls":      flow,
-            "cooling_cop":               cop,
-            # Tier 1 — Power Balance
-            "site_total_load_mw":        round(site_total_mw, 4),
-            "it_load_mw":                round(it_load_mw, 4),
-            "mechanical_load_mw":        round(mech_load_mw, 4),
-            "grid_import_mw":            round(grid_import_mw, 4),
-            "grid_import_metered_mw":    round(grid_import_metered_mw, 4),
-            "islanded":                  int(self._islanded),
-            "balance_residual_mw":       round(balance_residual, 4),
-            "binding_constraint":        binding_constraint,
-            # Forecast / advisory
-            "forecast_mw":               round(forecast_mw, 4),
-            # Scheduler diagnostics — step_event now generated internally
-            "step_event":                step_event,
-            # Run metadata
-            "scenario_id":               "demo_v2",
-            "rng_seed":                  self._rng_seed,
-            "source":                    "synthetic_generator",
-        }
+def _get_active_run() -> str | None:
+    """Synchronously fetch the first active run_id from GET /runs."""
+    try:
+        req = urllib.request.Request(f"{HTTP}/runs")
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            data = json.loads(resp.read())
+        ids = data.get("run_ids", [])
+        return ids[0] if ids else None
+    except Exception as exc:
+        print(f"[logger] GET /runs failed: {exc}", file=sys.stderr)
+        return None
 
 
-# ---------------------------------------------------------------------------
-# CSV writer
-# ---------------------------------------------------------------------------
+def _row(
+    *,
+    run_id: str,
+    tick: dict,
+    elapsed: float,
+    wall: str,
+) -> dict:
+    """Build one CSV row from the latest tick snapshot."""
+    soc_frac = tick.get("bess_soc_fraction")
+    soc_pct  = round(soc_frac * 100, 1) if isinstance(soc_frac, (int, float)) else ""
 
-def open_csv(path: Path) -> csv.DictWriter:
-    """
-    Open (or create) the CSV file and write the header row.
+    cpu = _psutil.cpu_percent(interval=None) if _HAS_PSUTIL else ""
+    mem = _psutil.virtual_memory().percent    if _HAS_PSUTIL else ""
 
-    If the file already exists, it is overwritten so sample runs start clean.
-    Raises OSError if the directory is not writable.
-    """
-    fh = path.open("w", newline="", encoding="utf-8")
-    # QUOTE_NONNUMERIC forces string fields (including timestamp) to be quoted.
-    # Excel/Sheets then treats them as plain text and shows the full
-    # HH:MM:SS value rather than silently dropping the seconds.
-    writer = csv.DictWriter(fh, fieldnames=CSV_COLUMNS,
-                            quoting=csv.QUOTE_NONNUMERIC)
-    writer.writeheader()
-    fh.flush()
-    return writer, fh
+    return {
+        "wall_time":              wall,
+        "elapsed_s":              round(elapsed, 3),
+        "run_id":                 run_id,
+        "sim_time_seconds":       _field(tick, "sim_time_seconds"),
+        "tick_index":             _field(tick, "tick_index"),
+        "synchronised_output_mw": _field(tick, "synchronised_output_mw"),
+        "turbine_output_mw":      _field(tick, "turbine_output_mw"),
+        "bess_output_mw":         _field(tick, "bess_output_mw"),
+        "bess_setpoint_mw":       _field(tick, "bess_setpoint_mw"),
+        "bess_soc_pct":           soc_pct,
+        "bess_bridging_seconds":  _field(tick, "bess_bridging_seconds"),
+        "p_renewable_mw":         _field(tick, "p_renewable_mw"),
+        "p_compute_mw":           _field(tick, "p_compute_mw"),
+        "p_cooling_mw":           _field(tick, "p_cooling_mw"),
+        "p_total_mw":             _field(tick, "p_total_mw"),
+        "net_demand_mw":          _field(tick, "net_demand_mw"),
+        "balance_residual_mw":    _field(tick, "balance_residual_mw"),
+        "frequency_hz":           _field(tick, "frequency_hz"),
+        "absorbable_mw":          _field(tick, "absorbable_mw"),
+        "rated_cooling_mw":       _field(tick, "rated_cooling_mw"),
+        "cpu_pct":                cpu,
+        "mem_pct":                mem,
+    }
 
 
-def log_row(writer: csv.DictWriter, fh, row: dict) -> None:
-    """Append one row to the CSV and flush immediately so data is not lost
-    if the process is interrupted."""
-    writer.writerow(row)
-    fh.flush()
+async def _capture(run_id: str) -> None:
+    """Connect to WS, sample at args.interval, write args.rows rows to CSV."""
+    import websockets  # type: ignore
 
+    ws_url = f"{WS_BASE}/ws/{run_id}"
+    print(f"[logger] connecting to {ws_url}", file=sys.stderr)
 
-# ---------------------------------------------------------------------------
-# Entry point
-# ---------------------------------------------------------------------------
+    # Shared state updated by the receive loop.
+    latest: dict = {}
+    last_tick_index: Any = None
+    first_tick_event = asyncio.Event()
+
+    async def _recv_loop(ws: Any) -> None:
+        nonlocal latest, last_tick_index
+        async for raw in ws:
+            try:
+                msg = json.loads(raw)
+                latest = msg
+                if msg.get("tick_index") != last_tick_index:
+                    last_tick_index = msg.get("tick_index")
+                    first_tick_event.set()
+            except Exception:
+                pass
+
+    async with websockets.connect(ws_url, ping_interval=15, open_timeout=10) as ws:
+        recv_task = asyncio.create_task(_recv_loop(ws))
+
+        # Prime psutil CPU counter (first call always returns 0.0).
+        if _HAS_PSUTIL:
+            _psutil.cpu_percent(interval=None)
+
+        # Wait up to 20 s for the first tick before starting the clock.
+        try:
+            await asyncio.wait_for(first_tick_event.wait(), timeout=20.0)
+        except asyncio.TimeoutError:
+            recv_task.cancel()
+            print("[logger] no tick received within 20 s — is a run active?",
+                  file=sys.stderr)
+            sys.exit(1)
+
+        start  = time.monotonic()
+        next_t = start
+        count  = 0
+
+        with open(args.out, "w", newline="") as fh:
+            writer = csv.DictWriter(fh, fieldnames=COLUMNS)
+            writer.writeheader()
+
+            while count < args.rows:
+                now      = time.monotonic()
+                sleep_s  = next_t - now
+                if sleep_s > 0:
+                    await asyncio.sleep(sleep_s)
+                next_t  += args.interval
+
+                elapsed  = time.monotonic() - start
+                wall_str = (datetime.datetime.utcnow()
+                            .isoformat(timespec="milliseconds") + "Z")
+
+                writer.writerow(_row(
+                    run_id=run_id,
+                    tick=latest,
+                    elapsed=elapsed,
+                    wall=wall_str,
+                ))
+                count += 1
+
+                # Print progress every 60 rows (~6 s).
+                if count % 60 == 0:
+                    print(f"[logger] {count}/{args.rows} rows", file=sys.stderr)
+
+        recv_task.cancel()
+        try:
+            await recv_task
+        except asyncio.CancelledError:
+            pass
+
+    print(f"[logger] done — {count} rows → {args.out!r}", file=sys.stderr)
+
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="GridSignal subsystem telemetry logger")
-    parser.add_argument("--out",  default="system_stats.csv",
-                        help="Output CSV file path (default: system_stats.csv)")
-    parser.add_argument("--rows", type=int, default=0,
-                        help="Stop after N rows (0 = run until Ctrl-C)")
-    parser.add_argument("--interval", type=float, default=1.0,
-                        help="Seconds between rows (default: 1.0)")
-    parser.add_argument("--step-period", type=float, default=0.7,
-                        help="Scheduler training-step period in seconds (default: 0.7). "
-                             "step_event=1 is written whenever a step boundary falls "
-                             "inside the current tick window. Set to 0 to disable.")
-    parser.add_argument("--fast", action="store_true",
-                        help="Skip inter-tick sleep — generate all rows immediately. "
-                             "Use for export/download; omit for live monitoring.")
-    args = parser.parse_args()
-
-    output_path = Path(args.out)
-
-    # --- open CSV ---------------------------------------------------------
-    try:
-        writer, fh = open_csv(output_path)
-    except OSError as exc:
-        print(f"[ERROR] Cannot open {output_path}: {exc}", file=sys.stderr)
+    run_id = _get_active_run()
+    if run_id is None:
+        print("[logger] no active run found — start a run before using Log Test",
+              file=sys.stderr)
         sys.exit(1)
 
-    sim   = SimulatedGrid(step_period=args.step_period)
-    count = 0
-
-    print(f"Logging to '{output_path}' every 1 second.  Press Ctrl-C to stop.")
-    print(f"{'Tick':<6} {'Timestamp':<21} {'GT MW':>8} {'Solar MW':>9} "
-          f"{'BESS SoC':>9} {'CPU %':>7} {'CHWS °C':>8}")
-    print("-" * 72)
-
-    try:
-        while True:
-            # Collect data — wrap in try/except so a transient error
-            # doesn't crash the whole logger
-            try:
-                row = sim.tick(dt=args.interval)
-            except Exception as exc:          # pragma: no cover
-                print(f"[WARN] Simulation error at tick {count}: {exc}", file=sys.stderr)
-                time.sleep(args.interval)
-                continue
-
-            # Replace wall-clock timestamp with elapsed time "xx.y s"
-            row["timestamp"] = f"{count * args.interval:.1f}"
-
-            # Write to CSV
-            try:
-                log_row(writer, fh, row)
-            except OSError as exc:
-                print(f"[ERROR] Write failed at tick {count}: {exc}", file=sys.stderr)
-                # Try to re-open the file (e.g. if it was deleted under us)
-                try:
-                    fh.close()
-                    writer, fh = open_csv(output_path)
-                    log_row(writer, fh, row)
-                except OSError as exc2:
-                    print(f"[FATAL] Cannot recover file: {exc2}", file=sys.stderr)
-                    sys.exit(1)
-
-            count += 1
-
-            # Progress line
-            print(f"{count:<6} {row['timestamp']:<21} "
-                  f"{row['gt_power_mw']:>8.1f} "
-                  f"{row['solar_output_mw']:>9.1f} "
-                  f"{row['bess_soc_pct']:>8.1f}% "
-                  f"{row['compute_cpu_load_pct']:>7.1f} "
-                  f"{row['cooling_chws_temp_c']:>8.2f}")
-
-            if args.rows and count >= args.rows:
-                print(f"\nReached {args.rows} rows — stopping.")
-                break
-
-            if not args.fast:
-                time.sleep(args.interval)
-
-    except KeyboardInterrupt:
-        print(f"\nInterrupted after {count} row(s).")
-    finally:
-        fh.close()
-        print(f"Saved to '{output_path}'.")
+    print(f"[logger] active run: {run_id!r}  rows={args.rows}  interval={args.interval}s",
+          file=sys.stderr)
+    asyncio.run(_capture(run_id))
 
 
 if __name__ == "__main__":
