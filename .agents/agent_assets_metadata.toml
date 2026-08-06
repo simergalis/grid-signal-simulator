@@ -56,3 +56,10 @@ uri = "file://gridsignal_source_review.zip"
 type = "unspecified"
 title = "GridSignal Source Review Package"
 description = "282 source files, 2.6 MB — Python backend, React frontend, shared TypeScript libs, and workspace config. Excludes node_modules, __pycache__, .pythonlibs, dist, .git, and binary/lock files."
+
+[[outputs]]
+id = "h4SFAP4qstHMPr3_HQMYc"
+uri = "file://gridsignal_ui_components.zip"
+type = "unspecified"
+title = "GridSignal UI Components Package"
+description = "138 source files, 293 KB — all dashboard screens, modals, chart primitives, subsystem panels, state stores, and shadcn/ui primitives with build config."
