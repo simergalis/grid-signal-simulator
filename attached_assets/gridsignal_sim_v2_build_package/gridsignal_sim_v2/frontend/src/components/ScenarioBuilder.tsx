@@ -186,8 +186,34 @@ function blankSpec(): ScenarioSpec {
     island_mode: true,
     pue_base: 1.03,
     end_sim_time: 300,
+    default_playback_speed: 1,
     pms_config: null,
   }
+}
+
+// ── Run-length and speed options (mirrors DemoBar) ────────────────────────────
+
+const DURATION_OPTIONS = [
+  { label: '5 min',    value: 300   },
+  { label: '15 min',   value: 900   },
+  { label: '30 min',   value: 1800  },
+  { label: '1 hour',   value: 3600  },
+  { label: '4 hours',  value: 14400 },
+  { label: 'No limit', value: 1e15  },
+]
+
+const SPEED_OPTIONS = [
+  { label: '1×  (real-time)',  value: 1  },
+  { label: '5×',              value: 5  },
+  { label: '10×',             value: 10 },
+  { label: '30×',             value: 30 },
+  { label: 'MAX (no limit)',  value: 0  },
+]
+
+/** Find the closest DURATION_OPTIONS entry, falling back to the raw value. */
+function nearestDuration(v: number): number {
+  const match = DURATION_OPTIONS.find(o => Math.abs(o.value - v) < 1)
+  return match ? match.value : v
 }
 
 // ── Known hardware profiles ───────────────────────────────────────────────────
@@ -544,9 +570,37 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
               <div className="grid grid-cols-2 gap-2">
                 <NumField label="Solar capacity" unit="MW" value={spec.solar_rated_mw} min={0} step={0.5}
                   onChange={v => patch({ solar_rated_mw: v })} />
-                <NumField label="Sim duration" unit="s" value={spec.end_sim_time} min={60} max={86400} step={60}
-                  onChange={v => patch({ end_sim_time: v })} />
+
+                {/* Run length — mapped to end_sim_time */}
+                <label className="flex flex-col gap-0.5">
+                  <span className="text-[10px] text-muted">Run length</span>
+                  <select
+                    value={nearestDuration(spec.end_sim_time)}
+                    onChange={e => patch({ end_sim_time: Number(e.target.value) })}
+                    className="w-full rounded border border-border bg-canvas px-2 py-1 text-xs text-text
+                               focus:outline-none focus:ring-1 focus:ring-accent"
+                  >
+                    {DURATION_OPTIONS.map(o => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </label>
               </div>
+
+              {/* Playback speed stored with the scenario */}
+              <label className="flex flex-col gap-0.5">
+                <span className="text-[10px] text-muted">Default speed</span>
+                <select
+                  value={spec.default_playback_speed ?? 1}
+                  onChange={e => patch({ default_playback_speed: Number(e.target.value) })}
+                  className="w-full rounded border border-border bg-canvas px-2 py-1 text-xs text-text
+                             focus:outline-none focus:ring-1 focus:ring-accent"
+                >
+                  {SPEED_OPTIONS.map(o => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </label>
 
               {/* Hardware profile dropdown */}
               <label className="flex flex-col gap-0.5">

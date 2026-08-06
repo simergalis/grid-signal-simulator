@@ -394,6 +394,18 @@ class ScenarioSpec(BaseModel):
     )
     pue_base: float = Field(default=1.03, ge=1.0, le=2.0)
     end_sim_time: float = Field(default=300.0, ge=60.0, le=86400.0)
+    # Default playback speed stored with the scenario so operators don't have to
+    # re-select it every run.  0 = max-speed sentinel; >0 = simulated-s per real-s.
+    # Honoured by the "Run" button in the Scenarios modal and the DemoBar auto-fill.
+    default_playback_speed: float = Field(
+        default=1.0,
+        ge=0.0,
+        description=(
+            "Default simulation playback speed for this scenario.  "
+            "0 = run as fast as possible; >0 = simulated-seconds per real-second.  "
+            "Stored in the spec so the operator's choice persists across sessions."
+        ),
+    )
 
     # ── Physics parameters (gridsignal_parameters.json §2) ─────────────────
     # Generated from gridsignal_parameters.json at runtime; never hand-coded.
