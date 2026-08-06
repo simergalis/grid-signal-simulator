@@ -14,7 +14,7 @@ description: Phase tracker for the hardcoded-constant elimination refactor; trap
 | 4 — TickResult/serialiser extension | ✅ DONE | 5 fields on wire; panels restored; bess_output_mw confirmed fleet; labelling fixed |
 | 5 — Prose sweep + Phase 4 corrections | ✅ DONE | 3 corrections; stale prose fixed; undeclared count = 11 (reported) |
 | 6 — Peak load reconcile + catalogue + N-1 wire | ✅ DONE | Item 1 (one PUE-inclusive definition), Item 2 (3 locked catalogue entries), Item 3 (design_peak_load_mw wire field), Item 4 (N-1 uses declared design peak) |
-| 7 | NOT STARTED | Settings modal |
+| 7 — Rationale + fallback + comments + modal | ✅ DONE | Item 1 (cooling_margin comment/catalogue), Item 2 (remove 20.0 fallback + isDeclaredPeak labels), Item 3 (bess_anchor_reserve_mw layering comment), Item 4 (12-node classification), Item 5 (ParameterModal full descriptor rewrite) |
 
 ## Phase 5 — key rulings and findings
 

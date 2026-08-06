@@ -181,11 +181,19 @@ def build_run_context(
     ]
 
     # ── W1 advisory, telemetry, procurement wiring ────────────────────────
-    # GS-DES-CFG-001 §Phase-6 / Item-1+2:
-    # PUE-exclusive rebind ("_peak_compute_mw = nodes × kW / 1000") removed — it caused
-    # _rated_cooling_mw to be sized ~3% below the simulation engine's max_cooling_mw
-    # (alpha_max × PUE-inclusive p_compute, simulation_core.py:1152).
-    # _COOLING_MARGIN sourced from catalogue (locked cooling_margin, PROTO-10).
+    # GS-DES-CFG-001 §Phase-6 / Item-1+2, corrected §Phase-7 / Item-1.
+    # _COOLING_MARGIN (1.15) is sourced from the catalogue (locked cooling_margin, PROTO-10).
+    #
+    # What the 15% covers AFTER Phase 6 (PUE overhead is no longer in scope —
+    # it is now inside _peak_it_load_mw = nodes × kW × PUE_base / 1000):
+    #   1. BESS charge overhead — inverter losses (~2–4%) heat the plant during charging.
+    #   2. Non-compute IT load — networking switches, PDUs, UPS auxiliary (~3–8% of compute).
+    #   3. Ambient excursion headroom — alpha_max × ambient_alpha_scale can add up to +4.5%
+    #      above nominal (3°C × 1.5%/°C, locked ambient_cooling_scale_per_c) before saturation.
+    #   4. Cooling-plant efficiency margin — chillers operate below nameplate at partial load (~2–5%).
+    #
+    # Remaining sum: 11.5–21.5%; 1.15 is the CHOSEN midpoint.  Value unchanged from Phase 6.
+    # PUE overhead (formerly cited here) is absorbed into _peak_it_load_mw; not a margin job.
     _COOLING_MARGIN      = _sp.value("cooling_margin")  # PROTO-10; catalogue: locked cooling_margin
     _rated_cooling_mw    = site.alpha_max * _peak_it_load_mw * _COOLING_MARGIN
     _design_peak_load_mw = _peak_it_load_mw + _rated_cooling_mw
@@ -319,7 +327,8 @@ def build_load_test_context(
 
     # ── W1 advisory, telemetry, procurement wiring (load-test context) ──────
     _lt_total_turbine_mw = 10.0 * turbine_count   # default rated_mw per turbine
-    # GS-DES-CFG-001 §Phase-6 / Item-1: PUE-exclusive rebind removed; _lt_peak_it_load_mw used.
+    # GS-DES-CFG-001 §Phase-6 / Item-1, corrected §Phase-7 / Item-1: see build_run_context
+    # for the full enumeration of what _COOLING_MARGIN covers.  PUE in _lt_peak_it_load_mw.
     _lt_rated_cooling_mw    = site.alpha_max * _lt_peak_it_load_mw * _sp.value("cooling_margin")  # PROTO-10
     _lt_design_peak_load_mw = _lt_peak_it_load_mw + _lt_rated_cooling_mw
     _lt_grid_cap = [
@@ -648,23 +657,31 @@ def build_run_context_from_spec(
     # ── W1 advisory, telemetry, procurement wiring (spec path) ───────────
     _spec_turbine_mws = [float(t.get("rated_mw", 10.0)) for t in spec_data.get("turbine_units", [])]
     _spec_total_turbine_mw = sum(_spec_turbine_mws) if _spec_turbine_mws else 10.0
-    # GS-DES-CFG-001 §Phase-6 / Item-1: round-trip via solar_rated_mw deleted.
-    # Compute from workload_events — same source as build_run_context factory path.
-    # Falls back to 20.0 MW when no events present (kube path or idle run).
+    # GS-DES-CFG-001 §Phase-7 / Item-2: 20.0 MW literal fallback removed.
+    # Paths that reach this code with no workload events (kube path, idle run, TC-33
+    # compute runs without scripted workload_events) must NOT receive an invented figure.
+    # When peak load is uncomputable, _spec_design_peak_load_mw is left at 0.0.
+    # The wire field broadcasts 0 → frontend falls back to peakSiteLoadMW(history)
+    # and labels it "observed this run" — a labelled observed figure is strictly better
+    # than an unlabelled literal.  The only path to the former 20.0 fallback was here;
+    # it is now removed.
     _spec_hw_profile = DEFAULT_HARDWARE_LIBRARY.get(hw_id, HardwareProfile(hw_id, rated_kw=12.0))
     _spec_max_node_count = max(
         (int(e.get("node_count", 0)) for e in spec_data.get("workload_events", [])),
         default=0,
     )
-    _spec_peak_it_load_mw = (
-        _spec_max_node_count * _spec_hw_profile.rated_kw * site.pue_base / 1000.0
-        if _spec_max_node_count > 0 else 20.0  # safe fallback when no workload events
-    )
-    _spec_rated_cooling_mw    = site.alpha_max * _spec_peak_it_load_mw * _sp.value("cooling_margin")  # PROTO-10
-    # Use declared design_peak_load_mw from spec if present; otherwise derive from factory formula.
-    _spec_design_peak_load_mw = float(spec_data.get("design_peak_load_mw") or 0.0) or (
-        _spec_peak_it_load_mw + _spec_rated_cooling_mw
-    )
+    if _spec_max_node_count > 0:
+        _spec_peak_it_load_mw     = _spec_max_node_count * _spec_hw_profile.rated_kw * site.pue_base / 1000.0
+        _spec_rated_cooling_mw    = site.alpha_max * _spec_peak_it_load_mw * _sp.value("cooling_margin")  # PROTO-10
+        # Honour declared design_peak_load_mw from the spec dict if present; otherwise derive.
+        _spec_design_peak_load_mw = float(spec_data.get("design_peak_load_mw") or 0.0) or (
+            _spec_peak_it_load_mw + _spec_rated_cooling_mw
+        )
+    else:
+        # No workload events — do not substitute a literal.
+        _spec_rated_cooling_mw    = 0.0   # unused sizing; defined to avoid NameError
+        # Honour explicit design_peak_load_mw from spec if provided; otherwise 0.
+        _spec_design_peak_load_mw = float(spec_data.get("design_peak_load_mw") or 0.0)
     _spec_grid_cap = [
         GridCapacity(CapacityType.FIRM,     available_mw=_spec_total_turbine_mw * 0.80, price_per_mwh=48.0, t_reserve_s=0.0),
         GridCapacity(CapacityType.RESERVED, available_mw=_spec_total_turbine_mw * 0.40, price_per_mwh=62.0, t_reserve_s=300.0),

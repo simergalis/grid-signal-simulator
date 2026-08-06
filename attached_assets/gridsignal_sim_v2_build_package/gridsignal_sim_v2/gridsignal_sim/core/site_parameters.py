@@ -100,13 +100,14 @@ class CatalogueEntry:
         operator can see that pue_base is PROPOSED_HERE rather than measured.
         """
         d: Dict[str, Any] = {
-            "key":        self.key,
-            "label":      self.label,
-            "unit":       self.unit,
-            "provenance": self.provenance,
-            "spec_ref":   self.spec_ref,
-            "readonly":   self.is_conformance,
-            "section":    self.section,
+            "key":              self.key,
+            "label":            self.label,
+            "unit":             self.unit,
+            "provenance":       self.provenance,
+            "provenance_detail": self.provenance_detail or "",
+            "spec_ref":         self.spec_ref,
+            "readonly":         self.is_conformance,
+            "section":          self.section,
         }
         if self.default is not None:
             d["default"] = self.default

@@ -44,13 +44,18 @@ export interface TickPayload {
   dt_thermal_seconds: number  // base thermal lag Δt_thermal from SiteConfig (s)
   alpha_max:          number  // base cooling fraction α_max from SiteConfig (NOT × ambient_alpha_scale)
   // GS-DES-CFG-001 §Phase-6: two new wire fields.
-  // bess_anchor_reserve_mw: power permanently withheld on the grid-forming BESS for frequency
-  //   regulation (§7.1.2).  From BessConfig.p_anchor_reserve_mw; emitted each tick.
+  // bess_anchor_reserve_mw: anchor reserve on the grid-forming BESS unit (MW).
+  //   IMPORTANT — LAYERING: the broadcast value is the CONFIGURED value on the
+  //   grid-forming unit (BessConfig.p_anchor_reserve_mw), NOT the catalogue default.
+  //   These legitimately differ when a scenario overrides p_anchor_reserve_mw:
+  //   e.g. the San Diego demo broadcasts 2.0 MW while the catalogue locked value is 1.0 MW.
+  //   This is by design — the broadcast reports what the plant is actually configured with.
+  //   Falls back to the catalogue default when no grid-forming unit is present in the run.
   // design_peak_load_mw: declared design peak site load (MW) — NOT the observed run maximum.
-  //   = peak_it_load_mw (node_count × kW × PUE_base / 1000) + rated_cooling_mw
-  //   (alpha_max × peak_it_load_mw × cooling_margin).  Set by the scenario factory from the
-  //   single PUE-inclusive peak definition; used for N−1 and reserve checks.
-  bess_anchor_reserve_mw: number  // anchor reserve on grid-forming BESS (MW); catalogue locked bess_anchor_reserve_mw
+  //   = peak_it_load_mw (node_count × kW × PUE_base / 1000) + rated_cooling_mw.
+  //   0.0 when the factory cannot compute it (spec-path with no workload_events);
+  //   frontend falls back to observed peak (labeled as such) when 0.
+  bess_anchor_reserve_mw: number  // configured anchor reserve on grid-forming BESS (MW)
   design_peak_load_mw:    number  // declared design peak: peak IT load + rated cooling (MW)
 
   // Confidence band

@@ -1,22 +1,32 @@
 /**
  * ParameterModal.tsx — Physics parameter reference and settings modal.
  *
- * Generated at runtime from gridsignal_parameters.json.  No value is
- * hard-coded here; every default, range, and provenance tag is read from
- * the JSON at component load time.
+ * GS-DES-CFG-001 §Phase-7: generated entirely from gridsignal_parameters.json.
+ * No control is hand-coded here; every entry, range, provenance, and spec_ref is
+ * driven by the catalogue.  Adding a control that is NOT in the catalogue reintroduces
+ * the drift this spec exists to prevent.
  *
- * Design principles (from gridsignal_parameters.json preamble):
- *   · parameters with split=true show PLANT ──🔗── ENGINE two-column sliders
- *     with a link toggle that defaults ON (linked = same value for both)
- *   · locked parameters are displayed read-only with their reason text
- *   · provenance class is shown as a colour dot per parameter
- *   · excluded parameters are never shown
+ * Rendering rules:
+ *   · adjustable entries with a DESCRIPTOR_KEY_MAP mapping → editable slider
+ *   · adjustable entries without a mapping → read-only reference row
+ *     (managed in Scenario Builder or pending ScenarioSpec wiring)
+ *   · locked entries → read-only table, ALL groups shown (no LOCKED_GROUPS filter)
+ *   · CONFORMANCE provenance → read-only regardless of section
+ *   · CHOSEN provenance → read-only (deliberate decision, not pending calibration)
+ *   · dt_lead (split=false in catalogue) → single slider; CFG-5 deferred
+ *   · Every control displays provenance dot and spec_ref
  *
  * Decisions for PROPOSED_HERE values (see test_worked_example.py):
- *   band_pct_calibrated   = 4 %  (calibrated baseline; × 2.0 = 8 % uncal = fixture)
+ *   band_pct_calibrated    = 4 %   (calibrated baseline; × 2.0 = 8 % uncal = fixture)
  *   band_mult_uncalibrated = 2.0 × (§17.3 widening; matches worked-example 8 %)
  *   band_mult_unmapped_hw  = 1.5 × (§5.1 unmapped-profile widening)
- *   anchor_reserve_pct     = 8 %  (PROPOSED_HERE placeholder; pending commissioning)
+ *   anchor_reserve_pct     = 8 %   (PROPOSED_HERE placeholder; pending commissioning)
+ *
+ * bess_anchor_reserve_mw placement: locked/bess.  Confirmed in §Phase-7 Item-5 —
+ * operators adjust the reserve fraction via anchor_reserve_pct (adjustable PARAM-09);
+ * the catalogue holds the class default used when no per-scenario override is present.
+ *
+ * CFG-5 deferred: dt_lead split-parameter rendering not implemented.
  */
 
 import { useEffect, useRef, useState } from 'react'
@@ -33,6 +43,8 @@ type Provenance =
   | 'ESTIMATE'
   | 'PROPOSED_HERE'
   | 'CONFORMANCE'
+  | 'CHOSEN'   // GS-DES-CFG-001 §Phase-7: deliberate decision without measured basis
+  | 'n/a'      // GS-DES-CFG-001 §Phase-7: enumerated entries (not applicable)
 
 interface AdjParam {
   id: string
@@ -45,6 +57,8 @@ interface AdjParam {
   step?: number
   split?: boolean
   provenance: Provenance
+  provenance_detail?: string
+  spec_ref?: string
   note?: string
   ui: { control: string; group: string }
 }
@@ -53,8 +67,12 @@ interface LockedParam {
   key: string
   value: string | number
   unit?: string
+  label?: string           // GS-DES-CFG-001 §Phase-7: from catalogue
   provenance: Provenance
+  provenance_detail?: string  // GS-DES-CFG-001 §Phase-7: from catalogue
+  spec_ref?: string           // GS-DES-CFG-001 §Phase-7: from catalogue
   reason?: string
+  note?: string
   ui: { control: string; group: string }
 }
 
@@ -77,7 +95,8 @@ export interface PhysicsParams {
   band_pct_calibrated: number
   band_mult_uncalibrated: number
   band_mult_unmapped_hw: number
-  // Operator-adjustable site / advisory settings
+  // PARAM-28 through PARAM-34 are NOT in the catalogue adjustable section.
+  // They are absent from the modal pending catalogue addition; defaults are 0.
   site_latitude: number
   site_utc_offset_h: number
   ambient_temp_base_c: number
@@ -87,32 +106,39 @@ export interface PhysicsParams {
   advisory_max_mw: number
 }
 
-/** Build default PhysicsParams from JSON (authoritative). */
+/**
+ * Build default PhysicsParams from the catalogue (key-based, authoritative).
+ *
+ * GS-DES-CFG-001 §Phase-7: switched from PARAM-id lookup to catalogue key lookup.
+ * PARAM-28 through PARAM-34 are not in the catalogue adjustable section; their
+ * defaults are 0 pending catalogue addition.
+ */
 export function defaultPhysicsParams(): PhysicsParams {
   const adj = (parametersJson as { adjustable: AdjParam[] }).adjustable
-  const def = (id: string) => adj.find(a => a.id === id)?.default ?? 0
+  const def = (key: string) => adj.find(a => a.key === key)?.default ?? 0
   return {
-    dt_lead_seconds:           def('PARAM-01'),
+    dt_lead_seconds:           def('dt_lead'),
     plant_dt_lead_seconds:     null,
-    dt_thermal_seconds:        def('PARAM-02'),
+    dt_thermal_seconds:        def('dt_thermal'),
     plant_dt_thermal_seconds:  null,
-    alpha_max:                 def('PARAM-03'),
+    alpha_max:                 def('alpha_max'),
     plant_alpha_max:           null,
-    tau_seconds:               def('PARAM-04'),
+    tau_seconds:               def('tau'),
     plant_tau_seconds:         null,
-    pue_base:                  def('PARAM-06'),
+    pue_base:                  def('pue_base'),
     plant_pue_base:            null,
-    anchor_reserve_pct:        def('PARAM-09'),
-    band_pct_calibrated:       def('PARAM-13'),
-    band_mult_uncalibrated:    def('PARAM-14'),
-    band_mult_unmapped_hw:     def('PARAM-15'),
-    site_latitude:             def('PARAM-28'),
-    site_utc_offset_h:         def('PARAM-29'),
-    ambient_temp_base_c:       def('PARAM-30'),
-    soc_floor_pct:             def('PARAM-31'),
-    soc_ceil_pct:              def('PARAM-32'),
-    advisory_interval_s:       def('PARAM-33'),
-    advisory_max_mw:           def('PARAM-34'),
+    anchor_reserve_pct:        def('anchor_reserve_pct'),
+    band_pct_calibrated:       def('band_pct_calibrated'),
+    band_mult_uncalibrated:    def('band_mult_uncalibrated'),
+    band_mult_unmapped_hw:     def('band_mult_unmapped_hw'),
+    // Not in catalogue adjustable section → 0 defaults
+    site_latitude:             0,
+    site_utc_offset_h:         0,
+    ambient_temp_base_c:       0,
+    soc_floor_pct:             0,
+    soc_ceil_pct:              0,
+    advisory_interval_s:       0,
+    advisory_max_mw:           0,
   }
 }
 
@@ -127,6 +153,9 @@ const PROVENANCE_COLORS: Record<Provenance, { bg: string; label: string }> = {
   ESTIMATE:       { bg: '#facc15', label: 'Engineering estimate' },
   PROPOSED_HERE:  { bg: '#f97316', label: 'Proposed — needs calibration' },
   CONFORMANCE:    { bg: '#6b7280', label: 'Conformance requirement' },
+  // GS-DES-CFG-001 §Phase-7: new provenance classes
+  CHOSEN:         { bg: '#a16207', label: 'Deliberate design choice — no measured basis' },
+  'n/a':          { bg: '#374151', label: 'Not applicable (enumerated / fixed)' },
 }
 
 function ProvenanceDot({ prov, size = 6 }: { prov: Provenance; size?: number }) {
@@ -153,6 +182,60 @@ function SectionHead({ title }: { title: string }) {
       {title}
     </h3>
   )
+}
+
+// ---------------------------------------------------------------------------
+// Catalogue key → PhysicsParams key mapping
+//
+// GS-DES-CFG-001 §Phase-7: replaces hand-written PARAM_MAP (id-based).
+// Only entries listed here render as editable controls.  Adjustable entries
+// in the catalogue that are absent from this map render as read-only reference
+// rows (managed via the Scenario Builder or pending ScenarioSpec wiring).
+//
+// dt_lead: split=false in catalogue (CFG-5 deferred — split rendering not implemented).
+// ---------------------------------------------------------------------------
+
+const DESCRIPTOR_KEY_MAP: Record<string, [keyof PhysicsParams, keyof PhysicsParams | null]> = {
+  'dt_lead':               ['dt_lead_seconds',        'plant_dt_lead_seconds'],
+  'dt_thermal':            ['dt_thermal_seconds',     'plant_dt_thermal_seconds'],
+  'alpha_max':             ['alpha_max',              'plant_alpha_max'],
+  'tau':                   ['tau_seconds',            'plant_tau_seconds'],
+  'pue_base':              ['pue_base',               'plant_pue_base'],
+  'anchor_reserve_pct':    ['anchor_reserve_pct',     null],
+  'band_pct_calibrated':   ['band_pct_calibrated',    null],
+  'band_mult_uncalibrated':['band_mult_uncalibrated', null],
+  'band_mult_unmapped_hw': ['band_mult_unmapped_hw',  null],
+}
+
+// Display ordering for adjustable groups (UX preference — not a filter).
+// Groups not in this list are shown at the end in discovery order.
+const ADJUSTABLE_GROUP_ORDER = [
+  'timing', 'thermal', 'load', 'storage', 'supply', 'generation', 'advisory', 'confidence',
+]
+
+// Display ordering for locked groups.
+const LOCKED_GROUP_ORDER = [
+  'thermal', 'solar', 'bess', 'turbine', 'engine', 'classifier', 'integrity',
+]
+
+const GROUP_LABELS: Record<string, string> = {
+  site:        'Site',
+  timing:      'Timing',
+  thermal:     'Thermal',
+  load:        'Load',
+  storage:     'Storage',
+  supply:      'Supply',
+  generation:  'Generation',
+  advisory:    'Advisory Agents',
+  confidence:  'Confidence Band (INV-2)',
+  bess:        'BESS',
+  classifier:  'Classifier',
+  engine:      'Engine',
+  integrity:   'Integrity',
+  turbine:     'Turbine',
+  solar:       'Solar',
+  authority:   'Authority',
+  scenario:    'Scenario',
 }
 
 // ---------------------------------------------------------------------------
@@ -189,6 +272,11 @@ function SplitSliderRow({
         <span className="text-[9px] text-muted opacity-50 flex-none">
           {param.min}–{param.max} {param.unit}
         </span>
+        {param.spec_ref && (
+          <span className="text-[9px] text-muted opacity-35 flex-none ml-1 font-mono">
+            {param.spec_ref}
+          </span>
+        )}
       </div>
 
       {isSplit ? (
@@ -277,16 +365,56 @@ function SplitSliderRow({
 }
 
 // ---------------------------------------------------------------------------
+// Reference-only row (adjustable entry without a DESCRIPTOR_KEY_MAP mapping)
+// ---------------------------------------------------------------------------
+
+/**
+ * Read-only reference display for catalogue adjustable entries that are managed
+ * outside this modal (e.g. Scenario Builder) or are pending ScenarioSpec wiring.
+ *
+ * GS-DES-CFG-001 §Phase-7: these entries ARE in the catalogue adjustable section
+ * and are shown here so operators can see their current default values and
+ * provenance.  They are not editable here; the Scenario Builder is the SoT.
+ */
+function RefRow({ param }: { param: AdjParam }) {
+  const valStr =
+    typeof param.default !== 'undefined'
+      ? `${param.default}${param.unit ? ' ' + param.unit : ''}`
+      : '—'
+  return (
+    <div className="mb-2.5 opacity-55">
+      <div className="flex items-center gap-1.5">
+        <ProvenanceDot prov={param.provenance as Provenance} />
+        <span className="text-[10px] text-muted flex-1 leading-tight">{param.label}</span>
+        <span className="font-mono text-[10px] text-muted tabular-nums">{valStr}</span>
+        {param.spec_ref && (
+          <span className="text-[9px] text-muted opacity-40 flex-none ml-1 font-mono">
+            {param.spec_ref}
+          </span>
+        )}
+      </div>
+      <p className="ml-4 text-[9px] text-muted opacity-40 leading-snug mt-0.5">
+        Managed in Scenario Builder — reference only
+      </p>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Locked params table
 // ---------------------------------------------------------------------------
 
-/** Derive a human label from a snake_case key. */
+/** Derive a human label from a snake_case key (fallback when label absent). */
 function keyToLabel(key: string): string {
   return key
     .replace(/_/g, ' ')
     .replace(/\b\w/g, c => c.toUpperCase())
 }
 
+/**
+ * GS-DES-CFG-001 §Phase-7: shows ALL locked entries (no group filter).
+ * Added spec_ref column; uses catalogue label; shows provenance_detail or reason.
+ */
 function LockedTable({ params }: { params: LockedParam[] }) {
   if (!params.length) return null
   return (
@@ -296,7 +424,8 @@ function LockedTable({ params }: { params: LockedParam[] }) {
           <th className="py-1 pr-2 font-semibold w-4" />
           <th className="py-1 pr-3 font-semibold">Parameter</th>
           <th className="py-1 pr-3 font-semibold text-right">Value</th>
-          <th className="py-1 font-semibold">Reason locked</th>
+          <th className="py-1 pr-2 font-semibold text-[9px] whitespace-nowrap">Spec ref</th>
+          <th className="py-1 font-semibold">Provenance / reason</th>
         </tr>
       </thead>
       <tbody>
@@ -305,12 +434,15 @@ function LockedTable({ params }: { params: LockedParam[] }) {
             <td className="py-1 pr-2">
               <ProvenanceDot prov={p.provenance as Provenance} size={5} />
             </td>
-            <td className="py-1 pr-3 text-muted">{keyToLabel(p.key)}</td>
+            <td className="py-1 pr-3 text-muted">{p.label ?? keyToLabel(p.key)}</td>
             <td className="py-1 pr-3 font-mono text-right text-text whitespace-nowrap">
               {p.value}{p.unit ? ' ' + p.unit : ''}
             </td>
+            <td className="py-1 pr-2 text-muted opacity-50 text-[9px] font-mono whitespace-nowrap">
+              {p.spec_ref ?? '—'}
+            </td>
             <td className="py-1 text-muted opacity-60 leading-snug">
-              {p.reason ?? '—'}
+              {p.reason ?? p.provenance_detail ?? p.note ?? '—'}
             </td>
           </tr>
         ))}
@@ -331,37 +463,6 @@ export interface Props {
   onApply: (params: PhysicsParams) => void
 }
 
-/** Maps PARAM-id to [engineKey, plantKey | null] in PhysicsParams. */
-const PARAM_MAP: Record<string, [keyof PhysicsParams, keyof PhysicsParams | null]> = {
-  'PARAM-01': ['dt_lead_seconds',        'plant_dt_lead_seconds'],
-  'PARAM-02': ['dt_thermal_seconds',     'plant_dt_thermal_seconds'],
-  'PARAM-03': ['alpha_max',              'plant_alpha_max'],
-  'PARAM-04': ['tau_seconds',            'plant_tau_seconds'],
-  'PARAM-06': ['pue_base',               'plant_pue_base'],
-  'PARAM-09': ['anchor_reserve_pct',     null],
-  'PARAM-13': ['band_pct_calibrated',    null],
-  'PARAM-14': ['band_mult_uncalibrated', null],
-  'PARAM-15': ['band_mult_unmapped_hw',  null],
-  'PARAM-28': ['site_latitude',          null],
-  'PARAM-29': ['site_utc_offset_h',      null],
-  'PARAM-30': ['ambient_temp_base_c',    null],
-  'PARAM-31': ['soc_floor_pct',          null],
-  'PARAM-32': ['soc_ceil_pct',           null],
-  'PARAM-33': ['advisory_interval_s',    null],
-  'PARAM-34': ['advisory_max_mw',        null],
-}
-
-const GROUP_ORDER = ['site', 'timing', 'thermal', 'storage', 'advisory', 'confidence']
-const GROUP_LABELS: Record<string, string> = {
-  site:        'Site',
-  timing:      'Timing',
-  thermal:     'Thermal',
-  storage:     'Storage',
-  advisory:    'Advisory Agents',
-  confidence:  'Confidence Band (INV-2)',
-}
-const LOCKED_GROUPS = ['classifier', 'engine', 'storage', 'integrity']
-
 export function ParameterModal({ open, onClose, initial, onApply }: Props) {
   const json         = parametersJson as { adjustable: AdjParam[]; locked: LockedParam[] }
   const overlayRef   = useRef<HTMLDivElement>(null)
@@ -373,62 +474,88 @@ export function ParameterModal({ open, onClose, initial, onApply }: Props) {
     if (!open) return
     setVals(initial)
     const initLinked: Record<string, boolean> = {}
+    // GS-DES-CFG-001 §Phase-7: use catalogue key, not PARAM-id
     json.adjustable
-      .filter(p => p.split && PARAM_MAP[p.id])
-      .forEach(p => { initLinked[p.id] = true })
+      .filter(p => p.split && DESCRIPTOR_KEY_MAP[p.key])
+      .forEach(p => { initLinked[p.key] = true })
     setLinked(initLinked)
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!open) return null
 
   // ── Value accessors ──────────────────────────────────────────────────
-  const engineVal = (id: string): number => {
-    const k = PARAM_MAP[id]?.[0]
+  // GS-DES-CFG-001 §Phase-7: all accessors keyed by catalogue key, not PARAM-id.
+  const engineVal = (key: string): number => {
+    const k = DESCRIPTOR_KEY_MAP[key]?.[0]
     return k ? (vals[k] as number) : 0
   }
-  const plantVal = (id: string): number => {
-    const spec = PARAM_MAP[id]
-    if (!spec?.[1]) return engineVal(id)
+  const plantVal = (key: string): number => {
+    const spec = DESCRIPTOR_KEY_MAP[key]
+    if (!spec?.[1]) return engineVal(key)
     const v = vals[spec[1] as keyof PhysicsParams]
-    return v == null ? engineVal(id) : (v as number)
+    return v == null ? engineVal(key) : (v as number)
   }
-  const setEngineVal = (id: string, v: number) => {
-    const k = PARAM_MAP[id]?.[0]
+  const setEngineVal = (key: string, v: number) => {
+    const k = DESCRIPTOR_KEY_MAP[key]?.[0]
     if (k) setVals(prev => ({ ...prev, [k]: v }))
   }
-  const setPlantVal = (id: string, v: number) => {
-    const spec = PARAM_MAP[id]
+  const setPlantVal = (key: string, v: number) => {
+    const spec = DESCRIPTOR_KEY_MAP[key]
     if (spec?.[1]) setVals(prev => ({ ...prev, [spec[1] as keyof PhysicsParams]: v }))
   }
-  const toggleLink = (id: string) => {
-    const nowLinked = !linked[id]
-    setLinked(prev => ({ ...prev, [id]: nowLinked }))
-    const spec = PARAM_MAP[id]
+  const toggleLink = (key: string) => {
+    const nowLinked = !linked[key]
+    setLinked(prev => ({ ...prev, [key]: nowLinked }))
+    const spec = DESCRIPTOR_KEY_MAP[key]
     if (spec?.[1]) {
       setVals(prev => ({
         ...prev,
-        [spec[1] as keyof PhysicsParams]: nowLinked ? null : engineVal(id),
+        [spec[1] as keyof PhysicsParams]: nowLinked ? null : engineVal(key),
       }))
     }
   }
 
-  // ── Group visible params ─────────────────────────────────────────────
-  const showableIds = new Set(Object.keys(PARAM_MAP))
+  // ── Group all adjustable params by their catalogue group ─────────────
+  // GS-DES-CFG-001 §Phase-7: no showableIds filter — all catalogue entries shown.
+  // Entries in DESCRIPTOR_KEY_MAP → editable slider.
+  // Entries not in map → RefRow (read-only reference).
   const byGroup = new Map<string, AdjParam[]>()
   for (const p of json.adjustable) {
-    const g = p.ui?.group
-    if (!showableIds.has(p.id) || !g) continue
+    const g = p.ui?.group ?? 'other'
     if (!byGroup.has(g)) byGroup.set(g, [])
     byGroup.get(g)!.push(p)
   }
 
-  // ── Locked params (all locked groups, minus excluded) ────────────────
-  const visibleLocked = json.locked.filter(p => LOCKED_GROUPS.includes(p.ui?.group ?? ''))
+  // Ordered group list: ADJUSTABLE_GROUP_ORDER first, then any remaining in discovery order
+  const discoveredGroups = Array.from(byGroup.keys())
+  const orderedGroups = [
+    ...ADJUSTABLE_GROUP_ORDER.filter(g => byGroup.has(g)),
+    ...discoveredGroups.filter(g => !ADJUSTABLE_GROUP_ORDER.includes(g)),
+  ]
 
-  // ── PROPOSED_HERE count ──────────────────────────────────────────────
-  const proposedCount = json.adjustable.filter(
-    p => showableIds.has(p.id) && p.provenance === 'PROPOSED_HERE'
-  ).length
+  // ── All locked params, ordered by LOCKED_GROUP_ORDER ────────────────
+  // GS-DES-CFG-001 §Phase-7: LOCKED_GROUPS filter removed — all locked entries shown.
+  // Group by ui.group, apply LOCKED_GROUP_ORDER, then any remaining.
+  const byLockedGroup = new Map<string, LockedParam[]>()
+  for (const p of json.locked) {
+    const g = p.ui?.group ?? 'other'
+    if (!byLockedGroup.has(g)) byLockedGroup.set(g, [])
+    byLockedGroup.get(g)!.push(p)
+  }
+  const discoveredLockedGroups = Array.from(byLockedGroup.keys())
+  const orderedLockedGroups = [
+    ...LOCKED_GROUP_ORDER.filter(g => byLockedGroup.has(g)),
+    ...discoveredLockedGroups.filter(g => !LOCKED_GROUP_ORDER.includes(g)),
+  ]
+  // Flatten in ordered group sequence
+  const visibleLocked = orderedLockedGroups.flatMap(g => byLockedGroup.get(g) ?? [])
+
+  // ── Provenance counts ────────────────────────────────────────────────
+  const proposedCount =
+    json.adjustable.filter(p => p.provenance === 'PROPOSED_HERE').length +
+    json.locked.filter(p => p.provenance === 'PROPOSED_HERE').length
+  const chosenCount =
+    json.locked.filter(p => p.provenance === 'CHOSEN').length
 
   return (
     <div
@@ -439,10 +566,10 @@ export function ParameterModal({ open, onClose, initial, onApply }: Props) {
     >
       <div
         className="relative flex flex-col bg-canvas border border-border rounded-lg shadow-2xl
-                   w-[700px] max-w-[96vw] max-h-[88vh] overflow-hidden"
+                   w-[720px] max-w-[96vw] max-h-[88vh] overflow-hidden"
       >
         {/* ── Header ─────────────────────────────────────────────── */}
-        <div className="flex items-center gap-3 px-5 py-3 border-b border-border flex-shrink-0">
+        <div className="flex items-center gap-2 px-5 py-3 border-b border-border flex-shrink-0 flex-wrap">
           <h2 className="text-sm font-semibold text-text">Parameter Reference</h2>
 
           {proposedCount > 0 && (
@@ -455,16 +582,26 @@ export function ParameterModal({ open, onClose, initial, onApply }: Props) {
             </span>
           )}
 
+          {chosenCount > 0 && (
+            <span
+              className="text-[9px] rounded px-1.5 py-0.5 font-mono flex-none"
+              style={{ background: '#a1620720', color: '#d97706', border: '1px solid #a1620740' }}
+              title={`${chosenCount} parameters with CHOSEN provenance — deliberate design decision, no measured basis`}
+            >
+              ○ {chosenCount}× CHOSEN
+            </span>
+          )}
+
           {/* Legend */}
-          <div className="flex gap-3 items-center ml-auto">
-            {(['MEASURED', 'SPEC_DEFAULT', 'PROPOSED_HERE', 'CONFORMANCE'] as Provenance[]).map(k => (
+          <div className="flex gap-2.5 items-center ml-auto flex-wrap">
+            {(['MEASURED', 'SPEC_DEFAULT', 'PROPOSED_HERE', 'CHOSEN', 'CONFORMANCE'] as Provenance[]).map(k => (
               <span key={k} className="flex items-center gap-1" title={PROVENANCE_COLORS[k].label}>
                 <span style={{
                   display:'inline-block', width:6, height:6,
                   borderRadius:'50%', background: PROVENANCE_COLORS[k].bg,
                 }} />
                 <span className="text-[9px] text-muted">
-                  {k === 'SPEC_DEFAULT' ? 'SPEC' : k.split('_')[0]}
+                  {k === 'SPEC_DEFAULT' ? 'SPEC' : k === 'PROPOSED_HERE' ? 'PROP' : k.split('_')[0]}
                 </span>
               </span>
             ))}
@@ -493,36 +630,47 @@ export function ParameterModal({ open, onClose, initial, onApply }: Props) {
             </div>
           </div>
 
-          {/* Adjustable param groups */}
-          {GROUP_ORDER.map(group => {
-            const groupParams = byGroup.get(group)
-            if (!groupParams?.length) return null
+          {/* Adjustable param groups
+              GS-DES-CFG-001 §Phase-7: all catalogue adjustable entries shown.
+              Entries with DESCRIPTOR_KEY_MAP mapping → editable slider.
+              Entries without mapping → RefRow (reference only). */}
+          {orderedGroups.map(group => {
+            const groupParams = byGroup.get(group)!
             return (
               <div key={group}>
                 <SectionHead title={GROUP_LABELS[group] ?? group} />
-                {groupParams.map(p => (
-                  <SplitSliderRow
-                    key={p.id}
-                    param={p}
-                    engineValue={engineVal(p.id)}
-                    plantValue={plantVal(p.id)}
-                    linked={linked[p.id] ?? true}
-                    onEngineChange={v => {
-                      setEngineVal(p.id, v)
-                      if (linked[p.id] ?? true) setPlantVal(p.id, v)
-                    }}
-                    onPlantChange={v => setPlantVal(p.id, v)}
-                    onToggleLink={() => toggleLink(p.id)}
-                  />
-                ))}
+                {groupParams.map(p => {
+                  const isEditable = !!DESCRIPTOR_KEY_MAP[p.key]
+                  if (!isEditable) return <RefRow key={p.key} param={p} />
+                  return (
+                    <SplitSliderRow
+                      key={p.key}
+                      param={p}
+                      engineValue={engineVal(p.key)}
+                      plantValue={plantVal(p.key)}
+                      linked={linked[p.key] ?? true}
+                      onEngineChange={v => {
+                        setEngineVal(p.key, v)
+                        if (linked[p.key] ?? true) setPlantVal(p.key, v)
+                      }}
+                      onPlantChange={v => setPlantVal(p.key, v)}
+                      onToggleLink={() => toggleLink(p.key)}
+                    />
+                  )
+                })}
               </div>
             )
           })}
 
-          {/* Locked section */}
+          {/* Locked section
+              GS-DES-CFG-001 §Phase-7: ALL locked entries shown (LOCKED_GROUPS filter removed).
+              Grouped by ui.group in LOCKED_GROUP_ORDER, then remaining groups.
+              Includes cooling_margin (thermal), solar_fraction_of_peak (solar),
+              bess_anchor_reserve_mw / p_anchor_reserve_mw_san_diego (bess),
+              p_min_stable_frac_demo (turbine) — previously hidden by LOCKED_GROUPS filter. */}
           {visibleLocked.length > 0 && (
             <>
-              <SectionHead title="Locked — conformance (read-only)" />
+              <SectionHead title="Locked — read-only constants (CONFORMANCE and CHOSEN)" />
               <LockedTable params={visibleLocked} />
             </>
           )}
@@ -530,10 +678,13 @@ export function ParameterModal({ open, onClose, initial, onApply }: Props) {
           {/* Footer note */}
           <div className="mt-4 rounded bg-surface/30 border border-border/30 px-3 py-2">
             <p className="text-[9px] text-muted leading-snug">
-              <strong>Note:</strong> r_asset (turbine ramp), BESS rated MW, initial SOC, hardware
-              profile, dt_lead, and P_renewable are managed in the Scenario Builder above.
-              Values here are supplementary physics configuration.
-              Source: <code className="font-mono">gridsignal_parameters.json</code> — never hand-coded.
+              <strong>GS-DES-CFG-001:</strong> all entries, ranges, and provenance tags are read
+              from <code className="font-mono">gridsignal_parameters.json</code> — none are
+              hand-coded in this component.  Adjustable entries without a slider are managed
+              in the <strong>Scenario Builder</strong> (bess_rated_mw, r_asset, soc_pct,
+              p_renewable_mw).  Enumerated entries (clock discipline, grid mode, hardware
+              profile, etc.) are scenario-configuration values shown in the Scenario Builder.
+              PARAM-28–34 are not yet in the catalogue adjustable section.
             </p>
           </div>
         </div>

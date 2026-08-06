@@ -588,13 +588,13 @@
       "unit": "dimensionless",
       "label": "Cooling-plant sizing margin over α_max × peak IT load",
       "provenance": "PROPOSED_HERE",
-      "provenance_detail": "15% headroom above alpha_max × peak IT load. Provides clearance for BESS-charge and ambient-temperature variation at the design point. CHOSEN — no measured thermal-engineering basis. Calibrate against mechanical-plant specifications.",
+      "provenance_detail": "What the 15% covers AFTER Phase 6 (PUE overhead removed from scope — it is now inside peak_it_load_mw = nodes × kW × PUE_base / 1000): (1) BESS charge overhead — inverter losses ~2–4% appear as additional heat during charging cycles; (2) non-compute IT load — networking switches, PDUs, UPS auxiliary draw ~3–8% of compute rack load; (3) ambient excursion headroom — ambient_alpha_scale raises effective cooling fraction by up to ~4.5% above nominal (3°C × 1.5%/°C per locked ambient_cooling_scale_per_c), which the cooling plant must cover without saturation; (4) cooling-plant efficiency margin — real chillers operate below nameplate at partial load, ~2–5% headroom needed. Sum of remaining jobs: 11.5–21.5%; 1.15 is the CHOSEN midpoint (PROTO-10). CHOSEN — no measured thermal-engineering basis. Calibrate against mechanical-plant commissioning data.",
       "spec_ref": "v2.5 PROTO-10",
       "ui": {
         "control": "readonly",
         "group": "thermal"
       },
-      "note": "rated_cooling_mw = alpha_max × peak_it_load_mw × cooling_margin. Formerly hardcoded as _COOLING_MARGIN = 1.15 in scenario_factory.py:182 (tagged PROTO-10-MARGIN). Now read through site_parameters.py."
+      "note": "rated_cooling_mw = alpha_max × peak_it_load_mw × cooling_margin. Previously hardcoded as _COOLING_MARGIN = 1.15. PUE overhead is no longer a job of this margin (absorbed into peak_it_load_mw in Phase 6). Value 1.15 unchanged; stated rationale corrected in Phase 7."
     },
     {
       "key": "solar_fraction_of_peak",

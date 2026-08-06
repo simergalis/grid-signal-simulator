@@ -1045,9 +1045,17 @@ class TickResult:
     dt_thermal_seconds: float = _sp.value("dt_thermal")  # base thermal lag; enriched from ctx.sim_state.site per tick
     alpha_max:          float = _sp.value("alpha_max")   # base α_max; enriched from ctx.sim_state.site per tick
     # GS-DES-CFG-001 §Phase-6: two new wire fields.
-    # bess_anchor_reserve_mw: anchor reserve on the grid-forming BESS unit (MW);
-    #   sourced from BessConfig.p_anchor_reserve_mw; default = catalogue locked value.
+    # bess_anchor_reserve_mw: anchor reserve on the grid-forming BESS unit (MW).
+    #   LAYERING: the broadcast value is the CONFIGURED value on the grid-forming unit
+    #   (BessConfig.p_anchor_reserve_mw), NOT the catalogue default.  These legitimately
+    #   differ when a scenario overrides p_anchor_reserve_mw — e.g. the San Diego demo
+    #   broadcasts 2.0 MW while the catalogue locked value is 1.0 MW.  This is by design:
+    #   the broadcast reports what the plant is actually configured with.
+    #   Guard D cannot detect catalogue-vs-configured divergence — this is intended;
+    #   the override is explicit and scenario-level.  Default (no grid-forming unit present):
+    #   falls back to the catalogue default (bess_anchor_reserve_mw).
     # design_peak_load_mw: declared design peak site load (MW) — NOT observed run peak.
-    #   = peak_it_load_mw + rated_cooling_mw; set by factory; 0.0 until enriched.
+    #   = peak_it_load_mw + rated_cooling_mw; set by factory; 0.0 when uncomputable
+    #   (spec-path with no workload_events) — frontend falls back to observed peak.
     bess_anchor_reserve_mw: float = _sp.value("bess_anchor_reserve_mw")  # anchor reserve (MW)
     design_peak_load_mw:    float = 0.0  # declared design peak; enriched from ctx._design_peak_load_mw
