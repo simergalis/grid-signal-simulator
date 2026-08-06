@@ -193,6 +193,20 @@ export function DemoBar({
       className="flex items-center gap-0 border-t border-border flex-shrink-0"
       style={{ background: '#111821', minHeight: 74 }}
     >
+      {/* ── Far-left: Scenario Editor button ─────────────────────────────── */}
+      {!isRunning && (
+        <div className="flex items-center px-3 py-3 shrink-0 border-r border-border self-stretch">
+          <button
+            onClick={onManageScenarios}
+            className="flex flex-col items-center rounded border border-border px-3 py-1 font-sans
+                       text-muted hover:text-accent hover:border-accent/50 transition-colors leading-tight"
+          >
+            <span className="text-xs font-semibold">Scenario</span>
+            <span className="text-[9px]">Editor</span>
+          </button>
+        </div>
+      )}
+
       {/* ── Left: controls ────────────────────────────────────────────────── */}
       <div className="flex flex-col justify-center px-5 py-3 gap-1" style={{ minWidth: 60 }}>
         <div className="font-sans text-muted" style={{ fontSize: 11 }}>
@@ -288,18 +302,6 @@ export function DemoBar({
                        font-semibold text-accent hover:bg-accent/10 transition-colors"
           >
             View Results
-          </button>
-        )}
-
-        {/* Scenarios button — opens the Scenario modal */}
-        {!isRunning && (
-          <button
-            onClick={onManageScenarios}
-            className="flex flex-col items-center rounded border border-border px-3 py-1 font-sans
-                       text-muted hover:text-accent hover:border-accent/50 transition-colors leading-tight"
-          >
-            <span className="text-xs font-semibold">Scenario</span>
-            <span className="text-[9px]">Editor</span>
           </button>
         )}
 
