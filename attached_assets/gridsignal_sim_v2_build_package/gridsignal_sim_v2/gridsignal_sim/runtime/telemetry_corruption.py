@@ -89,16 +89,40 @@ class TelemetryCorruptionSchedule:
     dropout_prob: float
     max_stale:   int
     source:      str = "telemetry_corruption/rng"
+    run_id:      Optional[str] = None   # attached at run construction for diagnostics
 
     def for_tick(self, tick_index: int) -> CorruptionEntry:
         """Return the CorruptionEntry for the given zero-based tick index.
 
-        Returns a clean (no-op) entry if tick_index is out of range —
-        the schedule silently covers any overshoot (e.g. off-by-one at run end).
+        Overshoot policy:
+        • tick_index in [0, len) — normal path; return the scheduled entry.
+        • tick_index == len      — one-tick overshoot; return _CLEAN silently.
+                                   Documented tolerance for off-by-one at run end.
+        • tick_index > len       — unbounded overshoot; raise RuntimeError.
+                                   A run longer than its schedule has had fault
+                                   injection silently disabled from tick `len`
+                                   onward; results since then are not evidence of
+                                   anything.  Fail loudly rather than return a
+                                   clean entry that masks the misconfiguration.
+
+        The one-tick tolerance is preserved exactly as documented.
+        Negative indices are always invalid.
         """
-        if 0 <= tick_index < len(self.schedule):
+        n = len(self.schedule)
+        if 0 <= tick_index < n:
             return self.schedule[tick_index]
-        return _CLEAN
+        if tick_index == n:
+            # Documented off-by-one tolerance — silent clean.
+            return _CLEAN
+        # tick_index < 0 or tick_index > n — both are errors.
+        _run = f" (run_id={self.run_id!r})" if self.run_id else ""
+        raise RuntimeError(
+            f"TelemetryCorruptionSchedule.for_tick(): tick_index {tick_index} "
+            f"is out of range for a schedule of length {n}{_run}.  "
+            f"The run is longer than its corruption schedule — fault injection "
+            f"has been silently disabled since tick {n}.  "
+            f"Either extend the schedule (n_ticks) or shorten the run."
+        )
 
     def summary(self) -> str:
         """Short human-readable summary for the generation_block."""

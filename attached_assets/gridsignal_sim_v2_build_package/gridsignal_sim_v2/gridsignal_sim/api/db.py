@@ -74,12 +74,30 @@ _pg_kwargs: dict = (
     # background task that conflicts with pytest's event-loop teardown in tests.
 )
 
-_engine = create_async_engine(
-    _DATABASE_URL,
-    echo=False,
-    connect_args=_connect_args,
-    **_pg_kwargs,
-)
+# Under pytest, pool_recycle spawns background SQLAlchemy "heartbeat" tasks that
+# call loop.create_task() during garbage collection — after the per-test event
+# loop has already closed.  This raises "RuntimeError: Event loop is closed" in
+# asyncpg's _cancel_current_command and marks a passing test body as FAILED.
+# NullPool closes each connection immediately on release, so there is nothing
+# in-flight when the loop closes.  Production (uvicorn) never sets PYTEST_CURRENT_TEST
+# so the production path keeps the full connection pool.
+import sys as _sys
+_is_pytest = "pytest" in _sys.modules
+
+if _is_pytest:
+    from sqlalchemy.pool import NullPool as _NullPool
+    _engine = create_async_engine(
+        _DATABASE_URL,
+        echo=False,
+        poolclass=_NullPool,
+    )
+else:
+    _engine = create_async_engine(
+        _DATABASE_URL,
+        echo=False,
+        connect_args=_connect_args,
+        **_pg_kwargs,
+    )
 
 _SessionLocal = async_sessionmaker(
     bind=_engine,

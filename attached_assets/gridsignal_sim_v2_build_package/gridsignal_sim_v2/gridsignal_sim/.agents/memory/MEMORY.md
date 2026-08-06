@@ -1,0 +1,32 @@
+- [gridsignal-sim-v2-overview](gridsignal-sim-v2-overview.md) — codebase root, verification commands, completed through AD2 (417 tests, 9 determinism scenarios, col-3 count 39).
+- [bess-anchor-reserve](bess-anchor-reserve.md) — IslandMode + grid_forming design; why sum-of-durations not min(); THE TRAP with cover_shortfall taper flag.
+- [cooling-envelope-cursor](cooling-envelope-cursor.md) — deque + absolute cursor design; THE TRAP with popleft() shifting plain integer indices.
+- [sim-clock-convention](sim-clock-convention.md) — sim_time = interval START; TickResult state is at sim_time+dt; Step 8 must use convention (A) consistently.
+- [d14-allocation-design](d14-allocation-design.md) — equal-share-then-cap replaces proportional-by-ceiling; power-limited guard pattern required in 3 places.
+- [step9-verdict-design](step9-verdict-design.md) — AssertionSpec in runtime/verdict.py (not api/); demo-20mw needs bess_rated_mw=18.0 for PASS; H1 gap rules.
+- [step10-arbitration-design](step10-arbitration-design.md) — Phase 0 insertion point; CurtailmentLadder hold analysis; TC-49 permutation trap; OperatingTier/PreStagingConfig shape.
+- [step11-scada-pms-design](step11-scada-pms-design.md) — K1/K2/K3 unified pool wiring; generate_candidates() live path; TC-64–TC-68 patterns; TRAP: never call both tick() and generate_candidates() in same tick.
+- [step12-advisory-design](step12-advisory-design.md) — deident.py egress filter; advisory gate/router/principal structure; LP-1 short-circuit; TC-29/TC-30 wire guarantees; proposal lifecycle hold questions.
+- [w1-w2-w3-wiring](w1-w2-w3-wiring.md) — run-loop agent/telemetry/thermal wiring; circular-import trap; plane-sep trap; advisory endpoint 409 semantics; energy-summary RT_EFF proxy; frontend URL prefixes.
+- [ui-implementation-u1-u4](ui-implementation-u1-u4.md) — chart primitives + Readiness screen + 9 subsystem modals + tick wiring; getByText multiple-match trap; ComposedChart for mixed Line+Area.
+- [ui-opening-screen-v1-v4](ui-opening-screen-v1-v4.md) — one-line mimic (SVG foreignObject), VerdictBand, SystemStrip, TopologyExplainer; key traps with TS casts and CSS flowDash animation.
+- [websockets-install](websockets-install.md) — uvicorn needs `websockets` pkg (.pythonlibs); load-test 1× regression: LLM calls on tick 1 block event loop.
+- [solar-sim-mistral](solar-sim-mistral.md) — Mistral solar injection in runs.py (not factory); THE TRAP: restarting wrong server leaves old code running.
+- [kube-demand-layer](kube-demand-layer.md) — OU+EMA demand agent; KubeMetrics in models.py (not kube_demand.py) to break circular import; dt_lead=0 always; Step 0 in evaluate_tick.
+- [parameter-reference-system](parameter-reference-system.md) — gridsignal_parameters.json → ParameterModal + 24 regression tests; INV-2 band check; PROPOSED_HERE decisions; JSON has ui.group not group.
+- [generation-architecture](generation-architecture.md) — 5 pre-run generators (solar+ambient, cluster, stressor, param_sampler, telemetry_corruption); asyncio.gather before t=0; validate-not-clamp constraint; GenerationBlock for F10 fix.
+- [gen-trip-cover-fix](gen-trip-cover-fix.md) — D-1/D-2/D-3 fix; ContingencyState+Coverage in models.py, PlantState+evaluate_contingency in contingency.py; demo-20mw → 5×7 MW fleet; hot_standby pattern.
+- [advisory-telemetry-wiring](advisory-telemetry-wiring.md) — W2a: telemetry_snapshot() on AgentRegistry; advisory_telemetry dict on TickResult; stamped in _dc_replace block (section B, before broadcast); agents.ts fully live.
+- [sendgrid-auth-system](sendgrid-auth-system.md) — OTP email login (no password); SENDGRID_FROM_EMAIL must be verified sender; all /api/auth/* bypass middleware.
+- [auth-system-quirks](auth-system-quirks.md) — bcrypt 4.x/passlib break; /api/admin middleware pass-through; ck_auth_user_role must include 'admin'; migration guard pattern.
+- [operator-adjustable-params](operator-adjustable-params.md) — PARAM-28–34 in parameters.json; site/advisory/storage groups added to ParameterModal; soc limits flow from POST /runs into runMeta; advisory_interval_s stored but not yet wired to per-agent cadence.
+- [sqlite-to-postgres-migration](sqlite-to-postgres-migration.md) — auth_user wipe-on-publish fix; asyncpg URL conversion trap; connect_args SQLite-only trap; INITIAL_ADMIN_EMAIL seeding for fresh Neon DB.
+- [location-sot-refactor](location-sot-refactor.md) — site_config.py is the only permitted geographic-literal file; 5 traps (longitude vs utc_offset_h, singleton contamination, Guard A word boundary, TickResult defaults, legacy JSON migration).
+- [solar-tile-stale-tick](solar-tile-stale-tick.md) — Solar PV tile must poll /api/solar/state (not rely on WebSocket tick) so it stays consistent with modal after run ends.
+- [phase-13-3-frequency](phase-13-3-frequency.md) — swing eq on frequency_forcing only; droop formula; B1a/B5/I3 test traps; BESS lag clamp; pre-existing failures list.
+- [phase-13-4-setpoint-split](phase-13-4-setpoint-split.md) — model_error_mw + binding_constraint fields; cover_shortfall power_ceiling_mw trap; TurbineState.AT_TARGET lock pattern; standby label fix.
+- [phase-13-5-carried-forward](phase-13-5-carried-forward.md) — TC-03 7τ/0.5%; R4-R6 p_min_stable/t_min_run/t_min_down defaults=0 (NOT 0.45); R8 PROTO-22 fix; TurbineSnapshot r_asset required.
+- [phase-1b-p2-loading-layer](phase-1b-p2-loading-layer.md) — loading layer + UnitAvailability boundary; THE TRAP: allocated set A = SYNCHRONISED only (not is_synchronised); stray @dataclass on TurbineState enum fixed.
+- [phase-201d-power-factor](phase-201d-power-factor.md) — power_factor required on SiteConfig; S_base = Σ MW / pf; all raw-dict spec helpers need the field; re-baseline rules for swing-eq expected values.
+- [incremental-turbine-dispatch](incremental-turbine-dispatch.md) — N_needed+1 spare rule; delta≤0 guard on-bus only; 80% headroom check in evaluate_tick; test_tc84f updated; pre-existing failures catalogue.
+- [triage-baseline](triage-baseline.md) — Post-triage failure floor: 14 failed (2 A, 3 C, 7 D), 960 passed, 0 errors; NullPool+lifespan-singleton fixes; for_tick() Phase 3 guard.

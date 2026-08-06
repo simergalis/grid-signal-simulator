@@ -1,0 +1,114 @@
+Baseline triage — establish a usable failure floor
+
+Runs before: the dynamic-configuration refactor and the ramp-algorithm work (DR-2026-08-06, D-15). Target: backend/tests/, backend/runtime/telemetry_corruption.py, and whatever the investigation in Phase 1 identifies. Not in scope: core/ physics, gridsignal_logger.py, the unit-commitment work.
+
+The suite currently reports 57 failed, 911 passed, 5 errors. At that ratio a new defect introduced by the next refactor is indistinguishable from pre-existing noise, which is exactly how the last three sessions went sideways. This session lowers the floor so that subsequent phase gates mean something.
+
+This session fixes test infrastructure only. No physics changes. No behaviour changes. If a fix would require touching core/, stop and report instead.
+
+Phase 1 — Classify all 57, with evidence
+
+Produce a table: test name, failure mode, root cause, class. Classes:
+
+A — intentional red. Documented in the test's own docstring as expected to fail. test_kube_oscillation states "With the current hardcode this test FAILS — that is the point." test_power_cap_toggle_count_within_300s and test_oscillation_is_reproducible_across_seeds appear to be the same. Confirm from each docstring; do not infer from the name.
+B — infrastructure. Fixture loading, path resolution, event-loop teardown, registration. Fixable without touching physics.
+C — genuine defect. A real bug in core/. Report; do not fix in this session.
+D — stale assertion. Written against behaviour that has since changed legitimately. Report; do not edit.
+
+One correction to carry in. A previous report classified the fabric scenario failures (fabric-s3, s4, s6, s7, s8) as "missing scenario files". All eight files are present in backend/config/scenarios/ — S1_baseline_training.json through S8_transceiver_degrade.json. Note that the tests reference specs by key (fabric-s3) while the files are named S3_job_end_withholds.json, so the likely cause is registration or key-mapping, not absence. Determine the actual cause and paste the evidence — do not repeat the earlier diagnosis.
+
+Also report the 5 errors separately from the 57 failures. An error is a collection or fixture problem, not an assertion failure, and it may be masking additional tests that never ran.
+
+Gate: table reported before any fix.
+
+Phase 2 — Fix class B only
+
+Fix every class B item. Nothing else.
+
+For each fix, state what was broken and what changed. If a fix turns out to require a core/ change, it was misclassified — move it to class C and report.
+
+The RuntimeError: Event loop is closed teardown failures are a known class B candidate. So is anything failing at collection.
+
+Gate: suite delta reported. Every newly-passing test traced to a stated infrastructure fix. Zero core/ files modified.
+
+Phase 3 — Fault injection silently stops injecting
+
+TelemetryCorruptionSchedule.for_tick() (runtime/telemetry_corruption.py:93-101) returns _CLEAN when tick_index is out of range. Its docstring says this is deliberate:
+
+"Returns a clean (no-op) entry if tick_index is out of range — the schedule silently covers any overshoot (e.g. off-by-one at run end)."
+
+The off-by-one tolerance is legitimate. Unbounded silence is not: a run longer than its schedule stops injecting faults entirely, every assertion downstream passes for the wrong reason, and nothing says so. Do not simply make it raise — that would break the documented off-by-one case.
+
+Change it to: tolerate an overshoot of one tick silently, as documented; beyond that, raise with the tick index, the schedule length, and the run id.
+
+Then report every test in the suite that overshoots by more than one tick — those have had fault injection partially disabled and their results are not evidence of anything. List them; do not fix them in this session.
+
+Gate: the one-tick tolerance preserved and tested; the overshoot list reported.
+
+Phase 4 — Report the new floor
+
+State the new baseline as three numbers, with the class A count called out separately, e.g. "N failed (of which M are intentional red), P passed, Q errors."
+
+Subsequent phase gates will be measured against this figure, so it must be a number someone can reproduce from a clean checkout.
+
+Also list, unfixed, everything remaining in classes C and D. That list is the input to the next planning session.
+
+Prohibited
+Modifying any file under core/.
+Editing any test assertion or fixture to make a test pass. A stale assertion is class D — report it.
+Deleting, skipping, or xfail-ing a test to lower the count.
+Making for_tick() raise on a one-tick overshoot.
+Fixing anything in class C or D.
+Repeating the "missing scenario files" diagnosis without evidence.
+Modifying gridsignal_logger.py.
+Proceeding past a phase gate without reporting.
+Acceptance criteria
+ All 57 failures and 5 errors classified A/B/C/D with evidence.
+ Class A confirmed from each test's own docstring, not inferred.
+ Fabric scenario root cause determined from evidence; earlier diagnosis corrected.
+ Every class B item fixed; zero core/ files modified.
+ for_tick() tolerates one tick of overshoot and raises beyond it.
+ Tests overshooting their schedule by more than one tick listed.
+ New baseline stated with the intentional-red count broken out.
+ No assertion or fixture edited; nothing skipped or xfail-ed.
+Project content
+GridSignal
+Created by you
+GridSignal-Forecast-Engine-Functional-Spec_v2.5.md
+
+1,683 lines
+
+MD
+
+PDF
+
+PDF
+
+Content
+gridsignal_source_review.zip
+
+ZIP
+
+gridsignal_ui_components.zip
+
+ZIP
+
+The gas turbine generators powered up all at once, which is not possible. One turbine shoiuld have started, increasing its oputput, and rthwen another turbine should start up Fix the logic underlying the ramp up 12 minutes ago Refining turbine startup logic Refining turbine startup logi
+
+PASTED
+
+The test_kube_oscillation docstring literally says "With the current hardcode this test FAILS — that is the point" — it's an intentional red test, pre-existing. I need to fix the 3 real regressions: test_d10, test_tc84f, and test_tc_gt2. Let me read their full failures and test code in parallel:
+
+PASTED
+
+PHASE 0 — REVERT REPORT Files changed and what was reverted File Change core/dispatch.py:503-519 Replaced single-unit staging ("stage exactly ONE") with original N_needed+1 formula: _n_start = min(max(1, ceil(delta / rated) + 1), len(_offline)), target distributed equally core/simulation_core.py
+
+PASTED
+
+PHASE 1 — STATE/WRITER TABLE Derived from asset_modules.py:962–999 (advance), simulation_core.py:638–644 (_synchronised_units filter), loading.py:116–136 (apply_loading), and asset_modules.py:810–814 (is_synchronised). State Written by advance()? Written by apply_loading() today? Physical meanin
+
+PASTED
+
+All evidence collected. Here is the complete report. PART A — Raw evidence Command 1: sed -n '625,700p' core/simulation_core.py # Used by the arbitrator, the balance decomposition, and the TickResult. _p_dispatch_droop_mw = max(0.0, p_dispatch_required_mw + _droop_correction_mw) #
+
+PASTED

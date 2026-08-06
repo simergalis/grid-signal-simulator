@@ -122,6 +122,13 @@ async def _lifespan(application: FastAPI):
     # load_site_location() handles both schema_version 1 (new) and legacy field names.
     from api.routes.location import load_site_location as _load_loc
     from site_config import get_site_location_or_default as _gslod
+    import site_config as _site_config_module
+    # Capture the singleton value in effect BEFORE we overwrite it.  The lifespan
+    # teardown restores this so that a module-scoped TestClient in pytest cannot
+    # leave _stored set to the loaded file's location for the remainder of the
+    # test session.  In production (uvicorn) _pre_lifespan_location is always None
+    # and the restore is a no-op that doesn't affect anything.
+    _pre_lifespan_location = _site_config_module._stored
     _restored = _load_loc()
     if _restored is not None:
         application.state.site_location = _restored
@@ -160,6 +167,25 @@ async def _lifespan(application: FastAPI):
         task.cancel()
     if running_tasks:
         await asyncio.gather(*running_tasks, return_exceptions=True)
+
+    # Dispose the shared asyncpg engine before the event loop closes.
+    # Without this, asyncpg's connection-cancel machinery calls
+    # loop.create_task() after pytest has already closed the loop, producing
+    # "RuntimeError: Event loop is closed" in teardown and marking passing
+    # tests as FAILED.  dispose() drains all pooled connections cleanly while
+    # the loop is still alive; the engine can be reused in subsequent tests.
+    from api.db import _engine as _db_engine
+    await _db_engine.dispose()
+
+    # Restore the site_config singleton to the value that existed before this
+    # lifespan started.  Without this, a module-scoped TestClient (e.g. the
+    # solar_client fixture in test_solar_routes.py) sets _stored = Singapore at
+    # module-startup time — BEFORE any function-scoped pytest fixture has a
+    # chance to save it.  Every function fixture thereafter captures and restores
+    # "Singapore", so the contamination leaks into the entire remainder of the
+    # test session.  Resetting here at teardown ensures the lifespan is a
+    # net-zero side effect on the process-level singleton.
+    _site_config_module._stored = _pre_lifespan_location
 
 
 def create_app() -> FastAPI:
