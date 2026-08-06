@@ -99,6 +99,17 @@ export function unitRampMWs(units: TurbineUnitSpec[]): number | null {
   return units[0].r_asset_mw_per_s
 }
 
+/**
+ * Return the largest single unit's rated_mw in the fleet.
+ *
+ * Returns null when no units are available.
+ * Used for N-1 adequacy: the contingency loss size equals the largest unit.
+ */
+export function largestUnitMW(units: TurbineUnitSpec[]): number | null {
+  if (!units || units.length === 0) return null
+  return Math.max(...units.map(u => u.rated_mw))
+}
+
 // ── MW closeable in lead window ───────────────────────────────────────────────
 
 /**

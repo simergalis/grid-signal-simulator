@@ -5,7 +5,7 @@
  * Copy matches gridsignal-07-generation.svg exactly.
  *
  * Verdict phrased against FORECAST DEMAND:
- *   "Can close a X.XX MW gap inside the 45 s lead window."
+ *   "Can close a X.XX MW gap inside the configured lead window."
  *   Not "turbine operational" — that is equipment status, not the product argument.
  */
 
@@ -14,9 +14,11 @@ import type { PanelConfig, PanelData } from './index'
 import type { TickPayload, HistoryPoint } from '../../types'
 import { TimeSeries } from '../../charts/TimeSeries'
 import { BulletBar }  from '../../charts/BulletBar'
+import { installedFleetMW } from '../../config/siteParameters'
 
 // GS-DES-CFG-001 §Phase-3: no module-scope numeric constants.
-// Rated MW and ramp rate are derived from tick.turbine_units[0] at render time.
+// Rated MW and ramp rate are derived from tick.turbine_units at render time.
+// Fleet-level quantities use installedFleetMW(); per-unit stat rows use first unit.
 
 const GOLD  = '#e0a458'
 const TEAL  = '#3fb6a8'
@@ -56,8 +58,11 @@ export const generationPanel: PanelConfig = {
     const outputMW   = tick.turbine_output_mw
     const demandMW   = tick.net_demand_mw
     // GS-DES-CFG-001 §Phase-3: rated MW and ramp rate derived from tick payload.
+    // Fleet-level: installedFleetMW() for ceilings and utilisation fractions.
+    // Per-unit: first unit's rated_mw / r_asset_mw_per_s for per-unit stat rows.
     const u0         = tick.turbine_units?.[0]
-    const unitMW     = u0?.rated_mw ?? 0          // first-unit nameplate (0 if no units)
+    const unitMW     = u0?.rated_mw ?? 0          // first-unit nameplate (for per-unit stat rows)
+    const fleetMW    = installedFleetMW(tick.turbine_units ?? []) ?? 0  // fleet ceiling
     const rampMWs    = u0?.r_asset_mw_per_s ?? 0  // first-unit ramp rate
     const rampCap    = rampMWs * tick.dt_lead_next_s  // MW closeable in lead window
     const canClose   = rampCap >= demandMW
@@ -71,7 +76,7 @@ export const generationPanel: PanelConfig = {
         { label: 'turbine output',    colour: GOLD, points: history.map(h => ({ x: h.sim_time_seconds, y: h.p_total_mw })), filled: true },
         { label: 'dispatch required', colour: TEAL, points: dispatchSeries },
       ],
-      ceiling:  unitMW > 0 ? { y: unitMW, label: 'rated ceiling', colour: '#d9534f' } : undefined,
+      ceiling:  fleetMW > 0 ? { y: fleetMW, label: 'fleet rated ceiling', colour: '#d9534f' } : undefined,
       xLabel:   'seconds from run start',
       height:   200,
     })
@@ -87,12 +92,12 @@ export const generationPanel: PanelConfig = {
         note:   `red marker = predicted shortfall (${fmtMW(demandMW)}). ${canClose ? 'Capability exceeds it.' : 'Shortfall exceeds ramp capability.'}`,
       }),
       React.createElement(BulletBar, {
-        label:  'Output as share of rated',
+        label:  'Output as share of fleet rated',
         value:  outputMW,
-        max:    unitMW > 0 ? unitMW : Math.max(outputMW, 1),
+        max:    fleetMW > 0 ? fleetMW : Math.max(outputMW, 1),
         colour: GOLD,
         unit:   ' MW',
-        note:   unitMW > 0 && outputMW < unitMW ? `${fmtMW(unitMW - outputMW)} of unused nameplate — capacity is not the constraint, ramp rate is.` : 'At rated output.',
+        note:   fleetMW > 0 && outputMW < fleetMW ? `${fmtMW(fleetMW - outputMW)} of unused fleet nameplate — capacity is not the constraint, ramp rate is.` : 'At fleet rated output.',
       }),
     )
 
@@ -120,7 +125,7 @@ export const generationPanel: PanelConfig = {
       why: [
         'Ramp rate, not capacity, is what decides whether a turbine can answer a step-load.',
         `At ${rampMWs.toFixed(3)} MW/s this unit delivers ${rampCap.toFixed(1)} MW in the ${tick.dt_lead_next_s.toFixed(0)} s of warning the scheduler gives.`,
-        `${canClose ? `This covers the ${fmtMW(demandMW)} shortfall.` : `This does not cover the ${fmtMW(demandMW)} shortfall — BESS bridge is required.`}${unitMW > 0 ? ` Unused nameplate: ${fmtMW(unitMW - outputMW)}.` : ''}`,
+        `${canClose ? `This covers the ${fmtMW(demandMW)} shortfall.` : `This does not cover the ${fmtMW(demandMW)} shortfall — BESS bridge is required.`}${fleetMW > 0 ? ` Unused fleet nameplate: ${fmtMW(fleetMW - outputMW)}.` : ''}`,
       ],
     }
   },
