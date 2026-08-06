@@ -314,14 +314,33 @@ class GPUModule(AssetModule):
             # advance() so _auto_step_period_s is 0.0 there and this branch
             # is skipped — the externally-set value is used as-is.
             if self._auto_step_period_s > 0.0:
-                self.step_phase = (
-                    math.fmod(sim_time, self._auto_step_period_s)
-                    / self._auto_step_period_s
+                if dt_seconds >= self._auto_step_period_s:
+                    # Tick spans multiple complete steps (dt >> period).
+                    # Point-sampling step_phase aliases harshly against the tick
+                    # grid and produces large artificial jumps on the display
+                    # (e.g. 6.3 → 2.91 MW every few ticks at dt=5 s, period=0.7 s).
+                    # Use the duty-cycle average instead: every full-step tick
+                    # sees the same weighted mix of compute and allreduce power,
+                    # which is the physically correct coarse-grained value.
+                    raw_profile = (
+                        self.load_config.f_compute * 1.0
+                        + (1.0 - self.load_config.f_compute)
+                        * self.load_config.p_comm_ratio
+                    )
+                else:
+                    self.step_phase = (
+                        math.fmod(sim_time, self._auto_step_period_s)
+                        / self._auto_step_period_s
+                    )
+                    raw_profile = (
+                        1.0 if self.step_phase < self.load_config.f_compute
+                        else self.load_config.p_comm_ratio
+                    )
+            else:
+                raw_profile = (
+                    1.0 if self.step_phase < self.load_config.f_compute
+                    else self.load_config.p_comm_ratio
                 )
-            raw_profile = (
-                1.0 if self.step_phase < self.load_config.f_compute
-                else self.load_config.p_comm_ratio
-            )
             # Discrete first-order lag: alpha = 1 - exp(-dt/tau).
             # At tau_gpu_s=0.06 s, dt=0.1 s (10 Hz): alpha ≈ 0.811 (fast).
             alpha = 1.0 - math.exp(
