@@ -1,0 +1,122 @@
+D1 — Settle the Contradiction (evidence only, no fixes)
+
+Target model: core/simulation_core.py, core/loading.py, core/asset_modules.py (live engine). NOT gridsignal_logger.py.
+
+This session makes no production code changes. It answers one question with evidence. Report and stop.
+
+Why this session exists
+
+You have produced two mutually exclusive accounts of the same four lines.
+
+D1 diagnostic report:
+
+"The loading layer's _synchronised_units list at simulation_core.py:641-644 uses the same is_synchronised property, inadvertently pulling RAMPING turbines into loading-layer control."
+
+Phase 1 state-table report:
+
+"That is t.state == TurbineState.SYNCHRONISED, not t.is_synchronised. RAMPING turbines ... are excluded by the filter."
+
+Phase 0's revert log records only simulation_core.py:676-694 as modified, so these lines did not change between the two reports. One account is wrong.
+
+Do not resolve this by re-reading the file and restating a conclusion. That method produced both reports. Resolve it with raw bytes and observed behaviour.
+
+Part A — Raw evidence
+
+Run these and paste the output verbatim and unedited. No summary, no characterisation, no commentary between them.
+
+sed -n '625,700p' core/simulation_core.py
+git log -p -L 630,700:core/simulation_core.py
+grep -rn "is_synchronised" core/ | sort
+sed -n '100,145p' core/loading.py
+sed -n '960,1005p' core/asset_modules.py
+
+If any file or line range does not exist, say so plainly rather than substituting a nearby range.
+
+Part B — Test B, run in isolation
+
+This is a behavioural discriminator. It does not depend on either code reading being correct.
+
+Construct: a single turbine, r_asset_mw_per_s=0.2, dt=5s, mid-ramp toward a target well above its current output. Then inject a step that drops the loading setpoint substantially below the turbine's current accumulated output — a solar step is the natural mechanism, but any mechanism that lowers the demand setpoint is acceptable.
+
+Observe and report a tick-by-tick trace across the injection, with columns: tick, sim time, turbine state, _current_output_mw, _target_mw, loading setpoint, demand.
+
+The discriminator:
+
+Observed	Conclusion
+Output continues rising on its ramp, ignoring the dropped setpoint	Partition is clean. Phase 1 report correct. D1 closed.
+Output falls toward the dropped setpoint	RAMPING units are under loading-layer control. D1 report correct.
+
+Report which occurred and paste the trace. Do not fix whichever outcome you find.
+
+Keep this test. Name it descriptively. Do not assign a TC number.
+
+Part C — Two control paths
+
+Independent of the above, your Phase 1 report quoted this comment at simulation_core.py:638-640:
+
+"RAMPING and AT_TARGET (legacy pre-Phase-2 aliases) continue using advance() and the old stage_target() mechanism for backward compatibility."
+
+Report, with file:line for each answer:
+
+Confirm or refute that two independent control paths for turbine output exist: advance() driving toward _target_mw, and apply_loading() driving toward the fleet demand setpoint.
+What is the exact handoff condition from the first path to the second? Quote the code.
+If demand moves away from _target_mw while a unit is RAMPING, can the handoff condition ever fail to be satisfied? Under what demand trajectory does a unit remain on the legacy path indefinitely? Give a concrete example.
+Which path is authoritative when the two disagree about a unit's correct output?
+Is there any consumer of the legacy path other than the tests? Name it, or state that there is none.
+
+Answer these. Do not delete or refactor either path in this session.
+
+Part D — Unreachable states that are still credited
+
+AT_TARGET and TRANSITIONAL are reported as unset by any code path, with no writer, while both report is_synchronised == True.
+
+Report:
+
+Every consumer of is_synchronised (from the Part A grep), and for each, what it would do with a unit in AT_TARGET — specifically contingency evaluation, UnitAvailability, and turbine_output_mw aggregation.
+Whether a unit in AT_TARGET would be counted toward N−1 firm capacity while its output was frozen at its entry value.
+Confirm no code path sets either state, by grep, pasting the result.
+Prohibited
+Any production code change.
+Editing any test assertion or fixture.
+Deleting or refactoring either control path.
+Changing r_asset_mw_per_s, dt_lead_seconds, rated_mw, p_min_stable_frac, _N_WARMUP_TICKS, schedule length, node_count, or _DISPATCH_HEADROOM_FRAC.
+Summarising or paraphrasing the Part A output instead of pasting it.
+Fixing anything found in Parts B, C, or D.
+Touching gridsignal_logger.py.
+Acceptance criteria
+ All five Part A commands run, output pasted verbatim.
+ Test B written, run in isolation, tick-by-tick trace pasted.
+ Discriminator outcome stated explicitly as one of the two rows.
+ Parts C and D answered with file:line references.
+ Zero production code modified.
+ Report ends with: which of the two prior accounts was correct, and one sentence on why the incorrect one was produced.
+Project content
+GridSignal
+Created by you
+GridSignal-Forecast-Engine-Functional-Spec_v2.5.md
+
+1,683 lines
+
+MD
+
+PDF
+
+PDF
+
+Content
+
+The gas turbine generators powered up all at once, which is not possible. One turbine shoiuld have started, increasing its oputput, and rthwen another turbine should start up Fix the logic underlying the ramp up 12 minutes ago Refining turbine startup logic Refining turbine startup logi
+
+PASTED
+
+The test_kube_oscillation docstring literally says "With the current hardcode this test FAILS — that is the point" — it's an intentional red test, pre-existing. I need to fix the 3 real regressions: test_d10, test_tc84f, and test_tc_gt2. Let me read their full failures and test code in parallel:
+
+PASTED
+
+PHASE 0 — REVERT REPORT Files changed and what was reverted File Change core/dispatch.py:503-519 Replaced single-unit staging ("stage exactly ONE") with original N_needed+1 formula: _n_start = min(max(1, ceil(delta / rated) + 1), len(_offline)), target distributed equally core/simulation_core.py
+
+PASTED
+
+PHASE 1 — STATE/WRITER TABLE Derived from asset_modules.py:962–999 (advance), simulation_core.py:638–644 (_synchronised_units filter), loading.py:116–136 (apply_loading), and asset_modules.py:810–814 (is_synchronised). State Written by advance()? Written by apply_loading() today? Physical meanin
+
+PASTED
