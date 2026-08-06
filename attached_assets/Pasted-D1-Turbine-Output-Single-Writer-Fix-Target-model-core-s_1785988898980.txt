@@ -1,0 +1,121 @@
+D1 — Turbine Output Single-Writer Fix
+
+Target model: core/simulation_core.py, core/loading.py, core/asset_modules.py (live engine). NOT gridsignal_logger.py. If any instruction below appears to apply to the logger, stop and report.
+
+Scope: one defect. Do not fix anything else found along the way — record it and report at the end.
+
+The defect
+
+Phase 1 diagnostics (D1) established that two writers touch _current_output_mw on the same turbine within a single tick:
+
+apply_loading() → t.set_output(setpoint) — simulation_core.py:650-652 → asset_modules.py:821. Operates on every unit where is_synchronised == True, which per asset_modules.py:810-814 includes RAMPING and AT_TARGET.
+TurbineModule.advance() — asset_modules.py:990-999, reached via arbitrator.tick() at simulation_core.py:659. Adds r_asset × dt to _current_output_mw on RAMPING units.
+
+Because (2) runs after (1), a RAMPING turbine's output for the tick resolves to:
+
+output = loading_setpoint + (r_asset × dt_seconds)
+
+The ramp accumulator therefore has no memory. Output is not the integral of the ramp rate; it is a setpoint plus a fixed per-tick increment. The observed 1 MW/tick rise is correct only because demand happened to rise alongside it. The ramp-rate constraint is not being simulated.
+
+Everything that depends on turbines being ramp-limited is affected: §7.2 arbitration, §7.3's worked example, the BESS bridging window, the insufficient-reserve check, and the aggregate-ramp figures on the Gas Turbine Fleet tile.
+
+The rule to restore: exactly one writer per field per tick.
+
+Phase 1 — Establish the state partition (report only, no changes)
+
+Do not guess the partition. Derive it and report it.
+
+For each TurbineState value (OFFLINE, STARTING, RAMPING, SYNCHRONISED, AT_TARGET, and any others present), report:
+
+Column	Content
+State	The enum value
+Written by advance()?	Yes/No, with file:line
+Written by apply_loading() today?	Yes/No, with file:line
+Physical meaning	One sentence — what does a unit in this state represent?
+
+Then state explicitly:
+
+The intended semantics of AT_TARGET versus SYNCHRONISED. Are both dispatchable? Does advance() treat them identically (asset_modules.py:982-984 is a no-op for SYNCHRONISED — confirm the same for AT_TARGET)?
+Whether any state is currently written by both. This is the set to be eliminated.
+
+Stop and report the table before making any change.
+
+Phase 2 — Apply the fix
+
+The partition rule: the loading layer controls only states that advance() does not write.
+
+Change the _synchronised_units construction at simulation_core.py:641-644 so the loading layer operates on the dispatchable-and-not-ramping set derived in Phase 1.
+Do not change the is_synchronised property at asset_modules.py:810-814. Contingency evaluation, UnitAvailability, and turbine_output_mw aggregation all consume it, and narrowing it globally would break N−1 and availability reporting. The fix is at the loading layer's call site only.
+Do not change advance().
+Add a comment at the changed site stating the invariant: one writer per field per tick, and which layer owns which states.
+
+If Phase 1 shows the partition cannot be made clean without a state-machine change, stop and report rather than improvising one.
+
+Phase 3 — Prove the ramp integrates
+
+Add two new tests. These are the proof that the defect is gone; without them the fix is unverified.
+
+Test A — ramp is rate-determined, not setpoint-determined. Single turbine, r_asset_mw_per_s=0.2, dt=5s. Command a ramp toward a target. Assert output rises by exactly 1.0 MW per tick within tolerance, and that the value at tick n equals n × r_asset × dt — i.e. it is the accumulated integral, independent of what the loading setpoint is doing.
+
+Test B — falsification: setpoint drop mid-ramp does not pull output down. Single turbine mid-ramp. Inject a step that drops the loading setpoint well below the turbine's current accumulated output (a solar step is the natural mechanism). Assert the turbine's output continues on its ramp and does not fall to the setpoint. Under the current defect this test fails; under the fix it passes.
+
+Test B is the one that matters — it fails today for the right reason. Confirm it fails before the Phase 2 change and passes after, and report both results.
+
+Name these descriptively. Spec acceptance-test numbering is deferred until §7.1.2 exists — do not assign TC numbers.
+
+Phase 4 — Suite delta
+
+This fix changes numbers, not pixels. Expect movement.
+
+Baseline before the change: 57 failed, 911 passed, 5 errors.
+
+Report the delta as three lists:
+
+Newly failing
+Newly passing
+Changed numeric output but still passing/failing as before
+
+For each newly failing test, state whether the new behaviour is physically correct. Several existing assertions were written against the un-ramped engine and may now be wrong — but do not edit any of them in this session. List them for review.
+
+Prohibited
+Editing any test assertion or fixture to accommodate the change.
+Changing r_asset_mw_per_s, dt_lead_seconds, turbine rated_mw, p_min_stable_frac, _N_WARMUP_TICKS, schedule length, node_count, or _DISPATCH_HEADROOM_FRAC.
+Changing the is_synchronised property.
+Fixing anything else found in passing. Record it in a findings section at the end of the report.
+Touching gridsignal_logger.py.
+Proceeding past a phase gate without reporting.
+Acceptance criteria
+ Phase 1 state/writer table reported before any code change.
+ No state is written by both apply_loading() and advance() after the change.
+ is_synchronised unchanged.
+ Test A passes.
+ Test B confirmed failing pre-fix and passing post-fix, both results reported.
+ Suite delta reported as three lists against the 57/911/5 baseline.
+ No test assertion or fixture edited.
+ Report ends with the findings list of anything noticed but deliberately not fixed.
+Project content
+GridSignal
+Created by you
+GridSignal-Forecast-Engine-Functional-Spec_v2.5.md
+
+1,683 lines
+
+MD
+
+PDF
+
+PDF
+
+Content
+
+The gas turbine generators powered up all at once, which is not possible. One turbine shoiuld have started, increasing its oputput, and rthwen another turbine should start up Fix the logic underlying the ramp up 12 minutes ago Refining turbine startup logic Refining turbine startup logi
+
+PASTED
+
+The test_kube_oscillation docstring literally says "With the current hardcode this test FAILS — that is the point" — it's an intentional red test, pre-existing. I need to fix the 3 real regressions: test_d10, test_tc84f, and test_tc_gt2. Let me read their full failures and test code in parallel:
+
+PASTED
+
+PHASE 0 — REVERT REPORT Files changed and what was reverted File Change core/dispatch.py:503-519 Replaced single-unit staging ("stage exactly ONE") with original N_needed+1 formula: _n_start = min(max(1, ceil(delta / rated) + 1), len(_offline)), target distributed equally core/simulation_core.py
+
+PASTED
