@@ -22,7 +22,7 @@
 
 import { useEffect, useState } from 'react'
 import { useScenarioStore } from '../store/scenarioStore'
-import type { BessUnitSpec, TurbineUnitSpec, ScenarioSpec } from '../types'
+import type { BessUnitSpec, KubeJobSpec, TurbineUnitSpec, ScenarioSpec } from '../types'
 import { ParameterModal, defaultPhysicsParams } from './ParameterModal'
 import type { PhysicsParams } from './ParameterModal'
 
@@ -222,8 +222,24 @@ function nearestDuration(v: number): number {
 // Add new profile IDs here as they are commissioned.
 
 const HARDWARE_PROFILES = [
-  { id: 'enterprise_8gpu_air', label: 'enterprise_8gpu_air — 8× GPU air-cooled' },
+  { id: 'enterprise_8gpu_air', label: 'enterprise_8gpu_air — 8× GPU air-cooled (10.2 kW/node)' },
+  { id: 'nextgen_rack_liquid', label: 'nextgen_rack_liquid — liquid-cooled (126 kW/node)' },
 ]
+
+/** Nameplate draw per node (kW) — must match runtime/scenario_factory.py HW_PROFILES. */
+const HW_KW_PER_NODE: Record<string, number> = {
+  enterprise_8gpu_air: 10.2,
+  nextgen_rack_liquid: 126.0,
+}
+
+/** Estimated peak demand in MW given node config + site PUE. */
+function peakMw(k: { hardware_profile_id: string; max_nodes: number }, pue: number): number {
+  return (k.max_nodes * (HW_KW_PER_NODE[k.hardware_profile_id] ?? 10.2) * pue) / 1000
+}
+
+function defaultKube(): KubeJobSpec {
+  return { hardware_profile_id: 'enterprise_8gpu_air', max_nodes: 1000, min_nodes: 100 }
+}
 
 // ── Section header ────────────────────────────────────────────────────────────
 
@@ -323,6 +339,9 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
   // ── Turbine mutations ─────────────────────────────────────────────────────
   const patchTurbine = (i: number, partial: Partial<TurbineUnitSpec>) =>
     patch({ turbine_units: spec.turbine_units.map((t, idx) => idx === i ? { ...t, ...partial } : t) })
+
+  const patchKube = (partial: Partial<KubeJobSpec>) =>
+    patch({ kube_job_spec: spec.kube_job_spec ? { ...spec.kube_job_spec, ...partial } : { ...defaultKube(), ...partial } })
 
   const addTurbine = () =>
     patch({ turbine_units: [...spec.turbine_units, defaultTurbine(spec.turbine_units.length)] })
@@ -632,6 +651,95 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* ── GPU Compute Fleet ───────────────────────────────────────── */}
+            <div>
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-[10px] text-muted">GPU Compute Fleet</span>
+                <button
+                  className="text-[10px] text-accent hover:underline"
+                  onClick={() => patch({ kube_job_spec: spec.kube_job_spec ? null : defaultKube() })}
+                >
+                  {spec.kube_job_spec ? '− Disable' : '+ Enable'}
+                </button>
+              </div>
+
+              {spec.kube_job_spec ? (
+                <div className="rounded border border-border bg-canvas p-3 space-y-3">
+                  {/* Hardware profile */}
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[10px] text-muted">Hardware profile</span>
+                    <select
+                      className="w-full rounded border border-border bg-canvas px-2 py-1 text-xs text-text
+                                 focus:outline-none focus:ring-1 focus:ring-accent"
+                      value={spec.kube_job_spec.hardware_profile_id}
+                      onChange={e => patchKube({ hardware_profile_id: e.target.value })}
+                    >
+                      {HARDWARE_PROFILES.map(p => (
+                        <option key={p.id} value={p.id}>{p.label}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Peak nodes + computed MW */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[10px] text-muted">GPU nodes (peak)</span>
+                      <input
+                        type="number"
+                        min={1}
+                        step={50}
+                        className="w-full rounded border border-border bg-canvas px-2 py-1 text-xs text-text
+                                   focus:outline-none focus:ring-1 focus:ring-accent"
+                        value={spec.kube_job_spec.max_nodes}
+                        onChange={e => patchKube({ max_nodes: Math.max(1, parseInt(e.target.value) || 1) })}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-0.5 justify-end">
+                      <span className="text-[10px] text-muted">Peak demand</span>
+                      <div className="flex items-center h-[26px] px-2 rounded border border-accent/30 bg-accent/5">
+                        <span className="text-xs font-mono text-accent font-semibold">
+                          {peakMw(spec.kube_job_spec, spec.pue_base).toFixed(1)} MW
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Idle nodes + computed idle MW */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[10px] text-muted">GPU nodes (idle)</span>
+                      <input
+                        type="number"
+                        min={1}
+                        step={25}
+                        className="w-full rounded border border-border bg-canvas px-2 py-1 text-xs text-text
+                                   focus:outline-none focus:ring-1 focus:ring-accent"
+                        value={spec.kube_job_spec.min_nodes}
+                        onChange={e => patchKube({ min_nodes: Math.max(1, parseInt(e.target.value) || 1) })}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-0.5 justify-end">
+                      <span className="text-[10px] text-muted">Idle demand</span>
+                      <div className="flex items-center h-[26px] px-2 rounded border border-border/50 bg-canvas">
+                        <span className="text-xs font-mono text-muted">
+                          {peakMw({ ...spec.kube_job_spec, max_nodes: spec.kube_job_spec.min_nodes }, spec.pue_base).toFixed(1)} MW
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <p className="text-[9px] text-muted leading-snug">
+                    Peak = nodes × {(HW_KW_PER_NODE[spec.kube_job_spec.hardware_profile_id] ?? 10.2).toFixed(1)} kW/node × PUE {spec.pue_base.toFixed(2)} ÷ 1000
+                  </p>
+                </div>
+              ) : (
+                <p className="text-[9px] text-muted mt-1 leading-snug">
+                  Enable to add a stochastic Kubernetes demand agent — Poisson job arrivals
+                  drive the load instead of scripted workload events.
+                </p>
+              )}
             </div>
           </section>
 

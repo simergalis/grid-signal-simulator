@@ -387,6 +387,13 @@ export interface PmsConfigSpec {
   transition_mode: 'open_transition' | 'closed_transition'
 }
 
+/** Kubernetes GPU compute demand agent — drives stochastic load from gang-admission events. */
+export interface KubeJobSpec {
+  hardware_profile_id: string
+  max_nodes: number   // peak cluster capacity (nodes)
+  min_nodes: number   // idle-baseline nodes — cluster never fully drains
+}
+
 export interface ScenarioSpec {
   name: string
   description: string
@@ -405,6 +412,7 @@ export interface ScenarioSpec {
   /** Default playback speed stored with the scenario. 0 = max-speed; >0 = sim-s per real-s. */
   default_playback_speed: number
   pms_config: PmsConfigSpec | null    // null = PMS disabled
+  kube_job_spec?: KubeJobSpec | null  // null = no Kubernetes demand agent
 
   // ── Physics parameters (gridsignal_parameters.json §2) ────────────────
   // Thermal response — split params have optional plant_ variants.
