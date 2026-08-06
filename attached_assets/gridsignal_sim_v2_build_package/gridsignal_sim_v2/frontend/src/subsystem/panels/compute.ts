@@ -91,7 +91,9 @@ export const computePanel: PanelConfig = {
     } else if (tick.dt_lead_next_s > 0) {
       verdict = `Ramp in progress — ${fmtCountdown(tick.dt_lead_next_s)} until GPU reaches full TDP.`
     } else if (running.length > 0) {
-      verdict = `${running.length} job${running.length > 1 ? 's' : ''} at full draw. Cooling will settle in ~90 s.`
+      // GS-DES-CFG-001 §Phase-5 / Item-4 (stale): was hardcoded "~90 s".
+      // dt_thermal_seconds is now on the wire (catalogue default 90 s, range 60–120 s).
+      verdict = `${running.length} job${running.length > 1 ? 's' : ''} at full draw. Cooling will settle in ~${tick.dt_thermal_seconds.toFixed(0)} s.`
     } else {
       verdict = 'No jobs queued. Thermal load at rest.'
     }

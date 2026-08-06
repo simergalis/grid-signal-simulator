@@ -125,7 +125,11 @@ export const generationPanel: PanelConfig = {
       chartTitle:  'TURBINE OUTPUT VS REQUIRED, FIRST 300 S',
       chart,
       statRows: [
-        { label: 'Units online',         value: '1 of 1', sub: 'no unit in maintenance or failed' },
+        // GS-DES-CFG-001 §Phase-5 / Item-4 (stale): was hardcoded '1 of 1'.
+        // Derive from tick.turbine_units: count units on-bus vs total installed.
+        { label: 'Units online',
+          value: `${tick.turbine_units?.filter((u: any) => ['synchronised','ramping','at_target'].includes(u.state ?? '')).length ?? 0} of ${tick.turbine_units?.length ?? 0}`,
+          sub: 'synchronised / ramping / at_target' },
         { label: 'Rated output',         value: unitMW > 0 ? `${unitMW.toFixed(1)} MW` : '—', sub: 'nameplate per unit' },
         { label: 'Ramp rate configured', value: rampMWs > 0 ? `${rampMWs.toFixed(3)} MW/s` : '—', sub: 'first-unit nameplate (homogeneous fleet)' },
         { label: 'Ramp rate measured',   value: 'not instrumented', sub: 'no maintenance config in this scenario' },
