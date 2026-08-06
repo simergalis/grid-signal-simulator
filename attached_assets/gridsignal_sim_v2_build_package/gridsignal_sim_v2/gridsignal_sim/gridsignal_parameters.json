@@ -120,7 +120,7 @@
       "unit": "dimensionless",
       "default": 1.03,
       "min": 1.01,
-      "max": 1.10,
+      "max": 1.1,
       "step": 0.01,
       "split": true,
       "control_relevant": true,
@@ -581,6 +581,48 @@
         "group": "bess"
       },
       "note": "Applied in api/routes/scenarios.py demo-20mw BessUnitSpec only. BessConfig.p_anchor_reserve_mw default (1.0 MW) is unchanged so all other scenarios that do not set an explicit override remain unaffected. TC-81 asserts the class default is still 1.0 MW."
+    },
+    {
+      "key": "cooling_margin",
+      "value": 1.15,
+      "unit": "dimensionless",
+      "label": "Cooling-plant sizing margin over α_max × peak IT load",
+      "provenance": "PROPOSED_HERE",
+      "provenance_detail": "15% headroom above alpha_max × peak IT load. Provides clearance for BESS-charge and ambient-temperature variation at the design point. CHOSEN — no measured thermal-engineering basis. Calibrate against mechanical-plant specifications.",
+      "spec_ref": "v2.5 PROTO-10",
+      "ui": {
+        "control": "readonly",
+        "group": "thermal"
+      },
+      "note": "rated_cooling_mw = alpha_max × peak_it_load_mw × cooling_margin. Formerly hardcoded as _COOLING_MARGIN = 1.15 in scenario_factory.py:182 (tagged PROTO-10-MARGIN). Now read through site_parameters.py."
+    },
+    {
+      "key": "solar_fraction_of_peak",
+      "value": 0.25,
+      "unit": "dimensionless",
+      "label": "Solar-array rated output as fraction of peak IT load",
+      "provenance": "PROPOSED_HERE",
+      "provenance_detail": "CHOSEN — no measured on-site solar resource data. 20-30% of peak IT load is the design range for a representative on-site renewable contribution that keeps P_dispatch_required non-zero (BESS bridging, reserve checks, and §7.1.1 renewable-shortfall scenarios remain exercisable). 25% is the midpoint. See PROTO-7.",
+      "spec_ref": "v2.5 PROTO-7",
+      "ui": {
+        "control": "readonly",
+        "group": "solar"
+      },
+      "note": "solar_rated_mw = solar_fraction_of_peak × peak_it_load_mw. Formerly hardcoded as 0.25 in scenario_factory.py:145, :273. Now read through site_parameters.py."
+    },
+    {
+      "key": "bess_anchor_reserve_mw",
+      "value": 1.0,
+      "unit": "MW",
+      "label": "BESS anchor reserve — class default",
+      "provenance": "CHOSEN",
+      "provenance_detail": "1.0 MW is the class default withheld from bridging on the grid-forming BESS unit to maintain frequency-regulation headroom in both charge and discharge directions (§7.1.2). CHOSEN — non-zero per TC-63; no measured frequency-regulation specification from design partner (PROTO-9). The San Diego demo plant overrides this to 2.0 MW via spec-level anchor_reserve_pct.",
+      "spec_ref": "v2.5 §7.1.2 / PROTO-9",
+      "ui": {
+        "control": "readonly",
+        "group": "bess"
+      },
+      "note": "Default for BessConfig.p_anchor_reserve_mw. Scenario-level override via anchor_reserve_pct. See locked entry p_anchor_reserve_mw_san_diego for the San Diego site override."
     }
   ],
   "excluded": [

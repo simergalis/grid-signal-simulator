@@ -362,6 +362,18 @@ class ScenarioSpec(BaseModel):
     turbine_units: list[TurbineUnitSpec] = Field(min_length=1)
 
     solar_rated_mw: float = Field(default=0.0, ge=0.0)
+    # GS-DES-CFG-001 §Phase-6 / Item-3: declared design peak site load.
+    design_peak_load_mw: Optional[float] = Field(
+        default=None, ge=0.0,
+        description=(
+            "Declared design peak site load (MW). "
+            "Definition: peak_it_load_mw (node_count × rated_kw × PUE_base / 1000) "
+            "+ rated_cooling_mw (alpha_max × peak_it_load_mw × cooling_margin). "
+            "Optional — old specs without this field load with a fallback derived at run start "
+            "from workload_events and hardware_profile. Broadcast on TickPayload so fleet panels "
+            "can use the declared figure for N−1 checks instead of the observed run maximum."
+        ),
+    )
     irradiance_steps: list[tuple[float, float]] = Field(
         default_factory=lambda: [(0.0, 1.0)],
         description="Zero-order-hold irradiance profile. Duplicate timestamps unnecessary.",

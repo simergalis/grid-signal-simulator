@@ -13,7 +13,8 @@ description: Phase tracker for the hardcoded-constant elimination refactor; trap
 | 3 — panels/ ALL_CAPS removal | ✅ DONE | All panels/ constants removed; Class B revert + fleet fix applied; closeout items resolved |
 | 4 — TickResult/serialiser extension | ✅ DONE | 5 fields on wire; panels restored; bess_output_mw confirmed fleet; labelling fixed |
 | 5 — Prose sweep + Phase 4 corrections | ✅ DONE | 3 corrections; stale prose fixed; undeclared count = 11 (reported) |
-| 6–7 | NOT STARTED | |
+| 6 — Peak load reconcile + catalogue + N-1 wire | ✅ DONE | Item 1 (one PUE-inclusive definition), Item 2 (3 locked catalogue entries), Item 3 (design_peak_load_mw wire field), Item 4 (N-1 uses declared design peak) |
+| 7 | NOT STARTED | Settings modal |
 
 ## Phase 5 — key rulings and findings
 

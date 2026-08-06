@@ -43,6 +43,7 @@ from core.models import (
 from core.kube_demand import KubeConfig, KubeDemandAgent
 from core.step_config import LoadProfileConfig, StepTimingConfig
 from core.simulation_core import SimulationState
+import core.site_parameters as _sp  # GS-DES-CFG-001 §Phase-6
 from pydantic import TypeAdapter
 
 from runtime.run_manager import InMemoryTimeseriesSink, RunContext
@@ -141,8 +142,13 @@ def build_run_context(
         hardware_profile_id,
         HardwareProfile(hardware_profile_id, rated_kw=12.0),
     )
-    _peak_compute_mw = node_count * _solar_profile.rated_kw * site.pue_base / 1000.0
-    _solar_rated_mw = 0.25 * _peak_compute_mw  # PROTO-7 — CHOSEN, no measured basis
+    # GS-DES-CFG-001 §Phase-6 / Item-1: one definition, PUE-inclusive, named for its basis.
+    # simulation_core.py:953 computes P_compute = Σ nodes × kW × PUE_base / 1000 (PUE-inclusive).
+    # alpha_max is applied to that PUE-inclusive figure at runtime (simulation_core.py:1152),
+    # so cooling sizing must use the same basis.  Solar also sizes against total site draw
+    # (PUE-inclusive), so one definition serves both.  Former two-definition rebind removed.
+    _peak_it_load_mw = node_count * _solar_profile.rated_kw * site.pue_base / 1000.0
+    _solar_rated_mw  = _sp.value("solar_fraction_of_peak") * _peak_it_load_mw  # PROTO-7
 
     solar_arrays = [
         SolarModule(
@@ -175,13 +181,14 @@ def build_run_context(
     ]
 
     # ── W1 advisory, telemetry, procurement wiring ────────────────────────
-    # Rated cooling MW: alpha_max (fraction of compute) × peak compute MW,
-    # plus 15 % headroom for BESS-charge and PUE-base overhead on total IT
-    # load (PROTO-10-MARGIN).  Without this the cooling plant saturates the
-    # moment any non-compute IT load is added at peak compute.
-    _COOLING_MARGIN   = 1.15
-    _peak_compute_mw  = node_count * _solar_profile.rated_kw / 1000.0
-    _rated_cooling_mw = site.alpha_max * _peak_compute_mw * _COOLING_MARGIN
+    # GS-DES-CFG-001 §Phase-6 / Item-1+2:
+    # PUE-exclusive rebind ("_peak_compute_mw = nodes × kW / 1000") removed — it caused
+    # _rated_cooling_mw to be sized ~3% below the simulation engine's max_cooling_mw
+    # (alpha_max × PUE-inclusive p_compute, simulation_core.py:1152).
+    # _COOLING_MARGIN sourced from catalogue (locked cooling_margin, PROTO-10).
+    _COOLING_MARGIN      = _sp.value("cooling_margin")  # PROTO-10; catalogue: locked cooling_margin
+    _rated_cooling_mw    = site.alpha_max * _peak_it_load_mw * _COOLING_MARGIN
+    _design_peak_load_mw = _peak_it_load_mw + _rated_cooling_mw
 
     # Grid capacity scaled to turbine fleet (static for the demo run).
     _total_turbine_mw = turbine_rated_mw * turbine_count
@@ -210,6 +217,7 @@ def build_run_context(
         price_curve=SyntheticPriceCurve(seed=42),
         grid_capacity=_grid_cap,
         _rated_cooling_mw=_rated_cooling_mw,
+        _design_peak_load_mw=_design_peak_load_mw,
     )
 
 
@@ -267,10 +275,11 @@ def build_load_test_context(
         hardware_profile_id,
         HardwareProfile(hardware_profile_id, rated_kw=12.0),
     )
-    _lt_peak_compute_mw = (
+    # GS-DES-CFG-001 §Phase-6 / Item-1: PUE-inclusive, same basis as build_run_context.
+    _lt_peak_it_load_mw = (
         gpu_module_count * nodes_per_gpu_module * _lt_profile.rated_kw * site.pue_base / 1000.0
     )
-    _lt_solar_rated_mw_each = (0.25 * _lt_peak_compute_mw) / max(solar_count, 1)  # PROTO-7
+    _lt_solar_rated_mw_each = (_sp.value("solar_fraction_of_peak") * _lt_peak_it_load_mw) / max(solar_count, 1)  # PROTO-7
 
     solar_arrays = [
         SolarModule(
@@ -310,10 +319,9 @@ def build_load_test_context(
 
     # ── W1 advisory, telemetry, procurement wiring (load-test context) ──────
     _lt_total_turbine_mw = 10.0 * turbine_count   # default rated_mw per turbine
-    _lt_peak_compute_mw  = (
-        gpu_module_count * nodes_per_gpu_module * _lt_profile.rated_kw / 1000.0
-    )
-    _lt_rated_cooling_mw = site.alpha_max * _lt_peak_compute_mw * 1.15  # PROTO-10-MARGIN
+    # GS-DES-CFG-001 §Phase-6 / Item-1: PUE-exclusive rebind removed; _lt_peak_it_load_mw used.
+    _lt_rated_cooling_mw    = site.alpha_max * _lt_peak_it_load_mw * _sp.value("cooling_margin")  # PROTO-10
+    _lt_design_peak_load_mw = _lt_peak_it_load_mw + _lt_rated_cooling_mw
     _lt_grid_cap = [
         GridCapacity(CapacityType.FIRM,     available_mw=_lt_total_turbine_mw * 0.80, price_per_mwh=48.0, t_reserve_s=0.0),
         GridCapacity(CapacityType.RESERVED, available_mw=_lt_total_turbine_mw * 0.40, price_per_mwh=62.0, t_reserve_s=300.0),
@@ -345,6 +353,7 @@ def build_load_test_context(
         price_curve=SyntheticPriceCurve(seed=42),
         grid_capacity=_lt_grid_cap,
         _rated_cooling_mw=_lt_rated_cooling_mw,
+        _design_peak_load_mw=_lt_design_peak_load_mw,
     )
 
 
@@ -639,10 +648,23 @@ def build_run_context_from_spec(
     # ── W1 advisory, telemetry, procurement wiring (spec path) ───────────
     _spec_turbine_mws = [float(t.get("rated_mw", 10.0)) for t in spec_data.get("turbine_units", [])]
     _spec_total_turbine_mw = sum(_spec_turbine_mws) if _spec_turbine_mws else 10.0
-    _spec_peak_compute_mw  = float(spec_data.get("solar_rated_mw", 0.0)) / 0.25  # reverse PROTO-7
-    if _spec_peak_compute_mw <= 0:
-        _spec_peak_compute_mw = 20.0  # safe fallback when solar is absent
-    _spec_rated_cooling_mw = site.alpha_max * _spec_peak_compute_mw * 1.15  # PROTO-10-MARGIN
+    # GS-DES-CFG-001 §Phase-6 / Item-1: round-trip via solar_rated_mw deleted.
+    # Compute from workload_events — same source as build_run_context factory path.
+    # Falls back to 20.0 MW when no events present (kube path or idle run).
+    _spec_hw_profile = DEFAULT_HARDWARE_LIBRARY.get(hw_id, HardwareProfile(hw_id, rated_kw=12.0))
+    _spec_max_node_count = max(
+        (int(e.get("node_count", 0)) for e in spec_data.get("workload_events", [])),
+        default=0,
+    )
+    _spec_peak_it_load_mw = (
+        _spec_max_node_count * _spec_hw_profile.rated_kw * site.pue_base / 1000.0
+        if _spec_max_node_count > 0 else 20.0  # safe fallback when no workload events
+    )
+    _spec_rated_cooling_mw    = site.alpha_max * _spec_peak_it_load_mw * _sp.value("cooling_margin")  # PROTO-10
+    # Use declared design_peak_load_mw from spec if present; otherwise derive from factory formula.
+    _spec_design_peak_load_mw = float(spec_data.get("design_peak_load_mw") or 0.0) or (
+        _spec_peak_it_load_mw + _spec_rated_cooling_mw
+    )
     _spec_grid_cap = [
         GridCapacity(CapacityType.FIRM,     available_mw=_spec_total_turbine_mw * 0.80, price_per_mwh=48.0, t_reserve_s=0.0),
         GridCapacity(CapacityType.RESERVED, available_mw=_spec_total_turbine_mw * 0.40, price_per_mwh=62.0, t_reserve_s=300.0),
@@ -719,6 +741,7 @@ def build_run_context_from_spec(
         price_curve=SyntheticPriceCurve(seed=42),
         grid_capacity=_spec_grid_cap,
         _rated_cooling_mw=_spec_rated_cooling_mw,
+        _design_peak_load_mw=_spec_design_peak_load_mw,
         # AB2: for §21.2 cost model in energy-summary endpoint.
         turbine_rated_mw=_spec_total_turbine_mw,
         # PROTO-32-AMB: ambient temperature metadata for the Solar PV modal.

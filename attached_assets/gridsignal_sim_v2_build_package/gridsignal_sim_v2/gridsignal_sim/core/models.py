@@ -513,7 +513,8 @@ class BessConfig:
     #   unadjusted arithmetic this constraint exists to correct.  1.0 MW is a
     #   CHOSEN value (no measured basis, PROTO-9); calibrate against design partner
     #   frequency-regulation specs.
-    p_anchor_reserve_mw: float = 1.0  # CHOSEN — non-zero per TC-63, no measured basis (PROTO-9)
+    # GS-DES-CFG-001 §Phase-6 / Item-2: sourced from catalogue (locked bess_anchor_reserve_mw).
+    p_anchor_reserve_mw: float = _sp.value("bess_anchor_reserve_mw")  # §7.1.2 / PROTO-9; CHOSEN
     # grid_forming: True when this unit is the designated grid-forming anchor
     #   for the islanded bus.  False = grid-following; P_anchor_reserve = 0.
     #   Default False: most units in a fleet are grid-following; the anchor role
@@ -1043,3 +1044,10 @@ class TickResult:
     bess_unit_count:    int   = 0                     # count of BESS units in fleet
     dt_thermal_seconds: float = _sp.value("dt_thermal")  # base thermal lag; enriched from ctx.sim_state.site per tick
     alpha_max:          float = _sp.value("alpha_max")   # base α_max; enriched from ctx.sim_state.site per tick
+    # GS-DES-CFG-001 §Phase-6: two new wire fields.
+    # bess_anchor_reserve_mw: anchor reserve on the grid-forming BESS unit (MW);
+    #   sourced from BessConfig.p_anchor_reserve_mw; default = catalogue locked value.
+    # design_peak_load_mw: declared design peak site load (MW) — NOT observed run peak.
+    #   = peak_it_load_mw + rated_cooling_mw; set by factory; 0.0 until enriched.
+    bess_anchor_reserve_mw: float = _sp.value("bess_anchor_reserve_mw")  # anchor reserve (MW)
+    design_peak_load_mw:    float = 0.0  # declared design peak; enriched from ctx._design_peak_load_mw

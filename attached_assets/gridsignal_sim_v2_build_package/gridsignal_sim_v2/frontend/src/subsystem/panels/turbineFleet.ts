@@ -602,7 +602,8 @@ function noTickPanel(peakMW: number | null): PanelData {
 }
 
 // ── Single-unit panel (AE3 branch 1) ────────────────────────────────────────
-function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: number): PanelData {
+// GS-DES-CFG-001 §Phase-6 / Item-4: peakMW = declared design peak; observedPeakMW = run maximum.
+function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: number, observedPeakMW: number): PanelData {
   const u          = units[0]
   // Algebraic: use synchronised_output_mw (Σ_{i∈A} p_i) for active-state check
   // and for the FleetTable aggregate — not turbine_output_mw (includes RAMPING path).
@@ -656,7 +657,9 @@ function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: nu
         colour: syncedCount > 0 ? GOLD : undefined,
         sub: syncedCount > 0 ? `contributing ${syncedMW.toFixed(2)} MW` : 'none on bus' },
       { label: 'N−1 firm capacity',  value: '0.0 MW',                             colour: RED, sub: 'single unit — no redundancy' },
-      { label: 'Peak site load',     value: peakMW > 0 ? `${peakMW.toFixed(2)} MW` : '—', sub: 'observed peak this run' },
+      // GS-DES-CFG-001 §Phase-6 / Item-4: show both declared design peak and observed.
+      { label: 'Design peak load',   value: peakMW > 0 ? `${peakMW.toFixed(2)} MW` : '—', sub: 'declared at scenario design point' },
+      { label: 'Observed peak',      value: observedPeakMW > 0 ? `${observedPeakMW.toFixed(2)} MW` : 'no peak yet', sub: 'observed this run' },
       { label: 'N−1 margin',         value: 'none',                               colour: RED },
       // 0.5: ramp energy bounded at rated_mw — integral is not unbounded
       { label: 'Ramp (configured)',  value: `${u.r_asset_mw_per_s.toFixed(3)} MW/s`,
@@ -676,7 +679,8 @@ function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: nu
 }
 
 // ── Fleet panel (AE3 branch 2) — N > 1 units ────────────────────────────────
-function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: number): PanelData {
+// GS-DES-CFG-001 §Phase-6 / Item-4: peakMW = declared design peak; observedPeakMW = run maximum.
+function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: number, observedPeakMW: number): PanelData {
   // Algebraic: synchronised_output_mw = Σ_{i∈A} p_i (loading-layer-managed only).
   // turbine_output_mw includes auto-staged RAMPING turbines; those are not in A.
   const onlineN  = tick.units_synchronised_count
@@ -724,9 +728,10 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: number)
       target: peakMW > 0 ? peakMW : undefined,
       colour: n1Covers ? GOLD : RED,
       unit:   ' MW',
+      // GS-DES-CFG-001 §Phase-6 / Item-4: label states source (declared, not observed).
       note:   peakMW > 0
-        ? `red marker = ${peakMW.toFixed(2)} MW observed peak  ·  ${marginStr} margin with any one unit out`
-        : `N−1 firm ${n1FirmMW.toFixed(1)} MW  ·  ${marginStr} margin (no peak observed yet)`,
+        ? `red marker = ${peakMW.toFixed(2)} MW declared design peak  ·  ${marginStr} margin with any one unit out`
+        : `N−1 firm ${n1FirmMW.toFixed(1)} MW  ·  ${marginStr} margin (declared design peak unavailable)`,
     }),
     React.createElement(BulletBar, {
       label:  'Aggregate ramp with all units online',
@@ -736,7 +741,7 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: number)
       colour: rampCovers ? GOLD : RED,
       unit:   ' MW/s',
       note:   horizonS > 0
-        ? `red marker = ${rampNeedMWs.toFixed(3)} MW/s to cover ${peakMW > 0 ? peakMW.toFixed(2) : '—'} MW step in ${horizonS.toFixed(0)} s  ·  ramp scales with unit count`
+        ? `red marker = ${rampNeedMWs.toFixed(3)} MW/s to cover ${peakMW > 0 ? peakMW.toFixed(2) : '—'} MW declared design peak in ${horizonS.toFixed(0)} s  ·  ramp scales with unit count`
         : `no active ramp event — dt_lead_next_s = 0  ·  ramp scales with unit count`,
     }),
     ParallelingInset(units),
@@ -749,11 +754,12 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: number)
   return {
     stateLabel,
     stateColour,
+    // GS-DES-CFG-001 §Phase-6 / Item-4: verdict uses declared design peak, not observed.
     verdict: peakMW > 0
       ? (n1Covers
-          ? `N−1 firm capacity ${n1FirmMW.toFixed(1)} MW covers the ${peakMW.toFixed(2)} MW observed peak with ${marginStr} margin.`
-          : `N−1 firm capacity ${n1FirmMW.toFixed(1)} MW is below the ${peakMW.toFixed(2)} MW observed peak — site cannot survive a unit loss.`)
-      : `N−1 firm capacity ${n1FirmMW.toFixed(1)} MW (no peak observed yet — peak loads once run progresses).`,
+          ? `N−1 firm capacity ${n1FirmMW.toFixed(1)} MW covers the ${peakMW.toFixed(2)} MW declared design peak with ${marginStr} margin.`
+          : `N−1 firm capacity ${n1FirmMW.toFixed(1)} MW is below the ${peakMW.toFixed(2)} MW declared design peak — site cannot survive a unit loss.`)
+      : `N−1 firm capacity ${n1FirmMW.toFixed(1)} MW (declared design peak not yet available).`,
     heroValue:   (tick.synchronised_output_mw ?? 0).toFixed(2),
     heroLabel:   'MW output',
     chartTitle:  '',
@@ -767,10 +773,12 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: number)
         sub: onlineN > 0 ? `contributing ${syncedMW.toFixed(2)} MW` : 'none on bus',
         colour: onlineN > 0 ? GOLD : undefined },
       { label: 'N−1 firm capacity',  value: `${n1FirmMW.toFixed(1)} MW`,    colour: n1Covers ? GOLD : RED, sub: 'with any one unit unavailable' },
-      { label: 'Peak site load',     value: peakMW > 0 ? `${peakMW.toFixed(2)} MW` : '—', sub: 'observed peak this run' },
+      // GS-DES-CFG-001 §Phase-6 / Item-4: show both declared design peak and observed.
+      { label: 'Design peak load',   value: peakMW > 0 ? `${peakMW.toFixed(2)} MW` : '—', sub: 'declared at scenario design point' },
+      { label: 'Observed peak',      value: observedPeakMW > 0 ? `${observedPeakMW.toFixed(2)} MW` : 'no peak yet', sub: 'observed this run' },
       // 0.4: subtitle states the arithmetic — not a raw unit count
       { label: 'N−1 margin',         value: marginStr,                        colour: marginColour,
-        sub: `${installedMW.toFixed(0)} MW − ${maxUnitMW.toFixed(0)} MW contingency = ${n1FirmMW.toFixed(0)} MW firm${peakMW > 0 ? `  ·  peak ${peakMW.toFixed(2)} MW` : ''}` },
+        sub: `${installedMW.toFixed(0)} MW − ${maxUnitMW.toFixed(0)} MW contingency = ${n1FirmMW.toFixed(0)} MW firm${peakMW > 0 ? `  ·  design peak ${peakMW.toFixed(2)} MW` : ''}` },
       // Phase 1b + Task #198 item 3: backend ramp_capability_mw at runtime horizon
       { label: 'Aggregate ramp',     value: `${aggRampMWs.toFixed(3)} MW/s`, colour: rampCovers ? GOLD : RED,
         sub: horizonS > 0
@@ -784,7 +792,7 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: number)
     ],
     secondary,
     why: [
-      `Installed capacity is not the number that matters — N−1 firm capacity is. ${units.length} × ${maxUnitMW.toFixed(0)} MW gives ${n1FirmMW.toFixed(1)} MW firm${peakMW > 0 ? ` against a ${peakMW.toFixed(2)} MW observed peak` : ''}.`,
+      `Installed capacity is not the number that matters — N−1 firm capacity is. ${units.length} × ${maxUnitMW.toFixed(0)} MW gives ${n1FirmMW.toFixed(1)} MW firm${peakMW > 0 ? ` against a ${peakMW.toFixed(2)} MW declared design peak` : ''}.`,
       `Aggregate ramp scales with unit count, not megawatts: ${units.length} units deliver ${aggRampMWs.toFixed(3)} MW/s — ${units.length}× the rate of a single equivalent unit.`,
       'Degraded = effective ramp below 95% of fleet maximum. The reserve check uses the effective figure (§27, TC-58) — a quietly degraded unit is decisive in a reserve calculation.',
     ],
@@ -796,8 +804,12 @@ export const turbineFleetPanel: PanelConfig = {
   deriveData(tick: TickPayload | null, _alert: TickPayload | null, history: HistoryPoint[]): PanelData {
     // GS-DES-CFG-001 §Phase-3: derive peak load from run history (not hardcoded).
     const peakMW = peakSiteLoadMW(history) ?? 0
+    // GS-DES-CFG-001 §Phase-6 / Item-4: declared design peak for N−1 / ramp checks.
+    // peakMW (observed run maximum) is kept for display alongside the declared figure.
+    // Falls back to observed peak when design_peak_load_mw is not yet broadcast (0).
 
     if (!tick) return noTickPanel(peakMW > 0 ? peakMW : null)
+    const designPeakMW = (tick.design_peak_load_mw ?? 0) > 0 ? tick.design_peak_load_mw! : peakMW
 
     const units = tick.turbine_units ?? []
 
@@ -809,8 +821,8 @@ export const turbineFleetPanel: PanelConfig = {
       }
     }
 
-    if (units.length === 1) return singleUnitPanel(tick, units, peakMW)
+    if (units.length === 1) return singleUnitPanel(tick, units, designPeakMW, peakMW)
 
-    return fleetPanel(tick, units, peakMW)
+    return fleetPanel(tick, units, designPeakMW, peakMW)
   },
 }

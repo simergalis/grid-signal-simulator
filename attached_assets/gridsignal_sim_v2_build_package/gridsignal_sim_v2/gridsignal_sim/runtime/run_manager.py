@@ -377,8 +377,10 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # ambient_alpha_scale.  ambient_alpha_scale is already on the wire at
         # line 277.  A panel must display both to avoid labelling the scaled
         # product as α_max during ambient stress scenarios.
-        "dt_thermal_seconds": round(tick.dt_thermal_seconds, 2),
-        "alpha_max":          round(tick.alpha_max, 6),
+        "dt_thermal_seconds":     round(tick.dt_thermal_seconds, 2),
+        "alpha_max":              round(tick.alpha_max, 6),
+        "bess_anchor_reserve_mw": round(tick.bess_anchor_reserve_mw, 4),
+        "design_peak_load_mw":    round(tick.design_peak_load_mw, 4),
     }
 
 
@@ -556,6 +558,7 @@ class RunContext:
     _last_cooling_mw: float = 0.0        # cooling load at previous tick
     _approach_rate_mw_s: float = 0.0     # MW/s rate of change (positive = rising)
     _rated_cooling_mw: float = 5.0       # rated cooling capacity; set by factory
+    _design_peak_load_mw: float = 0.0   # declared design peak site load (MW); set by factory
 
     # AB2: sum of all turbine rated_mw; set by build_run_context_from_spec
     # for §21.2 cost model in the energy-summary endpoint.  0.0 = unknown.
@@ -1354,6 +1357,16 @@ class RunManager:
                     # alpha_max: base cooling fraction — NOT × ambient_alpha_scale.
                     dt_thermal_seconds=ctx.sim_state.site.dt_thermal_seconds,
                     alpha_max=ctx.sim_state.site.alpha_max,
+                    # ── Phase 6 (GS-DES-CFG-001 §Phase-6): anchor reserve + design peak ──
+                    # bess_anchor_reserve_mw: p_anchor_reserve_mw from the grid-forming BESS
+                    #   unit; falls back to TickResult default (catalogue value) when absent.
+                    # design_peak_load_mw: declared design peak from scenario factory.
+                    bess_anchor_reserve_mw=next(
+                        (b.config.p_anchor_reserve_mw for b in ctx.sim_state.bess_units
+                         if b.config.grid_forming),
+                        tick_result.bess_anchor_reserve_mw,  # catalogue default when no grid-forming unit
+                    ),
+                    design_peak_load_mw=ctx._design_peak_load_mw,
                 )
                 if _profiling: _sec.setdefault("B_thermal_update", []).append(_time_module.perf_counter() - _t0)
 

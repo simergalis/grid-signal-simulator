@@ -43,6 +43,15 @@ export interface TickPayload {
   //                     Broadcast both so a panel can show the base AND the scaled product.
   dt_thermal_seconds: number  // base thermal lag Δt_thermal from SiteConfig (s)
   alpha_max:          number  // base cooling fraction α_max from SiteConfig (NOT × ambient_alpha_scale)
+  // GS-DES-CFG-001 §Phase-6: two new wire fields.
+  // bess_anchor_reserve_mw: power permanently withheld on the grid-forming BESS for frequency
+  //   regulation (§7.1.2).  From BessConfig.p_anchor_reserve_mw; emitted each tick.
+  // design_peak_load_mw: declared design peak site load (MW) — NOT the observed run maximum.
+  //   = peak_it_load_mw (node_count × kW × PUE_base / 1000) + rated_cooling_mw
+  //   (alpha_max × peak_it_load_mw × cooling_margin).  Set by the scenario factory from the
+  //   single PUE-inclusive peak definition; used for N−1 and reserve checks.
+  bess_anchor_reserve_mw: number  // anchor reserve on grid-forming BESS (MW); catalogue locked bess_anchor_reserve_mw
+  design_peak_load_mw:    number  // declared design peak: peak IT load + rated cooling (MW)
 
   // Confidence band
   confidence_lower_mw: number

@@ -106,7 +106,8 @@ export const storagePanel: PanelConfig = {
       statRows: [
         { label: 'State of charge',   value: `${socPct}%`,                        colour: soc < 0.2 ? RED : soc < 0.4 ? AMBER : undefined },
         { label: 'Rated power',       value: `${ratedMW.toFixed(2)} MW`,           sub: `fleet aggregate — ${unitLabel}` },
-        { label: 'Anchor reserve',    value: '1.0 MW',                             colour: AMBER, sub: 'withheld for grid-forming (§7.1.2)' },
+        // GS-DES-CFG-001 §Phase-6 / Item-2: bess_anchor_reserve_mw now on wire.
+        { label: 'Anchor reserve',    value: `${tick.bess_anchor_reserve_mw.toFixed(1)} MW`,  colour: AMBER, sub: 'withheld for grid-forming (§7.1.2) — catalogue: locked bess_anchor_reserve_mw' },
         { label: 'Current output',    value: `${outputMW.toFixed(2)} MW`,          colour: BATTERY, sub: 'fleet discharge — sum across all units' },
         { label: 'Usable energy',     value: `${usableMWh.toFixed(2)} MWh`,        sub: `fleet aggregate — ${unitLabel}` },
         { label: 'Bridging basis',    value: tick.bridging_basis.replace('_', ' ') },
@@ -114,7 +115,8 @@ export const storagePanel: PanelConfig = {
       ],
       why: [
         'The battery serves two purposes simultaneously: grid-forming anchor and bridge reserve.',
-        'One megawatt is permanently withheld to regulate frequency — this is the anchor reserve (§7.1.2).',
+        // GS-DES-CFG-001 §Phase-6 / Item-2 (stale): was hardcoded "One megawatt".
+        `${tick.bess_anchor_reserve_mw.toFixed(1)} MW is permanently withheld to regulate frequency — this is the anchor reserve (§7.1.2).`,
         'Bridge duration at current shortfall is the metric that answers the operator question, not SoC percentage.',
       ],
     }
