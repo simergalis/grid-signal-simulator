@@ -58,14 +58,24 @@ export const generationPanel: PanelConfig = {
     const outputMW   = tick.turbine_output_mw
     const demandMW   = tick.net_demand_mw
     // GS-DES-CFG-001 §Phase-3: rated MW and ramp rate derived from tick payload.
-    // Fleet-level: installedFleetMW() for ceilings and utilisation fractions.
-    // Per-unit: first unit's rated_mw / r_asset_mw_per_s for per-unit stat rows.
-    const u0         = tick.turbine_units?.[0]
-    const unitMW     = u0?.rated_mw ?? 0          // first-unit nameplate (for per-unit stat rows)
-    const fleetMW    = installedFleetMW(tick.turbine_units ?? []) ?? 0  // fleet ceiling
-    const rampMWs    = u0?.r_asset_mw_per_s ?? 0  // first-unit ramp rate
-    const rampCap    = rampMWs * tick.dt_lead_next_s  // MW closeable in lead window
-    const canClose   = rampCap >= demandMW
+    // ── Fleet-level (use for verdicts, hero, BulletBar, canClose) ──────────────
+    //   fleetMW:      installedFleetMW() — sum of all unit rated_mw (chart ceiling,
+    //                   BulletBar utilisation denominator).
+    //   fleetRampCap: tick.ramp_capability_mw — loading-layer authoritative fleet
+    //                   ramp over dt_lead_next_s horizon. Replaces the Phase-0.5
+    //                   display-level cap.  Used for verdict and hero.
+    // ── Per-unit (use for per-unit stat rows and why[] prose) ──────────────────
+    //   unitMW:       u0.rated_mw — first unit's nameplate (homogeneous fleet only).
+    //   rampMWs:      u0.r_asset_mw_per_s — first unit's configured ramp rate.
+    //   unitRampCap:  rampMWs * dt_lead_next_s — per-unit lead-window delivery
+    //                   (used in why[1] "this unit delivers …" prose).
+    const u0          = tick.turbine_units?.[0]
+    const unitMW      = u0?.rated_mw ?? 0          // PER-UNIT: first-unit nameplate
+    const fleetMW     = installedFleetMW(tick.turbine_units ?? []) ?? 0  // FLEET: ceiling
+    const rampMWs     = u0?.r_asset_mw_per_s ?? 0  // PER-UNIT: first-unit ramp rate
+    const unitRampCap = rampMWs * tick.dt_lead_next_s  // PER-UNIT: per-unit lead-window delivery (why[] prose)
+    const fleetRampCap = tick.ramp_capability_mw       // FLEET: loading-layer authoritative ramp over lead horizon
+    const canClose    = fleetRampCap >= demandMW       // FLEET: verdict gate
 
     // Chart series from history
     // Note: turbine_output_mw not in HistoryPoint; use p_total as proxy
@@ -83,13 +93,16 @@ export const generationPanel: PanelConfig = {
 
     const secondary = React.createElement('div', { className: 'space-y-2' },
       React.createElement(BulletBar, {
-        label:  'Ramp capability in lead window',
-        value:  rampCap,
-        max:    Math.max(rampCap, demandMW) || 1,
+        // FLEET-LEVEL: tick.ramp_capability_mw is loading-layer authoritative
+        // fleet ramp over the current dt_lead_next_s horizon.  Do NOT use
+        // u0.r_asset_mw_per_s * dt_lead_next_s here — that is per-unit.
+        label:  'Fleet ramp capability in lead window',
+        value:  fleetRampCap,
+        max:    Math.max(fleetRampCap, demandMW) || 1,
         target: demandMW,
         colour: GOLD,
         unit:   ' MW',
-        note:   `red marker = predicted shortfall (${fmtMW(demandMW)}). ${canClose ? 'Capability exceeds it.' : 'Shortfall exceeds ramp capability.'}`,
+        note:   `red marker = predicted shortfall (${fmtMW(demandMW)}). ${canClose ? 'Fleet capability exceeds it.' : 'Shortfall exceeds fleet ramp capability.'}`,
       }),
       React.createElement(BulletBar, {
         label:  'Output as share of fleet rated',
@@ -105,9 +118,9 @@ export const generationPanel: PanelConfig = {
       stateLabel:  outputMW > 0 ? 'ACTIVE' : 'READY',
       stateColour: '#3fb6a8',
       verdict:     canClose
-        ? `Can close a ${fmtMW(demandMW)} gap inside the ${tick.dt_lead_next_s.toFixed(0)} s lead window.`
+        ? `Can close a ${fmtMW(demandMW)} gap inside the ${tick.dt_lead_next_s.toFixed(0)} s lead window.`  // FLEET-LEVEL: canClose uses fleetRampCap
         : `Ramp cannot close the ${fmtMW(demandMW)} shortfall — BESS bridge required.`,
-      heroValue:   `${rampCap.toFixed(1)}`,
+      heroValue:   `${fleetRampCap.toFixed(1)}`,  // FLEET-LEVEL: fleet ramp capability over lead horizon
       heroLabel:   'MW in lead window',
       chartTitle:  'TURBINE OUTPUT VS REQUIRED, FIRST 300 S',
       chart,
@@ -124,7 +137,9 @@ export const generationPanel: PanelConfig = {
       secondary,
       why: [
         'Ramp rate, not capacity, is what decides whether a turbine can answer a step-load.',
-        `At ${rampMWs.toFixed(3)} MW/s this unit delivers ${rampCap.toFixed(1)} MW in the ${tick.dt_lead_next_s.toFixed(0)} s of warning the scheduler gives.`,
+        // PER-UNIT: rampMWs and unitRampCap are both first-unit figures — "this unit" framing is intentional.
+        `At ${rampMWs.toFixed(3)} MW/s this unit delivers ${unitRampCap.toFixed(1)} MW in the ${tick.dt_lead_next_s.toFixed(0)} s of warning the scheduler gives.`,
+        // FLEET-LEVEL: canClose uses fleetRampCap (tick.ramp_capability_mw); fleetMW from installedFleetMW().
         `${canClose ? `This covers the ${fmtMW(demandMW)} shortfall.` : `This does not cover the ${fmtMW(demandMW)} shortfall — BESS bridge is required.`}${fleetMW > 0 ? ` Unused fleet nameplate: ${fmtMW(fleetMW - outputMW)}.` : ''}`,
       ],
     }

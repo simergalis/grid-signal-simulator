@@ -15,13 +15,13 @@ import React from 'react'
 import type { PanelConfig, PanelData } from './index'
 import type { TickPayload, HistoryPoint } from '../../types'
 import { GaugeArc }  from '../../charts/GaugeArc'
-import { BulletBar } from '../../charts/BulletBar'
+// BulletBar removed: BESS rated MW is not on the tick payload (bess_units is on
+// ScenarioSpec, not TickPayload).  A bar whose max equals its own value is
+// permanently full regardless of actual headroom.  Phase 4 restores it.
 
 const BATTERY = '#4a9fe0'
 const AMBER   = '#f0883e'
 const RED     = '#f85149'
-// GS-DES-CFG-001 §Phase-3: no module-scope numeric constants.
-// BESS rated MW and usable MWh derived from tick.bess_units[0] at render time.
 
 function fmtBridge(s: number): string {
   if (s >= 86400) return 'full reserve'
@@ -63,9 +63,6 @@ export const storagePanel: PanelConfig = {
     // Phase 4 will add bess_rated_mw + bess_usable_mwh to the TickResult and
     // serialiser so they are broadcast per tick.
 
-    // Available MW derived entirely from tick fields that ARE broadcast.
-    const availMW   = outputMW > 0 ? outputMW : 0
-
     const stateLabel  = alert ? 'ATTENTION' : bridge_s > 0 ? 'READY' : 'ATTENTION'
     const stateColour = alert ? AMBER : bridge_s > 0 ? '#3fb6a8' : RED
 
@@ -75,17 +72,6 @@ export const storagePanel: PanelConfig = {
       bigLabel:   `${socPct}%`,
       smallLabel: 'state of charge',
     })
-
-    const secondary = React.createElement('div', { className: 'space-y-2' },
-      React.createElement(BulletBar, {
-        label:  'Available power',
-        value:  availMW,
-        max:    Math.max(availMW, 1),
-        colour: BATTERY,
-        unit:   ' MW',
-        note:   'anchor reserve (1.0 MW) withheld for grid-forming frequency regulation (§7.1.2). Rated cap not instrumented — not broadcast on tick payload.',
-      }),
-    )
 
     return {
       stateLabel,
@@ -100,16 +86,14 @@ export const storagePanel: PanelConfig = {
       chartTitle: 'STATE OF CHARGE',
       chart,
       statRows: [
-        { label: 'State of charge',   value: `${socPct}%`,          colour: soc < 0.2 ? RED : soc < 0.4 ? AMBER : undefined },
-        { label: 'Rated power',        value: 'not instrumented',   sub: 'bess_units not on tick payload — Phase 4 scope' },
-        { label: 'Anchor reserve',     value: '1.0 MW',              colour: AMBER, sub: 'withheld for grid-forming (§7.1.2)' },
-        { label: 'Available power',    value: `${availMW.toFixed(1)} MW`,    colour: BATTERY },
-        { label: 'Current output',     value: `${outputMW.toFixed(2)} MW` },
-        { label: 'Usable energy',      value: 'not instrumented',   sub: 'bess_units not on tick payload — Phase 4 scope' },
-        { label: 'Bridging basis',     value: tick.bridging_basis.replace('_', ' ') },
-        { label: 'State of health',    value: 'not modelled',        sub: 'no degradation curve in this version' },
+        { label: 'State of charge',   value: `${socPct}%`,        colour: soc < 0.2 ? RED : soc < 0.4 ? AMBER : undefined },
+        { label: 'Rated power',       value: 'not instrumented',  sub: 'bess_units not on tick payload — Phase 4 scope' },
+        { label: 'Anchor reserve',    value: '1.0 MW',            colour: AMBER, sub: 'withheld for grid-forming (§7.1.2)' },
+        { label: 'Current output',    value: `${outputMW.toFixed(2)} MW`, colour: BATTERY },
+        { label: 'Usable energy',     value: 'not instrumented',  sub: 'bess_units not on tick payload — Phase 4 scope' },
+        { label: 'Bridging basis',    value: tick.bridging_basis.replace('_', ' ') },
+        { label: 'State of health',   value: 'not modelled',      sub: 'no degradation curve in this version' },
       ],
-      secondary,
       why: [
         'The battery serves two purposes simultaneously: grid-forming anchor and bridge reserve.',
         'One megawatt is permanently withheld to regulate frequency — this is the anchor reserve (§7.1.2).',
