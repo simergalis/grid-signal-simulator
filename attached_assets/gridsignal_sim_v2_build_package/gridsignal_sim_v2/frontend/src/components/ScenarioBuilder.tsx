@@ -187,6 +187,7 @@ function blankSpec(): ScenarioSpec {
     pue_base: 1.03,
     end_sim_time: 300,
     default_playback_speed: 1,
+    demo_description: '',
     pms_config: null,
   }
 }
@@ -250,6 +251,8 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
   const [warnings,      setWarnings]      = useState<string[]>([])
   const [physicsOpen,   setPhysicsOpen]   = useState(false)
   const [physicsParams, setPhysicsParams] = useState<PhysicsParams>(defaultPhysicsParams())
+  const [aiBusy,        setAiBusy]        = useState(false)
+  const [aiErr,         setAiErr]         = useState<string | null>(null)
 
   // If editing, load the existing spec
   useEffect(() => {
@@ -348,6 +351,41 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
     patch({ irradiance_steps: spec.irradiance_steps.filter((_, idx) => idx !== i) })
   }
 
+  // ── Demo description helpers ──────────────────────────────────────────────
+
+  const handleTts = () => {
+    const text = spec.demo_description?.trim()
+    if (!text || !('speechSynthesis' in window)) return
+    window.speechSynthesis.cancel()
+    const utt = new SpeechSynthesisUtterance(text)
+    utt.rate = 0.95
+    window.speechSynthesis.speak(utt)
+  }
+
+  const handleImproveWithAI = async () => {
+    setAiBusy(true)
+    setAiErr(null)
+    try {
+      const resp = await fetch('/api/ai/improve-description', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          text:                 spec.demo_description ?? '',
+          scenario_name:        spec.name,
+          scenario_description: spec.description,
+        }),
+      })
+      if (!resp.ok) throw new Error(`${resp.status}: ${await resp.text()}`)
+      const data = await resp.json() as { improved: string }
+      patch({ demo_description: data.improved })
+    } catch (e) {
+      setAiErr(String(e))
+    } finally {
+      setAiBusy(false)
+    }
+  }
+
   // ── Save ──────────────────────────────────────────────────────────────────
   const handleSave = async () => {
     if (!spec.name.trim()) { setErr('Name is required'); return }
@@ -441,6 +479,47 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                   onChange={e => patch({ description: e.target.value })}
                 />
               </label>
+
+              {/* ── Scenario Presentation copy ──────────────────────────── */}
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-muted">Scenario Presentation</span>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={handleTts}
+                      disabled={!spec.demo_description?.trim()}
+                      title="Read aloud (browser TTS)"
+                      className="rounded border border-border px-2 py-0.5 text-[10px] text-muted
+                                 hover:border-accent hover:text-accent disabled:opacity-30
+                                 transition-colors"
+                    >
+                      🔊 TTS
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleImproveWithAI}
+                      disabled={aiBusy}
+                      title="Generate or improve with Mistral AI"
+                      className="rounded border border-accent/60 px-2 py-0.5 text-[10px] text-accent
+                                 hover:bg-accent/10 disabled:opacity-40 transition-colors"
+                    >
+                      {aiBusy ? '…generating' : '✨ Improve With AI'}
+                    </button>
+                  </div>
+                </div>
+                <textarea
+                  className="w-full rounded border border-border bg-canvas px-2 py-1 text-xs text-text
+                             focus:outline-none focus:ring-1 focus:ring-accent resize-none"
+                  rows={3}
+                  placeholder="Write what this scenario demonstrates for operators watching live…"
+                  value={spec.demo_description ?? ''}
+                  onChange={e => patch({ demo_description: e.target.value })}
+                />
+                {aiErr && (
+                  <p className="text-[10px] text-danger font-mono truncate" title={aiErr}>{aiErr}</p>
+                )}
+              </div>
             </div>
           </section>
 

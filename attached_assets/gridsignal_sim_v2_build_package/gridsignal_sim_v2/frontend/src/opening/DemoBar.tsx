@@ -67,6 +67,7 @@ export function DemoBar({
 
   const [speed,    setSpeed]    = useState(1)
   const [duration, setDuration] = useState(1800)
+  const [demoDesc, setDemoDesc] = useState<string | null>(null)
   const [busy,     setBusy]     = useState(false)
   const [error,    setError]    = useState<string | null>(null)
 
@@ -141,10 +142,11 @@ export function DemoBar({
     let cancelled = false
     fetch(`/scenarios/${selectedId}`)
       .then(r => r.ok ? r.json() : null)
-      .then((data: { spec: { default_playback_speed?: number; end_sim_time?: number } } | null) => {
+      .then((data: { spec: { default_playback_speed?: number; end_sim_time?: number; demo_description?: string } } | null) => {
         if (cancelled || !data?.spec) return
         if (data.spec.default_playback_speed != null) setSpeed(data.spec.default_playback_speed)
         if (data.spec.end_sim_time           != null) setDuration(data.spec.end_sim_time)
+        setDemoDesc(data.spec.demo_description?.trim() || null)
       })
       .catch(() => {/* leave current values unchanged */})
     return () => { cancelled = true }
@@ -367,12 +369,20 @@ export function DemoBar({
         >
           {copy.heading}
         </div>
-        <div className="font-sans" style={{ fontSize: 11, color: '#e6ecf2', lineHeight: 1.5 }}>
-          {copy.line1}
-        </div>
-        <div className="font-sans" style={{ fontSize: 11, color: '#7d8b9c', lineHeight: 1.5 }}>
-          {copy.line2}
-        </div>
+        {demoDesc ? (
+          <div className="font-sans" style={{ fontSize: 11, color: '#e6ecf2', lineHeight: 1.5 }}>
+            {demoDesc}
+          </div>
+        ) : (
+          <>
+            <div className="font-sans" style={{ fontSize: 11, color: '#e6ecf2', lineHeight: 1.5 }}>
+              {copy.line1}
+            </div>
+            <div className="font-sans" style={{ fontSize: 11, color: '#7d8b9c', lineHeight: 1.5 }}>
+              {copy.line2}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Running label — scenario + speed */}

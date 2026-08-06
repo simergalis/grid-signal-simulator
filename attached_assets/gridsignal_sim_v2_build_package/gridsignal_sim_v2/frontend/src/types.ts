@@ -400,6 +400,8 @@ export interface ScenarioSpec {
   island_mode: boolean
   pue_base: number                    // [1.0, 2.0]
   end_sim_time: number                // [60, 86400] s
+  /** Operator-facing "What this demonstrates" copy for the DemoBar. Empty = use hardcoded default. */
+  demo_description?: string
   /** Default playback speed stored with the scenario. 0 = max-speed; >0 = sim-s per real-s. */
   default_playback_speed: number
   pms_config: PmsConfigSpec | null    // null = PMS disabled

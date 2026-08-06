@@ -394,6 +394,10 @@ class ScenarioSpec(BaseModel):
     )
     pue_base: float = Field(default=1.03, ge=1.0, le=2.0)
     end_sim_time: float = Field(default=300.0, ge=60.0, le=86400.0)
+    # Operator-facing "What this demonstrates" copy shown in the DemoBar.
+    # Plain prose, 1-3 sentences.  Empty string = fall back to the hardcoded default.
+    demo_description: str = ""
+
     # Default playback speed stored with the scenario so operators don't have to
     # re-select it every run.  0 = max-speed sentinel; >0 = simulated-s per real-s.
     # Honoured by the "Run" button in the Scenarios modal and the DemoBar auto-fill.
