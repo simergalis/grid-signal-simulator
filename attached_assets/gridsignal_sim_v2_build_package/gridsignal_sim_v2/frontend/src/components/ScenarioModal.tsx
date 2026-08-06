@@ -71,11 +71,13 @@ function Toast({ msg, kind, onDismiss }: { msg: string; kind: 'ok' | 'err'; onDi
 
 interface Props {
   onClose:       () => void
-  onNew:         () => void          // closes modal + opens ScenarioBuilder (new)
-  onEdit:        (id: string) => void // closes modal + opens ScenarioBuilder (edit)
+  onNew:         () => void           // closes modal + opens ScenarioBuilder (new)
+  onEdit:        (id: string) => void  // closes modal + opens ScenarioBuilder (edit)
+  /** Called after a run is successfully started from the Execute button. */
+  onExecute?:    (runId: string, speed: number, socFloor?: number, socCeil?: number) => void
 }
 
-export function ScenarioModal({ onClose, onNew, onEdit }: Props) {
+export function ScenarioModal({ onClose, onNew, onEdit, onExecute }: Props) {
   const scenarios      = useScenarioStore(s => s.scenarios)
   const isLoading      = useScenarioStore(s => s.isLoading)
   const fetchScenarios = useScenarioStore(s => s.fetchScenarios)
@@ -90,8 +92,30 @@ export function ScenarioModal({ onClose, onNew, onEdit }: Props) {
   const [deleteBusy,   setDeleteBusy]   = useState(false)
   const [uploadBusy,   setUploadBusy]   = useState(false)
   const [downloadBusy, setDownloadBusy] = useState<string | null>(null)
+  const [executeBusy,  setExecuteBusy]  = useState<string | null>(null)
   const [dragOver,     setDragOver]     = useState(false)
   const [search,       setSearch]       = useState('')
+
+  // ── Execute (start a run directly from the scenario list) ──────────────────
+  const handleExecute = async (scenarioId: string) => {
+    setExecuteBusy(scenarioId)
+    setToast(null)
+    try {
+      const resp = await fetch('/runs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scenario_id: scenarioId, playback_speed: 1, end_sim_time: 1800 }),
+      })
+      if (!resp.ok) throw new Error(`${resp.status}: ${await resp.text()}`)
+      const data = await resp.json() as { run_id: string; soc_floor_pct?: number; soc_ceil_pct?: number }
+      onExecute?.(data.run_id, 1, data.soc_floor_pct, data.soc_ceil_pct)
+      onClose()
+    } catch (e) {
+      setToast({ msg: `Failed to start run: ${String(e)}`, kind: 'err' })
+    } finally {
+      setExecuteBusy(null)
+    }
+  }
 
   useEffect(() => { fetchScenarios() }, [fetchScenarios])
 
@@ -299,6 +323,7 @@ export function ScenarioModal({ onClose, onNew, onEdit }: Props) {
                   const seeded       = isSeeded(s.scenario_id)
                   const isConfirming = confirmId === s.scenario_id
                   const isDown       = downloadBusy === s.scenario_id
+                  const isExec       = executeBusy === s.scenario_id
 
                   return (
                     <tr key={s.scenario_id}
@@ -350,6 +375,25 @@ export function ScenarioModal({ onClose, onNew, onEdit }: Props) {
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1.5">
+                            {/* Execute — start run immediately */}
+                            <button
+                              onClick={() => handleExecute(s.scenario_id)}
+                              disabled={!!executeBusy}
+                              title="Start a run with this scenario"
+                              className="inline-flex items-center gap-1 rounded border px-2 py-0.5
+                                         text-[10px] font-semibold transition-colors disabled:opacity-40"
+                              style={{
+                                borderColor: '#3fb6a8aa',
+                                color:        '#3fb6a8',
+                                background:   isExec ? 'rgba(63,182,168,0.12)' : 'rgba(63,182,168,0.06)',
+                              }}
+                            >
+                              {isExec
+                                ? <span className="inline-block h-2.5 w-2.5 animate-spin rounded-full border border-accent border-t-transparent" />
+                                : <span>▶</span>
+                              }
+                              {isExec ? 'Starting…' : 'Run'}
+                            </button>
                             <button onClick={() => onEdit(s.scenario_id)}
                               className="rounded border border-border px-2 py-0.5 text-[10px] text-muted
                                          hover:border-accent hover:text-accent transition-colors">

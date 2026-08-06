@@ -264,6 +264,10 @@ function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
             onClose={() => setScenariosOpen(false)}
             onNew={() => { setScenariosOpen(false); handleNewScenario() }}
             onEdit={id => { setScenariosOpen(false); handleEditScenario(id) }}
+            onExecute={(runId, speed, socFloor, socCeil) => {
+              setScenariosOpen(false)
+              handleRunStarted(runId, speed, socFloor, socCeil)
+            }}
           />
         )}
 
@@ -384,6 +388,9 @@ function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
           <ScenarioManagerPage
             onNewScenario={handleNewScenario}
             onEditScenario={handleEditScenario}
+            onExecute={(runId, speed, socFloor, socCeil) =>
+              handleRunStarted(runId, speed, socFloor, socCeil)
+            }
           />
         </main>
       ) : currentPage === 'admin' && role === 'admin' ? (
