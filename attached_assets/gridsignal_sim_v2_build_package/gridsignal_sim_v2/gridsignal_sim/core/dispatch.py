@@ -500,27 +500,22 @@ class DispatchArbitrator:
             _offline = [t for t in _active_turbines if t.state == TurbineState.OFFLINE]
             _on_bus  = [t for t in _active_turbines if t.state != TurbineState.OFFLINE]
 
-            # ── Stage offline turbines: sequential start, one unit per call ────
-            # D-05 sequential-start contract (DR-2026-08-06, §7.1.3):
-            # at most ONE unit transitions from OFFLINE per dispatch event.
-            #
-            # The N_needed+1 simultaneous-start formula is removed.  Starting
-            # N_needed+1 units at once violates the sequential-start contract and
-            # produces the simultaneous-RAMPING defect observed in TC-87/TC-88.
-            #
-            # The N-1 spare unit is staged by the per-tick headroom check in
-            # evaluate_tick() (simulation_core.py:661-692) once the first unit
-            # becomes SYNCHRONISED and fleet utilisation exceeds the headroom
-            # threshold.  BESS bridges any gap between single-unit ramp capacity
-            # and demand until the running unit is fully synchronised.
-            #
-            # When delta_p_mw is zero or negative there is no demand increment to
-            # assign; skip the call entirely (stage_target(0, OFFLINE) is a no-op
-            # but the N-1 spare is handled by the per-tick headroom check anyway).
+            # ── Stage offline turbines: N_needed + 1 N-1 spare ──────────────────
+            # N_needed = ceil(delta_p_mw / rated_mw): the minimum number of units
+            # needed to cover the demand step.  The +1 spare provides N-1 reserve:
+            # if the first online unit trips immediately after startup, the surviving
+            # fleet still has enough rated headroom to close the deficit (closable=True).
+            # Without +1, a single-turbine fleet has no N-1 survivor and contingency
+            # is CANNOT_CARRY.
             if _offline:
-                _eff_delta = max(delta_p_mw, 0.0)
-                if _eff_delta > 0.0:
-                    _offline[0].stage_target(_eff_delta, sim_time)
+                _eff_delta = max(delta_p_mw, 0.0)   # never a negative start target
+                _n_start = min(
+                    max(1, math.ceil(_eff_delta / _offline[0].config.rated_mw) + 1),
+                    len(_offline),
+                )
+                _per_start_target = _eff_delta / _n_start if _n_start else 0.0
+                for _ht in _offline[:_n_start]:
+                    _ht.stage_target(_per_start_target, sim_time)
 
             # ── On-bus units: raise targets for positive demand increments ONLY ──
             # A negative delta_p_mw (demand shrinking, e.g. from a SOLAR_STEP

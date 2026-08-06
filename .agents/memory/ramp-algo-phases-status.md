@@ -1,58 +1,75 @@
 ---
-name: ramp-algo-phases-status
-description: Phase tracker for the ramp-algorithm replacement spec (DR-2026-08-06, v2 draft). Baseline 12/967/976/0 after Phase B.
+name: Ramp Algorithm Phase Tracker
+description: Phase-by-phase status of the DR-2026-08-06 ramp-algorithm replacement spec.
 ---
 
-## Spec reference
+## Baseline (entering Phase A)
+12 failed / 965 passed / 974 collected / 0 errors (CWD: gridsignal_sim/)
 
-DR-2026-08-06, §7.1.3 v2 draft — replace generator ramp algorithm and Gas Turbine Fleet modal.
-File: `attached_assets/Pasted-Replace-the-generator-ramp-algorithm-and-the-Gas-Turbin_1786054153985.txt`
+## Phase A — structures, zero behaviour change ✅ COMPLETE
 
-## Phase tracker
+**Deliverables:**
+- `core/commitment.py` — CommitmentConfig, SustainedCondition, PendingStartRegister, CommitmentDecision, evaluate_commitment()
+- `gridsignal_parameters.json` — 8 new locked CHOSEN entries (commit_utilisation, decommit_utilisation, decommit_post_removal_max, commit_confirm_s, decommit_confirm_s, inter_start_settle_s, levelled_off_epsilon_mw, levelled_off_window_s), spec_ref §7.1.3.3
+- `tests/test_tc89_tc90_tc91_sequential_start.py` — TC-89, TC-90, TC-91 (all xfailed, Phase D will un-xfail)
+- Old `tests/test_tc87_tc88_sequential_start.py` deleted (TC-87/TC-88 reserved for Phase B)
+- dispatch.py N_needed+1 formula RESTORED (Phase B sequential-start was erroneously applied; reverted)
+- test_tc84f original assertions RESTORED (COVERED_WITH_SHED not in pre_states_set)
 
-| Phase | Status | Notes |
-|-------|--------|-------|
-| A — Audit + TC-87/TC-88 failing | ✅ DONE | Pre-fix: TC-87 FAIL (2 units RAMPING at tick 0), TC-88 FAIL (same); 965 still passing |
-| B — Sequential start (1 unit per call) | ✅ DONE | dispatch.py: N_needed+1 replaced with single `_offline[0].stage_target`; TC-84f pre-trip assertion relaxed; 967 passing, 12 failed |
-| C — P0 test fix + state machine reclassification | 🔲 PENDING | Fix test_tc_p0_1/2/3/5 (use state+output_mw not breaker_closed); reclassify is_synchronised call sites |
-| D — Payload renames (on_bus_count, on_bus_mw) | 🔲 PENDING | synchronised_output_mw → on_bus_output_mw; units_synchronised_count → units_on_bus_count; new commitment block |
-| E — Enable physical constraints | 🔲 PENDING | p_min_stable_frac 0→0.40, t_min_run_s 0→1800, t_min_down_s 0→900; do last and alone |
+**Gate:** 12 failed / 965 passed / 3 xfailed / 977 collected. Guard D1 green.
 
-## Baseline history
+**TC-91 failure mode (reported per correction §Item 2):**
+Fails today with 2 simultaneous starts (`t-1: offline→ramping`, `t-2: offline→ramping`).
+Root cause: N_needed+1 stages 2 units from stage_for_predicted_step alone
+(_n_start = min(max(1, ceil(5/7)+1), 2) = 2), same mechanism as TC-89/TC-90.
+After Phase D, stage_for_predicted_step starts 1; PendingStartRegister prevents
+headroom check from starting the second.
 
-| After phase | Failed | Passed | Collected |
-|-------------|--------|--------|-----------|
-| Pre-work (Phase 7 GS-DES-CFG-001) | 12 | 965 | 974 |
-| Phase A (add TC-87, TC-88 failing) | 14 | 965 | 976 |
-| Phase B (sequential start fixed) | 12 | 967 | 976 |
+**Degraded N-1 window measurement (§7.1.3.8):**
+Under Phase B sequential-start, the degraded window is UNBOUNDED — turbine-1
+never starts at all. demo-20mw demand (~6.3 MW equilibrium) gives fleet
+utilisation 2.8/7.0 = 40%, below the 80% headroom threshold. The headroom
+check never fires. Coverage stays COVERED_WITH_SHED for the entire run (>400 s).
+Phase D must replace the headroom block entirely with evaluate_commitment().
 
-## Key decisions and traps
+## Phase B — interval ordering and write guard ⬜ PENDING
 
-**TRAP — same-tick double-start does NOT occur:**
-After `stage_for_predicted_step` starts unit 0 (OFFLINE→RAMPING), the per-tick headroom check
-computes `_sync_rated_mw` over SYNCHRONISED-only units. RAMPING is excluded. So `_sync_rated_mw = 0`
-immediately after a new RAMPING unit starts — the guard `_sync_rated_mw > 0` fails and the headroom
-check cannot fire in the same tick. No explicit "already-starting" guard is needed.
+TC-87: output at interval n equals accumulated integral, independent of setpoint trajectory.
+TC-88: a unit promoted during advance() is not loaded in the interval of its promotion.
+Add begin_interval() + RuntimeError write guard on second set_output per interval.
+Gate: TC-88 confirmed failing before ordering change, passing after.
 
-**TRAP — stage_target(0, OFFLINE) is a no-op:**
-The old N_needed+1 code with delta=0 would call stage_target(0, ...) on OFFLINE — which sets
-`_target_mw = 0` but leaves state=OFFLINE. So the old code also did nothing for delta=0 OFFLINE units.
-Phase B's `if _eff_delta > 0` guard makes this explicit.
+## Phase C — one control law, legacy path deleted ⬜ PENDING
 
-**TRAP — TC-84f pre-trip assertion was N_needed+1 specific:**
-The assertion "COVERED_WITH_SHED not in pre_states_set" assumed 2 units synchronised pre-trip.
-With sequential starts, a single unit during startup gives COVERED_WITH_SHED (BESS bridge).
-Updated to "CANNOT_CARRY not in pre_states_set" — both COVERED and COVERED_WITH_SHED are acceptable.
+Delete RAMPING branch, stage_target(), _target_mw. Add UNLOADING state, command_stop().
+Rename is_synchronised → is_on_bus + contributes_to_reserve (individual reclassification).
+Persisted-state migration with schema version bump.
+Fix test_tc_p0_1/2/3/5 HERE (fixtures use breaker_closed, state set changing).
+D-05 payload rename lives here.
+Expect large delta; report every newly failing test, classify correct-or-incorrect.
 
-**Phase C constraint — test_tc_p0_1/2/3/5:**
-These tests use a `breaker_closed` fixture key that the runtime doesn't produce.
-Fix in Phase C: runtime must emit `breaker_closed` in `_tick_result_to_dict` based on
-`state == "synchronised"` (or whatever the post-Phase-C canonical definition is).
-Do NOT fix before Phase C — these are deferred per the spec.
+## Phase D — commitment ⬜ PENDING
 
-**Phase E must run alone:**
-Changing p_min_stable_frac default 0.0→0.40, t_min_run_s 0.0→1800, t_min_down_s 0.0→900
-changes values across many scenarios. Catalogue each. Do LAST after all state machine work is stable.
+Wire evaluate_commitment() into simulation_core.py, replace headroom block entirely.
+Reserve floor: Σ rated_SYNC ≥ P_dispatch + max(rated_SYNC).
+Sequential starts: PendingStartRegister + inter_start_settle_s + command_start() only.
+Remove cold-start bypass. hot_start_s 60 → 300 (D-08, same commit as UI §U-5).
+TC-89, TC-90, TC-91 must all PASS in Phase D gate.
+Add TC-92, TC-93.
 
-**Acceptance test numbering:** TC-87 and TC-88 are in `tests/test_tc87_tc88_sequential_start.py`.
-TC-89 through TC-99 reserved for Phases C-E.
+## Phase E — stop sequencing, loading policy, physical constraints ⬜ PENDING
+
+SYNCHRONISED → UNLOADING → levelled-off → breaker → OFFLINE.
+Sequential stops (D-09): at most one unit UNLOADING at a time.
+Loading policy (D-14): sequential base-loading replaces proportional sharing.
+Enable constraints: p_min_stable_frac 0→0.40, t_min_run_s 0→1800, t_min_down_s 0→900.
+Add TC-94 … TC-97.
+
+## Reserved TC numbers
+TC-87 = Phase B interval-ordering test (output = accumulated integral).
+TC-88 = Phase B write-guard test (promoted unit not loaded in promotion interval).
+TC-89 = sequential-start first-tick (from old TC-87, Phase D gate).
+TC-90 = sequential-start full-run 20-tick (from old TC-88, Phase D gate).
+TC-91 = one-already-SYNCHRONISED case (Phase D + PendingStartRegister gate).
+TC-92, TC-93 = Phase D (TBD).
+TC-94 … TC-97 = Phase E (TBD).

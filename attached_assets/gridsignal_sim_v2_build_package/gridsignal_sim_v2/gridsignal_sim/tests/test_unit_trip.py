@@ -243,17 +243,16 @@ def test_tc84f_demo_20mw_contingency_state_changes_after_trip():
     """End-to-end: run the seeded demo-20mw scenario through t=125 s and
     confirm that:
       1. turbine-1 is OFFLINE on the first tick after t=120 s.
-      2. contingency_coverage.state is COVERED or COVERED_WITH_SHED before the
-         trip (never UNCOVERED or CANNOT_CARRY).
+      2. contingency_coverage.state is COVERED before the trip.
       3. contingency_coverage.state does not reach UNCOVERED after the trip;
          COVERED_WITH_SHED is acceptable (curtailment closes the gap).
 
-    With sequential starts (D-05), demo-20mw starts turbine-0 at t=0 and
-    turbine-1 via the per-tick headroom check once turbine-0 is near capacity.
-    During the startup window (before turbine-0 is synchronised), N-1 contingency
-    coverage relies on BESS bridge capacity — COVERED_WITH_SHED is the correct
-    and expected result during this window.  After turbine-1 trips at t=120 s,
-    only turbine-0 remains; N-1 assessment is COVERED_WITH_SHED (curtailment
+    With incremental dispatch, demo-20mw starts turbine-0 and turbine-1
+    (N_needed + 1 N-1 spare) at t=0.  Turbines 2 and 3 do not start because
+    the 600-node / ~6.3 MW job never loads the 2-unit fleet above the 80 %
+    headroom threshold needed to trigger the per-tick startup check.  After
+    turbine-1 trips at t=120 s, only turbine-0 remains synchronised; N-1
+    assessment for that single-unit fleet is COVERED_WITH_SHED (curtailment
     closes the hypothetical second trip).  The trip machinery still fires and
     the dashboard gen-trip indicator changes visual state — that is the TC-84
     acceptance criterion, not the post-trip coverage tier.
@@ -305,12 +304,10 @@ def test_tc84f_demo_20mw_contingency_state_changes_after_trip():
     pre_states_set = set(pre_trip_states)
     post_states_set = set(post_trip_states)
 
-    # With sequential starts (D-05), the pre-trip window may include
-    # COVERED_WITH_SHED during the single-unit startup window (BESS bridges
-    # while turbine-0 ramps; the headroom check starts turbine-1 later).
-    # The hard constraint is that coverage must never reach CANNOT_CARRY.
-    assert ContingencyState.CANNOT_CARRY not in pre_states_set, (
-        f"Pre-trip contingency must not reach CANNOT_CARRY; got {pre_states_set}"
+    # With N_needed + 1 turbines synchronised before the trip, the N-1
+    # contingency must be COVERED throughout the pre-trip window.
+    assert ContingencyState.COVERED_WITH_SHED not in pre_states_set, (
+        f"Pre-trip contingency_coverage must be COVERED; got {pre_states_set}"
     )
     # After turbine-1 trips the single surviving unit's N-1 contingency
     # is COVERED_WITH_SHED (curtailment closes a hypothetical turbine-0 trip).

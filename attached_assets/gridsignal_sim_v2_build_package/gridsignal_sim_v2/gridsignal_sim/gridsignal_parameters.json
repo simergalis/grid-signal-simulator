@@ -623,6 +623,118 @@
         "group": "bess"
       },
       "note": "Default for BessConfig.p_anchor_reserve_mw. Scenario-level override via anchor_reserve_pct. See locked entry p_anchor_reserve_mw_san_diego for the San Diego site override."
+    },
+    {
+      "key": "commit_utilisation",
+      "value": 0.80,
+      "unit": "dimensionless",
+      "label": "Commitment trigger — fleet utilisation threshold",
+      "provenance": "CHOSEN",
+      "provenance_detail": "CHOSEN — 0.80 is the midpoint of the 75–85% range used by independent system operators for spinning-reserve dispatch triggers. No measured basis against this fleet class (UC-1). Calibrate against commissioning data.",
+      "spec_ref": "v2.5 §7.1.3.3",
+      "ui": {
+        "control": "readonly",
+        "group": "commitment"
+      },
+      "note": "Start the next offline unit when fleet utilisation U = P_demand / Σ rated_SYNCHRONISED ≥ this value, sustained commit_confirm_s seconds. Primary commit trigger. Reserve-floor violation is the secondary (always-binding) trigger."
+    },
+    {
+      "key": "decommit_utilisation",
+      "value": 0.50,
+      "unit": "dimensionless",
+      "label": "Decommitment trigger — fleet utilisation threshold",
+      "provenance": "CHOSEN",
+      "provenance_detail": "CHOSEN — 0.50 provides a 30-point gap below commit_utilisation (0.80), giving a 300 s decommit hysteresis window time to expire before conditions re-trigger a commit. No measured basis (UC-2). The asymmetry (commit 0.80, decommit 0.50) is normative per §7.1.3.",
+      "spec_ref": "v2.5 §7.1.3.3",
+      "ui": {
+        "control": "readonly",
+        "group": "commitment"
+      },
+      "note": "Consider decommitting the last-committed unit only when U ≤ this value, sustained decommit_confirm_s seconds. Must be evaluated together with decommit_post_removal_max and the reserve floor."
+    },
+    {
+      "key": "decommit_post_removal_max",
+      "value": 0.70,
+      "unit": "dimensionless",
+      "label": "Decommitment — maximum utilisation after unit removal",
+      "provenance": "CHOSEN",
+      "provenance_detail": "CHOSEN — 0.70 is below commit_utilisation (0.80) so decommitting does not immediately re-trigger a commit. No measured basis (UC-3). The 10-point gap is a tuning parameter; production systems should set it from load-forecast variance.",
+      "spec_ref": "v2.5 §7.1.3.3",
+      "ui": {
+        "control": "readonly",
+        "group": "commitment"
+      },
+      "note": "The utilisation that would result from removing the candidate unit (P_demand / Σ rated_remaining) must not exceed this value. Guards against decommitting into an immediately-recommit situation."
+    },
+    {
+      "key": "commit_confirm_s",
+      "value": 30,
+      "unit": "s",
+      "label": "Commitment confirmation window",
+      "provenance": "CHOSEN",
+      "provenance_detail": "CHOSEN — 30 s is short enough to prevent load-shedding during a sustained demand step but long enough to reject a transient spike lasting fewer than six 5-second ticks. No measured basis (UC-1). The 30 s / 300 s asymmetry (commit fast, decommit slow) is normative.",
+      "spec_ref": "v2.5 §7.1.3.3",
+      "ui": {
+        "control": "readonly",
+        "group": "commitment"
+      },
+      "note": "Fleet utilisation must exceed commit_utilisation continuously for this many seconds before a commit command is issued. Resets to 0 on any tick where the condition is false."
+    },
+    {
+      "key": "decommit_confirm_s",
+      "value": 300,
+      "unit": "s",
+      "label": "Decommitment confirmation window",
+      "provenance": "CHOSEN",
+      "provenance_detail": "CHOSEN — 300 s equals one cold-start time (r_asset 0.2 MW/s × 7 MW ≈ 35 s + startup countdown; round to a commissioning-friendly 5-minute window). Prevents short-cycling a turbine that was just committed. No measured basis (UC-4). Normative asymmetry: 10× commit_confirm_s.",
+      "spec_ref": "v2.5 §7.1.3.3",
+      "ui": {
+        "control": "readonly",
+        "group": "commitment"
+      },
+      "note": "All decommit conditions must hold continuously for this many seconds. The long window prevents short-cycling (commit → decommit → commit within one cold-start window)."
+    },
+    {
+      "key": "inter_start_settle_s",
+      "value": 60,
+      "unit": "s",
+      "label": "Inter-start settle interval",
+      "provenance": "CHOSEN",
+      "provenance_detail": "CHOSEN — 60 s is approximately twice the synchronisation time for the default turbine (r_asset 0.2 MW/s × 7 MW ≈ 35 s). Gives the first unit time to settle at a stable setpoint before the commitment engine can issue a second start command. No measured basis (UC-1).",
+      "spec_ref": "v2.5 §7.1.3.3",
+      "ui": {
+        "control": "readonly",
+        "group": "commitment"
+      },
+      "note": "PendingStartRegister.settled_at() uses this value. The next command_start() may not issue until inter_start_settle_s has elapsed since the previous unit reached SYNCHRONISED."
+    },
+    {
+      "key": "levelled_off_epsilon_mw",
+      "value": 0.05,
+      "unit": "MW",
+      "label": "Levelled-off output deadband",
+      "provenance": "CHOSEN",
+      "provenance_detail": "CHOSEN — 0.05 MW is 0.7% of the default 7 MW turbine rated output. Provides numerical tolerance for floating-point convergence of the setpoint tracking loop without masking real load-following errors. No measured basis.",
+      "spec_ref": "v2.5 §7.1.3.3",
+      "ui": {
+        "control": "readonly",
+        "group": "commitment"
+      },
+      "note": "A unit is considered levelled-off when |output_mw - setpoint_mw| < levelled_off_epsilon_mw, sustained levelled_off_window_s seconds. levelled_off is a derived predicate, never a TurbineState."
+    },
+    {
+      "key": "levelled_off_window_s",
+      "value": 10,
+      "unit": "s",
+      "label": "Levelled-off confirmation window",
+      "provenance": "CHOSEN",
+      "provenance_detail": "CHOSEN — 10 s (two 5-second ticks) is the minimum window to confirm a unit has settled, avoiding false levelled-off detection during transient output oscillation. No measured basis.",
+      "spec_ref": "v2.5 §7.1.3.3",
+      "ui": {
+        "control": "readonly",
+        "group": "commitment"
+      },
+      "note": "The levelled-off condition (|output - setpoint| < levelled_off_epsilon_mw) must be sustained this many seconds before the stop sequencer considers the unit ready to begin unloading (Phase E)."
     }
   ],
   "excluded": [

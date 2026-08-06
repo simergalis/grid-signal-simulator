@@ -1,66 +1,53 @@
 ---
-name: incremental-turbine-dispatch
-description: Design decisions for the incremental turbine startup dispatch in stage_for_predicted_step and the per-tick headroom check in evaluate_tick.
+name: Incremental Turbine Dispatch
+description: Current dispatch algorithm state; TC-84f trip test; sequential-start Phase D plan.
 ---
 
-## Rule
+## Current dispatch state (after Phase A revert)
 
-### stage_for_predicted_step (dispatch.py) — Phase B sequential-start contract
+`core/dispatch.py` stage_for_predicted_step() uses N_needed+1 formula:
 
-**D-05 sequential-start (current behaviour after Phase B):**
-- At most ONE offline unit starts per call to `stage_for_predicted_step()`.
-- The N_needed+1 simultaneous-start formula is removed.
-- When `_eff_delta > 0`, call `_offline[0].stage_target(_eff_delta, sim_time)` for the first offline unit only.
-- When `_eff_delta == 0` (demand step is zero or negative), skip the call — `stage_target(0, OFFLINE)` is a no-op on OFFLINE units anyway, and the N-1 spare is handled by the per-tick headroom check.
-- BESS bridges the gap until the first unit is SYNCHRONISED and the headroom check can stage the second.
-
-**Negative delta guard (on-bus only, unchanged):**
-- Never propagate `delta_p_mw <= 0` to `_on_bus` turbines — that sends simultaneous stop commands causing the 7.5 MW → 0 oscillation.
-- Guard: `if _on_bus and delta_p_mw > 0.0: stage_target(output + delta/N, ...)`.
-
-### Per-tick headroom check (simulation_core.py — unchanged)
-
-```
-_DISPATCH_HEADROOM_FRAC = 0.20   # start next unit when synchronised fleet ≥ 80% loaded
-_sync_rated_mw = sum(rated for t where t.state == SYNCHRONISED and not hot_standby)
-if _sync_rated_mw > 0 and turbine_output_mw / _sync_rated_mw >= 0.80:
-    first_offline.stage_target(_p_dispatch_droop_mw, sim_time)
-    break  # one at a time
+```python
+_n_start = min(max(1, math.ceil(_eff_delta / _offline[0].config.rated_mw) + 1), len(_offline))
+_per_start_target = _eff_delta / _n_start if _n_start else 0.0
+for _ht in _offline[:_n_start]:
+    _ht.stage_target(_per_start_target, sim_time)
 ```
 
-Key: `_sync_rated_mw` counts SYNCHRONISED-only (not RAMPING). A freshly-RAMPING unit from
-`stage_for_predicted_step` is excluded, so the guard `_sync_rated_mw > 0` prevents a
-same-tick double-start.  The headroom check only fires once the first unit is fully SYNCHRONISED.
+N_needed = ceil(delta/rated); +1 provides N-1 reserve (if first unit trips, survivor has headroom).
+Without +1, single-turbine fleet has CANNOT_CARRY contingency on first startup.
 
-## Why
+## Phase B sequential-start code was REVERTED (see ramp-algo-phases-status.md)
 
-**Why sequential (not N_needed+1):**
-TC-87/TC-88 gate: simultaneous starts violate the sequential-start contract (D-05, §7.1.3).
-The N-1 spare is provided through the staircase: turbine-0 synchronises → headroom check starts
-turbine-1. During the startup window BESS bridges any single-unit contingency.
+A single-unit dispatch was applied in error (Phase D work, not Phase A).
+Revert confirmed: suite gate restored to 12/965/974/0 base + 3 xfailed = 977 collected.
 
-**Why COVERED_WITH_SHED is acceptable pre-trip (TC-84f update):**
-With sequential starts, only turbine-0 is running during the startup window. N-1 contingency for
-a single-unit fleet relies on BESS bridge — legitimately COVERED_WITH_SHED. The old assertion
-("must be COVERED") was specific to the N_needed+1 world. TC-84f's pre-trip assertion now accepts
-COVERED or COVERED_WITH_SHED (must not be CANNOT_CARRY).
+## TC-84f: pre-trip assertion
 
-**Why `stage_target(0, OFFLINE)` is a no-op:**
-`stage_target` only transitions OFFLINE→RAMPING when `target_mw > 0`. With target=0 the stop
-path runs, but `if self.state != OFFLINE` guard prevents any action. Net effect: OFFLINE stays
-OFFLINE, `_target_mw = 0`. The old N_needed+1 code's "delta=0 → start 1 unit with target 0"
-was therefore also a no-op on OFFLINE units — behaviour is preserved.
+test_tc84f_demo_20mw_contingency_state_changes_after_trip (tests/test_unit_trip.py)
+Pre-trip assertion: `COVERED_WITH_SHED not in pre_states_set`
+Why: N_needed+1 starts turbine-0 and turbine-1 at t=0. With both SYNCHRONISED the N-1
+survivor (turbine-1) covers a hypothetical turbine-0 trip → COVERED throughout pre-trip window.
+Post-trip assertion: `CANNOT_CARRY not in post_states_set` (COVERED_WITH_SHED acceptable).
 
-## How to apply
+## TC-89, TC-90, TC-91 (xfailed, Phase D)
 
-- `stage_for_predicted_step` is called for every STARTING/SOLAR_STEP/COMPLETION event (not every tick).
-- The per-tick headroom check in `evaluate_tick` is the sole mechanism for starting units 2+ in a multi-unit fleet.
-- Phases C-E of the ramp-algorithm replacement will migrate this from stage_target/RAMPING to command_start/STARTING.
+All in tests/test_tc89_tc90_tc91_sequential_start.py, marked xfail strict=False.
+TC-89 and TC-90 fail because N_needed+1 starts 2 units simultaneously (tick 0).
+TC-91 fails: with turbine-0 SYNCHRONISED at 6.0 MW and 2 offline units,
+  stage_for_predicted_step(delta=5 MW) → _n_start = 2 → both start simultaneously.
+  After Phase D: 1 unit starts from stage_for_predicted_step; PendingStartRegister
+  prevents headroom check from starting the second.
 
-## Test impact (Phase B)
+## Sequential-start Phase D plan
 
-- **TC-87**: PASSES — at most 1 unit non-OFFLINE after tick 0.
-- **TC-88**: PASSES — at most 1 OFFLINE→non-OFFLINE transition per tick across 20 ticks.
-- **test_tc84f** (test_unit_trip.py): pre-trip assertion updated from "must be COVERED" to "must not be CANNOT_CARRY" (COVERED_WITH_SHED is correct with sequential starts during startup window).
-- All other 965 previously-passing tests: still passing (zero regression).
-- Suite: 12 failed (pre-existing), 967 passed, 976 collected, 0 errors.
+Phase D (see ramp-algo-phases-status.md):
+- evaluate_commitment() from core/commitment.py replaces the headroom block
+- At most 1 unit in STARTING (PendingStartRegister)
+- inter_start_settle_s = 60 s gap between starts
+- command_start() only (no direct state assignment)
+- TC-89, TC-90, TC-91 all must pass
+
+**Why:** N_needed+1 is a simultaneous-start defect. Phase D replaces it with
+commitment-engine-controlled sequential starts, which also gives the operator
+visibility into commitment decisions via evaluate_commitment() output.
