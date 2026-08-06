@@ -49,3 +49,10 @@ uri = "file://attached_assets/scenario_solar_single_turbine_300pct_surge.json"
 type = "unspecified"
 title = "GridSignal Scenario — Solar + Single Turbine, 300% Traffic Surge"
 description = "Upload via POST /scenarios or the scenario selector in GridSignal. 30-minute run, 6 staged job waves, single 15 MW turbine, 6 MW solar anchored at noon."
+
+[[outputs]]
+id = "lJkVrPgT4ET5zNrn_u-gJ"
+uri = "file://gridsignal_source_review.zip"
+type = "unspecified"
+title = "GridSignal Source Review Package"
+description = "282 source files, 2.6 MB — Python backend, React frontend, shared TypeScript libs, and workspace config. Excludes node_modules, __pycache__, .pythonlibs, dist, .git, and binary/lock files."
