@@ -988,3 +988,159 @@ def test_generate_solar_forecast_no_key_auckland_afternoon_nonzero():
         f"should produce non-zero t=0 fraction; got {first_fraction:.4f} — "
         f"UTC offset ({_AUCKLAND_UTC_OFF:+.1f} h) is not being applied"
     )
+
+
+# ---------------------------------------------------------------------------
+# T8 — Full pipeline: Auckland lat/utc_offset → irradiance_steps → p_renewable_mw
+#
+# The T7 tests above verify generate_solar_forecast() and _solar_fraction_at()
+# directly.  This section exercises the complete spec → factory → tick pipeline
+# that runs.py executes for every scenario start:
+#
+#   generate_solar_forecast() with Auckland params
+#   → forecast.samples written into spec_data["irradiance_steps"]
+#   → build_run_context_from_spec() reads those into IrradianceProfile
+#   → evaluate_tick() computes p_renewable_mw
+#
+# If spec field names for latitude or utc_offset ever drift, or if runs.py
+# silently falls back to San Diego defaults, this pipeline test would catch it
+# even though the T7 unit tests remained green.
+#
+# Pass A — Auckland UTC+12 at 04:00 UTC (= 16:00 local, afternoon):
+#   Expects p_renewable_mw > 0 on at least one of 10 ticks.
+#
+# Pass B — utc_offset_h forced to 0 at the same 04:00 UTC:
+#   04:00 UTC treated as 04:00 local (pre-dawn) → all irradiance fractions 0
+#   → p_renewable_mw == 0 on every tick.
+#   Confirms Pass A is sensitive to the offset, not vacuously true.
+# ---------------------------------------------------------------------------
+
+def _auckland_solar_spec(irradiance_steps: list, run_id: str) -> dict:
+    """Minimal 50-Hz spec with a 5 MW solar array and the given irradiance_steps.
+
+    Uses New Zealand's 50 Hz grid frequency and a short 60 s run so the test
+    completes quickly.  A 30 MW turbine provides ample headroom so no reserve
+    constraint fires and obscures the solar signal.
+    """
+    return {
+        "name": f"auckland-solar-pipeline-{run_id}",
+        "end_sim_time": 60.0,
+        "island_mode": False,
+        "frequency_nominal_hz": 50.0,   # New Zealand grid is 50 Hz (APAC)
+        "power_factor": 0.85,
+        "solar_rated_mw": 5.0,
+        "irradiance_steps": irradiance_steps,
+        "turbine_units": [
+            {"asset_id": "t-0", "rated_mw": 30.0, "r_asset_mw_per_s": 10.0}
+        ],
+        "bess_units": [
+            {
+                "asset_id": "b-0", "rated_mw": 5.0, "usable_mwh": 2.0,
+                "initial_soc_fraction": 1.0, "grid_forming": False,
+            }
+        ],
+        "workload_events": [
+            {
+                "event_type": "starting",
+                "timestamp": 0.0,
+                "job_id": "job-auckland-solar",
+                "node_count": 50,
+                "hardware_profile_id": "enterprise_8gpu_air",
+            }
+        ],
+    }
+
+
+def test_auckland_solar_pipeline_afternoon_produces_nonzero_renewable():
+    """Full pipeline test: Auckland lat/utc_offset at 04:00 UTC (16:00 local)
+    must produce p_renewable_mw > 0 on at least one of 10 ticks.
+
+    Exercises the complete chain that runs.py uses:
+      generate_solar_forecast(lat=-36.85, utc_offset=+12)
+        → irradiance_steps (fractions should be > 0 at local afternoon)
+      → build_run_context_from_spec (wires IrradianceProfile)
+      → evaluate_tick → p_renewable_mw
+
+    If the spec field names for latitude / utc_offset drift, or if the factory
+    silently ignores them and falls back to San Diego defaults, p_renewable_mw
+    would be 0 at 04:00 UTC in San Diego time (pre-dawn there too) and this
+    test catches that even though the T7 unit tests remain green.
+    """
+    from runtime.scenario_factory import build_run_context_from_spec
+
+    with _no_mistral_key():
+        forecast = generate_solar_forecast(
+            60.0,
+            utc_now=_AUCKLAND_AFTERNOON_UTC,      # 04:00 UTC = 16:00 Auckland local
+            site_latitude=_AUCKLAND_LAT,           # -36.85°S
+            site_utc_offset_h=_AUCKLAND_UTC_OFF,  # UTC+12
+            site_name="Auckland, NZ",
+        )
+
+    # Verify the forecast itself carries non-zero fractions before feeding
+    # the pipeline — isolates any failure to the factory/tick layer.
+    first_fraction = forecast.samples[0][1]
+    assert first_fraction > 0.0, (
+        f"Precondition: generate_solar_forecast must return non-zero t=0 fraction "
+        f"for Auckland at 04:00 UTC (16:00 local); got {first_fraction:.4f}"
+    )
+
+    irr_steps = [[t, f] for t, f in forecast.samples]
+    spec = _auckland_solar_spec(irr_steps, "afternoon")
+
+    ctx = build_run_context_from_spec("auckland-afternoon-pipeline", spec)
+    ticks = _run_n_ticks(ctx, 10)
+
+    renewable_mws = [t.p_renewable_mw for t in ticks]
+    assert any(mw > 0.0 for mw in renewable_mws), (
+        f"Auckland pipeline at 04:00 UTC (16:00 local) must produce p_renewable_mw > 0 "
+        f"on at least one of 10 ticks; got {renewable_mws} — "
+        f"irradiance_steps ({irr_steps[:3]!r} …) may not have reached the solar model, "
+        f"or the IrradianceProfile was not wired into the SimulationState"
+    )
+
+
+def test_auckland_solar_pipeline_utcoffset_zero_yields_all_zero_renewable():
+    """Sensitivity check: utc_offset_h forced to 0 at the same 04:00 UTC must
+    produce p_renewable_mw == 0 on all ticks.
+
+    04:00 UTC with offset=0 → local hour is 04:00 (pre-dawn) → physics fraction
+    is 0 → irradiance_steps are all zero → solar arrays contribute nothing.
+
+    This confirms test_auckland_solar_pipeline_afternoon_produces_nonzero_renewable
+    is sensitive to the UTC offset and would catch a regression where the offset
+    is silently dropped or forced to zero.
+    """
+    from runtime.scenario_factory import build_run_context_from_spec
+
+    with _no_mistral_key():
+        forecast_utc0 = generate_solar_forecast(
+            60.0,
+            utc_now=_AUCKLAND_AFTERNOON_UTC,   # same 04:00 UTC wall time
+            site_latitude=_AUCKLAND_LAT,        # same southern latitude
+            site_utc_offset_h=0.0,              # wrong offset → 04:00 local = pre-dawn
+            site_name="Auckland-offset-zero-test",
+        )
+
+    # All fractions must be 0 (pre-dawn at offset=0 means sun below horizon).
+    nonzero_in_forecast = [
+        (t, f) for t, f in forecast_utc0.samples if f > 0.0
+    ]
+    assert not nonzero_in_forecast, (
+        f"Precondition: with utc_offset_h=0 at 04:00 UTC, all forecast fractions "
+        f"must be 0 (pre-dawn local); found non-zero: {nonzero_in_forecast[:3]}"
+    )
+
+    irr_steps = [[t, f] for t, f in forecast_utc0.samples]
+    spec = _auckland_solar_spec(irr_steps, "utc0")
+
+    ctx = build_run_context_from_spec("auckland-utc0-pipeline", spec)
+    ticks = _run_n_ticks(ctx, 10)
+
+    renewable_mws = [t.p_renewable_mw for t in ticks]
+    assert all(mw == 0.0 for mw in renewable_mws), (
+        f"Auckland pipeline with utc_offset_h=0 at 04:00 UTC (pre-dawn local) "
+        f"must produce p_renewable_mw == 0 on all 10 ticks; "
+        f"got non-zero values at ticks: "
+        f"{[(i, mw) for i, mw in enumerate(renewable_mws) if mw > 0]}"
+    )
