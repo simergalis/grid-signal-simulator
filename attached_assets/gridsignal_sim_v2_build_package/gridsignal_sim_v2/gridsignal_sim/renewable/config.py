@@ -58,7 +58,14 @@ class SiteConfig:
         Turbine("gt-02", 5.0, True),
         Turbine("gt-03", 5.0, False),
     ])
-    bess_rated_mw: float = 10.0
+    bess_rated_mw: float = 10.0   # Intentional operating assumption for the renewable SolarSim
+    #   fixture (de-rated / test-convenience value).  This is NOT the vendor nameplate.
+    #   PARAM-07 bess_rated_mw = 15.0 MW (VENDOR_RATING) is the hardware nameplate.
+    #   Production simulations always override via BessUnitSpec.rated_mw (scenarios.py
+    #   uniformly uses 18.0 MW).  Changing this to 15.0 makes the compound-event sizing
+    #   test (test_compound_event_is_additive_and_fails_at_seed) erroneously pass because
+    #   bridging capacity then exceeds the shortfall.  Guard D exemption added; see
+    #   _SCAN_EXEMPTIONS in test_no_hardcoded_parameters.py.
     bess_mwh: float = 5.0
     bess_soc: float = 0.82
     bess_usable_fraction: float = 0.90

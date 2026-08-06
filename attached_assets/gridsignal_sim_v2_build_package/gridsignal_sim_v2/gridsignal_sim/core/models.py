@@ -13,9 +13,16 @@ these dataclasses to stored rows (Design Spec Section 6).
 
 from __future__ import annotations
 
+import logging as _logging
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
+
+# site_parameters: runtime catalogue loader (GS-DES-CFG-001 v1.0).
+# Imported here so SiteConfig field defaults read from gridsignal_parameters.json
+# rather than being hardcoded literals.  The import is safe: site_parameters.py
+# only imports stdlib modules and has no core/ dependencies.
+from core import site_parameters as _sp
 
 
 # ---------------------------------------------------------------------------
@@ -263,16 +270,20 @@ class SiteConfig:
     # synchronous generator fleet (dimensionless). MW ≠ MVA; pf=1 silently
     # underestimates S_base and overestimates df/dt. Typical gas turbine: 0.85.
     # Calibrate against nameplate or vendor data; open parameter (CHOSEN at use site).
-    pue_base: float = 1.03            # source spec Section 4, 1.02-1.05
-    alpha_max: float = 0.20           # source spec Section 8, 0.10-0.30
-    tau_seconds: float = 20.0         # source spec Section 8
-    dt_thermal_seconds: float = 90.0  # source spec Section 8-9, 60-120s
-    uncalibrated: bool = True         # source spec Section 17.3
+    pue_base: float = _sp.value("pue_base")
+    # IT-side overhead: power conversion, distribution, UPS losses, lighting.
+    # Excludes cooling (§4.1).  PROPOSED_HERE; range [1.01, 1.10].
+    # Source: gridsignal_parameters.json PARAM-06.
+    alpha_max: float = _sp.value("alpha_max")             # PROPOSED_HERE §8, 0.10-0.30
+    tau_seconds: float = _sp.value("tau")                 # PROPOSED_HERE §8; key "tau" in catalogue
+    dt_thermal_seconds: float = _sp.value("dt_thermal")   # PROPOSED_HERE §8-9; key "dt_thermal"
+    uncalibrated: bool = True                              # source spec Section 17.3
 
     # ── Confidence band for reserve check (gridsignal_parameters.json §2.5) ──
     # INV-2: reserve check evaluates the band, never the point estimate.
-    # Default 0.0 preserves backward-compatibility for all existing tests and
-    # seeded scenarios; ScenarioSpec defaults to 4.0% per PROPOSED_HERE decision.
+    # band_enabled=False preserves backward-compat for all existing tests and
+    # seeded scenarios.  ScenarioSpec sets band_enabled=True when
+    # band_pct_calibrated > 0 (backward-compat inference in scenario_factory).
     #
     # Decision: band_pct_calibrated = 4%  (PROPOSED_HERE, this document)
     #   Rationale: at 4% calibrated × 2.0 uncalibrated multiplier = 8%,
@@ -286,21 +297,26 @@ class SiteConfig:
     # Decision: band_mult_unmapped_hw = 1.5× (PROPOSED_HERE, this document)
     #   §5.1 requires widening for unmapped hardware; 1.5× is conservative but
     #   avoids excessive alert fatigue when a new profile is first registered.
-    band_pct_calibrated:   float = 0.0   # ±% of peak_shortfall; 0=disabled
-    band_mult_uncalibrated: float = 2.0  # multiplier for uncalibrated site
-    band_mult_unmapped_hw:  float = 1.5  # multiplier for unmapped hardware
+    band_enabled: bool = False
+    # False = point-estimate check (backward-compat).
+    band_pct_calibrated: float = _sp.value("band_pct_calibrated")
+    # ±% of peak_shortfall; only used when band_enabled=True.
+    band_mult_uncalibrated: float = _sp.value("band_mult_uncalibrated")
+    # multiplier for uncalibrated site.
+    band_mult_unmapped_hw: float = _sp.value("band_mult_unmapped_hw")
+    # multiplier for unmapped hardware.
 
     def reserve_band_upper(self, is_unmapped_hw: bool = False) -> float:
         """Band fraction for the reserve check (§2.5, INV-2).
 
         alert ⟺  peak_shortfall × (1 + reserve_band_upper()) > P_bridge_avail
 
-        Returns 0.0 when band_pct_calibrated is 0 (backward-compatible default).
+        Returns 0.0 when band_enabled is False (backward-compatible default).
         Calibrated site: base = band_pct_calibrated / 100.
         Uncalibrated:    base × band_mult_uncalibrated.
         Unmapped HW:     multiply further by band_mult_unmapped_hw.
         """
-        if self.band_pct_calibrated <= 0.0:
+        if not self.band_enabled:
             return 0.0
         base = self.band_pct_calibrated / 100.0
         mult = self.band_mult_uncalibrated if self.uncalibrated else 1.0

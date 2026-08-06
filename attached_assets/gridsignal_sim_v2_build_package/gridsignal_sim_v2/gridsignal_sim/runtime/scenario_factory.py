@@ -425,7 +425,13 @@ def build_run_context_from_spec(
             or spec_data.get("dt_thermal_seconds", 90.0)
         ),
         # Reserve-check confidence band (INV-2, §2.5).
-        # Default 0.0 preserves backward-compat for seeded scenarios and tests.
+        # band_enabled: inferred from band_pct_calibrated for backward-compat —
+        # any pre-existing spec with band_pct_calibrated > 0 activates the band
+        # automatically. Explicit band_enabled in spec_data takes precedence.
+        band_enabled=bool(spec_data.get(
+            "band_enabled",
+            float(spec_data.get("band_pct_calibrated", 0.0)) > 0.0,
+        )),
         band_pct_calibrated=float(spec_data.get("band_pct_calibrated", 0.0)),
         band_mult_uncalibrated=float(spec_data.get("band_mult_uncalibrated", 2.0)),
         band_mult_unmapped_hw=float(spec_data.get("band_mult_unmapped_hw", 1.5)),

@@ -20,8 +20,8 @@ import { BulletBar } from '../../charts/BulletBar'
 const BATTERY = '#4a9fe0'
 const AMBER   = '#f0883e'
 const RED     = '#f85149'
-const RATED_MW  = 18.0   // demo-20mw fleet rated MW
-const USABLE_MWH = 8.0
+// GS-DES-CFG-001 §Phase-3: no module-scope numeric constants.
+// BESS rated MW and usable MWh derived from tick.bess_units[0] at render time.
 
 function fmtBridge(s: number): string {
   if (s >= 86400) return 'full reserve'
@@ -56,8 +56,12 @@ export const storagePanel: PanelConfig = {
     const bridgeStr = fmtBridge(bridge_s)
     const outputMW  = tick.bess_output_mw
 
+    // GS-DES-CFG-001 §Phase-3: derived from tick.bess_units[0] (not hardcoded).
+    const bessRated  = tick.bess_units?.[0]?.rated_mw ?? 0
+    const bessUsable = tick.bess_units?.[0]?.usable_mwh ?? 0
+
     // Available MW = what the tick reports as bridging
-    const availMW   = bridge_s > 0 ? Math.min(outputMW > 0 ? outputMW : RATED_MW - 1.0, RATED_MW) : 0
+    const availMW   = bridge_s > 0 ? Math.min(outputMW > 0 ? outputMW : Math.max(bessRated - 1.0, 0), bessRated > 0 ? bessRated : outputMW) : 0
 
     const stateLabel  = alert ? 'ATTENTION' : bridge_s > 0 ? 'READY' : 'ATTENTION'
     const stateColour = alert ? AMBER : bridge_s > 0 ? '#3fb6a8' : RED
@@ -73,7 +77,7 @@ export const storagePanel: PanelConfig = {
       React.createElement(BulletBar, {
         label:  'Available power vs rated',
         value:  availMW,
-        max:    RATED_MW,
+        max:    bessRated > 0 ? bessRated : Math.max(availMW, 1),
         colour: BATTERY,
         unit:   ' MW',
         note:   'anchor reserve (1.0 MW) withheld for grid-forming frequency regulation (§7.1.2)',
@@ -94,11 +98,11 @@ export const storagePanel: PanelConfig = {
       chart,
       statRows: [
         { label: 'State of charge',   value: `${socPct}%`,          colour: soc < 0.2 ? RED : soc < 0.4 ? AMBER : undefined },
-        { label: 'Rated power',        value: `${RATED_MW.toFixed(1)} MW`,   sub: 'fleet nameplate' },
+        { label: 'Rated power',        value: bessRated > 0 ? `${bessRated.toFixed(1)} MW` : '—',   sub: 'fleet nameplate' },
         { label: 'Anchor reserve',     value: '1.0 MW',              colour: AMBER, sub: 'withheld for grid-forming (§7.1.2)' },
         { label: 'Available power',    value: `${availMW.toFixed(1)} MW`,    colour: BATTERY },
         { label: 'Current output',     value: `${outputMW.toFixed(2)} MW` },
-        { label: 'Usable energy',      value: `${USABLE_MWH.toFixed(1)} MWh`, sub: 'at rated SoC' },
+        { label: 'Usable energy',      value: bessUsable > 0 ? `${bessUsable.toFixed(1)} MWh` : '—', sub: 'at rated SoC' },
         { label: 'Bridging basis',     value: tick.bridging_basis.replace('_', ' ') },
         { label: 'State of health',    value: 'not modelled',        sub: 'no degradation curve in this version' },
       ],

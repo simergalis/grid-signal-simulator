@@ -469,9 +469,17 @@ class ScenarioSpec(BaseModel):
     #   band_pct_calibrated = 4%  →  uncalibrated = 4% × 2.0 = 8% = fixture
     #   band_mult_uncalibrated = 2.0×
     #   band_mult_unmapped_hw  = 1.5×
-    # Default 0.0 in ScenarioSpec preserves backward-compat for all seeded
+    # Default band_enabled=False preserves backward-compat for all seeded
     # scenarios (which pre-date this parameter and should behave as before).
-    # Set to 4.0 in the ParameterModal default to activate INV-2 compliance.
+    # scenario_factory infers band_enabled=True when band_pct_calibrated > 0.
+    band_enabled: bool = Field(
+        default=False,
+        description=(
+            "Enable the confidence band for INV-2 reserve check. "
+            "False = point-estimate check only (backward-compat default). "
+            "scenario_factory sets True automatically when band_pct_calibrated > 0."
+        ),
+    )
     band_pct_calibrated: float = Field(
         default=0.0, ge=0.0, le=15.0,
         description=(

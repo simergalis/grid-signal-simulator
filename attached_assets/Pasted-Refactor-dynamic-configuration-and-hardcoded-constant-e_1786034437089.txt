@@ -1,0 +1,212 @@
+Refactor: dynamic configuration and hardcoded-constant elimination
+
+Implements: GS-DES-CFG-001 v1.0. Target: backend/core/, backend/renewable/, frontend/src/subsystem/panels/, frontend/src/components/. Not in scope: gridsignal_logger.py.
+
+gridsignal_parameters.json states its own contract in usage_note: "Load this file at runtime. Do not hard-code any value below into application code." Nothing loads it at runtime. This work makes it the runtime source and adds guards so the pattern cannot recur.
+
+Baseline: 12 failed, 963 passed, 0 errors (post-triage, DR-2026-08-06 D-15). Every phase gate below is measured against this. Of the 12: 2 intentional red, 3 class C core defects, 5 stale assertions — 4 of which (test_tc_p0_1/2/3/5) are deferred to the ramp-algorithm work and must not be touched here.
+
+Four supplied files are the starting point, not a suggestion:
+
+backend/core/site_parameters.py — runtime catalogue loader
+backend/tests/test_no_hardcoded_parameters.py — Guard D
+frontend/src/config/siteParameters.ts — pure derivation helpers
+frontend/src/test/no_hardcoded_constants.test.ts — Guard E
+
+Both guards have been run against the current tree; the violation lists in Phase 0 are actual output, not predictions.
+
+Phase 0 — Land the guards, fix nothing
+
+Copy the four files in. Run both guards. Report the output verbatim.
+
+Expected, and correct: Guard D1 fails with three drifts. Guard E Tier 1 fails with seven constants. Do not fix any of them in this phase.
+
+Guard D1 — code literals disagree with gridsignal_parameters.json:
+  core/models.py:266  pue_base = 1.03  vs catalogue 'pue_base' = 1.11
+                      (PROPOSED_HERE, v2.5 §4.1)  ** below catalogued minimum 1.05 **
+  core/models.py:289  band_pct_calibrated = 0.0  vs catalogue = 4.0 (PROPOSED_HERE, v2.5 §12)
+  renewable/config.py:61  bess_rated_mw = 10.0  vs catalogue = 15.0 (VENDOR_RATING, site config)
+
+Guard E Tier 1 (7):
+  panels/turbineFleet.ts:39  PEAK_LOAD_MW = 23.95
+  panels/generation.ts:20-21 RATED_MW = 25.0 · RAMP_MW_S = 0.2
+  panels/storage.ts:23-24    RATED_MW = 18.0 · USABLE_MWH = 8.0
+  panels/thermal.ts:22-23    DT_THERMAL_S = 90 · ALPHA_MAX = 0.20
+
+Also report the Guard D2 and Guard E Tier 2 backlogs.
+
+Gate: both guards running, violation lists reported, zero source files changed. If either guard passes on the first run, it is not scanning what it should be — investigate before continuing.
+
+Phase 1 — Resolve the three drifts (decisions already made — DR-2026-08-06)
+
+Each of these is two sources of truth returning different numbers for the same control-relevant quantity. The decisions are recorded; your job is to apply them and report, not to re-litigate.
+
+pue_base — keep 1.03 in code; correct the catalogue.
+
+Note the direction: the code wins here, not the catalogue. alpha_max already carries cooling separately (thermal.ts:89 — effective PUE = PUE_base × (1 + α_max)), so pue_base means IT-side overhead, not total facility PUE. At 1.11 the effective figure would be 1.332, which is a facility-wide number transcribed into a narrower slot.
+
+Three edits, all required together:
+
+gridsignal_parameters.json — set pue_base default to 1.03.
+Same entry — revise the range from [1.05, 1.30] to one consistent with IT-side overhead, and rewrite the entry description to state which overhead it covers. The definition is the actual defect; the value is the symptom.
+core/models.py:266 — correct the code comment, which cites a spec range of 1.02–1.05 matching neither document.
+
+bess_rated_mw — take the catalogue's 15.0. renewable/config.py:61 holds an undocumented 10.0; the catalogue entry is VENDOR_RATING, the strongest provenance class present. If you find evidence the demo site's unit is genuinely 10 MW, stop and report rather than editing the catalogue — the provenance class would then also be wrong.
+
+band_pct_calibrated — add band_enabled: bool; set the percentage to 4. The 0.0-means-disabled convention collides with a legitimate zero-width band, which is why the two sources disagree. A disabled state gets its own field. This is a schema change: core/models.py:289, the catalogue entry, and any consumer of the band logic.
+
+Gate: Guard D1 green. Report each edit and confirm the catalogue and code now agree.
+
+Do not proceed to Phase 2 without this. Migrating a literal to a runtime source while the two values disagree only relocates the disagreement.
+
+Phase 2 — Backend runtime source
+
+Wire core/site_parameters.py in and migrate the six D2 literals to read through it.
+
+Preserve three properties of the loader as written:
+
+Fail fast on an unknown key — ParameterNotCatalogued, never a default. A silently defaulted control-relevant parameter is a value chosen by nobody, which is the rule already applied to SiteLocation and to unknown persisted turbine states.
+Provenance travels with the value. Most current entries are PROPOSED_HERE or ESTIMATE. Any surface that presents one as a measurement is the failure the catalogue exists to prevent.
+CONFORMANCE entries are never editable. They are constant under acceptance test. A test already asserts this.
+
+CFG-6 — inventory before promoting. 22 of the 36 catalogued keys have no matching literal anywhere in source. Guard D matches by name and cannot tell "unused" from "read under a different name". Classify all 22 before promoting D2, or the empty backlog is a claim nobody has verified.
+
+Two follow-ups from the triage closeout, both in scope here because they are single-source-of-truth defects:
+
+site_config._stored can be read unguarded. The closeout identified generate_solar_forecast() as reading _stored when called without an explicit site=. Its safety today rests on nobody having wired it into a run — a call-graph coincidence, not an invariant. Locate the function, report its signature, and make site a required parameter so an unguarded read becomes impossible rather than merely unlikely.
+set_site_location() during an active run. PUT /api/location has no guard. Per the closeout recommendation, do not block it — the running simulation reads ctx.sim_state.site, not _stored, so the physics are safe and an operator may legitimately stage the next run's location. Add a warning log: "location changed while run is active; new location takes effect on next run start."
+
+Gate: D2 backlog empty and CFG-6 inventory reported; promote D2 from reported to blocking. Full suite delta against 12/963/0.
+
+Phase 3 — Class A frontend (no contract change)
+
+These values are already on the tick payload and simply are not read.
+
+panels/generation.ts:20 RATED_MW → tick.turbine_units[].rated_mw
+panels/generation.ts:21 RAMP_MW_S → tick.turbine_units[].r_asset_mw_per_s
+panels/generation.ts:49 — two literals on one line: (RAMP_MW_S * 45) and the prose "in the 45 s of warning the scheduler gives". Line 57 of the same file already uses tick.dt_lead_next_s for exactly this quantity. Two lead-time sources in one file; the prose must move with the arithmetic or the panel will state a number it no longer computes.
+
+Use config/siteParameters.ts helpers. Where a value is unavailable, render the existing "not instrumented" state — do not substitute a default. A hardcoded constant is a default that never admits it is one; returning null makes missing data visible instead of plausible.
+
+Gate: no behaviour change beyond the numbers becoming correct for non-demo scenarios.
+
+Phase 4 — Payload extension (Class B)
+
+The backend holds these; it does not broadcast them. Add a typed entry to frontend/src/types.ts before the backend emits each key (task #191).
+
+New field	Source	Consumer
+bess_rated_mw, bess_usable_mwh	BessConfig	panels/storage.ts
+dt_thermal_s, alpha_max	SiteConfig / catalogue	panels/thermal.ts
+per-unit cold_start_s, warm_start_s, hot_start_s	TurbineConfig	panels/turbineFleet.ts
+per-unit msl_mw	already on UnitAvailability (core/models.py:413)	panels/turbineFleet.ts
+
+msl_mw is worth noting: the modal's NO-LOAD / MSL MW column is correct and shows 0.00 / 0.00 only because p_min_stable_frac defaults to 0.0. The column is not the defect; the absent data is.
+
+Gate: npm run typecheck clean; every new key has a matching typed field.
+
+Phase 5 — Class B frontend
+
+Remove storage.ts:23-24, thermal.ts:22-23, and the start-time literals at turbineFleet.ts:56-71 and :776. Derive all of them.
+
+Also remove the repeated narrative string 'compute 19.96 + cooling 3.99' at turbineFleet.ts:589,656,763 — it is the decomposition of the hardcoded peak, hardcoded again. Derive it from p_compute_mw and p_cooling_mw.
+
+Note thermal.ts:105 carries 'includes 15% margin · PROTO-10' in a stat sub-label — a hardcoded margin in prose rather than a constant, so Guard E does not see it. Report any others like it; fix only if the underlying value is already derived.
+
+Gate: Guard E Tier 1 green.
+
+Phase 6 — Peak site load (Class C — a decision, not a refactor)
+
+PEAK_LOAD_MW = 23.95 at turbineFleet.ts:39 drives n1Covers, n1MarginPct, rampNeedMWs, and the READY/ATTENTION verdict. It is the most consequential number in the fleet modal and it is a literal.
+
+Unlike Classes A and B, no source for it exists anywhere — not on ScenarioSpec, not on the tick, not in the catalogue. It stands in for a quantity the system does not model.
+
+Decided (DR-2026-08-06): add design_peak_load_mw to ScenarioSpec and broadcast it. N−1 adequacy is a design-time question — can this plant survive a unit loss at its design load — not a question about the instantaneous load.
+
+Interim, already implemented in siteParameters.ts: peakSiteLoadMW() returns the observed peak of p_compute_mw + p_cooling_mw over run history. It must be labelled "observed this run" — it understates early in a run, so an N−1 verdict computed against it reads optimistic until the site has seen its peak.
+
+Gate: the N−1 verdict traceable to a declared or explicitly-labelled figure, with no literal anywhere in the path.
+
+Phase 7 — Generated settings modal
+
+Build the settings modal from site_parameters.ui_descriptor(), per the catalogue usage note: "Generate the settings modal from the 'ui' block of each entry so the modal cannot drift from the documented ranges."
+
+CONFORMANCE entries render read-only. adjustable entries render with their catalogued min, max, and step. Every control shows its provenance and spec_ref, so an operator can see that pue_base is PROPOSED_HERE rather than measured.
+
+Gate: the modal renders from the descriptor with no hand-written control list, and no control exposes a CONFORMANCE entry as editable.
+
+CFG-5 is deferred by decision. dt_lead is catalogued split=true, so plant and engine values may diverge deliberately, and the frontend will show one number for two quantities. This is a known and accepted gap for this release — do not implement split-parameter rendering. Render the engine value and label it.
+
+Prohibited
+Fixing any violation in Phase 0.
+Re-litigating the Phase 1 decisions. They are recorded in DR-2026-08-06; apply and report.
+Touching test_tc_p0_1/2/3/5 — those are deferred to the ramp-algorithm work (DR-2026-08-06 D-05 and D-12) and will otherwise be fixed twice.
+Fixing any of the 3 class C core defects.
+Blocking PUT /api/location during an active run. Warn, do not block.
+Substituting a default where a derived value is unavailable. Render "not instrumented".
+Adding a guard exemption to make a violation disappear. Exemptions are decisions on the record — _STATE_FIELD_EXEMPTIONS currently has exactly one entry, with a stated reason.
+Widening Guard E's name pattern to catch layout constants, or narrowing it to make Tier 1 pass.
+Emitting a new payload key before its types.ts entry exists.
+Editing any test assertion or fixture to accommodate a change.
+Modifying gridsignal_logger.py.
+Proceeding past a phase gate without reporting.
+Acceptance criteria
+ Both guards land in Phase 0 and fail with the documented lists.
+ Three Phase 1 drifts applied per DR-2026-08-06, each edit reported.
+ pue_base catalogue entry has a corrected value, range, and description.
+ Guard D1 green; Guard D2 backlog empty and promoted to blocking.
+ Guard E Tier 1 green; Tier 2 backlog reported.
+ No panel derives a site figure from a module-scope numeric constant.
+ Unavailable values render "not instrumented"; no silent defaults.
+ Every new payload key has a matching types.ts field.
+ Settings modal generated from ui_descriptor(); CONFORMANCE entries read-only.
+ Suite delta reported per phase; no test assertion or fixture edited.
+ CFG-6 inventory of the 22 unmatched catalogue keys completed in Phase 2, before D2 is promoted to blocking.
+ generate_solar_forecast() takes a required site parameter.
+ set_site_location() warns when called during an active run; does not block.
+ Final suite figure reported against the 12/963/0 baseline, with any new failure attributed.
+ CFG-5 confirmed deferred, not silently implemented.
+Project content
+GridSignal
+Created by you
+GridSignal-Forecast-Engine-Functional-Spec_v2.5.md
+
+1,683 lines
+
+MD
+
+PDF
+
+PDF
+
+Content
+gridsignal_source_review.zip
+
+ZIP
+
+gridsignal_ui_components.zip
+
+ZIP
+
+The gas turbine generators powered up all at once, which is not possible. One turbine shoiuld have started, increasing its oputput, and rthwen another turbine should start up Fix the logic underlying the ramp up 12 minutes ago Refining turbine startup logic Refining turbine startup logi
+
+PASTED
+
+The test_kube_oscillation docstring literally says "With the current hardcode this test FAILS — that is the point" — it's an intentional red test, pre-existing. I need to fix the 3 real regressions: test_d10, test_tc84f, and test_tc_gt2. Let me read their full failures and test code in parallel:
+
+PASTED
+
+PHASE 0 — REVERT REPORT Files changed and what was reverted File Change core/dispatch.py:503-519 Replaced single-unit staging ("stage exactly ONE") with original N_needed+1 formula: _n_start = min(max(1, ceil(delta / rated) + 1), len(_offline)), target distributed equally core/simulation_core.py
+
+PASTED
+
+PHASE 1 — STATE/WRITER TABLE Derived from asset_modules.py:962–999 (advance), simulation_core.py:638–644 (_synchronised_units filter), loading.py:116–136 (apply_loading), and asset_modules.py:810–814 (is_synchronised). State Written by advance()? Written by apply_loading() today? Physical meanin
+
+PASTED
+
+All evidence collected. Here is the complete report. PART A — Raw evidence Command 1: sed -n '625,700p' core/simulation_core.py # Used by the arbitrator, the balance decomposition, and the TickResult. _p_dispatch_droop_mw = max(0.0, p_dispatch_required_mw + _droop_correction_mw) #
+
+PASTED
+
+Triage closeout — all items settled Item 1 — TC-CL-1 and TC-CL-2 updated Both tests now assert the new three-branch contract. TC-CL-1b was added as a dedicated named test for the one-tick tolerance (as required by the instruction): Test What it asserts test_tc_cl_1_for_tick_returns_clean_beyon
+
+PASTED

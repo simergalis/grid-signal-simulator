@@ -19,8 +19,8 @@ const BATTERY = '#4a9fe0'
 const TEAL    = '#3fb6a8'
 const AMBER   = '#f0883e'
 
-const DT_THERMAL_S = 90   // cooling onset lag (§8)
-const ALPHA_MAX    = 0.20  // §7.1.1 — steady-state cooling fraction of compute
+// GS-DES-CFG-001 §Phase-3: no module-scope numeric constants.
+// DT_THERMAL_S and ALPHA_MAX are derived from tick.dt_thermal_seconds and tick.alpha_max.
 
 function fmtTime(s: number): string {
   if (s >= 86400) return '—'
@@ -56,6 +56,10 @@ export const thermalPanel: PanelConfig = {
     const approach  = tick.approach_rate_mw_s
     const lowHdr    = fraction < 0.05
 
+    // GS-DES-CFG-001 §Phase-3: derive from tick payload, not module-scope constants.
+    const dtThermalS = tick.dt_thermal_seconds ?? null
+    const alphaMax   = tick.alpha_max ?? null
+
     const stateLabel  = lowHdr ? 'ATTENTION' : 'READY'
     const stateColour = lowHdr ? AMBER : '#3fb6a8'
 
@@ -82,11 +86,11 @@ export const thermalPanel: PanelConfig = {
       }),
       React.createElement(BulletBar, {
         label:  'Steady-state cooling as fraction of compute',
-        value:  ALPHA_MAX * 100,
+        value:  alphaMax !== null ? alphaMax * 100 : 0,
         max:    100,
         colour: BATTERY,
         unit:   '%',
-        note:   `α_max = ${ALPHA_MAX} · effective PUE at full load = PUE_base × (1 + α_max)`,
+        note:   `α_max = ${alphaMax !== null ? alphaMax : '—'} · effective PUE at full load = PUE_base × (1 + α_max)`,
       }),
     )
 
@@ -106,7 +110,7 @@ export const thermalPanel: PanelConfig = {
         { label: 'Absorbable now',   value: `${absorbMW.toFixed(2)} MW`, colour: lowHdr ? AMBER : '#3fb6a8', sub: 'additional load before approach' },
         { label: 'Time to limit',    value: fmtTime(limitTime), sub: limitTime >= 86400 ? 'no approach in progress' : 'at current approach rate' },
         { label: 'Approach rate',    value: `${approach.toFixed(3)} MW/s`, sub: 'rate of headroom consumption' },
-        { label: 'Δt_thermal',       value: `${DT_THERMAL_S} s`, sub: 'compute spike to cooling onset' },
+        { label: 'Δt_thermal',       value: dtThermalS !== null ? `${dtThermalS} s` : '—', sub: 'compute spike to cooling onset' },
         { label: 'τ rise constant',  value: '20 s', sub: 'first-order settling' },
         { label: 'Pre-staging',      value: 'not configured', sub: 'shiftable load unavailable in this scenario' },
       ],

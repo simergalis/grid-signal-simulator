@@ -27,6 +27,7 @@ import React from 'react'
 import type { PanelConfig, PanelData } from './index'
 import type { TickPayload, HistoryPoint, TurbineUnitSpec } from '../../types'
 import { BulletBar } from '../../charts/BulletBar'
+import { peakSiteLoadMW } from '../../config/siteParameters'
 
 // ── Colour constants ─────────────────────────────────────────────────────────
 const GOLD  = '#e0a458'
@@ -34,10 +35,11 @@ const TEAL  = '#3fb6a8'
 const RED   = '#f85149'
 const AMBER = '#f0883e'
 
-// Site constant — matches demo-20mw / demo-3turbine (1 900-node, PUE 1.03).
-// compute 19.96 + cooling 3.99 = 23.95 MW.
-const PEAK_LOAD_MW = 23.95
-// No LEAD_WINDOW_S constant — Task #198 item 3.
+// GS-DES-CFG-001 §Phase-3: PEAK_LOAD_MW removed.
+// Peak site load is derived from run history via peakSiteLoadMW(history).
+// Labelled "observed peak this run" — see siteParameters.ts for the caveat
+// (understates early in a run before the site has reached its demand peak).
+// No LEAD_WINDOW_S constant — the lead horizon is tick.dt_lead_next_s.
 // The lead horizon is tick.dt_lead_next_s (the dispatch arbitrator's runtime
 // value), passed as horizonS to helpers.  When no step is in-flight the
 // horizon is 0 and no ramp requirement is displayed.
@@ -230,7 +232,7 @@ function _identityLine(units: TurbineUnitSpec[]): string {
 // ── Derived fleet metrics from a unit list ───────────────────────────────────
 // horizonS: dispatch arbitrator's runtime lead time (tick.dt_lead_next_s).
 //   When 0 (no step in-flight) rampNeedMWs = 0 — no active requirement.
-function deriveFleet(units: TurbineUnitSpec[], horizonS: number) {
+function deriveFleet(units: TurbineUnitSpec[], horizonS: number, peakMW: number) {
   const installedMW   = units.reduce((s, u) => s + u.rated_mw, 0)
   const maxUnitMW     = Math.max(...units.map(u => u.rated_mw))
   const n1FirmMW      = installedMW - maxUnitMW        // worst-case: losing largest
@@ -241,9 +243,9 @@ function deriveFleet(units: TurbineUnitSpec[], horizonS: number) {
   const aggRampMWs    = maxRamp * units.length
   // rampNeedMWs: MW/s needed to cover peak load in the runtime lead window.
   // 0 when no step is in-flight (horizonS = 0) — no active requirement to display.
-  const rampNeedMWs   = horizonS > 0 ? PEAK_LOAD_MW / horizonS : 0
-  const n1MarginPct   = n1FirmMW > 0
-    ? Math.round((n1FirmMW - PEAK_LOAD_MW) / PEAK_LOAD_MW * 100)
+  const rampNeedMWs   = horizonS > 0 && peakMW > 0 ? peakMW / horizonS : 0
+  const n1MarginPct   = n1FirmMW > 0 && peakMW > 0
+    ? Math.round((n1FirmMW - peakMW) / peakMW * 100)
     : -100
   return { installedMW, maxUnitMW, n1FirmMW, aggRampMWs, rampNeedMWs, n1MarginPct, maxRamp }
 }
@@ -569,7 +571,8 @@ function ParallelingInset(units: TurbineUnitSpec[]): React.ReactNode {
 }
 
 // ── No-tick panel ────────────────────────────────────────────────────────────
-function noTickPanel(): PanelData {
+function noTickPanel(peakMW: number | null): PanelData {
+  const peakStr = peakMW !== null ? `${peakMW.toFixed(2)} MW` : '—'
   return {
     stateLabel:   '—',
     stateColour:  '#6e7681',
@@ -586,7 +589,7 @@ function noTickPanel(): PanelData {
       { label: 'Units installed',    value: '—' },
       { label: 'N−1 firm capacity',  value: 'not instrumented' },
       { label: 'Aggregate ramp',     value: 'not instrumented' },
-      { label: 'Peak site load',     value: `${PEAK_LOAD_MW.toFixed(2)} MW`, sub: 'compute 19.96 + cooling 3.99' },
+      { label: 'Peak site load',     value: peakStr, sub: 'observed peak this run' },
       { label: 'Start time, cold',   value: '5–10 min', sub: 'a cold unit contributes nothing to a 45 s event' },
     ],
     secondary: undefined,
@@ -599,7 +602,7 @@ function noTickPanel(): PanelData {
 }
 
 // ── Single-unit panel (AE3 branch 1) ────────────────────────────────────────
-function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData {
+function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: number): PanelData {
   const u          = units[0]
   // Algebraic: use synchronised_output_mw (Σ_{i∈A} p_i) for active-state check
   // and for the FleetTable aggregate — not turbine_output_mw (includes RAMPING path).
@@ -653,7 +656,7 @@ function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData
         colour: syncedCount > 0 ? GOLD : undefined,
         sub: syncedCount > 0 ? `contributing ${syncedMW.toFixed(2)} MW` : 'none on bus' },
       { label: 'N−1 firm capacity',  value: '0.0 MW',                             colour: RED, sub: 'single unit — no redundancy' },
-      { label: 'Peak site load',     value: `${PEAK_LOAD_MW.toFixed(2)} MW`,      sub: 'compute 19.96 + cooling 3.99' },
+      { label: 'Peak site load',     value: peakMW > 0 ? `${peakMW.toFixed(2)} MW` : '—', sub: 'observed peak this run' },
       { label: 'N−1 margin',         value: 'none',                               colour: RED },
       // 0.5: ramp energy bounded at rated_mw — integral is not unbounded
       { label: 'Ramp (configured)',  value: `${u.r_asset_mw_per_s.toFixed(3)} MW/s`,
@@ -673,7 +676,7 @@ function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData
 }
 
 // ── Fleet panel (AE3 branch 2) — N > 1 units ────────────────────────────────
-function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData {
+function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: number): PanelData {
   // Algebraic: synchronised_output_mw = Σ_{i∈A} p_i (loading-layer-managed only).
   // turbine_output_mw includes auto-staged RAMPING turbines; those are not in A.
   const onlineN  = tick.units_synchronised_count
@@ -685,9 +688,9 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData {
   const {
     installedMW, maxUnitMW, n1FirmMW, aggRampMWs,
     rampNeedMWs, n1MarginPct, maxRamp,
-  } = deriveFleet(units, horizonS)
+  } = deriveFleet(units, horizonS, peakMW)
 
-  const n1Covers    = n1FirmMW >= PEAK_LOAD_MW
+  const n1Covers    = n1FirmMW >= peakMW
   const rampCovers  = aggRampMWs >= rampNeedMWs
   const stateLabel  = n1Covers && rampCovers ? 'READY' : 'ATTENTION'
   const stateColour = n1Covers && rampCovers ? TEAL : AMBER
@@ -718,10 +721,12 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData {
       label:  'N−1 firm capacity against peak site load',
       value:  n1FirmMW,
       max:    installedMW,
-      target: PEAK_LOAD_MW,
+      target: peakMW > 0 ? peakMW : undefined,
       colour: n1Covers ? GOLD : RED,
       unit:   ' MW',
-      note:   `red marker = ${PEAK_LOAD_MW.toFixed(2)} MW peak load  ·  ${marginStr} margin with any one unit out`,
+      note:   peakMW > 0
+        ? `red marker = ${peakMW.toFixed(2)} MW observed peak  ·  ${marginStr} margin with any one unit out`
+        : `N−1 firm ${n1FirmMW.toFixed(1)} MW  ·  ${marginStr} margin (no peak observed yet)`,
     }),
     React.createElement(BulletBar, {
       label:  'Aggregate ramp with all units online',
@@ -731,7 +736,7 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData {
       colour: rampCovers ? GOLD : RED,
       unit:   ' MW/s',
       note:   horizonS > 0
-        ? `red marker = ${rampNeedMWs.toFixed(3)} MW/s to cover ${PEAK_LOAD_MW.toFixed(2)} MW step in ${horizonS.toFixed(0)} s  ·  ramp scales with unit count`
+        ? `red marker = ${rampNeedMWs.toFixed(3)} MW/s to cover ${peakMW > 0 ? peakMW.toFixed(2) : '—'} MW step in ${horizonS.toFixed(0)} s  ·  ramp scales with unit count`
         : `no active ramp event — dt_lead_next_s = 0  ·  ramp scales with unit count`,
     }),
     ParallelingInset(units),
@@ -744,9 +749,11 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData {
   return {
     stateLabel,
     stateColour,
-    verdict: n1Covers
-      ? `N−1 firm capacity ${n1FirmMW.toFixed(1)} MW covers the ${PEAK_LOAD_MW.toFixed(2)} MW peak with ${marginStr} margin.`
-      : `N−1 firm capacity ${n1FirmMW.toFixed(1)} MW is below the ${PEAK_LOAD_MW.toFixed(2)} MW peak — site cannot survive a unit loss.`,
+    verdict: peakMW > 0
+      ? (n1Covers
+          ? `N−1 firm capacity ${n1FirmMW.toFixed(1)} MW covers the ${peakMW.toFixed(2)} MW observed peak with ${marginStr} margin.`
+          : `N−1 firm capacity ${n1FirmMW.toFixed(1)} MW is below the ${peakMW.toFixed(2)} MW observed peak — site cannot survive a unit loss.`)
+      : `N−1 firm capacity ${n1FirmMW.toFixed(1)} MW (no peak observed yet — peak loads once run progresses).`,
     heroValue:   (tick.synchronised_output_mw ?? 0).toFixed(2),
     heroLabel:   'MW output',
     chartTitle:  '',
@@ -760,10 +767,10 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData {
         sub: onlineN > 0 ? `contributing ${syncedMW.toFixed(2)} MW` : 'none on bus',
         colour: onlineN > 0 ? GOLD : undefined },
       { label: 'N−1 firm capacity',  value: `${n1FirmMW.toFixed(1)} MW`,    colour: n1Covers ? GOLD : RED, sub: 'with any one unit unavailable' },
-      { label: 'Peak site load',     value: `${PEAK_LOAD_MW.toFixed(2)} MW`, sub: 'compute 19.96 + cooling 3.99' },
+      { label: 'Peak site load',     value: peakMW > 0 ? `${peakMW.toFixed(2)} MW` : '—', sub: 'observed peak this run' },
       // 0.4: subtitle states the arithmetic — not a raw unit count
       { label: 'N−1 margin',         value: marginStr,                        colour: marginColour,
-        sub: `${installedMW.toFixed(0)} MW − ${maxUnitMW.toFixed(0)} MW contingency = ${n1FirmMW.toFixed(0)} MW firm  ·  peak ${PEAK_LOAD_MW.toFixed(2)} MW` },
+        sub: `${installedMW.toFixed(0)} MW − ${maxUnitMW.toFixed(0)} MW contingency = ${n1FirmMW.toFixed(0)} MW firm${peakMW > 0 ? `  ·  peak ${peakMW.toFixed(2)} MW` : ''}` },
       // Phase 1b + Task #198 item 3: backend ramp_capability_mw at runtime horizon
       { label: 'Aggregate ramp',     value: `${aggRampMWs.toFixed(3)} MW/s`, colour: rampCovers ? GOLD : RED,
         sub: horizonS > 0
@@ -777,7 +784,7 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData {
     ],
     secondary,
     why: [
-      `Installed capacity is not the number that matters — N−1 firm capacity is. ${units.length} × ${maxUnitMW.toFixed(0)} MW gives ${n1FirmMW.toFixed(1)} MW firm against a ${PEAK_LOAD_MW.toFixed(2)} MW peak.`,
+      `Installed capacity is not the number that matters — N−1 firm capacity is. ${units.length} × ${maxUnitMW.toFixed(0)} MW gives ${n1FirmMW.toFixed(1)} MW firm${peakMW > 0 ? ` against a ${peakMW.toFixed(2)} MW observed peak` : ''}.`,
       `Aggregate ramp scales with unit count, not megawatts: ${units.length} units deliver ${aggRampMWs.toFixed(3)} MW/s — ${units.length}× the rate of a single equivalent unit.`,
       'Degraded = effective ramp below 95% of fleet maximum. The reserve check uses the effective figure (§27, TC-58) — a quietly degraded unit is decisive in a reserve calculation.',
     ],
@@ -786,21 +793,24 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[]): PanelData {
 
 // ── Panel config ─────────────────────────────────────────────────────────────
 export const turbineFleetPanel: PanelConfig = {
-  deriveData(tick: TickPayload | null, _alert: TickPayload | null, _history: HistoryPoint[]): PanelData {
-    if (!tick) return noTickPanel()
+  deriveData(tick: TickPayload | null, _alert: TickPayload | null, history: HistoryPoint[]): PanelData {
+    // GS-DES-CFG-001 §Phase-3: derive peak load from run history (not hardcoded).
+    const peakMW = peakSiteLoadMW(history) ?? 0
+
+    if (!tick) return noTickPanel(peakMW > 0 ? peakMW : null)
 
     const units = tick.turbine_units ?? []
 
     if (units.length === 0) {
       return {
-        ...noTickPanel(),
+        ...noTickPanel(peakMW > 0 ? peakMW : null),
         stateLabel: '—',
         verdict: 'No turbine units found in this scenario spec.',
       }
     }
 
-    if (units.length === 1) return singleUnitPanel(tick, units)
+    if (units.length === 1) return singleUnitPanel(tick, units, peakMW)
 
-    return fleetPanel(tick, units)
+    return fleetPanel(tick, units, peakMW)
   },
 }

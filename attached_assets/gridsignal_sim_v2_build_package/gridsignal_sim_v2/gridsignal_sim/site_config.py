@@ -65,6 +65,28 @@ class SiteLocationNotConfigured(RuntimeError):
 
 _stored: Optional[SiteLocation] = None
 
+# Run-active flag — set by the run-lifecycle layer so set_site_location()
+# can emit a warning when called mid-run.  Not imported from run_manager to
+# avoid a circular dependency (site_config is a leaf module).
+_run_active: bool = False
+
+
+def notify_run_started() -> None:
+    """Mark that a simulation run is now active.
+
+    Call this at run-start (after the scenario factory has captured the
+    current location) so that any subsequent set_site_location() call emits
+    a warning rather than silently changing state under an active run.
+    """
+    global _run_active
+    _run_active = True
+
+
+def notify_run_ended() -> None:
+    """Mark that the current simulation run has ended."""
+    global _run_active
+    _run_active = False
+
 
 def get_site_location() -> SiteLocation:
     """Return the current site location.
@@ -82,8 +104,25 @@ def get_site_location() -> SiteLocation:
 
 
 def set_site_location(loc: SiteLocation) -> None:
-    """Replace the process-level site location singleton."""
+    """Replace the process-level site location singleton.
+
+    Safe to call at any time.  When called while a run is active, a WARNING is
+    emitted because the change will not affect the current run (the scenario
+    factory has already captured the location from the prior call).  The new
+    location takes effect on the next run-start.
+
+    GS-DES-CFG-001 §Phase-2: warn, do not raise.  Raising would break any
+    UI flow that lets operators update location mid-session.
+    """
     global _stored
+    if _run_active:
+        _log.warning(
+            "set_site_location('%s') called while a run is active. "
+            "The location change is stored but will not affect the current run — "
+            "the scenario factory already captured the location at run-start. "
+            "The new location takes effect on the next run.",
+            loc.site_name,
+        )
     _stored = loc
 
 

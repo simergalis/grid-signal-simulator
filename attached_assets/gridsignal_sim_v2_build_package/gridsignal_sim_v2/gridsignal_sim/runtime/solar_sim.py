@@ -553,10 +553,21 @@ def generate_solar_forecast(
         _longitude = site_longitude  # may be None
         _utc_offset = site_utc_offset_h
     else:
-        # Absolute fallback: no site info passed — use the process-level location
-        # (or San Diego if none configured) so test helpers that call
-        # generate_solar_forecast() without site= still produce geographically
-        # meaningful physics curves.
+        # Fallback path — DEPRECATED (GS-DES-CFG-001 §Phase-2).
+        # Pass site= explicitly instead of relying on process-level state.
+        # This path will become an error in a future release.
+        import logging as _log_mod
+        _log_mod.getLogger(__name__).warning(
+            "generate_solar_forecast() called without site= (and without legacy "
+            "site_latitude/site_longitude kwargs). "
+            "Falling back to the process-level location singleton — "
+            "this is non-deterministic when location changes between runs. "
+            "Pass site=<SiteLocation> explicitly. "
+            "This fallback will be removed in a future release (GS-DES-CFG-001)."
+        )
+        # Use the process-level location (or San Diego if none configured) so
+        # existing test helpers that call without site= still produce
+        # geographically meaningful physics curves.
         try:
             from site_config import get_site_location_or_default as _gslod
             _fallback  = _gslod()

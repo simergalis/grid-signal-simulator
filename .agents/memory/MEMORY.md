@@ -29,3 +29,4 @@
 - [phase-1b-p2-loading-layer](phase-1b-p2-loading-layer.md) — loading layer + UnitAvailability boundary; THE TRAP: allocated set A = SYNCHRONISED only (not is_synchronised); stray @dataclass on TurbineState enum fixed.
 - [phase-201d-power-factor](phase-201d-power-factor.md) — power_factor required on SiteConfig; S_base = Σ MW / pf; all raw-dict spec helpers need the field; re-baseline rules for swing-eq expected values.
 - [incremental-turbine-dispatch](incremental-turbine-dispatch.md) — N_needed+1 spare rule; delta≤0 guard on-bus only; 80% headroom check in evaluate_tick; test_tc84f updated; pre-existing failures catalogue.
+- [cfg-001-phase-status](cfg-001-phase-status.md) — GS-DES-CFG-001 phase tracker; fabric CWD false-positive baseline trap; Guard D1/D2/E Tier-1 all green after Phase 3.

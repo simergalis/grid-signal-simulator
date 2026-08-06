@@ -15,10 +15,11 @@ import type { TickPayload, HistoryPoint } from '../../types'
 import { TimeSeries } from '../../charts/TimeSeries'
 import { BulletBar }  from '../../charts/BulletBar'
 
+// GS-DES-CFG-001 §Phase-3: no module-scope numeric constants.
+// Rated MW and ramp rate are derived from tick.turbine_units[0] at render time.
+
 const GOLD  = '#e0a458'
 const TEAL  = '#3fb6a8'
-const RATED_MW      = 25.0   // demo-20mw turbine nameplate
-const RAMP_MW_S     = 0.2    // site parameter
 
 function fmtMW(v: number): string { return `${v.toFixed(2)} MW` }
 
@@ -35,10 +36,10 @@ export const generationPanel: PanelConfig = {
         chart: React.createElement('div', { className: 'font-mono text-xs text-muted py-12 text-center' }, 'No data'),
         statRows: [
           { label: 'Units online',         value: '—' },
-          { label: 'Rated output',         value: `${RATED_MW.toFixed(1)} MW`, sub: 'nameplate per unit' },
-          { label: 'Ramp rate configured', value: `${RAMP_MW_S.toFixed(3)} MW/s`, sub: 'site parameter' },
+          { label: 'Rated output',         value: '—', sub: 'nameplate per unit — shown once run starts' },
+          { label: 'Ramp rate configured', value: '—', sub: 'site parameter — shown once run starts' },
           { label: 'Ramp rate measured',   value: 'not instrumented', sub: 'no maintenance config in this scenario' },
-          { label: 'Time to full output',  value: `${Math.round(RATED_MW / RAMP_MW_S)} s`, sub: 'from cold at configured ramp' },
+          { label: 'Time to full output',  value: '—', sub: 'derived from tick payload — shown once run starts' },
           { label: 'Runtime hours',        value: 'not instrumented' },
           { label: 'Starts',               value: 'not instrumented' },
           { label: 'Availability',         value: '—' },
@@ -46,15 +47,19 @@ export const generationPanel: PanelConfig = {
         secondary: undefined,
         why: [
           'Ramp rate, not capacity, is what decides whether a turbine can answer a step-load.',
-          `At ${RAMP_MW_S} MW/s this unit delivers ${(RAMP_MW_S * 45).toFixed(1)} MW in the 45 s of warning the scheduler gives.`,
-          'Five megawatts of nameplate sit unused — capacity is not the constraint, ramp rate is.',
+          'Start a scenario to see the configured ramp rate and lead-window delivery.',
+          'Nameplate MW is not the constraint — ramp rate is.',
         ],
       }
     }
 
     const outputMW   = tick.turbine_output_mw
     const demandMW   = tick.net_demand_mw
-    const rampCap    = RAMP_MW_S * tick.dt_lead_next_s  // MW closeable in lead window
+    // GS-DES-CFG-001 §Phase-3: rated MW and ramp rate derived from tick payload.
+    const u0         = tick.turbine_units?.[0]
+    const unitMW     = u0?.rated_mw ?? 0          // first-unit nameplate (0 if no units)
+    const rampMWs    = u0?.r_asset_mw_per_s ?? 0  // first-unit ramp rate
+    const rampCap    = rampMWs * tick.dt_lead_next_s  // MW closeable in lead window
     const canClose   = rampCap >= demandMW
 
     // Chart series from history
@@ -66,7 +71,7 @@ export const generationPanel: PanelConfig = {
         { label: 'turbine output',    colour: GOLD, points: history.map(h => ({ x: h.sim_time_seconds, y: h.p_total_mw })), filled: true },
         { label: 'dispatch required', colour: TEAL, points: dispatchSeries },
       ],
-      ceiling:  { y: RATED_MW, label: 'rated ceiling', colour: '#d9534f' },
+      ceiling:  unitMW > 0 ? { y: unitMW, label: 'rated ceiling', colour: '#d9534f' } : undefined,
       xLabel:   'seconds from run start',
       height:   200,
     })
@@ -75,7 +80,7 @@ export const generationPanel: PanelConfig = {
       React.createElement(BulletBar, {
         label:  'Ramp capability in lead window',
         value:  rampCap,
-        max:    RATED_MW,
+        max:    Math.max(rampCap, demandMW) || 1,
         target: demandMW,
         colour: GOLD,
         unit:   ' MW',
@@ -84,10 +89,10 @@ export const generationPanel: PanelConfig = {
       React.createElement(BulletBar, {
         label:  'Output as share of rated',
         value:  outputMW,
-        max:    RATED_MW,
+        max:    unitMW > 0 ? unitMW : Math.max(outputMW, 1),
         colour: GOLD,
         unit:   ' MW',
-        note:   outputMW < RATED_MW ? `${fmtMW(RATED_MW - outputMW)} of unused nameplate — capacity is not the constraint, ramp rate is.` : 'At rated output.',
+        note:   unitMW > 0 && outputMW < unitMW ? `${fmtMW(unitMW - outputMW)} of unused nameplate — capacity is not the constraint, ramp rate is.` : 'At rated output.',
       }),
     )
 
@@ -103,10 +108,10 @@ export const generationPanel: PanelConfig = {
       chart,
       statRows: [
         { label: 'Units online',         value: '1 of 1', sub: 'no unit in maintenance or failed' },
-        { label: 'Rated output',         value: `${RATED_MW.toFixed(1)} MW`, sub: 'nameplate per unit' },
-        { label: 'Ramp rate configured', value: `${RAMP_MW_S.toFixed(3)} MW/s`, sub: 'site parameter' },
+        { label: 'Rated output',         value: unitMW > 0 ? `${unitMW.toFixed(1)} MW` : '—', sub: 'nameplate per unit' },
+        { label: 'Ramp rate configured', value: rampMWs > 0 ? `${rampMWs.toFixed(3)} MW/s` : '—', sub: 'site parameter' },
         { label: 'Ramp rate measured',   value: 'not instrumented', sub: 'no maintenance config in this scenario' },
-        { label: 'Time to full output',  value: `${Math.round(RATED_MW / RAMP_MW_S)} s`, sub: 'from cold at configured ramp' },
+        { label: 'Time to full output',  value: unitMW > 0 && rampMWs > 0 ? `${Math.round(unitMW / rampMWs)} s` : '—', sub: 'from cold at configured ramp' },
         { label: 'Runtime hours',        value: 'not instrumented' },
         { label: 'Starts',               value: 'not instrumented' },
         { label: 'Availability',         value: 'operational', colour: TEAL, sub: 'not degraded, not scheduled out' },
@@ -114,8 +119,8 @@ export const generationPanel: PanelConfig = {
       secondary,
       why: [
         'Ramp rate, not capacity, is what decides whether a turbine can answer a step-load.',
-        `At ${RAMP_MW_S} MW/s this unit delivers ${rampCap.toFixed(1)} MW in the ${tick.dt_lead_next_s.toFixed(0)} s of warning the scheduler gives.`,
-        `${canClose ? `This covers the ${fmtMW(demandMW)} shortfall.` : `This does not cover the ${fmtMW(demandMW)} shortfall — BESS bridge is required.`} Unused nameplate: ${fmtMW(RATED_MW - outputMW)}.`,
+        `At ${rampMWs.toFixed(3)} MW/s this unit delivers ${rampCap.toFixed(1)} MW in the ${tick.dt_lead_next_s.toFixed(0)} s of warning the scheduler gives.`,
+        `${canClose ? `This covers the ${fmtMW(demandMW)} shortfall.` : `This does not cover the ${fmtMW(demandMW)} shortfall — BESS bridge is required.`}${unitMW > 0 ? ` Unused nameplate: ${fmtMW(unitMW - outputMW)}.` : ''}`,
       ],
     }
   },
