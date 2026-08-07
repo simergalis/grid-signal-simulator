@@ -105,3 +105,10 @@ uri = "file://reports/gridsignal_item6_conformance_report.md"
 type = "text"
 title = "GridSignal Item 6 — Conformance Report (A–C Gate + Mockup Pass)"
 description = "Items A–C gate results + element-by-element conformance against the fleet modal mockup. Suite: 15 failed / 975 passed / 16 xfailed / 29 frontend / TSC clean."
+
+[[outputs]]
+id = "37PvYAYUfNd029YSsGpJ0"
+uri = "file://reports/gridsignal_close_conformance_gaps_report.md"
+type = "text"
+title = "GridSignal Conformance Gaps — Session Report"
+description = "Full session report: Item 1 integration path verification, Item 2 unload_tail_s catalogue, Gaps 1+2/5/7/9 closed in turbineFleet.ts, Guard E self-consistency test, uncatalogued sweep. Suite: 15/976/16, 29 frontend, tsc clean."
