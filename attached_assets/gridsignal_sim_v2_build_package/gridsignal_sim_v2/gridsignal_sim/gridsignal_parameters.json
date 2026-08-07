@@ -806,17 +806,17 @@
     },
     {
       "key": "warm_start_s",
-      "value": 300,
+      "value": 600,
       "unit": "s",
       "label": "Warm-start time to synchronised",
       "provenance": "CHOSEN",
-      "provenance_detail": "CHOSEN — 300 s (5 min) engineering placeholder.  No OEM basis; actual warm-start times depend on thermal soak and grid-code ride-through requirements.  Replace with OEM data.",
-      "spec_ref": "§7.1 Phase 2",
+      "provenance_detail": "CHOSEN — 600 s (10 min).  Raised from 300 s (where it was equal to hot_start_s) to restore a meaningful thermal-state distinction.  D-08 fixed hot_start_s at 300 s (frame machines cannot sync in 1 min); landing warm_start_s at the same value made the WARM classification decorative.  600 s (10 min) is physically defensible for a machine that has cooled 1–4 hours: less heat soak than cold (900 s) but more than a machine that has been off < 1 h (hot, 300 s).  No OEM calibration on file; replace with OEM thermal soak curve data.  Cross-parameter invariant: hot_start_s (300) < warm_start_s (600) < cold_start_s (900).",
+      "spec_ref": "§7.1 Phase 2 / Item 1 correction",
       "ui": {
         "control": "readonly",
         "group": "turbine"
       },
-      "note": "Time from OFFLINE to SYNCHRONISED when hot_threshold_s < elapsed ≤ warm_threshold_s.  Must satisfy: warm_start_s < cold_start_s (warm starts faster than cold).  Cross-parameter candidate: warm_start_s < cold_start_s (not yet enforced)."
+      "note": "Time from OFFLINE to SYNCHRONISED when hot_threshold_s < elapsed ≤ warm_threshold_s.  Must satisfy: warm_start_s < cold_start_s (warm starts faster than cold) and hot_start_s < warm_start_s.  Cross-parameter candidate (not yet enforced as test invariant)."
     },
     {
       "key": "hot_start_s",
@@ -824,13 +824,13 @@
       "unit": "s",
       "label": "Hot-start time to synchronised",
       "provenance": "CHOSEN",
-      "provenance_detail": "CHOSEN — 300 s (5 min).  Corrected from 60 s during Phase D (D-08): a frame-class machine cannot synchronise in one minute.  60 s was an unrealistic bypass value.  No OEM basis; replace with manufacturer data for the installed frame class.",
-      "spec_ref": "§D-08 / Phase D",
+      "provenance_detail": "CHOSEN — 300 s (5 min).  Corrected from 60 s during Phase D (D-08): a frame-class machine cannot synchronise in one minute.  60 s was an unrealistic bypass value.  300 s kept here; warm_start_s was raised to 600 s to restore a meaningful thermal gap (Item 1 correction).  No OEM basis; replace with manufacturer data for the installed frame class.",
+      "spec_ref": "§D-08 / Phase D / Item 1 correction",
       "ui": {
         "control": "readonly",
         "group": "turbine"
       },
-      "note": "Time from OFFLINE to SYNCHRONISED when elapsed ≤ hot_threshold_s.  Must satisfy: hot_start_s ≤ warm_start_s ≤ cold_start_s.  Cross-parameter candidate: ordering of all three start times (not yet enforced as an invariant)."
+      "note": "Time from OFFLINE to SYNCHRONISED when elapsed ≤ hot_threshold_s.  Must satisfy: hot_start_s < warm_start_s ≤ cold_start_s.  Cross-parameter candidate (not yet enforced as test invariant)."
     },
     {
       "key": "inertia_constant_s",

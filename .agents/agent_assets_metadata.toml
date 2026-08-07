@@ -119,3 +119,10 @@ uri = "file://reports/gridsignal_verify_catalogue_open_params_report.md"
 type = "text"
 title = "Verify Integration Path, Restore MSL, Catalogue Open Parameters"
 description = "Item 1: commitment_block verified from emitted payload (satisfied U=22%, violated U=79%). Item 2: MSL MW restored in bar sub-annotation. Item 3: 11 open parameters catalogued — D3 call sites 15→26, D2 backlog empty. 0 regressions."
+
+[[outputs]]
+id = "zcfiNyRnQLUjeuqZvNC_5"
+uri = "file://reports/gridsignal_diagnose_remaining_failures_report.md"
+type = "text"
+title = "GS Diagnose Remaining Failures — Full Report"
+description = "Items 1–3: warm_start_s separation, commit harness trace, and all 15 failure classifications (Groups A–D). Ready for Claude AI."

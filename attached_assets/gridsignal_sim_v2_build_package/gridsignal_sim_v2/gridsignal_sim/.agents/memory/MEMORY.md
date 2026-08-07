@@ -30,3 +30,4 @@
 - [phase-201d-power-factor](phase-201d-power-factor.md) — power_factor required on SiteConfig; S_base = Σ MW / pf; all raw-dict spec helpers need the field; re-baseline rules for swing-eq expected values.
 - [incremental-turbine-dispatch](incremental-turbine-dispatch.md) — N_needed+1 spare rule; delta≤0 guard on-bus only; 80% headroom check in evaluate_tick; test_tc84f updated; pre-existing failures catalogue.
 - [triage-baseline](triage-baseline.md) — Post-triage failure floor: 14 failed (2 A, 3 C, 7 D), 960 passed, 0 errors; NullPool+lifespan-singleton fixes; for_tick() Phase 3 guard.
+- [start-time-separation](start-time-separation.md) — warm_start_s=600/hot_start_s=300 separation; TC-GT2 warmup depth trap; D3/I4a Phase D setpoint trap; commit harness pattern.
