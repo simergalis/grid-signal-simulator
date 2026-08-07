@@ -77,3 +77,10 @@ uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/
 type = "text"
 title = "Phase D Completion Report"
 description = "DR-2026-08-06 Phase D — commitment engine wired. Gate: 38 failed / 946 passed / 0 regressions."
+
+[[outputs]]
+id = "M8rc6gt23oMNMRqzgUbfE"
+uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/docs/phase_e_completion_report.md"
+type = "text"
+title = "Phase E Completion Report"
+description = "DR-2026-08-06 Phase E — stop sequencing, sequential base-loading, physical constraints. Final gate: 13 failed / 975 passed / 16 xfailed."
