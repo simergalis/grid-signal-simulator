@@ -230,16 +230,18 @@ def _turbine(
     hot_standby: bool = False,
     p_min_stable_frac: float = 0.40,
     t_min_run_s: float = 1800.0,
+    min_run_enabled: bool = True,
     t_min_down_s: float = 900.0,
+    min_down_enabled: bool = True,
 ) -> TurbineUnitSpec:
     """Build a TurbineUnitSpec.
 
-    Phase E Item 8 / §7.1.3.6: physical constraints enabled by default.
+    Phase E §7.1.3.6 / closeout Item 1: physical constraints with D-03 flags.
     p_min_stable_frac=0.40  — frame-class MSL floor (PW-1 / §15, CHOSEN).
     t_min_run_s=1800        — 30 min minimum run time before a stop (R5, CHOSEN).
+    min_run_enabled=True    — R5 guard active for all seeded scenarios.
     t_min_down_s=900        — 15 min cooling window before a restart (R6, CHOSEN).
-    demo-20mw turbines were already at 0.40; Item 8 propagates all three
-    values to the remaining 23 seeded scenarios.
+    min_down_enabled=True   — R6 guard active for all seeded scenarios.
     """
     return TurbineUnitSpec(
         asset_id=asset_id,
@@ -249,7 +251,9 @@ def _turbine(
         hot_standby=hot_standby,
         p_min_stable_frac=p_min_stable_frac,
         t_min_run_s=t_min_run_s,
+        min_run_enabled=min_run_enabled,
         t_min_down_s=t_min_down_s,
+        min_down_enabled=min_down_enabled,
     )
 
 

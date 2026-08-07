@@ -773,13 +773,29 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             for _cht in state.turbines:
                 if _cht.config.asset_id == _commit_decision.target_unit_id:
                     try:
-                        _cht.command_stop(sim_time)
+                        # Phase E closeout Item 3: command_stop() now returns
+                        # Optional[str] — None = accepted, str = block reason.
+                        _stop_block: Optional[str] = _cht.command_stop(sim_time)
+                    except (RuntimeError, AttributeError):
+                        _stop_block = None  # state changed between snapshot and call
+                    if _stop_block is None:
                         _log.info(
                             "Commitment engine: stop %r at sim_time=%.1f (%s)",
                             _cht.config.asset_id, sim_time, _commit_decision.reason,
                         )
-                    except (RuntimeError, AttributeError):
-                        pass  # SYNCHRONISED-only guard; state may have changed since snapshot
+                    else:
+                        # R5 guard deferred the stop — thread the reason into
+                        # blocked_by so the fleet modal and run log surface it.
+                        _commit_decision = CommitmentDecision(
+                            action="hold",
+                            target_unit_id=_commit_decision.target_unit_id,
+                            reason=_commit_decision.reason,
+                            blocked_by=_stop_block,
+                        )
+                        _log.debug(
+                            "R5 guard: decommit of %r deferred at sim_time=%.1f: %s",
+                            _cht.config.asset_id, sim_time, _stop_block,
+                        )
                     break
         else:
             _log.debug(

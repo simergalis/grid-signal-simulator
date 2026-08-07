@@ -487,17 +487,36 @@ class TurbineConfig:
     #   0.0 = constraint disabled (default — backward-compatible with scenarios
     #   that do not model combustion stability limits).  Set to 0.40 in
     #   demo-20mw (PW-1 / §15: 2.8 MW floor on 7 MW units, CHOSEN).
-    p_min_stable_frac: float = 0.0
+    # Phase E closeout Item 2 / §7.1.3.6: read p_min_stable_frac from catalogue
+    #   so the field carries the CHOSEN production default (0.40) without a
+    #   code literal that Guard D1 would flag as a drift.  The catalogue key
+    #   is "p_min_stable_frac" (unified after closeout Item 2 rename).
+    #   0.0 disables the MSL floor (pass explicitly for tests that do not model
+    #   combustion stability limits).
+    p_min_stable_frac: float = _sp.value("p_min_stable_frac")
     # t_min_run_s — minimum continuous run time (seconds) before a controlled
-    #   stop is permitted.  A stop command issued before this time elapses is
-    #   deferred: the turbine holds at p_min_stable until t_min_run_s passes.
-    #   0.0 = constraint disabled (default).  Set to 1800.0 for frame-class GT.
-    t_min_run_s: float = 0.0
+    #   stop is permitted.  When min_run_enabled=True, a stop command issued
+    #   before this time elapses is deferred via R5 in command_stop().
+    #   Read from catalogue so the field carries the CHOSEN production default
+    #   (1800 s) without a code literal that Guard D1 would flag as a drift.
+    t_min_run_s: float = _sp.value("t_min_run_s")
+    # min_run_enabled — Phase E closeout Item 1 / D-03 pattern.
+    #   True  = R5 guard active; command_stop() defers until t_min_run_s elapses.
+    #   False = R5 guard disabled (backward-compat default for unit tests that
+    #           create TurbineConfig() directly without going through the factory).
+    #   Scenario factory always sets True for production seeded scenarios.
+    min_run_enabled: bool = False
     # t_min_down_s — minimum cooling/rest period (seconds) between a controlled
-    #   stop and the next permitted restart.  A restart command while in the
-    #   cooling window is silently dropped.
-    #   0.0 = constraint disabled (default).  Phase 2 spec constant: 600 s.
-    t_min_down_s: float = 0.0
+    #   stop and the next permitted restart.  When min_down_enabled=True, a start
+    #   command during the cooling window is silently dropped via R6.
+    #   Read from catalogue so the field carries the CHOSEN production default
+    #   (900 s) without a code literal that Guard D1 would flag as a drift.
+    t_min_down_s: float = _sp.value("t_min_down_s")
+    # min_down_enabled — Phase E closeout Item 1 / D-03 pattern.
+    #   True  = R6 guard active; command_start() defers until t_min_down_s elapses.
+    #   False = R6 guard disabled (backward-compat default for unit tests).
+    #   Scenario factory always sets True for production seeded scenarios.
+    min_down_enabled: bool = False
     # gt_mode — per-unit gas turbine frame class.
     #   "frame" = large heavy-duty frame (slow ramp, high inertia).
     #   "aero"  = aeroderivative unit (fast ramp, lower inertia).

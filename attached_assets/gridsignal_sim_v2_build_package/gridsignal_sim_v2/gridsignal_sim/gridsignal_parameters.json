@@ -555,32 +555,18 @@
       "note": "scale = 1.0 + 0.015 × (T_amb − 21). Clamped to [0.80, 1.20]. At 14 °C → 0.895; at 24 °C → 1.045. Requires commissioning measurement to graduate to MEASURED."
     },
     {
-      "key": "p_min_stable_frac_demo",
+      "key": "p_min_stable_frac",
       "value": 0.4,
       "unit": "fraction",
-      "label": "Minimum stable load fraction — demo-20mw turbine units",
+      "label": "Minimum stable load fraction — all turbine units (universal CHOSEN default)",
       "provenance": "CHOSEN",
-      "provenance_detail": "PW-1 / §15: 0.40 was selected as a representative lean-extinction boundary for the demo 7 MW frame-class turbines.  No OEM combustion stability measurement exists.  A production deployment must replace this with frame-class-specific data (PROTO-R4).  Applied to all five turbine units in the demo-20mw seeded scenario; BessConfig default (p_min_stable_frac=0.0) unchanged.",
-      "spec_ref": "§15 / PROTO-R4",
+      "provenance_detail": "Phase E §7.1.3.6 / PW-1: 0.40 is the frame-class representative lean-extinction boundary.  Originally applied only to demo-20mw turbine units (7 MW rated; MSL = 2.8 MW per unit, PARAM formerly 'p_min_stable_frac_demo').  Phase E Item 8 propagated the value to all 23 remaining seeded scenarios; Phase E closeout Item 2 reconciled the two catalogue entries (p_min_stable_frac_demo + p_min_stable_frac_all_scenarios → this single authoritative entry keyed to match TurbineConfig.p_min_stable_frac).  No OEM combustion stability measurement on file.  A production deployment must replace this with frame-class-specific data (PROTO-R4).  BessConfig does not carry this field; 0.0 is still a valid per-unit override for units without a combustion floor.",
+      "spec_ref": "§7.1.3.6 / PROTO-R4",
       "ui": {
         "control": "readonly",
         "group": "turbine"
       },
-      "note": "MSL = p_min_stable_frac × rated_mw = 0.40 × 7.0 = 2.8 MW per unit. Σ msl (4 online units) = 11.2 MW; (5 units incl. hot-standby) = 14.0 MW. sub_msl_surplus_mw > 0 when p_fleet < Σ msl (islanded overfrequency path). Requires OEM combustion-stability data to graduate from CHOSEN."
-    },
-    {
-      "key": "p_min_stable_frac_all_scenarios",
-      "value": 0.4,
-      "unit": "fraction",
-      "label": "Minimum stable load fraction — Phase E Item 8 default for all seeded scenarios",
-      "provenance": "CHOSEN",
-      "provenance_detail": "Phase E Item 8 / §7.1.3.6: 0.40 propagated from demo-20mw to all 23 remaining seeded scenarios.  Previously 0.0 (disabled) in every scenario except demo-20mw.  Frame-class representative lean-extinction boundary; no OEM data.  Requires frame-class-specific measurement to graduate from CHOSEN (PROTO-R4).  Enforced via sequential base-loading (TC-96) and the UNLOADING → levelled-off → OFFLINE path (TC-94).",
-      "spec_ref": "§7.1.3.6",
-      "ui": {
-        "control": "readonly",
-        "group": "turbine"
-      },
-      "note": "MSL floor applies to all turbines in all seeded scenarios.  sub_msl_surplus_mw > 0 is returned by compute_loading_setpoints() when p_fleet < Σ MSL (TC-95); the caller (simulation_core.py) decides whether to decommit or curtail."
+      "note": "MSL = p_min_stable_frac × rated_mw.  demo-20mw example: 0.40 × 7.0 = 2.8 MW per unit; Σ msl (4 online) = 11.2 MW; (5 incl. hot-standby) = 14.0 MW.  sub_msl_surplus_mw > 0 when p_fleet < Σ MSL (TC-95 sub-MSL path; TC-96 sequential-fill).  TurbineConfig.p_min_stable_frac reads this key via _sp.value() at class definition time (Guard D1 clean — no literal)."
     },
     {
       "key": "t_min_run_s",
@@ -594,7 +580,7 @@
         "control": "readonly",
         "group": "turbine"
       },
-      "note": "R5 enforcement: command_stop() returns without transitioning if sim_time − _run_start_s < t_min_run_s.  The commitment engine retries on the next decommit check.  t_min_run_s=0.0 disables the guard (backward-compat for tests)."
+      "note": "R5 enforcement (closeout Item 1 / D-03): command_stop() returns block reason 'r5_min_run_not_elapsed:...' when sim_time − _run_start_s < t_min_run_s and min_run_enabled=True.  The commitment engine threads the reason into CommitmentDecision.blocked_by and retries on the next decommit check.  Set min_run_enabled=False (TurbineConfig default) to disable the guard in unit tests that do not model minimum run-time constraints."
     },
     {
       "key": "t_min_down_s",
@@ -608,7 +594,7 @@
         "control": "readonly",
         "group": "turbine"
       },
-      "note": "R6 enforcement: command_start() returns without transitioning if sim_time − _stop_time_s < t_min_down_s.  t_min_down_s=0.0 disables the guard (backward-compat for tests, e.g. TC-203-3 which explicitly exercises the zero-cooldown path)."
+      "note": "R6 enforcement (closeout Item 1 / D-03): command_start() returns without transitioning if sim_time − _stop_time_s < t_min_down_s and min_down_enabled=True.  Set min_down_enabled=False (TurbineConfig default) to disable the guard.  TC-203-3 exercises the disabled-cooldown path — min_down_enabled=False is the correct way to express it after the D-03 refactor."
     },
     {
       "key": "p_anchor_reserve_mw_san_diego",

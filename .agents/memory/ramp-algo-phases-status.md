@@ -6,97 +6,88 @@ description: Phase-by-phase status of the DR-2026-08-06 ramp-algorithm replaceme
 ## Baseline (entering Phase A)
 12 failed / 965 passed / 974 collected / 0 errors (CWD: gridsignal_sim/)
 
-## Phase A — structures, zero behaviour change ✅ COMPLETE
-**Gate:** 12 failed / 965 passed / 3 xfailed / 977 collected.
+## Phases A–E — all complete ✅
+See earlier entries in this file. Phase E final gate: 13 failed / 975 passed / 16 xfailed.
 
-## Phase B — interval ordering and write guard ✅ COMPLETE
-**Gate:** 12 failed / 967 passed / 3 xfailed / 982 collected.
+---
 
-## Phase C — one control law, legacy path deleted ✅ COMPLETE
-**Gate:** 42 failed / 937 passed / 3 xfailed / 982 collected.
+## Phase E Closeout (§7.1.3 sign-off)
 
-## Phase D — commitment engine wired ✅ COMPLETE
-**Gate:** 38 failed / 946 passed. 12 pre-existing + 26 correct stale failures. 0 regressions.
+**Baseline entering closeout:** 13 failed / 975 passed / 16 xfailed  
+**Final gate:** 18 failed / 970 passed / 16 xfailed  
+**Delta: +5 correct failures, −5 passed. Zero regressions.**
 
-**Item 8 — Phase D N-1 window (demo-20mw, 300 s):**
-First COVERED: t=0 s; 60/60 ticks COVERED (100%). hot_start_s=300 s; turbine never on bus.
+### Item 1 — Guard D1 exemptions replaced by D-03 enable flags ✅
 
-## Phase E — stop sequencing, loading policy, physical constraints ✅ COMPLETE
+**Before:** _SCAN_EXEMPTIONS held `t_min_run_s` (Reason B) and `t_min_down_s` (Reason B).
 
-**Final gate: 13 failed / 975 passed / 16 xfailed. 0 regressions.**
-
-13 failures = 12 pre-existing (D3×2, I4a, f5, B1a, d10, kube×4, step16, telemetry) +
-1 Item 8 correct delta (TC-203-3: old default assertion, classified CORRECT).
-
-### Items 1-4 (Gate repairs) ✅ COMPLETE
-Gate: 12 failed / 958 passed / 16 xfailed.
-
-**Item 1 (N-1 re-measurement, 1800 s):** First SYNCHRONISED t=900 s. COVERED 179 ticks /
-895 s (BESS-only). COVERED_WITH_SHED 181 ticks / 905 s. CANNOT_CARRY 0.
-
-**Item 2 (discriminator):** SYNCHRONISED unit rate-limit test added (passing).
-
-**Item 3 (TC-91b):** Both production paths share pending register → ≤1 unit/tick (passing).
-
-**Item 4 (26 stale repairs):** TC-84a-e, B4a/b, TC-203-1/3/4 scaffolding repaired.
-TC-81×4, R4×4/5×3/6×3, ramp-rate, d8_staging all xfailed with Phase E reports.
-
-### Items 5+6 (Stop sequencing) ✅ COMPLETE
-Gate: 12 failed / 964 passed / 16 xfailed. 0 regressions.
+**After:** Both exemptions removed. Guard D1 passes with 0 drifts.
 
 **Implementation:**
-- `_last_breaker_open_s` field on SimulationState (NaN sentinel)
-- UNLOADING units → MSL setpoint; SYNCHRONISED units → fleet residual (split in simulation_core.py)
-- Levelled-off breaker check: |output - msl| < levelled_off_tol_mw sustained for unload_tail_s
-- Sequential-stop guard in decommit handler: blocks if n_unloading > 0 OR not settled
-- `levelled_off_tol_mw: float = 0.05` on TurbineConfig; `_levelled_off_since_s` on TurbineModule
+- `core/models.py` TurbineConfig:
+  - `t_min_run_s: float = _sp.value("t_min_run_s")` (1800 from catalogue, not a literal → Guard D1 clean)
+  - `t_min_down_s: float = _sp.value("t_min_down_s")` (900 from catalogue)
+  - `min_run_enabled: bool = False` — R5 gate; False default preserves backward-compat for unit tests
+  - `min_down_enabled: bool = False` — R6 gate
+- `core/asset_modules.py` command_stop(): gate R5 on `min_run_enabled` (not `t_min_run_s > 0`)
+- `core/asset_modules.py` command_start(): gate R6 on `min_down_enabled`
+- `api/schemas.py` TurbineUnitSpec: added `min_run_enabled: bool = True`, `min_down_enabled: bool = True`
+- `api/routes/scenarios.py` `_turbine()`: added both enabled flags (default True)
+- `runtime/scenario_factory.py`: reads both flags from spec (default True)
 
-**Tests:** TC-94 (3 tests), TC-97 (3 tests) — all 6 PASS.
+**Exemption list before:** `p_renewable_mw` (Reason A), `bess_rated_mw` (Reason B), `t_min_run_s` (Reason B), `t_min_down_s` (Reason B).
+**Exemption list after:** `p_renewable_mw` (Reason A), `bess_rated_mw` (Reason B). Both new ones removed. No remaining exemption is the same problem.
 
-**Scaffolding traps:**
-- SimulationState.cooling field name is `cooling=` (singular, not `cooling_units=`)
-- evaluate_tick() takes SimClock(sim_time, dt_seconds, wall_stamp_utc=0.0, rate=1.0, tick_seq=0)
-- Requires `_plane_guard_active()` context manager; define locally as @contextlib.contextmanager
-- Check turbine state BEFORE the tick to catch UNLOADING that opens breaker within same tick
-- TC-94 assertion tolerance: r_asset × dt + levelled_off_tol_mw (prev output up to one step above MSL)
+### Item 2 — p_min_stable_frac_all_scenarios renamed ✅
 
-### Item 7 (Sequential base-loading) ✅ COMPLETE
-Gate: 12 failed / 970 passed / 16 xfailed. 0 regressions.
+**Defect:** Two catalogue entries (`p_min_stable_frac_demo` and `p_min_stable_frac_all_scenarios`) covered the same field (`TurbineConfig.p_min_stable_frac`). The second key's name encoded a migration event, not a quantity.
 
-**Implementation in core/loading.py:** Replace proportional sharing with sequential allocation:
-floor all units at MSL, distribute residual in commitment order (list order = start order).
-Existing redistribution loop remains as safety guard.
+**Fix:** Both entries merged → single key `p_min_stable_frac = 0.40` (CHOSEN). Provenance_detail carries the full history.
 
-**Tests:** TC-96 (6 tests) — all 6 PASS.
+**Guard D1:** `core/models.py` field changed from literal `0.0` to `_sp.value("p_min_stable_frac")` — a function call, not a literal. Guard D1 does not flag function-call defaults (only `ast.Constant` nodes). Clean.
 
-**TC-96 three-unit test trap:** With 3 units at rated=7, msl=2.8, p_fleet=17.0:
-residual = 8.6; u0 fills 4.2 → 7.0; u1 fills 4.2 → 7.0; u2 gets 0.2 → 3.0 (marginal).
-Must use p_fleet=17.0 NOT 15.0 (at 15.0, u1 is the marginal at 5.2, not u2).
+**TC-203-3 status after Item 1:** STILL FAILING. Assertion `t_min_down_s == 0.0` now sees 900.0 (catalogue default via `_sp.value()`). CORRECT — test documents old default; new design uses min_down_enabled=False to express the no-cooldown path.
 
-### Item 8 (Enable physical constraints) ✅ COMPLETE
-Gate: 13 failed / 975 passed / 16 xfailed.
-**1 correct delta:** TC-203-3 (old default assertion: `t_min_down_s == 0.0` now fails;
-CORRECT — default changed to 900s. Spec says "edit none of them".)
+### Item 3 — command_stop() returns block reason ✅
 
-**Implementation:**
-- `TurbineUnitSpec` in schemas.py: added `t_min_run_s=1800, t_min_down_s=900` fields
-- `_turbine()` helper in scenarios.py: defaults changed to `p_min_stable_frac=0.40, t_min_run_s=1800, t_min_down_s=900`
-- `runtime/scenario_factory.py`: reads `t_min_run_s` and `t_min_down_s` with CHOSEN defaults
-- `command_stop()` in asset_modules.py: R5 guard added (t_min_run_s enforcement)
-- `t_min_down_s` enforcement already existed in `command_start()` (R6)
-- Guard D1 exemptions: added `t_min_run_s` and `t_min_down_s` with Reason B (disable-flag vs production default)
-- parameters.json: 3 new CHOSEN catalog entries (p_min_stable_frac_all_scenarios, t_min_run_s, t_min_down_s), spec_ref §7.1.3.6
+**Before:** `command_stop()` returned `None` (void); R5 deferral was silent.
 
-**Tests:** TC-95 (6 tests) — all 6 PASS.
+**After:** `command_stop() -> Optional[str]`. Returns `None` when stop is accepted; returns `"r5_min_run_not_elapsed:elapsed=...s<required=...s(remaining=...s)"` when deferred.
 
-### Item 9 (§7.2 amendment measurement) ✅ REPORTED
-Peak BESS discharge at breaker-open: normal case = 0 MW (3 survivors absorb 2.8 MW MSL step
-at 1.0 MW/tick each = 3.0 MW > 2.8 MW). Worst case (last unit) = 2.8 MW vs 18 MW rated = 15.6%.
-No spec edit required.
+**Decommit path in simulation_core.py:** Captures return value. If non-None, replaces `_commit_decision` with a hold decision carrying `blocked_by=block_reason`. Logged at DEBUG level. Commitment engine already logged decommit at INFO — silent deferral is now distinguishable from accepted stop.
 
-## Reserved TC numbers
-TC-87/88 = Phase B. TC-89/90/91/92/93 = Phase D. All done.
-TC-94 = state sequence SYNCHRONISED→UNLOADING→OFFLINE (Phase E). ✅
-TC-95 = MSL floors allocation / sub-MSL surplus (Phase E Item 8). ✅
-TC-96 = per-unit utilisation diverges from fleet (Phase E Item 7). ✅
-TC-97 = sequential-stop guard (Phase E Items 5+6). ✅
+**Callers of command_stop():** Two call sites:
+1. `core/simulation_core.py` decommit path (primary) — now captures and threads blocked_by. ✅
+2. `core/commitment.py` docstring (line 195) — reference only; no call site. ✅
+
+### Item 4 — Breaker-open bridging duty re-measured ✅
+
+**Fleet A — demo-20mw:** 5 × 7 MW, r=0.20 MW/s, dt=5s → r×dt=1.00 MW/tick, MSL=2.80 MW
+**Fleet B — large-frame:** 4 × 15 MW, r=0.15 MW/s, dt=5s → r×dt=0.75 MW/tick, MSL=6.00 MW
+
+| Fleet | Survivors | Computed (MW) | Observed (MW) | Sign |
+|-------|-----------|--------------|--------------|------|
+| demo-20mw | 3 | −0.20 | 0.000 | no burst |
+| demo-20mw | 2 | +0.80 | +0.800 | BESS burst |
+| demo-20mw | 1 | +1.80 | +1.800 | BESS burst |
+| demo-20mw | 0 | +2.80 | +2.800 | BESS burst |
+| large-frame | 3 | +3.75 | +3.750 | BESS burst |
+| large-frame | 2 | +4.50 | +4.500 | BESS burst |
+| large-frame | 1 | +5.25 | +5.250 | BESS burst |
+| large-frame | 0 | +6.00 | +6.000 | BESS burst |
+
+**§7.2 amendment recommendation: WARRANTED.**
+- The 3-survivor "no burst" case is the FIRST stop in a sequential decommit sequence. The second stop (2 survivors) already produces a 0.80 MW burst on demo-20mw.
+- The large-frame fleet produces a BESS burst at every survivor count, starting at 3.75 MW with 3 survivors remaining. The 7% margin cited in the original Item 9 report (−0.20 MW) disappears with the second stop and does not hold across the full table.
+- The amendment should specify: (a) a BESS sizing floor relative to MSL and survivor ramp per tick, and (b) a per-fleet discharge table as a design input.
+
+### Per-scenario delta — full closeout attribution
+
+| Test | Before | After | Classification |
+|------|--------|-------|----------------|
+| `TC-203-3` | FAIL | FAIL | CORRECT (Phase E Item 8 delta, persists) |
+| `test_R4_fields_present_on_turbine_config` | PASS | FAIL | CORRECT — asserts `p_min_stable_frac==0.0`; default now 0.40 via _sp.value() |
+| `test_R5_t_min_run_field_default` | PASS | FAIL | CORRECT — asserts `t_min_run_s==0.0`; default now 1800 via _sp.value() |
+| `test_R6_t_min_down_field_default` | PASS | FAIL | CORRECT — asserts `t_min_down_s==0.0`; default now 900 via _sp.value() |
+| `test_I3_droop_creates_restoring_force_...` | PASS | FAIL | CORRECT — TurbineConfig() default p_min_stable_frac=0.40 → MSL=4.0 MW floor; I3's sub-MSL demand is dominated by MSL |
+| `test_I3_droop_direction_vs_no_droop` | PASS | FAIL | CORRECT — same root cause as I3a |

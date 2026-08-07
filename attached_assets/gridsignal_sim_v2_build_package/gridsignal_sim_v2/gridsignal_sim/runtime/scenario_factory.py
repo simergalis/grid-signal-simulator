@@ -510,15 +510,19 @@ def build_run_context_from_spec(
                 r_asset_mw_per_s=float(t.get("r_asset_mw_per_s", 0.2)),
                 rated_mw=float(t.get("rated_mw", 10.0)),
                 hot_standby=bool(t.get("hot_standby", False)),
-                # Phase E Item 8 / §7.1.3.6 — physical constraints (CHOSEN).
-                # p_min_stable_frac=0.40: frame-class MSL floor (PW-1 / §15).
-                # t_min_run_s=1800: 30 min minimum stable operation before stop.
-                # t_min_down_s=900: 15 min cooling window before restart.
-                # All three default to the CHOSEN values so every scenario (incl.
-                # fabric JSON) inherits the constraint without an explicit override.
+                # Phase E §7.1.3.6 / closeout Item 1 — physical constraints.
+                # p_min_stable_frac=0.40: frame-class MSL floor (PW-1 / §15, CHOSEN).
+                # t_min_run_s=1800: 30 min minimum run time (R5, CHOSEN).
+                # min_run_enabled=True: R5 guard active for all factory-built scenarios.
+                # t_min_down_s=900: 15 min cooling window (R6, CHOSEN).
+                # min_down_enabled=True: R6 guard active for all factory-built scenarios.
+                # D-03 pattern: the enable flags distinguish "no constraint" from
+                # "constraint with the CHOSEN duration" — no 0.0-sentinel needed.
                 p_min_stable_frac=float(t.get("p_min_stable_frac", 0.40)),
                 t_min_run_s=float(t.get("t_min_run_s", 1800.0)),
+                min_run_enabled=bool(t.get("min_run_enabled", True)),
                 t_min_down_s=float(t.get("t_min_down_s", 900.0)),
+                min_down_enabled=bool(t.get("min_down_enabled", True)),
             )
         )
         for i, t in enumerate(spec_data.get("turbine_units", []))

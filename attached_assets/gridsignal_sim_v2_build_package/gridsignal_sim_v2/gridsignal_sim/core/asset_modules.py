@@ -890,8 +890,11 @@ class TurbineModule(AssetModule):
         if self.state != TurbineState.OFFLINE:
             return
 
-        # R6: enforce minimum down-time
-        if not math.isnan(self._stop_time_s):
+        # R6: enforce minimum down-time when the constraint is enabled.
+        # Phase E closeout Item 1 / D-03: gated on min_down_enabled so tests
+        # that create TurbineConfig() directly (min_down_enabled=False default)
+        # are unaffected.
+        if self.config.min_down_enabled and not math.isnan(self._stop_time_s):
             elapsed = sim_time - self._stop_time_s
             if elapsed < self.config.t_min_down_s:
                 return  # cooling window not yet satisfied
@@ -949,17 +952,28 @@ class TurbineModule(AssetModule):
             hot_standby=self.config.hot_standby,
         )
 
-    def command_stop(self, sim_time: float) -> None:
+    def command_stop(self, sim_time: float) -> Optional[str]:
         """Transition SYNCHRONISED → UNLOADING.  Phase E controlled-stop path.
 
-        R5 enforcement (Phase E Item 8): if the unit has not yet run for at least
-        t_min_run_s seconds since it last reached SYNCHRONISED, the stop is
-        silently deferred — the caller may retry on the next decommit check.
-        t_min_run_s=0.0 (disabled) makes this guard a no-op (backward compat).
+        Phase E closeout Item 3: returns a block-reason string when the stop
+        is deferred, and None when it is accepted.  The caller (simulation_core.py
+        decommit path) propagates the reason into CommitmentDecision.blocked_by
+        so it is visible in the fleet modal and run log.
+
+        R5 enforcement (Phase E Item 8 / closeout Item 1): when min_run_enabled
+        is True and the unit has not yet run for at least t_min_run_s seconds
+        since it last reached SYNCHRONISED, the stop is deferred.  The caller
+        may retry on the next decommit check.
 
         Raises RuntimeError for any state other than SYNCHRONISED — a loaded unit
-        must not be transitioned directly to OFFLINE through any normal dispatch path.
-        Operator trips (emergency) go through the run_manager.py A-1 drain loop.
+        must not be transitioned directly to OFFLINE through any normal dispatch
+        path.  Operator trips (emergency) go through the run_manager.py A-1
+        drain loop.
+
+        Returns
+        -------
+        None     — stop accepted; unit has transitioned to UNLOADING.
+        str      — stop deferred; value is the block reason for blocked_by.
         """
         if self.state != TurbineState.SYNCHRONISED:
             raise RuntimeError(
@@ -967,15 +981,22 @@ class TurbineModule(AssetModule):
                 f"state {self.state.value!r}. Only SYNCHRONISED → UNLOADING is valid "
                 f"here; operator trips use the run_manager trip path."
             )
-        # R5: enforce minimum run time — silently defer if not yet satisfied.
+        # R5: enforce minimum run time when the constraint is enabled.
         if (
-            self.config.t_min_run_s > 0.0
+            self.config.min_run_enabled
             and not math.isnan(self._run_start_s)
             and (sim_time - self._run_start_s) < self.config.t_min_run_s
         ):
-            return  # symmetric to R6: defer without error; caller retries
+            remaining = self.config.t_min_run_s - (sim_time - self._run_start_s)
+            return (
+                f"r5_min_run_not_elapsed:"
+                f"elapsed={sim_time - self._run_start_s:.0f}s"
+                f"<required={self.config.t_min_run_s:.0f}s"
+                f"(remaining={remaining:.0f}s)"
+            )
         self.state = TurbineState.UNLOADING
         self._levelled_off_since_s = math.nan   # Phase E: reset dwell clock on entry
+        return None
 
     def advance(self, sim_time: float, dt_seconds: float) -> None:
         """Tick this unit's internal state forward by one interval.
