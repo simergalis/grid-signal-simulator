@@ -133,3 +133,10 @@ uri = "file://reports/gridsignal_droop_setpoint_report.md"
 type = "text"
 title = "GridSignal Droop & Setpoint Gate Report"
 description = "Full session report: Item 1 droop runaway diagnosis, Item 2 OFFLINE setpoint gate fix, Item 3 warmup sweep, Item 4 surplus-netting verdict. Suite result: 15 → 13 failures."
+
+[[outputs]]
+id = "RdqbVh4RxFzLhNIJZUmR0"
+uri = "file://reports/gridsignal_frequency_protection_report.md"
+type = "text"
+title = "GridSignal Frequency Protection Report"
+description = "Items 1–4: gt_setpoint_mw contradiction resolved, §7.2 withdrawn, droop clamp applied, frequency protection diagnosis with proposed minimal protection layer."
