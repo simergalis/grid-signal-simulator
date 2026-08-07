@@ -175,3 +175,10 @@ uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/
 type = "unspecified"
 title = "S9 Catalogued Review Bundle"
 description = "ZIP containing: S9_catalogued_rerun_report.md, S9_catalogued_invariants.csv, test_s9_islanded_ramp.py"
+
+[[outputs]]
+id = "HWEDk7sZv_S_aRbU9Ma7D"
+uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/reports/S9_surplus_and_inertia_report.md"
+type = "text"
+title = "S9 Surplus & Inertia — Spec 2 Report"
+description = "Implementation report for GS_prompt_surplus_and_inertia_1786133005321: §INV-CURT, §INV-INERTIA S_base fix, S9 rerun results, ScenarioSpec thresholds, and findings F-2 through F-4."
