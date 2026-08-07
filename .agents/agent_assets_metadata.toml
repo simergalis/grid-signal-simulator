@@ -126,3 +126,10 @@ uri = "file://reports/gridsignal_diagnose_remaining_failures_report.md"
 type = "text"
 title = "GS Diagnose Remaining Failures — Full Report"
 description = "Items 1–3: warm_start_s separation, commit harness trace, and all 15 failure classifications (Groups A–D). Ready for Claude AI."
+
+[[outputs]]
+id = "1OnQ4z0dq8_MeWufKw0Pl"
+uri = "file://reports/gridsignal_droop_setpoint_report.md"
+type = "text"
+title = "GridSignal Droop & Setpoint Gate Report"
+description = "Full session report: Item 1 droop runaway diagnosis, Item 2 OFFLINE setpoint gate fix, Item 3 warmup sweep, Item 4 surplus-netting verdict. Suite result: 15 → 13 failures."

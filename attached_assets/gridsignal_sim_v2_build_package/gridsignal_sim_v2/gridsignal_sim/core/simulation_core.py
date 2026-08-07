@@ -1221,8 +1221,23 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     #   This is a deliberate re-scope: it is now a reporting field outside D4.
     #   The §13.2 spec document needs an edit to reflect two-channel D4 and the
     #   mode-independent delivery_error definition — reported, not edited here.
+    # Gate the turbine setpoint used in delivery-error on SYNCHRONISED.
+    # _p_dispatch_droop_mw is the fleet-level demand.  When no SYNCHRONISED
+    # turbines exist (e.g. all units OFFLINE or STARTING), the demand is
+    # fully absorbed by the BESS shortfall path: bess_setpoint ≈ demand and
+    # bess_output ≈ bess_setpoint.  Attributing _p_dispatch_droop_mw as the
+    # turbine setpoint would inject a spurious delivery error equal to −demand
+    # even when the BESS has covered load perfectly.
+    #
+    # The gating criterion: _committed_rated_mw_cs > 0 ↔ at least one
+    # SYNCHRONISED turbine has headroom and can act on the setpoint.
+    # TickResult.gt_setpoint_mw is intentionally kept as _p_dispatch_droop_mw
+    # (the fleet-level demand) so B5b and informational consumers are unchanged.
+    _turb_setpoint_for_error_mw = (
+        _p_dispatch_droop_mw if _committed_rated_mw_cs > 0.0 else 0.0
+    )
     _asset_delivery_error_mw = (           # reporting only — NOT a D4 term
-        (turbine_output_mw - _p_dispatch_droop_mw)
+        (turbine_output_mw - _turb_setpoint_for_error_mw)
         + (bess_output_mw  - _bess_setpoint_mw)
     )
     if _islanded:
@@ -1354,12 +1369,13 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         forecast_mw=forecast_mw,
         # Phase 11.3: dispatch truthfulness.
         bess_setpoint_mw=_bess_setpoint_mw,
-        # Phase 13.3: gt_setpoint_mw is the droop-adjusted turbine command
-        # (_p_dispatch_droop_mw), not the raw demand requirement.  The droop
-        # correction is zero at nominal frequency (deadband), so this field
-        # equals p_dispatch_required_mw in steady state — B5b and similar
-        # tests run at initial frequency (50 Hz) and are unaffected.
-        gt_setpoint_mw=_p_dispatch_droop_mw,
+        # Phase 13.3: gt_setpoint_mw is the droop-adjusted turbine command.
+        # Gate on SYNCHRONISED (same variable as the delivery-error formula):
+        # when no SYNCHRONISED turbine exists, the turbine fleet has no actionable
+        # setpoint — demand is fully absorbed by the BESS shortfall path.
+        # Using _p_dispatch_droop_mw here while asset_delivery_error_mw uses
+        # _turb_setpoint_for_error_mw would make the D5 formula check inconsistent.
+        gt_setpoint_mw=_turb_setpoint_for_error_mw,
         # balance_residual_mw REMOVED (Branch B) — local scratch only; D4 asserted above.
         frequency_hz=state._frequency_hz,
         # Phase 13.2: balance decomposition — three independent channels.

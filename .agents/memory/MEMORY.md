@@ -31,3 +31,4 @@
 - [incremental-turbine-dispatch](incremental-turbine-dispatch.md) — D-05 sequential-start (1 unit per call); headroom-check SYNCHRONISED-only guard prevents same-tick double-start; TC-84f pre-trip relaxed to CANNOT_CARRY.
 - [ramp-algo-phases-status](ramp-algo-phases-status.md) — Phase tracker for ramp-algorithm replacement; A+B done (12/967/976/0); C=P0 fix+is_sync reclassify, D=payload renames, E=physical constraints last.
 - [cfg-001-phase-status](cfg-001-phase-status.md) — GS-DES-CFG-001 phase tracker; fabric CWD false-positive baseline trap; Guard D1/D2/E Tier-1 all green after Phase 3.
+- [droop-runaway-and-setpoint-gate](droop-runaway-and-setpoint-gate.md) — unbounded droop at large Δf (Item 1, diagnosed only); OFFLINE-gate fix (Item 2, applied); B5b secondary regression; d10/TC-GT2-F warmup issues.
