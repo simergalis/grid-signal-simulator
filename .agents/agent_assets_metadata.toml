@@ -70,3 +70,10 @@ uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/
 type = "text"
 title = "Phase 6 Completion Report"
 description = "GS-DES-CFG-001 Phase 6 — Peak load reconcile, catalogue additions, design_peak_load_mw wire field, N-1 fleet modal switch."
+
+[[outputs]]
+id = "iQH4E7rcjRyqNDR5xBn3p"
+uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/docs/phase-d-completion-report.md"
+type = "text"
+title = "Phase D Completion Report"
+description = "DR-2026-08-06 Phase D — commitment engine wired. Gate: 38 failed / 946 passed / 0 regressions."
