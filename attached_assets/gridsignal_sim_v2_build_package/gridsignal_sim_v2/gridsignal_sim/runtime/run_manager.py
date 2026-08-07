@@ -383,6 +383,20 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         "alpha_max":              round(tick.alpha_max, 6),
         "bess_anchor_reserve_mw": round(tick.bess_anchor_reserve_mw, 4),
         "design_peak_load_mw":    round(tick.design_peak_load_mw, 4),
+        # Phase E+: commitment engine last-decision summary — drives fleet modal
+        # commitment stat rows (Item 7).  Always present; action="hold" and
+        # empty strings are the safe-sentinel defaults (no commitment engine wired).
+        "commitment_block": {
+            "action":                tick.commitment_action,
+            "target_unit_id":        tick.commitment_target_unit_id,
+            "reason":                tick.commitment_reason,
+            "blocked_by":            tick.commitment_blocked_by,
+            "committed_rated_mw":    round(tick.committed_rated_mw, 2),
+            "reserve_floor_mw":      round(tick.reserve_floor_mw, 2),
+            "reserve_satisfied":     tick.reserve_satisfied,
+            "utilisation":           round(tick.fleet_utilisation, 3),
+            "pending_start_unit_id": tick.pending_start_unit_id,
+        },
     }
 
 
@@ -1311,6 +1325,13 @@ class RunManager:
                             "thermal_state": t._thermal_state.value if hasattr(t, "_thermal_state") else None,
                             "start_phase": t._start_phase if t.state.value == "starting" else None,
                             "out_of_service_reason": t._out_of_service_reason,
+                            # Phase E+: per-unit setpoint, levelled-off predicate,
+                            # and thermal start-time config for U-1 through U-6.
+                            "setpoint_mw":  round(getattr(t, '_last_setpoint_mw', 0.0), 4),
+                            "levelled_off": not math.isnan(t._levelled_off_since_s),
+                            "hot_start_s":  t.config.hot_start_s,
+                            "warm_start_s": t.config.warm_start_s,
+                            "cold_start_s": t.config.cold_start_s,
                         }
                         for static_spec, t in zip(ctx.turbine_unit_specs, ctx.sim_state.turbines)
                     ) if (

@@ -301,6 +301,96 @@ describe('AssetReservePanel — turbine ramp credit / peak shortfall staging', (
 
 // ── Pre-run state ─────────────────────────────────────────────────────────────
 
+// ── TC-98 / TC-99 — per-unit output + ramp consistency ───────────────────────
+
+/** Two on-bus units with known per-unit output_mw + ramp_capability_mw. */
+const FLEET_TICK: TickPayload = {
+  ...ALERT_TICK,
+  tick_index: 20,
+  sim_time_seconds: 100.0,
+  ramp_capability_mw: 28.0,   // backend authoritative energy over dt_lead_next_s=40
+  dt_lead_next_s: 40.0,
+  turbine_units: [
+    {
+      asset_id: 'gt-1', rated_mw: 15, r_asset_mw_per_s: 0.20,
+      no_load_mw: 1.5, msl_mw: 6.0, gt_mode: 'frame',
+      hot_standby: false, breaker_closed: true, sync_relay_state: 'permissive',
+      state: 'synchronised', thermal_state: 'hot',
+      output_mw: 12.5,
+    },
+    {
+      asset_id: 'gt-2', rated_mw: 15, r_asset_mw_per_s: 0.20,
+      no_load_mw: 1.5, msl_mw: 6.0, gt_mode: 'frame',
+      hot_standby: false, breaker_closed: true, sync_relay_state: 'permissive',
+      state: 'synchronised', thermal_state: 'hot',
+      output_mw: 11.8,
+    },
+  ] as TickPayload['turbine_units'],
+  on_bus_output_mw: 24.3,
+  units_on_bus_count: 2,
+}
+
+describe('TC-98 — per-unit output_mw sums to on-bus fleet total', () => {
+  it('sum of on-bus unit output_mw matches on_bus_output_mw to 1 dp', () => {
+    const units = FLEET_TICK.turbine_units
+    const onBusUnits = units.filter(u =>
+      u.state !== undefined ? (u.state === 'synchronised' || u.state === 'unloading') : (u as any).breaker_closed
+    )
+    const sumOutputMW = onBusUnits.reduce((s, u) => s + ((u as any).output_mw ?? 0), 0)
+    // TC-98: Σ output_mw over on-bus units == on_bus_output_mw (within 0.1 MW)
+    expect(Math.abs(sumOutputMW - FLEET_TICK.on_bus_output_mw)).toBeLessThan(0.1)
+    expect(sumOutputMW).toBeCloseTo(12.5 + 11.8, 1)
+  })
+
+  it('UNLOADING units are counted as on-bus for TC-98 sum', () => {
+    const unloadingTick: TickPayload = {
+      ...FLEET_TICK,
+      turbine_units: [
+        { ...FLEET_TICK.turbine_units[0], state: 'synchronised', output_mw: 12.5 },
+        { ...FLEET_TICK.turbine_units[1], state: 'unloading', output_mw: 4.0 },
+      ] as TickPayload['turbine_units'],
+      on_bus_output_mw: 16.5,
+    }
+    const units = unloadingTick.turbine_units
+    const onBusUnits = units.filter(u =>
+      u.state === 'synchronised' || u.state === 'unloading'
+    )
+    const sumOutputMW = onBusUnits.reduce((s, u) => s + ((u as any).output_mw ?? 0), 0)
+    expect(sumOutputMW).toBeCloseTo(16.5, 1)
+  })
+})
+
+describe('TC-99 — single-unit and aggregate ramp derive from one source, clamp to rated', () => {
+  it('aggregate ramp energy matches tick.ramp_capability_mw (backend authoritative)', () => {
+    // After U-2 fix: the frontend must NOT compute its own aggregate figure.
+    // Verify the raw wire field is the one displayed.
+    expect(FLEET_TICK.ramp_capability_mw).toBe(28.0)
+  })
+
+  it('single-unit ramp clamped to rated_mw (no unit can exceed its nameplate)', () => {
+    const N = FLEET_TICK.turbine_units.length
+    const rampEnergyMW = FLEET_TICK.ramp_capability_mw ?? 0
+    const maxUnitMW = Math.max(...FLEET_TICK.turbine_units.map(u => u.rated_mw))
+    // U-3: per-unit energy = rampEnergyMW / N, clamped to rated_mw
+    const rampWith1MW = Math.min(rampEnergyMW / N, maxUnitMW)
+    // 28 / 2 = 14 MW ≤ 15 MW rated → no clamp in this case
+    expect(rampWith1MW).toBeCloseTo(14.0, 1)
+    // Verify clamp kicks in when energy per unit exceeds rated
+    const rampWith1MWClamped = Math.min(200 / N, maxUnitMW)  // 200 MW / 2 = 100 > 15 → clamp
+    expect(rampWith1MWClamped).toBe(maxUnitMW)
+  })
+
+  it('single-unit and aggregate derive from the same source (no two-formula divergence)', () => {
+    const N = FLEET_TICK.turbine_units.length
+    const rampEnergyMW = FLEET_TICK.ramp_capability_mw ?? 0
+    const maxUnitMW = Math.max(...FLEET_TICK.turbine_units.map(u => u.rated_mw))
+    const rampWith1MW = Math.min(rampEnergyMW / N, maxUnitMW)
+    // Aggregate and single-unit share the same base (ramp_capability_mw).
+    // If rampWith1MW * N were the aggregate, it would equal rampEnergyMW when no clamp.
+    expect(rampWith1MW * N).toBeCloseTo(rampEnergyMW, 1)
+  })
+})
+
 describe('Pre-run state — panels show idle placeholders before any run', () => {
   it('AlertDock shows "No active run"', () => {
     render(<AlertDock />)

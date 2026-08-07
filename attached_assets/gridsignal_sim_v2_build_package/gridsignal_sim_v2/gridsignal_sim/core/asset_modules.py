@@ -798,6 +798,11 @@ class TurbineModule(AssetModule):
     # once (sim_time − _levelled_off_since_s) ≥ config.unload_tail_s.
     # Reset to math.nan whenever the predicate is False or the breaker opens.
     _levelled_off_since_s: float = math.nan
+    # Phase E+: last setpoint commanded by the loading layer (before rate-clip).
+    # Stored in set_output() so the commitment modal can render a per-unit
+    # setpoint marker without a separate field on TickResult.  0.0 until the
+    # first set_output() call (STARTING units never receive a setpoint call).
+    _last_setpoint_mw: float = 0.0
     # Phase B Item 2: per-interval write counter for set_output().
     # Reset to 0 by begin_interval() at the start of each evaluation interval.
     # Incremented by set_output(); if it reaches 2 a RuntimeError is raised,
@@ -871,6 +876,7 @@ class TurbineModule(AssetModule):
                 f"Fix: ensure _synchronised_units contains each unit at most once "
                 f"and that begin_interval() is called at the start of each tick."
             )
+        self._last_setpoint_mw = float(new_output_mw)   # store before rate-clip
         self._current_output_mw = max(0.0, min(new_output_mw, self.config.rated_mw))
 
     def command_start(self, sim_time: float) -> None:

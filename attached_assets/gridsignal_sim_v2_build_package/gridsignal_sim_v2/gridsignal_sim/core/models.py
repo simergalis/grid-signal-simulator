@@ -505,7 +505,13 @@ class TurbineConfig:
     #   False = R5 guard disabled (backward-compat default for unit tests that
     #           create TurbineConfig() directly without going through the factory).
     #   Scenario factory always sets True for production seeded scenarios.
-    min_run_enabled: bool = False
+    # min_run_enabled — Phase E closeout Item 1 / D-03 pattern.
+    #   True  = R5 guard active; command_stop() defers until t_min_run_s elapses.
+    #   False = R5 guard disabled.
+    #   DEFAULT True (§GS_prompt_modal_with_closeout): every config carries the
+    #   physical constraint by default.  A test needing the constraint off must
+    #   say so explicitly — that is the point of an explicit flag.
+    min_run_enabled: bool = True
     # t_min_down_s — minimum cooling/rest period (seconds) between a controlled
     #   stop and the next permitted restart.  When min_down_enabled=True, a start
     #   command during the cooling window is silently dropped via R6.
@@ -514,9 +520,9 @@ class TurbineConfig:
     t_min_down_s: float = _sp.value("t_min_down_s")
     # min_down_enabled — Phase E closeout Item 1 / D-03 pattern.
     #   True  = R6 guard active; command_start() defers until t_min_down_s elapses.
-    #   False = R6 guard disabled (backward-compat default for unit tests).
-    #   Scenario factory always sets True for production seeded scenarios.
-    min_down_enabled: bool = False
+    #   False = R6 guard disabled.
+    #   DEFAULT True: same reasoning as min_run_enabled above.
+    min_down_enabled: bool = True
     # gt_mode — per-unit gas turbine frame class.
     #   "frame" = large heavy-duty frame (slow ramp, high inertia).
     #   "aero"  = aeroderivative unit (fast ramp, lower inertia).
@@ -1115,3 +1121,20 @@ class TickResult:
     #   (spec-path with no workload_events) — frontend falls back to observed peak.
     bess_anchor_reserve_mw: float = _sp.value("bess_anchor_reserve_mw")  # anchor reserve (MW)
     design_peak_load_mw:    float = 0.0  # declared design peak; enriched from ctx._design_peak_load_mw
+
+    # Phase E+: commitment engine last-decision summary — serialised for fleet modal.
+    # Populated by simulation_core.evaluate_tick() each tick from _commit_decision.
+    # Defaults produce innocuous values for tests that build TickResult directly.
+    commitment_action: str = "hold"
+    commitment_target_unit_id: Optional[str] = None
+    commitment_reason: str = ""
+    commitment_blocked_by: str = ""
+    # committed_rated_mw: Σ rated_mw for SYNCHRONISED/UNLOADING units this tick.
+    # reserve_floor_mw:   decommit_utilisation × committed_rated_mw (decommit trigger threshold).
+    # fleet_utilisation:  p_demand / committed_rated_mw (0.0 when no committed units).
+    committed_rated_mw:   float = 0.0
+    reserve_floor_mw:     float = 0.0
+    reserve_satisfied:    bool  = True
+    fleet_utilisation:    float = 0.0
+    # pending_start_unit_id: asset_id of the unit currently in STARTING; None when empty.
+    pending_start_unit_id: Optional[str] = None

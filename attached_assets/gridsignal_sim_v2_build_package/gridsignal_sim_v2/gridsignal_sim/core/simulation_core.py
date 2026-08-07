@@ -803,6 +803,25 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                 _commit_decision.target_unit_id, _n_unloading, _settle_ok, sim_time,
             )
 
+    # Phase E+: commitment engine summary — serialised for the fleet modal.
+    # Computed AFTER _commit_decision is finalised so that an R5-guard hold
+    # override (line 789) is reflected correctly in the action field.
+    _committed_rated_mw_cs = sum(u.rated_mw for u in _avail_on_bus)
+    _fleet_utilisation_cs = (
+        _p_dispatch_droop_mw / _committed_rated_mw_cs
+        if _committed_rated_mw_cs > 0.0 else 0.0
+    )
+    _commit_cfg_cs = getattr(state, '_commit_cfg', None)
+    _reserve_floor_mw_cs = (
+        _commit_cfg_cs.decommit_utilisation * _committed_rated_mw_cs
+        if _commit_cfg_cs is not None else 0.0
+    )
+    _reserve_satisfied_cs = (
+        _fleet_utilisation_cs >= _commit_cfg_cs.decommit_utilisation
+        if _commit_cfg_cs is not None else True
+    )
+    _pending_start_id_cs = getattr(getattr(state, '_pending_start', None), 'pending_unit_id', None)
+
     # Phase 13.4 B3: detect when the commanded BESS output exceeds the fleet's
     # total rated power ceiling.  Surfaced in TickResult for dashboard / alerts.
     _binding_constraint: Optional[str] = (
@@ -1340,4 +1359,14 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         ramp_capability_mw=_ramp_capability_mw,
         # Task #198 item 5: D4 defect field — 0.0 in normal operation.
         d4_balance_defect_mw=_d4_balance_defect_mw,
+        # Phase E+: commitment engine last-decision summary.
+        commitment_action=_commit_decision.action,
+        commitment_target_unit_id=_commit_decision.target_unit_id,
+        commitment_reason=_commit_decision.reason,
+        commitment_blocked_by=_commit_decision.blocked_by,
+        committed_rated_mw=_committed_rated_mw_cs,
+        reserve_floor_mw=_reserve_floor_mw_cs,
+        reserve_satisfied=_reserve_satisfied_cs,
+        fleet_utilisation=_fleet_utilisation_cs,
+        pending_start_unit_id=_pending_start_id_cs,
     )

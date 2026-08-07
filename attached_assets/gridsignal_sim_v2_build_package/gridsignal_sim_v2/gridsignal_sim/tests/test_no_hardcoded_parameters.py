@@ -245,6 +245,72 @@ def _fmt_hit(hit: _Hit, relative_root: Optional[pathlib.Path] = None) -> str:
 
 # ── Tests ─────────────────────────────────────────────────────────────────────
 
+def test_guard_d3_sp_value_keys_in_catalogue() -> None:
+    """D3: every _sp.value("key") / site_parameters.value("key") call names a
+    key that actually exists in gridsignal_parameters.json.
+
+    Guard D1 only catches ast.Constant defaults in annotated-assignment position.
+    Phase E closeout Item 2 migrated those constants to _sp.value("key") calls
+    (ast.Call nodes), making D1 blind to them.  D3 fills the gap.
+
+    Scan files under core/ and runtime/ for ast.Call nodes of the form
+    ``_sp.value("key")`` or ``site_parameters.value("key")`` and assert that
+    each quoted key resolves in the catalogue.  An absent key means either
+    (a) the call site has a typo, or (b) the catalogue entry was deleted without
+    updating the call site — both are programming errors and must fail loudly.
+
+    Pass condition: 0 missing keys.
+    """
+    import ast
+    import pathlib
+
+    from core import site_parameters as _sp_mod  # noqa: PLC0415
+
+    backend_root = pathlib.Path(__file__).parent.parent
+    # _load_catalogue() is the internal loader; use it directly here so D3 does
+    # not depend on a public API that may not exist on all store versions.
+    catalogue_keys = set(_sp_mod._load_catalogue().keys())
+
+    scan_dirs = ["core", "runtime"]
+    missing: list[tuple[str, int, str]] = []
+
+    for dir_name in scan_dirs:
+        scan_root = backend_root / dir_name
+        for py_file in sorted(scan_root.rglob("*.py")):
+            if "__pycache__" in str(py_file):
+                continue
+            try:
+                tree = ast.parse(py_file.read_text())
+            except SyntaxError:
+                continue
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                func = node.func
+                if not isinstance(func, ast.Attribute) or func.attr != "value":
+                    continue
+                obj = func.value
+                if not isinstance(obj, ast.Name) or obj.id not in ("_sp", "site_parameters"):
+                    continue
+                if not node.args:
+                    continue
+                arg = node.args[0]
+                if not isinstance(arg, ast.Constant) or not isinstance(arg.value, str):
+                    continue
+                key = arg.value
+                if key not in catalogue_keys:
+                    rel = py_file.relative_to(backend_root)
+                    missing.append((str(rel), node.lineno, key))
+
+    if missing:
+        lines = ["\nGuard D3 — _sp.value() keys absent from catalogue:\n"]
+        for path, lineno, key in missing:
+            lines.append(f"  {path}:{lineno}  key={key!r}  (not in gridsignal_parameters.json)")
+        msg = "\n".join(lines)
+        print(msg, file=__import__("sys").stderr)
+        assert len(missing) == 0, msg
+
+
 def test_guard_d1_no_drift() -> None:
     """D1: fail if any code literal disagrees with its catalogue counterpart.
 
@@ -257,6 +323,17 @@ def test_guard_d1_no_drift() -> None:
                           simulations override via BessUnitSpec.rated_mw (18.0 MW).
 
     This test must pass (0 drifts) at the Phase 1 gate.
+
+    SCOPE LIMITATION (Phase E closeout Item 2):
+      D1 scans for ast.Constant nodes in annotated-assignment position.  Fields
+      whose defaults read from the catalogue via _sp.value("key") are ast.Call
+      nodes — D1 cannot see them.  This means D1 no longer catches a typo'd key
+      name or a code path that diverges from what the catalogue holds.  Guard D3
+      (test_guard_d3_sp_value_keys_in_catalogue) fills this gap: it asserts that
+      every _sp.value("key") call site names a key that the catalogue actually
+      contains.  A green D1 does NOT mean "every default agrees with the catalogue"
+      — it only means "every numeric literal visible to the AST scanner agrees."
+      Read D1 and D3 together to form a complete picture.
     """
     all_hits = _scan_all()
     drifts = [h for h in all_hits if _is_drift(h)]

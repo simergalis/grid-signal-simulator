@@ -234,20 +234,21 @@ function _identityLine(units: TurbineUnitSpec[]): string {
 //   When 0 (no step in-flight) rampNeedMWs = 0 — no active requirement.
 function deriveFleet(units: TurbineUnitSpec[], horizonS: number, peakMW: number) {
   const installedMW   = units.reduce((s, u) => s + u.rated_mw, 0)
-  const maxUnitMW     = Math.max(...units.map(u => u.rated_mw))
-  const n1FirmMW      = installedMW - maxUnitMW        // worst-case: losing largest
-  const maxRamp       = Math.max(...units.map(u => u.r_asset_mw_per_s))
-  // Nominal aggregate ramp = fleet-max ramp × unit count.
-  // Displays the fleet's nameplate capability; the degraded-unit footnote in
-  // FleetTable records which units are running below max and by how much.
-  const aggRampMWs    = maxRamp * units.length
+  const maxUnitMW     = units.length > 0 ? Math.max(...units.map(u => u.rated_mw)) : 0
+  // U-4 fix: N−1 firm from committed (on-bus) units only — OFFLINE excluded.
+  // isOnBus() is a function declaration (hoisted) so this forward-reference is safe.
+  const onBusUnits    = units.filter(isOnBus)
+  const onBusMW       = onBusUnits.reduce((s, u) => s + u.rated_mw, 0)
+  const maxOnBusMW    = onBusUnits.length > 0 ? Math.max(...onBusUnits.map(u => u.rated_mw)) : 0
+  const n1FirmMW      = Math.max(0, onBusMW - maxOnBusMW)
   // rampNeedMWs: MW/s needed to cover peak load in the runtime lead window.
   // 0 when no step is in-flight (horizonS = 0) — no active requirement to display.
   const rampNeedMWs   = horizonS > 0 && peakMW > 0 ? peakMW / horizonS : 0
   const n1MarginPct   = n1FirmMW > 0 && peakMW > 0
     ? Math.round((n1FirmMW - peakMW) / peakMW * 100)
     : -100
-  return { installedMW, maxUnitMW, n1FirmMW, aggRampMWs, rampNeedMWs, n1MarginPct, maxRamp }
+  // aggRampMWs and maxRamp removed (U-1/U-2): tick.ramp_capability_mw is authoritative.
+  return { installedMW, maxUnitMW, n1FirmMW, rampNeedMWs, n1MarginPct, onBusMW, maxOnBusMW, onBusCount: onBusUnits.length }
 }
 
 // ── On-bus determination ─────────────────────────────────────────────────────
@@ -338,7 +339,10 @@ function FleetTable(
     // 0.2: isOnBus() prefers live state (Phase 2) over static breaker_closed (Phase 0).
     // Never inferred from output MW.
     const onBus    = isOnBus(u)
-    const syncStr  = onBus ? 'closed' : 'open'
+    // liveSt must be declared before syncStr / stateStr (all reference it).
+    const liveSt   = u.state ?? (onBus ? 'synchronised' : 'offline')
+    // Item 8: STARTING is in its own phase — neither open-and-idle nor closed.
+    const syncStr  = liveSt === 'starting' ? 'syncing' : onBus ? 'closed' : 'open'
     const rampStr  = `${u.r_asset_mw_per_s.toFixed(3)} / ${maxRamp.toFixed(3)}`
     const runHStr  = u.run_hours_h != null
       ? Math.round(u.run_hours_h).toLocaleString()
@@ -350,7 +354,6 @@ function FleetTable(
     // State machine: on-bus → Trip button; OFFLINE → Start button; STARTING → disabled.
     // Pending: command was issued but the next tick hasn't confirmed state change yet.
     // Clear pending when the state we commanded has been reached (tick confirms it).
-    const liveSt   = u.state ?? (onBus ? 'synchronised' : 'offline')
     // State label derived from live TurbineState (dynamic variable, not hardcoded).
     // 'synchronised' → 'online'   (loading layer managing output: on bus, in A)
     // 'ramping'      → 'ramping'  (auto-staged via advance(); NOT yet in A)
@@ -360,6 +363,8 @@ function FleetTable(
     const stateStr =
       liveSt === 'synchronised'
         ? (isDeg ? 'degraded' : 'online')
+        : liveSt === 'unloading'
+        ? 'unloading'                                    // U-8/Item 8: distinct from synchronised
         : liveSt === 'ramping' || liveSt === 'at_target'
         ? 'ramping'
         : liveSt === 'starting'
@@ -428,11 +433,44 @@ function FleetTable(
       }, '—')
     }
 
+    // Item 6: per-unit bar — fill=output/rated, dashed rule at MSL, marker at setpoint.
+    // STARTING: countdown display instead of output value.
+    const outFrac     = u.rated_mw > 0 ? Math.min(out / u.rated_mw, 1) : 0
+    const mslFrac     = u.rated_mw > 0 && u.msl_mw > 0 ? Math.min(u.msl_mw / u.rated_mw, 1) : 0
+    const spFrac      = u.rated_mw > 0 && u.setpoint_mw != null ? Math.min(u.setpoint_mw / u.rated_mw, 1) : null
+    const countdownS  = u.time_to_online_s != null ? Math.ceil(u.time_to_online_s) : null
+    const outLabel    = liveSt === 'starting'
+      ? (countdownS != null ? `${countdownS}s` : 'starting…')
+      : `${out.toFixed(2)} MW`
+    const outColour   = liveSt === 'starting' ? AMBER : out > 0.01 ? GOLD : '#6e7681'
+
+    const miniBar = React.createElement('div', {
+      style: { position: 'relative' as const, height: 4, width: 48, background: '#1c2a3a', borderRadius: 2, marginTop: 2 },
+    },
+      // Fill: output fraction
+      React.createElement('div', {
+        style: { position: 'absolute' as const, left: 0, top: 0, bottom: 0,
+          width: `${outFrac * 100}%`, background: outColour, borderRadius: 2 },
+      }),
+      // Dashed rule at MSL
+      mslFrac > 0 ? React.createElement('div', {
+        style: { position: 'absolute' as const, left: `${mslFrac * 100}%`, top: 0, bottom: 0,
+          width: 1, background: '#8b949e', borderLeft: '1px dashed #8b949e' },
+      }) : null,
+      // Thin marker at setpoint
+      spFrac != null ? React.createElement('div', {
+        style: { position: 'absolute' as const, left: `${spFrac * 100}%`, top: -1, bottom: -1,
+          width: 2, background: TEAL, borderRadius: 1 },
+      }) : null,
+    )
+
     return React.createElement('tr', { key: u.asset_id },
       React.createElement('td', { style: dCell(GOLD, true) }, u.asset_id),
-      // 0.6: column labelled CURRENT MW — distinct from no-load and MSL.
-      // Non-zero only for on-bus units; off-bus units show 0.00 MW (isOnBus fix).
-      React.createElement('td', { style: dCell(out > 0.01 ? GOLD : '#6e7681') }, `${out.toFixed(2)} MW`),
+      // 0.6: CURRENT MW cell — per-unit bar below the value; STARTING shows countdown.
+      React.createElement('td', { style: dCell(outColour) },
+        React.createElement('div', null, outLabel),
+        miniBar,
+      ),
       // 0.6: explicit NO-LOAD / MSL column from named typed fields
       React.createElement('td', { style: dCell('#8b949e') }, noLoadMslStr),
       // 0.2: SYNC driven by isOnBus() — Phase 2 live state preferred, breaker_closed fallback.
@@ -696,30 +734,46 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: number,
   const horizonS = tick.dt_lead_next_s ?? 0
 
   const {
-    installedMW, maxUnitMW, n1FirmMW, aggRampMWs,
-    rampNeedMWs, n1MarginPct, maxRamp,
+    installedMW, maxUnitMW, n1FirmMW,
+    rampNeedMWs, n1MarginPct, onBusMW, maxOnBusMW, onBusCount,
   } = deriveFleet(units, horizonS, peakMW)
 
+  const maxRamp     = units.length > 0 ? Math.max(...units.map(u => u.r_asset_mw_per_s)) : 0
   const n1Covers       = n1FirmMW >= peakMW
   const isDeclaredPeak = tick.design_peak_load_mw > 0
   const peakLabel      = isDeclaredPeak ? 'declared design peak' : 'observed peak'
-  const rampCovers  = aggRampMWs >= rampNeedMWs
+
+  // U-2 fix: ramp_capability_mw is authoritative; fallback removed.
+  // (U-1 fix: aggRampMWs was counting all units at fleet-max rate — deleted.)
+  const rampEnergyMW = tick.ramp_capability_mw ?? 0
+  // Rate in MW/s derived from energy figure — consistent with how backend computes it.
+  const rampRateMWs  = horizonS > 0 ? rampEnergyMW / horizonS : 0
+  // U-2 fix: rampCovers now compares energy to peak (same units).
+  const rampCovers  = horizonS <= 0 || rampEnergyMW >= peakMW
   const stateLabel  = n1Covers && rampCovers ? 'READY' : 'ATTENTION'
   const stateColour = n1Covers && rampCovers ? TEAL : AMBER
 
   const marginStr    = n1MarginPct >= 0 ? `+${n1MarginPct}%` : `${n1MarginPct}%`
   const marginColour = n1MarginPct >= 0 ? TEAL : RED
 
-  // Phase 1b + Task #198 item 3: ramp_capability_mw is the sole authoritative source.
-  // It is computed by the backend at the runtime lead horizon (dt_lead_next_s).
-  // STARTING units contribute zero (item 2 — not on bus; starts fail).
-  // The Phase 0.5 display-level cap and LEAD_WINDOW_S constant have been removed.
-  const rampEnergyMW = tick.ramp_capability_mw ?? (aggRampMWs * horizonS)
+  // U-3 fix: per-unit ramp energy from backend, clamped to rated_mw.
+  // Divide by horizonS for rate display; clamp avoids absurd values.
+  const rampWith1MW   = units.length > 0
+    ? Math.min(rampEnergyMW / units.length, maxUnitMW)
+    : 0
+  const rampWith1Rate = horizonS > 0 ? rampWith1MW / horizonS : 0
+
+  // U-5: cold-start time from per-unit spec; fallback to CHOSEN catalogue default.
+  // hot_start_s and warm_start_s are passed through thermalUnits for ThermalStateWidget.
+  const coldS = units[0]?.cold_start_s ?? 900
 
   const offlineUnits = units.filter(u => !isOnBus(u))
   const thermalUnits = offlineUnits.map(u => ({
     asset_id: u.asset_id, thermal: _thermalOf(u),
     ratedMW: u.rated_mw, rampMWs: u.r_asset_mw_per_s,
+    hotStartS:  u.hot_start_s  ?? 300,
+    warmStartS: u.warm_start_s ?? 300,
+    coldStartS: u.cold_start_s ?? 900,
   }))
   const chart = thermalUnits.length > 0
     ? React.createElement(React.Fragment, null,
@@ -731,6 +785,7 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: number,
   const secondary = React.createElement('div', { className: 'space-y-3' },
     React.createElement(BulletBar, {
       label:  'N−1 firm capacity against peak site load',
+      // U-4 fix: n1FirmMW is now from committed (on-bus) units only.
       value:  n1FirmMW,
       max:    installedMW,
       target: peakMW > 0 ? peakMW : undefined,
@@ -742,22 +797,26 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: number,
         : `N−1 firm ${n1FirmMW.toFixed(1)} MW  ·  ${marginStr} margin (no peak available)`,
     }),
     React.createElement(BulletBar, {
-      label:  'Aggregate ramp with all units online',
-      value:  aggRampMWs,
-      max:    Math.max(aggRampMWs * 1.5, rampNeedMWs * 1.5 || aggRampMWs * 1.5),
+      // U-2 fix: value from backend energy; rate derived consistently.
+      label:  'Aggregate ramp capability (SYNCHRONISED only)',
+      value:  rampRateMWs,
+      max:    Math.max(rampRateMWs * 1.5 || 1, rampNeedMWs * 1.5 || 1),
       target: rampNeedMWs,
       colour: rampCovers ? GOLD : RED,
       unit:   ' MW/s',
       note:   horizonS > 0
-        ? `red marker = ${rampNeedMWs.toFixed(3)} MW/s to cover ${peakMW > 0 ? peakMW.toFixed(2) : '—'} MW ${peakLabel} in ${horizonS.toFixed(0)} s  ·  ramp scales with unit count`
-        : `no active ramp event — dt_lead_next_s = 0  ·  ramp scales with unit count`,
+        ? `backend: ${rampEnergyMW.toFixed(1)} MW over ${horizonS.toFixed(0)} s  ·  red marker = ${rampNeedMWs.toFixed(3)} MW/s to cover ${peakMW > 0 ? peakMW.toFixed(2) : '—'} MW ${peakLabel}`
+        : `${rampEnergyMW.toFixed(1)} MW capability — no active ramp event`,
     }),
     ParallelingInset(units),
   )
 
-  const rampWith1 = units.length > 0
-    ? (aggRampMWs / units.length).toFixed(3)
-    : '—'
+  // Commitment block — null on legacy payloads without Phase E+ backend.
+  const cb = (tick as any).commitment_block as {
+    action: string; target_unit_id: string | null; reason: string; blocked_by: string
+    committed_rated_mw: number; reserve_floor_mw: number; reserve_satisfied: boolean
+    utilisation: number; pending_start_unit_id: string | null
+  } | null | undefined
 
   return {
     stateLabel,
@@ -780,7 +839,8 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: number,
       { label: 'Units on bus', value: `${onlineN}`,
         sub: onlineN > 0 ? `contributing ${syncedMW.toFixed(2)} MW` : 'none on bus',
         colour: onlineN > 0 ? GOLD : undefined },
-      { label: 'N−1 firm capacity',  value: `${n1FirmMW.toFixed(1)} MW`,    colour: n1Covers ? GOLD : RED, sub: 'with any one unit unavailable' },
+      // U-4 fix: N−1 firm uses committed (on-bus) units, not all installed.
+      { label: 'N−1 firm capacity',  value: `${n1FirmMW.toFixed(1)} MW`,    colour: n1Covers ? GOLD : RED, sub: 'with any one committed unit unavailable' },
       // GS-DES-CFG-001 §Phase-7 / Item-2: conditional on design_peak_load_mw > 0 on wire.
       ...(isDeclaredPeak ? [
         { label: 'Design peak load', value: peakMW > 0 ? `${peakMW.toFixed(2)} MW` : '—', sub: 'declared at scenario design point' },
@@ -788,24 +848,45 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: number,
       ] as const : [
         { label: 'Observed peak',    value: observedPeakMW > 0 ? `${observedPeakMW.toFixed(2)} MW` : 'no peak yet', sub: 'observed this run (design peak not broadcast)' },
       ] as const),
-      // 0.4: subtitle states the arithmetic — not a raw unit count
+      // U-4 fix: N-1 margin uses on-bus arithmetic, not installed-capacity arithmetic.
       { label: 'N−1 margin',         value: marginStr,                        colour: marginColour,
-        sub: `${installedMW.toFixed(0)} MW − ${maxUnitMW.toFixed(0)} MW contingency = ${n1FirmMW.toFixed(0)} MW firm${peakMW > 0 ? `  ·  ${peakLabel} ${peakMW.toFixed(2)} MW` : ''}` },
-      // Phase 1b + Task #198 item 3: backend ramp_capability_mw at runtime horizon
-      { label: 'Aggregate ramp',     value: `${aggRampMWs.toFixed(3)} MW/s`, colour: rampCovers ? GOLD : RED,
+        sub: `${onBusMW.toFixed(0)} MW committed − ${maxOnBusMW.toFixed(0)} MW contingency = ${n1FirmMW.toFixed(0)} MW firm${peakMW > 0 ? `  ·  ${peakLabel} ${peakMW.toFixed(2)} MW` : ''}` },
+      // U-2 fix: energy figure from backend (authoritative); rate derived.
+      { label: 'Aggregate ramp',     value: `${rampEnergyMW.toFixed(1)} MW`, colour: rampCovers ? GOLD : RED,
         sub: horizonS > 0
-          ? `${rampEnergyMW.toFixed(1)} MW capability in ${horizonS.toFixed(0)} s (SYNCHRONISED only — starts excluded)`
-          : `${rampEnergyMW.toFixed(1)} MW capability — no active ramp event` },
-      { label: 'Ramp with 1 unit',   value: `${rampWith1} MW/s`,
+          ? `${rampRateMWs.toFixed(3)} MW/s over ${horizonS.toFixed(0)} s horizon (SYNCHRONISED only — starts excluded)`
+          : `${rampRateMWs.toFixed(3)} MW/s — no active ramp event` },
+      // U-3 fix: energy per unit from backend, clamped to rated_mw.
+      { label: 'Ramp with 1 unit',   value: `${rampWith1MW.toFixed(1)} MW`,
         sub: horizonS > 0
-          ? `${(parseFloat(rampWith1) * horizonS).toFixed(0)} MW in ${horizonS.toFixed(0)} s — BESS covers the remainder`
+          ? `${rampWith1Rate.toFixed(3)} MW/s · clamped to ${maxUnitMW.toFixed(0)} MW rated — BESS covers the remainder`
           : 'no active ramp event' },
-      { label: 'Cold-start sync',    value: '900 s (15 min)',                  sub: 'STARTING units contribute 0 to ramp reserve · see thermal guide' },
+      // U-5 fix: cold-start time derived from per-unit spec, not hardcoded.
+      { label: 'Cold-start sync',    value: `${coldS} s (${Math.round(coldS/60)} min)`,  sub: 'STARTING units contribute 0 to ramp reserve · see thermal guide' },
+      // Item 7: commitment engine summary rows — present when commitment block is on wire.
+      ...(cb ? [
+        { label: 'Committed MW',
+          value: `${cb.committed_rated_mw.toFixed(1)} MW`,
+          colour: cb.reserve_satisfied ? GOLD : RED,
+          sub: `reserve floor ${cb.reserve_floor_mw.toFixed(1)} MW (${Math.round(cb.utilisation * 100)}% utilisation)` },
+        { label: 'Last decision',
+          value: cb.action.toUpperCase(),
+          colour: cb.action === 'commit' ? TEAL : cb.action === 'decommit' ? AMBER : undefined,
+          sub: cb.blocked_by
+            ? `blocked: ${cb.blocked_by}`
+            : (cb.reason || 'no active condition') },
+        ...(cb.pending_start_unit_id ? [{
+          label: 'Starting',
+          value: cb.pending_start_unit_id,
+          colour: AMBER,
+          sub: 'in start sequence — not counted toward committed capacity or ramp',
+        }] : []),
+      ] as const : []),
     ],
     secondary,
     why: [
-      `Installed capacity is not the number that matters — N−1 firm capacity is. ${units.length} × ${maxUnitMW.toFixed(0)} MW gives ${n1FirmMW.toFixed(1)} MW firm${peakMW > 0 ? ` against a ${peakMW.toFixed(2)} MW ${peakLabel}` : ''}.`,
-      `Aggregate ramp scales with unit count, not megawatts: ${units.length} units deliver ${aggRampMWs.toFixed(3)} MW/s — ${units.length}× the rate of a single equivalent unit.`,
+      `N−1 firm capacity is what matters, not installed capacity. ${onBusCount} committed units give ${n1FirmMW.toFixed(1)} MW firm (${onBusMW.toFixed(0)} MW committed − ${maxOnBusMW.toFixed(0)} MW contingency)${peakMW > 0 ? ` against a ${peakMW.toFixed(2)} MW ${peakLabel}` : ''}.`,
+      `Ramp capability is reported by the backend loading layer at the runtime lead horizon (${horizonS.toFixed(0)} s). Starts and offline units contribute zero — the figure is already from SYNCHRONISED units only.`,
       'Degraded = effective ramp below 95% of fleet maximum. The reserve check uses the effective figure (§27, TC-58) — a quietly degraded unit is decisive in a reserve calculation.',
     ],
   }

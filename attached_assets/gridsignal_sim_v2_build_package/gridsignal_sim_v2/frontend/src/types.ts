@@ -194,6 +194,20 @@ export interface TickPayload {
   site_utc_offset_h: number | null
   site_name:         string
 
+  // Phase E+: commitment engine last-decision summary — drives fleet modal commitment rows.
+  // Always present after Phase E+ backend; action="hold" is the safe-sentinel default.
+  commitment_block?: {
+    action:                string         // "commit" | "decommit" | "hold"
+    target_unit_id:        string | null
+    reason:                string
+    blocked_by:            string         // non-empty when action was held by R5 guard
+    committed_rated_mw:    number
+    reserve_floor_mw:      number
+    reserve_satisfied:     boolean
+    utilisation:           number
+    pending_start_unit_id: string | null
+  } | null
+
   // Phase 11.3: dispatch truthfulness.
   gt_setpoint_mw:      number  // total dispatch requirement handed to turbine fleet
   // balance_residual_mw REMOVED — Branch B (Phase pre-work).
@@ -416,6 +430,22 @@ export interface TurbineUnitSpec {
   /** Thermal state of the unit — "hot" | "warm" | "cold".
    *  Determines start-sequence duration.  Null when unit has never been started. */
   thermal_state?: string | null
+  /** Phase 2 live overlay: algebraic MW output; non-zero for synchronised/unloading only. */
+  output_mw?: number
+  /** Phase 2 live: seconds remaining in start sequence — non-null only when state==="starting". */
+  time_to_online_s?: number | null
+  /** Phase 2 live: thermal-state-derived start phase label — non-null when starting. */
+  start_phase?: string | null
+  /** Phase 2 live: reason unit is out of service — null when not OOS. */
+  out_of_service_reason?: string | null
+  /** Phase E+: last setpoint commanded by the loading layer (before rate-clip). */
+  setpoint_mw?: number
+  /** Phase E+: unit has been within epsilon of setpoint for the levelled-off window. */
+  levelled_off?: boolean
+  /** Thermal start durations from TurbineConfig (CHOSEN, from catalogue). */
+  hot_start_s?:  number
+  warm_start_s?: number
+  cold_start_s?: number
 }
 
 /** PMS wiring exposed in the Scenario Builder. */

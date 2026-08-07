@@ -165,13 +165,14 @@ class TestR4PMinStable:
         """
         TurbineConfig carries p_min_stable_frac.
 
-        Default is 0.0 (constraint disabled) so backward-compatible scenarios
-        are not affected.  The spec-chosen value 0.45 must be explicitly set in
-        scenarios exercising IP claim 4.
+        Phase E closeout Item 2: default changed from 0.0 (disabled sentinel)
+        to 0.40 (CHOSEN catalogue value, read via _sp.value("p_min_stable_frac")).
+        The enable switch is now structural (p_min_stable_frac > 0 → MSL floor active),
+        not a 0.0-sentinel.  Scenarios needing no MSL floor must pass 0.0 explicitly.
         """
         cfg_default = TurbineConfig(asset_id="t0")
-        assert cfg_default.p_min_stable_frac == pytest.approx(0.0), (
-            f"p_min_stable_frac default must be 0.0 (disabled).  "
+        assert cfg_default.p_min_stable_frac == pytest.approx(0.40), (
+            f"p_min_stable_frac default must be 0.40 (CHOSEN catalogue value).  "
             f"Got {cfg_default.p_min_stable_frac}"
         )
         cfg_45 = TurbineConfig(asset_id="t1", p_min_stable_frac=0.45)
@@ -268,8 +269,14 @@ class TestR4PMinStable:
 class TestR5MinRunTime:
 
     def test_R5_t_min_run_field_default(self):
-        """TurbineConfig carries t_min_run_s, default 0.0 (disabled)."""
-        assert TurbineConfig(asset_id="t0").t_min_run_s == pytest.approx(0.0)
+        """TurbineConfig carries t_min_run_s.
+
+        Phase E closeout Item 1: default changed from 0.0 (disable-sentinel) to
+        1800.0 s (CHOSEN catalogue value, read via _sp.value("t_min_run_s")).
+        The R5 enable switch is now min_run_enabled (True by default).
+        A test needing the constraint off must set min_run_enabled=False explicitly.
+        """
+        assert TurbineConfig(asset_id="t0").t_min_run_s == pytest.approx(1800.0)
 
     @pytest.mark.xfail(
         reason=(
@@ -355,8 +362,14 @@ class TestR5MinRunTime:
 class TestR6MinDownGtMode:
 
     def test_R6_t_min_down_field_default(self):
-        """TurbineConfig carries t_min_down_s, default 0.0 (disabled)."""
-        assert TurbineConfig(asset_id="t0").t_min_down_s == pytest.approx(0.0)
+        """TurbineConfig carries t_min_down_s.
+
+        Phase E closeout Item 1: default changed from 0.0 (disable-sentinel) to
+        900.0 s (CHOSEN catalogue value, read via _sp.value("t_min_down_s")).
+        The R6 enable switch is now min_down_enabled (True by default).
+        A test needing the constraint off must set min_down_enabled=False explicitly.
+        """
+        assert TurbineConfig(asset_id="t0").t_min_down_s == pytest.approx(900.0)
 
     def test_R6_gt_mode_field_default(self):
         """TurbineConfig carries gt_mode, default 'frame'."""
