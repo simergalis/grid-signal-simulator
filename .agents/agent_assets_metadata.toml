@@ -182,3 +182,10 @@ uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/
 type = "text"
 title = "S9 Surplus & Inertia — Spec 2 Report"
 description = "Implementation report for GS_prompt_surplus_and_inertia_1786133005321: §INV-CURT, §INV-INERTIA S_base fix, S9 rerun results, ScenarioSpec thresholds, and findings F-2 through F-4."
+
+[[outputs]]
+id = "4j0GufnFpc6mTvkimpjmG"
+uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/scenarios/islanded_8_60_10_ramp.json"
+type = "unspecified"
+title = "islanded_8_60_10_ramp.json"
+description = "Islanded 8-60-10 MW ramp scenario — 5×15 MW fleet, 15 MW solar, 18 MW/8 MWh BESS, 90-minute run"
