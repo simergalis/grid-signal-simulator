@@ -142,7 +142,9 @@ _EXPLAIN_SYSTEM = (
     "emergency load-shedding) and what that would mean for the GPU jobs running at the time.\n\n"
     "Use accessible language. Define any jargon inline the first time "
     "(e.g. 'BESS — the on-site battery storage', 'frequency — the heartbeat of the power grid'). "
-    "No headings, no bullets, no markdown. Return only the 5 sentences as a single paragraph."
+    "No headings, no bullets, no markdown. Do NOT start with or include the phrase "
+    "'WHAT THIS DEMONSTRATES' anywhere in your response. "
+    "Return only the 5 sentences as a single paragraph."
 )
 
 
