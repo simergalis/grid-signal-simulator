@@ -147,3 +147,24 @@ uri = "file://attached_assets/gridsignal_review_package.zip"
 type = "unspecified"
 title = "GridSignal — 60 Hz & Protection Review Package"
 description = "Reports, test trace, full suite log, and changed source files for Items 1–5 (IEEE 1547-2018 Cat I protection layer + S9 scenario test)."
+
+[[outputs]]
+id = "FksfNpQ-9ltq3GT1fG_6r"
+uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/reports/S9_catalogued_rerun_report.md"
+type = "text"
+title = "S9 Catalogued Rerun — Full Report"
+description = "Items 1–4: collapse analysis, demand schedule, F-1/F-2/F-3 findings, schema validation, 60 Hz coverage."
+
+[[outputs]]
+id = "AlR__NfnEOyzyuiTJ-Y31"
+uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/reports/S9_catalogued_invariants.csv"
+type = "table"
+title = "S9 Per-Tick Trace CSV"
+description = "Full per-tick simulation log (1 tick; collapse at sim_time=5 s). Columns: demand, per-unit state/output/setpoint/MSL, fleet totals, BESS, frequency, collapse fields."
+
+[[outputs]]
+id = "mZD1UhJF6-Y-MBdrfnTrk"
+uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_s9_islanded_ramp.py"
+type = "unspecified"
+title = "S9 Test — Catalogued Invariant Assertions"
+description = "Rewritten test: catalogued physics, enterprise_8gpu_air demand schedule, 9 invariant assertions (I-1 through I-9), CSV export."
