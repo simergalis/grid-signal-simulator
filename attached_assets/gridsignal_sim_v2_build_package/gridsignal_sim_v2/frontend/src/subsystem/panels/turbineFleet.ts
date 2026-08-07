@@ -452,16 +452,25 @@ function FleetTable(
     const uidColour   = liveSt === 'unloading' ? EMBER : GOLD  // gap 5
 
     // Bar sub-annotation: tracking progress or stable state label.
+    // Item 2: MSL MW always appended when non-zero so operators can read the
+    // megawatt figure in any unit state, not just when the unit is at MSL.
+    // Choice: sub-annotation over a restored column because (a) the bar already
+    // carries a sub-annotation row for other states and adding MSL there keeps
+    // the column budget stable, and (b) restoring NO-LOAD/MSL would require
+    // dropping RAMP meas/cfg — which still carries non-duplicate information
+    // (the measured ramp rate vs the config ceiling for degraded-unit detection).
     const rampDeltaMW = spFrac != null ? (u.setpoint_mw ?? 0) - out : 0
+    const mslSuffix   = u.msl_mw > 0 ? ` · MSL ${u.msl_mw.toFixed(2)} MW` : ''
     const barAnnotation: string | null =
-      liveSt === 'starting' ? null
+      liveSt === 'starting'
+        ? (u.msl_mw > 0 ? `MSL ${u.msl_mw.toFixed(2)} MW` : null)
       : spFrac != null && rampDeltaMW > 0.05
-        ? `tracking → ${(u.setpoint_mw ?? 0).toFixed(2)} · +${rampDeltaMW.toFixed(2)} MW to go`
+        ? `tracking → ${(u.setpoint_mw ?? 0).toFixed(2)} · +${rampDeltaMW.toFixed(2)} MW to go${mslSuffix}`
         : outFrac >= 0.999
-          ? 'at rated · levelled off'
+          ? `at rated · levelled off${mslSuffix}`
           : (mslFrac > 0 && Math.abs(outFrac - mslFrac) < 0.005)
-            ? 'at minimum stable load'
-            : null
+            ? `at minimum stable load · ${u.msl_mw.toFixed(2)} MW`
+            : u.msl_mw > 0 ? `MSL ${u.msl_mw.toFixed(2)} MW` : null
 
     // Gap 1+2: full-width bar in its own column.
     //   • Amber/ember fill = output fraction of rated (gap 5: ember when UNLOADING).

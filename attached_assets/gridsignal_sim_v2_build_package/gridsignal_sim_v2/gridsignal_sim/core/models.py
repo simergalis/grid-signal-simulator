@@ -343,7 +343,7 @@ class SiteConfig:
     # Phase 11.2 — workload signal staleness threshold.
     # A WorkloadSignal is considered stale when none has arrived within this many
     # seconds for an active job.  Default 30 s (CHOSEN, no measured basis).
-    workload_signal_stale_s: float = 30.0
+    workload_signal_stale_s: float = _sp.value("workload_signal_stale_s")
 
     # Phase 11.3 — swing-equation parameters for islanded frequency tracking.
     # These are used to compute df/dt from balance_residual_mw each tick.
@@ -367,8 +367,8 @@ class SiteConfig:
     #   response.  Default 4% (0.04) — typical gas turbine governor setting.
     #   CHOSEN — no measured basis; read but not yet wired to control path
     #   (Phase 13.3b will close this).
-    inertia_constant_s:    float = 4.0   # CHOSEN — no measured basis (open parameter)
-    governor_droop:        float = 0.04  # CHOSEN — no measured basis (open parameter)
+    inertia_constant_s:    float = _sp.value("inertia_constant_s")  # CHOSEN — read from catalogue
+    governor_droop:        float = _sp.value("governor_droop")       # CHOSEN — read from catalogue
     # load_model_bias_mw: deliberate load-estimation offset for test injection (B1).
     #   Default 0.0 — the dispatch engine's load estimate matches the metered load.
     #   When non-zero, the difference is reported as model_error_mw in TickResult
@@ -468,7 +468,7 @@ class UnitAvailability:
 @dataclass
 class TurbineConfig:
     asset_id: str
-    r_asset_mw_per_s: float = 0.2     # source spec Section 7.1 MVP default
+    r_asset_mw_per_s: float = _sp.value("r_asset_mw_per_s")  # CHOSEN — read from catalogue
     rated_mw: float = 10.0
     # hot_standby: True when this unit is commissioned but not synchronized to the
     # bus.  A hot-standby unit is ready to start but contributes zero to the
@@ -530,22 +530,22 @@ class TurbineConfig:
     # ── Phase 2: start durations — from config, no literals in state machine ─
     # cold_start_s: time for a COLD-start unit to reach SYNCHRONISED.
     #   TC-80 implies 900 s.  CHOSEN — no measured OEM basis.
-    cold_start_s: float = 900.0
+    cold_start_s: float = _sp.value("cold_start_s")
     # warm_start_s: time for a WARM-start unit to reach SYNCHRONISED.
     #   CHOSEN — engineering placeholder; OEM data required.
-    warm_start_s: float = 300.0
+    warm_start_s: float = _sp.value("warm_start_s")
     # hot_start_s: time for a HOT-start unit to reach SYNCHRONISED.
     #   CHOSEN — 300 s (5 min); OEM data required.
     #   Phase D (D-08): raised from 60 s to 300 s — a frame machine cannot
     #   synchronise in a minute; 60 s was an unrealistic bypass.
-    hot_start_s: float = 300.0
+    hot_start_s: float = _sp.value("hot_start_s")
     # Thermal classification thresholds (time offline since last synchronisation).
     # hot_threshold_s: elapsed ≤ this → HOT start.
     #   CHOSEN — 1 h; OEM calibration required.
-    hot_threshold_s: float = 3600.0
+    hot_threshold_s: float = _sp.value("hot_threshold_s")
     # warm_threshold_s: hot_threshold_s < elapsed ≤ this → WARM; above → COLD.
     #   CHOSEN — 4 h; OEM calibration required.
-    warm_threshold_s: float = 14400.0
+    warm_threshold_s: float = _sp.value("warm_threshold_s")
     # unload_tail_s: settling dwell (seconds) from levelled_off True to breaker open,
     #   and also the minimum settling interval after each breaker open before the next
     #   unit may enter UNLOADING (sequential-stop guard, Item 6).
@@ -557,7 +557,7 @@ class TurbineConfig:
     #   Must be < r_asset_mw_per_s × dt_seconds (1.0 MW at r=0.2, dt=5) so the
     #   predicate does not fire prematurely mid-descent.
     #   CHOSEN — 0.05 MW (50 kW).  PROTO-23.
-    levelled_off_tol_mw: float = 0.05
+    levelled_off_tol_mw: float = _sp.value("levelled_off_tol_mw")
 
 
 @dataclass
@@ -605,7 +605,7 @@ class BessConfig:
     #   for a given tick interval.  At dt=0.1 s, alpha = 1−exp(−0.1/tau):
     #     tau=0.05 s → alpha≈0.865 (87% of setpoint delivered per tick)
     #     tau=0.30 s → alpha≈0.283 (28% of setpoint delivered per tick)
-    bess_response_tau_s: float = 0.05  # CHOSEN — grid-forming inverter class (open parameter)
+    bess_response_tau_s: float = _sp.value("bess_response_tau_s")   # CHOSEN — read from catalogue
 
     def __post_init__(self) -> None:
         """D12 / PROTO-9: warn when C-rate is outside the 0.25–4.0 C physical

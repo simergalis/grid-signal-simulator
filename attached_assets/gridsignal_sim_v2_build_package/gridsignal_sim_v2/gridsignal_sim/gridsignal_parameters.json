@@ -775,6 +775,160 @@
         "group": "turbine"
       },
       "reason": "Settling dwell from levelled_off True to breaker open (and minimum inter-unit stop spacing under sequential decommit). Must strictly exceed levelled_off_window_s (10 s): if unload_tail_s <= levelled_off_window_s then _levelled_off_sustained is never True and the panel indicator silently absent. CHOSEN — calibrate against OEM breaker and droop-response data before production deployment."
+    },
+    {
+      "key": "r_asset_mw_per_s",
+      "value": 0.2,
+      "unit": "MW/s",
+      "label": "Turbine ramp rate",
+      "provenance": "CHOSEN",
+      "provenance_detail": "CHOSEN — 0.2 MW/s is the Section 7.1 MVP default.  No measured basis.  A production deployment must replace this with OEM ramp-rate data for the installed frame class.  OPEN PARAMETER.",
+      "spec_ref": "§7.1 MVP default",
+      "ui": {
+        "control": "readonly",
+        "group": "turbine"
+      },
+      "note": "The single most consequential constant in the generation-dispatch model.  Every ramp-credit figure shown in the Generation panel is a product of this value and the available dt_lead.  Until measured, all derived ramp-capability numbers are unvalidated.  Claim discipline: do not quote ramp figures externally before replacing this with OEM data."
+    },
+    {
+      "key": "cold_start_s",
+      "value": 900,
+      "unit": "s",
+      "label": "Cold-start time to synchronised",
+      "provenance": "CHOSEN",
+      "provenance_detail": "CHOSEN — 900 s (15 min) implied by TC-80 scenario structure.  No OEM basis; frame-class gas turbines typically require 10–30 min from cold to synchronised, depending on turbine model and grid code.  Replace with manufacturer commissioning data.",
+      "spec_ref": "§TC-80",
+      "ui": {
+        "control": "readonly",
+        "group": "turbine"
+      },
+      "note": "Time from OFFLINE to SYNCHRONISED when the turbine has been offline longer than warm_threshold_s.  Governs commitment timing after a decommit event followed by a cold soak."
+    },
+    {
+      "key": "warm_start_s",
+      "value": 300,
+      "unit": "s",
+      "label": "Warm-start time to synchronised",
+      "provenance": "CHOSEN",
+      "provenance_detail": "CHOSEN — 300 s (5 min) engineering placeholder.  No OEM basis; actual warm-start times depend on thermal soak and grid-code ride-through requirements.  Replace with OEM data.",
+      "spec_ref": "§7.1 Phase 2",
+      "ui": {
+        "control": "readonly",
+        "group": "turbine"
+      },
+      "note": "Time from OFFLINE to SYNCHRONISED when hot_threshold_s < elapsed ≤ warm_threshold_s.  Must satisfy: warm_start_s < cold_start_s (warm starts faster than cold).  Cross-parameter candidate: warm_start_s < cold_start_s (not yet enforced)."
+    },
+    {
+      "key": "hot_start_s",
+      "value": 300,
+      "unit": "s",
+      "label": "Hot-start time to synchronised",
+      "provenance": "CHOSEN",
+      "provenance_detail": "CHOSEN — 300 s (5 min).  Corrected from 60 s during Phase D (D-08): a frame-class machine cannot synchronise in one minute.  60 s was an unrealistic bypass value.  No OEM basis; replace with manufacturer data for the installed frame class.",
+      "spec_ref": "§D-08 / Phase D",
+      "ui": {
+        "control": "readonly",
+        "group": "turbine"
+      },
+      "note": "Time from OFFLINE to SYNCHRONISED when elapsed ≤ hot_threshold_s.  Must satisfy: hot_start_s ≤ warm_start_s ≤ cold_start_s.  Cross-parameter candidate: ordering of all three start times (not yet enforced as an invariant)."
+    },
+    {
+      "key": "inertia_constant_s",
+      "value": 4.0,
+      "unit": "s",
+      "label": "Combined inertia constant H",
+      "provenance": "CHOSEN",
+      "provenance_detail": "CHOSEN — 4.0 s, typical medium diesel/gas island plant.  No measured basis; calibrate against design partner generator specs and system-study data.  OPEN PARAMETER.",
+      "spec_ref": "§Phase 13.2",
+      "ui": {
+        "control": "readonly",
+        "group": "site"
+      },
+      "note": "H sets the entire frequency-response timescale.  The electromechanical time constant is ≈2H/droop, so every derived frequency criterion — trip threshold crossing time, droop settle time, stability margin — scales directly with this value.  Claim discipline: do not quote absolute frequency figures externally until H is measured."
+    },
+    {
+      "key": "governor_droop",
+      "value": 0.04,
+      "unit": "pu",
+      "label": "Governor droop (per-unit)",
+      "provenance": "CHOSEN",
+      "provenance_detail": "CHOSEN — 0.04 pu (4 %), typical gas turbine governor setting.  No measured basis.  OPEN PARAMETER.",
+      "spec_ref": "§Phase 13.3",
+      "ui": {
+        "control": "readonly",
+        "group": "site"
+      },
+      "note": "Per-unit frequency deviation that produces 100 % governor response.  Governs frequency response alongside inertia_constant_s.  Cross-parameter candidate: 2H/droop gives the electromechanical time constant; both must be measured together."
+    },
+    {
+      "key": "hot_threshold_s",
+      "value": 3600,
+      "unit": "s",
+      "label": "Hot-start thermal threshold",
+      "provenance": "CHOSEN",
+      "provenance_detail": "CHOSEN — 3 600 s (1 h).  No OEM calibration.  Turbines offline ≤ this many seconds since last synchronisation are classified as HOT and use hot_start_s.  Replace with OEM thermal cooling-curve data.",
+      "spec_ref": "§7.1 Phase 2",
+      "ui": {
+        "control": "readonly",
+        "group": "turbine"
+      },
+      "note": "Ordering invariant candidate: hot_threshold_s < warm_threshold_s (not yet enforced)."
+    },
+    {
+      "key": "warm_threshold_s",
+      "value": 14400,
+      "unit": "s",
+      "label": "Warm-start thermal threshold",
+      "provenance": "CHOSEN",
+      "provenance_detail": "CHOSEN — 14 400 s (4 h).  No OEM calibration.  Turbines offline > hot_threshold_s and ≤ this use warm_start_s.  Above warm_threshold_s the turbine is COLD.  Replace with OEM thermal cooling-curve data.",
+      "spec_ref": "§7.1 Phase 2",
+      "ui": {
+        "control": "readonly",
+        "group": "turbine"
+      },
+      "note": "Ordering invariant candidate: hot_threshold_s < warm_threshold_s (not yet enforced)."
+    },
+    {
+      "key": "levelled_off_tol_mw",
+      "value": 0.05,
+      "unit": "MW",
+      "label": "Levelled-off output tolerance",
+      "provenance": "CHOSEN",
+      "provenance_detail": "CHOSEN — 0.05 MW (50 kW).  PROTO-23.  Must be < r_asset_mw_per_s × dt_seconds (1.0 MW at r=0.2, dt=5) so the predicate does not fire prematurely mid-descent.  No measured basis.",
+      "spec_ref": "PROTO-23",
+      "ui": {
+        "control": "readonly",
+        "group": "turbine"
+      },
+      "note": "Absolute output tolerance (MW) used to detect that an UNLOADING unit has reached its MSL setpoint.  When |output − msl| < tol the levelled_off predicate is True and the unload_tail_s dwell clock starts.  Cross-parameter constraint: must be < r_asset_mw_per_s × dt_seconds."
+    },
+    {
+      "key": "workload_signal_stale_s",
+      "value": 30,
+      "unit": "s",
+      "label": "Workload signal staleness threshold",
+      "provenance": "CHOSEN",
+      "provenance_detail": "CHOSEN — 30 s.  No measured basis.  A WorkloadSignal is marked stale when none has arrived within this window for an active job.  30 s allows for orchestrator heartbeat intervals of up to 15 s with a 2× margin.",
+      "spec_ref": "§Phase 11.2",
+      "ui": {
+        "control": "readonly",
+        "group": "site"
+      },
+      "note": "Governs the stale-signal alert surfaced in TickResult.  Too short → false alerts under normal orchestrator jitter.  Too long → delayed detection of a silent job exit."
+    },
+    {
+      "key": "bess_response_tau_s",
+      "value": 0.05,
+      "unit": "s",
+      "label": "BESS first-order response time constant",
+      "provenance": "CHOSEN",
+      "provenance_detail": "CHOSEN — 0.05 s (50 ms), grid-forming inverter class.  No measured basis; calibrate against design partner inverter specs.  OPEN PARAMETER.",
+      "spec_ref": "§Phase 13 inverter model",
+      "ui": {
+        "control": "readonly",
+        "group": "bess"
+      },
+      "note": "First-order lag time constant for BESS power delivery: alpha = 1 − exp(−dt/tau).  Representative values: grid-forming VSM 20–50 ms, grid-following PLL 50–150 ms, slow droop UPS 200–500 ms.  Effect on coverage: shorter tau → faster delivery → higher coverage ratio.  Claim discipline: BESS coverage figures are unvalidated until tau is measured."
     }
   ],
   "excluded": [

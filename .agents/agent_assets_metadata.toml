@@ -112,3 +112,10 @@ uri = "file://reports/gridsignal_close_conformance_gaps_report.md"
 type = "text"
 title = "GridSignal Conformance Gaps — Session Report"
 description = "Full session report: Item 1 integration path verification, Item 2 unload_tail_s catalogue, Gaps 1+2/5/7/9 closed in turbineFleet.ts, Guard E self-consistency test, uncatalogued sweep. Suite: 15/976/16, 29 frontend, tsc clean."
+
+[[outputs]]
+id = "irxJ6NHwXWhcKZlR8LR0q"
+uri = "file://reports/gridsignal_verify_catalogue_open_params_report.md"
+type = "text"
+title = "Verify Integration Path, Restore MSL, Catalogue Open Parameters"
+description = "Item 1: commitment_block verified from emitted payload (satisfied U=22%, violated U=79%). Item 2: MSL MW restored in bar sub-annotation. Item 3: 11 open parameters catalogued — D3 call sites 15→26, D2 backlog empty. 0 regressions."
