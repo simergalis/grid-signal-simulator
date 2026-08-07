@@ -84,3 +84,10 @@ uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/
 type = "text"
 title = "Phase E Completion Report"
 description = "DR-2026-08-06 Phase E — stop sequencing, sequential base-loading, physical constraints. Final gate: 13 failed / 975 passed / 16 xfailed."
+
+[[outputs]]
+id = "zyu16Ojjw8aMnA0Hljbs1"
+uri = "file://reports/items_4_9_implementation_report.md"
+type = "text"
+title = "Items 4–9 Implementation Report"
+description = "Gas Turbine Fleet Modal — Phase E+ backend wiring, UI defect fixes (U-1 through U-8), commitment stat rows, per-unit bar, TC-98/TC-99 smoke tests."
