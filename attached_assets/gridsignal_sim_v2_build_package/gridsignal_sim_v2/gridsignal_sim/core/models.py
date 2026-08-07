@@ -550,7 +550,7 @@ class TurbineConfig:
     #   and also the minimum settling interval after each breaker open before the next
     #   unit may enter UNLOADING (sequential-stop guard, Item 6).
     #   CHOSEN — 60 s.  Calibrate against OEM breaker and droop-response data.
-    unload_tail_s: float = 60.0
+    unload_tail_s: float = _sp.value("unload_tail_s")
     # levelled_off_tol_mw: absolute output tolerance (MW) used to detect that an
     #   UNLOADING unit has reached its MSL setpoint.  When |output − msl| < tol the
     #   levelled_off predicate is True and the unload_tail_s dwell clock starts.

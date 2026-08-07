@@ -654,7 +654,7 @@
     },
     {
       "key": "commit_utilisation",
-      "value": 0.80,
+      "value": 0.8,
       "unit": "dimensionless",
       "label": "Commitment trigger — fleet utilisation threshold",
       "provenance": "CHOSEN",
@@ -668,7 +668,7 @@
     },
     {
       "key": "decommit_utilisation",
-      "value": 0.50,
+      "value": 0.5,
       "unit": "dimensionless",
       "label": "Decommitment trigger — fleet utilisation threshold",
       "provenance": "CHOSEN",
@@ -682,7 +682,7 @@
     },
     {
       "key": "decommit_post_removal_max",
-      "value": 0.70,
+      "value": 0.7,
       "unit": "dimensionless",
       "label": "Decommitment — maximum utilisation after unit removal",
       "provenance": "CHOSEN",
@@ -763,6 +763,18 @@
         "group": "commitment"
       },
       "note": "The levelled-off condition (|output - setpoint| < levelled_off_epsilon_mw) must be sustained this many seconds before the stop sequencer considers the unit ready to begin unloading (Phase E)."
+    },
+    {
+      "key": "unload_tail_s",
+      "value": 60,
+      "unit": "s",
+      "provenance": "CHOSEN",
+      "spec_ref": "§7.1.3.6",
+      "ui": {
+        "control": "readonly",
+        "group": "turbine"
+      },
+      "reason": "Settling dwell from levelled_off True to breaker open (and minimum inter-unit stop spacing under sequential decommit). Must strictly exceed levelled_off_window_s (10 s): if unload_tail_s <= levelled_off_window_s then _levelled_off_sustained is never True and the panel indicator silently absent. CHOSEN — calibrate against OEM breaker and droop-response data before production deployment."
     }
   ],
   "excluded": [

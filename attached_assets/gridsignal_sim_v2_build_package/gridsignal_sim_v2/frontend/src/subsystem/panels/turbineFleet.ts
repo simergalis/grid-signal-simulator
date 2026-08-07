@@ -34,6 +34,7 @@ const GOLD  = '#e0a458'
 const TEAL  = '#3fb6a8'
 const RED   = '#f85149'
 const AMBER = '#f0883e'
+const EMBER = '#d9663d'  // UNLOADING distinction — mockup --ember; gap 5
 
 // GS-DES-CFG-001 §Phase-3: PEAK_LOAD_MW removed.
 // Peak site load is derived from run history via peakSiteLoadMW(history).
@@ -348,7 +349,7 @@ function FleetTable(
       ? Math.round(u.run_hours_h).toLocaleString()
       : '—'
     // 0.6: no_load_mw and msl_mw from named typed fields — resolves column ambiguity
-    const noLoadMslStr = `${u.no_load_mw.toFixed(2)} / ${u.msl_mw.toFixed(2)}`
+    // noLoadMslStr removed: data now expressed by the dashed MSL rule in the bar column.
 
     // ── Operator action button ────────────────────────────────────────────
     // State machine: on-bus → Trip button; OFFLINE → Start button; STARTING → disabled.
@@ -433,8 +434,11 @@ function FleetTable(
       }, '—')
     }
 
-    // Item 6: per-unit bar — fill=output/rated, dashed rule at MSL, marker at setpoint.
-    // STARTING: countdown display instead of output value.
+    // Gap 1+2 / Gap 5: full-width bar column (≥ 132 px × 16 px) replacing NO-LOAD/MSL.
+    // NO-LOAD/MSL column dropped: its data is now expressed by the dashed rule in the
+    // bar at mslFrac — showing it twice as a separate text column is redundant.
+    // Gap 5: UNLOADING uses ember fill and uid colour so it is visually distinct from
+    // a SYNCHRONISED unit at low load, which looks identical at amber/gold.
     const outFrac     = u.rated_mw > 0 ? Math.min(out / u.rated_mw, 1) : 0
     const mslFrac     = u.rated_mw > 0 && u.msl_mw > 0 ? Math.min(u.msl_mw / u.rated_mw, 1) : 0
     const spFrac      = u.rated_mw > 0 && u.setpoint_mw != null ? Math.min(u.setpoint_mw / u.rated_mw, 1) : null
@@ -442,37 +446,78 @@ function FleetTable(
     const outLabel    = liveSt === 'starting'
       ? (countdownS != null ? `${countdownS}s` : 'starting…')
       : `${out.toFixed(2)} MW`
-    const outColour   = liveSt === 'starting' ? AMBER : out > 0.01 ? GOLD : '#6e7681'
+    // Gap 5: ember for UNLOADING fill; amber for STARTING; gold otherwise.
+    const fillColour  = liveSt === 'unloading' ? EMBER : out > 0.01 ? GOLD : '#6e7681'
+    const outColour   = liveSt === 'starting' ? AMBER : fillColour
+    const uidColour   = liveSt === 'unloading' ? EMBER : GOLD  // gap 5
 
-    const miniBar = React.createElement('div', {
-      style: { position: 'relative' as const, height: 4, width: 48, background: '#1c2a3a', borderRadius: 2, marginTop: 2 },
-    },
-      // Fill: output fraction
+    // Bar sub-annotation: tracking progress or stable state label.
+    const rampDeltaMW = spFrac != null ? (u.setpoint_mw ?? 0) - out : 0
+    const barAnnotation: string | null =
+      liveSt === 'starting' ? null
+      : spFrac != null && rampDeltaMW > 0.05
+        ? `tracking → ${(u.setpoint_mw ?? 0).toFixed(2)} · +${rampDeltaMW.toFixed(2)} MW to go`
+        : outFrac >= 0.999
+          ? 'at rated · levelled off'
+          : (mslFrac > 0 && Math.abs(outFrac - mslFrac) < 0.005)
+            ? 'at minimum stable load'
+            : null
+
+    // Gap 1+2: full-width bar in its own column.
+    //   • Amber/ember fill = output fraction of rated (gap 5: ember when UNLOADING).
+    //   • Hatched fill for STARTING (deferred gap 3 — here kept as placeholder fill).
+    //   • Teal-shaded region between fill and setpoint = ramp gap (gap 2).
+    //   • Dashed rule at mslFrac = MSL; cyan marker at spFrac = setpoint.
+    const fullBar = React.createElement('div', null,
       React.createElement('div', {
-        style: { position: 'absolute' as const, left: 0, top: 0, bottom: 0,
-          width: `${outFrac * 100}%`, background: outColour, borderRadius: 2 },
-      }),
-      // Dashed rule at MSL
-      mslFrac > 0 ? React.createElement('div', {
-        style: { position: 'absolute' as const, left: `${mslFrac * 100}%`, top: 0, bottom: 0,
-          width: 1, background: '#8b949e', borderLeft: '1px dashed #8b949e' },
-      }) : null,
-      // Thin marker at setpoint
-      spFrac != null ? React.createElement('div', {
-        style: { position: 'absolute' as const, left: `${spFrac * 100}%`, top: -1, bottom: -1,
-          width: 2, background: TEAL, borderRadius: 1 },
-      }) : null,
+        style: { position: 'relative' as const, height: 16, background: '#060a0f',
+                 border: '1px solid #1a2330', minWidth: 132 },
+      },
+        // Fill — hatched for STARTING, solid otherwise (gap 5: ember for UNLOADING)
+        liveSt === 'starting'
+          ? React.createElement('div', {
+              style: { position: 'absolute' as const, left: 0, top: 0, bottom: 0,
+                       width: `${outFrac * 100}%`,
+                       background: 'repeating-linear-gradient(-45deg,#221e3a 0 5px,#171430 5px 10px)' },
+            })
+          : React.createElement('div', {
+              style: { position: 'absolute' as const, left: 0, top: 0, bottom: 0,
+                       width: `${outFrac * 100}%`, background: fillColour, opacity: 0.85 },
+            }),
+        // Gap 2: ramp gap — teal-shaded region from fill to setpoint (closes as unit levels off)
+        spFrac != null && spFrac > outFrac + 0.005
+          ? React.createElement('div', {
+              style: { position: 'absolute' as const, top: 6, height: 3,
+                       left: `${outFrac * 100}%`,
+                       width: `${(spFrac - outFrac) * 100}%`,
+                       background: 'rgba(63,182,168,0.22)' },
+            })
+          : null,
+        // Dashed MSL rule
+        mslFrac > 0 ? React.createElement('div', {
+          style: { position: 'absolute' as const, left: `${mslFrac * 100}%`,
+                   top: -1, bottom: -1, borderLeft: '1px dashed #6b5320' },
+        }) : null,
+        // Cyan setpoint marker
+        spFrac != null ? React.createElement('div', {
+          style: { position: 'absolute' as const, left: `${spFrac * 100}%`,
+                   top: -3, bottom: -3, width: 2, background: TEAL },
+        }) : null,
+      ),
+      barAnnotation != null
+        ? React.createElement('div', {
+            style: { ...MONO, fontSize: 9, color: '#5d6b7c', marginTop: 3 }
+          }, barAnnotation)
+        : null,
     )
 
     return React.createElement('tr', { key: u.asset_id },
-      React.createElement('td', { style: dCell(GOLD, true) }, u.asset_id),
-      // 0.6: CURRENT MW cell — per-unit bar below the value; STARTING shows countdown.
-      React.createElement('td', { style: dCell(outColour) },
-        React.createElement('div', null, outLabel),
-        miniBar,
-      ),
-      // 0.6: explicit NO-LOAD / MSL column from named typed fields
-      React.createElement('td', { style: dCell('#8b949e') }, noLoadMslStr),
+      // Gap 5: ember uid colour for UNLOADING
+      React.createElement('td', { style: dCell(uidColour, true) }, u.asset_id),
+      // Gap 1+2: full-width bar column (replaces CURRENT MW + NO-LOAD/MSL)
+      React.createElement('td', { style: { ...dCell(), minWidth: 140 } }, fullBar),
+      // MW value in its own narrow column (bar supplements, does not replace)
+      React.createElement('td', { style: dCell(outColour) }, outLabel),
       // 0.2: SYNC driven by isOnBus() — Phase 2 live state preferred, breaker_closed fallback.
       React.createElement('td', { style: dCell(onBus ? GOLD : '#8b949e') }, syncStr),
       React.createElement('td', { style: dCell(isDeg ? AMBER : '#c9d1d9') }, rampStr),
@@ -504,8 +549,9 @@ function FleetTable(
       React.createElement('thead', null,
         React.createElement('tr', null,
           React.createElement('th', { style: hCell }, 'UNIT'),
-          React.createElement('th', { style: hCell }, 'CURRENT MW'),        // 0.6: labelled
-          React.createElement('th', { style: hCell }, 'NO-LOAD / MSL MW'), // 0.6: new column
+          // Gap 1+2: bar column replaces the old CURRENT MW+minibar and NO-LOAD/MSL columns.
+          React.createElement('th', { style: { ...hCell, minWidth: 140 } }, 'Output · setpoint · MSL'),
+          React.createElement('th', { style: hCell }, 'MW'),
           React.createElement('th', { style: hCell }, 'SYNC'),
           React.createElement('th', { style: hCell }, 'RAMP meas/cfg'),
           React.createElement('th', { style: hCell }, 'RUN h'),
@@ -873,13 +919,25 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: number,
         { label: 'Committed MW',
           value: `${cb.committed_rated_mw.toFixed(1)} MW`,
           colour: cb.reserve_satisfied ? GOLD : RED,
-          sub: `reserve floor ${cb.reserve_floor_mw.toFixed(1)} MW (${Math.round(cb.utilisation * 100)}% utilisation)` },
+          sub: `${Math.round(cb.utilisation * 100)}% utilisation · ${cb.reserve_satisfied ? 'floor met' : 'floor violated'}` },
+        // Gap 7: dedicated reserve floor row — arithmetic explicit in sub-label so operator
+        // can see why a commit fired below the utilisation threshold (floor governs).
+        { label: 'Reserve floor',
+          value: `${cb.reserve_floor_mw.toFixed(1)} MW`,
+          colour: cb.reserve_satisfied ? GOLD : RED,
+          sub: cb.reserve_satisfied
+            ? `${(cb.committed_rated_mw - cb.reserve_floor_mw).toFixed(1)} MW margin · demand + largest committed unit`
+            : `short ${(cb.reserve_floor_mw - cb.committed_rated_mw).toFixed(1)} MW · demand + largest committed unit` },
+        // Gap 9: blocked_by and reason rendered as separate rows so an operator can see
+        // BOTH why the fleet is constrained AND what the engine last decided.
+        // Previously blocked_by hid reason — a constrained fleet looked the same as a
+        // satisfied one because the decision reason was suppressed.
+        ...(cb.blocked_by ? [{ label: 'Blocked', value: cb.blocked_by, colour: '#7b6bb0',
+          sub: 'further commitment held' }] : []),
         { label: 'Last decision',
           value: cb.action.toUpperCase(),
           colour: cb.action === 'commit' ? TEAL : cb.action === 'decommit' ? AMBER : undefined,
-          sub: cb.blocked_by
-            ? `blocked: ${cb.blocked_by}`
-            : (cb.reason || 'no active condition') },
+          sub: cb.reason || 'no active condition' },
         ...(cb.pending_start_unit_id ? [{
           label: 'Starting',
           value: cb.pending_start_unit_id,

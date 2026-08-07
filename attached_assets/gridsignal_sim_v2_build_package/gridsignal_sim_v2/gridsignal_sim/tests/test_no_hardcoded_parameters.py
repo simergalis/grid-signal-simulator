@@ -349,6 +349,29 @@ def test_guard_d1_no_drift() -> None:
         assert len(drifts) == 0, msg
 
 
+def test_guard_e_unload_tail_ordering() -> None:
+    """Guard E (Tier 1): unload_tail_s > levelled_off_window_s must hold in the catalogue.
+
+    Item B finding (conformance gate): nothing in the codebase enforces this ordering.
+    If unload_tail_s ≤ levelled_off_window_s then _levelled_off_sustained is never True
+    and the panel indicator silently never fires — an absent display rather than a wrong
+    one, which is the harder kind to notice.
+
+    This test makes the ordering explicit and blocking at the catalogue level.
+    A catalogue editor who violates it gets a clear error, not a silent miss.
+    """
+    from core import site_parameters as _sp_mod  # noqa: PLC0415
+    tail_s   = _sp_mod.value("unload_tail_s")
+    window_s = _sp_mod.value("levelled_off_window_s")
+    assert tail_s > window_s, (
+        f"Guard E: unload_tail_s ({tail_s} s) must be strictly greater than "
+        f"levelled_off_window_s ({window_s} s). "
+        f"If this ordering fails, _levelled_off_sustained is never True and the "
+        f"panel indicator silently never fires. Fix the catalogue entry for "
+        f"'unload_tail_s' in gridsignal_parameters.json."
+    )
+
+
 def test_guard_d2_backlog_reported() -> None:
     """D2: report all catalogue-matching literals that are still hard-coded.
 
