@@ -201,7 +201,11 @@ export interface TickPayload {
     target_unit_id:        string | null
     reason:                string
     blocked_by:            string         // non-empty when action was held by R5 guard
+    // committed_rated_mw: Σ rated_mw for SYNCHRONISED units — SYNCHRONISED only.
+    // UNLOADING excluded (pinned at MSL, no headroom). Distinct from on_bus_output_mw
+    // which includes UNLOADING; the two fields answer different questions.
     committed_rated_mw:    number
+    // reserve_floor_mw: p_demand + largest committed unit (N-1 floor, from CommitmentDecision).
     reserve_floor_mw:      number
     reserve_satisfied:     boolean
     utilisation:           number

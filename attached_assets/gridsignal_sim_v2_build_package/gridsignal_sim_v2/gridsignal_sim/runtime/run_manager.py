@@ -386,6 +386,9 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # Phase E+: commitment engine last-decision summary — drives fleet modal
         # commitment stat rows (Item 7).  Always present; action="hold" and
         # empty strings are the safe-sentinel defaults (no commitment engine wired).
+        # committed_rated_mw: Σ rated_mw for SYNCHRONISED units only (see models.py).
+        #   UNLOADING excluded — pinned at MSL, no upward headroom.  Distinct from
+        #   on_bus_output_mw above which INCLUDES UNLOADING (they produce at MSL).
         "commitment_block": {
             "action":                tick.commitment_action,
             "target_unit_id":        tick.commitment_target_unit_id,

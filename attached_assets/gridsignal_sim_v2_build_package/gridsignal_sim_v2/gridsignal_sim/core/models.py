@@ -1129,8 +1129,14 @@ class TickResult:
     commitment_target_unit_id: Optional[str] = None
     commitment_reason: str = ""
     commitment_blocked_by: str = ""
-    # committed_rated_mw: Σ rated_mw for SYNCHRONISED/UNLOADING units this tick.
-    # reserve_floor_mw:   decommit_utilisation × committed_rated_mw (decommit trigger threshold).
+    # committed_rated_mw: Σ rated_mw for SYNCHRONISED units this tick — SYNCHRONISED only.
+    #   UNLOADING units are excluded: they are pinned at MSL with no upward headroom, so
+    #   counting their nameplate overstates reserve precisely when the fleet is shrinking.
+    #   Distinct from on_bus_output_mw (run_manager) which INCLUDES UNLOADING because
+    #   UNLOADING units are breaker-closed and producing; the two fields answer different
+    #   questions — reserve capacity vs produced output.
+    # reserve_floor_mw:   p_demand + largest committed unit (N-1 floor from CommitmentDecision).
+    #   NOT the decommit threshold; reads directly from CommitmentDecision.floor_mw.
     # fleet_utilisation:  p_demand / committed_rated_mw (0.0 when no committed units).
     committed_rated_mw:   float = 0.0
     reserve_floor_mw:     float = 0.0
