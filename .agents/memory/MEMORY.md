@@ -1,36 +1,66 @@
-- [gridsignal-sim-v2 overview](gridsignal-sim-v2-overview.md) — codebase root, verification commands, completed through AD2 (417 tests, 9 determinism scenarios, col-3 count 39).
-- [bess-anchor-reserve](bess-anchor-reserve.md) — IslandMode + grid_forming design; why sum-of-durations not min(); THE TRAP with cover_shortfall taper flag.
-- [cooling-envelope-cursor](cooling-envelope-cursor.md) — deque + absolute cursor design; THE TRAP with popleft() shifting plain integer indices.
-- [sim-clock-convention](sim-clock-convention.md) — sim_time = interval START; TickResult state is at sim_time+dt; Step 8 must use convention (A) consistently.
-- [d14-allocation-design](d14-allocation-design.md) — equal-share-then-cap replaces proportional-by-ceiling; power-limited guard pattern required in 3 places.
-- [step9-verdict-design](step9-verdict-design.md) — AssertionSpec in runtime/verdict.py (not api/); demo-20mw needs bess_rated_mw=18.0 for PASS; H1 gap rules.
-- [step10-arbitration-design](step10-arbitration-design.md) — Phase 0 insertion point; CurtailmentLadder hold analysis; TC-49 permutation trap; OperatingTier/PreStagingConfig shape.
-- [step11-scada-pms-design](step11-scada-pms-design.md) — K1/K2/K3 unified pool wiring; generate_candidates() live path; TC-64–TC-68 patterns; TRAP: never call both tick() and generate_candidates() in same tick.
-- [step12-advisory-design](step12-advisory-design.md) — deident.py egress filter; advisory gate/router/principal structure; LP-1 short-circuit; TC-29/TC-30 wire guarantees; proposal lifecycle hold questions.
-- [w1-w2-w3-wiring](w1-w2-w3-wiring.md) — run-loop agent/telemetry/thermal wiring; circular-import trap; plane-sep trap; advisory endpoint 409 semantics; energy-summary RT_EFF proxy; frontend URL prefixes.
-- [ui-implementation-u1-u4](ui-implementation-u1-u4.md) — chart primitives + Readiness screen + 9 subsystem modals + tick wiring; getByText multiple-match trap; ComposedChart for mixed Line+Area.
-- [ui-opening-screen-v1-v4](ui-opening-screen-v1-v4.md) — one-line mimic (SVG foreignObject), VerdictBand, SystemStrip, TopologyExplainer; key traps with TS casts and CSS flowDash animation.
-- [websockets-install](websockets-install.md) — uvicorn needs `websockets` pkg (.pythonlibs); load-test 1× regression: LLM calls on tick 1 block event loop.
-- [solar-sim-mistral](solar-sim-mistral.md) — Mistral solar injection in runs.py (not factory); THE TRAP: restarting wrong server leaves old code running.
-- [kube-demand-layer](kube-demand-layer.md) — OU+EMA demand agent; KubeMetrics in models.py (not kube_demand.py) to break circular import; dt_lead=0 always; Step 0 in evaluate_tick.
-- [parameter-reference-system](parameter-reference-system.md) — gridsignal_parameters.json → ParameterModal + 24 regression tests; INV-2 band check; PROPOSED_HERE decisions; JSON has ui.group not group.
-- [generation-architecture](generation-architecture.md) — 5 pre-run generators (solar+ambient, cluster, stressor, param_sampler, telemetry_corruption); asyncio.gather before t=0; validate-not-clamp constraint; GenerationBlock for F10 fix.
-- [gen-trip-cover-fix](gen-trip-cover-fix.md) — D-1/D-2/D-3 fix; ContingencyState+Coverage in models.py, PlantState+evaluate_contingency in contingency.py; demo-20mw → 5×7 MW fleet; hot_standby pattern.
-- [advisory-telemetry-wiring](advisory-telemetry-wiring.md) — W2a: telemetry_snapshot() on AgentRegistry; advisory_telemetry dict on TickResult; stamped in _dc_replace block (section B, before broadcast); agents.ts fully live.
-- [sendgrid-auth-system](sendgrid-auth-system.md) — OTP email login (no password); SENDGRID_FROM_EMAIL must be verified sender; all /api/auth/* bypass middleware.
-- [auth-system-quirks](auth-system-quirks.md) — bcrypt 4.x/passlib break; /api/admin middleware pass-through; ck_auth_user_role must include 'admin'; migration guard pattern.
-- [operator-adjustable-params](operator-adjustable-params.md) — PARAM-28–34 in parameters.json; site/advisory/storage groups added to ParameterModal; soc limits flow from POST /runs into runMeta; advisory_interval_s stored but not yet wired to per-agent cadence.
-- [sqlite-to-postgres-migration](sqlite-to-postgres-migration.md) — auth_user wipe-on-publish fix; asyncpg URL conversion trap; connect_args SQLite-only trap; INITIAL_ADMIN_EMAIL seeding for fresh Neon DB.
-- [location-sot-refactor](location-sot-refactor.md) — site_config.py is the only permitted geographic-literal file; 5 traps (longitude vs utc_offset_h, singleton contamination, Guard A word boundary, TickResult defaults, legacy JSON migration).
-- [solar-tile-stale-tick](solar-tile-stale-tick.md) — Solar PV tile must poll /api/solar/state (not rely on WebSocket tick) so it stays consistent with modal after run ends.
-- [phase-13-3-frequency](phase-13-3-frequency.md) — swing eq on frequency_forcing only; droop formula; B1a/B5/I3 test traps; BESS lag clamp; pre-existing failures list.
-- [phase-13-4-setpoint-split](phase-13-4-setpoint-split.md) — model_error_mw + binding_constraint fields; cover_shortfall power_ceiling_mw trap; TurbineState.AT_TARGET lock pattern; standby label fix.
-- [phase-13-5-carried-forward](phase-13-5-carried-forward.md) — TC-03 7τ/0.5%; R4-R6 p_min_stable/t_min_run/t_min_down defaults=0 (NOT 0.45); R8 PROTO-22 fix; TurbineSnapshot r_asset required.
-- [phase-1b-p2-loading-layer](phase-1b-p2-loading-layer.md) — loading layer + UnitAvailability boundary; THE TRAP: allocated set A = SYNCHRONISED only (not is_synchronised); stray @dataclass on TurbineState enum fixed.
-- [phase-201d-power-factor](phase-201d-power-factor.md) — power_factor required on SiteConfig; S_base = Σ MW / pf; all raw-dict spec helpers need the field; re-baseline rules for swing-eq expected values.
-- [incremental-turbine-dispatch](incremental-turbine-dispatch.md) — D-05 sequential-start (1 unit per call); headroom-check SYNCHRONISED-only guard prevents same-tick double-start; TC-84f pre-trip relaxed to CANNOT_CARRY.
-- [ramp-algo-phases-status](ramp-algo-phases-status.md) — Phase tracker for ramp-algorithm replacement; A+B done (12/967/976/0); C=P0 fix+is_sync reclassify, D=payload renames, E=physical constraints last.
-- [cfg-001-phase-status](cfg-001-phase-status.md) — GS-DES-CFG-001 phase tracker; fabric CWD false-positive baseline trap; Guard D1/D2/E Tier-1 all green after Phase 3.
-- [droop-runaway-and-setpoint-gate](droop-runaway-and-setpoint-gate.md) — droop clamp applied (ceiling=Σ rated_MW); OFFLINE-gate fix; B5b regression; d10/TC-GT2-F issues.
-- [frequency-protection-gap](frequency-protection-gap.md) — swing eq unbounded; no threshold/UFLS/collapse anywhere; spec silent; 5 proposed thresholds (IEEE 1547); I3 bears on OF-2.
-- [protection-layer-design](protection-layer-design.md) — 5 IEEE 1547-2018 Cat I fields on SiteConfig (None=disabled); 4 collapse fields on TickResult; S9 scenario test traps (H=100, r=100, 4 pre-sync GTs, hot_standby=False for on-bus counting).
+---
+name: spec2-surplus-inertia
+description: Key decisions and traps from GS_prompt_surplus_and_inertia implementation (§INV-CURT, §INV-INERTIA, S9 rerun, ScenarioSpec thresholds).
+---
+
+## Summary
+
+All 6 spec-2 items delivered. Suite: 13 failed / 987 passed / 16 xfailed (net −1 failure vs pre-spec-2 baseline).
+
+## §INV-CURT
+
+Proportional OF curtailment block inserted in `evaluate_tick()` after `solar.advance()`, before `p_dispatch_required_mw`:
+
+```python
+curt_fraction = clamp((f − of_warning_hz) / (of_trip_hz − of_warning_hz), 0, 1)
+p_renewable_curtailed_mw = curt_fraction × p_renewable_mw
+p_renewable_mw -= p_renewable_curtailed_mw
+```
+
+Uses `state._frequency_hz` (previous tick — causal). Only fires when `island_mode == ISLANDED` AND both thresholds are non-None AND `f > of_warning_hz`. Was never triggered in S9 rerun (f stayed at 60.0 Hz ≤ 60.5 Hz of_warning throughout zero-machine phase).
+
+## §INV-INERTIA: S_base on-bus turbines only
+
+**Old:** `max(1.0, Σ all turbines) / pf`  
+**New:** `Σ on-bus turbines / pf` (SYNCHRONISED + UNLOADING only)
+
+**THE TRAP — `_sync_ceiling_mw` must be decoupled:** The old `_sync_ceiling_mw = _s_base_mw × pf` gave 0 when no on-bus turbines, starving the BESS setpoint. After fix: `_sync_ceiling_mw = Σ ALL turbine rated_mw` (dispatch ceiling, not inertia figure).
+
+**Zero-machine guard:**
+```python
+if _s_base_mw == 0:
+    if any(b.config.grid_forming for b in state.bess_units):
+        freeze frequency  # GF-BESS stiff reference
+    else:
+        use virtual S_base = 1.0/pf  # backward compat for non-GF fixtures (e.g. B1b)
+```
+
+**THE TRAP — I2 test fixture:** `_make_islanded_solar_state` had OFFLINE turbine; old formula counted it. After fix: turbine pre-forced to SYNCHRONISED + `p_min_stable_frac=0.0`. Without `p_min_stable_frac=0`, the loading layer holds turbine at MSL=4MW even when fleet_target=0, inflating frequency_forcing from 1 MW to 5 MW (BESS setpoint clamped to max(0,…) can't absorb the surplus).
+
+## S9 Rerun
+
+Corrected irradiance: 13-step ZOH dawn ramp 0→15 MW over t=0–300 s.
+
+- **Zero-machine phase (t=0–900 s):** GF-BESS freezes frequency at 60 Hz, covers demand via discharge.
+- **Collapse:** tick 181, t=905 s, `island_collapse_uf`, f=57.0 Hz.
+  - GT-0 synchronised at t=900 s; output=1 MW at collapse (dispatch ordering gap, F-4).
+  - BESS=17 MW (rated 18, anchor reserve 1 MW), solar=15 MW, demand=54.37 MW.
+  - Shortfall=21.37 MW → Δf=45.4 Hz/tick → single-tick collapse.
+- **§INV-CURT:** `p_renewable_curtailed_mw = 0.0` throughout (OF risk never arose).
+- **All 9 invariants pass.**
+
+## F-4: Dispatch ordering gap (new finding)
+
+Turbine transitions STARTING→SYNCHRONISED inside `advance()`, AFTER `_entry_states` snapshot. Loading layer uses entry_state=STARTING → turbine excluded → setpoint=0 on transition tick. Next tick ramps 1 step, not to MSL. Effect: ~7 ticks below MSL after synchronisation. I-2 assertion patched with 7-tick grace period. Root cause: dispatch→advance ordering not fixable without restructuring tick eval. Tracked as Task #247.
+
+## ScenarioSpec threshold fields
+
+5 `Optional[float] = None` fields added to `api/schemas.py::ScenarioSpec`:  
+`uf_warning_hz`, `ufls_stage1_hz`, `island_collapse_hz`, `of_warning_hz`, `of_trip_hz`.  
+Factory passes them through to SiteConfig unchanged. Backward compatible.
+
+**Why:** Allows per-scenario threshold override from the API; hardcoded 57/60.5/62 Hz defaults remain in SiteConfig when fields are None.
+
+## Pre-existing failures (13 total after spec 2)
+
+test_13_3 I3a/I3b (droop runaway), test_f5 (dt_lead), test_forecast_path B1a/B5/B5b (OFFLINE gate), test_formulas d10 (hot_start catalogue), test_kube_oscillation ×4, test_operator tc_203_3, test_telemetry tc_gt2_f.

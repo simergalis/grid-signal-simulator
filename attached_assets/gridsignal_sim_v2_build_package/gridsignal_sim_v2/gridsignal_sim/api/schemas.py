@@ -408,6 +408,63 @@ class ScenarioSpec(BaseModel):
             "Drives the swing-equation denominator and all frequency-response criteria."
         ),
     )
+
+    # ── §FP: Frequency-protection thresholds (Optional — None = threshold disabled) ──
+    # IEEE 1547-2018 Cat I defaults for a 60 Hz WECC site.  All five are Optional so
+    # legacy specs (no protection fields) continue to load without modification.
+    # The factory (scenario_factory.py) already passes these through to SiteConfig;
+    # adding them here makes them part of the validated schema so Pydantic rejects
+    # out-of-range values before a run starts.
+    #
+    # Field order mirrors the frequency axis (low → high):
+    #   island_collapse_hz < ufls_stage1_hz < uf_warning_hz  < f_nominal
+    #                       < of_warning_hz  < of_trip_hz
+    uf_warning_hz: Optional[float] = Field(
+        default=None, ge=45.0, le=65.0,
+        description=(
+            "Under-frequency advisory threshold (Hz).  Below this frequency the "
+            "advisory system alerts but the island does not collapse.  "
+            "IEEE 1547-2018 Cat I / SDG&E default: 59.5 Hz.  "
+            "None = threshold disabled (legacy scenario compatibility)."
+        ),
+    )
+    ufls_stage1_hz: Optional[float] = Field(
+        default=None, ge=45.0, le=65.0,
+        description=(
+            "Stage-1 under-frequency load-shedding threshold (Hz).  "
+            "Below this frequency automatic load shedding begins.  "
+            "IEEE 1547-2018 Cat I / SDG&E default: 58.5 Hz.  "
+            "None = UFLS stage 1 disabled."
+        ),
+    )
+    island_collapse_hz: Optional[float] = Field(
+        default=None, ge=45.0, le=65.0,
+        description=(
+            "Island collapse (mandatory under-frequency trip) threshold (Hz).  "
+            "Below this frequency the island de-energises.  "
+            "IEEE 1547-2018 Cat I / SDG&E default: 57.0 Hz.  "
+            "None = UF collapse disabled."
+        ),
+    )
+    of_warning_hz: Optional[float] = Field(
+        default=None, ge=45.0, le=65.0,
+        description=(
+            "Over-frequency advisory threshold (Hz).  Above this frequency the "
+            "§INV-CURT inverter curtailment ramp begins.  "
+            "IEEE 1547-2018 Cat I / SDG&E default: 60.5 Hz.  "
+            "None = OF advisory and inverter curtailment disabled."
+        ),
+    )
+    of_trip_hz: Optional[float] = Field(
+        default=None, ge=45.0, le=65.0,
+        description=(
+            "Over-frequency trip threshold (Hz).  Above this frequency the island "
+            "collapses via OF protection; inverter curtailment saturates at 100 % here.  "
+            "IEEE 1547-2018 Cat I / SDG&E default: 62.0 Hz.  "
+            "None = OF trip disabled."
+        ),
+    )
+
     power_factor: float = Field(
         default=0.85,
         gt=0.0, le=1.0,

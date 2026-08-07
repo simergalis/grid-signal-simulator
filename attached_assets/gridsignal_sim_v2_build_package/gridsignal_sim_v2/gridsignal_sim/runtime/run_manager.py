@@ -177,6 +177,10 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # p_renewable_mw: ForecastChart 4th trace; not recoverable from net_demand_mw
         #   after the lossy clamp max(0, p_total − p_renewable).
         "p_renewable_mw": round(tick.p_renewable_mw, 4),
+        # §INV-CURT: MW curtailed from solar this tick by frequency-response inverter.
+        # 0.0 in grid-connected mode, when thresholds are unset, or when f ≤ of_warning.
+        # p_renewable_mw is post-curtailment; this field carries the delta.
+        "p_renewable_curtailed_mw": round(tick.p_renewable_curtailed_mw, 4),
         # bess_bridging_seconds: AssetReservePanel "bridging capability in seconds".
         #   math.inf (net_demand_mw == 0 → no load) is capped at 86 400 s (24 h)
         #   for JSON safety; the UI renders this as "full reserve".

@@ -99,16 +99,30 @@ def _make_islanded_solar_state(
     hw = {"enterprise_8gpu_air": HardwareProfile(
         profile_id="enterprise_8gpu_air", rated_kw=10.2
     )}
+    # §INV-INERTIA: S_base now uses on-bus turbines only.
+    # Pre-force the turbine to SYNCHRONISED so it contributes to S_base and the
+    # swing equation produces the expected Δf.  An OFFLINE turbine contributes
+    # zero inertia (correct physics), but the I2 formula tests need a real S_base
+    # from an on-bus machine to produce a meaningful Δf.
+    # p_min_stable_frac=0.0 so MSL=0: with zero demand the loading layer
+    # assigns 0 MW and the turbine holds at 0 output.  Without this, the
+    # loading layer would hold the turbine at MSL (4 MW default) even with
+    # fleet_target=0, adding unwanted generation to the balance and inflating
+    # frequency_forcing_mw beyond the intended 1 MW solar surplus.
+    _gt = TurbineModule(TurbineConfig(
+        asset_id="gt-1",
+        rated_mw=turbine_rated_mw,
+        r_asset_mw_per_s=turbine_ramp,
+        p_min_stable_frac=0.0,
+    ))
+    _gt.state = TurbineState.SYNCHRONISED   # on-bus for inertia contribution
+
     state = SimulationState(
         run_id="test",
         site=site,
         gpu_modules=[GPUModule(asset_id="gpu-0", site=site,
                                hardware_library=hw, ramp_seconds=1.0)],
-        turbines=[TurbineModule(TurbineConfig(
-            asset_id="gt-1",
-            rated_mw=turbine_rated_mw,
-            r_asset_mw_per_s=turbine_ramp,
-        ))],
+        turbines=[_gt],
         bess_units=[BessModule(BessConfig(
             asset_id="bess-1",
             rated_mw=bess_rated_mw,
@@ -185,8 +199,9 @@ class TestI2SwingEquationAccuracy:
         tick = _run_tick(state, sim_time=0.0, dt=dt)
 
         ff = tick.frequency_forcing_mw
-        # S_base (MVA) = max(1.0, Σ rated_mw) / power_factor — mirrors simulation_core.py.
-        s_base_mva = max(1.0, S_base_rated) / state.site.power_factor
+        # §INV-INERTIA: S_base (MVA) = on-bus rated_mw / power_factor.
+        # The fixture pre-forces gt-1 to SYNCHRONISED so it contributes to S_base.
+        s_base_mva = S_base_rated / state.site.power_factor
         df_predicted = ff / (2.0 * H * s_base_mva) * f0 * dt
         df_actual = tick.frequency_hz - f0
 
@@ -226,8 +241,9 @@ class TestI2SwingEquationAccuracy:
             f"got {tick.frequency_forcing_mw:.6f}"
         )
 
-        # S_base (MVA) = rated_mw / power_factor — mirrors simulation_core.py formula.
-        s_base_mva = max(1.0, S_base_rated_mw) / state.site.power_factor
+        # §INV-INERTIA: S_base (MVA) = on-bus rated_mw / power_factor.
+        # The fixture pre-forces gt-1 to SYNCHRONISED so it contributes to S_base.
+        s_base_mva = S_base_rated_mw / state.site.power_factor
         df_predicted = 1.0 / (2.0 * H * s_base_mva) * f0 * dt
         df_actual = tick.frequency_hz - f0
         assert abs(df_actual - df_predicted) < df_predicted * 0.11, (   # ±10% tolerance

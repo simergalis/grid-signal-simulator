@@ -856,6 +856,13 @@ class TickResult:
     #   because the clamp max(0, p_total − p_renewable) is lossy: when renewable
     #   output exceeds total load, net_demand_mw is 0 and p_renewable is invisible.
     p_renewable_mw: float = 0.0
+    # §INV-CURT: MW of solar output curtailed this tick by the frequency-response
+    # inverter logic (islanded mode only).  Proportional curtailment between
+    # of_warning_hz (0 %) and of_trip_hz (100 %).  0.0 in grid-connected mode,
+    # when either threshold is None, or when frequency ≤ of_warning_hz.
+    # p_renewable_mw is the POST-curtailment figure; this field carries the delta
+    # so callers can reconstruct the pre-curtailment output when needed.
+    p_renewable_curtailed_mw: float = 0.0
     # bess_bridging_seconds: how long the BESS fleet can sustain net_demand_mw
     #   from current state of charge, using the same proportional-allocation +
     #   min() logic as stage_for_predicted_step (D13).  Using the SAME function

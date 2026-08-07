@@ -494,6 +494,11 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
 
     p_total_mw = p_compute_mw + p_cooling_mw
 
+    # _islanded: hoisted here (before section 3) so the §INV-CURT inverter
+    # curtailment block can reference it before the Phase 13.3 droop block.
+    # A single assignment; the same object is referenced throughout evaluate_tick().
+    _islanded = (state.site.island_mode == IslandMode.ISLANDED)
+
     # 3. Solar offset (Extension E-1 / §7.1.1) — evaluated BEFORE arbitration
     #    so the fleet sizes against P_dispatch_required, not P_total.
     #    P_renewable can vanish without notice (Δt_lead = 0 for inverter trips);
@@ -501,6 +506,53 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     for solar in state.solar_arrays:
         solar.advance(sim_time, dt_seconds)
     p_renewable_mw = sum(s.output_mw() for s in state.solar_arrays)
+
+    # §INV-CURT: Inverter frequency-response curtailment (islanded mode only).
+    #
+    # IEEE 1547-2018 §6.5.2: a grid-forming inverter reduces renewable output
+    # proportionally as frequency rises above of_warning_hz, saturating at full
+    # curtailment when f reaches of_trip_hz.
+    #
+    # Curtailment fraction = clamp((f − of_warning) / (of_trip − of_warning), 0, 1).
+    # Proportional (not a step-to-load clamp) — an abrupt step is itself a
+    # disturbance; the linear ramp is the physically correct model.
+    #
+    # Gain K = 1 / (of_trip_hz − of_warning_hz) [Hz⁻¹] — derived entirely from
+    # the existing catalogue threshold fields; no additional free parameter.
+    # Provenance of the thresholds: CHOSEN (IEEE 1547-2018 Cat I, SDG&E defaults).
+    #
+    # Active when:
+    #   • island_mode == ISLANDED
+    #   • both of_warning_hz and of_trip_hz are non-None (threshold pair enabled)
+    #   • of_trip_hz > of_warning_hz (well-ordered; guards against zero-divide)
+    #   • state._frequency_hz > of_warning_hz (above the curtailment deadband)
+    #
+    # Uses state._frequency_hz (previous-tick frequency) — causal: the inverter
+    # responds to the last measured frequency, not to a next-tick projection.
+    _p_renewable_curtailed_mw = 0.0
+    _of_warn_curt = state.site.of_warning_hz
+    _of_trip_curt = state.site.of_trip_hz
+    if (
+        _islanded
+        and _of_warn_curt is not None
+        and _of_trip_curt is not None
+        and _of_trip_curt > _of_warn_curt
+        and state._frequency_hz > _of_warn_curt
+    ):
+        _curt_fraction = min(
+            1.0,
+            (state._frequency_hz - _of_warn_curt) / (_of_trip_curt - _of_warn_curt),
+        )
+        _p_renewable_curtailed_mw = _curt_fraction * p_renewable_mw
+        p_renewable_mw = p_renewable_mw - _p_renewable_curtailed_mw
+        _log.info(
+            "§INV-CURT tick %d: f=%.3f Hz → curtail %.3f MW (%.1f %%) of solar "
+            "(of_warn=%.1f Hz, of_trip=%.1f Hz).",
+            state.tick_index, state._frequency_hz,
+            _p_renewable_curtailed_mw, _curt_fraction * 100.0,
+            _of_warn_curt, _of_trip_curt,
+        )
+
     # P_dispatch_required(t) = P_total(t) − P_renewable(t), clipped at zero.
     # net_demand_mw is a synonym kept for TickResult reporting compatibility.
     #
@@ -568,15 +620,27 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             )
 
     # ── Phase 13.3: governor droop pre-correction ─────────────────────────────
-    # S_base = total synchronous generator rating (MVA), used for both droop and
-    # the swing equation.  Computed here so it is available to both blocks.
-    # S_base in MVA = Σ rated_MW / power_factor.  pf < 1 raises the MVA base,
-    # reducing df/dt (more inertia per MW).  Without pf the base equals rated_MW,
-    # which overestimates df/dt by (1 − pf)/pf ≈ 18% for a typical 0.85 pf machine.
-    _s_base_mw = max(1.0, sum(t.config.rated_mw for t in state.turbines)) / state.site.power_factor
+    # §INV-INERTIA: S_base must reflect on-bus synchronous capacity only.
+    # OFFLINE and STARTING machines contribute zero rotational inertia to the
+    # island; crediting their rated MW overstates H_eff and suppresses df/dt.
+    # Root cause of the S9 tick-1 S_base mismatch: 5 × 15 MW credited despite
+    # zero units on-bus (all GTs were OFFLINE at t=0, cold_start=900 s).
+    #
+    # S_base in MVA = Σ on-bus rated_MW / power_factor.
+    #   pf < 1 raises the MVA base, reducing df/dt (more inertia per MW).
+    #   Without pf the base equals rated_MW, which overestimates df/dt by
+    #   (1 − pf)/pf ≈ 18% for a typical 0.85 pf machine.
+    #
+    # The old max(1.0, ...) guard is replaced by an explicit zero-machine branch
+    # in the swing equation below — see the §INV-INERTIA comment there.
+    _s_base_mw = (
+        sum(t.config.rated_mw for t in state.turbines if t.is_on_bus)
+        / state.site.power_factor
+    )
 
-    # _islanded: topology flag, used in droop, decomposition, and swing equation.
-    _islanded = (state.site.island_mode == IslandMode.ISLANDED)
+    # _islanded is hoisted to the top of section 3 (before §INV-CURT).
+    # Referenced here by the droop and balance-decomposition code without
+    # re-assignment; the single assignment earlier is authoritative.
 
     # Governor droop adjusts the turbine dispatch setpoint proportionally to the
     # current frequency error, providing primary frequency response.  Active in
@@ -621,7 +685,14 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # _s_base_mw × power_factor (both terms already computed; no new
     # catalogue constant introduced).  The physical interpretation is that
     # the governor cannot command more than 100 % of installed capacity.
-    _sync_ceiling_mw = _s_base_mw * state.site.power_factor
+    # §INV-INERTIA (dispatch ceiling): Decouple from _s_base_mw.
+    # _sync_ceiling_mw is the governor dispatch ceiling = "max MW the synchronous
+    # fleet could generate."  Using _s_base_mw × pf (= Σ on-bus MW) collapses the
+    # ceiling to 0 when all turbines are OFFLINE, which cascades into
+    # _p_dispatch_droop_mw = 0 and starves the arbitrator of a BESS setpoint.
+    # The ceiling must therefore span the FULL installed fleet, not just on-bus units.
+    # (The inertia computation uses on-bus only; this is the dispatch ceiling only.)
+    _sync_ceiling_mw = sum(t.config.rated_mw for t in state.turbines)
     _p_dispatch_droop_mw = max(
         0.0,
         min(
@@ -1313,12 +1384,49 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     _fp_collapse_frequency_hz: Optional[float] = None
 
     if _islanded:
-        _df_dt = (
-            _frequency_forcing_mw
-            / (2.0 * state.site.inertia_constant_s * _s_base_mw)
-            * state.site.frequency_nominal_hz
-        )
-        _new_freq = state._frequency_hz + _df_dt * dt_seconds
+        if _s_base_mw > 0.0:
+            # Standard swing equation: df/dt = frequency_forcing / (2·H·S_base) · f₀
+            _df_dt = (
+                _frequency_forcing_mw
+                / (2.0 * state.site.inertia_constant_s * _s_base_mw)
+                * state.site.frequency_nominal_hz
+            )
+            _new_freq = state._frequency_hz + _df_dt * dt_seconds
+        else:
+            # §INV-INERTIA: zero synchronous machines on bus.
+            # Behaviour depends on whether a grid-forming BESS is present:
+            #
+            # A) Grid-forming BESS present:
+            #    The inverter acts as a stiff voltage source, holding frequency at
+            #    its current value.  The swing equation (rotor dynamics) does NOT
+            #    apply — there is no rotating mass.
+            #    Design decision (CHOSEN, stated before implementation):
+            #      _df_dt = 0;  _new_freq = state._frequency_hz.
+            #    Conservative: virtual inertia is NOT modelled (future item;
+            #    blocked pending measured inverter response data).
+            #    The §INV-CURT block handles renewable surplus so the island does
+            #    not silently accumulate OF risk during the zero-machine phase.
+            #
+            # B) No grid-forming BESS (uncontrolled island, or test-fixture):
+            #    Without a frequency reference, fall back to a virtual S_base of
+            #    1.0/pf MVA — the minimum inertia sentinel used by the original
+            #    formula (max(1.0, ...) / pf).  This preserves backward-compatible
+            #    behaviour for fixtures that test channel separation without a
+            #    grid-forming device, where freezing frequency would be incorrect.
+            _has_gf_bess = any(b.config.grid_forming for b in state.bess_units)
+            if _has_gf_bess:
+                _df_dt = 0.0
+                _new_freq = state._frequency_hz
+            else:
+                # No grid-forming BESS: virtual inertia sentinel (1.0 / pf MVA).
+                # Mirrors the old max(1.0, Σ rated_MW) / pf guard when fleet is empty.
+                _virtual_s_base_mw = 1.0 / state.site.power_factor
+                _df_dt = (
+                    _frequency_forcing_mw
+                    / (2.0 * state.site.inertia_constant_s * _virtual_s_base_mw)
+                    * state.site.frequency_nominal_hz
+                )
+                _new_freq = state._frequency_hz + _df_dt * dt_seconds
 
         # §FP: Apply protection thresholds — all Optional[float]; None = disabled.
         # Protection only fires when the operator has explicitly set the threshold
@@ -1416,6 +1524,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         checkpoint_states=checkpoint_states,
         wall_stamp_utc=clock.wall_stamp_utc,
         p_renewable_mw=p_renewable_mw,
+        p_renewable_curtailed_mw=_p_renewable_curtailed_mw,
         # §7.4 SLD tile sub-fields.  p_expected_mw and banks_reporting are None
         # on the run path: the run engine has no independent expectation model,
         # and routing p_renewable_mw here creates a tautology that makes the
