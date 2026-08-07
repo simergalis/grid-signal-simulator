@@ -1,0 +1,118 @@
+TASK GS-DEF-CMT-001 — PHASE A (DIAGNOSTIC ONLY)
+Commit-decision discriminator for the islanded 8-60-10 MW ramp run.
+
+CONTEXT
+A run of the islanded 8-60-10 MW ramp scenario produced zero turbine output
+across the entire 15-minute demand ramp (t=0-900s), with first turbine
+commitment observed at t=1205s. The BESS carried the full deficit at its rated
+ceiling and drained to 0% SoC.
+
+A dashboard modal captured during that run showed two signals simultaneously:
+  - "Blocked: start pending for 'turbine-0' - further commitment held"
+  - "Last decision: HOLD - commit condition net (U=0.000, floor_violated=True)"
+
+These support two DIFFERENT and mutually exclusive root causes:
+  H-A  A commit WAS requested and was blocked by a serialized-start interlock
+       (one start pending at a time).
+  H-B  NO commit was requested at all, because the urgency term U evaluated to
+       zero. The "blocked" string is a downstream display of an
+       already-negative decision.
+
+The observed timeline favors H-B: a commit requested at t=605s plus a 600s
+sync lands at t=1205s exactly. H-A predicts first-on-bus at t=600s, which was
+not observed. This is an inference, not a measurement. Your job is to measure
+it.
+
+DO NOT attempt to determine which hypothesis is correct by reading the code and
+reasoning about it. Determine it by instrumenting the running system and
+reporting observed values.
+
+SCOPE - WHAT YOU MAY DO
+1. Add logging ONLY. No behavioral change of any kind.
+2. Re-run the islanded 8-60-10 MW ramp scenario, unmodified.
+3. Report findings and STOP.
+
+SCOPE - WHAT YOU MAY NOT DO
+- Do not modify any scenario parameter. Specifically: do not set hot_standby,
+  do not change t_warmup_s, sync time, fleet size, solar_rated_mw, BESS rating,
+  or any commitment threshold.
+- Do not modify gridsignal_parameters.json.
+- Do not "fix" anything, including things you are confident are broken. If you
+  find a defect, report it and leave it in place.
+- Do not tune anything to make an assertion pass.
+- Do not describe the behavior of any function or flag based on its name.
+  Every behavioral statement in your report must cite a logged value from the
+  run you performed.
+- Do not touch gridsignal_logger.py.
+
+STEP 0 - MODEL ATTRIBUTION (report before proceeding)
+State explicitly which physics implementation this scenario executes:
+core/simulation_core.py (live dashboard / WebSocket path) or gridsignal_logger.py
+(subprocess spawned by /api/export/telemetry-log). If the original run's modal
+and its telemetry timeline came from different paths, say so - it changes what
+the evidence can support. Do not proceed until you have stated this.
+
+STEP 1 - INSTRUMENT THE COMMIT DECISION POINT
+At the point where the unit-commitment decision is evaluated, emit one log
+record per tick containing:
+
+  a. tick timestamp (sim seconds)
+  b. whether a commit request was RAISED this tick (boolean) - this is the
+     discriminating field
+  c. U, and EACH input term to U separately, with its own label and value
+  d. floor_violated, and the reserve-floor arithmetic that produced it:
+     the required floor, the currently-counted firm capacity, and the deficit
+  e. start-pending gate state: which unit (if any) holds it, and since when
+  f. per-turbine state-machine state for all five units, by unit id
+  g. P_total, P_renewable, P_dispatch_required
+  h. BESS SoC and instantaneous discharge MW
+  i. turbine_output_mw as read at the decision point
+
+Log every tick from t=0 through t=1400s at minimum.
+
+STEP 2 - RE-RUN AND REPORT
+Re-run the scenario unmodified. Produce:
+
+  1. A table of ticks t=0 to t=1400 at 30s resolution with the fields above.
+  2. A direct answer, stated as a measured fact: was a commit request raised at
+     any tick before t=605s? Yes or no, with the first tick at which one was
+     raised.
+  3. The verdict: H-A, H-B, neither, or both-partially. If neither fits, say so
+     rather than forcing one.
+  4. If H-B: the specific input term that held U at zero, with its value and the
+     threshold it failed to cross.
+  5. If H-A: the exact interlock condition, quoted from the logged gate state
+     (not from the source).
+
+STEP 3 - SECONDARY OBSERVATIONS (data capture only, no investigation)
+From the same run, report these values. Do not analyze, do not fix, do not
+open follow-on work.
+
+  - Did the insufficient-reserve alert (spec §7.2 step 4) fire? At what tick,
+    and what MW/seconds shortfall did it report? If it did not fire, say so.
+  - Is the BESS configured as grid-forming anchor in this scenario? What is
+    P_anchor_reserve at each tick? (§7.1.2: bridging is bounded by
+    min(rated, usable SoC) − P_anchor_reserve. If the battery discharged to its
+    17 MW rated ceiling, report the anchor reserve value that permitted it.)
+  - Solar: report the exact code path that produced the ~5 MW figure and
+    whether it is evaluated once at scenario init or per tick. Report whether
+    solar_rated_mw from the scenario is read at all, and by what. Values only -
+    do not change it.
+  - During the hold period (t=3900-4300s): report total generation, total load,
+    BESS charge/discharge MW, and any dump-load or export term. Generation and
+    load must balance; report the residual. If the displayed turbine figure is
+    committed capacity rather than delivered output, say which quantity the
+    logged value represents and where the two diverge.
+  - BESS SoC at end of run. If it did not recover during the surplus period,
+    report the recharge path state.
+
+STEP 4 - STOP
+Do not proceed to any remediation. Report and wait for review.
+
+ACCEPTANCE
+- Model attribution stated before any other work.
+- Test baseline unchanged: 12 failed / 965 passed / 974 collected / 0 errors,
+  from CWD gridsignal_sim/. Run it and report the delta. A non-zero delta from
+  logging-only changes is itself a finding - report it, do not correct it.
+- Every behavioral claim traceable to a logged value from this run.
+- No parameter, threshold, or scenario file modified. Confirm explicitly.

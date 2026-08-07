@@ -905,6 +905,36 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                 _commit_decision.target_unit_id, _n_unloading, _settle_ok, sim_time,
             )
 
+    # ── GS-DEF-CMT-001 Phase A diagnostic — logging only, no behavior change ─
+    # Writes every tick from t=0 to t=1400 s to /tmp/cmt001_diag.log.
+    # Remove after Phase A review.
+    if sim_time <= 1400.0:
+        _cmt_on_bus_rated = [u.rated_mw for u in _avail_on_bus if not u.hot_standby]
+        _cmt_total_rated  = sum(_cmt_on_bus_rated)
+        _cmt_largest      = max(_cmt_on_bus_rated, default=0.0)
+        _cmt_U            = (_p_dispatch_droop_mw / _cmt_total_rated
+                             if _cmt_total_rated > 0.0 else 0.0)
+        _cmt_floor_deficit = _commit_decision.floor_mw - _cmt_total_rated
+        _cmt_bess_soc_pct  = (state.bess_units[0].soc_fraction * 100.0
+                               if state.bess_units else float("nan"))
+        _cmt_bess_anchor   = (state.bess_units[0].config.p_anchor_reserve_mw
+                               if state.bess_units else 0.0)
+        _cmt_t_states = {t.config.asset_id: t.state.name for t in state.turbines}
+        _cmt_line = (
+            f"CMT001 "
+            f"t={sim_time:.1f} commit_raised={_commit_decision.action == 'commit'} action={_commit_decision.action!r} "
+            f"U={_cmt_U:.4f} p_demand_mw={_p_dispatch_droop_mw:.3f} total_rated_mw={_cmt_total_rated:.3f} largest_mw={_cmt_largest:.3f} "
+            f"floor_mw={_commit_decision.floor_mw:.3f} floor_violated={_commit_decision.floor_violated} floor_deficit={_cmt_floor_deficit:.3f} "
+            f"commit_sustained_s={state._commit_cond.sustained_s:.1f} commit_confirm_s={state._commit_cfg.commit_confirm_s} "
+            f"pending_id={state._pending_start.pending_unit_id!r} pending_since={state._pending_start.start_commanded_at_s:.1f} "
+            f"turbine_states={_cmt_t_states} "
+            f"p_total={p_total_mw:.3f} p_renewable={p_renewable_mw:.3f} p_dispatch_req={p_dispatch_required_mw:.3f} "
+            f"bess_soc_pct={_cmt_bess_soc_pct:.2f} bess_output_mw={bess_output_mw:.3f} bess_anchor_mw={_cmt_bess_anchor:.3f} "
+            f"turbine_output_mw={turbine_output_mw:.3f} blocked_by={_commit_decision.blocked_by!r}\n"
+        )
+        with open("/tmp/cmt001_diag.log", "a") as _cmt_f:
+            _cmt_f.write(_cmt_line)
+
     # Phase E+: commitment engine summary — serialised for the fleet modal.
     # Computed AFTER _commit_decision is finalised so that an R5-guard hold
     # override is reflected correctly in the action field.
