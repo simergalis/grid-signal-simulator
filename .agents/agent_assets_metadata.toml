@@ -91,3 +91,10 @@ uri = "file://reports/items_4_9_implementation_report.md"
 type = "text"
 title = "Items 4–9 Implementation Report"
 description = "Gas Turbine Fleet Modal — Phase E+ backend wiring, UI defect fixes (U-1 through U-8), commitment stat rows, per-unit bar, TC-98/TC-99 smoke tests."
+
+[[outputs]]
+id = "YRd0SAVZn6fm46UFWaGmh"
+uri = "file://reports/gridsignal_correction_conformance_items1_5.md"
+type = "text"
+title = "GridSignal Correction & Conformance — Items 1–5 Gate Report"
+description = "Summary of all five Phase E+ modal corrections: reserve_floor_mw fix, committed_rated_mw SYNCHRONISED-only, U-3 headroom clamp, levelled_off sustained predicate, and TC-98 backend assertion. Test delta: 15 failed / 975 passed / 16 xfailed."
