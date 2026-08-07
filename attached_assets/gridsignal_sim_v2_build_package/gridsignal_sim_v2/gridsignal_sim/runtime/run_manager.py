@@ -1328,7 +1328,11 @@ class RunManager:
                             # Phase E+: per-unit setpoint, levelled-off predicate,
                             # and thermal start-time config for U-1 through U-6.
                             "setpoint_mw":  round(getattr(t, '_last_setpoint_mw', 0.0), 4),
-                            "levelled_off": not math.isnan(t._levelled_off_since_s),
+                            # Phase E+ Item 4: sustained predicate — True only after
+                            # levelled_off_window_s dwell, matching the breaker-open gate.
+                            # The previous `not isnan(_levelled_off_since_s)` reported
+                            # True from tick 1 of dwell; the panel and gate disagreed.
+                            "levelled_off": t._levelled_off_sustained,
                             "hot_start_s":  t.config.hot_start_s,
                             "warm_start_s": t.config.warm_start_s,
                             "cold_start_s": t.config.cold_start_s,

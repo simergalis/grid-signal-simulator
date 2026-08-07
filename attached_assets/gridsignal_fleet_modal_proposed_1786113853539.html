@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gas Turbine Fleet — proposed modal</title>
+<style>
+:root{
+  --ink:#070a0f; --panel:#0d121a; --sunk:#090d13; --line:#1a2330; --line-hi:#26344a;
+  --amber:#e8a33d; --ember:#d9663d; --cyan:#4fb3bf; --violet:#7b6bb0; --green:#5c9a6b;
+  --text:#c2ccd8; --dim:#5d6b7c; --faint:#38455a;
+  --mono:'JetBrains Mono','IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:#04060a;color:var(--text);font-family:var(--mono);font-size:13px}
+body{padding:20px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.shell{max-width:1180px;margin:0 auto;background:var(--panel);border:1px solid var(--line-hi);
+  border-radius:3px;overflow:hidden}
+
+/* header */
+.hd{display:flex;align-items:baseline;gap:12px;padding:16px 20px 12px;flex-wrap:wrap}
+h1{margin:0;font-size:14px;letter-spacing:.2em;text-transform:uppercase;color:var(--amber);font-weight:600}
+.pill{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ember);
+  display:inline-flex;align-items:center;gap:6px}
+.pill i{width:6px;height:6px;border-radius:50%;background:var(--ember);display:inline-block}
+.sub{color:var(--dim);font-size:11.5px;padding:0 20px 14px}
+.grow{flex:1}
+.tgl{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;
+  background:transparent;color:var(--dim);border:1px solid var(--line-hi);padding:5px 11px;
+  cursor:pointer;border-radius:2px}
+.tgl.on{background:var(--cyan);border-color:var(--cyan);color:var(--ink)}
+
+/* verdict */
+.verdict{margin:0 20px 18px;border:1px solid #3a2a1a;background:#120d07;padding:14px 18px;
+  display:flex;align-items:center;gap:20px}
+.vlab{font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin-bottom:5px}
+.vtxt{font-size:13.5px;line-height:1.5}
+.vhero{text-align:right;white-space:nowrap}
+.vhero b{font-size:31px;font-weight:300;color:var(--amber);font-variant-numeric:tabular-nums;display:block;line-height:1}
+.vhero span{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+
+.body{display:grid;grid-template-columns:1.55fr 1fr;gap:22px;padding:0 20px 18px}
+.cap{font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin-bottom:9px}
+
+/* fleet table */
+table{width:100%;border-collapse:collapse}
+th{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);
+  text-align:left;font-weight:400;padding:0 8px 7px 0;border-bottom:1px solid var(--line)}
+td{padding:9px 8px 9px 0;border-bottom:1px solid #101722;font-variant-numeric:tabular-nums;font-size:12px}
+tr:last-child td{border-bottom:0}
+.uid{color:var(--amber)}
+.uid.off{color:var(--faint)} .uid.start{color:var(--violet)} .uid.unl{color:var(--ember)}
+.st{font-size:10px;letter-spacing:.09em;text-transform:uppercase}
+.st.sync{color:var(--amber)} .st.start{color:var(--violet)}
+.st.unl{color:var(--ember)} .st.off{color:var(--faint)}
+.mw{font-size:13px}
+.dim{color:var(--dim)} .faint{color:var(--faint)}
+
+/* the signature element: per-unit bar */
+.bar{position:relative;height:16px;background:#060a0f;border:1px solid var(--line);min-width:132px}
+.fill{position:absolute;left:0;top:0;bottom:0;background:var(--amber);opacity:.85}
+.fill.unl{background:var(--ember)}
+.mslr{position:absolute;top:-1px;bottom:-1px;border-left:1px dashed #6b5320}
+.mk{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--cyan)}
+.wait{position:absolute;left:0;top:0;bottom:0;
+  background:repeating-linear-gradient(-45deg,#221e3a 0 5px,#171430 5px 10px)}
+.gap{position:absolute;top:6px;height:3px;background:rgba(79,179,191,.22)}
+
+.cmd{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;
+  background:transparent;border:1px solid var(--line-hi);color:var(--dim);padding:3px 9px;
+  cursor:pointer;border-radius:2px}
+.cmd.trip{border-color:#5a2a25;color:var(--ember)}
+.cmd.start{border-color:#3a5a3f;color:var(--green)}
+.cmd:disabled{opacity:.35;cursor:default}
+
+/* stat rows */
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:14px;
+  padding:11px 0;border-bottom:1px solid #101722}
+.row:last-child{border-bottom:0}
+.rl{font-size:11.5px;color:var(--text)}
+.rs{font-size:10px;color:var(--faint);margin-top:2px;line-height:1.4}
+.rv{font-size:16px;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
+.rv.ok{color:var(--green)} .rv.warn{color:var(--ember)} .rv.am{color:var(--amber)}
+.rv small{font-size:9.5px;color:var(--faint);display:block;letter-spacing:.1em;text-transform:uppercase}
+
+/* utilisation scale */
+.scale{position:relative;height:6px;background:#060a0f;border:1px solid var(--line);margin-top:8px}
+.scale .f{position:absolute;left:0;top:0;bottom:0;background:var(--amber);opacity:.8}
+.scale .t{position:absolute;top:-3px;bottom:-3px;width:1px;background:var(--dim)}
+.slab{display:flex;justify-content:space-between;font-size:9px;color:var(--faint);margin-top:4px}
+
+/* blocked */
+.blk{margin-top:10px;border-left:2px solid var(--violet);padding:8px 0 8px 11px;background:#0b0a14}
+.blk .k{font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--violet)}
+.blk .v{font-size:11px;color:var(--dim);margin-top:3px}
+
+.foot{border-top:1px solid var(--line);padding:13px 20px;display:flex;gap:9px;align-items:center;
+  font-size:10.5px;color:var(--faint);flex-wrap:wrap}
+.cb{width:20px;height:11px;border:1px solid var(--line-hi);display:inline-block}
+.cb.closed{background:var(--amber);opacity:.6}
+
+/* annotations */
+.an{display:none;font-size:10.5px;color:var(--cyan);border-left:2px solid var(--cyan);
+  padding:5px 0 5px 10px;margin:7px 0 2px;background:rgba(79,179,191,.05);line-height:1.5}
+.an b{color:var(--cyan);font-weight:600}
+body.anon .an{display:block}
+.legend{max-width:1180px;margin:16px auto 0;color:var(--faint);font-size:11px;line-height:1.7}
+.legend b{color:var(--dim)}
+@media(max-width:900px){.body{grid-template-columns:1fr}}
+</style>
+</head>
+<body class="anon">
+
+<div class="shell">
+  <div class="hd">
+    <h1>Gas Turbine Fleet</h1>
+    <span class="pill"><i></i>Attention</span>
+    <span class="grow"></span>
+    <button class="tgl on" id="t">Annotations on</button>
+  </div>
+  <div class="sub">5 × 15 MW frame-class · synchronous · islanded primary generation · MSL 6.00 MW/unit (40%)</div>
+
+  <div class="verdict">
+    <div style="flex:1">
+      <div class="vlab">Verdict</div>
+      <div class="vtxt">N−1 firm capacity <b style="color:var(--amber)">30.0 MW</b> does not cover the
+        <b style="color:var(--cyan)">38.5 MW</b> declared design peak — shortfall <b style="color:var(--ember)">8.5 MW</b>.
+        One unit is starting; coverage is expected to restore at synchronisation.</div>
+      <div class="an"><b>U-4 fixed.</b> Firm capacity is computed from <b>committed</b> units (45 MW − 15 MW largest = 30 MW).
+        The current code uses <b>installed</b> capacity, which would report 75 − 15 = 60 MW and render this same fleet as
+        comfortably COVERED. Two OFFLINE units were being counted as firm capacity.</div>
+    </div>
+    <div class="vhero"><b>32.20</b><span>MW on bus</span></div>
+  </div>
+
+  <div class="body">
+    <div>
+      <div class="cap">Fleet — 5 units · 3 on bus · 1 starting</div>
+      <table>
+        <thead><tr>
+          <th>Unit</th><th>State</th><th style="width:150px">Output · setpoint · MSL</th>
+          <th style="text-align:right">MW</th><th>Sync</th><th></th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td class="uid">turbine-0</td><td><span class="st sync">synchronised</span></td>
+            <td><div class="bar"><div class="fill" style="width:100%"></div>
+              <div class="mslr" style="left:40%"></div><div class="mk" style="left:calc(100% - 2px)"></div></div>
+              <div class="faint" style="font-size:9.5px;margin-top:3px">at rated · levelled off</div></td>
+            <td style="text-align:right" class="mw">15.00</td><td class="dim st">closed</td>
+            <td><button class="cmd trip">Trip</button></td>
+          </tr>
+          <tr>
+            <td class="uid">turbine-1</td><td><span class="st sync">synchronised</span></td>
+            <td><div class="bar"><div class="fill" style="width:74.7%"></div>
+              <div class="gap" style="left:74.7%;width:15.3%"></div>
+              <div class="mslr" style="left:40%"></div><div class="mk" style="left:90%"></div></div>
+              <div class="faint" style="font-size:9.5px;margin-top:3px">tracking → 13.50 · +2.30 MW to go</div></td>
+            <td style="text-align:right" class="mw">11.20</td><td class="dim st">closed</td>
+            <td><button class="cmd trip">Trip</button></td>
+          </tr>
+          <tr>
+            <td class="uid">turbine-2</td><td><span class="st sync">synchronised</span></td>
+            <td><div class="bar"><div class="fill" style="width:40%"></div>
+              <div class="mslr" style="left:40%"></div><div class="mk" style="left:40%"></div></div>
+              <div class="faint" style="font-size:9.5px;margin-top:3px">at minimum stable load</div></td>
+            <td style="text-align:right" class="mw">6.00</td><td class="dim st">closed</td>
+            <td><button class="cmd trip">Trip</button></td>
+          </tr>
+          <tr>
+            <td class="uid start">turbine-3</td><td><span class="st start">starting</span></td>
+            <td><div class="bar"><div class="wait" style="width:61.7%"></div></div>
+              <div style="font-size:9.5px;margin-top:3px;color:var(--violet)">hot · sync in 3:05 · purge complete</div></td>
+            <td style="text-align:right" class="faint mw">0.00</td>
+            <td><span class="st start">starting</span></td>
+            <td><button class="cmd" disabled>Start</button></td>
+          </tr>
+          <tr>
+            <td class="uid off">turbine-4</td><td><span class="st off">available</span></td>
+            <td><div class="bar"><div class="mslr" style="left:40%"></div></div>
+              <div class="faint" style="font-size:9.5px;margin-top:3px">cold · 15:00 to sync</div></td>
+            <td style="text-align:right" class="faint mw">0.00</td><td class="faint st">open</td>
+            <td><button class="cmd start">Start</button></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="an"><b>The per-unit bar is the new element.</b> Amber fill is output against rated.
+        The dashed rule at 40% is minimum stable load — now non-zero on every scenario after Phase E, so this column
+        finally has real data. The cyan marker is the commanded setpoint.
+        <b>The shaded gap between fill and marker is the ramp.</b> turbine-1 is 2.30 MW below its setpoint and closing
+        at r_asset; that gap shrinking to nothing is what "levels off at a stable state" looks like, and it is
+        invisible on the current screen.</div>
+
+      <div class="an"><b>turbine-3 shows the wait, not a blank row.</b> The hatched fill drains over the configured
+        start time, taken per-unit from <code>hot_start_s</code> — no literal (<b>U-5</b>). Under sequential
+        commitment this is the fifteen minutes during which nothing can be done, and it is the state an operator most
+        needs to see. The SYNC column shows <b>starting</b> rather than resolving to a breaker boolean.</div>
+    </div>
+
+    <div>
+      <div class="cap">Commitment</div>
+
+      <div class="row"><div><div class="rl">Committed capacity</div>
+        <div class="rs">3 units synchronised · turbine-3 starting contributes 0</div></div>
+        <div class="rv am">45.0<small>MW</small></div></div>
+
+      <div class="row"><div style="flex:1"><div class="rl">Reserve floor</div>
+        <div class="rs">34.50 MW demand + 15.0 MW largest committed unit</div></div>
+        <div class="rv warn">49.5<small>MW · short 4.5</small></div></div>
+
+      <div class="an"><b>Committed ≠ available.</b> turbine-3 is committed and contributes nothing to the floor —
+        a unit five minutes from synchronisation is worth zero against a 45-second ramp gap (§7.1.3.7).</div>
+
+      <div class="row" style="display:block"><div class="rl">Fleet utilisation</div>
+        <div class="rs">34.50 MW setpoint ÷ 45.0 MW committed</div>
+        <div class="scale"><div class="f" style="width:76.7%"></div>
+          <div class="t" style="left:50%"></div><div class="t" style="left:80%"></div></div>
+        <div class="slab"><span>0%</span><span>decommit 50%</span><span>commit 80%</span><span>100%</span></div>
+        <div class="rs" style="margin-top:6px">76.7% — below the commit threshold</div></div>
+
+      <div class="an"><b>The floor governs, not the trigger.</b> Utilisation is 76.7%, under the 80% commit
+        threshold — a purely measurement-driven controller would do nothing here. The reserve floor is violated,
+        so turbine-3 was committed anyway. This row exists so an operator can see <i>why</i>.</div>
+
+      <div class="blk">
+        <div class="k">Blocked</div>
+        <div class="v">Further commitment held: <b style="color:var(--violet)">pending_start</b> — turbine-3 in
+          STARTING. Next command permitted 60 s after synchronisation.</div>
+        <div class="v" style="margin-top:5px">Last decision: <span class="faint">reserve floor violated —
+          45.0 MW committed &lt; 49.5 MW required</span></div>
+      </div>
+
+      <div class="an"><b><code>blocked_by</code> now carries real content.</b> The Phase E closeout threaded R5
+        minimum-run-time refusals through it. An operator seeing no action can finally be told whether the fleet is
+        satisfied or constrained — previously the two looked identical.</div>
+
+      <div class="row" style="margin-top:6px"><div><div class="rl">Fleet ramp capability</div>
+        <div class="rs">over 45 s lead window · on-bus units only</div></div>
+        <div class="rv">12.8<small>MW</small></div></div>
+
+      <div class="row"><div><div class="rl">Marginal unit — turbine-2</div>
+        <div class="rs">9.00 MW headroom · 13.50 MW at rate — clamped to headroom</div></div>
+        <div class="rv">9.0<small>MW</small></div></div>
+
+      <div class="an"><b>U-1, U-2 and U-3 fixed together.</b> Both figures come from one function, so they cannot
+        disagree. The aggregate counts only on-bus units at their own rates — not <code>maxRamp × units.length</code>
+        over the whole fleet beneath a label claiming otherwise. And the single-unit row is <b>clamped to headroom</b>:
+        unclamped it would claim 13.5 MW from a unit with 9.0 MW of room, the same error that produced
+        "33 MW in 110 s" from a 15 MW machine.</div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span style="letter-spacing:.14em;text-transform:uppercase;font-size:9.5px">Paralleling — AC bus</span>
+    <span class="cb closed"></span><span class="cb closed"></span><span class="cb closed"></span>
+    <span class="cb"></span><span class="cb"></span>
+    <span>3 closed · turbine-3 synchro-check pending · synchro-check relay at rest</span>
+  </div>
+</div>
+
+<div class="legend">
+  <b>Mockup, not source.</b> <code>turbineFleet.ts</code> has changed across nine phases; this shows the proposed
+  design so it can be reviewed before implementation. Every figure is internally consistent and derived from the
+  reference implementation's rules — 5 × 15 MW, MSL 40%, r_asset 0.3 MW/s, 45 s lead window.<br>
+  <b>Preserved from the current modal:</b> verdict band, fleet table, operator Trip/Start, paralleling strip,
+  dark/monospace/amber language. <b>Changed:</b> per-unit bars replace a bare MW column; commitment rows replace the
+  aggregate-ramp rows that U-1 and U-2 invalidate.
+</div>
+
+<script>
+const b=document.getElementById('t');
+b.onclick=()=>{const on=document.body.classList.toggle('anon');
+  b.classList.toggle('on',on); b.textContent=on?'Annotations on':'Annotations off';};
+</script>
+</body>
+</html>

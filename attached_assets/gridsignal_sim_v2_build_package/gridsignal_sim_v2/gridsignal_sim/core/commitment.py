@@ -207,6 +207,11 @@ class CommitmentDecision:
     target_unit_id: Optional[str]  # None when action == "hold"
     reason: str                    # diagnostic string
     blocked_by: str = ""           # empty unless action == "hold" with a guard active
+    # Item 1: reserve floor — P_demand + largest committed unit (§7.1.3.3).
+    # Carried on every decision so the modal can read one source rather than recomputing
+    # a different quantity (decommit_utilisation × total_rated) in the summary block.
+    floor_mw: float = 0.0          # p_demand + largest on-bus unit (N-1 requirement)
+    floor_violated: bool = False   # total_rated < floor_mw this interval
 
 
 # ── evaluate_commitment ───────────────────────────────────────────────────────
@@ -278,6 +283,7 @@ def evaluate_commitment(
                 target_unit_id=None,
                 reason=f"commit condition met (U={utilisation:.3f}, floor_violated={floor_violated})",
                 blocked_by=f"start pending for {pending.pending_unit_id!r}",
+                floor_mw=floor_mw, floor_violated=floor_violated,
             )
         # Guard B: inter-start settle interval.
         if not pending.settled_at(sim_time, cfg.inter_start_settle_s):
@@ -289,6 +295,7 @@ def evaluate_commitment(
                 blocked_by=(
                     f"inter-start settle: {elapsed:.0f}/{cfg.inter_start_settle_s:.0f} s elapsed"
                 ),
+                floor_mw=floor_mw, floor_violated=floor_violated,
             )
         return CommitmentDecision(
             action="commit",
@@ -298,6 +305,7 @@ def evaluate_commitment(
                 f" ≥ {cfg.commit_utilisation}" if not floor_violated else
                 f"reserve floor violated: {total_rated_mw:.1f} MW < {floor_mw:.1f} MW"
             ),
+            floor_mw=floor_mw, floor_violated=floor_violated,
         )
 
     # ── Step 4: Decommit path ──────────────────────────────────────────────
@@ -336,6 +344,7 @@ def evaluate_commitment(
                 f"U={utilisation:.3f} ≤ {cfg.decommit_utilisation}, "
                 f"U_without={u_without:.3f} ≤ {cfg.decommit_post_removal_max}"
             ),
+            floor_mw=floor_mw, floor_violated=floor_violated,
         )
 
     # ── Step 5: Hold ───────────────────────────────────────────────────────
@@ -348,4 +357,5 @@ def evaluate_commitment(
             f"commit_sustained={commit_cond.sustained_s:.0f}/{cfg.commit_confirm_s:.0f} s, "
             f"decommit_sustained={decommit_cond.sustained_s:.0f}/{cfg.decommit_confirm_s:.0f} s"
         ),
+        floor_mw=floor_mw, floor_violated=floor_violated,
     )

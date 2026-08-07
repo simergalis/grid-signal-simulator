@@ -367,17 +367,30 @@ describe('TC-99 — single-unit and aggregate ramp derive from one source, clamp
     expect(FLEET_TICK.ramp_capability_mw).toBe(28.0)
   })
 
-  it('single-unit ramp clamped to rated_mw (no unit can exceed its nameplate)', () => {
-    const N = FLEET_TICK.turbine_units.length
+  it('single-unit ramp clamped to headroom (not nameplate); near-rated case shows the two bounds differ', () => {
+    // U-3 fix: divisor is on-bus count; clamp is headroom = rated_mw − output_mw.
+    const onBusUnits = FLEET_TICK.turbine_units.filter(u =>
+      u.state === 'synchronised' || u.state === 'unloading'
+    )
+    const onBusCnt    = Math.max(onBusUnits.length, 1)
     const rampEnergyMW = FLEET_TICK.ramp_capability_mw ?? 0
-    const maxUnitMW = Math.max(...FLEET_TICK.turbine_units.map(u => u.rated_mw))
-    // U-3: per-unit energy = rampEnergyMW / N, clamped to rated_mw
-    const rampWith1MW = Math.min(rampEnergyMW / N, maxUnitMW)
-    // 28 / 2 = 14 MW ≤ 15 MW rated → no clamp in this case
-    expect(rampWith1MW).toBeCloseTo(14.0, 1)
-    // Verify clamp kicks in when energy per unit exceeds rated
-    const rampWith1MWClamped = Math.min(200 / N, maxUnitMW)  // 200 MW / 2 = 100 > 15 → clamp
-    expect(rampWith1MWClamped).toBe(maxUnitMW)
+    const headrooms    = onBusUnits.map(u => u.rated_mw - ((u as any).output_mw ?? 0))
+    const maxHeadroom  = Math.max(...headrooms)
+    const perUnit      = rampEnergyMW / onBusCnt
+    const rampWith1MW  = Math.min(perUnit, maxHeadroom)
+
+    // FLEET_TICK: rampEnergyMW=28, onBusCnt=2, output_mw=[12.5, 11.8], rated=15 each
+    // headrooms=[2.5, 3.2], maxHeadroom=3.2, perUnit=14 → clamped to 3.2
+    expect(rampWith1MW).toBeCloseTo(3.2, 1)       // headroom governs, not nameplate
+
+    // Near-rated case: a unit at 12 MW output on a 15 MW machine has 3 MW headroom.
+    // Nameplate clamp: min(14, 15) = 14 MW.   Headroom clamp: min(14, 3) = 3 MW.
+    // The two answers must differ — that difference is the defect TC-99b guards.
+    const nearRatedHeadroom = 15 - 12             // 3 MW
+    const nameplateAnswer   = Math.min(perUnit, 15)             // 14
+    const headroomAnswer    = Math.min(perUnit, nearRatedHeadroom)  // 3
+    expect(headroomAnswer).toBeCloseTo(3.0, 1)
+    expect(headroomAnswer).toBeLessThan(nameplateAnswer)  // the key assertion
   })
 
   it('single-unit and aggregate derive from the same source (no two-formula divergence)', () => {

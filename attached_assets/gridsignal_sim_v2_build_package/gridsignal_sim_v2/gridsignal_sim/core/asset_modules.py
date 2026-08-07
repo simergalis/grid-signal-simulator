@@ -798,6 +798,11 @@ class TurbineModule(AssetModule):
     # once (sim_time − _levelled_off_since_s) ≥ config.unload_tail_s.
     # Reset to math.nan whenever the predicate is False or the breaker opens.
     _levelled_off_since_s: float = math.nan
+    # Phase E+ Item 4: sustained levelled-off predicate broadcast on the wire.
+    # True only once the dwell has exceeded levelled_off_window_s — the same
+    # threshold the commitment engine uses, not just "started holding".
+    # The panel and the breaker-open gate therefore agree.
+    _levelled_off_sustained: bool = False
     # Phase E+: last setpoint commanded by the loading layer (before rate-clip).
     # Stored in set_output() so the commitment modal can render a per-unit
     # setpoint marker without a separate field on TickResult.  0.0 until the

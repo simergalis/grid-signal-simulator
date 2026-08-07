@@ -391,3 +391,75 @@ class TestTC97AtMostOneUnloading:
             "Sequential-stop must ALLOW the next stop once settling has elapsed, "
             "not block it permanently."
         )
+
+
+# ---------------------------------------------------------------------------
+# TC-98 — Backend: per-unit output_mw summed over is_on_bus == turbine_output_mw
+# ---------------------------------------------------------------------------
+
+class TestTC98OnBusOutputAgreement:
+    """Verify that per-unit output values agree with the aggregate TickResult.
+
+    Run with one SYNCHRONISED unit (delivering output near rated) and one UNLOADING
+    unit (held at MSL by the loading layer).  Both are is_on_bus = True.
+
+    After evaluate_tick(), the sum of t.output_mw() across is_on_bus turbines must
+    equal tick.turbine_output_mw to floating-point precision.  This closes the gap
+    that TC-98 in the frontend smoke suite cannot close: the frontend only checks that
+    deriveFleet() can add up numbers from a fixture — it cannot prove the backend
+    computes on_bus_output_mw and per-unit values from the same source.
+    """
+
+    def test_tc98_per_unit_sum_equals_turbine_output_mw(self) -> None:
+        """sum(t.output_mw() for is_on_bus) == tick.turbine_output_mw."""
+        turb_sync = _make_turbine("gt-sync")
+        turb_sync.state               = TurbineState.SYNCHRONISED
+        turb_sync._current_output_mw  = 6.0  # below rated — loading will clamp, not clip
+
+        # Give the UNLOADING unit a non-zero dwell window so it stays UNLOADING
+        # through the tick (unload_tail_s=0.0 from _make_turbine causes instant
+        # breaker-open on tick 0, evicting the unit before the assertion runs).
+        turb_unload = TurbineModule(TurbineConfig(
+            asset_id="gt-unload",
+            rated_mw=7.0,
+            r_asset_mw_per_s=0.2,
+            p_min_stable_frac=0.40,
+            unload_tail_s=30.0,         # dwell window — breaker cannot open on tick 0
+            levelled_off_tol_mw=0.05,
+            hot_start_s=300.0,
+            cold_start_s=900.0,
+        ))
+        turb_unload.state              = TurbineState.UNLOADING
+        # Output at MSL so levelled-off predicate is immediately True,
+        # but the dwell hasn't elapsed so the breaker stays closed.
+        msl_mw = turb_unload.config.p_min_stable_frac * turb_unload.config.rated_mw  # 2.8
+        turb_unload._current_output_mw = msl_mw
+        turb_unload._levelled_off_since_s = math.nan  # dwell clock starts this tick
+
+        state = _make_state([turb_sync, turb_unload])
+
+        with _plane_guard_active():
+            result = evaluate_tick(state, SimClock(
+                sim_time=0.0, dt_seconds=5.0,
+                wall_stamp_utc=0.0, rate=1.0, tick_seq=0,
+            ))
+
+        on_bus_units   = [t for t in state.turbines if t.is_on_bus]
+        per_unit_total = sum(t.output_mw() for t in on_bus_units)
+
+        assert on_bus_units, "Pre-condition: at least one is_on_bus turbine required."
+        assert pytest.approx(per_unit_total, abs=1e-9) == result.turbine_output_mw, (
+            f"TC-98 FAIL: sum of per-unit output_mw across is_on_bus "
+            f"({per_unit_total:.6f} MW) != tick.turbine_output_mw "
+            f"({result.turbine_output_mw:.6f} MW).  "
+            "The wire payload's per-unit values and its aggregate must agree."
+        )
+        # Supplementary: UNLOADING unit must be included (is_on_bus = True).
+        assert turb_unload in on_bus_units, (
+            "TC-98 FAIL: UNLOADING unit not in is_on_bus set.  "
+            "on_bus_output_mw would exclude its MSL contribution."
+        )
+        # Supplementary: UNLOADING unit's output is non-zero (it produces at MSL).
+        assert turb_unload.output_mw() > 0.0, (
+            "TC-98 FAIL: UNLOADING unit output_mw is zero but should be at MSL."
+        )

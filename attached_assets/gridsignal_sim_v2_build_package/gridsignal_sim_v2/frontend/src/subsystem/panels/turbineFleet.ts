@@ -756,11 +756,16 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: number,
   const marginStr    = n1MarginPct >= 0 ? `+${n1MarginPct}%` : `${n1MarginPct}%`
   const marginColour = n1MarginPct >= 0 ? TEAL : RED
 
-  // U-3 fix: per-unit ramp energy from backend, clamped to rated_mw.
-  // Divide by horizonS for rate display; clamp avoids absurd values.
-  const rampWith1MW   = units.length > 0
-    ? Math.min(rampEnergyMW / units.length, maxUnitMW)
+  // U-3 fix: divisor counts on-bus units only (OFFLINE/STARTING contribute 0 to ramp).
+  // Clamp to headroom (rated_mw − output_mw), not nameplate — a unit at 12 MW on a
+  // 15 MW machine can contribute at most 3 MW more, whatever the horizon.
+  const _onBusForRamp = units.filter(isOnBus)
+  const _onBusCntRamp = Math.max(_onBusForRamp.length, 1)
+  const _maxHeadroom  = _onBusForRamp.length > 0
+    ? Math.max(..._onBusForRamp.map(u => u.rated_mw - (u.output_mw ?? 0)))
     : 0
+  const _perUnitRamp  = rampEnergyMW / _onBusCntRamp
+  const rampWith1MW   = Math.min(_perUnitRamp, _maxHeadroom)
   const rampWith1Rate = horizonS > 0 ? rampWith1MW / horizonS : 0
 
   // U-5: cold-start time from per-unit spec; fallback to CHOSEN catalogue default.
@@ -856,10 +861,10 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: number,
         sub: horizonS > 0
           ? `${rampRateMWs.toFixed(3)} MW/s over ${horizonS.toFixed(0)} s horizon (SYNCHRONISED only — starts excluded)`
           : `${rampRateMWs.toFixed(3)} MW/s — no active ramp event` },
-      // U-3 fix: energy per unit from backend, clamped to rated_mw.
+      // U-3 fix: energy per on-bus unit, clamped to headroom (not nameplate).
       { label: 'Ramp with 1 unit',   value: `${rampWith1MW.toFixed(1)} MW`,
         sub: horizonS > 0
-          ? `${rampWith1Rate.toFixed(3)} MW/s · clamped to ${maxUnitMW.toFixed(0)} MW rated — BESS covers the remainder`
+          ? `${rampWith1Rate.toFixed(3)} MW/s · clamped to ${_maxHeadroom.toFixed(1)} MW headroom — BESS covers the remainder`
           : 'no active ramp event' },
       // U-5 fix: cold-start time derived from per-unit spec, not hardcoded.
       { label: 'Cold-start sync',    value: `${coldS} s (${Math.round(coldS/60)} min)`,  sub: 'STARTING units contribute 0 to ramp reserve · see thermal guide' },

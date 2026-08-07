@@ -692,6 +692,15 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # Output falls continuously to MSL through the loading layer, then steps
     # discontinuously to 0 when the dwell (unload_tail_s) has been sustained.  Do not
     # smooth the discontinuous step — spec §E.5 explicit prohibition.
+    #
+    # Phase E+ Item 4: sustained predicate — levelled_off_window_s is the threshold
+    # after which the panel and the commitment engine agree the unit is settled.
+    # Shorter than unload_tail_s (the physical breaker gate).
+    _commit_cfg_lo  = getattr(state, '_commit_cfg', None)
+    _loff_window_s  = (
+        getattr(_commit_cfg_lo, 'levelled_off_window_s', 0.0)
+        if _commit_cfg_lo is not None else 0.0
+    )
     for _ut in _unloading_units:
         _ut_msl_mw = _ut.config.p_min_stable_frac * _ut.config.rated_mw
         _levelled  = abs(_ut.output_mw() - _ut_msl_mw) < _ut.config.levelled_off_tol_mw
@@ -699,8 +708,11 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             if math.isnan(_ut._levelled_off_since_s):
                 _ut._levelled_off_since_s = sim_time   # start dwell clock
             _dwell_elapsed = sim_time - _ut._levelled_off_since_s
+            # Sustained predicate: True once dwell ≥ levelled_off_window_s.
+            _ut._levelled_off_sustained = _dwell_elapsed >= _loff_window_s
             if _dwell_elapsed >= _ut.config.unload_tail_s:
                 # Breaker opens: output steps discontinuously from MSL to 0.
+                _ut._levelled_off_sustained = False  # reset before state change
                 _ut.state                  = TurbineState.OFFLINE
                 _ut._current_output_mw     = 0.0
                 _ut._stop_time_s           = sim_time
@@ -713,7 +725,8 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                     _ut.config.asset_id, sim_time, _ut_msl_mw, _dwell_elapsed,
                 )
         else:
-            _ut._levelled_off_since_s = math.nan   # reset dwell clock while descending
+            _ut._levelled_off_since_s   = math.nan  # reset dwell clock while descending
+            _ut._levelled_off_sustained = False
 
     # Phase 11.3: dispatch.tick() now returns a 4-tuple.
     # _bess_setpoint_mw: commanded BESS output before SOC/power clipping.
@@ -791,6 +804,8 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                             target_unit_id=_commit_decision.target_unit_id,
                             reason=_commit_decision.reason,
                             blocked_by=_stop_block,
+                            floor_mw=_commit_decision.floor_mw,
+                            floor_violated=_commit_decision.floor_violated,
                         )
                         _log.debug(
                             "R5 guard: decommit of %r deferred at sim_time=%.1f: %s",
@@ -805,22 +820,25 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
 
     # Phase E+: commitment engine summary — serialised for the fleet modal.
     # Computed AFTER _commit_decision is finalised so that an R5-guard hold
-    # override (line 789) is reflected correctly in the action field.
-    _committed_rated_mw_cs = sum(u.rated_mw for u in _avail_on_bus)
+    # override is reflected correctly in the action field.
+    #
+    # Item 2: committed_rated_mw counts SYNCHRONISED only (contributes_to_reserve).
+    # UNLOADING units are pinned at MSL with no upward headroom — counting their
+    # nameplate overstates reserve precisely when the fleet is shrinking.
+    # Distinct from on_bus_output_mw which INCLUDES UNLOADING (they do produce).
+    _avail_reserve        = [t.unit_availability() for t in state.turbines if t.contributes_to_reserve]
+    _committed_rated_mw_cs = sum(u.rated_mw for u in _avail_reserve)
     _fleet_utilisation_cs = (
         _p_dispatch_droop_mw / _committed_rated_mw_cs
         if _committed_rated_mw_cs > 0.0 else 0.0
     )
-    _commit_cfg_cs = getattr(state, '_commit_cfg', None)
-    _reserve_floor_mw_cs = (
-        _commit_cfg_cs.decommit_utilisation * _committed_rated_mw_cs
-        if _commit_cfg_cs is not None else 0.0
-    )
-    _reserve_satisfied_cs = (
-        _fleet_utilisation_cs >= _commit_cfg_cs.decommit_utilisation
-        if _commit_cfg_cs is not None else True
-    )
-    _pending_start_id_cs = getattr(getattr(state, '_pending_start', None), 'pending_unit_id', None)
+    # Item 1: reserve_floor_mw and reserve_satisfied from CommitmentDecision — one source.
+    # CommitmentDecision.floor_mw = p_demand + max(rated_on_bus) — the correct N-1 quantity.
+    # The previous code recomputed decommit_utilisation × total_rated, which is the
+    # decommit threshold under a different name and inverts the satisfied predicate.
+    _reserve_floor_mw_cs   = _commit_decision.floor_mw
+    _reserve_satisfied_cs  = not _commit_decision.floor_violated
+    _pending_start_id_cs   = getattr(getattr(state, '_pending_start', None), 'pending_unit_id', None)
 
     # Phase 13.4 B3: detect when the commanded BESS output exceeds the fleet's
     # total rated power ceiling.  Surfaced in TickResult for dashboard / alerts.
