@@ -33,3 +33,4 @@
 - [cfg-001-phase-status](cfg-001-phase-status.md) — GS-DES-CFG-001 phase tracker; fabric CWD false-positive baseline trap; Guard D1/D2/E Tier-1 all green after Phase 3.
 - [droop-runaway-and-setpoint-gate](droop-runaway-and-setpoint-gate.md) — droop clamp applied (ceiling=Σ rated_MW); OFFLINE-gate fix; B5b regression; d10/TC-GT2-F issues.
 - [frequency-protection-gap](frequency-protection-gap.md) — swing eq unbounded; no threshold/UFLS/collapse anywhere; spec silent; 5 proposed thresholds (IEEE 1547); I3 bears on OF-2.
+- [protection-layer-design](protection-layer-design.md) — 5 IEEE 1547-2018 Cat I fields on SiteConfig (None=disabled); 4 collapse fields on TickResult; S9 scenario test traps (H=100, r=100, 4 pre-sync GTs, hot_standby=False for on-bus counting).

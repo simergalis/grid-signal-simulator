@@ -453,6 +453,31 @@ def build_run_context_from_spec(
         band_pct_calibrated=float(spec_data.get("band_pct_calibrated", 0.0)),
         band_mult_uncalibrated=float(spec_data.get("band_mult_uncalibrated", 2.0)),
         band_mult_unmapped_hw=float(spec_data.get("band_mult_unmapped_hw", 1.5)),
+        # §FP: Optional frequency protection thresholds.
+        # Not present → None (protection disabled for that threshold).
+        # Set all five in the spec for a site with active protection.
+        # Recommended values for 60 Hz (SDG&E/WECC) are documented in
+        # gridsignal_parameters.json under the "frequency_protection" group.
+        uf_warning_hz=(
+            float(spec_data["uf_warning_hz"])
+            if spec_data.get("uf_warning_hz") is not None else None
+        ),
+        ufls_stage1_hz=(
+            float(spec_data["ufls_stage1_hz"])
+            if spec_data.get("ufls_stage1_hz") is not None else None
+        ),
+        island_collapse_hz=(
+            float(spec_data["island_collapse_hz"])
+            if spec_data.get("island_collapse_hz") is not None else None
+        ),
+        of_warning_hz=(
+            float(spec_data["of_warning_hz"])
+            if spec_data.get("of_warning_hz") is not None else None
+        ),
+        of_trip_hz=(
+            float(spec_data["of_trip_hz"])
+            if spec_data.get("of_trip_hz") is not None else None
+        ),
     )
 
     # PROTO-32-AMB: ambient temperature adjustment to alpha_max.

@@ -258,18 +258,29 @@ class PreStagingConfig:
 @dataclass
 class SiteConfig:
     site_id: str
-    # A2 / Task #200: required field — no default.
-    # The nominal grid frequency is a site property (SDG&E territory = 60 Hz;
-    # EU/APAC grids = 50 Hz).  Omitting it at construction is a commissioning
-    # error; a wrong default that silently passes every test is worse than a
-    # missing one that fails loudly.
-    # Carry through ScenarioSpec → scenario_factory → SiteConfig; tests must
-    # set it explicitly by intent (50 Hz = EU/APAC fixture; 60 Hz = WECC/ERCOT).
-    frequency_nominal_hz: float       # REQUIRED — no default (see above)
-    power_factor: float               # REQUIRED — no default. Rated pf of the
-    # synchronous generator fleet (dimensionless). MW ≠ MVA; pf=1 silently
-    # underestimates S_base and overestimates df/dt. Typical gas turbine: 0.85.
-    # Calibrate against nameplate or vendor data; open parameter (CHOSEN at use site).
+    # A2 / Task #200: site nominal grid frequency.
+    # Default 60.0 — primary deployment site is WECC/SDG&E territory (San Diego).
+    # Override explicitly for non-WECC sites: 50 Hz = EU / APAC / NZ grids.
+    #
+    # Provenance: CHOSEN at 60.0 for the demo site; physically constrained by
+    # the North American Eastern and Western Interconnections.  EU/APAC sites
+    # must set this field to 50.0 at construction — the default does not apply.
+    #
+    # The API schema (api/schemas.py) and scenario factory (runtime/scenario_factory.py)
+    # both carry the same 60.0 default independently.  All three default sites must
+    # stay in sync; change here and at the other two if the primary site moves.
+    #
+    # Impact: df/dt = f₀ × ΔP / (2H × S_base) scales linearly with this value.
+    # A 20% change (50 → 60 Hz) makes every frequency excursion 20% faster.
+    frequency_nominal_hz: float = 60.0   # WECC/SDG&E default — see A2 above
+    # power_factor: rated pf of the synchronous generator fleet (dimensionless).
+    # MW ≠ MVA; pf=1 silently underestimates S_base and overestimates df/dt.
+    # Typical gas turbine: 0.85 (CHOSEN — calibrate against nameplate or vendor data).
+    # Default 0.85 required here for Python dataclass field-ordering: once
+    # frequency_nominal_hz above carries a default, every subsequent field must also
+    # have one.  The API schema (api/schemas.py) and scenario factory already default
+    # to 0.85; this makes SiteConfig consistent.  Operator-visible via ParameterModal.
+    power_factor: float = 0.85        # CHOSEN — typical gas turbine; see comment above
     pue_base: float = _sp.value("pue_base")
     # IT-side overhead: power conversion, distribution, UPS losses, lighting.
     # Excludes cooling (§4.1).  PROPOSED_HERE; range [1.01, 1.10].
@@ -369,6 +380,41 @@ class SiteConfig:
     #   (Phase 13.3b will close this).
     inertia_constant_s:    float = _sp.value("inertia_constant_s")  # CHOSEN — read from catalogue
     governor_droop:        float = _sp.value("governor_droop")       # CHOSEN — read from catalogue
+
+    # §FP: Frequency protection thresholds (islanded mode only; read each tick, no literals).
+    #
+    # Five thresholds form two asymmetric barriers around f_nominal.  At 60 Hz (SDG&E/WECC):
+    #
+    # Standard reference: IEEE 1547-2018 §6.5.1, "Frequency trip settings for 60 Hz EPS".
+    # That section covers DER interconnection; for islanded operation IEEE 1547.4 / site
+    # relay coordination may apply different (tighter) values.  Flag all five for operator
+    # confirmation against the SDG&E Rule 21 interconnection agreement and plant relay settings.
+    #
+    # Trip times from IEEE 1547-2018 §6.5.1 Category I (default settings):
+    #   UF mandatory (< island_collapse_hz): ≤ 0.16 s clearing — hard trip.
+    #   UF adjustable (ufls_stage1_hz):      ≤ 2.0 s clearing  — CHOSEN within adjustable range.
+    #   OF mandatory (> of_trip_hz):         ≤ 0.16 s clearing — hard trip.
+    # The simulator freezes frequency at the trip threshold and sets island_collapsed=True.
+    # ufls_stage1_hz triggers a warning only (not yet wired to curtailment ladder — see §FP report).
+    #
+    # None = protection DISABLED for that threshold.  The protection layer only
+    # fires when the operator explicitly provides a value in the scenario spec.
+    # This ensures all pre-existing frequency tests (which exercise large swings
+    # for physics verification) are unaffected by the protection layer.
+    #
+    # RECOMMENDED values for a 60 Hz (SDG&E/WECC) site (IEEE 1547-2018 §6.5.1):
+    #   uf_warning_hz      = 59.5    # lower boundary of normal operation band
+    #   ufls_stage1_hz     = 58.5    # CHOSEN within adjustable range 57.0–59.5 Hz
+    #   island_collapse_hz = 57.0    # Cat I mandatory UF trip (≤ 0.16 s clearing)
+    #   of_warning_hz      = 60.5    # upper boundary of normal operation band
+    #   of_trip_hz         = 62.0    # Cat I mandatory OF trip (≤ 0.16 s clearing)
+    # Set all five explicitly in the scenario spec; do not rely on defaults.
+    uf_warning_hz:      Optional[float] = None  # None = disabled; set explicitly (see above)
+    ufls_stage1_hz:     Optional[float] = None  # None = disabled; set explicitly (see above)
+    island_collapse_hz: Optional[float] = None  # None = disabled; set explicitly (see above)
+    of_warning_hz:      Optional[float] = None  # None = disabled; set explicitly (see above)
+    of_trip_hz:         Optional[float] = None  # None = disabled; set explicitly (see above)
+
     # load_model_bias_mw: deliberate load-estimation offset for test injection (B1).
     #   Default 0.0 — the dispatch engine's load estimate matches the metered load.
     #   When non-zero, the difference is reported as model_error_mw in TickResult
@@ -1072,6 +1118,29 @@ class TickResult:
     #   error; the run continues and the field is logged (Task #198 item 5).
     #   Tests assert abs(d4_balance_defect_mw) < 1e-3.
     d4_balance_defect_mw:      float = 0.0
+
+    # ── §FP: Frequency protection outcome ────────────────────────────────────
+    # island_collapsed: True on the one tick where a protection threshold fires.
+    #   The run manager broadcasts this tick and then halts the loop.  Every tick
+    #   before the collapse carries island_collapsed=False; the tick after a collapse
+    #   should never be evaluated (the loop stops), but evaluate_tick() guards
+    #   against a second call by returning a frozen collapsed result.
+    # collapse_reason: which threshold fired.
+    #   "island_collapse_uf" — frequency fell through island_collapse_hz.
+    #   "island_collapse_of" — frequency rose through of_trip_hz.
+    #   "ufls_stage1"        — frequency fell through ufls_stage1_hz (warning tick only;
+    #                          island_collapsed is False on a warning tick).
+    #   "uf_warning" / "of_warning" — frequency crossed the normal-band edge (advisory).
+    #   None when island_collapsed is False and no warning fired.
+    # collapse_tick_index: tick_index at which the collapse was detected.
+    #   None when island_collapsed is False.
+    # collapse_frequency_hz: frequency frozen at the trip threshold.
+    #   None when island_collapsed is False.
+    island_collapsed:      bool          = False
+    collapse_reason:       Optional[str] = None
+    collapse_tick_index:   Optional[int] = None
+    collapse_frequency_hz: Optional[float] = None
+
     # ── Phase 13.4 — Setpoint/actual split ────────────────────────────────────
     # model_error_mw: injected load-model bias (site.load_model_bias_mw).
     #   Default 0.0.  Observable as its own channel — does NOT flow into dispatch

@@ -140,3 +140,10 @@ uri = "file://reports/gridsignal_frequency_protection_report.md"
 type = "text"
 title = "GridSignal Frequency Protection Report"
 description = "Items 1–4: gt_setpoint_mw contradiction resolved, §7.2 withdrawn, droop clamp applied, frequency protection diagnosis with proposed minimal protection layer."
+
+[[outputs]]
+id = "tkrn4XCXLNPeGVoDC-IB1"
+uri = "file://attached_assets/gridsignal_review_package.zip"
+type = "unspecified"
+title = "GridSignal — 60 Hz & Protection Review Package"
+description = "Reports, test trace, full suite log, and changed source files for Items 1–5 (IEEE 1547-2018 Cat I protection layer + S9 scenario test)."

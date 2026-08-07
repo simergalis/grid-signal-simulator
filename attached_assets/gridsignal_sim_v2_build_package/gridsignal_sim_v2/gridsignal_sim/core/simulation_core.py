@@ -1307,13 +1307,70 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     #
     # _s_base_mw and _islanded are computed early in the droop block (Phase 13.3).
     # Grid-connected: frequency is held at nominal by the grid; reset each tick.
+    # §FP: Frequency protection state for this tick (initialised before branch).
+    _island_collapsed_this_tick: bool = False
+    _fp_collapse_reason: Optional[str] = None
+    _fp_collapse_frequency_hz: Optional[float] = None
+
     if _islanded:
         _df_dt = (
             _frequency_forcing_mw
             / (2.0 * state.site.inertia_constant_s * _s_base_mw)
             * state.site.frequency_nominal_hz
         )
-        state._frequency_hz += _df_dt * dt_seconds
+        _new_freq = state._frequency_hz + _df_dt * dt_seconds
+
+        # §FP: Apply protection thresholds — all Optional[float]; None = disabled.
+        # Protection only fires when the operator has explicitly set the threshold
+        # in the scenario spec.  This preserves all pre-existing frequency tests
+        # (EU/APAC 50 Hz fixtures, physics swing-equation tests) that exercise
+        # large frequency swings for verification, not protection behaviour.
+        _fp_collapse = state.site.island_collapse_hz  # None = UF trip disabled
+        _fp_of_trip  = state.site.of_trip_hz          # None = OF trip disabled
+        _fp_ufls1    = state.site.ufls_stage1_hz       # None = UFLS warning disabled
+        _fp_uf_warn  = state.site.uf_warning_hz        # None = UF advisory disabled
+        _fp_of_warn  = state.site.of_warning_hz        # None = OF advisory disabled
+
+        if _fp_collapse is not None and _new_freq <= _fp_collapse:
+            # UF-2: mandatory under-frequency trip (IEEE 1547-2018 §6.5.1 Cat I,
+            # ≤ 0.16 s clearing).  Freeze at the trip threshold; signal collapse.
+            state._frequency_hz = _fp_collapse
+            _island_collapsed_this_tick = True
+            _fp_collapse_reason = "island_collapse_uf"
+            _fp_collapse_frequency_hz = _fp_collapse
+            _log.warning(
+                "§FP UF-2 ISLAND COLLAPSE: f=%.3f Hz ≤ %.3f Hz at tick %d "
+                "(sim_time=%.1f s).  Frequency frozen; run will halt after this tick.",
+                _new_freq, _fp_collapse, state.tick_index, clock.sim_time,
+            )
+        elif _fp_of_trip is not None and _new_freq >= _fp_of_trip:
+            # OF-2: mandatory over-frequency generation trip (IEEE 1547-2018 §6.5.1
+            # Cat I, ≤ 0.16 s clearing).  Freeze at the trip threshold; signal collapse.
+            state._frequency_hz = _fp_of_trip
+            _island_collapsed_this_tick = True
+            _fp_collapse_reason = "island_collapse_of"
+            _fp_collapse_frequency_hz = _fp_of_trip
+            _log.warning(
+                "§FP OF-2 ISLAND COLLAPSE: f=%.3f Hz ≥ %.3f Hz at tick %d "
+                "(sim_time=%.1f s).  Frequency frozen; run will halt after this tick.",
+                _new_freq, _fp_of_trip, state.tick_index, clock.sim_time,
+            )
+        else:
+            # No trip — integrate normally.
+            state._frequency_hz = _new_freq
+
+            # Advisory checks (warning only; island_collapsed stays False).
+            if _fp_ufls1 is not None and _new_freq <= _fp_ufls1:
+                _fp_collapse_reason = "ufls_stage1"
+                _log.warning(
+                    "§FP UF-1 UFLS warning: f=%.3f Hz ≤ %.3f Hz at tick %d "
+                    "(not wired to curtailment ladder — see §FP report).",
+                    _new_freq, _fp_ufls1, state.tick_index,
+                )
+            elif _fp_uf_warn is not None and _new_freq <= _fp_uf_warn:
+                _fp_collapse_reason = "uf_warning"
+            elif _fp_of_warn is not None and _new_freq >= _fp_of_warn:
+                _fp_collapse_reason = "of_warning"
     else:
         # Grid-connected: frequency is the grid's reference; not integrated.
         state._frequency_hz = state.site.frequency_nominal_hz
@@ -1419,4 +1476,9 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         reserve_satisfied=_reserve_satisfied_cs,
         fleet_utilisation=_fleet_utilisation_cs,
         pending_start_unit_id=_pending_start_id_cs,
+        # §FP: Frequency protection outcome — derived from protection logic above.
+        island_collapsed=_island_collapsed_this_tick,
+        collapse_reason=_fp_collapse_reason,
+        collapse_tick_index=(state.tick_index if _island_collapsed_this_tick else None),
+        collapse_frequency_hz=_fp_collapse_frequency_hz,
     )

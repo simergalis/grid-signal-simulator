@@ -84,10 +84,24 @@ export interface TickPayload {
   model_error_mw:            number
   binding_constraint:        string | null
 
-  // Phase 13.3: live frequency measurement — 50 Hz nominal ± swing-equation deviation.
+  // Phase 13.3: live frequency measurement — 60 Hz nominal (WECC/SDG&E) ± swing-equation deviation.
   // Islanded: integrated each tick via frequency_forcing_mw (governor droop provides restoring force).
   // Grid-connected: held at site frequency_nominal_hz (grid is the reference; forcing term is 0).
   frequency_hz: number
+
+  // §FP: Frequency protection outcome for this tick.
+  // island_collapsed: true on the one tick where a protection threshold fires.
+  //   The run manager halts after broadcasting this tick; no further ticks follow.
+  // collapse_reason: which threshold fired.
+  //   "island_collapse_uf" — frequency fell below island_collapse_hz (< 57.0 Hz on 60 Hz system).
+  //   "island_collapse_of" — frequency rose above of_trip_hz (> 62.0 Hz on 60 Hz system).
+  //   null on all non-collapsed ticks.
+  // collapse_tick_index: tick_index at which the collapse was detected (null if not collapsed).
+  // collapse_frequency_hz: frequency frozen at the trip threshold (null if not collapsed).
+  island_collapsed:      boolean
+  collapse_reason:       string | null
+  collapse_tick_index:   number | null
+  collapse_frequency_hz: number | null
 
   // Data quality
   data_quality_tags: string[]  // DataQualityTag values

@@ -400,6 +400,17 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
             "utilisation":           round(tick.fleet_utilisation, 3),
             "pending_start_unit_id": tick.pending_start_unit_id,
         },
+        # §FP: Frequency protection outcome — emitted on every tick.
+        # island_collapsed: True only on the terminal collapse tick (then the loop halts).
+        # collapse_reason / collapse_tick_index / collapse_frequency_hz: non-null iff collapsed.
+        # Clients check island_collapsed first; the other three fields are diagnostic detail.
+        "island_collapsed":      tick.island_collapsed,
+        "collapse_reason":       tick.collapse_reason,
+        "collapse_tick_index":   tick.collapse_tick_index,
+        "collapse_frequency_hz": (
+            round(tick.collapse_frequency_hz, 4)
+            if tick.collapse_frequency_hz is not None else None
+        ),
     }
 
 
@@ -1430,6 +1441,22 @@ class RunManager:
                 if _profiling: _t0 = _time_module.perf_counter()
                 await self._ws_hub.broadcast(ctx.run_id, tick_result)  # I/O -- yields
                 if _profiling: _sec.setdefault("C_ws_broadcast", []).append(_time_module.perf_counter() - _t0)
+
+                # ── §FP: Island collapse — halt after this tick ───────────
+                # The collapsed tick has been persisted (sink.append) and broadcast
+                # above.  Advisory agents, network telemetry, and downstream steps
+                # are skipped so the run exits cleanly on the collapse-boundary tick.
+                if tick_result.island_collapsed:
+                    logger.warning(
+                        "run %s: island collapse detected (%s, f=%.3f Hz) at "
+                        "tick %d — halting loop after final tick delivery.",
+                        ctx.run_id,
+                        tick_result.collapse_reason,
+                        tick_result.collapse_frequency_hz or 0.0,
+                        tick_result.collapse_tick_index or tick_result.tick_index,
+                    )
+                    ctx.cancelled = True  # signal _drive loop condition to exit cleanly
+                    break
 
                 # ── C2: solar-sim run sync (Task #122) ────────────────────
                 # Push the run's aggregate p_renewable_mw into the standalone
