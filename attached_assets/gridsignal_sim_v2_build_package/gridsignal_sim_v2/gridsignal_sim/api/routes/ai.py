@@ -5,6 +5,12 @@ POST /api/ai/improve-description
   Takes the current demo copy draft plus scenario metadata and calls Mistral
   to write / improve the operator-facing "What this demonstrates" blurb shown
   in the DemoBar.  Falls back to a 502 with a clear message when the key is absent.
+
+POST /api/ai/explain-scenario
+  Takes scenario parameters and calls Claude (Anthropic) to generate a rich,
+  plain-English educational explanation for new-hire operators:  what physical
+  processes are at play, what to watch on screen, and what GridSignal is doing.
+  Falls back to 502 when ANTHROPIC_API_KEY is absent.
 """
 
 import asyncio
@@ -111,3 +117,108 @@ async def improve_description(req: ImproveRequest) -> ImproveResponse:
         raise HTTPException(502, detail=f"AI call failed: {exc}") from exc
 
     return ImproveResponse(improved=improved)
+
+
+# ── /explain-scenario — Claude educational narration ─────────────────────────
+
+_ANTHROPIC_ENDPOINT = "https://api.anthropic.com/v1/messages"
+_ANTHROPIC_MODEL    = "claude-haiku-4-5"
+
+_EXPLAIN_SYSTEM = (
+    "You are an expert energy operations trainer writing the 'WHAT THIS DEMONSTRATES' "
+    "panel for new-hire operators watching a live data centre power simulation on screen. "
+    "Write exactly 4 sentences in plain, vivid English:\n"
+    "  Sentence 1 — what physical situation this scenario recreates (what problem or event).\n"
+    "  Sentence 2 — what GridSignal is doing in the background to manage it (prediction, staging, etc.).\n"
+    "  Sentence 3 — what the operator should watch for on screen (specific tiles, numbers, colours).\n"
+    "  Sentence 4 — what would happen to the site if GridSignal wasn't handling this.\n"
+    "Use accessible language. Define any jargon inline the first time (e.g. 'BESS — battery storage'). "
+    "No headings, no bullets, no markdown. Return only the 4 sentences as a single paragraph."
+)
+
+
+class ExplainRequest(BaseModel):
+    scenario_name: str = ""
+    scenario_description: str = ""
+    turbine_count: int = 0
+    turbine_rated_mw: float = 0.0
+    bess_rated_mw: float = 0.0
+    bess_usable_mwh: float = 0.0
+    solar_rated_mw: float = 0.0
+    node_count_max: int = 0
+    run_duration_s: int = 300
+    island_mode: bool = True
+    dt_lead_seconds: float = 60.0
+    demo_description: str = ""
+
+
+class ExplainResponse(BaseModel):
+    explanation: str
+
+
+def _call_anthropic_explain(req: ExplainRequest, api_key: str) -> str:
+    parts = []
+    if req.scenario_name:
+        parts.append(f"Scenario: {req.scenario_name}")
+    if req.scenario_description:
+        parts.append(f"Description: {req.scenario_description}")
+    if req.demo_description:
+        parts.append(f"Demo copy hint: {req.demo_description}")
+    parts.append(
+        f"Fleet: {req.turbine_count} gas turbine{'s' if req.turbine_count != 1 else ''} "
+        f"× {req.turbine_rated_mw:.0f} MW each · "
+        f"BESS {req.bess_rated_mw:.0f} MW / {req.bess_usable_mwh:.0f} MWh · "
+        f"Solar {req.solar_rated_mw:.2f} MW rated"
+    )
+    parts.append(
+        f"Workload: up to {req.node_count_max} GPU nodes · "
+        f"run lasts {req.run_duration_s} s · "
+        f"GridSignal lead time {req.dt_lead_seconds:.0f} s · "
+        f"{'islanded (no grid connection)' if req.island_mode else 'grid-connected'}"
+    )
+    user_msg = "\n".join(parts) + "\n\nWrite the 4-sentence educational paragraph:"
+
+    payload = json.dumps({
+        "model": _ANTHROPIC_MODEL,
+        "max_tokens": 400,
+        "system": _EXPLAIN_SYSTEM,
+        "messages": [{"role": "user", "content": user_msg}],
+    }).encode()
+
+    req_http = urllib.request.Request(
+        _ANTHROPIC_ENDPOINT,
+        data=payload,
+        headers={
+            "Content-Type":    "application/json",
+            "x-api-key":       api_key,
+            "anthropic-version": "2023-06-01",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req_http, timeout=20) as resp:
+            body = json.loads(resp.read())
+        return body["content"][0]["text"].strip()
+    except urllib.error.HTTPError as exc:
+        raise RuntimeError(f"Anthropic HTTP {exc.code}: {exc.read()[:200]}") from exc
+
+
+@router.post("/explain-scenario", response_model=ExplainResponse)
+async def explain_scenario(req: ExplainRequest) -> ExplainResponse:
+    """Call Claude to generate an educational 4-sentence explanation of a scenario."""
+    api_key = os.environ.get("ANTHROPIC_API_KEY") or ""
+    if not api_key:
+        raise HTTPException(503, detail="ANTHROPIC_API_KEY is not configured on this server.")
+
+    try:
+        explanation = await asyncio.get_event_loop().run_in_executor(
+            None,
+            _call_anthropic_explain,
+            req,
+            api_key,
+        )
+    except Exception as exc:
+        log.warning("ai: explain-scenario failed: %s", exc)
+        raise HTTPException(502, detail=f"AI call failed: {exc}") from exc
+
+    return ExplainResponse(explanation=explanation)

@@ -283,5 +283,5 @@ export const LEADTIME_BOX = {
  * Compute Racks left edge (x=716), above the Switchgear row (y=172).
  */
 export const WATCHING_BOX = {
-  x: 210, y: 8, w: 460, h: 110,
+  x: 210, y: 8, w: 460, h: 158,
 }
