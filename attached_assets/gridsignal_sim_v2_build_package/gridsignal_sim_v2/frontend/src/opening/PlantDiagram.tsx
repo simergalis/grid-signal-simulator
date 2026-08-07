@@ -82,51 +82,56 @@ function WatchingCallout({ tick }: { tick: TickPayload | null }) {
   const accent       = isRunning ? '#e0a458' : '#3fb6a8'
   const heading      = isRunning ? 'WHAT YOU ARE WATCHING' : 'WHAT THIS DEMONSTRATES'
 
-  // Cache: scenario_id → generated explanation
-  const cache = useRef<Record<string, string>>({})
-  const [aiText,     setAiText]     = useState<string | null>(null)
-  const [generating, setGenerating] = useState(false)
+  // Cache: "${scenarioId}:${mode}" → generated text
+  const cache       = useRef<Record<string, string>>({})
+  const [idleText,     setIdleText]     = useState<string | null>(null)
+  const [runningText,  setRunningText]  = useState<string | null>(null)
+  const [generating,   setGenerating]   = useState(false)
 
-  const generate = useCallback(async (scenarioId: string) => {
+  const generate = useCallback(async (scenarioId: string, mode: 'demonstrates' | 'watching') => {
+    const cacheKey = `${scenarioId}:${mode}`
+    const setter   = mode === 'watching' ? setRunningText : setIdleText
+
     // Return cached result immediately if available
-    if (cache.current[scenarioId]) {
-      setAiText(cache.current[scenarioId])
+    if (cache.current[cacheKey]) {
+      setter(cache.current[cacheKey])
       return
     }
     setGenerating(true)
-    setAiText(null)
+    setter(null)
     try {
       // Fetch full scenario spec so we can pass rich parameters to Claude
       const detail = await fetch(`/scenarios/${scenarioId}`).then(r => r.ok ? r.json() : null)
       if (!detail) { setGenerating(false); return }
-      const spec = detail.spec ?? {}
-      const turbines: {rated_mw?: number}[] = spec.turbine_units ?? []
-      const bess:     {rated_mw?: number; usable_mwh?: number}[] = spec.bess_units ?? []
-      const events:   {node_count?: number}[] = spec.workload_events ?? []
+      const spec    = detail.spec ?? {}
+      const turbines: {rated_mw?: number}[]                    = spec.turbine_units  ?? []
+      const bess:     {rated_mw?: number; usable_mwh?: number}[] = spec.bess_units   ?? []
+      const events:   {node_count?: number}[]                   = spec.workload_events ?? []
       const nodeMax   = events.reduce((m, e) => Math.max(m, e.node_count ?? 0), 0)
 
       const resp = await fetch('/api/ai/explain-scenario', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          scenario_name:        detail.name        ?? '',
-          scenario_description: detail.description ?? '',
+          scenario_name:        detail.name          ?? '',
+          scenario_description: detail.description   ?? '',
           turbine_count:        turbines.length,
           turbine_rated_mw:     turbines[0]?.rated_mw  ?? 0,
-          bess_rated_mw:        bess[0]?.rated_mw      ?? 0,
-          bess_usable_mwh:      bess[0]?.usable_mwh    ?? 0,
-          solar_rated_mw:       spec.solar_rated_mw    ?? 0,
+          bess_rated_mw:        bess[0]?.rated_mw       ?? 0,
+          bess_usable_mwh:      bess[0]?.usable_mwh     ?? 0,
+          solar_rated_mw:       spec.solar_rated_mw     ?? 0,
           node_count_max:       nodeMax,
-          run_duration_s:       spec.end_sim_time       ?? 300,
-          island_mode:          spec.island_mode        ?? true,
-          dt_lead_seconds:      spec.dt_lead_seconds    ?? 60,
-          demo_description:     spec.demo_description   ?? '',
+          run_duration_s:       spec.end_sim_time        ?? 300,
+          island_mode:          spec.island_mode         ?? true,
+          dt_lead_seconds:      spec.dt_lead_seconds     ?? 60,
+          demo_description:     spec.demo_description    ?? '',
+          mode,
         }),
       })
       if (resp.ok) {
         const data = await resp.json()
-        cache.current[scenarioId] = data.explanation
-        setAiText(data.explanation)
+        cache.current[cacheKey] = data.explanation
+        setter(data.explanation)
       }
     } catch (_) {
       // silently fall back to static text
@@ -135,16 +140,22 @@ function WatchingCallout({ tick }: { tick: TickPayload | null }) {
     }
   }, [])
 
-  // Trigger generation when idle and the selected scenario changes
+  // Pre-run: generate "demonstrates" when selected scenario changes
   useEffect(() => {
     if (isRunning || !selectedId) return
-    generate(selectedId)
+    generate(selectedId, 'demonstrates')
+  }, [isRunning, selectedId, generate])
+
+  // Run start: generate "watching" narrative from the scenario spec
+  useEffect(() => {
+    if (!isRunning || !selectedId) return
+    generate(selectedId, 'watching')
   }, [isRunning, selectedId, generate])
 
   // What to show in the body
   const body = isRunning
-    ? (watchingText || 'Watch the tiles — compute demand is rising and GridSignal is already pre-staging generation to meet it.')
-    : (aiText || watchingText || 'GridSignal reads the job scheduler, not the power meter. It knows a step-load is coming 30–60 s before it arrives, and stages generation and storage before the load lands.')
+    ? (runningText || watchingText || null)
+    : (idleText    || watchingText || 'GridSignal reads the job scheduler, not the power meter. It knows a step-load is coming 30–60 s before it arrives, and stages generation and storage before the load lands.')
 
   const { x, y, w, h } = WATCHING_BOX
   return (
@@ -173,13 +184,13 @@ function WatchingCallout({ tick }: { tick: TickPayload | null }) {
         </div>
         <div style={_RULE} />
         <div style={{
-          ..._BODY, color: generating && !aiText ? '#3a5a6a' : '#c8d6e5',
+          ..._BODY, color: generating && !body ? '#3a5a6a' : '#c8d6e5',
           lineHeight: 1.6, whiteSpace: 'normal',
           transition: 'color 0.3s',
         }}>
-          {generating && !aiText
+          {generating && !body
             ? 'Generating explanation…'
-            : body
+            : (body ?? '')
           }
         </div>
       </div>

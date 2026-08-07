@@ -124,7 +124,7 @@ async def improve_description(req: ImproveRequest) -> ImproveResponse:
 _ANTHROPIC_ENDPOINT = "https://api.anthropic.com/v1/messages"
 _ANTHROPIC_MODEL    = "claude-haiku-4-5"
 
-_EXPLAIN_SYSTEM = (
+_DEMONSTRATES_SYSTEM = (
     "You are an expert energy operations trainer writing the 'WHAT THIS DEMONSTRATES' "
     "panel for new-hire operators watching a live data centre power simulation on screen. "
     "Write exactly 5 sentences in plain, vivid English covering ALL of the following:\n\n"
@@ -147,6 +147,25 @@ _EXPLAIN_SYSTEM = (
     "Return only the 5 sentences as a single paragraph."
 )
 
+_WATCHING_SYSTEM = (
+    "You are an expert energy operations trainer writing the 'WHAT YOU ARE WATCHING' "
+    "panel shown to new-hire operators while a live data centre power simulation runs on screen. "
+    "The simulation has just started. Write exactly 4 sentences in plain, vivid, present-tense English:\n\n"
+    "  Sentence 1 — what is happening right now in this specific scenario: what the compute demand "
+    "profile looks like (how it ramps, holds, and releases), and what the total peak load will be.\n"
+    "  Sentence 2 — what the operator will see on the Compute Racks tile: describe the staircase "
+    "of GPU node waves being admitted by the Kubernetes scheduler and why each pulse appears.\n"
+    "  Sentence 3 — what the power sources are doing in response: which turbines are committing, "
+    "how the BESS (battery) is bridging each gap, and what role solar is playing.\n"
+    "  Sentence 4 — what GridSignal is doing in the background to keep the site stable: "
+    "the lead time it uses to pre-stage generation, how it sequences turbine start-up and "
+    "battery dispatch, and what success looks like (no frequency excursion, no load-shed).\n\n"
+    "Use present tense throughout ('the turbines are committing', 'the battery is bridging'). "
+    "Use accessible language. Define any jargon inline the first time. "
+    "No headings, no bullets, no markdown. Do NOT start with 'WHAT YOU ARE WATCHING'. "
+    "Return only the 4 sentences as a single paragraph."
+)
+
 
 class ExplainRequest(BaseModel):
     scenario_name: str = ""
@@ -161,13 +180,14 @@ class ExplainRequest(BaseModel):
     island_mode: bool = True
     dt_lead_seconds: float = 60.0
     demo_description: str = ""
+    mode: str = "demonstrates"   # "demonstrates" (idle) | "watching" (run active)
 
 
 class ExplainResponse(BaseModel):
     explanation: str
 
 
-def _call_anthropic_explain(req: ExplainRequest, api_key: str) -> str:
+def _call_anthropic_explain(req: ExplainRequest, api_key: str) -> str:  # noqa: C901
     parts = []
     if req.scenario_name:
         parts.append(f"Scenario: {req.scenario_name}")
@@ -189,10 +209,12 @@ def _call_anthropic_explain(req: ExplainRequest, api_key: str) -> str:
     )
     user_msg = "\n".join(parts) + "\n\nWrite the 4-sentence educational paragraph:"
 
+    system_prompt = _WATCHING_SYSTEM if req.mode == "watching" else _DEMONSTRATES_SYSTEM
+
     payload = json.dumps({
         "model": _ANTHROPIC_MODEL,
         "max_tokens": 400,
-        "system": _EXPLAIN_SYSTEM,
+        "system": system_prompt,
         "messages": [{"role": "user", "content": user_msg}],
     }).encode()
 
