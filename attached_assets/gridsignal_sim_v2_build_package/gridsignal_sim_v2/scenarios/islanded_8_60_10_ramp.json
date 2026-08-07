@@ -15,31 +15,36 @@
       "asset_id": "turbine-0",
       "rated_mw": 15.0,
       "r_asset_mw_per_s": 0.2,
-      "hot_standby": false
+      "hot_standby": false,
+      "cold_start_s": 300.0
     },
     {
       "asset_id": "turbine-1",
       "rated_mw": 15.0,
       "r_asset_mw_per_s": 0.2,
-      "hot_standby": false
+      "hot_standby": false,
+      "cold_start_s": 600.0
     },
     {
       "asset_id": "turbine-2",
       "rated_mw": 15.0,
       "r_asset_mw_per_s": 0.2,
-      "hot_standby": false
+      "hot_standby": false,
+      "cold_start_s": 900.0
     },
     {
       "asset_id": "turbine-3",
       "rated_mw": 15.0,
       "r_asset_mw_per_s": 0.2,
-      "hot_standby": false
+      "hot_standby": false,
+      "cold_start_s": 900.0
     },
     {
       "asset_id": "turbine-4",
       "rated_mw": 15.0,
       "r_asset_mw_per_s": 0.2,
-      "hot_standby": false
+      "hot_standby": false,
+      "cold_start_s": 900.0
     }
   ],
   "workload_events": [
