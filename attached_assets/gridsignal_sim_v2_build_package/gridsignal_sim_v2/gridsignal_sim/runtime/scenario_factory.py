@@ -548,6 +548,11 @@ def build_run_context_from_spec(
                 min_run_enabled=bool(t.get("min_run_enabled", True)),
                 t_min_down_s=float(t.get("t_min_down_s", 900.0)),
                 min_down_enabled=bool(t.get("min_down_enabled", True)),
+                # Start-duration overrides — fall back to locked parameter values
+                # when not present in the scenario JSON (None sentinel from schema).
+                **({} if t.get("cold_start_s") is None else {"cold_start_s": float(t["cold_start_s"])}),
+                **({} if t.get("warm_start_s") is None else {"warm_start_s": float(t["warm_start_s"])}),
+                **({} if t.get("hot_start_s") is None else {"hot_start_s": float(t["hot_start_s"])}),
             )
         )
         for i, t in enumerate(spec_data.get("turbine_units", []))

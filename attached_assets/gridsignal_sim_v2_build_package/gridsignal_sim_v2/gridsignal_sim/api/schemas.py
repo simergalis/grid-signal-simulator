@@ -240,6 +240,15 @@ class TurbineUnitSpec(BaseModel):
     # min_down_enabled: D-03 enable flag for the R6 guard.
     # True = command_start() enforces t_min_down_s; False = constraint disabled.
     min_down_enabled: bool = Field(default=True)
+    # Start-duration overrides — default None means "use the locked parameter value"
+    # from gridsignal_parameters.json (cold=900 s, warm=600 s, hot=300 s).
+    # Set per-unit when a scenario needs a non-standard sync time (e.g. a short
+    # cold_start_s for a diagnostic run, or an aeroderivative unit).
+    # Cross-parameter invariant: hot_start_s < warm_start_s < cold_start_s is not
+    # validated here — the caller is responsible for sensible values.
+    cold_start_s: Optional[float] = Field(default=None, gt=0)
+    warm_start_s: Optional[float] = Field(default=None, gt=0)
+    hot_start_s: Optional[float] = Field(default=None, gt=0)
 
 
 class StepTimingConfigSpec(BaseModel):
