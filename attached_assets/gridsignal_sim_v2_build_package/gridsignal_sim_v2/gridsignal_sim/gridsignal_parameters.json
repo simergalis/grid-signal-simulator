@@ -569,6 +569,48 @@
       "note": "MSL = p_min_stable_frac × rated_mw = 0.40 × 7.0 = 2.8 MW per unit. Σ msl (4 online units) = 11.2 MW; (5 units incl. hot-standby) = 14.0 MW. sub_msl_surplus_mw > 0 when p_fleet < Σ msl (islanded overfrequency path). Requires OEM combustion-stability data to graduate from CHOSEN."
     },
     {
+      "key": "p_min_stable_frac_all_scenarios",
+      "value": 0.4,
+      "unit": "fraction",
+      "label": "Minimum stable load fraction — Phase E Item 8 default for all seeded scenarios",
+      "provenance": "CHOSEN",
+      "provenance_detail": "Phase E Item 8 / §7.1.3.6: 0.40 propagated from demo-20mw to all 23 remaining seeded scenarios.  Previously 0.0 (disabled) in every scenario except demo-20mw.  Frame-class representative lean-extinction boundary; no OEM data.  Requires frame-class-specific measurement to graduate from CHOSEN (PROTO-R4).  Enforced via sequential base-loading (TC-96) and the UNLOADING → levelled-off → OFFLINE path (TC-94).",
+      "spec_ref": "§7.1.3.6",
+      "ui": {
+        "control": "readonly",
+        "group": "turbine"
+      },
+      "note": "MSL floor applies to all turbines in all seeded scenarios.  sub_msl_surplus_mw > 0 is returned by compute_loading_setpoints() when p_fleet < Σ MSL (TC-95); the caller (simulation_core.py) decides whether to decommit or curtail."
+    },
+    {
+      "key": "t_min_run_s",
+      "value": 1800,
+      "unit": "s",
+      "label": "Minimum continuous run time before a controlled stop is accepted",
+      "provenance": "CHOSEN",
+      "provenance_detail": "Phase E Item 8 / §7.1.3.6: 1800 s (30 min) is a representative minimum stable operating period for frame-class gas turbines before a controlled shutdown.  Prevents hot-cold thermal shock and combustor re-ignition churn.  No OEM specification on file; requires frame-class commissioning data to graduate from CHOSEN.  Enforced in command_stop() via R5 guard: stop deferred silently when elapsed < t_min_run_s.",
+      "spec_ref": "§7.1.3.6",
+      "ui": {
+        "control": "readonly",
+        "group": "turbine"
+      },
+      "note": "R5 enforcement: command_stop() returns without transitioning if sim_time − _run_start_s < t_min_run_s.  The commitment engine retries on the next decommit check.  t_min_run_s=0.0 disables the guard (backward-compat for tests)."
+    },
+    {
+      "key": "t_min_down_s",
+      "value": 900,
+      "unit": "s",
+      "label": "Minimum offline interval (cooling/purge) before a restart is accepted",
+      "provenance": "CHOSEN",
+      "provenance_detail": "Phase E Item 8 / §7.1.3.6: 900 s (15 min) is a representative cooling and purge cycle duration for frame-class gas turbines between a controlled stop and the next start.  No OEM specification on file; requires frame-class commissioning data to graduate from CHOSEN.  Enforced in command_start() via R6 guard: start silently dropped when elapsed < t_min_down_s.",
+      "spec_ref": "§7.1.3.6",
+      "ui": {
+        "control": "readonly",
+        "group": "turbine"
+      },
+      "note": "R6 enforcement: command_start() returns without transitioning if sim_time − _stop_time_s < t_min_down_s.  t_min_down_s=0.0 disables the guard (backward-compat for tests, e.g. TC-203-3 which explicitly exercises the zero-cooldown path)."
+    },
+    {
       "key": "p_anchor_reserve_mw_san_diego",
       "value": 2.0,
       "unit": "MW",

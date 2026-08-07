@@ -792,6 +792,12 @@ class TurbineModule(AssetModule):
     _out_of_service_reason: Optional[str] = None
     # _start_phase: human-readable label for the STARTING sub-phase (display only).
     _start_phase: str = "purge"
+    # Phase E Item 5: levelled-off dwell tracker.
+    # When the UNLOADING unit's output first reaches its MSL setpoint within
+    # levelled_off_tol_mw, this is set to the current sim_time.  The breaker opens
+    # once (sim_time − _levelled_off_since_s) ≥ config.unload_tail_s.
+    # Reset to math.nan whenever the predicate is False or the breaker opens.
+    _levelled_off_since_s: float = math.nan
     # Phase B Item 2: per-interval write counter for set_output().
     # Reset to 0 by begin_interval() at the start of each evaluation interval.
     # Incremented by set_output(); if it reaches 2 a RuntimeError is raised,
@@ -944,14 +950,15 @@ class TurbineModule(AssetModule):
         )
 
     def command_stop(self, sim_time: float) -> None:
-        """Transition SYNCHRONISED → UNLOADING.  Phase C controlled-stop entry point.
+        """Transition SYNCHRONISED → UNLOADING.  Phase E controlled-stop path.
 
-        The full unload sequence (R5 enforcement, loading taper, MSL dwell, breaker
-        open, thermal-state recording) is Phase E.  Phase C only validates the source
-        state and transitions to UNLOADING.
+        R5 enforcement (Phase E Item 8): if the unit has not yet run for at least
+        t_min_run_s seconds since it last reached SYNCHRONISED, the stop is
+        silently deferred — the caller may retry on the next decommit check.
+        t_min_run_s=0.0 (disabled) makes this guard a no-op (backward compat).
 
-        Raises RuntimeError for any state other than SYNCHRONISED — a loaded unit must
-        not be transitioned directly to OFFLINE through any normal dispatch path.
+        Raises RuntimeError for any state other than SYNCHRONISED — a loaded unit
+        must not be transitioned directly to OFFLINE through any normal dispatch path.
         Operator trips (emergency) go through the run_manager.py A-1 drain loop.
         """
         if self.state != TurbineState.SYNCHRONISED:
@@ -960,7 +967,15 @@ class TurbineModule(AssetModule):
                 f"state {self.state.value!r}. Only SYNCHRONISED → UNLOADING is valid "
                 f"here; operator trips use the run_manager trip path."
             )
+        # R5: enforce minimum run time — silently defer if not yet satisfied.
+        if (
+            self.config.t_min_run_s > 0.0
+            and not math.isnan(self._run_start_s)
+            and (sim_time - self._run_start_s) < self.config.t_min_run_s
+        ):
+            return  # symmetric to R6: defer without error; caller retries
         self.state = TurbineState.UNLOADING
+        self._levelled_off_since_s = math.nan   # Phase E: reset dwell clock on entry
 
     def advance(self, sim_time: float, dt_seconds: float) -> None:
         """Tick this unit's internal state forward by one interval.

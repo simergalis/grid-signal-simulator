@@ -221,11 +221,20 @@ class TurbineUnitSpec(BaseModel):
     # Hot-standby units are excluded from dispatch staging and contribute zero
     # to contingency ramp capability (§7.4 / TC-83).  Default False.
     hot_standby: bool = False
-    # PW-1 / §15: minimum stable load as a fraction of rated_mw.
-    # 0.0 = disabled (default — backward-compat with existing scenarios).
-    # Set to 0.40 on demo-20mw turbine units (2.8 MW floor on 7 MW units).
-    # CHOSEN — OEM combustion-stability data required for calibration.
-    p_min_stable_frac: float = Field(default=0.0, ge=0.0, le=1.0)
+    # Phase E Item 8 / §7.1.3.6: physical constraints — all CHOSEN provenance.
+    # p_min_stable_frac: minimum stable load floor as fraction of rated_mw.
+    # 0.40 = frame-class representative (PW-1 / §15). OEM data required for
+    # production calibration (PROTO-R4).
+    p_min_stable_frac: float = Field(default=0.40, ge=0.0, le=1.0)
+    # t_min_run_s: minimum continuous run time before a controlled stop is
+    # accepted.  A stop command inside this window is silently deferred (R5).
+    # 1800 s = 30 min — representative gas-turbine minimum stable operation
+    # period; prevents hot-cold thermal shock and combustor re-ignition churn.
+    t_min_run_s: float = Field(default=1800.0, ge=0.0)
+    # t_min_down_s: minimum offline interval before a restart is accepted.
+    # A start command inside this window is silently dropped (R6).
+    # 900 s = 15 min — cooling / purge cycle for frame-class turbines.
+    t_min_down_s: float = Field(default=900.0, ge=0.0)
 
 
 class StepTimingConfigSpec(BaseModel):

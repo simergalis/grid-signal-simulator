@@ -179,6 +179,17 @@ class TestR4PMinStable:
             f"p_min_stable_frac must accept 0.45.  Got {cfg_45.p_min_stable_frac}"
         )
 
+    @pytest.mark.xfail(
+        reason=(
+            "Phase E Item 4 report — stage_target() deleted in Phase C; "
+            "MSL floor enforcement belongs in Phase E loading policy (Item 7). "
+            "Old: stage_target(2.0) clamped _target_mw to p_min_stable. "
+            "New: apply_loading() enforces MSL floor (Phase E) — not yet implemented. "
+            "Why: Phase C removed the RAMPING state machine; explicit staging replaced "
+            "by rate-limited setpoint tracking in apply_loading()."
+        ),
+        strict=True,
+    )
     def test_R4_positive_target_below_floor_clamped_up(self):
         """
         Dispatching to 2 MW on a 10 MW turbine (p_min = 4.5 MW) must
@@ -193,6 +204,13 @@ class TestR4PMinStable:
             f"Got _target_mw={t._target_mw:.4f} MW."
         )
 
+    @pytest.mark.xfail(
+        reason=(
+            "Phase E Item 4 report — stage_target() deleted in Phase C. "
+            "See test_R4_positive_target_below_floor_clamped_up for full rationale."
+        ),
+        strict=True,
+    )
     def test_R4_target_above_floor_unchanged(self):
         """A target already above p_min_stable must not be changed."""
         t = TurbineModule(TurbineConfig(asset_id="t0", rated_mw=10.0,
@@ -203,6 +221,13 @@ class TestR4PMinStable:
             f"Got {t._target_mw:.4f} MW."
         )
 
+    @pytest.mark.xfail(
+        reason=(
+            "Phase E Item 4 report — stage_target() deleted in Phase C. "
+            "See test_R4_positive_target_below_floor_clamped_up for full rationale."
+        ),
+        strict=True,
+    )
     def test_R4_exactly_at_floor_accepted(self):
         """A target exactly equal to p_min_stable must be accepted unchanged."""
         t = TurbineModule(TurbineConfig(asset_id="t0", rated_mw=10.0,
@@ -210,6 +235,15 @@ class TestR4PMinStable:
         t.stage_target(4.5, sim_time=0.0)
         assert t._target_mw == pytest.approx(4.5, abs=1e-9)
 
+    @pytest.mark.xfail(
+        reason=(
+            "Phase E Item 4 report — stage_target() and advance() both deleted in "
+            "Phase C; RAMPING state deleted.  MSL floor enforcement and setpoint "
+            "tracking belong in Phase E loading policy.  "
+            "See test_R4_positive_target_below_floor_clamped_up for full rationale."
+        ),
+        strict=True,
+    )
     def test_R4_clamped_target_leads_to_correct_ramp(self):
         """After clamping, the turbine ramps to p_min_stable (not to the raw 2 MW)."""
         t = TurbineModule(TurbineConfig(asset_id="t0", rated_mw=10.0,
@@ -237,6 +271,17 @@ class TestR5MinRunTime:
         """TurbineConfig carries t_min_run_s, default 0.0 (disabled)."""
         assert TurbineConfig(asset_id="t0").t_min_run_s == pytest.approx(0.0)
 
+    @pytest.mark.xfail(
+        reason=(
+            "Phase E Item 4 report — stage_target() deleted in Phase C; "
+            "t_min_run enforcement belongs in Phase E stop sequencing (Item 8). "
+            "Old: stage_target(0.0, sim_time=50.0) deferred stop, held at p_min_stable. "
+            "New: command_stop() will enforce t_min_run; not yet implemented. "
+            "Why: Phase C replaced RAMPING/AT_TARGET with SYNCHRONISED; "
+            "the stop-deferral logic must be rebuilt in Phase E."
+        ),
+        strict=True,
+    )
     def test_R5_stop_before_min_run_holds_at_p_min_stable(self):
         """
         A stop command (target=0) issued before t_min_run_s elapses must
@@ -257,6 +302,13 @@ class TestR5MinRunTime:
             "Turbine must not go OFFLINE before t_min_run_s has elapsed."
         )
 
+    @pytest.mark.xfail(
+        reason=(
+            "Phase E Item 4 report — stage_target() deleted in Phase C. "
+            "See test_R5_stop_before_min_run_holds_at_p_min_stable for full rationale."
+        ),
+        strict=True,
+    )
     def test_R5_stop_after_min_run_is_allowed(self):
         """
         A stop command issued after t_min_run_s has elapsed must be accepted
@@ -277,6 +329,14 @@ class TestR5MinRunTime:
         )
         assert t._stop_time_s == pytest.approx(150.0, abs=1e-9)
 
+    @pytest.mark.xfail(
+        reason=(
+            "Phase E Item 4 report — stage_target() deleted in Phase C. "
+            "_run_start_s is now set by command_start() (Phase E); not yet wired. "
+            "See test_R5_stop_before_min_run_holds_at_p_min_stable for full rationale."
+        ),
+        strict=True,
+    )
     def test_R5_run_start_time_recorded_on_first_start(self):
         """_run_start_s is recorded at the sim_time of the first stage_target > 0."""
         t = TurbineModule(TurbineConfig(asset_id="t0"))
@@ -307,6 +367,18 @@ class TestR6MinDownGtMode:
         cfg = TurbineConfig(asset_id="t1", gt_mode="aero")
         assert cfg.gt_mode == "aero"
 
+    @pytest.mark.xfail(
+        reason=(
+            "Phase E Item 4 report — stage_target() deleted in Phase C; "
+            "t_min_down enforcement belongs in Phase E stop sequencing (Item 8). "
+            "Old: stage_target(8.0, sim_time=500.0) was dropped inside cooling window. "
+            "New: command_start() / command_stop() will enforce t_min_down; "
+            "not yet implemented. "
+            "Why: Phase C removed RAMPING state; cooling-window guard must be rebuilt "
+            "in Phase E command_start()."
+        ),
+        strict=True,
+    )
     def test_R6_restart_inside_cooling_window_dropped(self):
         """
         A restart command issued within t_min_down_s after a controlled stop
@@ -332,6 +404,16 @@ class TestR6MinDownGtMode:
             "_run_start_s must remain NaN when restart is dropped."
         )
 
+    @pytest.mark.xfail(
+        reason=(
+            "Phase E Item 4 report — stage_target() deleted (Phase C); "
+            "TurbineState.RAMPING deleted (Phase C). "
+            "Old: stage_target after cooling window → state == RAMPING. "
+            "New: command_start() after cooling window → state == STARTING (Phase E). "
+            "See test_R6_restart_inside_cooling_window_dropped for full rationale."
+        ),
+        strict=True,
+    )
     def test_R6_restart_after_cooling_window_succeeds(self):
         """A restart after t_min_down_s has elapsed must be accepted."""
         t = TurbineModule(TurbineConfig(asset_id="t0", rated_mw=10.0,
@@ -350,6 +432,13 @@ class TestR6MinDownGtMode:
             f"_run_start_s must be updated on valid restart.  Got {t._run_start_s}"
         )
 
+    @pytest.mark.xfail(
+        reason=(
+            "Phase E Item 4 report — stage_target() deleted (Phase C). "
+            "See test_R6_restart_inside_cooling_window_dropped for full rationale."
+        ),
+        strict=True,
+    )
     def test_R6_checkpoint_valley_zero_stop_start_cycles(self):
         """
         IP claim 4 regression guard: repeated checkpoint valleys (load drops

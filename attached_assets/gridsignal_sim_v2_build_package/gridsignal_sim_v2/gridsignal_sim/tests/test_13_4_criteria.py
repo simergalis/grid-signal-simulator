@@ -354,9 +354,9 @@ class TestB4StandbyConsistency:
         # No job, turbine pre-ramped well above resting load.
         state = _make_state()
         turb  = state.turbines[0]
+        # Phase E repair: AT_TARGET deleted (Phase C) → SYNCHRONISED; _target_mw removed.
         turb._current_output_mw = 5.0
-        turb._target_mw         = 5.0
-        turb.state              = TurbineState.AT_TARGET
+        turb.state              = TurbineState.SYNCHRONISED
 
         tick = _run_tick(state)
         assert tick.bess_setpoint_mw == pytest.approx(0.0, abs=0.01), (
@@ -390,9 +390,9 @@ class TestB4StandbyConsistency:
 
         # Lock turbine at AT_TARGET — advance() is a no-op when state != RAMPING.
         turb = state.turbines[0]
+        # Phase E repair: AT_TARGET deleted (Phase C) → SYNCHRONISED; _target_mw removed.
         turb._current_output_mw = 20.0   # ample to cover any load
-        turb._target_mw         = 20.0
-        turb.state              = TurbineState.AT_TARGET
+        turb.state              = TurbineState.SYNCHRONISED
 
         tick = _run_tick(state, sim_time=5.0)
 

@@ -8,6 +8,8 @@ layer, tested independently of the run-management/concurrency layer.
 import contextlib
 import math
 
+import pytest
+
 from core.asset_modules import BessModule, CoolingModule, GPUModule, IrradianceProfile, SolarModule, TurbineModule
 from core.dispatch import CheckpointClassifier, CheckpointState, DispatchArbitrator
 from core.models import BessConfig, HardwareProfile, SiteConfig, SolarConfig, TurbineConfig, WorkloadEventType, WorkloadSignal, WorkloadClass
@@ -141,6 +143,17 @@ def test_tc11_sufficient_reserve_no_false_alert():
     assert alert is None
 
 
+@pytest.mark.xfail(
+    reason=(
+        "Phase E Item 4 report — stage_target() and advance() deleted in Phase C. "
+        "Old: stage_target(6.0) set _target_mw; advance(dt=30) drove RAMPING output. "
+        "New: STARTING units advance via command_start/begin_interval; SYNCHRONISED "
+        "units track setpoints via apply_loading().  Rate-limited descent is tested "
+        "by test_synchronised_unit_rate_limits_setpoint_drop (Phase E Item 2). "
+        "Why: Phase C collapsed RAMPING/AT_TARGET into SYNCHRONISED."
+    ),
+    strict=True,
+)
 def test_turbine_ramps_at_configured_rate():
     turbine = TurbineModule(TurbineConfig(asset_id="t0", r_asset_mw_per_s=0.2, rated_mw=25.0))
     turbine.stage_target(6.0)
@@ -237,6 +250,19 @@ def test_d7_onboarding_alert_fires_once_per_unique_profile_id():
 # D8 — staging sizes against P_dispatch_required, not P_total
 # ---------------------------------------------------------------------------
 
+@pytest.mark.xfail(
+    reason=(
+        "Phase E Item 4 report — test body reads turbine._target_mw as an assertion "
+        "proxy; _target_mw deleted in Phase C.  "
+        "Old: stage_for_predicted_step() stored dispatch delta in _target_mw. "
+        "New: staging delta flows through the commitment engine's pending_start register "
+        "and commitment engine's dispatch delta; no _target_mw field on TurbineModule. "
+        "Why: Phase C removed _target_mw when it replaced the RAMPING state machine. "
+        "The underlying property (solar offset reduces dispatch delta) still holds — "
+        "it is exercised by TC-91b via the real evaluate_tick() path."
+    ),
+    strict=True,
+)
 def test_d8_staging_sizes_against_dispatch_required_not_p_total():
     """D8: stage_for_predicted_step() must receive the increment this job
     adds to P_dispatch_required, net of renewable output at staging time.

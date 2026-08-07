@@ -102,13 +102,13 @@ def _drain_operator_commands(ctx) -> None:
         for turb in ctx.sim_state.turbines:
             if turb.config.asset_id == uid:
                 if action == "trip":
-                    if turb.is_synchronised:
+                    # Phase E repair: is_synchronised → is_on_bus; _target_mw removed.
+                    if turb.is_on_bus:
                         turb._last_sync_stop_s = ctx.sim_time
                     turb._stop_time_s      = ctx.sim_time
                     turb._run_start_s      = math.nan
                     turb.state = TurbineState.OFFLINE
                     turb._current_output_mw = 0.0
-                    turb._target_mw = 0.0
                 elif action == "start":
                     turb.command_start(ctx.sim_time)
                 break
@@ -135,10 +135,10 @@ def test_tc_203_1_trip_command_zeroes_unit_and_leaves_fleet_reduced():
     manager = _make_manager_with_ctx(ctx)
 
     # Force both units onto the bus with non-zero output.
+    # Phase E repair: _target_mw removed.
     for turb in ctx.sim_state.turbines:
         turb.state = TurbineState.SYNCHRONISED
         turb._current_output_mw = 8.0
-        turb._target_mw = 8.0
 
     # ── validate and enqueue via the production path ──────────────────────────
     code, detail = manager.validate_and_enqueue_unit_command(ctx.run_id, "gt-0", "trip")
@@ -156,7 +156,8 @@ def test_tc_203_1_trip_command_zeroes_unit_and_leaves_fleet_reduced():
         f"gt-0 should be OFFLINE after trip, got {gt0.state!r}"
     )
     assert gt0._current_output_mw == 0.0, f"gt-0 output: {gt0._current_output_mw}"
-    assert gt0._target_mw == 0.0,          f"gt-0 target: {gt0._target_mw}"
+    # Phase E repair: _target_mw deleted (Phase C). Equivalent: output_mw() == 0.0.
+    assert gt0.output_mw() == 0.0,         f"gt-0 output_mw after trip: {gt0.output_mw()}"
     assert not math.isnan(gt0._stop_time_s), (
         "gt-0._stop_time_s must be set after trip so cooldown window is tracked"
     )
@@ -251,9 +252,9 @@ def test_tc_203_3_immediate_start_after_trip_accepted_when_cooldown_zero():
     )
 
     # ── Step 1: force gt-0 to SYNCHRONISED, then trip it ─────────────────────
+    # Phase E repair: _target_mw removed.
     gt0.state = TurbineState.SYNCHRONISED
     gt0._current_output_mw = 8.0
-    gt0._target_mw = 8.0
 
     code, detail = manager.validate_and_enqueue_unit_command(ctx.run_id, "gt-0", "trip")
     assert code == manager.UNIT_CMD_OK, f"trip should be accepted: {detail!r}"
@@ -297,9 +298,9 @@ def test_tc_203_4_start_rejected_during_minimum_down_time_window():
     gt0.config.t_min_down_s = 300.0
 
     # ── Step 1: trip gt-0 (sets _stop_time_s = ctx.sim_time = 0.0) ───────────
+    # Phase E repair: _target_mw removed.
     gt0.state = TurbineState.SYNCHRONISED
     gt0._current_output_mw = 8.0
-    gt0._target_mw = 8.0
 
     code, _ = manager.validate_and_enqueue_unit_command(ctx.run_id, "gt-0", "trip")
     assert code == manager.UNIT_CMD_OK

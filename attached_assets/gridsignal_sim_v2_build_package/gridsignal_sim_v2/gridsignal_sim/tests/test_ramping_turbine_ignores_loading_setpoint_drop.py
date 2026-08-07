@@ -187,3 +187,84 @@ def test_starting_turbine_output_frozen_by_loading_exclusion() -> None:
 
     finally:
         _EVALUATE_TICK_PERMITTED.reset(token)
+
+
+# ── Phase E Item 2 — correct discriminator: rate-limited setpoint drop ────────
+
+def test_synchronised_unit_rate_limits_setpoint_drop() -> None:
+    """
+    DISCRIMINATOR (Phase E Item 2 — successor to the STARTING-frozen test).
+
+    A SYNCHRONISED unit tracking toward rated output receives an abrupt setpoint
+    drop well below its current output.  The property under test:
+
+        apply_loading() CLAMPS the per-tick movement to ±r_asset × dt.
+
+    If a second writer were to reappear and write _current_output_mw directly
+    (bypassing the clamp), output would snap to the new setpoint in one tick —
+    the assertion below would catch it immediately.
+
+    Why this replaces the STARTING version (which asserted 0 → 0 is stable):
+        A STARTING unit produces zero MW regardless of setpoint — there is no
+        dual-writer hazard because the loading layer already excludes STARTING
+        units.  The hazard only exists for SYNCHRONISED units, where two code
+        paths could both write output.  This test targets that surface.
+
+    Setup:
+        Single turbine, rated_mw=10.0, r_asset_mw_per_s=0.2, dt=5.0 s.
+        Unit forced to SYNCHRONISED at 8.0 MW.
+        Setpoint dropped to 0.5 MW (7.5 MW gap — much larger than 1 tick's ramp).
+
+    Expected per-tick bounds:
+        max_step = r_asset × dt = 0.2 × 5.0 = 1.0 MW
+        output after one tick = 8.0 − 1.0 = 7.0 MW  (rate-limited descent)
+        output must NOT equal 0.5 MW (which would mean a snap / second write).
+    """
+    import pytest
+    from core.asset_modules import TurbineModule, TurbineState
+    from core.models import TurbineConfig
+    from core.loading import apply_loading
+
+    DT      = 5.0
+    R       = 0.2         # MW/s
+    RATED   = 10.0
+    INITIAL = 8.0         # MW — current output before setpoint drop
+    LOW_SP  = 0.5         # MW — abrupt setpoint; 7.5 MW gap
+    MAX_STEP = R * DT     # 1.0 MW — maximum allowed output change per tick
+
+    t = TurbineModule(TurbineConfig(
+        asset_id="turb-discriminator",
+        rated_mw=RATED,
+        r_asset_mw_per_s=R,
+    ))
+    t.state = TurbineState.SYNCHRONISED
+    t._current_output_mw = INITIAL
+
+    # begin_interval() resets the write-once guard so apply_loading() can write.
+    t.begin_interval()
+
+    # apply_loading with a fleet setpoint equal to LOW_SP (single-unit fleet).
+    apply_loading([t], p_fleet=LOW_SP, dt_seconds=DT)
+
+    after_out = t.output_mw()
+    actual_drop = INITIAL - after_out
+
+    # ── Rate-limit assertion ───────────────────────────────────────────────────
+    assert actual_drop <= MAX_STEP + 1e-9, (
+        f"Output dropped {actual_drop:.6f} MW in one tick; max allowed = {MAX_STEP} MW. "
+        f"A second writer is snapping output toward the setpoint rather than "
+        f"rate-limiting the change.  apply_loading() must clamp delta to ±r_asset×dt."
+    )
+
+    # ── No-snap assertion ─────────────────────────────────────────────────────
+    assert not abs(after_out - LOW_SP) < 1e-6, (
+        f"Output snapped to setpoint {LOW_SP} MW in one tick (from {INITIAL} MW). "
+        f"apply_loading() must move output by at most {MAX_STEP} MW per tick — "
+        f"not overwrite it with the setpoint directly."
+    )
+
+    # ── Exact-step assertion (confirms rate-limiting, not partial application) ─
+    assert abs(after_out - (INITIAL - MAX_STEP)) < 1e-9, (
+        f"Expected exactly one rate-limited step: {INITIAL} − {MAX_STEP} = "
+        f"{INITIAL - MAX_STEP} MW.  Got {after_out:.6f} MW."
+    )

@@ -74,15 +74,37 @@ def compute_loading_setpoints(
         return list(msl_i), sub_msl_surplus_mw
 
     # ── Normal case: P_allocated ∈ [Σ msl, Σ rated] ─────────────────────────
-    # Initial share — matched droop: share_i = rated_i / Σ rated_j.
-    shares = [t.config.rated_mw / total_rated for t in synchronised]
-    setpoints = [s * p_allocated for s in shares]
+    # Phase E Item 7: sequential base-loading replaces proportional sharing.
+    #
+    # WHY: proportional sharing (shares = rated_i / Σ rated) gives every unit
+    # the same utilisation fraction as the fleet.  Per-unit utilisation is then
+    # a scalar multiple of fleet utilisation, so the Phase D commit trigger
+    # (which fires on per-unit saturation) becomes indistinguishable from a
+    # fleet-level trigger — the two are mutually defeating.
+    #
+    # HOW: every unit receives at least its MSL (floor already set above);
+    # residual above Σ MSL is allocated in commitment order (list order = order
+    # units were started), filling each unit to its rated_mw before advancing.
+    # The "marginal unit" (last to receive residual) runs below rated while
+    # more-senior units are at rated — utilisation diverges (TC-96).
+    #
+    # The existing redistribution loop still runs to correct any numeric slip;
+    # it is a no-op for valid sequential allocations (setpoints already clamped
+    # within [msl, rated]).
+    setpoints   = list(msl_i)                         # floor: every unit at MSL
+    _residual_s = max(0.0, p_allocated - sum(msl_i))  # headroom above Σ MSL
+    for i, t in enumerate(synchronised):
+        if _residual_s < 1e-9:
+            break
+        _headroom_i   = t.config.rated_mw - msl_i[i]
+        _fill_i       = min(_residual_s, _headroom_i)
+        setpoints[i] += _fill_i
+        _residual_s  -= _fill_i
 
     # ── Residual redistribution — terminates within |A| passes ───────────────
-    # Each pass: identify clamped units, accumulate residual, redistribute
-    # proportionally (by rated_mw) among unclamped units.
-    # Order-independence: residual and unclamped_rated depend only on rated_mw
-    # values, not on list position.
+    # Each pass: identify clamped units, accumulate residual, redistribute.
+    # With sequential base-loading the initial setpoints are already in
+    # [msl, rated]; this loop is a safety guard against numeric edge cases.
     n = len(synchronised)
     for _ in range(n):
         residual = 0.0

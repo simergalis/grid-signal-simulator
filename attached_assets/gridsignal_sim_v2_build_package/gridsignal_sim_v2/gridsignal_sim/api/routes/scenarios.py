@@ -228,13 +228,18 @@ def _turbine(
     r_mw_per_s: float = 0.2,
     run_hours_h: Optional[float] = None,
     hot_standby: bool = False,
-    p_min_stable_frac: float = 0.0,
+    p_min_stable_frac: float = 0.40,
+    t_min_run_s: float = 1800.0,
+    t_min_down_s: float = 900.0,
 ) -> TurbineUnitSpec:
     """Build a TurbineUnitSpec.
 
-    p_min_stable_frac: minimum stable load floor as a fraction of rated_mw.
-    Default 0.0 = constraint disabled (backward-compat).
-    demo-20mw uses 0.40 (PW-1 / §15) → MSL = 2.8 MW per 7 MW unit.
+    Phase E Item 8 / §7.1.3.6: physical constraints enabled by default.
+    p_min_stable_frac=0.40  — frame-class MSL floor (PW-1 / §15, CHOSEN).
+    t_min_run_s=1800        — 30 min minimum run time before a stop (R5, CHOSEN).
+    t_min_down_s=900        — 15 min cooling window before a restart (R6, CHOSEN).
+    demo-20mw turbines were already at 0.40; Item 8 propagates all three
+    values to the remaining 23 seeded scenarios.
     """
     return TurbineUnitSpec(
         asset_id=asset_id,
@@ -243,6 +248,8 @@ def _turbine(
         run_hours_h=run_hours_h,
         hot_standby=hot_standby,
         p_min_stable_frac=p_min_stable_frac,
+        t_min_run_s=t_min_run_s,
+        t_min_down_s=t_min_down_s,
     )
 
 

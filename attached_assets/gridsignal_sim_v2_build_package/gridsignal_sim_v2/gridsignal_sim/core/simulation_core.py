@@ -138,6 +138,10 @@ class SimulationState:
     _pending_start: PendingStartRegister = field(init=False)
     _commit_cond:   SustainedCondition  = field(init=False)
     _decommit_cond: SustainedCondition  = field(init=False)
+    # Phase E Item 6: sim_time of the most recent breaker-open event.
+    # Guards sequential-stop settling: a new decommit is blocked until
+    # (sim_time − _last_breaker_open_s) ≥ max(unload_tail_s) across the fleet.
+    _last_breaker_open_s: float = field(default=math.nan, init=False)
 
     def __post_init__(self) -> None:
         # Step 3 Item 4: arbitrator now holds a reference to site so it can
@@ -663,9 +667,53 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # it guarded against no longer exist.  The Phase B write guard (begin_interval +
     # set_output counter) provides the remaining double-write protection.
 
-    _sub_msl_surplus_mw: float = apply_loading(
-        _synchronised_units, _p_dispatch_droop_mw, dt_seconds
+    # Phase E Item 5: split loading between UNLOADING and SYNCHRONISED units.
+    # UNLOADING units receive exactly their MSL setpoint — not the proportional
+    # fleet share — so output tracks continuously down to MSL rather than being
+    # pulled by fleet-level redistribution.  Residual after MSL allocation goes
+    # exclusively to SYNCHRONISED units.
+    _unloading_units  = [t for t in _synchronised_units if t.state == TurbineState.UNLOADING]
+    _truly_sync_units = [t for t in _synchronised_units if t.state == TurbineState.SYNCHRONISED]
+    _msl_held_mw: float = sum(
+        t.config.p_min_stable_frac * t.config.rated_mw for t in _unloading_units
     )
+    for _ut in _unloading_units:
+        _ut_msl_mw = _ut.config.p_min_stable_frac * _ut.config.rated_mw
+        apply_loading([_ut], _ut_msl_mw, dt_seconds)
+    _p_sync_fleet_mw = max(0.0, _p_dispatch_droop_mw - _msl_held_mw)
+    _sub_msl_surplus_mw: float = apply_loading(
+        _truly_sync_units, _p_sync_fleet_mw, dt_seconds
+    )
+
+    # Phase E Item 5 — levelled-off predicate and breaker open.
+    # `levelled_off` = |output − msl| < levelled_off_tol_mw — a derived predicate,
+    # NOT a TurbineState (spec §E.5 prohibition: a state needs an owner, and a second
+    # owner of unit output reproduces the dual-writer defect this sequence removed).
+    # Output falls continuously to MSL through the loading layer, then steps
+    # discontinuously to 0 when the dwell (unload_tail_s) has been sustained.  Do not
+    # smooth the discontinuous step — spec §E.5 explicit prohibition.
+    for _ut in _unloading_units:
+        _ut_msl_mw = _ut.config.p_min_stable_frac * _ut.config.rated_mw
+        _levelled  = abs(_ut.output_mw() - _ut_msl_mw) < _ut.config.levelled_off_tol_mw
+        if _levelled:
+            if math.isnan(_ut._levelled_off_since_s):
+                _ut._levelled_off_since_s = sim_time   # start dwell clock
+            _dwell_elapsed = sim_time - _ut._levelled_off_since_s
+            if _dwell_elapsed >= _ut.config.unload_tail_s:
+                # Breaker opens: output steps discontinuously from MSL to 0.
+                _ut.state                  = TurbineState.OFFLINE
+                _ut._current_output_mw     = 0.0
+                _ut._stop_time_s           = sim_time
+                _ut._last_sync_stop_s      = sim_time
+                _ut._levelled_off_since_s  = math.nan
+                state._last_breaker_open_s = sim_time
+                _log.info(
+                    "Stop sequencing: breaker open for %r at sim_time=%.1f "
+                    "(msl_mw=%.3f, dwell=%.1f s)",
+                    _ut.config.asset_id, sim_time, _ut_msl_mw, _dwell_elapsed,
+                )
+        else:
+            _ut._levelled_off_since_s = math.nan   # reset dwell clock while descending
 
     # Phase 11.3: dispatch.tick() now returns a 4-tuple.
     # _bess_setpoint_mw: commanded BESS output before SOC/power clipping.
@@ -708,17 +756,36 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                 )
                 break
     elif _commit_decision.action == "decommit" and _commit_decision.target_unit_id is not None:
-        for _cht in state.turbines:
-            if _cht.config.asset_id == _commit_decision.target_unit_id:
-                try:
-                    _cht.command_stop(sim_time)
-                    _log.info(
-                        "Commitment engine: stop %r at sim_time=%.1f (%s)",
-                        _cht.config.asset_id, sim_time, _commit_decision.reason,
-                    )
-                except (RuntimeError, AttributeError):
-                    pass  # SYNCHRONISED-only guard; state may have changed since snapshot
-                break
+        # Phase E Item 6: sequential-stop guard — at most one UNLOADING at a time,
+        # plus settling interval after last breaker open (symmetric to Phase D D-05).
+        # A new decommit is blocked when:
+        #   (a) any unit is already in UNLOADING, OR
+        #   (b) the last breaker opened less than unload_tail_s seconds ago.
+        _n_unloading = sum(1 for _tu in state.turbines if _tu.state == TurbineState.UNLOADING)
+        _settle_s = max(
+            (_tu.config.unload_tail_s for _tu in state.turbines), default=60.0
+        )
+        _settle_ok = (
+            math.isnan(state._last_breaker_open_s)
+            or (sim_time - state._last_breaker_open_s) >= _settle_s
+        )
+        if _n_unloading == 0 and _settle_ok:
+            for _cht in state.turbines:
+                if _cht.config.asset_id == _commit_decision.target_unit_id:
+                    try:
+                        _cht.command_stop(sim_time)
+                        _log.info(
+                            "Commitment engine: stop %r at sim_time=%.1f (%s)",
+                            _cht.config.asset_id, sim_time, _commit_decision.reason,
+                        )
+                    except (RuntimeError, AttributeError):
+                        pass  # SYNCHRONISED-only guard; state may have changed since snapshot
+                    break
+        else:
+            _log.debug(
+                "Decommit of %r deferred: n_unloading=%d settle_ok=%s (sim_time=%.1f)",
+                _commit_decision.target_unit_id, _n_unloading, _settle_ok, sim_time,
+            )
 
     # Phase 13.4 B3: detect when the commanded BESS output exceeds the fleet's
     # total rated power ceiling.  Surfaced in TickResult for dashboard / alerts.

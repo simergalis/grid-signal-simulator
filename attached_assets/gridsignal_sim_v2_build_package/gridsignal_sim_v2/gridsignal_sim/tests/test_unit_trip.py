@@ -123,11 +123,11 @@ def test_tc84a_unit_trip_forces_turbine_offline():
         _make_turbine("turbine-1"),
         _make_turbine("turbine-2"),
     ]
-    # Pre-stage each turbine as AT_TARGET so they are clearly online before the trip.
+    # Phase E repair: AT_TARGET deleted (Phase C). Setup with SYNCHRONISED — the
+    # direct successor: a unit fully on the bus and settled at an output level.
     for t in turbines:
-        t.state = TurbineState.AT_TARGET
+        t.state = TurbineState.SYNCHRONISED
         t._current_output_mw = 6.0
-        t._target_mw = 7.0
 
     state = _make_state(turbines)
     signal = _unit_trip_signal("turbine-1", t=120.0)
@@ -141,8 +141,10 @@ def test_tc84a_unit_trip_forces_turbine_offline():
     assert state.turbines[1]._current_output_mw == 0.0, (
         f"Expected turbine-1 output_mw == 0.0; got {state.turbines[1]._current_output_mw}"
     )
-    assert state.turbines[1]._target_mw == 0.0, (
-        f"Expected turbine-1 target_mw == 0.0; got {state.turbines[1]._target_mw}"
+    # Phase E repair: _target_mw deleted (Phase C).  The property it tested
+    # (tripped unit produces nothing) is now covered by output_mw() == 0.0.
+    assert state.turbines[1].output_mw() == 0.0, (
+        f"Expected tripped turbine-1 output_mw == 0.0; got {state.turbines[1].output_mw()}"
     )
 
 
@@ -157,19 +159,19 @@ def test_tc84b_other_turbines_unaffected():
         _make_turbine("turbine-1"),
         _make_turbine("turbine-2"),
     ]
+    # Phase E repair: AT_TARGET deleted (Phase C) → SYNCHRONISED.
     for t in turbines:
-        t.state = TurbineState.AT_TARGET
+        t.state = TurbineState.SYNCHRONISED
         t._current_output_mw = 6.0
-        t._target_mw = 7.0
 
     state = _make_state(turbines)
     state.apply_workload_signal(_unit_trip_signal("turbine-1"), dt_lead_seconds=0.0)
 
-    # turbine-0 and turbine-2 must remain AT_TARGET.
-    assert state.turbines[0].state == TurbineState.AT_TARGET, (
+    # turbine-0 and turbine-2 must remain SYNCHRONISED (unchanged by the trip).
+    assert state.turbines[0].state == TurbineState.SYNCHRONISED, (
         "turbine-0 should not be affected by a trip on turbine-1"
     )
-    assert state.turbines[2].state == TurbineState.AT_TARGET, (
+    assert state.turbines[2].state == TurbineState.SYNCHRONISED, (
         "turbine-2 should not be affected by a trip on turbine-1"
     )
 
@@ -180,15 +182,16 @@ def test_tc84b_other_turbines_unaffected():
 
 def test_tc84c_unknown_asset_id_ignored():
     """A UNIT_TRIP targeting a non-existent turbine must not raise."""
+    # Phase E repair: AT_TARGET deleted (Phase C) → SYNCHRONISED.
     turbines = [_make_turbine("turbine-0")]
-    turbines[0].state = TurbineState.AT_TARGET
+    turbines[0].state = TurbineState.SYNCHRONISED
     state = _make_state(turbines)
 
     # Should not raise; unknown asset_id is logged and skipped.
     state.apply_workload_signal(_unit_trip_signal("turbine-BOGUS"), dt_lead_seconds=0.0)
 
     # Fleet unchanged.
-    assert state.turbines[0].state == TurbineState.AT_TARGET
+    assert state.turbines[0].state == TurbineState.SYNCHRONISED
 
 
 # ---------------------------------------------------------------------------
@@ -197,9 +200,10 @@ def test_tc84c_unknown_asset_id_ignored():
 
 def test_tc84d_unit_trip_does_not_touch_gpu_state():
     """UNIT_TRIP early-returns before the GPU plane; no job owner is registered."""
+    # Phase E repair: AT_TARGET deleted (Phase C) → SYNCHRONISED.
     turbines = [_make_turbine("turbine-0"), _make_turbine("turbine-1")]
     for t in turbines:
-        t.state = TurbineState.AT_TARGET
+        t.state = TurbineState.SYNCHRONISED
         t._current_output_mw = 6.0
     state = _make_state(turbines)
 
@@ -218,17 +222,16 @@ def test_tc84d_unit_trip_does_not_touch_gpu_state():
 def test_tc84e_tripped_turbine_stays_offline_after_advance():
     """After a trip, advancing the turbine one tick must not re-engage it."""
     turbines = [_make_turbine("turbine-0"), _make_turbine("turbine-1")]
-    turbines[0].state = TurbineState.AT_TARGET
+    # Phase E repair: AT_TARGET deleted (Phase C) → SYNCHRONISED; _target_mw removed.
+    turbines[0].state = TurbineState.SYNCHRONISED
     turbines[0]._current_output_mw = 6.0
-    turbines[0]._target_mw = 7.0
-    turbines[1].state = TurbineState.AT_TARGET
+    turbines[1].state = TurbineState.SYNCHRONISED
     turbines[1]._current_output_mw = 6.0
-    turbines[1]._target_mw = 7.0
 
     state = _make_state(turbines)
     state.apply_workload_signal(_unit_trip_signal("turbine-0"), dt_lead_seconds=0.0)
 
-    # Advance one tick — OFFLINE turbines skip advance() (state != RAMPING).
+    # Advance one tick — OFFLINE turbines skip advance() (state != STARTING).
     state.turbines[0].advance(sim_time=121.0, dt_seconds=5.0)
 
     assert state.turbines[0].state == TurbineState.OFFLINE

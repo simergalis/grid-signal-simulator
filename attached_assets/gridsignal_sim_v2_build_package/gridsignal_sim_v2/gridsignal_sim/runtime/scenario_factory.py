@@ -510,10 +510,15 @@ def build_run_context_from_spec(
                 r_asset_mw_per_s=float(t.get("r_asset_mw_per_s", 0.2)),
                 rated_mw=float(t.get("rated_mw", 10.0)),
                 hot_standby=bool(t.get("hot_standby", False)),
-                # PW-1: read p_min_stable_frac from spec so demo-20mw
-                # turbines enforce the 2.8 MW MSL floor (0.40 × 7 MW).
-                # Default 0.0 preserves backward-compat for all other scenarios.
-                p_min_stable_frac=float(t.get("p_min_stable_frac", 0.0)),
+                # Phase E Item 8 / §7.1.3.6 — physical constraints (CHOSEN).
+                # p_min_stable_frac=0.40: frame-class MSL floor (PW-1 / §15).
+                # t_min_run_s=1800: 30 min minimum stable operation before stop.
+                # t_min_down_s=900: 15 min cooling window before restart.
+                # All three default to the CHOSEN values so every scenario (incl.
+                # fabric JSON) inherits the constraint without an explicit override.
+                p_min_stable_frac=float(t.get("p_min_stable_frac", 0.40)),
+                t_min_run_s=float(t.get("t_min_run_s", 1800.0)),
+                t_min_down_s=float(t.get("t_min_down_s", 900.0)),
             )
         )
         for i, t in enumerate(spec_data.get("turbine_units", []))

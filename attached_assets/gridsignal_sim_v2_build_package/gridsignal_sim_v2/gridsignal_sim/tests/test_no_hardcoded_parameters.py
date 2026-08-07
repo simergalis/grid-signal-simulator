@@ -84,6 +84,27 @@ _SCAN_EXEMPTIONS: Dict[str, str] = {
         "test_compound_event_is_additive_and_fails_at_seed erroneously pass because "
         "bridging capacity then exceeds the sizing-case shortfall by 11 kW."
     ),
+    "t_min_run_s": (
+        "[Reason B — disable-flag default vs. CHOSEN production default] "
+        "TurbineConfig.t_min_run_s = 0.0 is the disable-flag sentinel: 0.0 means "
+        "'no minimum run time constraint' and is required by the majority of unit tests "
+        "that create TurbineConfig() directly without a scenario spec.  "
+        "The catalogue value (1800.0 s, CHOSEN / §7.1.3.6) is the production scenario "
+        "default applied by the scenario factory (_turbine() helper) and "
+        "runtime/scenario_factory.py for all seeded scenarios.  Both values are "
+        "intentional and represent different physical slots: the code default is a "
+        "feature-off switch; the catalogue value is the CHOSEN operating constraint.  "
+        "Phase E Item 8."
+    ),
+    "t_min_down_s": (
+        "[Reason B — disable-flag default vs. CHOSEN production default] "
+        "TurbineConfig.t_min_down_s = 0.0 is the disable-flag sentinel: 0.0 means "
+        "'no minimum down time constraint' and is required by unit tests (e.g. TC-203-3) "
+        "that explicitly exercise the zero-cooldown path.  "
+        "The catalogue value (900.0 s, CHOSEN / §7.1.3.6) is the production scenario "
+        "default applied by the scenario factory and _turbine() helper.  Symmetric "
+        "justification to t_min_run_s.  Phase E Item 8."
+    ),
 }
 
 # Suffixes to strip when trying to map a code name to a catalogue key.

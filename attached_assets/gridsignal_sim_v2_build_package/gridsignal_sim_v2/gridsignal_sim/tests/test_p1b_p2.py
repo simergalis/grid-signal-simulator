@@ -428,6 +428,18 @@ class TestTC81UnitAvailabilityBoundary:
         # If this import succeeds without circular-import errors, the boundary holds.
         assert UA_from_models is UnitAvailability
 
+    @pytest.mark.xfail(
+        reason=(
+            "Phase E Item 4 report — Phase C replaced TRANSITIONAL, RAMPING, and AT_TARGET "
+            "with STARTING and SYNCHRONISED.  This test checked the Phase B state set; "
+            "the new canonical states are OFFLINE/STARTING/SYNCHRONISED/OUT_OF_SERVICE. "
+            "Old: 5-state enum including TRANSITIONAL/RAMPING/AT_TARGET.  "
+            "New: 4-state enum without those three.  "
+            "Why: Phase C collapsed the RAMPING/AT_TARGET sub-states into a single "
+            "SYNCHRONISED state to remove the dual-writer hazard (B1a defect)."
+        ),
+        strict=True,
+    )
     def test_tc81_new_phase2_states_exist(self):
         """All five Phase 2 canonical states exist in TurbineState."""
         for name in ("OFFLINE", "STARTING", "SYNCHRONISED", "OUT_OF_SERVICE", "TRANSITIONAL"):
@@ -484,6 +496,18 @@ class TestTC81UnitAvailabilityBoundary:
             f"TC-81 dispatch boundary cap: expected 5.0 MW, got {capped}"
         )
 
+    @pytest.mark.xfail(
+        reason=(
+            "Phase E Item 4 report — _check_loading_exclusion deleted in Phase C. "
+            "Old: explicit guard function in simulation_core.py verified RAMPING units "
+            "were excluded from the loading set.  "
+            "New: RAMPING state itself deleted; loading set is SYNCHRONISED-only by "
+            "construction; guard is no longer needed.  "
+            "Why: Phase C collapsed RAMPING/AT_TARGET into SYNCHRONISED, eliminating "
+            "the dual-writer hazard the guard was defending against."
+        ),
+        strict=True,
+    )
     def test_tc81_mutual_exclusion_guard_passes_for_valid_split(self):
         """Guard passes when SYNCHRONISED and RAMPING units are correctly separated.
 
@@ -498,6 +522,15 @@ class TestTC81UnitAvailabilityBoundary:
         # Correct usage: loading set = {GT-10}; RAMPING unit GT-15 is not in it → no error
         _check_loading_exclusion([synced], [synced, ramping])
 
+    @pytest.mark.xfail(
+        reason=(
+            "Phase E Item 4 report — _check_loading_exclusion deleted in Phase C "
+            "(same as test_tc81_mutual_exclusion_guard_passes_for_valid_split above). "
+            "Old: guard raised RuntimeError when RAMPING unit appeared in loading set. "
+            "New: guard deleted; RAMPING state deleted; defect is structurally impossible."
+        ),
+        strict=True,
+    )
     def test_tc81_mutual_exclusion_guard_raises_on_b1a_defect(self):
         """Guard raises RuntimeError when a RAMPING unit is in the loading set.
 
@@ -513,6 +546,16 @@ class TestTC81UnitAvailabilityBoundary:
         with pytest.raises(RuntimeError, match="mutual-exclusion"):
             _check_loading_exclusion([ramping], [ramping])
 
+    @pytest.mark.xfail(
+        reason=(
+            "Phase E Item 4 report — AT_TARGET deleted in Phase C; "
+            "_check_loading_exclusion deleted with it.  "
+            "Old: guard raised for AT_TARGET in loading set.  "
+            "New: AT_TARGET state and guard both deleted; AT_TARGET units now "
+            "treated as SYNCHRONISED — they are always in the loading set."
+        ),
+        strict=True,
+    )
     def test_tc81_mutual_exclusion_guard_raises_on_at_target_defect(self):
         """Guard raises for AT_TARGET unit appearing in loading set."""
         from core.simulation_core import _check_loading_exclusion

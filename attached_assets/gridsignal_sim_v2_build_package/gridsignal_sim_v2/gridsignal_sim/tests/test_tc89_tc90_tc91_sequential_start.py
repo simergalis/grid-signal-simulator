@@ -404,3 +404,78 @@ def test_tc93_starting_unit_contributes_zero():
         f"TC-93 FAIL: STARTING unit output_mw = {t.output_mw()} MW (expected 0.0). "
         f"STARTING units are not on the bus and produce no power."
     )
+
+
+# ── TC-91b: both production call sites in one real tick ───────────────────────
+
+def test_tc91b_both_production_paths_share_pending_register():
+    """TC-91b: PendingStartRegister is reachable from both production call sites
+    in the same simulation tick; at most one unit starts.
+
+    TC-91 manually drove stage_for_predicted_step() and the headroom check.
+    TC-91b drives a real ctx.step() so that both live code paths run
+    sequentially in one tick and must share the same PendingStartRegister.
+
+    Production call sites in one tick:
+      A. apply_workload_signal() → arb.stage_for_predicted_step()
+         (fires when a STARTING job signal is dispatched in the current tick)
+      B. evaluate_commitment() called from the tick loop in simulation_core.py
+         (fires when reserve floor is violated)
+
+    Both are eligible when:
+      - There are OFFLINE turbines available to start.
+      - One turbine is already SYNCHRONISED above the headroom threshold
+        (→ reserve floor violated, making path B want to commit).
+      - A STARTING job signal is pending
+        (→ path A fires a demand-step staging call with delta > 0).
+
+    PendingStartRegister must prevent path B from starting a second unit after
+    path A has already started one.  If the register is wired correctly, exactly
+    one of {turbine-1, turbine-2, turbine-3} transitions to STARTING; the rest
+    remain OFFLINE.
+
+    If the register is NOT shared between both paths, both could fire and two
+    units would start simultaneously — exactly the defect TC-89/TC-90 guard.
+    """
+    from api.routes.scenarios import build_seeded_store
+    from api.schemas import ScenarioSpec
+    from runtime.scenario_factory import build_run_context_from_spec
+    from core.models import TurbineState
+
+    store = build_seeded_store()
+    rec   = store.get("demo-20mw")
+    spec  = ScenarioSpec.model_validate_json(rec.spec_json)
+    ctx   = build_run_context_from_spec("tc91b-run", spec.model_dump())
+
+    # Force turbine-0 to SYNCHRONISED at 86% output (above 80% headroom threshold).
+    # This makes the commitment engine's reserve-floor check fire (1 unit 7 MW
+    # < demand+max_rated ≈ 6.3+7 = 13.3 MW) AND makes stage_for_predicted_step()
+    # eligible for the initial workload STARTING signal.
+    active = [t for t in ctx.sim_state.turbines if not t.config.hot_standby]
+    active[0].state = TurbineState.SYNCHRONISED
+    active[0]._current_output_mw = 6.0   # 6/7 MW = 86% > 80% headroom threshold
+
+    # Snapshot OFFLINE units before the tick.
+    offline_before = {t.config.asset_id for t in active if t.state == TurbineState.OFFLINE}
+    assert len(offline_before) >= 2, (
+        "TC-91b pre-condition: need ≥ 2 OFFLINE non-standby turbines "
+        "so both paths have a candidate to start"
+    )
+
+    # Run exactly one tick — both production paths fire inside ctx.step().
+    ctx.step()
+
+    # Count how many OFFLINE units transitioned to STARTING.
+    new_starting = [
+        t for t in active
+        if t.config.asset_id in offline_before
+        and t.state == TurbineState.STARTING
+    ]
+
+    assert len(new_starting) <= 1, (
+        f"TC-91b FAIL: {len(new_starting)} units entered STARTING in one tick "
+        f"({[t.config.asset_id for t in new_starting]}). "
+        f"Both production call sites (stage_for_predicted_step + evaluate_commitment) "
+        f"started units independently — PendingStartRegister is not shared between them. "
+        f"Check that arbitrator.pending_start is assigned in SimulationState.__post_init__."
+    )
