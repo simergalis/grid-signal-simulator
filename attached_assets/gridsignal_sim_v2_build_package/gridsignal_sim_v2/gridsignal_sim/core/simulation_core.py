@@ -612,7 +612,23 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
 
     # Effective turbine dispatch setpoint includes the droop correction.
     # Used by the arbitrator, the balance decomposition, and the TickResult.
-    _p_dispatch_droop_mw = max(0.0, p_dispatch_required_mw + _droop_correction_mw)
+    #
+    # Upper bound: the setpoint cannot exceed the total synchronous fleet
+    # rating.  Without this bound, a large negative Δf (frequency collapse
+    # during islanded startup) produces a correction that is a multiple of
+    # S_base, yielding setpoints in the hundreds or thousands of MW —
+    # nonsensical for a 45 MW fleet.  The ceiling is Σ rated_MW =
+    # _s_base_mw × power_factor (both terms already computed; no new
+    # catalogue constant introduced).  The physical interpretation is that
+    # the governor cannot command more than 100 % of installed capacity.
+    _sync_ceiling_mw = _s_base_mw * state.site.power_factor
+    _p_dispatch_droop_mw = max(
+        0.0,
+        min(
+            p_dispatch_required_mw + _droop_correction_mw,
+            _sync_ceiling_mw,
+        ),
+    )
 
     # 4. Turbine advance + Phase 1b loading layer + BESS shortfall coverage
     #

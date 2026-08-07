@@ -34,6 +34,16 @@ No new catalogue constant — `_s_base_mw × pf = Σ rated_MW` is already comput
 
 ---
 
+## Droop clamp implemented
+
+`_sync_ceiling_mw = _s_base_mw * state.site.power_factor` (= Σ rated_MW, already computed).
+```python
+_p_dispatch_droop_mw = max(0.0, min(p_dispatch_required_mw + _droop_correction_mw, _sync_ceiling_mw))
+```
+No new catalogue constant. Suite unchanged (no test exercises the extreme runaway regime).
+
+---
+
 ## OFFLINE setpoint gate (Item 2 — implemented)
 
 **Problem:** `_p_dispatch_droop_mw` (full fleet demand) was attributed as the turbine setpoint even when all turbines are OFFLINE. This produced spurious `asset_delivery_error_mw = −demand` when BESS correctly covers load.
