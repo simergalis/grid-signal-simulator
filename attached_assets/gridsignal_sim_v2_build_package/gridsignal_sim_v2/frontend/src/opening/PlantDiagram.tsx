@@ -143,7 +143,7 @@ function WatchingCallout({ tick }: { tick: TickPayload | null }) {
 
   // What to show in the body
   const body = isRunning
-    ? (watchingText || 'A 20 MW job was queued 25 seconds ago and has not reached full power yet. The turbine is already ramping and the battery is covering the gap.')
+    ? (watchingText || 'Watch the tiles — compute demand is rising and GridSignal is already pre-staging generation to meet it.')
     : (aiText || watchingText || 'GridSignal reads the job scheduler, not the power meter. It knows a step-load is coming 30–60 s before it arrives, and stages generation and storage before the load lands.')
 
   const { x, y, w, h } = WATCHING_BOX
