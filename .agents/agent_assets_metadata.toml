@@ -168,3 +168,10 @@ uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/
 type = "unspecified"
 title = "S9 Test — Catalogued Invariant Assertions"
 description = "Rewritten test: catalogued physics, enterprise_8gpu_air demand schedule, 9 invariant assertions (I-1 through I-9), CSV export."
+
+[[outputs]]
+id = "KjFrGxJsilA3DgTEV9aS8"
+uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/reports/S9_catalogued_review_bundle.zip"
+type = "unspecified"
+title = "S9 Catalogued Review Bundle"
+description = "ZIP containing: S9_catalogued_rerun_report.md, S9_catalogued_invariants.csv, test_s9_islanded_ramp.py"
