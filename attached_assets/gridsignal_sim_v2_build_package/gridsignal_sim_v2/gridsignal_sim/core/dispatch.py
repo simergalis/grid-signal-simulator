@@ -344,6 +344,12 @@ class DispatchArbitrator:
         self.turbines = turbines
         self.bess_units = bess_units
         self.site = site   # read each tick for island_mode (Step 3 Item 4 / §7.1.2)
+        # Phase D Item 6: PendingStartRegister wire-point.
+        # Set to None at construction; SimulationState.__post_init__ assigns the
+        # shared register so stage_for_predicted_step() and evaluate_commitment()
+        # both operate on the same object.  Unit tests that exercise the arbitrator
+        # directly may assign their own PendingStartRegister here.
+        self.pending_start: "object | None" = None
 
     # ------------------------------------------------------------------
     # Fleet allocation helper (Step 3 Item 4)
@@ -508,18 +514,22 @@ class DispatchArbitrator:
             # Without +1, a single-turbine fleet has no N-1 survivor and contingency
             # is CANNOT_CARRY.
             if _offline:
-                _eff_delta = max(delta_p_mw, 0.0)   # never a negative start target
-                _n_start = min(
-                    max(1, math.ceil(_eff_delta / _offline[0].config.rated_mw) + 1),
-                    len(_offline),
-                )
-                # Phase C Item 3: command_start() replaces stage_target() for offline
-                # units.  N_needed+1 staging count logic is preserved unchanged (Phase D
-                # replaces the count logic entirely).  No per-unit target is needed —
-                # the loading layer sets output for all on-bus units; command_start()
-                # begins the STARTING countdown.
-                for _ht in _offline[:_n_start]:
+                # Phase D Item 6: sequential start — exactly 1 unit per call (D-05).
+                # Removes the N_needed+1 formula (the "cold-start bypass" that started
+                # multiple units simultaneously).  The commitment engine (evaluate_commitment
+                # in simulation_core.py) handles subsequent units on future ticks.
+                #
+                # PendingStartRegister gate: if a unit is already in its start sequence
+                # do not issue a second command_start().  The register is None only in
+                # unit tests that have not wired a register — those tests get the
+                # unconditional 1-unit-per-call path without the gate.
+                _ps = self.pending_start
+                _gate_open = _ps is None or _ps.is_empty  # type: ignore[union-attr]
+                if _gate_open:
+                    _ht = _offline[0]
                     _ht.command_start(sim_time)
+                    if _ps is not None:
+                        _ps.record_start(_ht.config.asset_id, sim_time)  # type: ignore[union-attr]
 
             # On-bus units are driven by apply_loading() toward the fleet setpoint.
             # The former stage_target() on-bus block is deleted in Phase C — its only

@@ -886,7 +886,7 @@ def _apply_soc_corruption(ctx: "RunContext", tick_result: "TickResult") -> "Tick
             current_output_mw=t.output_mw(),
             rated_mw=t.config.rated_mw,
             r_asset_mw_per_s=t.config.r_asset_mw_per_s,
-            is_synchronized=(t.state != TurbineState.OFFLINE),
+            is_synchronized=t.is_on_bus,
         )
         for t in ctx.sim_state.turbines
     )

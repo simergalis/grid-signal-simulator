@@ -33,6 +33,10 @@ from .dispatch import (
     CurtailmentProposal, CurtailmentTier, DispatchArbitrator, InsufficientReserveAlert,
     LadderPosition, PreStagingEngine, select_candidates,
 )
+from .commitment import (
+    CommitmentConfig, CommitmentDecision, PendingStartRegister,
+    SustainedCondition, evaluate_commitment,
+)
 from .scada_layer import CommandType, SimulatedPMS, SimulatedScadaLayer
 from .models import DataQualityTag, GENERIC_FALLBACK_PROFILE, IslandMode, KubeMetrics, SiteConfig, TickResult, WorkloadEventType, WorkloadSignal
 from ._plane_guard import _EVALUATE_TICK_PERMITTED
@@ -125,11 +129,29 @@ class SimulationState:
     _forecast_error_sum_mw: float = field(default=0.0, init=False)
     _forecast_ticks:        int   = field(default=0,   init=False)
 
+    # Phase D Item 5: commitment engine state.
+    # All four fields are init=False; initialized in __post_init__ from the
+    # catalogue so no threshold appears as a code literal (Guard D1).
+    # PROHIBITED: crediting _pending_start contents toward capacity, reserve,
+    # ramp, or headroom — the pending unit is not yet on the bus.
+    _commit_cfg:    CommitmentConfig    = field(init=False)
+    _pending_start: PendingStartRegister = field(init=False)
+    _commit_cond:   SustainedCondition  = field(init=False)
+    _decommit_cond: SustainedCondition  = field(init=False)
+
     def __post_init__(self) -> None:
         # Step 3 Item 4: arbitrator now holds a reference to site so it can
         # read island_mode each tick (mode changes with operating state —
         # Step 11 will flip it; holding the reference keeps the tick path O(1)).
         self.arbitrator = DispatchArbitrator(self.turbines, self.bess_units, self.site)
+        # Phase D Item 5: commitment engine — build config from catalogue, wire
+        # PendingStartRegister to the arbitrator so stage_for_predicted_step()
+        # respects the sequential-start contract (D-05).
+        self._commit_cfg    = CommitmentConfig.from_catalogue()
+        self._pending_start = PendingStartRegister()
+        self._commit_cond   = SustainedCondition(threshold_s=self._commit_cfg.commit_confirm_s)
+        self._decommit_cond = SustainedCondition(threshold_s=self._commit_cfg.decommit_confirm_s)
+        self.arbitrator.pending_start = self._pending_start
         # Step 10: curtailment ladder and pre-staging engine.
         self.curtailment_ladder = CurtailmentLadder()
         if self.site.pre_staging_config is not None:
@@ -197,7 +219,6 @@ class SimulationState:
                 if _t.config.asset_id == _tripped_asset_id:
                     _t.state = TurbineState.OFFLINE
                     _t._current_output_mw = 0.0
-                    _t._target_mw = 0.0
                     _matched = True
                     _log.info(
                         "UNIT_TRIP: turbine %r forced OFFLINE at sim_time=%.1f (TC-84).",
@@ -613,6 +634,14 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     for turbine in state.turbines:
         turbine.advance(sim_time, dt_seconds)
 
+    # Phase D Item 5: clear pending start when tracked unit reaches SYNCHRONISED.
+    # advance() may have just transitioned a STARTING unit to SYNCHRONISED; if
+    # it matches the pending register, clear it so evaluate_commitment() can
+    # issue the next start command on a future tick.
+    for _ta in state.turbines:
+        if _ta.state == TurbineState.SYNCHRONISED:
+            state._pending_start.clear_on_synchronised(_ta.config.asset_id)
+
     # Phase 1b: loading layer — drive SYNCHRONISED units toward their share of
     # the droop-adjusted fleet setpoint.  Returns sub_msl_surplus_mw (> 0 only
     # when P_allocated < Σ msl_i, which holds the floor and reports the gap).
@@ -645,36 +674,51 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # the frequency-corrected target and the BESS covers only the residual shortfall.
     turbine_output_mw, bess_output_mw, _bess_setpoint_mw, _arb_candidates = state.arbitrator.tick(_p_dispatch_droop_mw, dt_seconds)
 
-    # ── Incremental turbine dispatch: headroom-triggered next-unit start ──────
-    # When the committed fleet is approaching its rated capacity ceiling
-    # (less than HEADROOM_FRAC of headroom remaining), GridSignal issues a
-    # stage_target() to the next offline non-standby unit so it begins its
-    # ramp sequence before demand outpaces the running fleet.
+    # ── Phase D Item 5: evaluate_commitment() replaces headroom block ────────
+    # Called every tick so commit/decommit hysteresis timers accumulate.
+    # Reserve floor (always binding):
+    #   Σ rated(on_bus) ≥ P_dispatch_required + max(rated(on_bus))
+    # Violation is an immediate commit trigger regardless of utilisation.
     #
-    # This is the "GridSignal forecast signal" the operator sees: one turbine
-    # starts at a time, triggered by measured utilisation, not by a manual
-    # operator command.
-    #
-    # Only one unit is started per tick (break after first match) so the
-    # next tick's headroom measurement re-evaluates with the new unit already
-    # in its ramp sequence — preventing a cascade of simultaneous starts
-    # when headroom first tips below the threshold.
-    _DISPATCH_HEADROOM_FRAC: float = 0.20  # start next unit when <20% headroom
-    _sync_rated_mw: float = sum(
-        t.config.rated_mw
-        for t in state.turbines
-        if t.is_on_bus  # Phase C: {SYNCHRONISED, UNLOADING} — on-bus capacity
+    # PROHIBITED: the pending unit (STARTING) must NOT be included in on_bus
+    # or offline — it is not on the bus and must not be counted toward capacity,
+    # reserve, ramp, or headroom figures.
+    _avail_on_bus  = [t.unit_availability() for t in state.turbines if t.is_on_bus]
+    _avail_offline = [t.unit_availability() for t in state.turbines
+                      if t.state == TurbineState.OFFLINE]
+    _commit_decision: CommitmentDecision = evaluate_commitment(
+        on_bus        = _avail_on_bus,
+        offline       = _avail_offline,
+        p_demand_mw   = _p_dispatch_droop_mw,
+        pending       = state._pending_start,
+        commit_cond   = state._commit_cond,
+        decommit_cond = state._decommit_cond,
+        cfg           = state._commit_cfg,
+        dt_s          = dt_seconds,
+        sim_time      = sim_time,
     )
-    if (
-        _sync_rated_mw > 0.0
-        and turbine_output_mw / _sync_rated_mw >= (1.0 - _DISPATCH_HEADROOM_FRAC)
-    ):
-        for _ht in state.turbines:
-            if _ht.state == TurbineState.OFFLINE and not _ht.config.hot_standby:
-                # Phase C: command_start() replaces stage_target().  Staging count
-                # logic is unchanged (Phase D replaces the count logic entirely).
-                _ht.command_start(sim_time)
-                break  # one at a time; re-evaluated every tick
+    if _commit_decision.action == "commit" and _commit_decision.target_unit_id is not None:
+        for _cht in state.turbines:
+            if _cht.config.asset_id == _commit_decision.target_unit_id:
+                _cht.command_start(sim_time)
+                state._pending_start.record_start(_cht.config.asset_id, sim_time)
+                _log.info(
+                    "Commitment engine: start %r at sim_time=%.1f (%s)",
+                    _cht.config.asset_id, sim_time, _commit_decision.reason,
+                )
+                break
+    elif _commit_decision.action == "decommit" and _commit_decision.target_unit_id is not None:
+        for _cht in state.turbines:
+            if _cht.config.asset_id == _commit_decision.target_unit_id:
+                try:
+                    _cht.command_stop(sim_time)
+                    _log.info(
+                        "Commitment engine: stop %r at sim_time=%.1f (%s)",
+                        _cht.config.asset_id, sim_time, _commit_decision.reason,
+                    )
+                except (RuntimeError, AttributeError):
+                    pass  # SYNCHRONISED-only guard; state may have changed since snapshot
+                break
 
     # Phase 13.4 B3: detect when the commanded BESS output exceeds the fleet's
     # total rated power ceiling.  Surfaced in TickResult for dashboard / alerts.

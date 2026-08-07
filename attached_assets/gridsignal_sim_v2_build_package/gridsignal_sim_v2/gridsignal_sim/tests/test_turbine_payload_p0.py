@@ -162,17 +162,17 @@ def test_tc_p0_3_all_online_count_equals_fleet_size():
 # ── TC-P0-4: all standby — count zero, MW zero ───────────────────────────────
 
 def test_tc_p0_4_all_standby_zero_count_and_mw():
-    """All breaker_closed=False → count=0 and synchronised_output_mw=0.0."""
+    """All breaker_closed=False → count=0 and on_bus_output_mw=0.0."""
     from runtime.run_manager import _tick_result_to_dict
 
     tick    = _make_tick(_ALL_STANDBY, turbine_output_mw=0.0)
     payload = _tick_result_to_dict(tick)
 
-    assert payload["units_synchronised_count"] == 0, (
-        f"Expected count=0, got {payload['units_synchronised_count']}"
+    assert payload["units_on_bus_count"] == 0, (
+        f"Expected count=0, got {payload['units_on_bus_count']}"
     )
-    assert payload["synchronised_output_mw"] == 0.0, (
-        f"Expected MW=0.0, got {payload['synchronised_output_mw']}"
+    assert payload["on_bus_output_mw"] == 0.0, (
+        f"Expected MW=0.0, got {payload['on_bus_output_mw']}"
     )
 
 

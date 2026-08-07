@@ -79,11 +79,16 @@ from core._plane_guard import _EVALUATE_TICK_PERMITTED
 
 DT = 5.0
 R  = 0.2          # MW/s → max_delta = R × DT = 1.0 MW/tick
-EXPECTED_STEP = R * DT   # 1.0 MW
+# Phase D repair: RAMPING deleted; STARTING units have frozen output (0 MW).
+# apply_loading() excludes STARTING units, so output must NOT change.
+EXPECTED_STEP = 0.0   # STARTING units contribute zero; loading exclusion holds
 
 
 def _make_state() -> tuple[SimulationState, TurbineModule, SolarModule]:
-    turbine = TurbineModule(TurbineConfig(asset_id="turb-0", r_asset_mw_per_s=R, rated_mw=25.0))
+    turbine = TurbineModule(TurbineConfig(
+        asset_id="turb-0", r_asset_mw_per_s=R, rated_mw=25.0,
+        cold_start_s=60.0,   # Phase D repair: 60 s → 12 ticks at DT=5 s; transition visible in 24-tick loop
+    ))
     bess    = BessModule(BessConfig(asset_id="bess-0", rated_mw=5.0, usable_mwh=2.0))
     site    = SiteConfig(frequency_nominal_hz=50.0, power_factor=0.85, site_id="test-d1-B")
 
@@ -121,17 +126,19 @@ def _make_state() -> tuple[SimulationState, TurbineModule, SolarModule]:
     return state, turbine, solar
 
 
-def test_ramping_turbine_ignores_loading_setpoint_drop() -> None:
+def test_starting_turbine_output_frozen_by_loading_exclusion() -> None:
     """
-    DISCRIMINATOR: a RAMPING turbine's _current_output_mw must rise by exactly
-    r_asset × dt per tick regardless of what the net demand (loading setpoint) is
-    doing.  If apply_loading() were writing RAMPING units' output the output would
-    track (or fall toward) the setpoint instead.
+    DISCRIMINATOR (Phase D repair): a STARTING turbine's _current_output_mw must
+    stay at 0 MW every tick regardless of net demand, because apply_loading()
+    excludes STARTING units from the loaded set.
+
+    If apply_loading() were writing STARTING units' output the output would
+    deviate from 0.0 MW — test would catch the exclusion failure.
 
     Also verifies the transition-tick dual-write: on the tick where advance()
-    transitions the unit RAMPING → SYNCHRONISED, apply_loading() runs in the
-    same tick and adjusts output a second time.  After the transition, the loading
-    layer is the sole writer and output tracks the fleet demand setpoint.
+    transitions the unit STARTING → SYNCHRONISED (at tick 12 with cold_start_s=60 s),
+    apply_loading() runs in the same tick and adjusts output.  After the transition,
+    the loading layer is the sole writer and output tracks the fleet demand setpoint.
     """
     state, turbine, solar = _make_state()
     token = _EVALUATE_TICK_PERMITTED.set(True)
@@ -151,22 +158,21 @@ def test_ramping_turbine_ignores_loading_setpoint_drop() -> None:
             )
             after_out = turbine._current_output_mw
 
-            if before_state == TurbineState.RAMPING and turbine.state == TurbineState.RAMPING:
-                # ── Pure RAMPING tick ──────────────────────────────────────────────
-                # Neither advance() nor apply_loading() should interact adversely:
-                # advance() adds max_delta; apply_loading() is excluded by the filter.
-                # Output must rise by exactly max_delta = 1.0 MW.
+            if before_state == TurbineState.STARTING and turbine.state == TurbineState.STARTING:
+                # ── Pure STARTING tick ─────────────────────────────────────────────
+                # advance() ticks the countdown; apply_loading() excludes STARTING
+                # units from the loaded set.  Output must stay at 0.0 MW.
                 if prev_out is not None:
                     actual_step = after_out - prev_out
                     assert abs(actual_step - EXPECTED_STEP) < 1e-9, (
-                        f"Tick {tick_i} (t={sim_time}): expected +{EXPECTED_STEP} MW step "
-                        f"for RAMPING turbine; got {actual_step:.6f} MW. "
-                        f"If step deviates, apply_loading() is influencing RAMPING output."
+                        f"Tick {tick_i} (t={sim_time}): expected {EXPECTED_STEP} MW step "
+                        f"for STARTING turbine (frozen output); got {actual_step:.6f} MW. "
+                        f"If step deviates, apply_loading() is influencing STARTING output."
                     )
 
-            elif before_state == TurbineState.RAMPING and turbine.state == TurbineState.SYNCHRONISED:
+            elif before_state == TurbineState.STARTING and turbine.state == TurbineState.SYNCHRONISED:
                 # ── Transition tick ────────────────────────────────────────────────
-                # advance() fires first (RAMPING→SYNCHRONISED), then apply_loading()
+                # advance() fires first (STARTING→SYNCHRONISED), then apply_loading()
                 # runs on the newly-SYNCHRONISED unit in the same tick.
                 # Record for inspection; do not assert a fixed step here.
                 transition_tick = tick_i
@@ -174,9 +180,9 @@ def test_ramping_turbine_ignores_loading_setpoint_drop() -> None:
             prev_out = after_out
             sim_time += DT
 
-        # At least some RAMPING ticks must have occurred before transition.
-        assert transition_tick is not None or turbine.state == TurbineState.RAMPING, (
-            "Turbine never entered RAMPING state — test setup failed."
+        # At least some STARTING ticks must have occurred before transition.
+        assert transition_tick is not None or turbine.state == TurbineState.STARTING, (
+            "Turbine never entered STARTING state — test setup failed."
         )
 
     finally:

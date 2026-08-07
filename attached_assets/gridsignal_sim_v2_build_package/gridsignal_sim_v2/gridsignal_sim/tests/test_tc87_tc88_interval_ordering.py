@@ -2,10 +2,13 @@
 tests/test_tc87_tc88_interval_ordering.py — Interval-ordering correctness tests.
 
 TC-87  Ramp is rate-determined, not setpoint-determined.
-       A RAMPING unit with a constant HIGH setpoint accumulates output at
-       exactly n × r_asset × dt per tick, independent of the setpoint value.
+       A SYNCHRONISED unit driven by apply_loading() toward a constant HIGH
+       setpoint accumulates output at exactly n × r_asset × dt per tick,
+       independent of the setpoint value.
+       (Phase D repair: RAMPING state deleted; equivalent test uses SYNCHRONISED
+       + begin_interval() + apply_loading().)
 
-TC-88  A unit promoted RAMPING → SYNCHRONISED during advance() is NOT loaded
+TC-88  A unit promoted STARTING → SYNCHRONISED during advance() is NOT loaded
        in the interval of its promotion.  Its first loaded interval is the next
        tick.
 
@@ -64,6 +67,7 @@ def test_tc87_ramp_output_equals_accumulated_integral():
     """
     from core.asset_modules import TurbineModule, TurbineState
     from core.models import TurbineConfig
+    from core.loading import apply_loading
 
     rated_mw  = 7.0
     r_asset   = 0.2      # MW/s
@@ -73,14 +77,13 @@ def test_tc87_ramp_output_equals_accumulated_integral():
     t = TurbineModule(
         TurbineConfig(asset_id="t-tc87", rated_mw=rated_mw, r_asset_mw_per_s=r_asset)
     )
-    # stage_target with rated_mw as the constant HIGH setpoint.
-    t.stage_target(rated_mw, sim_time=0.0)
-    assert t.state == TurbineState.RAMPING, (
-        "TC-87 pre-condition: stage_target(rated_mw) must produce RAMPING"
-    )
+    # Phase D repair: RAMPING state deleted; set SYNCHRONISED directly so
+    # apply_loading() can drive the unit at the rate-limited step r_asset × dt.
+    t.state = TurbineState.SYNCHRONISED
 
     for n in range(1, 8):    # 7 ticks to reach rated_mw (7.0 / 1.0 = 7 ticks)
-        t.advance(sim_time=n * dt, dt_seconds=dt)
+        t.begin_interval()
+        apply_loading([t], rated_mw, dt)
         expected = min(rated_mw, n * max_delta)
         actual   = t.output_mw()
         assert abs(actual - expected) < 1e-6, (
@@ -91,10 +94,9 @@ def test_tc87_ramp_output_equals_accumulated_integral():
             f"at tick 1 (setpoint) instead of {max_delta:.1f} MW (rate integral)."
         )
 
-    # Transition check: after tick 7 the unit must be SYNCHRONISED.
+    # Post-condition: unit remains SYNCHRONISED throughout (no transition in this test).
     assert t.state == TurbineState.SYNCHRONISED, (
-        f"TC-87 transition: unit must be SYNCHRONISED after ramp reaches rated_mw. "
-        f"Got: {t.state.value}"
+        f"TC-87 post-condition: turbine must be SYNCHRONISED, got {t.state.value}"
     )
 
 
@@ -162,14 +164,16 @@ def test_tc88_promoted_unit_not_loaded_in_promotion_interval():
     rated_mw = 7.0
     r_asset  = 0.2          # MW/s  → max_delta = 1.0 MW per tick
 
-    # Unit at 2.0 MW RAMPING toward 3.0 MW.
-    # One advance() call will push 2.0 + 1.0 = 3.0 MW and promote to SYNCHRONISED.
+    # Unit at 3.0 MW STARTING with exactly dt remaining to SYNCHRONISED.
+    # Phase D repair: RAMPING state deleted; use STARTING with _time_to_online_s = dt
+    # so one advance() call decrements to 0 and promotes to SYNCHRONISED.
+    # _current_output_mw=3.0 is the value that must be preserved through promotion.
     turbine = TurbineModule(
         TurbineConfig(asset_id="t-tc88", rated_mw=rated_mw, r_asset_mw_per_s=r_asset)
     )
-    turbine.state = TurbineState.RAMPING
-    turbine._current_output_mw = 2.0
-    turbine._target_mw         = 3.0
+    turbine.command_start(sim_time=0.0)        # OFFLINE → STARTING; sets _time_to_online_s
+    turbine._time_to_online_s = dt             # override: exactly one tick to SYNCHRONISED
+    turbine._current_output_mw = 3.0           # ramp endpoint to be preserved
 
     state = SimulationState(
         run_id="tc88-run",
@@ -207,7 +211,8 @@ def test_tc88_promoted_unit_not_loaded_in_promotion_interval():
     assert turbine.state == TurbineState.SYNCHRONISED, (
         f"TC-88 pre-condition: advance() must promote unit to SYNCHRONISED. "
         f"Got: {turbine.state.value}.  "
-        f"Check: _target_mw=3.0, _current_output_mw=2.0, max_delta=1.0 → should promote."
+        f"Check: command_start(); _time_to_online_s=dt, _current_output_mw=3.0 "
+        f"→ should promote to SYNCHRONISED after one advance()."
     )
 
     # Post-condition 2: output must equal the ramp endpoint (3.0 MW).
@@ -219,9 +224,9 @@ def test_tc88_promoted_unit_not_loaded_in_promotion_interval():
     assert abs(turbine.output_mw() - 3.0) < 1e-6, (
         f"TC-88 FAIL: promoted unit output = {turbine.output_mw():.6f} MW ≠ 3.0 MW. "
         f"apply_loading() ran on the unit in its promotion interval, overwriting "
-        f"the ramp endpoint.  "
+        f"_current_output_mw.  "
         f"PRE-FIX cause: _synchronised_units built from live state after advance(); "
-        f"promoted unit (entry=RAMPING, live=SYNCHRONISED) is included. "
+        f"promoted unit (entry=STARTING, live=SYNCHRONISED) is included. "
         f"FIX (Item 1): snapshot entry states before advance(); build "
         f"_synchronised_units from entry states so promoted units are excluded "
         f"until the NEXT interval."

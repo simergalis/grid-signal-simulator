@@ -56,7 +56,7 @@ const THERMAL_COLOUR: Record<string, string> = {
 }
 
 const _THERMAL_ROWS = [
-  { state: 'hot',  label: 'Hot',  cond: 'Off < 1 hour',                syncTime: '60 s (1 min)'   },
+  { state: 'hot',  label: 'Hot',  cond: 'Off < 1 hour',                syncTime: '300 s (5 min)'  },
   { state: 'warm', label: 'Warm', cond: 'Off 1–4 hours',                syncTime: '300 s (5 min)'  },
   { state: 'cold', label: 'Cold', cond: 'Off > 4 hours, or never run',  syncTime: '900 s (15 min)' },
 ] as const
@@ -68,7 +68,7 @@ function _thermalOf(u: TurbineUnitSpec): string {
 
 // Stat-row subtitle for the current thermal state — accurate start time.
 function _thermalSub(state: string): string {
-  if (state === 'hot')  return '60 s (1 min) to sync — recently stopped'
+  if (state === 'hot')  return '300 s (5 min) to sync — recently stopped'
   if (state === 'warm') return '300 s (5 min) to sync — partially cooled'
   return '900 s (15 min) to sync — never run or fully cooled'
 }

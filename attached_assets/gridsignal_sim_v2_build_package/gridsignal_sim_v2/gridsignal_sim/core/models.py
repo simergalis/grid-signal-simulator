@@ -510,8 +510,10 @@ class TurbineConfig:
     #   CHOSEN — engineering placeholder; OEM data required.
     warm_start_s: float = 300.0
     # hot_start_s: time for a HOT-start unit to reach SYNCHRONISED.
-    #   CHOSEN — engineering placeholder; OEM data required.
-    hot_start_s: float = 60.0
+    #   CHOSEN — 300 s (5 min); OEM data required.
+    #   Phase D (D-08): raised from 60 s to 300 s — a frame machine cannot
+    #   synchronise in a minute; 60 s was an unrealistic bypass.
+    hot_start_s: float = 300.0
     # Thermal classification thresholds (time offline since last synchronisation).
     # hot_threshold_s: elapsed ≤ this → HOT start.
     #   CHOSEN — 1 h; OEM calibration required.

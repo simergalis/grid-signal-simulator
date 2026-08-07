@@ -47,13 +47,6 @@ import pytest
 
 # ── TC-89: first-tick snapshot ────────────────────────────────────────────────
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "Phase D sequential-start (DR-2026-08-06 D-05); "
-        "dispatch still uses N_needed+1 which starts 2 units on tick 0"
-    ),
-)
 def test_tc89_first_tick_starts_at_most_one_unit():
     """TC-89: At most one non-standby turbine is non-OFFLINE after tick 0.
 
@@ -108,13 +101,6 @@ def test_tc89_first_tick_starts_at_most_one_unit():
 
 # ── TC-90: full-run sequential-start assertion ────────────────────────────────
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "Phase D sequential-start (DR-2026-08-06 D-05); "
-        "N_needed+1 causes 2 simultaneous OFFLINE→non-OFFLINE transitions on tick 0"
-    ),
-)
 def test_tc90_at_most_one_start_transition_per_tick():
     """TC-90: At most one non-standby turbine transitions OFFLINE→non-OFFLINE
     in any single simulation tick across the first 20 ticks (0–95 s).
@@ -194,15 +180,6 @@ def test_tc90_at_most_one_start_transition_per_tick():
 
 # ── TC-91: one unit already SYNCHRONISED ─────────────────────────────────────
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "Phase D + PendingStartRegister (DR-2026-08-06 D-05 §7.1.3); "
-        "N_needed+1 currently starts 2 units simultaneously even with one "
-        "unit already SYNCHRONISED; after Phase D, PendingStartRegister "
-        "prevents the headroom check from issuing a second start command"
-    ),
-)
 def test_tc91_at_most_one_start_when_one_unit_already_synchronised():
     """TC-91: With one unit already SYNCHRONISED above the headroom threshold,
     at most one OFFLINE turbine transitions to non-OFFLINE per tick.
@@ -241,6 +218,7 @@ def test_tc91_at_most_one_start_when_one_unit_already_synchronised():
     from core.asset_modules import TurbineModule, BessModule
     from core.models import TurbineConfig, TurbineState, BessConfig, SiteConfig, IslandMode
     from core.dispatch import DispatchArbitrator
+    from core.commitment import PendingStartRegister
 
     site = SiteConfig(
         frequency_nominal_hz=50.0,
@@ -264,32 +242,37 @@ def test_tc91_at_most_one_start_when_one_unit_already_synchronised():
     t0.state = TurbineState.SYNCHRONISED
     t0._current_output_mw = 6.0
 
+    # Phase D: wire PendingStartRegister so stage_for_predicted_step() respects
+    # the sequential-start gate.  The register is shared by both mechanisms.
+    pending = PendingStartRegister()
     arb = DispatchArbitrator(turbines=[t0, t1, t2], bess_units=[bess], site=site)
+    arb.pending_start = pending
 
     # Snapshot states before both mechanisms fire.
     states_before = {t.config.asset_id: t.state for t in [t0, t1, t2]}
 
     # ── Mechanism 1: demand step fires stage_for_predicted_step() ─────────────
-    # delta = 5.0 MW; N_needed+1 with 2 offline units:
-    #   _n_start = min(max(1, ceil(5/7)+1), 2) = min(max(1,2), 2) = 2
-    # Both t1 and t2 start simultaneously → TC-91 FAILS pre-fix.
+    # Phase D: starts exactly 1 unit (t1) and records it in the pending register.
     arb.stage_for_predicted_step(delta_p_mw=5.0, dt_lead_seconds=30.0, sim_time=0.0)
 
-    # ── Mechanism 2: per-tick headroom check (simulation_core.py §7.1.3) ──────
-    # turbine-0 at 6.0 / 7.0 = 86 % > 80 % → headroom check fires.
-    # After Phase D, stage_for_predicted_step starts exactly 1 unit;
-    # PendingStartRegister prevents this check from starting a second.
+    # ── Mechanism 2: per-tick headroom check (evaluate_commitment() path) ──────
+    # turbine-0 at 6.0 / 7.0 = 86 % > 80 % → headroom condition is met.
+    # PendingStartRegister is non-empty (t1 was just started above) →
+    # the gate blocks this mechanism from starting a second unit.
     _HEADROOM_THRESHOLD = 0.80
     _sync_rated_mw = sum(
         t.config.rated_mw for t in [t0, t1, t2]
-        if t.state == TurbineState.SYNCHRONISED and not t.config.hot_standby
+        if t.is_on_bus and not t.config.hot_standby   # Phase D: is_on_bus replaces raw state check
     )
     _turbine_output = sum(t.output_mw() for t in [t0, t1, t2])
     if _sync_rated_mw > 0.0 and _turbine_output / _sync_rated_mw >= _HEADROOM_THRESHOLD:
-        for ht in [t0, t1, t2]:
-            if ht.state == TurbineState.OFFLINE and not ht.config.hot_standby:
-                ht.stage_target(_turbine_output, 0.0)
-                break
+        # Phase D: PendingStartRegister gate prevents double-start.
+        if pending.is_empty:
+            for ht in [t0, t1, t2]:
+                if ht.state == TurbineState.OFFLINE and not ht.config.hot_standby:
+                    ht.command_start(sim_time=0.0)
+                    pending.record_start(ht.config.asset_id, 0.0)
+                    break
 
     # Count OFFLINE → non-OFFLINE transitions across both mechanisms.
     states_after = {t.config.asset_id: t.state for t in [t0, t1, t2]}
@@ -304,4 +287,120 @@ def test_tc91_at_most_one_start_when_one_unit_already_synchronised():
         f"{[f'{aid}: {states_before[aid].value}→{states_after[aid].value}' for aid in transitions]}. "
         f"PendingStartRegister (Phase A, wired in Phase D) must prevent "
         f"double-starts when one unit is already SYNCHRONISED."
+    )
+
+
+# ── TC-92: reserve floor commits N+1 for a demand N units can serve ───────────
+
+def test_tc92_reserve_floor_commits_n_plus_1():
+    """TC-92: reserve floor demands one more unit than demand alone requires.
+
+    With 2 SYNCHRONISED turbines each rated 7 MW and p_demand = 8 MW:
+      N=2 units cover the demand (2×7 = 14 MW ≥ 8 MW).
+      Reserve floor: Σ rated ≥ p_demand + max(rated) → 14 ≥ 8+7=15 → VIOLATED.
+    evaluate_commitment() must return action="commit" (start a 3rd unit) even
+    though the running fleet can serve the current demand.
+
+    This is the N+1 commitment invariant: the fleet always holds one unit above
+    what the current load requires, so any single-unit trip leaves enough
+    capacity to still cover demand.
+
+    Spec refs: DR-2026-08-06 §7.1.3 reserve-floor requirement, Phase D Item 5.
+    """
+    from core.asset_modules import TurbineModule, TurbineState
+    from core.models import TurbineConfig
+    from core.commitment import (
+        CommitmentConfig, SustainedCondition, PendingStartRegister,
+        evaluate_commitment,
+    )
+
+    # Two on-bus units and one offline candidate.
+    t0 = TurbineModule(TurbineConfig(asset_id="t-0", rated_mw=7.0, r_asset_mw_per_s=0.2))
+    t1 = TurbineModule(TurbineConfig(asset_id="t-1", rated_mw=7.0, r_asset_mw_per_s=0.2))
+    t2 = TurbineModule(TurbineConfig(asset_id="t-2", rated_mw=7.0, r_asset_mw_per_s=0.2))
+    t0.state = TurbineState.SYNCHRONISED
+    t1.state = TurbineState.SYNCHRONISED
+    # t2 stays OFFLINE
+
+    on_bus  = [t0.unit_availability(), t1.unit_availability()]
+    offline = [t2.unit_availability()]
+    p_demand = 8.0  # 2 units can serve 8 MW; floor says 3 are needed
+
+    cfg = CommitmentConfig.from_catalogue()
+    pending      = PendingStartRegister()
+    commit_cond  = SustainedCondition(threshold_s=0.0)   # confirm instantly for test
+    decommit_cond = SustainedCondition(threshold_s=0.0)
+
+    decision = evaluate_commitment(
+        on_bus=on_bus,
+        offline=offline,
+        p_demand_mw=p_demand,
+        pending=pending,
+        commit_cond=commit_cond,
+        decommit_cond=decommit_cond,
+        cfg=cfg,
+        dt_s=5.0,
+        sim_time=0.0,
+    )
+
+    assert decision.action == "commit", (
+        f"TC-92 FAIL: expected action='commit' when reserve floor violated "
+        f"(2×7={14} MW < demand+max={8+7}=15 MW); got action={decision.action!r}. "
+        f"reason: {decision.reason!r}"
+    )
+    assert decision.target_unit_id == "t-2", (
+        f"TC-92: expected target_unit_id='t-2', got {decision.target_unit_id!r}"
+    )
+
+
+# ── TC-93: STARTING unit contributes zero to reserve, ramp, and headroom ──────
+
+def test_tc93_starting_unit_contributes_zero():
+    """TC-93: A STARTING turbine contributes zero to reserve, ramp, and headroom.
+
+    Checks three zero-contribution properties that the spec requires:
+      1. is_on_bus is False → not counted toward on-bus capacity or headroom.
+      2. ramp_capability() returns 0.0 → not credited toward reserve ramp.
+      3. output_mw() returns 0.0 → produces nothing while counting down.
+
+    PendingStartRegister is the mechanism that prevents the commitment engine
+    from starting a second unit while one is in STARTING — these three
+    assertions confirm why: the pending unit cannot be counted toward any
+    capacity figure, making any double-count a hard violation.
+
+    Spec refs: DR-2026-08-06 Phase A PROHIBITED note; §7.1.3 D-05; TC-80.
+    """
+    from core.asset_modules import TurbineModule, TurbineState
+    from core.models import TurbineConfig
+    from core.loading import ramp_capability
+
+    t = TurbineModule(TurbineConfig(
+        asset_id="t-starting",
+        rated_mw=7.0,
+        r_asset_mw_per_s=0.2,
+        hot_start_s=300.0,
+    ))
+    t.command_start(sim_time=0.0)
+
+    assert t.state == TurbineState.STARTING, (
+        f"TC-93 pre-condition: command_start() must produce STARTING, got {t.state.value}"
+    )
+
+    # 1. On-bus flag: STARTING must not be counted as on_bus.
+    assert not t.is_on_bus, (
+        "TC-93 FAIL: STARTING unit reported is_on_bus=True — "
+        "it must not contribute to reserved/headroom calculations."
+    )
+
+    # 2. Ramp capability: STARTING must contribute 0 MW over any horizon.
+    cap = ramp_capability(horizon_s=300.0, turbines=[t])
+    assert cap == 0.0, (
+        f"TC-93 FAIL: ramp_capability for STARTING unit = {cap} MW (expected 0.0). "
+        f"STARTING units may not be credited toward reserve ramp (TC-80)."
+    )
+
+    # 3. Output: STARTING units produce nothing.
+    assert t.output_mw() == 0.0, (
+        f"TC-93 FAIL: STARTING unit output_mw = {t.output_mw()} MW (expected 0.0). "
+        f"STARTING units are not on the bus and produce no power."
     )
