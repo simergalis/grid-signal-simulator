@@ -13,9 +13,9 @@
  * Phase 0 field-boundary reconciliation (six contradictions fixed):
  *   0.1 identityLine derived from turbine_units (count, rated_mw, gt_mode).
  *   0.2 SYNC column uses unit.breaker_closed — never inferred from output MW.
- *       FLEET header derives on-bus count from units_synchronised_count.
- *   0.3 Units synchronised count from tick.units_synchronised_count;
- *       contributing MW from tick.synchronised_output_mw — same filtered set.
+ *       FLEET header derives on-bus count from units_on_bus_count.
+ *   0.3 Units on-bus count from tick.units_on_bus_count;
+ *       contributing MW from tick.on_bus_output_mw — same filtered set (Phase C D-05).
  *   0.4 N−1 margin subtitle states the arithmetic (firm, installed, contingency,
  *       peak) — not a raw unit count.
  *   0.5 Ramp-energy claim capped at installedMW; unbounded integral removed.
@@ -251,14 +251,13 @@ function deriveFleet(units: TurbineUnitSpec[], horizonS: number, peakMW: number)
 }
 
 // ── On-bus determination ─────────────────────────────────────────────────────
-// Algebraic formula: unit i ∈ A ⟺ state_i == 'synchronised' (not hot_standby).
-// A is the allocated set managed by the loading layer.  RAMPING / AT_TARGET are
-// legacy pre-staging states whose output accumulates via advance(); they are NOT
-// in A and are NOT considered on-bus from the operator perspective.
+// Algebraic formula: unit i ∈ A ⟺ state_i ∈ {synchronised, unloading} (is_on_bus).
+// Phase C: UNLOADING units are still breaker-closed and producing; they must be
+// treated as on-bus by the UI.  RAMPING / AT_TARGET no longer exist.
 // Phase 0 fallback: static breaker_closed from spec (absent state field).
 function isOnBus(u: TurbineUnitSpec): boolean {
   if (u.state !== undefined) {
-    return u.state === 'synchronised'
+    return u.state === 'synchronised' || u.state === 'unloading'
   }
   return u.breaker_closed
 }
@@ -292,7 +291,7 @@ function _issueUnitCommand(runId: string, unitId: string, action: string): void 
 }
 
 // ── Per-unit table ───────────────────────────────────────────────────────────
-// syncedCount: from tick.units_synchronised_count — never derived from output.
+// syncedCount: from tick.units_on_bus_count — never derived from output.
 function FleetTable(
   units: TurbineUnitSpec[],
   aggregateOutputMW: number,
@@ -607,10 +606,10 @@ function noTickPanel(peakMW: number | null): PanelData {
 function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: number, observedPeakMW: number): PanelData {
   const u          = units[0]
   const isDeclaredPeak = tick.design_peak_load_mw > 0
-  // Algebraic: use synchronised_output_mw (Σ_{i∈A} p_i) for active-state check
-  // and for the FleetTable aggregate — not turbine_output_mw (includes RAMPING path).
-  const syncedCount = tick.units_synchronised_count
-  const syncedMW    = tick.synchronised_output_mw
+  // Algebraic: use on_bus_output_mw (Σ_{i∈A} p_i) for active-state check
+  // and for the FleetTable aggregate — not turbine_output_mw.
+  const syncedCount = tick.units_on_bus_count
+  const syncedMW    = tick.on_bus_output_mw
   const stateLabel  = syncedCount > 0 ? 'ACTIVE' : 'READY'
   // Task #198 item 3: use runtime lead horizon from the dispatch arbitrator.
   // When dt_lead_next_s is 0 (no active step) the ramp figure is also 0.
@@ -646,7 +645,7 @@ function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: nu
     stateLabel,
     stateColour:  TEAL,
     verdict:      `Single-unit site — N−1 firm capacity 0.0 MW. A unit loss leaves BESS bridge only (~20 min).`,
-    heroValue:    (tick.synchronised_output_mw ?? 0).toFixed(2),
+    heroValue:    (tick.on_bus_output_mw ?? 0).toFixed(2),
     heroLabel:    'MW output',
     chartTitle:   '',
     // 0.1: derived from typed fields — count, rating, gt_mode
@@ -654,8 +653,8 @@ function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: nu
     chart,
     statRows: [
       { label: 'Units installed',    value: '1',                                  sub: `${u.rated_mw.toFixed(0)} MW · ${u.asset_id}` },
-      // 0.3: count from named field; MW from synchronised_output_mw (same filtered set)
-      { label: 'Units synchronised', value: `${syncedCount}`,
+      // 0.3: count from named field; MW from on_bus_output_mw (same filtered set)
+      { label: 'Units on bus', value: `${syncedCount}`,
         colour: syncedCount > 0 ? GOLD : undefined,
         sub: syncedCount > 0 ? `contributing ${syncedMW.toFixed(2)} MW` : 'none on bus' },
       { label: 'N−1 firm capacity',  value: '0.0 MW',                             colour: RED, sub: 'single unit — no redundancy' },
@@ -688,10 +687,10 @@ function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: nu
 // GS-DES-CFG-001 §Phase-6 / Item-4: peakMW = declared design peak; observedPeakMW = run maximum.
 // GS-DES-CFG-001 §Phase-7 / Item-2: isDeclaredPeak/peakLabel controls labels when wire sends 0.
 function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: number, observedPeakMW: number): PanelData {
-  // Algebraic: synchronised_output_mw = Σ_{i∈A} p_i (loading-layer-managed only).
-  // turbine_output_mw includes auto-staged RAMPING turbines; those are not in A.
-  const onlineN  = tick.units_synchronised_count
-  const syncedMW = tick.synchronised_output_mw
+  // Algebraic: on_bus_output_mw = Σ_{i∈A} p_i where A = {synchronised, unloading}.
+  // Phase C D-05: renamed from units_synchronised_count / synchronised_output_mw.
+  const onlineN  = tick.units_on_bus_count
+  const syncedMW = tick.on_bus_output_mw
 
   // Task #198 item 3: runtime lead horizon from the dispatch arbitrator.
   const horizonS = tick.dt_lead_next_s ?? 0
@@ -769,7 +768,7 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: number,
           ? `N−1 firm capacity ${n1FirmMW.toFixed(1)} MW covers the ${peakMW.toFixed(2)} MW ${peakLabel} with ${marginStr} margin.`
           : `N−1 firm capacity ${n1FirmMW.toFixed(1)} MW is below the ${peakMW.toFixed(2)} MW ${peakLabel} — site cannot survive a unit loss.`)
       : `N−1 firm capacity ${n1FirmMW.toFixed(1)} MW (no peak available).`,
-    heroValue:   (tick.synchronised_output_mw ?? 0).toFixed(2),
+    heroValue:   (tick.on_bus_output_mw ?? 0).toFixed(2),
     heroLabel:   'MW output',
     chartTitle:  '',
     // 0.1: derived from typed fields — count, rating, gt_mode
@@ -778,7 +777,7 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: number,
     statRows: [
       { label: 'Units installed',    value: `${units.length}`,               sub: `${maxUnitMW.toFixed(0)} MW each · ${installedMW.toFixed(0)} MW total` },
       // 0.3: both values from the same filtered set via named tick fields
-      { label: 'Units synchronised', value: `${onlineN}`,
+      { label: 'Units on bus', value: `${onlineN}`,
         sub: onlineN > 0 ? `contributing ${syncedMW.toFixed(2)} MW` : 'none on bus',
         colour: onlineN > 0 ? GOLD : undefined },
       { label: 'N−1 firm capacity',  value: `${n1FirmMW.toFixed(1)} MW`,    colour: n1Covers ? GOLD : RED, sub: 'with any one unit unavailable' },

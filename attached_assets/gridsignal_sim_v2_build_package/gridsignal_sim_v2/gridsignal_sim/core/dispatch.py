@@ -513,20 +513,17 @@ class DispatchArbitrator:
                     max(1, math.ceil(_eff_delta / _offline[0].config.rated_mw) + 1),
                     len(_offline),
                 )
-                _per_start_target = _eff_delta / _n_start if _n_start else 0.0
+                # Phase C Item 3: command_start() replaces stage_target() for offline
+                # units.  N_needed+1 staging count logic is preserved unchanged (Phase D
+                # replaces the count logic entirely).  No per-unit target is needed —
+                # the loading layer sets output for all on-bus units; command_start()
+                # begins the STARTING countdown.
                 for _ht in _offline[:_n_start]:
-                    _ht.stage_target(_per_start_target, sim_time)
+                    _ht.command_start(sim_time)
 
-            # ── On-bus units: raise targets for positive demand increments ONLY ──
-            # A negative delta_p_mw (demand shrinking, e.g. from a SOLAR_STEP
-            # when renewable output rises) must NOT be propagated to on-bus units
-            # via stage_target(output + negative/N) — that issues simultaneous stop
-            # commands to every unit, causing the "7.5 MW → 0" oscillation.
-            # The loading layer reduces setpoints naturally as p_fleet drops.
-            if _on_bus and delta_p_mw > 0.0:
-                _per_on_target = delta_p_mw / len(_on_bus)
-                for _t in _on_bus:
-                    _t.stage_target(_t.output_mw() + _per_on_target, sim_time)
+            # On-bus units are driven by apply_loading() toward the fleet setpoint.
+            # The former stage_target() on-bus block is deleted in Phase C — its only
+            # effect was raising _target_mw which advance() no longer reads.
 
             # Reserve-rate math uses the full active fleet (started + on-bus) so
             # ramp-credit and peak-shortfall figures are accurate regardless of how
@@ -655,13 +652,13 @@ class DispatchArbitrator:
         Neither requires human confirmation.
         """
         # Algebraic formula: P_fleet = Σ_{i ∈ A} p_i
-        # A is the allocated set — SYNCHRONISED state only (is_synchronised property).
-        # OFFLINE / STARTING / OUT_OF_SERVICE / hot-standby units contribute 0 MW;
-        # summing all turbines would include stale _current_output_mw from those units.
+        # A = {SYNCHRONISED, UNLOADING} (is_on_bus) — both states are on-bus and
+        # produce at their current setpoint.  OFFLINE / STARTING / OUT_OF_SERVICE /
+        # hot-standby contribute 0 MW.  Phase C Item 4: is_on_bus replaces is_synchronised.
         turbine_output_mw = sum(
             t.output_mw()
             for t in self.turbines
-            if t.is_synchronised
+            if t.is_on_bus
         )
         fleet_shortfall = max(0.0, p_dispatch_required_mw - turbine_output_mw)
         fleet_covered = fleet_shortfall <= 0.0

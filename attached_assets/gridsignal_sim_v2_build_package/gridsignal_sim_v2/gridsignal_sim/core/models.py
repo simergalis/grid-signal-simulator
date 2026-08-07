@@ -378,22 +378,49 @@ class SiteConfig:
 
 
 class TurbineState(str, Enum):
-    """Phase 2 canonical turbine unit states (five states).
+    """Phase C canonical turbine unit states (five states).
 
-    RAMPING and AT_TARGET are pre-Phase-2 legacy states retained for backward
-    compatibility with existing scenarios and tests.  New code must use
-    SYNCHRONISED.  The loading layer and UnitAvailability treat RAMPING and
-    AT_TARGET as equivalent to SYNCHRONISED (they are "in A").
+    UNLOADING is the Phase C controlled-stop state: on-bus, producing, tracking
+    down through the loading layer.  The full unload sequence (R5 enforcement,
+    MSL dwell, breaker open) is Phase E.
+
+    RAMPING, AT_TARGET, and TRANSITIONAL have been removed in Phase C.
+    Use from_persisted() to load states from storage — it applies the Phase C
+    migration map and fails fast on unrecognised values.
     """
-    # ── Legacy (pre-Phase 2) ─────────────────────────────────────────────────
-    OFFLINE    = "offline"     # not producing; no fault; ready to start
-    RAMPING    = "ramping"     # DEPRECATED — use SYNCHRONISED; legacy ramp-to-target
-    AT_TARGET  = "at_target"  # DEPRECATED — use SYNCHRONISED; legacy at setpoint
-    # ── Phase 2 canonical ────────────────────────────────────────────────────
-    OUT_OF_SERVICE = "out_of_service"  # excluded: operator | fault | maintenance
-    STARTING       = "starting"        # start sequence running; output_mw = 0
-    TRANSITIONAL   = "transitional"    # continuous output; in T (not A); Phase 3+
-    SYNCHRONISED   = "synchronised"    # on-bus; continuous output; in A
+    OFFLINE        = "offline"        # not producing; no fault; ready to start
+    OUT_OF_SERVICE = "out_of_service" # excluded: operator | fault | maintenance
+    STARTING       = "starting"       # start sequence running; output_mw = 0
+    UNLOADING      = "unloading"      # on-bus; tracking down to MSL; Phase C+
+    SYNCHRONISED   = "synchronised"   # on-bus; continuous output; loading-layer-managed
+
+    @classmethod
+    def from_persisted(cls, value: str) -> "TurbineState":
+        """Deserialise a persisted state string, applying the Phase C migration map.
+
+        Migration (Phase C):
+            ramping      → synchronised  (legacy ramp-to-target alias)
+            at_target    → synchronised  (legacy at-setpoint alias)
+            transitional → offline       (transient state; never produced real output)
+
+        Raises ValueError for any unrecognised value — a silently defaulted state
+        would credit a unit toward reserve on grounds nobody chose.
+        """
+        _MIGRATION: dict[str, "TurbineState"] = {
+            "ramping":      cls.SYNCHRONISED,
+            "at_target":    cls.SYNCHRONISED,
+            "transitional": cls.OFFLINE,
+        }
+        if value in _MIGRATION:
+            return _MIGRATION[value]
+        try:
+            return cls(value)
+        except ValueError:
+            raise ValueError(
+                f"TurbineState.from_persisted: unrecognised persisted state "
+                f"{value!r}. No default applied — fix the persisted data or "
+                f"add an explicit migration mapping."
+            ) from None
 
 
 class ThermalState(str, Enum):

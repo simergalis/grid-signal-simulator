@@ -147,9 +147,10 @@ def ramp_capability(horizon_s: float, turbines: "list[TurbineModule]") -> float:
     regardless of horizon (Task #198 item 2 — a unit not yet closed its breaker
     must not be banked as reserve; starts fail).
 
-    For SYNCHRONISED (and legacy RAMPING / AT_TARGET — in A):
+    For SYNCHRONISED only (contributes_to_reserve = True):
         contribution = min(r_i × horizon_s, max(0, rated_i − output_i))
-    STARTING, OFFLINE, OUT_OF_SERVICE, TRANSITIONAL, and hot-standby units: 0.
+    UNLOADING units hold no upward headroom (tracking down) — contribute 0.
+    STARTING, OFFLINE, OUT_OF_SERVICE, and hot-standby units: 0.
 
     TC-79: headroom dominates when output_i ≈ 0.9 × rated_i — capability equals
            (rated_i − output_i), not r_i × horizon_s × n.
@@ -164,8 +165,10 @@ def ramp_capability(horizon_s: float, turbines: "list[TurbineModule]") -> float:
             continue
         if t.state == TurbineState.STARTING:
             pass   # zero — not on bus; starts fail; must not be banked as reserve
-        elif t.is_synchronised:
+        elif t.contributes_to_reserve:
+            # Item 4: contributes_to_reserve = SYNCHRONISED only.  UNLOADING holds
+            # no upward headroom and must not be credited toward ramp reserve.
             headroom = max(0.0, t.config.rated_mw - t.output_mw())
             total += min(t.config.r_asset_mw_per_s * horizon_s, headroom)
-        # OFFLINE / OUT_OF_SERVICE / TRANSITIONAL: contribute 0
+        # OFFLINE / OUT_OF_SERVICE / UNLOADING: contribute 0
     return total

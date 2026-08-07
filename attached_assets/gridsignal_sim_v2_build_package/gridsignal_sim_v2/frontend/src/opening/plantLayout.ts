@@ -84,11 +84,10 @@ export const NODES: NodeDef[] = [
     id: 'gas-turbine',
     x: 0, y: 10, w: 155, h: 72,
     label: 'GAS TURBINE', label2: 'FLEET',
-    // Algebraic formula: P_fleet = Σ_{i ∈ A} p_i where A = {SYNCHRONISED, not hot_standby}.
-    // synchronised_output_mw is the sum of per-unit output_mw for loading-layer-managed units.
-    // turbine_output_mw includes auto-staged RAMPING turbines (advance() path); those
-    // are not visible to the operator as "production" until they reach SYNCHRONISED state.
-    mwField: 'synchronised_output_mw',
+    // Algebraic formula: P_fleet = Σ_{i ∈ A} p_i where A = {SYNCHRONISED, UNLOADING} (is_on_bus).
+    // Phase C D-05: on_bus_output_mw — renamed from synchronised_output_mw.
+    // Includes UNLOADING units so the tile always matches the per-unit row sum.
+    mwField: 'on_bus_output_mw',
     staticMW: 0,   // at rest: standby, 0 MW
     clickable: true, modalId: 'gas-turbine-fleet',
     accentColor: '#e0a458',
@@ -214,7 +213,7 @@ export const FLOWS: FlowDef[] = [
   {
     id: 'gas-to-sw',
     d: srcPath(...GAS_RC),
-    mwField: 'synchronised_output_mw',
+    mwField: 'on_bus_output_mw',
     staticMW: 0,
     maxMW: 25,
     color: '#e0a458',

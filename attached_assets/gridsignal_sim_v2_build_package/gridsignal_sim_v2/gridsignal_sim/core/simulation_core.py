@@ -27,42 +27,6 @@ from .kube_demand import KubeDemandAgent, KubeGridState
 _log = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
-# Mutual-exclusion guard helper (Task #198 item 4)
-# ---------------------------------------------------------------------------
-
-def _check_loading_exclusion(
-    synchronised_units: "list",
-    all_turbines: "list",
-) -> None:
-    """Raise RuntimeError if any turbine appears in both the loading-layer
-    allocated set A (SYNCHRONISED state) and the legacy advance() path
-    (RAMPING or AT_TARGET state).
-
-    This is the structural guard for the B1a double-advance defect.
-    Exported at module level so tests can call it directly without going
-    through a full evaluate_tick() invocation.
-
-    Parameters
-    ----------
-    synchronised_units : list[TurbineModule]
-        The loading-layer set A — already filtered to SYNCHRONISED-only.
-    all_turbines : list[TurbineModule]
-        The full turbine fleet from SimulationState.
-    """
-    _loading_ids = {t.config.asset_id for t in synchronised_units}
-    for t in all_turbines:
-        if t.state in (TurbineState.RAMPING, TurbineState.AT_TARGET):
-            if t.config.asset_id in _loading_ids:
-                raise RuntimeError(
-                    f"Loading-layer mutual-exclusion violated: unit "
-                    f"'{t.config.asset_id}' is in state {t.state.value} "
-                    f"(legacy advance() path) but also appears in the loading "
-                    f"layer's allocated set A (SYNCHRONISED-only filter). "
-                    f"This is the B1a double-advance defect — fix the allocation "
-                    f"filter."
-                )
-
 
 from .dispatch import (
     CandidateResponse, CheckpointClassifier, ConfidenceEngine, CurtailmentLadder,
@@ -656,15 +620,19 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # Allocated set A = SYNCHRONISED at INTERVAL ENTRY (not live state).
     # Units that promoted to SYNCHRONISED during advance() (entry state RAMPING)
     # are excluded; their ramp endpoint is preserved for this interval.
+    # Phase C Item 1: filter widened to {SYNCHRONISED, UNLOADING} before UNLOADING
+    # was added (committed first so there is never a state where UNLOADING exists but
+    # the filter does not include it).  An unloading unit is on-bus and producing;
+    # if excluded, set_output() is never called and its output freezes — a silent
+    # stall that the write-guard counter cannot catch (missing write ≠ double write).
     _synchronised_units = [
         t for t in state.turbines
-        if _entry_states[t.config.asset_id] == TurbineState.SYNCHRONISED
+        if _entry_states[t.config.asset_id] in (TurbineState.SYNCHRONISED, TurbineState.UNLOADING)
         and not t.config.hot_standby
     ]
-
-    # Mutual-exclusion guard (Task #198 item 4): see _check_loading_exclusion().
-    # Uses RuntimeError (not assert) — survives -O optimisation.
-    _check_loading_exclusion(_synchronised_units, state.turbines)
+    # _check_loading_exclusion deleted (Phase C): the legacy states (RAMPING, AT_TARGET)
+    # it guarded against no longer exist.  The Phase B write guard (begin_interval +
+    # set_output counter) provides the remaining double-write protection.
 
     _sub_msl_surplus_mw: float = apply_loading(
         _synchronised_units, _p_dispatch_droop_mw, dt_seconds
@@ -695,7 +663,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     _sync_rated_mw: float = sum(
         t.config.rated_mw
         for t in state.turbines
-        if t.state == TurbineState.SYNCHRONISED and not t.config.hot_standby
+        if t.is_on_bus  # Phase C: {SYNCHRONISED, UNLOADING} — on-bus capacity
     )
     if (
         _sync_rated_mw > 0.0
@@ -703,11 +671,9 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     ):
         for _ht in state.turbines:
             if _ht.state == TurbineState.OFFLINE and not _ht.config.hot_standby:
-                # Use stage_target() (OFFLINE → RAMPING) rather than command_start()
-                # (STARTING countdown) so the unit ramps up on the same timescale as
-                # demand growth — cold-start counters (900 s default) would outlast a
-                # typical 300 s demo run and the unit would never come online.
-                _ht.stage_target(_p_dispatch_droop_mw, sim_time)
+                # Phase C: command_start() replaces stage_target().  Staging count
+                # logic is unchanged (Phase D replaces the count logic entirely).
+                _ht.command_start(sim_time)
                 break  # one at a time; re-evaluated every tick
 
     # Phase 13.4 B3: detect when the commanded BESS output exceeds the fleet's
@@ -914,10 +880,10 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                 current_output_mw=t.output_mw(),
                 rated_mw=t.config.rated_mw,
                 r_asset_mw_per_s=t.config.r_asset_mw_per_s,
-                # Synchronized = RAMPING or AT_TARGET; OFFLINE = hot standby or uncommissioned.
-                # Phase 2: use is_synchronised property to exclude STARTING/
-                # OUT_OF_SERVICE/TRANSITIONAL units from N-1 computation.
-                is_synchronized=t.is_synchronised,
+                # Phase C Item 4 (simulation_core contingency snapshot): is_on_bus —
+                # an unloading unit is still breaker-closed and can trip; it must
+                # be included in the N-1 computation.
+                is_synchronized=t.is_on_bus,
             )
             for t in state.turbines
         ),

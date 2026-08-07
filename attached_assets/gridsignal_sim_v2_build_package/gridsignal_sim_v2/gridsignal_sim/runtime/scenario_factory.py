@@ -783,7 +783,7 @@ def build_run_context_from_spec(
                 # Phase 0 §0.2: breaker_closed — AC bus breaker closed.
                 # Derived from hot_standby for Phase 0; Phase 1 will track real-time
                 # breaker state from turbine physics.  Drives SYNC column and
-                # units_synchronised_count without inference from aggregate output.
+                # units_on_bus_count without inference from aggregate output.
                 "breaker_closed": not bool(t.get("hot_standby", False)),
                 # Phase 0 §0.6: no_load_mw — net output at no-load speed (shaft
                 # spinning, zero electrical delivery).  Typically 0.0 for aeroderivatives;

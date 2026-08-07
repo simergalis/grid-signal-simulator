@@ -70,14 +70,52 @@ Guard D1 (`_check_loading_exclusion`) still present and valid post-Item-1.
 Entry-state filter does not conflict with the exclusion check (RAMPING units never
 appear in _synchronised_units built from entry states).
 
-## Phase C — one control law, legacy path deleted ⬜ PENDING
+## Phase C — one control law, legacy path deleted ✅ COMPLETE
 
-Delete RAMPING branch, stage_target(), _target_mw. Add UNLOADING state, command_stop().
-Rename is_synchronised → is_on_bus + contributes_to_reserve (individual reclassification).
-Persisted-state migration with schema version bump.
-Fix test_tc_p0_1/2/3/5 HERE (fixtures use breaker_closed, state set changing).
-D-05 payload rename lives here.
-Expect large delta; report every newly failing test, classify correct-or-incorrect.
+**Deliverables:**
+- `core/models.py` — TurbineState: UNLOADING added; RAMPING/AT_TARGET/TRANSITIONAL removed; from_persisted() migration map.
+- `core/asset_modules.py` — stage_target() deleted; command_stop() added (raises RuntimeError if not SYNCHRONISED); advance() RAMPING branch deleted; _target_mw field removed; is_synchronised → is_on_bus + contributes_to_reserve.
+- `core/simulation_core.py` — _check_loading_exclusion deleted; _synchronised_units widened to {SYNCHRONISED, UNLOADING}; stage_target() → command_start(); is_on_bus at contingency snapshot.
+- `core/loading.py` — ramp_capability: is_synchronised → contributes_to_reserve.
+- `core/dispatch.py` — turbine_output_mw sum: is_on_bus; offline staging: stage_target() → command_start(); on-bus stage_target() block deleted; _per_start_target removed.
+- `runtime/run_manager.py` — _ON_BUS set updated; payload rename (units_synchronised_count → units_on_bus_count, synchronised_output_mw → on_bus_output_mw); output_mw overlay: is_on_bus; trip handler: is_on_bus + _target_mw line removed.
+- `frontend/src/types.ts` — field renames + comments updated.
+- `frontend/src/subsystem/panels/turbineFleet.ts` — isOnBus() widened; all field renames + label updates.
+- `frontend/src/opening/PlantNode.tsx` — field renames.
+- `frontend/src/opening/plantLayout.ts` — mwField renames.
+- `tests/test_turbine_payload_p0.py` — TC-P0-1/2/3/5 updated (fixture output_mw fields added, key renames).
+
+**Gate:** 42 failed / 937 passed / 3 xfailed / 982 collected.
+TypeScript --noEmit clean.
+Guard D1 (`_check_loading_exclusion`): DELETED per Phase C spec — no orphan references.
+Guard D2 and E Tier-1: not affected by Phase C changes (config-layer guards remain green).
+
+**Failure classification (42 total):**
+
+Pre-existing (12 — unchanged from Phase B baseline):
+- test_13_2_balance_decomp: D3_grid_connected_settled, D3_islanded_settled, I4a_healthy_islanded_delivery_error_near_zero
+- test_f5_sim_time_interval_end: test_internal_elapsed_unaffected_by_f5
+- test_forecast_path: test_B1a_islanded_delivery_fault_visible_in_delivery_channel
+- test_formulas: test_d10_demo_20mw_bess_fires_and_tapers
+- test_telemetry_corruption_wiring: test_tc_gt2_f_state_flips_when_soc_crosses_threshold
+- test_step16_wiring: test_demo_pms_column3_tc64_to_tc68
+- test_kube_no_oscillation: test_power_cap_toggle_count_within_300s + 3 SUBFAILEDs (seeds 42/7/2025)
+
+New Correct failures (30 — tests encoded old RAMPING/AT_TARGET/stage_target behavior):
+- test_tc87_tc88_interval_ordering: TC-87 (stage_target deleted → AttributeError), TC-88 (TurbineState.RAMPING deleted)
+- test_operator_unit_commands: TC-203-1/3/4 (TurbineModule.is_synchronised renamed → AttributeError)
+- test_unit_trip: TC-84a-e (TurbineState.AT_TARGET deleted → AttributeError)
+- test_13_4_criteria::TestB4StandbyConsistency: B4a/B4b (AT_TARGET deleted)
+- test_13_5_criteria: R4×4 / R5×3 / R6×3 (stage_target deleted → AttributeError)
+- test_formulas: test_turbine_ramps_at_configured_rate (RAMPING path), test_d8_staging_sizes (stage_target)
+- test_p1b_p2::TestTC81: ×4 (AT_TARGET deleted; _check_loading_exclusion deleted)
+- test_ramping_turbine_ignores_loading_setpoint_drop (TurbineState.RAMPING deleted)
+- test_turbine_payload_p0::TC-P0-4 (KeyError on renamed field — spec forbids editing)
+
+No incorrect (regression) failures.
+
+Extra site (not on spec's expected list, reported not changed):
+- runtime/run_manager.py:887 `is_synchronized=(t.state != TurbineState.OFFLINE)` — raw comparison, not a call to the is_synchronised property; semantics intact; left as-is per spec.
 
 ## Phase D — commitment ⬜ PENDING
 

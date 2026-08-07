@@ -87,10 +87,10 @@ function nodeDetail(
       const installed = units.reduce((s: number, u: { rated_mw: number }) => s + u.rated_mw, 0)
       const maxUnit   = Math.max(...units.map((u: { rated_mw: number }) => u.rated_mw))
       const n1Firm    = installed - maxUnit
-      // Algebraic: units_synchronised_count = |A| where A = {SYNCHRONISED, not hot_standby}.
+      // Algebraic: units_on_bus_count = |A| where A = {SYNCHRONISED, UNLOADING} ∩ {not hot_standby}.
       // Dynamic variable — reads directly from the tick's named field rather than
       // inferring count from an output-threshold (which conflates RAMPING with online).
-      const online    = (tick as any)?.units_synchronised_count ?? 0
+      const online    = (tick as any)?.units_on_bus_count ?? 0
       return `${units.length} unit${units.length === 1 ? '' : 's'} · ${online} online · N−1 firm ${n1Firm.toFixed(1)} MW`
     }
     case 'solar-pv': {
@@ -246,13 +246,13 @@ export function PlantNode({ def, tick, onClick, solarPreview, liveSolarMW }: Pla
   // stays consistent: turbine + solar_tile − load = what the operator sees.
   const isBess = def.id === 'battery-bess'
   const solarForBess = liveSolarMW ?? tick?.p_renewable_mw ?? 0
-  // Use synchronised_output_mw (not turbine_output_mw) so the BESS excess
+  // Use on_bus_output_mw (not turbine_output_mw) so the BESS excess
   // matches exactly what the GT tile shows: only loading-layer-managed units.
   // turbine_output_mw includes RAMPING/AT_TARGET auto-staged units whose output
   // is real but not yet visible on any tile, making the BESS figure misleading.
   const bessExcess = isBess && tick
     ? Math.max(0,
-        (tick.synchronised_output_mw ?? 0) + solarForBess
+        (tick.on_bus_output_mw ?? 0) + solarForBess
         - (tick.p_total_mw ?? 0) - (tick.bess_output_mw ?? 0)
       )
     : 0

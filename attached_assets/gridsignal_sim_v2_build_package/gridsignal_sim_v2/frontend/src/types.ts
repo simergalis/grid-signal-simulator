@@ -123,14 +123,14 @@ export interface TickPayload {
   // without a spec (e.g. direct job-id path).  Drives the fleet modal.
   turbine_units: TurbineUnitSpec[]
 
-  // Phase 0 §0.2/0.3: per-unit sync aggregates.
-  // units_synchronised_count: derived from live state (Phase 2: state in
-  //   synchronised/ramping/at_target) or breaker_closed (Phase 0 fallback).
-  // synchronised_output_mw: turbine_output_mw when any unit is live-state on-bus,
-  //   else 0.0.  Equals the actual on-bus unit total because off-bus units produce
-  //   zero output (loading layer dispatches SYNCHRONISED state only).
-  units_synchronised_count: number
-  synchronised_output_mw: number
+  // Phase C D-05: per-unit on-bus aggregates (renamed from units_synchronised_count /
+  // synchronised_output_mw).
+  // units_on_bus_count: A = {synchronised, unloading} — both states are breaker-closed
+  //   and producing.  OFFLINE / STARTING / OUT_OF_SERVICE are never in A.
+  // on_bus_output_mw: Σ_{i∈A} p_i — includes UNLOADING units so per-unit rows always
+  //   sum to the fleet hero value.  Falls back to breaker_closed when state is absent.
+  units_on_bus_count: number
+  on_bus_output_mw: number
 
   // Kubernetes demand agent metrics — null when kube_config is not active.
   // Non-null only on runs that have kube_config set in the ScenarioSpec.
@@ -407,9 +407,9 @@ export interface TurbineUnitSpec {
    *  "checking"   — relay active, matching V/f/θ before close (hot standby).
    *  "open"       — unit offline, not in sync sequence (Phase 1+). */
   sync_relay_state: string
-  /** Phase 2 live state overlay — absent on Phase 0 payloads.
-   *  "synchronised" | "ramping" | "at_target" → on bus, delivering power.
-   *  "available" | "starting" | "off"         → not on bus, zero output.
+  /** Phase C live state overlay — absent on Phase 0 payloads.
+   *  "synchronised" | "unloading" → on bus (is_on_bus), delivering power.
+   *  "starting" | "offline" | "out_of_service" → not on bus, zero output.
    *  Authoritative source for SYNC column and CURRENT MW distribution.
    *  Falls back to breaker_closed when absent. */
   state?: string

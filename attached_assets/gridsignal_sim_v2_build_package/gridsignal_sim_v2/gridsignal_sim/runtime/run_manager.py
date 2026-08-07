@@ -228,26 +228,28 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # start_phase, out_of_service_reason) are overlaid from state.turbines
         # each tick so the fleet modal shows live unit states without a separate call.
         "turbine_units": list(tick.turbine_units),
-        # units_synchronised_count: algebraic count — only SYNCHRONISED state.
-        # Algebraic formula: |A| where A = {i : state_i == synchronised, not hot_standby_i}
-        # RAMPING / AT_TARGET are the legacy pre-staging path (advance() drives them);
-        # they are not yet in the allocated set A managed by the loading layer.
-        # OFFLINE / STARTING / OUT_OF_SERVICE / hot-standby are never in A.
-        "units_synchronised_count": sum(
+        # units_on_bus_count: algebraic count of on-bus units (D-05 rename).
+        # A = {SYNCHRONISED, UNLOADING} — both states are breaker-closed and produce
+        # output.  OFFLINE / STARTING / OUT_OF_SERVICE are never in A.
+        # Legacy fallback: when state field is absent (Phase 0 test fixtures), uses
+        # breaker_closed (default True) so old dicts without state are treated as on-bus.
+        "units_on_bus_count": sum(
             1 for u in tick.turbine_units
-            if u.get("state") == "synchronised"
+            if (u.get("state") in {"synchronised", "unloading"}
+                if u.get("state") is not None
+                else u.get("breaker_closed", True))
         ),
-        # synchronised_output_mw: algebraic fleet production from the allocated set A.
-        #   Formula: P_fleet = Σ_{i ∈ A} p_i
-        #   where A = {i : state_i == synchronised, not hot_standby_i}
-        # Each unit carries its own output_mw field stamped by the Phase 2 overlay
-        # using t.state == SYNCHRONISED (loading layer output only).
-        # RAMPING / AT_TARGET / OFFLINE / STARTING units carry output_mw = 0.0.
-        "synchronised_output_mw": round(
+        # on_bus_output_mw: algebraic fleet production from the on-bus set A (D-05 rename).
+        #   Formula: P_fleet = Σ_{i ∈ A} p_i  where A = {state ∈ {synchronised, unloading}}
+        # UNLOADING units included so per-unit rows always sum to the fleet hero value.
+        # Legacy fallback: when state field is absent, uses breaker_closed.
+        "on_bus_output_mw": round(
             sum(
                 u.get("output_mw", 0.0)
                 for u in tick.turbine_units
-                if u.get("state") == "synchronised"
+                if (u.get("state") in {"synchronised", "unloading"}
+                    if u.get("state") is not None
+                    else u.get("breaker_closed", True))
             ),
             4,
         ),
@@ -1071,14 +1073,16 @@ class RunManager:
 
         # Validate action against current state.
         from core.asset_modules import TurbineState as _TS   # runtime → core OK
-        _ON_BUS    = {_TS.SYNCHRONISED, _TS.RAMPING, _TS.AT_TARGET}
+        # Phase C Item 4 (run_manager _ON_BUS): is_on_bus = {SYNCHRONISED, UNLOADING}.
+        # Trip is valid on any on-bus unit — UNLOADING units are still breaker-closed.
+        _ON_BUS    = {_TS.SYNCHRONISED, _TS.UNLOADING}
         _STARTABLE = {_TS.OFFLINE}
 
         if action == "trip" and turbine.state not in _ON_BUS:
             return self.UNIT_CMD_BAD_STATE, (
                 f"Unit {unit_id!r} is in state {turbine.state.value!r} — "
                 "trip is only valid for on-bus units "
-                "(synchronised / ramping / at_target)."
+                "(synchronised / unloading)."
             )
         if action == "start" and turbine.state not in _STARTABLE:
             return self.UNIT_CMD_BAD_STATE, (
@@ -1162,19 +1166,17 @@ class RunManager:
                     for _turb in ctx.sim_state.turbines:
                         if _turb.config.asset_id == _cmd_uid:
                             if _cmd_action == "trip":
-                                # Mirror the controlled-stop path in stage_target()
-                                # (asset_modules.py lines 932–938) so cooldown
-                                # tracking is consistent with a normal stop:
-                                #   _last_sync_stop_s → thermal state on restart
-                                #   _stop_time_s      → R6 min-down-time enforcement
-                                #   _run_start_s → nan → cleared for next run
-                                if _turb.is_synchronised:
+                                # Operator trip: emergency OFFLINE transition for any on-bus unit.
+                                # Bypasses the Phase C/E controlled-stop sequence — breaker opens
+                                # immediately.  Record timestamps for thermal classification.
+                                # Phase C Item 4 (run_manager): is_on_bus — trip is valid for both
+                                # SYNCHRONISED and UNLOADING units (both are breaker-closed).
+                                if _turb.is_on_bus:
                                     _turb._last_sync_stop_s = ctx.sim_time
                                 _turb._stop_time_s      = ctx.sim_time
                                 _turb._run_start_s      = float('nan')
                                 _turb.state = _TurbineState.OFFLINE
                                 _turb._current_output_mw = 0.0
-                                _turb._target_mw = 0.0
                                 logger.info(
                                     "operator command: TRIP turbine %r "
                                     "at sim_time=%.1f (run=%s)",
@@ -1291,18 +1293,14 @@ class RunManager:
                             # Phase 2 live state overlay — keys match TurbineState values.
                             "state": t.state.value,
                             # output_mw: algebraic per-unit MW contribution.
-                            #   Σ of these across on-bus units == synchronised_output_mw.
-                            #   Off-bus units (offline / starting / hot-standby) are 0.0;
-                            #   is_synchronised guards this so stale _current_output_mw
-                            #   from a tripped unit can never leak into the fleet total.
-                            # Only SYNCHRONISED units are shown non-zero: RAMPING/AT_TARGET
-                            # units contribute to turbine_output_mw (via is_synchronised)
-                            # but are not yet loading-layer-managed, and their output is not
-                            # visible on any tile — including them here would make per-unit
-                            # rows sum to more than the hero (synchronised_output_mw).
+                            #   Phase C D-05: Σ of these across on-bus units == on_bus_output_mw.
+                            #   is_on_bus guards this so stale _current_output_mw from a
+                            #   tripped unit never leaks into the fleet total.
+                            # SYNCHRONISED and UNLOADING units are non-zero; all off-bus
+                            # units (OFFLINE / STARTING / OUT_OF_SERVICE / hot-standby) = 0.0.
                             "output_mw": round(
                                 t.output_mw()
-                                if t.state == _TurbineState.SYNCHRONISED and not t.config.hot_standby
+                                if t.is_on_bus and not t.config.hot_standby
                                 else 0.0,
                                 4,
                             ),

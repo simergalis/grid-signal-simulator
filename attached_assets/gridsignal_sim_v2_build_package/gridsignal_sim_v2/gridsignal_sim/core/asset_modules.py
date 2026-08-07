@@ -773,7 +773,6 @@ class TurbineModule(AssetModule):
     config: TurbineConfig
     state: TurbineState = TurbineState.OFFLINE
     _current_output_mw: float = 0.0
-    _target_mw: float = 0.0
     # R4–R6 run-time tracking (Phase 13.5)
     # _run_start_s: sim_time when the current run started.  math.nan = never
     #   started (or stopped and time already recorded in _stop_time_s).
@@ -804,19 +803,33 @@ class TurbineModule(AssetModule):
         return self.config.asset_id
 
     @property
-    def is_synchronised(self) -> bool:
-        """True for states that are 'in A' (the allocated set) for the loading layer.
+    def is_on_bus(self) -> bool:
+        """True when the unit is electrically connected to the AC bus.
 
-        SYNCHRONISED is the canonical Phase 2 state.  RAMPING and AT_TARGET are
-        pre-Phase-2 aliases treated as equivalent for loading and UnitAvailability.
-        STARTING, OFFLINE, OUT_OF_SERVICE, and TRANSITIONAL are not in A.
-        Hot-standby units are never in A regardless of state.
+        Phase C: A = {SYNCHRONISED, UNLOADING} — both states produce output and
+        count toward N-1 contingency.  UNLOADING units are tracking down through
+        the loading layer but their breaker is still closed.
+        Hot-standby units are never on bus regardless of state.
+
+        Item 4 rationale: the old is_synchronised returned True for RAMPING and
+        AT_TARGET (legacy states that no longer exist), producing misleading
+        diagnostics.  The explicit name is_on_bus makes breaker-state semantics
+        unambiguous.
         """
         return self.state in (
             TurbineState.SYNCHRONISED,
-            TurbineState.RAMPING,
-            TurbineState.AT_TARGET,
+            TurbineState.UNLOADING,
         ) and not self.config.hot_standby
+
+    @property
+    def contributes_to_reserve(self) -> bool:
+        """True when the unit holds upward headroom and should be credited toward reserve.
+
+        Phase C: only SYNCHRONISED units have upward ramp headroom.  UNLOADING
+        units are tracking down toward MSL and cannot respond upward.
+        Hot-standby units are never counted regardless of state.
+        """
+        return self.state == TurbineState.SYNCHRONISED and not self.config.hot_standby
 
     def begin_interval(self) -> None:
         """Reset the per-interval write counter at the start of each evaluation interval.
@@ -911,7 +924,9 @@ class TurbineModule(AssetModule):
             time_to_online: Optional[float] = None
         elif self.state == TurbineState.STARTING:
             time_to_online = self._time_to_online_s
-        elif self.is_synchronised:
+        elif self.is_on_bus:
+            # Item 4: is_on_bus = {SYNCHRONISED, UNLOADING} — availability is a
+            # breaker-state question, not a reserve question.
             time_to_online = 0.0
         else:
             time_to_online = None
@@ -928,80 +943,37 @@ class TurbineModule(AssetModule):
             hot_standby=self.config.hot_standby,
         )
 
-    def stage_target(self, target_mw: float, sim_time: float = 0.0) -> None:
-        """Dispatch arbitrator calls this at a job's `starting` event
-        (source spec Section 7.2 step 1) to begin ramping immediately,
-        using the full available lead time.
+    def command_stop(self, sim_time: float) -> None:
+        """Transition SYNCHRONISED → UNLOADING.  Phase C controlled-stop entry point.
 
-        Hot-standby units are excluded: they are not synchronized to the bus
-        and must not receive automatic dispatch orders.  Their start time is
-        a separate, operator-initiated action.
+        The full unload sequence (R5 enforcement, loading taper, MSL dwell, breaker
+        open, thermal-state recording) is Phase E.  Phase C only validates the source
+        state and transitions to UNLOADING.
 
-        R4 (p_min_stable_frac): positive dispatch targets below the minimum
-        stable load floor are silently clamped up to the floor.  This prevents
-        operation in the combustion-instability regime.
-
-        R5 (t_min_run_s): if a stop command (target ≤ 0) arrives before the
-        minimum run time has elapsed, the turbine is held at p_min_stable
-        instead of stopping.
-
-        R6 (t_min_down_s): a restart command (target > 0 from OFFLINE) is
-        silently dropped if the unit has not yet satisfied its cooling window
-        after a controlled stop.
+        Raises RuntimeError for any state other than SYNCHRONISED — a loaded unit must
+        not be transitioned directly to OFFLINE through any normal dispatch path.
+        Operator trips (emergency) go through the run_manager.py A-1 drain loop.
         """
-        if self.config.hot_standby:
-            return
-
-        if target_mw > 0:
-            # ── R6: enforce minimum down-time before restart ──────────────
-            if self.state == TurbineState.OFFLINE and not math.isnan(self._stop_time_s):
-                elapsed_down = sim_time - self._stop_time_s
-                if elapsed_down < self.config.t_min_down_s:
-                    return  # cooling window not satisfied; drop restart command
-
-            # ── R4: clamp target to p_min_stable floor ────────────────────
-            p_min = self.config.p_min_stable_frac * self.config.rated_mw
-            target_mw = max(target_mw, p_min)
-
-            # ── Transition OFFLINE → RAMPING; record run start time ───────
-            if self.state == TurbineState.OFFLINE:
-                self._run_start_s = sim_time
-                self.state = TurbineState.RAMPING
-
-        else:
-            # target_mw == 0: controlled stop command
-            if self.state != TurbineState.OFFLINE:
-                # ── R5: enforce minimum run time before allowing stop ──────
-                if not math.isnan(self._run_start_s):
-                    elapsed_run = sim_time - self._run_start_s
-                    if elapsed_run < self.config.t_min_run_s:
-                        # Too early to stop — hold at p_min_stable instead
-                        target_mw = self.config.p_min_stable_frac * self.config.rated_mw
-                        self._target_mw = min(target_mw, self.config.rated_mw)
-                        return
-
-                # Minimum run time satisfied (or never tracked) — allow stop.
-                # Phase 2: record last sync stop time for thermal classification.
-                if self.is_synchronised:
-                    self._last_sync_stop_s = sim_time
-                self._stop_time_s = sim_time
-                self._run_start_s = math.nan
-                self._target_mw = 0.0
-                self._current_output_mw = 0.0
-                self.state = TurbineState.OFFLINE
-                return
-
-        self._target_mw = min(target_mw, self.config.rated_mw)
+        if self.state != TurbineState.SYNCHRONISED:
+            raise RuntimeError(
+                f"TurbineModule '{self.config.asset_id}': command_stop() called in "
+                f"state {self.state.value!r}. Only SYNCHRONISED → UNLOADING is valid "
+                f"here; operator trips use the run_manager trip path."
+            )
+        self.state = TurbineState.UNLOADING
 
     def advance(self, sim_time: float, dt_seconds: float) -> None:
         """Tick this unit's internal state forward by one interval.
 
-        Phase 2 state routing:
+        Phase C state routing:
           STARTING     → tick countdown; on expiry → SYNCHRONISED.
           SYNCHRONISED → no-op; loading layer drives output via set_output().
-          RAMPING      → legacy ramp-to-target (backward compat).
-          AT_TARGET    → no-op (already at target).
+          UNLOADING    → no-op; loading layer drives output down via set_output().
           all others   → no-op.
+
+        The RAMPING branch (legacy ramp-to-target) is deleted in Phase C.
+        Output for on-bus units (SYNCHRONISED and UNLOADING) is written
+        exclusively by the loading layer via set_output().
         """
         if self.state == TurbineState.STARTING:
             # Tick the STARTING countdown timer.
@@ -1011,26 +983,8 @@ class TurbineModule(AssetModule):
                 self._time_to_online_s = 0.0
                 self.state = TurbineState.SYNCHRONISED
                 self._run_start_s = sim_time   # record for R5 enforcement
-            return
-
-        if self.state == TurbineState.SYNCHRONISED:
-            # Loading layer drives output via set_output() — nothing to do here.
-            return
-
-        # ── Legacy RAMPING path (pre-Phase 2 backward compat) ────────────────
-        if self.state != TurbineState.RAMPING:
-            return
-        max_delta = self.config.r_asset_mw_per_s * dt_seconds
-        if self._current_output_mw < self._target_mw:
-            self._current_output_mw = min(self._target_mw, self._current_output_mw + max_delta)
-        elif self._current_output_mw > self._target_mw:
-            self._current_output_mw = max(self._target_mw, self._current_output_mw - max_delta)
-        if math.isclose(self._current_output_mw, self._target_mw, abs_tol=1e-6):
-            # Algebraic equation: P_unit = p_i at target → unit is on-bus.
-            # Transition to SYNCHRONISED (not AT_TARGET) so the loading layer
-            # takes over dispatch.  P_fleet = Σ_{i ∈ A} p_i where A is the set
-            # of SYNCHRONISED units; AT_TARGET would keep the unit outside A.
-            self.state = TurbineState.SYNCHRONISED
+        # SYNCHRONISED / UNLOADING: loading layer writes output via set_output().
+        # OFFLINE / OUT_OF_SERVICE: no output; no transition needed.
 
     def output_mw(self) -> float:
         return self._current_output_mw
