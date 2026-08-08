@@ -5,7 +5,7 @@
     {
       "asset_id": "bess-0",
       "rated_mw": 18.0,
-      "usable_mwh": 8.0,
+      "usable_mwh": 14.0,
       "initial_soc_fraction": 1.0,
       "grid_forming": true
     }
@@ -443,5 +443,11 @@
       "threshold": 0.2
     }
   ],
-  "default_playback_speed": 0.0
+  "default_playback_speed": 0.0,
+  "frequency_nominal_hz": 60.0,
+  "power_factor": 0.85,
+  "band_enabled": false,
+  "band_pct_calibrated": 0.0,
+  "band_mult_uncalibrated": 2.0,
+  "band_mult_unmapped_hw": 1.5
 }
