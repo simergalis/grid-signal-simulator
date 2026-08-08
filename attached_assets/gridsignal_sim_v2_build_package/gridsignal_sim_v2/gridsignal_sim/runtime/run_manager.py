@@ -179,7 +179,7 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         "p_demand_mw":          round(tick.p_demand_mw, 4),           # producer: simulation_core.py:496
         "p_served_mw":          None,   # no producer
         "p_unserved_mw":        None,   # no producer
-        "p_generation_mw":      None,   # no single-aggregate producer
+        "p_generation_mw":      round(tick.p_generation_mw, 4),   # Phase 1 — producer: simulation_core.py
         "p_imbalance_mw":       None,   # no producer
         # ───────────────────────────────────────────────────────────────────
         "net_demand_mw": round(tick.net_demand_mw, 4),

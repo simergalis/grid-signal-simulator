@@ -1,0 +1,243 @@
+GRIDSIGNAL — FREQUENCY DYNAMICS AND THE BALANCE PRODUCER
+IMPLEMENTS THE NULL FIELDS LEFT BY GS-CHG-2026-08-08.
+
+GOVERNING SPEC
+Forecast Engine Functional Spec v2.7, Sections 3, 3.2, 19, 16.14, and the
+frequency dynamics section (GS-CHG-2026-08-08 successor). Read them before
+writing anything. Where this prompt and the spec differ, the spec governs
+and you STOP AND REPORT.
+
+THE CENTRAL PHYSICS — READ THIS BEFORE ANYTHING ELSE
+Do not implement P_served as a clamp on P_demand. That is wrong physics
+and it is the most likely way this task fails.
+
+On an island, load is FULLY SERVED even when generation cannot meet it.
+The deficit is drawn from the rotational kinetic energy of the machines.
+Frequency falls. Load remains fully served until a protective device
+removes it. Therefore:
+
+  P_served(t) = P_demand(t)  MINUS  load removed by shed or trip events
+
+P_served is a STEP FUNCTION driven by discrete protective events. It is
+not a continuous min(), not a clamp, not a ratio. A state where
+P_generation < P_served is PHYSICALLY REAL and must be representable —
+it is the transient that drives frequency down. What was defective in
+the prior implementation was not that state; it was that the state
+persisted for minutes because nothing terminated it.
+
+Causal chain to implement:
+  P_imbalance = P_generation - P_served      (nonzero, transient)
+      -> swing equation -> frequency falls
+      -> threshold crossed -> shed or trip fires
+      -> P_served steps down
+      -> P_imbalance returns toward zero
+  P_unserved = P_demand - P_served           (zero except after a shed)
+
+ABSOLUTE PROHIBITIONS
+ 1. Do NOT implement P_served as min(P_demand, P_generation), as a
+    clamp, or as any continuous function of generation.
+ 2. Do NOT compute any of these quantities in more than one place. One
+    producer per quantity. A second implementation is a defect to be
+    deleted, not reconciled.
+ 3. Do NOT compute anything in the presentation layer (Spec 19). TC-92
+    must continue to pass.
+ 4. Do NOT invent any parameter value. Every constant introduced must
+    come from gridsignal_parameters.json or from the spec. If a value is
+    needed and neither supplies it, STOP AND REPORT.
+ 5. Do NOT tune any parameter to make a test pass.
+ 6. Do NOT modify gridsignal_scenario_islanded_8_60_10.json.
+ 7. Do NOT weaken, skip, or rewrite TC-87 through TC-92.
+ 8. Do NOT edit any specification document or decision record.
+ 9. Do NOT introduce RNG. Do NOT introduce literals in TSX.
+10. Do NOT fix any unrelated defect you discover. Log and report it.
+
+--------------------------------------------------------------------
+PHASE 1 — P_GENERATION AGGREGATE PRODUCER
+No new physics. Turbine, solar, and BESS output values already exist.
+
+Add ONE aggregate producer in the simulation core:
+    P_generation(t) = turbine output + solar output + BESS discharge
+                      + grid import
+BESS charging is negative generation, not load. State the sign
+convention explicitly in a comment and in your report.
+
+Wire p_generation_mw in the API to this single producer. Summing in the
+serialiser remains prohibited (Spec 19).
+
+ACCEPTANCE: p_generation_mw non-null on every tick. Suite delta zero.
+AT-7 determinism holds — this adds an observed quantity, it must not
+change simulation state.
+STOP AND REPORT.
+
+--------------------------------------------------------------------
+PHASE 2 — INERTIA INVENTORY
+Aggregate inertia over machines ON BUS, on MVA base:
+
+    H_aggregate(t) = SUM_i ( H_i * S_i ) / SUM_i ( S_i )
+    where S_i is the unit's rating in MVA, NOT MW
+
+CORRECT THE POWER FACTOR DEFECT. The existing _s_base_mw assumes
+pf = 1.0. A 15 MW unit at pf 0.85 is 17.65 MVA. Read pf from the
+parameter catalogue per unit. Do not hardcode 0.85 or any other value —
+if pf is absent from the catalogue, STOP AND REPORT.
+
+ZERO SYNCHRONOUS MACHINES ON BUS IS NOT AN ERROR BRANCH.
+When no turbine is on bus and the BESS is the grid-forming anchor, the
+anchor's inertia contribution depends on its configured mode:
+  - virtual synchronous machine mode: contributes a configured
+    equivalent inertia constant
+  - droop-only mode: contributes no inertia; frequency is set
+    algebraically by the droop characteristic
+Anchor mode is a SITE CONFIGURATION VALUE, read from the parameter
+catalogue, exactly as P_anchor_reserve is (Spec 7.1.2). If the catalogue
+does not declare anchor mode or a VSM inertia constant, STOP AND REPORT.
+Do not default. Do not freeze frequency. Do not clamp.
+
+The existing frozen-frequency zero-machine branch is a defect. Remove it
+as part of this phase and report what it was doing.
+
+ACCEPTANCE: H_aggregate produced per tick, on MVA base, with pf read
+from catalogue. Report H_aggregate at: 0 units on bus, 1 unit, 5 units.
+STOP AND REPORT.
+
+--------------------------------------------------------------------
+PHASE 3 — SWING EQUATION AND SUB-STEPPED INTEGRATION
+    2 * H_aggregate / f_0 * df/dt = (P_mech - P_elec) / S_base - D * df
+
+f_0 = 60 Hz (already confirmed).
+
+LOAD DAMPING D IS NOT THE CONVENTIONAL VALUE. Conventional power systems
+use D = 1 to 2. That is wrong for a data centre and using it will
+understate the nadir badly. IT load behind UPS and rectifiers is
+constant-power and decoupled from bus frequency — it contributes
+approximately zero damping. Only fixed-speed cooling motors contribute,
+via affinity laws. VFD-driven cooling is also decoupled.
+
+Compute D from the load composition, not as a scalar constant:
+    D_effective = (fixed_speed_cooling_fraction) * D_motor
+    IT load contributes 0
+    VFD cooling contributes 0
+The cooling fixed-speed / VFD split and D_motor are SITE PARAMETERS. Read
+them from the catalogue. If absent, STOP AND REPORT — do not assume a
+split and do not fall back to a conventional D.
+
+TIMESTEP. The 5.0 s production tick cannot resolve the nadir. Sub-step
+the dynamic integration inside each tick at a step read from the
+catalogue (order 10-20 ms). Spec 3.1's 5 s cadence is the FORECAST
+refresh floor and is a different quantity from the dynamic integration
+step — do not conflate them. If no dynamic step parameter exists,
+STOP AND REPORT.
+
+ACCEPTANCE: frequency responds to imbalance; nadir resolution
+independent of the 5 s tick. Report df/dt for a 18 MW deficit with one
+15 MW unit on bus, and state every parameter value used and its source.
+STOP AND REPORT.
+
+--------------------------------------------------------------------
+PHASE 4 — GOVERNOR DROOP, BOUNDED
+Droop response with R read from the catalogue (typical 0.04-0.05).
+
+BOUND IT. The existing droop is unbounded, which is a logged defect.
+Governor response is limited by:
+  - valve actuation time constant
+  - fuel-to-power time constant
+  - the maximum instantaneous load step the machine accepts
+All three are catalogue parameters. If any is absent, STOP AND REPORT.
+
+Consequence to preserve: in the first ~500 ms — the nadir window — a
+frame-class machine's governor contributes almost nothing. Do not let
+the implementation produce a governor that arrests the nadir instantly.
+If it does, a time constant is wrong; report it rather than tuning it.
+
+ACCEPTANCE: governor bounded by all three limits. Report governor
+contribution at t+100ms, t+500ms, t+2s for the Phase 3 test case.
+STOP AND REPORT.
+
+--------------------------------------------------------------------
+PHASE 5 — PROTECTION AND SHED  ** EXPECT TO STOP HERE **
+This phase implements the MECHANISM. The SETTINGS are an external input
+that does not yet exist in the parameter catalogue.
+
+DO NOT USE IEEE 1547-2018 THRESHOLDS FOR THIS. IEEE 1547 governs DER
+INTERCONNECTION to a utility distribution system — ride-through
+obligations for a grid-connected resource. It is NOT the governing
+standard for protection on an intentionally islanded microgrid. Using it
+here is a category error. The governing settings are the generator 81U
+relay and the site under-frequency load shedding scheme, which are
+site-specific protection coordination values.
+
+Implement:
+  - a protection layer as ENVIRONMENT, not as a GridSignal function
+    (Spec 28.4, 28.7 place protective functions outside GridSignal's
+    scope; the simulator models them, GridSignal never commands them)
+  - staged under-frequency load shedding: per-stage threshold, time
+    delay, and load block size, all READ FROM THE CATALOGUE
+  - generator under-frequency trip, threshold and delay from catalogue
+  - a terminal tripped run state: the run ends, the state is recorded,
+    and this is a VALID outcome not a crash
+  - P_served steps down by the shed block size when a stage fires
+
+If the catalogue does not contain 81U settings, UFLS stage thresholds,
+stage delays, and block sizes: STOP AND REPORT. List exactly which values
+are missing. DO NOT invent thresholds. DO NOT substitute IEEE 1547
+values. DO NOT pick "typical" numbers. This is a protection coordination
+question with an external owner and inventing it produces a simulator
+that trips at the wrong time, which is worse than one that does not trip.
+
+Also required (Spec 28.4 interlock): a shed that has occurred is already
+in the measured data. GridSignal curtailment must not treat it as unmet
+shortfall and shed again. Implement the reconciliation entry, not a
+second shed.
+
+ACCEPTANCE: mechanism present and parameterised; missing settings
+reported by name.
+STOP AND REPORT.
+
+--------------------------------------------------------------------
+PHASE 6 — P_SERVED, P_UNSERVED, P_IMBALANCE PRODUCERS
+One producer each, in the simulation core.
+
+    P_served    = P_demand minus cumulative shed/trip load removal
+    P_unserved  = P_demand - P_served
+    P_imbalance = P_generation - P_served
+
+Wire all six null API fields (site and per-subsystem) to these producers.
+Per-subsystem served and unserved follow the shed scheme's allocation of
+removed load across compute and cooling — read that allocation from the
+shed block definition, do not apportion by ratio.
+
+Remove the Spec 3.2 silent-discard defect: where the BESS is clamped at
+its anchor-adjusted limit (Spec 7.1.2), the uncovered remainder must
+reach P_imbalance. The clamp is correct and stays; the discard does not.
+
+ACCEPTANCE: all six fields non-null on every tick.
+STOP AND REPORT.
+
+--------------------------------------------------------------------
+PHASE 7 — RUN AND REPORT
+Run the islanded 8-60-10 scenario UNCHANGED, 1x, 3 hours, existing seed.
+
+Report:
+ 1. Suite delta on PRE-EXISTING tests. Baseline: 13 failed / 988 passed
+    / 21 xfailed. Any change to the 13 known failures or the 988 passes
+    is a failure of this work — report, do not fix.
+ 2. TC-87 through TC-92 status. TC-87 and TC-91 are expected to move to
+    PASS. TC-88, TC-89, TC-90 depend on Phase 5 settings and will remain
+    xfail if those are absent — state which. Remember xfail is strict:
+    an unexpected pass is an ERROR.
+ 3. Every parameter introduced: name, value, source (catalogue key or
+    spec section). Any parameter you could not source, by name.
+ 4. Frequency trace at the first tick where P_imbalance exceeds 5 MW:
+    df/dt, nadir, time to nadir, whether any protective stage fired.
+ 5. Whether the run terminated normally or in a tripped state, and at
+    what sim time.
+ 6. Peak P_unserved and its duration.
+ 7. Confirmation that P_served is nowhere computed as a clamp, min, or
+    continuous function of generation. Quote the producer.
+ 8. TC-92 still passing, with the static analysis quoted.
+ 9. Every judgement call where the spec did not determine the answer.
+10. Every defect observed, unfixed.
+
+Do not tune anything to make TC-89 or TC-90 pass. If they fail with
+correct settings, that is a finding about the scenario, not a defect in
+this work.

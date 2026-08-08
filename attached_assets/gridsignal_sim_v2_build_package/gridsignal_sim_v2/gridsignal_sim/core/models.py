@@ -856,6 +856,15 @@ class TickResult:
     #   because the clamp max(0, p_total − p_renewable) is lossy: when renewable
     #   output exceeds total load, net_demand_mw is 0 and p_renewable is invisible.
     p_renewable_mw: float = 0.0
+    # GS-CHG-2026-08-08 successor Phase 1 — P_generation aggregate producer.
+    # ONE producer in simulation_core; summing in the serialiser is prohibited (Spec 19).
+    # Sign convention: BESS discharging → positive generation.
+    #                  BESS charging    → negative generation (not load).
+    #                  Grid import (PCC supplying the site) → positive.
+    # In islanded mode grid_exchange_mw = 0, so p_generation_mw = local generation only.
+    # Default 0.0 allows pre-existing test TickResult constructors that omit this kwarg
+    # to remain valid; evaluate_tick() always sets it explicitly.
+    p_generation_mw: float = 0.0
     # §INV-CURT: MW of solar output curtailed this tick by the frequency-response
     # inverter logic (islanded mode only).  Proportional curtailment between
     # of_warning_hz (0 %) and of_trip_hz (100 %).  0.0 in grid-connected mode,

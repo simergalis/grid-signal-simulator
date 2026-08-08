@@ -1365,6 +1365,14 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         _grid_exchange_mw     = _balance_residual_mw   # actual supply-demand → PCC
         _frequency_forcing_mw = 0.0                    # grid holds frequency (D2)
 
+    # GS-CHG-2026-08-08 successor Phase 1 — P_generation aggregate producer.
+    # ONE computation site; the serialiser must NOT sum these components again (Spec 19 / TC-92).
+    # _p_gen_mw = turbine + BESS + solar (already computed at line ~1291).
+    # Grid import: _grid_exchange_mw < 0 in grid-connected when local gen < demand;
+    #   -_grid_exchange_mw > 0 gives the MW drawn from the PCC.  In islanded mode
+    #   _grid_exchange_mw = 0 always (D1), so max(0, -0) = 0 and this is a no-op.
+    _p_generation_mw = _p_gen_mw + max(0.0, -_grid_exchange_mw)
+
     # D4 check (Task #198 item 5, revised Task #200 B1) — two-channel identity.
     # A bare assert is stripped under -O and kills the run mid-tick on fault.
     # Instead: compute defect, log if non-zero, continue.  Tests assert zero.
@@ -1621,4 +1629,6 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         collapse_reason=_fp_collapse_reason,
         collapse_tick_index=(state.tick_index if _island_collapsed_this_tick else None),
         collapse_frequency_hz=_fp_collapse_frequency_hz,
+        # GS-CHG-2026-08-08 successor Phase 1
+        p_generation_mw=_p_generation_mw,
     )

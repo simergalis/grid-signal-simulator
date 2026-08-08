@@ -31,7 +31,7 @@ export interface TickPayload {
   p_demand_mw:          number         // = p_total_mw, producer: simulation_core
   p_served_mw:          number | null  // no producer
   p_unserved_mw:        number | null  // no producer
-  p_generation_mw:      number | null  // no single-aggregate producer
+  p_generation_mw:      number          // GS-CHG-2026-08-08 successor Phase 1 — wired to simulation_core producer
   p_imbalance_mw:       number | null  // no producer
   turbine_output_mw: number
   bess_output_mw: number
