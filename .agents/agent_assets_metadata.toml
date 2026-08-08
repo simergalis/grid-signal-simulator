@@ -217,3 +217,10 @@ uri = "file://reports/NAR-001_phase_A_prime_part0_part3_report.md"
 type = "text"
 title = "NAR-001 Phase A′ — Part 0 & Part 3 Report"
 description = "Part 0: two persistence defects (sink never wired, schema mismatch). Part 3: static conformance findings on reserve arithmetic, anchor-adjustment, dispatch droop, and rated_mw."
+
+[[outputs]]
+id = "fF2S-YLqW3VNX6be7Am3R"
+uri = "file://reports/NAR-001_phase_A_prime_part2a_precheck.md"
+type = "text"
+title = "NAR-001 Phase A′ — Part 2a Pre-Check Report"
+description = "Four gates: POST /runs endpoint shape, WebSocket auth (none required), durable output location (workspace volume), and multi-subscriber concurrency (confirmed)."
