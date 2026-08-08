@@ -808,6 +808,13 @@ class TurbineModule(AssetModule):
     # setpoint marker without a separate field on TickResult.  0.0 until the
     # first set_output() call (STARTING units never receive a setpoint call).
     _last_setpoint_mw: float = 0.0
+    # Phase 4 (DR-2026-08-08-FREQ): governor cascade state (per-unit, MW domain).
+    # _gov_valve_mw: current valve gate position (output of valve-lag first-order lag).
+    # _gov_power_mw: current governor mechanical power output (output of fuel-lag).
+    # Both are initialised to 0.0 (no governor correction at start of run).
+    # Updated each sub-step in the swing-equation loop; persist across outer ticks.
+    _gov_valve_mw: float = 0.0
+    _gov_power_mw: float = 0.0
     # Phase B Item 2: per-interval write counter for set_output().
     # Reset to 0 by begin_interval() at the start of each evaluation interval.
     # Incremented by set_output(); if it reaches 2 a RuntimeError is raised,

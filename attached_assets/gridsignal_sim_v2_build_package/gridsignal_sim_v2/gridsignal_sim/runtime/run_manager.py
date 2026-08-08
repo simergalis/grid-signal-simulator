@@ -46,6 +46,48 @@ from core._plane_guard import _EVALUATE_TICK_PERMITTED
 
 logger = logging.getLogger("gridsignal.run_manager")
 
+# ---------------------------------------------------------------------------
+# Phase 2A (DR-2026-08-08-FREQ): Run-wide protection_provisional tracking.
+# ---------------------------------------------------------------------------
+# _run_provisional: True when the current (or most recent) run used any tick
+# with protection_provisional=True (i.e. any islanded tick, since D_eff consults
+# PROVISIONAL-UNMEASURED catalogue parameters: d_motor, fixed_speed_cooling_fraction,
+# valve_actuation_tc_s, fuel_to_power_tc_s, max_instantaneous_load_step_mw,
+# vsm_inertia_constant_s, ufls_stages, relay_81u_threshold_hz, relay_81u_delay_s).
+# Monotonically set within a run; cleared at start_run() for the next run.
+# Blocks demo export (is_export_blocked() → HTTP 403) when True.
+_run_provisional: bool = False
+
+
+def set_run_provisional() -> None:
+    """Mark the current run as having used PROVISIONAL-UNMEASURED physics.
+
+    Called from broadcast() when tick.protection_provisional is True.
+    Idempotent: once True it stays True until the next start_run().
+    """
+    global _run_provisional
+    _run_provisional = True
+
+
+def clear_run_provisional() -> None:
+    """Reset provisional state at the start of a new run.
+
+    Called from RunManager.start_run() so each run starts clean.
+    """
+    global _run_provisional
+    _run_provisional = False
+
+
+def is_export_blocked() -> bool:
+    """Return True when demo export should be refused (HTTP 403).
+
+    Export is blocked when the run used any PROVISIONAL-UNMEASURED catalogue
+    parameter in the frequency-dynamics path.  The caller is responsible for
+    returning a 403 with an explanatory message.
+    """
+    return _run_provisional
+
+
 # Maximum number of recent TickResult objects kept in RunContext.tick_history.
 # 120 ticks × 5 s = 10 min of simulated history — enough for all six agents.
 _TICK_HISTORY_MAXLEN: int = 120
@@ -125,6 +167,9 @@ class WebSocketHub:
         await asyncio.gather(*(_send_and_close(ws) for ws in subs))
 
     async def broadcast(self, run_id: str, tick_result: TickResult) -> None:
+        # Phase 2A: propagate protection_provisional flag to run-wide tracker.
+        if tick_result.protection_provisional:
+            set_run_provisional()
         subs = list(self._subscribers.get(run_id, ()))
         if not subs:
             return
@@ -170,17 +215,23 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         #   no balance-solver producer exists → null per spec §3.2.
         #   Summing turbine + solar + BESS to produce p_generation_mw is
         #   prohibited (computation in transport layer, spec §16.14 TC-92).
-        "p_compute_demand_mw":  round(tick.p_compute_demand_mw, 4),  # producer: simulation_core.py:489
-        "p_compute_served_mw":  None,   # no producer
-        "p_compute_unserved_mw": None,  # no producer
-        "p_cooling_demand_mw":  round(tick.p_cooling_demand_mw, 4),  # producer: simulation_core.py:494
-        "p_cooling_served_mw":  None,   # no producer
-        "p_cooling_unserved_mw": None,  # no producer
-        "p_demand_mw":          round(tick.p_demand_mw, 4),           # producer: simulation_core.py:496
-        "p_served_mw":          None,   # no producer
-        "p_unserved_mw":        None,   # no producer
-        "p_generation_mw":      round(tick.p_generation_mw, 4),   # Phase 1 — producer: simulation_core.py
-        "p_imbalance_mw":       None,   # no producer
+        "p_compute_demand_mw":   round(tick.p_compute_demand_mw, 4),  # producer: simulation_core.py:489
+        # Phase 6: p_compute_served_mw / p_compute_unserved_mw — wired from evaluate_tick().
+        "p_compute_served_mw":   round(tick.p_compute_served_mw, 4) if tick.p_compute_served_mw is not None else None,
+        "p_compute_unserved_mw": round(tick.p_compute_unserved_mw, 4) if tick.p_compute_unserved_mw is not None else None,
+        "p_cooling_demand_mw":   round(tick.p_cooling_demand_mw, 4),  # producer: simulation_core.py:494
+        # Phase 6: p_cooling_served_mw / p_cooling_unserved_mw — wired from evaluate_tick().
+        "p_cooling_served_mw":   round(tick.p_cooling_served_mw, 4) if tick.p_cooling_served_mw is not None else None,
+        "p_cooling_unserved_mw": round(tick.p_cooling_unserved_mw, 4) if tick.p_cooling_unserved_mw is not None else None,
+        "p_demand_mw":           round(tick.p_demand_mw, 4),           # producer: simulation_core.py:496
+        # Phase 6: p_served_mw / p_unserved_mw — wired from evaluate_tick() (UFLS shed).
+        "p_served_mw":           round(tick.p_served_mw, 4) if tick.p_served_mw is not None else None,
+        "p_unserved_mw":         round(tick.p_unserved_mw, 4) if tick.p_unserved_mw is not None else None,
+        "p_generation_mw":       round(tick.p_generation_mw, 4),   # Phase 1 — producer: simulation_core.py
+        # Phase 6: p_imbalance_mw = p_generation - p_served — wired from evaluate_tick().
+        "p_imbalance_mw":        round(tick.p_imbalance_mw, 4) if tick.p_imbalance_mw is not None else None,
+        # Phase 2A: protection_provisional flag — True for all islanded ticks.
+        "protection_provisional": tick.protection_provisional,
         # ───────────────────────────────────────────────────────────────────
         "net_demand_mw": round(tick.net_demand_mw, 4),
         "turbine_output_mw": round(tick.turbine_output_mw, 4),
@@ -1068,6 +1119,7 @@ class RunManager:
         return self._completed.get(run_id)
 
     async def start_run(self, ctx: RunContext) -> str:
+        clear_run_provisional()  # Phase 2A: reset for each new run
         self._contexts[ctx.run_id] = ctx
         task = asyncio.create_task(self._drive(ctx), name=f"run-{ctx.run_id}")
         self._tasks[ctx.run_id] = task

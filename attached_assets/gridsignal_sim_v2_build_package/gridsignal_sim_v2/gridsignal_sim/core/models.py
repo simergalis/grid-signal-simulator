@@ -381,6 +381,43 @@ class SiteConfig:
     inertia_constant_s:    float = _sp.value("inertia_constant_s")  # CHOSEN — read from catalogue
     governor_droop:        float = _sp.value("governor_droop")       # CHOSEN — read from catalogue
 
+    # ── Phase 2A–5: Frequency-dynamics catalogue fields (DR-2026-08-08-FREQ) ───
+    # anchor_mode: "vsm" (virtual synchronous machine) — when zero synchronous machines
+    #   are on-bus, grid-forming BESS provides virtual inertia via vsm_inertia_constant_s.
+    #   DR-2026-08-08-FREQ; replaces the old frozen-frequency (df/dt=0) branch.
+    anchor_mode: str = _sp.value("anchor_mode")  # DR-2026-08-08-FREQ — "vsm"
+    # vsm_inertia_constant_s: virtual H for the GF-BESS in zero-machine phase.
+    #   PROVISIONAL-UNMEASURED — 2.0 s. Blocks demo export when used.
+    vsm_inertia_constant_s: float = _sp.value("vsm_inertia_constant_s")  # PROVISIONAL-UNMEASURED
+    # dynamic_step_s: swing-equation sub-step (0.01 s). DR-2026-08-08-FREQ.
+    #   Must satisfy: dynamic_step_s ≤ min(protection_delay) / 10 = 0.015 s.
+    dynamic_step_s: float = _sp.value("dynamic_step_s")  # DR-2026-08-08-FREQ — 0.01 s
+    # fixed_speed_cooling_fraction: fraction of cooling load on fixed-speed motors.
+    #   PROVISIONAL-UNMEASURED — 0.30. Used by D_eff damping term.
+    fixed_speed_cooling_fraction: float = _sp.value("fixed_speed_cooling_fraction")  # PROVISIONAL-UNMEASURED
+    # d_motor: motor damping coefficient (pu/pu). Affinity-law basis.
+    #   PROVISIONAL-UNMEASURED — 2.5. D_eff = cooling_frac × fixed_speed_frac × d_motor.
+    d_motor: float = _sp.value("d_motor")  # PROVISIONAL-UNMEASURED — 2.5 pu/pu
+    # valve_actuation_tc_s / fuel_to_power_tc_s: governor cascade time constants.
+    #   PROVISIONAL-UNMEASURED. Fleet-level defaults; per-unit overrides on TurbineConfig.
+    valve_actuation_tc_s: float = _sp.value("valve_actuation_tc_s")      # PROVISIONAL-UNMEASURED — 0.2 s
+    fuel_to_power_tc_s:   float = _sp.value("fuel_to_power_tc_s")        # PROVISIONAL-UNMEASURED — 1.0 s
+    # max_instantaneous_load_step_mw: governor output rate limit per sub-step.
+    #   PROVISIONAL-UNMEASURED — 2.25 MW. Fleet-level default.
+    max_instantaneous_load_step_mw: float = _sp.value("max_instantaneous_load_step_mw")  # PROVISIONAL-UNMEASURED
+    # ufls_stages: 3-stage UFLS relay definitions (threshold_hz, delay_s, block_fraction).
+    #   PROVISIONAL-UNMEASURED. OPT-IN: defaults to [] (disabled). Must be explicitly
+    #   populated per-scenario via ScenarioSpec.ufls_stages to enable protection.
+    #   Rationale: the 59.3/58.9/58.5 Hz thresholds (only 0.7–1.5 Hz below 60 Hz nominal)
+    #   are too aggressive for general-purpose runs; they cause spurious UFLS trips in
+    #   scenarios not designed for protection testing. Enable explicitly when needed.
+    ufls_stages: list = field(default_factory=list)  # PROVISIONAL-UNMEASURED — opt-in
+    # relay_81u_threshold_hz / relay_81u_delay_s: islanded 81U under-frequency protection.
+    #   PROVISIONAL-UNMEASURED. OPT-IN: threshold defaults to None (disabled).
+    #   Set explicitly in ScenarioSpec to enable islanded 81U protection.
+    relay_81u_threshold_hz: float | None = None     # PROVISIONAL-UNMEASURED — opt-in; 57.5 Hz when enabled
+    relay_81u_delay_s:      float = _sp.value("relay_81u_delay_s")  # PROVISIONAL-UNMEASURED — 0.10 s
+
     # §FP: Frequency protection thresholds (islanded mode only; read each tick, no literals).
     #
     # Five thresholds form two asymmetric barriers around f_nominal.  At 60 Hz (SDG&E/WECC):
@@ -604,6 +641,26 @@ class TurbineConfig:
     #   predicate does not fire prematurely mid-descent.
     #   CHOSEN — 0.05 MW (50 kW).  PROTO-23.
     levelled_off_tol_mw: float = _sp.value("levelled_off_tol_mw")
+
+    # ── Phase 2B: Per-unit turbine physics fields (DR-2026-08-08-FREQ) ────────
+    # These default to the fleet-level catalogue values and can be overridden
+    # per-unit in the scenario spec (TurbineUnitSpec) for heterogeneous fleets.
+    #
+    # power_factor: per-unit pf for MVA base computation: S_i = rated_mw_i / pf_i.
+    #   Default matches SiteConfig.power_factor (0.85). CHOSEN.
+    power_factor: float = _sp.value("power_factor_turbine")  # CHOSEN — 0.85
+    # inertia_constant_s: per-unit H for H_aggregate computation.
+    #   Default from catalogue inertia_constant_s (same as SiteConfig fleet H).
+    inertia_constant_s: float = _sp.value("inertia_constant_s")  # CHOSEN
+    # droop_r: per-unit governor droop (pu/pu). Default 0.04 (= governor_droop).
+    droop_r: float = _sp.value("droop_r")  # CHOSEN — 0.04 pu/pu
+    # valve_actuation_tc_s / fuel_to_power_tc_s: governor cascade time constants.
+    #   PROVISIONAL-UNMEASURED per unit; default matches SiteConfig fleet value.
+    valve_actuation_tc_s: float = _sp.value("valve_actuation_tc_s")  # PROVISIONAL-UNMEASURED — 0.2 s
+    fuel_to_power_tc_s:   float = _sp.value("fuel_to_power_tc_s")    # PROVISIONAL-UNMEASURED — 1.0 s
+    # max_instantaneous_load_step_mw: governor output rate limit per sub-step.
+    #   PROVISIONAL-UNMEASURED per unit; default matches SiteConfig fleet value.
+    max_instantaneous_load_step_mw: float = _sp.value("max_instantaneous_load_step_mw")  # PROVISIONAL-UNMEASURED
 
 
 @dataclass
@@ -865,6 +922,31 @@ class TickResult:
     # Default 0.0 allows pre-existing test TickResult constructors that omit this kwarg
     # to remain valid; evaluate_tick() always sets it explicitly.
     p_generation_mw: float = 0.0
+
+    # ── Phase 2A: Protection-provisional flag ─────────────────────────────────
+    # True when this tick consulted any PROVISIONAL-UNMEASURED catalogue parameter
+    # in the frequency-dynamics path.  Set True for all islanded ticks (D_eff uses
+    # d_motor + fixed_speed_cooling_fraction, both PROVISIONAL-UNMEASURED).
+    # Propagated run-wide via run_manager.set_run_provisional().
+    # Blocks demo export when True (HTTP 403 via is_export_blocked()).
+    protection_provisional: bool = False
+
+    # ── Phase 6: Supply/served producers ──────────────────────────────────────
+    # p_served_mw:   demand actually served = p_demand - cumulative_shed_mw.
+    #   NOT a clamp min(p_demand, p_generation). Shed is discrete UFLS blocks.
+    # p_unserved_mw: load shed so far = p_demand - p_served_mw = cumulative_shed_mw.
+    # p_imbalance_mw: generation vs served = p_generation - p_served_mw.
+    #   Positive: surplus (frequency rises); Negative: deficit (frequency falls).
+    # Per-subsystem shares allocated proportional to demand fraction.
+    # All None until Phase 6 wires producers; TC-87/TC-91 move xfail→pass.
+    p_served_mw:           Optional[float] = None
+    p_unserved_mw:         Optional[float] = None
+    p_imbalance_mw:        Optional[float] = None
+    p_compute_served_mw:   Optional[float] = None
+    p_compute_unserved_mw: Optional[float] = None
+    p_cooling_served_mw:   Optional[float] = None
+    p_cooling_unserved_mw: Optional[float] = None
+
     # §INV-CURT: MW of solar output curtailed this tick by the frequency-response
     # inverter logic (islanded mode only).  Proportional curtailment between
     # of_warning_hz (0 %) and of_trip_hz (100 %).  0.0 in grid-connected mode,

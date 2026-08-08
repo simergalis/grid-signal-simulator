@@ -119,6 +119,11 @@ export interface TickPayload {
   collapse_tick_index:   number | null
   collapse_frequency_hz: number | null
 
+  // Phase 2A: protection_provisional — true when this tick was computed using
+  // PROVISIONAL-UNMEASURED protection parameters (any islanded tick). Export
+  // of the telemetry log is blocked while any tick in the run is provisional.
+  protection_provisional: boolean
+
   // Data quality
   data_quality_tags: string[]  // DataQualityTag values
 

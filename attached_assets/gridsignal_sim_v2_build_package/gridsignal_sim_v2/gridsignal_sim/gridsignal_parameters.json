@@ -929,6 +929,140 @@
         "group": "bess"
       },
       "note": "First-order lag time constant for BESS power delivery: alpha = 1 − exp(−dt/tau).  Representative values: grid-forming VSM 20–50 ms, grid-following PLL 50–150 ms, slow droop UPS 200–500 ms.  Effect on coverage: shorter tau → faster delivery → higher coverage ratio.  Claim discipline: BESS coverage figures are unvalidated until tau is measured."
+    },
+    {
+      "key": "anchor_mode",
+      "value": "vsm",
+      "unit": "",
+      "label": "BESS anchor mode",
+      "provenance": "DR-2026-08-08-FREQ",
+      "provenance_detail": "DR-2026-08-08-FREQ — virtual synchronous machine mode. Grid-forming BESS contributes virtual inertia (vsm_inertia_constant_s) when zero synchronous machines are on-bus.",
+      "spec_ref": "§DR-2026-08-08-FREQ Phase 2A",
+      "ui": { "control": "readonly", "group": "frequency" }
+    },
+    {
+      "key": "vsm_inertia_constant_s",
+      "value": 2.0,
+      "unit": "s",
+      "label": "VSM virtual inertia constant",
+      "provenance": "PROVISIONAL-UNMEASURED",
+      "provenance_detail": "PROVISIONAL-UNMEASURED — 2.0 s. No measured basis. Applies when anchor_mode = 'vsm' and zero synchronous machines are on-bus. Blocks demo export until measured.",
+      "spec_ref": "§DR-2026-08-08-FREQ Phase 2A",
+      "ui": { "control": "readonly", "group": "frequency" }
+    },
+    {
+      "key": "dynamic_step_s",
+      "value": 0.01,
+      "unit": "s",
+      "label": "Swing equation sub-step size",
+      "provenance": "DR-2026-08-08-FREQ",
+      "provenance_detail": "DR-2026-08-08-FREQ — 0.01 s (10 ms). Required for nadir resolution. Must satisfy: dynamic_step_s <= shortest_protection_delay / 10 = 0.015 s.",
+      "spec_ref": "§DR-2026-08-08-FREQ Phase 3",
+      "ui": { "control": "readonly", "group": "frequency" }
+    },
+    {
+      "key": "fixed_speed_cooling_fraction",
+      "value": 0.30,
+      "unit": "",
+      "label": "Fixed-speed cooling motor fraction",
+      "provenance": "PROVISIONAL-UNMEASURED",
+      "provenance_detail": "PROVISIONAL-UNMEASURED — 0.30. Fraction of cooling load served by fixed-speed motors (not VFD). These motors produce load damping proportional to speed. Blocks demo export until measured.",
+      "spec_ref": "§DR-2026-08-08-FREQ Phase 3",
+      "ui": { "control": "readonly", "group": "frequency" }
+    },
+    {
+      "key": "d_motor",
+      "value": 2.5,
+      "unit": "pu/pu",
+      "label": "Motor damping coefficient",
+      "provenance": "PROVISIONAL-UNMEASURED",
+      "provenance_detail": "PROVISIONAL-UNMEASURED — 2.5 pu/pu. Affinity law basis. D_eff = (p_cooling/p_demand) x fixed_speed_cooling_fraction x d_motor ~0.13 at nominal operating point. Blocks demo export until measured.",
+      "spec_ref": "§DR-2026-08-08-FREQ Phase 3",
+      "ui": { "control": "readonly", "group": "frequency" }
+    },
+    {
+      "key": "valve_actuation_tc_s",
+      "value": 0.2,
+      "unit": "s",
+      "label": "Governor valve actuation time constant",
+      "provenance": "PROVISIONAL-UNMEASURED",
+      "provenance_detail": "PROVISIONAL-UNMEASURED — 0.2 s. No measured basis. First-order lag from governor signal to valve gate position. Blocks demo export until measured.",
+      "spec_ref": "§DR-2026-08-08-FREQ Phase 4",
+      "ui": { "control": "readonly", "group": "turbine" }
+    },
+    {
+      "key": "fuel_to_power_tc_s",
+      "value": 1.0,
+      "unit": "s",
+      "label": "Fuel-to-power time constant",
+      "provenance": "PROVISIONAL-UNMEASURED",
+      "provenance_detail": "PROVISIONAL-UNMEASURED — 1.0 s. No measured basis. First-order lag from fuel valve position to shaft mechanical power output. Blocks demo export until measured.",
+      "spec_ref": "§DR-2026-08-08-FREQ Phase 4",
+      "ui": { "control": "readonly", "group": "turbine" }
+    },
+    {
+      "key": "max_instantaneous_load_step_mw",
+      "value": 2.25,
+      "unit": "MW",
+      "label": "Maximum instantaneous governor load step",
+      "provenance": "PROVISIONAL-UNMEASURED",
+      "provenance_detail": "PROVISIONAL-UNMEASURED — 2.25 MW per sub-step. No measured basis. Bounds the governor output change per dynamic_step_s integration step. Blocks demo export until measured.",
+      "spec_ref": "§DR-2026-08-08-FREQ Phase 4",
+      "ui": { "control": "readonly", "group": "turbine" }
+    },
+    {
+      "key": "ufls_stages",
+      "value": [
+        {"threshold_hz": 59.3, "delay_s": 0.15, "block_fraction": 0.10},
+        {"threshold_hz": 58.9, "delay_s": 0.15, "block_fraction": 0.15},
+        {"threshold_hz": 58.5, "delay_s": 0.15, "block_fraction": 0.20}
+      ],
+      "unit": "list",
+      "label": "UFLS stage definitions",
+      "provenance": "PROVISIONAL-UNMEASURED",
+      "provenance_detail": "PROVISIONAL-UNMEASURED — 3 stages. No measured basis. Thresholds and delays must be confirmed against site relay coordination study. Blocks demo export until measured.",
+      "spec_ref": "§DR-2026-08-08-FREQ Phase 5",
+      "ui": { "control": "readonly", "group": "frequency" }
+    },
+    {
+      "key": "relay_81u_threshold_hz",
+      "value": 57.5,
+      "unit": "Hz",
+      "label": "81U relay under-frequency trip threshold (islanded)",
+      "provenance": "PROVISIONAL-UNMEASURED",
+      "provenance_detail": "PROVISIONAL-UNMEASURED — 57.5 Hz. No measured basis for islanded operation. NOTE: island_collapse_hz (IEEE 1547 Cat I = 57.0 Hz) is for grid-connected DER interconnection and must not be used as the islanded protection threshold. This PROVISIONAL value replaces it for islanded mode. Blocks demo export until measured.",
+      "spec_ref": "§DR-2026-08-08-FREQ Phase 5",
+      "ui": { "control": "readonly", "group": "frequency" }
+    },
+    {
+      "key": "relay_81u_delay_s",
+      "value": 0.10,
+      "unit": "s",
+      "label": "81U relay clearing delay",
+      "provenance": "PROVISIONAL-UNMEASURED",
+      "provenance_detail": "PROVISIONAL-UNMEASURED — 0.10 s (100 ms). No measured basis. Time from threshold crossing to generator trip. Blocks demo export until measured.",
+      "spec_ref": "§DR-2026-08-08-FREQ Phase 5",
+      "ui": { "control": "readonly", "group": "frequency" }
+    },
+    {
+      "key": "droop_r",
+      "value": 0.04,
+      "unit": "pu/pu",
+      "label": "Per-unit governor droop (per turbine)",
+      "provenance": "CHOSEN",
+      "provenance_detail": "CHOSEN — 0.04 pu/pu. Per-unit alias of governor_droop, used as the default for TurbineConfig.droop_r (Phase 2B per-unit governor). Same value as fleet-level governor_droop.",
+      "spec_ref": "§DR-2026-08-08-FREQ Phase 2B",
+      "ui": { "control": "readonly", "group": "turbine" }
+    },
+    {
+      "key": "power_factor_turbine",
+      "value": 0.85,
+      "unit": "",
+      "label": "Per-unit turbine power factor default",
+      "provenance": "CHOSEN",
+      "provenance_detail": "CHOSEN — 0.85. Default per-unit power factor for TurbineConfig (Phase 2B). Used to compute per-unit MVA base: S_i = rated_mw_i / power_factor_i. Matches SiteConfig.power_factor default.",
+      "spec_ref": "§DR-2026-08-08-FREQ Phase 2B",
+      "ui": { "control": "readonly", "group": "turbine" }
     }
   ],
   "excluded": [

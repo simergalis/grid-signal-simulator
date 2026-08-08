@@ -81,6 +81,28 @@ async def _run_logger(job_id: str, out_path: str) -> None:
 @router.post("/api/export/telemetry-log", include_in_schema=True)
 async def start_telemetry_log() -> JSONResponse:
     """Kick off the logger; return job_id and eta immediately."""
+    # Phase 2A (DR-2026-08-08-FREQ): Block demo export when run used
+    # PROVISIONAL-UNMEASURED protection parameters.  Any islanded tick sets
+    # protection_provisional=True (D_eff uses d_motor + fixed_speed_cooling_fraction,
+    # both PROVISIONAL-UNMEASURED).  The run_manager propagates this flag run-wide.
+    # Callers must supply measured site data before export is permitted.
+    from runtime.run_manager import is_export_blocked as _is_export_blocked
+    if _is_export_blocked():
+        return JSONResponse(
+            status_code=403,
+            content={
+                "detail": (
+                    "Export blocked: run used PROVISIONAL-UNMEASURED frequency-protection "
+                    "parameters (protection_provisional=True). Calibrated site measurements "
+                    "for d_motor, fixed_speed_cooling_fraction, valve_actuation_tc_s, "
+                    "fuel_to_power_tc_s, max_instantaneous_load_step_mw, "
+                    "vsm_inertia_constant_s, ufls_stages, relay_81u_threshold_hz, and "
+                    "relay_81u_delay_s are required before demo export is permitted. "
+                    "See gridsignal_parameters.json for PROVISIONAL-UNMEASURED entries."
+                ),
+                "blocked_by": "protection_provisional",
+            },
+        )
     if not _LOGGER_SCRIPT.exists():
         return JSONResponse(
             status_code=500,

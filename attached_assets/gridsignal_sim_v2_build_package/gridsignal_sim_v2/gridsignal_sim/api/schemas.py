@@ -249,6 +249,16 @@ class TurbineUnitSpec(BaseModel):
     cold_start_s: Optional[float] = Field(default=None, gt=0)
     warm_start_s: Optional[float] = Field(default=None, gt=0)
     hot_start_s: Optional[float] = Field(default=None, gt=0)
+    # Phase 2B (DR-2026-08-08-FREQ): per-unit turbine physics overrides.
+    # When None, TurbineConfig defaults (from catalogue) are used.
+    # Use these for heterogeneous fleets where individual units differ from
+    # the fleet-level catalogue values.
+    power_factor: Optional[float] = Field(default=None, gt=0.0, le=1.0)
+    inertia_constant_s: Optional[float] = Field(default=None, gt=0.0)
+    droop_r: Optional[float] = Field(default=None, ge=0.0, le=1.0)
+    valve_actuation_tc_s: Optional[float] = Field(default=None, gt=0.0)
+    fuel_to_power_tc_s: Optional[float] = Field(default=None, gt=0.0)
+    max_instantaneous_load_step_mw: Optional[float] = Field(default=None, gt=0.0)
 
 
 class StepTimingConfigSpec(BaseModel):
@@ -471,6 +481,33 @@ class ScenarioSpec(BaseModel):
             "collapses via OF protection; inverter curtailment saturates at 100 % here.  "
             "IEEE 1547-2018 Cat I / SDG&E default: 62.0 Hz.  "
             "None = OF trip disabled."
+        ),
+    )
+
+    # ── Phase 5: UFLS and 81U relay (opt-in — disabled by default) ───────────
+    # PROVISIONAL-UNMEASURED thresholds. Must be explicitly set per-scenario.
+    # Empty list / None = protection stage disabled (backward-compatible default).
+    ufls_stages: Optional[list[dict]] = Field(
+        default=None,
+        description=(
+            "Under-frequency load-shedding relay stages.  Each entry: "
+            "{'threshold_hz': float, 'delay_s': float, 'block_fraction': float}. "
+            "PROVISIONAL-UNMEASURED. None = UFLS disabled (default)."
+        ),
+    )
+    relay_81u_threshold_hz: Optional[float] = Field(
+        default=None, ge=45.0, le=65.0,
+        description=(
+            "Islanded 81U under-frequency relay trip threshold (Hz). "
+            "PROVISIONAL-UNMEASURED. None = 81U relay disabled (default). "
+            "57.5 Hz is the PROVISIONAL value for 60 Hz (WECC) systems."
+        ),
+    )
+    relay_81u_delay_s: Optional[float] = Field(
+        default=None, ge=0.0, le=10.0,
+        description=(
+            "81U relay time delay before trip (s). "
+            "PROVISIONAL-UNMEASURED. None = use catalogue default (0.10 s)."
         ),
     )
 

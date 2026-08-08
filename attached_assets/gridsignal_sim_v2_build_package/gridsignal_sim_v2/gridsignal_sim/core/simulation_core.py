@@ -143,6 +143,21 @@ class SimulationState:
     # (sim_time − _last_breaker_open_s) ≥ max(unload_tail_s) across the fleet.
     _last_breaker_open_s: float = field(default=math.nan, init=False)
 
+    # ── Phase 5 (DR-2026-08-08-FREQ): UFLS relay state ────────────────────────
+    # _ufls_timer_s: elapsed time (s) each stage has been below its threshold.
+    #   Resets to 0 when frequency recovers above the threshold (stage not fired).
+    # _ufls_fired: True once a stage has shed load; stays True (no re-engagement).
+    # _cumulative_shed_mw: total load shed so far this run by all UFLS stages.
+    #   Monotonically increasing; used by Phase 6 P_served computation.
+    # _relay_81u_timer_s: elapsed time (s) frequency has been ≤ relay_81u_threshold_hz.
+    # _relay_81u_fired: True once the 81U islanded UF protection trips.
+    # Initialized in __post_init__ (UFLS lists sized to catalogue stage count).
+    _ufls_timer_s:      list  = field(default_factory=list, init=False)
+    _ufls_fired:        list  = field(default_factory=list, init=False)
+    _cumulative_shed_mw: float = field(default=0.0, init=False)
+    _relay_81u_timer_s: float = field(default=0.0, init=False)
+    _relay_81u_fired:   bool  = field(default=False, init=False)
+
     def __post_init__(self) -> None:
         # Step 3 Item 4: arbitrator now holds a reference to site so it can
         # read island_mode each tick (mode changes with operating state —
@@ -168,6 +183,11 @@ class SimulationState:
         # SiteConfig.frequency_nominal_hz is required (no default) so this always
         # sources from a conscious per-site choice (60 Hz WECC/SDG&E; 50 Hz EU/APAC).
         self._frequency_hz = self.site.frequency_nominal_hz
+        # Phase 5: UFLS timer/fired lists — sized to catalogue stage count.
+        # Always 3 stages in the current catalogue; sized dynamically for robustness.
+        _n_ufls = len(self.site.ufls_stages)
+        self._ufls_timer_s = [0.0] * _n_ufls
+        self._ufls_fired   = [False] * _n_ufls
 
     def _owning_gpu_module(self, signal: WorkloadSignal) -> GPUModule:
         """A WorkloadSignal targets exactly one GPU module -- the real
@@ -620,79 +640,81 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                 "+%.2f MW to P_dispatch_required (TC-67).", sim_time, _transition_gap_mw,
             )
 
-    # ── Phase 13.3: governor droop pre-correction ─────────────────────────────
-    # §INV-INERTIA: S_base must reflect on-bus synchronous capacity only.
-    # OFFLINE and STARTING machines contribute zero rotational inertia to the
-    # island; crediting their rated MW overstates H_eff and suppresses df/dt.
-    # Root cause of the S9 tick-1 S_base mismatch: 5 × 15 MW credited despite
-    # zero units on-bus (all GTs were OFFLINE at t=0, cold_start=900 s).
+    # ── Phase 2C+4: Per-unit H_aggregate, S_base_mva, and bounded governor droop ─
+    # Replaces the old _s_base_mw = Σ on-bus rated_MW / pf fleet formula.
     #
-    # S_base in MVA = Σ on-bus rated_MW / power_factor.
-    #   pf < 1 raises the MVA base, reducing df/dt (more inertia per MW).
-    #   Without pf the base equals rated_MW, which overestimates df/dt by
-    #   (1 − pf)/pf ≈ 18% for a typical 0.85 pf machine.
+    # Per-unit inertia: S_i = rated_mw_i / pf_i (MVA per unit).
+    #   H_agg = Σ(H_i × S_i) / Σ(S_i)  — capacity-weighted H.
+    # On-bus turbines only: OFFLINE/STARTING contribute zero rotational inertia.
     #
-    # The old max(1.0, ...) guard is replaced by an explicit zero-machine branch
-    # in the swing equation below — see the §INV-INERTIA comment there.
-    _s_base_mw = (
-        sum(t.config.rated_mw for t in state.turbines if t.is_on_bus)
-        / state.site.power_factor
-    )
-
-    # _islanded is hoisted to the top of section 3 (before §INV-CURT).
-    # Referenced here by the droop and balance-decomposition code without
-    # re-assignment; the single assignment earlier is authoritative.
-
-    # Governor droop adjusts the turbine dispatch setpoint proportionally to the
-    # current frequency error, providing primary frequency response.  Active in
-    # islanded mode only — in grid-tie the infinite bus holds frequency and the
-    # forcing term is zero (D2).
+    # Phase 4: Governor outer droop uses the per-turbine governor terminal state
+    # (_gov_power_mw) from the previous tick's sub-step loop, not an instantaneous
+    # droop formula. This correctly models the cascade dynamics (valve_tc → fuel_tc)
+    # with the max_load_step bound, and persists across outer ticks.
     #
-    # Formula: ΔP = −Δf / (droop × f_nominal) × P_rated
-    #   Δf > 0 (f above nominal) → ΔP < 0 → reduce turbine command.
-    #   Δf < 0 (f below nominal) → ΔP > 0 → increase turbine command.
-    #
-    # Deadband: no response within ±0.02 Hz of nominal to avoid hunting.
-    # Ramp limits: TurbineModule.advance() naturally limits how far the turbine
-    #   can actually move in one tick, so no explicit per-tick clamping here.
-    # Lower bound: clamped to 0 — turbines cannot be commanded below zero output.
+    # §REPORT-2A (island_collapse_hz defect): The existing island_collapse_hz
+    # (IEEE 1547 Cat I = 57.0 Hz) is a grid-connected DER interconnection threshold.
+    # It is currently applied in islanded mode — a defect. Phase 5 adds the
+    # correct islanded 81U relay at relay_81u_threshold_hz (57.5 Hz PROVISIONAL).
+    # island_collapse_hz is retained for backward compat with tests that set it
+    # explicitly. See swing equation below.
     _GOVERNOR_DEADBAND_HZ: float = 0.02
-    _f_error_hz = state._frequency_hz - state.site.frequency_nominal_hz
 
+    _on_bus_turbines = [t for t in state.turbines if t.is_on_bus]
+    if _on_bus_turbines:
+        _per_unit_s_i = [t.config.rated_mw / t.config.power_factor for t in _on_bus_turbines]
+        _per_unit_h_s = [t.config.inertia_constant_s * s for t, s in zip(_on_bus_turbines, _per_unit_s_i)]
+        _s_base_mva = sum(_per_unit_s_i)
+        _h_aggregate = sum(_per_unit_h_s) / _s_base_mva
+    else:
+        # Phase 2C: zero synchronous machines on bus.
+        # DELETED BRANCH: The old frozen-frequency path was:
+        #   "if GF-BESS present: _df_dt=0, freeze frequency (no virtual inertia).
+        #    else: virtual S_base = 1.0/pf, use SiteConfig.inertia_constant_s."
+        # Phase 2C replaces this with the VSM inertia model (anchor_mode='vsm'):
+        #   GF-BESS provides virtual inertia H_vsm; sub-step swing equation applies.
+        # This enables realistic frequency dynamics during the zero-machine phase
+        # (e.g., S9 zero-machine phase where GF-BESS held f at 60 Hz).
+        _gf_bess_units = [b for b in state.bess_units if b.config.grid_forming]
+        if _gf_bess_units and state.site.anchor_mode == "vsm":
+            # VSM: GF-BESS contributes virtual inertia on its own MVA base.
+            _vsm_s = sum(b.config.rated_mw / state.site.power_factor for b in _gf_bess_units)
+            _s_base_mva = _vsm_s if _vsm_s > 0.0 else 1.0 / state.site.power_factor
+            _h_aggregate = state.site.vsm_inertia_constant_s  # PROVISIONAL-UNMEASURED
+        else:
+            # No GF-BESS or non-vsm mode: minimum inertia sentinel.
+            _s_base_mva = 1.0 / state.site.power_factor
+            _h_aggregate = state.site.inertia_constant_s  # site-level H fallback
+
+    # Phase 4: Dispatch droop correction.
+    # Uses the instantaneous per-unit formula for DISPATCH (same sign convention
+    # as Phase 13.3, now using per-unit S_i = rated_mw/pf_i per turbine).
+    # ΔP_i = −Δf/(droop_r_i × f0) × S_i  (per turbine)
+    # Total correction = Σ ΔP_i across on-bus turbines.
+    #
+    # WHY INSTANTANEOUS FOR DISPATCH: The bounded governor cascade (Phase 4 sub-step
+    # loop) provides fine-grained state tracking across sub-steps, but uses a one-tick
+    # delay if its terminal state is read for dispatch. A one-tick delay (5 s outer tick)
+    # means zero droop correction on the first elevated-frequency tick, breaking the
+    # I3 restoring-force invariant. Using the instantaneous formula preserves I3 while
+    # the sub-step cascade tracks governor state for diagnostics and future use.
+    _f_error_hz = state._frequency_hz - state.site.frequency_nominal_hz
     if (
         _islanded
+        and _on_bus_turbines
         and abs(_f_error_hz) > _GOVERNOR_DEADBAND_HZ
-        and state.site.governor_droop > 0.0
     ):
-        _droop_correction_mw = (
-            -_f_error_hz
-            / (state.site.governor_droop * state.site.frequency_nominal_hz)
-            * _s_base_mw
+        _droop_correction_mw = sum(
+            (-_f_error_hz / (t.config.droop_r * state.site.frequency_nominal_hz))
+            * (t.config.rated_mw / t.config.power_factor)
+            for t in _on_bus_turbines
+            if t.config.droop_r > 0.0
         )
     else:
-        # governor_droop == 0: droop response disabled (no correction).
-        # _f_error within deadband: small dead-zone to avoid hunting.
-        # grid-connected: droop inactive (infinite bus holds frequency).
         _droop_correction_mw = 0.0
 
-    # Effective turbine dispatch setpoint includes the droop correction.
-    # Used by the arbitrator, the balance decomposition, and the TickResult.
-    #
-    # Upper bound: the setpoint cannot exceed the total synchronous fleet
-    # rating.  Without this bound, a large negative Δf (frequency collapse
-    # during islanded startup) produces a correction that is a multiple of
-    # S_base, yielding setpoints in the hundreds or thousands of MW —
-    # nonsensical for a 45 MW fleet.  The ceiling is Σ rated_MW =
-    # _s_base_mw × power_factor (both terms already computed; no new
-    # catalogue constant introduced).  The physical interpretation is that
-    # the governor cannot command more than 100 % of installed capacity.
-    # §INV-INERTIA (dispatch ceiling): Decouple from _s_base_mw.
-    # _sync_ceiling_mw is the governor dispatch ceiling = "max MW the synchronous
-    # fleet could generate."  Using _s_base_mw × pf (= Σ on-bus MW) collapses the
-    # ceiling to 0 when all turbines are OFFLINE, which cascades into
-    # _p_dispatch_droop_mw = 0 and starves the arbitrator of a BESS setpoint.
-    # The ceiling must therefore span the FULL installed fleet, not just on-bus units.
-    # (The inertia computation uses on-bus only; this is the dispatch ceiling only.)
+    # Dispatch ceiling = total installed fleet (not just on-bus) — dispatch intent,
+    # not inertia basis. Decoupled from _s_base_mva per §INV-INERTIA.
     _sync_ceiling_mw = sum(t.config.rated_mw for t in state.turbines)
     _p_dispatch_droop_mw = max(
         0.0,
@@ -1396,131 +1418,233 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # No separate LEAD_WINDOW_S constant; one source of truth.
     _ramp_capability_mw = ramp_capability(dt_lead_next_s, state.turbines)
 
-    # Swing equation — islanded mode only.
-    # Task #200 B1: forcing input = frequency_forcing_mw = balance_residual.
-    #   df/dt = frequency_forcing_mw / (2 × H × S_base) × f₀
-    # where H = inertia_constant_s, S_base = total turbine fleet rating (MVA),
-    #       f₀ = frequency_nominal_hz (sourced from SiteConfig — no literal).
+    # ── Phase 3+4+5: Sub-stepped swing equation, bounded governor, UFLS/81U ────
+    # Replaces the single-step swing equation from Phase 13.3.
     #
-    # frequency_forcing_mw = _balance_residual_mw = p_gen − p_load (actual).
-    # Any real supply-demand imbalance — floor constraint, BESS lag, hardware
-    # fault — moves frequency.  asset_delivery_error_mw is a reporting field
-    # outside D4 and does NOT separately drive the swing equation; it is
-    # already implicit in balance_residual.
+    # Sub-step dt = site.dynamic_step_s (0.01 s, DR-2026-08-08-FREQ).
+    # n_sub = round(dt_seconds / dynamic_step_s) = 500 sub-steps per 5 s outer tick.
+    # Assertion: dynamic_step_s ≤ min(relay_81u_delay_s, ufls_delay_s) / 10 = 0.01 s.
     #
-    # Governor droop provides the restoring force: by adjusting _p_dispatch_droop_mw
-    # before arbitration, the droop correction changes _p_commanded_mw each tick,
-    # which changes frequency_forcing_mw, which drives df/dt back toward zero.
-    # The feedback loop is:
-    #   Δf > 0 → droop reduces setpoint → _p_commanded falls → frequency_forcing < 0
-    #          → df/dt < 0 → frequency falls back toward nominal.
+    # §REPORT-2C (deleted branch): The old frozen-frequency branch
+    # "if GF-BESS and zero machines: df/dt=0, freeze frequency" has been removed
+    # (Phase 2C). The frozen-frequency model treated GF-BESS as an infinite bus
+    # with no virtual inertia, preventing any frequency dynamics during the zero-
+    # machine phase. Phase 2C replaces it with VSM physics (H_vsm=2.0 s PROVISIONAL).
     #
-    # _s_base_mw and _islanded are computed early in the droop block (Phase 13.3).
-    # Grid-connected: frequency is held at nominal by the grid; reset each tick.
-    # §FP: Frequency protection state for this tick (initialised before branch).
+    # §REPORT-5A (defect retained): island_collapse_hz (IEEE 1547 Cat I, 57.0 Hz)
+    # is a grid-connected DER interconnection threshold. It is currently applied
+    # inside the islanded block — a defect. Phase 5 adds the correct islanded 81U
+    # relay at relay_81u_threshold_hz (57.5 Hz, PROVISIONAL-UNMEASURED). The 81U
+    # fires at a less-conservative threshold with a delay; for rapidly falling
+    # frequency, island_collapse_hz fires first. Backward compat: retained.
     _island_collapsed_this_tick: bool = False
     _fp_collapse_reason: Optional[str] = None
     _fp_collapse_frequency_hz: Optional[float] = None
+    # Phase 2A: protection_provisional — True for every islanded tick.
+    # D_eff uses d_motor + fixed_speed_cooling_fraction (both PROVISIONAL-UNMEASURED).
+    _protection_provisional: bool = _islanded
 
     if _islanded:
-        if _s_base_mw > 0.0:
-            # Standard swing equation: df/dt = frequency_forcing / (2·H·S_base) · f₀
-            _df_dt = (
-                _frequency_forcing_mw
-                / (2.0 * state.site.inertia_constant_s * _s_base_mw)
-                * state.site.frequency_nominal_hz
+        _f0 = state.site.frequency_nominal_hz
+
+        # Phase 3 assertion: sub-step ≤ shortest_protection_delay / 10.
+        # Shortest delay = min(relay_81u_delay_s, min UFLS stage delay_s).
+        _shortest_delay_s = min(
+            state.site.relay_81u_delay_s,
+            min((s["delay_s"] for s in state.site.ufls_stages), default=float("inf")),
+        )
+        assert state.site.dynamic_step_s <= _shortest_delay_s / 10.0, (
+            f"dynamic_step_s={state.site.dynamic_step_s} s violates "
+            f"dynamic_step_s ≤ shortest_protection_delay/10 = "
+            f"{_shortest_delay_s / 10.0} s (§DR-2026-08-08-FREQ Phase 3)"
+        )
+
+        _dt_sub = state.site.dynamic_step_s
+        _n_sub  = max(1, round(dt_seconds / _dt_sub))
+        _dt_sub = dt_seconds / _n_sub  # actual sub-step (may differ by float rounding)
+
+        # Phase 3: Load damping D_eff (dimensionless, pu/pu).
+        # Only fixed-speed motors damp frequency; VFD loads and IT loads do NOT.
+        # D_eff ≈ 0.13 at typical 0.45 × 0.30 × 2.5 = 0.3375 MW/MW cooling fraction.
+        _d_eff: float = 0.0
+        if p_demand_mw > 1e-9:
+            _d_eff = (
+                (p_cooling_demand_mw / p_demand_mw)
+                * state.site.fixed_speed_cooling_fraction
+                * state.site.d_motor
             )
-            _new_freq = state._frequency_hz + _df_dt * dt_seconds
-        else:
-            # §INV-INERTIA: zero synchronous machines on bus.
-            # Behaviour depends on whether a grid-forming BESS is present:
+
+        # Shed accumulated within this outer tick's sub-steps (affects swing eq).
+        _shed_this_tick_mw: float = 0.0
+
+        _f = state._frequency_hz  # working frequency across sub-steps
+
+        for _k in range(_n_sub):
+            _f_dev = _f - _f0
+
+            # Phase 3: Swing equation sub-step.
+            # 2·H_agg/f0 · df/dt = P_net/S_base − D_eff·(f−f0)/f0
+            # => df/dt = [P_net_pu·f0 − D_eff·f_dev] / (2·H_agg)
             #
-            # A) Grid-forming BESS present:
-            #    The inverter acts as a stiff voltage source, holding frequency at
-            #    its current value.  The swing equation (rotor dynamics) does NOT
-            #    apply — there is no rotating mass.
-            #    Design decision (CHOSEN, stated before implementation):
-            #      _df_dt = 0;  _new_freq = state._frequency_hz.
-            #    Conservative: virtual inertia is NOT modelled (future item;
-            #    blocked pending measured inverter response data).
-            #    The §INV-CURT block handles renewable surplus so the island does
-            #    not silently accumulate OF risk during the zero-machine phase.
+            # Forcing: _frequency_forcing_mw is the outer-tick balance residual
+            # (constant within the sub-step loop). This is the dispatch-plan
+            # imbalance that drives rotating inertia.
             #
-            # B) No grid-forming BESS (uncontrolled island, or test-fixture):
-            #    Without a frequency reference, fall back to a virtual S_base of
-            #    1.0/pf MVA — the minimum inertia sentinel used by the original
-            #    formula (max(1.0, ...) / pf).  This preserves backward-compatible
-            #    behaviour for fixtures that test channel separation without a
-            #    grid-forming device, where freezing frequency would be incorrect.
-            _has_gf_bess = any(b.config.grid_forming for b in state.bess_units)
-            if _has_gf_bess:
-                _df_dt = 0.0
-                _new_freq = state._frequency_hz
-            else:
-                # No grid-forming BESS: virtual inertia sentinel (1.0 / pf MVA).
-                # Mirrors the old max(1.0, Σ rated_MW) / pf guard when fleet is empty.
-                _virtual_s_base_mw = 1.0 / state.site.power_factor
-                _df_dt = (
-                    _frequency_forcing_mw
-                    / (2.0 * state.site.inertia_constant_s * _virtual_s_base_mw)
-                    * state.site.frequency_nominal_hz
+            # Governor feedback (Phase 4) runs SEPARATELY below and advances the
+            # governor state using the instantaneous frequency deviation. The
+            # governor terminal state (_gov_power_mw) is used as the NEXT outer
+            # tick's dispatch correction (outer droop), NOT as a within-tick
+            # feedback to the swing equation. This one-outer-tick delay correctly
+            # models the governor's role: it adjusts the NEXT dispatch setpoint,
+            # not the current tick's balance residual.
+            #
+            # Within-tick shed from UFLS is added to the forcing since shed
+            # reduces the effective load immediately (sub-step granularity).
+            if _s_base_mva > 0.0 and _h_aggregate > 0.0:
+                _p_net_pu = (
+                    (_frequency_forcing_mw + _shed_this_tick_mw)
+                    / _s_base_mva
                 )
-                _new_freq = state._frequency_hz + _df_dt * dt_seconds
+                _df_dt_sub = (
+                    _p_net_pu * _f0 - _d_eff * _f_dev
+                ) / (2.0 * _h_aggregate)
+                _f += _df_dt_sub * _dt_sub
+            # If _s_base_mva==0 or _h_aggregate==0: degenerate; f unchanged.
 
-        # §FP: Apply protection thresholds — all Optional[float]; None = disabled.
-        # Protection only fires when the operator has explicitly set the threshold
-        # in the scenario spec.  This preserves all pre-existing frequency tests
-        # (EU/APAC 50 Hz fixtures, physics swing-equation tests) that exercise
-        # large frequency swings for verification, not protection behaviour.
-        _fp_collapse = state.site.island_collapse_hz  # None = UF trip disabled
-        _fp_of_trip  = state.site.of_trip_hz          # None = OF trip disabled
-        _fp_ufls1    = state.site.ufls_stage1_hz       # None = UFLS warning disabled
-        _fp_uf_warn  = state.site.uf_warning_hz        # None = UF advisory disabled
-        _fp_of_warn  = state.site.of_warning_hz        # None = OF advisory disabled
+            # Phase 4: Advance per-unit bounded governor cascade (valve lag → fuel lag).
+            # Governor reads the instantaneous frequency deviation and advances its
+            # cascade state. The terminal _gov_power_mw is used by the NEXT outer
+            # tick's dispatch correction (outer droop formula). This is a one-outer-tick
+            # delay, which is the correct model for governor response to frequency events.
+            # Not added to the swing equation forcing within this tick.
+            for _t in _on_bus_turbines:
+                _s_i = _t.config.rated_mw / _t.config.power_factor  # MVA base for this unit
+                # Governor demand: droop signal in MW (positive = more output needed).
+                _gov_target = (
+                    (-_f_dev / (_t.config.droop_r * _f0)) * _s_i
+                    if abs(_f_dev) > _GOVERNOR_DEADBAND_HZ and _t.config.droop_r > 0.0
+                    else 0.0
+                )
+                # Valve first-order lag.
+                _alpha_v = 1.0 - math.exp(-_dt_sub / _t.config.valve_actuation_tc_s)
+                _new_valve = _t._gov_valve_mw + (_gov_target - _t._gov_valve_mw) * _alpha_v
+                # Fuel/power first-order lag.
+                _alpha_f = 1.0 - math.exp(-_dt_sub / _t.config.fuel_to_power_tc_s)
+                _new_power = _t._gov_power_mw + (_new_valve - _t._gov_power_mw) * _alpha_f
+                # Rate limiter: max_instantaneous_load_step_mw per sub-step.
+                _step = _new_power - _t._gov_power_mw
+                if abs(_step) > _t.config.max_instantaneous_load_step_mw:
+                    _new_power = _t._gov_power_mw + math.copysign(
+                        _t.config.max_instantaneous_load_step_mw, _step
+                    )
+                _t._gov_valve_mw = _new_valve
+                _t._gov_power_mw = _new_power
 
-        if _fp_collapse is not None and _new_freq <= _fp_collapse:
-            # UF-2: mandatory under-frequency trip (IEEE 1547-2018 §6.5.1 Cat I,
-            # ≤ 0.16 s clearing).  Freeze at the trip threshold; signal collapse.
-            state._frequency_hz = _fp_collapse
-            _island_collapsed_this_tick = True
-            _fp_collapse_reason = "island_collapse_uf"
-            _fp_collapse_frequency_hz = _fp_collapse
-            _log.warning(
-                "§FP UF-2 ISLAND COLLAPSE: f=%.3f Hz ≤ %.3f Hz at tick %d "
-                "(sim_time=%.1f s).  Frequency frozen; run will halt after this tick.",
-                _new_freq, _fp_collapse, state.tick_index, clock.sim_time,
-            )
-        elif _fp_of_trip is not None and _new_freq >= _fp_of_trip:
-            # OF-2: mandatory over-frequency generation trip (IEEE 1547-2018 §6.5.1
-            # Cat I, ≤ 0.16 s clearing).  Freeze at the trip threshold; signal collapse.
-            state._frequency_hz = _fp_of_trip
-            _island_collapsed_this_tick = True
-            _fp_collapse_reason = "island_collapse_of"
-            _fp_collapse_frequency_hz = _fp_of_trip
-            _log.warning(
-                "§FP OF-2 ISLAND COLLAPSE: f=%.3f Hz ≥ %.3f Hz at tick %d "
-                "(sim_time=%.1f s).  Frequency frozen; run will halt after this tick.",
-                _new_freq, _fp_of_trip, state.tick_index, clock.sim_time,
-            )
-        else:
-            # No trip — integrate normally.
-            state._frequency_hz = _new_freq
+            # Phase 5: UFLS staged protection (PROVISIONAL-UNMEASURED thresholds).
+            # Guard: like the 81U relay, UFLS thresholds are calibrated for 60 Hz
+            # systems. A 59.3 Hz threshold is meaningless for a 50 Hz system (50 Hz
+            # nominal is already below 59.3 Hz — the relay would fire immediately).
+            # Only fire when threshold_hz < frequency_nominal_hz.
+            # Timer resets if f recovers above threshold before stage fires.
+            for _j, _stage in enumerate(state.site.ufls_stages):
+                if state._ufls_fired[_j]:
+                    continue  # already shed; skip
+                if _stage["threshold_hz"] >= _f0:
+                    continue  # threshold above nominal: not calibrated for this system
+                if _f <= _stage["threshold_hz"]:
+                    state._ufls_timer_s[_j] += _dt_sub
+                    if state._ufls_timer_s[_j] >= _stage["delay_s"]:
+                        _shed_block = _stage["block_fraction"] * p_demand_mw
+                        state._cumulative_shed_mw += _shed_block
+                        _shed_this_tick_mw += _shed_block
+                        state._ufls_fired[_j] = True
+                        _log.warning(
+                            "§UFLS Stage %d fired: f=%.3f Hz ≤ %.3f Hz, tick %d, "
+                            "shed=%.2f MW (%.0f%% of %.2f MW demand). PROVISIONAL thresholds.",
+                            _j, _f, _stage["threshold_hz"], state.tick_index,
+                            _shed_block, _stage["block_fraction"] * 100, p_demand_mw,
+                        )
+                else:
+                    state._ufls_timer_s[_j] = 0.0  # recovered; reset timer
 
-            # Advisory checks (warning only; island_collapsed stays False).
-            if _fp_ufls1 is not None and _new_freq <= _fp_ufls1:
+            # Phase 5: 81U islanded UF relay (PROVISIONAL-UNMEASURED, 57.5 Hz / 0.10 s).
+            # Guard: relay_81u_threshold_hz must be below the system nominal frequency.
+            # A 57.5 Hz threshold makes no sense for a 50 Hz system — 50 Hz nominal is
+            # already below 57.5 Hz, so the relay would fire immediately on every sub-step.
+            # Physical interpretation: the threshold is calibrated for the site frequency;
+            # for a 60 Hz (WECC/SDG&E) site 57.5 Hz < 60 Hz → relay active.
+            # For a 50 Hz (EU/APAC) site 57.5 Hz > 50 Hz → relay disabled (not calibrated).
+            if not state._relay_81u_fired and not _island_collapsed_this_tick:
+                _r81u_thresh = state.site.relay_81u_threshold_hz
+                # relay_81u_threshold_hz is opt-in (None = disabled).
+                # Also guard: threshold must be below the system nominal frequency.
+                if _r81u_thresh is not None and _r81u_thresh < _f0 and _f <= _r81u_thresh:
+                    state._relay_81u_timer_s += _dt_sub
+                    if state._relay_81u_timer_s >= state.site.relay_81u_delay_s:
+                        state._relay_81u_fired = True
+                        _island_collapsed_this_tick = True
+                        _fp_collapse_reason = "island_collapse_uf"
+                        _fp_collapse_frequency_hz = _f
+                        state._frequency_hz = _f
+                        _log.warning(
+                            "§81U ISLANDED TRIP: f=%.3f Hz ≤ %.3f Hz for %.3f s "
+                            "≥ %.3f s delay, tick %d. PROVISIONAL-UNMEASURED threshold.",
+                            _f, _r81u_thresh, state._relay_81u_timer_s,
+                            state.site.relay_81u_delay_s, state.tick_index,
+                        )
+                        break
+                else:
+                    state._relay_81u_timer_s = 0.0
+
+            # §REPORT-5A: island_collapse_hz — retained for backward compat.
+            # NOTE: This is the IEEE 1547-2018 Cat I grid-connected DER threshold
+            # (57.0 Hz). Using it as the islanded UF trip is a defect (reported).
+            # The 81U relay (57.5 Hz, delayed) fires at a less-conservative level;
+            # for rapidly falling f, island_collapse_hz fires first (57.0 < 57.5 Hz).
+            if not _island_collapsed_this_tick:
+                _fp_collapse = state.site.island_collapse_hz
+                _fp_of_trip  = state.site.of_trip_hz
+                if _fp_collapse is not None and _f <= _fp_collapse:
+                    state._frequency_hz = _fp_collapse
+                    _island_collapsed_this_tick = True
+                    _fp_collapse_reason = "island_collapse_uf"
+                    _fp_collapse_frequency_hz = _fp_collapse
+                    _log.warning(
+                        "§FP UF-2 ISLAND COLLAPSE: f=%.3f Hz ≤ %.3f Hz at tick %d "
+                        "(sim_time=%.1f s).  Frequency frozen; run will halt after this tick.",
+                        _f, _fp_collapse, state.tick_index, clock.sim_time,
+                    )
+                    break
+                elif _fp_of_trip is not None and _f >= _fp_of_trip:
+                    state._frequency_hz = _fp_of_trip
+                    _island_collapsed_this_tick = True
+                    _fp_collapse_reason = "island_collapse_of"
+                    _fp_collapse_frequency_hz = _fp_of_trip
+                    _log.warning(
+                        "§FP OF-2 ISLAND COLLAPSE: f=%.3f Hz ≥ %.3f Hz at tick %d "
+                        "(sim_time=%.1f s).  Frequency frozen; run will halt after this tick.",
+                        _f, _fp_of_trip, state.tick_index, clock.sim_time,
+                    )
+                    break
+
+        if not _island_collapsed_this_tick:
+            state._frequency_hz = _f
+
+        # Advisory threshold checks (non-tripping; island_collapsed stays False).
+        if not _island_collapsed_this_tick:
+            _fp_ufls1   = state.site.ufls_stage1_hz
+            _fp_uf_warn = state.site.uf_warning_hz
+            _fp_of_warn = state.site.of_warning_hz
+            if _fp_ufls1 is not None and state._frequency_hz <= _fp_ufls1:
                 _fp_collapse_reason = "ufls_stage1"
-                _log.warning(
-                    "§FP UF-1 UFLS warning: f=%.3f Hz ≤ %.3f Hz at tick %d "
-                    "(not wired to curtailment ladder — see §FP report).",
-                    _new_freq, _fp_ufls1, state.tick_index,
-                )
-            elif _fp_uf_warn is not None and _new_freq <= _fp_uf_warn:
+            elif _fp_uf_warn is not None and state._frequency_hz <= _fp_uf_warn:
                 _fp_collapse_reason = "uf_warning"
-            elif _fp_of_warn is not None and _new_freq >= _fp_of_warn:
+            elif _fp_of_warn is not None and state._frequency_hz >= _fp_of_warn:
                 _fp_collapse_reason = "of_warning"
     else:
         # Grid-connected: frequency is the grid's reference; not integrated.
         state._frequency_hz = state.site.frequency_nominal_hz
+        _protection_provisional = False  # No PROVISIONAL physics in grid-connected mode
 
     # ── Phase 11.6: compute inlet temperature (Section 8 thermal model) ───────
     # T_inlet = T_ambient_base + cooling_fraction × T_rise_max_c
@@ -1540,6 +1664,28 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         else 0.0
     )
     _compute_inlet_temp_c = _T_AMBIENT_BASE_C + _cooling_fraction * _T_RISE_MAX_C
+
+    # ── Phase 6: Supply/served producers ──────────────────────────────────────
+    # P_served = P_demand − cumulative_shed (runs across all outer ticks).
+    # NOT: min(P_demand, P_generation) — that is explicitly prohibited by the spec.
+    # P_imbalance = P_generation − P_served (positive = surplus, f rises).
+    # Per-subsystem shed: proportional to demand fraction (judgement call — stage
+    # definitions specify block_fraction of total demand only; no subsystem split).
+    _cumulative_shed_mw = state._cumulative_shed_mw  # monotonic run total
+    _p_served_mw = p_demand_mw - _cumulative_shed_mw
+    _p_unserved_mw = _cumulative_shed_mw
+    _p_imbalance_mw = _p_generation_mw - _p_served_mw
+
+    if p_demand_mw > 1e-9:
+        _compute_demand_frac = p_compute_demand_mw / p_demand_mw
+        _cooling_demand_frac = p_cooling_demand_mw / p_demand_mw
+    else:
+        _compute_demand_frac = 0.5
+        _cooling_demand_frac = 0.5
+    _p_compute_served_mw   = p_compute_demand_mw - _p_unserved_mw * _compute_demand_frac
+    _p_compute_unserved_mw = _p_unserved_mw * _compute_demand_frac
+    _p_cooling_served_mw   = p_cooling_demand_mw - _p_unserved_mw * _cooling_demand_frac
+    _p_cooling_unserved_mw = _p_unserved_mw * _cooling_demand_frac
 
     state.tick_index += 1
     return TickResult(
@@ -1631,4 +1777,14 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         collapse_frequency_hz=_fp_collapse_frequency_hz,
         # GS-CHG-2026-08-08 successor Phase 1
         p_generation_mw=_p_generation_mw,
+        # Phase 2A: protection_provisional — True for all islanded ticks.
+        protection_provisional=_protection_provisional,
+        # Phase 6: supply/served producers.
+        p_served_mw=_p_served_mw,
+        p_unserved_mw=_p_unserved_mw,
+        p_imbalance_mw=_p_imbalance_mw,
+        p_compute_served_mw=_p_compute_served_mw,
+        p_compute_unserved_mw=_p_compute_unserved_mw,
+        p_cooling_served_mw=_p_cooling_served_mw,
+        p_cooling_unserved_mw=_p_cooling_unserved_mw,
     )

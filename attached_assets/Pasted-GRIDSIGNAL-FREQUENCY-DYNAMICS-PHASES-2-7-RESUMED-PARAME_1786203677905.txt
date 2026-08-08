@@ -1,0 +1,222 @@
+GRIDSIGNAL — FREQUENCY DYNAMICS, PHASES 2-7 (RESUMED)
+PARAMETERS RESOLVED PER DR-2026-08-08-FREQ.
+
+STATUS
+Phase 1 complete: p_generation_mw producer landed, suite delta zero.
+Phase 2 stopped correctly at the parameter gate. That was the right
+behaviour. The twelve missing parameters are now resolved. Proceed.
+
+Governing spec: Forecast Engine Functional Spec v2.7, Sections 3, 3.2,
+19, 16.14, and the frequency dynamics section. Where this prompt and the
+spec differ, the spec governs and you STOP AND REPORT.
+
+RE-READ THE CENTRAL PHYSICS BEFORE WRITING ANYTHING
+P_served is NOT a clamp on P_demand. Load is FULLY SERVED even when
+generation cannot meet it; the deficit comes from rotational kinetic
+energy and frequency falls. P_served steps down ONLY when a protective
+device removes load. A state where P_generation < P_served is physically
+real and must be representable.
+
+  P_served = P_demand - cumulative shed/trip load removal
+  P_unserved = P_demand - P_served
+  P_imbalance = P_generation - P_served
+
+Any implementation using min(), a ratio, a clamp, or any continuous
+function of generation to produce P_served is wrong and will be rejected.
+
+--------------------------------------------------------------------
+PHASE 2A - CATALOGUE AND SCHEMA ADDITIONS
+Add to gridsignal_parameters.json. Every value carries a basis tag.
+Values tagged PROVISIONAL-UNMEASURED are decisions of record, not
+measurements.
+
+Anchor (site-level, scenario-overridable):
+  anchor_mode                     "vsm"        BASIS: DR-2026-08-08-FREQ
+  vsm_inertia_constant_s          2.0          PROVISIONAL-UNMEASURED
+
+Dynamics:
+  dynamic_step_s                  0.01         BASIS: nadir resolution
+  fixed_speed_cooling_fraction    0.30         PROVISIONAL-UNMEASURED
+  d_motor                         2.5          BASIS: affinity law
+
+Governor (per-unit, see 2B):
+  droop_r                         0.04
+  valve_actuation_tc_s            0.2          PROVISIONAL-UNMEASURED
+  fuel_to_power_tc_s              1.0          PROVISIONAL-UNMEASURED
+  max_instantaneous_load_step_mw  2.25         PROVISIONAL-UNMEASURED
+
+Protection - ALL PROVISIONAL-UNMEASURED:
+  ufls_stages: [
+    {threshold_hz: 59.3, delay_s: 0.15, block_fraction: 0.10},
+    {threshold_hz: 58.9, delay_s: 0.15, block_fraction: 0.15},
+    {threshold_hz: 58.5, delay_s: 0.15, block_fraction: 0.20}
+  ]
+  relay_81u_threshold_hz          57.5         PROVISIONAL-UNMEASURED
+  relay_81u_delay_s               0.10         PROVISIONAL-UNMEASURED
+
+Retain the existing IEEE 1547 Cat I thresholds for the GRID-CONNECTED
+case only. They must not be consulted in islanded operation. If the code
+currently uses them for islanded frequency protection, report it - do
+not silently repoint it.
+
+PROVENANCE TAGGING - REQUIRED
+Every parameter carries a basis field. Any run whose execution consulted
+a PROVISIONAL-UNMEASURED value sets a run-level flag
+protection_provisional = true, recorded in run output.
+
+That flag BLOCKS export. A provisional run must not be exportable through
+the demo path - refuse, do not warn. This is the same demo/production
+path separation already standing; provenance is subject to it.
+
+ACCEPTANCE: catalogue loads, basis tags present, export block enforced
+and tested. Suite delta zero.
+STOP AND REPORT.
+
+--------------------------------------------------------------------
+PHASE 2B - PER-UNIT SCHEMA
+Add to TurbineConfig, each defaulting to the SiteConfig value when
+absent in scenario JSON:
+    power_factor            default SiteConfig.power_factor (0.85)
+    inertia_constant_s      default SiteConfig.inertia_constant_s (4.0)
+    droop_r, valve_actuation_tc_s, fuel_to_power_tc_s,
+    max_instantaneous_load_step_mw   default to site values above
+
+The demo fleet is homogeneous. Do NOT use that as licence to aggregate
+on a fleet scalar. The aggregation formula is per-unit by construction
+and a mixed fleet (aeroderivative alongside frame) is a supported
+configuration. Fleet homogeneity must be a property of the SCENARIO, not
+of the code.
+
+ACCEPTANCE: per-unit fields resolve correctly with and without scenario
+override. Suite delta zero.
+STOP AND REPORT.
+
+--------------------------------------------------------------------
+PHASE 2C - INERTIA INVENTORY
+    S_i = rated_mw_i / power_factor_i          MVA, NOT MW
+    H_aggregate(t) = SUM_i(H_i * S_i) / SUM_i(S_i)   over units ON BUS
+
+Correct the _s_base_mw pf = 1.0 defect. 15 MW at pf 0.85 is 17.65 MVA.
+
+DIRECTION WARNING: since df/dt = dP*f0/(2*H*S), a LARGER S gives a
+SMALLER df/dt. This correction makes frequency response LESS severe, not
+more. The prior implementation overstated severity by ~18%. If your
+result moves the other way, the correction is inverted - report it.
+
+ZERO SYNCHRONOUS MACHINES ON BUS IS NOT AN ERROR BRANCH.
+With anchor_mode = "vsm", the grid-forming BESS contributes
+vsm_inertia_constant_s on its own MVA base. H_aggregate is therefore
+never zero while the anchor is present.
+
+DELETE the existing frozen-frequency zero-machine branch. Report what it
+was doing before you remove it.
+
+ACCEPTANCE: report H_aggregate at 0, 1, and 5 turbines on bus, and the
+MVA base at each.
+STOP AND REPORT.
+
+--------------------------------------------------------------------
+PHASE 3 - SWING EQUATION, SUB-STEPPED
+    2*H_agg/f0 * df/dt = (P_mech - P_elec)/S_base - D_eff*df
+    f0 = 60 Hz
+
+D IS COMPUTED PER TICK, NOT CONFIGURED AS A SCALAR:
+    D_eff(t) = (P_cooling_demand(t)/P_demand(t))
+               * fixed_speed_cooling_fraction * d_motor
+
+IT load behind UPS/rectifiers is constant-power and frequency-decoupled:
+zero damping. VFD cooling: zero. Only across-the-line induction motors
+contribute, via affinity laws.
+
+Expected magnitude at present operating point: D_eff ~ 0.13. Conventional
+power system models use D = 1 to 2. If your implementation produces a
+value near 1, it is applying damping to IT load and is wrong - report it
+rather than scaling it.
+
+Integrate at dynamic_step_s inside each 5 s tick. Spec 3.1's 5 s cadence
+is the FORECAST refresh floor and is a different quantity from the
+dynamic integration step. Do not conflate them.
+Constraint: dynamic_step_s <= (shortest protection delay)/10. Assert it.
+
+ACCEPTANCE: report df/dt, nadir, and time-to-nadir for an 18 MW deficit
+with one 15 MW unit on bus. Report D_eff at that tick. Confirm nadir
+resolution is unchanged when the outer tick rate is varied.
+STOP AND REPORT.
+
+--------------------------------------------------------------------
+PHASE 4 - GOVERNOR, BOUNDED
+Droop R per unit, bounded by valve actuation TC, fuel-to-power TC, and
+max instantaneous load step. The existing unbounded droop is a logged
+defect - remove it.
+
+EXPECTED BEHAVIOUR: through the first ~500 ms - the nadir window - a
+frame machine's governor contributes close to nothing. If your
+implementation arrests the nadir promptly, a time constant is wrong.
+REPORT IT. DO NOT TUNE IT.
+
+ACCEPTANCE: report governor contribution at t+100ms, t+500ms, t+2s for
+the Phase 3 case.
+STOP AND REPORT.
+
+--------------------------------------------------------------------
+PHASE 5 - PROTECTION AND SHED
+Implement as ENVIRONMENT, not as a GridSignal function. Spec 28.4/28.7
+place protective functions outside GridSignal's scope: the simulator
+models them, GridSignal never commands them.
+
+  - staged UFLS: threshold, delay, block, all from catalogue
+  - 81U generator trip: threshold and delay from catalogue
+  - a shed removes load; P_served steps down by the block
+  - block allocation across compute and cooling comes from the block
+    definition. Do NOT apportion by ratio.
+  - terminal tripped run state: run ends, state recorded, VALID outcome
+    not a crash
+
+SPEC 28.4 INTERLOCK: a shed that has occurred is already in the measured
+data. GridSignal curtailment must NOT treat it as unmet shortfall and
+shed again. Implement the reconciliation entry, not a second shed.
+
+Every run touching these values sets protection_provisional = true.
+
+ACCEPTANCE: staged shed executes; coordination between last UFLS stage
+and 81U is demonstrable. Report the sequence for the Phase 3 case.
+STOP AND REPORT.
+
+--------------------------------------------------------------------
+PHASE 6 - THE THREE PRODUCERS
+One producer each in the simulation core, wired to the six null API
+fields (site and per-subsystem).
+
+Remove the Spec 3.2 silent-discard defect: where BESS is clamped at its
+7.1.2 anchor-adjusted limit, the uncovered remainder must reach
+P_imbalance. The clamp is correct and stays. The discard does not.
+
+ACCEPTANCE: all six fields non-null every tick. TC-92 still passes.
+STOP AND REPORT.
+
+--------------------------------------------------------------------
+PHASE 7 - RUN AND REPORT
+Islanded 8-60-10 UNCHANGED, 1x, 3 hours, existing seed.
+
+Report:
+ 1. Suite delta on PRE-EXISTING tests. Baseline 13 failed / 988 passed /
+    21 xfailed. Any change to those is a failure of this work.
+ 2. TC-87 through TC-92 status. TC-87, TC-91 expected to PASS. TC-88,
+    TC-89, TC-90 now testable against provisional settings - report
+    result AND that it is provisional. xfail is strict: an unexpected
+    pass on a still-xfail test is an ERROR.
+ 3. Every parameter used: name, value, basis tag, source.
+ 4. H_aggregate and MVA base at 0 / 1 / 5 units on bus.
+ 5. D_eff range across the run, min and max.
+ 6. Frequency trace at first tick where P_imbalance > 5 MW: df/dt,
+    nadir, time to nadir, which protective stages fired and when.
+ 7. Whether the run terminated normally or tripped, and at what sim time.
+ 8. Peak P_unserved and its duration.
+ 9. Quote the P_served producer verbatim. Confirm it is not a clamp.
+10. Confirm protection_provisional = true and that export was blocked.
+11. What the frozen-frequency branch was doing before deletion.
+12. Every judgement call, and every defect observed and unfixed.
+
+DO NOT tune anything to make TC-89 or TC-90 pass. If they fail against
+these settings, that is a finding about the scenario or the settings,
+not a defect in this work.

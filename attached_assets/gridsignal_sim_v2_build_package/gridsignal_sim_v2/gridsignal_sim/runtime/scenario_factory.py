@@ -478,6 +478,20 @@ def build_run_context_from_spec(
             float(spec_data["of_trip_hz"])
             if spec_data.get("of_trip_hz") is not None else None
         ),
+        # Phase 5: UFLS and 81U relay (opt-in — empty list / None = disabled).
+        ufls_stages=(
+            list(spec_data["ufls_stages"])
+            if spec_data.get("ufls_stages") is not None else []
+        ),
+        relay_81u_threshold_hz=(
+            float(spec_data["relay_81u_threshold_hz"])
+            if spec_data.get("relay_81u_threshold_hz") is not None else None
+        ),
+        relay_81u_delay_s=(
+            float(spec_data["relay_81u_delay_s"])
+            if spec_data.get("relay_81u_delay_s") is not None else
+            float(_sp.value("relay_81u_delay_s"))
+        ),
     )
 
     # PROTO-32-AMB: ambient temperature adjustment to alpha_max.
@@ -560,6 +574,14 @@ def build_run_context_from_spec(
                 **({} if t.get("cold_start_s") is None else {"cold_start_s": float(t["cold_start_s"])}),
                 **({} if t.get("warm_start_s") is None else {"warm_start_s": float(t["warm_start_s"])}),
                 **({} if t.get("hot_start_s") is None else {"hot_start_s": float(t["hot_start_s"])}),
+                # Phase 2B (DR-2026-08-08-FREQ): per-unit governor physics overrides.
+                # When None, TurbineConfig defaults (from catalogue) apply unchanged.
+                **({} if t.get("power_factor") is None else {"power_factor": float(t["power_factor"])}),
+                **({} if t.get("inertia_constant_s") is None else {"inertia_constant_s": float(t["inertia_constant_s"])}),
+                **({} if t.get("droop_r") is None else {"droop_r": float(t["droop_r"])}),
+                **({} if t.get("valve_actuation_tc_s") is None else {"valve_actuation_tc_s": float(t["valve_actuation_tc_s"])}),
+                **({} if t.get("fuel_to_power_tc_s") is None else {"fuel_to_power_tc_s": float(t["fuel_to_power_tc_s"])}),
+                **({} if t.get("max_instantaneous_load_step_mw") is None else {"max_instantaneous_load_step_mw": float(t["max_instantaneous_load_step_mw"])}),
             )
         )
         for i, t in enumerate(spec_data.get("turbine_units", []))
