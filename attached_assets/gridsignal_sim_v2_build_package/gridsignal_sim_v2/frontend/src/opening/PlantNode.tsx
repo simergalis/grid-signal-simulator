@@ -145,13 +145,29 @@ function nodeDetail(
     case 'pdu-rpp':
       return 'rack feeds'
     case 'compute-racks': {
-      const jobs = tick ? Object.keys(tick.checkpoint_states).length : 0
       // Show p_compute_mw (GPU rack draw only), not p_total_mw (total site
       // including cooling, BESS, renewables).  The compute-racks node should
       // reflect what the racks themselves are drawing, not the full site balance.
+      //
+      // Job + node counts differ between kube and workload-event scenarios:
+      //  • kube:  kube_metrics carries admitted_nodes (scheduler-admitted) and
+      //           active_jobs (gang count).  Use these so operators see the
+      //           actual admitted footprint, not just the classified-job count.
+      //  • non-kube: checkpoint_states has one entry per active training job;
+      //           node count comes from summing workload-event node_counts, but
+      //           that total isn't in the tick payload — show job count only.
+      if (tick?.kube_metrics) {
+        const km         = tick.kube_metrics
+        const computeMW  = (tick.p_compute_mw ?? 0).toFixed(2)
+        const jobLabel   = `${km.active_jobs} job${km.active_jobs !== 1 ? 's' : ''}`
+        const nodeLabel  = `${km.admitted_nodes.toLocaleString()} nodes`
+        const capBadge   = km.power_cap_active ? ' · cap active' : ''
+        return `${jobLabel} · ${nodeLabel} · ${computeMW} MW${capBadge}`
+      }
+      const jobs = tick ? Object.keys(tick.checkpoint_states).length : 0
       if (jobs > 0) {
         const computeMW = (tick?.p_compute_mw ?? 0).toFixed(2)
-        return `${jobs} job${jobs > 1 ? 's' : ''} · ${computeMW} MW`
+        return `${jobs} job${jobs !== 1 ? 's' : ''} · ${computeMW} MW`
       }
       return '600 – 1,900 nodes · up to 19.96 MW'
     }

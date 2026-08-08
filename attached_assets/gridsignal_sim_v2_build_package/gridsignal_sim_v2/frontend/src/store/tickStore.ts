@@ -152,13 +152,31 @@ export const useTickStore = create<TickState>((set, get) => ({
       // visible stutter (display jumped once then froze until the next real tick).
       // _lastFrameWall is NOT updated here so elapsed grows monotonically from
       // the last real-tick wall time — giving a correct t in [0, 0.99].
+      //
+      // Safety guard: only interpolate when prevTick and latestTick are
+      // near-consecutive (indexGap ≤ 2).  When the gap is larger — e.g. after a
+      // WebSocket burst delivered many ticks at once and prevTick was left behind
+      // from an earlier drain — lerping p_compute_mw (and other energy fields)
+      // from the old prevTick while non-lerped fields (checkpoint_states,
+      // on_bus_output_mw, turbine_units) come from the newer latestTick produces
+      // internally inconsistent display values: e.g. 0.18 MW compute alongside
+      // 27 jobs and 30 MW turbines.  Skipping interpolation in that case keeps
+      // all tile values consistent with the same confirmed tick.
       if (s.prevTick && s.latestTick) {
-        const elapsed = (now - s._lastFrameWall) / 1000
-        const rate = s.runMeta?.playback_speed ?? 1.0
-        const simInterval = rate > 0 ? 5.0 / rate : 5.0  // wall seconds between ticks
-        const t = Math.min(0.99, elapsed / simInterval)
-        const interpolated = interpolateTick(s.prevTick, s.latestTick, t)
-        set({ latestTick: interpolated, isInterpolated: true, decimationCount: 0 })
+        const indexGap = s.latestTick.tick_index - s.prevTick.tick_index
+        if (indexGap <= 2) {
+          const elapsed = (now - s._lastFrameWall) / 1000
+          const rate = s.runMeta?.playback_speed ?? 1.0
+          // For max-speed runs (rate ≤ 0) the inter-tick wall time is near-zero;
+          // use a short simInterval so the display snaps to latestTick within one
+          // frame instead of lingering at prevTick values for seconds.
+          const simInterval = rate > 0 ? 5.0 / rate : 0.1
+          const t = Math.min(0.99, elapsed / simInterval)
+          const interpolated = interpolateTick(s.prevTick, s.latestTick, t)
+          set({ latestTick: interpolated, isInterpolated: true, decimationCount: 0 })
+        }
+        // indexGap > 2: latestTick already holds the correct confirmed values —
+        // leave it unchanged; the next real tick will close the gap naturally.
       }
       return
     }

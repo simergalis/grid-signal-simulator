@@ -416,8 +416,9 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         )
         for _ks in _kube_signals:
             # §9 / resolution-log item 5: dt_lead_seconds for a Kubernetes signal
-            # equals GPUModule.ramp_seconds (default 45 s) — the physical window
-            # from scheduler allocation to GPUs reaching full TDP.
+            # equals GPUModule.ramp_seconds — the physical window from scheduler
+            # allocation to GPUs reaching full TDP.  For spec-built runs this is
+            # wired from dt_lead_seconds in scenario_factory.build_run_context_from_spec.
             #
             # Previously this was hard-coded to 0.0, which told the arbitrator
             # the turbine had no ramp window, so already_ramped_mw = r_asset × 0

@@ -519,11 +519,18 @@ def build_run_context_from_spec(
     hw_id = spec_data.get("hardware_profile_id", "enterprise_8gpu_air")
 
     # ── Modules ───────────────────────────────────────────────────────────
+    # ramp_seconds must match dt_lead_seconds so the GPU compute draw reaches
+    # full TDP over the same window that the commitment engine uses to stage
+    # turbines.  The kube path already reads gpu_module.ramp_seconds and uses
+    # it as the workload-signal dt_lead (simulation_core.py §0); wiring both
+    # sides to the same value here keeps the two paths consistent.
+    _dt_lead = float(spec_data.get("dt_lead_seconds", 45.0))
     gpu_modules = [
         GPUModule(
             asset_id="gpu-0",
             site=site,
             hardware_library=DEFAULT_HARDWARE_LIBRARY,
+            ramp_seconds=_dt_lead,
         )
     ]
     cooling = CoolingModule(asset_id="cooling-0", site=site)
