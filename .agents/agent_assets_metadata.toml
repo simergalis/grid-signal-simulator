@@ -196,3 +196,10 @@ uri = "file://docs/inventory/NAR-001_phase0_orientation.md"
 type = "text"
 title = "NAR-001 Phase 0 Orientation Report"
 description = "Read-only variable inventory orientation report — module map, enumerations, IDs, and Phase 1 coverage forecast."
+
+[[outputs]]
+id = "BHF_OhQUmE9wGTwR_GCAv"
+uri = "file://docs/inventory/NAR-001_variable_inventory.md"
+type = "text"
+title = "NAR-001 Variable Inventory"
+description = "Complete Phase 1 signal inventory — sections A–K, TickResult wire diff, tolerance keys, and targeted questions Q2–Q14."
