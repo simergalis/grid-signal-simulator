@@ -189,3 +189,10 @@ uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/
 type = "unspecified"
 title = "islanded_8_60_10_ramp.json"
 description = "Updated scenario: 14 MWh BESS, cold_start_s per turbine, frequency_nominal_hz/power_factor explicit, description rewritten. Verdict: PASS (both assertions)."
+
+[[outputs]]
+id = "Xa5E-P2KnIOix07BTRuRG"
+uri = "file://docs/inventory/NAR-001_phase0_orientation.md"
+type = "text"
+title = "NAR-001 Phase 0 Orientation Report"
+description = "Read-only variable inventory orientation report — module map, enumerations, IDs, and Phase 1 coverage forecast."
