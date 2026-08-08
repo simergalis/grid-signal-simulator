@@ -224,3 +224,10 @@ uri = "file://reports/NAR-001_phase_A_prime_part2a_precheck.md"
 type = "text"
 title = "NAR-001 Phase A′ — Part 2a Pre-Check Report"
 description = "Four gates: POST /runs endpoint shape, WebSocket auth (none required), durable output location (workspace volume), and multi-subscriber concurrency (confirmed)."
+
+[[outputs]]
+id = "Te70_mob206BJDM5mpwxy"
+uri = "file://reports/NAR-001_phase_A_prime_part2a_build_report.md"
+type = "text"
+title = "NAR-001 Part 2a Build Report"
+description = "Recorder build findings, TC-118–121 results, and Part 2a.5 smoke validation. Stopped at leading-ticks gate."
