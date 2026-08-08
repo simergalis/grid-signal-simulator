@@ -203,3 +203,10 @@ uri = "file://docs/inventory/NAR-001_variable_inventory.md"
 type = "text"
 title = "NAR-001 Variable Inventory"
 description = "Complete Phase 1 signal inventory — sections A–K, TickResult wire diff, tolerance keys, and targeted questions Q2–Q14."
+
+[[outputs]]
+id = "WePZ6vEzOsKx_mch9dulp"
+uri = "file://reports/NAR-001_phase_A_prime_part1_report.md"
+type = "text"
+title = "NAR-001 Phase A′ Part 1 Report"
+description = "Schema inventory, run availability, field coverage, and two stop-condition findings."
