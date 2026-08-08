@@ -54,7 +54,7 @@ export function DemoBar({
   const setWatchingText   = useScenarioStore(s => s.setWatchingText)
 
   const [speed,    setSpeed]    = useState(1)
-  const [duration, setDuration] = useState(1800)
+  const [duration, setDuration] = useState(3600)
   const [busy,     setBusy]     = useState(false)
   const [error,    setError]    = useState<string | null>(null)
 
