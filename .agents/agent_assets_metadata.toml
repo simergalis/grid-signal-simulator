@@ -210,3 +210,10 @@ uri = "file://reports/NAR-001_phase_A_prime_part1_report.md"
 type = "text"
 title = "NAR-001 Phase A′ Part 1 Report"
 description = "Schema inventory, run availability, field coverage, and two stop-condition findings."
+
+[[outputs]]
+id = "RpkAbn3e7YhAzFva51ZKW"
+uri = "file://reports/NAR-001_phase_A_prime_part0_part3_report.md"
+type = "text"
+title = "NAR-001 Phase A′ — Part 0 & Part 3 Report"
+description = "Part 0: two persistence defects (sink never wired, schema mismatch). Part 3: static conformance findings on reserve arithmetic, anchor-adjustment, dispatch droop, and rated_mw."
