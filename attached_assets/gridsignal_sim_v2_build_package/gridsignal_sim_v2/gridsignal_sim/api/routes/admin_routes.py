@@ -441,3 +441,58 @@ async def email_check():
         "sendgrid_pkg": sendgrid_pkg,
         "issues":       issues,
     }
+
+
+@router.post("/email-test", dependencies=[Depends(_require_admin)])
+async def email_test(
+    request: Request,
+    db: AsyncSession = Depends(get_db_session),
+):
+    """Send a real test OTP email to the currently logged-in admin.
+
+    Lets admins verify end-to-end delivery from the UI without needing shell
+    access.  Only works for session-authenticated admins (not API-key callers)
+    because we need a real inbox to deliver the test message to.
+
+    Returns
+    -------
+    200  {"sent": true,  "to": "<email>"}   — email queued via SendGrid
+    200  {"sent": false, "to": "<email>",
+          "reason": "…"}                    — delivery attempt failed
+    409  {"detail": "…"}                    — called by API-key caller (no inbox)
+    """
+    from api.email_service import send_otp_email
+    from api.routes.auth_routes import inject_otp
+
+    # Resolve the requesting admin from the session cookie.
+    token = request.cookies.get(COOKIE_NAME)
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Test send is only available for browser-session admins (no inbox for API-key callers)",
+        )
+    payload = decode_access_token(token)
+    if payload is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid session")
+
+    user_id = int(payload["sub"])
+    user: AuthUser | None = await db.get(AuthUser, user_id)
+    if user is None or not user.is_active:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin account not found")
+
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    inject_otp(user.email, code)
+
+    sent = send_otp_email(user.email, user.display_name, code)
+    _log.info(
+        "Admin email-test: delivery %s for %s",
+        "succeeded" if sent else "FAILED",
+        user.email,
+    )
+    result: dict = {"sent": sent, "to": user.email}
+    if not sent:
+        result["reason"] = (
+            "SendGrid call returned a non-2xx status. "
+            "Check SENDGRID_API_KEY and SENDGRID_FROM_EMAIL in Replit Secrets."
+        )
+    return result
