@@ -560,9 +560,9 @@ async def get_run_timeseries(
             TimeseriesRowResponse(
                 tick_index=r["tick_index"],
                 sim_time_seconds=r["sim_time_seconds"],
-                p_compute_mw=r["p_compute_mw"],
-                p_cooling_mw=r["p_cooling_mw"],
-                p_total_mw=r["p_total_mw"],
+                p_compute_demand_mw=r["p_compute_mw"],
+                p_cooling_demand_mw=r["p_cooling_mw"],
+                p_demand_mw=r["p_total_mw"],
                 net_demand_mw=r["net_demand_mw"],
                 turbine_output_mw=r["turbine_output_mw"],
                 bess_output_mw=r["bess_output_mw"],

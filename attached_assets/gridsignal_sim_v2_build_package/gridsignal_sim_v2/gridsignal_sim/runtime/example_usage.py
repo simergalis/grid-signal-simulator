@@ -72,7 +72,7 @@ async def main() -> None:
         last = ctx.sink.rows[-1]
         print(
             f"[{ctx.run_id}] ticks={len(ctx.sink.rows)} "
-            f"final P_total={last.p_total_mw:.3f} MW "
+            f"final P_total={last.p_demand_mw:.3f} MW "
             f"turbine={last.turbine_output_mw:.3f} MW "
             f"bess={last.bess_output_mw:.3f} MW "
             f"alerts_seen={any(r.insufficient_reserve_alert for r in ctx.sink.rows)}"

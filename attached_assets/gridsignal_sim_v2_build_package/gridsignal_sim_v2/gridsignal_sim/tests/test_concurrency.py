@@ -43,7 +43,7 @@ async def test_concurrent_runs_are_isolated():
         rows = ctx.sink.rows
         assert len(rows) == len(solo_rows)
         for solo_tick, group_tick in zip(solo_rows, rows):
-            assert solo_tick.p_total_mw == group_tick.p_total_mw
+            assert solo_tick.p_demand_mw == group_tick.p_demand_mw
             assert solo_tick.turbine_output_mw == group_tick.turbine_output_mw
             assert solo_tick.bess_output_mw == group_tick.bess_output_mw
 
@@ -114,7 +114,7 @@ async def test_determinism_under_concurrent_load():
     rows_group = target_ctx.sink.rows
     assert len(rows_alone) == len(rows_group)
     for a, b in zip(rows_alone, rows_group):
-        assert a.p_total_mw == b.p_total_mw
+        assert a.p_demand_mw == b.p_demand_mw
         assert a.tick_index == b.tick_index
 
 

@@ -829,9 +829,9 @@ class TickResult:
     # and wire field carries the interval-end value so stored rows are aligned with
     # the physical state they represent and FR-1.5 MAPE attribution is unbiased.
     sim_time_seconds: float
-    p_compute_mw: float
-    p_cooling_mw: float
-    p_total_mw: float
+    p_compute_demand_mw: float
+    p_cooling_demand_mw: float
+    p_demand_mw: float
     net_demand_mw: float               # p_total - solar output, Section 4.4.2
     turbine_output_mw: float
     bess_output_mw: float

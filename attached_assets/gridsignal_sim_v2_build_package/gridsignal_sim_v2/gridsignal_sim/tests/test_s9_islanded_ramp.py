@@ -380,9 +380,9 @@ def _run_s9() -> tuple[list[dict], list[list[dict]]]:
             "tick_index":          tick.tick_index,
             "sim_time_s":          tick.sim_time_seconds,
             # ── Demand ──────────────────────────────────────────────────────
-            "p_compute_mw":        round(tick.p_compute_mw, 4),
-            "p_cooling_mw":        round(tick.p_cooling_mw, 4),
-            "p_total_mw":          round(tick.p_total_mw, 4),
+            "p_compute_mw":        round(tick.p_compute_demand_mw, 4),
+            "p_cooling_mw":        round(tick.p_cooling_demand_mw, 4),
+            "p_total_mw":          round(tick.p_demand_mw, 4),
             "p_renewable_mw":      round(tick.p_renewable_mw, 4),
             "p_renewable_curtailed_mw": round(tick.p_renewable_curtailed_mw, 4),
             "net_demand_mw":       round(tick.net_demand_mw, 4),

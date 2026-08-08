@@ -37,7 +37,7 @@ from renewable.solar import (
     SolarSim,
     bess_bridging_mw,
     p_renewable_mw,
-    p_total_mw,
+    p_demand_mw,
     reserve_check,
 )
 
@@ -54,7 +54,7 @@ def _coverage_fracs(sim: SolarSim, *, solar_stopped: bool = False):
     """
     cfg, st = sim.cfg, sim.state
     solar  = p_renewable_mw(cfg, st)
-    tot    = p_total_mw(cfg, st)
+    tot    = p_demand_mw(cfg, st)
     bridge = bess_bridging_mw(cfg, st)
 
     def clamp(v, lo=0.0, hi=1.0):
@@ -125,7 +125,7 @@ def test_ac_ui1_gap_proportional_to_deficit():
 
     cfg, st = sim.cfg, sim.state
     solar  = p_renewable_mw(cfg, st)
-    tot    = p_total_mw(cfg, st)
+    tot    = p_demand_mw(cfg, st)
     rc     = reserve_check(cfg, st, solar, dt_lead_s=0.0)
 
     expected_gap_frac = max(0.0, min(1.0, rc.deficit_mw / tot))

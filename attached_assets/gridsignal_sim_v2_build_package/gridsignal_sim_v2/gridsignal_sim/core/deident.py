@@ -336,7 +336,7 @@ def deidentify(
             v_max=round(max(vals), _DP),
         )
 
-    p_total_s   = [r.p_total_mw       for r in ticks]
+    p_total_s   = [r.p_demand_mw       for r in ticks]
     turbine_s   = [r.turbine_output_mw for r in ticks]
     bess_out_s  = [r.bess_output_mw    for r in ticks]
     # bess_soc_fraction may not be on all TickResult versions; default 1.0.

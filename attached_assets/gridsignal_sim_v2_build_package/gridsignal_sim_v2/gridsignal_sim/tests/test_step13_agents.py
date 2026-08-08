@@ -58,7 +58,7 @@ SKUS    = frozenset({"enterprise_8gpu_air"})
 def _hash_trace(rows) -> str:
     """SHA-256 of the full dispatch trace: (sim_time, p_total, turbine, bess)."""
     trace = "|".join(
-        f"{r.sim_time_seconds:.3f},{r.p_total_mw:.9f},"
+        f"{r.sim_time_seconds:.3f},{r.p_demand_mw:.9f},"
         f"{r.turbine_output_mw:.9f},{r.bess_output_mw:.9f}"
         for r in rows
     )
@@ -94,7 +94,7 @@ def _make_tick(p_total: float = 12.0, sim_time: float = 5.0) -> object:
     class Tick:
         pass
     t = Tick()
-    t.p_total_mw                = p_total
+    t.p_demand_mw                = p_total
     t.turbine_output_mw         = p_total * 0.8
     t.bess_output_mw            = p_total * 0.2
     t.bess_soc_fraction         = 0.5

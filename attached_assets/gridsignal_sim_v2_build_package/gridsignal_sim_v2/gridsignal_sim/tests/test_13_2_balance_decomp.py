@@ -177,7 +177,7 @@ class TestD3ModelErrorSteadyState:
     def test_D3_grid_connected_settled(self):
         """Grid-connected, settled: |asset_delivery_error_mw| < 0.5% of p_total_mw."""
         tick = self._run_to_settlement(island_mode=IslandMode.GRID_TIE)
-        p_site = tick.p_total_mw
+        p_site = tick.p_demand_mw
         threshold = 0.005 * p_site if p_site > 0.01 else 0.001
         assert abs(tick.asset_delivery_error_mw) < threshold, (
             f"D3: asset_delivery_error_mw={tick.asset_delivery_error_mw:.6f} MW exceeds 0.5% of "
@@ -187,7 +187,7 @@ class TestD3ModelErrorSteadyState:
     def test_D3_islanded_settled(self):
         """Islanded, settled: |asset_delivery_error_mw| < 0.5% of p_total_mw."""
         tick = self._run_to_settlement(island_mode=IslandMode.ISLANDED)
-        p_site = tick.p_total_mw
+        p_site = tick.p_demand_mw
         threshold = 0.005 * p_site if p_site > 0.01 else 0.001
         assert abs(tick.asset_delivery_error_mw) < threshold, (
             f"D3: asset_delivery_error_mw={tick.asset_delivery_error_mw:.6f} MW exceeds 0.5% of "
@@ -250,7 +250,7 @@ class TestD4SumIdentity:
         """Recompute the scratch residual from first principles."""
         return (
             tick.turbine_output_mw + tick.bess_output_mw + tick.p_renewable_mw
-            - tick.p_total_mw
+            - tick.p_demand_mw
         )
 
     def _verify_d4(self, tick, label: str):
@@ -318,7 +318,7 @@ class TestD4SumIdentity:
             total = tick.grid_exchange_mw + tick.frequency_forcing_mw
             residual = (
                 tick.turbine_output_mw + tick.bess_output_mw + tick.p_renewable_mw
-                - tick.p_total_mw
+                - tick.p_demand_mw
             )
             assert total == pytest.approx(residual, abs=1e-6), (
                 f"D4: sum of channels={total:.9f} != "

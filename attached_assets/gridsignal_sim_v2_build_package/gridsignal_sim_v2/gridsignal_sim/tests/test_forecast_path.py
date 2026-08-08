@@ -212,9 +212,9 @@ class TestForecastPath:
         tick_t1 = _run_tick(state, sim_time=1.0, dt=0.1)
 
         # p_total_mw should be much smaller than forecast_mw (near zero)
-        assert tick_t1.p_compute_mw < expected_full_mw * 0.05, (
+        assert tick_t1.p_compute_demand_mw < expected_full_mw * 0.05, (
             f"F2 precondition: p_compute_mw should be near-zero during early ramp; "
-            f"got {tick_t1.p_compute_mw:.6f}"
+            f"got {tick_t1.p_compute_demand_mw:.6f}"
         )
         # But forecast_mw should be at full TDP
         assert abs(tick_t1.forecast_mw - expected_full_mw) / expected_full_mw < 0.001, (
@@ -237,7 +237,7 @@ class TestForecastPath:
         tick_b = _run_tick(state, sim_time=15.0, dt=0.1)
 
         # Measured draw changes between ticks (ramp advances)
-        assert tick_b.p_compute_mw > tick_a.p_compute_mw, (
+        assert tick_b.p_compute_demand_mw > tick_a.p_compute_demand_mw, (
             "F3 precondition: measured draw must increase between ticks"
         )
         # But forecast_mw is bit-identical (no new WorkloadSignal)
@@ -499,7 +499,7 @@ class TestDispatchTruthfulness:
         #   p_gen = turbine_output + bess_output + p_renewable
         # The residual should be non-zero because the turbine over-delivered vs its setpoint.
         _p_gen = tick.turbine_output_mw + tick.bess_output_mw + tick.p_renewable_mw
-        _residual = _p_gen - tick.p_total_mw
+        _residual = _p_gen - tick.p_demand_mw
         # Task #200 B1: D4 is a TWO-channel identity (grid_exchange + frequency_forcing).
         # asset_delivery_error_mw is a reporting field outside D4.
         _d4_sum = tick.grid_exchange_mw + tick.frequency_forcing_mw
@@ -761,7 +761,7 @@ class TestDispatchTruthfulness:
         tick = _run_tick(state, sim_time=5.0)
 
         # gt_setpoint_mw is p_dispatch_required_mw = max(0, p_total - renewable)
-        expected = max(0.0, tick.p_total_mw - tick.p_renewable_mw)
+        expected = max(0.0, tick.p_demand_mw - tick.p_renewable_mw)
         assert tick.gt_setpoint_mw == pytest.approx(expected, abs=1e-9), (
             f"B5b: gt_setpoint_mw={tick.gt_setpoint_mw} should equal "
             f"p_dispatch_required={expected}"
@@ -799,17 +799,17 @@ class TestCoolingThermalLag:
 
         # Register job start, record steady-state compute draw
         cooling.register_job_start(job_id, T_start)
-        p_compute_mw = 1.0  # 1 MW compute
+        p_compute_demand_mw = 1.0  # 1 MW compute
 
         # Advance to t = 60 s (well within the 90 s threshold)
         t = T_start
         while t < 60.0 - 1e-9:
-            cooling.record_job_compute(t, {job_id: p_compute_mw})
+            cooling.record_job_compute(t, {job_id: p_compute_demand_mw})
             cooling.advance(t, dt)
             t += dt
 
         # At t=60 s, output must be 0 (threshold not yet reached)
-        cooling.record_job_compute(t, {job_id: p_compute_mw})
+        cooling.record_job_compute(t, {job_id: p_compute_demand_mw})
         cooling.advance(t, dt)
         out_60 = cooling.output_mw()
         assert out_60 == pytest.approx(0.0, abs=1e-9), (
@@ -827,7 +827,7 @@ class TestCoolingThermalLag:
         alpha_max = 0.20
         tau = 20.0
         dt_thermal = 90.0
-        p_compute_mw = 1.0
+        p_compute_demand_mw = 1.0
 
         site = SiteConfig(
             frequency_nominal_hz=50.0, power_factor=0.85,  # required; frequency unused in this non-frequency test
@@ -845,12 +845,12 @@ class TestCoolingThermalLag:
 
         t = 0.0
         while t < T_settle + 10.0:
-            cooling.record_job_compute(t, {job_id: p_compute_mw})
+            cooling.record_job_compute(t, {job_id: p_compute_demand_mw})
             cooling.advance(t, dt)
             t += dt
 
         out_steady = cooling.output_mw()
-        expected = alpha_max * p_compute_mw  # 0.20 MW
+        expected = alpha_max * p_compute_demand_mw  # 0.20 MW
         assert abs(out_steady - expected) / expected < 0.02, (
             f"C2: steady-state P_cooling={out_steady:.4f} MW, "
             f"expected ≈ {expected:.4f} MW (±2%)"

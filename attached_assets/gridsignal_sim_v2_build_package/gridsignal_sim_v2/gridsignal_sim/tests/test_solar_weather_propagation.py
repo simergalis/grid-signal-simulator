@@ -643,8 +643,8 @@ def test_p_cooling_mw_higher_in_hot_ambient_run():
     hot_ticks  = _run_n_ticks(hot_ctx,  n_ticks)
     cold_ticks = _run_n_ticks(cold_ctx, n_ticks)
 
-    hot_last  = hot_ticks[-1].p_cooling_mw
-    cold_last = cold_ticks[-1].p_cooling_mw
+    hot_last  = hot_ticks[-1].p_cooling_demand_mw
+    cold_last = cold_ticks[-1].p_cooling_demand_mw
 
     assert hot_last > 0.0, (
         f"hot run must produce non-zero cooling by tick {n_ticks}; got {hot_last}"
@@ -683,8 +683,8 @@ def test_p_cooling_mw_differs_between_noon_and_midnight_physics_forecast():
     noon_ticks     = _run_n_ticks(noon_ctx,     n_ticks)
     midnight_ticks = _run_n_ticks(midnight_ctx, n_ticks)
 
-    noon_cooling     = noon_ticks[-1].p_cooling_mw
-    midnight_cooling = midnight_ticks[-1].p_cooling_mw
+    noon_cooling     = noon_ticks[-1].p_cooling_demand_mw
+    midnight_cooling = midnight_ticks[-1].p_cooling_demand_mw
 
     # Noon San Diego (summer) is hotter than local midnight → noon cooling > midnight.
     assert noon_cooling != midnight_cooling, (

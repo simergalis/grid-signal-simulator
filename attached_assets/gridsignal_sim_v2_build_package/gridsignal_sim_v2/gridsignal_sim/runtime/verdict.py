@@ -86,7 +86,7 @@ AssertionSpec = Annotated[
 
 class EvalRow(NamedTuple):
     tick_index: int
-    p_total_mw: float
+    p_demand_mw: float
     bess_soc_fraction: float
     insufficient_reserve_alert: bool
 
@@ -202,9 +202,9 @@ def _eval_one(
         )
 
     if check == "max_p_total_mw":
-        violating = [r for r in rows if r.p_total_mw > threshold_mw]
+        violating = [r for r in rows if r.p_demand_mw > threshold_mw]
         if violating:
-            peak = max(r.p_total_mw for r in violating)
+            peak = max(r.p_demand_mw for r in violating)
             return AssertionResult(
                 check=check, status="FAIL",
                 detail=(
@@ -220,7 +220,7 @@ def _eval_one(
                     "but gaps exist — dropped ticks may have exceeded threshold"
                 ),
             )
-        peak = max((r.p_total_mw for r in rows), default=0.0)
+        peak = max((r.p_demand_mw for r in rows), default=0.0)
         return AssertionResult(
             check=check, status="PASS",
             detail=f"Peak {peak:.3f} MW ≤ {threshold_mw} MW across {len(rows)} ticks",

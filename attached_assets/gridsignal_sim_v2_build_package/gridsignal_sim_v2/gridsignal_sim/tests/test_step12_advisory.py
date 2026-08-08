@@ -57,7 +57,7 @@ from runtime.advisory_router import AdvisoryRouter
 # ---------------------------------------------------------------------------
 
 def _make_tick(
-    p_total_mw: float = 10.0,
+    p_demand_mw: float = 10.0,
     turbine_mw: float = 8.0,
     bess_mw: float = 2.0,
     sim_time_seconds: float = 5.0,
@@ -68,7 +68,7 @@ def _make_tick(
     class FakeTick:
         pass
     r = FakeTick()
-    r.p_total_mw           = p_total_mw
+    r.p_demand_mw           = p_demand_mw
     r.turbine_output_mw    = turbine_mw
     r.bess_output_mw       = bess_mw
     r.sim_time_seconds     = sim_time_seconds
@@ -80,7 +80,7 @@ def _make_tick(
 def _make_ticks(n: int, *, base_time: float = 5.0, dt: float = 5.0) -> list:
     return [
         _make_tick(
-            p_total_mw=10.0 + i * 0.1,
+            p_demand_mw=10.0 + i * 0.1,
             sim_time_seconds=base_time + i * dt,
         )
         for i in range(n)

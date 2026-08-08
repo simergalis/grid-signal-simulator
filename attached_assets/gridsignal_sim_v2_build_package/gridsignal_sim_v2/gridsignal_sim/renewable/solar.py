@@ -89,7 +89,7 @@ class PlantState:
     soiling: float
     cloud_factor: float = 1.0
     cloud_target: float = 1.0
-    p_compute_mw: float = 0.0
+    p_compute_demand_mw: float = 0.0
     p_compute_target_mw: float = 0.0
     bess_soc: float = 0.82
     # Primary name is `blocks` for backward compat with console.html and tests.
@@ -393,17 +393,17 @@ def p_clear_sky_mw(cfg: SiteConfig, st: PlantState) -> float:
     return sum(bank_clear_sky_mw(cfg, st, b) for b in st.blocks)
 
 
-def p_cooling_mw(cfg: SiteConfig, st: PlantState) -> float:
-    return st.p_compute_mw * cfg.pue_cooling_fraction
+def p_cooling_demand_mw(cfg: SiteConfig, st: PlantState) -> float:
+    return st.p_compute_demand_mw * cfg.pue_cooling_fraction
 
 
-def p_total_mw(cfg: SiteConfig, st: PlantState) -> float:
-    return st.p_compute_mw + p_cooling_mw(cfg, st)
+def p_demand_mw(cfg: SiteConfig, st: PlantState) -> float:
+    return st.p_compute_demand_mw + p_cooling_demand_mw(cfg, st)
 
 
 def p_dispatch_required_mw(cfg: SiteConfig, st: PlantState) -> float:
     """§7.1.1  P_dispatch_required(t) = P_total(t) − P_renewable(t)"""
-    return p_total_mw(cfg, st) - p_renewable_mw(cfg, st)
+    return p_demand_mw(cfg, st) - p_renewable_mw(cfg, st)
 
 
 # ---------------------------------------------------------------------------
@@ -659,7 +659,7 @@ class SolarSim:
             clear_sky_poa=cfg.clear_sky_poa_seed,
             module_temp_c=cfg.module_temp_c_seed,
             soiling=cfg.soiling_loss,
-            p_compute_mw=cfg.p_compute_seed_mw,
+            p_compute_demand_mw=cfg.p_compute_seed_mw,
             p_compute_target_mw=cfg.p_compute_seed_mw,
             bess_soc=cfg.bess_soc,
             blocks=banks,
@@ -789,7 +789,7 @@ class SolarSim:
         if abs(st.cloud_target - st.cloud_factor) < 0.004:
             st.cloud_factor = st.cloud_target
 
-        st.p_compute_mw += (st.p_compute_target_mw - st.p_compute_mw) * 0.18
+        st.p_compute_demand_mw += (st.p_compute_target_mw - st.p_compute_demand_mw) * 0.18
 
         st.poa = _clamp(st.poa - 0.06 + (rng.random() - 0.5) * 1.6, 300, 1050)
         st.clear_sky_poa = _clamp(st.clear_sky_poa - 0.06, 320, 1100)
@@ -929,7 +929,7 @@ class SolarSim:
                 % (st.soiling * 100), "warn")
 
         elif kind == "spike":
-            st.p_compute_target_mw = st.p_compute_mw + 6.0
+            st.p_compute_target_mw = st.p_compute_demand_mw + 6.0
             self._log(
                 "Compute step-load +6.00 MW staged from queue telemetry. "
                 "Δt_lead = 30 s on this term only.", "warn")
@@ -1117,7 +1117,7 @@ class SolarSim:
                     if self._mistral_fraction_received_at is not None else None)
         solar      = self.live_aggregate_mw()       # plant tier (POA or Mistral)
         clear_sky  = p_clear_sky_mw(cfg, st)
-        total      = p_total_mw(cfg, st)
+        total      = p_demand_mw(cfg, st)
         p_expected = sum(bank_expected_mw(cfg, st, b) for b in st.blocks)
 
         banks_reporting = sum(1 for b in st.blocks if b.state != "no_comms")
@@ -1172,8 +1172,8 @@ class SolarSim:
                 "banks_total":          len(st.blocks),
                 "p_clear_sky_mw":       clear_sky,
                 "performance_ratio":    (solar / clear_sky * 100.0) if clear_sky else 0.0,
-                "p_compute_mw":         st.p_compute_mw,
-                "p_cooling_mw":         p_cooling_mw(cfg, st),
+                "p_compute_mw":         st.p_compute_demand_mw,
+                "p_cooling_mw":         p_cooling_demand_mw(cfg, st),
                 "p_total_mw":           total,
                 # Use the run-synchronized `solar` so dispatch reconciles with
                 # p_renewable_mw when run-sync scaling has been applied.

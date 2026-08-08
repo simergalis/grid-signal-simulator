@@ -60,6 +60,11 @@ function interpolateTick(a: TickPayload, b: TickPayload, t: number): TickPayload
     p_compute_mw:     lerp(a.p_compute_mw,     b.p_compute_mw),
     p_cooling_mw:     lerp(a.p_cooling_mw,      b.p_cooling_mw),
     p_total_mw:       lerp(a.p_total_mw,         b.p_total_mw),
+    // GS-CHG-2026-08-08 Phase 2 — lerp demand fields (non-null numbers).
+    // p_demand_mw, p_served_mw, p_unserved_mw, p_generation_mw, p_imbalance_mw
+    // pass through via ...b spread above (no lerp — TC-92 prohibits arithmetic).
+    p_compute_demand_mw: lerp(a.p_compute_demand_mw, b.p_compute_demand_mw),
+    p_cooling_demand_mw: lerp(a.p_cooling_demand_mw, b.p_cooling_demand_mw),
     net_demand_mw:    lerp(a.net_demand_mw,       b.net_demand_mw),
     p_renewable_mw:   lerp(a.p_renewable_mw,     b.p_renewable_mw),
     turbine_output_mw: lerp(a.turbine_output_mw, b.turbine_output_mw),

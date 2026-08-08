@@ -491,8 +491,8 @@ def test_ca8_tick_level_cooling_mw_higher_for_correct_utc_offset():
 
     # Average p_cooling_mw from tick 20 onward (envelope fully settled by then
     # given dt_thermal=5 s and tau=5 s: ~5 × tau = 25 s ≈ 5 ticks to settle)
-    settled_correct = [t.p_cooling_mw for t in ticks_correct[20:]]
-    settled_broken  = [t.p_cooling_mw for t in ticks_broken[20:]]
+    settled_correct = [t.p_cooling_demand_mw for t in ticks_correct[20:]]
+    settled_broken  = [t.p_cooling_demand_mw for t in ticks_broken[20:]]
 
     avg_correct = sum(settled_correct) / len(settled_correct)
     avg_broken  = sum(settled_broken)  / len(settled_broken)

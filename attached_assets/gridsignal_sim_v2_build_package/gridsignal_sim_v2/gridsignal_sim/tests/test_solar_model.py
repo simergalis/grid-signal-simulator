@@ -20,7 +20,7 @@ from renewable.solar import (
     bank_output_mw, bank_expected_mw, bank_clear_sky_mw,
     counted_output_mw, _update_bank_classifier, _raw_state,
     _bank_physical_mw, _pms_p_renewable,
-    p_renewable_mw, p_clear_sky_mw, p_total_mw, p_dispatch_required_mw,
+    p_renewable_mw, p_clear_sky_mw, p_demand_mw, p_dispatch_required_mw,
     largest_bank_mw, largest_feeder_mw, _largest_feeder_id,
     largest_block_mw,   # compat alias
     fleet_ramp_mw_per_s, bess_bridging_mw, bess_usable_mwh,
@@ -47,7 +47,7 @@ def test_seed_net_dispatch_requirement(sim):
 
 def test_seed_share_of_site_draw(sim):
     solar = p_renewable_mw(sim.cfg, sim.state)
-    total = p_total_mw(sim.cfg, sim.state)
+    total = p_demand_mw(sim.cfg, sim.state)
     assert solar / total * 100 == pytest.approx(35.6, abs=0.1)
 
 
@@ -55,7 +55,7 @@ def test_net_requirement_is_total_minus_renewable(sim):
     """§7.1.1 — the definition, asserted directly."""
     cfg, st = sim.cfg, sim.state
     assert p_dispatch_required_mw(cfg, st) == pytest.approx(
-        p_total_mw(cfg, st) - p_renewable_mw(cfg, st))
+        p_demand_mw(cfg, st) - p_renewable_mw(cfg, st))
 
 
 def test_performance_ratio_exposes_soiling(sim):

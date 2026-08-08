@@ -161,9 +161,27 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         "run_id": tick.run_id,
         "tick_index": tick.tick_index,
         "sim_time_seconds": tick.sim_time_seconds,
-        "p_compute_mw": round(tick.p_compute_mw, 4),
-        "p_cooling_mw": round(tick.p_cooling_mw, 4),
-        "p_total_mw": round(tick.p_total_mw, 4),
+        "p_compute_mw": round(tick.p_compute_demand_mw, 4),
+        "p_cooling_mw": round(tick.p_cooling_demand_mw, 4),
+        "p_total_mw": round(tick.p_demand_mw, 4),
+        # ── GS-CHG-2026-08-08 Phase 2 — supply/served contract ─────────────
+        # p_*_demand_mw: wired to existing producers (same values as above).
+        # p_served_mw / p_unserved_mw / p_generation_mw / p_imbalance_mw:
+        #   no balance-solver producer exists → null per spec §3.2.
+        #   Summing turbine + solar + BESS to produce p_generation_mw is
+        #   prohibited (computation in transport layer, spec §16.14 TC-92).
+        "p_compute_demand_mw":  round(tick.p_compute_demand_mw, 4),  # producer: simulation_core.py:489
+        "p_compute_served_mw":  None,   # no producer
+        "p_compute_unserved_mw": None,  # no producer
+        "p_cooling_demand_mw":  round(tick.p_cooling_demand_mw, 4),  # producer: simulation_core.py:494
+        "p_cooling_served_mw":  None,   # no producer
+        "p_cooling_unserved_mw": None,  # no producer
+        "p_demand_mw":          round(tick.p_demand_mw, 4),           # producer: simulation_core.py:496
+        "p_served_mw":          None,   # no producer
+        "p_unserved_mw":        None,   # no producer
+        "p_generation_mw":      None,   # no single-aggregate producer
+        "p_imbalance_mw":       None,   # no producer
+        # ───────────────────────────────────────────────────────────────────
         "net_demand_mw": round(tick.net_demand_mw, 4),
         "turbine_output_mw": round(tick.turbine_output_mw, 4),
         "bess_output_mw": round(tick.bess_output_mw, 4),
@@ -514,7 +532,7 @@ class InMemoryTimeseriesSink:
         return [
             EvalRow(
                 tick_index=r.tick_index,
-                p_total_mw=r.p_total_mw,
+                p_demand_mw=r.p_demand_mw,
                 bess_soc_fraction=r.bess_soc_fraction,
                 insufficient_reserve_alert=r.insufficient_reserve_alert,
             )
@@ -765,7 +783,7 @@ def _ingest_synthetic_telemetry(ctx: RunContext, tick: TickResult) -> None:
     """
     from core.network_telemetry import NetworkTelemetry, ClockDiscipline  # local — lazy
 
-    rx_bps = max(0.0, tick.p_compute_mw * 200_000_000.0)   # 200 Mbps per MW
+    rx_bps = max(0.0, tick.p_compute_demand_mw * 200_000_000.0)   # 200 Mbps per MW
     tx_bps = rx_bps * 0.93
     t = tick.tick_index  # unique per tick — used for deduplication event_id
 
@@ -812,7 +830,7 @@ def _update_thermal_state(ctx: RunContext, tick: TickResult) -> None:
     tracks a synthetic inlet temperature that rises linearly with cooling
     utilisation (18°C–24°C band, PROTO-10 defaults).
     """
-    current_mw = tick.p_cooling_mw
+    current_mw = tick.p_cooling_demand_mw
     ctx._approach_rate_mw_s = (current_mw - ctx._last_cooling_mw) / TICK_INTERVAL_SIM_SECONDS
     ctx._last_cooling_mw = current_mw
 
@@ -1271,7 +1289,7 @@ class RunManager:
                         _km.admitted_nodes,
                         round(_km.headroom_mw, 3),
                         1 if _km.power_cap_active else 0,
-                        round(tick_result.p_compute_mw, 4),
+                        round(tick_result.p_compute_demand_mw, 4),
                     ])
                     _kube_csv_file.flush()  # type: ignore[union-attr]
 
@@ -1302,7 +1320,7 @@ class RunManager:
                 if _profiling: _t0 = _time_module.perf_counter()
                 _update_thermal_state(ctx, tick_result)
                 _th_rated    = ctx._rated_cooling_mw
-                _th_absorb   = max(0.0, _th_rated - tick_result.p_cooling_mw)
+                _th_absorb   = max(0.0, _th_rated - tick_result.p_cooling_demand_mw)
                 _th_approach = ctx._approach_rate_mw_s
                 tick_result  = _dc_replace(
                     tick_result,

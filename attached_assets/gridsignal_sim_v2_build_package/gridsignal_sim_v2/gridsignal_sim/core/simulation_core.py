@@ -486,14 +486,14 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     for _g in state.gpu_modules:
         for _job_id in _g._node_counts:
             _per_job_draws[_job_id] = _g.per_job_compute_mw(_job_id)
-    p_compute_mw = sum(_per_job_draws.values())
+    p_compute_demand_mw = sum(_per_job_draws.values())
     state.cooling.record_job_compute(sim_time, _per_job_draws)
 
     # 2. Cooling term (lagged)
     state.cooling.advance(sim_time, dt_seconds)
-    p_cooling_mw = state.cooling.output_mw()
+    p_cooling_demand_mw = state.cooling.output_mw()
 
-    p_total_mw = p_compute_mw + p_cooling_mw
+    p_demand_mw = p_compute_demand_mw + p_cooling_demand_mw
 
     # _islanded: hoisted here (before section 3) so the §INV-CURT inverter
     # curtailment block can reference it before the Phase 13.3 droop block.
@@ -562,7 +562,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # condition and is relevant for the §7.1 grid-tie boundary.  It is NOT
     # stored here; only the clamped value is used.  Grid-export modelling is
     # out of scope for this simulator release.
-    p_dispatch_required_mw = max(0.0, p_total_mw - p_renewable_mw)
+    p_dispatch_required_mw = max(0.0, p_demand_mw - p_renewable_mw)
     net_demand_mw = p_dispatch_required_mw
     # Phase 13.4 B1: track load-model bias as a separately observable channel.
     # Does NOT flow into p_dispatch_required, BESS setpoint, or frequency_forcing.
@@ -929,7 +929,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             f"commit_sustained_s={state._commit_cond.sustained_s:.1f} commit_confirm_s={state._commit_cfg.commit_confirm_s} "
             f"pending_id={state._pending_start.pending_unit_id!r} pending_since={state._pending_start.start_commanded_at_s:.1f} "
             f"turbine_states={_cmt_t_states} "
-            f"p_total={p_total_mw:.3f} p_renewable={p_renewable_mw:.3f} p_dispatch_req={p_dispatch_required_mw:.3f} "
+            f"p_total={p_demand_mw:.3f} p_renewable={p_renewable_mw:.3f} p_dispatch_req={p_dispatch_required_mw:.3f} "
             f"bess_soc_pct={_cmt_bess_soc_pct:.2f} bess_output_mw={bess_output_mw:.3f} bess_anchor_mw={_cmt_bess_anchor:.3f} "
             f"turbine_output_mw={turbine_output_mw:.3f} blocked_by={_commit_decision.blocked_by!r}\n"
         )
@@ -1233,7 +1233,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # confident 0 MW.  Fall back to max(queue-forecast, measured-draw) to ensure
     # the band never goes below what the site is visibly drawing.
     _confidence_point_mw = (
-        max(forecast_mw, p_total_mw)
+        max(forecast_mw, p_demand_mw)
         if _workload_signal_absent
         else forecast_mw
     )
@@ -1289,7 +1289,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # Branch B: _balance_residual_mw is a local scratch variable; it is NOT on
     # TickResult.  D4 is asserted inline below before any use in the swing eq.
     _p_gen_mw = turbine_output_mw + bess_output_mw + p_renewable_mw
-    _balance_residual_mw = _p_gen_mw - p_total_mw
+    _balance_residual_mw = _p_gen_mw - p_demand_mw
 
     # ── Phase 13.2: balance decomposition — three independent channels ────────
     #
@@ -1379,7 +1379,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             "asset_delivery_error=%.6f [reporting only, not in D4])",
             _d4_balance_defect_mw,
             _grid_exchange_mw, _frequency_forcing_mw,
-            _balance_residual_mw, _p_gen_mw, p_total_mw,
+            _balance_residual_mw, _p_gen_mw, p_demand_mw,
             _asset_delivery_error_mw,
         )
 
@@ -1525,9 +1525,9 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # tau_seconds=20s, since exp(−0.1/20) ≈ 0.9950).
     _T_AMBIENT_BASE_C = 20.0  # °C — chosen; representative air-cooled ambient
     _T_RISE_MAX_C     = 15.0  # °C — chosen; typical hot-aisle delta (PROTO-11-COOL)
-    _max_cooling_mw = state.site.alpha_max * max(p_compute_mw, 1e-6)
+    _max_cooling_mw = state.site.alpha_max * max(p_compute_demand_mw, 1e-6)
     _cooling_fraction = (
-        min(1.0, p_cooling_mw / _max_cooling_mw)
+        min(1.0, p_cooling_demand_mw / _max_cooling_mw)
         if _max_cooling_mw > 1e-9
         else 0.0
     )
@@ -1542,9 +1542,9 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         # is the interval START; all internal elapsed calculations above use
         # clock.sim_time directly.  Only the persisted / wire field changes.
         sim_time_seconds=sim_time + clock.dt_seconds,
-        p_compute_mw=p_compute_mw,
-        p_cooling_mw=p_cooling_mw,
-        p_total_mw=p_total_mw,
+        p_compute_demand_mw=p_compute_demand_mw,
+        p_cooling_demand_mw=p_cooling_demand_mw,
+        p_demand_mw=p_demand_mw,
         net_demand_mw=net_demand_mw,
         turbine_output_mw=turbine_output_mw,
         bess_output_mw=bess_output_mw,

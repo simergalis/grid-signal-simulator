@@ -311,7 +311,7 @@ class TestI3DroopRestoringForce:
         assert tick.frequency_forcing_mw < 0.0, (
             f"I3: droop must produce negative frequency_forcing_mw (restoring force) "
             f"when f={f_elevated} Hz > nominal; got {tick.frequency_forcing_mw:.6f} MW  "
-            f"(p_total={tick.p_total_mw:.6f}, gt_setpoint={tick.gt_setpoint_mw:.6f})"
+            f"(p_total={tick.p_demand_mw:.6f}, gt_setpoint={tick.gt_setpoint_mw:.6f})"
         )
         assert tick.frequency_hz < f_elevated, (
             f"I3: frequency_hz must decrease from {f_elevated} Hz when droop "

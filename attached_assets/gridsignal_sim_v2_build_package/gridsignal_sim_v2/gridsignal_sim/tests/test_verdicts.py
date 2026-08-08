@@ -49,9 +49,9 @@ class TestEvaluateVerdictGapHandling:
         the verdict must be INCONCLUSIVE, never PASS.
         """
         rows = [
-            EvalRow(tick_index=1, p_total_mw=19.0, bess_soc_fraction=0.95, insufficient_reserve_alert=False),
-            EvalRow(tick_index=2, p_total_mw=19.0, bess_soc_fraction=0.94, insufficient_reserve_alert=False),
-            EvalRow(tick_index=4, p_total_mw=19.0, bess_soc_fraction=0.93, insufficient_reserve_alert=False),
+            EvalRow(tick_index=1, p_demand_mw=19.0, bess_soc_fraction=0.95, insufficient_reserve_alert=False),
+            EvalRow(tick_index=2, p_demand_mw=19.0, bess_soc_fraction=0.94, insufficient_reserve_alert=False),
+            EvalRow(tick_index=4, p_demand_mw=19.0, bess_soc_fraction=0.93, insufficient_reserve_alert=False),
             # tick 3 is missing — simulated dropped row
         ]
         result = evaluate_verdict(
@@ -68,7 +68,7 @@ class TestEvaluateVerdictGapHandling:
     def test_no_alert_passes_without_gaps(self) -> None:
         """Clean sequence with no gaps and no alert — should PASS."""
         rows = [
-            EvalRow(tick_index=i + 1, p_total_mw=19.0, bess_soc_fraction=0.95, insufficient_reserve_alert=False)
+            EvalRow(tick_index=i + 1, p_demand_mw=19.0, bess_soc_fraction=0.95, insufficient_reserve_alert=False)
             for i in range(5)
         ]
         result = evaluate_verdict(
@@ -82,8 +82,8 @@ class TestEvaluateVerdictGapHandling:
     def test_no_alert_fails_when_alert_fires(self) -> None:
         """Alert fires in retained rows — must FAIL regardless of gaps."""
         rows = [
-            EvalRow(tick_index=1, p_total_mw=19.0, bess_soc_fraction=0.95, insufficient_reserve_alert=False),
-            EvalRow(tick_index=2, p_total_mw=19.0, bess_soc_fraction=0.80, insufficient_reserve_alert=True),
+            EvalRow(tick_index=1, p_demand_mw=19.0, bess_soc_fraction=0.95, insufficient_reserve_alert=False),
+            EvalRow(tick_index=2, p_demand_mw=19.0, bess_soc_fraction=0.80, insufficient_reserve_alert=True),
         ]
         result = evaluate_verdict(
             assertions=[NoReserveAlertAssertion()],
@@ -96,8 +96,8 @@ class TestEvaluateVerdictGapHandling:
     def test_alert_fires_passes_despite_gaps(self) -> None:
         """Existential assertion: retained row fires → PASS even with gaps."""
         rows = [
-            EvalRow(tick_index=1, p_total_mw=19.0, bess_soc_fraction=0.50, insufficient_reserve_alert=True),
-            EvalRow(tick_index=3, p_total_mw=19.0, bess_soc_fraction=0.40, insufficient_reserve_alert=False),
+            EvalRow(tick_index=1, p_demand_mw=19.0, bess_soc_fraction=0.50, insufficient_reserve_alert=True),
+            EvalRow(tick_index=3, p_demand_mw=19.0, bess_soc_fraction=0.40, insufficient_reserve_alert=False),
             # gap before tick 3
         ]
         result = evaluate_verdict(
@@ -112,7 +112,7 @@ class TestEvaluateVerdictGapHandling:
     def test_empty_assertions_inconclusive(self) -> None:
         """No assertions → overall INCONCLUSIVE (cannot confirm absence of failure)."""
         rows = [
-            EvalRow(tick_index=i + 1, p_total_mw=19.0, bess_soc_fraction=0.95, insufficient_reserve_alert=False)
+            EvalRow(tick_index=i + 1, p_demand_mw=19.0, bess_soc_fraction=0.95, insufficient_reserve_alert=False)
             for i in range(5)
         ]
         result = evaluate_verdict(assertions=[], rows=rows, dropped_ticks=0)

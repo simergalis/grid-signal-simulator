@@ -260,7 +260,7 @@ def test_bess_bridging_seconds_inf_capped_in_payload():
     # Manufacture a TickResult with bess_bridging_seconds=math.inf directly.
     tick = TickResult(
         run_id="r", tick_index=1, sim_time_seconds=0.0,
-        p_compute_mw=0.0, p_cooling_mw=0.0, p_total_mw=0.0,
+        p_compute_demand_mw=0.0, p_cooling_demand_mw=0.0, p_demand_mw=0.0,
         net_demand_mw=0.0, turbine_output_mw=0.0, bess_output_mw=0.0,
         bess_soc_fraction=1.0,
         confidence=ConfidenceBand(point_estimate_mw=0.0, plus_minus_fraction=0.05),
@@ -381,7 +381,7 @@ async def test_stalled_subscriber_does_not_block_broadcast():
 
     tick = TickResult(
         run_id="r1", tick_index=1, sim_time_seconds=0.0,
-        p_compute_mw=0.0, p_cooling_mw=0.0, p_total_mw=0.0,
+        p_compute_demand_mw=0.0, p_cooling_demand_mw=0.0, p_demand_mw=0.0,
         net_demand_mw=0.0, turbine_output_mw=0.0, bess_output_mw=0.0,
         bess_soc_fraction=1.0,
         confidence=ConfidenceBand(point_estimate_mw=0.0, plus_minus_fraction=0.05),

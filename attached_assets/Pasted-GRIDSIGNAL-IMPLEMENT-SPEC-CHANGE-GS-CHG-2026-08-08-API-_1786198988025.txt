@@ -1,0 +1,221 @@
+GRIDSIGNAL — IMPLEMENT SPEC CHANGE GS-CHG-2026-08-08
+API CONTRACT, ACCEPTANCE TESTS, AND DISPLAY.
+NO PHYSICS. NO COMPUTATION IN THE PRESENTATION LAYER.
+
+GOVERNING SPEC
+Forecast Engine Functional Spec v2.7, Sections 3, 3.2, 19, 19.2, 16.14.
+Read those sections before writing anything. This prompt does not restate
+them; where this prompt and the spec differ, the spec governs and you
+STOP AND REPORT the discrepancy.
+
+WHAT THIS TASK IS
+v2.7 splits the former P_total symbol into P_demand, P_served,
+P_unserved, and P_imbalance, and adds P_generation. It states the power
+balance identity as an invariant (3.2) and adds a second governing rule
+to Section 19: a console surface renders values, it does not compute
+them.
+
+This task implements the CONTRACT and the DISPLAY for those symbols, and
+lands the Section 16.14 acceptance tests. It does NOT implement the
+balance solver. The frequency dynamics specification does not yet exist,
+and implementing physics against an absent specification is prohibited.
+
+EXPECTED OUTCOME — READ THIS TWICE
+P_served, P_unserved, and P_imbalance HAVE NO PRODUCER TODAY. That is
+expected and correct.
+
+At the end of this task:
+  - the API returns those fields as null
+  - the tiles render them as explicitly unavailable
+  - TC-87 through TC-91 FAIL
+  - TC-92 PASSES
+
+A run in which TC-87 through TC-91 pass is a FAILURE OF THIS TASK. It
+means producers were invented. Per Spec 3.2, P_served is an output of the
+electrical solution; anything else assigned to it is one of the three
+defective implementations that section names.
+
+DO NOT create producers for P_served, P_unserved, P_imbalance, or
+P_generation. DO NOT derive them. DO NOT default them to zero, to
+P_demand, or to any placeholder that reads as a measurement. A displayed
+zero not produced by the simulation is a false statement about site
+physics (Spec 19).
+
+ABSOLUTE PROHIBITIONS
+ 1. Do NOT change any physics, dispatch, commitment, BESS, cooling,
+    solar, frequency, or balance logic.
+ 2. Do NOT create producers for the four new supply/served symbols.
+ 3. Do NOT compute any displayed value in the presentation layer. No
+    difference, sum, min/max, clamp, or fallback arithmetic. This is
+    Spec 19's second governing rule and TC-92 tests it.
+ 4. Do NOT compute P_unserved as P_demand - P_served anywhere, including
+    in the API serialiser. That relationship is a physics statement and
+    belongs to the balance producer.
+ 5. Do NOT modify gridsignal_scenario_islanded_8_60_10.json or
+    gridsignal_parameters.json.
+ 6. Do NOT introduce literals in TSX (standing rule).
+ 7. Do NOT introduce RNG.
+ 8. Do NOT edit any specification document or decision record.
+ 9. Do NOT tune any parameter for any reason.
+10. Do NOT fix any defect you discover. Log it and report it.
+11. If a value has no producer, a name is ambiguous, or the spec does not
+    determine the answer: STOP AND REPORT. Do not infer from a symbol
+    name. Do not invent a constant.
+
+--------------------------------------------------------------------
+PHASE 1 — SYMBOL RENAME (backend and internal only)
+Apply the Spec 3 rename across backend source, with word boundaries:
+
+  P_total   / p_total_mw    -> P_demand   / p_demand_mw
+  P_compute / p_compute_mw  -> P_compute_demand / p_compute_demand_mw
+  P_cooling / p_cooling_mw  -> P_cooling_demand / p_cooling_demand_mw
+
+Rename globally within the backend. A partial rename leaves two names for
+one quantity, which is the ambiguity this change exists to remove.
+
+Report the occurrence count for each. Reference counts from the v2.5 spec
+copy were 15 / 12 / 9; code counts will differ and that is expected.
+
+Do NOT rename anything in scenario or parameter JSON. If a rename would
+require a JSON key change, STOP AND REPORT — do not rename the key.
+
+ACCEPTANCE: backend compiles, suite delta is zero, counts reported.
+STOP AND REPORT. Do not proceed.
+
+--------------------------------------------------------------------
+PHASE 2 — API CONTRACT
+Extend the site-state API response. ADD fields only; do not remove or
+rename existing response fields in this phase.
+
+For each of compute, cooling, and site total:
+    p_demand_mw      MW, required, wired to the EXISTING producer
+    p_served_mw      MW, or null
+    p_unserved_mw    MW, or null
+
+At site level additionally:
+    p_generation_mw  MW, or null
+    p_imbalance_mw   MW, or null
+
+p_demand_mw wires to the producer already feeding the current tiles. Do
+not re-derive it.
+
+For every other field: wire to a backend producer IF AND ONLY IF one
+already exists. Determine this by inspecting the simulation core, not by
+variable name. Where none exists, the serialiser emits null.
+
+Note on p_generation_mw: aggregate turbine + solar + BESS output values
+may already exist individually. Summing them in the serialiser to produce
+p_generation_mw is PROHIBITED — that is a computation in the transport
+layer. Wire it only if a single aggregate producer already exists.
+Otherwise null.
+
+ACCEPTANCE: response carries all fields. Report, per field, whether it
+resolved to a real producer or to null, with file and line for every
+producer wired.
+STOP AND REPORT.
+
+--------------------------------------------------------------------
+PHASE 3 — ACCEPTANCE TESTS TC-87 THROUGH TC-92
+Implement Spec 16.14 verbatim as tests. Do not soften the assertions to
+make them pass.
+
+  TC-87  P_generation = P_served within 0.01 MW at every tick
+  TC-88  Where P_unserved > 0.01 MW, a frequency excursion is present at
+         that tick
+  TC-89  Islanded, 18 MW deficit, unstaged: frequency falls, UF threshold
+         crossed, protection operates, run enters terminal tripped state
+  TC-90  Identical demand curve, staged: P_unserved remains zero,
+         protection does not operate
+  TC-91  Supply term clamped at the 7.1.2 anchor-adjusted limit: the
+         uncovered remainder appears in P_unserved or P_imbalance;
+         appearing in neither is a failure
+  TC-92  Static inspection: no difference, sum, clamp, or fallback is
+         computed on p_demand_mw, p_served_mw, p_unserved_mw,
+         p_generation_mw, or p_imbalance_mw anywhere in the presentation
+         layer
+
+TC-87 through TC-91 must be registered as EXPECTED TO FAIL, with an
+explicit reference to GS-CHG-2026-08-08 and the reason: the balance
+producer and frequency dynamics are unspecified. They must appear in
+suite output as expected failures with a visible count. Do NOT skip them,
+do NOT comment them out, do NOT mark them pending without a reason
+string. A skipped test is invisible; an expected failure is a standing
+measure of the gap.
+
+TC-92 must PASS. If it fails, presentation-layer arithmetic exists —
+report where, and remove the arithmetic rather than weakening the test.
+
+TC-89 and TC-90 are the demonstration scenario expressed as tests. Build
+them against the demonstration scenario definition, not a separate
+fixture.
+
+ACCEPTANCE: six tests present. TC-87..TC-91 reported as expected
+failures. TC-92 passes. No pre-existing test changed.
+STOP AND REPORT.
+
+--------------------------------------------------------------------
+PHASE 4 — COMPUTE RACKS AND COOLING PLANT TILES
+Per Spec 19.2, three lines per tile, in this order:
+
+    COMPUTE RACKS
+      44.05 MW   served
+      44.05 MW   demand
+       0.00 MW   unserved
+
+Rendering rules, all from Spec 19:
+ - A null field renders an explicit unavailable state with a short reason
+   ("not modelled"). NOT 0.00. NOT a bare dash that could read as zero.
+ - The unserved line is visually subordinate when zero and prominent when
+   nonzero.
+ - "Unavailable" must be distinguishable at a glance from a real zero. An
+   operator must never be able to mistake "we are not modelling this" for
+   "this is fine."
+ - Every figure reads from one API field. No arithmetic.
+
+Existing tile behaviour otherwise unchanged: same detail-view
+affordance, same secondary metadata lines.
+
+Apply identically to Cooling Plant.
+
+ACCEPTANCE: both tiles render three lines; TC-92 still passes.
+STOP AND REPORT.
+
+--------------------------------------------------------------------
+PHASE 5 — HEADER
+Per Spec 19.2, the SITE DRAW label is retired. Render:
+
+    SITE DEMAND    52.11 MW
+    SITE SERVED    <from backend, or unavailable>
+    UNSERVED       <from backend, or unavailable>
+
+Do NOT touch PREDICTED PEAK, GEN-TRIP COVER, or RESERVE. Those are under
+separate diagnostic investigation; changing them here confounds it.
+
+ACCEPTANCE: header split rendered, no other header field altered.
+STOP AND REPORT.
+
+--------------------------------------------------------------------
+PHASE 6 — RUN AND REPORT
+Run the islanded 8-60-10 scenario UNCHANGED, 1x speed, 3 hour duration,
+existing seed.
+
+Report:
+ 1. Suite delta: passing/failing before vs after, EXCLUDING the six new
+    tests, which are reported separately. Any delta in pre-existing tests
+    is a failure of this work — report it, do not fix it.
+ 2. The six new tests: status of each. Confirm TC-87..TC-91 are expected
+    failures and TC-92 passes. If any of TC-87..TC-91 PASSES, stop and
+    report immediately — a producer was invented.
+ 3. AT-7 determinism: simulation output bit-identical to a pre-change run
+    from the same seed. This is contract and display work; a delta means
+    something physical was touched. Revert and report.
+ 4. Per-field producer resolution table from Phase 2.
+ 5. Rename counts from Phase 1.
+ 6. The grep or static analysis backing TC-92, quoted.
+ 7. Rendered description or screenshot of Compute Racks, Cooling Plant,
+    and the header at a mid-ramp tick, showing the unavailable state.
+ 8. Every judgement call made where the spec did not determine the
+    answer. List explicitly for review.
+ 9. Every defect observed, listed, unfixed.
+
+Do not draw conclusions about physics. Report what renders and what fails.

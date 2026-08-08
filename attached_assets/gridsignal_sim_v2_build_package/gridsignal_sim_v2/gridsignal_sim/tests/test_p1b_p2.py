@@ -695,7 +695,7 @@ class TestTC82DemoPlantMSLConstraint:
 
         sub_msl_surplus_mw = 0.8   # MSL 2.8 − p_fleet 2.0
         p_commanded_mw     = 2.0   # droop_setpoint + bess_setpoint + p_renewable
-        p_total_mw         = 2.0   # GPU + cooling load (matches commanded, steady state)
+        p_demand_mw         = 2.0   # GPU + cooling load (matches commanded, steady state)
 
         # Islanded frequency_forcing formula (Task #200 B1 — balance_residual):
         #   frequency_forcing = p_gen − p_load
@@ -705,7 +705,7 @@ class TestTC82DemoPlantMSLConstraint:
         # (Numerically equal to the old (p_cmd − p_total) + sub_msl formula in
         #  steady state where p_cmd = p_total, but the source is balance_residual.)
         turb_out_mw = 2.8   # MSL floor (= droop_setpoint 2.0 + sub_msl 0.8)
-        frequency_forcing = turb_out_mw - p_total_mw  # balance_residual = p_gen − p_load
+        frequency_forcing = turb_out_mw - p_demand_mw  # balance_residual = p_gen − p_load
         assert frequency_forcing == pytest.approx(0.8, abs=1e-6), (
             f"TC-82c: expected frequency_forcing (= balance_residual) ≈ 0.8 MW, "
             f"got {frequency_forcing:.6f}"

@@ -199,6 +199,92 @@ function weatherLabel(weather: string): string {
 }
 
 /**
+ * BalanceRows — Phase 4 (GS-CHG-2026-08-08).
+ *
+ * Compact three-line supply/served/unserved display for Compute Racks and
+ * Cooling Plant tiles.  Replaces the single MW hero value.
+ *
+ * Rendering rules (§4.3 of the spec):
+ *   - Order: Served / Demand / Unserved (top-to-bottom)
+ *   - null  → "not modelled" in muted colour — never "0.00" or bare "—"
+ *   - Unserved > 0 → prominent amber (#f0883e) to signal urgency
+ *   - No arithmetic on the Phase-2 null fields; values read directly from props
+ */
+function BalanceRows({
+  servedMW,
+  demandMW,
+  unservedMW,
+  accentColor,
+}: {
+  servedMW:    number | null
+  demandMW:    number
+  unservedMW:  number | null
+  accentColor: string
+}) {
+  const NULL_COLOUR  = '#4b5764'   // muted — unambiguously unavailable
+  const NULL_LABEL   = 'not modelled'
+
+  const unservedAlert = unservedMW !== null && unservedMW > 0.005
+
+  const rows: Array<{ key: string; valueStr: string; valueColour: string }> = [
+    {
+      key: 'served',
+      valueStr:    servedMW !== null ? `${servedMW.toFixed(2)} MW` : NULL_LABEL,
+      valueColour: servedMW !== null ? accentColor : NULL_COLOUR,
+    },
+    {
+      key: 'demand',
+      valueStr:    `${demandMW.toFixed(2)} MW`,
+      valueColour: accentColor,
+    },
+    {
+      key: 'unserved',
+      valueStr:    unservedMW !== null ? `${unservedMW.toFixed(2)} MW` : NULL_LABEL,
+      valueColour: unservedMW !== null
+        ? (unservedAlert ? '#f0883e' : '#3fb6a8')
+        : NULL_COLOUR,
+    },
+  ]
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {rows.map(({ key, valueStr, valueColour }) => (
+        <div
+          key={key}
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'baseline',
+            gap: 4,
+          }}
+        >
+          <span style={{
+            fontFamily: "'SF Mono','Roboto Mono',Menlo,Consolas,monospace",
+            fontSize: 7,
+            color: '#4b5764',
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase' as const,
+            flexShrink: 0,
+          }}>
+            {key}
+          </span>
+          <span style={{
+            fontFamily: "'SF Mono','Roboto Mono',Menlo,Consolas,monospace",
+            fontSize: 9,
+            color: valueColour,
+            fontWeight: 500,
+            letterSpacing: '-0.01em',
+            textAlign: 'right' as const,
+          }}>
+            {valueStr}
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/**
  * WeatherBadge — compact weather chip shown on the Solar PV node before a run.
  * Disappears once a tick arrives (live run takes over the display).
  */
@@ -384,8 +470,33 @@ export function PlantNode({ def, tick, onClick, solarPreview, liveSolarMW }: Pla
           </div>
         </div>
 
-        {/* MW value (middle) */}
-        {def.mwField !== undefined && (
+        {/* Phase 4 (GS-CHG-2026-08-08): balance rows for compute and cooling tiles */}
+        {(def.id === 'compute-racks' || def.id === 'cooling-plant') && tick && (
+          <BalanceRows
+            servedMW={
+              def.id === 'compute-racks'
+                ? tick.p_compute_served_mw
+                : tick.p_cooling_served_mw
+            }
+            demandMW={
+              def.id === 'compute-racks'
+                ? tick.p_compute_demand_mw
+                : tick.p_cooling_demand_mw
+            }
+            unservedMW={
+              def.id === 'compute-racks'
+                ? tick.p_compute_unserved_mw
+                : tick.p_cooling_unserved_mw
+            }
+            accentColor={def.accentColor ?? '#3fb6a8'}
+          />
+        )}
+
+        {/* MW value (middle) — hidden for compute/cooling (replaced by balance rows) */}
+        {def.mwField !== undefined
+          && def.id !== 'compute-racks'
+          && def.id !== 'cooling-plant'
+          && (
           <div style={{ lineHeight: 1 }}>
             <div style={{
               fontFamily: "'SF Mono','Roboto Mono',Menlo,Consolas,monospace",

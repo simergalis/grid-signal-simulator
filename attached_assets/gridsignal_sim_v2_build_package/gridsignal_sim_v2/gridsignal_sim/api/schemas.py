@@ -1007,9 +1007,9 @@ class TimeseriesRowResponse(BaseModel):
     """
     tick_index: int
     sim_time_seconds: float
-    p_compute_mw: float
-    p_cooling_mw: float
-    p_total_mw: float
+    p_compute_demand_mw: float
+    p_cooling_demand_mw: float
+    p_demand_mw: float
     net_demand_mw: float
     turbine_output_mw: float
     bess_output_mw: float

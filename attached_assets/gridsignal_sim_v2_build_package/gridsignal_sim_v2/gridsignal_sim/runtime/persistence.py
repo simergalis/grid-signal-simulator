@@ -184,9 +184,9 @@ class RunTimeseries(Base):
     run_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
     tick_index: Mapped[int] = mapped_column(Integer, nullable=False)
     sim_time_seconds: Mapped[float] = mapped_column(Float, nullable=False)
-    p_compute_mw: Mapped[float] = mapped_column(Float, nullable=False)
-    p_cooling_mw: Mapped[float] = mapped_column(Float, nullable=False)
-    p_total_mw: Mapped[float] = mapped_column(Float, nullable=False)
+    p_compute_demand_mw: Mapped[float] = mapped_column(Float, nullable=False)
+    p_cooling_demand_mw: Mapped[float] = mapped_column(Float, nullable=False)
+    p_demand_mw: Mapped[float] = mapped_column(Float, nullable=False)
     net_demand_mw: Mapped[float] = mapped_column(Float, nullable=False)
     turbine_output_mw: Mapped[float] = mapped_column(Float, nullable=False)
     bess_output_mw: Mapped[float] = mapped_column(Float, nullable=False)
@@ -627,9 +627,9 @@ class SqlitePersistedTimeseriesSink:
                                 run_id=tick.run_id,
                                 tick_index=tick.tick_index,
                                 sim_time_seconds=tick.sim_time_seconds,
-                                p_compute_mw=tick.p_compute_mw,
-                                p_cooling_mw=tick.p_cooling_mw,
-                                p_total_mw=tick.p_total_mw,
+                                p_compute_demand_mw=tick.p_compute_demand_mw,
+                                p_cooling_demand_mw=tick.p_cooling_demand_mw,
+                                p_demand_mw=tick.p_demand_mw,
                                 net_demand_mw=tick.net_demand_mw,
                                 turbine_output_mw=tick.turbine_output_mw,
                                 bess_output_mw=tick.bess_output_mw,
@@ -812,7 +812,7 @@ class SqlitePersistedTimeseriesSink:
         return [
             EvalRow(
                 tick_index=r.tick_index,
-                p_total_mw=r.p_total_mw,
+                p_demand_mw=r.p_demand_mw,
                 bess_soc_fraction=r.bess_soc_fraction,
                 insufficient_reserve_alert=r.insufficient_reserve_alert,
             )
@@ -850,9 +850,9 @@ class SqlitePersistedTimeseriesSink:
                 "run_id": r.run_id,
                 "tick_index": r.tick_index,
                 "sim_time_seconds": r.sim_time_seconds,
-                "p_compute_mw": r.p_compute_mw,
-                "p_cooling_mw": r.p_cooling_mw,
-                "p_total_mw": r.p_total_mw,
+                "p_compute_mw": r.p_compute_demand_mw,
+                "p_cooling_mw": r.p_cooling_demand_mw,
+                "p_total_mw": r.p_demand_mw,
                 "net_demand_mw": r.net_demand_mw,
                 "turbine_output_mw": r.turbine_output_mw,
                 "bess_output_mw": r.bess_output_mw,

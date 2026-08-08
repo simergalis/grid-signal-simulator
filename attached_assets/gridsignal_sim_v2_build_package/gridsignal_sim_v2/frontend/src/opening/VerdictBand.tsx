@@ -190,10 +190,35 @@ export function VerdictBand({ onLocationChanged }: VerdictBandProps = {}) {
   if (running && tick) {
     const cc = tick.contingency_coverage
     figures = [
+      // GS-CHG-2026-08-08 Phase 5 — "Site Draw" retired; replaced by three
+      // supply/served/unserved figures.  Null renders as 'unavailable / not modelled',
+      // never as 0 or a bare dash.  No arithmetic on the new fields (TC-92).
       {
-        label:    'Site Draw',
-        value:    `${tick.p_total_mw.toFixed(2)} MW`,
-        colWidth: 140,
+        label:    'Site Demand',
+        value:    tick.p_demand_mw !== null
+          ? `${tick.p_demand_mw.toFixed(2)} MW`
+          : '—',
+        colWidth: 108,
+      },
+      {
+        label:    'Site Served',
+        value:    tick.p_served_mw !== null
+          ? `${tick.p_served_mw.toFixed(2)} MW`
+          : 'unavailable',
+        colour:   tick.p_served_mw !== null ? undefined : '#4b5764',
+        sub:      tick.p_served_mw !== null ? undefined : 'not modelled',
+        colWidth: 112,
+      },
+      {
+        label:    'Unserved',
+        value:    tick.p_unserved_mw !== null
+          ? `${tick.p_unserved_mw.toFixed(2)} MW`
+          : 'unavailable',
+        colour:   tick.p_unserved_mw !== null
+          ? (tick.p_unserved_mw > 0.005 ? '#f0883e' : '#3fb6a8')
+          : '#4b5764',
+        sub:      tick.p_unserved_mw !== null ? undefined : 'not modelled',
+        colWidth: 110,
       },
       {
         // F5: must read forecast_mw (queue-derived, Section 4 formula), not

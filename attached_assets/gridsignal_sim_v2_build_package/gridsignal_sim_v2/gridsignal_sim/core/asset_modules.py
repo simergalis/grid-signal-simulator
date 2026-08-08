@@ -632,7 +632,7 @@ class CoolingModule(AssetModule):
     # Scalar path (backward compat)
     # ------------------------------------------------------------------
 
-    def record_compute_sample(self, sim_time: float, p_compute_mw: float) -> None:
+    def record_compute_sample(self, sim_time: float, p_compute_demand_mw: float) -> None:
         """Scalar aggregate interface — backward compat for unit tests.
 
         Each step-up creates a synthetic envelope (onset_t=sim_time, load_mw=delta).
@@ -648,7 +648,7 @@ class CoolingModule(AssetModule):
         events — the engine must never infer t₀ from aggregate draw shape.
         """
         _EPS = 1e-9
-        delta = p_compute_mw - self._prev_agg_mw
+        delta = p_compute_demand_mw - self._prev_agg_mw
         if delta > _EPS:
             key = f"_syn_{self._synth_counter}"
             self._synth_counter += 1
@@ -679,7 +679,7 @@ class CoolingModule(AssetModule):
                     )
                 if remaining <= _EPS:
                     break
-        self._prev_agg_mw = p_compute_mw
+        self._prev_agg_mw = p_compute_demand_mw
 
     # ------------------------------------------------------------------
     # Shared internals

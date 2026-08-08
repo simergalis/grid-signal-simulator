@@ -12,11 +12,27 @@ export interface TickPayload {
   tick_index: number
   sim_time_seconds: number
 
-  // Power terms (MW)
+  // Power terms (MW) — backward-compat wire keys preserved per GS-CHG-2026-08-08 §3.1
   p_compute_mw: number
   p_cooling_mw: number
   p_total_mw: number
   net_demand_mw: number       // p_total - p_renewable, clamped ≥ 0
+
+  // GS-CHG-2026-08-08 Phase 2 — supply/served contract.
+  // p_*_demand_mw  : wired to existing producer (same values as the compat fields above).
+  // null fields    : no balance-solver producer in this release.
+  // Null must render as "not modelled" in the UI, NOT as 0.00 or "—".
+  p_compute_demand_mw:  number         // = p_compute_mw, producer: simulation_core
+  p_compute_served_mw:  number | null  // no producer
+  p_compute_unserved_mw: number | null // no producer
+  p_cooling_demand_mw:  number         // = p_cooling_mw, producer: simulation_core
+  p_cooling_served_mw:  number | null  // no producer
+  p_cooling_unserved_mw: number | null // no producer
+  p_demand_mw:          number         // = p_total_mw, producer: simulation_core
+  p_served_mw:          number | null  // no producer
+  p_unserved_mw:        number | null  // no producer
+  p_generation_mw:      number | null  // no single-aggregate producer
+  p_imbalance_mw:       number | null  // no producer
   turbine_output_mw: number
   bess_output_mw: number
   bess_setpoint_mw: number    // dispatch command before SoC/power clipping (B4 gate)
