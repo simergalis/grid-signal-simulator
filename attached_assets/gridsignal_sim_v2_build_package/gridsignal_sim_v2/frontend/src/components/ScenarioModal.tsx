@@ -243,7 +243,7 @@ export function ScenarioModal({ onClose, onNew, onEdit, onExecute }: Props) {
             {uploadBusy
               ? <span className="h-3 w-3 rounded-full border border-accent border-t-transparent animate-spin inline-block" />
               : <span>↑</span>}
-            Upload JSON
+            Upload Scenario
           </button>
 
           {/* New */}

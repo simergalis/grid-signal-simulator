@@ -255,7 +255,7 @@ export function ScenarioManagerPage({ onNewScenario, onEditScenario, onExecute }
           ) : (
             <span>↑</span>
           )}
-          Upload JSON
+          Upload Scenario
         </button>
 
         {/* New */}
@@ -435,7 +435,7 @@ export function ScenarioManagerPage({ onNewScenario, onEditScenario, onExecute }
       {/* Upload hint */}
       <div className="border-t border-border bg-surface px-6 py-2 flex-shrink-0">
         <p className="text-[10px] text-muted">
-          Drag a <span className="font-mono">.json</span> file anywhere onto this page to upload, or use the Upload JSON button.
+          Drag a <span className="font-mono">.json</span> file anywhere onto this page to upload, or use the Upload Scenario button.
           Required fields: <span className="font-mono">name</span>, <span className="font-mono">bess_units</span>, <span className="font-mono">turbine_units</span>.
           Download <a href="/scenario_spec_schema.json" target="_blank" className="text-accent hover:underline">schema ↗</a>
         </p>
