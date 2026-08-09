@@ -135,6 +135,12 @@ export const thermalPanel: PanelConfig = {
         { label: 'Absorbable now',   value: `${absorbMW.toFixed(2)} MW`, colour: lowHdr ? AMBER : '#3fb6a8', sub: 'additional load before approach' },
         { label: 'Time to limit',    value: fmtTime(limitTime), sub: limitTime >= 86400 ? 'no approach in progress' : 'at current approach rate' },
         { label: 'Approach rate',    value: `${approach.toFixed(3)} MW/s`, sub: 'rate of headroom consumption' },
+        {
+          label: 'Unserved load',
+          value: tick.p_cooling_unserved_mw != null ? `${tick.p_cooling_unserved_mw.toFixed(2)} MW` : '—',
+          colour: (tick.p_cooling_unserved_mw ?? 0) > 0.01 ? AMBER : undefined,
+          sub: 'cooling\'s pro-rata share of any site-wide generation shortfall — not a chiller fault',
+        },
         { label: 'Δt_thermal',       value: dtThermalS > 0 ? `${dtThermalS.toFixed(0)} s` : 'not populated', sub: 'base thermal lag — from SiteConfig, unscaled' },
         { label: 'τ rise constant',  value: '20 s', sub: 'first-order settling — catalogue default (tau min=10, max=40 s) · not broadcast on tick' },
         { label: 'Pre-staging',      value: 'not configured', sub: 'shiftable load unavailable in this scenario' },
@@ -146,6 +152,9 @@ export const thermalPanel: PanelConfig = {
         `A compute step and its cooling response are two separate events roughly ${tick.dt_thermal_seconds.toFixed(0)} s apart.`,
         'A reactive controller meets each one after it arrives, and meets the second having already spent its ramp on the first.',
         'The lag is why one threshold cannot work — GridSignal reads the scheduler queue before any current flows.',
+        'The "Unserved load" figure is not a cooling failure. When the plant runs short of total generation, ' +
+        'the shortfall is split across compute and cooling in proportion to how much each draws. ' +
+        'Cooling has no internal capacity limit that triggers this number — if the plant has enough power, it always reads zero.',
       ],
     }
   },
