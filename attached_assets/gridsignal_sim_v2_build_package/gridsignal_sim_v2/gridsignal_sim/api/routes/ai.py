@@ -181,6 +181,7 @@ class ExplainRequest(BaseModel):
     dt_lead_seconds: float = 60.0
     demo_description: str = ""
     mode: str = "demonstrates"   # "demonstrates" (idle) | "watching" (run active)
+    frequency_nominal_hz: float = 60.0  # 60 Hz = WECC/US; 50 Hz = EU/APAC/NZ
 
 
 class ExplainResponse(BaseModel):
@@ -195,17 +196,26 @@ def _call_anthropic_explain(req: ExplainRequest, api_key: str) -> str:  # noqa: 
         parts.append(f"Description: {req.scenario_description}")
     if req.demo_description:
         parts.append(f"Demo copy hint: {req.demo_description}")
+    grid_label = "WECC/US 60 Hz" if req.frequency_nominal_hz >= 59.5 else "EU/APAC 50 Hz"
+    solar_note = (
+        f"Solar {req.solar_rated_mw:.2f} MW installed capacity "
+        f"(rated nameplate — actual output at demo time is typically 20–40% of this "
+        f"due to sun angle; do NOT say the solar is contributing the full rated figure)"
+        if req.solar_rated_mw > 0
+        else "Solar: none"
+    )
     parts.append(
         f"Fleet: {req.turbine_count} gas turbine{'s' if req.turbine_count != 1 else ''} "
         f"× {req.turbine_rated_mw:.0f} MW each · "
         f"BESS {req.bess_rated_mw:.0f} MW / {req.bess_usable_mwh:.0f} MWh · "
-        f"Solar {req.solar_rated_mw:.2f} MW rated"
+        f"{solar_note}"
     )
     parts.append(
         f"Workload: up to {req.node_count_max} GPU nodes · "
         f"run lasts {req.run_duration_s} s · "
         f"GridSignal lead time {req.dt_lead_seconds:.0f} s · "
-        f"{'islanded (no grid connection)' if req.island_mode else 'grid-connected'}"
+        f"{'islanded (no grid connection)' if req.island_mode else 'grid-connected'} · "
+        f"Grid: {req.frequency_nominal_hz:.0f} Hz nominal ({grid_label})"
     )
     user_msg = "\n".join(parts) + "\n\nWrite the 4-sentence educational paragraph:"
 
@@ -213,7 +223,7 @@ def _call_anthropic_explain(req: ExplainRequest, api_key: str) -> str:  # noqa: 
 
     payload = json.dumps({
         "model": _ANTHROPIC_MODEL,
-        "max_tokens": 400,
+        "max_tokens": 600,
         "system": system_prompt,
         "messages": [{"role": "user", "content": user_msg}],
     }).encode()
