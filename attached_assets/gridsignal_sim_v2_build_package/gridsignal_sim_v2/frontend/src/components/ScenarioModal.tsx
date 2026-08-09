@@ -180,13 +180,13 @@ export function ScenarioModal({ onClose, onNew, onEdit, onExecute }: Props) {
       const resp = await fetch(`/scenarios/${id}`)
       if (!resp.ok) throw new Error(`${resp.status}`)
       const data = await resp.json() as { spec: ScenarioSpec }
-      const blob = new Blob([JSON.stringify(data.spec, null, 2)], { type: 'application/json' })
-      const url  = URL.createObjectURL(blob)
+      const json = JSON.stringify(data.spec, null, 2)
+      const url  = 'data:application/json;charset=utf-8,' + encodeURIComponent(json)
       const a    = Object.assign(document.createElement('a'), {
         href: url, download: `${name.replace(/[^a-z0-9_-]/gi, '_')}.json`,
       })
       document.body.appendChild(a); a.click()
-      document.body.removeChild(a); URL.revokeObjectURL(url)
+      document.body.removeChild(a)
     } catch (e) {
       setToast({ msg: `Download failed: ${e}`, kind: 'err' })
     } finally {

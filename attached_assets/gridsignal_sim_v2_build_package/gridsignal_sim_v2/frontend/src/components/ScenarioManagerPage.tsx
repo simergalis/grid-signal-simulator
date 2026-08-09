@@ -187,15 +187,13 @@ export function ScenarioManagerPage({ onNewScenario, onEditScenario, onExecute }
       if (!resp.ok) throw new Error(`GET /scenarios/${id} → ${resp.status}`)
       const data = await resp.json() as { spec: ScenarioSpec }
       const json = JSON.stringify(data.spec, null, 2)
-      const blob = new Blob([json], { type: 'application/json' })
-      const url  = URL.createObjectURL(blob)
+      const url  = 'data:application/json;charset=utf-8,' + encodeURIComponent(json)
       const a    = document.createElement('a')
       a.href     = url
       a.download = `${name.replace(/[^a-z0-9_-]/gi, '_')}.json`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
-      URL.revokeObjectURL(url)
     } catch (e) {
       setToast({ msg: String(e), kind: 'err' })
     } finally {

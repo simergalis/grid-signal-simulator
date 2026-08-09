@@ -156,6 +156,9 @@ function nodeDetail(
       //  • non-kube: checkpoint_states has one entry per active training job;
       //           node count comes from summing workload-event node_counts, but
       //           that total isn't in the tick payload — show job count only.
+      //           Display uses the same admitted/queued layout as the kube path
+      //           so the tile is visually consistent across scenario types; the
+      //           queue is always 0 for scripted workload-event runs.
       if (tick?.kube_metrics) {
         const km        = tick.kube_metrics
         const computeMW = (tick.p_compute_mw ?? 0).toFixed(2)
@@ -168,7 +171,8 @@ function nodeDetail(
       const jobs = tick ? Object.keys(tick.checkpoint_states).length : 0
       if (jobs > 0) {
         const computeMW = (tick?.p_compute_mw ?? 0).toFixed(2)
-        return `${jobs} job${jobs !== 1 ? 's' : ''} · ${computeMW} MW`
+        const jw = jobs === 1 ? 'job' : 'jobs'
+        return `${jobs} ${jw} admitted · 0 queued · ${computeMW} MW`
       }
       return '600 – 1,900 nodes · up to 19.96 MW'
     }
