@@ -169,6 +169,7 @@ function defaultTurbine(index: number): TurbineUnitSpec {
     no_load_mw:        0.0,
     msl_mw:            0.0,
     sync_relay_state:  'permissive',  // Phase 0 §0.2: relay at rest for on-bus unit
+    thermal_state:     'cold',
   }
 }
 
@@ -647,6 +648,32 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                         onChange={v => patchTurbine(i, { rated_mw: v })} />
                       <NumField label="Ramp rate" unit="MW/s" value={t.r_asset_mw_per_s} min={0.01} step={0.05}
                         onChange={v => patchTurbine(i, { r_asset_mw_per_s: v })} />
+                    </div>
+                    {/* Initial standby tier — determines start-sequence duration */}
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[10px] text-muted">Initial standby</span>
+                      <div className="grid grid-cols-3 gap-1">
+                        {(['hot', 'warm', 'cold'] as const).map(tier => {
+                          const active = (t.thermal_state ?? 'cold') === tier
+                          const label  = tier.charAt(0).toUpperCase() + tier.slice(1)
+                          const hint   = tier === 'hot' ? '~5 min' : tier === 'warm' ? '~10 min' : '~15 min'
+                          return (
+                            <button
+                              key={tier}
+                              onClick={() => patchTurbine(i, { thermal_state: tier })}
+                              className={[
+                                'flex flex-col items-center py-1 rounded border text-[9px] leading-tight transition-colors',
+                                active
+                                  ? 'border-accent bg-accent/10 text-accent font-semibold'
+                                  : 'border-border text-muted hover:border-accent/50',
+                              ].join(' ')}
+                            >
+                              <span>{label}</span>
+                              <span className="opacity-60">{hint}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
                     </div>
                   </div>
                 ))}

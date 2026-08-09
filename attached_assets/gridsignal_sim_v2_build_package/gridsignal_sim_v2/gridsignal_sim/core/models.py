@@ -559,6 +559,12 @@ class TurbineConfig:
     # Its start time is a separate quantity and must never be folded into a ramp
     # rate.  False = default (synchronized online).
     hot_standby: bool = False
+    # initial_thermal_state: thermal classification at t=0 of the run.
+    # Determines which start-duration path (hot/warm/cold) is used on the FIRST
+    # command_start() call.  Subsequent starts use the elapsed-time classifier.
+    # CHOSEN default COLD — conservative; scenarios that want a pre-warmed fleet
+    # set this explicitly per unit in TurbineUnitSpec.thermal_state.
+    initial_thermal_state: ThermalState = ThermalState.COLD
     # R4–R6 operational constraints (Phase 13.5).  All CHOSEN (PROTO-R4); no
     # measured basis.  A production deployment should replace these with
     # OEM-specified values for the installed frame class.

@@ -249,6 +249,10 @@ class TurbineUnitSpec(BaseModel):
     cold_start_s: Optional[float] = Field(default=None, gt=0)
     warm_start_s: Optional[float] = Field(default=None, gt=0)
     hot_start_s: Optional[float] = Field(default=None, gt=0)
+    # thermal_state: initial thermal classification for this unit at run start.
+    # Controls which start-duration path applies on the first command_start().
+    # "hot" | "warm" | "cold" (default "cold" — conservative, always safe).
+    thermal_state: Optional[str] = Field(default="cold", pattern=r"^(hot|warm|cold)$")
     # Phase 2B (DR-2026-08-08-FREQ): per-unit turbine physics overrides.
     # When None, TurbineConfig defaults (from catalogue) are used.
     # Use these for heterogeneous fleets where individual units differ from

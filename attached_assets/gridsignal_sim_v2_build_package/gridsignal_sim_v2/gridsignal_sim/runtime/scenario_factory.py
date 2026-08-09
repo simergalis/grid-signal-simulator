@@ -34,6 +34,7 @@ from core.models import (
     PreStagingConfig,
     SiteConfig,
     SolarConfig,
+    ThermalState,
     TransitionMode,
     TurbineConfig,
     WorkloadClass,
@@ -574,6 +575,10 @@ def build_run_context_from_spec(
                 **({} if t.get("cold_start_s") is None else {"cold_start_s": float(t["cold_start_s"])}),
                 **({} if t.get("warm_start_s") is None else {"warm_start_s": float(t["warm_start_s"])}),
                 **({} if t.get("hot_start_s") is None else {"hot_start_s": float(t["hot_start_s"])}),
+                # thermal_state: initial thermal classification (hot/warm/cold).
+                # Defaults to COLD when absent or explicitly null.
+                initial_thermal_state=ThermalState(t["thermal_state"])
+                    if t.get("thermal_state") else ThermalState.COLD,
                 # Phase 2B (DR-2026-08-08-FREQ): per-unit governor physics overrides.
                 # When None, TurbineConfig defaults (from catalogue) apply unchanged.
                 **({} if t.get("power_factor") is None else {"power_factor": float(t["power_factor"])}),

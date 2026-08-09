@@ -781,7 +781,8 @@ class TurbineModule(AssetModule):
     #   stopped.  Guards t_min_down_s enforcement on the next restart.
     _stop_time_s: float = math.nan
     # Phase 2: thermal state and start sequence tracking
-    # _thermal_state: determined at command_start() from time offline since last sync.
+    # _thermal_state: seeded from config.initial_thermal_state in __post_init__;
+    # then updated at each command_start() from time-offline heuristic.
     _thermal_state: ThermalState = ThermalState.COLD
     # _time_to_online_s: countdown timer while STARTING; 0 when SYNCHRONISED.
     _time_to_online_s: float = 0.0
@@ -820,6 +821,11 @@ class TurbineModule(AssetModule):
     # Incremented by set_output(); if it reaches 2 a RuntimeError is raised,
     # catching any code path that calls set_output() twice in one interval.
     _output_writes: int = 0
+
+    def __post_init__(self) -> None:
+        # Seed thermal state from the scenario spec so the first command_start()
+        # uses the operator-configured tier (hot/warm/cold) rather than always COLD.
+        self._thermal_state = self.config.initial_thermal_state
 
     @property
     def asset_id(self) -> str:  # noqa: D401 -- property mirrors dataclass field name
