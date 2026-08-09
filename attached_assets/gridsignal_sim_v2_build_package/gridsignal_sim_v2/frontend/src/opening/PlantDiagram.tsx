@@ -428,10 +428,11 @@ function LeadTimeCallout({
           const predicted = tick!.confidence_upper_mw
           const avail     = tick!.turbine_output_mw + tick!.bess_output_mw + tick!.p_renewable_mw
           const shortfall = Math.max(0, predicted - avail)
+          const lastEntry = atRestLog.length > 0 ? atRestLog[atRestLog.length - 1] : null
           return <>
             <div style={_LABEL(accent)}>STEP-LOAD INCOMING — RESERVE SHORT</div>
             <div style={_RULE} />
-            <div style={_BIG(accent)}>{secs} s</div>
+            <div style={{ ..._BIG(accent), fontSize: 28 }}>{secs} s</div>
             <div style={{ ..._BODY, color: '#e6edf3' }}>
               {`until racks reach full draw\n+${predicted.toFixed(1)} MW · ${
                 shortfall > 0.1
@@ -450,6 +451,18 @@ function LeadTimeCallout({
             >
               Acknowledge
             </button>
+            {lastEntry && <>
+              <div style={{ ..._RULE, marginTop: 2 }} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 1, overflow: 'hidden' }}>
+                <span style={{ ..._MONO, fontSize: 8, color: '#3a5a6a', lineHeight: 1.3 }}>
+                  {lastEntry.ts} · SCHEDULER FEED
+                </span>
+                <span style={{ ..._BODY, color: '#4b5764', lineHeight: 1.4,
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {lastEntry.body}
+                </span>
+              </div>
+            </>}
           </>
         })()}
 
@@ -460,11 +473,44 @@ function LeadTimeCallout({
           return <>
             <div style={_LABEL(accent)}>STEP-LOAD INCOMING</div>
             <div style={_RULE} />
-            <div style={_BIG(accent)}>{secs} s</div>
+            <div style={{ ..._BIG(accent), fontSize: 28 }}>{secs} s</div>
             <div style={{ ..._BODY, color: '#e6edf3' }}>
               {`until racks reach full draw\n+${predicted.toFixed(1)} MW · turbine ramping · BESS armed`}
             </div>
             <div style={{ ..._BODY, color: '#3fb6a8', fontWeight: 600 }}>Nothing required</div>
+            {/* ── SCHEDULER FEED log (live during countdown) ────────────── */}
+            {atRestLog.length > 0 && <>
+              <div style={{ ..._RULE, marginTop: 2 }} />
+              <div style={{ ..._MONO, fontSize: 8, color: '#3a5a6a', marginBottom: -2 }}>
+                SCHEDULER FEED
+              </div>
+              <div
+                ref={atRestScrollRef}
+                style={{
+                  flex: 1, overflowY: 'auto',
+                  display: 'flex', flexDirection: 'column', gap: 5,
+                  paddingRight: 2,
+                  scrollbarWidth: 'thin' as const,
+                  scrollbarColor: '#2a3a4a transparent',
+                }}
+              >
+                {atRestLog.map((entry, i) => (
+                  <div key={i} style={{
+                    display: 'flex', flexDirection: 'column', gap: 1,
+                    borderLeft: `2px solid ${i === atRestLog.length - 1 ? '#2a5060' : '#1e2a36'}`,
+                    paddingLeft: 6,
+                  }}>
+                    <span style={{ ..._MONO, fontSize: 8, color: '#3a5a6a', lineHeight: 1.4 }}>
+                      {entry.ts}
+                    </span>
+                    <span style={{ ..._BODY, lineHeight: 1.5,
+                      color: i === atRestLog.length - 1 ? '#7d9ab0' : '#4b5764' }}>
+                      {entry.body}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>}
           </>
         })()}
 
