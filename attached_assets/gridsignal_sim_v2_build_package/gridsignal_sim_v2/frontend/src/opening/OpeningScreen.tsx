@@ -40,7 +40,7 @@ const NODE_MODAL_MAP: Record<string, { modalId?: string; tabRoute?: string }> = 
 }
 
 /** The three subsystem ids shown in the system strip (Band 3). */
-const SYSTEM_STRIP_IDS = ['forecast-quality', 'network', 'agents']
+const SYSTEM_STRIP_IDS = ['forecast-quality', 'gcc', 'agents']
 
 interface OpeningScreenProps {
   onNavigate?: (tabId: string) => void
