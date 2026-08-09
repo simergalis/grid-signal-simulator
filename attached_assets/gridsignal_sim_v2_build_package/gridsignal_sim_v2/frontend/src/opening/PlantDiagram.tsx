@@ -435,11 +435,11 @@ function LeadTimeCallout({
     }
 
     // ── Power cap: admission paused / cleared ─────────────────────────────
-    if (tick!.power_cap_active && !prevPowerCap && (kube.queued_jobs ?? 0) > 0) {
+    if (kube.power_cap_active && !prevPowerCap && (kube.queued_jobs ?? 0) > 0) {
       const body = `Kube: admission paused — power cap active, waiting for turbine headroom.`
       setAtRestLog(prev => [...prev, { ts, body }])
     }
-    if (!tick!.power_cap_active && prevPowerCap) {
+    if (!kube.power_cap_active && prevPowerCap) {
       const body = `Kube: power cap cleared — admission window open.`
       setAtRestLog(prev => [...prev, { ts, body }])
     }
@@ -447,7 +447,7 @@ function LeadTimeCallout({
     prevActiveJobsRef.current    = kube.active_jobs
     prevAdmittedNodesRef.current = kube.admitted_nodes
     prevQueuedJobsRef.current    = kube.queued_jobs
-    prevPowerCapRef.current      = tick!.power_cap_active
+    prevPowerCapRef.current      = kube.power_cap_active
   }, [tick])
 
   // ── Gas turbine start detection ───────────────────────────────────────────
