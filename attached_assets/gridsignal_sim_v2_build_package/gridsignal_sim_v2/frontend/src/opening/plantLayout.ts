@@ -153,7 +153,7 @@ export const NODES: NodeDef[] = [
   },
   {
     id: 'cooling-plant',
-    x: 716, y: 278, w: 165, h: 78,
+    x: 716, y: 278, w: 165, h: 100,
     label: 'COOLING PLANT',
     mwField: 'p_cooling_mw',
     staticMW: 0,   // at rest: lags compute, 0 MW
