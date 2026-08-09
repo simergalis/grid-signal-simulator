@@ -292,6 +292,37 @@ function _issueUnitCommand(runId: string, unitId: string, action: string): void 
     })
 }
 
+// ── Thermal standby override ──────────────────────────────────────────────────
+// Module-level map: unit_id → target thermal tier ("hot" | "warm" | "cold").
+// Cleared when the next tick confirms thermal_state matches the requested tier.
+const _pendingThermal: Map<string, string> = new Map()
+
+function _setUnitThermalState(runId: string, unitId: string, tier: string): void {
+  if (_pendingThermal.has(unitId)) return   // already in-flight
+  _pendingThermal.set(unitId, tier)
+  fetch(
+    `/runs/${encodeURIComponent(runId)}/units/${encodeURIComponent(unitId)}/thermal-state`,
+    {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ thermal_state: tier }),
+    },
+  )
+    .then(r => {
+      if (!r.ok) {
+        r.text().then(t =>
+          console.warn(`set-thermal ${tier} ${unitId} → ${r.status}: ${t}`),
+        )
+        _pendingThermal.delete(unitId)
+      }
+      // On success: leave pending until the next tick confirms thermal_state changed.
+    })
+    .catch(err => {
+      console.warn(`set-thermal ${tier} ${unitId} failed:`, err)
+      _pendingThermal.delete(unitId)
+    })
+}
+
 // ── Per-unit table ───────────────────────────────────────────────────────────
 // syncedCount: from tick.units_on_bus_count — never derived from output.
 function FleetTable(
@@ -380,6 +411,47 @@ function FleetTable(
       const reachedStart = pendingAction === 'start' && (liveSt === 'starting' || liveSt === 'synchronised')
       if (reachedTrip || reachedStart) _pending.delete(u.asset_id)
     }
+
+    // ── Thermal standby selector ─────────────────────────────────────────
+    // Shown only for offline non-hot-standby units.  Three pill buttons let
+    // the operator set cold / warm / hot readiness tier before the next start.
+    // _pendingThermal is cleared when the tick confirms thermal_state changed.
+    const currentThermal = _thermalOf(u)
+    const isPendingThermal = _pendingThermal.has(u.asset_id)
+    if (isPendingThermal) {
+      const expectedTier = _pendingThermal.get(u.asset_id)!
+      if (currentThermal === expectedTier) _pendingThermal.delete(u.asset_id)
+    }
+
+    const standbyCell: React.ReactNode = (liveSt === 'offline' && !u.hot_standby)
+      ? React.createElement('div', { style: { display: 'flex', gap: 3 } },
+          ...(['cold', 'warm', 'hot'] as const).map(tier => {
+            const isActiveTier  = currentThermal === tier
+            const tierColour    = THERMAL_COLOUR[tier] ?? '#8b949e'
+            const isPendingTier = isPendingThermal && _pendingThermal.get(u.asset_id) === tier
+            return React.createElement('button', {
+              key: tier,
+              style: {
+                ...MONO, fontSize: 8, fontWeight: 700, letterSpacing: '0.04em',
+                padding: '2px 6px', borderRadius: 3,
+                background: isActiveTier ? tierColour + '26' : 'transparent',
+                color: isActiveTier ? tierColour : '#4b5764',
+                border: `1px solid ${isActiveTier ? tierColour : '#2a3a4a'}`,
+                cursor: (isActiveTier || isPendingTier) ? 'default' : 'pointer',
+                opacity: isPendingTier ? 0.45 : 1,
+                transition: 'background 0.12s, color 0.12s',
+              },
+              disabled: isActiveTier || isPendingTier,
+              title: isActiveTier
+                ? `${u.asset_id} is already in ${tier} standby`
+                : `Set ${u.asset_id} to ${tier} standby — affects next start duration`,
+              onClick: (isActiveTier || isPendingTier)
+                ? undefined
+                : () => _setUnitThermalState(runId, u.asset_id, tier),
+            }, tier.charAt(0).toUpperCase() + tier.slice(1))
+          }),
+        )
+      : React.createElement('span', { style: { ...MONO, fontSize: 9, color: '#2a3a4a' } }, '—')
 
     let actionCell: React.ReactNode
     const btnBase: React.CSSProperties = {
@@ -532,6 +604,8 @@ function FleetTable(
       React.createElement('td', { style: dCell(isDeg ? AMBER : '#c9d1d9') }, rampStr),
       React.createElement('td', { style: dCell('#8b949e') }, runHStr),
       React.createElement('td', { style: dCell(isDeg ? AMBER : TEAL, true) }, stateStr),
+      // Standby tier — Cold/Warm/Hot pills for offline units; — for all others
+      React.createElement('td', { style: { ...dCell(), paddingRight: 4 } }, standbyCell),
       // Operator action — Trip (on-bus) / Start (offline) / starting… / —
       React.createElement('td', { style: { ...dCell(), paddingRight: 0 } }, actionCell),
     )
@@ -565,6 +639,7 @@ function FleetTable(
           React.createElement('th', { style: hCell }, 'RAMP meas/cfg'),
           React.createElement('th', { style: hCell }, 'RUN h'),
           React.createElement('th', { style: hCell }, 'STATE'),
+          React.createElement('th', { style: hCell }, 'STANDBY'),           // Cold/Warm/Hot tier
           React.createElement('th', { style: hCell }, 'COMMAND'),           // operator Trip/Start
         )
       ),

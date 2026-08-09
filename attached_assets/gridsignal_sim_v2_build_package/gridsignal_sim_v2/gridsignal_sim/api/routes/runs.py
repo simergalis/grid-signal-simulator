@@ -58,6 +58,7 @@ from api.schemas import (
     StartRunResponse,
     TimeseriesResponse,
     TimeseriesRowResponse,
+    SetThermalStateRequest,
     UnitCommandRequest,
 )
 from runtime.cluster_gen import generate_cluster_forecast
@@ -752,6 +753,49 @@ async def unit_command(
         run_id, unit_id, body.action,
     )
     return {"queued": True, "unit_id": unit_id, "action": body.action}
+
+
+@router.post(
+    "/{run_id}/units/{unit_id}/thermal-state",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Set thermal standby classification of an offline turbine unit",
+    responses={
+        404: {"description": "Run or unit not found"},
+        409: {"description": "Unit is not offline or is a hot-standby unit"},
+    },
+)
+async def set_thermal_state(
+    run_id:  str,
+    unit_id: str,
+    body:    SetThermalStateRequest,
+    manager: RunManager = Depends(_run_manager),
+) -> dict:
+    """Override the thermal standby classification (cold / warm / hot) of an
+    OFFLINE turbine unit.
+
+    The new tier is used immediately by the next command_start() call to
+    select the correct start-sequence duration.  The change is reflected
+    in the thermal_state field on TurbineUnitSpec in the very next tick
+    broadcast.
+
+    Returns 202 { thermal_state: "<tier>" } on success.
+    Returns 404 if the run is not active or the unit is not in the fleet.
+    Returns 409 if the unit is not OFFLINE, or if it is a hot-standby unit
+    (hot_standby=True) that is managed automatically by the dispatch
+    arbitrator.
+    """
+    result_code, detail = manager.set_unit_thermal_state(
+        run_id, unit_id, body.thermal_state
+    )
+
+    if result_code == manager.UNIT_CMD_RUN_404:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=detail)
+    if result_code == manager.UNIT_CMD_UNIT_404:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=detail)
+    if result_code == manager.UNIT_CMD_BAD_STATE:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=detail)
+
+    return {"unit_id": unit_id, "thermal_state": body.thermal_state}
 
 
 @router.delete(

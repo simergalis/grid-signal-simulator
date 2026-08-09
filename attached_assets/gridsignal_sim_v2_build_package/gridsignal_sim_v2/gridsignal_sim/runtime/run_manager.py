@@ -1232,6 +1232,69 @@ class RunManager:
         ctx.enqueue_unit_command(unit_id, action)
         return self.UNIT_CMD_OK, ""
 
+    def set_unit_thermal_state(
+        self,
+        run_id:   str,
+        unit_id:  str,
+        thermal:  str,
+    ) -> tuple[str, str]:
+        """Override the thermal standby classification of an OFFLINE turbine unit.
+
+        Directly mutates turbine._thermal_state so the next command_start()
+        call uses the correct start-duration tier (hot/warm/cold).  The change
+        is immediately reflected in the next tick broadcast via the thermal_state
+        field on TurbineUnitSpec.
+
+        Returns a (UNIT_CMD_*, detail) pair — same codes as
+        validate_and_enqueue_unit_command so the api/ layer can re-use the same
+        error mapping.
+
+        Constraints:
+          · Only valid when the unit is in OFFLINE state.
+          · hot_standby=True units are managed by the dispatch arbitrator and
+            must not have their thermal state overridden by the operator.
+        """
+        ctx = self._contexts.get(run_id)
+        if ctx is None:
+            return self.UNIT_CMD_RUN_404, f"Run {run_id!r} not found or not active."
+
+        turbine = None
+        for _t in ctx.sim_state.turbines:
+            if _t.config.asset_id == unit_id:
+                turbine = _t
+                break
+
+        if turbine is None:
+            return self.UNIT_CMD_UNIT_404, f"Unit {unit_id!r} not found in run {run_id!r}."
+
+        from core.asset_modules import ThermalState as _ThS, TurbineState as _TS  # runtime→core OK
+
+        if turbine.state != _TS.OFFLINE:
+            return self.UNIT_CMD_BAD_STATE, (
+                f"Unit {unit_id!r} is in state {turbine.state.value!r} — "
+                "thermal standby can only be changed while the unit is OFFLINE."
+            )
+        if turbine.config.hot_standby:
+            return self.UNIT_CMD_BAD_STATE, (
+                f"Unit {unit_id!r} is a hot-standby unit managed by the dispatch "
+                "arbitrator — its thermal classification cannot be overridden by "
+                "the operator."
+            )
+
+        try:
+            new_thermal = _ThS(thermal)
+        except ValueError:
+            return self.UNIT_CMD_BAD_STATE, (
+                f"Unknown thermal state {thermal!r} — must be 'hot', 'warm', or 'cold'."
+            )
+
+        turbine._thermal_state = new_thermal
+        _log.info(
+            "thermal state override: run=%s unit=%s thermal=%s",
+            run_id, unit_id, thermal,
+        )
+        return self.UNIT_CMD_OK, ""
+
     async def _drive(self, ctx: RunContext) -> None:
         # W1b: pre-register all STARTING events with the corroborator so
         # fabric traffic rises can be matched against known predicted starts.

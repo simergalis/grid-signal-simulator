@@ -1103,3 +1103,20 @@ class UnitCommandRequest(BaseModel):
                 SYNCHRONISED naturally.  Only valid when state is OFFLINE.
     """
     action: Literal["trip", "start"]
+
+
+class SetThermalStateRequest(BaseModel):
+    """Body for POST /runs/{run_id}/units/{unit_id}/thermal-state.
+
+    thermal_state — the standby readiness tier to assign to an OFFLINE unit:
+      "cold" — unit fully cooled (longest start, ~900 s).  Default after
+               extended shutdown.
+      "warm" — unit partially cooled (medium start, ~300 s).  Use when the
+               unit was stopped within the last few hours and conserved heat.
+      "hot"  — unit recently stopped and still thermally hot (shortest start,
+               ~300 s with immediate ramp).  Use to pre-position a unit for a
+               fast response without putting it on the bus.
+
+    Only valid for units in OFFLINE state with hot_standby=False.
+    """
+    thermal_state: Literal["hot", "warm", "cold"]
