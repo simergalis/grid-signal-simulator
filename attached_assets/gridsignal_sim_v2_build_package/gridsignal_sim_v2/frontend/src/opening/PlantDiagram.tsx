@@ -268,6 +268,8 @@ function LeadTimeCallout({
   const prevPowerCapRef      = useRef<boolean>(false)
   // Per-unit turbine state tracking (asset_id → last known state string).
   const prevTurbineStatesRef = useRef<Record<string, string>>({})
+  // GCC commitment block action tracking — null = no tick seen yet.
+  const prevCommitActionRef  = useRef<string | null>(null)
 
   useEffect(() => {
     if (!tick) return
@@ -450,21 +452,68 @@ function LeadTimeCallout({
     prevPowerCapRef.current      = kube.power_cap_active
   }, [tick])
 
+  // ── GCC commitment block decision tracking ───────────────────────────────
+  // Emits a feed entry each time commitment_block.action changes so operators
+  // see the GCC's commit / decommit / hold decisions as they happen.
+  // • commit   → GCC decided to start a standby unit (with reason + utilisation)
+  // • decommit → GCC decided to release an on-bus unit
+  // • hold     → only logged when transitioning BACK from commit/decommit so the
+  //              feed isn't flooded on every steady-state tick
+  useEffect(() => {
+    if (!tick) { prevCommitActionRef.current = null; return }
+    const cb = tick.commitment_block
+    if (!cb) return
+
+    const action = cb.action
+    const prev   = prevCommitActionRef.current
+
+    // First tick seen — record without emitting (no "previous" to compare against).
+    if (prev === null) {
+      prevCommitActionRef.current = action
+      return
+    }
+
+    if (action !== prev) {
+      const ts     = `t=${Math.round(tick.sim_time_seconds)}s`
+      const util   = (cb.utilisation * 100).toFixed(1)
+      const unit   = cb.target_unit_id ? cb.target_unit_id.toUpperCase() : null
+      const reason = cb.reason ?? ''
+
+      let body = ''
+      if (action === 'commit') {
+        const unitPart = unit ? ` ${unit}` : ''
+        body = `GCC: COMMIT${unitPart} — ${reason} (fleet utilisation ${util}%).`
+      } else if (action === 'decommit') {
+        const unitPart = unit ? ` ${unit}` : ''
+        body = `GCC: DECOMMIT${unitPart} — ${reason}.`
+      } else {
+        // hold — only emit when transitioning out of an active decision
+        if (prev === 'commit' || prev === 'decommit') {
+          const blockedNote = cb.blocked_by ? ` Held by: ${cb.blocked_by}.` : ''
+          body = `GCC: HOLD — ${reason}.${blockedNote}`
+        }
+      }
+
+      if (body) setAtRestLog(p => [...p, { ts, body }])
+    }
+
+    prevCommitActionRef.current = action
+  }, [tick])
+
   // ── Gas turbine start detection ───────────────────────────────────────────
-  // Rising edge of isRunning → step-load countdown just began → log it.
-  // Uses turbine_ramp_credit_mw (what this asset contributes) and
-  // confidence_upper_mw (total site forecast) so both numbers are attributed.
+  // Rising edge of isRunning → step-load countdown just began → log the GCC
+  // dispatch outcome (ramp credit vs forecast step-load size).
   useEffect(() => {
     if (!tick) return
     const nowRunning = tick.dt_lead_next_s > 0
     if (nowRunning && !prevIsRunningRef.current) {
       const ts         = `t=${Math.round(tick.sim_time_seconds)}s`
-      const forecast   = tick.confidence_upper_mw      // site-wide step-load forecast
-      const rampCredit = tick.turbine_ramp_credit_mw   // MW this turbine covers in dt_lead
+      const forecast   = tick.confidence_upper_mw
+      const rampCredit = tick.turbine_ramp_credit_mw
       const body = rampCredit > 0.1
-        ? `Gas turbine ramping — ramp credit +${rampCredit.toFixed(1)} MW `
-          + `of +${forecast.toFixed(1)} MW forecast step-load.`
-        : `Gas turbine starting — forecast step-load +${forecast.toFixed(1)} MW.`
+        ? `GCC dispatch: ramp credit +${rampCredit.toFixed(1)} MW`
+          + ` of +${forecast.toFixed(1)} MW forecast step-load.`
+        : `GCC dispatch: turbine committed — step-load +${forecast.toFixed(1)} MW incoming.`
       setAtRestLog(prev => [...prev, { ts, body }])
     }
     prevIsRunningRef.current = nowRunning
