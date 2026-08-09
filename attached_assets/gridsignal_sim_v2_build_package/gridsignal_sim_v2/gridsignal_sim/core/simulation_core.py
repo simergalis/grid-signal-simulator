@@ -1716,14 +1716,27 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     _compute_inlet_temp_c = _T_AMBIENT_BASE_C + _cooling_fraction * _T_RISE_MAX_C
 
     # ── Phase 6: Supply/served producers ──────────────────────────────────────
-    # P_served = P_demand − cumulative_shed (runs across all outer ticks).
-    # NOT: min(P_demand, P_generation) — that is explicitly prohibited by the spec.
-    # P_imbalance = P_generation − P_served (positive = surplus, f rises).
-    # Per-subsystem shed: proportional to demand fraction (judgement call — stage
-    # definitions specify block_fraction of total demand only; no subsystem split).
+    # P_served = min(P_demand − cumulative_shed, P_generation).
+    #
+    # The cap at P_generation is essential: when the BESS is power-saturated or
+    # turbines are still starting, generation can be less than admitted demand.
+    # Without the cap, served = full demand and the display shows physically
+    # impossible values (e.g. 21.09 MW served from 20.40 MW generation).
+    #
+    # The cap is display-only: frequency physics uses _balance_residual_mw
+    # (= P_gen − P_demand, line ~1381) directly and is NOT derived from
+    # _p_served_mw, so the swing-equation dynamics are unaffected.
+    #
+    # P_unserved now captures both UFLS-shed load AND generation-deficit load in
+    # one field, which closes the D4 identity:
+    #   defect = generation + exchange − (demand − unserved)
+    #          = generation + exchange − served  →  0 when served = generation.
+    #
+    # Per-subsystem shed: proportional to demand fraction (same judgement call as
+    # before — stage definitions specify block_fraction of total demand only).
     _cumulative_shed_mw = state._cumulative_shed_mw  # monotonic run total
-    _p_served_mw = p_demand_mw - _cumulative_shed_mw
-    _p_unserved_mw = _cumulative_shed_mw
+    _p_served_mw   = min(p_demand_mw - _cumulative_shed_mw, _p_gen_mw)
+    _p_unserved_mw = p_demand_mw - _p_served_mw   # shed + generation deficit
     _p_imbalance_mw = _p_generation_mw - _p_served_mw
 
     # D4 — power balance identity (Phase 0 + DR-BAL-5, DR-2026-08-09-BALANCE).
