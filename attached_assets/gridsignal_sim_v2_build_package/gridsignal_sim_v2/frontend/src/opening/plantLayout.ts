@@ -82,7 +82,7 @@ export interface FlowDef {
 export const NODES: NodeDef[] = [
   {
     id: 'gas-turbine',
-    x: 0, y: 10, w: 155, h: 72,
+    x: 0, y: 10, w: 155, h: 88,
     label: 'GAS TURBINE', label2: 'FLEET',
     // Algebraic formula: P_fleet = Σ_{i ∈ A} p_i where A = {SYNCHRONISED, UNLOADING} (is_on_bus).
     // Phase C D-05: on_bus_output_mw — renamed from synchronised_output_mw.
