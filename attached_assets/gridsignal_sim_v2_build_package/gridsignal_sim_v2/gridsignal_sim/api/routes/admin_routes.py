@@ -162,7 +162,7 @@ async def bootstrap_admin(
     # Inject a one-time OTP code into the live auth store so the caller can
     # POST /api/auth/login immediately without waiting for an email.
     one_time_code = f"{secrets.randbelow(1_000_000):06d}"
-    inject_otp(_RECOVERY_EMAIL, one_time_code)
+    await inject_otp(_RECOVERY_EMAIL, one_time_code)
 
     _log.warning(
         "Bootstrap: no active admin found — recovery account created (%s); "
@@ -383,7 +383,7 @@ async def inject_code_for_user(
         raise HTTPException(status_code=404, detail="User not found or inactive")
 
     code = f"{secrets.randbelow(1_000_000):06d}"
-    inject_otp(user.email, code)
+    await inject_otp(user.email, code)
     _log.info(
         "Admin injected manual OTP for %s (id=%s) — code NOT logged here; "
         "relay it to the user via a secure channel",
@@ -511,7 +511,7 @@ async def email_test(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin account not found")
 
     code = f"{secrets.randbelow(1_000_000):06d}"
-    inject_otp(user.email, code)
+    await inject_otp(user.email, code)
 
     sent = send_otp_email(user.email, user.display_name, code)
     _log.info(

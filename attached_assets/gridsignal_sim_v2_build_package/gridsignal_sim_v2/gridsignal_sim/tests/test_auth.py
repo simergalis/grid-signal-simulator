@@ -19,14 +19,20 @@ Assertions covered:
          and the session cookie remains valid after the change.
   PW-3   POST /api/auth/change-password with a wrong current password returns 401.
 
+  OTP-1  request-code → login full round-trip succeeds on SQLite (DB-backed OTP).
+  OTP-2  Second request-code within 60 s returns 429 (resend cooldown enforced).
+  OTP-3  Login with an already-expired OTP returns 401 with hint=try_new_code.
+  OTP-4  OTP row written in one session is visible in a second session, confirming
+         that DB persistence survives a simulated server restart.
+
 Design notes
 ------------
 SEC-1 through SEC-4 are synchronous tests that use FastAPI's TestClient.
-PW-1 through PW-3 are async tests (pytest.mark.asyncio) that use an isolated
-in-memory SQLite database injected via dependency_overrides, following the
-same pattern as TC-B7 in test_bootstrap.py.  This avoids the event-loop
-teardown issues that arise when asyncpg connection pools are closed inside a
-sync test's anyio thread.
+PW-1 through PW-3 and OTP-1 through OTP-4 are async tests (pytest.mark.asyncio)
+that use an isolated in-memory SQLite database injected via dependency_overrides,
+following the same pattern as TC-B7 in test_bootstrap.py.  This avoids the
+event-loop teardown issues that arise when asyncpg connection pools are closed
+inside a sync test's anyio thread.
 """
 
 from __future__ import annotations
@@ -87,7 +93,7 @@ async def _ensure_user(email: str, role: str) -> int:
 def test_login_wrong_code_returns_401() -> None:
     """POST /api/auth/login with an invalid code must return 401, not 200 or 500."""
     # Inject a known OTP for a test address, then send a different code.
-    inject_otp("sec1-test@example.com", "111111")
+    asyncio.run(inject_otp("sec1-test@example.com", "111111"))
     with TestClient(create_app()) as client:
         resp = client.post(
             "/api/auth/login",
@@ -245,7 +251,7 @@ def test_login_set_cookie_has_secure_flag_when_env_set(monkeypatch) -> None:
     sec6_email = "sec6-secure-cookie@example.com"
     asyncio.run(_ensure_user(sec6_email, "operator"))
 
-    inject_otp(sec6_email, "123456")
+    asyncio.run(inject_otp(sec6_email, "123456"))
 
     with TestClient(create_app()) as client:
         resp = client.post(
@@ -272,7 +278,7 @@ def test_login_set_cookie_no_secure_flag_by_default(monkeypatch) -> None:
     sec6b_email = "sec6b-no-secure@example.com"
     asyncio.run(_ensure_user(sec6b_email, "operator"))
 
-    inject_otp(sec6b_email, "654321")
+    asyncio.run(inject_otp(sec6b_email, "654321"))
 
     with TestClient(create_app()) as client:
         resp = client.post(
@@ -654,6 +660,261 @@ async def test_change_password_wrong_current_password_returns_401() -> None:
 
     assert resp.status_code == 401, (
         f"PW-3 expected 401 for wrong current password, got {resp.status_code}: {resp.text}"
+    )
+
+    await engine.dispose()
+
+
+# ---------------------------------------------------------------------------
+# OTP-1 — request-code → login round-trip succeeds (DB-backed, SQLite)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_otp_request_and_login_full_flow() -> None:
+    """DB-backed OTP: request-code followed by login with the correct code returns 200.
+
+    Strategy
+    --------
+    1. Create an isolated in-memory SQLite engine with all auth tables.
+    2. Insert a real AuthUser so the route will find the account.
+    3. Override get_db_session so all route calls land in the same isolated DB.
+    4. Call POST /api/auth/request-code — stores an OTP row in SQLite.
+       We capture the code by patching _make_code to return a known value.
+    5. Call POST /api/auth/login with that code — must return 200 and a cookie.
+    6. Confirm the code is consumed (second login attempt with same code → 401).
+    """
+    import httpx
+    import unittest.mock as mock
+    from api.db import get_db_session
+    from api.routes import auth_routes
+
+    engine, session_factory = await _make_sqlite_engine()
+    otp1_email = "otp1-full-flow@example.com"
+    await _insert_user(session_factory, otp1_email)
+
+    async def _real_db():
+        async with session_factory() as session:
+            yield session
+
+    known_code = "424242"
+    _login_rate_clear()
+    app = create_app()
+    app.dependency_overrides[get_db_session] = _real_db
+
+    with mock.patch.object(auth_routes, "_make_code", return_value=known_code):
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app),
+            base_url="http://test",
+        ) as client:
+            # Step 1: request a code.
+            rc_resp = await client.post(
+                "/api/auth/request-code",
+                json={"email": otp1_email},
+            )
+            assert rc_resp.status_code == 200, (
+                f"OTP-1 request-code expected 200, got {rc_resp.status_code}: {rc_resp.text}"
+            )
+            body = rc_resp.json()
+            assert "expires_at" in body, f"OTP-1 response missing expires_at: {body}"
+
+            # Step 2: login with the correct code.
+            login_resp = await client.post(
+                "/api/auth/login",
+                json={"email": otp1_email, "code": known_code},
+            )
+            assert login_resp.status_code == 200, (
+                f"OTP-1 login expected 200, got {login_resp.status_code}: {login_resp.text}"
+            )
+            assert "gs_session" in login_resp.headers.get("set-cookie", ""), (
+                "OTP-1 expected a session cookie to be set"
+            )
+
+            # Step 3: second use of the same code must fail (single-use).
+            _login_rate_clear()
+            reuse_resp = await client.post(
+                "/api/auth/login",
+                json={"email": otp1_email, "code": known_code},
+            )
+            assert reuse_resp.status_code == 401, (
+                f"OTP-1 expected 401 on code reuse, got {reuse_resp.status_code}: {reuse_resp.text}"
+            )
+
+    await engine.dispose()
+
+
+# ---------------------------------------------------------------------------
+# OTP-2 — resend cooldown: second request-code within 60 s returns 429
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_otp_resend_cooldown_returns_429() -> None:
+    """A second request-code call within the 60-second cooldown must return 429.
+
+    Strategy
+    --------
+    1. Isolated SQLite engine; insert a user.
+    2. First request-code → 200.
+    3. Immediate second request-code → 429 (cooldown not elapsed).
+    """
+    import httpx
+    import unittest.mock as mock
+    from api.db import get_db_session
+    from api.routes import auth_routes
+
+    engine, session_factory = await _make_sqlite_engine()
+    otp2_email = "otp2-cooldown@example.com"
+    await _insert_user(session_factory, otp2_email)
+
+    async def _real_db():
+        async with session_factory() as session:
+            yield session
+
+    app = create_app()
+    app.dependency_overrides[get_db_session] = _real_db
+
+    with mock.patch.object(auth_routes, "_make_code", return_value="111111"):
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app),
+            base_url="http://test",
+        ) as client:
+            r1 = await client.post("/api/auth/request-code", json={"email": otp2_email})
+            assert r1.status_code == 200, f"OTP-2 first request-code failed: {r1.text}"
+
+            r2 = await client.post("/api/auth/request-code", json={"email": otp2_email})
+            assert r2.status_code == 429, (
+                f"OTP-2 expected 429 on resend within cooldown, got {r2.status_code}: {r2.text}"
+            )
+
+    await engine.dispose()
+
+
+# ---------------------------------------------------------------------------
+# OTP-3 — expired OTP returns 401 with hint=try_new_code
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_otp_expired_returns_try_new_code_hint() -> None:
+    """Login against an already-expired OTP must return 401 with hint=try_new_code.
+
+    Strategy
+    --------
+    1. Isolated SQLite engine; insert a user.
+    2. Directly insert an AuthOTP row with expires_at already in the past.
+    3. Attempt login — must return 401; the JSON body must contain hint=try_new_code.
+
+    This exercises _otp_get's expired-row cleanup path and the 'hint' field
+    added to the login endpoint to distinguish missing/expired codes from
+    wrong-guess attempts.
+    """
+    import httpx
+    from datetime import timedelta
+    from api.db import get_db_session
+    from runtime.persistence import AuthOTP
+
+    engine, session_factory = await _make_sqlite_engine()
+    otp3_email = "otp3-expired@example.com"
+    await _insert_user(session_factory, otp3_email)
+
+    # Insert an already-expired OTP directly into the DB.
+    from datetime import datetime, timezone
+    past = datetime.now(timezone.utc) - timedelta(seconds=1)
+    async with session_factory() as session:
+        row = AuthOTP(
+            email=otp3_email,
+            code="999999",
+            expires_at=past,
+            attempts=0,
+            last_sent=past,
+        )
+        session.add(row)
+        await session.commit()
+
+    async def _real_db():
+        async with session_factory() as session:
+            yield session
+
+    _login_rate_clear()
+    app = create_app()
+    app.dependency_overrides[get_db_session] = _real_db
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        resp = await client.post(
+            "/api/auth/login",
+            json={"email": otp3_email, "code": "999999"},
+        )
+
+    assert resp.status_code == 401, (
+        f"OTP-3 expected 401 for expired code, got {resp.status_code}: {resp.text}"
+    )
+    detail = resp.json().get("detail", {})
+    hint = detail.get("hint") if isinstance(detail, dict) else None
+    assert hint == "try_new_code", (
+        f"OTP-3 expected hint='try_new_code' in detail, got: {resp.json()}"
+    )
+
+    await engine.dispose()
+
+
+# ---------------------------------------------------------------------------
+# OTP-4 — cross-session persistence: simulates server restart
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_otp_persists_across_sessions() -> None:
+    """An OTP written in one session is readable and usable in a second session.
+
+    This confirms that DB persistence (not an in-memory dict) is the source of
+    truth: even after the 'process' that wrote the code finishes (simulated by
+    closing the first session), the code is valid for a new session.  This
+    directly tests the scenario that used to break when the server restarted
+    between request-code and login.
+
+    Strategy
+    --------
+    1. Session A: write an AuthOTP row via _otp_upsert.
+    2. Close session A (simulate server restart; in-memory state is gone).
+    3. Session B (fresh session from the same SQLite file): verify the row is
+       still present and the login endpoint accepts the code.
+    """
+    import httpx
+    from api.db import get_db_session
+    from api.routes.auth_routes import _otp_upsert
+
+    engine, session_factory = await _make_sqlite_engine()
+    otp4_email = "otp4-persist@example.com"
+    await _insert_user(session_factory, otp4_email)
+
+    known_code = "737373"
+
+    # Session A: write the OTP row, then close the session.
+    async with session_factory() as session_a:
+        await _otp_upsert(otp4_email, known_code, session_a)
+    # session_a is closed; in-memory state is gone.
+
+    # Session B: a fresh session reads the same SQLite file.
+    async def _real_db():
+        async with session_factory() as session:
+            yield session
+
+    _login_rate_clear()
+    app = create_app()
+    app.dependency_overrides[get_db_session] = _real_db
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        resp = await client.post(
+            "/api/auth/login",
+            json={"email": otp4_email, "code": known_code},
+        )
+
+    assert resp.status_code == 200, (
+        f"OTP-4 expected 200 (code persists after session close), "
+        f"got {resp.status_code}: {resp.text}"
     )
 
     await engine.dispose()

@@ -363,6 +363,28 @@ class AuthUser(Base):
     )
 
 
+class AuthOTP(Base):
+    """One-time password codes for email-based sign-in.
+
+    Persisted in the database so codes survive server restarts and container
+    recycles.  Each row holds exactly one pending code per email address
+    (UNIQUE on email).  The route layer upserts on request-code and deletes
+    on successful login or exhausted attempts.
+
+    expires_at and last_sent are stored as timezone-aware UTC datetimes so
+    comparisons are unambiguous even across DST transitions or container moves.
+    """
+
+    __tablename__ = "auth_otp"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    email: Mapped[str] = mapped_column(String, nullable=False, unique=True, index=True)
+    code: Mapped[str] = mapped_column(String, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    attempts: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    last_sent: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
 class Recommendation(Base):
     """§21.6 / §26.3: agent-generated parameter change proposal.
 

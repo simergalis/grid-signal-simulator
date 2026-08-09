@@ -9,6 +9,14 @@ POST /api/auth/change-password   — change the authenticated user's password
 
 Codes expire after 10 minutes and are invalidated after 5 wrong guesses.
 A new code can only be requested once every 60 seconds per address.
+
+OTP persistence
+---------------
+Codes are stored in the ``auth_otp`` table (see runtime/persistence.AuthOTP)
+rather than an in-memory dict.  This means a server restart, container recycle,
+or deploy no longer silently invalidates every pending code — a user who
+requested a code a few seconds before the restart can still log in as long as
+the 10-minute TTL has not elapsed.
 """
 from __future__ import annotations
 
@@ -16,29 +24,29 @@ import logging
 import os
 import random
 import time
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, EmailStr
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.auth_utils import COOKIE_NAME, create_access_token, decode_access_token
-from api.db import get_db_session
-from runtime.persistence import AuthUser
+from api.db import get_db_session, _SessionLocal
+from runtime.persistence import AuthOTP, AuthUser
 
 _log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 # ---------------------------------------------------------------------------
-# In-memory OTP store  {email -> {code, expires_at, attempts, last_sent}}
+# OTP configuration
 # ---------------------------------------------------------------------------
 
 _OTP_TTL_SECS          = 600   # code valid for 10 minutes
 _OTP_MAX_ATTEMPTS      = 5     # invalidate after this many wrong guesses
 _OTP_RESEND_COOLDOWN_S = 60    # minimum seconds between resend requests
-
-_otp_store: dict[str, dict] = {}
 
 # ---------------------------------------------------------------------------
 # Per-IP and per-email rate limiter for POST /api/auth/login
@@ -101,32 +109,94 @@ def _login_rate_clear() -> None:
     _login_rate.clear()
 
 
+# ---------------------------------------------------------------------------
+# DB-backed OTP helpers
+# ---------------------------------------------------------------------------
+
 def _make_code() -> str:
     return f"{random.SystemRandom().randint(0, 999999):06d}"
 
 
-def _otp_entry(email: str) -> dict | None:
-    entry = _otp_store.get(email)
-    if entry and entry["expires_at"] > time.monotonic():
-        return entry
-    _otp_store.pop(email, None)
-    return None
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 
-def inject_otp(email: str, code: str) -> None:
-    """Inject a pre-generated OTP code directly into the in-memory store.
+def _as_utc(dt: datetime) -> datetime:
+    """Coerce *dt* to a UTC-aware datetime.
 
-    Used by the bootstrap endpoint to create a usable one-time sign-in
-    credential without going through the SendGrid email path.  The injected
-    code expires after the standard TTL and is consumed on first use.
+    SQLite stores datetimes as strings and returns them without tzinfo even
+    when the column is declared as ``DateTime(timezone=True)``.  PostgreSQL
+    returns timezone-aware values.  Normalising here keeps comparisons safe
+    on both backends without changing the stored representation.
     """
-    now = time.monotonic()
-    _otp_store[email.lower()] = {
-        "code":       code,
-        "expires_at": now + _OTP_TTL_SECS,
-        "attempts":   0,
-        "last_sent":  now,
-    }
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt
+
+
+async def _otp_get(email: str, db: AsyncSession) -> AuthOTP | None:
+    """Return the valid (non-expired) OTP row for *email*, or None.
+
+    Expired rows are deleted eagerly so the table doesn't accumulate stale
+    entries if codes are never claimed.
+    """
+    result = await db.execute(select(AuthOTP).where(AuthOTP.email == email))
+    row: AuthOTP | None = result.scalar_one_or_none()
+    if row is None:
+        return None
+    if _as_utc(row.expires_at) <= _utcnow():
+        await db.delete(row)
+        await db.commit()
+        return None
+    return row
+
+
+async def _otp_upsert(
+    email: str,
+    code: str,
+    db: AsyncSession,
+    *,
+    ttl_secs: int = _OTP_TTL_SECS,
+) -> AuthOTP:
+    """Create or replace the OTP row for *email*, returning the saved row."""
+    now = _utcnow()
+    result = await db.execute(select(AuthOTP).where(AuthOTP.email == email))
+    row: AuthOTP | None = result.scalar_one_or_none()
+    if row is None:
+        row = AuthOTP(
+            email=email,
+            code=code,
+            expires_at=now + timedelta(seconds=ttl_secs),
+            attempts=0,
+            last_sent=now,
+        )
+        db.add(row)
+    else:
+        row.code = code
+        row.expires_at = now + timedelta(seconds=ttl_secs)
+        row.attempts = 0
+        row.last_sent = now
+    await db.commit()
+    await db.refresh(row)
+    return row
+
+
+async def inject_otp(email: str, code: str) -> None:
+    """Inject a pre-generated OTP code directly into the database.
+
+    Used by the bootstrap endpoint and admin helpers to create a usable
+    one-time sign-in credential without going through the SendGrid email path.
+    The injected code expires after the standard TTL and is consumed on first
+    use.
+
+    This is a standalone async function that opens its own session so callers
+    that already have a session (admin routes) and callers that do not (tests)
+    can both use it without a parameter change.  Admin routes that hold an open
+    write transaction should ``await db.commit()`` first to avoid lock
+    conflicts on SQLite.
+    """
+    async with _SessionLocal() as session:
+        await _otp_upsert(email.lower(), code, session)
 
 
 # ---------------------------------------------------------------------------
@@ -189,16 +259,19 @@ async def request_code(
 
     Returns 200 whether or not the email is registered (avoids enumeration).
     Returns 429 if a code was already sent within the cooldown window.
+
+    The response includes ``expires_at`` (ISO-8601 UTC) so clients can show
+    the user how long the code remains valid without guessing based on when
+    the request was made.
     """
-    from sqlalchemy import select
     from api.email_service import send_otp_email
 
     email = body.email.lower()
 
-    # Cooldown check
-    existing = _otp_entry(email)
+    # Cooldown check — read the existing (non-expired) row.
+    existing = await _otp_get(email, db)
     if existing:
-        elapsed = time.monotonic() - existing.get("last_sent", 0)
+        elapsed = (_utcnow() - _as_utc(existing.last_sent)).total_seconds()
         if elapsed < _OTP_RESEND_COOLDOWN_S:
             wait = int(_OTP_RESEND_COOLDOWN_S - elapsed) + 1
             raise HTTPException(
@@ -212,13 +285,7 @@ async def request_code(
     user: AuthUser | None = result.scalar_one_or_none()
 
     code = _make_code()
-    now  = time.monotonic()
-    _otp_store[email] = {
-        "code":       code,
-        "expires_at": now + _OTP_TTL_SECS,
-        "attempts":   0,
-        "last_sent":  now,
-    }
+    row = await _otp_upsert(email, code, db)
 
     email_sent = False
     if user and user.is_active:
@@ -255,7 +322,13 @@ async def request_code(
             email, code,
         )
 
-    return {"ok": True, "email_sent": email_sent}
+    return {
+        "ok": True,
+        "email_sent": email_sent,
+        # Human-readable expiry so clients can show "your code expires at HH:MM UTC"
+        # without guessing based on when the request was made.
+        "expires_at": row.expires_at.isoformat(),
+    }
 
 
 @router.post("/login")
@@ -266,8 +339,6 @@ async def login(
     db: AsyncSession = Depends(get_db_session),
 ):
     """Verify the 6-digit code and set an httpOnly session cookie."""
-    from sqlalchemy import select
-
     email = body.email.lower()
     code  = body.code.strip()
 
@@ -293,29 +364,44 @@ async def login(
     # attempts, not rate-limit probes.
     _login_rate_record(client_ip, email)
 
-    # Generic failure to use in all error paths (avoids leaking detail)
-    def _fail():
+    # Generic failure — avoids leaking whether the code exists at all.
+    def _fail(*, hint: str | None = None):
+        detail: dict | str
+        if hint:
+            # The optional hint lets the UI distinguish "code not found / expired"
+            # from "code exists but wrong guess" so it can prompt the user to
+            # request a fresh code rather than retry the same one.
+            detail = {"message": "Invalid or expired code.", "hint": hint}
+        else:
+            detail = "Invalid or expired code."
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired code.",
+            detail=detail,
         )
 
-    entry = _otp_entry(email)
+    entry = await _otp_get(email, db)
     if not entry:
+        # Code was never requested, already expired, or the server restarted and
+        # the old in-memory store was lost.  Surface a distinct hint so the UI
+        # can tell the user to request a new code instead of retrying.
+        _fail(hint="try_new_code")
+
+    # Increment attempts before checking so brute-force counts correctly.
+    entry.attempts += 1
+    await db.commit()
+
+    if entry.attempts > _OTP_MAX_ATTEMPTS:
+        await db.delete(entry)
+        await db.commit()
         _fail()
 
-    # Increment attempts before checking so brute-force counts correctly
-    entry["attempts"] += 1
-    if entry["attempts"] > _OTP_MAX_ATTEMPTS:
-        _otp_store.pop(email, None)
+    if entry.code != code:
+        _log.warning("Wrong OTP attempt %d/%d for %s", entry.attempts, _OTP_MAX_ATTEMPTS, email)
         _fail()
 
-    if entry["code"] != code:
-        _log.warning("Wrong OTP attempt %d/%d for %s", entry["attempts"], _OTP_MAX_ATTEMPTS, email)
-        _fail()
-
-    # Code matches — consume it immediately (single-use)
-    _otp_store.pop(email, None)
+    # Code matches — consume it immediately (single-use).
+    await db.delete(entry)
+    await db.commit()
 
     result = await db.execute(select(AuthUser).where(AuthUser.email == email))
     user: AuthUser | None = result.scalar_one_or_none()
