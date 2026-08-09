@@ -59,9 +59,7 @@ const _LABEL = (color: string): React.CSSProperties => ({
   ..._SANS, fontSize: 9, fontWeight: 700,
   letterSpacing: '0.12em', textTransform: 'uppercase' as const, color,
 })
-const _BIG = (color: string): React.CSSProperties => ({
-  ..._MONO, fontSize: 48, fontWeight: 500, color, lineHeight: 1, letterSpacing: '-0.02em',
-})
+
 
 /**
  * WatchingCallout — centred box between Gas Turbine and Compute Racks.
@@ -261,6 +259,7 @@ function LeadTimeCallout({
   const prevActiveJobsRef    = useRef<number | null>(null)
   const prevAdmittedNodesRef = useRef<number | null>(null)
   const prevQueuedJobsRef    = useRef<number | null>(null)
+  const prevIsRunningRef     = useRef(false)
 
   useEffect(() => {
     if (!tick) return
@@ -415,6 +414,20 @@ function LeadTimeCallout({
     prevQueuedJobsRef.current    = kube.queued_jobs
   }, [tick])
 
+  // ── Gas turbine start detection ───────────────────────────────────────────
+  // Rising edge of isRunning → step-load countdown just began → log it.
+  useEffect(() => {
+    if (!tick) return
+    const nowRunning = tick.dt_lead_next_s > 0
+    if (nowRunning && !prevIsRunningRef.current) {
+      const ts        = `t=${Math.round(tick.sim_time_seconds)}s`
+      const predicted = tick.confidence_upper_mw
+      const body      = `Gas turbine generator starting — ramping to cover +${predicted.toFixed(1)} MW step load.`
+      setAtRestLog(prev => [...prev, { ts, body }])
+    }
+    prevIsRunningRef.current = nowRunning
+  }, [tick])
+
   // ISA-101 colour by state
   const accent =
     isLanded   ? '#3fb6a8' :
@@ -463,7 +476,7 @@ function LeadTimeCallout({
           return <>
             <div style={_LABEL(accent)}>STEP-LOAD INCOMING — RESERVE SHORT</div>
             <div style={_RULE} />
-            <div style={{ ..._BIG(accent), fontSize: 28 }}>{secs} s</div>
+            <div style={{ ..._SANS, fontSize: 28, fontWeight: 500, color: accent, lineHeight: 1 }}>{secs} s</div>
             <div style={{ ..._BODY, color: '#e6edf3' }}>
               {`until racks reach full draw\n+${predicted.toFixed(1)} MW · ${
                 shortfall > 0.1
@@ -504,7 +517,7 @@ function LeadTimeCallout({
           return <>
             <div style={_LABEL(accent)}>STEP-LOAD INCOMING</div>
             <div style={_RULE} />
-            <div style={{ ..._BIG(accent), fontSize: 28 }}>{secs} s</div>
+            <div style={{ ..._SANS, fontSize: 28, fontWeight: 500, color: accent, lineHeight: 1 }}>{secs} s</div>
             <div style={{ ..._BODY, color: '#e6edf3' }}>
               {`until racks reach full draw\n+${predicted.toFixed(1)} MW · turbine ramping · BESS armed`}
             </div>
