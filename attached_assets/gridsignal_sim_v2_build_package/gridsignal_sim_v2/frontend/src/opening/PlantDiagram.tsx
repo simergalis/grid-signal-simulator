@@ -266,6 +266,8 @@ function LeadTimeCallout({
   // BESS and power-cap transition tracking for feed entries.
   const prevBessOutputRef    = useRef<number>(0)
   const prevPowerCapRef      = useRef<boolean>(false)
+  // Per-unit turbine state tracking (asset_id → last known state string).
+  const prevTurbineStatesRef = useRef<Record<string, string>>({})
 
   useEffect(() => {
     if (!tick) return
@@ -494,6 +496,57 @@ function LeadTimeCallout({
       setAtRestLog(p => [...p, { ts, body: `BESS: returned to standby.` }])
     }
     prevBessOutputRef.current = bess
+  }, [tick])
+
+  // ── Gas turbine per-unit start-sequence detection ────────────────────────
+  // Watches state on each TurbineUnitSpec in tick.turbine_units.
+  // • "starting" rising edge  → unit just began its start sequence (spinning up).
+  // • "synchronised" from "starting" → unit closed its breaker and came on bus.
+  // Skips first-seen ticks (prev === undefined) to avoid false positives on
+  // page-load mid-run, and skips units that lack the live state overlay.
+  useEffect(() => {
+    if (!tick) return
+    const units = tick.turbine_units ?? []
+    if (units.length === 0) return
+    const ts = `t=${Math.round(tick.sim_time_seconds)}s`
+
+    for (const unit of units) {
+      const id    = unit.asset_id
+      const state = unit.state   // undefined when live overlay absent (Phase 0 only)
+      if (!state) continue       // no live state field — skip
+
+      const prev = prevTurbineStatesRef.current[id]  // undefined = first tick for this unit
+
+      // Rising edge: unit begins start sequence.
+      // Guard: prev must exist and must not already be "starting" to avoid
+      // re-firing on every tick while the start sequence is in progress.
+      if (state === 'starting' && prev !== undefined && prev !== 'starting') {
+        const thermal    = unit.thermal_state ?? 'cold'
+        const startDurS  = thermal === 'hot'  ? unit.hot_start_s
+                         : thermal === 'warm' ? unit.warm_start_s
+                         : unit.cold_start_s
+        const eta = unit.time_to_online_s != null
+          ? `~${Math.round(unit.time_to_online_s)} s to online`
+          : startDurS != null
+            ? `~${startDurS} s to online`
+            : null
+        const phase   = unit.start_phase ? ` · ${unit.start_phase}` : ''
+        const etaPart = eta ? `, ${eta}` : ''
+        const body = `${id.toUpperCase()}: start sequence initiated — ${thermal} start${phase}${etaPart}.`
+        setAtRestLog(p => [...p, { ts, body }])
+      }
+
+      // Completion edge: unit closes breaker and comes on bus.
+      if (state === 'synchronised' && prev === 'starting') {
+        const mwPart = unit.output_mw != null && unit.output_mw > 0.05
+          ? ` at ${unit.output_mw.toFixed(1)} MW`
+          : ''
+        const body = `${id.toUpperCase()}: synchronised to bus${mwPart} — online and generating.`
+        setAtRestLog(p => [...p, { ts, body }])
+      }
+
+      prevTurbineStatesRef.current[id] = state
+    }
   }, [tick])
 
   // ISA-101 colour by state
