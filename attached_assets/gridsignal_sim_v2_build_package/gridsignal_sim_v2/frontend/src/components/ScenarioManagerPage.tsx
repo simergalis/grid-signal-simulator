@@ -100,7 +100,6 @@ export function ScenarioManagerPage({ onNewScenario, onEditScenario, onExecute }
   const [confirmId,     setConfirmId]     = useState<string | null>(null)
   const [deleteBusy,    setDeleteBusy]    = useState(false)
   const [uploadBusy,    setUploadBusy]    = useState(false)
-  const [downloadBusy,  setDownloadBusy]  = useState<string | null>(null)  // scenario_id in-flight
   const [executeBusy,   setExecuteBusy]   = useState<string | null>(null)  // scenario_id in-flight
   const [dragOver,      setDragOver]      = useState(false)
   const [search,        setSearch]        = useState('')
@@ -177,28 +176,6 @@ export function ScenarioManagerPage({ onNewScenario, onEditScenario, onExecute }
     setDragOver(false)
     const f = e.dataTransfer.files[0]
     if (f) handleFile(f)
-  }
-
-  // ── Download ───────────────────────────────────────────────────────────────
-  const handleDownload = async (id: string, name: string) => {
-    setDownloadBusy(id)
-    try {
-      const resp = await fetch(`/scenarios/${id}`)
-      if (!resp.ok) throw new Error(`GET /scenarios/${id} → ${resp.status}`)
-      const data = await resp.json() as { spec: ScenarioSpec }
-      const json = JSON.stringify(data.spec, null, 2)
-      const url  = 'data:application/json;charset=utf-8,' + encodeURIComponent(json)
-      const a    = document.createElement('a')
-      a.href     = url
-      a.download = `${name.replace(/[^a-z0-9_-]/gi, '_')}.json`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-    } catch (e) {
-      setToast({ msg: String(e), kind: 'err' })
-    } finally {
-      setDownloadBusy(null)
-    }
   }
 
   // ── Delete ─────────────────────────────────────────────────────────────────
@@ -325,7 +302,6 @@ export function ScenarioManagerPage({ onNewScenario, onEditScenario, onExecute }
               {filtered.map(s => {
                 const seeded  = isSeeded(s.scenario_id)
                 const isConfirming = confirmId === s.scenario_id
-                const isDown  = downloadBusy === s.scenario_id
                 const isExec  = executeBusy === s.scenario_id
 
                 return (
@@ -420,16 +396,19 @@ export function ScenarioManagerPage({ onNewScenario, onEditScenario, onExecute }
                             Edit
                           </button>
 
-                          {/* Download */}
-                          <button
-                            onClick={() => handleDownload(s.scenario_id, s.name)}
-                            disabled={isDown}
+                          {/* Download — plain <a> so the browser handles the
+                              Content-Disposition header directly; programmatic
+                              blob/data-URI clicks are blocked in the proxy iframe. */}
+                          <a
+                            href={`/scenarios/${s.scenario_id}/download`}
+                            download
                             title="Download spec as JSON"
                             className="rounded border border-border px-2 py-0.5 text-[10px] text-muted
-                                       hover:border-accent hover:text-accent disabled:opacity-40 transition-colors"
+                                       hover:border-accent hover:text-accent transition-colors"
+                            style={{ textDecoration: 'none' }}
                           >
-                            {isDown ? '…' : '↓ JSON'}
-                          </button>
+                            ↓ JSON
+                          </a>
 
                           {/* Delete */}
                           <button

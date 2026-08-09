@@ -26,7 +26,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Request, Response, status
 
 from api.schemas import (
     KubeConfigSpec,
@@ -867,6 +867,31 @@ async def get_scenario(
         created_at=rec.created_at.isoformat(),
         spec=spec,
         c_rate_warnings=spec.collect_c_rate_warnings(),
+    )
+
+
+@router.get(
+    "/{scenario_id}/download",
+    summary="Download scenario spec as a JSON file",
+    responses={404: {"description": "Scenario not found"}},
+)
+async def download_scenario(
+    scenario_id: str,
+    request: Request,
+) -> Response:
+    store = _scenario_store(request)
+    rec = store.get(scenario_id)
+    if rec is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Scenario {scenario_id!r} not found",
+        )
+    spec = ScenarioSpec.model_validate_json(rec.spec_json)
+    filename = f"{scenario_id.replace('/', '_')}.json"
+    return Response(
+        content=spec.model_dump_json(indent=2),
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 
