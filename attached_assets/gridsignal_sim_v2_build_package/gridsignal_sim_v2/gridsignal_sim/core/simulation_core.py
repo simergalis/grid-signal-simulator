@@ -1337,7 +1337,18 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # Carries the generation-side view (headroom, BESS SoC) computed this tick
     # so the agent can enforce power-caps based on the last committed values.
     if state.kube_agent is not None:
-        _k_turbine_rated = sum(t.config.rated_mw for t in state.turbines)
+        # BUG FIX: only count turbines that are currently on-bus (SYNCHRONISED or
+        # UNLOADING).  The previous formula summed ALL turbines' rated_mw, including
+        # units that are OFFLINE, STARTING, or HOT_STANDBY — none of which can
+        # deliver power right now.  That inflated headroom let the kube scheduler
+        # admit workloads far beyond available generation (e.g. 5 × 12 MW = 60 MW
+        # rated when only 1 turbine at 15 MW is on bus → reported headroom 45 MW
+        # while actual spare capacity was 0 MW).  Units that are staging but not yet
+        # synchronised are accounted for via _pending_ramp_credit_mw in the staging
+        # path, so they must not also appear here.
+        _k_turbine_rated = sum(
+            t.config.rated_mw for t in state.turbines if t.is_on_bus
+        )
         _k_bess_rated    = sum(b.config.rated_mw for b in state.bess_units)
         state._kube_grid_state = KubeGridState(
             p_dispatch_required_mw=net_demand_mw,
