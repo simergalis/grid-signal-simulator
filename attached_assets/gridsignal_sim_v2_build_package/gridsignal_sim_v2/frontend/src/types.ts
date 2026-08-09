@@ -503,6 +503,8 @@ export interface KubeJobSpec {
   max_nodes: number   // peak cluster capacity (nodes)
   min_nodes: number   // idle-baseline nodes — cluster never fully drains
 }
+// Alias kept for backwards compat; backend field is kube_config
+export type KubeConfigSpec = KubeJobSpec
 
 export interface ScenarioSpec {
   name: string
@@ -522,7 +524,7 @@ export interface ScenarioSpec {
   /** Default playback speed stored with the scenario. 0 = max-speed; >0 = sim-s per real-s. */
   default_playback_speed: number
   pms_config: PmsConfigSpec | null    // null = PMS disabled
-  kube_job_spec?: KubeJobSpec | null  // null = no Kubernetes demand agent
+  kube_config?: KubeJobSpec | null  // null = no Kubernetes demand agent
 
   // ── Physics parameters (gridsignal_parameters.json §2) ────────────────
   // Thermal response — split params have optional plant_ variants.

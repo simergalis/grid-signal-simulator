@@ -341,7 +341,7 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
     patch({ turbine_units: spec.turbine_units.map((t, idx) => idx === i ? { ...t, ...partial } : t) })
 
   const patchKube = (partial: Partial<KubeJobSpec>) =>
-    patch({ kube_job_spec: spec.kube_job_spec ? { ...spec.kube_job_spec, ...partial } : { ...defaultKube(), ...partial } })
+    patch({ kube_config: spec.kube_config ? { ...spec.kube_config, ...partial } : { ...defaultKube(), ...partial } })
 
   const addTurbine = () =>
     patch({ turbine_units: [...spec.turbine_units, defaultTurbine(spec.turbine_units.length)] })
@@ -659,13 +659,13 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                 <span className="text-[10px] text-muted">GPU Compute Fleet</span>
                 <button
                   className="text-[10px] text-accent hover:underline"
-                  onClick={() => patch({ kube_job_spec: spec.kube_job_spec ? null : defaultKube() })}
+                  onClick={() => patch({ kube_config: spec.kube_config ? null : defaultKube() })}
                 >
-                  {spec.kube_job_spec ? '− Disable' : '+ Enable'}
+                  {spec.kube_config ? '− Disable' : '+ Enable'}
                 </button>
               </div>
 
-              {spec.kube_job_spec ? (
+              {spec.kube_config ? (
                 <div className="rounded border border-border bg-canvas p-3 space-y-3">
                   {/* Hardware profile */}
                   <div className="flex flex-col gap-0.5">
@@ -673,7 +673,7 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                     <select
                       className="w-full rounded border border-border bg-canvas px-2 py-1 text-xs text-text
                                  focus:outline-none focus:ring-1 focus:ring-accent"
-                      value={spec.kube_job_spec.hardware_profile_id}
+                      value={spec.kube_config.hardware_profile_id}
                       onChange={e => patchKube({ hardware_profile_id: e.target.value })}
                     >
                       {HARDWARE_PROFILES.map(p => (
@@ -692,7 +692,7 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                         step={50}
                         className="w-full rounded border border-border bg-canvas px-2 py-1 text-xs text-text
                                    focus:outline-none focus:ring-1 focus:ring-accent"
-                        value={spec.kube_job_spec.max_nodes}
+                        value={spec.kube_config.max_nodes}
                         onChange={e => patchKube({ max_nodes: Math.max(1, parseInt(e.target.value) || 1) })}
                       />
                     </div>
@@ -700,7 +700,7 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                       <span className="text-[10px] text-muted">Peak demand</span>
                       <div className="flex items-center h-[26px] px-2 rounded border border-accent/30 bg-accent/5">
                         <span className="text-xs font-mono text-accent font-semibold">
-                          {peakMw(spec.kube_job_spec, spec.pue_base).toFixed(1)} MW
+                          {peakMw(spec.kube_config, spec.pue_base).toFixed(1)} MW
                         </span>
                       </div>
                     </div>
@@ -716,7 +716,7 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                         step={25}
                         className="w-full rounded border border-border bg-canvas px-2 py-1 text-xs text-text
                                    focus:outline-none focus:ring-1 focus:ring-accent"
-                        value={spec.kube_job_spec.min_nodes}
+                        value={spec.kube_config.min_nodes}
                         onChange={e => patchKube({ min_nodes: Math.max(1, parseInt(e.target.value) || 1) })}
                       />
                     </div>
@@ -724,14 +724,14 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                       <span className="text-[10px] text-muted">Idle demand</span>
                       <div className="flex items-center h-[26px] px-2 rounded border border-border/50 bg-canvas">
                         <span className="text-xs font-mono text-muted">
-                          {peakMw({ ...spec.kube_job_spec, max_nodes: spec.kube_job_spec.min_nodes }, spec.pue_base).toFixed(1)} MW
+                          {peakMw({ ...spec.kube_config, max_nodes: spec.kube_config.min_nodes }, spec.pue_base).toFixed(1)} MW
                         </span>
                       </div>
                     </div>
                   </div>
 
                   <p className="text-[9px] text-muted leading-snug">
-                    Peak = nodes × {(HW_KW_PER_NODE[spec.kube_job_spec.hardware_profile_id] ?? 10.2).toFixed(1)} kW/node × PUE {spec.pue_base.toFixed(2)} ÷ 1000
+                    Peak = nodes × {(HW_KW_PER_NODE[spec.kube_config.hardware_profile_id] ?? 10.2).toFixed(1)} kW/node × PUE {spec.pue_base.toFixed(2)} ÷ 1000
                   </p>
                 </div>
               ) : (
