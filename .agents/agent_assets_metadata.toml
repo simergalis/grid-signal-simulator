@@ -238,3 +238,10 @@ uri = "file://reports/NAR-001_phase_A_prime_part2b_R1_R2_findings.md"
 type = "text"
 title = "NAR-001 Part 2b Pre-flight: R1 & R2 Findings"
 description = "Catalogue key discrepancy (R1) and generator pipeline / ScenarioSpec analysis (R2). Stopped at ScenarioSpec gate."
+
+[[outputs]]
+id = "KQTv9ZlcCcJoeu1159yun"
+uri = "file://reports/NAR-001_phase_A_prime_part2b_report.md"
+type = "text"
+title = "NAR-001 Part 2b Report"
+description = "Run set, C1–C6 coverage, 3 clean recordings, two stop conditions: demo-kube ZeroDivisionError (#272) and no grid-connected scenario (C3)."

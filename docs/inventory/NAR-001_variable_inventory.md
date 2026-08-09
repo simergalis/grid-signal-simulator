@@ -1631,7 +1631,8 @@ All keys listable: **yes** (76 keys confirmed across three sections).
 | fabric_signal_tier | PARAM-26 | legacy \| current \| emerging | |
 | scenario_preset | PARAM-27 | options_source: scenario_library | |
 
-### J.3 — Locked section (55 keys)
+### J.3 — Locked section (53 keys)
+<!-- Correction: original heading said "55 keys" and the §J total said "76"; both were arithmetic errors in the inventory document found during Phase A′ Part 2b pre-flight (2026-08-08). The table below has always contained 53 rows, matching the 53 locked entries in gridsignal_parameters.json. -->
 
 | Key | Value | Unit | Notes |
 |---|---|---|---|
@@ -1689,7 +1690,7 @@ All keys listable: **yes** (76 keys confirmed across three sections).
 | droop_r | 0.04 | pu/pu | CHOSEN; per-unit alias of governor_droop |
 | power_factor_turbine | 0.85 | dimensionless | CHOSEN |
 
-**Total counted: 13 adjustable + 8 enumerated + 55 locked = 76 keys.**
+**Total counted: 13 adjustable + 8 enumerated + 53 locked = 74 keys.** *(Corrected from original "55 locked = 76"; see note above §J.3.)*
 
 ---
 

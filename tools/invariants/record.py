@@ -38,6 +38,7 @@ import asyncio
 import datetime
 import hashlib
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -81,10 +82,6 @@ def load_catalogue(catalogue_path: pathlib.Path) -> tuple[dict, str]:
         "sha256:<hex>" of the canonical JSON of resolved_values
         (keys sorted, no whitespace).  Stable across reads of an
         unchanged file; changes when any value changes.
-
-    The hash is computed over the resolved values dict, not the raw file
-    bytes, so it remains stable regardless of comment or whitespace changes
-    in the source JSON that do not affect values.
     """
     raw = catalogue_path.read_bytes()
     d = json.loads(raw)
@@ -100,6 +97,160 @@ def load_catalogue(catalogue_path: pathlib.Path) -> tuple[dict, str]:
     canonical = json.dumps(values, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
     sha = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
     return values, f"sha256:{sha}"
+
+
+# ---------------------------------------------------------------------------
+# Payload flattener (for constant_fields computation)
+# ---------------------------------------------------------------------------
+
+
+def _flatten_payload(d, prefix: str = "") -> dict:
+    """
+    Recursively flatten a dict or list into {dotted[i].path: value}.
+
+    dict keys are joined with ".", list indices are written as "[i]".
+    Only leaf (non-container) values are emitted as keys.  None is a
+    leaf — it is kept as-is to distinguish "always null" from "absent".
+    """
+    result: dict = {}
+    if isinstance(d, dict):
+        for k, v in d.items():
+            path = f"{prefix}.{k}" if prefix else k
+            if isinstance(v, (dict, list)):
+                result.update(_flatten_payload(v, path))
+            else:
+                result[path] = v
+    elif isinstance(d, list):
+        for i, v in enumerate(d):
+            path = f"{prefix}[{i}]"
+            if isinstance(v, (dict, list)):
+                result.update(_flatten_payload(v, path))
+            else:
+                result[path] = v
+    else:
+        # Scalar reached via recursive call (shouldn't happen directly)
+        result[prefix] = d
+    return result
+
+
+def compute_constant_fields(jsonl_path: pathlib.Path) -> tuple[dict, str, list[str], str]:
+    """
+    Read all tick payloads from a JSONL file and classify every leaf field
+    (including nested paths) as either constant or varying.
+
+    A field is constant iff:
+        1. It appears in EVERY tick payload (not just some).
+        2. Its value is identical across all ticks (None counts as a value).
+
+    Returns:
+        constant_fields:      {dotted.path: value} for constant fields.
+        constant_fields_hash: "sha256:<hex>" of canonical JSON of constant_fields.
+        varying_fields:       sorted list of dotted paths that vary or are absent.
+        note:                 human-readable limitation note.
+    """
+    ticks: list[dict] = []
+    for line in jsonl_path.read_text(encoding="utf-8").splitlines():
+        item = json.loads(line)
+        if (
+            "payload" in item
+            and isinstance(item["payload"], dict)
+            and "sim_time_seconds" in item["payload"]
+        ):
+            ticks.append(item["payload"])
+
+    if not ticks:
+        return {}, "sha256:" + hashlib.sha256(b"{}").hexdigest(), [], "no tick payloads"
+
+    # Flatten each tick
+    flattened: list[dict] = [_flatten_payload(t) for t in ticks]
+
+    # Union of all paths
+    all_paths: set[str] = set()
+    for f in flattened:
+        all_paths.update(f.keys())
+
+    constant_fields: dict = {}
+    varying_fields: list[str] = []
+
+    for path in sorted(all_paths):
+        # Present in every tick?
+        present_in_all = all(path in f for f in flattened)
+        if not present_in_all:
+            varying_fields.append(path)
+            continue
+        # Same value in every tick?
+        first_val = flattened[0][path]
+        if all(f[path] == first_val for f in flattened):
+            constant_fields[path] = first_val
+        else:
+            varying_fields.append(path)
+
+    canonical = json.dumps(
+        constant_fields, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    )
+    sha = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    constant_fields_hash = f"sha256:{sha}"
+
+    note = (
+        "constant_fields captures physical configuration fields that are "
+        "empirically stable across every tick in this run. It does NOT include "
+        "workload event schedules, irradiance profiles, or generator seeds, "
+        "which are resolved before the run starts and never appear on the wire. "
+        "Use constant_fields_hash to compare physical configuration between runs, "
+        "not to assert full scenario reproducibility."
+    )
+
+    return constant_fields, constant_fields_hash, varying_fields, note
+
+
+# ---------------------------------------------------------------------------
+# Seed / determinism probe
+# ---------------------------------------------------------------------------
+
+
+async def _probe_scenario_seeds(
+    base_url: str, scenario_id: str
+) -> tuple[bool, dict]:
+    """
+    Fetch the scenario spec via GET /scenarios/{scenario_id} and check
+    whether integer seeds are set on any generator config.
+
+    Returns:
+        (rng_seed_present, seed_detail)
+        rng_seed_present: True if at least one integer seed is set.
+        seed_detail: dict mapping config_name → seed value for all non-None seeds.
+    """
+    try:
+        async with httpx.AsyncClient(base_url=base_url, timeout=10.0) as client:
+            r = await client.get(f"/scenarios/{scenario_id}")
+            if r.status_code != 200:
+                return False, {"error": f"HTTP {r.status_code}"}
+            spec = r.json().get("spec", {})
+    except Exception as exc:  # noqa: BLE001
+        return False, {"error": str(exc)}
+
+    seeds: dict = {}
+    # Top-level seed fields
+    for key in ("seed", "rng_seed"):
+        val = spec.get(key)
+        if val is not None:
+            seeds[key] = val
+
+    # Per-generator config blocks
+    for cfg_name in (
+        "cluster_gen_config",
+        "stressor_gen_config",
+        "param_sampling_config",
+        "telemetry_corruption_config",
+    ):
+        cfg = spec.get(cfg_name) or {}
+        if isinstance(cfg, dict):
+            for k, v in cfg.items():
+                if "seed" in k.lower() and v is not None:
+                    seeds[f"{cfg_name}.{k}"] = v
+
+    rng_seed_present = any(isinstance(v, int) for v in seeds.values())
+    return rng_seed_present, seeds
 
 
 # ---------------------------------------------------------------------------
@@ -122,7 +273,6 @@ def _get_code_rev() -> Optional[str]:
 
 # ---------------------------------------------------------------------------
 # Transport-agnostic stream processor
-# (used by both the live recorder and the unit tests)
 # ---------------------------------------------------------------------------
 
 
@@ -145,13 +295,12 @@ async def process_stream(
         is_reconnect: When True, emits a {"seq": N, "event": "reconnect"} marker
                       before processing any messages.
         wall_fn:      Callable returning an ISO-8601 UTC timestamp string.
-                      Defaults to datetime.datetime.now(utc).isoformat().
 
     Returns:
         (stop_reason, next_seq, stats)
-        stop_reason: "run_complete" | "dropped" | "error:<msg>"
-        next_seq:    First seq number not yet used (pass as seq_start on reconnect).
-        stats:       Dict with per-stream telemetry (see body).
+        stop_reason: "run_complete" | "dropped" | "timeout" | "error:<msg>"
+        next_seq:    First seq number not yet used.
+        stats:       Per-stream telemetry dict.
     """
     if wall_fn is None:
 
@@ -170,7 +319,6 @@ async def process_stream(
         "missed_leading_ticks": False,
     }
 
-    # Reconnect marker — emitted before any messages from this stream.
     if is_reconnect:
         out_queue.put_nowait({"seq": seq, "event": "reconnect"})
         seq += 1
@@ -179,13 +327,11 @@ async def process_stream(
         async for raw in source:
             received_wall_utc = wall_fn()
 
-            # Deserialise — verbatim pass-through; never transform.
             try:
                 payload = json.loads(raw)
             except (json.JSONDecodeError, TypeError):
                 payload = {"_raw": str(raw)}
 
-            # ── run_complete sentinel ──────────────────────────────────────
             if isinstance(payload, dict) and payload.get("type") == "run_complete":
                 out_queue.put_nowait(
                     {
@@ -198,7 +344,6 @@ async def process_stream(
                 stats["message_count"] += 1
                 return "run_complete", seq, stats
 
-            # ── sim_time_seconds tracking and gap detection ────────────────
             if isinstance(payload, dict) and "sim_time_seconds" in payload:
                 try:
                     st = float(payload["sim_time_seconds"])
@@ -208,9 +353,6 @@ async def process_stream(
                 if st is not None:
                     if stats["first_sim_time_s"] is None:
                         stats["first_sim_time_s"] = st
-                        # "Missed leading ticks" = first observed sim_time is
-                        # materially above zero (more than one expected tick
-                        # interval).  5.0 is the fallback before derivation.
                         if st > 5.0:
                             stats["missed_leading_ticks"] = True
 
@@ -220,9 +362,6 @@ async def process_stream(
                         if delta > 0:
                             samples = stats["interval_samples"]
                             samples.append(delta)
-                            # Derive median interval after ≥3 samples.
-                            # Expected spacing comes from the data, not from
-                            # an assumed 5.0 s or from TICK_INTERVAL_SIM_SECONDS.
                             if (
                                 stats["observed_tick_interval_s"] is None
                                 and len(samples) >= 3
@@ -232,8 +371,6 @@ async def process_stream(
                                 ]
 
                         expected = stats["observed_tick_interval_s"] or 5.0
-                        # Gap: interval > 1.5× expected AND interval derivation
-                        # is already stable (≥3 samples collected).
                         if delta > expected * 1.5 and len(stats["interval_samples"]) >= 3:
                             gap_marker = {
                                 "seq": seq,
@@ -248,18 +385,16 @@ async def process_stream(
                     stats["prev_sim_time_s"] = st
                     stats["last_sim_time_s"] = st
 
-            # ── Write JSONL record ─────────────────────────────────────────
             out_queue.put_nowait(
                 {
                     "seq": seq,
                     "received_wall_utc": received_wall_utc,
-                    "payload": payload,  # verbatim — nulls, nested objects, all of it
+                    "payload": payload,
                 }
             )
             seq += 1
             stats["message_count"] += 1
 
-        # Iterator exhausted cleanly → connection closed without sentinel.
         return "dropped", seq, stats
 
     except Exception as exc:  # noqa: BLE001
@@ -288,25 +423,28 @@ async def _disk_writer(path: pathlib.Path, q: asyncio.Queue) -> None:
 # ---------------------------------------------------------------------------
 
 
-async def _ws_messages(ws_uri: str, timeout_s: float) -> AsyncIterator[str]:
+async def _ws_messages(
+    ws_uri: str,
+    timeout_s: float,
+    *,
+    connected_event: Optional[asyncio.Event] = None,
+) -> AsyncIterator[str]:
     """
-    Yield raw JSON strings from a WebSocket until timeout, clean closure,
-    or an error.
+    Yield raw JSON strings from a WebSocket until timeout, clean closure, or error.
 
-    The generator handles ConnectionClosed internally so process_stream
-    sees a clean iterator exhaustion (→ "dropped") rather than an exception
-    (→ "error").
-
-    Timeout is wall-clock based.  The generator returns without yielding if
-    the connection cannot be opened within 15 s.
+    connected_event: if provided, set() as soon as the WS handshake completes
+                     (before any messages are received).  Callers use this to
+                     record ws_subscribed_utc precisely.
     """
     deadline = time.monotonic() + timeout_s
     try:
         async with websockets.connect(ws_uri, open_timeout=15.0) as ws:
+            if connected_event is not None:
+                connected_event.set()
             while True:
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
-                    return  # wall-clock timeout
+                    return
                 try:
                     msg = await asyncio.wait_for(ws.recv(), timeout=min(remaining, 30.0))
                     yield msg
@@ -315,7 +453,9 @@ async def _ws_messages(ws_uri: str, timeout_s: float) -> AsyncIterator[str]:
                 except ConnectionClosed:
                     return
     except (ConnectionClosed, InvalidHandshake, OSError):
-        return  # connection never opened or closed during open
+        if connected_event is not None and not connected_event.is_set():
+            connected_event.set()  # unblock any waiter even on failure
+        return
 
 
 # ---------------------------------------------------------------------------
@@ -337,18 +477,6 @@ async def record(
     Start a run via POST /runs, subscribe to its WebSocket, and write JSONL
     + manifest to output_dir.
 
-    The WebSocket is opened immediately after POST returns to minimise the
-    subscribe race (Refinement 1).  Messages are received into an in-memory
-    queue and written to disk by a separate task so a slow filesystem never
-    stalls the socket read (Refinement 2).
-
-    Args:
-        base_url:      HTTP base URL of the simulator, e.g. "http://localhost:22126".
-        request_body:  Body for POST /runs (StartRunRequest).
-        output_dir:    Where to write <run_id>.jsonl and <run_id>.manifest.json.
-        catalogue_path: Path to gridsignal_parameters.json.
-        timeout_s:     Wall-clock limit per connection attempt.
-
     Returns:
         (run_id, jsonl_path, manifest_path)
     """
@@ -356,11 +484,19 @@ async def record(
 
     catalogue_values, catalogue_hash = load_catalogue(catalogue_path)
     code_rev = _get_code_rev()
+    mistral_key_present = bool(os.environ.get("MISTRAL_API_KEY"))
 
     playback_speed = float(request_body.get("playback_speed", 1.0))
     end_sim_time = float(request_body.get("end_sim_time", 300.0))
     scenario_id = request_body.get("scenario_id") or ""
-    scenario_version: Optional[str] = None  # not exposed by current API
+
+    # ── Seed probe ────────────────────────────────────────────────────────────
+    rng_seed_present: Optional[bool] = None
+    seed_detail: dict = {}
+    if scenario_id:
+        rng_seed_present, seed_detail = await _probe_scenario_seeds(
+            base_url, scenario_id
+        )
 
     recorder_start_utc = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
@@ -369,6 +505,8 @@ async def record(
         resp = await client.post("/runs", json=request_body)
         resp.raise_for_status()
         start_resp = resp.json()
+
+    post_returned_utc = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
     run_id = start_resp["run_id"]
     soc_floor_pct = start_resp.get("soc_floor_pct", 10.0)
@@ -387,12 +525,11 @@ async def record(
     )
     ws_uri = f"{ws_base}/ws/{run_id}"
 
-    # ── In-memory queue → disk writer ─────────────────────────────────────────
-    # Unbounded queue: a slow disk write never causes the socket to be dropped.
+    # ── Queue → disk writer ───────────────────────────────────────────────────
     q: asyncio.Queue = asyncio.Queue()
     writer_task = asyncio.create_task(_disk_writer(jsonl_path, q))
 
-    # ── State accumulated across reconnect attempts ───────────────────────────
+    # ── Accumulated state ─────────────────────────────────────────────────────
     all_first_sim_time_s: Optional[float] = None
     all_last_sim_time_s: Optional[float] = None
     all_message_count = 0
@@ -402,15 +539,27 @@ async def record(
     all_observed_tick_interval_s: Optional[float] = None
 
     final_stop_reason = "error:no_attempt"
+    ws_subscribed_utc: Optional[str] = None
     seq = 0
 
     # ── Reconnect loop ────────────────────────────────────────────────────────
     for attempt in range(_MAX_RECONNECT_ATTEMPTS + 1):
         is_reconnect = attempt > 0
+        connected_event = asyncio.Event()
+
+        # Capture ws_subscribed_utc on the first successful connection.
+        async def _timed_source(_uri=ws_uri, _ts=timeout_s, _ev=connected_event):
+            nonlocal ws_subscribed_utc
+            async for msg in _ws_messages(_uri, _ts, connected_event=_ev):
+                if ws_subscribed_utc is None and _ev.is_set():
+                    ws_subscribed_utc = datetime.datetime.now(
+                        datetime.timezone.utc
+                    ).isoformat()
+                yield msg
+
         try:
-            source = _ws_messages(ws_uri, timeout_s)
             stop_reason, seq, stream_stats = await process_stream(
-                source,
+                _timed_source(),
                 out_queue=q,
                 seq_start=seq,
                 is_reconnect=is_reconnect,
@@ -427,7 +576,6 @@ async def record(
                 "missed_leading_ticks": False,
             }
 
-        # Merge stream_stats into accumulated state.
         if all_first_sim_time_s is None:
             all_first_sim_time_s = stream_stats["first_sim_time_s"]
         if stream_stats["last_sim_time_s"] is not None:
@@ -442,9 +590,7 @@ async def record(
 
         final_stop_reason = stop_reason
 
-        if stop_reason == "run_complete":
-            break
-        if stop_reason == "timeout":
+        if stop_reason in ("run_complete", "timeout"):
             break
         if stop_reason.startswith("error"):
             break
@@ -456,33 +602,70 @@ async def record(
 
     recorder_stop_utc = datetime.datetime.now(datetime.timezone.utc).isoformat()
 
-    # Finalise observed_tick_interval_s from all samples if not yet derived.
+    # ── Subscribe timing ──────────────────────────────────────────────────────
+    subscribe_window_ms: Optional[float] = None
+    if ws_subscribed_utc and post_returned_utc:
+        try:
+            t_post = datetime.datetime.fromisoformat(post_returned_utc)
+            t_ws = datetime.datetime.fromisoformat(ws_subscribed_utc)
+            subscribe_window_ms = round((t_ws - t_post).total_seconds() * 1000, 1)
+        except Exception:  # noqa: BLE001
+            pass
+
+    # ── Observed tick interval ────────────────────────────────────────────────
     obi = all_observed_tick_interval_s
     if obi is None and all_interval_samples:
         s = sorted(all_interval_samples)
         obi = s[len(s) // 2]
 
+    # ── Constant/varying field analysis ───────────────────────────────────────
+    constant_fields: dict = {}
+    constant_fields_hash: str = ""
+    varying_fields: list[str] = []
+    constant_fields_note: str = ""
+    if jsonl_path.exists():
+        constant_fields, constant_fields_hash, varying_fields, constant_fields_note = (
+            compute_constant_fields(jsonl_path)
+        )
+
     # ── Write manifest ────────────────────────────────────────────────────────
     manifest = {
         "run_id": run_id,
         "scenario_id": scenario_id,
-        "scenario_version": scenario_version,
+        "scenario_version": None,
         "playback_speed": playback_speed,
         "end_sim_time_requested": end_sim_time,
         "soc_floor_pct": soc_floor_pct,
         "soc_ceil_pct": soc_ceil_pct,
+        # Timing
+        "recorder_start_utc": recorder_start_utc,
+        "post_returned_utc": post_returned_utc,
+        "ws_subscribed_utc": ws_subscribed_utc,
+        "subscribe_window_ms": subscribe_window_ms,
+        "recorder_stop_utc": recorder_stop_utc,
+        # Run outcome
+        "stop_reason": final_stop_reason,
+        "message_count": all_message_count,
+        # Leading tick race
+        "missed_leading_ticks": all_missed_leading_ticks,
         "first_sim_time_s": all_first_sim_time_s,
         "last_sim_time_s": all_last_sim_time_s,
-        "message_count": all_message_count,
-        "recorder_start_utc": recorder_start_utc,
-        "recorder_stop_utc": recorder_stop_utc,
-        "stop_reason": final_stop_reason,
-        "missed_leading_ticks": all_missed_leading_ticks,
         "observed_tick_interval_s": obi,
         "sim_time_gaps": all_sim_time_gaps,
-        "code_rev": code_rev,
+        # Determinism facts
+        "rng_seed_present": rng_seed_present,
+        "seed_detail": seed_detail,
+        "mistral_key_present": mistral_key_present,
+        # Catalogue
         "catalogue_hash": catalogue_hash,
         "catalogue_values": catalogue_values,
+        # Physical configuration fingerprint (empirical; see note)
+        "constant_fields": constant_fields,
+        "constant_fields_hash": constant_fields_hash,
+        "varying_fields": varying_fields,
+        "constant_fields_note": constant_fields_note,
+        # Provenance
+        "code_rev": code_rev,
         "run_start_request": request_body,
     }
     manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False))
@@ -503,16 +686,10 @@ def _build_parser() -> argparse.ArgumentParser:
     p.add_argument("--output-dir", default=str(RECORDINGS_DIR))
     p.add_argument("--catalogue", default=str(DEFAULT_CATALOGUE_PATH))
     p.add_argument("--timeout", type=float, default=600.0)
-
-    # Run-start options (scenario_id path)
     p.add_argument("--scenario-id", default=None)
-
-    # Run-start options (direct path)
     p.add_argument("--job-id", default=None)
     p.add_argument("--node-count", type=int, default=None)
     p.add_argument("--hardware-profile-id", default=None)
-
-    # Common
     p.add_argument("--end-sim-time", type=float, default=300.0)
     p.add_argument("--playback-speed", type=float, default=1.0)
     return p
@@ -559,7 +736,13 @@ def main() -> None:
         print(f"last_sim_time_s    : {m['last_sim_time_s']}")
         print(f"observed_interval  : {m['observed_tick_interval_s']} s")
         print(f"missed_leading     : {m['missed_leading_ticks']}")
+        print(f"subscribe_window   : {m['subscribe_window_ms']} ms")
         print(f"sim_time_gaps      : {len(m['sim_time_gaps'])}")
+        print(f"rng_seed_present   : {m['rng_seed_present']}  {m['seed_detail']}")
+        print(f"mistral_key        : {m['mistral_key_present']}")
+        print(f"constant_fields    : {len(m['constant_fields'])} fields")
+        print(f"varying_fields     : {len(m['varying_fields'])} fields")
+        print(f"constant_hash      : {m['constant_fields_hash']}")
         print(f"catalogue_hash     : {m['catalogue_hash']}")
         print(f"catalogue_keys     : {len(m['catalogue_values'])}")
         print(f"jsonl              : {jsonl_path}")
