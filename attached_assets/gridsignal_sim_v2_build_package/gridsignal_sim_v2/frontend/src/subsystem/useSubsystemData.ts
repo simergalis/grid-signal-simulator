@@ -72,13 +72,13 @@ export function useSubsystemData(): Record<string, SubsystemTileData> {
           { label: 'Calibrated', value: 'NO',    colour: RED   },
         ],
       },
-      network: {
+      gcc: {
         state:   'READY',
-        verdict: '2 switches reporting — one at NTP only',
+        verdict: 'GCC armed — waiting for run to start.',
         metrics: [
-          { label: 'Reachable',  value: '2 / 2', colour: TEAL },
-          { label: 'NTP sync',   value: 'partial' },
-          { label: 'Latency',    value: '< 5 ms' },
+          { label: 'Fleet util.',    value: '—' },
+          { label: 'Committed MW',   value: '—' },
+          { label: 'Reserve floor',  value: '—' },
         ],
       },
       agents: {
@@ -155,16 +155,21 @@ export function useSubsystemData(): Record<string, SubsystemTileData> {
     ? `${dqTags.length} data-quality flag${dqTags.length > 1 ? 's' : ''} active — confidence band widened.`
     : 'All calibration checks clear. Confidence band nominal.'
 
-  // ── Network Fabric ───────────────────────────────────────────────────────
-  // Network telemetry is collected by NetworkTelemetryIngestor in _drive()
-  // and served via GET /network-telemetry (polled 2 Hz in the detail modal).
-  // It is NOT on the tick payload — the per-tick snapshot is the advisory
-  // endpoint, not the WebSocket stream.
-  // The SystemStrip tile shows the CONFIGURED site network state (static),
-  // which is the same whether or not a run is active — same as the at-rest
-  // view.  Live fabric metrics (latency, topology, ptp/ntp breakdown) belong
-  // in the Network Fabric modal, not in this summary tile.
-  const netVerdict = '2 switches reporting — one at NTP only'
+  // ── Generation Commitment Controller ─────────────────────────────────────
+  const cb          = tick.commitment_block
+  const gccAction   = cb?.action       ?? 'hold'
+  const gccUtil     = cb?.utilisation  ?? 0
+  const gccCommitMW = cb?.committed_rated_mw ?? 0
+  const gccFloor    = cb?.reserve_floor_mw   ?? 0
+  const gccReserveOk = cb?.reserve_satisfied ?? true
+  const gccReason   = cb?.reason ?? '—'
+  const gccState: TileState = gccAction === 'commit'   ? 'ACTIVE'
+    : gccAction === 'decommit' ? 'ATTENTION' : 'READY'
+  const gccVerdict = gccAction === 'commit'
+    ? `COMMIT — ${gccReason} (fleet util. ${fmtPct(gccUtil)}).`
+    : gccAction === 'decommit'
+    ? `DECOMMIT — ${gccReason}.`
+    : `Holding — fleet util. ${fmtPct(gccUtil)}, reserve ${gccReserveOk ? 'satisfied' : 'SHORT'}.`
 
   // ── Optimisation Agents ──────────────────────────────────────────────────
   const agentVerdict = 'Finding patterns a threshold rule cannot — dispatch never waits.'
@@ -240,13 +245,13 @@ export function useSubsystemData(): Record<string, SubsystemTileData> {
       ],
     },
 
-    network: {
-      state:   'READY',
-      verdict: netVerdict,
+    gcc: {
+      state:   gccState,
+      verdict: gccVerdict,
       metrics: [
-        { label: 'Reachable',  value: '2 / 2', colour: TEAL },
-        { label: 'NTP sync',   value: 'partial' },
-        { label: 'Latency',    value: '< 5 ms' },
+        { label: 'Fleet util.',   value: fmtPct(gccUtil),      colour: gccUtil >= 0.8 ? GOLD : undefined },
+        { label: 'Committed MW',  value: fmtMW(gccCommitMW),   colour: GOLD },
+        { label: 'Reserve floor', value: fmtMW(gccFloor),      colour: gccReserveOk ? undefined : RED },
       ],
     },
 
