@@ -245,3 +245,17 @@ uri = "file://reports/NAR-001_phase_A_prime_part2b_report.md"
 type = "text"
 title = "NAR-001 Part 2b Report"
 description = "Run set, C1–C6 coverage, 3 clean recordings, two stop conditions: demo-kube ZeroDivisionError (#272) and no grid-connected scenario (C3)."
+
+[[outputs]]
+id = "_XuLubf04uLphoNxpAU16"
+uri = "file://reports/NAR-001_invariant_residuals.md"
+type = "text"
+title = "NAR-001 Invariant Residuals"
+description = "Full invariant residual report across 880 ticks from 6 recordings."
+
+[[outputs]]
+id = "jyzLCDvPg4Tm11qRlMJju"
+uri = "file://reports/NAR-001_residuals.jsonl"
+type = "unspecified"
+title = "NAR-001 Residuals (JSONL)"
+description = "Per-tick ResidualRecord stream for all invariants, 880 ticks."
