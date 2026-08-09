@@ -366,8 +366,25 @@ function LeadTimeCallout({
     const prevQueued = prevQueuedJobsRef.current
     const ts = `t=${Math.round(tick!.sim_time_seconds)}s`
 
+    // ── First kube tick (page loaded mid-run): emit a catch-up snapshot ───
+    if (prevJobs === null) {
+      const parts: string[] = []
+      if (kube.active_jobs > 0) {
+        const jw = kube.active_jobs === 1 ? 'job' : 'jobs'
+        parts.push(`${kube.active_jobs} ${jw} running · ${kube.admitted_nodes} nodes`)
+      }
+      if ((kube.queued_jobs ?? 0) > 0) {
+        const qw = kube.queued_jobs === 1 ? 'job' : 'jobs'
+        parts.push(`${kube.queued_jobs} ${qw} queued`)
+      }
+      const body = parts.length > 0
+        ? `Kube: scheduler state on connect — ${parts.join(' · ')}.`
+        : `Kube: scheduler connected — no jobs running.`
+      setAtRestLog(prev => [...prev, { ts, body }])
+    }
+
     // ── Rising edge: new job(s) entered the reorder buffer ────────────────
-    if (prevQueued !== null && kube.queued_jobs > prevQueued) {
+    if (prevQueued !== null && kube.queued_jobs > (prevQueued ?? 0) && kube.queued_jobs > 0) {
       const delta    = kube.queued_jobs - prevQueued
       const jobWord  = delta === 1 ? 'job' : 'jobs'
       const qWord    = kube.queued_jobs === 1 ? 'job' : 'jobs'
