@@ -1,0 +1,19 @@
+The narration is conflating exactly this
+
+The summary you pasted treats the queue as part of the crisis — "four GPU jobs backed up in the queue unable to admit... we risk frequency collapse and customer job rejection." That inverts it. The queue is the mitigation, and deferred is not rejected (§23.2: Tier A reversibility is full). If the narration agent can't hold that distinction, it will describe correct admission behavior as impending failure in front of Jeff Baer.
+
+Three other things in that text I'd log:
+
+"grid frequency has drifted to minus 677 Hz." Negative frequency is not a degraded reading, it's a physically impossible one. The defect worth logging isn't the simulator value — you already have that class open — it's that the narration layer narrated it as an operational finding. A domain-bound invariant (f ∈ [f_min, f_max]) should have caught it upstream and the narrator should have suppressed the quantity and emitted a data-quality flag instead. Right now the narrator has no sanity gate on the quantities it renders. That's a NAR-001 harness wiring gap, and it also puts an absolute frequency figure on a customer-facing surface, which your demo constraint forbids outright.
+
+"equivalent to powering roughly 28,000 homes." An unsourced constant (~1.29 kW/home) invented at the presentation layer. No catalogue entry, no measured basis. This is the fabricated-literal failure mode arriving through a new door — the narrator, rather than the config.
+
+Reconciliation. Narration says 67 MW generating / 103 MW demanded / 36 MW unserved. Supply tiles give 45.00 + 4.90 + 17.00 = 66.90 (matches served, good), but the tiles total 105.55 demand and 38.65 unserved. If those are the same tick, the narrator is recomputing rather than sourcing the computed value — the §19 presentation-layer prohibition, in the narration path. Worth a same-tick capture to confirm before logging.
+
+One question the tile raises
+
+How does 38.65 MW stay unserved while the plant keeps running? The header reports 15.0 MW shed. That leaves ~23.6 MW of demand that is neither served nor shed nor tripped. In a real islanded microgrid that quantity doesn't exist — it either gets disconnected or frequency collapses and protection acts.
+
+So UNSERVED is currently an accounting residual, not a physical state. That may be an acceptable simulator abstraction, but it needs an explicit definition and a stated model attribution, because an operator will ask that question in the first five minutes and "it's the difference between two numbers" is not an answer.
+
+Worth noting: neither UNSERVED nor QUEUED DEMAND appears in the v2.5 glossary or Section 19 page inventory. Two labels on the primary display surface with no spec definition and no single source of truth named. That's the gap to close first — the narration confusion is downstream of it.

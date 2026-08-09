@@ -249,12 +249,20 @@ _SUMMARY_SYSTEM = (
     "Write a clear, friendly summary (4–6 sentences, single paragraph) covering:\n"
     "  · What happened in order — what jobs ran, what the turbines and battery did.\n"
     "  · How the system is performing right now — comfortable or stressed?\n"
-    "  · Any anomalies — unserved loads, power caps, admission stalls, frequency drift.\n"
+    "  · Any anomalies — unserved loads, power caps, admission stalls.\n"
     "  · One sentence on what this means operationally for the data centre.\n\n"
     "Rules:\n"
     "  · Plain English only — no bullet lists, no headings, no markdown.\n"
-    "  · Convert MW to something relatable when it helps "
-    "(e.g. '15 MW — enough to power about 12,000 homes').\n"
+    "  · Use only the MW figures provided in LIVE SENSOR READINGS. "
+    "Do not recompute, rederive, or invent any quantity not explicitly given.\n"
+    "  · Do not convert MW into home-equivalents or any other real-world analogy — "
+    "no unsourced constants.\n"
+    "  · 'Queued demand' and 'deferred jobs' are the scheduler's controlled mitigation, "
+    "not a failure state. Deferred admission is fully reversible; describe it as the "
+    "system managing its queue, not as job rejection or impending collapse.\n"
+    "  · 'Unserved load' is the arithmetic gap between demand and served load — it is "
+    "an accounting residual, not a confirmed physical disconnection. Do not describe it "
+    "as load that has been cut or customers that have lost power.\n"
     "  · Define any technical term the first time you use it.\n"
     "  · Be honest: if the feed is empty or data is sparse, say so.\n"
     "  · Single paragraph, 4–6 sentences."
@@ -301,8 +309,10 @@ def _call_anthropic_summary(req_data: "SchedulerSummaryRequest", api_key: str) -
         _fmt("bess_output_mw",         "BESS (+ discharge / − charge)")
         _fmt("p_demand_mw",            "Total site demand")
         _fmt("p_served_mw",            "Served load")
-        _fmt("p_unserved_mw",          "Unserved load (amber = stressed)")
-        _fmt("frequency_hz",           "Grid frequency",                          "Hz")
+        _fmt("p_unserved_mw",          "Unserved load (accounting residual: demand minus served)")
+        # frequency_hz is intentionally excluded — absolute frequency is not
+        # suitable for customer-facing narration; a sanity gate would also be
+        # required before exposing it (f must be in [40, 70] Hz to be physical).
         _fmt("confidence_upper_mw",    "Forecast step-load (upper bound)")
         _fmt("turbine_ramp_credit_mw", "Turbine ramp credit this tick")
 
