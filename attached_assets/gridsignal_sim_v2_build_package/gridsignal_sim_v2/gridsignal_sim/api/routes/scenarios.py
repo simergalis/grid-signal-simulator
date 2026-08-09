@@ -277,91 +277,6 @@ _TC33_MW = 600 * _ENT_KW * _PUE / 1000.0   # 6.3036 MW
 _TC33_DT_LEAD = 15.0
 
 _SEEDED: list[tuple[str, ScenarioSpec]] = [
-    # ── AD1: procurement (TC-47, TC-52) ─────────────────────────────────
-    (
-        "demo-procurement",
-        ScenarioSpec(
-            name="demo-procurement",
-            description=(
-                "demo-20mw + §24 ProcurementLayer active (AD1).  "
-                "ProcurementLayer calls NonFirmImportEffect.apply() (TC-47: reserve gap "
-                "unchanged despite non-firm import) and creates ReservationProposal "
-                "(TC-52: requires_confirmation always True) each tick.  "
-                "non_firm_available_mw=3.0 MW; firm=20.0 MW; reserved=10.0 MW.  "
-                "Observe-only: no effect on dispatch trace."
-            ),
-            workload_events=[_evt_start("job-big", _DEMO_NODES)],
-            dt_lead_seconds=30.0,
-            bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
-            turbine_units=[_turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2)],
-            solar_rated_mw=_SOLAR_DEMO,
-            end_sim_time=300.0,
-            procurement_config=ProcurementConfigSpec(
-                firm_available_mw=20.0,
-                reserved_available_mw=10.0,
-                non_firm_available_mw=3.0,
-                price_curve_seed=7,
-            ),
-        ),
-    ),
-    # ── AD1: maintenance (TC-58, TC-59, TC-60) ──────────────────────────
-    (
-        "demo-maintenance",
-        ScenarioSpec(
-            name="demo-maintenance",
-            description=(
-                "demo-20mw + §27 MaintenanceLayer active (AD1).  "
-                "Asset starts DEGRADED (effective_ramp=0.15 < nameplate=0.20 MW/s). "
-                "Each tick: reserve_contribution_mw_per_s() returns effective rate (TC-58). "
-                "At sim_time≥30 s: validate_window() checks synthetic window [60,120) "
-                "across full forecast duration (TC-59). "
-                "After 20 favorable ticks: propose_rating_change() returns RAISE with "
-                "requires_confirmation=True (TC-60). "
-                "Observe-only: no effect on dispatch trace."
-            ),
-            workload_events=[_evt_start("job-big", _DEMO_NODES)],
-            dt_lead_seconds=30.0,
-            bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
-            turbine_units=[_turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2)],
-            solar_rated_mw=_SOLAR_DEMO,
-            end_sim_time=300.0,
-            maintenance_config=MaintenanceConfigSpec(
-                asset_id="turbine-0",
-                nameplate_ramp_mw_per_s=0.2,
-                effective_ramp_mw_per_s=0.15,   # DEGRADED — below nameplate
-                reserve_threshold_mw=1.0,
-            ),
-        ),
-    ),
-    # ── AD1: ramp relaxation (TC-75, TC-76) ─────────────────────────────
-    (
-        "demo-ramp-relax",
-        ScenarioSpec(
-            name="demo-ramp-relax",
-            description=(
-                "demo-20mw + §23.7.2 RampRelaxationEngine active (AD1).  "
-                "evaluate() called each tick with ReservePosition built from "
-                "turbine_rated_mw=25 MW and forecast_upper_bound = demand × 1.10. "
-                "headroom_at_upper_bound check (TC-75) fires every tick; "
-                "gridSignal_connected=True so adaptive_active reflects reserve headroom. "
-                "TC-76 (gridSignal_connected=False → baseline) is exercised by the unit "
-                "test; this scenario exercises the evaluate() code path live. "
-                "Observe-only: returned SiteRampPolicy is advisory only."
-            ),
-            workload_events=[_evt_start("job-big", _DEMO_NODES)],
-            dt_lead_seconds=30.0,
-            bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
-            turbine_units=[_turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2)],
-            solar_rated_mw=_SOLAR_DEMO,
-            end_sim_time=300.0,
-            ramp_relaxation_config=RampRelaxationConfigSpec(
-                reserve_threshold_mw=2.0,
-                baseline_ramp_cap_mw=5.0,
-                baseline_ramp_duration_s=75.0,
-                adaptive_ramp_duration_s=30.0,
-            ),
-        ),
-    ),
     # ── AD2: PMS shortfall — TC-65 live conflict detection ───────────────
     (
         "demo-pms-shortfall",
@@ -777,12 +692,41 @@ def _seed_fabric_scenarios(store: ScenarioStore) -> None:
         store._seed(store_id, _spec)
 
 
+def _seed_json_scenarios(store: ScenarioStore) -> None:
+    """Seed scenarios stored as full ScenarioSpec JSON files in config/scenarios/.
+
+    Each entry maps a stable store key to a filename under config/scenarios/.
+    The JSON must be a valid ScenarioSpec (model_dump_json output).
+    """
+    import json as _json
+    from pathlib import Path as _Path
+
+    _JSON_ENTRIES: list[tuple[str, str]] = [
+        # (store_id, filename)
+        ("demo-islanded-ramp", "demo-islanded-ramp.json"),
+    ]
+
+    _cfg_dir = _Path("config/scenarios")
+    for store_id, filename in _JSON_ENTRIES:
+        _jpath = _cfg_dir / filename
+        try:
+            _raw = _jpath.read_text()
+            _spec = ScenarioSpec.model_validate_json(_raw)
+            store._seed(store_id, _spec)
+        except Exception as exc:
+            import logging as _logging
+            _logging.getLogger(__name__).warning(
+                "Failed to seed %s from %s: %s", store_id, filename, exc
+            )
+
+
 def build_seeded_store() -> ScenarioStore:
     """Return a ScenarioStore pre-loaded with all built-in demo scenarios."""
     store = ScenarioStore()
     for sid, spec in _SEEDED:
         store._seed(sid, spec)
     _seed_fabric_scenarios(store)
+    _seed_json_scenarios(store)
     return store
 
 
