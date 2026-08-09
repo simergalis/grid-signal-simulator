@@ -260,6 +260,9 @@ function LeadTimeCallout({
   const prevAdmittedNodesRef = useRef<number | null>(null)
   const prevQueuedJobsRef    = useRef<number | null>(null)
   const prevIsRunningRef     = useRef(false)
+  // BESS and power-cap transition tracking for feed entries.
+  const prevBessOutputRef    = useRef<number>(0)
+  const prevPowerCapRef      = useRef<boolean>(false)
 
   useEffect(() => {
     if (!tick) return
@@ -324,7 +327,7 @@ function LeadTimeCallout({
       // Describe what just happened.
       let body: string
       if (wasState1 === null) {
-        body = 'Scheduler online — no step-load queued.'
+        body = 'Scheduler online.'
       } else if (prevWasLanded.current) {
         body = `Step-load absorbed — staged ${stagedSecsRef.current}s ahead. System returned to rest.`
       } else if (prevWasRunning.current) {
@@ -348,9 +351,8 @@ function LeadTimeCallout({
   }, [atRestLog])
 
   // ── Kube scheduler admission detection ────────────────────────────────────
-  // Fires on every tick. When kube_metrics.active_jobs rises, the scheduler
-  // just admitted one or more GPU workloads. Append a log entry so operators
-  // see what the scheduler decided even while the panel is in another state.
+  // Fires on every tick. Detects rising edges (queue, admission), falling edges
+  // (job completion), and power-cap pauses so the feed covers the full lifecycle.
   useEffect(() => {
     const kube = tick?.kube_metrics ?? null
     if (!kube) {
@@ -358,12 +360,15 @@ function LeadTimeCallout({
       prevActiveJobsRef.current    = null
       prevAdmittedNodesRef.current = null
       prevQueuedJobsRef.current    = null
+      prevPowerCapRef.current      = false
       return
     }
-    const prevJobs   = prevActiveJobsRef.current
-    const prevNodes  = prevAdmittedNodesRef.current
-    const prevQueued = prevQueuedJobsRef.current
-    const ts = `t=${Math.round(tick!.sim_time_seconds)}s`
+    const prevJobs      = prevActiveJobsRef.current
+    const prevNodes     = prevAdmittedNodesRef.current
+    const prevQueued    = prevQueuedJobsRef.current
+    const prevPowerCap  = prevPowerCapRef.current
+    const ts         = `t=${Math.round(tick!.sim_time_seconds)}s`
+    const forecastMw = tick!.confidence_upper_mw   // site-wide step-load forecast
 
     // ── First kube tick (page loaded mid-run): emit a catch-up snapshot ───
     if (prevJobs === null) {
@@ -377,55 +382,115 @@ function LeadTimeCallout({
         parts.push(`${kube.queued_jobs} ${qw} queued`)
       }
       const body = parts.length > 0
-        ? `Kube: scheduler state on connect — ${parts.join(' · ')}.`
-        : `Kube: scheduler connected — no jobs running.`
+        ? `Kube: connected — ${parts.join(' · ')}.`
+        : `Kube: connected — no jobs running.`
       setAtRestLog(prev => [...prev, { ts, body }])
     }
 
     // ── Rising edge: new job(s) entered the reorder buffer ────────────────
     if (prevQueued !== null && kube.queued_jobs > (prevQueued ?? 0) && kube.queued_jobs > 0) {
-      const delta    = kube.queued_jobs - prevQueued
-      const jobWord  = delta === 1 ? 'job' : 'jobs'
-      const qWord    = kube.queued_jobs === 1 ? 'job' : 'jobs'
-      const body = `Kube: ${delta} ${jobWord} received into queue — `
-        + `${kube.queued_jobs} ${qWord} waiting for admission window.`
+      const delta   = kube.queued_jobs - prevQueued
+      const jobWord = delta === 1 ? 'job' : 'jobs'
+      const qWord   = kube.queued_jobs === 1 ? 'job' : 'jobs'
+      const body = `Kube: ${delta} ${jobWord} received — `
+        + `${kube.queued_jobs} ${qWord} waiting for admission.`
       setAtRestLog(prev => [...prev, { ts, body }])
     }
 
     // ── Rising edge: job(s) admitted from the queue ───────────────────────
+    // "217-node GPU workload" uses singular noun in compound-adjective position.
+    // runWord covers the total now running (independent of how many were just admitted).
     if (prevJobs !== null && kube.active_jobs > prevJobs) {
       const admittedJobs  = kube.active_jobs - prevJobs
       const admittedNodes = prevNodes !== null
         ? Math.max(0, kube.admitted_nodes - prevNodes)
         : kube.admitted_nodes
-      const jobWord  = admittedJobs  === 1 ? 'job'  : 'jobs'
-      const nodeWord = admittedNodes === 1 ? 'node' : 'nodes'
+      const jobWord  = admittedJobs    === 1 ? 'job'  : 'jobs'
+      const runWord  = kube.active_jobs === 1 ? 'job'  : 'jobs'   // total running
+      const mwSuffix = forecastMw > 0.1
+        ? ` — forecast +${forecastMw.toFixed(1)} MW at full draw`
+        : ''
       const body = admittedNodes > 0
-        ? `Kube: scheduler admitted ${admittedNodes}-${nodeWord} GPU workload — `
-          + `${kube.active_jobs} ${jobWord} now running, `
-          + `${kube.admitted_nodes} nodes total.`
-        : `Kube: ${admittedJobs} GPU ${jobWord} admitted — `
-          + `${kube.active_jobs} running, ${kube.admitted_nodes} nodes total.`
+        ? `Kube: ${admittedNodes}-node GPU workload admitted (${admittedJobs} ${jobWord})${mwSuffix}. `
+          + `${kube.active_jobs} ${runWord} now running, ${kube.admitted_nodes} nodes total.`
+        : `Kube: ${admittedJobs} GPU ${jobWord} admitted${mwSuffix}. `
+          + `${kube.active_jobs} ${runWord} now running, ${kube.admitted_nodes} nodes total.`
+      setAtRestLog(prev => [...prev, { ts, body }])
+    }
+
+    // ── Falling edge: job(s) completed ────────────────────────────────────
+    if (prevJobs !== null && kube.active_jobs < prevJobs) {
+      const completedJobs = prevJobs - kube.active_jobs
+      const jobWord = completedJobs   === 1 ? 'job' : 'jobs'
+      const remWord = kube.active_jobs === 1 ? 'job' : 'jobs'
+      const body = kube.active_jobs > 0
+        ? `Kube: ${completedJobs} ${jobWord} completed — ${kube.active_jobs} ${remWord} still running.`
+        : `Kube: ${completedJobs} ${jobWord} completed — no jobs running.`
+      setAtRestLog(prev => [...prev, { ts, body }])
+    }
+
+    // ── Power cap: admission paused / cleared ─────────────────────────────
+    if (tick!.power_cap_active && !prevPowerCap && (kube.queued_jobs ?? 0) > 0) {
+      const body = `Kube: admission paused — power cap active, waiting for turbine headroom.`
+      setAtRestLog(prev => [...prev, { ts, body }])
+    }
+    if (!tick!.power_cap_active && prevPowerCap) {
+      const body = `Kube: power cap cleared — admission window open.`
       setAtRestLog(prev => [...prev, { ts, body }])
     }
 
     prevActiveJobsRef.current    = kube.active_jobs
     prevAdmittedNodesRef.current = kube.admitted_nodes
     prevQueuedJobsRef.current    = kube.queued_jobs
+    prevPowerCapRef.current      = tick!.power_cap_active
   }, [tick])
 
   // ── Gas turbine start detection ───────────────────────────────────────────
   // Rising edge of isRunning → step-load countdown just began → log it.
+  // Uses turbine_ramp_credit_mw (what this asset contributes) and
+  // confidence_upper_mw (total site forecast) so both numbers are attributed.
   useEffect(() => {
     if (!tick) return
     const nowRunning = tick.dt_lead_next_s > 0
     if (nowRunning && !prevIsRunningRef.current) {
-      const ts        = `t=${Math.round(tick.sim_time_seconds)}s`
-      const predicted = tick.confidence_upper_mw
-      const body      = `Gas turbine generator starting — ramping to cover +${predicted.toFixed(1)} MW step load.`
+      const ts         = `t=${Math.round(tick.sim_time_seconds)}s`
+      const forecast   = tick.confidence_upper_mw      // site-wide step-load forecast
+      const rampCredit = tick.turbine_ramp_credit_mw   // MW this turbine covers in dt_lead
+      const body = rampCredit > 0.1
+        ? `Gas turbine ramping — ramp credit +${rampCredit.toFixed(1)} MW `
+          + `of +${forecast.toFixed(1)} MW forecast step-load.`
+        : `Gas turbine starting — forecast step-load +${forecast.toFixed(1)} MW.`
       setAtRestLog(prev => [...prev, { ts, body }])
     }
     prevIsRunningRef.current = nowRunning
+  }, [tick])
+
+  // ── BESS discharge / charge / standby detection ───────────────────────────
+  // Emits a feed entry whenever the BESS transitions between standby, discharge,
+  // and absorb states so the feed accounts for what the BESS is actually doing.
+  useEffect(() => {
+    if (!tick) { prevBessOutputRef.current = 0; return }
+    const bess = tick.bess_output_mw
+    const prev = prevBessOutputRef.current
+    const ts   = `t=${Math.round(tick.sim_time_seconds)}s`
+    const THR  = 0.5   // MW — below this magnitude is standby / anchor noise
+    // Standby → discharge
+    if (bess >= THR && prev < THR) {
+      setAtRestLog(p => [...p, {
+        ts, body: `BESS: discharging at ${bess.toFixed(1)} MW to bridge supply gap.`,
+      }])
+    }
+    // Standby / discharge → absorbing surplus
+    if (bess <= -THR && prev > -THR) {
+      setAtRestLog(p => [...p, {
+        ts, body: `BESS: absorbing ${Math.abs(bess).toFixed(1)} MW — storing surplus generation.`,
+      }])
+    }
+    // Return to standby from either direction
+    if (Math.abs(bess) < THR && (prev >= THR || prev <= -THR)) {
+      setAtRestLog(p => [...p, { ts, body: `BESS: returned to standby.` }])
+    }
+    prevBessOutputRef.current = bess
   }, [tick])
 
   // ISA-101 colour by state
