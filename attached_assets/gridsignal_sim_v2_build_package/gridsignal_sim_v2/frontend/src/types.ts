@@ -341,6 +341,7 @@ export interface KubeMetrics {
   headroom_mw: number       // turbine_headroom + bess_headroom from previous tick
   active_jobs: number       // gang-admitted workloads currently running
   admitted_nodes: number    // sum of node_count across active jobs (pre min_nodes floor)
+  queued_jobs: number       // jobs in the reorder buffer (observed, not yet admitted)
 }
 
 /**

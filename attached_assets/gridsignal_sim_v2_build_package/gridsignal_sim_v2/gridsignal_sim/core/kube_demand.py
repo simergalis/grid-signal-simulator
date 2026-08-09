@@ -444,6 +444,7 @@ class KubeDemandAgent:
             admitted_nodes=admitted_nodes,
             arrivals_this_tick=arrivals_this_tick,
             requeued_this_tick=requeued_this_tick,
+            queued_jobs=len(self._reorder_buffer),
         )
         return signals, metrics
 

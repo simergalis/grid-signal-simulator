@@ -157,12 +157,13 @@ function nodeDetail(
       //           node count comes from summing workload-event node_counts, but
       //           that total isn't in the tick payload — show job count only.
       if (tick?.kube_metrics) {
-        const km         = tick.kube_metrics
-        const computeMW  = (tick.p_compute_mw ?? 0).toFixed(2)
-        const jobLabel   = `${km.active_jobs} job${km.active_jobs !== 1 ? 's' : ''}`
-        const nodeLabel  = `${km.admitted_nodes.toLocaleString()} nodes`
-        const capBadge   = km.power_cap_active ? ' · cap active' : ''
-        return `${jobLabel} · ${nodeLabel} · ${computeMW} MW${capBadge}`
+        const km        = tick.kube_metrics
+        const computeMW = (tick.p_compute_mw ?? 0).toFixed(2)
+        const admitted  = `${km.active_jobs} admitted`
+        const queued    = `${km.queued_jobs ?? 0} queued`
+        const nodes     = `${km.admitted_nodes.toLocaleString()} nodes`
+        const capBadge  = km.power_cap_active ? ' · cap active' : ''
+        return `${admitted} · ${queued} · ${nodes} · ${computeMW} MW${capBadge}`
       }
       const jobs = tick ? Object.keys(tick.checkpoint_states).length : 0
       if (jobs > 0) {

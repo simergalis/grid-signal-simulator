@@ -256,10 +256,11 @@ function LeadTimeCallout({
   const tickRef         = useRef(tick)
   const stagedSecsRef   = useRef(stagedSecs)
   const lastEventStrRef = useRef('')
-  // Track kube admission state across ticks so we detect the rising edge.
+  // Track kube admission + queue state across ticks so we detect rising edges.
   // null = no kube scenario running (kube_metrics absent from tick).
   const prevActiveJobsRef    = useRef<number | null>(null)
   const prevAdmittedNodesRef = useRef<number | null>(null)
+  const prevQueuedJobsRef    = useRef<number | null>(null)
 
   useEffect(() => {
     if (!tick) return
@@ -357,18 +358,30 @@ function LeadTimeCallout({
       // No kube scenario — reset so next run starts clean.
       prevActiveJobsRef.current    = null
       prevAdmittedNodesRef.current = null
+      prevQueuedJobsRef.current    = null
       return
     }
-    const prevJobs  = prevActiveJobsRef.current
-    const prevNodes = prevAdmittedNodesRef.current
+    const prevJobs   = prevActiveJobsRef.current
+    const prevNodes  = prevAdmittedNodesRef.current
+    const prevQueued = prevQueuedJobsRef.current
+    const ts = `t=${Math.round(tick!.sim_time_seconds)}s`
 
+    // ── Rising edge: new job(s) entered the reorder buffer ────────────────
+    if (prevQueued !== null && kube.queued_jobs > prevQueued) {
+      const delta    = kube.queued_jobs - prevQueued
+      const jobWord  = delta === 1 ? 'job' : 'jobs'
+      const qWord    = kube.queued_jobs === 1 ? 'job' : 'jobs'
+      const body = `Kube: ${delta} ${jobWord} received into queue — `
+        + `${kube.queued_jobs} ${qWord} waiting for admission window.`
+      setAtRestLog(prev => [...prev, { ts, body }])
+    }
+
+    // ── Rising edge: job(s) admitted from the queue ───────────────────────
     if (prevJobs !== null && kube.active_jobs > prevJobs) {
-      // One or more jobs admitted this tick.
       const admittedJobs  = kube.active_jobs - prevJobs
       const admittedNodes = prevNodes !== null
         ? Math.max(0, kube.admitted_nodes - prevNodes)
         : kube.admitted_nodes
-      const ts = `t=${Math.round(tick!.sim_time_seconds)}s`
       const jobWord  = admittedJobs  === 1 ? 'job'  : 'jobs'
       const nodeWord = admittedNodes === 1 ? 'node' : 'nodes'
       const body = admittedNodes > 0
@@ -382,6 +395,7 @@ function LeadTimeCallout({
 
     prevActiveJobsRef.current    = kube.active_jobs
     prevAdmittedNodesRef.current = kube.admitted_nodes
+    prevQueuedJobsRef.current    = kube.queued_jobs
   }, [tick])
 
   // ISA-101 colour by state
