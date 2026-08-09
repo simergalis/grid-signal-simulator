@@ -750,14 +750,8 @@ function LeadTimeCallout({
           </div>
           <div style={_RULE} />
 
-          {/* AI Summary modal — rendered via portal so it escapes the SVG foreignObject */}
-          {showSummaryModal && (
-            <SchedulerSummaryModal
-              feedEntries={atRestLog as FeedEntry[]}
-              tick={tick}
-              onClose={() => setShowSummaryModal(false)}
-            />
-          )}
+          {/* AI Summary modal placeholder — actual portal is rendered below, outside all
+              state guards, so it mounts regardless of which state (1/2/3/4) is active. */}
           {/* Scrolling vbox: one entry per transition into AT REST state.
               flex:1 fills whatever height remains after the label+rule.
               overflowY:'auto' enables scrolling; auto-scroll keeps the
@@ -804,6 +798,17 @@ function LeadTimeCallout({
             ))}
           </div>
         </>}
+
+        {/* AI Summary modal — outside all state-conditional blocks so it mounts
+            in State 1 (at-rest), State 2 (countdown) and State 3 (reserve-short).
+            createPortal escapes the SVG foreignObject and renders into document.body. */}
+        {showSummaryModal && (
+          <SchedulerSummaryModal
+            feedEntries={atRestLog as FeedEntry[]}
+            tick={tick}
+            onClose={() => setShowSummaryModal(false)}
+          />
+        )}
 
       </div>
     </foreignObject>
