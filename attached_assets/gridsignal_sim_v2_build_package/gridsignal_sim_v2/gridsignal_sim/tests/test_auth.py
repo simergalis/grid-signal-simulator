@@ -8,6 +8,10 @@ Assertions covered:
   SEC-3  POST /api/admin/users without X-Admin-Key and without a session returns 403
   SEC-4  POST /api/admin/users with a valid session whose role is "operator"
          (not "admin") returns 403
+  SEC-5  GET  /api/fabric/fixture with a valid JWT for a deactivated account returns 401
+  SEC-6  POST /api/auth/login sets Secure cookie flag when SECURE_COOKIES=1
+  RATE-1 POST /api/auth/login returns 429 with Retry-After on the 11th request
+         within a 60-second window (rate limit: 10 per minute per IP or email)
 
   PW-1   POST /api/auth/change-password with no prior password (first-time set)
          succeeds — current_password is not required when password_hash is empty.
@@ -35,7 +39,7 @@ from fastapi.testclient import TestClient
 from api.app import create_app
 from api.auth_utils import COOKIE_NAME, create_access_token
 from api.db import _SessionLocal, create_auth_tables
-from api.routes.auth_routes import inject_otp
+from api.routes.auth_routes import inject_otp, _login_rate_clear
 from runtime.persistence import AuthUser
 from sqlalchemy import select
 
@@ -280,6 +284,149 @@ def test_login_set_cookie_no_secure_flag_by_default(monkeypatch) -> None:
     set_cookie = resp.headers.get("set-cookie", "")
     assert "secure" not in set_cookie.lower(), (
         f"SEC-6b expected NO Secure flag in dev mode but got: {set_cookie!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# RATE-1 — 11th POST /api/auth/login within the window returns 429
+# ---------------------------------------------------------------------------
+
+def test_login_rate_limit_returns_429() -> None:
+    """The 11th POST /api/auth/login within 60 s must return 429 with Retry-After.
+
+    Strategy
+    --------
+    1. Clear the in-memory rate-limit store so this test is isolated from any
+       prior requests that may have accumulated (e.g. SEC-1 tests).
+    2. Fire 10 requests using the same source IP (TestClient uses 127.0.0.1 and
+       does not set X-Forwarded-For, so all requests share the "ip:127.0.0.1"
+       bucket).  Each of those 10 must NOT return 429.
+    3. Fire the 11th request and assert HTTP 429.
+    4. Confirm the response includes a Retry-After header with a positive integer
+       value so clients can back off cleanly.
+
+    The test does not need a valid OTP or a real user account — the rate-limit
+    guard fires before any OTP lookup, so the code/email values are irrelevant.
+    """
+    _login_rate_clear()
+
+    with TestClient(create_app()) as client:
+        # Requests 1–10 must pass the rate-limit guard (they may return 401 for
+        # an invalid OTP, but NOT 429).
+        for i in range(10):
+            resp = client.post(
+                "/api/auth/login",
+                json={"email": "rate1-test@example.com", "code": "000000"},
+            )
+            assert resp.status_code != 429, (
+                f"RATE-1 request #{i + 1} was rate-limited prematurely: "
+                f"{resp.status_code} {resp.text}"
+            )
+
+        # 11th request must be rate-limited.
+        resp = client.post(
+            "/api/auth/login",
+            json={"email": "rate1-test@example.com", "code": "000000"},
+        )
+
+    assert resp.status_code == 429, (
+        f"RATE-1 expected 429 on 11th request, got {resp.status_code}: {resp.text}"
+    )
+    retry_after = resp.headers.get("retry-after", "")
+    assert retry_after.isdigit() and int(retry_after) > 0, (
+        f"RATE-1 expected a positive integer Retry-After header, got: {retry_after!r}"
+    )
+
+
+def test_login_ip_rate_limit_fires_across_distinct_emails() -> None:
+    """The per-IP bucket triggers on the 11th request even when each uses a different email.
+
+    Strategy
+    --------
+    1. Clear the rate-limit store.
+    2. Fire 10 requests from the same TCP peer (127.0.0.1), each targeting a
+       *different* email address, so the per-email bucket never exceeds 1.
+    3. The 11th request (yet another distinct email) must return 429 — proving
+       the IP bucket is the one that fired, not the email bucket.
+    4. Confirm Retry-After is present.
+
+    This test catches the regression where the IP bucket is ignored and only
+    the email bucket is enforced (which a bot can trivially bypass by cycling
+    email addresses).
+    """
+    _login_rate_clear()
+
+    with TestClient(create_app()) as client:
+        for i in range(10):
+            resp = client.post(
+                "/api/auth/login",
+                json={"email": f"rate2-victim-{i}@example.com", "code": "000000"},
+            )
+            assert resp.status_code != 429, (
+                f"RATE-2 (IP bucket) request #{i + 1} was rate-limited prematurely: "
+                f"{resp.status_code} {resp.text}"
+            )
+
+        # 11th request with yet another fresh email — only the IP bucket can trigger.
+        resp = client.post(
+            "/api/auth/login",
+            json={"email": "rate2-victim-10@example.com", "code": "000000"},
+        )
+
+    assert resp.status_code == 429, (
+        f"RATE-2 expected 429 when IP bucket is exhausted (distinct emails), "
+        f"got {resp.status_code}: {resp.text}"
+    )
+    retry_after = resp.headers.get("retry-after", "")
+    assert retry_after.isdigit() and int(retry_after) > 0, (
+        f"RATE-2 expected a positive integer Retry-After header, got: {retry_after!r}"
+    )
+
+
+def test_login_forged_forwarded_for_cannot_bypass_ip_rate_limit() -> None:
+    """A bot sending a different X-Forwarded-For value on each request must not bypass the IP limit.
+
+    Strategy
+    --------
+    1. Clear the rate-limit store.
+    2. Fire 10 requests from 127.0.0.1 (TestClient), each spoofing a different
+       X-Forwarded-For header value.
+    3. Fire the 11th request with yet another spoofed header.
+    4. Assert 429 — the rate limiter must key on request.client.host (127.0.0.1),
+       not on the attacker-controlled header.
+
+    This test directly verifies that the fix for the trusted-proxy bypass is in
+    place: if the route still reads X-Forwarded-For, the IP key changes on every
+    request and 429 is never returned, causing the assertion to fail.
+    """
+    _login_rate_clear()
+
+    with TestClient(create_app()) as client:
+        for i in range(10):
+            resp = client.post(
+                "/api/auth/login",
+                json={"email": f"rate3-bypass-{i}@example.com", "code": "000000"},
+                headers={"X-Forwarded-For": f"10.0.{i // 256}.{i % 256}"},
+            )
+            assert resp.status_code != 429, (
+                f"RATE-3 request #{i + 1} was rate-limited prematurely: "
+                f"{resp.status_code} {resp.text}"
+            )
+
+        # 11th request — bot supplies yet another fake forwarded IP.
+        resp = client.post(
+            "/api/auth/login",
+            json={"email": "rate3-bypass-10@example.com", "code": "000000"},
+            headers={"X-Forwarded-For": "10.99.99.99"},
+        )
+
+    assert resp.status_code == 429, (
+        f"RATE-3 expected 429 (spoofed X-Forwarded-For must not bypass IP bucket), "
+        f"got {resp.status_code}: {resp.text}"
+    )
+    retry_after = resp.headers.get("retry-after", "")
+    assert retry_after.isdigit() and int(retry_after) > 0, (
+        f"RATE-3 expected a positive integer Retry-After header, got: {retry_after!r}"
     )
 
 

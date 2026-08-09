@@ -18,6 +18,7 @@ import random
 import time
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -38,6 +39,66 @@ _OTP_MAX_ATTEMPTS      = 5     # invalidate after this many wrong guesses
 _OTP_RESEND_COOLDOWN_S = 60    # minimum seconds between resend requests
 
 _otp_store: dict[str, dict] = {}
+
+# ---------------------------------------------------------------------------
+# Per-IP and per-email rate limiter for POST /api/auth/login
+#
+# SEC-5 / Task 94: A bot that hammers /login can exhaust the 5-attempt OTP
+# window, trigger a fresh request-code cycle, and repeat — effectively brute-
+# forcing 1 000 000 6-digit values in minutes with enough concurrency.
+#
+# Mitigation: a simple sliding-window counter keyed on BOTH the client IP and
+# the target email address.  Either key exceeding the threshold on its own is
+# enough to return 429.  The window is tracked as a list of monotonic
+# timestamps; entries older than _LOGIN_WINDOW_S are pruned on each check.
+# ---------------------------------------------------------------------------
+
+_LOGIN_RATE_LIMIT  = 10    # max requests per window per key
+_LOGIN_WINDOW_S    = 60    # sliding-window duration in seconds
+
+# {key -> [monotonic timestamp, ...]}
+_login_rate: dict[str, list[float]] = {}
+
+
+def _login_rate_check(ip: str, email: str) -> int | None:
+    """Return seconds until the rate-limit resets, or None if under the limit.
+
+    Checks both the per-IP and per-email counters.  If either counter has
+    >= _LOGIN_RATE_LIMIT requests in the last _LOGIN_WINDOW_S seconds the
+    caller must return 429.  The check is side-effect-free (it does NOT record
+    the current request — that is done separately after the guard passes).
+
+    Expired entries are pruned on each access to bound memory growth; keys
+    whose bucket becomes empty are deleted entirely so the dict does not grow
+    unboundedly from one-off requests by many distinct IPs or email addresses.
+    """
+    now = time.monotonic()
+    cutoff = now - _LOGIN_WINDOW_S
+    for key in (f"ip:{ip}", f"email:{email}"):
+        timestamps = _login_rate.get(key, [])
+        # Prune expired entries.
+        timestamps = [t for t in timestamps if t > cutoff]
+        if timestamps:
+            _login_rate[key] = timestamps
+        else:
+            _login_rate.pop(key, None)
+        if len(timestamps) >= _LOGIN_RATE_LIMIT:
+            # Oldest entry tells us when a slot will free up.
+            retry_after = int(timestamps[0] + _LOGIN_WINDOW_S - now) + 1
+            return max(retry_after, 1)
+    return None
+
+
+def _login_rate_record(ip: str, email: str) -> None:
+    """Record the current request in both per-IP and per-email buckets."""
+    now = time.monotonic()
+    for key in (f"ip:{ip}", f"email:{email}"):
+        _login_rate.setdefault(key, []).append(now)
+
+
+# Exposed so tests can reset state between cases without restarting the app.
+def _login_rate_clear() -> None:
+    _login_rate.clear()
 
 
 def _make_code() -> str:
@@ -200,6 +261,7 @@ async def request_code(
 @router.post("/login")
 async def login(
     body: LoginRequest,
+    request: Request,
     response: Response,
     db: AsyncSession = Depends(get_db_session),
 ):
@@ -208,6 +270,28 @@ async def login(
 
     email = body.email.lower()
     code  = body.code.strip()
+
+    # SEC-5 / Task 94: rate-limit check (before any OTP work so we don't leak
+    # timing info about whether the OTP exists or not).
+    #
+    # IP is taken ONLY from request.client.host (the TCP peer address set by
+    # the ASGI server) — never from X-Forwarded-For or X-Real-IP.  Those
+    # headers are client-supplied and trivially spoofable; trusting them would
+    # let a bot cycle through arbitrary fake IPs and bypass the per-IP bucket.
+    # If the app sits behind a trusted reverse proxy, configure the proxy to
+    # rewrite the actual source address into request.client via ProxyHeadersMiddleware
+    # at the server boundary, not through client-controlled headers here.
+    client_ip = request.client.host if request.client else "unknown"
+    retry_after = _login_rate_check(client_ip, email)
+    if retry_after is not None:
+        return JSONResponse(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            content={"detail": "Too many login attempts. Please try again later."},
+            headers={"Retry-After": str(retry_after)},
+        )
+    # Record this attempt AFTER the guard so the counter reflects genuine
+    # attempts, not rate-limit probes.
+    _login_rate_record(client_ip, email)
 
     # Generic failure to use in all error paths (avoids leaking detail)
     def _fail():
