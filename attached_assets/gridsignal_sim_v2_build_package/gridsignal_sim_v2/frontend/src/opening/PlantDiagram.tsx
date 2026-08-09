@@ -597,8 +597,8 @@ function LeadTimeCallout({
           return <>
             <div style={_LABEL(accent)}>STEP-LOAD INCOMING — RESERVE SHORT</div>
             <div style={_RULE} />
-            <div style={{ ..._BODY, color: accent }}>
-              {`${secs} s until racks reach full draw\n+${predicted.toFixed(1)} MW · ${
+            <div style={{ ..._BODY, color: accent, whiteSpace: 'normal' }}>
+              {`${secs} s until racks reach full draw +${predicted.toFixed(1)} MW · ${
                 shortfall > 0.1
                   ? `${shortfall.toFixed(1)} MW will be uncovered`
                   : 'insufficient reserve'
@@ -637,8 +637,8 @@ function LeadTimeCallout({
           return <>
             <div style={_LABEL(accent)}>STEP-LOAD INCOMING</div>
             <div style={_RULE} />
-            <div style={{ ..._BODY, color: accent }}>
-              {`${secs} s until racks reach full draw\n+${predicted.toFixed(1)} MW · turbine ramping · BESS armed`}
+            <div style={{ ..._BODY, color: accent, whiteSpace: 'normal' }}>
+              {`${secs} s until racks reach full draw +${predicted.toFixed(1)} MW · turbine ramping · BESS armed`}
             </div>
             <div style={{ ..._BODY, color: '#3fb6a8', fontWeight: 600 }}>Nothing required</div>
             {/* ── SCHEDULER FEED log (live during countdown) ────────────── */}
