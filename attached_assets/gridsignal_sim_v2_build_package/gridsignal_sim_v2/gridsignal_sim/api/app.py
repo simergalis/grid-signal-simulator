@@ -47,6 +47,20 @@ from pathlib import Path
 
 _log = logging.getLogger(__name__)
 
+# Emit INFO-level application logs to stdout so startup messages such as
+# "Auth tables ready (backend=postgresql)" appear alongside uvicorn's own logs.
+# uvicorn's dictConfig only configures the "uvicorn.*" namespace; application
+# loggers that propagate to the unconfigured root logger fall back to Python's
+# lastResort handler, which only shows WARNING and above.  Adding a StreamHandler
+# to the "api" namespace fixes this without touching uvicorn's own log setup.
+_api_log_ns = logging.getLogger("api")
+if not _api_log_ns.handlers:
+    _api_h = logging.StreamHandler()
+    _api_h.setFormatter(logging.Formatter("%(levelname)s:     %(name)s - %(message)s"))
+    _api_log_ns.addHandler(_api_h)
+    _api_log_ns.setLevel(logging.INFO)
+    _api_log_ns.propagate = False   # avoid double-printing if root gains a handler later
+
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles

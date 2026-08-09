@@ -399,6 +399,36 @@ async def inject_code_for_user(
 
 _DEFAULT_FROM = "noreply@gridsignal.app"
 
+
+# ---------------------------------------------------------------------------
+# Database backend diagnostic
+# ---------------------------------------------------------------------------
+
+@router.get("/db-info", dependencies=[Depends(_require_admin)])
+async def db_info():
+    """Diagnostic: confirm which database backend is active.
+
+    Returns a JSON object the admin can inspect without needing startup logs:
+      backend          — "postgresql" when DATABASE_URL is set (Replit managed
+                         PostgreSQL), "sqlite" when running locally without
+                         DATABASE_URL (dev fallback).
+      database_url_set — True when DATABASE_URL was present at server startup.
+      persistent       — True when the backend survives container redeploys
+                         (always True for postgresql, False for sqlite).
+
+    A production deployment MUST return backend="postgresql" and persistent=True.
+    If it returns "sqlite" the operator accounts will be erased on the next publish.
+    """
+    from api.db import _using_postgres  # module-level flag set at import time
+
+    backend = "postgresql" if _using_postgres else "sqlite"
+    return {
+        "backend":          backend,
+        "database_url_set": _using_postgres,
+        "persistent":       _using_postgres,
+    }
+
+
 @router.get("/email-check", dependencies=[Depends(_require_admin)])
 async def email_check():
     """Diagnostic: verify that email delivery is likely to work.
