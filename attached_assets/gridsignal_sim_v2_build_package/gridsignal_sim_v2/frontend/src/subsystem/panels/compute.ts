@@ -137,6 +137,12 @@ export const computePanel: PanelConfig = {
         { label: 'IT draw',          value: `${tick.p_compute_mw.toFixed(2)} MW`,  colour: TEAL },
         { label: 'Cooling draw',     value: `${tick.p_cooling_mw.toFixed(2)} MW` },
         { label: 'Total site',       value: `${tick.p_total_mw.toFixed(2)} MW` },
+        {
+          label: 'Unserved load',
+          value: tick.p_compute_unserved_mw != null ? `${tick.p_compute_unserved_mw.toFixed(2)} MW` : '—',
+          colour: (tick.p_compute_unserved_mw ?? 0) > 0.01 ? AMBER : undefined,
+          sub: "compute's pro-rata share of any site-wide generation shortfall — not a job kill or admission failure",
+        },
         { label: 'Δt_lead',          value: tick.dt_lead_next_s > 0 ? `${tick.dt_lead_next_s.toFixed(0)} s` : '—' },
         { label: 'Running jobs',     value: running.length.toString(),  colour: running.length > 0 ? TEAL : undefined },
         { label: 'Starting',         value: starting.length.toString() },
@@ -150,10 +156,12 @@ export const computePanel: PanelConfig = {
         'Gang admission is the trigger — when Kueue or Volcano admits a pod group the node count jumps instantly. A 10-second reorder buffer and event dedup model the real NTP-timestamp guarantee.',
         'P_compute = Σ [nodes × kW] × PUE / 1000 is computed by the GPUModule each tick; P_cooling follows with a 90-second thermal lag — steps 3–4 of the Kube-to-turbine path.',
         'Power-cap holds new admissions when grid headroom falls below threshold; critical headroom evicts the largest running job so BESS can recover before the turbine ramps up.',
+        '"Unserved load" is not a job kill — it is compute\'s share of any site-wide generation shortfall, split in proportion to demand. Queued jobs remain eligible for admission; nothing is cancelled. It reads zero whenever generation covers total site load.',
       ] : [
         'GridSignal reads the job scheduler queue, not a power meter — it knows a step-load is coming 30–60 s before any current flows.',
         'The two-stage power draw (compute at job start, cooling 90 s later) is the pattern incumbents cannot handle with a single threshold.',
         'Δt_lead is the window in which turbine ramp and battery bridge must be staged — the product exists to exploit this interval.',
+        '"Unserved load" is not a job kill — it is compute\'s share of any site-wide generation shortfall, split in proportion to demand. It reads zero whenever generation covers total site load.',
       ],
     }
   },
