@@ -237,6 +237,23 @@ function LeadTimeCallout({
   const maxDtLead   = useRef(0)            // peak Δt_lead during current ramp
   const lastLandedAt = useRef<number>(0)  // wall-clock of most recent landing
 
+  // ── NO STEP-LOAD INCOMING scrolling log ───────────────────────────────────
+  const [atRestLog, setAtRestLog] = useState<Array<{ ts: string; body: string }>>([])
+  const atRestScrollRef  = useRef<HTMLDivElement>(null)
+  // Track State-1 transitions so we log only on entry, not every render.
+  const prevIsState1    = useRef<boolean | null>(null)  // null = not yet evaluated
+  const prevWasLanded   = useRef(false)
+  const prevWasRunning  = useRef(false)
+  // Snapshot refs so the transition effect captures fresh values without
+  // re-firing when lastEventStr ticks (every minute) or stagedSecs changes.
+  const tickRef         = useRef(tick)
+  const stagedSecsRef   = useRef(stagedSecs)
+  const lastEventStrRef = useRef('')
+  // Track kube admission state across ticks so we detect the rising edge.
+  // null = no kube scenario running (kube_metrics absent from tick).
+  const prevActiveJobsRef    = useRef<number | null>(null)
+  const prevAdmittedNodesRef = useRef<number | null>(null)
+
   useEffect(() => {
     if (!tick) return
     const cur  = tick.dt_lead_next_s
@@ -274,6 +291,91 @@ function LeadTimeCallout({
     const minsAgo = Math.floor((Date.now() - lastLandedAt.current) / 60_000)
     return minsAgo < 1 ? 'last event < 1 min ago' : `last event ${minsAgo} min ago`
   })()
+
+  // ── Keep snapshot refs current so the transition effect captures fresh
+  //    values without re-firing when lastEventStr or stagedSecs change.
+  tickRef.current         = tick
+  stagedSecsRef.current   = stagedSecs
+  lastEventStrRef.current = lastEventStr
+
+  // ── Detect transitions INTO State 1 (AT REST) and append a log entry ──────
+  useEffect(() => {
+    const nowState1 = !isLanded && !isRunning
+    const wasState1 = prevIsState1.current
+
+    if (nowState1 && wasState1 !== true) {
+      // Format a timestamp: sim time if a tick exists, else wall clock.
+      const t = tickRef.current
+      let ts: string
+      if (t) {
+        ts = `t=${Math.round(t.sim_time_seconds)}s`
+      } else {
+        const d = new Date()
+        ts = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`
+      }
+
+      // Describe what just happened.
+      let body: string
+      if (wasState1 === null) {
+        body = 'Scheduler online — no step-load queued.'
+      } else if (prevWasLanded.current) {
+        body = `Step-load absorbed — staged ${stagedSecsRef.current}s ahead. System returned to rest.`
+      } else if (prevWasRunning.current) {
+        body = 'Countdown cleared — system returned to rest.'
+      } else {
+        body = `Scheduler healthy — ${lastEventStrRef.current}.`
+      }
+
+      setAtRestLog(prev => [...prev, { ts, body }])
+    }
+
+    prevIsState1.current   = nowState1
+    prevWasLanded.current  = isLanded
+    prevWasRunning.current = isRunning
+  }, [isLanded, isRunning])
+
+  // Auto-scroll the log to the bottom whenever a new entry is appended.
+  useEffect(() => {
+    const el = atRestScrollRef.current
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+  }, [atRestLog])
+
+  // ── Kube scheduler admission detection ────────────────────────────────────
+  // Fires on every tick. When kube_metrics.active_jobs rises, the scheduler
+  // just admitted one or more GPU workloads. Append a log entry so operators
+  // see what the scheduler decided even while the panel is in another state.
+  useEffect(() => {
+    const kube = tick?.kube_metrics ?? null
+    if (!kube) {
+      // No kube scenario — reset so next run starts clean.
+      prevActiveJobsRef.current    = null
+      prevAdmittedNodesRef.current = null
+      return
+    }
+    const prevJobs  = prevActiveJobsRef.current
+    const prevNodes = prevAdmittedNodesRef.current
+
+    if (prevJobs !== null && kube.active_jobs > prevJobs) {
+      // One or more jobs admitted this tick.
+      const admittedJobs  = kube.active_jobs - prevJobs
+      const admittedNodes = prevNodes !== null
+        ? Math.max(0, kube.admitted_nodes - prevNodes)
+        : kube.admitted_nodes
+      const ts = `t=${Math.round(tick!.sim_time_seconds)}s`
+      const jobWord  = admittedJobs  === 1 ? 'job'  : 'jobs'
+      const nodeWord = admittedNodes === 1 ? 'node' : 'nodes'
+      const body = admittedNodes > 0
+        ? `Kube: scheduler admitted ${admittedNodes}-${nodeWord} GPU workload — `
+          + `${kube.active_jobs} ${jobWord} now running, `
+          + `${kube.admitted_nodes} nodes total.`
+        : `Kube: ${admittedJobs} GPU ${jobWord} admitted — `
+          + `${kube.active_jobs} running, ${kube.admitted_nodes} nodes total.`
+      setAtRestLog(prev => [...prev, { ts, body }])
+    }
+
+    prevActiveJobsRef.current    = kube.active_jobs
+    prevAdmittedNodesRef.current = kube.admitted_nodes
+  }, [tick])
 
   // ISA-101 colour by state
   const accent =
@@ -359,12 +461,54 @@ function LeadTimeCallout({
           </>
         })()}
 
-        {/* ── STATE 1: AT REST ─────────────────────────────────────────── */}
+        {/* ── STATE 1: AT REST — scrolling event log ──────────────────── */}
         {!isLanded && !isRunning && <>
           <div style={_LABEL(accent)}>NO STEP-LOAD INCOMING</div>
           <div style={_RULE} />
-          <div style={{ ..._BODY, color: '#4b5764', lineHeight: 1.65 }}>
-            {`Scheduler feed healthy · ${lastEventStr}\nNotice on next: 30–60 s`}
+          {/* Scrolling vbox: one entry per transition into AT REST state.
+              flex:1 fills whatever height remains after the label+rule.
+              overflowY:'auto' enables scrolling; auto-scroll keeps the
+              latest entry visible without the operator having to scroll. */}
+          <div
+            ref={atRestScrollRef}
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 6,
+              paddingRight: 2,
+              // Thin scrollbar so it doesn't crowd the 280 px box.
+              scrollbarWidth: 'thin' as const,
+              scrollbarColor: '#2a3a4a transparent',
+            }}
+          >
+            {atRestLog.length === 0 && (
+              <div style={{ ..._BODY, color: '#2a3a4a', fontStyle: 'italic' }}>
+                Awaiting first event…
+              </div>
+            )}
+            {atRestLog.map((entry, i) => (
+              <div
+                key={i}
+                style={{
+                  display: 'flex', flexDirection: 'column', gap: 1,
+                  borderLeft: `2px solid #1e2a36`,
+                  paddingLeft: 6,
+                  // Highlight the most-recent entry
+                  ...(i === atRestLog.length - 1
+                    ? { borderLeftColor: '#2a5060' }
+                    : {}),
+                }}
+              >
+                <span style={{ ..._MONO, fontSize: 8, color: '#3a5a6a', lineHeight: 1.4 }}>
+                  {entry.ts}
+                </span>
+                <span style={{ ..._BODY, color: i === atRestLog.length - 1 ? '#7d9ab0' : '#4b5764', lineHeight: 1.5 }}>
+                  {entry.body}
+                </span>
+              </div>
+            ))}
           </div>
         </>}
 
