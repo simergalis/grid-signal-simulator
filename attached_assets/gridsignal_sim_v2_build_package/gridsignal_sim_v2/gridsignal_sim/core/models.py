@@ -861,6 +861,7 @@ class KubeMetrics:
     arrivals_this_tick: int  # new Poisson arrivals observed this tick
     requeued_this_tick: int  # admissions held by power-cap and re-queued this tick
     queued_jobs: int         # jobs currently sitting in the reorder buffer (observed, not yet admitted)
+    queued_nodes: int        # sum of node_count across all jobs in the reorder buffer
 
 
 # ---------------------------------------------------------------------------

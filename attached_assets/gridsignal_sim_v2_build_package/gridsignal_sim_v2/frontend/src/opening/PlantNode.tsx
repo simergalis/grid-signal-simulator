@@ -13,7 +13,7 @@
  */
 
 import type { NodeDef } from './plantLayout'
-import type { TickPayload } from '../types'
+import type { TickPayload, TurbineUnitSpec } from '../types'
 
 /** Weather preview data from GET /solar-preview */
 export interface SolarPreview {
@@ -87,11 +87,27 @@ function nodeDetail(
       const installed = units.reduce((s: number, u: { rated_mw: number }) => s + u.rated_mw, 0)
       const maxUnit   = Math.max(...units.map((u: { rated_mw: number }) => u.rated_mw))
       const n1Firm    = installed - maxUnit
-      // Algebraic: units_on_bus_count = |A| where A = {SYNCHRONISED, UNLOADING} ∩ {not hot_standby}.
-      // Dynamic variable — reads directly from the tick's named field rather than
-      // inferring count from an output-threshold (which conflates RAMPING with online).
       const online    = (tick as any)?.units_on_bus_count ?? 0
-      return `${units.length} unit${units.length === 1 ? '' : 's'} · ${online} online · N−1 firm ${n1Firm.toFixed(1)} MW`
+
+      // Classify non-bus units by thermal_state into the three standby tiers.
+      // "On bus" = state is synchronised/unloading; or (no live state) breaker closed and not hot_standby.
+      const standby = { hot: 0, warm: 0, cold: 0 }
+      for (const u of units as TurbineUnitSpec[]) {
+        const s = u.state
+        const onBus = s
+          ? (s === 'synchronised' || s === 'unloading')
+          : (u.breaker_closed && !u.hot_standby)
+        if (!onBus) {
+          const t = u.thermal_state ?? 'cold'
+          if (t === 'hot')       standby.hot++
+          else if (t === 'warm') standby.warm++
+          else                   standby.cold++
+        }
+      }
+
+      const fleetLine   = `${units.length} unit${units.length === 1 ? '' : 's'} · ${online} online · N−1 firm ${n1Firm.toFixed(1)} MW`
+      const standbyLine = `${standby.hot} hot standby · ${standby.warm} warm standby · ${standby.cold} cold standby`
+      return `${fleetLine}\n${standbyLine}`
     }
     case 'solar-pv': {
       if (tick) {
@@ -220,11 +236,13 @@ function BalanceRows({
   demandMW,
   unservedMW,
   accentColor,
+  queuedDemandMW,
 }: {
-  servedMW:    number | null
-  demandMW:    number
-  unservedMW:  number | null
-  accentColor: string
+  servedMW:         number | null
+  demandMW:         number
+  unservedMW:       number | null
+  accentColor:      string
+  queuedDemandMW?:  number | null   // pending queued jobs — shown dimmed below unserved
 }) {
   const NULL_COLOUR  = '#4b5764'   // muted — unambiguously unavailable
   const NULL_LABEL   = 'not modelled'
@@ -251,40 +269,50 @@ function BalanceRows({
     },
   ]
 
+  const ROW_STYLE: React.CSSProperties = {
+    fontFamily: "'SF Mono','Roboto Mono',Menlo,Consolas,monospace",
+    fontSize: 7,
+    color: '#4b5764',
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase' as const,
+    flexShrink: 0,
+  }
+  const VAL_STYLE = (colour: string): React.CSSProperties => ({
+    fontFamily: "'SF Mono','Roboto Mono',Menlo,Consolas,monospace",
+    fontSize: 9,
+    color: colour,
+    fontWeight: 500,
+    letterSpacing: '-0.01em',
+    textAlign: 'right' as const,
+  })
+
+  const showQueued = queuedDemandMW != null && queuedDemandMW > 0.005
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       {rows.map(({ key, valueStr, valueColour }) => (
         <div
           key={key}
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'baseline',
-            gap: 4,
-          }}
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 4 }}
         >
-          <span style={{
-            fontFamily: "'SF Mono','Roboto Mono',Menlo,Consolas,monospace",
-            fontSize: 7,
-            color: '#4b5764',
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase' as const,
-            flexShrink: 0,
-          }}>
-            {key}
-          </span>
-          <span style={{
-            fontFamily: "'SF Mono','Roboto Mono',Menlo,Consolas,monospace",
-            fontSize: 9,
-            color: valueColour,
-            fontWeight: 500,
-            letterSpacing: '-0.01em',
-            textAlign: 'right' as const,
-          }}>
-            {valueStr}
-          </span>
+          <span style={ROW_STYLE}>{key}</span>
+          <span style={VAL_STYLE(valueColour)}>{valueStr}</span>
         </div>
       ))}
+      {/* Queued Demand — dimmed amber, only shown when jobs are waiting */}
+      {showQueued && (
+        <div style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 4,
+          marginTop: 1,
+          paddingTop: 2,
+          borderTop: '1px dashed #1e2a36',
+        }}>
+          <span style={{ ...ROW_STYLE, color: '#3a4a58' }}>Queued Demand</span>
+          <span style={VAL_STYLE('#6a7d52')}>
+            +{queuedDemandMW!.toFixed(2)} MW
+          </span>
+        </div>
+      )}
     </div>
   )
 }
@@ -494,6 +522,22 @@ export function PlantNode({ def, tick, onClick, solarPreview, liveSolarMW }: Pla
                 : tick.p_cooling_unserved_mw
             }
             accentColor={def.accentColor ?? '#3fb6a8'}
+            queuedDemandMW={(() => {
+              // Only compute-racks shows queued demand; cooling never has a queue.
+              if (def.id !== 'compute-racks') return null
+              const km = tick.kube_metrics
+              if (!km || km.queued_nodes <= 0) return null
+              // Estimate MW proportionally from the current admitted draw.
+              // All nodes share the same hardware profile, so kW/node is constant.
+              if (km.admitted_nodes > 0) {
+                return (km.queued_nodes / km.admitted_nodes) * tick.p_compute_demand_mw
+              }
+              // No admitted jobs yet — use node_count (includes min_nodes floor) as proxy.
+              if (km.node_count > 0) {
+                return (km.queued_nodes / km.node_count) * tick.p_compute_demand_mw
+              }
+              return null
+            })()}
           />
         )}
 

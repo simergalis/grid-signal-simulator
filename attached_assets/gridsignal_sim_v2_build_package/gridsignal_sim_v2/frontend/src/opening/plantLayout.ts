@@ -274,7 +274,7 @@ export const FLOWS: FlowDef[] = [
 
 /** Lead-time callout box geometry (rendered as HTML foreignObject). */
 export const LEADTIME_BOX = {
-  x: 910, y: 62, w: 280, h: 230,
+  x: 910, y: 62, w: 280, h: 310,
 }
 
 /**

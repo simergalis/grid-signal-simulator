@@ -342,6 +342,7 @@ export interface KubeMetrics {
   active_jobs: number       // gang-admitted workloads currently running
   admitted_nodes: number    // sum of node_count across active jobs (pre min_nodes floor)
   queued_jobs: number       // jobs in the reorder buffer (observed, not yet admitted)
+  queued_nodes: number      // sum of node_count across all reorder-buffer jobs
 }
 
 /**

@@ -341,6 +341,7 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
                 "arrivals_this_tick": tick.kube_metrics.arrivals_this_tick,
                 "requeued_this_tick": tick.kube_metrics.requeued_this_tick,
                 "queued_jobs":        tick.kube_metrics.queued_jobs,
+                "queued_nodes":       tick.kube_metrics.queued_nodes,
             }
             if tick.kube_metrics is not None
             else None

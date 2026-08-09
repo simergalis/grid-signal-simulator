@@ -445,6 +445,7 @@ class KubeDemandAgent:
             arrivals_this_tick=arrivals_this_tick,
             requeued_this_tick=requeued_this_tick,
             queued_jobs=len(self._reorder_buffer),
+            queued_nodes=sum(pa.node_count for pa in self._reorder_buffer),
         )
         return signals, metrics
 
