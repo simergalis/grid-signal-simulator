@@ -111,14 +111,6 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
     tabId: 'overview',
   },
   {
-    id: 'network',
-    name: 'Network Fabric',
-    group: 'system',
-    accentColor: '#4a9fe0',
-    identityLine: 'network telemetry · latency · topology',
-    tabId: 'network',
-  },
-  {
     id: 'agents',
     name: 'Optimisation Agents',
     group: 'system',
