@@ -236,6 +236,141 @@ def _call_anthropic_explain(req: ExplainRequest, api_key: str) -> str:  # noqa: 
         raise RuntimeError(f"Anthropic HTTP {exc.code}: {exc.read()[:200]}") from exc
 
 
+# ── /scheduler-summary — Claude layman's summary of the Scheduler Feed ───────
+
+_SUMMARY_SYSTEM = (
+    "You are explaining a live data-centre power grid simulation to a non-technical "
+    "audience — think of them as an intelligent executive who has never seen a power "
+    "dashboard before.\n\n"
+    "You will receive:\n"
+    "  1. A chronological 'Scheduler Feed' log — events showing GPU job admissions, "
+    "turbine start-ups, battery (BESS) activity, and power-cap pauses.\n"
+    "  2. Current live sensor readings from the simulation.\n\n"
+    "Write a clear, friendly summary (4–6 sentences, single paragraph) covering:\n"
+    "  · What happened in order — what jobs ran, what the turbines and battery did.\n"
+    "  · How the system is performing right now — comfortable or stressed?\n"
+    "  · Any anomalies — unserved loads, power caps, admission stalls, frequency drift.\n"
+    "  · One sentence on what this means operationally for the data centre.\n\n"
+    "Rules:\n"
+    "  · Plain English only — no bullet lists, no headings, no markdown.\n"
+    "  · Convert MW to something relatable when it helps "
+    "(e.g. '15 MW — enough to power about 12,000 homes').\n"
+    "  · Define any technical term the first time you use it.\n"
+    "  · Be honest: if the feed is empty or data is sparse, say so.\n"
+    "  · Single paragraph, 4–6 sentences."
+)
+
+
+class SchedulerSummaryRequest(BaseModel):
+    feed_entries: list[dict] = []   # [{ts: str, body: str}, ...]
+    tick: dict | None = None        # full current tick snapshot
+
+
+class SchedulerSummaryResponse(BaseModel):
+    summary: str
+
+
+def _call_anthropic_summary(req_data: "SchedulerSummaryRequest", api_key: str) -> str:
+    parts: list[str] = []
+
+    # Feed log
+    if req_data.feed_entries:
+        lines = "\n".join(
+            f"  {e.get('ts', '?')}  {e.get('body', '')}"
+            for e in req_data.feed_entries
+        )
+        parts.append(f"SCHEDULER FEED LOG:\n{lines}")
+    else:
+        parts.append("SCHEDULER FEED LOG:\n  (empty — no events recorded yet)")
+
+    # Live sensor readings from the current tick
+    if req_data.tick:
+        t = req_data.tick
+        readings: list[str] = []
+
+        def _fmt(key: str, label: str, unit: str = "MW") -> None:
+            val = t.get(key)
+            if val is not None:
+                fmt_val = f"{val:.2f}" if isinstance(val, float) else str(val)
+                readings.append(f"  {label}: {fmt_val} {unit}")
+
+        _fmt("sim_time_seconds",       "Simulation time",                         "s")
+        _fmt("p_generation_mw",        "Total generation")
+        _fmt("turbine_output_mw",      "Gas turbine output")
+        _fmt("p_renewable_mw",         "Solar PV output")
+        _fmt("bess_output_mw",         "BESS (+ discharge / − charge)")
+        _fmt("p_demand_mw",            "Total site demand")
+        _fmt("p_served_mw",            "Served load")
+        _fmt("p_unserved_mw",          "Unserved load (amber = stressed)")
+        _fmt("frequency_hz",           "Grid frequency",                          "Hz")
+        _fmt("confidence_upper_mw",    "Forecast step-load (upper bound)")
+        _fmt("turbine_ramp_credit_mw", "Turbine ramp credit this tick")
+
+        units_on = t.get("units_on_bus_count")
+        if units_on is not None:
+            readings.append(f"  Turbine units on bus (generating): {units_on}")
+
+        cap = t.get("power_cap_active")
+        if cap is not None:
+            readings.append(f"  Power cap active (admission paused): {'yes' if cap else 'no'}")
+
+        kube = t.get("kube_metrics") or {}
+        if kube:
+            readings.append(f"  Kube active GPU jobs: {kube.get('active_jobs', 0)}")
+            readings.append(f"  Kube admitted nodes: {kube.get('admitted_nodes', 0)}")
+            readings.append(f"  Kube queued jobs: {kube.get('queued_jobs', 0)}")
+
+        if readings:
+            parts.append("LIVE SENSOR READINGS:\n" + "\n".join(readings))
+
+    user_msg = "\n\n".join(parts) + "\n\nWrite the plain-English summary paragraph:"
+
+    payload = json.dumps({
+        "model": _ANTHROPIC_MODEL,   # claude-haiku-4-5 (fast, cost-effective)
+        "max_tokens": 600,
+        "system": _SUMMARY_SYSTEM,
+        "messages": [{"role": "user", "content": user_msg}],
+    }).encode()
+
+    req_http = urllib.request.Request(
+        _ANTHROPIC_ENDPOINT,
+        data=payload,
+        headers={
+            "Content-Type":      "application/json",
+            "x-api-key":         api_key,
+            "anthropic-version": "2023-06-01",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req_http, timeout=25) as resp:
+            body = json.loads(resp.read())
+        return body["content"][0]["text"].strip()
+    except urllib.error.HTTPError as exc:
+        raise RuntimeError(f"Anthropic HTTP {exc.code}: {exc.read()[:200]}") from exc
+
+
+@router.post("/scheduler-summary", response_model=SchedulerSummaryResponse)
+async def scheduler_summary(req: SchedulerSummaryRequest) -> SchedulerSummaryResponse:
+    """Call Claude to produce a layman's summary of the Scheduler Feed + live tick data."""
+    api_key = os.environ.get("ANTHROPIC_API_KEY") or ""
+    if not api_key:
+        raise HTTPException(503, detail="ANTHROPIC_API_KEY is not configured on this server.")
+
+    try:
+        summary = await asyncio.get_event_loop().run_in_executor(
+            None,
+            _call_anthropic_summary,
+            req,
+            api_key,
+        )
+    except Exception as exc:
+        log.warning("ai: scheduler-summary failed: %s", exc)
+        raise HTTPException(502, detail=f"AI call failed: {exc}") from exc
+
+    return SchedulerSummaryResponse(summary=summary)
+
+
 @router.post("/explain-scenario", response_model=ExplainResponse)
 async def explain_scenario(req: ExplainRequest) -> ExplainResponse:
     """Call Claude to generate an educational 4-sentence explanation of a scenario."""

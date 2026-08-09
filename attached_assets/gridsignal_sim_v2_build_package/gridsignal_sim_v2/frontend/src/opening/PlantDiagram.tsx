@@ -19,6 +19,8 @@ import { FlowLine, FlowMarkers } from './FlowLine'
 import { PlantNode } from './PlantNode'
 import type { SolarPreview } from './PlantNode'
 import type { TickPayload } from '../types'
+import { SchedulerSummaryModal } from './SchedulerSummaryModal'
+import type { FeedEntry } from './SchedulerSummaryModal'
 
 interface PlantDiagramProps {
   /** Called when a clickable node is activated. Passes the node id. */
@@ -244,6 +246,7 @@ function LeadTimeCallout({
   // ── NO STEP-LOAD INCOMING scrolling log ───────────────────────────────────
   const [atRestLog, setAtRestLog] = useState<Array<{ ts: string; body: string }>>([])
   const [showFeedTip, setShowFeedTip] = useState(false)
+  const [showSummaryModal, setShowSummaryModal] = useState(false)
   const atRestScrollRef  = useRef<HTMLDivElement>(null)
   // Track State-1 transitions so we log only on entry, not every render.
   const prevIsState1    = useRef<boolean | null>(null)  // null = not yet evaluated
@@ -590,8 +593,23 @@ function LeadTimeCallout({
             {/* ── SCHEDULER FEED log (live during countdown) ────────────── */}
             {atRestLog.length > 0 && <>
               <div style={{ ..._RULE, marginTop: 2 }} />
-              <div style={{ ..._MONO, fontSize: 8, color: '#3a5a6a', marginBottom: -2 }}>
-                SCHEDULER FEED
+              <div style={{
+                display: 'flex', alignItems: 'center',
+                justifyContent: 'space-between', marginBottom: -2,
+              }}>
+                <span style={{ ..._MONO, fontSize: 8, color: '#3a5a6a' }}>SCHEDULER FEED</span>
+                <button
+                  onClick={() => setShowSummaryModal(true)}
+                  style={{
+                    background: 'transparent', border: '1px solid #1e3a4a',
+                    borderRadius: 3, color: '#3fb6a8', cursor: 'pointer',
+                    ..._MONO, fontSize: 7, fontWeight: 700,
+                    letterSpacing: '0.04em', padding: '1px 5px', lineHeight: 1.4,
+                    flexShrink: 0,
+                  }}
+                >
+                  AI SUMMARY
+                </button>
               </div>
               <div
                 ref={atRestScrollRef}
@@ -625,14 +643,43 @@ function LeadTimeCallout({
 
         {/* ── STATE 1: AT REST — scrolling event log ──────────────────── */}
         {!isLanded && !isRunning && <>
-          {/* Title with hover tooltip */}
+          {/* Title row: label + tooltip + AI Summary button */}
           <div style={{ position: 'relative' }}>
-            <div
-              style={{ ..._LABEL(accent), cursor: 'default', display: 'inline-block' }}
-              onMouseEnter={() => setShowFeedTip(true)}
-              onMouseLeave={() => setShowFeedTip(false)}
-            >
-              SCHEDULER FEED
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
+              <div
+                style={{ ..._LABEL(accent), cursor: 'default', display: 'inline-block' }}
+                onMouseEnter={() => setShowFeedTip(true)}
+                onMouseLeave={() => setShowFeedTip(false)}
+              >
+                SCHEDULER FEED
+              </div>
+              <button
+                onClick={() => setShowSummaryModal(true)}
+                title="Ask Claude to summarise the feed in plain language"
+                style={{
+                  background: 'rgba(63,182,168,0.07)',
+                  border: '1px solid #2a4a5a',
+                  borderRadius: 4,
+                  color: '#3fb6a8',
+                  cursor: 'pointer',
+                  ..._MONO, fontSize: 8, fontWeight: 700,
+                  letterSpacing: '0.05em',
+                  padding: '2px 7px',
+                  lineHeight: 1.5,
+                  flexShrink: 0,
+                  transition: 'background 0.15s, border-color 0.15s',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = 'rgba(63,182,168,0.16)'
+                  e.currentTarget.style.borderColor = '#3fb6a8'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(63,182,168,0.07)'
+                  e.currentTarget.style.borderColor = '#2a4a5a'
+                }}
+              >
+                AI SUMMARY
+              </button>
             </div>
             {showFeedTip && (
               <div style={{
@@ -649,6 +696,15 @@ function LeadTimeCallout({
             )}
           </div>
           <div style={_RULE} />
+
+          {/* AI Summary modal — rendered via portal so it escapes the SVG foreignObject */}
+          {showSummaryModal && (
+            <SchedulerSummaryModal
+              feedEntries={atRestLog as FeedEntry[]}
+              tick={tick}
+              onClose={() => setShowSummaryModal(false)}
+            />
+          )}
           {/* Scrolling vbox: one entry per transition into AT REST state.
               flex:1 fills whatever height remains after the label+rule.
               overflowY:'auto' enables scrolling; auto-scroll keeps the
