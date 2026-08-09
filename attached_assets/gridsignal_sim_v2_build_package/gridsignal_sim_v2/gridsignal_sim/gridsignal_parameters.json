@@ -938,7 +938,10 @@
       "provenance": "DR-2026-08-08-FREQ",
       "provenance_detail": "DR-2026-08-08-FREQ — virtual synchronous machine mode. Grid-forming BESS contributes virtual inertia (vsm_inertia_constant_s) when zero synchronous machines are on-bus.",
       "spec_ref": "§DR-2026-08-08-FREQ Phase 2A",
-      "ui": { "control": "readonly", "group": "frequency" }
+      "ui": {
+        "control": "readonly",
+        "group": "frequency"
+      }
     },
     {
       "key": "vsm_inertia_constant_s",
@@ -948,7 +951,10 @@
       "provenance": "PROVISIONAL-UNMEASURED",
       "provenance_detail": "PROVISIONAL-UNMEASURED — 2.0 s. No measured basis. Applies when anchor_mode = 'vsm' and zero synchronous machines are on-bus. Blocks demo export until measured.",
       "spec_ref": "§DR-2026-08-08-FREQ Phase 2A",
-      "ui": { "control": "readonly", "group": "frequency" }
+      "ui": {
+        "control": "readonly",
+        "group": "frequency"
+      }
     },
     {
       "key": "dynamic_step_s",
@@ -958,17 +964,23 @@
       "provenance": "DR-2026-08-08-FREQ",
       "provenance_detail": "DR-2026-08-08-FREQ — 0.01 s (10 ms). Required for nadir resolution. Must satisfy: dynamic_step_s <= shortest_protection_delay / 10 = 0.015 s.",
       "spec_ref": "§DR-2026-08-08-FREQ Phase 3",
-      "ui": { "control": "readonly", "group": "frequency" }
+      "ui": {
+        "control": "readonly",
+        "group": "frequency"
+      }
     },
     {
       "key": "fixed_speed_cooling_fraction",
-      "value": 0.30,
+      "value": 0.3,
       "unit": "",
       "label": "Fixed-speed cooling motor fraction",
       "provenance": "PROVISIONAL-UNMEASURED",
       "provenance_detail": "PROVISIONAL-UNMEASURED — 0.30. Fraction of cooling load served by fixed-speed motors (not VFD). These motors produce load damping proportional to speed. Blocks demo export until measured.",
       "spec_ref": "§DR-2026-08-08-FREQ Phase 3",
-      "ui": { "control": "readonly", "group": "frequency" }
+      "ui": {
+        "control": "readonly",
+        "group": "frequency"
+      }
     },
     {
       "key": "d_motor",
@@ -978,7 +990,10 @@
       "provenance": "PROVISIONAL-UNMEASURED",
       "provenance_detail": "PROVISIONAL-UNMEASURED — 2.5 pu/pu. Affinity law basis. D_eff = (p_cooling/p_demand) x fixed_speed_cooling_fraction x d_motor ~0.13 at nominal operating point. Blocks demo export until measured.",
       "spec_ref": "§DR-2026-08-08-FREQ Phase 3",
-      "ui": { "control": "readonly", "group": "frequency" }
+      "ui": {
+        "control": "readonly",
+        "group": "frequency"
+      }
     },
     {
       "key": "valve_actuation_tc_s",
@@ -988,7 +1003,10 @@
       "provenance": "PROVISIONAL-UNMEASURED",
       "provenance_detail": "PROVISIONAL-UNMEASURED — 0.2 s. No measured basis. First-order lag from governor signal to valve gate position. Blocks demo export until measured.",
       "spec_ref": "§DR-2026-08-08-FREQ Phase 4",
-      "ui": { "control": "readonly", "group": "turbine" }
+      "ui": {
+        "control": "readonly",
+        "group": "turbine"
+      }
     },
     {
       "key": "fuel_to_power_tc_s",
@@ -998,7 +1016,10 @@
       "provenance": "PROVISIONAL-UNMEASURED",
       "provenance_detail": "PROVISIONAL-UNMEASURED — 1.0 s. No measured basis. First-order lag from fuel valve position to shaft mechanical power output. Blocks demo export until measured.",
       "spec_ref": "§DR-2026-08-08-FREQ Phase 4",
-      "ui": { "control": "readonly", "group": "turbine" }
+      "ui": {
+        "control": "readonly",
+        "group": "turbine"
+      }
     },
     {
       "key": "max_instantaneous_load_step_mw",
@@ -1008,21 +1029,39 @@
       "provenance": "PROVISIONAL-UNMEASURED",
       "provenance_detail": "PROVISIONAL-UNMEASURED — 2.25 MW per sub-step. No measured basis. Bounds the governor output change per dynamic_step_s integration step. Blocks demo export until measured.",
       "spec_ref": "§DR-2026-08-08-FREQ Phase 4",
-      "ui": { "control": "readonly", "group": "turbine" }
+      "ui": {
+        "control": "readonly",
+        "group": "turbine"
+      }
     },
     {
       "key": "ufls_stages",
       "value": [
-        {"threshold_hz": 59.3, "delay_s": 0.15, "block_fraction": 0.10},
-        {"threshold_hz": 58.9, "delay_s": 0.15, "block_fraction": 0.15},
-        {"threshold_hz": 58.5, "delay_s": 0.15, "block_fraction": 0.20}
+        {
+          "threshold_hz": 59.3,
+          "delay_s": 0.15,
+          "block_fraction": 0.1
+        },
+        {
+          "threshold_hz": 58.9,
+          "delay_s": 0.15,
+          "block_fraction": 0.15
+        },
+        {
+          "threshold_hz": 58.5,
+          "delay_s": 0.15,
+          "block_fraction": 0.2
+        }
       ],
       "unit": "list",
       "label": "UFLS stage definitions",
       "provenance": "PROVISIONAL-UNMEASURED",
       "provenance_detail": "PROVISIONAL-UNMEASURED — 3 stages. No measured basis. Thresholds and delays must be confirmed against site relay coordination study. Blocks demo export until measured.",
       "spec_ref": "§DR-2026-08-08-FREQ Phase 5",
-      "ui": { "control": "readonly", "group": "frequency" }
+      "ui": {
+        "control": "readonly",
+        "group": "frequency"
+      }
     },
     {
       "key": "relay_81u_threshold_hz",
@@ -1032,17 +1071,23 @@
       "provenance": "PROVISIONAL-UNMEASURED",
       "provenance_detail": "PROVISIONAL-UNMEASURED — 57.5 Hz. No measured basis for islanded operation. NOTE: island_collapse_hz (IEEE 1547 Cat I = 57.0 Hz) is for grid-connected DER interconnection and must not be used as the islanded protection threshold. This PROVISIONAL value replaces it for islanded mode. Blocks demo export until measured.",
       "spec_ref": "§DR-2026-08-08-FREQ Phase 5",
-      "ui": { "control": "readonly", "group": "frequency" }
+      "ui": {
+        "control": "readonly",
+        "group": "frequency"
+      }
     },
     {
       "key": "relay_81u_delay_s",
-      "value": 0.10,
+      "value": 0.1,
       "unit": "s",
       "label": "81U relay clearing delay",
       "provenance": "PROVISIONAL-UNMEASURED",
       "provenance_detail": "PROVISIONAL-UNMEASURED — 0.10 s (100 ms). No measured basis. Time from threshold crossing to generator trip. Blocks demo export until measured.",
       "spec_ref": "§DR-2026-08-08-FREQ Phase 5",
-      "ui": { "control": "readonly", "group": "frequency" }
+      "ui": {
+        "control": "readonly",
+        "group": "frequency"
+      }
     },
     {
       "key": "droop_r",
@@ -1052,7 +1097,10 @@
       "provenance": "CHOSEN",
       "provenance_detail": "CHOSEN — 0.04 pu/pu. Per-unit alias of governor_droop, used as the default for TurbineConfig.droop_r (Phase 2B per-unit governor). Same value as fleet-level governor_droop.",
       "spec_ref": "§DR-2026-08-08-FREQ Phase 2B",
-      "ui": { "control": "readonly", "group": "turbine" }
+      "ui": {
+        "control": "readonly",
+        "group": "turbine"
+      }
     },
     {
       "key": "power_factor_turbine",
@@ -1062,7 +1110,51 @@
       "provenance": "CHOSEN",
       "provenance_detail": "CHOSEN — 0.85. Default per-unit power factor for TurbineConfig (Phase 2B). Used to compute per-unit MVA base: S_i = rated_mw_i / power_factor_i. Matches SiteConfig.power_factor default.",
       "spec_ref": "§DR-2026-08-08-FREQ Phase 2B",
-      "ui": { "control": "readonly", "group": "turbine" }
+      "ui": {
+        "control": "readonly",
+        "group": "turbine"
+      }
+    },
+    {
+      "key": "governor_deadband_hz",
+      "value": 0.02,
+      "unit": "Hz",
+      "label": "Governor deadband",
+      "provenance": "CHOSEN",
+      "provenance_detail": "CHOSEN — 0.02 Hz. Was a class-level literal (_GOVERNOR_DEADBAND_HZ) in simulation_core.py. Promoted to catalogue by Phase 1 (DR-2026-08-09-BALANCE) so the value has one authoritative home. No measured basis; typical gas-turbine governor setting.",
+      "spec_ref": "§DR-2026-08-09-BALANCE Phase 1",
+      "ui": {
+        "control": "readonly",
+        "group": "frequency"
+      }
+    },
+    {
+      "key": "droop_max_frequency_error_hz",
+      "value": null,
+      "unit": "Hz",
+      "label": "Maximum frequency error for droop clamping (DR-BAL-1)",
+      "provenance": "CHOSEN",
+      "provenance_detail": "CHOSEN — value not yet set (DR-BAL-1 open). A defensible basis is the tightest protective threshold the site declares: beyond that point a machine trips rather than governs. Phase 1 bounded droop is gated on this key having a non-null value; the unbounded formula is retained while null.",
+      "spec_ref": "§DR-2026-08-09-BALANCE Phase 1 / DR-BAL-1",
+      "ui": {
+        "control": "readonly",
+        "group": "frequency"
+      },
+      "reason": "DR-BAL-1 open — must be set before Phase 1 bounded droop activates."
+    },
+    {
+      "key": "balance_defect_tolerance_mw",
+      "value": 0.0,
+      "unit": "MW",
+      "label": "Power balance identity tolerance (noise floor, DR-BAL-2)",
+      "provenance": "CHOSEN",
+      "provenance_detail": "CHOSEN — 0.0 MW. Calibrated from demo-baseline (11 ticks, I1 = 0.0 MW exactly; calibrate_noise_floor gives p99.9 = 0.0, suggested = 0.0 × 10 = 0.0 MW). Do not raise to accommodate a run that violates the identity — TC-125 pins this. DR-BAL-2: re-calibrate against a production clean recording before the gate is relied on for acceptance decisions.",
+      "spec_ref": "§DR-2026-08-09-BALANCE Phase 0 / DR-BAL-2",
+      "ui": {
+        "control": "readonly",
+        "group": "balance"
+      },
+      "reason": "DR-BAL-2 open — value derived from demo-baseline; pending review."
     }
   ],
   "excluded": [

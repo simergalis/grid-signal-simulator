@@ -1023,6 +1023,21 @@ class AssertionResultResponse(BaseModel):
     detail: str
 
 
+class BalanceGateResponse(BaseModel):
+    """Phase 0 power balance gate verdict (DR-2026-08-09-BALANCE).
+
+    Present when the gate was evaluated (balance_defect_tolerance_mw is set in the
+    catalogue). When renderable is False the run's derived figures — reserve margin,
+    N-1 firm capacity, served load — rest on terms that did not reconcile and should
+    not be presented as if they did. The reason string carries the detail.
+    """
+    renderable: bool
+    reason: Optional[str] = None
+    worst_defect_mw: float
+    worst_tick_index: Optional[int] = None
+    n_violating: int
+
+
 class RunResultResponse(BaseModel):
     """Full verdict returned by GET /runs/{run_id}/result."""
     run_id: str
@@ -1034,6 +1049,7 @@ class RunResultResponse(BaseModel):
     dropped_ticks: int
     gap_count: int
     assertions: list[AssertionResultResponse]
+    balance_gate: Optional[BalanceGateResponse] = None
 
 
 class TimeseriesRowResponse(BaseModel):

@@ -49,6 +49,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from api.schemas import (
     AssertionResultResponse,
+    BalanceGateResponse,
     GenerationBlock,
     RunListResponse,
     RunResultResponse,
@@ -501,6 +502,21 @@ async def get_run_result(
             ),
         )
     v = completed.verdict
+    # Phase 0 (DR-2026-08-09-BALANCE): include the balance gate verdict.
+    # The UI surface for this field is a design decision not made here; the data is
+    # available on the response for the frontend to consume as appropriate.
+    _bg = completed.balance_gate
+    _balance_gate_resp = (
+        BalanceGateResponse(
+            renderable=_bg.renderable,
+            reason=_bg.reason,
+            worst_defect_mw=_bg.worst_defect_mw,
+            worst_tick_index=_bg.worst_index,
+            n_violating=_bg.n_violating,
+        )
+        if _bg is not None
+        else None
+    )
     return RunResultResponse(
         run_id=run_id,
         scenario_id=completed.scenario_id,
@@ -514,6 +530,7 @@ async def get_run_result(
             AssertionResultResponse(check=a.check, status=a.status, detail=a.detail)
             for a in v.assertions
         ],
+        balance_gate=_balance_gate_resp,
     )
 
 

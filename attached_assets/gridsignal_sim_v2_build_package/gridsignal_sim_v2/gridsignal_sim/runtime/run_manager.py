@@ -40,9 +40,11 @@ from typing import Any, Awaitable, Callable, Optional, Protocol
 
 from core.asset_modules import TurbineState as _TurbineState   # runtime → core OK
 from core.models import TickResult, WorkloadSignal
+from core.power_balance import GateVerdict as _PbGateVerdict, gate_run as _pb_gate_run
 from core.sim_clock import SimClock
 from core.simulation_core import SimulationState, evaluate_tick
 from core._plane_guard import _EVALUATE_TICK_PERMITTED
+from core.site_parameters import value as _sp_catalogue_value
 
 logger = logging.getLogger("gridsignal.run_manager")
 
@@ -815,6 +817,11 @@ class CompletedRun:
     dropped_ticks: int
     # AB2: turbine fleet rated capacity (MW); used by energy-summary cost model.
     turbine_rated_mw: float = 0.0
+    # Phase 0 (DR-2026-08-09-BALANCE): power balance gate verdict.
+    # None when the gate was not evaluated (e.g. balance_defect_tolerance_mw unset).
+    # When renderable is False the run's derived figures should not be presented
+    # as if the identity closed; the reason string carries the detail.
+    balance_gate: Optional[_PbGateVerdict] = None
 
 
 # ---------------------------------------------------------------------------
@@ -1761,6 +1768,23 @@ class RunManager:
 
                 await ctx.sink.finalize(ctx.run_id, verdict_json)
 
+                # Phase 0 (DR-2026-08-09-BALANCE): evaluate the power balance gate.
+                # Collect d4_balance_defect_mw from every tick and call gate_run so
+                # the result screen can surface whether the identity closed.
+                # The gate is omitted when the tolerance key is null (DR-BAL-2 open)
+                # or when tick_dicts is empty (dropped runs).
+                _balance_gate: Optional[_PbGateVerdict] = None
+                try:
+                    _bal_tol = _sp_catalogue_value("balance_defect_tolerance_mw")
+                    if tick_dicts and _bal_tol is not None:
+                        _defects = [
+                            td.get("d4_balance_defect_mw", 0.0)
+                            for td in tick_dicts
+                        ]
+                        _balance_gate = _pb_gate_run(_defects, tolerance_mw=_bal_tol)
+                except Exception:
+                    logger.exception("run %s: balance gate evaluation failed", ctx.run_id)
+
                 # Store for the results/playback screen.
                 self._completed[ctx.run_id] = CompletedRun(
                     run_id=ctx.run_id,
@@ -1776,6 +1800,7 @@ class RunManager:
                     tick_dicts=tick_dicts,
                     dropped_ticks=dropped,
                     turbine_rated_mw=ctx.turbine_rated_mw,
+                    balance_gate=_balance_gate,
                 )
 
             # AC3: emit section profile if flag was set for this run.
