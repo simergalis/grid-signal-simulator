@@ -231,3 +231,10 @@ uri = "file://reports/NAR-001_phase_A_prime_part2a_build_report.md"
 type = "text"
 title = "NAR-001 Part 2a Build Report"
 description = "Recorder build findings, TC-118–121 results, and Part 2a.5 smoke validation. Stopped at leading-ticks gate."
+
+[[outputs]]
+id = "ohWdEEsTYuhKtGLKxTmpy"
+uri = "file://reports/NAR-001_phase_A_prime_part2b_R1_R2_findings.md"
+type = "text"
+title = "NAR-001 Part 2b Pre-flight: R1 & R2 Findings"
+description = "Catalogue key discrepancy (R1) and generator pipeline / ScenarioSpec analysis (R2). Stopped at ScenarioSpec gate."
