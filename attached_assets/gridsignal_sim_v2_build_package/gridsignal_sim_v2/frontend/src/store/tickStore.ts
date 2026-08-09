@@ -112,6 +112,9 @@ interface TickState {
   acknowledgedAlerts: Set<number>
   /** Wall-clock timestamp of the last frame drain — used to compute interpolation t. */
   _lastFrameWall: number
+  /** GCC event log — appended by PlantDiagram whenever a GCC feed entry fires.
+   *  Read by SubsystemModal to populate the GCC tile event log. */
+  gccEvents: Array<{ts: string; body: string}>
 
   // ── Actions ───────────────────────────────────────────────────────────────
   /** Called by the WebSocket consumer on each arriving message. */
@@ -125,6 +128,10 @@ interface TickState {
    * acknowledgedAlerts so a future alert at the same index doesn't re-latch.
    */
   acknowledgeAlert: (tickIndex: number) => void
+  /** Append a single GCC decision event to the log. */
+  appendGccEvent: (event: {ts: string; body: string}) => void
+  /** Clear the GCC event log (called on new run start). */
+  clearGccEvents: () => void
   reset: () => void
 }
 
@@ -139,6 +146,7 @@ export const useTickStore = create<TickState>((set, get) => ({
   latchedAlert: null,
   acknowledgedAlerts: new Set(),
   _lastFrameWall: 0,
+  gccEvents: [],
 
   pushTick(tick) {
     set(s => ({ pendingTicks: [...s.pendingTicks, tick] }))
@@ -225,6 +233,14 @@ export const useTickStore = create<TickState>((set, get) => ({
     set({ runMeta: meta })
   },
 
+  appendGccEvent(event) {
+    set(s => ({ gccEvents: [...s.gccEvents, event] }))
+  },
+
+  clearGccEvents() {
+    set({ gccEvents: [] })
+  },
+
   acknowledgeAlert(tickIndex) {
     set(s => ({
       acknowledgedAlerts: new Set([...s.acknowledgedAlerts, tickIndex]),
@@ -240,7 +256,7 @@ export const useTickStore = create<TickState>((set, get) => ({
       latestTick: null, isInterpolated: false, prevTick: null,
       history: [], pendingTicks: [], decimationCount: 0,
       runMeta: null, latchedAlert: null, acknowledgedAlerts: new Set(),
-      _lastFrameWall: 0,
+      _lastFrameWall: 0, gccEvents: [],
     })
   },
 }))

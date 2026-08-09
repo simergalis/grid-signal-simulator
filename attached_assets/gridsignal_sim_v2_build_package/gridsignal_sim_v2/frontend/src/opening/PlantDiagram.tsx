@@ -233,6 +233,7 @@ function LeadTimeCallout({
 }) {
   const latchedAlert     = useTickStore(s => s.latchedAlert)
   const acknowledgeAlert = useTickStore(s => s.acknowledgeAlert)
+  const appendGccEvent   = useTickStore(s => s.appendGccEvent)
 
   // ── Landing-state tracking ─────────────────────────────────────────────────
   // When Δt_lead transitions from > 0 to 0, show STEP-LOAD LANDED for 30 s.
@@ -494,7 +495,10 @@ function LeadTimeCallout({
         }
       }
 
-      if (body) setAtRestLog(p => [...p, { ts, body }])
+      if (body) {
+        setAtRestLog(p => [...p, { ts, body }])
+        appendGccEvent({ ts, body })
+      }
     }
 
     prevCommitActionRef.current = action
@@ -515,6 +519,7 @@ function LeadTimeCallout({
           + ` of +${forecast.toFixed(1)} MW forecast step-load.`
         : `GCC dispatch: turbine committed — step-load +${forecast.toFixed(1)} MW incoming.`
       setAtRestLog(prev => [...prev, { ts, body }])
+      appendGccEvent({ ts, body })
     }
     prevIsRunningRef.current = nowRunning
   }, [tick])

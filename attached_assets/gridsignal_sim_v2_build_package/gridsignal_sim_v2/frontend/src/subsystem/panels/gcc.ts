@@ -15,7 +15,8 @@ import React from 'react'
 import type { PanelConfig, PanelData } from './index'
 import type { TickPayload, HistoryPoint } from '../../types'
 import { BulletBar } from '../../charts/BulletBar'
-import { StatTable }  from '../../charts/StatTable'
+
+type GccEvent = { ts: string; body: string }
 
 const GOLD   = '#e0a458'
 const TEAL   = '#3fb6a8'
@@ -41,8 +42,45 @@ function actionLabel(action: string): string {
   return 'HOLDING'
 }
 
+const _MONO = { fontFamily: "'SF Mono','Roboto Mono',Menlo,Consolas,monospace" }
+const _SANS = { fontFamily: 'Inter,system-ui,sans-serif' }
+
+function renderEventLog(events: GccEvent[]): React.ReactElement {
+  if (events.length === 0) {
+    return React.createElement('div', {
+      style: { ..._MONO, fontSize: 10, color: '#3a4a58', padding: '10px 0', textAlign: 'center' },
+    }, 'No GCC decisions recorded this run.')
+  }
+  // Show most-recent first
+  const reversed = [...events].reverse()
+  return React.createElement('div', {
+    style: {
+      display: 'flex', flexDirection: 'column', gap: 6,
+      maxHeight: 240, overflowY: 'auto',
+      paddingRight: 2, scrollbarWidth: 'thin', scrollbarColor: '#2a3a4a transparent',
+    },
+  }, ...reversed.map((ev, i) =>
+    React.createElement('div', {
+      key: i,
+      style: {
+        display: 'flex', flexDirection: 'column', gap: 2,
+        borderLeft: `2px solid ${i === 0 ? '#2a5060' : '#1e2a36'}`,
+        paddingLeft: 8,
+      },
+    },
+      React.createElement('span', {
+        style: { ..._MONO, fontSize: 8, color: '#3a5a6a', lineHeight: 1.4 },
+      }, ev.ts),
+      React.createElement('span', {
+        style: { ..._SANS, fontSize: 10, color: i === 0 ? '#c8d6e5' : '#4b5764', lineHeight: 1.5 },
+      }, ev.body),
+    )
+  ))
+}
+
 export const gccPanel: PanelConfig = {
-  deriveData(tick: TickPayload | null, _alert, _history: HistoryPoint[]): PanelData {
+  deriveData(tick: TickPayload | null, _alert, _history: HistoryPoint[], extra?: unknown): PanelData {
+    const events = (Array.isArray(extra) ? extra : []) as GccEvent[]
 
     if (!tick) {
       return {
@@ -65,7 +103,13 @@ export const gccPanel: PanelConfig = {
           { label: 'Reserve satisfied', value: '—' },
           { label: 'Pending start',     value: '—' },
         ],
-        secondary: undefined,
+        secondary: React.createElement('div', null,
+          React.createElement('div', {
+            style: { ..._MONO, fontSize: 9, color: '#3a5a6a', letterSpacing: '0.08em',
+                     textTransform: 'uppercase', marginBottom: 6 },
+          }, 'GCC EVENT LOG'),
+          renderEventLog(events),
+        ),
         why: [
           'The GCC monitors fleet utilisation each tick and fires command_start() when it exceeds the commit threshold.',
           'The N-1 reserve floor ensures enough on-bus capacity to survive the sudden loss of the largest committed unit.',
@@ -159,8 +203,14 @@ export const gccPanel: PanelConfig = {
           : 'no active ramp' },
     ]
 
-    // ── Secondary — last-decision StatTable ──────────────────────────────────
-    const secondary = React.createElement(StatTable, { rows: statRows })
+    // ── Secondary — GCC event log ────────────────────────────────────────────
+    const secondary = React.createElement('div', null,
+      React.createElement('div', {
+        style: { ..._MONO, fontSize: 9, color: '#3a5a6a', letterSpacing: '0.08em',
+                 textTransform: 'uppercase', marginBottom: 6 },
+      }, `GCC EVENT LOG — ${events.length} decision${events.length !== 1 ? 's' : ''} this run`),
+      renderEventLog(events),
+    )
 
     return {
       stateLabel:  actionLabel(action),

@@ -42,9 +42,10 @@ export function SubsystemModal({
 }) {
   const cfg    = SUBSYSTEMS.find(s => s.id === subsystemId)
   const panel  = PANEL_CONFIGS[subsystemId]
-  const tick   = useTickStore(s => s.latestTick)
-  const alert  = useTickStore(s => s.latchedAlert)
-  const history = useTickStore(s => s.history)
+  const tick      = useTickStore(s => s.latestTick)
+  const alert     = useTickStore(s => s.latchedAlert)
+  const history   = useTickStore(s => s.history)
+  const gccEvents = useTickStore(s => s.gccEvents)
 
   // Poll GET /api/session/transport at ~1 Hz while the network modal is open.
   const [transportData, setTransportData] = useState<TransportView | null>(null)
@@ -106,8 +107,11 @@ export function SubsystemModal({
   if (!cfg || !panel) return null
 
   // Derive live values for the modal from the tick.
-  // For the network panel, pass the polled transport data as the 4th arg.
-  const panelData = panel.deriveData(tick, alert, history, transportData ?? undefined)
+  // gcc panel: pass the accumulated GCC event log as the 4th arg.
+  // network panel: pass the polled transport data as the 4th arg.
+  const extra = subsystemId === 'gcc' ? gccEvents
+    : (transportData ?? undefined)
+  const panelData = panel.deriveData(tick, alert, history, extra)
 
   return (
     // Backdrop
