@@ -220,6 +220,70 @@ def test_deactivated_user_returns_401() -> None:
 
 
 # ---------------------------------------------------------------------------
+# SEC-6 — Set-Cookie includes Secure flag when SECURE_COOKIES=1
+# ---------------------------------------------------------------------------
+
+def test_login_set_cookie_has_secure_flag_when_env_set(monkeypatch) -> None:
+    """POST /api/auth/login must include Secure in Set-Cookie when SECURE_COOKIES=1.
+
+    Strategy
+    --------
+    1. Set SECURE_COOKIES=1 in the process environment.
+    2. Ensure the auth_user table exists and upsert a test account.
+    3. Inject a known OTP for that account.
+    4. POST /api/auth/login with the correct code.
+    5. Verify the response is 200 and the Set-Cookie header contains 'secure'
+       (case-insensitive), confirming the Secure flag is emitted.
+    """
+    monkeypatch.setenv("SECURE_COOKIES", "1")
+
+    asyncio.run(create_auth_tables())
+    sec6_email = "sec6-secure-cookie@example.com"
+    asyncio.run(_ensure_user(sec6_email, "operator"))
+
+    inject_otp(sec6_email, "123456")
+
+    with TestClient(create_app()) as client:
+        resp = client.post(
+            "/api/auth/login",
+            json={"email": sec6_email, "code": "123456"},
+        )
+
+    assert resp.status_code == 200, f"SEC-6 login failed: {resp.status_code}: {resp.text}"
+    set_cookie = resp.headers.get("set-cookie", "")
+    assert "secure" in set_cookie.lower(), (
+        f"SEC-6 expected Secure flag in Set-Cookie but got: {set_cookie!r}"
+    )
+
+
+def test_login_set_cookie_no_secure_flag_by_default(monkeypatch) -> None:
+    """POST /api/auth/login must NOT include Secure in Set-Cookie in plain dev mode.
+
+    Ensures the Secure flag is conditional — local HTTP dev is not broken.
+    """
+    monkeypatch.delenv("SECURE_COOKIES", raising=False)
+    monkeypatch.delenv("NODE_ENV", raising=False)
+
+    asyncio.run(create_auth_tables())
+    sec6b_email = "sec6b-no-secure@example.com"
+    asyncio.run(_ensure_user(sec6b_email, "operator"))
+
+    inject_otp(sec6b_email, "654321")
+
+    with TestClient(create_app()) as client:
+        resp = client.post(
+            "/api/auth/login",
+            json={"email": sec6b_email, "code": "654321"},
+        )
+
+    assert resp.status_code == 200, f"SEC-6b login failed: {resp.status_code}: {resp.text}"
+    set_cookie = resp.headers.get("set-cookie", "")
+    assert "secure" not in set_cookie.lower(), (
+        f"SEC-6b expected NO Secure flag in dev mode but got: {set_cookie!r}"
+    )
+
+
+# ---------------------------------------------------------------------------
 # Shared helper for PW tests — isolated SQLite engine + session factory
 # ---------------------------------------------------------------------------
 

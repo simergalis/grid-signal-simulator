@@ -13,6 +13,7 @@ A new code can only be requested once every 60 seconds per address.
 from __future__ import annotations
 
 import logging
+import os
 import random
 import time
 
@@ -238,6 +239,10 @@ async def login(
         _fail()
 
     token = create_access_token(user.id, user.email)
+    _secure_cookies = (
+        os.environ.get("SECURE_COOKIES", "").lower() in ("1", "true", "yes")
+        or os.environ.get("NODE_ENV", "").lower() == "production"
+    )
     response.set_cookie(
         key=COOKIE_NAME,
         value=token,
@@ -245,6 +250,7 @@ async def login(
         samesite="lax",
         max_age=86400,
         path="/",
+        secure=_secure_cookies,
     )
     _log.info("User %s signed in via OTP", user.email)
     return {"ok": True, "display_name": user.display_name, "role": user.role}
