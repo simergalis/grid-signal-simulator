@@ -64,7 +64,8 @@ from api.routes import auth_routes, admin_routes
 from api.routes import export as export_routes
 from api.routes import ai as ai_routes
 from api.auth_utils import COOKIE_NAME, decode_access_token
-from api.db import create_auth_tables
+from api.db import create_auth_tables, _SessionLocal
+from runtime.persistence import AuthUser
 
 # §10.2: built frontend lives two levels above this file (api/ → gridsignal_sim/ → gridsignal_sim_v2/)
 #   __file__ = .../gridsignal_sim_v2/gridsignal_sim/api/app.py
@@ -235,7 +236,23 @@ def create_app() -> FastAPI:
                 or path.startswith("/api/session/"):
             return await call_next(request)
         token = request.cookies.get(COOKIE_NAME)
-        if not token or decode_access_token(token) is None:
+        if not token:
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "Not authenticated"},
+            )
+        payload = decode_access_token(token)
+        if payload is None:
+            return JSONResponse(
+                status_code=401,
+                content={"detail": "Not authenticated"},
+            )
+        # Check the account is still active in the DB so a deactivated user
+        # is rejected immediately rather than waiting for the JWT to expire.
+        user_id = int(payload["sub"])
+        async with _SessionLocal() as _db:
+            _user = await _db.get(AuthUser, user_id)
+        if _user is None or not _user.is_active:
             return JSONResponse(
                 status_code=401,
                 content={"detail": "Not authenticated"},

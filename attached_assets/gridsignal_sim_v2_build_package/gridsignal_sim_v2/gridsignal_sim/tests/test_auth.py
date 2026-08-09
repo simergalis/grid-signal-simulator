@@ -37,6 +37,7 @@ from api.auth_utils import COOKIE_NAME, create_access_token
 from api.db import _SessionLocal, create_auth_tables
 from api.routes.auth_routes import inject_otp
 from runtime.persistence import AuthUser
+from sqlalchemy import select
 
 
 # ---------------------------------------------------------------------------
@@ -166,6 +167,56 @@ def test_admin_endpoint_with_operator_session_returns_403() -> None:
             cookies={COOKIE_NAME: token},
         )
     assert resp.status_code == 403, f"Expected 403, got {resp.status_code}: {resp.text}"
+
+
+# ---------------------------------------------------------------------------
+# SEC-5 — deactivated user is rejected immediately (not after JWT expiry)
+# ---------------------------------------------------------------------------
+
+def test_deactivated_user_returns_401() -> None:
+    """GET /api/fabric/fixture with a valid JWT for a deactivated account must return 401.
+
+    Strategy
+    --------
+    1. Ensure the auth_user table exists.
+    2. Upsert a test operator account (is_active=True) directly in the shared DB.
+    3. Mint a valid JWT for that account — cryptographically identical to a real
+       session that was issued before the account was deactivated.
+    4. Deactivate the account in the DB (is_active=False).
+    5. Send a protected GET request using the still-valid JWT.
+    6. Expect 401 — the auth middleware must check the DB, not just the JWT.
+    """
+    # Step 1: ensure auth tables exist.
+    asyncio.run(create_auth_tables())
+
+    # Step 2: ensure the operator account exists and is active.
+    sec5_email = "sec5-deactivated@example.com"
+    user_id = asyncio.run(_ensure_user(sec5_email, "operator"))
+
+    # Step 3: mint a valid JWT (would remain valid for 24 hours by expiry alone).
+    token = create_access_token(user_id, sec5_email)
+
+    # Step 4: deactivate the account in the DB.
+    async def _deactivate(uid: int) -> None:
+        async with _SessionLocal() as session:
+            result = await session.execute(
+                select(AuthUser).where(AuthUser.id == uid)
+            )
+            user = result.scalar_one_or_none()
+            if user is not None:
+                user.is_active = False
+                await session.commit()
+
+    asyncio.run(_deactivate(user_id))
+
+    # Step 5 & 6: the JWT is still cryptographically valid but the account is
+    # disabled — the middleware must reject the request with 401.
+    with TestClient(create_app()) as client:
+        resp = client.get("/api/fabric/fixture", cookies={COOKIE_NAME: token})
+
+    assert resp.status_code == 401, (
+        f"SEC-5 expected 401 for deactivated user, got {resp.status_code}: {resp.text}"
+    )
 
 
 # ---------------------------------------------------------------------------
