@@ -95,6 +95,14 @@ export const SUBSYSTEMS: SubsystemConfig[] = [
 
   // ── SYSTEM ────────────────────────────────────────────────────────────────
   {
+    id: 'gcc',
+    name: 'Generation Commitment Controller',
+    group: 'system',
+    accentColor: '#e0a458',
+    identityLine: 'GCC · forecast-driven · unit start/stop authority',
+    tabId: 'overview',
+  },
+  {
     id: 'forecast-quality',
     name: 'Forecast Quality',
     group: 'system',

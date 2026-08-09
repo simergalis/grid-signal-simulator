@@ -44,6 +44,7 @@ import { gridPanel }            from './grid'
 import { forecastQualityPanel } from './forecastQuality'
 import { networkPanel }         from './network'
 import { agentsPanel }          from './agents'
+import { gccPanel }             from './gcc'
 
 export const PANEL_CONFIGS: Record<string, PanelConfig> = {
   generation:           generationPanel,
@@ -56,4 +57,5 @@ export const PANEL_CONFIGS: Record<string, PanelConfig> = {
   'forecast-quality':   forecastQualityPanel,
   network:              networkPanel,
   agents:               agentsPanel,
+  gcc:                  gccPanel,
 }
