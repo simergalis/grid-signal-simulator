@@ -160,3 +160,37 @@ def fleet_droop_gain_mw_per_hz(units: Sequence[DroopUnit],
     """Σ rated/(pf·R·f0) -- the fleet's stiffness, used by the swing model."""
     return sum((u.rated_mw / u.power_factor) / (u.droop_r * frequency_nominal_hz)
                for u in units if u.droop_r > 0.0 and u.power_factor > 0.0)
+
+
+def max_frequency_error_from_thresholds(
+    frequency_nominal_hz: float,
+    protective_thresholds_hz: Sequence[float],
+) -> float:
+    """Derive the Δf clamp from the site's first-stage protective settings.
+
+    The clamp is a backstop against numerical excursion, not a physical limit --
+    the physical limit is per-unit headroom, applied above. So it belongs at the
+    boundary where governor action stops being the operative mechanism, which is
+    the tightest *first-stage* trip threshold: past that point the machine is on
+    a timer to disconnect, and modelling it as still governing models a unit that
+    is leaving the bus.
+
+    Setting it tighter would distort legitimate governor response during a real
+    excursion, which is the behaviour the frequency work exists to reproduce.
+
+    `protective_thresholds_hz` must come from the site's configured protection,
+    not from a standard quoted from memory. Pass the first-stage under- and
+    over-frequency settings; second-stage fast trips are not the boundary of
+    governor action.
+    """
+    if not protective_thresholds_hz:
+        raise ValueError(
+            "no protective thresholds supplied; the Δf clamp is derived from "
+            "site protection settings and has no default")
+    margins = [abs(frequency_nominal_hz - hz) for hz in protective_thresholds_hz]
+    smallest = min(margins)
+    if smallest <= 0.0:
+        raise ValueError(
+            f"a threshold coincides with nominal ({frequency_nominal_hz} Hz); "
+            "the clamp would be zero and droop would never act")
+    return smallest

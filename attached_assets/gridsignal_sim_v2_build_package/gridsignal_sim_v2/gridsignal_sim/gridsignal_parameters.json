@@ -1132,29 +1132,29 @@
       "key": "droop_max_frequency_error_hz",
       "value": null,
       "unit": "Hz",
-      "label": "Maximum frequency error for droop clamping (DR-BAL-1)",
+      "label": "Maximum frequency error for droop clamping (DR-BAL-1 — now derived, not set here)",
       "provenance": "CHOSEN",
-      "provenance_detail": "CHOSEN — value not yet set (DR-BAL-1 open). A defensible basis is the tightest protective threshold the site declares: beyond that point a machine trips rather than governs. Phase 1 bounded droop is gated on this key having a non-null value; the unbounded formula is retained while null.",
-      "spec_ref": "§DR-2026-08-09-BALANCE Phase 1 / DR-BAL-1",
+      "provenance_detail": "DR-BAL-1 CLOSED (C-4). This key is no longer read by simulation_core.py. The Δf clamp is now derived at tick time from `max_frequency_error_from_thresholds(site.frequency_nominal_hz, [site.ufls_stage1_hz, site.of_trip_hz])` — the tightest first-stage UF/OF margin. Retained in the catalogue as a documentation record; value null is intentional (the derived value varies by scenario). The unbounded droop fallback branch has been deleted.",
+      "spec_ref": "§DR-2026-08-09-BALANCE Phase 1 / DR-BAL-1 (closed)",
       "ui": {
         "control": "readonly",
         "group": "frequency"
       },
-      "reason": "DR-BAL-1 open — must be set before Phase 1 bounded droop activates."
+      "reason": "DR-BAL-1 closed — clamp is derived from site.ufls_stage1_hz and site.of_trip_hz; no longer a catalogue setting."
     },
     {
       "key": "balance_defect_tolerance_mw",
-      "value": 0.0,
+      "value": 1.9913e-14,
       "unit": "MW",
       "label": "Power balance identity tolerance (noise floor, DR-BAL-2)",
       "provenance": "CHOSEN",
-      "provenance_detail": "CHOSEN — 0.0 MW. Calibrated from demo-baseline (11 ticks, I1 = 0.0 MW exactly; calibrate_noise_floor gives p99.9 = 0.0, suggested = 0.0 × 10 = 0.0 MW). Do not raise to accommodate a run that violates the identity — TC-125 pins this. DR-BAL-2: re-calibrate against a production clean recording before the gate is relied on for acceptance decisions.",
+      "provenance_detail": "CALIBRATED — 1.9913e-14 MW. Derived by running `python3 -m core.calibrate reports/NAR-001_residuals.jsonl --invariant I2a`. I2a is `turbine + bess + renewable - p_generation_mw`; structurally identical to the balance identity and known to close on all 869 recorded ticks (880 samples, 179 non-zero). CLI output: max=3.55271e-15 MW, p99=8.88178e-16 MW, p99.9=1.9913e-15 MW, suggested=p99.9 × 10=1.9913e-14 MW. Sanity check: 1.9913e-14 MW is twelve orders of magnitude below the 14.34 MW and 18.05 MW defects it must catch. DR-BAL-2 closed. The previous value of 0.0 was degenerate: calibrated from demo-baseline (11 idle ticks where arithmetic cancels exactly — an absence of evidence, not a measured floor).",
       "spec_ref": "§DR-2026-08-09-BALANCE Phase 0 / DR-BAL-2",
       "ui": {
         "control": "readonly",
         "group": "balance"
       },
-      "reason": "DR-BAL-2 open — value derived from demo-baseline; pending review."
+      "reason": "DR-BAL-2 closed — calibrated from I2a over NAR-001_residuals.jsonl (880 ticks)."
     }
   ],
   "excluded": [

@@ -52,6 +52,7 @@ from .droop import (
     DroopUnit as _DroopUnit,
     droop_correction as _droop_correction_fn,
     dispatch_requirement_mw as _droop_dispatch_mw,
+    max_frequency_error_from_thresholds as _droop_max_freq_error,
 )
 
 
@@ -700,12 +701,16 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
 
     # Phase 4 / Phase 1 — Dispatch droop correction.
     #
-    # Phase 1 (DR-2026-08-09-BALANCE): governor_deadband_hz and
-    # droop_max_frequency_error_hz are now catalogue keys. The bounded per-unit
-    # droop (core/droop.py) is active only when droop_max_frequency_error_hz has
-    # a non-null value (DR-BAL-1). While that key is null the unbounded formula is
-    # retained and the suite delta is zero: frequency is frozen, so the deadband
-    # check is always False and neither branch is entered.
+    # Phase 1 (DR-2026-08-09-BALANCE): bounded per-unit droop with Δf clamp
+    # derived from the site's first-stage protective settings (DR-BAL-1 closed,
+    # C-4). The unbounded fallback is removed; two paths for one behaviour must
+    # not survive.
+    #
+    # Δf clamp derivation (C-4): the tightest margin from nominal to a first-stage
+    # threshold. Beyond that point a machine is on a protection timer, not
+    # governing. First-stage UF = site.ufls_stage1_hz; first-stage OF = site.of_trip_hz.
+    # If no protective settings are configured, the clamp cannot be derived and
+    # droop correction is skipped (no fallback to an unbounded formula).
     #
     # Attribute name differences from the integration guide (confirmed against codebase):
     #   t.unit_id         → t.config.asset_id
@@ -717,15 +722,26 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # at line ~1525; that usage is unchanged here.
     _f_error_hz = state._frequency_hz - state.site.frequency_nominal_hz
     _governor_deadband_hz = _sp.value("governor_deadband_hz")
-    _droop_max_f_err_hz = _sp.value("droop_max_frequency_error_hz")
     # Dispatch ceiling = total installed fleet (not just on-bus) — dispatch intent,
     # not inertia basis. Decoupled from _s_base_mva per §INV-INERTIA.
     _sync_ceiling_mw = sum(t.config.rated_mw for t in state.turbines)
+    # Derive the Δf clamp from first-stage protective settings (C-4, DR-BAL-1).
+    _first_stage_thresholds_hz = [
+        hz for hz in [state.site.ufls_stage1_hz, state.site.of_trip_hz]
+        if hz is not None
+    ]
+    try:
+        _droop_max_f_err_hz: float | None = _droop_max_freq_error(
+            state.site.frequency_nominal_hz, _first_stage_thresholds_hz
+        )
+    except ValueError:
+        # No first-stage protective settings configured for this run — skip droop.
+        _droop_max_f_err_hz = None
     if (
         _islanded
         and _on_bus_turbines
         and abs(_f_error_hz) > _governor_deadband_hz
-        and _droop_max_f_err_hz is not None          # DR-BAL-1 gate
+        and _droop_max_f_err_hz is not None
     ):
         # Phase 1 active — bounded per-unit droop with headroom limits and Δf clamp.
         # Prevents the fleet ceiling from becoming the operating point (the pathology
@@ -757,24 +773,8 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                 "bounded_correction=%.4f MW; verify frequency model is stable",
                 _sync_ceiling_mw, _droop_correction_mw,
             )
-    elif (
-        _islanded
-        and _on_bus_turbines
-        and abs(_f_error_hz) > _governor_deadband_hz
-    ):
-        # Phase 1 gated — DR-BAL-1 open (droop_max_frequency_error_hz is null).
-        # Unbounded formula retained; Δf and per-unit headroom are unconstrained.
-        _droop_correction_mw = sum(
-            (-_f_error_hz / (t.config.droop_r * state.site.frequency_nominal_hz))
-            * (t.config.rated_mw / t.config.power_factor)
-            for t in _on_bus_turbines
-            if t.config.droop_r > 0.0
-        )
-        _p_dispatch_droop_mw = max(
-            0.0,
-            min(p_dispatch_required_mw + _droop_correction_mw, _sync_ceiling_mw),
-        )
     else:
+        # Deadband / no turbines / no protective settings — zero correction.
         _droop_correction_mw = 0.0
         _p_dispatch_droop_mw = max(
             0.0,
@@ -1452,41 +1452,6 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     #   _grid_exchange_mw = 0 always (D1), so max(0, -0) = 0 and this is a no-op.
     _p_generation_mw = _p_gen_mw + max(0.0, -_grid_exchange_mw)
 
-    # D4 — power balance identity (Phase 0, DR-2026-08-09-BALANCE).
-    #
-    # FINDING (reported before this change): the previous expression
-    #   _d4_sum = _grid_exchange_mw + _frequency_forcing_mw
-    #   _d4_balance_defect_mw = _d4_sum - _balance_residual_mw
-    # is a routing consistency check, not a supply-demand check. When islanded:
-    #   _grid_exchange_mw = 0, _frequency_forcing_mw = _balance_residual_mw
-    #   → _d4_sum = _balance_residual_mw → defect = _balance_residual_mw − _balance_residual_mw = 0
-    # It was identically zero by algebraic construction in every islanded run,
-    # independent of whether generation equalled demand. This is defect #273.
-    #
-    # Replacement: supply-demand residual (generation + import − served − losses).
-    # Sign convention: positive = surplus generation (per core/power_balance.py).
-    #
-    # p_unserved_mw is not yet available at this point in the tick (shed is evaluated
-    # downstream at ~line 1676); the integration guide directs 0.0 for Phase 0.
-    # p_losses_mw defaults to 0.0 — the model does not represent losses; they are
-    # implicitly absorbed into the residual.
-    _d4_balance_defect_mw = _balance_defect_mw(_BalanceTerms(
-        p_generation_mw=_p_generation_mw,
-        p_demand_mw=p_demand_mw,
-        p_unserved_mw=0.0,
-        grid_exchange_mw=_grid_exchange_mw,
-        island_mode=_BAL_ISLANDED if _islanded else _BAL_GRID_TIE,
-    ))
-    if abs(_d4_balance_defect_mw) >= 1e-3:
-        _log.warning(
-            "D4 balance identity does not close: %+.4g MW "
-            "(gen=%.4f, demand=%.4f, exchange=%.4f islanded=%s; "
-            "routing check — balance_residual=%.6f)",
-            _d4_balance_defect_mw,
-            _p_generation_mw, p_demand_mw, _grid_exchange_mw, _islanded,
-            _balance_residual_mw,
-        )
-
     # Phase 1b (Task #198 item 3): ramp capability over the dispatch arbitrator's
     # runtime lead time — same horizon used for staging and BESS bridging.
     # No separate LEAD_WINDOW_S constant; one source of truth.
@@ -1749,6 +1714,42 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     _p_served_mw = p_demand_mw - _cumulative_shed_mw
     _p_unserved_mw = _cumulative_shed_mw
     _p_imbalance_mw = _p_generation_mw - _p_served_mw
+
+    # D4 — power balance identity (Phase 0 + DR-BAL-5, DR-2026-08-09-BALANCE).
+    #
+    # FINDING (Phase 0): the previous expression
+    #   _d4_sum = _grid_exchange_mw + _frequency_forcing_mw
+    #   _d4_balance_defect_mw = _d4_sum - _balance_residual_mw
+    # was a routing consistency check, identically zero by algebraic construction
+    # when islanded: _grid_exchange_mw=0, _frequency_forcing_mw=_balance_residual_mw
+    # → defect = _balance_residual_mw - _balance_residual_mw = 0. Defect #273.
+    #
+    # Replacement: supply-demand residual (generation + import − served − losses).
+    # Sign convention: positive = surplus generation (per core/power_balance.py).
+    #
+    # DR-BAL-5 (C-3): p_unserved_mw wired from the current tick's cumulative shed.
+    # Moved to after _p_unserved_mw is computed so the identity accounts for any
+    # load shed that occurred in this tick. Costs nothing while Phase 4 is not yet
+    # wired (_p_unserved_mw is always 0.0); when Phase 4 makes UFLS reachable, a
+    # hardcoded zero would silently double-count shed load and report a deficit that
+    # has in fact been resolved.
+    # p_losses_mw defaults to 0.0 — the model does not represent losses.
+    _d4_balance_defect_mw = _balance_defect_mw(_BalanceTerms(
+        p_generation_mw=_p_generation_mw,
+        p_demand_mw=p_demand_mw,
+        p_unserved_mw=_p_unserved_mw,
+        grid_exchange_mw=_grid_exchange_mw,
+        island_mode=_BAL_ISLANDED if _islanded else _BAL_GRID_TIE,
+    ))
+    if abs(_d4_balance_defect_mw) >= 1e-3:
+        _log.warning(
+            "D4 balance identity does not close: %+.4g MW "
+            "(gen=%.4f, demand=%.4f, exchange=%.4f islanded=%s; "
+            "routing check — balance_residual=%.6f)",
+            _d4_balance_defect_mw,
+            _p_generation_mw, p_demand_mw, _grid_exchange_mw, _islanded,
+            _balance_residual_mw,
+        )
 
     if p_demand_mw > 1e-9:
         _compute_demand_frac = p_compute_demand_mw / p_demand_mw

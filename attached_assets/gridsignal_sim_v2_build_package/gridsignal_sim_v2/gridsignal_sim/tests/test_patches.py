@@ -367,3 +367,108 @@ def test_modules_supply_no_protective_thresholds_of_their_own():
                           params=params(h=4.0, s=8.0), tick_s=0.1,
                           substep_s=0.001)
     assert r.crossings == ()        # none supplied, none invented
+
+
+def test_tc141_delta_f_clamp_is_derived_from_site_protection():
+    """DR-BAL-1. The clamp sits at the tightest first-stage trip threshold --
+    past there the machine is on a timer to disconnect, not governing."""
+    # First-stage under/over settings, as the site declares them.
+    assert dr.max_frequency_error_from_thresholds(60.0, [58.5, 61.2]) == pytest.approx(1.2)
+    assert dr.max_frequency_error_from_thresholds(50.0, [48.5, 51.5]) == pytest.approx(1.5)
+
+
+def test_tc141_clamp_has_no_default_and_refuses_degenerate_input():
+    with pytest.raises(ValueError, match="no default"):
+        dr.max_frequency_error_from_thresholds(60.0, [])
+    with pytest.raises(ValueError, match="coincides with nominal"):
+        dr.max_frequency_error_from_thresholds(60.0, [60.0, 61.2])
+
+
+def test_tc141_derived_clamp_leaves_headroom_as_the_binding_constraint():
+    """The clamp is a backstop; per-unit headroom should do the physics. At a
+    1.2 Hz derived clamp these units are headroom-limited, as intended."""
+    clamp = dr.max_frequency_error_from_thresholds(60.0, [58.5, 61.2])
+    r = dr.droop_correction(FLEET, frequency_hz=58.5, frequency_nominal_hz=60.0,
+                            governor_deadband_hz=0.02, max_frequency_error_hz=clamp)
+    assert all(u.headroom_limited for u in r.per_unit)
+    assert r.correction_mw == pytest.approx(5 * (7.0 - 3.8))
+
+
+# ===========================================================================
+# TC-142..145  Post-integration corrections
+# ===========================================================================
+def test_tc142_all_zero_sample_is_refused_not_returned_as_zero():
+    """DR-BAL-2. demo-baseline yields 11 exact zeros from an idle site. A floor
+    of 0.0 would block the first correct run that leaves float rounding, so the
+    sample is refused rather than believed."""
+    with pytest.raises(pb.DegenerateCalibration) as ei:
+        pb.calibrate_noise_floor([0.0] * 11, basis="demo-baseline")
+    assert "exactly zero" in str(ei.value)
+
+
+def test_tc142_a_single_real_sample_is_enough_to_calibrate():
+    nf = pb.calibrate_noise_floor([0.0] * 100 + [3.55e-15], basis="I2a")
+    assert nf.n == 101 and nf.n_nonzero == 1
+    assert nf.suggested_tolerance_mw > 0.0
+
+
+def test_tc143_i2a_scale_floor_is_far_below_the_defects_it_must_catch():
+    """The measured I2a p99 is ~3.55e-15 MW across 869 ticks. Any floor derived
+    from it must pass float noise and fail 14.34 MW and 18.05 MW by a wide
+    margin."""
+    import random as _r  # noqa: F401  (not used; kept out of the module under test)
+    sample = [1.77e-15, -3.55e-15, 0.0, 8.88e-16, -8.88e-16] * 174
+    nf = pb.calibrate_noise_floor(sample, basis="I2a across 869 ticks")
+    assert nf.suggested_tolerance_mw < 1e-12
+    assert pb.gate_run([14.339], nf.suggested_tolerance_mw).renderable is False
+    assert pb.gate_run([-18.0545], nf.suggested_tolerance_mw).renderable is False
+    assert pb.gate_run(sample, nf.suggested_tolerance_mw).renderable is True
+
+
+def test_tc144_depleted_bess_defect_is_the_expected_size():
+    """F-1 re-baseline. Islanded, BESS depleted, 10 nodes: no generation against
+    0.105 MW of demand. The old assertion held only because the field was a
+    routing identity that was zero by algebra."""
+    t = pb.BalanceTerms(p_generation_mw=0.0, p_demand_mw=0.105,
+                        p_unserved_mw=0.0, island_mode=pb.ISLANDED)
+    assert pb.balance_defect_mw(t) == pytest.approx(-0.105)
+
+
+def test_tc144_tolerance_must_not_be_widened_to_accommodate_it():
+    """The wrong fix for F-1 is a looser bound. A tolerance large enough to pass
+    a 0.105 MW deficit is 1e11 times the measured float-noise floor."""
+    float_noise_floor = 3.55e-14
+    assert 0.105 / float_noise_floor > 1e11
+    assert pb.gate_run([-0.105], float_noise_floor).renderable is False
+
+
+def test_tc145_calibrate_skips_not_evaluable_records():
+    """A not-evaluable tick carries no information about the floor; counting it
+    as zero would drag the floor down."""
+    from core import calibrate as cal
+    records = [
+        {"invariant": "I2a", "status": "evaluated", "value": 3.55e-15,
+         "run_id": "r1"},
+        {"invariant": "I2a", "status": "not_evaluable", "value": None,
+         "run_id": "r1"},
+        {"invariant": "I1", "status": "evaluated", "value": 14.339, "run_id": "r1"},
+        {"invariant": "I2a", "status": "evaluated", "value": -8.88e-16,
+         "run_id": "r2"},
+    ]
+    assert cal.values_for(records, "I2a") == [3.55e-15, -8.88e-16]
+    assert cal.values_for(records, "I2a", run_id="r2") == [-8.88e-16]
+    assert cal.values_for(records, "I1") == [14.339]
+
+
+def test_tc145_calibrate_reads_jsonl_and_tolerates_malformed_lines(tmp_path):
+    from core import calibrate as cal
+    import json as _json
+    p = tmp_path / "residuals.jsonl"
+    with p.open("w") as fh:
+        for v in (1.77e-15, -3.55e-15, 0.0):
+            fh.write(_json.dumps({"invariant": "I2a", "status": "evaluated",
+                                  "value": v, "run_id": "r1"}) + "\n")
+        fh.write("{not json\n")
+    nf = cal.calibrate(p, "I2a")
+    assert nf.n == 3 and nf.n_nonzero == 2
+    assert 0.0 < nf.suggested_tolerance_mw < 1e-12

@@ -95,9 +95,25 @@ def evaluate(terms: BalanceTerms, tolerance_mw: float | None = None) -> BalanceR
 # The tolerance is derived from recordings believed healthy, not chosen. Applying
 # a guessed tolerance is how a real defect gets classified as rounding.
 # ---------------------------------------------------------------------------
+class DegenerateCalibration(ValueError):
+    """Raised when a residual sample cannot support a noise floor.
+
+    A sample of exact zeros is not a measured floor -- it is an absence of
+    evidence. `demo-baseline` produces exactly this: 11 ticks of an idle site
+    where the arithmetic happens to cancel, yielding a suggested tolerance of
+    0.0. That tolerance would then block the first genuinely correct run whose
+    MW-scale sums leave float rounding of order 1e-15.
+
+    Calibrate instead on a residual that is structurally the same kind of sum and
+    is actually exercised -- I2a (turbine + bess + renewable - p_generation_mw)
+    across all recorded ticks is the intended source.
+    """
+
+
 @dataclass(frozen=True)
 class NoiseFloor:
     n: int
+    n_nonzero: int
     max_abs: float
     p99_abs: float
     p999_abs: float
@@ -119,8 +135,15 @@ def calibrate_noise_floor(defects: Sequence[float], *,
     vals = sorted(abs(float(d)) for d in defects)
     if not vals:
         raise ValueError("no residuals supplied")
+    n_nonzero = sum(1 for v in vals if v != 0.0)
+    if n_nonzero == 0:
+        raise DegenerateCalibration(
+            f"all {len(vals)} residuals in basis {basis!r} are exactly zero; a "
+            f"floor of 0.0 would block the first correct run that leaves float "
+            f"rounding. Calibrate on a residual that is actually exercised.")
     return NoiseFloor(
         n=len(vals),
+        n_nonzero=n_nonzero,
         max_abs=vals[-1],
         p99_abs=_quantile(vals, 0.99),
         p999_abs=_quantile(vals, 0.999),

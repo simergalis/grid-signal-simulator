@@ -293,8 +293,18 @@ class TestD4SumIdentity:
             tick = _run_tick(state, sim_time=float(i) * 5.0, dt=5.0)
         self._verify_d4(tick, "islanded with load")
 
-    def test_D4_depleted_bess(self):
-        """D4 must hold even under fault conditions (evaluate_tick() inline assert fires)."""
+    def test_D4_depleted_bess_reports_the_real_supply_gap(self):
+        """DR-2026-08-09-BALANCE Phase 0. Islanded, BESS depleted, 10 nodes: no
+        generation against ~0.105 MW of demand, so the balance defect is the gap.
+
+        Before Phase 0 this asserted abs(defect) < 1e-3, which held only because the
+        field was `_d4_sum - _balance_residual_mw` -- zero by algebra, a routing
+        identity dressed as a diagnostic.
+
+        The defect resolves to zero in Phase 4, when frequency collapse makes UFLS
+        reachable and `p_unserved_mw` becomes non-zero. Until then a non-zero value
+        here is the expected, correct result.
+        """
         state = _make_state(
             bess_soc=0.0,
             bess_mwh=0.01,
@@ -305,7 +315,10 @@ class TestD4SumIdentity:
         state.apply_workload_signal(sig, dt_lead_seconds=0.0)
         for i in range(5):
             tick = _run_tick(state, sim_time=float(i) * 5.0, dt=5.0)
-        self._verify_d4(tick, "islanded depleted BESS")
+        assert tick.p_generation_mw == pytest.approx(0.0)
+        assert tick.d4_balance_defect_mw == pytest.approx(
+            -(tick.p_demand_mw - tick.p_unserved_mw), rel=1e-9)
+        assert tick.d4_balance_defect_mw < -0.05      # a real gap, not rounding
 
     def test_D4_all_ticks_across_ramp(self):
         """D4 holds at every tick during a full ramp window (grid-connected)."""
