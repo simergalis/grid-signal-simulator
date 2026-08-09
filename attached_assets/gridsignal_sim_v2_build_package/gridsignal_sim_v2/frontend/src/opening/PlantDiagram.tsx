@@ -184,9 +184,15 @@ function WatchingCallout({ tick }: { tick: TickPayload | null }) {
         </div>
         <div style={_RULE} />
         <div style={{
-          ..._BODY, color: generating && !body ? '#3a5a6a' : '#c8d6e5',
+          ..._BODY,
+          flex: 1,
+          overflowY: 'auto',
+          scrollbarWidth: 'thin' as const,
+          scrollbarColor: '#2a3a4a transparent',
+          color: generating && !body ? '#3a5a6a' : '#c8d6e5',
           lineHeight: 1.6, whiteSpace: 'normal',
           transition: 'color 0.3s',
+          paddingRight: 2,
         }}>
           {generating && !body
             ? 'Generating explanation…'
@@ -239,6 +245,7 @@ function LeadTimeCallout({
 
   // ── NO STEP-LOAD INCOMING scrolling log ───────────────────────────────────
   const [atRestLog, setAtRestLog] = useState<Array<{ ts: string; body: string }>>([])
+  const [showFeedTip, setShowFeedTip] = useState(false)
   const atRestScrollRef  = useRef<HTMLDivElement>(null)
   // Track State-1 transitions so we log only on entry, not every render.
   const prevIsState1    = useRef<boolean | null>(null)  // null = not yet evaluated
@@ -463,7 +470,29 @@ function LeadTimeCallout({
 
         {/* ── STATE 1: AT REST — scrolling event log ──────────────────── */}
         {!isLanded && !isRunning && <>
-          <div style={_LABEL(accent)}>NO STEP-LOAD INCOMING</div>
+          {/* Title with hover tooltip */}
+          <div style={{ position: 'relative' }}>
+            <div
+              style={{ ..._LABEL(accent), cursor: 'default', display: 'inline-block' }}
+              onMouseEnter={() => setShowFeedTip(true)}
+              onMouseLeave={() => setShowFeedTip(false)}
+            >
+              SCHEDULER FEED
+            </div>
+            {showFeedTip && (
+              <div style={{
+                position: 'absolute', top: '100%', left: 0, zIndex: 10,
+                marginTop: 4, width: 220,
+                background: '#162130', border: '1px solid #2a4a5a',
+                borderRadius: 5, padding: '7px 10px',
+                ..._BODY, color: '#9ab4c8', lineHeight: 1.6,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                pointerEvents: 'none',
+              }}>
+                This feed comes from the <strong style={{ color: '#c8d6e5' }}>scheduler</strong> — the software that decides which jobs run and when — not from a power sensor. It records both <strong style={{ color: '#c8d6e5' }}>GPU job admissions</strong> (Kubernetes) and <strong style={{ color: '#c8d6e5' }}>step-load countdowns</strong>, and stays live even when nothing is happening.
+              </div>
+            )}
+          </div>
           <div style={_RULE} />
           {/* Scrolling vbox: one entry per transition into AT REST state.
               flex:1 fills whatever height remains after the label+rule.
