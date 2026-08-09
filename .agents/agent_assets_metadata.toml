@@ -259,3 +259,10 @@ uri = "file://reports/NAR-001_residuals.jsonl"
 type = "unspecified"
 title = "NAR-001 Residuals (JSONL)"
 description = "Per-tick ResidualRecord stream for all invariants, 880 ticks."
+
+[[outputs]]
+id = "uYjjV5egaFgUJ9nFxitgi"
+uri = "file://islanded-8-60-10mw-ramp-sequential.json"
+type = "unspecified"
+title = "Islanded 8-60-10 MW ramp — sequential commitment and release"
+description = "Full scenario spec including kube_config, workload_events, fleet, and assertions. 21 KB JSON."

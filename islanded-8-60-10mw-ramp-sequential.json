@@ -1,0 +1,675 @@
+{
+  "scenario_id": "d73ba17a-51cd-4047-ab7b-af090824d646",
+  "name": "Islanded 8-60-10 MW ramp - sequential commitment and release",
+  "description": "Islanded 5 \u00d7 15 MW gas-turbine fleet, 15 MW solar, 18 MW / 8 MWh grid-forming BESS. Two jobs \u2014 job-base (800 nodes, t\u202f=\u202f0) and job-01 (200 nodes, t\u202f=\u202f35\u202fs) \u2014 carry no end event and establish a permanent 1,000-node floor (10.5\u202fMW compute, PUE-inclusive) that runs throughout the full 90-min run without shedding. Additional 200-node GPU jobs arrive every ~35\u202fs from t\u202f=\u202f35\u202fs, driving a staircase ramp from 10.5\u202fMW to 63.0\u202fMW (6,000 nodes) by t\u202f=\u202f15\u202fmin. A 5-min peak hold follows, then a symmetric staircase shed (one job every ~40\u202fs) returns cluster compute to the 10.5\u202fMW floor by t\u202f=\u202f39\u202fmin. The final 51-min hold is deliberate: t_min_run_s (1,800\u202fs) must elapse on the last-committed turbine for the decommitment sequence to complete inside the run window.",
+  "created_at": "2026-08-09T14:19:45.181152+00:00",
+  "spec": {
+    "name": "Islanded 8-60-10 MW ramp - sequential commitment and release",
+    "description": "Islanded 5 \u00d7 15 MW gas-turbine fleet, 15 MW solar, 18 MW / 8 MWh grid-forming BESS. Two jobs \u2014 job-base (800 nodes, t\u202f=\u202f0) and job-01 (200 nodes, t\u202f=\u202f35\u202fs) \u2014 carry no end event and establish a permanent 1,000-node floor (10.5\u202fMW compute, PUE-inclusive) that runs throughout the full 90-min run without shedding. Additional 200-node GPU jobs arrive every ~35\u202fs from t\u202f=\u202f35\u202fs, driving a staircase ramp from 10.5\u202fMW to 63.0\u202fMW (6,000 nodes) by t\u202f=\u202f15\u202fmin. A 5-min peak hold follows, then a symmetric staircase shed (one job every ~40\u202fs) returns cluster compute to the 10.5\u202fMW floor by t\u202f=\u202f39\u202fmin. The final 51-min hold is deliberate: t_min_run_s (1,800\u202fs) must elapse on the last-committed turbine for the decommitment sequence to complete inside the run window.",
+    "workload_events": [
+      {
+        "event_id": "evt-base-start",
+        "job_id": "job-base",
+        "event_type": "starting",
+        "timestamp": 0.0,
+        "node_count": 800,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-up-01",
+        "job_id": "job-01",
+        "event_type": "starting",
+        "timestamp": 34.6,
+        "node_count": 200,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-up-02",
+        "job_id": "job-02",
+        "event_type": "starting",
+        "timestamp": 69.2,
+        "node_count": 200,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-up-03",
+        "job_id": "job-03",
+        "event_type": "starting",
+        "timestamp": 103.8,
+        "node_count": 200,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-up-04",
+        "job_id": "job-04",
+        "event_type": "starting",
+        "timestamp": 138.5,
+        "node_count": 200,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-up-05",
+        "job_id": "job-05",
+        "event_type": "starting",
+        "timestamp": 173.1,
+        "node_count": 200,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-up-06",
+        "job_id": "job-06",
+        "event_type": "starting",
+        "timestamp": 207.7,
+        "node_count": 200,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-up-07",
+        "job_id": "job-07",
+        "event_type": "starting",
+        "timestamp": 242.3,
+        "node_count": 200,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-up-08",
+        "job_id": "job-08",
+        "event_type": "starting",
+        "timestamp": 276.9,
+        "node_count": 200,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-up-09",
+        "job_id": "job-09",
+        "event_type": "starting",
+        "timestamp": 311.5,
+        "node_count": 200,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-up-10",
+        "job_id": "job-10",
+        "event_type": "starting",
+        "timestamp": 346.2,
+        "node_count": 200,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-up-11",
+        "job_id": "job-11",
+        "event_type": "starting",
+        "timestamp": 380.8,
+        "node_count": 200,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-up-12",
+        "job_id": "job-12",
+        "event_type": "starting",
+        "timestamp": 415.4,
+        "node_count": 200,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-up-13",
+        "job_id": "job-13",
+        "event_type": "starting",
+        "timestamp": 450.0,
+        "node_count": 200,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-up-14",
+        "job_id": "job-14",
+        "event_type": "starting",
+        "timestamp": 484.6,
+        "node_count": 200,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-up-15",
+        "job_id": "job-15",
+        "event_type": "starting",
+        "timestamp": 519.2,
+        "node_count": 200,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-up-16",
+        "job_id": "job-16",
+        "event_type": "starting",
+        "timestamp": 553.8,
+        "node_count": 200,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-up-17",
+        "job_id": "job-17",
+        "event_type": "starting",
+        "timestamp": 588.5,
+        "node_count": 200,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-up-18",
+        "job_id": "job-18",
+        "event_type": "starting",
+        "timestamp": 623.1,
+        "node_count": 200,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-up-19",
+        "job_id": "job-19",
+        "event_type": "starting",
+        "timestamp": 657.7,
+        "node_count": 200,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-up-20",
+        "job_id": "job-20",
+        "event_type": "starting",
+        "timestamp": 692.3,
+        "node_count": 200,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-up-21",
+        "job_id": "job-21",
+        "event_type": "starting",
+        "timestamp": 726.9,
+        "node_count": 200,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-up-22",
+        "job_id": "job-22",
+        "event_type": "starting",
+        "timestamp": 761.5,
+        "node_count": 200,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-up-23",
+        "job_id": "job-23",
+        "event_type": "starting",
+        "timestamp": 796.2,
+        "node_count": 200,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-up-24",
+        "job_id": "job-24",
+        "event_type": "starting",
+        "timestamp": 830.8,
+        "node_count": 200,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-up-25",
+        "job_id": "job-25",
+        "event_type": "starting",
+        "timestamp": 865.4,
+        "node_count": 200,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-up-26",
+        "job_id": "job-26",
+        "event_type": "starting",
+        "timestamp": 900.0,
+        "node_count": 200,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-dn1-01",
+        "job_id": "job-26",
+        "event_type": "job_end",
+        "timestamp": 1200.0,
+        "node_count": 0,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-dn1-02",
+        "job_id": "job-25",
+        "event_type": "job_end",
+        "timestamp": 1240.0,
+        "node_count": 0,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-dn1-03",
+        "job_id": "job-24",
+        "event_type": "job_end",
+        "timestamp": 1280.0,
+        "node_count": 0,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-dn1-04",
+        "job_id": "job-23",
+        "event_type": "job_end",
+        "timestamp": 1320.0,
+        "node_count": 0,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-dn1-05",
+        "job_id": "job-22",
+        "event_type": "job_end",
+        "timestamp": 1360.0,
+        "node_count": 0,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-dn1-06",
+        "job_id": "job-21",
+        "event_type": "job_end",
+        "timestamp": 1400.0,
+        "node_count": 0,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-dn1-07",
+        "job_id": "job-20",
+        "event_type": "job_end",
+        "timestamp": 1440.0,
+        "node_count": 0,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-dn1-08",
+        "job_id": "job-19",
+        "event_type": "job_end",
+        "timestamp": 1480.0,
+        "node_count": 0,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-dn1-09",
+        "job_id": "job-18",
+        "event_type": "job_end",
+        "timestamp": 1520.0,
+        "node_count": 0,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-dn1-10",
+        "job_id": "job-17",
+        "event_type": "job_end",
+        "timestamp": 1560.0,
+        "node_count": 0,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-dn1-11",
+        "job_id": "job-16",
+        "event_type": "job_end",
+        "timestamp": 1600.0,
+        "node_count": 0,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-dn1-12",
+        "job_id": "job-15",
+        "event_type": "job_end",
+        "timestamp": 1640.0,
+        "node_count": 0,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-dn1-13",
+        "job_id": "job-14",
+        "event_type": "job_end",
+        "timestamp": 1680.0,
+        "node_count": 0,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-dn1-14",
+        "job_id": "job-13",
+        "event_type": "job_end",
+        "timestamp": 1720.0,
+        "node_count": 0,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-dn1-15",
+        "job_id": "job-12",
+        "event_type": "job_end",
+        "timestamp": 1760.0,
+        "node_count": 0,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-dn2-01",
+        "job_id": "job-11",
+        "event_type": "job_end",
+        "timestamp": 1800.0,
+        "node_count": 0,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-dn2-02",
+        "job_id": "job-10",
+        "event_type": "job_end",
+        "timestamp": 1860.0,
+        "node_count": 0,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-dn2-03",
+        "job_id": "job-09",
+        "event_type": "job_end",
+        "timestamp": 1920.0,
+        "node_count": 0,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-dn2-04",
+        "job_id": "job-08",
+        "event_type": "job_end",
+        "timestamp": 1980.0,
+        "node_count": 0,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-dn2-05",
+        "job_id": "job-07",
+        "event_type": "job_end",
+        "timestamp": 2040.0,
+        "node_count": 0,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-dn2-06",
+        "job_id": "job-06",
+        "event_type": "job_end",
+        "timestamp": 2100.0,
+        "node_count": 0,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-dn2-07",
+        "job_id": "job-05",
+        "event_type": "job_end",
+        "timestamp": 2160.0,
+        "node_count": 0,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-dn2-08",
+        "job_id": "job-04",
+        "event_type": "job_end",
+        "timestamp": 2220.0,
+        "node_count": 0,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-dn2-09",
+        "job_id": "job-03",
+        "event_type": "job_end",
+        "timestamp": 2280.0,
+        "node_count": 0,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      },
+      {
+        "event_id": "evt-dn2-10",
+        "job_id": "job-02",
+        "event_type": "job_end",
+        "timestamp": 2340.0,
+        "node_count": 0,
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "renewable_shortfall_mw": 0.0
+      }
+    ],
+    "hardware_profile_id": "enterprise_8gpu_air",
+    "dt_lead_seconds": 45.0,
+    "bess_units": [
+      {
+        "asset_id": "bess-0",
+        "rated_mw": 18.0,
+        "usable_mwh": 14.0,
+        "initial_soc_fraction": 1.0,
+        "grid_forming": true,
+        "p_anchor_reserve_mw": 1.0
+      }
+    ],
+    "turbine_units": [
+      {
+        "asset_id": "turbine-0",
+        "rated_mw": 15.0,
+        "r_asset_mw_per_s": 0.16,
+        "run_hours_h": null,
+        "hot_standby": false,
+        "p_min_stable_frac": 0.4,
+        "t_min_run_s": 1800.0,
+        "min_run_enabled": true,
+        "t_min_down_s": 900.0,
+        "min_down_enabled": true,
+        "cold_start_s": 300.0,
+        "warm_start_s": null,
+        "hot_start_s": null,
+        "power_factor": null,
+        "inertia_constant_s": null,
+        "droop_r": null,
+        "valve_actuation_tc_s": null,
+        "fuel_to_power_tc_s": null,
+        "max_instantaneous_load_step_mw": null
+      },
+      {
+        "asset_id": "turbine-1",
+        "rated_mw": 15.0,
+        "r_asset_mw_per_s": 0.16,
+        "run_hours_h": null,
+        "hot_standby": false,
+        "p_min_stable_frac": 0.4,
+        "t_min_run_s": 1800.0,
+        "min_run_enabled": true,
+        "t_min_down_s": 900.0,
+        "min_down_enabled": true,
+        "cold_start_s": 600.0,
+        "warm_start_s": null,
+        "hot_start_s": null,
+        "power_factor": null,
+        "inertia_constant_s": null,
+        "droop_r": null,
+        "valve_actuation_tc_s": null,
+        "fuel_to_power_tc_s": null,
+        "max_instantaneous_load_step_mw": null
+      },
+      {
+        "asset_id": "turbine-2",
+        "rated_mw": 15.0,
+        "r_asset_mw_per_s": 0.16,
+        "run_hours_h": null,
+        "hot_standby": false,
+        "p_min_stable_frac": 0.4,
+        "t_min_run_s": 1800.0,
+        "min_run_enabled": true,
+        "t_min_down_s": 900.0,
+        "min_down_enabled": true,
+        "cold_start_s": 900.0,
+        "warm_start_s": null,
+        "hot_start_s": null,
+        "power_factor": null,
+        "inertia_constant_s": null,
+        "droop_r": null,
+        "valve_actuation_tc_s": null,
+        "fuel_to_power_tc_s": null,
+        "max_instantaneous_load_step_mw": null
+      },
+      {
+        "asset_id": "turbine-3",
+        "rated_mw": 15.0,
+        "r_asset_mw_per_s": 0.16,
+        "run_hours_h": null,
+        "hot_standby": false,
+        "p_min_stable_frac": 0.4,
+        "t_min_run_s": 1800.0,
+        "min_run_enabled": true,
+        "t_min_down_s": 900.0,
+        "min_down_enabled": true,
+        "cold_start_s": 900.0,
+        "warm_start_s": null,
+        "hot_start_s": null,
+        "power_factor": null,
+        "inertia_constant_s": null,
+        "droop_r": null,
+        "valve_actuation_tc_s": null,
+        "fuel_to_power_tc_s": null,
+        "max_instantaneous_load_step_mw": null
+      },
+      {
+        "asset_id": "turbine-4",
+        "rated_mw": 15.0,
+        "r_asset_mw_per_s": 0.16,
+        "run_hours_h": null,
+        "hot_standby": false,
+        "p_min_stable_frac": 0.4,
+        "t_min_run_s": 1800.0,
+        "min_run_enabled": true,
+        "t_min_down_s": 900.0,
+        "min_down_enabled": true,
+        "cold_start_s": 900.0,
+        "warm_start_s": null,
+        "hot_start_s": null,
+        "power_factor": null,
+        "inertia_constant_s": null,
+        "droop_r": null,
+        "valve_actuation_tc_s": null,
+        "fuel_to_power_tc_s": null,
+        "max_instantaneous_load_step_mw": null
+      }
+    ],
+    "solar_rated_mw": 15.0,
+    "design_peak_load_mw": null,
+    "irradiance_steps": [
+      [
+        0.0,
+        1.0
+      ]
+    ],
+    "island_mode": true,
+    "frequency_nominal_hz": 60.0,
+    "uf_warning_hz": null,
+    "ufls_stage1_hz": null,
+    "island_collapse_hz": null,
+    "of_warning_hz": null,
+    "of_trip_hz": null,
+    "ufls_stages": null,
+    "relay_81u_threshold_hz": null,
+    "relay_81u_delay_s": null,
+    "power_factor": 0.85,
+    "pue_base": 1.03,
+    "end_sim_time": 10800.0,
+    "demo_description": "",
+    "default_playback_speed": 1.0,
+    "dt_thermal_seconds": 90.0,
+    "plant_dt_thermal_seconds": null,
+    "alpha_max": 0.2,
+    "plant_alpha_max": null,
+    "tau_seconds": 20.0,
+    "plant_tau_seconds": null,
+    "anchor_reserve_pct": 0.0,
+    "band_enabled": false,
+    "band_pct_calibrated": 0.0,
+    "band_mult_uncalibrated": 2.0,
+    "band_mult_unmapped_hw": 1.5,
+    "pre_staging_config": null,
+    "pms_config": null,
+    "procurement_config": null,
+    "maintenance_config": null,
+    "ramp_relaxation_config": null,
+    "kube_config": {
+      "hardware_profile_id": "enterprise_8gpu_air",
+      "max_nodes": 6000,
+      "min_nodes": 1000,
+      "mean_interarrival_s": 35.0,
+      "mean_job_nodes": 200,
+      "job_node_std": 30.0,
+      "min_job_nodes": 50,
+      "mean_job_duration_s": 900.0,
+      "min_job_duration_s": 30.0,
+      "reorder_window_s": 10.0,
+      "ntp_jitter_s": 2.0,
+      "headroom_threshold_mw": 2.5,
+      "rng_seed": 42,
+      "step_config": null,
+      "load_config": null
+    },
+    "load_config": null,
+    "ambient_steps": [],
+    "cluster_gen_config": null,
+    "stressor_gen_config": null,
+    "param_sampling_config": null,
+    "telemetry_corruption_config": null,
+    "generation_block": null,
+    "calibrated": false,
+    "solar_origin_utc_hour": 20,
+    "assertions": [
+      {
+        "check": "max_p_total_mw",
+        "threshold_mw": 85.0
+      },
+      {
+        "check": "min_final_bess_soc",
+        "threshold": 0.2
+      }
+    ],
+    "fabric_scenario_id": null
+  }
+}
