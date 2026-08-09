@@ -923,9 +923,13 @@ class TurbineModule(AssetModule):
             if elapsed < self.config.t_min_down_s:
                 return  # cooling window not yet satisfied
 
-        # Determine thermal state from time offline since last synchronisation
+        # Determine thermal state from time offline since last synchronisation.
+        # First start (never stopped): use config.initial_thermal_state so the
+        # scenario-specified tier (hot/warm/cold) is honoured rather than always
+        # defaulting to the conservative cold path.  Subsequent restarts continue
+        # to use the elapsed-time classifier (time since last sync stop).
         if math.isnan(self._last_sync_stop_s):
-            self._thermal_state = ThermalState.COLD
+            self._thermal_state = self.config.initial_thermal_state
         else:
             elapsed_offline = sim_time - self._last_sync_stop_s
             if elapsed_offline < self.config.hot_threshold_s:
