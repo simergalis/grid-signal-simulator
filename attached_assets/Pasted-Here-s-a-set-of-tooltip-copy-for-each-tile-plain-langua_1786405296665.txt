@@ -1,0 +1,56 @@
+Here's a set of tooltip copy for each tile — plain-language, one to three sentences, written for someone touring the demo who isn't a power engineer. I kept the advisory-only framing intact (GridSignal advises the PMS, never commands breakers or generation directly), since that boundary matters for how the product is positioned.
+
+Plant tiles
+
+GAS TURBINE FLEET
+The on-site generators that supply power when demand outpaces solar and battery. GridSignal watches the job scheduler and starts extra turbines before the load hits, so the fleet is already spinning up when it's needed instead of scrambling after the fact.
+
+SOLAR PV
+Rooftop or ground-mounted solar panels feeding the microgrid. Output swings with sunlight and cloud cover, so GridSignal treats it as a variable source and leans on turbines and battery to cover the gaps.
+
+BATTERY (BESS)
+A battery energy storage system that can charge up and discharge in seconds. It's the fastest-reacting asset on site — it absorbs sudden spikes or fills short gaps while slower generators catch up.
+
+GRID CONNECTION
+The link (or lack of one) to the public utility. This site is "islanded," meaning it's running entirely on its own generation with no utility backup — every megawatt has to come from turbines, solar, or battery on-site.
+
+SWITCHGEAR / PMS
+The physical power management system that actually opens and closes breakers and starts/stops equipment. GridSignal sends it recommendations and forecasts — it never issues those commands itself; a human-configured PMS makes the final call.
+
+DISTRIBUTION
+The wiring and transformers that carry power from generation down to a voltage the data center can use (480V here). This is the plumbing between "power made" and "power used."
+
+PDU / RPP
+Power distribution units and remote power panels — the last stop before power reaches individual server racks. This is where rack-level demand actually shows up as electrical load.
+
+COMPUTE RACKS
+The servers actually running the workloads. Their power draw is the thing GridSignal is ultimately trying to predict — by reading what jobs the scheduler is about to assign, it can see rack demand coming 30–60 seconds before it happens.
+
+COOLING PLANT
+Chillers and cooling infrastructure that remove the heat the compute racks generate. Cooling load trails compute load by design (about 90 seconds here) since it takes a moment for heat to build up and for cooling to respond.
+
+SCHEDULER FEED
+The live connection into the Kubernetes job scheduler. This is GridSignal's early-warning system — it reads which jobs are about to be assigned to which nodes, before those jobs actually start drawing power.
+
+Status bar tiles
+
+DISPATCHABLE
+Megawatts available on demand from sources GridSignal can actually rely on for planning — turbines and battery. Unlike solar, these can be counted on to deliver power exactly when called for.
+
+RENEWABLE
+Megawatts currently coming from solar. Useful, but weather-dependent — it's a bonus on top of the dispatchable baseline, not something the system can bank on.
+
+GEN-TRIP COVER
+A safety check: if the largest single generator tripped offline right now, could everything else pick up the slack without dropping load? "N-1 ready" means yes — the fleet has enough spare capacity to survive losing its biggest unit.
+
+ATTENTION
+A flag for anything that needs a human look — a subsystem reading outside normal bounds, an uncalibrated sensor, or a forecast running with wider-than-usual error bands. Not necessarily an alarm, but worth checking.
+
+OPTIMISATION AGENTS
+Background processes continuously evaluating dispatch options — which generator to start, when, and how much battery to hold in reserve — so a decision is ready the instant it's needed rather than being computed from scratch under pressure.
+
+GENERATION COMMITMENT CONTROLLER
+The logic that decides when to commit to starting a turbine. Once armed, it's watching for the trigger conditions from the forecast engine and stages equipment ahead of the actual power need.
+
+FORECAST QUALITY
+A confidence indicator for the power predictions being shown. "Uncalibrated site" means this particular site hasn't yet been tuned with real operating data, so GridSignal is deliberately widening its error margins rather than overstating confidence.

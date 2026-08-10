@@ -21,6 +21,7 @@ import type { SolarPreview } from './PlantNode'
 import type { TickPayload } from '../types'
 import { SchedulerSummaryModal } from './SchedulerSummaryModal'
 import type { FeedEntry } from './SchedulerSummaryModal'
+import { InfoBtn } from './TileTooltip'
 
 interface PlantDiagramProps {
   /** Called when a clickable node is activated. Passes the node id. */
@@ -268,7 +269,6 @@ function LeadTimeCallout({
 
   // ── NO STEP-LOAD INCOMING scrolling log ───────────────────────────────────
   const [atRestLog, setAtRestLog] = useState<Array<{ ts: string; body: string }>>([])
-  const [showFeedTip, setShowFeedTip] = useState(false)
   const [showSummaryModal, setShowSummaryModal] = useState(false)
   const atRestScrollRef  = useRef<HTMLDivElement>(null)
   // Track State-1 transitions so we log only on entry, not every render.
@@ -726,7 +726,10 @@ function LeadTimeCallout({
                 display: 'flex', alignItems: 'center',
                 justifyContent: 'space-between', marginBottom: -2,
               }}>
-                <span style={{ ..._MONO, fontSize: 8, color: '#3a5a6a' }}>SCHEDULER FEED</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ ..._MONO, fontSize: 8, color: '#3a5a6a' }}>SCHEDULER FEED</span>
+                  <InfoBtn id="scheduler-feed" />
+                </span>
                 <button
                   onClick={() => setShowSummaryModal(true)}
                   style={{
@@ -781,57 +784,41 @@ function LeadTimeCallout({
 
         {/* ── STATE 1: AT REST — scrolling event log ──────────────────── */}
         {!isLanded && !isRunning && <>
-          {/* Title row: label + tooltip + AI Summary button */}
-          <div style={{ position: 'relative' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
-              <div
-                style={{ ..._LABEL(accent), cursor: 'default', display: 'inline-block' }}
-                onMouseEnter={() => setShowFeedTip(true)}
-                onMouseLeave={() => setShowFeedTip(false)}
-              >
+          {/* Title row: label + ⓘ + AI Summary button */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <div style={{ ..._LABEL(accent), cursor: 'default' }}>
                 SCHEDULER FEED
               </div>
-              <button
-                onClick={() => setShowSummaryModal(true)}
-                title="Ask Claude to summarise the feed in plain language"
-                style={{
-                  background: 'rgba(63,182,168,0.07)',
-                  border: '1px solid #2a4a5a',
-                  borderRadius: 4,
-                  color: '#3fb6a8',
-                  cursor: 'pointer',
-                  ..._MONO, fontSize: 8, fontWeight: 700,
-                  letterSpacing: '0.05em',
-                  padding: '2px 7px',
-                  lineHeight: 1.5,
-                  flexShrink: 0,
-                  transition: 'background 0.15s, border-color 0.15s',
-                }}
-                onMouseEnter={e => {
-                  e.currentTarget.style.background = 'rgba(63,182,168,0.16)'
-                  e.currentTarget.style.borderColor = '#3fb6a8'
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.background = 'rgba(63,182,168,0.07)'
-                  e.currentTarget.style.borderColor = '#2a4a5a'
-                }}
-              >
-                AI SUMMARY
-              </button>
+              <InfoBtn id="scheduler-feed" />
             </div>
-            {showFeedTip && (
-              <div style={{
-                position: 'absolute', top: '100%', left: 0, zIndex: 10,
-                marginTop: 4, width: 220,
-                background: '#162130', border: '1px solid #2a4a5a',
-                borderRadius: 5, padding: '7px 10px',
-                ..._BODY, color: '#9ab4c8', lineHeight: 1.6,
-                boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-                pointerEvents: 'none',
-              }}>
-                This feed comes from the <strong style={{ color: '#c8d6e5' }}>scheduler</strong> — the software that decides which jobs run and when — not from a power sensor. It records both <strong style={{ color: '#c8d6e5' }}>GPU job admissions</strong> (Kubernetes) and <strong style={{ color: '#c8d6e5' }}>step-load countdowns</strong>, and stays live even when nothing is happening.
-              </div>
-            )}
+            <button
+              onClick={() => setShowSummaryModal(true)}
+              title="Ask Claude to summarise the feed in plain language"
+              style={{
+                background: 'rgba(63,182,168,0.07)',
+                border: '1px solid #2a4a5a',
+                borderRadius: 4,
+                color: '#3fb6a8',
+                cursor: 'pointer',
+                ..._MONO, fontSize: 8, fontWeight: 700,
+                letterSpacing: '0.05em',
+                padding: '2px 7px',
+                lineHeight: 1.5,
+                flexShrink: 0,
+                transition: 'background 0.15s, border-color 0.15s',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.background = 'rgba(63,182,168,0.16)'
+                e.currentTarget.style.borderColor = '#3fb6a8'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'rgba(63,182,168,0.07)'
+                e.currentTarget.style.borderColor = '#2a4a5a'
+              }}
+            >
+              AI SUMMARY
+            </button>
           </div>
           <div style={_RULE} />
 

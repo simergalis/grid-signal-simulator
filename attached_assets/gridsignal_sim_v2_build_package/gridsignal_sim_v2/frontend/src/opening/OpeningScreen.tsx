@@ -19,6 +19,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useTickStore } from '../store/tickStore'
+import { TileTooltip, InfoBtn } from './TileTooltip'
 import { VerdictBand }      from './VerdictBand'
 import { PlantDiagram }     from './PlantDiagram'
 import type { SolarPreview } from './PlantNode'
@@ -165,6 +166,9 @@ export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
           }}
         />
       )}
+
+      {/* ── Tile tooltip — single fixed-position instance ──────────────── */}
+      <TileTooltip />
     </div>
   )
 }
@@ -211,7 +215,7 @@ function SystemStrip({ ids, data, onTileClick }: SystemStripProps) {
             <div
               key={id}
               className="flex-1 min-w-0"
-              style={id === 'gcc' ? { position: 'relative' } : undefined}
+              style={{ position: 'relative' }}
             >
               {/* Amber glow overlay — remounts on each GCC action to restart the animation */}
               {id === 'gcc' && gccFlashKey > 0 && (
@@ -232,6 +236,11 @@ function SystemStrip({ ids, data, onTileClick }: SystemStripProps) {
                 verdict={d.verdict}
                 metrics={d.metrics}
                 onClick={onTileClick}
+              />
+              {/* ⓘ info button — floats above top-right corner of tile */}
+              <InfoBtn
+                id={id}
+                style={{ position: 'absolute', top: 7, right: 7, zIndex: 3 }}
               />
             </div>
           )

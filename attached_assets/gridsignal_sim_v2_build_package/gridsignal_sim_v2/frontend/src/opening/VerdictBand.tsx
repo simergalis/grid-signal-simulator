@@ -21,6 +21,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useTickStore } from '../store/tickStore'
+import { InfoBtn } from './TileTooltip'
 import { GenTripModal } from './GenTripModal'
 import { ReserveModal } from './ReserveModal'
 import { LocationPicker } from './LocationPicker'
@@ -35,9 +36,11 @@ interface FigureProps {
   colWidth: number
   /** When supplied the tile renders as a button with a hover ring. */
   onClick?: () => void
+  /** When supplied an ⓘ info button appears in the label row. */
+  tooltipId?: string
 }
 
-function HeroFigure({ label, value, colour, sub, colWidth, onClick }: FigureProps) {
+function HeroFigure({ label, value, colour, sub, colWidth, onClick, tooltipId }: FigureProps) {
   const inner = (
     <div className="flex flex-col gap-0.5 flex-shrink-0" style={{ width: colWidth }}>
       <div className="font-mono text-[9px] uppercase tracking-wider text-muted flex items-center gap-1">
@@ -45,6 +48,7 @@ function HeroFigure({ label, value, colour, sub, colWidth, onClick }: FigureProp
         {onClick && (
           <span className="text-muted/50 text-[8px]">↗</span>
         )}
+        {tooltipId && <InfoBtn id={tooltipId} />}
       </div>
       <div
         className="font-mono text-lg font-semibold tabular-nums leading-none whitespace-nowrap overflow-hidden"
@@ -235,12 +239,13 @@ export function VerdictBand({ onLocationChanged }: VerdictBandProps = {}) {
         colWidth: 104,
       },
       {
-        label:    'Gen-trip cover',
-        value:    genTripValue(cc),
-        colour:   genTripColour(cc),
-        sub:      genTripSub(cc),
-        colWidth: 204,
-        onClick:  () => setModalOpen(true),
+        label:     'Gen-trip cover',
+        value:     genTripValue(cc),
+        colour:    genTripColour(cc),
+        sub:       genTripSub(cc),
+        colWidth:  204,
+        onClick:   () => setModalOpen(true),
+        tooltipId: 'gen-trip-cover',
       },
       {
         label:    'Reserve',
@@ -258,42 +263,46 @@ export function VerdictBand({ onLocationChanged }: VerdictBandProps = {}) {
     const renMw  = cc?.renewable_mw    ?? tick.p_renewable_mw
     figures = [
       {
-        label:    'Dispatchable',
-        value:    `${dispMw.toFixed(1)} MW`,
-        colour:   '#e0a458',
-        sub:      'turbine + BESS (anchor-adj)',
-        colWidth: 140,
+        label:     'Dispatchable',
+        value:     `${dispMw.toFixed(1)} MW`,
+        colour:    '#e0a458',
+        sub:       'turbine + BESS (anchor-adj)',
+        colWidth:  140,
+        tooltipId: 'dispatchable',
       },
       {
-        label:    'Renewable',
-        value:    `${renMw.toFixed(1)} MW`,
-        colour:   '#3fb6a8',
-        sub:      'non-firm · solar',
-        colWidth: 104,
+        label:     'Renewable',
+        value:     `${renMw.toFixed(1)} MW`,
+        colour:    '#3fb6a8',
+        sub:       'non-firm · solar',
+        colWidth:  104,
+        tooltipId: 'renewable',
       },
       {
-        label:    'Gen-trip cover',
-        value:    genTripValue(cc),
-        colour:   genTripColour(cc),
-        sub:      genTripSub(cc),
-        colWidth: 204,
-        onClick:  () => setModalOpen(true),
+        label:     'Gen-trip cover',
+        value:     genTripValue(cc),
+        colour:    genTripColour(cc),
+        sub:       genTripSub(cc),
+        colWidth:  204,
+        onClick:   () => setModalOpen(true),
+        tooltipId: 'gen-trip-cover',
       },
       {
-        label:    'Attention',
-        value:    dqCount > 0 ? `${dqCount} subsystem` : '—',
-        colour:   dqCount > 0 ? '#f0883e' : undefined,
-        colWidth: 140,
+        label:     'Attention',
+        value:     dqCount > 0 ? `${dqCount} subsystem` : '—',
+        colour:    dqCount > 0 ? '#f0883e' : undefined,
+        colWidth:  140,
+        tooltipId: 'attention',
       },
     ]
   } else {
     // Static defaults — no tick yet.
     // Gen-trip tile is still clickable so users can learn what it means before a run.
     figures = [
-      { label: 'Dispatchable',   value: '45.0 MW',   colour: '#e0a458', sub: 'turbine + BESS (anchor-adj)', colWidth: 140 },
-      { label: 'Renewable',      value: '~5.0 MW',   colour: '#3fb6a8', sub: 'non-firm · solar',             colWidth: 104 },
-      { label: 'Gen-trip cover', value: 'N−1 ready', colour: '#4a9fe0', sub: 'click to learn more',          colWidth: 204, onClick: () => setModalOpen(true) },
-      { label: 'Attention',      value: '1 subsystem', colour: '#f0883e',                                     colWidth: 140 },
+      { label: 'Dispatchable',   value: '45.0 MW',   colour: '#e0a458', sub: 'turbine + BESS (anchor-adj)', colWidth: 140, tooltipId: 'dispatchable' },
+      { label: 'Renewable',      value: '~5.0 MW',   colour: '#3fb6a8', sub: 'non-firm · solar',             colWidth: 104, tooltipId: 'renewable' },
+      { label: 'Gen-trip cover', value: 'N−1 ready', colour: '#4a9fe0', sub: 'click to learn more',          colWidth: 204, onClick: () => setModalOpen(true), tooltipId: 'gen-trip-cover' },
+      { label: 'Attention',      value: '1 subsystem', colour: '#f0883e',                                     colWidth: 140, tooltipId: 'attention' },
     ]
   }
 

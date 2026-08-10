@@ -14,6 +14,7 @@
 
 import type { NodeDef } from './plantLayout'
 import type { TickPayload, TurbineUnitSpec } from '../types'
+import { InfoBtn } from './TileTooltip'
 
 /** Weather preview data from GET /solar-preview */
 export interface SolarPreview {
@@ -480,6 +481,7 @@ export function PlantNode({ def, tick, onClick, solarPreview, liveSolarMW }: Pla
             )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0 }}>
+            <InfoBtn id={def.id} />
             {!isIdle && !isGrid && !def.passive && (
               <div style={{
                 width: 5, height: 5, borderRadius: '50%',
