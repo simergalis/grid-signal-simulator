@@ -117,6 +117,17 @@ async def _lifespan(application: FastAPI):
     # Ensure AuthUser table exists before any requests arrive.
     await create_auth_tables()
 
+    # Log the portal URL that will be embedded in every outgoing welcome email
+    # so operators can confirm it's correct without sending a test email.
+    # Set APP_PORTAL_URL in Replit Secrets to override (e.g. custom domain).
+    from api.email_service import _portal_url as _email_portal_url
+    _src = (
+        "APP_PORTAL_URL secret"
+        if os.environ.get("APP_PORTAL_URL", "").strip()
+        else ("REPLIT_DOMAINS" if os.environ.get("REPLIT_DOMAINS", "").strip() else "default fallback")
+    )
+    _log.info("Email portal URL: %s  (source: %s)", _email_portal_url(), _src)
+
     hub = WebSocketHub()
     manager = RunManager(hub)
     scenario_store = build_seeded_store()
