@@ -99,15 +99,15 @@ function deriveContent(cc: ContingencyCoverage | null | undefined): StateContent
 
   if (cc.state === 'COVERED_WITH_SHED') {
     return {
-      headline: `Your plant can cope, but it would need to pause ${shedMw} of compute load.`,
+      headline: `Your plant can cope, but it would need to pause ${shedMw} of compute load${cc.shed_equivalent_nodes != null ? ` — roughly ${cc.shed_equivalent_nodes} nodes` : ''}.`,
       summary: [
         `If the largest running generator tripped right now, it would remove ${deficitMw} of supply.`,
         `The remaining generators have only ${headroomMw} of spare headroom — not enough to cover the full gap by ramping alone.`,
-        `The battery (${bessMw} available) would bridge the shortfall for up to ${rtTime} while the control system reduces compute load by ${shedMw} to bring demand in line with available supply.`,
+        `The battery (${bessMw} available) would bridge the shortfall for up to ${rtTime} while the control system reduces compute load by ${shedMw}${cc.shed_equivalent_nodes != null ? ` (≈ ${cc.shed_equivalent_nodes} nodes)` : ''} to bring demand in line with available supply.`,
         'This is an automatic safety action — not a failure. The affected jobs pause and resume once generation recovers.',
       ],
       whatItMeans: [
-        `A ${shedMw} reduction in compute is equivalent to the lowest-priority workloads stepping back temporarily. No data is lost — training jobs checkpoint automatically.`,
+        `A ${shedMw} reduction in compute${cc.shed_equivalent_nodes != null ? ` (≈ ${cc.shed_equivalent_nodes} nodes)` : ''} is equivalent to the lowest-priority workloads stepping back temporarily. No data is lost — training jobs checkpoint automatically.`,
         'The battery buys enough time for the curtailment system to act gracefully rather than having frequency collapse.',
         'This state is common when all turbines are near full load. It resolves if load drops, a turbine gains headroom, or the battery SoC is higher.',
       ],
@@ -335,8 +335,8 @@ export function GenTripModal({
               {cc.shed_required_mw > 0 && (
                 <MetricRow
                   label="Load reduction needed"
-                  note="Compute power that would pause automatically to bring demand in line"
-                  value={fmt(cc.shed_required_mw)}
+                  note={`Compute power that would pause automatically to bring demand in line${cc.shed_equivalent_nodes != null ? ` — roughly ${cc.shed_equivalent_nodes} nodes at current power density` : ''}`}
+                  value={`${fmt(cc.shed_required_mw)}${cc.shed_equivalent_nodes != null ? `  ≈ ${cc.shed_equivalent_nodes} nodes` : ''}`}
                   highlight="#f0883e"
                 />
               )}

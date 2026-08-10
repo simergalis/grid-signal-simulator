@@ -1273,6 +1273,25 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     )
     _contingency_coverage = evaluate_contingency(_plant_state)
 
+    # 4b. Annotate contingency coverage with an approximate node count for shed_required_mw.
+    # Converts the MW figure into "≈ N nodes" so the UI can show both without the frontend
+    # needing to know the per-node power density.
+    _shed_equiv_nodes: Optional[int] = None
+    if _contingency_coverage.shed_required_mw > 0 and state.gpu_modules:
+        _total_active_nodes = sum(g.effective_node_count() for g in state.gpu_modules)
+        _p_compute_total = sum(
+            g.per_job_compute_mw(j)
+            for g in state.gpu_modules
+            for j in g.active_training_jobs()
+        )
+        if _total_active_nodes > 0 and _p_compute_total > 0.01:
+            _shed_equiv_nodes = max(1, round(
+                _contingency_coverage.shed_required_mw / _p_compute_total * _total_active_nodes
+            ))
+    _contingency_coverage = dataclasses.replace(
+        _contingency_coverage, shed_equivalent_nodes=_shed_equiv_nodes
+    )
+
     # 5. Checkpoint classification, per active training job.
     # Step 3 Item 1: use gpu.per_job_compute_mw(job_id) — the draw for THIS job
     # on THIS module — not the site-wide p_compute_mw sum.  A 20% checkpoint dip

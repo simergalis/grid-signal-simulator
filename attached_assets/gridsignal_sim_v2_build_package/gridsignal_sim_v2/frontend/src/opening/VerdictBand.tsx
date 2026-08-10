@@ -90,7 +90,8 @@ function genTripValue(cc: ContingencyCoverage | null | undefined): string {
     return `covered · ${cc.deficit_mw.toFixed(1)} MW · ${close}`
   }
   if (cc.state === 'COVERED_WITH_SHED') {
-    return `${cc.shed_required_mw.toFixed(1)} MW shed · ${rt} ride-through`
+    const nodes = cc.shed_equivalent_nodes != null ? ` ≈ ${cc.shed_equivalent_nodes} nodes` : ''
+    return `${cc.shed_required_mw.toFixed(1)} MW shed${nodes} · ${rt} ride-through`
   }
   return `${cc.deficit_mw.toFixed(1)} MW uncov · ${rt} ride-through`
 }
@@ -105,7 +106,10 @@ function genTripColour(cc: ContingencyCoverage | null | undefined): string {
 function genTripSub(cc: ContingencyCoverage | null | undefined): string | undefined {
   if (!cc) return 'click to learn more'
   if (cc.state === 'COVERED') return 'N−1 gen-trip covered · click for details'
-  if (cc.state === 'COVERED_WITH_SHED') return `${cc.shed_required_mw.toFixed(1)} MW shed to cover · click for details`
+  if (cc.state === 'COVERED_WITH_SHED') {
+    const nodes = cc.shed_equivalent_nodes != null ? ` ≈ ${cc.shed_equivalent_nodes} nodes` : ''
+    return `${cc.shed_required_mw.toFixed(1)} MW shed to cover${nodes} · click for details`
+  }
   return 'insufficient generation + shed · click for details'
 }
 

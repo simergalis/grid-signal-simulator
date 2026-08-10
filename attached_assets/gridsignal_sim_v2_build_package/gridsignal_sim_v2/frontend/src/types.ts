@@ -332,6 +332,9 @@ export interface ContingencyCoverage {
   // §7.5 header-strip figures
   dispatchable_mw: number          // online turbine rated + anchor-adj BESS bridging (TC-82: solar excluded)
   renewable_mw: number             // solar output as separate non-firm term (TC-81, TC-82)
+  // Approximate GPU node count for shed_required_mw at current load density.
+  // null when compute load is zero or shed_required_mw is 0.
+  shed_equivalent_nodes: number | null
 }
 
 export interface KubeMetrics {

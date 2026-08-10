@@ -795,6 +795,10 @@ class ContingencyCoverage:
     # §7.5 header-strip figures
     dispatchable_mw: float               # online turbine rated + anchor-adj BESS bridging
     renewable_mw: float                  # solar output — displayed separately, never in coverage arithmetic
+    # Approximate GPU node count that maps to shed_required_mw at current load density.
+    # None when compute load is zero (no active jobs) or shed_required_mw is 0.
+    # Computed in simulation_core.py after evaluate_contingency().
+    shed_equivalent_nodes: Optional[int] = None
 
 
 # ---------------------------------------------------------------------------
