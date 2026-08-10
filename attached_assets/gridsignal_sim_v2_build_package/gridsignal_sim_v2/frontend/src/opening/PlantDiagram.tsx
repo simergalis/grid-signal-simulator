@@ -63,6 +63,25 @@ const _LABEL = (color: string): React.CSSProperties => ({
 })
 
 
+/** Renders bullet lines (starting with •) as styled chevron bullets, or plain text fallback. */
+function BulletBody({ text, accent }: { text: string; accent: string }) {
+  const lines   = text.split('\n').map(l => l.trim()).filter(Boolean)
+  const bullets = lines.filter(l => l.startsWith('•'))
+  if (bullets.length >= 2) {
+    return (
+      <>
+        {bullets.map((line, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 6, lineHeight: 1.45 }}>
+            <span style={{ color: accent, flexShrink: 0, fontSize: 10, marginTop: 1 }}>▸</span>
+            <span>{line.replace(/^•\s*/, '')}</span>
+          </div>
+        ))}
+      </>
+    )
+  }
+  return <span style={{ lineHeight: 1.6, whiteSpace: 'normal' }}>{text}</span>
+}
+
 /**
  * WatchingCallout — centred box between Gas Turbine and Compute Racks.
  *
@@ -191,13 +210,14 @@ function WatchingCallout({ tick }: { tick: TickPayload | null }) {
           scrollbarWidth: 'thin' as const,
           scrollbarColor: '#2a3a4a transparent',
           color: generating && !body ? '#3a5a6a' : '#c8d6e5',
-          lineHeight: 1.6, whiteSpace: 'normal',
           transition: 'color 0.3s',
           paddingRight: 2,
+          display: 'flex', flexDirection: 'column', gap: 5,
+          justifyContent: 'center',
         }}>
           {generating && !body
-            ? 'Generating explanation…'
-            : (body ?? '')
+            ? <span style={{ lineHeight: 1.6 }}>Generating explanation…</span>
+            : <BulletBody text={body ?? ''} accent={accent} />
           }
         </div>
       </div>
