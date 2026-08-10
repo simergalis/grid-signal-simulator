@@ -289,6 +289,12 @@ class SiteConfig:
     tau_seconds: float = _sp.value("tau")                 # PROPOSED_HERE §8; key "tau" in catalogue
     dt_thermal_seconds: float = _sp.value("dt_thermal")   # PROPOSED_HERE §8-9; key "dt_thermal"
     uncalibrated: bool = True                              # source spec Section 17.3
+    # Scenario-scripted DQ tag injection windows.  Each tuple is
+    # (start_s, end_s, tag_str) where tag_str is a DataQualityTag value.
+    # At every tick where start_s <= sim_time < end_s the named tag is added
+    # to the confidence band computation and the low-confidence interlock.
+    # Default empty — no injected flags in production scenarios.
+    dq_inject_events: list[tuple[float, float, str]] = field(default_factory=list)
 
     # ── Confidence band for reserve check (gridsignal_parameters.json §2.5) ──
     # INV-2: reserve check evaluates the band, never the point estimate.

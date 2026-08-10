@@ -428,6 +428,11 @@ def build_run_context_from_spec(
         # Required for scenarios where the TC-43 curtailment dwell must fire
         # (e.g. demo-pms-shortfall).  Default False preserves §17.3 behaviour.
         uncalibrated=not bool(spec_data.get("calibrated", False)),
+        # Scripted DQ inject windows — convert list[dict] from JSON to list[tuple].
+        dq_inject_events=[
+            (float(e["start_s"]), float(e["end_s"]), str(e["tag"]))
+            for e in spec_data.get("dq_inject_events", [])
+        ],
         # ── Physics parameters (gridsignal_parameters.json §2) ──────────────
         # Plant values: what the simulation actually does.
         # plant_* present → use that; absent → use engine value (linked default).

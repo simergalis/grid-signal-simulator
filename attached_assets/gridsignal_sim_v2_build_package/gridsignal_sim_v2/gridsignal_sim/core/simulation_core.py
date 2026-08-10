@@ -1138,12 +1138,20 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         and (sim_time - state._last_workload_signal_sim_time) >= state.site.workload_signal_stale_s
     )
 
+    # Scenario-scripted DQ inject events: any active window makes this tick
+    # low-confidence regardless of real hardware/calibration state.
+    _dq_injected = any(
+        s <= sim_time < e
+        for s, e, _ in state.site.dq_inject_events
+    )
     _is_low_confidence = (
         any(g.has_active_unmapped_jobs() for g in state.gpu_modules)
         or state.site.uncalibrated
         # Phase 11.2: absent feed is structurally equivalent to unmapped hardware
         # for the purposes of the curtailment interlock (TC-43 pattern).
         or _workload_signal_absent
+        # Scripted inject windows (demo / scenario testing).
+        or _dq_injected
     )
     _remaining_gap_mw = max(
         0.0, p_dispatch_required_mw - turbine_output_mw - bess_output_mw
@@ -1294,6 +1302,16 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         tags.add(DataQualityTag.WORKLOAD_SIGNAL_ABSENT)
     if _workload_signal_stale:
         tags.add(DataQualityTag.WORKLOAD_SIGNAL_STALE)
+    # Scenario-scripted DQ inject windows — add named tags for any active window.
+    for _inj_start, _inj_end, _inj_tag_str in state.site.dq_inject_events:
+        if _inj_start <= sim_time < _inj_end:
+            try:
+                tags.add(DataQualityTag(_inj_tag_str))
+            except ValueError:
+                _log.warning(
+                    "dq_inject_events: unknown tag %r at sim_time=%.1f — skipped.",
+                    _inj_tag_str, sim_time,
+                )
 
     # Phase 11.1: queue-derived forecast — Section 4 formula.
     # P_compute_forecast(t) = Σ_i Nodes_i(t) × kW_i × PUE_base / 1000

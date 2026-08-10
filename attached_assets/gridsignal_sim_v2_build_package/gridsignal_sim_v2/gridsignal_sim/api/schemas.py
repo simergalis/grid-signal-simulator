@@ -371,6 +371,23 @@ class KubeConfigSpec(BaseModel):
     load_config: Optional[LoadProfileConfigSpec] = None
 
 
+class DqInjectEvent(BaseModel):
+    """A scripted data-quality tag injection window.
+
+    Activates ``tag`` (a DataQualityTag value string, e.g. ``"invalid_payload"``)
+    for every tick where ``start_s <= sim_time < end_s``.  The effect is identical
+    to the tag firing naturally: the confidence band widens and the low-confidence
+    interlock blocks autonomous curtailment.
+
+    Multiple windows may overlap; each is additive.
+    Validated tag strings: unmapped_hardware, uncalibrated_site, invalid_payload,
+    stale_profile, workload_signal_stale, workload_signal_absent.
+    """
+    start_s: float = Field(ge=0.0, description="Sim-time (seconds) at which the tag becomes active.")
+    end_s:   float = Field(ge=0.0, description="Sim-time (seconds) at which the tag clears (exclusive).")
+    tag:     str   = Field(description="DataQualityTag value string to inject.")
+
+
 class ScenarioSpec(BaseModel):
     """Full scenario configuration.  Stored as spec_json in ScenarioRecord.
     Posted to POST /scenarios or PUT /scenarios/{id}.
@@ -730,6 +747,13 @@ class ScenarioSpec(BaseModel):
     # Only set True for scenarios where the curtailment path must engage
     # (e.g. demo-pms-shortfall for TC-65 conflict detection).
     calibrated: bool = False
+
+    # Scripted DQ tag injection windows — each entry fires the named tag for
+    # every tick in [start_s, end_s).  Produces ATTENTION state on the Forecast
+    # Quality tile, widens the confidence band, and blocks autonomous curtailment
+    # (TC-43 interlock) exactly as a real DQ tag would.  Use in demo scenarios
+    # so operators can see the tile trip to ATTENTION mid-run.
+    dq_inject_events: list[DqInjectEvent] = Field(default_factory=list)
 
     # Solar origin UTC hour override — demo-solar-peak uses this to anchor
     # generate_solar_forecast() at a fixed midday UTC time (UTC 20 = 12:00 PST)

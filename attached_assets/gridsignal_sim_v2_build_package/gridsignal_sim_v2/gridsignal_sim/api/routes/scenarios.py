@@ -29,6 +29,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Request, Response, status
 
 from api.schemas import (
+    DqInjectEvent,
     KubeConfigSpec,
     LoadProfileConfigSpec,
     MaintenanceConfigSpec,
@@ -432,6 +433,14 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             # power_factor: CHOSEN — typical gas turbine (0.85).  Calibrate against
             # vendor nameplate for real deployments.  Raises S_base vs pf=1 by ~18%.
             power_factor=0.85,
+            # Demo DQ inject: trip FORECAST QUALITY to ATTENTION at t=90 s so the
+            # operator sees the tile change colour mid-run.  Clears at t=180 s.
+            # During the window the confidence band widens (+15%) and autonomous
+            # curtailment is blocked (TC-43).  The turbine-1 trip at t=120 s fires
+            # inside this window — showing what happens when quality degrades mid-event.
+            dq_inject_events=[
+                DqInjectEvent(start_s=90.0, end_s=180.0, tag="invalid_payload"),
+            ],
         ),
     ),
     (
