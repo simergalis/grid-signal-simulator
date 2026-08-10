@@ -220,7 +220,7 @@ function SystemStrip({ ids, data, onTileClick }: SystemStripProps) {
                   style={{
                     position: 'absolute', inset: 0, borderRadius: 8,
                     pointerEvents: 'none', zIndex: 2,
-                    animation: 'gccFlash 1.8s ease-out forwards',
+                    animation: 'gccFlash 5s ease-out forwards',
                   }}
                 />
               )}
