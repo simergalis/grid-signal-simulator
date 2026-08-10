@@ -444,6 +444,50 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
         ),
     ),
     (
+        "demo-forecast-quality",
+        ScenarioSpec(
+            name="demo-forecast-quality",
+            description=(
+                "600-node ~6.3 MW scenario that demonstrates the Forecast Quality "
+                "subsystem live.  Three scripted DQ windows fire in sequence:\n"
+                "  t=60–120 s  — invalid_payload (+15% band): bad telemetry from "
+                "the workload agent; confidence band visibly widens, curtailment "
+                "blocked.\n"
+                "  t=150–210 s — stale_profile (+12% band): hardware profile "
+                "vintage is outdated; a second ATTENTION window after the first "
+                "clears so the operator sees the tile trip twice.\n"
+                "  t=240–270 s — uncalibrated_site (+8% band): site calibration "
+                "flag raised momentarily; shorter window to show rapid recovery.\n"
+                "Each window widens the confidence band and engages the TC-43 "
+                "low-confidence interlock — no autonomous curtailment while any "
+                "tag is active.  FORECAST QUALITY tile returns to READY between "
+                "windows so the contrast is clear."
+            ),
+            workload_events=[_evt_start("job-big", _DEMO_NODES)],
+            dt_lead_seconds=30.0,
+            bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0,
+                               grid_forming=True, p_anchor_reserve_mw=2.0)],
+            turbine_units=[
+                _turbine("turbine-0", rated_mw=7.0, r_mw_per_s=0.2, p_min_stable_frac=0.40),
+                _turbine("turbine-1", rated_mw=7.0, r_mw_per_s=0.2, p_min_stable_frac=0.40),
+                _turbine("turbine-2", rated_mw=7.0, r_mw_per_s=0.2, p_min_stable_frac=0.40),
+                _turbine("turbine-3", rated_mw=7.0, r_mw_per_s=0.2, p_min_stable_frac=0.40),
+                _turbine("turbine-4", rated_mw=7.0, r_mw_per_s=0.2, hot_standby=True,
+                          p_min_stable_frac=0.40),
+            ],
+            solar_rated_mw=_SOLAR_DEMO,
+            end_sim_time=300.0,
+            load_config=LoadProfileConfigSpec(),
+            frequency_nominal_hz=60.0,
+            power_factor=0.85,
+            dq_inject_events=[
+                DqInjectEvent(start_s=60.0,  end_s=120.0, tag="invalid_payload"),
+                DqInjectEvent(start_s=150.0, end_s=210.0, tag="stale_profile"),
+                DqInjectEvent(start_s=240.0, end_s=270.0, tag="uncalibrated_site"),
+            ],
+        ),
+    ),
+    (
         "demo-alert",
         ScenarioSpec(
             name="demo-alert",
