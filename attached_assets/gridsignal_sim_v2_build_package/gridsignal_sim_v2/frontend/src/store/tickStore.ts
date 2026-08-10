@@ -115,6 +115,12 @@ interface TickState {
   /** GCC event log — appended by PlantDiagram whenever a GCC feed entry fires.
    *  Read by SubsystemModal to populate the GCC tile event log. */
   gccEvents: Array<{ts: string; body: string}>
+  /**
+   * Wall-clock timestamp (ms) of the most recent GCC commit/decommit/dispatch
+   * action.  Set by triggerGccFlash(); read by SystemStrip to animate the GCC
+   * tile.  Null until the first action fires.
+   */
+  gccFlashAt: number | null
 
   // ── Actions ───────────────────────────────────────────────────────────────
   /** Called by the WebSocket consumer on each arriving message. */
@@ -132,6 +138,9 @@ interface TickState {
   appendGccEvent: (event: {ts: string; body: string}) => void
   /** Clear the GCC event log (called on new run start). */
   clearGccEvents: () => void
+  /** Record the current wall-clock time as the latest GCC action instant,
+   *  triggering the amber flash animation on the GCC tile. */
+  triggerGccFlash: () => void
   reset: () => void
 }
 
@@ -147,6 +156,7 @@ export const useTickStore = create<TickState>((set, get) => ({
   acknowledgedAlerts: new Set(),
   _lastFrameWall: 0,
   gccEvents: [],
+  gccFlashAt: null,
 
   pushTick(tick) {
     set(s => ({ pendingTicks: [...s.pendingTicks, tick] }))
@@ -239,6 +249,10 @@ export const useTickStore = create<TickState>((set, get) => ({
 
   clearGccEvents() {
     set({ gccEvents: [] })
+  },
+
+  triggerGccFlash() {
+    set({ gccFlashAt: Date.now() })
   },
 
   acknowledgeAlert(tickIndex) {

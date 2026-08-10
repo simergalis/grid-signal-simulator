@@ -18,6 +18,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react'
+import { useTickStore } from '../store/tickStore'
 import { VerdictBand }      from './VerdictBand'
 import { PlantDiagram }     from './PlantDiagram'
 import type { SolarPreview } from './PlantNode'
@@ -177,6 +178,13 @@ interface SystemStripProps {
 }
 
 function SystemStrip({ ids, data, onTileClick }: SystemStripProps) {
+  const gccFlashAt = useTickStore(s => s.gccFlashAt)
+  const [gccFlashKey, setGccFlashKey] = useState(0)
+
+  useEffect(() => {
+    if (!gccFlashAt) return
+    setGccFlashKey(k => k + 1)
+  }, [gccFlashAt])
   return (
     <div
       className="flex-shrink-0 border-t border-border"
@@ -200,7 +208,22 @@ function SystemStrip({ ids, data, onTileClick }: SystemStripProps) {
           if (!cfg || !d) return null
 
           return (
-            <div key={id} className="flex-1 min-w-0">
+            <div
+              key={id}
+              className="flex-1 min-w-0"
+              style={id === 'gcc' ? { position: 'relative' } : undefined}
+            >
+              {/* Amber glow overlay — remounts on each GCC action to restart the animation */}
+              {id === 'gcc' && gccFlashKey > 0 && (
+                <div
+                  key={gccFlashKey}
+                  style={{
+                    position: 'absolute', inset: 0, borderRadius: 8,
+                    pointerEvents: 'none', zIndex: 2,
+                    animation: 'gccFlash 1.8s ease-out forwards',
+                  }}
+                />
+              )}
               <SubsystemTile
                 id={id}
                 name={cfg.name}

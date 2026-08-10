@@ -235,6 +235,7 @@ function LeadTimeCallout({
   const latchedAlert     = useTickStore(s => s.latchedAlert)
   const acknowledgeAlert = useTickStore(s => s.acknowledgeAlert)
   const appendGccEvent   = useTickStore(s => s.appendGccEvent)
+  const triggerGccFlash  = useTickStore(s => s.triggerGccFlash)
 
   // ── Landing-state tracking ─────────────────────────────────────────────────
   // When Δt_lead transitions from > 0 to 0, show STEP-LOAD LANDED for 30 s.
@@ -499,6 +500,7 @@ function LeadTimeCallout({
       if (body) {
         setAtRestLog(p => [...p, { ts, body }])
         appendGccEvent({ ts, body })
+        triggerGccFlash()
       }
     }
 
@@ -521,6 +523,7 @@ function LeadTimeCallout({
         : `GCC dispatch: turbine committed — step-load +${forecast.toFixed(1)} MW incoming.`
       setAtRestLog(prev => [...prev, { ts, body }])
       appendGccEvent({ ts, body })
+      triggerGccFlash()
     }
     prevIsRunningRef.current = nowRunning
   }, [tick])
@@ -727,21 +730,30 @@ function LeadTimeCallout({
                   scrollbarColor: '#2a3a4a transparent',
                 }}
               >
-                {atRestLog.map((entry, i) => (
-                  <div key={i} style={{
-                    display: 'flex', flexDirection: 'column', gap: 1,
-                    borderLeft: `2px solid ${i === atRestLog.length - 1 ? '#2a5060' : '#1e2a36'}`,
-                    paddingLeft: 6,
-                  }}>
-                    <span style={{ ..._MONO, fontSize: 8, color: '#3a5a6a', lineHeight: 1.4 }}>
-                      {entry.ts}
-                    </span>
-                    <span style={{ ..._BODY, lineHeight: 1.5,
-                      color: i === atRestLog.length - 1 ? '#7d9ab0' : '#4b5764' }}>
-                      {entry.body}
-                    </span>
-                  </div>
-                ))}
+                {atRestLog.map((entry, i) => {
+                  const isGcc    = entry.body.startsWith('GCC')
+                  const isNewest = i === atRestLog.length - 1
+                  const borderCol = isGcc
+                    ? (isNewest ? 'rgba(224,164,88,0.75)' : 'rgba(224,164,88,0.30)')
+                    : (isNewest ? '#2a5060' : '#1e2a36')
+                  const textCol = isGcc
+                    ? (isNewest ? '#e0a458' : '#7a6030')
+                    : (isNewest ? '#7d9ab0' : '#4b5764')
+                  return (
+                    <div key={i} style={{
+                      display: 'flex', flexDirection: 'column', gap: 1,
+                      borderLeft: `2px solid ${borderCol}`,
+                      paddingLeft: 6,
+                    }}>
+                      <span style={{ ..._MONO, fontSize: 8, color: '#3a5a6a', lineHeight: 1.4 }}>
+                        {entry.ts}
+                      </span>
+                      <span style={{ ..._BODY, lineHeight: 1.5, color: textCol }}>
+                        {entry.body}
+                      </span>
+                    </div>
+                  )
+                })}
               </div>
             </>}
           </>
@@ -828,27 +840,33 @@ function LeadTimeCallout({
                 Awaiting first event…
               </div>
             )}
-            {atRestLog.map((entry, i) => (
-              <div
-                key={i}
-                style={{
-                  display: 'flex', flexDirection: 'column', gap: 1,
-                  borderLeft: `2px solid #1e2a36`,
-                  paddingLeft: 6,
-                  // Highlight the most-recent entry
-                  ...(i === atRestLog.length - 1
-                    ? { borderLeftColor: '#2a5060' }
-                    : {}),
-                }}
-              >
-                <span style={{ ..._MONO, fontSize: 8, color: '#3a5a6a', lineHeight: 1.4 }}>
-                  {entry.ts}
-                </span>
-                <span style={{ ..._BODY, color: i === atRestLog.length - 1 ? '#7d9ab0' : '#4b5764', lineHeight: 1.5 }}>
-                  {entry.body}
-                </span>
-              </div>
-            ))}
+            {atRestLog.map((entry, i) => {
+              const isGcc    = entry.body.startsWith('GCC')
+              const isNewest = i === atRestLog.length - 1
+              const borderCol = isGcc
+                ? (isNewest ? 'rgba(224,164,88,0.75)' : 'rgba(224,164,88,0.30)')
+                : (isNewest ? '#2a5060' : '#1e2a36')
+              const textCol = isGcc
+                ? (isNewest ? '#e0a458' : '#7a6030')
+                : (isNewest ? '#7d9ab0' : '#4b5764')
+              return (
+                <div
+                  key={i}
+                  style={{
+                    display: 'flex', flexDirection: 'column', gap: 1,
+                    borderLeft: `2px solid ${borderCol}`,
+                    paddingLeft: 6,
+                  }}
+                >
+                  <span style={{ ..._MONO, fontSize: 8, color: '#3a5a6a', lineHeight: 1.4 }}>
+                    {entry.ts}
+                  </span>
+                  <span style={{ ..._BODY, color: textCol, lineHeight: 1.5 }}>
+                    {entry.body}
+                  </span>
+                </div>
+              )
+            })}
           </div>
         </>}
 
