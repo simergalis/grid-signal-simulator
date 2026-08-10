@@ -13,7 +13,10 @@
       "job_id": "job-alpha",
       "start_s": 0.0,
       "phases": [
-        {"name": "training", "duration_s": 20.0}
+        {
+          "name": "training",
+          "duration_s": 20.0
+        }
       ]
     }
   ],
@@ -57,5 +60,6 @@
       "value": 2000.0,
       "description": "budget_ms is 2000 on every tick (TC-84)"
     }
-  ]
+  ],
+  "description": "This scenario demonstrates a management network problem that puts pressure on the control path without touching the compute network \u2014 testing the platform's ability to isolate problems rather than let them propagate across fabric boundaries. Congestion is injected into the management network, pushing the time it takes for a control command to reach a GPU above the 1,000-millisecond latency budget, while the separate compute fabric used for GPU-to-GPU gradient exchange remains completely clean throughout. The operator sees the control latency metric breach its threshold while the compute network metrics stay nominal. This matters because management and compute traffic sharing the same infrastructure is a common cost-saving design choice, and this scenario shows why that choice introduces risk: a routine management spike can delay critical control commands during exactly the moments when fast response matters most."
 }

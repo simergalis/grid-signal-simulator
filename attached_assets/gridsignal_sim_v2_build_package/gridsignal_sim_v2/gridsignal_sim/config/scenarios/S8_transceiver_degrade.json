@@ -13,7 +13,10 @@
       "job_id": "job-alpha",
       "start_s": 0.0,
       "phases": [
-        {"name": "training", "duration_s": 30.0}
+        {
+          "name": "training",
+          "duration_s": 30.0
+        }
       ]
     }
   ],
@@ -33,5 +36,6 @@
       "link_id": "compute/leaf5/up2",
       "description": "degraded transceiver produces non-zero CRC error counters"
     }
-  ]
+  ],
+  "description": "This scenario demonstrates hardware-level optical degradation in which a physically worn network transceiver begins generating data errors on the link it serves, detectable as checksum failures in the packet stream. The monitoring system identifies the rising error rate before it reaches the threshold at which packets begin to be dropped and lost entirely, giving the operator early warning of a component that needs replacement. The dashboard surfaces the affected link and the error rate trend, distinguishing this from a configuration or software issue. This matters because optical transceivers are consumable hardware that degrades gradually rather than failing cleanly, and catching a deteriorating transceiver before it causes training job failures or data corruption avoids both downtime and the much harder problem of diagnosing why a completed training run produced unexpected results."
 }

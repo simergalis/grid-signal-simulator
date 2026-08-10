@@ -13,8 +13,14 @@
       "job_id": "job-alpha",
       "start_s": 0.0,
       "phases": [
-        {"name": "training",  "duration_s": 20.0},
-        {"name": "job_end",   "duration_s": 40.0}
+        {
+          "name": "training",
+          "duration_s": 20.0
+        },
+        {
+          "name": "job_end",
+          "duration_s": 40.0
+        }
       ]
     }
   ],
@@ -42,5 +48,6 @@
       "verdict": "checkpoint_corroborated",
       "description": "corroboration never fires in a scenario with no checkpoint (TC-82)"
     }
-  ]
+  ],
+  "description": "This scenario demonstrates how the network behaves when a training job ends, a phase that is often overlooked but can cause its own brief disruptions if not handled cleanly. When the job finishes, compute nodes stop sending traffic and wait for a confirmation signal before releasing their resources; the compute fabric quiets down in an orderly way, and no checkpoint verification is triggered because the job ended without a checkpoint save. The dashboard shows the traffic collapse and the clean end-of-job handshake completing normally. This matters because a disorderly job termination \u2014 where nodes stop at different times or fail to release resources \u2014 can interfere with the next job's startup and corrupt shared state, so confirming clean teardown behaviour is an important operational check."
 }

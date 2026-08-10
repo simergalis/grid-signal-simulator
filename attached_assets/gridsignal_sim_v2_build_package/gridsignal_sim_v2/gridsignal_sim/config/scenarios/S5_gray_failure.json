@@ -13,7 +13,10 @@
       "job_id": "job-alpha",
       "start_s": 0.0,
       "phases": [
-        {"name": "training", "duration_s": 30.0}
+        {
+          "name": "training",
+          "duration_s": 30.0
+        }
       ]
     }
   ],
@@ -34,5 +37,6 @@
       "min_loss": 0.005,
       "description": "gray failure link reports elevated packet loss above the injected floor"
     }
-  ]
+  ],
+  "description": "This scenario demonstrates a particularly difficult failure mode in which a network link appears fully operational but silently discards a portion of the packets passing through it. Unlike a complete link failure, which is immediately obvious, this kind of partial failure can persist undetected for extended periods, causing intermittent training errors or checkpoint corruption without a clear hardware alert to prompt investigation. The platform's monitoring tracks packet loss rates and flags the anomaly even though the link reports itself as healthy. This matters because silent link failures are among the hardest problems to diagnose in a GPU cluster and can cause expensive training jobs to produce incorrect results or fail at late stages, making early automated detection a significant operational safeguard."
 }

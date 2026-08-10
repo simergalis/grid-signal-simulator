@@ -99,15 +99,15 @@ function deriveContent(cc: ContingencyCoverage | null | undefined): StateContent
 
   if (cc.state === 'COVERED_WITH_SHED') {
     return {
-      headline: `Your plant can cope, but it would need to pause ${shedMw} of compute load${cc.shed_equivalent_nodes != null ? ` — roughly ${cc.shed_equivalent_nodes} nodes` : ''}.`,
+      headline: `Your plant can cope, but it would need to pause ${shedMw} of compute load.`,
       summary: [
         `If the largest running generator tripped right now, it would remove ${deficitMw} of supply.`,
         `The remaining generators have only ${headroomMw} of spare headroom — not enough to cover the full gap by ramping alone.`,
-        `The battery (${bessMw} available) would bridge the shortfall for up to ${rtTime} while the control system reduces compute load by ${shedMw}${cc.shed_equivalent_nodes != null ? ` (≈ ${cc.shed_equivalent_nodes} nodes)` : ''} to bring demand in line with available supply.`,
+        `The battery (${bessMw} available) would bridge the shortfall for up to ${rtTime} while the control system reduces compute load by ${shedMw} to bring demand in line with available supply.`,
         'This is an automatic safety action — not a failure. The affected jobs pause and resume once generation recovers.',
       ],
       whatItMeans: [
-        `A ${shedMw} reduction in compute${cc.shed_equivalent_nodes != null ? ` (≈ ${cc.shed_equivalent_nodes} nodes)` : ''} is equivalent to the lowest-priority workloads stepping back temporarily. No data is lost — training jobs checkpoint automatically.`,
+        `A ${shedMw} reduction in compute is equivalent to the lowest-priority workloads stepping back temporarily. No data is lost — training jobs checkpoint automatically.`,
         'The battery buys enough time for the curtailment system to act gracefully rather than having frequency collapse.',
         'This state is common when all turbines are near full load. It resolves if load drops, a turbine gains headroom, or the battery SoC is higher.',
       ],
@@ -257,20 +257,44 @@ export function GenTripModal({
         {/* ── Scrollable body ─────────────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto px-7 py-5 space-y-5">
 
-          {/* What is gen-trip cover? */}
+          {/* What N-1 means here */}
           <div
-            className="rounded-lg border px-4 py-4 space-y-2"
+            className="rounded-lg border px-4 py-4 space-y-3"
             style={{ borderColor: colour, background: '#16222e' }}
           >
             <div className="font-mono text-[9px] uppercase tracking-[0.14em]" style={{ color: '#4b5764' }}>
-              WHAT IS GEN-TRIP COVER?
+              WHAT N−1 MEANS HERE
             </div>
             <p className="font-mono text-xs text-muted leading-relaxed">
-              A "gen-trip" is when a generator suddenly goes offline — a fault, an emergency stop, or
-              a breaker trip. The question this tile answers is: <span className="text-text">if that happened right now,
-              could the rest of the plant hold the load?</span> The assessment runs every tick using live
-              output figures, not nameplate ratings.
+              This site is islanded — there is no utility feed to lean on. "N−1" asks one question:
+              if the largest generator running right now tripped offline this instant, could everything
+              on the bus still be served by what's left?
             </p>
+            <p className="font-mono text-xs text-muted leading-relaxed">
+              The MW shed figure is the answer when it's no. It is the size of the gap that would
+              remain after every surviving generator ran up to its ceiling. It is not a count of
+              servers, and it is not a prediction that anything will trip.
+            </p>
+            <p className="font-mono text-xs text-muted leading-relaxed">
+              Read it as: <span className="text-text">this much compute draw would have to pause</span> to
+              bring demand back in line with supply.
+            </p>
+            <p className="font-mono text-xs text-muted leading-relaxed">
+              At 0.00 MW the surviving fleet absorbs the loss on its own and no compute is at risk.
+              As it climbs, the site is running closer to its own edge — usually because load ramped
+              faster than generation was staged, or because a unit is already out.
+            </p>
+            <div className="border-t border-border/40 pt-3">
+              <p className="font-mono text-[10px] font-semibold text-text/80 mb-1">Why megawatts and not nodes</p>
+              <p className="font-mono text-xs text-muted leading-relaxed">
+                The obvious question is how many servers that is. We don't show a number, because the
+                honest answer changes every few seconds. A node's draw depends on what its job is doing
+                at that moment — a training run pulls far more while computing than while the network
+                exchanges results — and the cooling that follows that draw arrives about 90 seconds
+                behind it. A node count would look precise and be stale by the time you read it.
+                Megawatts is what the electrical system actually responds to, so megawatts is what we show.
+              </p>
+            </div>
           </div>
 
           {/* State explanation */}
@@ -335,8 +359,8 @@ export function GenTripModal({
               {cc.shed_required_mw > 0 && (
                 <MetricRow
                   label="Load reduction needed"
-                  note={`Compute power that would pause automatically to bring demand in line${cc.shed_equivalent_nodes != null ? ` — roughly ${cc.shed_equivalent_nodes} nodes at current power density` : ''}`}
-                  value={`${fmt(cc.shed_required_mw)}${cc.shed_equivalent_nodes != null ? `  ≈ ${cc.shed_equivalent_nodes} nodes` : ''}`}
+                  note="Compute power that would pause automatically to bring demand in line with available supply"
+                  value={fmt(cc.shed_required_mw)}
                   highlight="#f0883e"
                 />
               )}

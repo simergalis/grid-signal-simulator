@@ -503,6 +503,21 @@ export function PlantNode({ def, tick, onClick, solarPreview, liveSolarMW }: Pla
           </div>
         </div>
 
+        {/* Compute Racks: one-line pointer to gen-trip cover */}
+        {def.id === 'compute-racks' && (
+          <div style={{
+            fontFamily: "'SF Mono','Roboto Mono',Menlo,Consolas,monospace",
+            fontSize: 7,
+            color: '#3a4a5a',
+            lineHeight: 1.3,
+            marginTop: 1,
+            marginBottom: 2,
+          }}>
+            Rack draw is what gen-trip cover is measured against — if the fleet can't cover a unit
+            trip, this is the load that pauses. → gen-trip cover tile
+          </div>
+        )}
+
         {/* Phase 4 (GS-CHG-2026-08-08): balance rows for compute and cooling tiles */}
         {(def.id === 'compute-racks' || def.id === 'cooling-plant') && tick && (
           <BalanceRows

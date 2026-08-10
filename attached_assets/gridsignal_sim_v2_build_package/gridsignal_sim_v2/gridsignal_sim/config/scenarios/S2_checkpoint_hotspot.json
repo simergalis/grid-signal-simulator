@@ -13,9 +13,18 @@
       "job_id": "job-alpha",
       "start_s": 0.0,
       "phases": [
-        {"name": "training",    "duration_s": 20.0},
-        {"name": "checkpoint",  "duration_s": 40.0},
-        {"name": "training",    "duration_s": 20.0}
+        {
+          "name": "training",
+          "duration_s": 20.0
+        },
+        {
+          "name": "checkpoint",
+          "duration_s": 40.0
+        },
+        {
+          "name": "training",
+          "duration_s": 20.0
+        }
       ]
     }
   ],
@@ -61,5 +70,6 @@
       "value": true,
       "description": "elephant_flow_present emitted at current capability tier (TC-81)"
     }
-  ]
+  ],
+  "description": "This scenario demonstrates a traffic congestion problem that occurs specifically during model checkpointing, when every GPU node simultaneously writes a copy of the model weights to storage. The simultaneous writes all share the same network paths through the storage fabric, and the routing protocol's load-balancing mechanism sends multiple streams down the same physical link, creating a hotspot that saturates that uplink while others sit idle. The compute network \u2014 the separate fabric used for GPU-to-GPU communication \u2014 pauses cleanly during the checkpoint as expected, and the congestion is isolated to the storage side. This matters because checkpoint congestion is one of the most common causes of unexpectedly long save times in large training runs, and understanding its signature on the dashboard helps operators distinguish a slow checkpoint from a storage hardware fault."
 }

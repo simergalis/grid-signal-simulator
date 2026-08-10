@@ -284,17 +284,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
         ScenarioSpec(
             name="demo-pms-shortfall",
             description=(
-                "§28.4 PMS with undersized turbine so the curtailment ladder engages "
-                "(AD2 / TC-65).  "
-                "Turbine=5 MW, BESS=3 MW, demand≈15 MW → shortfall≈7 MW after ramp. "
-                "CurtailmentTier order: GridSignal issues a_defer (2 MW) then "
-                "b_power_cap (5 MW) to cover the gap (mandatory tier ordering §23.2). "
-                "PMS shed_priority_order=['b_power_cap', 'a_defer'] — reversed. "
-                "After curtailment dwell (§23.2 120 s), _curtailment_proposals is "
-                "non-empty, triggering check_order_conflict() each tick. "
-                "Conflict: PMS order [b,a] ≠ GridSignal order [a,b]. "
-                "Per §28.4, PMS order is authoritative; GridSignal must not override "
-                "it — the mismatch is a commissioning defect logged to pms_order_conflict."
+                "This scenario demonstrates what happens when GridSignal and the physical protection relay disagree on which compute loads to shed during a power shortfall. The site is running with a single 5 MW turbine and 3 MW of battery storage against roughly 15 MW of demand, leaving a shortfall of around 7 MW that forces automatic load reduction. GridSignal issues a shedding order based on job priority and headroom calculations, but the physical protection relay — a separate hardware safety system — insists on a different shedding sequence, and the dashboard immediately flags the conflict for the operator. This matters because in a real facility, a disagreement between software control and hardware protection can leave the wrong compute jobs offline or, worse, leave the grid exposed during an emergency, making it essential that operators can see and resolve such conflicts quickly."
             ),
             workload_events=[_evt_start("job-big", 1900)],
             dt_lead_seconds=30.0,
@@ -330,14 +320,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
         ScenarioSpec(
             name="demo-pms",
             description=(
-                "demo-20mw + §28.4 PMS active (Step 11 / AB1).  "
-                "PmsConfig defaults: fast_shed=30 s, open_transition mode, "
-                "transition_gap=2.0 MW for 5 s, shed_priority_order=[].  "
-                "The scenario activates SimulatedPMS; fast shed and open transition "
-                "are injected externally via inject_fast_shed() / inject_transition() "
-                "in the TC-68 egress audit script.  "
-                "Separate from demo-20mw because PMS modifies p_dispatch_required_mw "
-                "during the shed/transition windows, changing allocation numbers."
+                "This scenario demonstrates two critical protective actions — an emergency load drop and a brief power interruption during generator switchover — operating together under live conditions. As the site runs at full load, the physical protection relay triggers a rapid load shed, cutting compute demand within 30 seconds to protect the grid, while the generator transition briefly interrupts supply before the incoming unit takes over. An operator watching the dashboard sees load drop sharply, a momentary gap in generation, and then the site stabilising as the new generator comes online. This matters because both events happen quickly and in close succession in real emergencies, and operators need confidence that the protection relay and GridSignal act in a coordinated rather than conflicting way."
             ),
             workload_events=[_evt_start("job-big", _DEMO_NODES)],
             dt_lead_seconds=30.0,
@@ -353,15 +336,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
         ScenarioSpec(
             name="demo-prestage",
             description=(
-                "demo-20mw + §8.1 pre-staging (Step 10) — two-phase load-shifting model.  "
-                "Charge phase (early ticks, gap ≤ 0): engine draws up to 1.0 MW of extra "
-                "cooling load, lowering inlet temp and banking thermal energy (η=0.9).  "
-                "Discharge phase (gap > 0): stored thermal energy offsets up to 1.0 MW "
-                "of p_dispatch_required; shift tapers to 0 once thermal_soc is exhausted.  "
-                "Energy shifted ≤ energy pre-cooled × η (observable energy balance).  "
-                "BMS override (TC-56) blocks both phases; inlet band [18–24 °C] bounds "
-                "the charge rate (TC-55).  "
-                "Separate from demo-20mw because pre-staging changes dispatch numbers."
+                "This scenario demonstrates how a data centre can shift cooling energy use in time to reduce pressure on the grid during peak compute demand. In the first phase, when power is plentiful, the cooling system is deliberately run harder than needed, storing thermal energy in the building fabric and cooling infrastructure; in the second phase, that stored cooling offsets what would otherwise be a sharp rise in electrical demand when GPU training jobs peak. The operator sees total site load smooth out rather than spike, and the scenario also shows what happens when a battery management override blocks both phases, illustrating the dependency on storage availability. This matters because thermal pre-staging is one of the few tools available to reduce peak grid demand without curtailing compute jobs, directly protecting revenue during constrained generation periods."
             ),
             workload_events=[_evt_start("job-big", _DEMO_NODES)],
             dt_lead_seconds=30.0,
@@ -377,22 +352,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
         ScenarioSpec(
             name="demo-20mw",
             description=(
-                "600-node ~6.3 MW GPU ramp — 5 × 7 MW gas turbine fleet "
-                "(4 synchronized online + 1 hot standby), single grid-forming BESS "
-                "(18 MW / 8 MWh).  "
-                "Job ramps over 120 s (process launch → NCCL init → first steps), "
-                "giving the pre-staged turbines time to convert lead-time into MW. "
-                "Staging distributes demand across the 4 active (non-standby) units: "
-                "each stages to ≈ 1.58 MW.  "
-                "Ramp credit per turbine = dt_lead × r = 30 s × 0.2 MW/s = 6.0 MW "
-                ">> 1.58 MW → COVERED before and after the live trip. "
-                "TC-84 live trip: turbine-1 trips at t=120 s → 3 online remain; "
-                "each now stages to 2.10 MW, still well within 6.0 MW ramp credit "
-                "→ COVERED.  Dashboard gen-trip indicator changes state on screen. "
-                "BESS power test: 18 − 1 = 17 MW bridging ≥ any single-turbine "
-                "deficit throughout the run. "
-                "The hot-standby unit (turbine-4) contributes zero to dispatch "
-                "and zero to r_surviving (§7.4 / TC-83)."
+                "This scenario demonstrates the core operational challenge of a GPU data centre on an islanded grid: starting a large training job while surviving an unplanned generator loss mid-run. A cluster of roughly 600 GPU nodes ramps up over two minutes, drawing around 6 MW, served by four online turbines with a fifth held in hot standby; at the two-minute mark, one of the online turbines trips unexpectedly, leaving only three generators running. The battery immediately provides up to 17 MW of bridging power while the system rebalances, and the operator sees generation drop and battery output surge before the site stabilises — all without losing the training job. This matters because generator trips are a normal occurrence in real facilities, and the ability to bridge the gap automatically without interrupting expensive GPU workloads is the central promise of the platform."
             ),
             workload_events=[
                 _evt_start("job-big", _DEMO_NODES),
@@ -448,20 +408,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
         ScenarioSpec(
             name="demo-forecast-quality",
             description=(
-                "600-node ~6.3 MW scenario that demonstrates the Forecast Quality "
-                "subsystem live.  Three scripted DQ windows fire in sequence:\n"
-                "  t=60–120 s  — invalid_payload (+15% band): bad telemetry from "
-                "the workload agent; confidence band visibly widens, curtailment "
-                "blocked.\n"
-                "  t=150–210 s — stale_profile (+12% band): hardware profile "
-                "vintage is outdated; a second ATTENTION window after the first "
-                "clears so the operator sees the tile trip twice.\n"
-                "  t=240–270 s — uncalibrated_site (+8% band): site calibration "
-                "flag raised momentarily; shorter window to show rapid recovery.\n"
-                "Each window widens the confidence band and engages the TC-43 "
-                "low-confidence interlock — no autonomous curtailment while any "
-                "tag is active.  FORECAST QUALITY tile returns to READY between "
-                "windows so the contrast is clear."
+                "This scenario demonstrates how GridSignal handles degraded sensor data while a training job is running, showing the platform's ability to widen its uncertainty margins and suspend autonomous actions when it cannot fully trust its inputs. Three separate data quality problems are injected in sequence — bad telemetry from the workload agent, an outdated hardware performance profile, and an uncalibrated site reading — each causing the forecast confidence band to visibly widen on the dashboard and the system to pause any automatic load reductions until the problem clears. The operator sees the forecast quality tile trip to an attention state and then recover between each window, providing a clear before-and-after contrast. This matters because acting on bad data in a live power environment can cause unnecessary compute curtailment or, worse, miss a genuine reserve shortfall, so knowing when to trust the forecast and when to wait is a critical operational safeguard."
             ),
             workload_events=[_evt_start("job-big", _DEMO_NODES)],
             dt_lead_seconds=30.0,
@@ -492,32 +439,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
         ScenarioSpec(
             name="demo-advisory-agents",
             description=(
-                "600-node ~6.3 MW scenario purpose-built to exercise all six "
-                "Optimisation Agents simultaneously.\n\n"
-                "Advisory activation: the AC2 stampede fires every agent on tick 12 "
-                "regardless of cadence, because _last_run_wall starts at −∞.  With "
-                "ANTHROPIC_API_KEY or MISTRAL_API_KEY present the tile immediately "
-                "shows ARMED 6/6 and a proposal from each domain.\n\n"
-                "Conditions that give each agent meaningful evidence:\n"
-                "  Compute — reserve alert fires at t≈0 (BESS 5 MW < predicted "
-                "peak shortfall); alert_count > 0 keeps ComputeWorkloadAgent "
-                "qualifying every advisory round.\n"
-                "  Storage — same alert triggers bess_reserve_adjust proposal; "
-                "SOC stress visible as BESS discharges into the gap.\n"
-                "  Generation — GenerationAgent always qualifies (qualify() returns "
-                "True unconditionally); ramp-rate proposals based on load trend.\n"
-                "  Renewable — irradiance drops from 1.0 → 0.05 at t=150 s (sharp "
-                "cloud cover event), recovering to 0.90 at t=240 s.  The gap "
-                "creates a dispatch_gap anomaly that qualifies RenewableSupplyAgent "
-                "and prompts a pre-staging proposal.\n"
-                "  Thermal — same dispatch_gap anomaly qualifies ThermalAgent for "
-                "a load-defer proposal (BMS-supervisory, requires confirmation).\n"
-                "  Calibration — consecutive_alerts_N anomaly from sustained "
-                "reserve shortfall qualifies CalibrationAgent; all calibration "
-                "proposals carry requires_confirmation=True (TC-57).\n\n"
-                "Run length 600 s provides multiple advisory rounds after the "
-                "stampede: Compute/Storage/Renewable fire every 30–60 s wall-clock; "
-                "Generation/Thermal every 5 min wall-clock."
+                "This scenario demonstrates GridSignal's AI advisory layer, showing all six specialist optimisation agents producing live recommendations simultaneously based on real operating conditions. The run is deliberately configured to stress multiple dimensions at once: the battery is undersized relative to peak demand (triggering reserve and storage alerts), and a sharp cloud-cover event mid-run causes solar output to collapse and then partially recover, creating an energy gap that activates the renewable and thermal agents. Each agent analyses conditions within its domain — compute scheduling, battery sizing, generation headroom, renewable variability, thermal load deferral, and site calibration — and surfaces a prioritised proposal on the dashboard. This matters because optimisation recommendations are only credible when they are grounded in live data rather than static rules, and this scenario shows each agent working from genuine evidence rather than synthetic triggers."
             ),
             workload_events=[_evt_start("job-alert", _DEMO_NODES)],
             dt_lead_seconds=30.0,
@@ -549,7 +471,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
         "demo-alert",
         ScenarioSpec(
             name="demo-alert",
-            description="600-node ~6.3 MW scenario where BESS cannot bridge the "
+            description="This scenario demonstrates the reserve alert system by deliberately sizing the battery too small to cover the predicted peak compute load, causing the dashboard to flag a shortfall immediately when the training job starts. The site has a single large generator with ample ramp capacity, but the battery — at 5 MW — cannot bridge the gap between current generation and the forecast peak, so the alert latches on the first assessment cycle and remains visible until an operator acknowledges it. The operator sees the reserve tile change state and the alert banner appear within seconds of the run starting. This matters because early warning of a battery shortfall gives operators time to shed lower-priority jobs before the gap becomes a live stability problem rather than a forecast risk."
                         "predicted peak — insufficient_reserve_alert fires at tick 1.  "
                         "Exercises the alert latch (F4) and basis label (F2).",
             workload_events=[_evt_start("job-alert", _DEMO_NODES)],
@@ -565,7 +487,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
         "demo-5mw",
         ScenarioSpec(
             name="demo-5mw",
-            description="476-node 5 MW scenario — longer dt_lead (60 s).  "
+            description="This scenario demonstrates steady, comfortable operation with a smaller compute job and ample generation headroom, providing a contrast to the higher-stress scenarios. A cluster of around 476 GPU nodes draws roughly 5 MW, and with 60 seconds of advance notice the single generator has enough lead time and spare capacity to stage the load without any battery bridging or reserve alerts. The operator sees a clean, alert-free run with generation comfortably ahead of demand throughout. This matters as a reference baseline: understanding what a well-provisioned, unconstrained run looks like on the dashboard makes it easier to recognise when something in a larger or more stressed scenario is genuinely wrong."
                         "Turbine covers steadily; no alert expected.",
             workload_events=[_evt_start("job-small", 476)],
             dt_lead_seconds=60.0,
@@ -579,7 +501,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
         "demo-baseline",
         ScenarioSpec(
             name="demo-baseline",
-            description="1-node idle baseline — minimal compute, full renewable offset.  "
+            description="This scenario demonstrates the platform operating at near-idle conditions, with a single node drawing minimal power and solar panels supplying almost all of the site's needs. There are no compute events, no reserve pressure, and no generation decisions to make — the turbine stays offline and the battery remains at rest while solar handles the small residual load. The operator sees a quiet dashboard with stable readings across all tiles and no alerts of any kind. This matters as a sanity check and reference point: confirming that the platform handles the zero-stress case cleanly is the foundation on which all more demanding scenarios are built."
                         "Validates zero-load path through evaluate_tick.",
             workload_events=[_evt_start("job-idle", 1)],
             dt_lead_seconds=30.0,
@@ -594,11 +516,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
         ScenarioSpec(
             name="demo-3turbine",
             description=(
-                "3 × 15 MW aeroderivative fleet — islanded primary generation. "
-                "turbine-03 re-rated to 0.160 MW/s after 2,041 h (§27, TC-58). "
-                "N−1 firm capacity 30.0 MW vs 23.95 MW peak (+25% margin). "
-                "Aggregate ramp 0.600 MW/s covers a 23.95 MW step in 45 s. "
-                "Demonstrates fleet view in the Gas Turbine Fleet modal."
+                "This scenario demonstrates fleet management with three large gas turbines, one of which has accumulated enough run-hours to be derated to a slower ramp rate, reflecting real-world generator ageing. The site carries 1,900 GPU nodes drawing nearly 20 MW, and the two faster turbines handle the majority of ramp response while the older unit contributes its reduced share; the fleet still maintains N-1 coverage — the ability to lose any single turbine and keep the site running — with a 25 percent margin above peak demand. The operator sees the full fleet view in the generator panel, with each unit's output, ramp rate, and run-hour status displayed individually. This matters because real generator fleets are never uniform: units age at different rates, and operators need to see how ageing assets affect overall coverage before committing a large cluster to a long run."
             ),
             workload_events=[_evt_start("job-fleet3", 1900)],
             dt_lead_seconds=30.0,
@@ -616,7 +534,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
         "demo-fleet",
         ScenarioSpec(
             name="demo-fleet",
-            description="Heterogeneous 2-BESS fleet — bess-0 (18 MW / 8 MWh, "
+            description="This scenario demonstrates how GridSignal manages two battery units working together — a large grid-forming anchor battery and a smaller follower unit — splitting the bridging load proportionally between them based on their ratings. At peak demand, the anchor battery handles roughly 78 percent of the bridging requirement and the smaller unit covers the remaining 22 percent, with the overall endurance of the combined fleet limited by whichever unit runs out of stored energy first. The operator sees both batteries in the reserve panel with their individual output, state of charge, and contribution to the total bridging capacity. This matters because multi-battery configurations are common in larger facilities, and understanding how capacity and endurance are shared — not simply added — is essential for operators sizing storage to cover a specific shortfall duration."
                         "grid-forming anchor) + bess-1 (5 MW / 2.5 MWh, follower).  "
                         "Exercises Step 3 proportional fleet allocation (78%/22% at "
                         "peak) and D13 min() endurance across units.  Both are visible "
@@ -636,7 +554,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
         "demo-tc33-compute",
         ScenarioSpec(
             name="demo-tc33-compute",
-            description="TC-33 compute path — no workload at t=0; 600-node job "
+            description="This scenario demonstrates the relationship between advance notice and battery bridging by starting a 600-node training job with less warning time than the generator needs to ramp up to full output. The job arrives 30 seconds into the run with only 15 seconds of advance notice, but the turbine needs around 31 seconds to reach the required output level, leaving a 16-second gap that the battery must cover. The reserve alert fires immediately and the dashboard shows the battery discharging to fill the shortfall while the generator catches up. This matters because the length of the warning window directly determines whether an operator can avoid battery use entirely or must budget for bridging energy on every job start — a key factor in site economics and battery sizing decisions."
                         "starts at t=30 s with dt_lead=15 s.  Staging fires via "
                         "STARTING event (gap ≈ 16.5 s > 0 → alert).  Compare with "
                         "demo-tc33-renewable: same delta_p, larger gap because "
@@ -656,7 +574,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
         "demo-tc33-renewable",
         ScenarioSpec(
             name="demo-tc33-renewable",
-            description="TC-33 renewable path — 600-node job from t=0 fully offset by "
+            description="This scenario demonstrates one of the most counterintuitive results in islanded data centre power management: a loss of solar generation is more dangerous than an equivalent compute load step, because solar gives no advance warning at all. The site starts with 600 GPU nodes fully offset by solar panels; at 30 seconds, cloud cover eliminates solar output instantly, and the generator must cover the full 6 MW swing from a standing start with zero lead time — creating a longer battery bridging gap than any compute event of the same size. The operator sees the solar tile drop to zero, the battery surge to bridge, and the generator ramp over 30 seconds to close the gap. This matters because many operators treat solar as a risk-free resource that simply reduces turbine load; this scenario shows that intermittent solar requires the same contingency planning as a fast compute ramp, and a larger battery reserve to cover the unwarned loss."
                         f"{_TC33_MW:.4f} MW solar.  Irradiance drops to 0 at t=30 s; "
                         "SOLAR_STEP event triggers staging with dt_lead=0 (§7.1.1).  "
                         "Gap = 31.5 s (larger than compute case) → BESS bridges longer.  "
@@ -682,13 +600,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
         ScenarioSpec(
             name="demo-solar-peak",
             description=(
-                "demo-20mw anchored at San Diego solar noon (UTC 20:00 = 12:00 PST). "
-                "solar_origin_utc_hour=20 overrides real wall-clock UTC so the Mistral "
-                "weather query and physics fallback both see midday regardless of when "
-                "the demo runs.  Solar output varies 0.65–0.98 across the 300-second "
-                "run, making marine-layer behaviour and Fleet-must-cover changes visible "
-                "in the Solar PV modal.  Identical fleet to demo-20mw; only the solar "
-                "origin time differs."
+                "This scenario demonstrates how solar variability from marine layer and partial cloud cover affects site operations during midday, when solar contribution is at its highest and the gap between solar output and full load is most sensitive to fluctuations. The simulation is anchored to solar noon at the San Diego site so that marine layer behaviour and the resulting output swings — between 65 and 98 percent of rated capacity — are visible on the solar panel regardless of when the demo actually runs. The operator sees generation mix shift as solar fades and recovers, with the turbine adjusting to compensate. This matters because midday is when solar optimism is most tempting and most dangerous: a marine layer that reduces solar output by a third during the peak compute window is a real planning scenario for coastal data centres."
             ),
             workload_events=[_evt_start("job-big", _DEMO_NODES)],
             dt_lead_seconds=30.0,
@@ -705,18 +617,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
         ScenarioSpec(
             name="demo-kube",
             description=(
-                "Kubernetes gang-admission demand simulator (steps 1–2 of the "
-                "Kube-to-turbine path).  An in-cluster informer watches Kueue / "
-                "Volcano PodGroup objects; gang admission is the trigger.  Each "
-                "admitted pod group maps to a WorkloadSignal (node_count from the "
-                "spec, hardware_profile_id from node labels).  A 10-second reorder "
-                "buffer honours the NTP ordering guarantee; event_ids are deduped.  "
-                "Steps 3–8 (P_compute = Σ[nodes × kW] × PUE / 1000, thermal lag, "
-                "BESS arbitration, turbine ramp) run unchanged in the core pipeline.  "
-                "dt_lead=0 throughout: Kubernetes gives no advance notice to the grid "
-                "— the scheduler decides, the microgrid finds out when current flows.  "
-                "Power-cap holds new admissions when headroom < 2.5 MW; critical "
-                "headroom evicts the largest running job.  rng_seed=42 for replay."
+                "This scenario demonstrates how GridSignal manages a data centre in which GPU jobs are scheduled by Kubernetes — an industry-standard cluster orchestrator — without any advance power notice to the grid. Unlike scripted scenarios where job arrivals are known in advance, the Kubernetes scheduler makes admission decisions independently and the power system finds out only when current begins to flow; over a 10-minute run, jobs arrive roughly once per minute, each drawing between 50 and several hundred nodes, and the battery and generator must absorb each step reactively. When available headroom falls below 2.5 MW, the platform automatically holds new job admissions; if headroom falls further, it evicts the largest running job to protect grid stability. This matters because Kubernetes is the actual scheduler used in most AI data centres today, and demonstrating that GridSignal can manage a live cluster without requiring the scheduler to share its plans is central to the platform's production viability."
             ),
             workload_events=[],      # gang-admission simulator handles all signals
             dt_lead_seconds=0.0,     # no advance notice — dt_lead=0 per spec
@@ -780,8 +681,11 @@ def _seed_fabric_scenarios(store: ScenarioStore) -> None:
         _jpath = _cfg_dir / f"{fab_id}.json"
         try:
             _raw = _json.loads(_jpath.read_text())
-            # Use the first assertion description as a summary when available.
-            if _raw.get("assertions"):
+            # Prefer the top-level description field when present (operator-friendly copy).
+            # Fall back to joining assertion descriptions for legacy / missing files.
+            if _raw.get("description"):
+                _desc = _raw["description"]
+            elif _raw.get("assertions"):
                 _descs = [a.get("description", "") for a in _raw["assertions"]]
                 _desc = "; ".join(d for d in _descs if d)
         except Exception:
