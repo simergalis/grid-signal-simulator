@@ -488,6 +488,64 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
         ),
     ),
     (
+        "demo-advisory-agents",
+        ScenarioSpec(
+            name="demo-advisory-agents",
+            description=(
+                "600-node ~6.3 MW scenario purpose-built to exercise all six "
+                "Optimisation Agents simultaneously.\n\n"
+                "Advisory activation: the AC2 stampede fires every agent on tick 12 "
+                "regardless of cadence, because _last_run_wall starts at −∞.  With "
+                "ANTHROPIC_API_KEY or MISTRAL_API_KEY present the tile immediately "
+                "shows ARMED 6/6 and a proposal from each domain.\n\n"
+                "Conditions that give each agent meaningful evidence:\n"
+                "  Compute — reserve alert fires at t≈0 (BESS 5 MW < predicted "
+                "peak shortfall); alert_count > 0 keeps ComputeWorkloadAgent "
+                "qualifying every advisory round.\n"
+                "  Storage — same alert triggers bess_reserve_adjust proposal; "
+                "SOC stress visible as BESS discharges into the gap.\n"
+                "  Generation — GenerationAgent always qualifies (qualify() returns "
+                "True unconditionally); ramp-rate proposals based on load trend.\n"
+                "  Renewable — irradiance drops from 1.0 → 0.05 at t=150 s (sharp "
+                "cloud cover event), recovering to 0.90 at t=240 s.  The gap "
+                "creates a dispatch_gap anomaly that qualifies RenewableSupplyAgent "
+                "and prompts a pre-staging proposal.\n"
+                "  Thermal — same dispatch_gap anomaly qualifies ThermalAgent for "
+                "a load-defer proposal (BMS-supervisory, requires confirmation).\n"
+                "  Calibration — consecutive_alerts_N anomaly from sustained "
+                "reserve shortfall qualifies CalibrationAgent; all calibration "
+                "proposals carry requires_confirmation=True (TC-57).\n\n"
+                "Run length 600 s provides multiple advisory rounds after the "
+                "stampede: Compute/Storage/Renewable fire every 30–60 s wall-clock; "
+                "Generation/Thermal every 5 min wall-clock."
+            ),
+            workload_events=[_evt_start("job-alert", _DEMO_NODES)],
+            dt_lead_seconds=30.0,
+            # Small BESS — cannot fully bridge the peak shortfall on its own,
+            # so insufficient_reserve_alert fires at tick 1.  This gives
+            # ComputeWorkloadAgent, StorageAgent, and CalibrationAgent the
+            # alert_count / consecutive_alerts evidence they need to qualify.
+            bess_units=[_bess("bess-0", rated_mw=5.0, usable_mwh=2.5,
+                               grid_forming=True)],
+            # Single large turbine — GenerationAgent reads ramp headroom across
+            # the full rated range; simple fleet keeps the advisory evidence clean.
+            turbine_units=[_turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2)],
+            solar_rated_mw=_SOLAR_DEMO,
+            # Irradiance profile: full sun → sharp cloud cover at t=150 s →
+            # recovery at t=240 s.  The trough creates a dispatch_gap anomaly
+            # that qualifies RenewableSupplyAgent and ThermalAgent.
+            irradiance_steps=[
+                (0.0,   1.00),   # full irradiance
+                (150.0, 0.05),   # cloud cover — sharp renewable drop
+                (240.0, 0.90),   # partial recovery
+            ],
+            end_sim_time=600.0,
+            load_config=LoadProfileConfigSpec(),
+            frequency_nominal_hz=60.0,
+            power_factor=0.85,
+        ),
+    ),
+    (
         "demo-alert",
         ScenarioSpec(
             name="demo-alert",
