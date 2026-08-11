@@ -800,6 +800,47 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             gpu_load_profile=[],   # full GPU load throughout (no throttling)
         ),
     ),
+    # ── Islanded 3-hour ramp, 50→1,000 GPU nodes ─────────────────────────
+    (
+        "islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs",
+        ScenarioSpec(
+            name="islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs",
+            description=(
+                "Three-hour islanded-grid workload ramp from 50 to 1,000 GPU nodes "
+                "and back, with a 50 MW-class gas turbine fleet and 18 MW / 14 MWh "
+                "battery. The site operates in island mode throughout — no utility "
+                "tie — so the gas turbines and battery alone must balance generation "
+                "against a workload that rises and falls across seven structured "
+                "phases: a 50-node floor, ramp to 1,000 over 30 minutes, step down "
+                "to 500, recover to 1,000, collapse to 50, recover a second time, "
+                "then a final wind-down to 50 by minute 173. Five 15 MW turbines "
+                "cover the peak (75 MW rated, N-1 firm at 60 MW); the battery "
+                "carries transient gaps and smooths step changes. Use this scenario "
+                "to stress-test islanded frequency response, generator commitment "
+                "sequencing, and BESS SoC management across a full operational cycle."
+            ),
+            workload_events=_operator_trip_events(),
+            dt_lead_seconds=45.0,
+            bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=14.0, grid_forming=True)],
+            turbine_units=[
+                _turbine("turbine-0", rated_mw=15.0, r_mw_per_s=0.20,
+                         p_min_stable_frac=0.40, thermal_state="hot",  cold_start_s=300.0),
+                _turbine("turbine-1", rated_mw=15.0, r_mw_per_s=0.20,
+                         p_min_stable_frac=0.40, thermal_state="warm", cold_start_s=600.0),
+                _turbine("turbine-2", rated_mw=15.0, r_mw_per_s=0.20,
+                         p_min_stable_frac=0.40, thermal_state="warm"),
+                _turbine("turbine-3", rated_mw=15.0, r_mw_per_s=0.20,
+                         p_min_stable_frac=0.40, thermal_state="cold"),
+                _turbine("turbine-4", rated_mw=15.0, r_mw_per_s=0.20,
+                         p_min_stable_frac=0.40, thermal_state="cold"),
+            ],
+            solar_rated_mw=15.0,
+            end_sim_time=10800.0,   # 3 hours
+            frequency_nominal_hz=60.0,
+            power_factor=0.85,
+            gpu_load_profile=[],   # full GPU load throughout (no throttling)
+        ),
+    ),
 ]
 
 
@@ -878,6 +919,8 @@ def _seed_json_scenarios(store: ScenarioStore) -> None:
         # (store_id, filename)
         ("demo-islanded-ramp",  "demo-islanded-ramp.json"),
         ("demo-operator-trip",  "demo-operator-trip.json"),
+        ("islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs",
+         "islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs.json"),
     ]
 
     _cfg_dir = _Path("config/scenarios")
