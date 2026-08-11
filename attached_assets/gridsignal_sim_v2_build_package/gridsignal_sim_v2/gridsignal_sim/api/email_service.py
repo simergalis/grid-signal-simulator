@@ -412,21 +412,178 @@ def send_password_reset_email(to_email: str, reset_token: str, base_url: str) ->
 
     reset_url = f"{base_url}/reset-password?token={reset_token}"
     subject = f"{_APP_NAME} — password reset request"
-    body = f"""\
-<p>A password reset was requested for your {_APP_NAME} account.</p>
-<p><a href="{reset_url}">Click here to reset your password</a></p>
-<p>This link expires in 1 hour.  If you did not request a reset, ignore this email.</p>
+    html_body = f"""\
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="only light">
+  <meta name="supported-color-schemes" content="only light">
+  <title>Reset your GridSignal password</title>
+</head>
+<body style="margin:0;padding:0;background:#f0f4f8;font-family:sans-serif">
+
+  <!-- Preheader (hidden preview text in email clients) -->
+  <span style="display:none;max-height:0;overflow:hidden;color:transparent">
+    Reset your GridSignal password &mdash; link expires in 1 hour.
+  </span>
+
+  <!-- Outer wrapper -->
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+         style="background:#f0f4f8;padding:40px 16px">
+    <tr>
+      <td align="center">
+
+        <!-- Email card -->
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+               style="max-width:500px;background:#0b1017;border-radius:10px;
+                      color:#e6ecf2;overflow:hidden">
+
+          <!-- Top accent bar -->
+          <tr>
+            <td style="background:#3fb6a8;height:4px;line-height:4px;font-size:0">&nbsp;</td>
+          </tr>
+
+          <!-- Header -->
+          <tr>
+            <td style="padding:36px 36px 0">
+              <p style="margin:0 0 3px;color:#3fb6a8;font-size:22px;
+                        font-weight:700;letter-spacing:0.12em">GRIDSIGNAL</p>
+              <p style="margin:0;color:#8a97a6;font-size:12px;letter-spacing:0.02em">
+                Predictive power management
+              </p>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding:24px 36px 0">
+              <div style="border-top:1px solid #1e2a38"></div>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:28px 36px 0">
+
+              <p style="margin:0 0 16px;font-size:15px;line-height:1.65">
+                Password reset request
+              </p>
+              <p style="margin:0 0 24px;font-size:15px;line-height:1.65;color:#c8d6e5">
+                We received a request to reset the password for your GridSignal
+                account. Click the button below to choose a new password.
+                This link expires in&nbsp;<span style="color:#e6ecf2">1&nbsp;hour</span>.
+              </p>
+
+              <!-- Reset link callout -->
+              <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+                     style="background:#111821;border-left:3px solid #3fb6a8;
+                            margin-bottom:28px">
+                <tr>
+                  <td style="padding:14px 18px">
+                    <p style="margin:0 0 6px;color:#8a97a6;font-size:11px;
+                               text-transform:uppercase;letter-spacing:0.08em">
+                      Account address
+                    </p>
+                    <p style="margin:0;font-family:monospace;font-size:15px;
+                               color:#e6ecf2">
+                      {to_email}
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- CTA button -->
+              <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+                     style="margin-bottom:32px">
+                <tr>
+                  <td align="center">
+                    <a href="{reset_url}"
+                       style="display:inline-block;background:#3fb6a8;
+                              color:#0b1017;font-weight:700;font-size:15px;
+                              text-decoration:none;padding:14px 40px;
+                              border-radius:6px;letter-spacing:0.04em">
+                      Reset Password
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding:0 36px">
+              <div style="border-top:1px solid #1e2a38"></div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:20px 36px 36px">
+              <p style="margin:0 0 10px;color:#8a97a6;font-size:12px;line-height:1.6">
+                If the button doesn't work, copy and paste this link into your
+                browser:
+                <a href="{reset_url}" style="color:#3fb6a8;text-decoration:none;word-break:break-all">
+                  {reset_url}
+                </a>
+              </p>
+              <p style="margin:0;color:#8a97a6;font-size:12px;line-height:1.6">
+                If you didn't request a password reset, you can ignore this
+                email. Your account remains secure and no changes have been made.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+        <!-- /Email card -->
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
 """
+    plain_body = (
+        f"GRIDSIGNAL — Predictive power management\n"
+        f"\n"
+        f"Password reset request\n"
+        f"\n"
+        f"We received a request to reset the password for your GridSignal\n"
+        f"account ({to_email}). Use the link below to choose a new password.\n"
+        f"This link expires in 1 hour.\n"
+        f"\n"
+        f"    {reset_url}\n"
+        f"\n"
+        f"If you didn't request a password reset, you can ignore this email.\n"
+        f"Your account remains secure and no changes have been made.\n"
+    )
     try:
         from sendgrid.helpers.mail import Mail
         message = Mail(
             from_email=_from_email(),
             to_emails=to_email,
             subject=subject,
-            html_content=body,
+            html_content=html_body,
+            plain_text_content=plain_body,
         )
         resp = client.send(message)
-        return 200 <= resp.status_code < 300
+        success = 200 <= resp.status_code < 300
+        if success:
+            _log.info("Password reset email sent to %s (status=%s)", to_email, resp.status_code)
+        else:
+            try:
+                body_text = resp.body.decode() if isinstance(resp.body, (bytes, bytearray)) else str(resp.body)
+            except Exception:
+                body_text = "<unreadable>"
+            _log.warning(
+                "SendGrid returned status %s for reset email to %s — body: %s",
+                resp.status_code, to_email, body_text,
+            )
+        return success
     except Exception as exc:  # noqa: BLE001
         _log.error("Failed to send reset email to %s: %s", to_email, exc)
         return False
