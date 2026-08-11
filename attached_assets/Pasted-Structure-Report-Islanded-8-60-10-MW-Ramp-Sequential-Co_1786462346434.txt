@@ -1,0 +1,159 @@
+Structure Report — Islanded 8-60-10 MW Ramp: Sequential Commitment and Release
+1 · Identity
+Field	Value
+Name	Islanded 8-60-10 MW ramp - sequential commitment and release
+Hardware profile	enterprise_8gpu_air (10.2 kW/node)
+Operating mode	Island (no grid backup)
+Frequency	60.0 Hz (WECC/North America)
+Power factor	0.85
+Run duration	10,800 s (3 hours)
+Default playback speed	1× (real-time)
+Calibrated	No
+2 · Generation Fleet
+2a · Battery (BESS)
+Asset	Rated MW	Usable MWh	C-rate	SoC start	Grid-forming	Anchor reserve
+bess-0	18.0	14.0	1.29 C ✓	100 %	Yes	1.0 MW
+Single grid-forming anchor. At 1.29 C, within PROTO-9 bounds (0.25–4.0 C). At full discharge rate, the 14 MWh pack lasts ~47 min at 18 MW draw.
+
+2b · Turbines (5 units, 75 MW total rated)
+Asset	Rated MW	Ramp MW/s	Min stable frac	Min stable MW	Min run	Min down	Cold start	Initial thermal state
+turbine-0	15.0	0.2	0.40	6.0 MW	1,800 s	900 s	300 s	Hot
+turbine-1	15.0	0.2	0.40	6.0 MW	1,800 s	900 s	600 s	Warm
+turbine-2	15.0	0.2	0.40	6.0 MW	1,800 s	900 s	900 s	Cold
+turbine-3	15.0	0.2	0.40	6.0 MW	1,800 s	900 s	900 s	Cold
+turbine-4	15.0	0.2	0.40	6.0 MW	1,800 s	900 s	900 s	Cold
+Full-ramp time per unit (0 → 15 MW): 75 s
+Fleet Σ rated: 75 MW · N-1 rated: 60 MW
+MSL per unit: 6.0 MW · Fleet Σ MSL (all 5): 30.0 MW
+Min-run constraint (1,800 s = 30 min) means committed turbines cannot decommit quickly — relevant to the down-ramp phase
+Only turbine-0 (hot) and turbine-1 (warm) are ready quickly; turbines 2–4 need 900 s cold-start before synchronising
+2c · Solar
+Field	Value
+Rated capacity	15.0 MW
+Irradiance profile	Constant 1.0 (full sun throughout)
+Solar noon anchor	UTC 20:00 (12:00 PST — San Diego)
+GPU load profile	Empty → full 100 % GPU load, no throttling
+3 · Workload Events
+27 starting events + 10 job_end events = 37 total
+
+3a · Ramp-up phase (t = 0 → 900 s, 15 min)
+Phase	Events	Interval	Nodes added per step	Cumulative nodes	Estimated demand (MW at PUE 1.03)
+Base	evt-base-start at t=0	—	800	800	~8.4 MW
+Steps 1–26	evt-up-01 … evt-up-26	~34.6 s	200 each	up to 6,000	~63.0 MW
+Node ramp: 800 → 6,000 over 900 s in 27 steps
+Per-step load increment: 200 nodes × 10.2 kW × 1.03 PUE ÷ 1000 ≈ 2.1 MW per step
+Cumulative peak at t=900 s: 6,000 × 10.2 × 1.03 ÷ 1000 ≈ 63.1 MW
+3b · Peak hold (t = 900 → 1,200 s, 5 min)
+No events in this window. All 6,000 nodes running at full TDP.
+
+3c · Down-ramp phase — fast shed (t = 1,200 → 1,760 s)
+Jobs 26 → 12 released at 40 s intervals (15 job_end events). Load reduces by ~2.1 MW every 40 s.
+
+3d · Down-ramp phase — slow shed (t = 1,800 → 2,340 s)
+Jobs 11 → 02 released at 60 s intervals (10 job_end events). Decommit rate slows, reflecting turbine minimum-down-time constraints becoming binding.
+
+Note: jobs 01 and base (job-base) have no corresponding job_end event in this file — the baseline 800-node floor remains running at t=2,340 s (end of scripted events). Simulation continues under the Kube config until end_sim_time.
+
+4 · Physics Parameters
+Parameter	Value	Note
+dt_lead_seconds	45.0 s	Advance notice for GPU ramp events
+PUE base	1.03	Near-optimal cooling
+dt_thermal	90.0 s	Thermal time constant
+alpha_max	0.20	Max cooling fraction of IT load
+tau_seconds	20.0 s	Cooling response lag
+anchor_reserve_pct	0 %	No percent-based reserve floor
+band_enabled	false	Forecast confidence band off
+band_pct_calibrated	0 %	—
+5 · Frequency Protection
+All protection thresholds are disabled (null): no UF warning, no UFLS stage 1, no island collapse trip, no OF warning, no OF trip, no 81U relay. The scenario runs without frequency-protection interlock.
+
+6 · Kube Config (active alongside scripted events)
+Parameter	Value
+Hardware profile	enterprise_8gpu_air
+Node range	100 – 1,000
+Mean interarrival	60 s
+Mean job nodes	200 (σ = 80, min 50)
+Mean job duration	300 s (min 30 s)
+Headroom threshold	2.5 MW (hold new admissions below this)
+RNG seed	null (non-deterministic)
+The Kube agent is active throughout — it runs alongside the scripted staircase. During the peak hold and down-ramp, Kube may admit or evict additional jobs.
+
+7 · Assertions (pass/fail checks at run end)
+Check	Threshold
+max_p_total_mw	≤ 85.0 MW
+min_final_bess_soc	≥ 0.20 (20 %)
+The 85 MW ceiling gives ~22 MW headroom above the scripted 63 MW peak, accommodating Kube demand and PUE overhead. The 20 % SoC floor confirms the battery is not fully depleted over the 3-hour run.
+
+8 · UI Display Overrides
+Field	Value
+ui_bess_rated_mw	50.0 MW
+ui_bess_usable_mwh	50.0 MWh
+The dashboard fleet panel shows a 50 MW / 50 MWh BESS capacity for presentation purposes, rather than the physical 18 MW / 14 MWh unit in the simulation — intended for investor-facing demos at a larger notional scale.
+
+9 · Disabled / Inactive Features
+Feature	Status
+Pre-staging config	null
+PMS config	null
+Procurement config	null
+Maintenance config	null
+Ramp relaxation config	null
+Load profile config	null
+Ambient steps	empty
+DQ inject events	empty
+Cluster/stressor gen	null
+Telemetry corruption	null
+Generation block	null
+Fabric scenario	null
+
+Worked for 59 seconds
+
+Checkpoint made
+1 hour ago
+update this scenario with a new timeline, adjust the timestamps for each GPU event to spread them evenly over the 3-hour period, and include the idle/transition periods. Here's how the updated workload_events will look:
+
+Start at 50 GPUs: 0–10 minutes Ramp up to 1,000 GPUs: 17.14–47.14 minutes Reduce to 500 GPUs: 54.28–69.28 minutes Increase to 1,000 GPUs: 76.42–91.42 minutes Reduce to 50 GPUs: 98.56–113.56 minutes Increase to 1,000 GPUs: 120.70–135.70 minutes End at 50 GPUs: 142.84–172.84 minutes
+
+35 minutes ago
+Updating workload timeline specifications
+
+Updating workload timeline specifications
+Let me compute all timestamps and node counts precisely before writing the file:
+
+Generating JSON file structure
+
+Generating JSON file structure
+All timing and node math verified. Now generating and writing the complete updated JSON:
+
+
+4 actions
+All 97 events verified. Now writing the updated file:
+
+
+2 actions
+Done. Here's a summary of what changed:
+
+Timeline (97 events total, all other parameters unchanged)
+
+Phase	Window	Direction	Events	Interval	Node total after
+P1 – Floor	t = 0 s	Start job-base	1	—	50
+Idle	0 – 17.14 min	—	—	—	50
+P2 – Ramp up	17.14 – 47.14 min	+950 nodes	19 × 50	100 s	1,000
+Idle	47.14 – 54.28 min	—	—	—	1,000
+P3 – Reduce	54.28 – 69.28 min	−500 nodes	10 × 50	100 s	500
+Idle	69.28 – 76.42 min	—	—	—	500
+P4 – Ramp up	76.42 – 91.42 min	+500 nodes	10 × 50	100 s	1,000
+Idle	91.42 – 98.56 min	—	—	—	1,000
+P5 – Reduce	98.56 – 113.56 min	−950 nodes	19 × 50	50 s	50
+Idle	113.56 – 120.70 min	—	—	—	50
+P6 – Ramp up	120.70 – 135.70 min	+950 nodes	19 × 50	50 s	1,000
+Idle	135.70 – 142.84 min	—	—	—	1,000
+P7 – Wind down	142.84 – 172.84 min	−950 nodes	19 × 50	100 s	50
+Tail	172.84 – 180 min	job-base only	—	—	50
+Each job is 50 nodes (51.0 kW × PUE 1.03 ÷ 1000 ≈ 0.527 MW per job). Peak demand at 1,000 nodes: ~10.5 MW covered by solar (15 MW) plus turbine staging. The file is saved in-place and ready to upload.
+
+
+Worked for 6 minutes
+Update the turbines as follows:
+
+2b · Turbines (5 units, 75 MW total rated) Asset Rated MW Ramp MW/s Min stable frac Min stable MW Min run Min down Cold start Initial thermal state turbine-0 15.0 0.2 0.40 6.0 MW 1,800 s 900 s 300 s Hot turbine-1 15.0 0.2 0.40 6.0 MW 1,800 s 900 s 600 s Warm turbine-2 15.0 0.2 0.40 6.0 MW 1,800 s 900 s 900 s Warm turbine-3 15.0 0.2 0.40 6.0 MW 1,800 s 900 s 900 s Cold turbine-4 15.0 0.2 0.40 6.0 MW 1,800 s 900 s 900 s Cold
+
