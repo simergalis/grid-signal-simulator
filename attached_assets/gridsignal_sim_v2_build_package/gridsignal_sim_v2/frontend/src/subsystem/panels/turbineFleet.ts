@@ -101,12 +101,12 @@ function ThermalStateWidget({ units }: { units: ThermalUnit[] }): React.ReactNod
 
   const thSt = {
     ...MONO, padding: '6px 10px', textAlign: 'left' as const,
-    fontSize: 9, color: '#8b949e', fontWeight: 700,
+    fontSize: 18, color: '#8b949e', fontWeight: 700,
     letterSpacing: '0.08em', textTransform: 'uppercase' as const,
     borderBottom: '1px solid #2a3a4a',
   }
   const tdSt = (active: boolean) => ({
-    ...MONO, padding: '10px 10px', fontSize: 11,
+    ...MONO, padding: '10px 10px', fontSize: 22,
     color: active ? '#c9d1d9' : '#8b949e', borderBottom: '1px solid #1a2535',
   })
   // A row is highlighted when any unit in the set has that thermal state.
@@ -128,13 +128,13 @@ function ThermalStateWidget({ units }: { units: ThermalUnit[] }): React.ReactNod
     },
       React.createElement('span', {
         style: {
-          ...MONO, fontSize: 9, fontWeight: 700,
+          ...MONO, fontSize: 18, fontWeight: 700,
           letterSpacing: '0.1em', textTransform: 'uppercase' as const,
           color: '#8b949e',
         },
       }, 'THERMAL STATE'),
       React.createElement('span', {
-        style: { ...MONO, fontSize: 10, fontWeight: 600, color: primaryColour },
+        style: { ...MONO, fontSize: 20, fontWeight: 600, color: primaryColour },
       }, `${primaryLabel} \u2197`),
     ),
 
@@ -159,7 +159,7 @@ function ThermalStateWidget({ units }: { units: ThermalUnit[] }): React.ReactNod
         // Header
         React.createElement('div', {
           style: {
-            ...MONO, fontSize: 11, fontWeight: 700,
+            ...MONO, fontSize: 22, fontWeight: 700,
             letterSpacing: '0.12em', textTransform: 'uppercase' as const,
             color: '#8b949e', marginBottom: 16,
           },
@@ -206,7 +206,7 @@ function ThermalStateWidget({ units }: { units: ThermalUnit[] }): React.ReactNod
             style: {
               background: TEAL, color: '#0d1117', border: 'none',
               borderRadius: 6, padding: '7px 22px',
-              ...MONO, fontSize: 11, fontWeight: 700,
+              ...MONO, fontSize: 22, fontWeight: 700,
               cursor: 'pointer', letterSpacing: '0.04em',
             },
             onClick: () => setOpen(false),
@@ -353,13 +353,13 @@ function FleetTable(
     : `${units.length} UNITS · ${syncedStr}`
 
   const hCell: React.CSSProperties = {
-    ...MONO, fontSize: 9, fontWeight: 700,
+    ...MONO, fontSize: 18, fontWeight: 700,
     letterSpacing: '0.1em', color: '#8b949e',
     padding: '0 10px 6px 0', textTransform: 'uppercase' as const,
     borderBottom: '1px solid #2a3a4a', whiteSpace: 'nowrap' as const,
   }
   const dCell = (colour?: string, bold?: boolean): React.CSSProperties => ({
-    ...MONO, fontSize: 10,
+    ...MONO, fontSize: 20,
     color: colour ?? '#c9d1d9', fontWeight: bold ? 600 : 400,
     padding: '5px 10px 5px 0', borderBottom: '1px solid #161f29',
     whiteSpace: 'nowrap' as const,
@@ -432,7 +432,7 @@ function FleetTable(
             return React.createElement('button', {
               key: tier,
               style: {
-                ...MONO, fontSize: 8, fontWeight: 700, letterSpacing: '0.04em',
+                ...MONO, fontSize: 16, fontWeight: 700, letterSpacing: '0.04em',
                 padding: '2px 6px', borderRadius: 3,
                 background: isActiveTier ? tierColour + '26' : 'transparent',
                 color: isActiveTier ? tierColour : '#4b5764',
@@ -451,18 +451,18 @@ function FleetTable(
             }, tier.charAt(0).toUpperCase() + tier.slice(1))
           }),
         )
-      : React.createElement('span', { style: { ...MONO, fontSize: 9, color: '#2a3a4a' } }, '—')
+      : React.createElement('span', { style: { ...MONO, fontSize: 18, color: '#2a3a4a' } }, '—')
 
     let actionCell: React.ReactNode
     const btnBase: React.CSSProperties = {
-      ...MONO, fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
+      ...MONO, fontSize: 18, fontWeight: 700, letterSpacing: '0.08em',
       padding: '3px 8px', borderRadius: 3, cursor: 'pointer',
       border: 'none', outline: 'none',
     }
     if (liveSt === 'starting') {
       // In-flight start — show disabled label
       actionCell = React.createElement('span', {
-        style: { ...MONO, fontSize: 9, color: '#8b949e', fontStyle: 'italic' as const }
+        style: { ...MONO, fontSize: 18, color: '#8b949e', fontStyle: 'italic' as const }
       }, 'starting…')
     } else if (onBus) {
       // On-bus unit: offer Trip
@@ -502,7 +502,7 @@ function FleetTable(
     } else {
       // out_of_service or transitional — no operator action available
       actionCell = React.createElement('span', {
-        style: { ...MONO, fontSize: 9, color: '#6e7681' }
+        style: { ...MONO, fontSize: 18, color: '#6e7681' }
       }, '—')
     }
 
@@ -587,7 +587,7 @@ function FleetTable(
       ),
       barAnnotation != null
         ? React.createElement('div', {
-            style: { ...MONO, fontSize: 9, color: '#5d6b7c', marginTop: 3 }
+            style: { ...MONO, fontSize: 18, color: '#5d6b7c', marginTop: 3 }
           }, barAnnotation)
         : null,
     )
@@ -623,7 +623,7 @@ function FleetTable(
 
   return React.createElement('div', { style: { overflowX: 'auto' as const } },
     React.createElement('div', {
-      style: { ...MONO, fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
+      style: { ...MONO, fontSize: 18, fontWeight: 700, letterSpacing: '0.1em',
                color: '#8b949e', textTransform: 'uppercase' as const, marginBottom: 8 }
     }, `FLEET — ${unitCountStr}`),
     React.createElement('table', {
@@ -649,7 +649,7 @@ function FleetTable(
       ...degradedFootnotes.map((note, i) =>
         React.createElement('p', {
           key: i,
-          style: { fontFamily: 'Inter,sans-serif', fontSize: 10, color: '#8b949e',
+          style: { fontFamily: 'Inter,sans-serif', fontSize: 20, color: '#8b949e',
                    lineHeight: 1.5, margin: i > 0 ? '4px 0 0' : '0' }
         }, note)
       )
@@ -670,11 +670,11 @@ function ParallelingInset(units: TurbineUnitSpec[]): React.ReactNode {
           border: `1.5px solid ${GOLD}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
-          ...MONO, fontSize: 9, fontWeight: 700, color: GOLD,
+          ...MONO, fontSize: 18, fontWeight: 700, color: GOLD,
         }
       }, 'G'),
       React.createElement('div', {
-        style: { ...MONO, fontSize: 9, color: '#8b949e', flexShrink: 0, minWidth: 76 }
+        style: { ...MONO, fontSize: 18, color: '#8b949e', flexShrink: 0, minWidth: 76 }
       }, u.asset_id),
       React.createElement('div', { style: { flex: 1, display: 'flex', alignItems: 'center', gap: 2 } },
         React.createElement('div', { style: { height: 1.5, flex: 1, background: '#2a3f52', minWidth: 10 } }),
@@ -682,7 +682,7 @@ function ParallelingInset(units: TurbineUnitSpec[]): React.ReactNode {
           style: {
             width: 16, height: 16, border: '1.5px solid #3a5060', borderRadius: 2,
             display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-            ...MONO, fontSize: 7, color: '#8b949e',
+            ...MONO, fontSize: 14, color: '#8b949e',
           }
         }, 'CB'),
         React.createElement('div', { style: { height: 1.5, flex: 1, background: '#2a3f52', minWidth: 6 } }),
@@ -694,7 +694,7 @@ function ParallelingInset(units: TurbineUnitSpec[]): React.ReactNode {
     style: { borderTop: '1px solid #1e2a36', borderBottom: '1px solid #1e2a36', padding: '12px 0' }
   },
     React.createElement('div', {
-      style: { ...MONO, fontSize: 9, fontWeight: 700, letterSpacing: '0.1em',
+      style: { ...MONO, fontSize: 18, fontWeight: 700, letterSpacing: '0.1em',
                color: '#8b949e', textTransform: 'uppercase' as const, marginBottom: 12 }
     }, 'PARALLELING — AC BUS, SYNCHRO-CHECK BEFORE CLOSE'),
     React.createElement('div', {
@@ -707,16 +707,16 @@ function ParallelingInset(units: TurbineUnitSpec[]): React.ReactNode {
         },
           React.createElement('div', { style: { height: 2, flex: 1, background: GOLD, borderRadius: 1 } }),
           React.createElement('div', {
-            style: { ...MONO, fontSize: 9, fontWeight: 700, color: GOLD, whiteSpace: 'nowrap' as const }
+            style: { ...MONO, fontSize: 18, fontWeight: 700, color: GOLD, whiteSpace: 'nowrap' as const }
           }, '13.8 kV BUS'),
           React.createElement('div', {
-            style: { ...MONO, fontSize: 9, color: '#8b949e', whiteSpace: 'nowrap' as const }
+            style: { ...MONO, fontSize: 18, color: '#8b949e', whiteSpace: 'nowrap' as const }
           }, '▶ switchgear / PMS'),
         ),
       ),
       React.createElement('div', { style: { flex: 1, minWidth: 200 } },
         React.createElement('p', {
-          style: { fontFamily: 'Inter,sans-serif', fontSize: 10, color: '#b1bac4', lineHeight: 1.6, margin: 0 }
+          style: { fontFamily: 'Inter,sans-serif', fontSize: 20, color: '#b1bac4', lineHeight: 1.6, margin: 0 }
         }, (() => {
           // 0.2: relay footer reads sync_relay_state — separate from the breaker_closed
           // SYNC column. Phase 0: derived from hot_standby; Phase 1: real-time.
@@ -726,11 +726,11 @@ function ParallelingInset(units: TurbineUnitSpec[]): React.ReactNode {
             : 'All units on bus — synchro-check relay at rest.'
         })()),
         React.createElement('p', {
-          style: { fontFamily: 'Inter,sans-serif', fontSize: 10, color: RED, lineHeight: 1.6,
+          style: { fontFamily: 'Inter,sans-serif', fontSize: 20, color: RED, lineHeight: 1.6,
                    margin: '4px 0 0', fontWeight: 600 }
         }, 'GridSignal never issues this command — TC-68'),
         React.createElement('p', {
-          style: { fontFamily: 'Inter,sans-serif', fontSize: 10, color: '#8b949e', lineHeight: 1.6, margin: '8px 0 0' }
+          style: { fontFamily: 'Inter,sans-serif', fontSize: 20, color: '#8b949e', lineHeight: 1.6, margin: '8px 0 0' }
         }, 'Synchronous generators produce AC directly. No rectifier or DC link in this path — unlike the BESS and solar inverters, which are DC-coupled and grid-following.'),
       ),
     ),
@@ -749,7 +749,7 @@ function noTickPanel(peakMW: number | null): PanelData {
     chartTitle:   '',
     identityLine: 'gas turbine fleet · synchronous · islanded primary generation',
     chart: React.createElement('div', {
-      style: { fontFamily: 'Inter,sans-serif', fontSize: 11, color: '#8b949e',
+      style: { fontFamily: 'Inter,sans-serif', fontSize: 22, color: '#8b949e',
                padding: '32px 0', textAlign: 'center' as const }
     }, 'No data — start a scenario to populate the fleet table.'),
     statRows: [
@@ -800,7 +800,7 @@ function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: nu
       style: {
         borderRadius: 6, border: `1px solid ${RED}`,
         background: '#1a0e0e', padding: '10px 14px',
-        fontFamily: 'Inter,sans-serif', fontSize: 11, color: RED, lineHeight: 1.6,
+        fontFamily: 'Inter,sans-serif', fontSize: 22, color: RED, lineHeight: 1.6,
       }
     },
       React.createElement('span', { style: { fontWeight: 700 } }, 'N−1 firm 0.0 MW — '),

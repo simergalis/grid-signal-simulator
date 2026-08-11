@@ -22,8 +22,8 @@ export interface StatTableProps {
 
 export function StatTable({ rows, dense = false }: StatTableProps) {
   const rowPad = dense ? 'py-1' : 'py-1.5'
-  const fontSize = dense ? 'text-[10px]' : 'text-xs'
-  const subSize  = dense ? 'text-[9px]' : 'text-[10px]'
+  const fontSize = dense ? 'text-[20px]' : 'text-[24px]'
+  const subSize  = dense ? 'text-[18px]' : 'text-[20px]'
 
   return (
     <div className="divide-y divide-border">

@@ -127,7 +127,7 @@ export function SubsystemModal({
         aria-label={cfg.name}
         className={`
           relative flex flex-col
-          w-full max-w-[92vw] xl:max-w-[1120px]
+          w-full max-w-[96vw] xl:max-w-[1456px]
           max-h-[90vh]
           rounded-xl overflow-hidden
           border border-border bg-surface shadow-2xl
@@ -144,7 +144,7 @@ export function SubsystemModal({
         <div className="flex items-start justify-between px-7 pt-7 pb-4">
           <div className="space-y-0.5">
             <div className="flex items-center gap-2">
-              <h2 className="font-mono text-lg font-bold tracking-wide text-text">
+              <h2 className="font-mono text-[36px] font-bold tracking-wide text-text">
                 {cfg.name.toUpperCase()}
               </h2>
               <div
@@ -152,7 +152,7 @@ export function SubsystemModal({
                 style={{ background: panelData.stateColour }}
               />
               <span
-                className="font-mono text-xs font-bold tracking-wider uppercase"
+                className="font-mono text-[24px] font-bold tracking-wider uppercase"
                 style={{ color: panelData.stateColour }}
               >
                 {panelData.stateLabel}
@@ -160,13 +160,13 @@ export function SubsystemModal({
             </div>
             {/* Phase 0 §0.1: prefer panelData.identityLine (derived from tick) over
                 the static cfg.identityLine so the fleet modal never shows a hardcoded string. */}
-            <div className="font-mono text-xs text-muted">{panelData.identityLine ?? cfg.identityLine}</div>
+            <div className="font-mono text-[24px] text-muted">{panelData.identityLine ?? cfg.identityLine}</div>
           </div>
 
           <button
             ref={closeBtnRef}
             onClick={onClose}
-            className="ml-4 shrink-0 text-muted hover:text-text text-lg leading-none px-1"
+            className="ml-4 shrink-0 text-muted hover:text-text text-[36px] leading-none px-1"
             aria-label="Close"
           >
             ✕
@@ -184,20 +184,20 @@ export function SubsystemModal({
             style={{ borderColor: cfg.accentColor, background: '#16222e' }}
           >
             <div className="flex-1">
-              <div className="font-mono text-[9px] uppercase tracking-[0.14em] mb-1"
+              <div className="font-mono text-[18px] uppercase tracking-[0.14em] mb-1"
                    style={{ color: '#4b5764' }}>
                 VERDICT
               </div>
-              <p className="font-mono text-sm text-text">{panelData.verdict}</p>
+              <p className="font-mono text-[28px] text-text">{panelData.verdict}</p>
             </div>
             <div className="text-right shrink-0">
               <div
-                className="font-mono text-3xl font-semibold tabular-nums"
+                className="font-mono text-[60px] font-semibold tabular-nums"
                 style={{ color: cfg.accentColor }}
               >
                 {panelData.heroValue}
               </div>
-              <div className="font-mono text-[9px] text-muted mt-0.5">
+              <div className="font-mono text-[18px] text-muted mt-0.5">
                 {panelData.heroLabel}
               </div>
             </div>
@@ -208,7 +208,7 @@ export function SubsystemModal({
             {/* Chart area (left / top on small screens) */}
             <div className="md:w-[58%]">
               {panelData.chartTitle && (
-                <div className="font-mono text-[9px] uppercase tracking-[0.14em] mb-2"
+                <div className="font-mono text-[18px] uppercase tracking-[0.14em] mb-2"
                      style={{ color: '#4b5764' }}>
                   {panelData.chartTitle}
                 </div>
@@ -233,13 +233,13 @@ export function SubsystemModal({
 
           {/* ── Why this matters ──────────────────────────────────────── */}
           <div>
-            <div className="font-mono text-[9px] uppercase tracking-[0.14em] mb-3"
+            <div className="font-mono text-[18px] uppercase tracking-[0.14em] mb-3"
                  style={{ color: '#4b5764' }}>
               WHY THIS MATTERS
             </div>
             <div className="space-y-1">
               {panelData.why.map((line, i) => (
-                <p key={i} className="font-mono text-xs text-muted leading-relaxed">{line}</p>
+                <p key={i} className="font-mono text-[24px] text-muted leading-relaxed">{line}</p>
               ))}
             </div>
           </div>
@@ -250,7 +250,7 @@ export function SubsystemModal({
           {cfg.tabId && (
             <button
               onClick={() => onOpenPage(cfg.tabId!)}
-              className="px-4 py-2 rounded border border-border text-xs text-muted
+              className="px-4 py-2 rounded border border-border text-[24px] text-muted
                          hover:text-text hover:border-muted transition-colors font-mono"
             >
               Open full page
@@ -258,7 +258,7 @@ export function SubsystemModal({
           )}
           <button
             onClick={onClose}
-            className="px-5 py-2 rounded text-xs font-semibold font-mono transition-colors"
+            className="px-5 py-2 rounded text-[24px] font-semibold font-mono transition-colors"
             style={{ background: cfg.accentColor, color: '#0d1117' }}
           >
             Close
