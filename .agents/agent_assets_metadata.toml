@@ -266,3 +266,10 @@ uri = "file://islanded-8-60-10mw-ramp-sequential.json"
 type = "unspecified"
 title = "Islanded 8-60-10 MW ramp — sequential commitment and release"
 description = "Full scenario spec including kube_config, workload_events, fleet, and assertions. 21 KB JSON."
+
+[[outputs]]
+id = "Khu-7SlfBEDV5ptYZkZWF"
+uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs.json"
+type = "unspecified"
+title = "islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs.json"
+description = "ScenarioSpec JSON — 3-hour islanded ramp, 97 workload events, 5×15 MW turbines, 18 MW / 14 MWh BESS, 15 MW solar, 50→1 000 GPU nodes"
