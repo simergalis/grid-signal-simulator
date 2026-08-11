@@ -47,9 +47,9 @@ _SPEC = {
     ],
     "turbine_units": [
         {"asset_id": "gt-0", "rated_mw": 10.0, "r_asset_mw_per_s": 0.5,
-         "hot_standby": False},
+         "hot_standby": False, "t_min_down_s": 0.0, "min_down_enabled": False},
         {"asset_id": "gt-1", "rated_mw": 10.0, "r_asset_mw_per_s": 0.5,
-         "hot_standby": False},
+         "hot_standby": False, "t_min_down_s": 0.0, "min_down_enabled": False},
     ],
     "solar_rated_mw": 0.0,
     "irradiance_steps": [],

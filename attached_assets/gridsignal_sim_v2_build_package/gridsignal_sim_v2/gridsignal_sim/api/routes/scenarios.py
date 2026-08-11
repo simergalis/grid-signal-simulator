@@ -657,6 +657,54 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             gpu_load_profile=[],   # full GPU load throughout (no throttling)
         ),
     ),
+    # ── Operator manual trip / start demo ────────────────────────────────
+    (
+        "demo-operator-trip",
+        ScenarioSpec(
+            name="demo-operator-trip",
+            description=(
+                "This scenario demonstrates the operator manual turbine control feature, "
+                "giving operators direct command over individual generators during a live run. "
+                "A cluster of 600 GPU nodes draws roughly 6 MW, and three gas turbines commit "
+                "in sequence as load rises: turbine-0 and turbine-1 are 7 MW standard-ramp "
+                "units; turbine-2 is a 7 MW unit with a slightly slower ramp rate, representing "
+                "an older or derated frame. Once all three units are synchronised on bus, the "
+                "operator can trip any online unit using the Trip button in the Gas Turbine Fleet "
+                "panel — the tripped unit's output drops to zero immediately and the battery "
+                "bridges the gap while the remaining generators absorb the slack. The operator "
+                "can then use the Start button on the offline unit to re-enter it into the "
+                "starting sequence; it ramps back onto the bus normally over subsequent ticks. "
+                "All three units have the minimum-down constraint disabled so the operator can "
+                "restart a recently tripped unit without waiting, making the trip–start cycle "
+                "easy to observe within the 300-second run window. This matters because generator "
+                "trips are a routine occurrence in real facilities, and the ability to take a "
+                "unit offline manually — for maintenance, protection testing, or load rebalancing "
+                "— and restore it without interrupting the compute job is a fundamental operational "
+                "requirement."
+            ),
+            workload_events=[_evt_start("job-op-trip", _DEMO_NODES)],
+            dt_lead_seconds=30.0,
+            bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
+            # PW-1 / §15: p_min_stable_frac=0.40 on all demo plant turbines.
+            # turbine-2: r=0.15 MW/s (derated frame); min_down_enabled=False on all
+            # units so operators can restart a recently tripped unit within the demo
+            # window without waiting for the 900-second cooling period (D-03 flag).
+            turbine_units=[
+                _turbine("turbine-0", rated_mw=7.0, r_mw_per_s=0.20,
+                         p_min_stable_frac=0.40, min_down_enabled=False),
+                _turbine("turbine-1", rated_mw=7.0, r_mw_per_s=0.20,
+                         p_min_stable_frac=0.40, min_down_enabled=False),
+                _turbine("turbine-2", rated_mw=7.0, r_mw_per_s=0.15,
+                         p_min_stable_frac=0.40, min_down_enabled=False),
+            ],
+            solar_rated_mw=_SOLAR_DEMO,
+            end_sim_time=300.0,
+            load_config=LoadProfileConfigSpec(),
+            frequency_nominal_hz=60.0,
+            power_factor=0.85,
+            gpu_load_profile=[],   # full GPU load throughout (no throttling)
+        ),
+    ),
 ]
 
 
@@ -733,7 +781,8 @@ def _seed_json_scenarios(store: ScenarioStore) -> None:
 
     _JSON_ENTRIES: list[tuple[str, str]] = [
         # (store_id, filename)
-        ("demo-islanded-ramp", "demo-islanded-ramp.json"),
+        ("demo-islanded-ramp",  "demo-islanded-ramp.json"),
+        ("demo-operator-trip",  "demo-operator-trip.json"),
     ]
 
     _cfg_dir = _Path("config/scenarios")
