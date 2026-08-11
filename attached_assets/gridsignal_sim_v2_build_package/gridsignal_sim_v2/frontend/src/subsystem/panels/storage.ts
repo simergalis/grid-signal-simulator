@@ -16,6 +16,7 @@ import type { PanelConfig, PanelData } from './index'
 import type { TickPayload, HistoryPoint } from '../../types'
 import { GaugeArc }  from '../../charts/GaugeArc'
 import { BulletBar } from '../../charts/BulletBar'
+import { BessConfigWidget } from './BessConfigWidget'
 // GS-DES-CFG-001 §Phase-4: bess_rated_mw, bess_usable_mwh, bess_unit_count are now
 // broadcast per tick (TickPayload).  BulletBar restored, max from bess_rated_mw.
 
@@ -36,11 +37,11 @@ export const storagePanel: PanelConfig = {
       return {
         stateLabel:  '—',
         stateColour: '#30363d',
-        verdict:     'No active run. Start a scenario to see storage readiness.',
+        verdict:     'No active run. Configure BESS below, then start a scenario.',
         heroValue:   '—',
         heroLabel:   'bridge duration',
-        chartTitle:  'STATE OF CHARGE',
-        chart: React.createElement('div', { className: 'font-mono text-xs text-muted py-12 text-center' }, 'No data'),
+        chartTitle:  'BESS CONFIGURATION',
+        chart: React.createElement(BessConfigWidget, {}),
         statRows: [],
         why: [
           'The battery serves two purposes: grid-forming anchor and bridge reserve.',

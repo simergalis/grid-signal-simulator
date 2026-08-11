@@ -20,6 +20,7 @@
 
 import { useEffect, useState } from 'react'
 import { useScenarioStore } from '../store/scenarioStore'
+import { useBessConfigStore } from '../store/bessConfigStore'
 
 const SPEED_OPTIONS = [
   { label: '1×',   value: 1 },
@@ -55,13 +56,13 @@ export function RunControlBar({ runId, lastRunId, onRunStarted, onRunStopped, on
   const selectScenario = useScenarioStore(s => s.selectScenario)
   const fetchScenarios = useScenarioStore(s => s.fetchScenarios)
 
-  const [speed,        setSpeed]        = useState(1)
-  const [duration,     setDuration]     = useState(1800)
-  const [busy,         setBusy]         = useState(false)
-  const [error,        setError]        = useState<string | null>(null)
-  // BESS size overrides — null means "use whatever the scenario stores"
-  const [bessRatedMw,  setBessRatedMw]  = useState<number | null>(null)
-  const [bessUsableMwh,setBessUsableMwh]= useState<number | null>(null)
+  const [speed,    setSpeed]    = useState(1)
+  const [duration, setDuration] = useState(1800)
+  const [busy,     setBusy]     = useState(false)
+  const [error,    setError]    = useState<string | null>(null)
+  // BESS size overrides — configured via the Energy Storage modal, read here at run-start
+  const bessRatedMw   = useBessConfigStore(s => s.ratedMw)
+  const bessUsableMwh = useBessConfigStore(s => s.usableMwh)
 
   // Fetch scenario list on mount
   useEffect(() => { fetchScenarios() }, [fetchScenarios])
@@ -164,37 +165,8 @@ export function RunControlBar({ runId, lastRunId, onRunStarted, onRunStopped, on
         ))}
       </select>
 
-      {/* BESS size overrides — only editable when not running */}
-      <span className="text-xs text-muted shrink-0 ml-1">BESS</span>
-      <input
-        type="number"
-        className="w-[58px] rounded border border-border bg-canvas px-2 py-1 text-xs text-text
-                   focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
-        value={bessRatedMw ?? ''}
-        placeholder="MW"
-        disabled={isRunning || busy}
-        min={0.1}
-        step={0.5}
-        title="Override BESS rated power for this run (MW) — leave blank to use the scenario default"
-        onChange={e => setBessRatedMw(e.target.value !== '' ? Number(e.target.value) : null)}
-      />
-      <span className="text-xs text-muted shrink-0">MW</span>
-      <input
-        type="number"
-        className="w-[62px] rounded border border-border bg-canvas px-2 py-1 text-xs text-text
-                   focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
-        value={bessUsableMwh ?? ''}
-        placeholder="MWh"
-        disabled={isRunning || busy}
-        min={0.1}
-        step={0.5}
-        title="Override BESS usable energy capacity for this run (MWh) — leave blank to use the scenario default"
-        onChange={e => setBessUsableMwh(e.target.value !== '' ? Number(e.target.value) : null)}
-      />
-      <span className="text-xs text-muted shrink-0">MWh</span>
-
       {/* Speed selector */}
-      <label className="text-xs text-muted shrink-0 ml-1">Speed</label>
+      <label className="text-xs text-muted shrink-0">Speed</label>
       <select
         className="rounded border border-border bg-canvas px-2 py-1 text-xs text-text
                    focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
