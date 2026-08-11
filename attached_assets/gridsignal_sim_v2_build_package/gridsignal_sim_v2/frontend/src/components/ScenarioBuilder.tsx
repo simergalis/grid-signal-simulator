@@ -25,7 +25,7 @@ import { useScenarioStore } from '../store/scenarioStore'
 import type { BessUnitSpec, KubeJobSpec, TurbineUnitSpec, ScenarioSpec } from '../types'
 import { ParameterModal, defaultPhysicsParams } from './ParameterModal'
 import type { PhysicsParams } from './ParameterModal'
-import { GpuLoadEditor } from './GpuLoadEditor'
+import { GpuLoadEditorModal } from './GpuLoadEditorModal'
 
 // ── C-rate helper ─────────────────────────────────────────────────────────────
 
@@ -269,6 +269,7 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
   const [warnings,      setWarnings]      = useState<string[]>([])
   const [physicsOpen,   setPhysicsOpen]   = useState(false)
   const [physicsParams, setPhysicsParams] = useState<PhysicsParams>(defaultPhysicsParams())
+  const [gpuEditorOpen, setGpuEditorOpen] = useState(false)
   const [aiBusy,        setAiBusy]        = useState(false)
   const [aiErr,         setAiErr]         = useState<string | null>(null)
 
@@ -963,29 +964,34 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                 </p>
               </div>
 
-              {/* GPU Load Profile editor */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] text-muted">GPU load profile (zero-order hold)</span>
-                  {gpuLoadPoints.length > 0 && (
-                    <button
-                      className="text-[10px] text-muted hover:text-danger transition-colors"
-                      onClick={() => setGpuLoadProfile([])}
-                    >
-                      reset to flat
-                    </button>
-                  )}
+              {/* GPU Load Profile — opens editor modal */}
+              <div className="rounded border border-border/60 px-3 py-2 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] text-muted block">GPU load profile</span>
+                    <span className="text-[9px] text-muted opacity-60">
+                      {gpuLoadPoints.length === 0
+                        ? 'Flat 100 % (full TDP) — no throttling'
+                        : `${gpuLoadPoints.length} point${gpuLoadPoints.length === 1 ? '' : 's'} · zero-order hold`}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setGpuEditorOpen(true)}
+                    className="rounded border border-accent/50 px-2 py-1 text-[10px] text-accent
+                               hover:bg-accent/10 transition-colors font-mono"
+                  >
+                    ✎ Edit Profile
+                  </button>
                 </div>
-                <GpuLoadEditor
-                  points={gpuLoadPoints}
-                  durationSeconds={spec.end_sim_time}
-                  onChange={setGpuLoadProfile}
-                  style={{ marginBottom: 2 }}
-                />
-                <p className="text-[9px] text-muted mt-0.5">
-                  Shapes GPU compute demand over time (0 % = idle, 100 % = full TDP).
-                  Empty = constant full load. Click canvas to add points; drag to adjust; Delete to remove.
-                </p>
+                {gpuLoadPoints.length > 0 && (
+                  <button
+                    className="text-[9px] text-muted hover:text-danger transition-colors"
+                    onClick={() => setGpuLoadProfile([])}
+                  >
+                    reset to flat
+                  </button>
+                )}
               </div>
             </div>
           </section>
@@ -1061,6 +1067,16 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
           initial={physicsParams}
           onApply={setPhysicsParams}
         />
+
+        {/* GPU Load Profile editor modal */}
+        {gpuEditorOpen && (
+          <GpuLoadEditorModal
+            points={gpuLoadPoints}
+            durationSeconds={spec.end_sim_time}
+            onSave={pts => { setGpuLoadProfile(pts); setGpuEditorOpen(false) }}
+            onCancel={() => setGpuEditorOpen(false)}
+          />
+        )}
 
         {/* Footer */}
         <div className="border-t border-border px-4 py-3 flex justify-end gap-2">
