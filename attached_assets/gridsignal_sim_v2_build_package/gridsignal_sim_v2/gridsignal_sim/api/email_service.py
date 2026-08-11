@@ -222,30 +222,163 @@ def send_otp_email(to_email: str, display_name: str, code: str) -> bool:
         _log.warning("SENDGRID_API_KEY not set — OTP email NOT sent to %s", to_email)
         return False
 
-    subject = f"{_APP_NAME} — your sign-in code"
-    body = f"""\
-<div style="font-family:sans-serif;max-width:480px;margin:0 auto;background:#0b1017;color:#e6ecf2;padding:32px;border-radius:8px">
-  <p style="color:#3fb6a8;font-size:20px;font-weight:700;letter-spacing:0.1em;margin-bottom:4px">GRIDSIGNAL</p>
-  <p style="color:#4b5764;font-size:12px;margin-top:0">Predictive power management</p>
-  <hr style="border:none;border-top:1px solid #1e2a38;margin:20px 0">
-  <p>Hello {display_name},</p>
-  <p>Your sign-in code is:</p>
-  <div style="font-size:36px;font-weight:700;letter-spacing:0.2em;color:#3fb6a8;
-              background:#111821;border-radius:6px;padding:16px 24px;
-              text-align:center;margin:20px 0">{code}</div>
-  <p style="color:#7d8b9c;font-size:12px">
-    This code expires in 10 minutes and can only be used once.<br>
-    If you did not request this code, ignore this email.
-  </p>
-</div>
+    url = _portal_url()
+    subject = f"{_APP_NAME} — your sign-in code is {code}"
+    html_body = f"""\
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="only light">
+  <meta name="supported-color-schemes" content="only light">
+  <title>Your GridSignal sign-in code</title>
+</head>
+<body style="margin:0;padding:0;background:#f0f4f8;font-family:sans-serif">
+
+  <!-- Preheader (hidden preview text in email clients) -->
+  <span style="display:none;max-height:0;overflow:hidden;color:transparent">
+    Your sign-in code is {code} &mdash; expires in 10 minutes.
+  </span>
+
+  <!-- Outer wrapper -->
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+         style="background:#f0f4f8;padding:40px 16px">
+    <tr>
+      <td align="center">
+
+        <!-- Email card -->
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+               style="max-width:500px;background:#0b1017;border-radius:10px;
+                      color:#e6ecf2;overflow:hidden">
+
+          <!-- Top accent bar -->
+          <tr>
+            <td style="background:#3fb6a8;height:4px;line-height:4px;font-size:0">&nbsp;</td>
+          </tr>
+
+          <!-- Header -->
+          <tr>
+            <td style="padding:36px 36px 0">
+              <p style="margin:0 0 3px;color:#3fb6a8;font-size:22px;
+                        font-weight:700;letter-spacing:0.12em">GRIDSIGNAL</p>
+              <p style="margin:0;color:#8a97a6;font-size:12px;letter-spacing:0.02em">
+                Predictive power management
+              </p>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding:24px 36px 0">
+              <div style="border-top:1px solid #1e2a38"></div>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:28px 36px 0">
+
+              <p style="margin:0 0 16px;font-size:15px;line-height:1.65">
+                Hi <strong>{display_name}</strong>,
+              </p>
+              <p style="margin:0 0 24px;font-size:15px;line-height:1.65;color:#c8d6e5">
+                Here is your GridSignal sign-in code. Enter it on the sign-in
+                screen to continue. Codes expire after 10&nbsp;minutes and
+                can only be used once.
+              </p>
+
+              <!-- Code callout -->
+              <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+                     style="background:#111821;border-left:3px solid #3fb6a8;
+                            margin-bottom:28px">
+                <tr>
+                  <td style="padding:14px 18px">
+                    <p style="margin:0 0 6px;color:#8a97a6;font-size:11px;
+                               text-transform:uppercase;letter-spacing:0.08em">
+                      Your sign-in code
+                    </p>
+                    <p style="margin:0;font-family:monospace;font-size:32px;
+                               font-weight:700;letter-spacing:0.22em;color:#3fb6a8">
+                      {code}
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- CTA button -->
+              <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+                     style="margin-bottom:32px">
+                <tr>
+                  <td align="center">
+                    <a href="{url}"
+                       style="display:inline-block;background:#3fb6a8;
+                              color:#0b1017;font-weight:700;font-size:15px;
+                              text-decoration:none;padding:14px 40px;
+                              border-radius:6px;letter-spacing:0.04em">
+                      Open GridSignal
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr>
+            <td style="padding:0 36px">
+              <div style="border-top:1px solid #1e2a38"></div>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:20px 36px 36px">
+              <p style="margin:0 0 10px;color:#8a97a6;font-size:12px;line-height:1.6">
+                Trouble signing in? Reply to this email and we'll sort it out.
+              </p>
+              <p style="margin:0;color:#8a97a6;font-size:12px;line-height:1.6">
+                If you didn't request this code, you can ignore this email.
+                Your account remains secure.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+        <!-- /Email card -->
+
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>
 """
+    plain_body = (
+        f"GRIDSIGNAL — Predictive power management\n"
+        f"\n"
+        f"Hi {display_name},\n"
+        f"\n"
+        f"Your GridSignal sign-in code is:\n"
+        f"\n"
+        f"    {code}\n"
+        f"\n"
+        f"This code expires in 10 minutes and can only be used once.\n"
+        f"\n"
+        f"Open GridSignal: {url}\n"
+        f"\n"
+        f"If you didn't request this code, you can ignore this email.\n"
+        f"Your account remains secure.\n"
+    )
     try:
         from sendgrid.helpers.mail import Mail
         message = Mail(
             from_email=_from_email(),
             to_emails=to_email,
             subject=subject,
-            html_content=body,
+            html_content=html_body,
+            plain_text_content=plain_body,
         )
         resp = client.send(message)
         success = 200 <= resp.status_code < 300
