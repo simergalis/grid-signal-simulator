@@ -117,6 +117,26 @@ async def start_run(
         scenario_store.link_run(body.scenario_id, run_id)
         spec_data = json.loads(record.spec_json)
 
+        # ── Operator BESS size overrides (RunControlBar) ──────────────────
+        # Apply before any generator pipelines so that the corrected sizing
+        # propagates to the irradiance / forecast generators that may read
+        # solar_rated_mw relative to peak load (PROTO-7).
+        if body.bess_rated_mw_override is not None or body.bess_usable_mwh_override is not None:
+            _bess_units = spec_data.get("bess_units", [])
+            for _u in _bess_units:
+                if body.bess_rated_mw_override is not None:
+                    _u["rated_mw"] = body.bess_rated_mw_override
+                if body.bess_usable_mwh_override is not None:
+                    _u["usable_mwh"] = body.bess_usable_mwh_override
+            spec_data["bess_units"] = _bess_units
+            _log.info(
+                "run %s: BESS override applied — rated_mw=%s usable_mwh=%s across %d unit(s)",
+                run_id,
+                body.bess_rated_mw_override,
+                body.bess_usable_mwh_override,
+                len(_bess_units),
+            )
+
         # ── Pre-run generation pipeline ───────────────────────────────────
         # All generators run concurrently as parallel asyncio tasks and MUST
         # complete before t=0.  No generator runs during the tick loop.

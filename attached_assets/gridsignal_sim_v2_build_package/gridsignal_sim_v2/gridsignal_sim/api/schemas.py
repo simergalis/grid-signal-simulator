@@ -1009,6 +1009,28 @@ class StartRunRequest(BaseModel):
         description="Simulated seconds per real second (0 = max speed)",
     )
 
+    # ── Operator BESS size overrides ──────────────────────────────────────────
+    # When present these replace rated_mw / usable_mwh on every BESS unit in the
+    # stored scenario spec before the run is built.  Intended for the RunControlBar
+    # "BESS" fields; only accepted while no run is active (enforced in the UI).
+    # None (default) = use the scenario's stored BESS values unchanged.
+    bess_rated_mw_override: Optional[float] = Field(
+        default=None,
+        gt=0,
+        description=(
+            "Override rated power (MW) for all BESS units in the scenario. "
+            "None = use the scenario's stored value."
+        ),
+    )
+    bess_usable_mwh_override: Optional[float] = Field(
+        default=None,
+        gt=0,
+        description=(
+            "Override usable energy capacity (MWh) for all BESS units in the scenario. "
+            "None = use the scenario's stored value."
+        ),
+    )
+
     @model_validator(mode="after")
     def _require_scenario_or_job_fields(self) -> "StartRunRequest":
         """scenario_id OR (job_id + node_count) must be present."""
