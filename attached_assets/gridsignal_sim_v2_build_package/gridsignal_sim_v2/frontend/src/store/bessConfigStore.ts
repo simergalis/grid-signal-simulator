@@ -23,9 +23,9 @@ interface BessConfigState {
 }
 
 export const useBessConfigStore = create<BessConfigState>((set) => ({
-  ratedMw:          null,
-  usableMwh:        null,
-  selectedPresetId: null,
+  ratedMw:          30,
+  usableMwh:        30,
+  selectedPresetId: 'freq-anchor',
   setRatedMw:       (v)  => set({ ratedMw: v }),
   setUsableMwh:     (v)  => set({ usableMwh: v }),
   setSelectedPresetId: (v) => set({ selectedPresetId: v }),

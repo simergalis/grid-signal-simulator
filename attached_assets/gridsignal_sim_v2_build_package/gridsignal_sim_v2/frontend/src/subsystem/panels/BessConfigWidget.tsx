@@ -42,7 +42,7 @@ const PRESETS: Preset[] = [
   {
     id: 'freq-anchor', label: 'Freq. Anchor',
     tag: 'Frequency response · 1 C', cRate: 1.0,
-    ratedMw: 5, usableMwh: 5, bridgeMin: '~60 min',
+    ratedMw: 30, usableMwh: 30, bridgeMin: '~60 min',
     desc: 'Balanced for fast frequency injection and 1-hour bridging. Simulator default — anchor reserve is a small fraction of rated power.',
   },
   {
