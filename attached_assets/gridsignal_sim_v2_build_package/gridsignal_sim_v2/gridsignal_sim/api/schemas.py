@@ -432,6 +432,14 @@ class ScenarioSpec(BaseModel):
         default_factory=lambda: [(0.0, 1.0)],
         description="Zero-order-hold irradiance profile. Duplicate timestamps unnecessary.",
     )
+    gpu_load_profile: list[tuple[float, float]] = Field(
+        default_factory=list,
+        description=(
+            "Zero-order-hold GPU load profile. Each tuple is (sim_time_s, fraction [0,1]). "
+            "Empty = constant 1.0 (full load). The active fraction scales p_compute_demand_mw "
+            "each tick so operators can shape GPU utilisation over time."
+        ),
+    )
 
     island_mode: bool = True
     # A1 / Task #200: site nominal grid frequency.

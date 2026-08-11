@@ -125,6 +125,12 @@ class SimulationState:
     _last_workload_signal_sim_time:  float = field(default=-1.0, init=False)
     _ever_received_workload_signal:  bool  = field(default=False, init=False)
 
+    # Operator GPU load profile — zero-order-hold list of (sim_time_s, fraction)
+    # tuples sorted ascending by time.  Empty = constant 1.0 (full load).
+    # Populated from ScenarioSpec.gpu_load_profile at run start; all existing
+    # scripted scenarios and tests omit it (empty = no-op, fully backward-compat).
+    gpu_load_profile: list[tuple[float, float]] = field(default_factory=list)
+
     # Phase 11.3 — frequency state for the swing equation (islanded mode only).
     # Persisted on SimulationState so df/dt integration accumulates correctly
     # across ticks.  Initialized to site.frequency_nominal_hz in __post_init__
@@ -381,6 +387,25 @@ class SimulationState:
         self._ever_received_workload_signal = True
 
 
+def _gpu_load_fraction_at(profile: list[tuple[float, float]], t: float) -> float:
+    """Zero-order-hold lookup for gpu_load_profile.
+
+    Returns the fraction (0-1) that applies at sim-time t.
+    The last entry whose time_s <= t wins; if t precedes all entries the first
+    entry's value is used.  Returns 1.0 for an empty profile (full load, no-op).
+    Clamped to [0, 1] so out-of-range authored values are safe.
+    """
+    if not profile:
+        return 1.0
+    frac = profile[0][1]          # use first point even before its timestamp
+    for time_s, value in profile:
+        if time_s <= t:
+            frac = value
+        else:
+            break
+    return max(0.0, min(1.0, frac))
+
+
 def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     """The fixed-order tick evaluation (Design Spec Section 5 / 10.1):
 
@@ -520,6 +545,19 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         for _job_id in _g._node_counts:
             _per_job_draws[_job_id] = _g.per_job_compute_mw(_job_id)
     p_compute_demand_mw = sum(_per_job_draws.values())
+
+    # ── GPU load profile scaling (operator-authored zero-order-hold) ──────────
+    # Multiplies p_compute_demand_mw AND the per-job draws passed to the cooling
+    # model by the active fraction so that cooling tracks the same throttled load.
+    # No-op when the profile is empty (the default), so all existing tests and
+    # seeded scenarios are unaffected.
+    _gpu_load_fraction = _gpu_load_fraction_at(state.gpu_load_profile, sim_time)
+    if _gpu_load_fraction != 1.0:
+        p_compute_demand_mw *= _gpu_load_fraction
+        # Scale per-job draws so the cooling model sees the same throttled GPU heat
+        # output — not the full-TDP value before the profile was applied.
+        _per_job_draws = {k: v * _gpu_load_fraction for k, v in _per_job_draws.items()}
+
     state.cooling.record_job_compute(sim_time, _per_job_draws)
 
     # 2. Cooling term (lagged)
@@ -1923,4 +1961,6 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         p_compute_unserved_mw=_p_compute_unserved_mw,
         p_cooling_served_mw=_p_cooling_served_mw,
         p_cooling_unserved_mw=_p_cooling_unserved_mw,
+        # GPU load profile — active fraction this tick (1.0 = no scaling).
+        gpu_load_fraction=_gpu_load_fraction,
     )

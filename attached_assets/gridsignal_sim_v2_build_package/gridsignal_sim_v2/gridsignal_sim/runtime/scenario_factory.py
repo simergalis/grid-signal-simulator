@@ -647,6 +647,13 @@ def build_run_context_from_spec(
         cooling=cooling,
     )
 
+    # ── GPU load profile ──────────────────────────────────────────────────
+    _gpu_load_raw = spec_data.get("gpu_load_profile", [])
+    if _gpu_load_raw:
+        sim_state.gpu_load_profile = sorted(
+            (float(t), float(f)) for t, f in _gpu_load_raw
+        )
+
     # ── Kubernetes demand agent ───────────────────────────────────────────
     # Created after SimulationState so site_id is available.
     # Only instantiated when kube_config is present in the spec; all existing

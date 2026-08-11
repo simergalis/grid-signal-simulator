@@ -25,6 +25,7 @@ import { useScenarioStore } from '../store/scenarioStore'
 import type { BessUnitSpec, KubeJobSpec, TurbineUnitSpec, ScenarioSpec } from '../types'
 import { ParameterModal, defaultPhysicsParams } from './ParameterModal'
 import type { PhysicsParams } from './ParameterModal'
+import { GpuLoadEditor } from './GpuLoadEditor'
 
 // ── C-rate helper ─────────────────────────────────────────────────────────────
 
@@ -369,6 +370,13 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
   const removeIrrStep = (i: number) => {
     if (spec.irradiance_steps.length <= 1) return
     patch({ irradiance_steps: spec.irradiance_steps.filter((_, idx) => idx !== i) })
+  }
+
+  // ── GPU load profile mutations ────────────────────────────────────────────
+  const gpuLoadPoints: [number, number][] = spec.gpu_load_profile ?? []
+
+  const setGpuLoadProfile = (pts: [number, number][]) => {
+    patch({ gpu_load_profile: pts.length > 0 ? pts : undefined })
   }
 
   // ── Demo description helpers ──────────────────────────────────────────────
@@ -952,6 +960,31 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                 </table>
                 <p className="text-[9px] text-muted mt-0.5">
                   Value holds from t until the next step. First step must start at t = 0.
+                </p>
+              </div>
+
+              {/* GPU Load Profile editor */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] text-muted">GPU load profile (zero-order hold)</span>
+                  {gpuLoadPoints.length > 0 && (
+                    <button
+                      className="text-[10px] text-muted hover:text-danger transition-colors"
+                      onClick={() => setGpuLoadProfile([])}
+                    >
+                      reset to flat
+                    </button>
+                  )}
+                </div>
+                <GpuLoadEditor
+                  points={gpuLoadPoints}
+                  durationSeconds={spec.end_sim_time}
+                  onChange={setGpuLoadProfile}
+                  style={{ marginBottom: 2 }}
+                />
+                <p className="text-[9px] text-muted mt-0.5">
+                  Shapes GPU compute demand over time (0 % = idle, 100 % = full TDP).
+                  Empty = constant full load. Click canvas to add points; drag to adjust; Delete to remove.
                 </p>
               </div>
             </div>

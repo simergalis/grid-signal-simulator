@@ -358,6 +358,9 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # Keys: backend, agents_armed, proposals_total, proposals_pending,
         #        last_proposal_sim_time, per_agent (dict[str, float]).
         "advisory_telemetry": tick.advisory_telemetry,
+        # GPU load profile — active fraction this tick (1.0 = no profile / full load).
+        # Present on every tick; 1.0 when no gpu_load_profile is set in the spec.
+        "gpu_load_fraction": round(tick.gpu_load_fraction, 4),
         # Phase 10: fabric model modal-view — six plant-plane fields + link utilisation.
         # null when FabricEngine is not wired (headless tests, direct job-id path).
         "fabric": tick.fabric_modal,

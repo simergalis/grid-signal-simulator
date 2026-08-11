@@ -198,6 +198,9 @@ export interface TickPayload {
   // Reflects proposals from ticks 0…t−1 (stamped before this tick's run_all()).
   advisory_telemetry: AdvisoryTelemetry | null
 
+  // GPU load profile — active fraction this tick (1.0 = full load / no profile set).
+  gpu_load_fraction: number
+
   // Phase 10: fabric model modal-view — null when FabricEngine not wired.
   // Six plant-plane fields + control decomposition + per-link utilisation map.
   fabric: FabricModalView | null
@@ -520,6 +523,7 @@ export interface ScenarioSpec {
   turbine_units: TurbineUnitSpec[]
   solar_rated_mw: number
   irradiance_steps: [number, number][] // zero-order hold [(t, fraction), ...]
+  gpu_load_profile?: [number, number][] // zero-order hold [(t_s, fraction 0-1), ...]; empty = full load
   island_mode: boolean
   pue_base: number                    // [1.0, 2.0]
   end_sim_time: number                // [60, 86400] s

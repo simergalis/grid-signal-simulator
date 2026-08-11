@@ -1078,6 +1078,10 @@ class TickResult:
     # Keys: backend, agents_armed, proposals_total, proposals_pending,
     #        last_proposal_sim_time, per_agent (dict[str, float]).
     advisory_telemetry: Optional[dict] = None
+    # GPU load profile fraction active this tick — 1.0 when no gpu_load_profile is
+    # set on the scenario (no scaling applied).  Sent on the wire so the dashboard
+    # can display the current throttle level without re-deriving it.
+    gpu_load_fraction: float = 1.0
 
     # Phase 10: fabric model modal-view — six plant-plane fields derived from
     # the Network Fabric model.  None when FabricEngine is not wired (headless
