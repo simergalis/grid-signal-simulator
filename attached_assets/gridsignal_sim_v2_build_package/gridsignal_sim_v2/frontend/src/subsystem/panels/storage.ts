@@ -44,9 +44,13 @@ export const storagePanel: PanelConfig = {
         chart: React.createElement(BessConfigWidget, {}),
         statRows: [],
         why: [
-          'The battery serves two purposes: grid-forming anchor and bridge reserve.',
-          'One megawatt is permanently withheld to regulate frequency — anchor reserve (§7.1.2).',
-          'Bridge duration is the only metric that answers the operator question: how long can we cover the gap?',
+          'A larger BESS buys five things for a data centre.',
+          '1 · Longer turbine deferral — the GCC commits a gas turbine when utilisation crosses a threshold. BESS covering the gap keeps turbines in cold standby longer, saving fuel, wear, and start-up emissions. A 5 MWh battery bridges a 5 MW shortfall for 1 h; a 20 MWh battery covers the same gap for 4 h.',
+          '2 · Bigger step-load absorption — a GPU rack powers up in milliseconds; turbines need 45 s to ramp. A larger rated-MW battery absorbs a bigger instantaneous step, letting the scheduler admit larger jobs without tripping the power cap or risking a frequency dip.',
+          '3 · N-1 survivability with fewer committed turbines — the GCC\'s N-1 floor is turbine-only and ignores BESS. But a large battery with healthy SoC provides a real-world ride-through cushion while fewer turbines are on bus.',
+          '4 · More solar, less curtailment — a small battery fills quickly at midday and forces solar to be curtailed. A larger battery absorbs the full solar peak and discharges it into the evening ramp, increasing renewable utilisation.',
+          '5 · Anchor reserve stays cheap — the grid-forming unit permanently withholds p_anchor_reserve_mw for frequency regulation. On a small battery that is a large fraction of usable capacity; on a large battery it is a small fraction, leaving more nameplate capacity available for bridging.',
+          'Trade-off: larger BESS costs more capex. Try increasing rated MW/MWh in the config above and watch whether the GCC still needs to commit a third turbine during the step-load sequence.',
         ],
       }
     }
@@ -115,10 +119,14 @@ export const storagePanel: PanelConfig = {
         { label: 'State of health',   value: 'not modelled',                       sub: 'no degradation curve in this version' },
       ],
       why: [
-        'The battery serves two purposes simultaneously: grid-forming anchor and bridge reserve.',
-        // GS-DES-CFG-001 §Phase-6 / Item-2 (stale): was hardcoded "One megawatt".
-        `${tick.bess_anchor_reserve_mw.toFixed(1)} MW is permanently withheld to regulate frequency — this is the anchor reserve (§7.1.2).`,
-        'Bridge duration at current shortfall is the metric that answers the operator question, not SoC percentage.',
+        'A larger BESS buys five things for a data centre.',
+        `1 · Longer turbine deferral — the GCC commits a gas turbine when utilisation crosses its threshold. BESS covering the gap keeps turbines in cold standby longer, saving fuel and start-up wear. At current rated power (${ratedMW.toFixed(1)} MW rated / ${usableMWh.toFixed(1)} MWh usable), bridge duration is the live measure of how much deferral headroom remains.`,
+        '2 · Bigger step-load absorption — GPU racks power up in milliseconds; turbines need 45 s to ramp. A higher rated-MW battery absorbs a larger instantaneous step, letting the scheduler admit bigger jobs without tripping the power cap or risking a frequency dip.',
+        '3 · N-1 survivability with fewer turbines on bus — the GCC\'s N-1 floor is turbine-only and ignores BESS, but a large battery with healthy SoC provides a real-world ride-through cushion while fewer turbines are committed.',
+        '4 · More solar, less curtailment — a small battery fills quickly at midday and forces solar to be curtailed. A larger battery absorbs the full solar peak and discharges it into the evening ramp, raising renewable utilisation.',
+        // GS-DES-CFG-001 §Phase-6 / Item-2: bess_anchor_reserve_mw is the live configured value.
+        `5 · Anchor reserve stays cheap — ${tick.bess_anchor_reserve_mw.toFixed(1)} MW is permanently withheld for grid-forming frequency regulation (§7.1.2). On a small battery that is a large fraction of usable capacity; on a large battery it is a small fraction, leaving more nameplate power available for bridging.`,
+        'Trade-off: larger BESS costs more capex. Change the sizing profile above and restart the scenario to see the effect on turbine commitment and bridge duration.',
       ],
     }
   },

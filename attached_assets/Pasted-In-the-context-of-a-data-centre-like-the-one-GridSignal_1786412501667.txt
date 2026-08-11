@@ -1,0 +1,13 @@
+In the context of a data centre like the one GridSignal simulates, a larger BESS buys you five concrete things:
+
+1. Longer bridging before turbines must commit The GCC starts a gas turbine when turbine utilisation exceeds the commit threshold. If BESS can cover the gap for longer, the turbines stay offline (or cold standby) longer — saving fuel, wear, and startup emissions. A 5 MWh battery bridges a 5 MW shortfall for one hour; a 20 MWh battery bridges the same gap for four.
+
+2. Absorb larger step-loads without frequency excursions When a rack of GPUs powers up, it creates an instantaneous demand step that turbines cannot match in time (they need 45 seconds to ramp). BESS responds in milliseconds. A larger rated-MW battery can absorb a bigger step — meaning you can admit larger GPU jobs without tripping the power cap or risking a frequency dip.
+
+3. N-1 survivability with fewer committed turbines The GCC's N-1 reserve rule is turbine-only — it ignores BESS. But in practice, a large BESS with plenty of SoC provides a real-world safety cushion while fewer turbines are on bus. Operators can configure a smaller turbine fleet knowing the battery can ride through a single unit trip long enough for the next unit to come online.
+
+4. More solar absorption, less curtailment Solar output fluctuates. A small battery fills up quickly when solar peaks and must be curtailed. A larger battery can absorb the full midday solar peak and discharge it into the evening ramp, increasing the fraction of renewable energy that actually reaches the load.
+
+5. Anchor reserve stays cheap The grid-forming BESS unit holds p_anchor_reserve_mw permanently withheld for frequency regulation. On a small battery that reserve is a large fraction of usable capacity; on a large battery it's a small fraction, so more of the nameplate capacity is available for actual bridging.
+
+The trade-off: a larger BESS costs more capex and has a higher anchor-reserve absolute MW commitment (the reserve scales with the config, not proportionally). In GridSignal you can explore this directly — increase rated MW/MWh via the BESS Config widget in the BATTERY panel and watch whether the GCC needs to commit a third turbine during the step-load sequence.
