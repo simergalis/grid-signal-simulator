@@ -313,6 +313,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             # unreachable.  Calibrated state is a precondition for TC-65 to be
             # observable in a live run.
             calibrated=True,
+            gpu_load_profile=[],   # full GPU load throughout (no throttling)
         ),
     ),
     (
@@ -329,6 +330,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             solar_rated_mw=_SOLAR_DEMO,
             end_sim_time=300.0,
             pms_config=PmsConfigSpec(),   # all defaults: open_transition, fast_shed_duration_s=30
+            gpu_load_profile=[],   # full GPU load throughout (no throttling)
         ),
     ),
     (
@@ -345,6 +347,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             solar_rated_mw=_SOLAR_DEMO,
             end_sim_time=300.0,
             pre_staging_config=PreStagingConfigSpec(),   # defaults: max_shift=1.0 MW, eta=0.9
+            gpu_load_profile=[],   # full GPU load throughout (no throttling)
         ),
     ),
     (
@@ -401,6 +404,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             dq_inject_events=[
                 DqInjectEvent(start_s=90.0, end_s=180.0, tag="invalid_payload"),
             ],
+            gpu_load_profile=[],   # full GPU load throughout (no throttling)
         ),
     ),
     (
@@ -432,6 +436,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
                 DqInjectEvent(start_s=150.0, end_s=210.0, tag="stale_profile"),
                 DqInjectEvent(start_s=240.0, end_s=270.0, tag="uncalibrated_site"),
             ],
+            gpu_load_profile=[],   # full GPU load throughout (no throttling)
         ),
     ),
     (
@@ -461,6 +466,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
                 (150.0, 0.05),   # cloud cover — sharp renewable drop
                 (240.0, 0.90),   # partial recovery
             ],
+            gpu_load_profile=[],   # full GPU load throughout (no throttling)
             end_sim_time=600.0,
             load_config=LoadProfileConfigSpec(),
             frequency_nominal_hz=60.0,
@@ -481,6 +487,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             solar_rated_mw=_SOLAR_DEMO,
             end_sim_time=300.0,
             load_config=LoadProfileConfigSpec(),
+            gpu_load_profile=[],   # full GPU load throughout (no throttling)
         ),
     ),
     (
@@ -495,6 +502,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             turbine_units=[_turbine("turbine-0", rated_mw=10.0, r_mw_per_s=0.2)],
             solar_rated_mw=_SOLAR_5MW,
             end_sim_time=300.0,
+            gpu_load_profile=[],   # full GPU load throughout (no throttling)
         ),
     ),
     (
@@ -509,6 +517,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             turbine_units=[_turbine("turbine-0", rated_mw=10.0, r_mw_per_s=0.2)],
             solar_rated_mw=_SOLAR_BASE,
             end_sim_time=300.0,
+            gpu_load_profile=[],   # full GPU load throughout (no throttling)
         ),
     ),
     (
@@ -528,6 +537,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             ],
             solar_rated_mw=_SOLAR_20MW,
             end_sim_time=300.0,
+            gpu_load_profile=[],   # full GPU load throughout (no throttling)
         ),
     ),
     (
@@ -548,6 +558,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             turbine_units=[_turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2)],
             solar_rated_mw=_SOLAR_20MW,
             end_sim_time=300.0,
+            gpu_load_profile=[],   # full GPU load throughout (no throttling)
         ),
     ),
     (
@@ -568,6 +579,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             turbine_units=[_turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2)],
             solar_rated_mw=0.0,   # no solar — net_demand = full compute draw
             end_sim_time=120.0,
+            gpu_load_profile=[],   # full GPU load throughout (no throttling)
         ),
     ),
     (
@@ -591,6 +603,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             turbine_units=[_turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2)],
             solar_rated_mw=_TC33_MW,  # exactly matches 600-node compute draw (A-fix)
             irradiance_steps=[(0.0, 1.0), (30.0, 0.0)],  # zero-order hold step
+            gpu_load_profile=[],   # full GPU load throughout (no throttling)
             end_sim_time=120.0,
         ),
     ),
@@ -609,6 +622,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             solar_rated_mw=_SOLAR_DEMO,
             end_sim_time=300.0,
             solar_origin_utc_hour=20,   # UTC 20:00 = 12:00 PST San Diego solar noon
+            gpu_load_profile=[],   # full GPU load throughout (no throttling)
         ),
     ),
     # ── Kubernetes demand layer ───────────────────────────────────────────
@@ -640,6 +654,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
                 headroom_threshold_mw=2.5,
                 rng_seed=42,
             ),
+            gpu_load_profile=[],   # full GPU load throughout (no throttling)
         ),
     ),
 ]

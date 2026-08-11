@@ -603,6 +603,7 @@
       1.0
     ]
   ],
+  "gpu_load_profile": [],
   "island_mode": true,
   "frequency_nominal_hz": 60.0,
   "uf_warning_hz": null,
