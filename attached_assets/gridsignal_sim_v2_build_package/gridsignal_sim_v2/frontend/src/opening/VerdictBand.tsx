@@ -48,7 +48,7 @@ function HeroFigure({ label, value, colour, sub, colWidth, onClick, tooltipId }:
         {onClick && (
           <span className="text-muted/50 text-[8px]">↗</span>
         )}
-        {tooltipId && <InfoBtn id={tooltipId} />}
+        {tooltipId && <InfoBtn id={tooltipId} style={{ width: 11, height: 11, fontSize: 6 }} />}
       </div>
       <div
         className="font-mono text-lg font-semibold tabular-nums leading-none whitespace-nowrap overflow-hidden"
