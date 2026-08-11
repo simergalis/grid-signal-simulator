@@ -234,6 +234,10 @@ def _turbine(
     min_run_enabled: bool = True,
     t_min_down_s: float = 900.0,
     min_down_enabled: bool = True,
+    thermal_state: Optional[str] = None,
+    cold_start_s: Optional[float] = None,
+    warm_start_s: Optional[float] = None,
+    hot_start_s: Optional[float] = None,
 ) -> TurbineUnitSpec:
     """Build a TurbineUnitSpec.
 
@@ -243,8 +247,12 @@ def _turbine(
     min_run_enabled=True    — R5 guard active for all seeded scenarios.
     t_min_down_s=900        — 15 min cooling window before a restart (R6, CHOSEN).
     min_down_enabled=True   — R6 guard active for all seeded scenarios.
+    thermal_state           — initial thermal classification: "hot"|"warm"|"cold".
+                              None falls back to TurbineUnitSpec default ("cold").
+    cold/warm/hot_start_s   — per-unit start-duration overrides (None = use
+                              gridsignal_parameters.json catalogue values).
     """
-    return TurbineUnitSpec(
+    kwargs: dict = dict(
         asset_id=asset_id,
         rated_mw=rated_mw,
         r_asset_mw_per_s=r_mw_per_s,
@@ -256,6 +264,15 @@ def _turbine(
         t_min_down_s=t_min_down_s,
         min_down_enabled=min_down_enabled,
     )
+    if thermal_state is not None:
+        kwargs["thermal_state"] = thermal_state
+    if cold_start_s is not None:
+        kwargs["cold_start_s"] = cold_start_s
+    if warm_start_s is not None:
+        kwargs["warm_start_s"] = warm_start_s
+    if hot_start_s is not None:
+        kwargs["hot_start_s"] = hot_start_s
+    return TurbineUnitSpec(**kwargs)
 
 
 # ---------------------------------------------------------------------------
@@ -685,17 +702,25 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             workload_events=[_evt_start("job-op-trip", _DEMO_NODES)],
             dt_lead_seconds=30.0,
             bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
-            # PW-1 / §15: p_min_stable_frac=0.40 on all demo plant turbines.
-            # turbine-2: r=0.15 MW/s (derated frame); min_down_enabled=False on all
-            # units so operators can restart a recently tripped unit within the demo
-            # window without waiting for the 900-second cooling period (D-03 flag).
+            # 5-unit fleet — 75 MW total rated, N-1 rated 60 MW.
+            # PW-1 / §15: p_min_stable_frac=0.40 → MSL 6.0 MW per unit (30 MW fleet).
+            # Thermal states from structure report (line 158 update):
+            #   turbine-0 Hot  (cold_start_s=300 — fast-start frame)
+            #   turbine-1 Warm (cold_start_s=600)
+            #   turbine-2 Warm (cold_start_s=900 — standard frame, pre-warmed)
+            #   turbine-3 Cold (cold_start_s=900)
+            #   turbine-4 Cold (cold_start_s=900)
             turbine_units=[
                 _turbine("turbine-0", rated_mw=15.0, r_mw_per_s=0.20,
-                         p_min_stable_frac=0.40, min_down_enabled=False),
+                         p_min_stable_frac=0.40, thermal_state="hot",  cold_start_s=300.0),
                 _turbine("turbine-1", rated_mw=15.0, r_mw_per_s=0.20,
-                         p_min_stable_frac=0.40, min_down_enabled=False),
-                _turbine("turbine-2", rated_mw=15.0, r_mw_per_s=0.15,
-                         p_min_stable_frac=0.40, min_down_enabled=False),
+                         p_min_stable_frac=0.40, thermal_state="warm", cold_start_s=600.0),
+                _turbine("turbine-2", rated_mw=15.0, r_mw_per_s=0.20,
+                         p_min_stable_frac=0.40, thermal_state="warm"),
+                _turbine("turbine-3", rated_mw=15.0, r_mw_per_s=0.20,
+                         p_min_stable_frac=0.40, thermal_state="cold"),
+                _turbine("turbine-4", rated_mw=15.0, r_mw_per_s=0.20,
+                         p_min_stable_frac=0.40, thermal_state="cold"),
             ],
             solar_rated_mw=_SOLAR_DEMO,
             end_sim_time=300.0,
