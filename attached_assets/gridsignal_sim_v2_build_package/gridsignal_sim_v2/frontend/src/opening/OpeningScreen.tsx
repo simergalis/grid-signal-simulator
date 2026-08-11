@@ -240,7 +240,7 @@ function SystemStrip({ ids, data, onTileClick }: SystemStripProps) {
               {/* ⓘ info button — floats above top-right corner of tile */}
               <InfoBtn
                 id={id}
-                style={{ position: 'absolute', top: 7, right: 7, zIndex: 3 }}
+                style={{ position: 'absolute', top: 6, right: 6, zIndex: 3, width: 11, height: 11, fontSize: 6 }}
               />
             </div>
           )
