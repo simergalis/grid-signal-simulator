@@ -59,18 +59,19 @@ export function InfoBtn({ id, style }: { id: string; style?: CSSProperties }) {
         height: 14,
         borderRadius: '50%',
         cursor: 'pointer',
-        border: `1px solid ${active ? '#3fb6a8' : '#4a9fe0'}`,
-        color: active ? '#3fb6a8' : '#4a9fe0',
-        background: active ? 'rgba(63,182,168,0.12)' : 'rgba(74,159,224,0.08)',
-        fontSize: 8,
+        background: active ? '#3fb6a8' : '#4a9fe0',
+        color: '#fff',
+        fontSize: 9,
+        fontWeight: 700,
+        fontStyle: 'italic',
         lineHeight: 1,
         flexShrink: 0,
         userSelect: 'none' as const,
-        transition: 'color 0.15s, border-color 0.15s, background 0.15s',
+        transition: 'background 0.15s',
         ...style,
       }}
     >
-      ⓘ
+      i
     </span>
   )
 }
