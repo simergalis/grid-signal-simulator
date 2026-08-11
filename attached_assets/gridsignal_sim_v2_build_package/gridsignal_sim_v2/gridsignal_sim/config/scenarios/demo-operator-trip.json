@@ -27,7 +27,7 @@
   "turbine_units": [
     {
       "asset_id": "turbine-0",
-      "rated_mw": 7.0,
+      "rated_mw": 15.0,
       "r_asset_mw_per_s": 0.2,
       "run_hours_h": null,
       "hot_standby": false,
@@ -49,7 +49,7 @@
     },
     {
       "asset_id": "turbine-1",
-      "rated_mw": 7.0,
+      "rated_mw": 15.0,
       "r_asset_mw_per_s": 0.2,
       "run_hours_h": null,
       "hot_standby": false,
@@ -71,7 +71,7 @@
     },
     {
       "asset_id": "turbine-2",
-      "rated_mw": 7.0,
+      "rated_mw": 15.0,
       "r_asset_mw_per_s": 0.15,
       "run_hours_h": null,
       "hot_standby": false,

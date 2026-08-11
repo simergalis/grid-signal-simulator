@@ -690,11 +690,11 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             # units so operators can restart a recently tripped unit within the demo
             # window without waiting for the 900-second cooling period (D-03 flag).
             turbine_units=[
-                _turbine("turbine-0", rated_mw=7.0, r_mw_per_s=0.20,
+                _turbine("turbine-0", rated_mw=15.0, r_mw_per_s=0.20,
                          p_min_stable_frac=0.40, min_down_enabled=False),
-                _turbine("turbine-1", rated_mw=7.0, r_mw_per_s=0.20,
+                _turbine("turbine-1", rated_mw=15.0, r_mw_per_s=0.20,
                          p_min_stable_frac=0.40, min_down_enabled=False),
-                _turbine("turbine-2", rated_mw=7.0, r_mw_per_s=0.15,
+                _turbine("turbine-2", rated_mw=15.0, r_mw_per_s=0.15,
                          p_min_stable_frac=0.40, min_down_enabled=False),
             ],
             solar_rated_mw=_SOLAR_DEMO,
