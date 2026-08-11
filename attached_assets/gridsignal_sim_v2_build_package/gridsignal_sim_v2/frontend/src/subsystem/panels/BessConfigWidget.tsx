@@ -161,8 +161,8 @@ export function BessConfigWidget() {
 
       {/* Section header */}
       <div style={{
-        ...MONO, fontSize: 9, fontWeight: 700, letterSpacing: '0.12em',
-        textTransform: 'uppercase', color: DIM, marginBottom: 14,
+        ...MONO, fontSize: 18, fontWeight: 700, letterSpacing: '0.12em',
+        textTransform: 'uppercase', color: DIM, marginBottom: 18,
       }}>
         Choose a sizing profile for the next run
       </div>
@@ -171,8 +171,8 @@ export function BessConfigWidget() {
       <div style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: 8,
-        marginBottom: 14,
+        gap: 10,
+        marginBottom: 16,
       }}>
         {PRESETS.map(p => {
           const active = selectedId === p.id
@@ -186,8 +186,8 @@ export function BessConfigWidget() {
               style={{
                 background:   active ? 'rgba(74,159,224,0.08)' : CANVAS,
                 border:       `1px solid ${active ? BATT : BORDER}`,
-                borderRadius: 6,
-                padding:      '10px 12px',
+                borderRadius: 7,
+                padding:      '14px 16px',
                 cursor:       'pointer',
                 transition:   'border-color 0.15s, background 0.15s',
                 position:     'relative',
@@ -197,41 +197,41 @@ export function BessConfigWidget() {
               {/* Active dot */}
               {active && (
                 <div style={{
-                  position: 'absolute', top: 8, right: 9,
-                  width: 7, height: 7, borderRadius: '50%',
+                  position: 'absolute', top: 10, right: 12,
+                  width: 9, height: 9, borderRadius: '50%',
                   background: BATT,
                 }} />
               )}
 
               {/* Label */}
               <div style={{
-                ...MONO, fontSize: 11, fontWeight: 700,
+                ...MONO, fontSize: 18, fontWeight: 700,
                 color: active ? BATT : TEXT,
-                marginBottom: 4,
+                marginBottom: 5,
               }}>
                 {p.label}
               </div>
 
               {/* Tag / C-rate */}
               <div style={{
-                ...MONO, fontSize: 9, color: DIM,
-                marginBottom: 7, lineHeight: 1.4,
+                ...MONO, fontSize: 14, color: DIM,
+                marginBottom: 10, lineHeight: 1.4,
               }}>
                 {p.tag}
               </div>
 
               {/* MW / MWh values */}
               {p.ratedMw !== null ? (
-                <div style={{ marginBottom: 8 }}>
-                  <span style={{ ...MONO, fontSize: 16, fontWeight: 700, color: active ? BATT : TEXT }}>
+                <div style={{ marginBottom: 10 }}>
+                  <span style={{ ...MONO, fontSize: 24, fontWeight: 700, color: active ? BATT : TEXT }}>
                     {p.ratedMw} MW
                   </span>
-                  <span style={{ ...MONO, fontSize: 11, color: LABEL, marginLeft: 4 }}>
+                  <span style={{ ...MONO, fontSize: 16, color: LABEL, marginLeft: 6 }}>
                     / {p.usableMwh} MWh
                   </span>
                 </div>
               ) : (
-                <div style={{ ...MONO, fontSize: 13, color: LABEL, marginBottom: 8 }}>
+                <div style={{ ...MONO, fontSize: 20, color: LABEL, marginBottom: 10 }}>
                   — / —
                 </div>
               )}
@@ -240,13 +240,13 @@ export function BessConfigWidget() {
               {p.ratedMw !== null && (
                 <div style={{
                   display:      'inline-block',
-                  ...MONO, fontSize: 9,
+                  ...MONO, fontSize: 14,
                   color:        active ? BATT : LABEL,
                   background:   active ? 'rgba(74,159,224,0.12)' : 'rgba(74,159,224,0.04)',
                   border:       `1px solid ${active ? 'rgba(74,159,224,0.3)' : 'rgba(74,159,224,0.1)'}`,
-                  borderRadius: 3,
-                  padding:      '2px 6px',
-                  marginBottom: 8,
+                  borderRadius: 4,
+                  padding:      '3px 8px',
+                  marginBottom: 10,
                 }}>
                   bridge {p.bridgeMin}
                 </div>
@@ -254,8 +254,8 @@ export function BessConfigWidget() {
 
               {/* Description */}
               <div style={{
-                ...MONO, fontSize: 9, color: DIM,
-                lineHeight: 1.5,
+                ...MONO, fontSize: 13, color: DIM,
+                lineHeight: 1.55,
               }}>
                 {p.desc}
               </div>
@@ -269,19 +269,19 @@ export function BessConfigWidget() {
         <div style={{
           background: CANVAS,
           border:     `1px solid ${BATT}`,
-          borderRadius: 6,
-          padding:    '12px 14px',
-          marginBottom: 12,
+          borderRadius: 7,
+          padding:    '16px 18px',
+          marginBottom: 14,
         }}>
           <div style={{
-            ...MONO, fontSize: 9, color: LABEL, marginBottom: 10,
+            ...MONO, fontSize: 14, color: LABEL, marginBottom: 12,
             textTransform: 'uppercase', letterSpacing: '0.1em',
           }}>
             Custom values
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <div>
-              <div style={{ ...MONO, fontSize: 10, color: LABEL, marginBottom: 5 }}>
+              <div style={{ ...MONO, fontSize: 16, color: LABEL, marginBottom: 7 }}>
                 Rated power (MW)
               </div>
               <input
@@ -289,8 +289,8 @@ export function BessConfigWidget() {
                 style={{
                   width: '100%', boxSizing: 'border-box' as const,
                   background: '#0a0f14', border: `1px solid ${BORDER}`,
-                  borderRadius: 4, padding: '7px 10px',
-                  ...MONO, fontSize: 15, color: TEXT, outline: 'none',
+                  borderRadius: 5, padding: '9px 12px',
+                  ...MONO, fontSize: 20, color: TEXT, outline: 'none',
                 }}
                 value={customMwStr}
                 placeholder="e.g. 5.0"
@@ -301,7 +301,7 @@ export function BessConfigWidget() {
               />
             </div>
             <div>
-              <div style={{ ...MONO, fontSize: 10, color: LABEL, marginBottom: 5 }}>
+              <div style={{ ...MONO, fontSize: 16, color: LABEL, marginBottom: 7 }}>
                 Usable capacity (MWh)
               </div>
               <input
@@ -309,8 +309,8 @@ export function BessConfigWidget() {
                 style={{
                   width: '100%', boxSizing: 'border-box' as const,
                   background: '#0a0f14', border: `1px solid ${BORDER}`,
-                  borderRadius: 4, padding: '7px 10px',
-                  ...MONO, fontSize: 15, color: TEXT, outline: 'none',
+                  borderRadius: 5, padding: '9px 12px',
+                  ...MONO, fontSize: 20, color: TEXT, outline: 'none',
                 }}
                 value={customMwhStr}
                 placeholder="e.g. 5.0"
@@ -327,16 +327,16 @@ export function BessConfigWidget() {
       {/* Live C-rate + active override status */}
       {liveC !== null && (
         <div style={{
-          ...MONO, fontSize: 10,
+          ...MONO, fontSize: 16,
           color:      cRateColour(liveC),
           background: liveC >= 0.25 && liveC <= 4
             ? 'rgba(63,182,168,0.07)' : 'rgba(240,136,62,0.07)',
           border: `1px solid ${liveC >= 0.25 && liveC <= 4
             ? 'rgba(63,182,168,0.2)' : 'rgba(240,136,62,0.2)'}`,
-          borderRadius: 4, padding: '5px 10px',
+          borderRadius: 5, padding: '7px 12px',
           display: 'flex', justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: 8,
+          marginBottom: 10,
         }}>
           <span>
             {liveC.toFixed(2)} C-rate
@@ -353,18 +353,18 @@ export function BessConfigWidget() {
       {/* Footer row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         {selectedId !== null ? (
-          <div style={{ ...MONO, fontSize: 9, color: BATT }}>
+          <div style={{ ...MONO, fontSize: 15, color: BATT }}>
             ● Override active — applies when you start the next run.
           </div>
         ) : (
-          <div style={{ ...MONO, fontSize: 9, color: DIM }}>
+          <div style={{ ...MONO, fontSize: 15, color: DIM }}>
             No override — scenario's stored BESS settings will be used.
           </div>
         )}
         {selectedId !== null && (
           <span
             role="button"
-            style={{ ...MONO, fontSize: 9, color: LABEL, cursor: 'pointer', textDecoration: 'underline' }}
+            style={{ ...MONO, fontSize: 15, color: LABEL, cursor: 'pointer', textDecoration: 'underline' }}
             onClick={clearAll}
           >
             Clear
