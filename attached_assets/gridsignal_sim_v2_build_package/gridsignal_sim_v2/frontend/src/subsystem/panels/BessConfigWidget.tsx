@@ -132,13 +132,11 @@ function cRateOk(c: number) { return c >= 0.25 && c <= 4 }
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function BessConfigWidget() {
-  const ratedMw      = useBessConfigStore(s => s.ratedMw)
-  const usableMwh    = useBessConfigStore(s => s.usableMwh)
-  const setRatedMw   = useBessConfigStore(s => s.setRatedMw)
-  const setUsableMwh = useBessConfigStore(s => s.setUsableMwh)
-
-  // Which preset is currently saved (highlighted card)
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const ratedMw        = useBessConfigStore(s => s.ratedMw)
+  const usableMwh      = useBessConfigStore(s => s.usableMwh)
+  const selectedId     = useBessConfigStore(s => s.selectedPresetId)
+  const applyPreset    = useBessConfigStore(s => s.applyPreset)
+  const clearOverride  = useBessConfigStore(s => s.clearOverride)
 
   // Edit modal state
   const [editing,  setEditing]  = useState<Preset | null>(null)
@@ -185,9 +183,7 @@ export function BessConfigWidget() {
   function handleSave() {
     const mw  = editMw  !== '' ? Number(editMw)  : null
     const mwh = editMwh !== '' ? Number(editMwh) : null
-    setRatedMw(mw)
-    setUsableMwh(mwh)
-    setSelectedId(editing?.id ?? null)
+    applyPreset(editing?.id ?? null, mw, mwh)
     setEditing(null)
   }
 
@@ -396,7 +392,7 @@ export function BessConfigWidget() {
             <span
               role="button"
               style={{ ...MONO, fontSize: 15, color: LABEL, cursor: 'pointer', textDecoration: 'underline' }}
-              onClick={() => { setSelectedId(null); setRatedMw(null); setUsableMwh(null) }}
+              onClick={clearOverride}
             >
               Clear
             </span>
