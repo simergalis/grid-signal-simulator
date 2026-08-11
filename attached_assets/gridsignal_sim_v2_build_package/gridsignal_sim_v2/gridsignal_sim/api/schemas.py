@@ -788,6 +788,13 @@ class ScenarioSpec(BaseModel):
         ),
     )
 
+    # UI hint: operator BESS config widget seeds these values when this scenario
+    # is selected, overriding the global default (30 MW / 30 MWh Freq. Anchor).
+    # Null / absent = fall back to the global UI default.  Does not affect
+    # physics — only the initial operator-facing override shown in the widget.
+    ui_bess_rated_mw:  Optional[float] = Field(default=None, ge=0.0)
+    ui_bess_usable_mwh: Optional[float] = Field(default=None, ge=0.0)
+
     @model_validator(mode="after")
     def _single_grid_forming_anchor(self) -> "ScenarioSpec":
         """§7.1.2: only one BESS unit may be the grid-forming anchor."""

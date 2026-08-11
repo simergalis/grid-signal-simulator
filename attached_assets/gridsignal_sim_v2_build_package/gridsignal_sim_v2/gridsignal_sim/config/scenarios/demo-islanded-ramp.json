@@ -670,5 +670,7 @@
       "threshold": 0.2
     }
   ],
-  "fabric_scenario_id": null
+  "fabric_scenario_id": null,
+  "ui_bess_rated_mw": 50,
+  "ui_bess_usable_mwh": 50
 }

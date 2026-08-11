@@ -14,6 +14,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useTickStore } from '../store/tickStore'
 import { useScenarioStore } from '../store/scenarioStore'
+import { useBessConfigStore } from '../store/bessConfigStore'
 import { NODES, FLOWS, LEADTIME_BOX, WATCHING_BOX, DIAGRAM_W, DIAGRAM_H } from './plantLayout'
 import { FlowLine, FlowMarkers } from './FlowLine'
 import { PlantNode } from './PlantNode'
@@ -258,6 +259,7 @@ function LeadTimeCallout({
   const appendGccEvent   = useTickStore(s => s.appendGccEvent)
   const triggerGccFlash  = useTickStore(s => s.triggerGccFlash)
   const selectedId       = useScenarioStore(s => s.selectedId)
+  const applyBessPreset  = useBessConfigStore(s => s.applyPreset)
 
   // ── Landing-state tracking ─────────────────────────────────────────────────
   // When Δt_lead transitions from > 0 to 0, show STEP-LOAD LANDED for 30 s.
@@ -275,21 +277,31 @@ function LeadTimeCallout({
   // passed to the scheduler-summary modal so Claude can reason about solar headroom.
   const [solarRatedMw, setSolarRatedMw] = useState<number>(0)
 
-  // Fetch solar_rated_mw whenever the selected scenario changes.
-  // We only need a single spec field — the fetch is lightweight (cached by browser).
+  // Fetch spec fields whenever the selected scenario changes:
+  //   • solar_rated_mw   — passed to the scheduler-summary modal for Claude headroom reasoning
+  //   • ui_bess_rated_mw / ui_bess_usable_mwh — seeds the BESS config widget with the
+  //     scenario's preferred starting values (falls back to global default 30/30 when absent)
   useEffect(() => {
-    if (!selectedId) { setSolarRatedMw(0); return }
+    if (!selectedId) {
+      setSolarRatedMw(0)
+      applyBessPreset('freq-anchor', 30, 30)
+      return
+    }
     let cancelled = false
     fetch(`/scenarios/${selectedId}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
-        if (!cancelled && data?.spec?.solar_rated_mw != null) {
-          setSolarRatedMw(data.spec.solar_rated_mw)
+        if (!cancelled) {
+          if (data?.spec?.solar_rated_mw != null) setSolarRatedMw(data.spec.solar_rated_mw)
+          // Seed BESS widget: use scenario ui_bess_* if present, else global default
+          const mw  = data?.spec?.ui_bess_rated_mw  ?? 30
+          const mwh = data?.spec?.ui_bess_usable_mwh ?? 30
+          applyBessPreset('freq-anchor', mw, mwh)
         }
       })
       .catch(() => {/* silently ignore — solar context is enhancement only */})
     return () => { cancelled = true }
-  }, [selectedId])
+  }, [selectedId, applyBessPreset])
   const atRestScrollRef  = useRef<HTMLDivElement>(null)
   // Track State-1 transitions so we log only on entry, not every render.
   const prevIsState1    = useRef<boolean | null>(null)  // null = not yet evaluated
