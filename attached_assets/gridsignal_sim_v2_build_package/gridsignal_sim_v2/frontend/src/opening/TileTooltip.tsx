@@ -21,7 +21,7 @@ import { TILE_TOOLTIPS }   from './tileTooltipContent'
 // ── Shared style constants ────────────────────────────────────────────────────
 
 const MONO: CSSProperties = { fontFamily: "'SF Mono','Roboto Mono',Menlo,Consolas,monospace" }
-const TOOLTIP_W = 284
+const TOOLTIP_W = 360
 const GAP       = 10   // px from viewport edges / anchor
 
 // ── InfoBtn ───────────────────────────────────────────────────────────────────
@@ -151,7 +151,7 @@ export function TileTooltip() {
         }}>
           <div style={{
             ...MONO,
-            fontSize: 9,
+            fontSize: 18,
             fontWeight: 700,
             letterSpacing: '0.12em',
             color: '#3fb6a8',
@@ -203,7 +203,7 @@ export function TileTooltip() {
         {/* Body */}
         <div style={{
           padding: '10px 13px 12px',
-          fontSize: 11,
+          fontSize: 22,
           color: '#9ab4c8',
           lineHeight: 1.65,
         }}>
@@ -215,7 +215,7 @@ export function TileTooltip() {
           <div style={{
             padding: '0 13px 10px',
             ...MONO,
-            fontSize: 8,
+            fontSize: 16,
             color: '#e0a45875',
             letterSpacing: '0.06em',
           }}>
