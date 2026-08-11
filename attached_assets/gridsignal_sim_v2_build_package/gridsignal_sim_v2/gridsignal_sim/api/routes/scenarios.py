@@ -201,6 +201,77 @@ def _evt_unit_trip(t: float, asset_id: str) -> WorkloadEventSpec:
     )
 
 
+def _evt_job_end(job_id: str, t: float) -> WorkloadEventSpec:
+    return WorkloadEventSpec(
+        event_id=f"evt-{job_id}-end",
+        job_id=job_id,
+        event_type="job_end",
+        timestamp=t,
+        node_count=0,
+    )
+
+
+def _operator_trip_events() -> list[WorkloadEventSpec]:
+    """Generate the 97-event workload timeline for demo-operator-trip.
+
+    Timeline (all times in seconds):
+      P1  floor       t=0        job-base 50 nodes starts
+      idle            0–1028 s   (10 min floor)
+      P2  ramp-up     1028–2828  +950 nodes, 19 × 50 at 100 s intervals
+      idle            2828–3257  (7 min)
+      P3  reduce      3257–4157  −500 nodes, 10 × 50 at 100 s intervals
+      idle            4157–4585  (7 min)
+      P4  increase    4585–5485  +500 nodes, 10 × 50 at 100 s intervals
+      idle            5485–5914  (7 min)
+      P5  reduce      5914–6814  −950 nodes, 19 × 50 at  50 s intervals
+      idle            6814–7242  (7 min)
+      P6  ramp-up     7242–8142  +950 nodes, 19 × 50 at  50 s intervals
+      idle            8142–8570  (7 min)
+      P7  wind-down   8570–10370 −950 nodes, 19 × 50 at 100 s intervals
+      tail            10370–10800 job-base only (50 nodes)
+    """
+    # Phase anchor timestamps (seconds)
+    P2_T0 = round(17.14 * 60, 1)   # 1028.4 s
+    P3_T0 = round(54.28 * 60, 1)   # 3256.8 s
+    P4_T0 = round(76.42 * 60, 1)   # 4585.2 s
+    P5_T0 = round(98.56 * 60, 1)   # 5913.6 s
+    P6_T0 = round(120.70 * 60, 1)  # 7242.0 s
+    P7_T0 = round(142.84 * 60, 1)  # 8570.4 s
+
+    events: list[WorkloadEventSpec] = []
+
+    # ── P1: floor ────────────────────────────────────────────────────────────
+    events.append(_evt_start("job-base", 50, t=0.0))
+
+    # ── P2: ramp 50 → 1,000 (19 × 50 nodes, 100 s) ──────────────────────────
+    for i in range(19):
+        events.append(_evt_start(f"job-p2-{i+1:02d}", 50, t=round(P2_T0 + i * 100, 1)))
+
+    # ── P3: reduce 1,000 → 500 (end 10 P2 jobs, 100 s) ──────────────────────
+    for i in range(10):
+        events.append(_evt_job_end(f"job-p2-{i+1:02d}", t=round(P3_T0 + i * 100, 1)))
+
+    # ── P4: increase 500 → 1,000 (10 × 50 nodes, 100 s) ─────────────────────
+    for i in range(10):
+        events.append(_evt_start(f"job-p4-{i+1:02d}", 50, t=round(P4_T0 + i * 100, 1)))
+
+    # ── P5: reduce 1,000 → 50 (end 9 remaining P2 + 10 P4 jobs, 50 s) ───────
+    p5_jobs = [f"job-p2-{i+1:02d}" for i in range(10, 19)] + \
+              [f"job-p4-{i+1:02d}" for i in range(10)]
+    for i, jid in enumerate(p5_jobs):
+        events.append(_evt_job_end(jid, t=round(P5_T0 + i * 50, 1)))
+
+    # ── P6: ramp 50 → 1,000 (19 × 50 nodes, 50 s) ───────────────────────────
+    for i in range(19):
+        events.append(_evt_start(f"job-p6-{i+1:02d}", 50, t=round(P6_T0 + i * 50, 1)))
+
+    # ── P7: wind-down 1,000 → 50 (end 19 P6 jobs, 100 s) ────────────────────
+    for i in range(19):
+        events.append(_evt_job_end(f"job-p6-{i+1:02d}", t=round(P7_T0 + i * 100, 1)))
+
+    return events
+
+
 def _bess(
     asset_id: str,
     rated_mw: float,
@@ -680,31 +751,31 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
         ScenarioSpec(
             name="demo-operator-trip",
             description=(
-                "This scenario demonstrates the operator manual turbine control feature, "
-                "giving operators direct command over individual generators during a live run. "
-                "A cluster of 600 GPU nodes draws roughly 6 MW, and three gas turbines commit "
-                "in sequence as load rises: turbine-0 and turbine-1 are 7 MW standard-ramp "
-                "units; turbine-2 is a 7 MW unit with a slightly slower ramp rate, representing "
-                "an older or derated frame. Once all three units are synchronised on bus, the "
-                "operator can trip any online unit using the Trip button in the Gas Turbine Fleet "
-                "panel — the tripped unit's output drops to zero immediately and the battery "
-                "bridges the gap while the remaining generators absorb the slack. The operator "
-                "can then use the Start button on the offline unit to re-enter it into the "
-                "starting sequence; it ramps back onto the bus normally over subsequent ticks. "
-                "All three units have the minimum-down constraint disabled so the operator can "
-                "restart a recently tripped unit without waiting, making the trip–start cycle "
-                "easy to observe within the 300-second run window. This matters because generator "
-                "trips are a routine occurrence in real facilities, and the ability to take a "
-                "unit offline manually — for maintenance, protection testing, or load rebalancing "
-                "— and restore it without interrupting the compute job is a fundamental operational "
-                "requirement."
+                "This scenario demonstrates the operator manual turbine control feature "
+                "across a full three-hour operational cycle, giving operators direct command "
+                "over individual generators while the compute workload rises and falls in "
+                "structured phases. The site starts with a 50-node floor, ramps to 1,000 "
+                "nodes over 30 minutes, steps down to 500 and back up to 1,000, collapses "
+                "to 50 and recovers a second time, then winds down to 50 again — with idle "
+                "periods between each phase. Across five 15 MW gas turbines, the two fastest "
+                "to start (turbine-0, already hot; turbine-1, warm) come online first, while "
+                "the three cold units commit sequentially as load demands it. At any point "
+                "the operator can trip a synchronised turbine using the Trip button in the "
+                "Gas Turbine Fleet panel — its output drops to zero on the next tick and the "
+                "battery bridges the shortfall — or start an offline unit with the Start "
+                "button, re-entering it into the normal ramp-up sequence. The varied workload "
+                "phases provide multiple natural windows to exercise both commands under "
+                "different demand conditions. This matters because generator trips are routine "
+                "in real facilities, and manual control of individual units — for protection "
+                "testing, maintenance scheduling, or load rebalancing — must be available "
+                "without interrupting the compute workload."
             ),
-            workload_events=[_evt_start("job-op-trip", _DEMO_NODES)],
-            dt_lead_seconds=30.0,
-            bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
+            workload_events=_operator_trip_events(),
+            dt_lead_seconds=45.0,
+            bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=14.0, grid_forming=True)],
             # 5-unit fleet — 75 MW total rated, N-1 rated 60 MW.
             # PW-1 / §15: p_min_stable_frac=0.40 → MSL 6.0 MW per unit (30 MW fleet).
-            # Thermal states from structure report (line 158 update):
+            # Thermal states from structure report:
             #   turbine-0 Hot  (cold_start_s=300 — fast-start frame)
             #   turbine-1 Warm (cold_start_s=600)
             #   turbine-2 Warm (cold_start_s=900 — standard frame, pre-warmed)
@@ -722,9 +793,8 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
                 _turbine("turbine-4", rated_mw=15.0, r_mw_per_s=0.20,
                          p_min_stable_frac=0.40, thermal_state="cold"),
             ],
-            solar_rated_mw=_SOLAR_DEMO,
-            end_sim_time=300.0,
-            load_config=LoadProfileConfigSpec(),
+            solar_rated_mw=15.0,
+            end_sim_time=10800.0,   # 3 hours
             frequency_nominal_hz=60.0,
             power_factor=0.85,
             gpu_load_profile=[],   # full GPU load throughout (no throttling)
