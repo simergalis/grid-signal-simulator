@@ -243,18 +243,28 @@ _SUMMARY_SYSTEM = (
     "You will receive:\n"
     "  1. A chronological 'Scheduler Feed' log — events showing GPU job admissions, "
     "turbine start-ups, battery (BESS) activity, and power-cap pauses.\n"
-    "  2. Current live sensor readings from the simulation.\n\n"
+    "  2. Current live sensor readings from the simulation.\n"
+    "  3. SYSTEM CONFIGURATION — the installed capacity of the BESS (battery) and "
+    "Solar PV plant. Use these figures as context when reasoning about whether the "
+    "system is comfortable, stressed, or near its limits. For example: if BESS output "
+    "is close to its rated MW, the battery is near full discharge rate; if solar output "
+    "is much lower than its rated capacity, generation is significantly curtailed.\n\n"
     "Write a clear, friendly summary (4–6 sentences, single paragraph) covering:\n"
     "  · What happened in order — what jobs ran, what the turbines and battery did.\n"
-    "  · How the system is performing right now — comfortable or stressed?\n"
+    "  · How the system is performing right now — comfortable or stressed — "
+    "referencing installed capacity where relevant (e.g. 'the battery is discharging "
+    "at 80% of its 5 MW rated power').\n"
     "  · Any anomalies — unserved loads, power caps, admission stalls.\n"
     "  · One sentence on what this means operationally for the data centre.\n\n"
     "Rules:\n"
     "  · Plain English only — no bullet lists, no headings, no markdown.\n"
-    "  · Use only the MW figures provided in LIVE SENSOR READINGS. "
-    "Do not recompute, rederive, or invent any quantity not explicitly given.\n"
+    "  · Use only the MW figures provided in LIVE SENSOR READINGS and SYSTEM "
+    "CONFIGURATION. Do not recompute, rederive, or invent any quantity not explicitly "
+    "given.\n"
     "  · Do not convert MW into home-equivalents or any other real-world analogy — "
     "no unsourced constants.\n"
+    "  · When referencing percentages of capacity, calculate from the figures given "
+    "in SYSTEM CONFIGURATION only.\n"
     "  · 'Queued demand' and 'deferred jobs' are the scheduler's controlled mitigation, "
     "not a failure state. Deferred admission is fully reversible; describe it as the "
     "system managing its queue, not as job rejection or impending collapse.\n"
@@ -270,6 +280,9 @@ _SUMMARY_SYSTEM = (
 class SchedulerSummaryRequest(BaseModel):
     feed_entries: list[dict] = []   # [{ts: str, body: str}, ...]
     tick: dict | None = None        # full current tick snapshot
+    # Installed-capacity context — not always available in the tick, so the
+    # frontend passes them explicitly.  0.0 = unknown / not configured.
+    solar_rated_mw: float = 0.0    # Solar PV nameplate rated capacity (MW)
 
 
 class SchedulerSummaryResponse(BaseModel):
@@ -330,6 +343,44 @@ def _call_anthropic_summary(req_data: "SchedulerSummaryRequest", api_key: str) -
 
         if readings:
             parts.append("LIVE SENSOR READINGS:\n" + "\n".join(readings))
+
+    # ── SYSTEM CONFIGURATION block ─────────────────────────────────────────
+    # Pull BESS capacity from the tick (broadcast per-tick since Phase 4) and
+    # solar rated capacity from the request field (not in the tick payload).
+    config_lines: list[str] = []
+    if req_data.tick:
+        t = req_data.tick
+        bess_rated   = t.get("bess_rated_mw")
+        bess_usable  = t.get("bess_usable_mwh")
+        bess_anchor  = t.get("bess_anchor_reserve_mw")
+        bess_soc     = t.get("bess_soc_fraction")
+        design_peak  = t.get("design_peak_load_mw")
+
+        if bess_rated is not None:
+            config_lines.append(f"  BESS rated power (MW): {bess_rated:.2f} MW  "
+                                 "(maximum discharge/charge rate)")
+        if bess_usable is not None:
+            config_lines.append(f"  BESS usable energy: {bess_usable:.2f} MWh  "
+                                 "(total storable energy; full discharge ≈ "
+                                 f"{bess_usable / bess_rated:.1f} h at rated power)"
+                                 if bess_rated and bess_rated > 0 else
+                                 f"  BESS usable energy: {bess_usable:.2f} MWh")
+        if bess_anchor is not None and bess_anchor > 0:
+            config_lines.append(f"  BESS anchor reserve (permanently withheld): "
+                                 f"{bess_anchor:.2f} MW  "
+                                 "(held for grid-forming frequency regulation, §7.1.2)")
+        if bess_soc is not None:
+            config_lines.append(f"  BESS current state of charge: "
+                                 f"{bess_soc * 100:.1f}%")
+        if design_peak is not None and design_peak > 0:
+            config_lines.append(f"  Site design peak load: {design_peak:.2f} MW")
+
+    if req_data.solar_rated_mw and req_data.solar_rated_mw > 0:
+        config_lines.append(f"  Solar PV rated capacity: {req_data.solar_rated_mw:.2f} MW  "
+                             "(nameplate output under ideal irradiance)")
+
+    if config_lines:
+        parts.append("SYSTEM CONFIGURATION:\n" + "\n".join(config_lines))
 
     user_msg = "\n\n".join(parts) + "\n\nWrite the plain-English summary paragraph:"
 

@@ -26,6 +26,8 @@ interface Props {
   feedEntries: FeedEntry[]
   tick: TickPayload | null
   onClose: () => void
+  /** Solar PV nameplate rated capacity (MW) — passed to Claude as capacity context. */
+  solarRatedMw?: number
 }
 
 const FONT_MIN = 11
@@ -43,7 +45,7 @@ function splitSentences(text: string): string[] {
     .filter(Boolean)
 }
 
-export function SchedulerSummaryModal({ feedEntries, tick, onClose }: Props) {
+export function SchedulerSummaryModal({ feedEntries, tick, onClose, solarRatedMw = 0 }: Props) {
   const [summary,  setSummary]  = useState<string | null>(null)
   const [error,    setError]    = useState<string | null>(null)
   const [loading,  setLoading]  = useState(true)
@@ -61,6 +63,7 @@ export function SchedulerSummaryModal({ feedEntries, tick, onClose }: Props) {
           body: JSON.stringify({
             feed_entries: feedEntries,
             tick: tick ?? null,
+            solar_rated_mw: solarRatedMw,
           }),
         })
         if (!res.ok) {

@@ -257,6 +257,7 @@ function LeadTimeCallout({
   const acknowledgeAlert = useTickStore(s => s.acknowledgeAlert)
   const appendGccEvent   = useTickStore(s => s.appendGccEvent)
   const triggerGccFlash  = useTickStore(s => s.triggerGccFlash)
+  const selectedId       = useScenarioStore(s => s.selectedId)
 
   // ── Landing-state tracking ─────────────────────────────────────────────────
   // When Δt_lead transitions from > 0 to 0, show STEP-LOAD LANDED for 30 s.
@@ -270,6 +271,25 @@ function LeadTimeCallout({
   // ── NO STEP-LOAD INCOMING scrolling log ───────────────────────────────────
   const [atRestLog, setAtRestLog] = useState<Array<{ ts: string; body: string }>>([])
   const [showSummaryModal, setShowSummaryModal] = useState(false)
+  // Solar PV rated capacity — fetched from scenario spec when selection changes,
+  // passed to the scheduler-summary modal so Claude can reason about solar headroom.
+  const [solarRatedMw, setSolarRatedMw] = useState<number>(0)
+
+  // Fetch solar_rated_mw whenever the selected scenario changes.
+  // We only need a single spec field — the fetch is lightweight (cached by browser).
+  useEffect(() => {
+    if (!selectedId) { setSolarRatedMw(0); return }
+    let cancelled = false
+    fetch(`/scenarios/${selectedId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!cancelled && data?.spec?.solar_rated_mw != null) {
+          setSolarRatedMw(data.spec.solar_rated_mw)
+        }
+      })
+      .catch(() => {/* silently ignore — solar context is enhancement only */})
+    return () => { cancelled = true }
+  }, [selectedId])
   const atRestScrollRef  = useRef<HTMLDivElement>(null)
   // Track State-1 transitions so we log only on entry, not every render.
   const prevIsState1    = useRef<boolean | null>(null)  // null = not yet evaluated
@@ -884,6 +904,7 @@ function LeadTimeCallout({
           <SchedulerSummaryModal
             feedEntries={atRestLog as FeedEntry[]}
             tick={tick}
+            solarRatedMw={solarRatedMw}
             onClose={() => setShowSummaryModal(false)}
           />
         )}
