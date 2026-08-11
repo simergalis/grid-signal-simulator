@@ -245,7 +245,7 @@ export function BessConfigWidget() {
                   }} />
                 )}
 
-                {/* ⓘ info button */}
+                {/* ⓘ info button — solid blue circle with white i */}
                 {PRESET_TOOLTIPS[p.id] && (
                   <span
                     role="button"
@@ -253,12 +253,19 @@ export function BessConfigWidget() {
                     style={{
                       position: 'absolute', top: 8,
                       right: active ? 28 : 10,
-                      fontSize: 15, fontWeight: 700,
-                      color: '#4a9fe0',
-                      cursor: 'help',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: 16, height: 16,
+                      borderRadius: '50%',
+                      background: '#4a9fe0',
+                      color: '#fff',
+                      fontSize: 11, fontWeight: 700, fontStyle: 'italic',
                       lineHeight: 1,
+                      cursor: 'help',
                       userSelect: 'none',
                       zIndex: 2,
+                      flexShrink: 0,
                     }}
                     onMouseEnter={e => {
                       e.stopPropagation()
@@ -267,7 +274,7 @@ export function BessConfigWidget() {
                     onMouseLeave={() => setTipState(null)}
                     onClick={e => e.stopPropagation()}
                   >
-                    ⓘ
+                    i
                   </span>
                 )}
 
