@@ -502,10 +502,10 @@ export function ComputeRacksModal({ tick, onClose }: Props) {
               <table className="w-full text-sm border-separate border-spacing-0">
                 <thead>
                   <tr>
-                    {['Tenant / cage', 'Scheduler', 'MW draw', 'Forecast (60s)', 'Consent tier', ''].map((h, i) => (
+                    {['Tenant / cage', 'Scheduler', 'MW draw', 'GPU nodes', 'Forecast (60s)', 'Consent tier', ''].map((h, i) => (
                       <th key={i} className={[
                         'text-left pb-2 pr-4 text-[11px] font-medium uppercase tracking-wider text-muted border-b border-border',
-                        i === 5 ? 'text-right pr-0' : '',
+                        i === 6 ? 'text-right pr-0' : '',
                       ].join(' ')}>{h}</th>
                     ))}
                   </tr>
@@ -513,10 +513,20 @@ export function ComputeRacksModal({ tick, onClose }: Props) {
                 <tbody>
                   {visibleRows.map(t => {
                     // Per-tenant MW: from job rollup (full) or tick frac (metered)
+                    const jobs = t.tier === 'full' ? deriveJobs(t, siteMW * t.frac) : []
                     const tenantMW = t.tier === 'full'
-                      ? deriveJobs(t, siteMW * t.frac).reduce((s, j) => s + j.tdpMW, 0)
+                      ? jobs.reduce((s, j) => s + j.tdpMW, 0)
                       : siteMW * t.frac
                     const forecast = t.tier === 'full' ? tenantMW * t.forecastMult : null
+                    // GPU node count: exact from job rollup (full) or estimated from MW (metered)
+                    const gpuNodes = t.tier === 'full'
+                      ? jobs.reduce((s, j) => s + j.gpus, 0)
+                      : Math.round(tenantMW / GPU_TDP_MW)
+                    const gpuLabel = tenantMW < 0.0001
+                      ? '—'
+                      : t.tier === 'full'
+                        ? gpuNodes.toLocaleString()
+                        : `~${gpuNodes.toLocaleString()}`
                     return (
                       <tr key={t.id} className="group border-b border-border hover:bg-white/[0.025] transition-colors">
                         <td className="py-4 pr-4">
@@ -536,6 +546,15 @@ export function ComputeRacksModal({ tick, onClose }: Props) {
                         </td>
                         <td className="py-4 pr-4">
                           <span className="font-mono font-semibold text-text tabular-nums">{fmtMW(tenantMW)}</span>
+                        </td>
+                        <td className="py-4 pr-4">
+                          <span
+                            className="font-mono tabular-nums"
+                            style={{ color: t.tier === 'full' ? '#c8d6e5' : '#4b5764' }}
+                            title={t.tier === 'metered' ? 'Estimated from circuit MW ÷ 700 W/GPU (H100 TDP). Scheduler data not shared.' : 'Exact count from job rollup'}
+                          >
+                            {gpuLabel}
+                          </span>
                         </td>
                         <td className="py-4 pr-4">
                           {forecast !== null
