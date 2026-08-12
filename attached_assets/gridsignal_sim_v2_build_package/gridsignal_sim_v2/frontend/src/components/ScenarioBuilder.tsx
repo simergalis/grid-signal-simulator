@@ -257,6 +257,7 @@ const DURATION_OPTIONS = [
   { label: '3 hours',  value: 10800 },
   { label: '4 hours',  value: 14400 },
   { label: 'No limit', value: 1e15  },
+  { label: 'Other…',   value: -1    },
 ]
 
 const SPEED_OPTIONS = [
@@ -267,10 +268,10 @@ const SPEED_OPTIONS = [
   { label: 'MAX (no limit)',  value: 0  },
 ]
 
-/** Find the closest DURATION_OPTIONS entry, falling back to the raw value. */
+/** Find the closest DURATION_OPTIONS preset value, or -1 (Other) if none match. */
 function nearestDuration(v: number): number {
-  const match = DURATION_OPTIONS.find(o => Math.abs(o.value - v) < 1)
-  return match ? match.value : v
+  const match = DURATION_OPTIONS.find(o => o.value !== -1 && Math.abs(o.value - v) < 1)
+  return match ? match.value : -1
 }
 
 // ── Known hardware profiles ───────────────────────────────────────────────────
@@ -325,6 +326,9 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
   const [gpuEditorOpen, setGpuEditorOpen] = useState(false)
   const [aiBusy,        setAiBusy]        = useState(false)
   const [aiErr,         setAiErr]         = useState<string | null>(null)
+  // Custom run-length state — used when "Other…" is selected in the Run length dropdown.
+  // Stored in seconds (same unit as end_sim_time).
+  const [customSecs,    setCustomSecs]    = useState<number>(60)
 
   // If editing, load the existing spec
   useEffect(() => {
@@ -338,6 +342,10 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
         const loaded = d.spec as ScenarioSpec
         setSpec({ ...loaded, pms_config: (loaded as ScenarioSpec & { pms_config?: typeof loaded.pms_config }).pms_config ?? null })
         setWarnings(d.c_rate_warnings ?? [])
+        // If the saved end_sim_time doesn't match any preset, prime the custom input.
+        if (nearestDuration(loaded.end_sim_time) === -1) {
+          setCustomSecs(loaded.end_sim_time)
+        }
         // Re-seed physicsParams from the loaded spec so editing preserves existing values.
         const defaults = defaultPhysicsParams()
         setPhysicsParams({
@@ -878,11 +886,24 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                   onChange={v => patch({ solar_rated_mw: v })} />
 
                 {/* Run length — mapped to end_sim_time */}
-                <label className="flex flex-col gap-0.5">
+                <div className="flex flex-col gap-0.5">
                   <span className="text-[10px] text-muted">Run length</span>
                   <select
                     value={nearestDuration(spec.end_sim_time)}
-                    onChange={e => patch({ end_sim_time: Number(e.target.value) })}
+                    onChange={e => {
+                      const v = Number(e.target.value)
+                      if (v === -1) {
+                        // "Other…" selected — seed the custom input with the
+                        // current value (or 60 s if it was a preset).
+                        const seed = nearestDuration(spec.end_sim_time) === -1
+                          ? spec.end_sim_time
+                          : 60
+                        setCustomSecs(seed)
+                        patch({ end_sim_time: seed })
+                      } else {
+                        patch({ end_sim_time: v })
+                      }
+                    }}
                     className="w-full rounded border border-border bg-canvas px-2 py-1 text-xs text-text
                                focus:outline-none focus:ring-1 focus:ring-accent"
                   >
@@ -890,7 +911,27 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                       <option key={o.value} value={o.value}>{o.label}</option>
                     ))}
                   </select>
-                </label>
+                  {nearestDuration(spec.end_sim_time) === -1 && (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <input
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={customSecs}
+                        onChange={e => {
+                          const raw = Math.floor(Number(e.target.value))
+                          if (raw >= 1) {
+                            setCustomSecs(raw)
+                            patch({ end_sim_time: raw })
+                          }
+                        }}
+                        className="w-full rounded border border-border bg-canvas px-2 py-1 text-xs text-text
+                                   focus:outline-none focus:ring-1 focus:ring-accent"
+                      />
+                      <span className="text-[10px] text-muted whitespace-nowrap">s</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Playback speed stored with the scenario */}
