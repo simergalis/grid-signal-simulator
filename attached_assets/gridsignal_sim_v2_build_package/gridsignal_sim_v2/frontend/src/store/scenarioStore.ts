@@ -11,13 +11,16 @@
  */
 
 import { create } from 'zustand'
-import type { ScenarioSpec, ScenarioSummary, CreateScenarioResponse } from '../types'
+import type { ScenarioSpec, ScenarioSummary, CreateScenarioResponse, ScenarioDetailResponse } from '../types'
 
 const BASE = ''   // same-origin API; no prefix needed
 
 interface ScenarioState {
   scenarios: ScenarioSummary[]
   selectedId: string | null
+  /** Full spec of the selected scenario — fetched on selection, used by
+   *  RunControlBar to read generator_config at run start. */
+  selectedSpec: ScenarioSpec | null
   isLoading: boolean
   error: string | null
   /** Copy shown in the plant-diagram "WHAT YOU ARE WATCHING / DEMONSTRATES" box. */
@@ -26,6 +29,7 @@ interface ScenarioState {
   // ── Actions ───────────────────────────────────────────────────────────
   fetchScenarios: () => Promise<void>
   selectScenario: (id: string | null) => void
+  fetchSelectedSpec: () => Promise<void>
   setWatchingText: (text: string | null) => void
   createScenario: (spec: ScenarioSpec) => Promise<CreateScenarioResponse>
   updateScenario: (id: string, spec: ScenarioSpec) => Promise<CreateScenarioResponse>
@@ -35,6 +39,7 @@ interface ScenarioState {
 export const useScenarioStore = create<ScenarioState>((set, get) => ({
   scenarios: [],
   selectedId: null,
+  selectedSpec: null,
   isLoading: false,
   error: null,
   watchingText: null,
@@ -50,14 +55,35 @@ export const useScenarioStore = create<ScenarioState>((set, get) => ({
       // Auto-select demo-20mw (most interesting demo) then fall back to first.
       if (!get().selectedId && data.length > 0) {
         const preferred = data.find(s => s.scenario_id === 'demo-20mw')
-        set({ selectedId: preferred ? preferred.scenario_id : data[0].scenario_id })
+        const newId = preferred ? preferred.scenario_id : data[0].scenario_id
+        set({ selectedId: newId })
+        get().fetchSelectedSpec()
       }
     } catch (e) {
       set({ error: String(e), isLoading: false })
     }
   },
 
-  selectScenario: (id) => set({ selectedId: id }),
+  selectScenario: (id) => {
+    set({ selectedId: id, selectedSpec: null })
+    if (id) get().fetchSelectedSpec()
+  },
+
+  fetchSelectedSpec: async () => {
+    const { selectedId } = get()
+    if (!selectedId) return
+    try {
+      const resp = await fetch(`${BASE}/scenarios/${selectedId}`)
+      if (!resp.ok) return
+      const data = await resp.json() as ScenarioDetailResponse
+      // Guard: only apply if selectedId hasn't changed while we were fetching
+      if (get().selectedId === selectedId) {
+        set({ selectedSpec: data.spec })
+      }
+    } catch {
+      // Non-critical — RunControlBar will fall back to manual generator start
+    }
+  },
 
   createScenario: async (spec) => {
     const resp = await fetch(`${BASE}/scenarios`, {

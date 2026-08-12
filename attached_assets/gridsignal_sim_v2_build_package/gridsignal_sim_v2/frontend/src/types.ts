@@ -513,6 +513,16 @@ export interface KubeJobSpec {
 // Alias kept for backwards compat; backend field is kube_config
 export type KubeConfigSpec = KubeJobSpec
 
+/** A scripted GPU burst job assigned to a specific colo tenant. */
+export interface TenantWorkloadEvent {
+  tenant_id: string           // 'a'–'e' for catalogued tenants, or custom
+  scheduler: string | null    // 'Slurm' | 'Kubernetes' | 'Ray' | null
+  label: string               // human-readable job name
+  gpus: number                // H100 SXM5 count
+  t_start: number             // simulation seconds at job start
+  duration_s: number          // job duration in simulation seconds
+}
+
 export interface ScenarioSpec {
   name: string
   description: string
@@ -554,6 +564,15 @@ export interface ScenarioSpec {
 
   // ── Site parameters ──────────────────────────────────────────────────────
   site_latitude?: number              // degrees N (default 37.39 = SV1 Silicon Valley)
+
+  // ── Tenant workload events (Approach 1 — scripted burst jobs) ──────────────
+  tenant_events?: TenantWorkloadEvent[]
+
+  // ── GPU Generator preset (Approach 2 — stochastic auto-start) ─────────────
+  // Opaque shape matching GeneratorConfig in gpuGeneratorStore.ts.
+  // null / absent = no auto-start; generator must be started manually.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  generator_config?: Record<string, any> | null
   site_utc_offset_h?: number          // UTC offset hours (default -8.0 = PST)
   ambient_temp_base_c?: number        // nighttime dry-bulb base °C (default 14.0)
 

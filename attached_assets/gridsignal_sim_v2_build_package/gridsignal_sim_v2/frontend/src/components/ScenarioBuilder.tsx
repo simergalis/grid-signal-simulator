@@ -22,10 +22,63 @@
 
 import { useEffect, useState } from 'react'
 import { useScenarioStore } from '../store/scenarioStore'
-import type { BessUnitSpec, KubeJobSpec, TurbineUnitSpec, ScenarioSpec } from '../types'
+import type { BessUnitSpec, KubeJobSpec, TurbineUnitSpec, ScenarioSpec, TenantWorkloadEvent } from '../types'
 import { ParameterModal, defaultPhysicsParams } from './ParameterModal'
 import type { PhysicsParams } from './ParameterModal'
 import { GpuLoadEditorModal } from './GpuLoadEditorModal'
+
+// ── Tenant catalogue (mirrors ComputeRacksModal SHOWN_TENANTS) ────────────────
+const TENANT_CATALOGUE = [
+  { id: 'a', name: 'Tenant A', scheduler: 'Slurm',      contractedMW: 1.40 },
+  { id: 'b', name: 'Tenant B', scheduler: 'Kubernetes', contractedMW: 1.00 },
+  { id: 'c', name: 'Tenant C', scheduler: 'Ray',        contractedMW: 0.60 },
+  { id: 'd', name: 'Tenant D', scheduler: null,         contractedMW: 0.80 },
+  { id: 'e', name: 'Tenant E', scheduler: null,         contractedMW: 0.45 },
+] as const
+type GenPresetKey = 'steady' | 'burst' | 'peak'
+const GPU_TDP_MW_BUILDER = 0.0007   // H100 SXM5 TDP per GPU
+
+// ── GPU Generator presets ─────────────────────────────────────────────────────
+const GEN_PRESETS: Record<GenPresetKey, {
+  label: string; desc: string; config: Record<string, unknown>
+}> = {
+  steady: {
+    label: 'Steady workday',
+    desc: '40–60 % of contract, slow drift',
+    config: {
+      ratePerMinute: 2, burstMode: false,
+      burstSize: [3, 8], burstIntervalSeconds: [30, 90],
+      tenantWeights: { a: 0.40, b: 0.35, c: 0.25 },
+      jobSizes: { small: 0.40, medium: 0.40, large: 0.20 },
+      maxJobsPerTenant: 8, jobDurationRange: [60, 180],
+      tenantContracts: { a: 1.40, b: 1.00, c: 0.60 },
+    },
+  },
+  burst: {
+    label: 'Burst storm',
+    desc: '80–95 % of contract, bursts every 30–90 s',
+    config: {
+      ratePerMinute: 6, burstMode: true,
+      burstSize: [4, 10], burstIntervalSeconds: [30, 90],
+      tenantWeights: { a: 0.40, b: 0.35, c: 0.25 },
+      jobSizes: { small: 0.20, medium: 0.40, large: 0.40 },
+      maxJobsPerTenant: 15, jobDurationRange: [90, 300],
+      tenantContracts: { a: 1.40, b: 1.00, c: 0.60 },
+    },
+  },
+  peak: {
+    label: 'Peak day',
+    desc: 'A + B near ceiling, C ramps mid-run',
+    config: {
+      ratePerMinute: 4, burstMode: false,
+      burstSize: [3, 8], burstIntervalSeconds: [30, 90],
+      tenantWeights: { a: 0.45, b: 0.40, c: 0.15 },
+      jobSizes: { small: 0.15, medium: 0.45, large: 0.40 },
+      maxJobsPerTenant: 20, jobDurationRange: [120, 360],
+      tenantContracts: { a: 1.40, b: 1.00, c: 0.60 },
+    },
+  },
+}
 
 // ── C-rate helper ─────────────────────────────────────────────────────────────
 
@@ -379,6 +432,17 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
   const setGpuLoadProfile = (pts: [number, number][]) => {
     patch({ gpu_load_profile: pts.length > 0 ? pts : undefined })
   }
+
+  // ── Tenant event mutations ────────────────────────────────────────────────
+  const tenantEvents: TenantWorkloadEvent[] = spec.tenant_events ?? []
+  const addTenantEvent = () =>
+    patch({ tenant_events: [...tenantEvents, { tenant_id: 'a', scheduler: 'Slurm', label: '', gpus: 256, t_start: 30, duration_s: 120 }] })
+  const removeTenantEvent = (i: number) =>
+    patch({ tenant_events: tenantEvents.filter((_, idx) => idx !== i) })
+  const patchTenantEvent = (i: number, partial: Partial<TenantWorkloadEvent>) =>
+    patch({ tenant_events: tenantEvents.map((ev, idx) => idx === i ? { ...ev, ...partial } : ev) })
+  const setGeneratorPreset = (key: GenPresetKey | null) =>
+    patch({ generator_config: key === null ? null : { ...GEN_PRESETS[key].config } })
 
   // ── Demo description helpers ──────────────────────────────────────────────
 
@@ -1038,6 +1102,131 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                   ]}
                   onChange={v => patch({ pms_config: { transition_mode: v as 'open_transition' | 'closed_transition' } })}
                 />
+              )}
+            </div>
+          </section>
+
+          {/* ── Section 5: Tenant Workload Events ───────────────────────── */}
+          <section>
+            <SectionHeader title="Tenant Workload Events" />
+            <div className="space-y-2">
+              <p className="text-[9px] text-muted leading-relaxed">
+                Script GPU burst jobs per tenant. Each event adds GPU TDP to site compute MW
+                during its window. Validated against contracted power ceilings at save time.
+              </p>
+              {tenantEvents.map((ev, i) => {
+                const cat = TENANT_CATALOGUE.find(t => t.id === ev.tenant_id)
+                const ceilingMW = cat?.contractedMW ?? 0.20
+                const tdpMW = ev.gpus * GPU_TDP_MW_BUILDER
+                const pct = Math.min(1, tdpMW / ceilingMW)
+                const barCol = pct > 0.85 ? '#f85149' : pct > 0.70 ? '#f0a500' : '#3fb6a8'
+                return (
+                  <div key={i} className="rounded border border-border bg-canvas p-2 space-y-1.5">
+                    <div className="flex gap-2">
+                      <div className="flex flex-col gap-0.5 flex-1">
+                        <span className="text-[10px] text-muted">Tenant</span>
+                        <select
+                          className="w-full rounded border border-border bg-surface px-1.5 py-0.5 text-xs text-text focus:outline-none focus:ring-1 focus:ring-accent"
+                          value={ev.tenant_id}
+                          onChange={e => {
+                            const t = TENANT_CATALOGUE.find(c => c.id === e.target.value)
+                            patchTenantEvent(i, { tenant_id: e.target.value, scheduler: t?.scheduler ?? null })
+                          }}
+                        >
+                          {TENANT_CATALOGUE.map(t => (
+                            <option key={t.id} value={t.id}>
+                              {t.name} · {t.scheduler ?? 'metered'}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex flex-col gap-0.5 flex-[2]">
+                        <span className="text-[10px] text-muted">Job label</span>
+                        <input type="text"
+                          className="w-full rounded border border-border bg-surface px-1.5 py-0.5 text-xs text-text focus:outline-none focus:ring-1 focus:ring-accent"
+                          placeholder="e.g. llm-finetune-70B"
+                          value={ev.label}
+                          onChange={e => patchTenantEvent(i, { label: e.target.value })}
+                        />
+                      </div>
+                      <button onClick={() => removeTenantEvent(i)}
+                        className="self-end text-muted hover:text-danger transition-colors text-sm"
+                        aria-label="Remove event">×</button>
+                    </div>
+                    <div className="flex gap-2">
+                      {([
+                        ['GPUs', 'gpus', 1, 64, ev.gpus],
+                        ['t start (s)', 't_start', 0, 10, ev.t_start],
+                        ['Duration (s)', 'duration_s', 1, 30, ev.duration_s],
+                      ] as [string, keyof TenantWorkloadEvent, number, number, number][]).map(([label, key, min, step, val]) => (
+                        <div key={key} className="flex flex-col gap-0.5 flex-1">
+                          <span className="text-[10px] text-muted">{label}</span>
+                          <input type="number" min={min} step={step}
+                            className="w-full rounded border border-border bg-surface px-1.5 py-0.5 text-xs text-text focus:outline-none focus:ring-1 focus:ring-accent"
+                            value={val}
+                            onChange={e => patchTenantEvent(i, { [key]: Math.max(min, parseFloat(e.target.value) || min) } as Partial<TenantWorkloadEvent>)}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-[3px] rounded-full bg-border/60 overflow-hidden">
+                        <div style={{ width: `${pct * 100}%`, background: barCol, height: '100%', borderRadius: 9999, transition: 'width 0.3s' }} />
+                      </div>
+                      <span className="text-[10px] font-mono shrink-0 tabular-nums" style={{ color: barCol }}>
+                        {tdpMW.toFixed(3)} / {ceilingMW.toFixed(2)} MW · {Math.round(pct * 100)}%
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+              <button className="text-[10px] text-accent hover:underline" onClick={addTenantEvent}>
+                + Add tenant job
+              </button>
+            </div>
+          </section>
+
+          {/* ── Section 6: GPU Generator Preset ─────────────────────────── */}
+          <section>
+            <SectionHeader title="GPU Generator Preset" />
+            <div className="space-y-2">
+              <p className="text-[9px] text-muted leading-relaxed">
+                Auto-arms the GPU Generator when this scenario starts. Runs
+                stochastically alongside any scripted tenant events above.
+              </p>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" className="accent-accent"
+                  checked={spec.generator_config != null}
+                  onChange={e => setGeneratorPreset(e.target.checked ? 'steady' : null)}
+                />
+                <span className="text-xs text-text">Enable GPU Generator auto-start</span>
+              </label>
+              {spec.generator_config != null && (
+                <div className="space-y-2 pt-2 border-t border-border">
+                  <span className="text-[10px] text-muted block">Preset</span>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(Object.entries(GEN_PRESETS) as [GenPresetKey, typeof GEN_PRESETS[GenPresetKey]][]).map(([key, p]) => {
+                      const active = JSON.stringify(spec.generator_config) === JSON.stringify(p.config)
+                      return (
+                        <button key={key} type="button" onClick={() => setGeneratorPreset(key)}
+                          className="rounded border px-2 py-1.5 text-left transition-colors"
+                          style={active
+                            ? { borderColor: '#3fb6a8', background: '#3fb6a815' }
+                            : { borderColor: 'var(--border)' }
+                          }
+                        >
+                          <div className="text-[10px] font-semibold" style={{ color: active ? '#3fb6a8' : 'var(--text)' }}>
+                            {p.label}
+                          </div>
+                          <div className="text-[9px] text-muted mt-0.5">{p.desc}</div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <p className="text-[9px] text-muted">
+                    Fine-tune sliders with the ⚡ GPU Generator button in the Compute Racks modal during the run.
+                  </p>
+                </div>
               )}
             </div>
           </section>

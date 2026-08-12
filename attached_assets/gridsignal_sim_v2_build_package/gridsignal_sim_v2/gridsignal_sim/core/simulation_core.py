@@ -57,6 +57,25 @@ from .droop import (
 
 
 @dataclass
+class TenantBurstEvent:
+    """Lightweight runtime representation of a scripted tenant workload event.
+
+    Translated from TenantWorkloadEvent (api/schemas.py) at run-start by
+    scenario_factory.py.  Stored on SimulationState.tenant_events and consumed
+    each tick in evaluate_tick() — contributes gpus × 0.0007 MW to
+    p_compute_demand_mw during [t_start, t_start + duration_s).
+    """
+    tenant_id: str
+    gpus: int
+    t_start: float
+    duration_s: float
+
+    @property
+    def tdp_mw(self) -> float:
+        return self.gpus * 0.0007
+
+
+@dataclass
 class SimulationState:
     """The full set of asset modules + engines for one run. This is the
     part of RunContext (runtime/run_manager.py) that evaluate_tick()
@@ -130,6 +149,12 @@ class SimulationState:
     # Populated from ScenarioSpec.gpu_load_profile at run start; all existing
     # scripted scenarios and tests omit it (empty = no-op, fully backward-compat).
     gpu_load_profile: list[tuple[float, float]] = field(default_factory=list)
+
+    # Scripted tenant workload events — each adds GPU TDP to p_compute_demand_mw
+    # during [t_start, t_start + duration_s).  Populated from
+    # ScenarioSpec.tenant_events at run start via scenario_factory.py.
+    # Empty list = no extra tenant load (default; fully backward-compat).
+    tenant_events: list = field(default_factory=list)  # list[TenantBurstEvent]
 
     # Phase 11.3 — frequency state for the swing equation (islanded mode only).
     # Persisted on SimulationState so df/dt integration accumulates correctly
@@ -557,6 +582,20 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         # Scale per-job draws so the cooling model sees the same throttled GPU heat
         # output — not the full-TDP value before the profile was applied.
         _per_job_draws = {k: v * _gpu_load_fraction for k, v in _per_job_draws.items()}
+
+    # ── Scripted tenant workload events ────────────────────────────────────────
+    # Each TenantBurstEvent contributes gpus × 0.0007 MW during its active window.
+    # Added AFTER gpu_load_fraction scaling so the profile throttles only the base
+    # cluster load; tenant burst jobs are not throttled by the operator load profile.
+    # No-op when tenant_events is empty (all existing tests and scenarios unaffected).
+    if state.tenant_events:
+        _tenant_extra_mw = sum(
+            ev.tdp_mw
+            for ev in state.tenant_events
+            if ev.t_start <= sim_time < ev.t_start + ev.duration_s
+        )
+        if _tenant_extra_mw > 0.0:
+            p_compute_demand_mw += _tenant_extra_mw
 
     state.cooling.record_job_compute(sim_time, _per_job_draws)
 

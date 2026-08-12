@@ -43,7 +43,7 @@ from core.models import (
 )
 from core.kube_demand import KubeConfig, KubeDemandAgent
 from core.step_config import LoadProfileConfig, StepTimingConfig
-from core.simulation_core import SimulationState
+from core.simulation_core import SimulationState, TenantBurstEvent
 import core.site_parameters as _sp  # GS-DES-CFG-001 §Phase-6
 from pydantic import TypeAdapter
 
@@ -653,6 +653,22 @@ def build_run_context_from_spec(
         sim_state.gpu_load_profile = sorted(
             (float(t), float(f)) for t, f in _gpu_load_raw
         )
+
+    # ── Tenant workload events ────────────────────────────────────────────
+    # Translate ScenarioSpec.tenant_events dicts into TenantBurstEvent instances
+    # and store on sim_state so evaluate_tick() can add their MW each tick.
+    _tenant_events_raw = spec_data.get("tenant_events", [])
+    if _tenant_events_raw:
+        sim_state.tenant_events = [
+            TenantBurstEvent(
+                tenant_id=str(ev.get("tenant_id", "")),
+                gpus=int(ev.get("gpus", 0)),
+                t_start=float(ev.get("t_start", 0.0)),
+                duration_s=float(ev.get("duration_s", 60.0)),
+            )
+            for ev in _tenant_events_raw
+            if int(ev.get("gpus", 0)) > 0
+        ]
 
     # ── Kubernetes demand agent ───────────────────────────────────────────
     # Created after SimulationState so site_id is available.

@@ -388,6 +388,45 @@ class DqInjectEvent(BaseModel):
     tag:     str   = Field(description="DataQualityTag value string to inject.")
 
 
+# ── Tenant workload event support ─────────────────────────────────────────────
+# Mirror of frontend ComputeRacksModal SHOWN_TENANTS contractedMW values.
+# The GPU_TDP_MW constant is the only place in the backend that encodes the
+# H100 SXM5 TDP — any change here must match the frontend GPU_TDP_MW constant.
+TENANT_CONTRACTED_MW: dict[str, float] = {
+    "a": 1.40, "b": 1.00, "c": 0.60, "d": 0.80, "e": 0.45,
+}
+_DEFAULT_TENANT_CONTRACTED_MW = 0.20   # fallback for custom / unlisted tenant IDs
+_GPU_TDP_MW = 0.0007                   # H100 SXM5 TDP per GPU in MW
+
+
+class TenantWorkloadEvent(BaseModel):
+    """A scripted GPU burst job assigned to a specific colo tenant.
+
+    Contributes tdp_mw = gpus × 0.0007 MW to p_compute_demand_mw during the
+    window [t_start, t_start + duration_s).  Validated against
+    TENANT_CONTRACTED_MW at save time — the scenario is rejected if the event
+    would push the tenant over its contracted power ceiling.
+    """
+    tenant_id: str = Field(
+        description="Tenant ID ('a'–'e' for catalogued tenants, or a custom string)."
+    )
+    scheduler: Optional[str] = Field(
+        default=None,
+        description="Scheduler name for display ('Slurm', 'Kubernetes', 'Ray', or null).",
+    )
+    label: str = Field(
+        default="",
+        description="Human-readable job name (e.g. 'llm-finetune-70B burst').",
+    )
+    gpus: int = Field(ge=1, description="Number of H100 SXM5 GPUs allocated.")
+    t_start: float = Field(ge=0.0, description="Simulation time at job start (seconds).")
+    duration_s: float = Field(ge=1.0, description="Job duration (seconds).")
+
+    @property
+    def tdp_mw(self) -> float:
+        return self.gpus * _GPU_TDP_MW
+
+
 class ScenarioSpec(BaseModel):
     """Full scenario configuration.  Stored as spec_json in ScenarioRecord.
     Posted to POST /scenarios or PUT /scenarios/{id}.
@@ -773,8 +812,33 @@ class ScenarioSpec(BaseModel):
         default=None, ge=0, le=23,
         description=(
             "Fix the UTC hour passed to generate_solar_forecast(). "
-            "Use 20 for UTC 20:00 = 12:00 PST San Diego solar noon. "
+            "Use 20 for UTC 20:00 = 12:00 PST SV1 solar noon (America/Los_Angeles). "
             "None = real wall-clock UTC (default for all other scenarios)."
+        ),
+    )
+
+    # ── Approach 1: Scripted tenant workload events ───────────────────────────
+    # Each event adds its GPU TDP to p_compute_demand_mw during its active window.
+    # Validated against TENANT_CONTRACTED_MW ceilings at save time.
+    tenant_events: list[TenantWorkloadEvent] = Field(
+        default_factory=list,
+        description=(
+            "Scripted GPU burst jobs per colo tenant. Each event contributes "
+            "gpus × 0.0007 MW to p_compute_demand_mw during [t_start, t_start+duration_s). "
+            "Rejected at save if any event exceeds the tenant's contracted power ceiling."
+        ),
+    )
+
+    # ── Approach 2: GPU Generator preset auto-armed at run start ─────────────
+    # Frontend reads this at run start and auto-arms the GPU Generator store.
+    # Opaque JSON — shape matches GeneratorConfig in gpuGeneratorStore.ts.
+    # null / absent = no auto-start; operator must arm the generator manually.
+    generator_config: Optional[dict] = Field(
+        default=None,
+        description=(
+            "GPU Generator config auto-armed when the run starts. "
+            "Keys match GeneratorConfig in frontend/src/store/gpuGeneratorStore.ts. "
+            "null = no auto-start."
         ),
     )
 
@@ -802,6 +866,20 @@ class ScenarioSpec(BaseModel):
     # physics — only the initial operator-facing override shown in the widget.
     ui_bess_rated_mw:  Optional[float] = Field(default=None, ge=0.0)
     ui_bess_usable_mwh: Optional[float] = Field(default=None, ge=0.0)
+
+    @model_validator(mode="after")
+    def _check_tenant_ceilings(self) -> "ScenarioSpec":
+        """Reject any tenant event whose GPU TDP exceeds the contracted MW ceiling."""
+        for ev in self.tenant_events:
+            ceiling = TENANT_CONTRACTED_MW.get(ev.tenant_id.lower(), _DEFAULT_TENANT_CONTRACTED_MW)
+            if ev.tdp_mw > ceiling + 1e-6:
+                max_gpus = int(ceiling / _GPU_TDP_MW)
+                raise ValueError(
+                    f"Tenant {ev.tenant_id!r} event '{ev.label or ev.tenant_id}': "
+                    f"{ev.gpus} GPUs = {ev.tdp_mw:.3f} MW exceeds contracted ceiling "
+                    f"{ceiling:.2f} MW. Reduce to ≤ {max_gpus} GPUs."
+                )
+        return self
 
     @model_validator(mode="after")
     def _single_grid_forming_anchor(self) -> "ScenarioSpec":

@@ -21,6 +21,7 @@
 import { useEffect, useState } from 'react'
 import { useScenarioStore } from '../store/scenarioStore'
 import { useBessConfigStore } from '../store/bessConfigStore'
+import { useGpuGeneratorStore } from '../store/gpuGeneratorStore'
 
 const SPEED_OPTIONS = [
   { label: '1×',   value: 1 },
@@ -50,9 +51,10 @@ interface Props {
 }
 
 export function RunControlBar({ runId, lastRunId, onRunStarted, onRunStopped, onNewScenario, onViewResults }: Props) {
-  const scenarios    = useScenarioStore(s => s.scenarios)
-  const selectedId   = useScenarioStore(s => s.selectedId)
-  const isLoading    = useScenarioStore(s => s.isLoading)
+  const scenarios      = useScenarioStore(s => s.scenarios)
+  const selectedId     = useScenarioStore(s => s.selectedId)
+  const selectedSpec   = useScenarioStore(s => s.selectedSpec)
+  const isLoading      = useScenarioStore(s => s.isLoading)
   const selectScenario = useScenarioStore(s => s.selectScenario)
   const fetchScenarios = useScenarioStore(s => s.fetchScenarios)
 
@@ -90,6 +92,14 @@ export function RunControlBar({ runId, lastRunId, onRunStarted, onRunStopped, on
       }
       const data = await resp.json() as { run_id: string; soc_floor_pct?: number; soc_ceil_pct?: number }
       onRunStarted(data.run_id, speed, data.soc_floor_pct, data.soc_ceil_pct)
+      // Auto-arm the GPU Generator if the scenario has a generator_config preset
+      if (selectedSpec?.generator_config) {
+        const gen = useGpuGeneratorStore.getState()
+        gen.stop()
+        gen.reset()
+        gen.updateConfig(selectedSpec.generator_config as Parameters<typeof gen.updateConfig>[0])
+        gen.start()
+      }
     } catch (e) {
       setError(String(e))
     } finally {
