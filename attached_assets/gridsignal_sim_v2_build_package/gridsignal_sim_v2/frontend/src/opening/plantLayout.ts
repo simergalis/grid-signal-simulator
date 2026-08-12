@@ -145,7 +145,7 @@ export const NODES: NodeDef[] = [
   {
     id: 'compute-racks',
     x: 716, y: 62, w: 165, h: 90,
-    label: 'GPU CO-LOCATION DATA CENTER',
+    label: 'GPU CO-LOCATION', label2: 'DATA CENTER',
     mwField: 'p_compute_mw',
     staticMW: 0,   // at rest: nodes idle, 0 MW
     clickable: true, modalId: 'compute',
