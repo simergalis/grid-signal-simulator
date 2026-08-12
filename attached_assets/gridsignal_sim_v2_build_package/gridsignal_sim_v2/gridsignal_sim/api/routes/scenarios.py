@@ -925,6 +925,8 @@ def _seed_json_scenarios(store: ScenarioStore) -> None:
         ("demo-10-tenant-random-gpu", "demo-10-tenant-random-gpu.json"),
         # 10-tenant full-ceiling stress — tight BESS + 3-turbine fleet
         ("demo-10-tenant-full-ceiling", "demo-10-tenant-full-ceiling.json"),
+        # 10-tenant 120% overload burst — 15 min at 120% of generation nameplate
+        ("demo-10-tenant-overload-120pct", "demo-10-tenant-overload-120pct.json"),
     ]
 
     _cfg_dir = _Path("config/scenarios")
