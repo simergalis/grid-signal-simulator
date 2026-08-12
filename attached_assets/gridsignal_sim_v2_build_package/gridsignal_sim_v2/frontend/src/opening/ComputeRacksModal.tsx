@@ -614,7 +614,30 @@ export function ComputeRacksModal({ tick, onClose }: Props) {
                         </td>
                         <td className="py-4 pr-4">
                           {t.tier === 'full'
-                            ? <span className="text-text">Full</span>
+                            ? (
+                              <span className="inline-flex items-center">
+                                <span className="text-text">Full</span>
+                                <InfoTooltip>
+                                  <span className="text-[11px] font-semibold uppercase tracking-wider"
+                                    style={{ color: '#5a7a96' }}>
+                                    What is full telemetry sharing?
+                                  </span>
+                                  <span className="text-xs leading-relaxed" style={{ color: '#8ca8c0' }}>
+                                    This tenant has <strong style={{ color: '#c8d6e5' }}>opted in</strong> to
+                                    sharing their job queue, GPU node counts, and 60-second load forecasts
+                                    directly with GridSignal. Think of it as giving the grid operator a
+                                    real-time view into their scheduler — so the system can see a big
+                                    job coming <em>before</em> it starts drawing power.
+                                  </span>
+                                  <span className="text-xs leading-relaxed" style={{ color: '#8ca8c0' }}>
+                                    This lets GridSignal pre-position turbines and battery reserves
+                                    30–60 seconds earlier than it could from a power meter alone.
+                                    Data is used only for grid dispatch and is never shared with
+                                    other tenants.
+                                  </span>
+                                </InfoTooltip>
+                              </span>
+                            )
                             : (
                               <span className="inline-flex items-center">
                                 <span className="text-muted">Metered only</span>
