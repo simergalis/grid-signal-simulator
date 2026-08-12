@@ -1,0 +1,507 @@
+{
+  "name": "10-Tenant Random GPU Load — 3 h",
+  "description": "Stochastic GPU workload spread across 10 colo tenants (A–E catalogued, F–J custom at 0.20 MW contract each) over a 3-hour simulation. Each tenant runs 4–6 burst jobs with randomised start time, GPU count (≤ 85 % of contracted ceiling), and duration (seed=42). Exercises reserve-margin and cooling headroom across the full run window.",
+  "workload_events": [],
+  "hardware_profile_id": "enterprise_8gpu_air",
+  "dt_lead_seconds": 30.0,
+  "bess_units": [
+    {
+      "asset_id": "bess-1",
+      "rated_mw": 10.0,
+      "usable_mwh": 40.0,
+      "initial_soc_fraction": 0.8,
+      "grid_forming": false,
+      "p_anchor_reserve_mw": 1.0
+    }
+  ],
+  "turbine_units": [
+    {
+      "asset_id": "gt-1",
+      "rated_mw": 15.0,
+      "r_asset_mw_per_s": 0.2,
+      "run_hours_h": null,
+      "hot_standby": false,
+      "p_min_stable_frac": 0.4,
+      "t_min_run_s": 1800.0,
+      "min_run_enabled": true,
+      "t_min_down_s": 900.0,
+      "min_down_enabled": true,
+      "cold_start_s": null,
+      "warm_start_s": null,
+      "hot_start_s": null,
+      "thermal_state": "cold",
+      "power_factor": null,
+      "inertia_constant_s": null,
+      "droop_r": null,
+      "valve_actuation_tc_s": null,
+      "fuel_to_power_tc_s": null,
+      "max_instantaneous_load_step_mw": null
+    }
+  ],
+  "solar_rated_mw": 5.0,
+  "design_peak_load_mw": 20.0,
+  "irradiance_steps": [
+    [
+      0.0,
+      0.85
+    ]
+  ],
+  "gpu_load_profile": [],
+  "island_mode": false,
+  "frequency_nominal_hz": 60.0,
+  "uf_warning_hz": null,
+  "ufls_stage1_hz": null,
+  "island_collapse_hz": null,
+  "of_warning_hz": null,
+  "of_trip_hz": null,
+  "ufls_stages": null,
+  "relay_81u_threshold_hz": null,
+  "relay_81u_delay_s": null,
+  "power_factor": 0.85,
+  "pue_base": 1.35,
+  "end_sim_time": 10800.0,
+  "demo_description": "",
+  "default_playback_speed": 1.0,
+  "dt_thermal_seconds": 90.0,
+  "plant_dt_thermal_seconds": null,
+  "alpha_max": 0.2,
+  "plant_alpha_max": null,
+  "tau_seconds": 20.0,
+  "plant_tau_seconds": null,
+  "anchor_reserve_pct": 0.0,
+  "band_enabled": false,
+  "band_pct_calibrated": 0.0,
+  "band_mult_uncalibrated": 2.0,
+  "band_mult_unmapped_hw": 1.5,
+  "pre_staging_config": null,
+  "pms_config": null,
+  "procurement_config": null,
+  "maintenance_config": null,
+  "ramp_relaxation_config": null,
+  "kube_config": null,
+  "load_config": null,
+  "ambient_steps": [],
+  "cluster_gen_config": null,
+  "stressor_gen_config": null,
+  "param_sampling_config": null,
+  "telemetry_corruption_config": null,
+  "generation_block": null,
+  "calibrated": false,
+  "dq_inject_events": [],
+  "solar_origin_utc_hour": null,
+  "tenant_events": [
+    {
+      "tenant_id": "a",
+      "scheduler": "Slurm",
+      "label": "diffusion-train-242",
+      "gpus": 738,
+      "t_start": 38.0,
+      "duration_s": 950.0
+    },
+    {
+      "tenant_id": "a",
+      "scheduler": "Slurm",
+      "label": "inference-burst-704",
+      "gpus": 719,
+      "t_start": 2815.0,
+      "duration_s": 2184.0
+    },
+    {
+      "tenant_id": "a",
+      "scheduler": "Slurm",
+      "label": "diffusion-train-617",
+      "gpus": 1374,
+      "t_start": 3648.0,
+      "duration_s": 587.0
+    },
+    {
+      "tenant_id": "a",
+      "scheduler": "Slurm",
+      "label": "data-parallel-eval-529",
+      "gpus": 564,
+      "t_start": 6242.0,
+      "duration_s": 1832.0
+    },
+    {
+      "tenant_id": "a",
+      "scheduler": "Slurm",
+      "label": "llm-finetune-70B-877",
+      "gpus": 961,
+      "t_start": 7874.0,
+      "duration_s": 956.0
+    },
+    {
+      "tenant_id": "a",
+      "scheduler": "Slurm",
+      "label": "embedding-batch-320",
+      "gpus": 836,
+      "t_start": 10047.0,
+      "duration_s": 520.0
+    },
+    {
+      "tenant_id": "b",
+      "scheduler": "Kubernetes",
+      "label": "vision-pretrain-718",
+      "gpus": 468,
+      "t_start": 173.0,
+      "duration_s": 593.0
+    },
+    {
+      "tenant_id": "b",
+      "scheduler": "Kubernetes",
+      "label": "data-parallel-eval-227",
+      "gpus": 634,
+      "t_start": 3661.0,
+      "duration_s": 1859.0
+    },
+    {
+      "tenant_id": "b",
+      "scheduler": "Kubernetes",
+      "label": "fp8-quant-sweep-982",
+      "gpus": 751,
+      "t_start": 4467.0,
+      "duration_s": 986.0
+    },
+    {
+      "tenant_id": "b",
+      "scheduler": "Kubernetes",
+      "label": "llm-finetune-70B-777",
+      "gpus": 734,
+      "t_start": 7554.0,
+      "duration_s": 1809.0
+    },
+    {
+      "tenant_id": "b",
+      "scheduler": "Kubernetes",
+      "label": "diffusion-train-987",
+      "gpus": 597,
+      "t_start": 10078.0,
+      "duration_s": 717.0
+    },
+    {
+      "tenant_id": "c",
+      "scheduler": "Ray",
+      "label": "vision-pretrain-266",
+      "gpus": 412,
+      "t_start": 667.0,
+      "duration_s": 1671.0
+    },
+    {
+      "tenant_id": "c",
+      "scheduler": "Ray",
+      "label": "inference-burst-723",
+      "gpus": 407,
+      "t_start": 3553.0,
+      "duration_s": 1740.0
+    },
+    {
+      "tenant_id": "c",
+      "scheduler": "Ray",
+      "label": "embedding-batch-573",
+      "gpus": 543,
+      "t_start": 5811.0,
+      "duration_s": 1858.0
+    },
+    {
+      "tenant_id": "c",
+      "scheduler": "Ray",
+      "label": "data-parallel-eval-324",
+      "gpus": 412,
+      "t_start": 8748.0,
+      "duration_s": 1929.0
+    },
+    {
+      "tenant_id": "d",
+      "scheduler": null,
+      "label": "diffusion-train-941",
+      "gpus": 623,
+      "t_start": 1264.0,
+      "duration_s": 1952.0
+    },
+    {
+      "tenant_id": "d",
+      "scheduler": null,
+      "label": "inference-burst-316",
+      "gpus": 323,
+      "t_start": 3008.0,
+      "duration_s": 1202.0
+    },
+    {
+      "tenant_id": "d",
+      "scheduler": null,
+      "label": "reward-model-train-505",
+      "gpus": 871,
+      "t_start": 4915.0,
+      "duration_s": 1029.0
+    },
+    {
+      "tenant_id": "d",
+      "scheduler": null,
+      "label": "diffusion-train-862",
+      "gpus": 949,
+      "t_start": 6088.0,
+      "duration_s": 930.0
+    },
+    {
+      "tenant_id": "d",
+      "scheduler": null,
+      "label": "tokenizer-distil-697",
+      "gpus": 865,
+      "t_start": 8008.0,
+      "duration_s": 1894.0
+    },
+    {
+      "tenant_id": "d",
+      "scheduler": null,
+      "label": "embedding-batch-621",
+      "gpus": 699,
+      "t_start": 9543.0,
+      "duration_s": 1255.0
+    },
+    {
+      "tenant_id": "e",
+      "scheduler": null,
+      "label": "embedding-batch-742",
+      "gpus": 209,
+      "t_start": 1406.0,
+      "duration_s": 2122.0
+    },
+    {
+      "tenant_id": "e",
+      "scheduler": null,
+      "label": "inference-burst-494",
+      "gpus": 244,
+      "t_start": 3633.0,
+      "duration_s": 1244.0
+    },
+    {
+      "tenant_id": "e",
+      "scheduler": null,
+      "label": "rl-sweep-666",
+      "gpus": 358,
+      "t_start": 5428.0,
+      "duration_s": 1336.0
+    },
+    {
+      "tenant_id": "e",
+      "scheduler": null,
+      "label": "data-parallel-eval-868",
+      "gpus": 168,
+      "t_start": 7745.0,
+      "duration_s": 629.0
+    },
+    {
+      "tenant_id": "e",
+      "scheduler": null,
+      "label": "rl-sweep-545",
+      "gpus": 299,
+      "t_start": 10070.0,
+      "duration_s": 512.0
+    },
+    {
+      "tenant_id": "f",
+      "scheduler": "Slurm",
+      "label": "rl-sweep-612",
+      "gpus": 188,
+      "t_start": 8.0,
+      "duration_s": 1844.0
+    },
+    {
+      "tenant_id": "f",
+      "scheduler": "Slurm",
+      "label": "rl-sweep-961",
+      "gpus": 117,
+      "t_start": 3918.0,
+      "duration_s": 613.0
+    },
+    {
+      "tenant_id": "f",
+      "scheduler": "Slurm",
+      "label": "vision-pretrain-880",
+      "gpus": 235,
+      "t_start": 6618.0,
+      "duration_s": 798.0
+    },
+    {
+      "tenant_id": "f",
+      "scheduler": "Slurm",
+      "label": "data-parallel-eval-100",
+      "gpus": 113,
+      "t_start": 9395.0,
+      "duration_s": 1183.0
+    },
+    {
+      "tenant_id": "g",
+      "scheduler": "Kubernetes",
+      "label": "vision-pretrain-999",
+      "gpus": 154,
+      "t_start": 733.0,
+      "duration_s": 624.0
+    },
+    {
+      "tenant_id": "g",
+      "scheduler": "Kubernetes",
+      "label": "fp8-quant-sweep-180",
+      "gpus": 150,
+      "t_start": 2159.0,
+      "duration_s": 882.0
+    },
+    {
+      "tenant_id": "g",
+      "scheduler": "Kubernetes",
+      "label": "data-parallel-eval-884",
+      "gpus": 93,
+      "t_start": 4698.0,
+      "duration_s": 2032.0
+    },
+    {
+      "tenant_id": "g",
+      "scheduler": "Kubernetes",
+      "label": "data-parallel-eval-269",
+      "gpus": 104,
+      "t_start": 5593.0,
+      "duration_s": 1351.0
+    },
+    {
+      "tenant_id": "g",
+      "scheduler": "Kubernetes",
+      "label": "diffusion-train-652",
+      "gpus": 139,
+      "t_start": 7992.0,
+      "duration_s": 1613.0
+    },
+    {
+      "tenant_id": "g",
+      "scheduler": "Kubernetes",
+      "label": "vision-pretrain-548",
+      "gpus": 123,
+      "t_start": 10069.0,
+      "duration_s": 532.0
+    },
+    {
+      "tenant_id": "h",
+      "scheduler": "Ray",
+      "label": "vision-pretrain-121",
+      "gpus": 187,
+      "t_start": 182.0,
+      "duration_s": 849.0
+    },
+    {
+      "tenant_id": "h",
+      "scheduler": "Ray",
+      "label": "llm-finetune-70B-172",
+      "gpus": 222,
+      "t_start": 2631.0,
+      "duration_s": 1577.0
+    },
+    {
+      "tenant_id": "h",
+      "scheduler": "Ray",
+      "label": "llm-finetune-70B-980",
+      "gpus": 233,
+      "t_start": 3688.0,
+      "duration_s": 535.0
+    },
+    {
+      "tenant_id": "h",
+      "scheduler": "Ray",
+      "label": "reward-model-train-319",
+      "gpus": 156,
+      "t_start": 5506.0,
+      "duration_s": 876.0
+    },
+    {
+      "tenant_id": "h",
+      "scheduler": "Ray",
+      "label": "fp8-quant-sweep-690",
+      "gpus": 210,
+      "t_start": 7398.0,
+      "duration_s": 2271.0
+    },
+    {
+      "tenant_id": "h",
+      "scheduler": "Ray",
+      "label": "tokenizer-distil-294",
+      "gpus": 193,
+      "t_start": 9364.0,
+      "duration_s": 890.0
+    },
+    {
+      "tenant_id": "i",
+      "scheduler": null,
+      "label": "tokenizer-distil-578",
+      "gpus": 96,
+      "t_start": 1582.0,
+      "duration_s": 1109.0
+    },
+    {
+      "tenant_id": "i",
+      "scheduler": null,
+      "label": "inference-burst-162",
+      "gpus": 85,
+      "t_start": 4316.0,
+      "duration_s": 2368.0
+    },
+    {
+      "tenant_id": "i",
+      "scheduler": null,
+      "label": "inference-burst-354",
+      "gpus": 175,
+      "t_start": 7148.0,
+      "duration_s": 2001.0
+    },
+    {
+      "tenant_id": "i",
+      "scheduler": null,
+      "label": "tokenizer-distil-287",
+      "gpus": 121,
+      "t_start": 8557.0,
+      "duration_s": 1227.0
+    },
+    {
+      "tenant_id": "j",
+      "scheduler": null,
+      "label": "reward-model-train-927",
+      "gpus": 190,
+      "t_start": 465.0,
+      "duration_s": 2247.0
+    },
+    {
+      "tenant_id": "j",
+      "scheduler": null,
+      "label": "data-parallel-eval-956",
+      "gpus": 212,
+      "t_start": 2342.0,
+      "duration_s": 1704.0
+    },
+    {
+      "tenant_id": "j",
+      "scheduler": null,
+      "label": "diffusion-train-270",
+      "gpus": 75,
+      "t_start": 6122.0,
+      "duration_s": 2253.0
+    },
+    {
+      "tenant_id": "j",
+      "scheduler": null,
+      "label": "tokenizer-distil-160",
+      "gpus": 176,
+      "t_start": 7383.0,
+      "duration_s": 827.0
+    },
+    {
+      "tenant_id": "j",
+      "scheduler": null,
+      "label": "rl-sweep-902",
+      "gpus": 114,
+      "t_start": 9345.0,
+      "duration_s": 1440.0
+    }
+  ],
+  "generator_config": null,
+  "assertions": [],
+  "fabric_scenario_id": null,
+  "ui_bess_rated_mw": null,
+  "ui_bess_usable_mwh": null
+}

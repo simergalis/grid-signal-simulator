@@ -921,6 +921,8 @@ def _seed_json_scenarios(store: ScenarioStore) -> None:
         ("demo-operator-trip",  "demo-operator-trip.json"),
         ("islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs",
          "islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs.json"),
+        # 10-tenant stochastic GPU load — 3-hour simulation across A–J tenants
+        ("demo-10-tenant-random-gpu", "demo-10-tenant-random-gpu.json"),
     ]
 
     _cfg_dir = _Path("config/scenarios")
