@@ -690,10 +690,10 @@ function LeadTimeCallout({
           <div style={_LABEL(accent)}>STEP-LOAD LANDED</div>
           <div style={_RULE} />
           <div style={{ ..._MONO, fontSize: 20, fontWeight: 600, color: '#e6edf3', lineHeight: 1.25 }}>
-            Staged {stagedSecs} s ahead of arrival
+            Step-load absorbed — staged {stagedSecs}s ahead.
           </div>
           <div style={_BODY}>
-            Turbine {turbineAtLanding.toFixed(2)} MW · BESS standby
+            System returned to rest.
           </div>
         </>}
 
