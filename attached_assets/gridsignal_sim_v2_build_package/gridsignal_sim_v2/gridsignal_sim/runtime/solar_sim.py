@@ -143,7 +143,8 @@ def _build_system_prompt(
         f'  "samples": [[sim_time_s, fraction], ...],\n'
         f'  "ambient": [[sim_time_s, drybulb_c, wetbulb_c], ...]\n'
         f"}}\n\n"
-        f"Provide 15-25 samples spanning sim_time_s = 0 to sim_duration_s (inclusive).\n"
+        f"Provide samples at 600-second intervals: sim_time_s = 0, 600, 1200, … up to sim_duration_s.\n"
+        f"For runs shorter than 600 seconds provide exactly 2 samples: sim_time_s = 0 and sim_time_s = sim_duration_s.\n"
         f"The first sample in both \"samples\" and \"ambient\" MUST be at sim_time_s = 0.\n"
         f"All sim_time_s values must be non-negative and <= sim_duration_s.\n"
         f"Fractions must be in [0.0, 1.0].\n\n"
@@ -225,8 +226,9 @@ def _physics_samples(
     """Build irradiance samples from pure sun-position math — no API call."""
     if longitude_deg is None and utc_offset_h is None:
         raise ValueError("_physics_samples: supply longitude_deg= or utc_offset_h=")
-    n = max(20, min(120, int(sim_duration_s / 30)))
-    step = sim_duration_s / n
+    # One sample every 600 s; always include t=0 and t=sim_duration_s.
+    step = min(600.0, sim_duration_s)
+    n    = max(1, round(sim_duration_s / 600))
     samples: list[tuple[float, float]] = []
     for i in range(n + 1):
         t = i * step
@@ -277,8 +279,9 @@ def _physics_ambient_steps(
     """Physics-based ambient temperature timeline correlated with solar output."""
     if longitude_deg is None and utc_offset_h is None:
         raise ValueError("_physics_ambient_steps: supply longitude_deg= or utc_offset_h=")
-    n = max(20, min(120, int(sim_duration_s / 30)))
-    step = sim_duration_s / n
+    # One sample every 600 s; always include t=0 and t=sim_duration_s.
+    step = min(600.0, sim_duration_s)
+    n    = max(1, round(sim_duration_s / 600))
     result: list[tuple[float, float, float]] = []
     for i in range(n + 1):
         t = i * step
