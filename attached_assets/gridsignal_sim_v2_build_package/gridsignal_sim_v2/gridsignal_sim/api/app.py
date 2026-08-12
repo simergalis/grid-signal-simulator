@@ -177,7 +177,7 @@ async def _lifespan(application: FastAPI):
         return _re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "datacenter-01"
     solar_sim.cfg.site_id = _loc_slug(application.state.site_location.site_name)
 
-    # Operator-editable site display name (default = "Riverbend DC-West").
+    # Operator-editable site display name (default = "SV1 - Silicon Valley, California").
     from api.routes.location import SiteSettings
     application.state.site_settings = SiteSettings()
 

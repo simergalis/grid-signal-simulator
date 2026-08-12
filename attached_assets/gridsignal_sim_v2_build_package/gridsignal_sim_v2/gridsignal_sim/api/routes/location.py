@@ -532,7 +532,7 @@ from dataclasses import dataclass as _dataclass
 @_dataclass
 class SiteSettings:
     """Operator-editable site display settings."""
-    site_name: str = "Riverbend DC-West"
+    site_name: str = "SV1 - Silicon Valley, California"
 
 
 def _get_settings(request: Request) -> SiteSettings:

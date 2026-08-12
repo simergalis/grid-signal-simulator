@@ -30,7 +30,7 @@ function utcNow(): string {
   )
 }
 
-const DEFAULT_SITE_NAME = 'Riverbend DC-West'
+const DEFAULT_SITE_NAME = 'SV1 - Silicon Valley, California'
 
 export function GridSignalHeader({ runId, onHowItWorks, displayName, role, onLogout, onAdmin, onChangePassword }: Props) {
   const [clock, setClock] = useState(utcNow)
