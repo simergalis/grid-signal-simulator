@@ -99,20 +99,33 @@ export interface KubernetesJob {
 }
 
 export interface RayJob {
+  // ── GridSignal internal ────────────────────────────────────────────────────
   type:        'ray'
-  id:          string
+  id:          string            // display ID ("JOB-C-0001")
   entrypoint:  string
   numGPUs:     number
   numWorkers:  number
   totalGPUs:   number
   tdpMW:       number
-  rayJobId:    string
+  rayJobId:    string            // kept for UI display compat
   priority:    'high' | 'medium' | 'low'
   status:      'PENDING' | 'RUNNING' | 'SUCCEEDED'
   submittedAt: number
   startsAt:    number
   completesAt: number
-  manifest:    string   // Ray submission snippet
+  /** WorkloadSignal event JSON — conforms to spec §10 / ray_workloadsignal_emitter contract */
+  manifest:    string
+  // ── WorkloadSignal fields (spec §10) ──────────────────────────────────────
+  submission_id:       string    // "raysubmit_XXXX" or "serve_deployment_NAME"
+  event_id:            string    // ULID: "evt_01J8X7QK3M5N6P8R9T2V4W6Y8Z"
+  event_type:          string    // queued|starting|running|scale|checkpoint_start|checkpoint_end|job_end|cancelled
+  timestamp:           string    // ISO-8601 UTC (source-clock, per §11.4)
+  hardware_profile_id: string    // "nvidia-h100-sxm5-8way"
+  node_count:          number    // active nodes at event time
+  workload_class:      'training' | 'inference' | 'other'
+  site_id:             string
+  queue_depth?:        number    // inference only (§6 row 2)
+  request_rate?:       number    // inference only — requests/sec
 }
 
 export type AnyJob = SlurmJob | KubernetesJob | RayJob
@@ -169,14 +182,34 @@ const K8S_IMAGES = [
 
 const K8S_NAMESPACES = ['ml-workloads', 'inference', 'training', 'batch-jobs']
 
-const RAY_NAMES = [
+// Split by workload_class so submission_id and job_id formats follow the spec
+const RAY_TRAIN_NAMES = [
   'distributed-train-v2', 'distributed-train-v3',
   'hyperopt-sweep-64', 'hyperopt-sweep-128',
   'rl-policy-ppo', 'rl-policy-sac',
-  'data-pipeline-gpu', 'feature-engineering-gpu',
-  'model-parallel-train', 'batch-inference-ray',
-  'tune-experiment', 'rllib-training',
+  'model-parallel-train', 'tune-experiment', 'rllib-training',
 ]
+const RAY_SERVE_NAMES = [
+  'llama3-70b-endpoint', 'codellama-34b-endpoint',
+  'whisper-large-v3-endpoint', 'clip-vit-large-endpoint',
+  'mixtral-8x7b-endpoint', 'llava-13b-endpoint',
+]
+const RAY_OTHER_NAMES = [
+  'data-pipeline-gpu', 'feature-engineering-gpu', 'batch-inference-ray',
+]
+const RAY_SITES = [
+  'site-us-east-04', 'site-us-west-02', 'site-eu-west-01', 'site-ap-northeast-01',
+]
+
+// Crockford base32 ULID — 26 chars, 10 timestamp + 16 random (spec §17.1 idempotency key)
+const _B32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'
+function makeULID(): string {
+  let t = Date.now(), ts = ''
+  for (let i = 9; i >= 0; i--) { ts = _B32[t % 32] + ts; t = Math.floor(t / 32) }
+  let r = ''
+  for (let i = 0; i < 16; i++) r += _B32[Math.floor(Math.random() * 32)]
+  return ts + r
+}
 
 const GPU_TDP_MW = 0.0007  // H100 SXM5 ~700 W
 
@@ -375,44 +408,64 @@ function makeRayJob(cfg: GeneratorConfig, now: number): RayJob {
   const totalGPUs  = gpuCountForSize(size)
   const numWorkers = Math.max(1, Math.floor(totalGPUs / 8))
   const gpusEach   = Math.ceil(totalGPUs / numWorkers)
-  const name       = rPick(RAY_NAMES)
   const id         = nextId('JOB-C')
-  const rayJobId   = `raysubmit_${Math.random().toString(36).slice(2, 10).toUpperCase()}`
   const priority   = priorityForSize(size)
   const tdpMW      = totalGPUs * GPU_TDP_MW
   const dur        = rInt(cfg.jobDurationRange[0], cfg.jobDurationRange[1]) * 1000
-  const entrypoint = `python ${name.replace(/-/g, '_')}.py --num-gpus ${gpusEach} --num-workers ${numWorkers}`
-  const cpuEach  = gpusEach * 12
-  const memBytes = gpusEach * 120 * 1024 ** 3   // bytes — Ray memory arg
-  const manifest   = [
-    `import ray`,
-    `from ray.runtime_env import RuntimeEnv`,
-    ``,
-    `ray.init(`,
-    `    address="ray://ray-head.ray-system:10001",`,
-    `    runtime_env=RuntimeEnv(`,
-    `        pip=["torch==2.2.0", "transformers==4.40.0"],`,
-    `        env_vars={"NCCL_DEBUG": "INFO", "NCCL_IB_DISABLE": "0"},`,
-    `    ),`,
-    `)`,
-    ``,
-    `@ray.remote(`,
-    `    num_gpus=${gpusEach},`,
-    `    num_cpus=${cpuEach},`,
-    `    memory=${memBytes},`,
-    `    accelerator_type="H100",`,
-    `)`,
-    `class GPUWorker:`,
-    `    def train(self): ...`,
-    ``,
-    `# ${numWorkers} workers × ${gpusEach} GPUs = ${totalGPUs} total GPUs`,
-    `workers = [GPUWorker.remote() for _ in range(${numWorkers})]`,
-    `ray.get([w.train.remote() for w in workers])`,
-  ].join('\n')
+  const site_id    = rPick(RAY_SITES)
+  const hardware_profile_id = 'nvidia-h100-sxm5-8way'  // H100 → ACCELERATOR_TO_PROFILE map
+
+  // Workload class selection: 65% training, 20% inference (Serve), 15% other
+  const roll = Math.random()
+  let name: string
+  let workload_class: 'training' | 'inference' | 'other'
+  let submission_id: string
+  let entrypoint: string
+  let queue_depth: number | undefined
+  let request_rate: number | undefined
+
+  if (roll < 0.65) {
+    name           = rPick(RAY_TRAIN_NAMES)
+    workload_class = 'training'
+    submission_id  = `raysubmit_${makeULID().slice(10)}`   // 16-char random suffix
+    entrypoint     = `python ${name.replace(/-/g, '_')}.py --num-gpus ${gpusEach} --num-workers ${numWorkers}`
+  } else if (roll < 0.85) {
+    name           = rPick(RAY_SERVE_NAMES)
+    workload_class = 'inference'
+    submission_id  = `serve_deployment_${name}`
+    entrypoint     = `serve run ${name}:deployment --num-replicas ${numWorkers}`
+    queue_depth    = rInt(5, 500)
+    request_rate   = Math.round(Math.random() * 200 * 10) / 10
+  } else {
+    name           = rPick(RAY_OTHER_NAMES)
+    workload_class = 'other'
+    submission_id  = `raysubmit_${makeULID().slice(10)}`
+    entrypoint     = `python ${name.replace(/-/g, '_')}.py`
+  }
+
+  // Initial event: PENDING → "queued" (per spec mapping table)
+  const event_id  = `evt_${makeULID()}`
+  const timestamp = new Date(now).toISOString()
+  const node_count = numWorkers
+
+  const wsEvent: Record<string, unknown> = {
+    job_id:  submission_id, event_id, event_type: 'queued',
+    timestamp, hardware_profile_id, node_count, workload_class, site_id,
+  }
+  if (workload_class === 'inference') {
+    wsEvent.queue_depth  = queue_depth
+    wsEvent.request_rate = request_rate
+  }
+
   return {
     type: 'ray', id, entrypoint, numGPUs: gpusEach, numWorkers, totalGPUs,
-    tdpMW, rayJobId, priority, status: 'PENDING', manifest,
+    tdpMW, rayJobId: submission_id, priority, status: 'PENDING',
+    manifest: JSON.stringify(wsEvent, null, 2),
     submittedAt: now, startsAt: now + 800, completesAt: now + dur,
+    // WorkloadSignal fields
+    submission_id, event_id, event_type: 'queued', timestamp,
+    hardware_profile_id, node_count, workload_class, site_id,
+    queue_depth, request_rate,
   }
 }
 
@@ -512,8 +565,31 @@ export const useGpuGeneratorStore = create<GpuGeneratorState>((set, get) => ({
     function advanceRay(jobs: RayJob[]): RayJob[] {
       return jobs
         .map(j => {
-          if (j.status === 'PENDING'  && now >= j.startsAt)    return { ...j, status: 'RUNNING'   as const }
-          if (j.status === 'RUNNING'  && now >= j.completesAt) return { ...j, status: 'SUCCEEDED' as const }
+          if (j.status === 'PENDING' && now >= j.startsAt) {
+            // PENDING → RUNNING: first observation → event_type "starting" (spec mapping table)
+            const event_id  = `evt_${makeULID()}`
+            const timestamp = new Date(now).toISOString()
+            const wsEvent: Record<string, unknown> = {
+              job_id: j.submission_id, event_id, event_type: 'starting',
+              timestamp, hardware_profile_id: j.hardware_profile_id,
+              node_count: j.node_count, workload_class: j.workload_class, site_id: j.site_id,
+            }
+            if (j.workload_class === 'inference') {
+              wsEvent.queue_depth = j.queue_depth; wsEvent.request_rate = j.request_rate
+            }
+            return { ...j, status: 'RUNNING' as const, event_type: 'starting', event_id, timestamp, manifest: JSON.stringify(wsEvent, null, 2) }
+          }
+          if (j.status === 'RUNNING' && now >= j.completesAt) {
+            // RUNNING → SUCCEEDED: event_type "job_end"
+            const event_id  = `evt_${makeULID()}`
+            const timestamp = new Date(now).toISOString()
+            const wsEvent   = {
+              job_id: j.submission_id, event_id, event_type: 'job_end',
+              timestamp, hardware_profile_id: j.hardware_profile_id,
+              node_count: j.node_count, workload_class: j.workload_class, site_id: j.site_id,
+            }
+            return { ...j, status: 'SUCCEEDED' as const, event_type: 'job_end', event_id, timestamp, manifest: JSON.stringify(wsEvent, null, 2) }
+          }
           return j
         })
         .filter(j => !(j.status === 'SUCCEEDED' && now >= j.completesAt + 3000))
