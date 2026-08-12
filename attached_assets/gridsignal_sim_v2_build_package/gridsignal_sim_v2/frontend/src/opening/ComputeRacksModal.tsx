@@ -195,7 +195,9 @@ function TenantDetailPanel({
   const totalGPUs    = jobs.reduce((s, j) => s + j.gpus, 0)
   const rolledUpMW   = jobs.reduce((s, j) => s + j.tdpMW, 0)  // = drawMW by construction
   const forecastMW   = rolledUpMW * tenant.forecastMult
-  const utilPct      = Math.min(98, Math.round((rolledUpMW / (rolledUpMW * 1.05 + 0.001)) * 100 + Math.random() * 3))
+  // Seed utilisation from tenant ID so each tenant shows a distinct stable value.
+  const _utilSeed    = tenant.id.charCodeAt(0) % 8          // 0-7
+  const utilPct      = 91 + _utilSeed                        // 91-98 %, stable per tenant
 
   return (
     <div className="flex flex-col h-full min-h-0">
