@@ -1,0 +1,64 @@
+Here's how this fits together: Slurm's own job representation (via slurmrestd) and GridSignal's WorkloadSignal ingestion contract (spec §10, extended §17.1–17.2) are two different schemas — the ingestion agent's job is to translate one into the other.
+
+1. Raw Slurm-side request (slurmrestd)
+
+This is what your ingestion agent polls/receives from slurmctld via the Slurm REST API (GET /slurm/v0.0.40/jobs or a webhook-style push if you're using slurmrestd's event stream):
+
+json
+{
+  "job_id": 4831207,
+  "name": "llama3-70b-pretrain-shard12",
+  "user_name": "mlops",
+  "job_state": ["RUNNING"],
+  "partition": "gpu-training",
+  "nodes": "gpu-node[014-029]",
+  "node_count": 16,
+  "cpus": 2048,
+  "tres_req_str": "cpu=2048,mem=4096G,gres/gpu=128",
+  "tres_alloc_str": "cpu=2048,mem=4096G,gres/gpu=128,gres/gpu:h100=128",
+  "start_time": 1786538400,
+  "submit_time": 1786538100,
+  "time_limit": {"set": true, "number": 720},
+  "features": "h100,nvlink4",
+  "account": "ml-research",
+  "qos": "high-priority"
+}
+
+This payload is Slurm's own vocabulary — tres_alloc_str, job_state, partition — and it says nothing about power. That translation step is the ingestion agent's whole job.
+
+2. Translated GridSignal WorkloadSignal event
+
+Per spec §10, every event — regardless of source scheduler — must be normalized to this contract before it reaches Schema + Domain Validation:
+
+Field	Type	Required	Notes
+job_id	string	Yes	Stable identifier across the job's lifecycle events
+event_id	string	Yes	Globally unique per event, producer-assigned; required for idempotent dedupe (§17.1)
+event_type	enum	Yes	queued | starting | running | scale | checkpoint_start | checkpoint_end | job_end | cancelled
+timestamp	ISO-8601, UTC	Yes	Source-clock timestamp; see §11.4 for skew handling
+hardware_profile_id	string	Yes	Keys into hardware profile library (§5); unmapped → §5.1 fallback
+node_count	integer	Yes	Active node count at event time; scale events carry the new count
+workload_class	enum	Yes	training | inference | other — selects load-signature model (§6)
+site_id	string	Yes	Routes event to correct site's hardware library and lag config
+queue_depth / request_rate	number	Conditional	Required only when workload_class = inference
+
+And the resulting event your ingestion agent emits:
+
+json
+{
+  "job_id": "slurm-4831207",
+  "event_id": "evt-8f3a1c2d-slurm-4831207-running-001",
+  "event_type": "running",
+  "timestamp": "2026-08-12T14:20:00Z",
+  "hardware_profile_id": "h100-sxm5-8way-nvl4",
+  "node_count": 16,
+  "workload_class": "training",
+  "site_id": "site-dfw-02"
+}
+
+A few things worth flagging about this translation, given your guardrails:
+
+job_id is prefixed (slurm-4831207) rather than using the bare Slurm integer, since site_id scopes the space but job_id itself should stay collision-safe across schedulers if a site ever runs Slurm + K8s side by side.
+event_id is producer-assigned and must be unique per event, not per job — a starting and running event for the same job need distinct event_ids so the idempotency check (§17.1) doesn't collapse them.
+hardware_profile_id is derived, not copied — the agent has to map tres_alloc_str's gres/gpu:h100=128 plus node topology into your hardware profile library key; this mapping logic is exactly the kind of mechanism detail that shouldn't appear in anything external per your guardrails.
+No queue_depth/request_rate here since workload_class = training — that field only appears for inference jobs feeding the micro-ramp model (§6, row 2).
+A PENDING Slurm job with a known start_time in the future would map to event_type: "queued" — this is the earliest signal in the pipeline and the one your 30–60s lead-time claim depends on, so timestamp fidelity on this particular transition is the one to protect most carefully in any trace-donor validation.
