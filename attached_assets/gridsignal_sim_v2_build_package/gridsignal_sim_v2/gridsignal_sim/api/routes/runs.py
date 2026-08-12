@@ -72,6 +72,72 @@ from runtime.telemetry_corruption import generate_corruption_schedule
 router = APIRouter(prefix="/runs", tags=["runs"])
 
 
+async def _load_completed_from_db(run_id: str) -> "CompletedRun | None":
+    """Durability fallback: reconstruct a CompletedRun from the Scenario table.
+
+    Called when RunManager._completed has no entry for run_id, which happens
+    whenever the server restarts after a run completes.  The persist_completed_hook
+    (wired in api/app.py lifespan) writes the verdict JSON to the Scenario row
+    when _drive() finishes, so it is available here across restarts.
+
+    Returns None when the Scenario row doesn't exist or has no verdict (the run
+    never finished or predates the durability hook).
+
+    Tick-by-tick data (tick_dicts) is NOT available via this path — the in-memory
+    sink does not persist rows to the DB.  The caller returns 410 for the
+    /timeseries endpoint in that case.
+    """
+    import json as _json
+    from runtime.persistence import Scenario as _ScenarioORM
+    from runtime.verdict import AssertionResult as _AR, VerdictResult as _VR
+    from runtime.run_manager import CompletedRun as _CR
+    from sqlalchemy import select as _sa_select
+    from api.db import _SessionLocal as _SL
+    from datetime import datetime as _dt, timezone as _tz
+
+    try:
+        async with _SL() as _session:
+            _result = await _session.execute(
+                _sa_select(_ScenarioORM).where(_ScenarioORM.run_id == run_id)
+            )
+            _row = _result.scalar_one_or_none()
+    except Exception:
+        _log.warning("run %s: DB fallback query failed", run_id, exc_info=True)
+        return None
+
+    if _row is None or _row.verdict is None:
+        return None
+
+    try:
+        _v = _json.loads(_row.verdict)
+        _assertions = [
+            _AR(check=a["check"], status=a["status"], detail=a["detail"])
+            for a in _v.get("assertions", [])
+        ]
+        _verdict = _VR(
+            overall=_v.get("overall", "INCONCLUSIVE"),
+            tick_count=_v.get("tick_count", 0),
+            dropped_ticks=_v.get("dropped_ticks", 0),
+            gap_count=_v.get("gap_count", 0),
+            assertions=_assertions,
+        )
+        _completed_at = _row.completed_at or _dt.now(_tz.utc)
+        if _completed_at.tzinfo is None:
+            _completed_at = _completed_at.replace(tzinfo=_tz.utc)
+        return _CR(
+            run_id=run_id,
+            scenario_id=_row.scenario_id,
+            scenario_name=_row.name or run_id,
+            completed_at=_completed_at,
+            verdict=_verdict,
+            tick_dicts=[],        # Not persisted — timeseries endpoint returns 410
+            dropped_ticks=_v.get("dropped_ticks", 0),
+        )
+    except Exception:
+        _log.warning("run %s: DB fallback verdict parse failed", run_id, exc_info=True)
+        return None
+
+
 def _run_manager(request: Request) -> RunManager:
     """Dependency: retrieve the shared RunManager from FastAPI app state."""
     return request.app.state.run_manager
@@ -514,6 +580,11 @@ async def get_run_result(
         )
     completed = manager.get_completed(run_id)
     if completed is None:
+        # Durability fallback: run completed in a previous server process.
+        # The verdict was persisted to the Scenario table by the
+        # persist_completed_hook wired in api/app.py lifespan.
+        completed = await _load_completed_from_db(run_id)
+    if completed is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=(
@@ -562,6 +633,7 @@ async def get_run_result(
     responses={
         404: {"description": "Run not found or not yet started"},
         409: {"description": "Run is still active — timeseries not yet sealed"},
+        410: {"description": "Run completed before the current server process; verdict available but tick replay data is gone"},
     },
 )
 async def get_run_timeseries(
@@ -585,6 +657,22 @@ async def get_run_timeseries(
         )
     completed = manager.get_completed(run_id)
     if completed is None:
+        # Durability fallback: check whether this run's verdict was persisted
+        # to the DB (completed before the current server process started).
+        # Tick-by-tick data is held in memory only and cannot be replayed after
+        # a restart — return 410 Gone with a clear explanation so the results
+        # screen can degrade gracefully instead of showing a confusing 404.
+        _db_completed = await _load_completed_from_db(run_id)
+        if _db_completed is not None:
+            raise HTTPException(
+                status_code=status.HTTP_410_GONE,
+                detail=(
+                    f"Run {run_id!r} completed before the current server process started. "
+                    "The verdict is available via GET /runs/{run_id}/result, but "
+                    "tick-by-tick replay data is held in memory only and is not "
+                    "available after a server restart."
+                ),
+            )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Run {run_id!r} not found",

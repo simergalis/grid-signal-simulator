@@ -1108,6 +1108,13 @@ class RunManager:
         # Task #122: wired by app.py lifespan so _drive() can push the run's
         # p_renewable_mw into SolarSim each tick.
         self.solar_sim: Any = None
+        # Durability hook: set by api/app.py lifespan to an async callable that
+        # persists the completed run's verdict to the durable DB so that
+        # GET /runs/{id}/result survives a server restart.
+        # Signature: persist_completed_hook(run_id, scenario_id, scenario_name,
+        #                                   completed_at, verdict_json) -> None
+        # Left as None in tests (in-memory only) — _drive() guards the call.
+        self.persist_completed_hook: Optional[Any] = None
 
     def active_run_ids(self) -> list[str]:
         return list(self._contexts.keys())
@@ -1855,11 +1862,12 @@ class RunManager:
                     logger.exception("run %s: balance gate evaluation failed", ctx.run_id)
 
                 # Store for the results/playback screen.
+                _completed_at = datetime.now(timezone.utc)
                 self._completed[ctx.run_id] = CompletedRun(
                     run_id=ctx.run_id,
                     scenario_id=ctx.scenario_id,
                     scenario_name=ctx.scenario_name,
-                    completed_at=datetime.now(timezone.utc),
+                    completed_at=_completed_at,
                     verdict=verdict_result or VerdictResult(
                         overall="INCONCLUSIVE",
                         tick_count=0,
@@ -1871,6 +1879,25 @@ class RunManager:
                     turbine_rated_mw=ctx.turbine_rated_mw,
                     balance_gate=_balance_gate,
                 )
+
+                # Durability: persist verdict to the durable DB so that
+                # GET /runs/{id}/result survives a server restart.
+                # The hook is set by api/app.py; absent in tests.
+                if self.persist_completed_hook is not None:
+                    try:
+                        await self.persist_completed_hook(
+                            run_id=ctx.run_id,
+                            scenario_id=ctx.scenario_id,
+                            scenario_name=ctx.scenario_name,
+                            completed_at=_completed_at,
+                            verdict_json=verdict_json,
+                        )
+                    except Exception:  # noqa: BLE001
+                        logger.exception(
+                            "run %s: persist_completed_hook failed — "
+                            "verdict will not survive a server restart",
+                            ctx.run_id,
+                        )
 
             # AC3: emit section profile if flag was set for this run.
             if _profiling and _sec:

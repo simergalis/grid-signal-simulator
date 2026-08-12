@@ -135,6 +135,46 @@ async def _lifespan(application: FastAPI):
     application.state.run_manager = manager
     application.state.scenario_store = scenario_store
 
+    # Durability: wire a persistence hook so completed run verdicts survive
+    # server restarts.  The hook writes to the same DB used by api/db.py
+    # (PostgreSQL in production, SQLite in development) via _SessionLocal.
+    # No runtime/ → api/ import: the hook is a closure set here in app.py
+    # (api/ → runtime/ direction, which is always allowed).
+    from api.db import _SessionLocal as _SL
+    from runtime.persistence import Scenario as _ScenarioORM
+    from sqlalchemy import select as _sa_select
+
+    async def _persist_completed_run(
+        *,
+        run_id: str,
+        scenario_id: "str | None",
+        scenario_name: str,
+        completed_at: "datetime",
+        verdict_json: "str | None",
+    ) -> None:
+        """Upsert the completed run's verdict into the Scenario table."""
+        async with _SL() as _session:
+            async with _session.begin():
+                _result = await _session.execute(
+                    _sa_select(_ScenarioORM).where(_ScenarioORM.run_id == run_id)
+                )
+                _row = _result.scalar_one_or_none()
+                if _row is None:
+                    from datetime import datetime as _dt, timezone as _tz
+                    _row = _ScenarioORM(
+                        run_id=run_id,
+                        name=scenario_name,
+                        created_at=_dt.now(_tz.utc),
+                    )
+                    _session.add(_row)
+                _row.scenario_id = scenario_id
+                _row.name = scenario_name
+                _row.completed_at = completed_at
+                _row.verdict = verdict_json
+        _log.debug("run %s: verdict persisted to DB", run_id)
+
+    manager.persist_completed_hook = _persist_completed_run
+
     # Renewable Supply Console — one SolarSim per process, ticked continuously.
     from renewable.solar import SolarSim
     solar_sim = SolarSim()
