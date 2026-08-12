@@ -24,6 +24,7 @@ import { useTickStore } from '../store/tickStore'
 import { InfoBtn } from './TileTooltip'
 import { GenTripModal } from './GenTripModal'
 import { ReserveModal } from './ReserveModal'
+import { AttentionModal } from './AttentionModal'
 import { LocationPicker } from './LocationPicker'
 import type { ContingencyCoverage } from '../types'
 
@@ -136,6 +137,7 @@ export function VerdictBand({ onLocationChanged }: VerdictBandProps = {}) {
   // Modal state
   const [modalOpen, setModalOpen] = useState(false)
   const [reserveModalOpen, setReserveModalOpen] = useState(false)
+  const [attentionModalOpen, setAttentionModalOpen] = useState(false)
 
   // ── TC-84: log state transitions ─────────────────────────────────────────
   const prevContingencyState = useRef<string | null>(null)
@@ -291,8 +293,10 @@ export function VerdictBand({ onLocationChanged }: VerdictBandProps = {}) {
         label:     'Attention',
         value:     dqCount > 0 ? `${dqCount} subsystem` : '—',
         colour:    dqCount > 0 ? '#f0883e' : undefined,
+        sub:       dqCount > 0 ? 'click to review' : undefined,
         colWidth:  140,
         tooltipId: 'attention',
+        onClick:   dqCount > 0 ? () => setAttentionModalOpen(true) : undefined,
       },
     ]
   } else {
@@ -302,7 +306,7 @@ export function VerdictBand({ onLocationChanged }: VerdictBandProps = {}) {
       { label: 'Dispatchable',   value: '45.0 MW',   colour: '#e0a458', sub: 'turbine + BESS (anchor-adj)', colWidth: 140, tooltipId: 'dispatchable' },
       { label: 'Renewable',      value: '~5.0 MW',   colour: '#3fb6a8', sub: 'non-firm · solar',             colWidth: 104, tooltipId: 'renewable' },
       { label: 'Gen-trip cover', value: 'N−1 ready', colour: '#4a9fe0', sub: 'click to learn more',          colWidth: 204, onClick: () => setModalOpen(true), tooltipId: 'gen-trip-cover' },
-      { label: 'Attention',      value: '1 subsystem', colour: '#f0883e',                                     colWidth: 140, tooltipId: 'attention' },
+      { label: 'Attention', value: '1 subsystem', colour: '#f0883e', sub: 'click to review', colWidth: 140, tooltipId: 'attention', onClick: () => setAttentionModalOpen(true) },
     ]
   }
 
@@ -379,6 +383,13 @@ export function VerdictBand({ onLocationChanged }: VerdictBandProps = {}) {
         <ReserveModal
           tick={tick}
           onClose={() => setReserveModalOpen(false)}
+        />
+      )}
+
+      {/* Attention modal */}
+      {attentionModalOpen && (
+        <AttentionModal
+          onClose={() => setAttentionModalOpen(false)}
         />
       )}
     </>

@@ -263,9 +263,8 @@ function LeadTimeCallout({
 
   // ── Landing-state tracking ─────────────────────────────────────────────────
   // When Δt_lead transitions from > 0 to 0, show STEP-LOAD LANDED for 30 s.
-  const [landedUntil,      setLandedUntil]      = useState(0)
-  const [stagedSecs,       setStagedSecs]       = useState(45)
-  const [turbineAtLanding, setTurbineAtLanding] = useState(0)
+  const [landedUntil, setLandedUntil] = useState(0)
+  const [stagedSecs,  setStagedSecs]  = useState(45)
   const prevDtLead  = useRef(0)
   const maxDtLead   = useRef(0)            // peak Δt_lead during current ramp
   const lastLandedAt = useRef<number>(0)  // wall-clock of most recent landing
@@ -336,7 +335,6 @@ function LeadTimeCallout({
       const now = Date.now()
       setLandedUntil(now + 30_000)
       setStagedSecs(Math.round(maxDtLead.current))
-      setTurbineAtLanding(tick.turbine_output_mw)
       lastLandedAt.current = now
       maxDtLead.current = 0
     }
