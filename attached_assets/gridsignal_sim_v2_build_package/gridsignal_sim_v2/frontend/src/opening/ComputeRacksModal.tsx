@@ -15,6 +15,8 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { TickPayload } from '../types'
+import { useGpuGeneratorStore, type AnyJob } from '../store/gpuGeneratorStore'
+import { GpuNodeGeneratorModal } from './GpuNodeGeneratorModal'
 
 // ── Tenant catalogue ──────────────────────────────────────────────────────────
 
@@ -185,15 +187,29 @@ function TierPill({ active, label, count, onClick }: TierPillProps) {
 // ── Tenant detail drill-down ──────────────────────────────────────────────────
 
 function TenantDetailPanel({
-  tenant, tick, onBack,
-}: { tenant: TenantDef; tick: TickPayload | null; onBack: () => void }) {
+  tenant, tick, onBack, generatorJobs = [],
+}: { tenant: TenantDef; tick: TickPayload | null; onBack: () => void; generatorJobs?: AnyJob[] }) {
   // Actual draw: from tick when live, else derive from base GPU counts
   const siteMW  = tick?.p_compute_mw ?? 0
   const drawMW  = tick ? siteMW * tenant.frac : tenantBaseMW(tenant.id)
 
-  const jobs         = deriveJobs(tenant, drawMW)
+  // When the generator is running and has jobs for this tenant, show those.
+  // Otherwise fall back to the static template-derived jobs.
+  const useGeneratorJobs = generatorJobs.length > 0
+  const jobs: Job[] = useGeneratorJobs
+    ? generatorJobs.map(j => ({
+        id:       j.id,
+        name:     j.type === 'slurm' ? (j as any).name
+                  : j.type === 'kubernetes' ? (j as any).name
+                  : ((j as any).entrypoint?.split(' ')[1] ?? 'ray-job'),
+        priority: j.priority,
+        gpus:     j.totalGPUs,
+        tdpMW:    j.tdpMW,
+        state:    (j.status === 'RUNNING' || j.status === 'Running') ? 'RUNNING' : j.status as any,
+      }))
+    : deriveJobs(tenant, drawMW)
   const totalGPUs    = jobs.reduce((s, j) => s + j.gpus, 0)
-  const rolledUpMW   = jobs.reduce((s, j) => s + j.tdpMW, 0)  // = drawMW by construction
+  const rolledUpMW   = useGeneratorJobs ? jobs.reduce((s, j) => s + j.tdpMW, 0) : drawMW
   const forecastMW   = rolledUpMW * tenant.forecastMult
   // Seed utilisation from tenant ID so each tenant shows a distinct stable value.
   const _utilSeed    = tenant.id.charCodeAt(0) % 8          // 0-7
@@ -342,17 +358,31 @@ export function ComputeRacksModal({ tick, onClose }: Props) {
   const [tab,            setTab]            = useState<FilterTab>('all')
   const [expanded,       setExpanded]       = useState(false)
   const [selectedTenant, setSelectedTenant] = useState<TenantDef | null>(null)
+  const [generatorOpen,  setGeneratorOpen]  = useState(false)
 
-  // Esc: drill-down → table → close
+  // GPU Node Generator store
+  const { tenantA: genA, tenantB: genB, tenantC: genC, running: genRunning } =
+    useGpuGeneratorStore()
+
+  // Map tenant ID → generator jobs (only full-telemetry tenants match)
+  const generatorJobsForTenant = (id: string): AnyJob[] => {
+    if (id === 'a') return genA
+    if (id === 'b') return genB
+    if (id === 'c') return genC
+    return []
+  }
+
+  // Esc: drill-down → table → close (generator handled by its own modal)
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
+      if (generatorOpen) return           // let generator modal handle its own Esc
       if (selectedTenant) setSelectedTenant(null)
       else onClose()
     }
     window.addEventListener('keydown', h)
     return () => window.removeEventListener('keydown', h)
-  }, [onClose, selectedTenant])
+  }, [onClose, selectedTenant, generatorOpen])
 
   // ── Site-level hero numbers ───────────────────────────────────────────────
   // With a tick: site IT draw comes from tick directly (most accurate).
@@ -407,7 +437,22 @@ export function ComputeRacksModal({ tick, onClose }: Props) {
               {TOTAL_CAGES} cages · {SCHEDULER_STACKS} scheduler stacks · facility-wide GPU IT load
             </p>
           </div>
-          <button onClick={onClose} className="text-muted hover:text-text text-2xl leading-none ml-4 mt-1" aria-label="Close">×</button>
+          <div className="flex items-center gap-3 ml-4 mt-1">
+            {/* GPU Node Generator button */}
+            <button
+              onClick={() => setGeneratorOpen(true)}
+              className="flex items-center gap-1.5 rounded border px-3 py-1.5 text-xs font-semibold transition-colors"
+              style={genRunning
+                ? { borderColor: '#3fb6a8', color: '#3fb6a8', background: '#3fb6a815' }
+                : { borderColor: 'var(--border)', color: 'var(--muted)' }}
+              title="Open GPU Node Generator"
+            >
+              <span>⚡</span>
+              <span>GPU Generator</span>
+              {genRunning && <span className="ml-0.5 text-[10px] animate-pulse">●</span>}
+            </button>
+            <button onClick={onClose} className="text-muted hover:text-text text-2xl leading-none" aria-label="Close">×</button>
+          </div>
         </div>
 
         {/* ── Hero stats ─────────────────────────────────────────────────── */}
@@ -437,7 +482,12 @@ export function ComputeRacksModal({ tick, onClose }: Props) {
 
         {/* ── Body ────────────────────────────────────────────────────────── */}
         {selectedTenant ? (
-          <TenantDetailPanel tenant={selectedTenant} tick={tick} onBack={() => setSelectedTenant(null)} />
+          <TenantDetailPanel
+            tenant={selectedTenant}
+            tick={tick}
+            onBack={() => setSelectedTenant(null)}
+            generatorJobs={generatorJobsForTenant(selectedTenant.id)}
+          />
         ) : (
           <>
             {/* Filter tabs */}
@@ -580,5 +630,10 @@ export function ComputeRacksModal({ tick, onClose }: Props) {
     </div>
   )
 
-  return createPortal(modal, document.body)
+  return (
+    <>
+      {createPortal(modal, document.body)}
+      {generatorOpen && <GpuNodeGeneratorModal onClose={() => setGeneratorOpen(false)} />}
+    </>
+  )
 }

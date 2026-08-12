@@ -1,0 +1,570 @@
+/**
+ * GpuNodeGeneratorModal.tsx — Operator-configurable GPU job generator.
+ *
+ * Generates Slurm (Tenant A), Kubernetes (Tenant B), and Ray (Tenant C) jobs
+ * asynchronously and randomly, driven by the gpuGeneratorStore engine.
+ *
+ * Natural-language interface
+ * ──────────────────────────
+ * The STT text box (type or use the mic) sends commands to
+ * POST /api/ai/gpu-generator/interpret, which uses Claude to translate
+ * plain English into a GeneratorConfig patch.  Example commands:
+ *   "focus all large LLM training jobs on Tenant A, burst every 30 seconds"
+ *   "steady stream of small jobs across all tenants, 5 per minute"
+ *   "heavy kubernetes workload, medium to large jobs, max 20 per tenant"
+ */
+
+import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
+import {
+  useGpuGeneratorStore,
+  DEFAULT_CONFIG,
+  type GeneratorConfig,
+  type AnyJob,
+} from '../store/gpuGeneratorStore'
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function fmtMW(mw: number) { return `${mw.toFixed(2)} MW` }
+function fmtTime(ms: number) {
+  const s = Math.floor((Date.now() - ms) / 1000)
+  if (s < 60) return `${s}s ago`
+  return `${Math.floor(s / 60)}m ${s % 60}s ago`
+}
+
+const TENANT_COLOUR: Record<string, string> = {
+  A: '#3fb6a8', B: '#4a9fe0', C: '#9b6fe0',
+}
+const SCHEDULER_BADGE: Record<string, string> = {
+  A: 'Slurm', B: 'Kubernetes', C: 'Ray',
+}
+const STATUS_COLOUR: Record<string, string> = {
+  PENDING: '#4b5764', Pending: '#4b5764',
+  RUNNING: '#3fb6a8', Running: '#3fb6a8',
+  COMPLETING: '#f0a500', Succeeded: '#4b5764', SUCCEEDED: '#4b5764',
+}
+// ── Sub-components ────────────────────────────────────────────────────────────
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted mb-2">
+      {children}
+    </p>
+  )
+}
+
+function Slider({
+  label, value, min, max, step = 0.5, unit = '',
+  onChange,
+}: {
+  label: string; value: number; min: number; max: number; step?: number; unit?: string
+  onChange: (v: number) => void
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex justify-between text-xs">
+        <span className="text-muted">{label}</span>
+        <span className="text-text tabular-nums font-mono">{value}{unit}</span>
+      </div>
+      <input
+        type="range" min={min} max={max} step={step} value={value}
+        onChange={e => onChange(parseFloat(e.target.value))}
+        className="w-full accent-accent h-1.5 rounded cursor-pointer"
+      />
+    </div>
+  )
+}
+
+function Toggle({
+  label, value, onChange,
+}: { label: string; value: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      onClick={() => onChange(!value)}
+      className="flex items-center justify-between w-full"
+    >
+      <span className="text-xs text-muted">{label}</span>
+      <div className={`relative w-8 h-4 rounded-full transition-colors ${value ? 'bg-accent' : 'bg-border'}`}>
+        <span className={`absolute top-0.5 w-3 h-3 bg-white rounded-full transition-transform ${value ? 'translate-x-4' : 'translate-x-0.5'}`} />
+      </div>
+    </button>
+  )
+}
+
+function WeightRow({
+  label, value, colour, onChange,
+}: { label: string; value: number; colour: string; onChange: (v: number) => void }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-xs w-20 shrink-0" style={{ color: colour }}>{label}</span>
+      <input
+        type="range" min={0} max={1} step={0.05} value={value}
+        onChange={e => onChange(parseFloat(e.target.value))}
+        className="flex-1 h-1.5 rounded cursor-pointer"
+        style={{ accentColor: colour }}
+      />
+      <span className="text-xs font-mono text-muted w-8 text-right">{Math.round(value * 100)}%</span>
+    </div>
+  )
+}
+
+
+function ManifestDrawer({ job, onClose }: { job: AnyJob; onClose: () => void }) {
+  const manifest = job.type === 'slurm' ? job.manifest
+    : job.type === 'kubernetes' ? job.manifest
+    : job.manifest
+  return (
+    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/60"
+      onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="relative bg-canvas border border-border rounded-xl shadow-2xl"
+        style={{ width: 600, maxWidth: '90vw', maxHeight: '70vh' }}>
+        <div className="flex items-center justify-between px-5 py-3 border-b border-border">
+          <div>
+            <span className="text-xs font-semibold text-text">{job.id}</span>
+            <span className="text-xs text-muted ml-3">{job.type === 'slurm' ? 'Slurm batch script' : job.type === 'kubernetes' ? 'Kubernetes manifest' : 'Ray submission'}</span>
+          </div>
+          <button onClick={onClose} className="text-muted hover:text-text text-lg">×</button>
+        </div>
+        <div className="overflow-y-auto p-5">
+          <pre className="text-[11px] text-text font-mono leading-relaxed whitespace-pre-wrap"
+            style={{ background: '#0a0e13', padding: '12px', borderRadius: 6 }}>
+            {manifest}
+          </pre>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+
+interface Props { onClose: () => void }
+
+export function GpuNodeGeneratorModal({ onClose }: Props) {
+  const { config, running, tenantA, tenantB, tenantC, feed, start, stop, reset, updateConfig } =
+    useGpuGeneratorStore()
+
+  const [nlText,       setNlText]       = useState('')
+  const [nlLoading,    setNlLoading]    = useState(false)
+  const [nlExplanation, setNlExplanation] = useState<string | null>(null)
+  const [activeTab,    setActiveTab]    = useState<'config' | 'jobs' | 'feed'>('config')
+  const [previewJob,   setPreviewJob]   = useState<AnyJob | null>(null)
+  const [listening,    setListening]    = useState(false)
+  const recognitionRef = useRef<any>(null)
+
+  // Esc to close
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape' && !previewJob) onClose() }
+    window.addEventListener('keydown', h)
+    return () => window.removeEventListener('keydown', h)
+  }, [onClose, previewJob])
+
+  // Web Speech API
+  const startListening = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition
+    if (!SpeechRecognition) return
+    const r = new SpeechRecognition()
+    r.lang = 'en-US'
+    r.continuous = false
+    r.interimResults = false
+    r.onresult = (e: any) => {
+      setNlText(e.results[0][0].transcript)
+      setListening(false)
+    }
+    r.onerror = () => setListening(false)
+    r.onend   = () => setListening(false)
+    recognitionRef.current = r
+    r.start()
+    setListening(true)
+  }
+
+  const applyNlCommand = async () => {
+    if (!nlText.trim()) return
+    setNlLoading(true)
+    setNlExplanation(null)
+    try {
+      const res = await fetch('/api/ai/gpu-generator/interpret', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: nlText.trim(), current_config: config }),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      const data = await res.json()
+      if (data.config) updateConfig(data.config)
+      setNlExplanation(data.explanation ?? 'Configuration updated.')
+    } catch (err) {
+      setNlExplanation(`Error: ${err instanceof Error ? err.message : String(err)}`)
+    } finally {
+      setNlLoading(false)
+    }
+  }
+
+  // Normalise weights so they sum to 1
+  const normaliseTenantWeight = (key: 'a' | 'b' | 'c', value: number) => {
+    const other = { a: config.tenantWeights.b + config.tenantWeights.c,
+                    b: config.tenantWeights.a + config.tenantWeights.c,
+                    c: config.tenantWeights.a + config.tenantWeights.b }[key]
+    const total = value + (other || 0.001)
+    const norm  = { ...config.tenantWeights, [key]: value }
+    const scale = 1 / total
+    updateConfig({ tenantWeights: { a: norm.a * scale, b: norm.b * scale, c: norm.c * scale } })
+  }
+  const normaliseJobSize = (key: 'small' | 'medium' | 'large', value: number) => {
+    const rest = Object.entries(config.jobSizes)
+      .filter(([k]) => k !== key)
+      .reduce((s, [, v]) => s + v, 0) || 0.001
+    const scale = (1 - value) / rest
+    const next  = { ...config.jobSizes, [key]: value }
+    for (const k of ['small', 'medium', 'large'] as const) {
+      if (k !== key) next[k] = config.jobSizes[k] * scale
+    }
+    updateConfig({ jobSizes: next })
+  }
+
+  // Merged job list
+  const allJobs: { job: AnyJob; tenant: 'A' | 'B' | 'C' }[] = [
+    ...tenantA.map(j => ({ job: j as AnyJob, tenant: 'A' as const })),
+    ...tenantB.map(j => ({ job: j as AnyJob, tenant: 'B' as const })),
+    ...tenantC.map(j => ({ job: j as AnyJob, tenant: 'C' as const })),
+  ].sort((a, b) => b.job.submittedAt - a.job.submittedAt)
+
+  const totalGPUs = allJobs
+    .filter(({ job }) =>
+      job.status === 'RUNNING' || job.status === 'Running' ||
+      job.status === 'PENDING' || job.status === 'Pending')
+    .reduce((s, { job }) => s + job.totalGPUs, 0)
+  const totalMW = totalGPUs * 0.0007
+
+  // ── Render ────────────────────────────────────────────────────────────────
+  const modal = (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/70"
+      onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="relative flex flex-col rounded-xl border border-border bg-surface shadow-2xl overflow-hidden"
+        style={{ width: 900, maxWidth: '96vw', maxHeight: '90vh' }}
+        onMouseDown={e => e.stopPropagation()}>
+
+        {/* Accent bar */}
+        <div className="absolute inset-x-0 top-0 h-[3px]"
+          style={{ background: 'linear-gradient(90deg, #3fb6a8, #4a9fe0, #9b6fe0)' }} />
+
+        {/* ── Header ────────────────────────────────────────────────────── */}
+        <div className="flex items-start justify-between px-8 pt-7 pb-4 flex-shrink-0">
+          <div>
+            <div className="flex items-center gap-3">
+              <h2 className="text-[26px] font-bold text-text leading-none">GPU Node Generator</h2>
+              <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider ${running ? 'text-accent bg-accent/15' : 'text-muted bg-border/40'}`}>
+                {running ? '● RUNNING' : '○ STOPPED'}
+              </span>
+            </div>
+            <p className="text-sm text-muted mt-1.5">
+              Generates Slurm · Kubernetes · Ray jobs asynchronously across tenants
+            </p>
+          </div>
+          <button onClick={onClose} className="text-muted hover:text-text text-2xl leading-none ml-4 mt-1">×</button>
+        </div>
+
+        {/* ── NL Command bar ─────────────────────────────────────────────── */}
+        <div className="px-8 pb-4 flex-shrink-0">
+          <div className="rounded-lg border border-border/60 bg-canvas px-4 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted mb-2">
+              Natural language configuration
+            </p>
+            <div className="flex gap-2">
+              <textarea
+                value={nlText}
+                onChange={e => setNlText(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) applyNlCommand() }}
+                placeholder={`e.g. "burst mode, focus on Tenant A large LLM jobs, 5 bursts per minute"\nor "steady stream, even split, small and medium jobs only"`}
+                className="flex-1 rounded border border-border bg-surface px-3 py-2 text-sm text-text
+                           placeholder:text-muted/50 resize-none focus:outline-none focus:border-accent/60"
+                rows={2}
+              />
+              <div className="flex flex-col gap-1.5">
+                <button
+                  onClick={startListening}
+                  title="Speak a command"
+                  className={`w-10 h-10 rounded border flex items-center justify-center text-base transition-colors ${listening ? 'border-accent text-accent animate-pulse' : 'border-border text-muted hover:border-accent/60 hover:text-accent'}`}
+                >🎙</button>
+                <button
+                  onClick={applyNlCommand}
+                  disabled={nlLoading || !nlText.trim()}
+                  className="flex-1 px-3 py-1 rounded text-sm font-semibold text-white transition-colors disabled:opacity-40"
+                  style={{ background: '#3fb6a8' }}
+                >
+                  {nlLoading ? '…' : 'Apply'}
+                </button>
+              </div>
+            </div>
+            {nlExplanation && (
+              <p className={`mt-2 text-xs leading-relaxed ${nlExplanation.startsWith('Error') ? 'text-red-400' : 'text-accent'}`}>
+                ✓ {nlExplanation}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* ── Controls + live stats ───────────────────────────────────────── */}
+        <div className="px-8 pb-3 flex-shrink-0 flex items-center justify-between gap-4">
+          <div className="flex gap-2">
+            <button
+              onClick={running ? stop : start}
+              className="px-5 py-1.5 rounded text-sm font-semibold text-white transition-colors"
+              style={{ background: running ? '#f85149' : '#3fb6a8' }}
+            >
+              {running ? '⏹ Stop' : '▶ Start'}
+            </button>
+            <button
+              onClick={reset}
+              className="px-4 py-1.5 rounded text-sm font-medium text-muted border border-border hover:border-muted/60 hover:text-text transition-colors"
+            >
+              Reset
+            </button>
+          </div>
+
+          {/* Live stats */}
+          <div className="flex items-center gap-6 text-xs font-mono">
+            <div>
+              <span className="text-muted">Active jobs  </span>
+              <span className="text-text font-semibold">{allJobs.filter(({ job }) => job.status === 'RUNNING' || job.status === 'Running').length}</span>
+            </div>
+            <div>
+              <span className="text-muted">GPU nodes  </span>
+              <span className="text-text font-semibold">{totalGPUs.toLocaleString()}</span>
+            </div>
+            <div>
+              <span className="text-muted">Est. draw  </span>
+              <span style={{ color: '#3fb6a8' }} className="font-semibold">{fmtMW(totalMW)}</span>
+            </div>
+            <div>
+              <span className="text-muted">Feed events  </span>
+              <span className="text-text">{feed.length}</span>
+            </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-1">
+            {(['config', 'jobs', 'feed'] as const).map(tab => (
+              <button key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-3 py-1 rounded text-xs font-medium transition-colors capitalize ${activeTab === tab ? 'bg-accent/20 text-accent' : 'text-muted hover:text-text'}`}
+              >
+                {tab === 'jobs' ? `Jobs (${allJobs.length})` : tab === 'feed' ? `Feed (${feed.length})` : 'Config'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Body ─────────────────────────────────────────────────────────── */}
+        <div className="flex-1 overflow-y-auto px-8 pb-6">
+
+          {/* CONFIG tab */}
+          {activeTab === 'config' && (
+            <div className="grid grid-cols-2 gap-8">
+              {/* Left column */}
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <SectionLabel>Job rate</SectionLabel>
+                  <Slider label="Jobs per minute" value={config.ratePerMinute} min={0.5} max={20} step={0.5} unit="/min"
+                    onChange={v => updateConfig({ ratePerMinute: v })} />
+                  <Toggle label="Burst mode (emit batches instead of steady stream)"
+                    value={config.burstMode}
+                    onChange={v => updateConfig({ burstMode: v })} />
+                  {config.burstMode && (
+                    <div className="pl-4 border-l border-border/40 space-y-3 mt-2">
+                      <Slider label="Burst size min" value={config.burstSize[0]} min={2} max={20} step={1}
+                        onChange={v => updateConfig({ burstSize: [v, Math.max(v, config.burstSize[1])] })} />
+                      <Slider label="Burst size max" value={config.burstSize[1]} min={2} max={50} step={1}
+                        onChange={v => updateConfig({ burstSize: [Math.min(config.burstSize[0], v), v] })} />
+                      <Slider label="Burst interval min (s)" value={config.burstIntervalSeconds[0]} min={10} max={120} step={5} unit="s"
+                        onChange={v => updateConfig({ burstIntervalSeconds: [v, Math.max(v, config.burstIntervalSeconds[1])] })} />
+                      <Slider label="Burst interval max (s)" value={config.burstIntervalSeconds[1]} min={10} max={300} step={5} unit="s"
+                        onChange={v => updateConfig({ burstIntervalSeconds: [Math.min(config.burstIntervalSeconds[0], v), v] })} />
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <SectionLabel>Job lifecycle</SectionLabel>
+                  <Slider label="Min duration (s)" value={config.jobDurationRange[0]} min={30} max={300} step={10} unit="s"
+                    onChange={v => updateConfig({ jobDurationRange: [v, Math.max(v + 30, config.jobDurationRange[1])] })} />
+                  <Slider label="Max duration (s)" value={config.jobDurationRange[1]} min={60} max={600} step={10} unit="s"
+                    onChange={v => updateConfig({ jobDurationRange: [Math.min(config.jobDurationRange[0], v - 30), v] })} />
+                  <Slider label="Max live jobs per tenant" value={config.maxJobsPerTenant} min={3} max={30} step={1}
+                    onChange={v => updateConfig({ maxJobsPerTenant: v })} />
+                </div>
+              </div>
+
+              {/* Right column */}
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <SectionLabel>Tenant mix (Slurm · K8s · Ray)</SectionLabel>
+                  <WeightRow label="Tenant A (Slurm)"      colour={TENANT_COLOUR.A} value={config.tenantWeights.a} onChange={v => normaliseTenantWeight('a', v)} />
+                  <WeightRow label="Tenant B (Kubernetes)" colour={TENANT_COLOUR.B} value={config.tenantWeights.b} onChange={v => normaliseTenantWeight('b', v)} />
+                  <WeightRow label="Tenant C (Ray)"        colour={TENANT_COLOUR.C} value={config.tenantWeights.c} onChange={v => normaliseTenantWeight('c', v)} />
+                  {/* Visual bar */}
+                  <div className="flex h-2 rounded-full overflow-hidden mt-1">
+                    <div style={{ width: `${config.tenantWeights.a * 100}%`, background: TENANT_COLOUR.A }} />
+                    <div style={{ width: `${config.tenantWeights.b * 100}%`, background: TENANT_COLOUR.B }} />
+                    <div style={{ width: `${config.tenantWeights.c * 100}%`, background: TENANT_COLOUR.C }} />
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <SectionLabel>Job size distribution</SectionLabel>
+                  <div className="text-xs text-muted mb-1">Small: 8–64 GPUs · Medium: 128–512 · Large: 512–2048</div>
+                  <WeightRow label="Small"  colour="#4b5764" value={config.jobSizes.small}  onChange={v => normaliseJobSize('small', v)} />
+                  <WeightRow label="Medium" colour="#c8d6e5" value={config.jobSizes.medium} onChange={v => normaliseJobSize('medium', v)} />
+                  <WeightRow label="Large"  colour="#3fb6a8" value={config.jobSizes.large}  onChange={v => normaliseJobSize('large', v)} />
+                  <div className="flex h-2 rounded-full overflow-hidden mt-1">
+                    <div style={{ width: `${config.jobSizes.small * 100}%`, background: '#4b5764' }} />
+                    <div style={{ width: `${config.jobSizes.medium * 100}%`, background: '#c8d6e5' }} />
+                    <div style={{ width: `${config.jobSizes.large * 100}%`, background: '#3fb6a8' }} />
+                  </div>
+                </div>
+
+                {/* Preset buttons */}
+                <div className="space-y-2">
+                  <SectionLabel>Presets</SectionLabel>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { label: 'Steady light',     cfg: { ratePerMinute: 1,  burstMode: false, jobSizes: { small: 0.6, medium: 0.35, large: 0.05 } } },
+                      { label: 'Mixed steady',      cfg: { ratePerMinute: 3,  burstMode: false, jobSizes: { small: 0.3, medium: 0.5,  large: 0.2  } } },
+                      { label: 'LLM burst',         cfg: { ratePerMinute: 8,  burstMode: true,  burstSize: [5, 15] as [number,number], burstIntervalSeconds: [20, 60] as [number,number], jobSizes: { small: 0.05, medium: 0.25, large: 0.70 } } },
+                      { label: 'Inference flood',   cfg: { ratePerMinute: 15, burstMode: true,  burstSize: [8, 20] as [number,number], burstIntervalSeconds: [10, 30] as [number,number], jobSizes: { small: 0.5, medium: 0.45, large: 0.05 } } },
+                      { label: 'Training ramp',     cfg: { ratePerMinute: 4,  burstMode: false, tenantWeights: { a: 0.60, b: 0.25, c: 0.15 }, jobSizes: { small: 0.1, medium: 0.3, large: 0.6 } } },
+                    ].map(p => (
+                      <button key={p.label}
+                        onClick={() => updateConfig(p.cfg as Partial<GeneratorConfig>)}
+                        className="px-3 py-1 rounded border border-border text-xs text-muted hover:border-accent/60 hover:text-accent transition-colors"
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => updateConfig(DEFAULT_CONFIG)}
+                      className="px-3 py-1 rounded border border-border text-xs text-muted hover:border-muted/60 hover:text-text transition-colors"
+                    >
+                      Reset defaults
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* JOBS tab */}
+          {activeTab === 'jobs' && (
+            <div>
+              {allJobs.length === 0 ? (
+                <div className="py-12 text-center text-muted text-sm">
+                  {running ? 'Generating first jobs…' : 'Start the generator to see jobs here.'}
+                </div>
+              ) : (
+                <table className="w-full text-sm border-separate border-spacing-0">
+                  <thead>
+                    <tr>
+                      {['Type', 'Job ID', 'Name', 'GPUs', 'Est. draw', 'Status'].map((h, i) => (
+                        <th key={i} className="text-left pb-2 pr-3 text-[11px] font-medium uppercase tracking-wider text-muted border-b border-border">
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allJobs.map(({ job, tenant }) => (
+                      <tr key={job.id}
+                        className="border-b border-border/40 hover:bg-white/[0.025] transition-colors cursor-pointer"
+                        onClick={() => setPreviewJob(job)}
+                        title="Click to view scheduler manifest">
+                        <td className="py-2 pr-3">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded"
+                            style={{ background: TENANT_COLOUR[tenant] + '22', color: TENANT_COLOUR[tenant] }}>
+                            {SCHEDULER_BADGE[tenant]}
+                          </span>
+                        </td>
+                        <td className="py-2 pr-3 font-mono text-xs text-muted">{job.id}</td>
+                        <td className="py-2 pr-3 text-xs text-text font-medium max-w-[160px] truncate">
+                          {job.type === 'slurm' ? job.name : job.type === 'kubernetes' ? job.name : (job.entrypoint.split(' ')[1] ?? 'ray-job')}
+                        </td>
+                        <td className="py-2 pr-3 font-mono text-xs tabular-nums text-text font-semibold">
+                          {job.totalGPUs.toLocaleString()}
+                        </td>
+                        <td className="py-2 pr-3 font-mono text-xs text-muted">{fmtMW(job.tdpMW)}</td>
+                        <td className="py-2">
+                          <span className="text-[10px] font-semibold"
+                            style={{ color: STATUS_COLOUR[job.status] ?? '#4b5764' }}>
+                            {job.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan={3} className="pt-3 text-[11px] text-muted uppercase tracking-wider">Total (active)</td>
+                      <td className="pt-3 font-mono font-bold text-text">{totalGPUs.toLocaleString()}</td>
+                      <td className="pt-3 font-mono font-bold" style={{ color: '#3fb6a8' }}>{fmtMW(totalMW)}</td>
+                      <td />
+                    </tr>
+                  </tfoot>
+                </table>
+              )}
+              {allJobs.length > 0 && (
+                <p className="mt-3 text-[10px] text-muted">Click any row to view the scheduler manifest.</p>
+              )}
+            </div>
+          )}
+
+          {/* FEED tab */}
+          {activeTab === 'feed' && (
+            <div>
+              {feed.length === 0 ? (
+                <div className="py-12 text-center text-muted text-sm">
+                  {running ? 'Waiting for first job submission…' : 'Start the generator to see the event feed.'}
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {feed.map(entry => (
+                    <div key={entry.id} className="flex items-center gap-3 py-1.5 border-b border-border/30 text-xs">
+                      <span className="font-mono text-muted w-16 shrink-0">{fmtTime(entry.ts)}</span>
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase shrink-0"
+                        style={{ background: TENANT_COLOUR[entry.tenant] + '22', color: TENANT_COLOUR[entry.tenant] }}>
+                        {SCHEDULER_BADGE[entry.tenant]}
+                      </span>
+                      <span className={`text-[10px] font-semibold w-20 shrink-0 ${entry.action === 'SUBMITTED' ? 'text-muted' : entry.action === 'RUNNING' ? 'text-accent' : 'text-muted/50'}`}>
+                        {entry.action}
+                      </span>
+                      <span className="font-mono text-muted shrink-0">{entry.jobId}</span>
+                      <span className="text-text flex-1 truncate">{entry.jobName}</span>
+                      <span className="font-mono text-muted shrink-0">{entry.gpus.toLocaleString()} GPUs</span>
+                      <span className="font-mono shrink-0" style={{ color: '#3fb6a8' }}>{fmtMW(entry.tdpMW)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* ── Footer ─────────────────────────────────────────────────────────── */}
+        <div className="flex items-center justify-between px-8 py-3 border-t border-border flex-shrink-0">
+          <p className="text-[11px] text-muted font-mono">
+            {running
+              ? `Generator active · ${tenantA.length} Slurm · ${tenantB.length} K8s · ${tenantC.length} Ray`
+              : 'Generator stopped — jobs persist until Reset'}
+          </p>
+          <button onClick={onClose}
+            className="rounded px-4 py-1.5 text-sm font-semibold text-white transition-colors"
+            style={{ background: '#3fb6a8' }}>
+            Close
+          </button>
+        </div>
+      </div>
+
+      {/* Manifest drawer */}
+      {previewJob && <ManifestDrawer job={previewJob} onClose={() => setPreviewJob(null)} />}
+    </div>
+  )
+
+  return createPortal(modal, document.body)
+}

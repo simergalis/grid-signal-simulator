@@ -430,6 +430,116 @@ async def scheduler_summary(req: SchedulerSummaryRequest) -> SchedulerSummaryRes
     return SchedulerSummaryResponse(summary=summary)
 
 
+# ── GPU Node Generator — NL command → GeneratorConfig ─────────────────────────
+
+_GPU_GEN_SYSTEM = """\
+You are an AI assistant configuring a GPU workload generator for a data-centre power simulation.
+The operator has typed a natural-language command. Parse it into a structured JSON configuration.
+
+Return ONLY valid JSON in exactly this format (no markdown fences, no extra keys):
+{
+  "config": {
+    "ratePerMinute": <number 0.5-20, total jobs per minute across all tenants>,
+    "burstMode": <true or false>,
+    "burstSize": [<min int 2-20>, <max int 2-50>],
+    "burstIntervalSeconds": [<min int 10-120>, <max int 30-300>],
+    "tenantWeights": {"a": <0.0-1.0>, "b": <0.0-1.0>, "c": <0.0-1.0>},
+    "jobSizes": {"small": <0.0-1.0>, "medium": <0.0-1.0>, "large": <0.0-1.0>},
+    "maxJobsPerTenant": <int 3-30>,
+    "jobDurationRange": [<min int 30-300>, <max int 60-600>]
+  },
+  "explanation": "<one sentence confirming what you understood, plain English>"
+}
+
+Rules:
+- tenantWeights values must be non-negative and sum to exactly 1.0 (normalise if needed).
+- jobSizes values must be non-negative and sum to exactly 1.0 (normalise if needed).
+- Small jobs: 8-64 GPU nodes. Medium: 128-512. Large: 512-2048.
+- Tenant A uses Slurm. Tenant B uses Kubernetes. Tenant C uses Ray.
+- If the command names a specific tenant (A/B/C or Slurm/Kubernetes/Ray), weight it heavily (≥0.7).
+- "burst" / "spike" → burstMode=true. "steady" / "constant" / "continuous" → burstMode=false.
+- "fast" / "aggressive" → ratePerMinute ≥ 8. "slow" / "light" → ratePerMinute ≤ 2.
+- "large" / "big" / "LLM training" → jobSizes heavy on large. "small" / "quick" → heavy on small.
+- For any field not mentioned, keep the value from current_config or use a sensible default.
+- The explanation must be exactly one sentence, plain English, confirming what changed.
+"""
+
+
+class GpuGenInterpretRequest(BaseModel):
+    command: str
+    current_config: dict = {}
+
+
+class GpuGenInterpretResponse(BaseModel):
+    config: dict
+    explanation: str
+
+
+def _call_anthropic_gpu_gen(command: str, current_config: dict, api_key: str) -> dict:
+    user_msg = (
+        f"Current config: {json.dumps(current_config)}\n\n"
+        f"Operator command: {command}\n\n"
+        "Return the updated config JSON:"
+    )
+    payload = json.dumps({
+        "model": _ANTHROPIC_MODEL,
+        "max_tokens": 800,
+        "system": _GPU_GEN_SYSTEM,
+        "messages": [{"role": "user", "content": user_msg}],
+    }).encode()
+    req_http = urllib.request.Request(
+        _ANTHROPIC_ENDPOINT,
+        data=payload,
+        headers={
+            "Content-Type":      "application/json",
+            "x-api-key":         api_key,
+            "anthropic-version": "2023-06-01",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req_http, timeout=20) as resp:
+            body = json.loads(resp.read())
+        text = body["content"][0]["text"].strip()
+        if text.startswith("```"):
+            lines = text.split("\n")
+            text = "\n".join(ln for ln in lines if not ln.startswith("```")).strip()
+        return json.loads(text)
+    except urllib.error.HTTPError as exc:
+        raise RuntimeError(f"Anthropic HTTP {exc.code}: {exc.read()[:200]}") from exc
+
+
+@router.post("/gpu-generator/interpret", response_model=GpuGenInterpretResponse)
+async def gpu_generator_interpret(req: GpuGenInterpretRequest) -> GpuGenInterpretResponse:
+    """Interpret a natural-language operator command into GPU Node Generator config.
+
+    Uses Claude to parse plain English into a structured GeneratorConfig.
+    Falls back gracefully when ANTHROPIC_API_KEY is absent (returns current config unchanged).
+    """
+    api_key = os.environ.get("ANTHROPIC_API_KEY") or ""
+    if not api_key:
+        return GpuGenInterpretResponse(
+            config=req.current_config,
+            explanation="AI not available — ANTHROPIC_API_KEY is not configured. "
+                        "Adjust controls manually.",
+        )
+    try:
+        result = await asyncio.get_event_loop().run_in_executor(
+            None,
+            _call_anthropic_gpu_gen,
+            req.command,
+            req.current_config,
+            api_key,
+        )
+        return GpuGenInterpretResponse(
+            config=result.get("config", req.current_config),
+            explanation=result.get("explanation", "Configuration updated."),
+        )
+    except Exception as exc:
+        log.warning("ai: gpu-generator/interpret failed: %s", exc)
+        raise HTTPException(502, detail=f"AI interpretation failed: {exc}") from exc
+
+
 @router.post("/explain-scenario", response_model=ExplainResponse)
 async def explain_scenario(req: ExplainRequest) -> ExplainResponse:
     """Call Claude to generate an educational 4-sentence explanation of a scenario."""
