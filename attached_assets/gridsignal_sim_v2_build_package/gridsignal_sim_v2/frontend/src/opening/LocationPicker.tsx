@@ -49,6 +49,8 @@ interface SuggestionEntry {
 }
 
 const SUGGESTIONS: SuggestionEntry[] = [
+  // Default site
+  { name: 'SV1 - Silicon Valley, California', utc: -8, tags: ['sv1', 'silicon valley', 'san jose', 'santa clara', 'ca', 'us', 'usa', '950', '951', '954', '955'] },
   // United States
   { name: 'New York, NY',        utc: -5,   tags: ['ny', 'us', 'usa', '100', '101', '102', '103', '104'] },
   { name: 'Los Angeles, CA',     utc: -8,   tags: ['la', 'ca', 'us', 'usa', '900', '901', '902', '903'] },

@@ -683,7 +683,7 @@ class RunContext:
 
     # SD-1: site identity — stamped onto every TickResult so the WS header
     # physically cannot drift from the physics after a server restart or
-    # sleep/wake cycle.  Defaults match SiteLocation defaults (San Diego).
+    # sleep/wake cycle.  Defaults match SiteLocation defaults (SV1 Silicon Valley).
     # Set from spec_data["site_latitude/utc_offset_h/name"] by scenario_factory.
     # Defaults are 0.0 / "" so Guard A's float-literal scan never sees San Diego
     # coordinates here; scenario_factory always stamps the real values before t=0.
