@@ -49,8 +49,8 @@ export const TILE_TOOLTIPS: Record<string, TooltipContent> = {
   },
 
   'compute-racks': {
-    title: 'Compute Racks',
-    body:  'The servers actually running the workloads. Their power draw is the thing GridSignal is ultimately trying to predict — by reading what jobs the scheduler is about to assign, it can see rack demand coming 30–60 seconds before it happens.',
+    title: 'GPU Co-Location Data Center',
+    body:  'A shared facility housing 33 tenant cages across 4 scheduler stacks (Slurm, Kubernetes, Ray). Each tenant operates independently — some share full job telemetry with GridSignal, others share only their circuit meter reading. GridSignal aggregates the total GPU IT load across all tenants and uses it as the demand signal for turbine commitment and BESS dispatch.',
   },
 
   'cooling-plant': {
