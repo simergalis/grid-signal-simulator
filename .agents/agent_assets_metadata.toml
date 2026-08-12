@@ -278,5 +278,5 @@ description = "ScenarioSpec JSON — 3-hour islanded ramp, 97 workload events, 5
 id = "n50abTqOJtgr5cP6FcmnU"
 uri = "file://attached_assets/demo_script_tile_review_updated.md"
 type = "text"
-title = "Tile-by-Tile Demo Script — Updated"
-description = "Section 2 of the demo script, revised to reflect the Shaped Load scenario, conformant scheduler manifests (Slurm/K8s/Ray), the Compute Racks modal detail, AlertDock latch behaviour, and GPU Generator auto-arm."
+title = "Tile-by-Tile Demo Script (Section 2).md"
+description = "Updated demo script — tile-by-tile walkthrough covering all zones, Compute Racks modal, AlertDock, scheduler manifests, and GPU Generator auto-arm."
