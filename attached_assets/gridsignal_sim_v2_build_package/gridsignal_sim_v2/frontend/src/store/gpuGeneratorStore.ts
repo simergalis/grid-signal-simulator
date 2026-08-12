@@ -47,21 +47,37 @@ export const DEFAULT_CONFIG: GeneratorConfig = {
 // ── Job types ─────────────────────────────────────────────────────────────────
 
 export interface SlurmJob {
+  // ── GridSignal internal ────────────────────────────────────────────────────
   type:        'slurm'
-  id:          string
-  name:        string
-  partition:   string
-  nodes:       number
-  gpusPerNode: number
-  totalGPUs:   number
+  id:          string               // display ID ("JOB-A-0001")
   tdpMW:       number
-  walltime:    string
   priority:    'high' | 'medium' | 'low'
   status:      'PENDING' | 'RUNNING' | 'COMPLETING'
-  submittedAt: number   // Date.now()
+  submittedAt: number               // Date.now() ms
   startsAt:    number
   completesAt: number
-  manifest:    string   // #SBATCH script snippet
+  gpusPerNode: number
+  totalGPUs:   number
+  walltime:    string               // HH:MM:SS display label
+  /** slurmrestd JSON snapshot — conforms to GET /slurm/v0.0.40/jobs/{job_id} */
+  manifest:    string
+  // ── slurmrestd fields (GET /slurm/v0.0.40/jobs) ───────────────────────────
+  slurm_job_id:   number            // raw Slurm integer job ID
+  name:           string
+  user_name:      string
+  job_state:      string[]          // ["PENDING"] | ["RUNNING"] | ["COMPLETING"]
+  partition:      string
+  nodes:          string            // node-range e.g. "gpu-node[014-029]"
+  node_count:     number
+  cpus:           number
+  tres_req_str:   string            // "cpu=N,mem=XG,gres/gpu=Y"
+  tres_alloc_str: string            // + ",gres/gpu:h100=Y"
+  start_time:     number            // unix epoch seconds
+  submit_time:    number
+  time_limit:     { set: boolean; number: number }  // minutes
+  features:       string            // "h100,nvlink4"
+  account:        string
+  qos:            string
 }
 
 export interface KubernetesJob {
@@ -125,6 +141,14 @@ const SLURM_NAMES = [
 ]
 
 const SLURM_PARTITIONS = ['gpu-high', 'gpu-medium', 'gpu-preempt', 'gpu-long']
+
+const SLURM_ACCOUNTS  = ['ml-research', 'ml-compute', 'inference-prod', 'data-platform', 'safety-research']
+const SLURM_USERS     = ['mlops', 'researcher', 'batch-runner', 'inference-eng', 'training-eng', 'data-eng']
+const SLURM_QOS: Record<'high' | 'medium' | 'low', string> = {
+  high:   'high-priority',
+  medium: 'normal',
+  low:    'preemptible',
+}
 
 const K8S_NAMES = [
   'inference-serving-prod', 'inference-serving-canary',
@@ -203,52 +227,80 @@ function walltimeForSize(size: 'small' | 'medium' | 'large'): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`
 }
 
+/** Convert "HH:MM:SS" walltime to whole minutes (Slurm time_limit.number). */
+function walltimeToMinutes(wt: string): number {
+  const [h, m] = wt.split(':').map(Number)
+  return h * 60 + m
+}
+
+/** Build a Slurm node-range string e.g. "gpu-node[014-029]" for `count` nodes. */
+function nodeRangeStr(count: number): string {
+  const base = rInt(0, 230)
+  const end  = base + count - 1
+  if (count === 1) return `gpu-node-${String(base).padStart(3, '0')}`
+  return `gpu-node[${String(base).padStart(3, '0')}-${String(end).padStart(3, '0')}]`
+}
+
 // ── Job factories ─────────────────────────────────────────────────────────────
 
 function makeSlurmJob(cfg: GeneratorConfig, now: number): SlurmJob {
-  const size      = rWeighted(cfg.jobSizes)
-  const totalGPUs = gpuCountForSize(size)
+  const size        = rWeighted(cfg.jobSizes)
+  const totalGPUs   = gpuCountForSize(size)
   const gpusPerNode = rPick([4, 8])
-  const nodes     = Math.max(1, Math.ceil(totalGPUs / gpusPerNode))
-  const id        = nextId('JOB-A')
-  const name      = rPick(SLURM_NAMES)
-  const partition = rPick(SLURM_PARTITIONS)
-  const priority  = priorityForSize(size)
-  const walltime  = walltimeForSize(size)
-  const tdpMW     = totalGPUs * GPU_TDP_MW
-  const dur       = rInt(cfg.jobDurationRange[0], cfg.jobDurationRange[1]) * 1000
-  const manifest  = [
-    `#!/bin/bash`,
-    `#SBATCH --job-name=${name}`,
-    `#SBATCH --partition=${partition}`,
-    `#SBATCH --nodes=${nodes}`,
-    `#SBATCH --ntasks-per-node=1`,
-    `#SBATCH --gres=gpu:h100:${gpusPerNode}`,
-    `#SBATCH --time=${walltime}`,
-    `#SBATCH --mem-per-gpu=120G`,
-    `#SBATCH --cpus-per-gpu=12`,
-    `#SBATCH --output=logs/%x_%j_%N.out`,
-    `#SBATCH --error=logs/%x_%j_%N.err`,
-    `#SBATCH --account=ml-compute`,
-    `#SBATCH --exclusive`,
-    ``,
-    `module purge`,
-    `module load cuda/12.3 nccl/2.19 pytorch/2.2`,
-    ``,
-    `export NCCL_DEBUG=INFO`,
-    `export NCCL_IB_DISABLE=0`,
-    `export MASTER_ADDR=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n1)`,
-    `export MASTER_PORT=29500`,
-    ``,
-    `srun --kill-on-bad-exit=1 \\`,
-    `  python ${name.replace(/-/g, '_')}.py \\`,
-    `    --nodes ${nodes} \\`,
-    `    --gpus-per-node ${gpusPerNode}`,
-  ].join('\n')
+  const node_count  = Math.max(1, Math.ceil(totalGPUs / gpusPerNode))
+  const id          = nextId('JOB-A')
+  const name        = rPick(SLURM_NAMES)
+  const partition   = rPick(SLURM_PARTITIONS)
+  const priority    = priorityForSize(size)
+  const walltime    = walltimeForSize(size)
+  const tdpMW       = totalGPUs * GPU_TDP_MW
+  const dur         = rInt(cfg.jobDurationRange[0], cfg.jobDurationRange[1]) * 1000
+  const account     = rPick(SLURM_ACCOUNTS)
+  const user_name   = rPick(SLURM_USERS)
+  const qos         = SLURM_QOS[priority]
+
+  // slurmrestd resource strings
+  const cpus           = totalGPUs * 12                        // 12 vCPU per H100
+  const memGB          = totalGPUs * 120                       // 120 GiB per H100
+  const tres_req_str   = `cpu=${cpus},mem=${memGB}G,gres/gpu=${totalGPUs}`
+  const tres_alloc_str = `${tres_req_str},gres/gpu:h100=${totalGPUs}`
+  const nodes          = nodeRangeStr(node_count)
+  const slurm_job_id   = rInt(4_000_000, 9_999_999)
+  const submit_time    = Math.floor(now / 1000)
+  const start_time     = Math.floor((now + 1_200_000) / 1000)  // +20 min queue wait
+
+  // slurmrestd-conformant JSON snapshot (GET /slurm/v0.0.40/jobs/{job_id})
+  const slurmObj = {
+    job_id:         slurm_job_id,
+    name,
+    user_name,
+    job_state:      ['PENDING'],
+    partition,
+    nodes,
+    node_count,
+    cpus,
+    tres_req_str,
+    tres_alloc_str,
+    submit_time,
+    start_time,
+    time_limit:     { set: true, number: walltimeToMinutes(walltime) },
+    features:       'h100,nvlink4',
+    account,
+    qos,
+  }
+  const manifest = JSON.stringify(slurmObj, null, 2)
+
   return {
-    type: 'slurm', id, name, partition, nodes, gpusPerNode, totalGPUs,
-    tdpMW, walltime, priority, status: 'PENDING', manifest,
-    submittedAt: now, startsAt: now + 1200, completesAt: now + dur,
+    type: 'slurm', id, tdpMW, priority, status: 'PENDING',
+    submittedAt: now, startsAt: now + 1_200_000, completesAt: now + dur,
+    gpusPerNode, totalGPUs, walltime, manifest,
+    // slurmrestd fields
+    slurm_job_id, name, user_name, job_state: ['PENDING'],
+    partition, nodes, node_count, cpus,
+    tres_req_str, tres_alloc_str,
+    submit_time, start_time,
+    time_limit: { set: true, number: walltimeToMinutes(walltime) },
+    features: 'h100,nvlink4', account, qos,
   }
 }
 
@@ -440,8 +492,10 @@ export const useGpuGeneratorStore = create<GpuGeneratorState>((set, get) => ({
     function advanceSlurm(jobs: SlurmJob[]): SlurmJob[] {
       return jobs
         .map(j => {
-          if (j.status === 'PENDING'     && now >= j.startsAt)    return { ...j, status: 'RUNNING'     as const }
-          if (j.status === 'RUNNING'     && now >= j.completesAt) return { ...j, status: 'COMPLETING'  as const }
+          if (j.status === 'PENDING'  && now >= j.startsAt)
+            return { ...j, status: 'RUNNING'    as const, job_state: ['RUNNING'],    start_time: Math.floor(now / 1000) }
+          if (j.status === 'RUNNING'  && now >= j.completesAt)
+            return { ...j, status: 'COMPLETING' as const, job_state: ['COMPLETING'] }
           return j
         })
         .filter(j => !(j.status === 'COMPLETING' && now >= j.completesAt + 3000))
