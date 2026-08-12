@@ -676,10 +676,10 @@ export const renewablePanel: PanelConfig = {
           const w = tick.solar_weather
           const c = tick.solar_conditions
           if (!w || w === 'physics_estimate') {
-            return { label: 'Conditions', value: 'Physics estimate', sub: 'San Diego baseline — Mistral unavailable', colour: '#5a6673' }
+            return { label: 'Conditions', value: 'Physics estimate', sub: 'SV1 baseline — Mistral unavailable', colour: '#5a6673' }
           }
           const label = w.replace(/_/g, ' ')
-          return { label: 'Conditions', value: label, sub: c || 'Mistral solar forecast · San Diego', colour: SOLAR }
+          return { label: 'Conditions', value: label, sub: c || 'Mistral solar forecast · SV1', colour: SOLAR }
         })(),
         // PROTO-32-AMB: ambient temperature row — hidden when ambient_avg_c is 0
         // (no solar forecast was generated for this run, so the adjustment is absent).

@@ -127,14 +127,14 @@ def set_site_location(loc: SiteLocation) -> None:
 
 
 def get_site_location_or_default() -> SiteLocation:
-    """Return the stored location, or San Diego if none has been stored.
+    """Return the stored location, or SV1 Silicon Valley if none has been stored.
 
     Only the opening-screen preview path uses this; the run-start path must
     call get_site_location() directly (returns 409 when not configured).
     """
     if _stored is not None:
         return _stored
-    return _SAN_DIEGO_DEFAULT
+    return _SV1_DEFAULT
 
 
 def utc_offset_for_dt(tz_name: str, utc_dt: datetime.datetime) -> float:
@@ -159,19 +159,19 @@ def utc_offset_for_dt(tz_name: str, utc_dt: datetime.datetime) -> float:
 
 
 # ---------------------------------------------------------------------------
-# Built-in fallback / default — San Diego, CA
+# Built-in fallback / default — SV1, Silicon Valley, CA
 # Only geographic literals permitted in this file.
 # ---------------------------------------------------------------------------
 
-_SAN_DIEGO_DEFAULT = SiteLocation(
-    site_name="San Diego, CA",
-    latitude_deg=32.72,
-    longitude_deg=-117.16,
+_SV1_DEFAULT = SiteLocation(
+    site_name="SV1 - Silicon Valley, California",
+    latitude_deg=37.39,
+    longitude_deg=-121.97,
     tz_name="America/Los_Angeles",
     source="default",
     climate_hint=(
-        "Marine layer ('June Gloom') common before 10:00; clear afternoons "
-        "near solar noon; occasional cloud transients; coastal moderate humidity."
+        "Mediterranean climate; warm dry summers with clear skies near solar noon; "
+        "mild winters with occasional low overcast; low humidity typical."
     ),
-    ambient_temp_base_c=14.0,
+    ambient_temp_base_c=15.5,
 )

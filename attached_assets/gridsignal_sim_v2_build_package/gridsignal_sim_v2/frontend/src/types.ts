@@ -553,7 +553,7 @@ export interface ScenarioSpec {
   band_mult_unmapped_hw?: number      // × multiplier for unmapped hardware
 
   // ── Site parameters ──────────────────────────────────────────────────────
-  site_latitude?: number              // degrees N (default 32.72 = San Diego)
+  site_latitude?: number              // degrees N (default 37.39 = SV1 Silicon Valley)
   site_utc_offset_h?: number          // UTC offset hours (default -8.0 = PST)
   ambient_temp_base_c?: number        // nighttime dry-bulb base °C (default 14.0)
 
