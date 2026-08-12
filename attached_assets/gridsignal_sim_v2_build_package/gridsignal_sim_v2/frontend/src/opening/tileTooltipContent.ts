@@ -49,7 +49,7 @@ export const TILE_TOOLTIPS: Record<string, TooltipContent> = {
   },
 
   'compute-racks': {
-    title: 'GPU Co-Location Data Center',
+    title: 'GPU Colo Center',
     body:  'A shared facility housing 33 tenant cages across 4 scheduler stacks (Slurm, Kubernetes, Ray). Each tenant operates independently — some share full job telemetry with GridSignal, others share only their circuit meter reading. GridSignal aggregates the total GPU IT load across all tenants and uses it as the demand signal for turbine commitment and BESS dispatch.',
   },
 

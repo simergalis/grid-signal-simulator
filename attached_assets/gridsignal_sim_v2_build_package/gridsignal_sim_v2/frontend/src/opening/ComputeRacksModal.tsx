@@ -271,7 +271,7 @@ function TenantDetailPanel({
       {/* Breadcrumb */}
       <div className="px-8 pt-4 pb-3 flex-shrink-0 flex items-center gap-2">
         <button onClick={onBack} className="text-xs text-muted hover:text-accent transition-colors">
-          ← GPU Co-Location Data Center
+          ← GPU Colo Center
         </button>
         <span className="text-muted text-xs">/</span>
         <span className="text-xs text-text font-medium">{tenant.name}</span>
@@ -469,7 +469,7 @@ export function ComputeRacksModal({ tick, onClose }: Props) {
   // ── Portal render ─────────────────────────────────────────────────────────
   const modal = (
     <div
-      role="dialog" aria-modal="true" aria-label="GPU Co-Location Data Center"
+      role="dialog" aria-modal="true" aria-label="GPU Colo Center"
       className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70"
       onMouseDown={e => { if (e.target === e.currentTarget) onClose() }}
     >
@@ -483,7 +483,7 @@ export function ComputeRacksModal({ tick, onClose }: Props) {
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <div className="flex items-start justify-between px-8 pt-7 pb-5 flex-shrink-0">
           <div>
-            <h2 className="text-[28px] font-bold text-text leading-none">GPU Co-Location Data Center</h2>
+            <h2 className="text-[28px] font-bold text-text leading-none">GPU Colo Center</h2>
             <p className="text-sm text-muted mt-1.5">
               {TOTAL_CAGES} cages · {SCHEDULER_STACKS} scheduler stacks · facility-wide GPU IT load
             </p>
