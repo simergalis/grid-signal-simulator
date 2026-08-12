@@ -1,31 +1,85 @@
 {
-  "name": "10-Tenant Overload — 120% Nameplate for 15 min",
-  "description": "Stress scenario derived from demo-10-tenant-full-ceiling. All 10 colo tenants run at full contracted ceiling throughout the 3-hour simulation. At t = 30:00 a massive compute burst fires for exactly 15 minutes, driving total site facility draw to 48.3 MW — 120% of the 40.25 MW generation nameplate and beyond what the fleet can sustain. The three gas turbines (hot/warm/cold) and 6 MW / 8 MWh BESS must absorb the step; BESS SoC will deplete rapidly and the reserve-gap alert will fire. At t = 45:00 the burst clears and the site recovers. Use this to observe overload protection, SoC recovery, and generator re-commitment sequencing. (seed=42, deterministic replay.)",
+  "name": "Shaped Load — 5%→40%→120%→40%→20% (90 min)",
+  "description": "90-minute shaped load profile against the SV1 generation fleet (40.25 MW nameplate — 3×10 MW turbines, 5 MW solar, 6 MW/8 MWh BESS). Load advances through five phases: t=0:00 warm-up floor at ~5% (2 MW); t=10:00 step to 40% (16.1 MW facility); t=30:00 overload burst to 120% (48.3 MW — 8 MW above nameplate, BESS depletes, reserve-gap alert fires); t=50:00 recovery back to 40%; t=60:00 step down to 20% (8.1 MW) and hold to end of run. Use to exercise overload protection, BESS SoC depletion and recovery, and generator re-commitment sequencing in a single 90-minute window. (Deterministic — no tenant events, workload-event driven.)",
   "workload_events": [
     {
-      "event_id": "evt-9b38b9fc",
-      "job_id": "floor-load",
+      "event_id": "evt-495e7993",
+      "job_id": "phase-floor",
       "event_type": "starting",
       "timestamp": 0.0,
-      "node_count": 50,
+      "node_count": 146,
       "hardware_profile_id": "enterprise_8gpu_air",
       "renewable_shortfall_mw": 0.0
     },
     {
-      "event_id": "evt-2cfc0e89",
-      "job_id": "overload-burst",
+      "event_id": "evt-2f9e3201",
+      "job_id": "phase-floor",
+      "event_type": "job_end",
+      "timestamp": 600.0,
+      "node_count": 0,
+      "hardware_profile_id": "enterprise_8gpu_air",
+      "renewable_shortfall_mw": 0.0
+    },
+    {
+      "event_id": "evt-b1c21ea1",
+      "job_id": "phase-40a",
+      "event_type": "starting",
+      "timestamp": 600.0,
+      "node_count": 1169,
+      "hardware_profile_id": "enterprise_8gpu_air",
+      "renewable_shortfall_mw": 0.0
+    },
+    {
+      "event_id": "evt-04cdf839",
+      "job_id": "phase-40a",
+      "event_type": "job_end",
+      "timestamp": 1800.0,
+      "node_count": 0,
+      "hardware_profile_id": "enterprise_8gpu_air",
+      "renewable_shortfall_mw": 0.0
+    },
+    {
+      "event_id": "evt-933e2f33",
+      "job_id": "phase-120",
       "event_type": "starting",
       "timestamp": 1800.0,
-      "node_count": 3179,
+      "node_count": 3508,
       "hardware_profile_id": "enterprise_8gpu_air",
       "renewable_shortfall_mw": 0.0
     },
     {
-      "event_id": "evt-d253231b",
-      "job_id": "overload-burst",
+      "event_id": "evt-641a6ab4",
+      "job_id": "phase-120",
       "event_type": "job_end",
-      "timestamp": 2700.0,
+      "timestamp": 3000.0,
       "node_count": 0,
+      "hardware_profile_id": "enterprise_8gpu_air",
+      "renewable_shortfall_mw": 0.0
+    },
+    {
+      "event_id": "evt-f004bf6b",
+      "job_id": "phase-40b",
+      "event_type": "starting",
+      "timestamp": 3000.0,
+      "node_count": 1169,
+      "hardware_profile_id": "enterprise_8gpu_air",
+      "renewable_shortfall_mw": 0.0
+    },
+    {
+      "event_id": "evt-8e7ee1b1",
+      "job_id": "phase-40b",
+      "event_type": "job_end",
+      "timestamp": 3600.0,
+      "node_count": 0,
+      "hardware_profile_id": "enterprise_8gpu_air",
+      "renewable_shortfall_mw": 0.0
+    },
+    {
+      "event_id": "evt-ef302259",
+      "job_id": "phase-20",
+      "event_type": "starting",
+      "timestamp": 3600.0,
+      "node_count": 585,
       "hardware_profile_id": "enterprise_8gpu_air",
       "renewable_shortfall_mw": 0.0
     }
@@ -131,7 +185,7 @@
   "relay_81u_delay_s": null,
   "power_factor": 0.85,
   "pue_base": 1.35,
-  "end_sim_time": 10800.0,
+  "end_sim_time": 5400.0,
   "demo_description": "",
   "default_playback_speed": 1.0,
   "dt_thermal_seconds": 90.0,
@@ -161,440 +215,7 @@
   "calibrated": false,
   "dq_inject_events": [],
   "solar_origin_utc_hour": null,
-  "tenant_events": [
-    {
-      "tenant_id": "a",
-      "scheduler": "Slurm",
-      "label": "diffusion-train-242",
-      "gpus": 1114,
-      "t_start": 38.0,
-      "duration_s": 950.0
-    },
-    {
-      "tenant_id": "a",
-      "scheduler": "Slurm",
-      "label": "data-parallel-eval-189",
-      "gpus": 1754,
-      "t_start": 1954.0,
-      "duration_s": 1881.0
-    },
-    {
-      "tenant_id": "a",
-      "scheduler": "Slurm",
-      "label": "diffusion-train-338",
-      "gpus": 1604,
-      "t_start": 4233.0,
-      "duration_s": 460.0
-    },
-    {
-      "tenant_id": "a",
-      "scheduler": "Slurm",
-      "label": "data-parallel-eval-529",
-      "gpus": 1517,
-      "t_start": 6303.0,
-      "duration_s": 1522.0
-    },
-    {
-      "tenant_id": "a",
-      "scheduler": "Slurm",
-      "label": "llm-finetune-70B-877",
-      "gpus": 1225,
-      "t_start": 7874.0,
-      "duration_s": 956.0
-    },
-    {
-      "tenant_id": "a",
-      "scheduler": "Slurm",
-      "label": "rl-sweep-259",
-      "gpus": 1825,
-      "t_start": 9239.0,
-      "duration_s": 891.0
-    },
-    {
-      "tenant_id": "b",
-      "scheduler": "Kubernetes",
-      "label": "vision-pretrain-967",
-      "gpus": 1058,
-      "t_start": 245.0,
-      "duration_s": 1160.0
-    },
-    {
-      "tenant_id": "b",
-      "scheduler": "Kubernetes",
-      "label": "reward-model-train-649",
-      "gpus": 1066,
-      "t_start": 4149.0,
-      "duration_s": 2014.0
-    },
-    {
-      "tenant_id": "b",
-      "scheduler": "Kubernetes",
-      "label": "data-parallel-eval-400",
-      "gpus": 841,
-      "t_start": 7735.0,
-      "duration_s": 1157.0
-    },
-    {
-      "tenant_id": "b",
-      "scheduler": "Kubernetes",
-      "label": "fp8-quant-sweep-296",
-      "gpus": 1357,
-      "t_start": 9584.0,
-      "duration_s": 1103.0
-    },
-    {
-      "tenant_id": "c",
-      "scheduler": "Ray",
-      "label": "rl-sweep-181",
-      "gpus": 463,
-      "t_start": 69.0,
-      "duration_s": 856.0
-    },
-    {
-      "tenant_id": "c",
-      "scheduler": "Ray",
-      "label": "reward-model-train-750",
-      "gpus": 547,
-      "t_start": 3100.0,
-      "duration_s": 1160.0
-    },
-    {
-      "tenant_id": "c",
-      "scheduler": "Ray",
-      "label": "diffusion-train-786",
-      "gpus": 855,
-      "t_start": 4147.0,
-      "duration_s": 1140.0
-    },
-    {
-      "tenant_id": "c",
-      "scheduler": "Ray",
-      "label": "inference-burst-723",
-      "gpus": 564,
-      "t_start": 6453.0,
-      "duration_s": 1767.0
-    },
-    {
-      "tenant_id": "c",
-      "scheduler": "Ray",
-      "label": "embedding-batch-573",
-      "gpus": 753,
-      "t_start": 7457.0,
-      "duration_s": 1858.0
-    },
-    {
-      "tenant_id": "c",
-      "scheduler": "Ray",
-      "label": "data-parallel-eval-324",
-      "gpus": 622,
-      "t_start": 9405.0,
-      "duration_s": 1321.0
-    },
-    {
-      "tenant_id": "d",
-      "scheduler": null,
-      "label": "diffusion-train-941",
-      "gpus": 903,
-      "t_start": 1264.0,
-      "duration_s": 1952.0
-    },
-    {
-      "tenant_id": "d",
-      "scheduler": null,
-      "label": "inference-burst-316",
-      "gpus": 603,
-      "t_start": 3008.0,
-      "duration_s": 1202.0
-    },
-    {
-      "tenant_id": "d",
-      "scheduler": null,
-      "label": "reward-model-train-246",
-      "gpus": 893,
-      "t_start": 3919.0,
-      "duration_s": 1398.0
-    },
-    {
-      "tenant_id": "d",
-      "scheduler": null,
-      "label": "data-parallel-eval-369",
-      "gpus": 842,
-      "t_start": 5609.0,
-      "duration_s": 1890.0
-    },
-    {
-      "tenant_id": "d",
-      "scheduler": null,
-      "label": "diffusion-train-241",
-      "gpus": 1009,
-      "t_start": 8547.0,
-      "duration_s": 1140.0
-    },
-    {
-      "tenant_id": "d",
-      "scheduler": null,
-      "label": "inference-burst-256",
-      "gpus": 1092,
-      "t_start": 9740.0,
-      "duration_s": 899.0
-    },
-    {
-      "tenant_id": "e",
-      "scheduler": null,
-      "label": "inference-burst-494",
-      "gpus": 402,
-      "t_start": 1188.0,
-      "duration_s": 1244.0
-    },
-    {
-      "tenant_id": "e",
-      "scheduler": null,
-      "label": "rl-sweep-666",
-      "gpus": 516,
-      "t_start": 2694.0,
-      "duration_s": 1336.0
-    },
-    {
-      "tenant_id": "e",
-      "scheduler": null,
-      "label": "data-parallel-eval-868",
-      "gpus": 326,
-      "t_start": 4620.0,
-      "duration_s": 629.0
-    },
-    {
-      "tenant_id": "e",
-      "scheduler": null,
-      "label": "rl-sweep-545",
-      "gpus": 457,
-      "t_start": 6553.0,
-      "duration_s": 1080.0
-    },
-    {
-      "tenant_id": "e",
-      "scheduler": null,
-      "label": "rl-sweep-612",
-      "gpus": 401,
-      "t_start": 7881.0,
-      "duration_s": 2308.0
-    },
-    {
-      "tenant_id": "e",
-      "scheduler": null,
-      "label": "rl-sweep-961",
-      "gpus": 412,
-      "t_start": 9762.0,
-      "duration_s": 468.0
-    },
-    {
-      "tenant_id": "f",
-      "scheduler": "Slurm",
-      "label": "embedding-batch-652",
-      "gpus": 271,
-      "t_start": 913.0,
-      "duration_s": 706.0
-    },
-    {
-      "tenant_id": "f",
-      "scheduler": "Slurm",
-      "label": "reward-model-train-119",
-      "gpus": 277,
-      "t_start": 3178.0,
-      "duration_s": 1598.0
-    },
-    {
-      "tenant_id": "f",
-      "scheduler": "Slurm",
-      "label": "rl-sweep-345",
-      "gpus": 170,
-      "t_start": 4994.0,
-      "duration_s": 2157.0
-    },
-    {
-      "tenant_id": "f",
-      "scheduler": "Slurm",
-      "label": "inference-burst-187",
-      "gpus": 156,
-      "t_start": 5761.0,
-      "duration_s": 1535.0
-    },
-    {
-      "tenant_id": "f",
-      "scheduler": "Slurm",
-      "label": "data-parallel-eval-884",
-      "gpus": 266,
-      "t_start": 8424.0,
-      "duration_s": 2332.0
-    },
-    {
-      "tenant_id": "f",
-      "scheduler": "Slurm",
-      "label": "data-parallel-eval-269",
-      "gpus": 174,
-      "t_start": 9193.0,
-      "duration_s": 974.0
-    },
-    {
-      "tenant_id": "g",
-      "scheduler": "Kubernetes",
-      "label": "diffusion-train-652",
-      "gpus": 277,
-      "t_start": 1623.0,
-      "duration_s": 1246.0
-    },
-    {
-      "tenant_id": "g",
-      "scheduler": "Kubernetes",
-      "label": "vision-pretrain-548",
-      "gpus": 193,
-      "t_start": 3486.0,
-      "duration_s": 1198.0
-    },
-    {
-      "tenant_id": "g",
-      "scheduler": "Kubernetes",
-      "label": "inference-burst-446",
-      "gpus": 274,
-      "t_start": 5160.0,
-      "duration_s": 896.0
-    },
-    {
-      "tenant_id": "g",
-      "scheduler": "Kubernetes",
-      "label": "diffusion-train-107",
-      "gpus": 147,
-      "t_start": 7574.0,
-      "duration_s": 860.0
-    },
-    {
-      "tenant_id": "g",
-      "scheduler": "Kubernetes",
-      "label": "inference-burst-132",
-      "gpus": 160,
-      "t_start": 9957.0,
-      "duration_s": 426.0
-    },
-    {
-      "tenant_id": "h",
-      "scheduler": "Ray",
-      "label": "reward-model-train-319",
-      "gpus": 160,
-      "t_start": 956.0,
-      "duration_s": 957.0
-    },
-    {
-      "tenant_id": "h",
-      "scheduler": "Ray",
-      "label": "fp8-quant-sweep-690",
-      "gpus": 280,
-      "t_start": 2406.0,
-      "duration_s": 2271.0
-    },
-    {
-      "tenant_id": "h",
-      "scheduler": "Ray",
-      "label": "tokenizer-distil-294",
-      "gpus": 263,
-      "t_start": 4772.0,
-      "duration_s": 1346.0
-    },
-    {
-      "tenant_id": "h",
-      "scheduler": "Ray",
-      "label": "tokenizer-distil-520",
-      "gpus": 166,
-      "t_start": 6660.0,
-      "duration_s": 1262.0
-    },
-    {
-      "tenant_id": "h",
-      "scheduler": "Ray",
-      "label": "inference-burst-162",
-      "gpus": 261,
-      "t_start": 10247.0,
-      "duration_s": 408.0
-    },
-    {
-      "tenant_id": "i",
-      "scheduler": null,
-      "label": "diffusion-train-294",
-      "gpus": 228,
-      "t_start": 1489.0,
-      "duration_s": 619.0
-    },
-    {
-      "tenant_id": "i",
-      "scheduler": null,
-      "label": "rl-sweep-573",
-      "gpus": 279,
-      "t_start": 2994.0,
-      "duration_s": 1244.0
-    },
-    {
-      "tenant_id": "i",
-      "scheduler": null,
-      "label": "data-parallel-eval-200",
-      "gpus": 205,
-      "t_start": 5947.0,
-      "duration_s": 551.0
-    },
-    {
-      "tenant_id": "i",
-      "scheduler": null,
-      "label": "llm-finetune-70B-195",
-      "gpus": 154,
-      "t_start": 7693.0,
-      "duration_s": 1481.0
-    },
-    {
-      "tenant_id": "i",
-      "scheduler": null,
-      "label": "diffusion-train-985",
-      "gpus": 202,
-      "t_start": 8949.0,
-      "duration_s": 1105.0
-    },
-    {
-      "tenant_id": "j",
-      "scheduler": null,
-      "label": "tokenizer-distil-371",
-      "gpus": 157,
-      "t_start": 306.0,
-      "duration_s": 404.0
-    },
-    {
-      "tenant_id": "j",
-      "scheduler": null,
-      "label": "data-parallel-eval-777",
-      "gpus": 258,
-      "t_start": 2691.0,
-      "duration_s": 1793.0
-    },
-    {
-      "tenant_id": "j",
-      "scheduler": null,
-      "label": "llm-finetune-70B-693",
-      "gpus": 266,
-      "t_start": 4608.0,
-      "duration_s": 993.0
-    },
-    {
-      "tenant_id": "j",
-      "scheduler": null,
-      "label": "llm-finetune-70B-698",
-      "gpus": 280,
-      "t_start": 6593.0,
-      "duration_s": 1027.0
-    },
-    {
-      "tenant_id": "j",
-      "scheduler": null,
-      "label": "embedding-batch-158",
-      "gpus": 264,
-      "t_start": 9575.0,
-      "duration_s": 1103.0
-    }
-  ],
+  "tenant_events": [],
   "generator_config": null,
   "assertions": [],
   "fabric_scenario_id": null,
