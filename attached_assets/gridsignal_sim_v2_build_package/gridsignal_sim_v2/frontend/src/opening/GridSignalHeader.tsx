@@ -9,6 +9,8 @@
  */
 
 import { useEffect, useRef, useState } from 'react'
+import { useTickStore }    from '../store/tickStore'
+import { useScenarioStore } from '../store/scenarioStore'
 
 interface Props {
   runId: string | null
@@ -32,7 +34,28 @@ function utcNow(): string {
 
 const DEFAULT_SITE_NAME = 'SV1 - Silicon Valley, California'
 
+function formatSimTime(seconds: number): string {
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = Math.floor(seconds % 60)
+  return [h, m, s].map(v => String(v).padStart(2, '0')).join(':')
+}
+
+function speedLabel(speed: number): string {
+  if (speed <= 0)  return 'max speed'
+  if (speed === 1) return '1× real-time'
+  return `${speed}× speed`
+}
+
 export function GridSignalHeader({ runId, onHowItWorks, displayName, role, onLogout, onAdmin, onChangePassword }: Props) {
+  const tick         = useTickStore(s => s.latestTick)
+  const meta         = useTickStore(s => s.runMeta)
+  const selectedSpec = useScenarioStore(s => s.selectedSpec)
+
+  const simTime  = tick?.sim_time_seconds ?? 0
+  const endTime  = selectedSpec?.end_sim_time ?? 0
+  const speed    = meta?.playback_speed ?? 1
+  const progress = endTime > 0 ? Math.min(simTime / endTime, 1) : 0
   const [clock, setClock] = useState(utcNow)
 
   // ── Site name (editable) ──────────────────────────────────────────────────
@@ -267,6 +290,55 @@ export function GridSignalHeader({ runId, onHowItWorks, displayName, role, onLog
           {statusText}
         </span>
       </div>
+
+      {/* ── Sim clock (only when a run is active) ────────────────────────── */}
+      {runId && (
+        <>
+          <div className="self-stretch w-px bg-border" />
+          <div className="flex flex-col justify-center px-5" style={{ minWidth: 180 }}>
+            {/* Time display */}
+            <div className="flex items-baseline gap-1.5">
+              <span
+                className="tabular-nums font-bold"
+                style={{ fontFamily: "'SF Mono','Roboto Mono',Menlo,Consolas,monospace", fontSize: 15, color: '#3fb6a8' }}
+              >
+                {formatSimTime(simTime)}
+              </span>
+              {endTime > 0 && (
+                <span
+                  className="tabular-nums"
+                  style={{ fontFamily: "'SF Mono','Roboto Mono',Menlo,Consolas,monospace", fontSize: 10, color: '#4b5764' }}
+                >
+                  / {formatSimTime(endTime)}
+                </span>
+              )}
+            </div>
+
+            {/* Progress bar */}
+            {endTime > 0 && (
+              <div
+                className="mt-1 rounded-full overflow-hidden"
+                style={{ height: 3, background: '#1c2733', width: '100%' }}
+              >
+                <div
+                  style={{
+                    height: '100%',
+                    width: `${progress * 100}%`,
+                    background: '#3fb6a8',
+                    transition: 'width 0.25s linear',
+                    borderRadius: 9999,
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Speed label */}
+            <div className="font-sans mt-0.5" style={{ fontSize: 9, color: '#4b5764' }}>
+              {speedLabel(speed)}
+            </div>
+          </div>
+        </>
+      )}
 
       {/* ── Separator ─────────────────────────────────────────────────────── */}
       <div className="self-stretch w-px bg-border" />
