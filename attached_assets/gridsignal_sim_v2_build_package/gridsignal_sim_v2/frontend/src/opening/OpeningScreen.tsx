@@ -24,6 +24,7 @@ import { VerdictBand }      from './VerdictBand'
 import { PlantDiagram }     from './PlantDiagram'
 import type { SolarPreview } from './PlantNode'
 import { SubsystemModal }   from '../subsystem/SubsystemModal'
+import { ComputeRacksModal } from './ComputeRacksModal'
 import { SubsystemTile }    from '../readiness/SubsystemTile'
 import type { TileState }   from '../readiness/SubsystemTile'
 import { ReadinessScreen }  from '../readiness/ReadinessScreen'
@@ -50,13 +51,15 @@ interface OpeningScreenProps {
 
 export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
   const [windowWidth,   setWindowWidth]   = useState(() => window.innerWidth)
-  const [activeModal,   setActiveModal]   = useState<string | null>(null)
+  const [activeModal,      setActiveModal]      = useState<string | null>(null)
+  const [computeRacksOpen, setComputeRacksOpen] = useState(false)
   const [compact,       setCompact]       = useState(false)
   const [solarPreview,  setSolarPreview]  = useState<SolarPreview | null>(null)
   const [liveSolarMW,   setLiveSolarMW]   = useState<number | null>(null)
   const solarFetched = useRef(false)
 
   const data = useSubsystemData()
+  const tick = useTickStore(s => s.latestTick)
 
   useEffect(() => {
     function onResize() {
@@ -109,6 +112,11 @@ export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
   // ── Node click handler ──────────────────────────────────────────────────
 
   const handleNodeClick = (nodeId: string) => {
+    // COMPUTE RACKS gets its own multi-tenant modal instead of the generic subsystem view.
+    if (nodeId === 'compute-racks') {
+      setComputeRacksOpen(true)
+      return
+    }
     const target = NODE_MODAL_MAP[nodeId]
     if (!target) return
     if (target.tabRoute) {
@@ -164,6 +172,13 @@ export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
             setActiveModal(null)
             onNavigate?.(tabId)
           }}
+        />
+      )}
+
+      {computeRacksOpen && (
+        <ComputeRacksModal
+          tick={tick}
+          onClose={() => setComputeRacksOpen(false)}
         />
       )}
 
