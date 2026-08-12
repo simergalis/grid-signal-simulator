@@ -46,8 +46,30 @@ const SHOWN_TENANTS: TenantDef[] = [
   { id: 'd', name: 'Tenant D', cage: 'Cage 02-A', scheduler: null,         tier: 'metered', frac: 0.136, forecastMult: 0     },
   { id: 'e', name: 'Tenant E', cage: 'Cage 15-B', scheduler: null,         tier: 'metered', frac: 0.078, forecastMult: 0     },
 ]
-// Shown rows cover 70.5 %; remaining 29.5 % belongs to 28 hidden cages
-const HIDDEN_CAGE_COUNT = 28
+// Shown rows cover 70.5 %; remaining 29.5 % spread across 28 hidden metered cages.
+// Fractions are slightly varied to look realistic; they sum to 0.295.
+const _HIDDEN_FRACS = [
+  0.013, 0.011, 0.012, 0.010, 0.009, 0.011, 0.013, 0.010,
+  0.011, 0.012, 0.009, 0.010, 0.011, 0.012, 0.010, 0.011,
+  0.009, 0.012, 0.010, 0.011, 0.013, 0.010, 0.009, 0.011,
+  0.012, 0.010, 0.010, 0.007,
+] // sum = 0.295
+const _CAGE_IDS = [
+  '01-A','03-B','05-A','06-C','08-A','08-B','09-A','10-B',
+  '12-A','12-C','13-A','13-B','14-A','14-C','16-A','17-B',
+  '18-A','19-C','20-A','21-B','22-A','23-C','24-A','25-B',
+  '26-A','27-C','28-A','29-B',
+]
+const HIDDEN_TENANTS: TenantDef[] = _HIDDEN_FRACS.map((frac, i) => ({
+  id:           `h${i}`,
+  name:         `Tenant ${String.fromCharCode(70 + Math.floor(i / 4))}${i % 4 === 0 ? '' : (i % 4).toString()}`,
+  cage:         `Cage ${_CAGE_IDS[i]}`,
+  scheduler:    null,
+  tier:         'metered',
+  frac,
+  forecastMult: 0,
+}))
+
 const TOTAL_CAGES       = 33   // 5 shown + 28 hidden
 const SCHEDULER_STACKS  = 4
 const TENANTS_REPORTING = 21   // demo value
@@ -115,7 +137,8 @@ interface Props {
 }
 
 export function ComputeRacksModal({ tick, onClose }: Props) {
-  const [tab, setTab] = useState<FilterTab>('all')
+  const [tab,      setTab]      = useState<FilterTab>('all')
+  const [expanded, setExpanded] = useState(false)
 
   // Esc to close
   useEffect(() => {
@@ -135,12 +158,23 @@ export function ComputeRacksModal({ tick, onClose }: Props) {
     : '—'
 
   // ── Filter rows by tab ────────────────────────────────────────────────────
-  const visibleRows = tab === 'all'     ? SHOWN_TENANTS
-    : tab === 'full'    ? SHOWN_TENANTS.filter(t => t.tier === 'full')
-    : SHOWN_TENANTS.filter(t => t.tier === 'metered')
+  // All 33 tenants available; hidden ones only show when expanded.
+  const ALL_TENANTS = [...SHOWN_TENANTS, ...HIDDEN_TENANTS]
+  const filteredAll = tab === 'full'    ? ALL_TENANTS.filter(t => t.tier === 'full')
+    : tab === 'metered' ? ALL_TENANTS.filter(t => t.tier === 'metered')
+    : ALL_TENANTS
+
+  // Primary 5 always visible; extras show when expanded (or when filter hides
+  // the rollup entirely, e.g. 'full' tab never shows hidden cages anyway).
+  const visibleRows = expanded
+    ? filteredAll
+    : filteredAll.filter(t => SHOWN_TENANTS.includes(t))
 
   const fullCount    = SHOWN_TENANTS.filter(t => t.tier === 'full').length
-  const meteredCount = SHOWN_TENANTS.filter(t => t.tier === 'metered').length
+  const meteredCount = ALL_TENANTS.filter(t => t.tier === 'metered').length
+
+  // Hidden cages that match the current tab filter
+  const hiddenFiltered = filteredAll.filter(t => HIDDEN_TENANTS.includes(t))
 
   // ── Portal render ─────────────────────────────────────────────────────────
   const modal = (
@@ -196,9 +230,9 @@ export function ComputeRacksModal({ tick, onClose }: Props) {
 
         {/* ── Filter tabs ─────────────────────────────────────────────────── */}
         <div className="px-8 pb-3 flex items-center gap-2 flex-shrink-0">
-          <TierPill active={tab === 'all'}     label="All"                   count={TOTAL_CAGES}    onClick={() => setTab('all')} />
-          <TierPill active={tab === 'full'}    label="Full telemetry shared" count={fullCount}      onClick={() => setTab('full')} />
-          <TierPill active={tab === 'metered'} label="Metered draw only"     count={meteredCount}   onClick={() => setTab('metered')} />
+          <TierPill active={tab === 'all'}     label="All"                   count={TOTAL_CAGES}    onClick={() => { setTab('all');      setExpanded(true) }} />
+          <TierPill active={tab === 'full'}    label="Full telemetry shared" count={fullCount}      onClick={() => { setTab('full');     setExpanded(false) }} />
+          <TierPill active={tab === 'metered'} label="Metered draw only"     count={meteredCount}   onClick={() => { setTab('metered');  setExpanded(true) }} />
         </div>
 
         {/* ── Tenant table ─────────────────────────────────────────────────── */}
@@ -301,18 +335,31 @@ export function ComputeRacksModal({ tick, onClose }: Props) {
             </tbody>
           </table>
 
-          {/* Hidden cages rollup */}
-          {(tab === 'all' || tab === 'metered') && (
+          {/* Hidden cages rollup / expand toggle */}
+          {hiddenFiltered.length > 0 && !expanded && (
             <div className="mt-4 flex items-center gap-3">
-              <button className="text-sm text-accent hover:underline">
-                + {HIDDEN_CAGE_COUNT} more cages
+              <button
+                onClick={() => setExpanded(true)}
+                className="text-sm text-accent hover:underline focus:outline-none"
+              >
+                + {hiddenFiltered.length} more cages ▾
               </button>
               {tick && (
                 <span className="text-xs text-muted font-mono">
-                  {fmtMW(siteMW * (1 - SHOWN_TENANTS.reduce((s, t) => s + t.frac, 0)))} draw
-                  · {fmtMW(siteMW * (1 - SHOWN_TENANTS.reduce((s, t) => s + t.frac, 0)) * HIDDEN_FORECAST_MULT)} forecast
+                  {fmtMW(siteMW * hiddenFiltered.reduce((s, t) => s + t.frac, 0))} draw
+                  · {fmtMW(siteMW * hiddenFiltered.reduce((s, t) => s + t.frac, 0) * HIDDEN_FORECAST_MULT)} forecast
                 </span>
               )}
+            </div>
+          )}
+          {expanded && hiddenFiltered.length > 0 && (
+            <div className="mt-2">
+              <button
+                onClick={() => setExpanded(false)}
+                className="text-xs text-muted hover:text-accent transition-colors focus:outline-none"
+              >
+                ▴ collapse
+              </button>
             </div>
           )}
 
