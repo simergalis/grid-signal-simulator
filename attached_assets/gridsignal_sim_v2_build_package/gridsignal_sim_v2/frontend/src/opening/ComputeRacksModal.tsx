@@ -152,6 +152,57 @@ const PRIORITY_COLOUR: Record<string, string> = {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
+/**
+ * InfoTooltip — a small ⓘ badge that reveals a styled card on hover.
+ * Written in plain CSS-in-JS (no extra library) so it works in the
+ * existing Tailwind + inline-style setup.
+ */
+function InfoTooltip({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="relative inline-flex items-center group/tip ml-1.5 cursor-default">
+      {/* Badge */}
+      <span
+        className="inline-flex items-center justify-center rounded-full text-[10px] font-bold leading-none select-none"
+        style={{
+          width: 14, height: 14,
+          background: '#1e2a36',
+          border: '1px solid #2e3d4d',
+          color: '#5a7a96',
+        }}
+      >ⓘ</span>
+
+      {/* Card — appears above the badge */}
+      <span
+        className="pointer-events-none absolute z-[200] hidden group-hover/tip:flex flex-col gap-2
+                   rounded-lg border shadow-2xl text-left"
+        style={{
+          bottom: 'calc(100% + 8px)',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: 300,
+          background: '#0f1923',
+          borderColor: '#2e3d4d',
+          padding: '14px 16px',
+        }}
+      >
+        {/* Arrow */}
+        <span
+          className="absolute"
+          style={{
+            top: '100%', left: '50%',
+            transform: 'translateX(-50%)',
+            width: 0, height: 0,
+            borderLeft: '7px solid transparent',
+            borderRight: '7px solid transparent',
+            borderTop: '7px solid #2e3d4d',
+          }}
+        />
+        {children}
+      </span>
+    </span>
+  )
+}
+
 function StatBox({ label, value, valueColour, sub }: {
   label: string; value: string; valueColour?: string; sub?: string
 }) {
@@ -564,7 +615,34 @@ export function ComputeRacksModal({ tick, onClose }: Props) {
                         <td className="py-4 pr-4">
                           {t.tier === 'full'
                             ? <span className="text-text">Full</span>
-                            : <span className="text-muted">Metered only</span>}
+                            : (
+                              <span className="inline-flex items-center">
+                                <span className="text-muted">Metered only</span>
+                                <InfoTooltip>
+                                  <span className="text-[11px] font-semibold uppercase tracking-wider"
+                                    style={{ color: '#5a7a96' }}>
+                                    What is circuit metering?
+                                  </span>
+                                  <span className="text-xs leading-relaxed" style={{ color: '#8ca8c0' }}>
+                                    This tenant has agreed to share <strong style={{ color: '#c8d6e5' }}>only
+                                    their power meter reading</strong> — the total electricity flowing into
+                                    their cage, measured at the circuit breaker. Think of it like a utility
+                                    bill: the data centre knows how many kilowatts are being used, but not
+                                    what's running inside.
+                                  </span>
+                                  <span className="text-xs leading-relaxed" style={{ color: '#8ca8c0' }}>
+                                    They have <strong style={{ color: '#c8d6e5' }}>not opted in</strong> to
+                                    sharing job schedules, GPU node counts, or workload details.
+                                    GridSignal still manages the site's total power supply using their
+                                    meter reading — it just can't see inside their operation.
+                                  </span>
+                                  <span className="text-[10px] leading-relaxed" style={{ color: '#4b6375' }}>
+                                    The ~ GPU estimate is reverse-engineered from their power draw
+                                    (watts ÷ 700 W per H100), not data they have shared.
+                                  </span>
+                                </InfoTooltip>
+                              </span>
+                            )}
                         </td>
                         <td className="py-4 text-right">
                           {t.tier === 'full' ? (
