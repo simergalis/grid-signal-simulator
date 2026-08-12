@@ -24,8 +24,11 @@ export interface GeneratorConfig {
   burstIntervalSeconds: [number, number]      // [min, max] s between bursts
   tenantWeights: { a: number; b: number; c: number }  // must sum to 1
   jobSizes: { small: number; medium: number; large: number }  // must sum to 1
-  maxJobsPerTenant: number                    // cap live jobs per tenant
+  maxJobsPerTenant: number                    // hard cap on live job count per tenant
   jobDurationRange: [number, number]          // [min, max] seconds running
+  /** Contracted power ceiling per tenant (MW). Matches colo contract signed values.
+   *  The generator will not add a job that would push a tenant over this limit. */
+  tenantContracts: { a: number; b: number; c: number }
 }
 
 export const DEFAULT_CONFIG: GeneratorConfig = {
@@ -37,6 +40,8 @@ export const DEFAULT_CONFIG: GeneratorConfig = {
   jobSizes:             { small: 0.30, medium: 0.50, large: 0.20 },
   maxJobsPerTenant:     12,
   jobDurationRange:     [60, 240],
+  // Mirror the contractedMW values in ComputeRacksModal's SHOWN_TENANTS catalogue.
+  tenantContracts:      { a: 1.40, b: 1.00, c: 0.60 },
 }
 
 // ── Job types ─────────────────────────────────────────────────────────────────
@@ -421,19 +426,33 @@ export const useGpuGeneratorStore = create<GpuGeneratorState>((set, get) => ({
       }
     }
 
+    // Live MW draw per tenant (sum of active/pending job TDP)
+    const liveMW = {
+      a: nextA.filter(j => j.status !== 'COMPLETING').reduce((s, j) => s + j.tdpMW, 0),
+      b: nextB.filter(j => j.status !== 'Succeeded').reduce((s, j) => s + j.tdpMW, 0),
+      c: nextC.filter(j => j.status !== 'SUCCEEDED').reduce((s, j) => s + j.tdpMW, 0),
+    }
+
     for (let i = 0; i < newJobs; i++) {
       const tenant = rWeighted(config.tenantWeights)
       if (tenant === 'a' && nextA.length < config.maxJobsPerTenant) {
         const j = makeSlurmJob(config, now)
+        // Respect contracted ceiling — skip if this job would exceed it
+        if (liveMW.a + j.tdpMW > config.tenantContracts.a) continue
         nextA.push(j)
+        liveMW.a += j.tdpMW
         feedUpdates.push({ id: `fe-${now}-${i}`, ts: now, tenant: 'A', action: 'SUBMITTED', jobId: j.id, jobName: j.name, gpus: j.totalGPUs, tdpMW: j.tdpMW })
       } else if (tenant === 'b' && nextB.length < config.maxJobsPerTenant) {
         const j = makeKubernetesJob(config, now)
+        if (liveMW.b + j.tdpMW > config.tenantContracts.b) continue
         nextB.push(j)
+        liveMW.b += j.tdpMW
         feedUpdates.push({ id: `fe-${now}-${i}`, ts: now, tenant: 'B', action: 'SUBMITTED', jobId: j.id, jobName: j.name, gpus: j.totalGPUs, tdpMW: j.tdpMW })
       } else if (tenant === 'c' && nextC.length < config.maxJobsPerTenant) {
         const j = makeRayJob(config, now)
+        if (liveMW.c + j.tdpMW > config.tenantContracts.c) continue
         nextC.push(j)
+        liveMW.c += j.tdpMW
         feedUpdates.push({ id: `fe-${now}-${i}`, ts: now, tenant: 'C', action: 'SUBMITTED', jobId: j.id, jobName: j.entrypoint.split(' ')[1] ?? 'ray-job', gpus: j.totalGPUs, tdpMW: j.tdpMW })
       }
     }

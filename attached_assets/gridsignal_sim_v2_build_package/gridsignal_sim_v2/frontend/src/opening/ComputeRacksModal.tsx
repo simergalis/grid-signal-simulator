@@ -28,14 +28,18 @@ interface TenantDef {
   tier:         'full' | 'metered'
   frac:         number        // fraction of total p_compute_mw
   forecastMult: number
+  contractedMW: number        // maximum simultaneous draw per signed contract
 }
 
+// contractedMW sets each tenant's power ceiling — the hard limit written into
+// their colo agreement. Circuit breakers are sized to this figure; exceeding it
+// trips the breaker. Implies a GPU cap: contractedMW ÷ 0.0007 MW/H100.
 const SHOWN_TENANTS: TenantDef[] = [
-  { id: 'a', name: 'Tenant A', cage: 'Cage 04-B', scheduler: 'Slurm',      tier: 'full',    frac: 0.226, forecastMult: 1.086 },
-  { id: 'b', name: 'Tenant B', cage: 'Cage 07-A', scheduler: 'Kubernetes', tier: 'full',    frac: 0.165, forecastMult: 1.088 },
-  { id: 'c', name: 'Tenant C', cage: 'Cage 11-C', scheduler: 'Ray',        tier: 'full',    frac: 0.100, forecastMult: 1.098 },
-  { id: 'd', name: 'Tenant D', cage: 'Cage 02-A', scheduler: null,         tier: 'metered', frac: 0.136, forecastMult: 0     },
-  { id: 'e', name: 'Tenant E', cage: 'Cage 15-B', scheduler: null,         tier: 'metered', frac: 0.078, forecastMult: 0     },
+  { id: 'a', name: 'Tenant A', cage: 'Cage 04-B', scheduler: 'Slurm',      tier: 'full',    frac: 0.226, forecastMult: 1.086, contractedMW: 1.40 },
+  { id: 'b', name: 'Tenant B', cage: 'Cage 07-A', scheduler: 'Kubernetes', tier: 'full',    frac: 0.165, forecastMult: 1.088, contractedMW: 1.00 },
+  { id: 'c', name: 'Tenant C', cage: 'Cage 11-C', scheduler: 'Ray',        tier: 'full',    frac: 0.100, forecastMult: 1.098, contractedMW: 0.60 },
+  { id: 'd', name: 'Tenant D', cage: 'Cage 02-A', scheduler: null,         tier: 'metered', frac: 0.136, forecastMult: 0,     contractedMW: 0.80 },
+  { id: 'e', name: 'Tenant E', cage: 'Cage 15-B', scheduler: null,         tier: 'metered', frac: 0.078, forecastMult: 0,     contractedMW: 0.45 },
 ]
 
 const _HIDDEN_FRACS = [
@@ -58,6 +62,7 @@ const HIDDEN_TENANTS: TenantDef[] = _HIDDEN_FRACS.map((frac, i) => ({
   tier:         'metered',
   frac,
   forecastMult: 0,
+  contractedMW: Math.round(frac * 18 * 100) / 100,   // proportional to frac, ~18 MW/unit
 }))
 
 const TOTAL_CAGES       = 33
@@ -453,7 +458,7 @@ export function ComputeRacksModal({ tick, onClose }: Props) {
         return siteMWEst
       })()
 
-  const predictedMW  = siteMW * 1.28
+  const siteContractedMW = ALL_TENANTS.reduce((s, t) => s + t.contractedMW, 0)
   const reserveOk    = tick ? !tick.insufficient_reserve_alert : null
   const reserveLabel = reserveOk === null ? '—' : reserveOk ? 'Sufficient' : 'Insufficient'
 
@@ -515,9 +520,9 @@ export function ComputeRacksModal({ tick, onClose }: Props) {
               sub={tick ? 'live tick' : 'baseline est.'}
             />
             <StatBox
-              label="Predicted peak"
-              value={fmtMW(predictedMW)}
-              sub="30 min horizon"
+              label="Site contracted"
+              value={fmtMW(siteContractedMW)}
+              sub={`${Math.round(siteContractedMW / GPU_TDP_MW).toLocaleString()} GPUs max`}
             />
             <StatBox
               label="Reserve cover"
@@ -553,7 +558,7 @@ export function ComputeRacksModal({ tick, onClose }: Props) {
               <table className="w-full text-sm border-separate border-spacing-0">
                 <thead>
                   <tr>
-                    {['Tenant / cage', 'Scheduler', 'MW draw', 'GPU nodes', 'Forecast (60s)', 'Consent tier', ''].map((h, i) => (
+                    {['Tenant / cage', 'Scheduler', 'Draw / Contract', 'GPU nodes', 'Forecast (60s)', 'Consent tier', ''].map((h, i) => (
                       <th key={i} className={[
                         'text-left pb-2 pr-4 text-[11px] font-medium uppercase tracking-wider text-muted border-b border-border',
                         i === 6 ? 'text-right pr-0' : '',
@@ -595,8 +600,31 @@ export function ComputeRacksModal({ tick, onClose }: Props) {
                             ? <span className="text-text">{t.scheduler}</span>
                             : <span className="text-muted">Not shared</span>}
                         </td>
-                        <td className="py-4 pr-4">
-                          <span className="font-mono font-semibold text-text tabular-nums">{fmtMW(tenantMW)}</span>
+                        <td className="py-4 pr-4 min-w-[130px]">
+                          {(() => {
+                            const pct = Math.min(1, tenantMW / t.contractedMW)
+                            const barColour = pct > 0.85 ? '#f85149' : pct > 0.70 ? '#f0a500' : '#3fb6a8'
+                            const maxGPUs   = Math.round(t.contractedMW / GPU_TDP_MW)
+                            return (
+                              <div>
+                                <div className="flex items-baseline gap-1 font-mono tabular-nums text-xs">
+                                  <span className="font-semibold" style={{ color: barColour }}>
+                                    {tenantMW.toFixed(2)}
+                                  </span>
+                                  <span className="text-muted">/ {t.contractedMW.toFixed(2)} MW</span>
+                                </div>
+                                <div className="mt-1.5 flex items-center gap-2">
+                                  <div className="flex-1 h-[3px] rounded-full bg-border/60 overflow-hidden">
+                                    <div style={{ width: `${pct * 100}%`, background: barColour, height: '100%', borderRadius: 9999, transition: 'width 0.4s' }} />
+                                  </div>
+                                  <span className="text-[10px] font-mono text-muted shrink-0"
+                                    title={`Max ${maxGPUs.toLocaleString()} GPUs (${t.contractedMW.toFixed(2)} MW ÷ 700 W/H100)`}>
+                                    {Math.round(pct * 100)}%
+                                  </span>
+                                </div>
+                              </div>
+                            )
+                          })()}
                         </td>
                         <td className="py-4 pr-4">
                           <span
@@ -715,7 +743,7 @@ export function ComputeRacksModal({ tick, onClose }: Props) {
                   Each tenant's GPU node commitments roll up to their cage MW draw.
                   All {TOTAL_CAGES} cage draws sum to the consolidated
                   <span className="text-text font-mono mx-1">{fmtMW(siteMW)}</span>
-                  Site IT draw{predictedMW > 0 && <> (predicted peak <span className="text-text font-mono">{fmtMW(predictedMW)}</span>)</>}.
+                  Site IT draw (contracted ceiling <span className="text-text font-mono">{fmtMW(siteContractedMW)}</span>).
                   GridSignal's turbine commitment and BESS dispatch act on this site total only —
                   per-tenant rows are for operator awareness.
                 </p>
