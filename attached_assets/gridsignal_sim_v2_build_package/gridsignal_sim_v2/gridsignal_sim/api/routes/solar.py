@@ -41,8 +41,17 @@ from runtime.solar_sim import generate_solar_forecast, _solar_fraction_at
 
 router = APIRouter()
 
-# Short simulation duration just to get weather metadata.
-_PREVIEW_DURATION_S = 60.0
+# Simulation duration used for the weather-preview call.
+#
+# Must be long enough that Mistral's natural sample spacing (typically every
+# 60–120 s for a ~10-minute window) stays within the _parse_forecast filter
+# cutoff of sim_duration_s × 1.05.  With 60 s the cutoff is only 63 s, so any
+# sample beyond that was silently dropped, leaving an empty list that triggered
+# the physics fallback even when Mistral returned valid data.
+# 600 s gives a 630 s cutoff, comfortably covering Mistral's typical output.
+# Only weather metadata (weather, conditions, source) is used from the result;
+# the irradiance samples themselves are discarded by get_solar_preview().
+_PREVIEW_DURATION_S = 600.0
 
 # Path to the standalone console HTML (lives next to this package).
 _CONSOLE_HTML = Path(__file__).resolve().parents[2] / "renewable" / "console.html"
