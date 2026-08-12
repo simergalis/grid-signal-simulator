@@ -216,7 +216,17 @@
   "dq_inject_events": [],
   "solar_origin_utc_hour": null,
   "tenant_events": [],
-  "generator_config": null,
+  "generator_config": {
+    "ratePerMinute": 2,
+    "burstMode": true,
+    "burstSize": [3, 6],
+    "burstIntervalSeconds": [120, 300],
+    "tenantWeights": { "a": 0.40, "b": 0.35, "c": 0.25 },
+    "jobSizes": { "small": 0.45, "medium": 0.40, "large": 0.15 },
+    "maxJobsPerTenant": 15,
+    "jobDurationRange": [60, 300],
+    "tenantContracts": { "a": 1.40, "b": 1.00, "c": 0.60 }
+  },
   "assertions": [],
   "fabric_scenario_id": null,
   "ui_bess_rated_mw": null,
