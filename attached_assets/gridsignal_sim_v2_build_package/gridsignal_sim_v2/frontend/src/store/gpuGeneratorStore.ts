@@ -225,8 +225,25 @@ function makeSlurmJob(cfg: GeneratorConfig, now: number): SlurmJob {
     `#SBATCH --ntasks-per-node=1`,
     `#SBATCH --gres=gpu:h100:${gpusPerNode}`,
     `#SBATCH --time=${walltime}`,
-    `#SBATCH --mem=${nodes * 128}G`,
-    `#SBATCH --cpus-per-task=${gpusPerNode * 12}`,
+    `#SBATCH --mem-per-gpu=120G`,
+    `#SBATCH --cpus-per-gpu=12`,
+    `#SBATCH --output=logs/%x_%j_%N.out`,
+    `#SBATCH --error=logs/%x_%j_%N.err`,
+    `#SBATCH --account=ml-compute`,
+    `#SBATCH --exclusive`,
+    ``,
+    `module purge`,
+    `module load cuda/12.3 nccl/2.19 pytorch/2.2`,
+    ``,
+    `export NCCL_DEBUG=INFO`,
+    `export NCCL_IB_DISABLE=0`,
+    `export MASTER_ADDR=$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n1)`,
+    `export MASTER_PORT=29500`,
+    ``,
+    `srun --kill-on-bad-exit=1 \\`,
+    `  python ${name.replace(/-/g, '_')}.py \\`,
+    `    --nodes ${nodes} \\`,
+    `    --gpus-per-node ${gpusPerNode}`,
   ].join('\n')
   return {
     type: 'slurm', id, name, partition, nodes, gpusPerNode, totalGPUs,
@@ -247,24 +264,52 @@ function makeKubernetesJob(cfg: GeneratorConfig, now: number): KubernetesJob {
   const priority     = priorityForSize(size)
   const tdpMW        = totalGPUs * GPU_TDP_MW
   const dur          = rInt(cfg.jobDurationRange[0], cfg.jobDurationRange[1]) * 1000
+  const cpuReq  = gpuPerReplica * 12          // 12 vCPU per H100 (192-core node ÷ 8 GPUs × ratio)
+  const cpuLim  = gpuPerReplica * 24          // 2× headroom for burst
+  const memReq  = gpuPerReplica * 120         // 120 GiB per GPU (matches H100 SXM5 HBM headroom)
+  const memLim  = Math.round(memReq * 1.25)   // +25% for framework overhead
+  const prioClass = priority === 'high' ? 'gpu-high-priority'
+                  : priority === 'medium' ? 'gpu-standard-priority'
+                  : 'gpu-preemptible'
   const manifest     = [
     `apiVersion: batch/v1`,
     `kind: Job`,
     `metadata:`,
     `  name: ${name}`,
     `  namespace: ${namespace}`,
+    `  labels:`,
+    `    app: ${name}`,
+    `    scheduler: kubernetes`,
+    `    nvidia.com/gpu-job: "true"`,
     `spec:`,
     `  parallelism: ${replicas}`,
     `  completions: ${replicas}`,
+    `  backoffLimit: 0`,
     `  template:`,
+    `    metadata:`,
+    `      labels:`,
+    `        app: ${name}`,
     `    spec:`,
+    `      priorityClassName: ${prioClass}`,
+    `      restartPolicy: Never`,
     `      containers:`,
     `      - name: worker`,
     `        image: ${image}`,
     `        resources:`,
-    `          limits:`,
+    `          requests:`,
+    `            cpu: "${cpuReq}"`,
+    `            memory: "${memReq}Gi"`,
     `            nvidia.com/gpu: "${gpuPerReplica}"`,
-    `            memory: "128Gi"`,
+    `          limits:`,
+    `            cpu: "${cpuLim}"`,
+    `            memory: "${memLim}Gi"`,
+    `            nvidia.com/gpu: "${gpuPerReplica}"`,
+    `      nodeSelector:`,
+    `        nvidia.com/gpu.product: H100-SXM5-80GB`,
+    `      tolerations:`,
+    `      - key: "nvidia.com/gpu"`,
+    `        operator: "Exists"`,
+    `        effect: "NoSchedule"`,
   ].join('\n')
   return {
     type: 'kubernetes', id, name, namespace, image, replicas, gpuPerReplica,
@@ -285,17 +330,32 @@ function makeRayJob(cfg: GeneratorConfig, now: number): RayJob {
   const tdpMW      = totalGPUs * GPU_TDP_MW
   const dur        = rInt(cfg.jobDurationRange[0], cfg.jobDurationRange[1]) * 1000
   const entrypoint = `python ${name.replace(/-/g, '_')}.py --num-gpus ${gpusEach} --num-workers ${numWorkers}`
+  const cpuEach  = gpusEach * 12
+  const memBytes = gpusEach * 120 * 1024 ** 3   // bytes — Ray memory arg
   const manifest   = [
     `import ray`,
-    `ray.init(address="auto")`,
+    `from ray.runtime_env import RuntimeEnv`,
     ``,
-    `@ray.remote(num_gpus=${gpusEach})`,
+    `ray.init(`,
+    `    address="ray://ray-head.ray-system:10001",`,
+    `    runtime_env=RuntimeEnv(`,
+    `        pip=["torch==2.2.0", "transformers==4.40.0"],`,
+    `        env_vars={"NCCL_DEBUG": "INFO", "NCCL_IB_DISABLE": "0"},`,
+    `    ),`,
+    `)`,
+    ``,
+    `@ray.remote(`,
+    `    num_gpus=${gpusEach},`,
+    `    num_cpus=${cpuEach},`,
+    `    memory=${memBytes},`,
+    `    accelerator_type="H100",`,
+    `)`,
     `class GPUWorker:`,
-    `    def run(self): ...`,
+    `    def train(self): ...`,
     ``,
     `# ${numWorkers} workers × ${gpusEach} GPUs = ${totalGPUs} total GPUs`,
     `workers = [GPUWorker.remote() for _ in range(${numWorkers})]`,
-    `ray.get([w.run.remote() for w in workers])`,
+    `ray.get([w.train.remote() for w in workers])`,
   ].join('\n')
   return {
     type: 'ray', id, entrypoint, numGPUs: gpusEach, numWorkers, totalGPUs,
