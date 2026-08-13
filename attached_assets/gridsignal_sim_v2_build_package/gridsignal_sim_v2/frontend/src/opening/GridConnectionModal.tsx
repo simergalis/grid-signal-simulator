@@ -56,8 +56,8 @@ interface GridConfig {
 // ── Advisory boundary constants (GS-DES-GRID-001 §8) ─────────────────────────
 
 const ADVISORY_INBOUND = [
-  { label: 'Anti-islanding protection',  authority: 'PMS owns · never commands' },
-  { label: 'Droop secondary regulation', authority: 'PMS owns · never commands' },
+  { label: 'Anti-islanding protection',  authority: 'PMS owns · always commands' }, // §11 — PG&E mandated trip-on-grid-loss
+  { label: 'Droop secondary regulation', authority: 'PMS owns · never commands'  }, // §12 — no secondary regulation unless grid services enrolled
 ] as const
 
 const ADVISORY_OUTBOUND = [
@@ -67,19 +67,21 @@ const ADVISORY_OUTBOUND = [
 
 // ── Default state ──────────────────────────────────────────────────────────────
 
+// PG&E B-19 TOU recommended defaults for a GPU data-centre interconnect.
+// Source: GS-DES-GRID-001 §5 + PG&E interconnection guidance.
 const DEFAULT_CONFIG: GridConfig = {
-  connectionMode:                     'islanded',
-  pGridFirmMw:                        0,
-  pGridReservedMw:                    0,
-  tReserveHours:                      0,
-  spotImportEnabled:                  false,
-  pGridSpotCapMw:                     0,
-  transitionMode:                     'open',
-  pccImportLimitMw:                   25,
-  demandChargeThresholdMw:            null,
-  procurementBudgetWindowUsd:         '',
-  procurementBudgetPeriodUsd:         '',
-  priceFeedSource:                    'fixed_rate',
+  connectionMode:                     'grid_tied',   // §1 — continuous grid connectivity
+  pGridFirmMw:                        50,            // §2 — mid-to-large GPU farm contracted capacity
+  pGridReservedMw:                    10,            // §3 — 20 % headroom for future GPU scaling
+  tReserveHours:                      24,            // §4 — PG&E 24–48 h reservation lead time
+  spotImportEnabled:                  true,          // §5 — non-firm off-peak cost savings
+  pGridSpotCapMw:                     5,             // §5 — conservative non-firm spot cap
+  transitionMode:                     'closed',      // §6 — synchronized (closed-transition) switching
+  pccImportLimitMw:                   50,            // §7 — matches firm contracted capacity
+  demandChargeThresholdMw:            40,            // §8 — 80 % of firm cap; avoids demand-charge penalty
+  procurementBudgetWindowUsd:         '100000',      // §9 — monthly window budget
+  procurementBudgetPeriodUsd:         '100000',      // §9 — period ceiling
+  priceFeedSource:                    'utility_tou_tariff', // §10 — PG&E B-19 TOU tariff
   exportEnabled:                      false,
   exportMode:                         'none',
   pExportMaxMw:                       0,

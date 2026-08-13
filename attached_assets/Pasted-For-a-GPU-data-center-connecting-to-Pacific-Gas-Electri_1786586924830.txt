@@ -1,0 +1,109 @@
+For a GPU data center connecting to Pacific Gas & Electric (PG&E), the configuration must prioritize high reliability, scalability, and cost-efficiency while complying with PG&E’s interconnection and tariff requirements. Below is a recommended configuration for your inbound power connection, tailored for a GPU data center with high and variable power demands.
+
+🔧 Recommended Inbound Power Configuration for GPU Data Center
+1. Connection Mode
+
+Setting: grid-tied
+Rationale: GPU data centers require continuous grid connectivity for baseline power and backup (if applicable).
+
+2. Firm Contracted Capacity
+
+Setting: 50 MW (or your actual contracted value)
+Rationale:
+
+GPU data centers are power-intensive. A typical large-scale GPU farm (e.g., AI/ML training) can require 10–100 MW.
+Confirm your actual contracted capacity with PG&E. If unsure, 50 MW is a reasonable starting point for a mid-to-large data center.
+If your agreement specifies a different value (e.g., 75 MW), use that instead.
+
+
+3. Reserved Capacity Block
+
+Setting: 10 MW
+Rationale:
+
+Reserve 10–20% of your firm capacity for future scaling (e.g., adding more GPUs).
+PG&E may allow reserved capacity for demand response or load growth.
+
+
+4. Reservation Lead Time
+
+Setting: 24 hrs
+Rationale:
+
+PG&E often requires 24–48 hours for capacity reservations, especially for large industrial customers.
+This ensures PG&E can allocate resources for your inbound power needs.
+
+
+5. Non-Firm Spot Import
+
+Setting: 5 MW Cap
+Rationale:
+
+GPU data centers can leverage non-firm imports during off-peak hours (e.g., overnight) for cost savings.
+Set a conservative cap (e.g., 5–10 MW) to avoid overloading the grid.
+
+
+6. Transition Mode
+
+Setting: synchronized
+Rationale:
+
+Synchronized transition ensures seamless switching between grid and backup power (if applicable).
+Critical for avoiding downtime during grid fluctuations.
+
+
+7. PCC Interconnection Limit
+
+Setting: 50 MW (or match your firm capacity)
+Rationale:
+
+The PCC limit should match or exceed your firm contracted capacity.
+If your firm capacity is 50 MW, set the PCC limit to 50 MW to avoid curtailment.
+
+
+8. Demand Charge Threshold
+
+Setting: 40 MW
+Rationale:
+
+GPU data centers often face high demand charges due to spiky power usage (e.g., during AI training).
+Set the threshold below your firm capacity (e.g., 80% of 50 MW = 40 MW) to avoid demand charge penalties.
+Confirm the exact threshold with PG&E’s B-19 or B-20 tariff (common for large commercial/industrial customers).
+
+
+9. Procurement Budget Ceiling
+
+Setting: $100,000 / $100,000 (or your budget)
+Rationale:
+
+If PG&E offers demand response programs, set a monthly budget for procurement (e.g., $100K).
+This helps cap costs for non-firm or spot market imports.
+
+
+10. Price Feed
+
+Setting: PG&E B-19 TOU tariff
+Rationale:
+
+B-19 is PG&E’s standard TOU tariff for large commercial/industrial customers (e.g., data centers).
+If your data center qualifies for B-20 (high-load industrial), use that instead.
+Avoid residential tariffs (e.g., E-1), as they are not applicable to GPU data centers.
+
+
+11. Anti-Islanding Protection
+
+Setting: Utility TOU tariff (or PMS owns • always commands)
+Rationale:
+
+PG&E mandates anti-islanding for all grid-tied systems.
+For a GPU data center, ensure the system trips (disconnects) if the grid fails to protect line workers.
+
+
+12. Droop Secondary Regulation
+
+Setting: PMS owns • never commands
+Rationale:
+
+GPU data centers typically do not require secondary regulation unless participating in grid services (e.g., frequency control).
+If PG&E requires it, set to Utility TOU tariff.
+
