@@ -934,28 +934,58 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, 
   const tick       = useTickStore(s => s.latestTick)
   const selectedId = useScenarioStore(s => s.selectedId)
 
-  // Fetch fuel_cell_enabled from the selected scenario spec so we can show/hide
-  // the Fuel Cell Module Array tile without a hard page reload.
-  const [fuelCellEnabled, setFuelCellEnabled] = useState(false)
+  // Fetch scenario spec to determine which power supply sources are enabled.
+  // This drives both the Fuel Cell tile visibility and the dynamic outline.
+  interface SourceState { turbine: boolean; solar: boolean; bess: boolean; grid: boolean; fuelCell: boolean }
+  const [sourceState, setSourceState] = useState<SourceState>(
+    { turbine: true, solar: true, bess: true, grid: false, fuelCell: false }
+  )
   useEffect(() => {
-    if (!selectedId) { setFuelCellEnabled(false); return }
+    if (!selectedId) {
+      setSourceState({ turbine: true, solar: true, bess: true, grid: false, fuelCell: false })
+      return
+    }
     let cancelled = false
     fetch(`/scenarios/${selectedId}`)
       .then(r => r.ok ? r.json() : null)
-      .then(data => { if (!cancelled) setFuelCellEnabled(data?.spec?.fuel_cell_enabled ?? false) })
+      .then(data => {
+        if (cancelled) return
+        const spec = data?.spec ?? {}
+        setSourceState({
+          turbine:  (spec.turbine_units?.length  ?? 1) > 0,
+          solar:    (spec.solar_rated_mw          ?? 1) > 0,
+          bess:     (spec.bess_units?.length      ?? 1) > 0,
+          grid:     !(spec.island_mode            ?? true),
+          fuelCell: spec.fuel_cell_enabled        ?? false,
+        })
+      })
       .catch(() => {})
     return () => { cancelled = true }
   }, [selectedId])
 
-  // ── Power supply outline geometry ──────────────────────────────────────────
-  // Surrounds Gas Turbine (y=10), Solar PV (y=110), BESS (y=210),
-  // Grid Connection (y=310+72=382), and optionally Fuel Cell (y=392+72=464).
+  const fuelCellEnabled = sourceState.fuelCell
+
+  // ── Dynamic outline geometry ───────────────────────────────────────────────
+  // Fixed y/h for each source node in SVG coordinate space.
+  const SOURCE_NODE_GEOM = [
+    { key: 'turbine',  y: 10,  h: 88 },
+    { key: 'solar',    y: 110, h: 72 },
+    { key: 'bess',     y: 210, h: 72 },
+    { key: 'grid',     y: 310, h: 72 },
+    { key: 'fuelCell', y: 392, h: 72 },
+  ] as const
+
+  const PAD = 6
+  const enabledNodes = SOURCE_NODE_GEOM.filter(n => sourceState[n.key])
+  // Fall back to full span when nothing is selected (avoids zero-height rect).
+  const outlineTop    = enabledNodes.length > 0 ? enabledNodes[0].y - PAD : 4
+  const outlineBottom = enabledNodes.length > 0
+    ? enabledNodes[enabledNodes.length - 1].y + enabledNodes[enabledNodes.length - 1].h + PAD
+    : 390
   const outlineX = -8
-  const outlineY = 4
+  const outlineY = outlineTop
   const outlineW = 171
-  const outlineBottomNoFC = 390  // 6 px below Grid Connection bottom (382)
-  const outlineBottomFC   = 472  // 8 px below Fuel Cell bottom (464)
-  const outlineH = fuelCellEnabled ? outlineBottomFC - outlineY : outlineBottomNoFC - outlineY
+  const outlineH = outlineBottom - outlineTop
   const tagY     = outlineY + outlineH - 28  // tag sits 28 px above the rect bottom
 
   return (
@@ -997,7 +1027,7 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, 
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 5,
                   fontFamily: "'JetBrains Mono',ui-monospace,monospace",
-                  fontSize: 9.5, letterSpacing: '0.04em', fontWeight: 600,
+                  fontSize: 8, letterSpacing: '0.04em', fontWeight: 600,
                   color: 'rgba(63,182,168,0.9)',
                   background: '#0a0e13',
                   border: '1.5px solid rgba(63,182,168,0.55)',
@@ -1015,7 +1045,7 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, 
                   e.currentTarget.style.borderColor = 'rgba(63,182,168,0.55)'
                 }}
               >
-                ⬡ Select Power Supply
+                ⬡ Select Power
               </button>
             </div>
           </foreignObject>
