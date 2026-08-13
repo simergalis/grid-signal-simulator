@@ -801,7 +801,18 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     _governor_deadband_hz = _sp.value("governor_deadband_hz")
     # Dispatch ceiling = total installed fleet (not just on-bus) — dispatch intent,
     # not inertia basis. Decoupled from _s_base_mva per §INV-INERTIA.
-    _sync_ceiling_mw = sum(t.config.rated_mw for t in state.turbines)
+    #
+    # BUG-FIX: include BESS rated MW so that no-turbine configurations (e.g.
+    # grid + fuel-cell + BESS with no gas turbines) do not produce a ceiling
+    # of 0 MW.  With _sync_ceiling_mw = 0, the else-branch clamp
+    # min(demand, 0) = 0 → _p_dispatch_droop_mw = 0 → arbitrator sees zero
+    # fleet shortfall → BESS setpoint = 0 on every tick despite live demand.
+    # Including BESS here aligns the code with the comment ("total installed
+    # fleet") and allows the arbitrator to dispatch BESS against real demand.
+    _sync_ceiling_mw = (
+        sum(t.config.rated_mw for t in state.turbines) +
+        sum(b.config.rated_mw for b in state.bess_units)
+    )
     # Derive the Δf clamp from first-stage protective settings (C-4, DR-BAL-1).
     _first_stage_thresholds_hz = [
         hz for hz in [state.site.ufls_stage1_hz, state.site.of_trip_hz]
