@@ -20,7 +20,7 @@
  *   · irradiance_steps → editable two-column table (sim_time_s / irradiance)
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useScenarioStore } from '../store/scenarioStore'
 import type { BessUnitSpec, KubeJobSpec, TurbineUnitSpec, ScenarioSpec, TenantWorkloadEvent } from '../types'
 import { ParameterModal, defaultPhysicsParams } from './ParameterModal'
@@ -326,14 +326,25 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
   const [gpuEditorOpen, setGpuEditorOpen] = useState(false)
   const [aiBusy,        setAiBusy]        = useState(false)
   const [aiErr,         setAiErr]         = useState<string | null>(null)
-  // Custom run-length state — used when "Other…" is selected in the Run length dropdown.
-  // Stored in seconds (same unit as end_sim_time).
-  const [customSecs,    setCustomSecs]    = useState<number>(60)
+  // Custom run-length state — minutes entered by the operator when "Other…" is selected.
+  // end_sim_time = customMins * 60 (seconds).
+  const [customMins,    setCustomMins]    = useState<number>(90)
+
+  // ── Power Supply source toggles ──────────────────────────────────────────
+  // Controls which subsystem config sections are visible and included.
+  const [srcBess,     setSrcBess]     = useState(true)
+  const [srcTurbine,  setSrcTurbine]  = useState(true)
+  const [srcSolar,    setSrcSolar]    = useState(false)
+  const [srcFuelCell, setSrcFuelCell] = useState(false)
+  // Saved copies so toggling back on restores the last config.
+  const savedBessUnits    = useRef<typeof spec.bess_units>([])
+  const savedTurbineUnits = useRef<typeof spec.turbine_units>([])
 
   // If editing, load the existing spec
   useEffect(() => {
     if (!editId) {
       setSpec(blankSpec())
+      setSrcBess(true); setSrcTurbine(true); setSrcSolar(false); setSrcFuelCell(false)
       return
     }
     fetch(`/scenarios/${editId}`)
@@ -342,9 +353,14 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
         const loaded = d.spec as ScenarioSpec
         setSpec({ ...loaded, pms_config: (loaded as ScenarioSpec & { pms_config?: typeof loaded.pms_config }).pms_config ?? null })
         setWarnings(d.c_rate_warnings ?? [])
-        // If the saved end_sim_time doesn't match any preset, prime the custom input.
+        // Initialise power-source toggles from the loaded spec.
+        setSrcBess((loaded.bess_units?.length ?? 0) > 0)
+        setSrcTurbine((loaded.turbine_units?.length ?? 0) > 0)
+        setSrcSolar((loaded.solar_rated_mw ?? 0) > 0)
+        setSrcFuelCell(loaded.fuel_cell_enabled ?? false)
+        // If the saved end_sim_time doesn't match any preset, prime the minutes input.
         if (nearestDuration(loaded.end_sim_time) === -1) {
-          setCustomSecs(loaded.end_sim_time)
+          setCustomMins(Math.round(loaded.end_sim_time / 60))
         }
         // Re-seed physicsParams from the loaded spec so editing preserves existing values.
         const defaults = defaultPhysicsParams()
@@ -641,7 +657,83 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
           <section>
             <SectionHeader title="Fleet" />
 
-            {/* BESS units */}
+            {/* ── Power Supply Sources — boxed selector ────────────────────── */}
+            <div className="mb-4 rounded border border-border p-3 space-y-2">
+              <span className="text-[10px] text-muted block">
+                Power Supply Sources — click to add or remove from this scenario
+              </span>
+              <div className="grid grid-cols-2 gap-1.5">
+                {/* BESS pill */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (srcBess) {
+                      savedBessUnits.current = spec.bess_units
+                      patch({ bess_units: [] })
+                      setSrcBess(false)
+                    } else {
+                      patch({ bess_units: savedBessUnits.current.length > 0 ? savedBessUnits.current : [defaultBess(0)] })
+                      setSrcBess(true)
+                    }
+                  }}
+                  className={`flex items-center gap-1.5 rounded border px-2 py-1.5 text-[10px] font-mono text-left transition-colors ${srcBess ? 'border-accent/50 bg-accent/10 text-accent' : 'border-border bg-canvas text-muted hover:border-accent/40'}`}
+                >
+                  <span>{srcBess ? '●' : '○'}</span> BESS
+                </button>
+                {/* Gas Turbine Fleet pill */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (srcTurbine) {
+                      savedTurbineUnits.current = spec.turbine_units
+                      patch({ turbine_units: [] })
+                      setSrcTurbine(false)
+                    } else {
+                      patch({ turbine_units: savedTurbineUnits.current.length > 0 ? savedTurbineUnits.current : [defaultTurbine(0)] })
+                      setSrcTurbine(true)
+                    }
+                  }}
+                  className={`flex items-center gap-1.5 rounded border px-2 py-1.5 text-[10px] font-mono text-left transition-colors ${srcTurbine ? 'border-accent/50 bg-accent/10 text-accent' : 'border-border bg-canvas text-muted hover:border-accent/40'}`}
+                >
+                  <span>{srcTurbine ? '●' : '○'}</span> Gas Turbine Fleet
+                </button>
+                {/* Solar PV pill */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (srcSolar) {
+                      patch({ solar_rated_mw: 0 })
+                      setSrcSolar(false)
+                    } else {
+                      patch({ solar_rated_mw: spec.solar_rated_mw > 0 ? spec.solar_rated_mw : 5 })
+                      setSrcSolar(true)
+                    }
+                  }}
+                  className={`flex items-center gap-1.5 rounded border px-2 py-1.5 text-[10px] font-mono text-left transition-colors ${srcSolar ? 'border-accent/50 bg-accent/10 text-accent' : 'border-border bg-canvas text-muted hover:border-accent/40'}`}
+                >
+                  <span>{srcSolar ? '●' : '○'}</span> Solar PV
+                </button>
+                {/* Fuel Cell Module Array pill */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !srcFuelCell
+                    patch({
+                      fuel_cell_enabled: next,
+                      fuel_cell_rated_mw: spec.fuel_cell_rated_mw ?? 1.8,
+                      fuel_cell_stack_count: spec.fuel_cell_stack_count ?? 3,
+                    })
+                    setSrcFuelCell(next)
+                  }}
+                  className={`flex items-center gap-1.5 rounded border px-2 py-1.5 text-[10px] font-mono text-left transition-colors ${srcFuelCell ? 'border-accent/50 bg-accent/10 text-accent' : 'border-border bg-canvas text-muted hover:border-accent/40'}`}
+                >
+                  <span>{srcFuelCell ? '●' : '○'}</span> Fuel Cell Module Array
+                </button>
+              </div>
+            </div>
+
+            {/* BESS units — shown only when BESS source is enabled */}
+            {srcBess && (
             <div className="mb-4">
               <div className="mb-1 flex items-center justify-between">
                 <span className="text-[10px] text-muted">BESS Units</span>
@@ -705,9 +797,11 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                 ))}
               </div>
             </div>
+            )}
 
-            {/* Turbine units */}
-            <div>
+            {/* Turbine units — shown only when Gas Turbine source is enabled */}
+            {srcTurbine && (
+            <div className="mb-4">
               <div className="mb-1 flex items-center justify-between">
                 <span className="text-[10px] text-muted">Turbine Units</span>
                 <button className="text-[10px] text-accent hover:underline" onClick={addTurbine}>
@@ -760,6 +854,45 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                 ))}
               </div>
             </div>
+            )}
+
+            {/* Fuel Cell Module Array — shown only when Fuel Cell source is enabled */}
+            {srcFuelCell && (
+            <div className="mb-4">
+              <div className="mb-1 flex items-center justify-between">
+                <span className="text-[10px] text-muted">Fuel Cell Module Array</span>
+              </div>
+              <div className="rounded border border-border bg-canvas p-3 space-y-3">
+                <p className="text-[9px] text-muted leading-snug">
+                  Hydrogen fuel cell array. Physics model is advisory-only in this build — output
+                  is recorded in the scenario spec but not yet dispatched by the engine.
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <NumField
+                    label="Rated MW / stack"
+                    unit="MW"
+                    value={spec.fuel_cell_rated_mw ?? 1.8}
+                    min={0.1}
+                    step={0.1}
+                    onChange={v => patch({ fuel_cell_rated_mw: v })}
+                  />
+                  <NumField
+                    label="Stack count"
+                    value={spec.fuel_cell_stack_count ?? 3}
+                    min={1}
+                    max={20}
+                    step={1}
+                    onChange={v => patch({ fuel_cell_stack_count: Math.round(v) })}
+                  />
+                </div>
+                <div className="text-[9px] font-mono text-muted">
+                  Total rated:{' '}
+                  {((spec.fuel_cell_rated_mw ?? 1.8) * (spec.fuel_cell_stack_count ?? 3)).toFixed(1)} MW
+                  {' '}· H₂ source: external supply
+                </div>
+              </div>
+            </div>
+            )}
 
             {/* ── GPU Compute Fleet ───────────────────────────────────────── */}
             <div>
@@ -882,8 +1015,12 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
               />
 
               <div className="grid grid-cols-2 gap-2">
+                {/* Solar capacity — only visible when Solar PV source is enabled */}
+                {srcSolar && (
                 <NumField label="Solar capacity" unit="MW" value={spec.solar_rated_mw} min={0} step={0.5}
                   onChange={v => patch({ solar_rated_mw: v })} />
+                )}
+                {!srcSolar && <div />}{/* keep grid balanced */}
 
                 {/* Run length — mapped to end_sim_time */}
                 <div className="flex flex-col gap-0.5">
@@ -893,13 +1030,12 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                     onChange={e => {
                       const v = Number(e.target.value)
                       if (v === -1) {
-                        // "Other…" selected — seed the custom input with the
-                        // current value (or 60 s if it was a preset).
-                        const seed = nearestDuration(spec.end_sim_time) === -1
-                          ? spec.end_sim_time
-                          : 60
-                        setCustomSecs(seed)
-                        patch({ end_sim_time: seed })
+                        // "Other…" selected — seed with current minutes or default 90.
+                        const seedMins = nearestDuration(spec.end_sim_time) === -1
+                          ? customMins
+                          : 90
+                        setCustomMins(seedMins)
+                        patch({ end_sim_time: seedMins * 60 })
                       } else {
                         patch({ end_sim_time: v })
                       }
@@ -917,18 +1053,16 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                         type="number"
                         min={1}
                         step={1}
-                        value={customSecs}
+                        value={customMins}
                         onChange={e => {
-                          const raw = Math.floor(Number(e.target.value))
-                          if (raw >= 1) {
-                            setCustomSecs(raw)
-                            patch({ end_sim_time: raw })
-                          }
+                          const m = Math.max(1, Math.floor(Number(e.target.value)))
+                          setCustomMins(m)
+                          patch({ end_sim_time: m * 60 })
                         }}
                         className="w-full rounded border border-border bg-canvas px-2 py-1 text-xs text-text
                                    focus:outline-none focus:ring-1 focus:ring-accent"
                       />
-                      <span className="text-[10px] text-muted whitespace-nowrap">s</span>
+                      <span className="text-[10px] text-muted whitespace-nowrap">min</span>
                     </div>
                   )}
                 </div>

@@ -37,9 +37,23 @@ const DURATION_OPTIONS = [
   { label: '15 min',   value: 900 },
   { label: '30 min',   value: 1800 },
   { label: '1 hour',   value: 3600 },
+  { label: '3 hours',  value: 10800 },
   { label: '4 hours',  value: 14400 },
   { label: 'No limit', value: 1e15 },
 ]
+
+/** Set of preset second values for fast membership checks. */
+const PRESET_VALUES = new Set(DURATION_OPTIONS.map(o => o.value))
+
+/** Format any second count as a concise human-readable label, e.g. 5400 → "90 min". */
+function formatDuration(secs: number): string {
+  if (secs >= 1e14) return 'No limit'
+  const mins = Math.round(secs / 60)
+  if (mins < 60) return `${mins} min`
+  const h = Math.floor(mins / 60)
+  const m = mins % 60
+  return m === 0 ? `${h} hour${h === 1 ? '' : 's'}` : `${h}h ${m} min`
+}
 
 interface Props {
   runId: string | null
@@ -58,16 +72,27 @@ export function RunControlBar({ runId, lastRunId, onRunStarted, onRunStopped, on
   const selectScenario = useScenarioStore(s => s.selectScenario)
   const fetchScenarios = useScenarioStore(s => s.fetchScenarios)
 
-  const [speed,    setSpeed]    = useState(1)
-  const [duration, setDuration] = useState(1800)
-  const [busy,     setBusy]     = useState(false)
-  const [error,    setError]    = useState<string | null>(null)
+  const [speed,      setSpeed]      = useState(1)
+  const [duration,   setDuration]   = useState(1800)
+  const [customMins, setCustomMins] = useState(90)
+  const [busy,       setBusy]       = useState(false)
+  const [error,      setError]      = useState<string | null>(null)
   // BESS size overrides — configured via the Energy Storage modal, read here at run-start
   const bessRatedMw   = useBessConfigStore(s => s.ratedMw)
   const bessUsableMwh = useBessConfigStore(s => s.usableMwh)
 
   // Fetch scenario list on mount
   useEffect(() => { fetchScenarios() }, [fetchScenarios])
+
+  // When the selected scenario changes, sync duration to its end_sim_time.
+  // If the scenario's value is a known preset the select shows the right label
+  // automatically; if not, we enter custom mode showing "X min" + an input.
+  useEffect(() => {
+    const t = selectedSpec?.end_sim_time
+    if (!t) return
+    setDuration(t)
+    if (!PRESET_VALUES.has(t)) setCustomMins(Math.round(t / 60))
+  }, [selectedSpec?.end_sim_time])
 
   const handleStart = async () => {
     if (!selectedId) return
@@ -162,18 +187,58 @@ export function RunControlBar({ runId, lastRunId, onRunStarted, onRunStopped, on
       </button>
 
       {/* Duration selector */}
-      <label className="text-xs text-muted shrink-0">Duration</label>
-      <select
-        className="rounded border border-border bg-canvas px-2 py-1 text-xs text-text
-                   focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
-        value={duration}
-        disabled={isRunning || busy}
-        onChange={e => setDuration(Number(e.target.value))}
-      >
-        {DURATION_OPTIONS.map(o => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
+      {(() => {
+        const isCustom = !PRESET_VALUES.has(duration)
+        return (
+          <>
+            <label className="text-xs text-muted shrink-0">Duration</label>
+            <select
+              className="rounded border border-border bg-canvas px-2 py-1 text-xs text-text
+                         focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
+              value={isCustom ? '__custom__' : String(duration)}
+              disabled={isRunning || busy}
+              onChange={e => {
+                const v = e.target.value
+                if (v === '__other__') {
+                  // "Other…" chosen — keep current customMins
+                  setDuration(customMins * 60)
+                } else {
+                  setDuration(Number(v))
+                }
+              }}
+            >
+              {DURATION_OPTIONS.map(o => (
+                <option key={o.value} value={String(o.value)}>{o.label}</option>
+              ))}
+              {/* Dynamic option shown when scenario specifies a non-preset (e.g. "90 min") */}
+              {isCustom && (
+                <option value="__custom__">{formatDuration(duration)}</option>
+              )}
+              <option value="__other__">Other…</option>
+            </select>
+            {/* Custom minutes input — shown for non-preset values */}
+            {isCustom && (
+              <div className="flex items-center gap-1">
+                <input
+                  type="number"
+                  min={1}
+                  step={1}
+                  value={customMins}
+                  disabled={isRunning || busy}
+                  onChange={e => {
+                    const m = Math.max(1, Math.floor(Number(e.target.value)))
+                    setCustomMins(m)
+                    setDuration(m * 60)
+                  }}
+                  className="w-14 rounded border border-border bg-canvas px-2 py-1 text-xs text-text
+                             focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50"
+                />
+                <span className="text-xs text-muted">min</span>
+              </div>
+            )}
+          </>
+        )
+      })()}
 
       {/* Speed selector */}
       <label className="text-xs text-muted shrink-0">Speed</label>

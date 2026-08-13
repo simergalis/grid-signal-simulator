@@ -583,6 +583,11 @@ export interface ScenarioSpec {
   // ── Advisory agent tuning ─────────────────────────────────────────────────
   advisory_interval_s?: number        // advisory poll cadence in simulated seconds
   advisory_max_mw?: number            // TC-30 cap on any single proposal MW
+
+  // ── Fuel Cell Module Array (UI scaffold; physics advisory-only this build) ─
+  fuel_cell_enabled?: boolean         // true = operator has included FC array
+  fuel_cell_rated_mw?: number         // rated MW output per stack
+  fuel_cell_stack_count?: number      // number of stacks in the array
 }
 
 export interface ScenarioSummary {
