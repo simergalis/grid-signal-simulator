@@ -152,8 +152,8 @@ function nodeDetail(
       return `standby · ${socPct}% SoC · anchor 1.0 MW`
     }
     case 'fuel-cell': {
-      const fcMw = (tick as unknown as Record<string, number>).fuel_cell_output_mw ?? 0
       if (!tick) return 'H₂ fuel cell array · armed'
+      const fcMw = (tick as unknown as Record<string, number>).fuel_cell_output_mw ?? 0
       return fcMw > 0.01
         ? `dispatching · ${fcMw.toFixed(2)} MW`
         : 'H₂ fuel cell array · standby'
