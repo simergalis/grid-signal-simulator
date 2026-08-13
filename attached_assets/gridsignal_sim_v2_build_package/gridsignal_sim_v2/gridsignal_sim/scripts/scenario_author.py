@@ -28,11 +28,14 @@ Mistral API
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import json
 import logging
 import os
 import sys
 from typing import Any, Dict, List, Optional
+
+from runtime.pms_test_double import OperatorResponseProfile as _OperatorResponseProfile
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +139,11 @@ def generate_operator_response_profile(
         ) from exc
 
     # Convert string keys ("1", "2") to int keys (1, 2) for OperatorResponseProfile.
-    return _normalise_profile(profile_dict)
+    normalised = _normalise_profile(profile_dict)
+
+    # Phase 5 — wire to real schema: validate + serialise via OperatorResponseProfile.
+    # Raises TypeError for unknown fields (Mistral hallucination guard).
+    return _validate_against_schema(normalised)
 
 
 def _normalise_profile(raw: Dict[str, Any]) -> Dict[str, Any]:
@@ -146,6 +153,29 @@ def _normalise_profile(raw: Dict[str, Any]) -> Dict[str, Any]:
         if field_name in raw:
             result[field_name] = {int(k): v for k, v in raw[field_name].items()}
     return result
+
+
+def _validate_against_schema(profile_dict: Dict[str, Any]) -> Dict[str, Any]:
+    """Validate *profile_dict* against the real OperatorResponseProfile schema.
+
+    Phase 5 (GS-IMPL-PSP-002): wire scenario_author to the real ScenarioSpec schema.
+
+    Constructs an _OperatorResponseProfile instance from *profile_dict*.
+    This raises TypeError for unknown fields (Mistral hallucination guard) and
+    catches type mismatches early, at profile-generation time, rather than
+    silently propagating a bad profile to PMSTestDouble at simulator startup.
+
+    Returns a plain dict serialised via dataclasses.asdict() — including all
+    fields with their defaults (default_latency_s, default_approve) — so the
+    output JSON is a complete, validated schema snapshot:
+
+        profile = OperatorResponseProfile(**json.load(open("profiles/x.json")))
+
+    works correctly after a JSON round-trip (int keys survive as strings in JSON;
+    callers should normalise via _normalise_profile before constructing).
+    """
+    validated = _OperatorResponseProfile(**profile_dict)
+    return dataclasses.asdict(validated)
 
 
 # ── CLI entry point ───────────────────────────────────────────────────────────

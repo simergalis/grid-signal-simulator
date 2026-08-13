@@ -108,3 +108,12 @@ BESS catalogue repricing moved from `step()` into `PowerRanker.rank()`. Both the
 ## Phase 4 test results
 - Total: 110 passed (14 new Phase 4 tests in test_psp002_phase4.py, 6 new in test_economic_dispatch_loop.py)
 - Pre-existing failure: `test_d10_demo_20mw_bess_fires_and_tapers` (D4 balance routing, unrelated)
+
+**Phase 5 — scenario_author schema wiring + TC-C14 deterministic replay.**
+- `scripts/scenario_author.py`: imports `_OperatorResponseProfile` from `runtime.pms_test_double` at module level. After `_normalise_profile()`, calls `_validate_against_schema()` which constructs `_OperatorResponseProfile(**profile_dict)` (raises TypeError on unknown fields that survive whitelist) then returns `dataclasses.asdict()` — adding `default_latency_s` and `default_approve` to the output JSON. `_normalise_profile()` is the Mistral hallucination filter (strict whitelist); unknown keys never reach `_validate_against_schema()`.
+- `mistralai` is not installed in this environment — mock it via `sys.modules` injection, not `patch("mistralai.Mistral")` (resolves the target at patch-time → ModuleNotFoundError before mocking).
+- TC-C14 behavioral: `EconomicDispatchLoop.step()` and `PMSTestDouble.process()` are deterministic by construction — two calls with identical inputs produce `==` results because all four dataclasses (`DispatchResult`, `DispatchAllocation`, `ShortfallEvent`, `PMSLogEntry`) have auto-generated `__eq__` from `@dataclass`.
+
+## Phase 5 test results
+- Total: 141 passed (15 new in test_psp002_phase5.py, 16 new in test_scenario_author.py)
+- `test_no_forbidden_imports.py`: still 6/6 passing (TC-C11, TC-C12, TC-C13 structural)
