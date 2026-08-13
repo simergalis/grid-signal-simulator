@@ -336,6 +336,7 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
   const [srcTurbine,  setSrcTurbine]  = useState(true)
   const [srcSolar,    setSrcSolar]    = useState(false)
   const [srcFuelCell, setSrcFuelCell] = useState(false)
+  const [srcGrid,     setSrcGrid]     = useState(false)  // false = islanded (default)
   // Saved copies so toggling back on restores the last config.
   const savedBessUnits    = useRef<typeof spec.bess_units>([])
   const savedTurbineUnits = useRef<typeof spec.turbine_units>([])
@@ -344,7 +345,7 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
   useEffect(() => {
     if (!editId) {
       setSpec(blankSpec())
-      setSrcBess(true); setSrcTurbine(true); setSrcSolar(false); setSrcFuelCell(false)
+      setSrcBess(true); setSrcTurbine(true); setSrcSolar(false); setSrcFuelCell(false); setSrcGrid(false)
       return
     }
     fetch(`/scenarios/${editId}`)
@@ -358,6 +359,7 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
         setSrcTurbine((loaded.turbine_units?.length ?? 0) > 0)
         setSrcSolar((loaded.solar_rated_mw ?? 0) > 0)
         setSrcFuelCell(loaded.fuel_cell_enabled ?? false)
+        setSrcGrid(!(loaded.island_mode ?? true))  // island_mode true = grid OFF
         // If the saved end_sim_time doesn't match any preset, prime the minutes input.
         if (nearestDuration(loaded.end_sim_time) === -1) {
           setCustomMins(Math.round(loaded.end_sim_time / 60))
@@ -731,6 +733,18 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                   className={`flex items-center gap-1.5 rounded border px-2 py-1.5 text-[10px] font-mono text-left transition-colors ${srcFuelCell ? 'border-accent/50 bg-accent/10 text-accent' : 'border-border bg-canvas text-muted hover:border-accent/40'}`}
                 >
                   <span>{srcFuelCell ? '●' : '○'}</span> Fuel Cell Module Array
+                </button>
+                {/* Grid Connection pill */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !srcGrid
+                    patch({ island_mode: !next })
+                    setSrcGrid(next)
+                  }}
+                  className={`flex items-center gap-1.5 rounded border px-2 py-1.5 text-[10px] font-mono text-left transition-colors ${srcGrid ? 'border-accent/50 bg-accent/10 text-accent' : 'border-border bg-canvas text-muted hover:border-accent/40'}`}
+                >
+                  <span>{srcGrid ? '●' : '○'}</span> Grid Connection
                 </button>
               </div>
             </div>

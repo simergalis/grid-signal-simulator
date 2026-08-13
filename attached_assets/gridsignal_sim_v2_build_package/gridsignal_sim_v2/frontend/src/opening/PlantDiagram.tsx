@@ -15,7 +15,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useTickStore } from '../store/tickStore'
 import { useScenarioStore } from '../store/scenarioStore'
 import { useBessConfigStore } from '../store/bessConfigStore'
-import { NODES, FLOWS, LEADTIME_BOX, WATCHING_BOX, DIAGRAM_W, DIAGRAM_H } from './plantLayout'
+import { NODES, FLOWS, LEADTIME_BOX, WATCHING_BOX, DIAGRAM_W, DIAGRAM_H, FUEL_CELL_NODE, FUEL_CELL_FLOW } from './plantLayout'
 import { FlowLine, FlowMarkers } from './FlowLine'
 import { PlantNode } from './PlantNode'
 import type { SolarPreview } from './PlantNode'
@@ -925,7 +925,21 @@ function LeadTimeCallout({
 }
 
 export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW }: PlantDiagramProps) {
-  const tick = useTickStore(s => s.latestTick)
+  const tick       = useTickStore(s => s.latestTick)
+  const selectedId = useScenarioStore(s => s.selectedId)
+
+  // Fetch fuel_cell_enabled from the selected scenario spec so we can show/hide
+  // the Fuel Cell Module Array tile without a hard page reload.
+  const [fuelCellEnabled, setFuelCellEnabled] = useState(false)
+  useEffect(() => {
+    if (!selectedId) { setFuelCellEnabled(false); return }
+    let cancelled = false
+    fetch(`/scenarios/${selectedId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (!cancelled) setFuelCellEnabled(data?.spec?.fuel_cell_enabled ?? false) })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [selectedId])
 
   return (
     <svg
@@ -948,6 +962,16 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW }
           marker={flow.marker}
         />
       ))}
+      {/* Fuel Cell flow — only when scenario enables it */}
+      {fuelCellEnabled && (
+        <FlowLine
+          key={FUEL_CELL_FLOW.id}
+          d={FUEL_CELL_FLOW.d}
+          mwValue={0}
+          maxMW={FUEL_CELL_FLOW.maxMW}
+          color={FUEL_CELL_FLOW.color}
+        />
+      )}
 
       {/* ── Nodes ───────────────────────────────────────────────────────── */}
       {NODES.map(node => (
@@ -960,6 +984,15 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW }
           liveSolarMW={liveSolarMW}
         />
       ))}
+      {/* Fuel Cell Module Array tile — only when scenario enables it */}
+      {fuelCellEnabled && (
+        <PlantNode
+          key="fuel-cell"
+          def={FUEL_CELL_NODE}
+          tick={tick}
+          onClick={onNodeClick}
+        />
+      )}
 
       {/* ── Watching callout — centred between Gen & Compute ──────────── */}
       <WatchingCallout tick={tick} />

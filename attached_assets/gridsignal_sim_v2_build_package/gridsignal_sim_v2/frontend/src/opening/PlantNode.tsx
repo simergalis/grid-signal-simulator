@@ -153,6 +153,8 @@ function nodeDetail(
       if (excess > 0.1) return `absorbing · ${excess.toFixed(1)} MW · ${socPct}% SoC · anchor 1.0 MW`
       return `standby · ${socPct}% SoC · anchor 1.0 MW`
     }
+    case 'fuel-cell':
+      return 'H₂ fuel cell array · advisory — not yet dispatched by engine'
     case 'grid-connection':
       return 'islanded — no utility feed'
     case 'switchgear-pms':

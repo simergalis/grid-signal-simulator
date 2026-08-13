@@ -9,9 +9,10 @@
  */
 
 export const DIAGRAM_W = 1200
-// Height trimmed to actual content bottom (grid-connection y=310+h=72=382) + 8px margin.
-// Reduces dead space below the nodes without clipping any element.
-export const DIAGRAM_H = 390
+// Height extended to fit optional Fuel Cell node (y=392+h=72=464) + 8px margin.
+// When no fuel-cell scenario is active the bottom tiles simply have extra whitespace;
+// the FUEL_CELL_NODE foreignObject is only added to the DOM when fuelCellEnabled.
+export const DIAGRAM_H = 472
 
 /** One node in the one-line diagram. */
 export interface NodeDef {
@@ -271,6 +272,34 @@ export const FLOWS: FlowDef[] = [
     marker: 'arrow-teal',
   },
 ]
+
+/**
+ * Fuel Cell Module Array node — conditionally rendered in PlantDiagram when the
+ * selected scenario has fuel_cell_enabled: true.  Exported separately so the
+ * diagram can add it only when relevant without reserving a permanent empty slot.
+ *
+ * Position: below grid-connection (y=310+72=382 → start at 392).
+ * Accent: hydrogen green (#3fd490) to distinguish from teal BESS.
+ */
+export const FUEL_CELL_NODE: NodeDef = {
+  id: 'fuel-cell',
+  x: 0, y: 392, w: 155, h: 72,
+  label: 'FUEL CELL', label2: 'MODULE ARRAY',
+  staticMW: 0,
+  clickable: false,
+  passive: true,
+  accentColor: '#3fd490',
+}
+
+// Right-centre of the fuel-cell node (x=155, y=392+72/2=428)
+const FUEL_RC: [number, number] = [155, 428]
+
+export const FUEL_CELL_FLOW: FlowDef = {
+  id: 'fuel-cell-to-sw',
+  d: srcPath(...FUEL_RC),
+  maxMW: 6,
+  color: '#3fd490',
+}
 
 /** Lead-time callout box geometry (rendered as HTML foreignObject). */
 export const LEADTIME_BOX = {
