@@ -15,6 +15,7 @@ is the concurrency layer).
 
 from __future__ import annotations
 
+import datetime as _datetime
 import os
 import uuid as _uuid
 
@@ -65,6 +66,12 @@ from core.procurement import (
 )
 from core.maintenance import AssetHealthRecord, MaintenanceLayer
 from core.ramp_relaxation import RampRelaxationEngine
+from core.power_source_priority import (
+    AuthorityTier as _AuthorityTier,
+    PowerSource as _PowerSource,
+    PowerSourceType as _PowerSourceType,
+    ResponseLatencyClass as _ResponseLatencyClass,
+)
 
 # TypeAdapter for deserialising assertion specs from plain dicts in
 # build_run_context_from_spec.  Created once at module level (not per-call)
@@ -836,6 +843,72 @@ def build_run_context_from_spec(
             adaptive_ramp_duration_s=float(_ramp_raw.get("adaptive_ramp_duration_s", 30.0)),
         )
 
+    # ── EDL sources (PSP-002 §3.2 / Task #371) ───────────────────────────
+    # Build the PowerSource list that EconomicDispatchLoop.step() uses for
+    # merit-order dispatch.  RunContext.edl_sources = None causes the EDL to
+    # be skipped entirely each tick; populating it here activates per-tick
+    # economic dispatch.
+    #
+    # Authority tier: honour per-unit spec field written by the Scenario
+    # Builder UI (autonomous / confirm / human_only).  Defaults to AUTONOMOUS
+    # so the EDL can dispatch without operator confirmation in headless runs.
+    #
+    # Grid source: uncapped (available_mw=999.0 — no hard physics limit).
+    # EDL.step() reprices grid sources per TOU each tick, so the initial
+    # marginal_cost_mwh here is a catalogue-read placeholder only.
+    _edl_sources: list[_PowerSource] = []
+
+    for _i, _b in enumerate(spec_data.get("bess_units", [])):
+        _tier_raw = _b.get("authority_tier", "autonomous")
+        try:
+            _bess_tier = _AuthorityTier(_tier_raw)
+        except ValueError:
+            _bess_tier = _AuthorityTier.AUTONOMOUS
+        _edl_sources.append(_PowerSource(
+            source_id=_b.get("asset_id") or f"bess-{_i}",
+            source_type=_PowerSourceType.BESS,
+            dispatchable=True,
+            counts_toward_reserve=True,
+            marginal_cost_mwh=float(_sp.value("bess_marginal_cost_mwh")),
+            response_latency_class=_ResponseLatencyClass.INSTANT,
+            authority_tier=_bess_tier,
+            available_mw=float(_b.get("rated_mw", 5.0)),
+            cost_basis_note="cycle amortisation (PSP-6)",
+        ))
+
+    if spec_data.get("fuel_cell_enabled", False):
+        _edl_sources.append(_PowerSource(
+            source_id="fuel-cell-0",
+            source_type=_PowerSourceType.FUEL_CELL,
+            dispatchable=True,
+            counts_toward_reserve=False,
+            marginal_cost_mwh=float(_sp.value("fuel_cell_ppa_rate_mwh")),
+            response_latency_class=_ResponseLatencyClass.RAMP_LIMITED,
+            authority_tier=_AuthorityTier.AUTONOMOUS,
+            available_mw=float(spec_data.get("fuel_cell_rated_mw", 0.0)),
+            cost_basis_note="fuel cell PPA rate (PSP-002 §7)",
+        ))
+
+    # Grid is always present as the last-resort source.
+    _edl_sources.append(_PowerSource(
+        source_id="grid-firm",
+        source_type=_PowerSourceType.GRID_FIRM,
+        dispatchable=True,
+        counts_toward_reserve=False,
+        marginal_cost_mwh=float(_sp.value("pge_tou_summer_off_peak_mwh")),
+        response_latency_class=_ResponseLatencyClass.INSTANT,
+        authority_tier=_AuthorityTier.AUTONOMOUS,
+        available_mw=999.0,
+        cost_basis_note="PG&E B-20 TOU placeholder — repriced per tick by EDL.step()",
+    ))
+
+    # Calendar month for TOU classification (Task #370).
+    # Honour spec field when the Scenario Builder has overridden it;
+    # fall back to the real wall-clock month at run start.
+    _edl_calendar_month: int = int(
+        spec_data.get("edl_calendar_month") or _datetime.datetime.now().month
+    )
+
     # ── RunContext ────────────────────────────────────────────────────────
     return RunContext(
         run_id=run_id,
@@ -940,6 +1013,10 @@ def build_run_context_from_spec(
         irradiance_profile=(
             IrradianceProfile(irradiance_steps) if solar_rated_mw > 0 else None
         ),
+        # PSP-002 §3.2 / Task #371 — activate per-tick EDL merit-order dispatch.
+        edl_sources=_edl_sources,
+        # PSP-002 §7 / Task #370 — TOU month for grid repricing.
+        edl_calendar_month=_edl_calendar_month,
     )
 
 
