@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GridSignal — Power Management UI Mockups</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --canvas:   #0d1117;
+    --surface:  #161b22;
+    --border:   #21262d;
+    --text:     #e6edf3;
+    --muted:    #6b7663;
+    --muted2:   #4b5764;
+    --accent:   #3fb6a8;
+    --accent-bg:#3fb6a820;
+    --accent-b: #3fb6a840;
+    --warn:     #f0a500;
+    --danger:   #f85149;
+    --blue:     #60a0c8;
+  }
+
+  body {
+    background: #070b0f;
+    color: var(--text);
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    padding: 28px;
+    min-height: 100vh;
+  }
+
+  /* ── Gallery ── */
+  .gallery-header { margin-bottom: 28px; border-bottom: 1px solid var(--border); padding-bottom: 14px; }
+  .gallery-header h1 { font-size: 13px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; }
+  .gallery-header p  { font-size: 10px; color: var(--muted2); }
+  .gallery { display: flex; flex-direction: column; gap: 44px; }
+  .section-label {
+    font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--muted2); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+  /* ── Modal shell ── */
+  .modal {
+    background: var(--canvas); border: 1px solid var(--border); border-radius: 8px;
+    box-shadow: 0 24px 64px #00000080; max-width: 680px; overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .modal-header { padding: 18px 20px 12px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-start; }
+  .modal-eyebrow { font-size: 9px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; color: var(--accent); margin-bottom: 3px; }
+  .modal-title   { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+  .modal-subtitle{ font-size: 9px; color: var(--muted2); line-height: 1.4; max-width: 440px; }
+  .modal-close   { font-size: 18px; line-height: 1; color: var(--muted2); cursor: pointer; margin-left: 12px; flex-shrink: 0; }
+
+  /* ── Tabs ── */
+  .tabs { display: flex; border-bottom: 1px solid var(--border); padding: 0 20px; padding-top: 8px; }
+  .tab-btn {
+    padding: 8px 16px; font-size: 11px; font-weight: 600; font-family: inherit;
+    border: none; border-bottom: 2px solid transparent; margin-bottom: -1px;
+    background: none; cursor: pointer; transition: color .15s; color: var(--muted2);
+  }
+  .tab-btn.active { border-bottom-color: var(--accent); color: var(--accent); }
+  .tab-btn:hover:not(.active) { color: var(--text); }
+
+  /* ── Tab content ── */
+  .tab-pane { display: none; padding: 16px 20px; overflow-y: auto; max-height: 540px; }
+  .tab-pane.active { display: block; }
+  .tab-pane > * + * { margin-top: 16px; }
+
+  /* ── Inner section heading ── */
+  .subsec { font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--muted2); margin-bottom: 8px; }
+
+  /* ── Operating tier cards ── */
+  .tier-card {
+    display: flex; align-items: flex-start; gap: 10px; border: 1px solid var(--border);
+    border-radius: 6px; padding: 10px 12px; cursor: pointer;
+    transition: border-color .15s, background .15s; background: var(--surface); margin-bottom: 6px;
+  }
+  .tier-card.t-warn   { border-color: #f0a50060; background: #f0a50008; }
+  .tier-card.t-yellow { border-color: #eab30860; background: #eab30808; }
+  .tier-card.t-teal   { border-color: var(--accent-b); background: var(--accent-bg); }
+  .tier-dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--border); margin-top: 1px; flex-shrink: 0; }
+  .t-warn   .tier-dot { border-color: var(--warn);   background: var(--warn); }
+  .t-yellow .tier-dot { border-color: #eab308;        background: #eab308; }
+  .t-teal   .tier-dot { border-color: var(--accent);  background: var(--accent); }
+  .tier-name { font-size: 11px; font-weight: 600; margin-bottom: 2px; }
+  .t-warn   .tier-name { color: var(--warn); }
+  .t-yellow .tier-name { color: #eab308; }
+  .t-teal   .tier-name { color: var(--accent); }
+  .tier-card:not(.t-warn):not(.t-yellow):not(.t-teal) .tier-name { color: var(--text); }
+  .tier-desc { font-size: 9px; line-height: 1.4; color: var(--muted2); }
+  .t-warn .tier-desc, .t-yellow .tier-desc, .t-teal .tier-desc { opacity: .8; }
+
+  /* ── EDL row ── */
+  .edl-row { display: flex; align-items: flex-start; gap: 12px; }
+  .season-badge { font-size: 10px; font-weight: 600; color: var(--accent); }
+  .edl-hint { font-size: 9px; color: var(--muted2); margin-top: 3px; }
+
+  select, input[type=number] {
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    border-radius: 4px; padding: 5px 8px; font-size: 11px; font-family: inherit; outline: none;
+  }
+  select:focus, input[type=number]:focus { border-color: var(--accent); }
+
+  hr.divider { border: none; border-top: 1px solid var(--border); }
+
+  /* ── Source cards ── */
+  .src-card { border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; background: var(--surface); margin-bottom: 6px; }
+  .src-hdr  { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .src-id   { font-size: 11px; color: var(--text); }
+  .src-tag  { font-size: 9px; color: var(--muted2); margin-left: 8px; }
+  .pill-group { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
+  .pill {
+    display: flex; flex-direction: column; align-items: center; padding: 5px 4px;
+    border-radius: 4px; border: 1px solid var(--border); background: none; color: var(--muted2);
+    font-family: inherit; font-size: 9px; cursor: pointer; transition: all .15s; line-height: 1.3;
+  }
+  .pill.active { border-color: var(--accent-b); background: var(--accent-bg); color: var(--accent); font-weight: 700; }
+  .pill:hover:not(.active) { border-color: var(--accent-b); }
+  .pill-sub { font-size: 8px; opacity: .6; }
+  .src-readonly { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
+  .ro-badge { font-size: 9px; border: 1px solid var(--border); border-radius: 4px; padding: 2px 6px; color: var(--muted2); font-family: inherit; }
+  .ro-note  { font-size: 9px; color: var(--muted2); }
+
+  /* ── TOU tables ── */
+  .tou-head { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .tou-sub  { font-size: 9px; color: var(--muted2); font-weight: 400; }
+  .tbl { width: 100%; border-collapse: collapse; font-size: 10px; }
+  .tbl th { text-align: left; padding: 5px 0; color: var(--muted2); font-weight: 400; border-bottom: 1px solid var(--border); }
+  .tbl th.r, .tbl td.r { text-align: right; }
+  .tbl td { padding: 7px 0; border-bottom: 1px solid #21262d60; color: var(--text); }
+  .tbl td.dim { color: var(--muted2); }
+  .bess-box { border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; background: var(--surface); display: flex; align-items: center; justify-content: space-between; }
+  .bess-rate { font-size: 16px; font-weight: 700; color: var(--accent); }
+  .merit-box { border: 1px solid #21262d60; border-radius: 6px; padding: 10px 12px; background: #0a0e1360; font-size: 9px; color: var(--muted2); line-height: 1.7; }
+
+  /* ── Profile tab ── */
+  .pgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 10px; color: var(--muted2); }
+  .ab-btns { display: flex; gap: 6px; }
+  .ab-btn { flex: 1; padding: 6px 8px; border-radius: 4px; border: 1px solid var(--border); background: none; font-family: inherit; font-size: 10px; color: var(--muted2); cursor: pointer; transition: all .15s; }
+  .ab-btn.on { border-color: var(--accent-b); background: var(--accent-bg); color: var(--accent); }
+  .rank-tbl { width: 100%; border-collapse: collapse; font-size: 10px; }
+  .rank-tbl th { text-align: left; padding: 5px 0; color: var(--muted2); font-weight: 400; border-bottom: 1px solid var(--border); }
+  .rank-tbl td { padding: 8px 0; border-bottom: 1px solid #21262d60; vertical-align: middle; }
+  .slider-cell { padding-right: 12px; }
+  .slider-cell input[type=range] { width: 100%; accent-color: var(--accent); background: none; border: none; padding: 0; margin-bottom: 2px; display: block; }
+  .sticks { display: flex; justify-content: space-between; font-size: 8px; color: var(--muted2); }
+  .sval { color: var(--text); font-family: inherit; }
+  .dec-wrap { display: flex; gap: 4px; justify-content: center; }
+  .dec { padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border); background: none; font-family: inherit; font-size: 9px; color: var(--muted2); cursor: pointer; transition: all .15s; }
+  .dec.apr { border-color: var(--accent-b); background: var(--accent-bg); color: var(--accent); }
+  .dec.rej { border-color: #f8514960; background: #f8514910; color: var(--danger); }
+  .rm-btn  { font-size: 9px; color: var(--muted2); background: none; border: none; font-family: inherit; cursor: pointer; }
+  .rm-btn:hover { color: var(--danger); }
+  .json-pre { font-family: inherit; font-size: 9px; color: var(--muted2); background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 10px 12px; white-space: pre; overflow-x: auto; }
+
+  /* ── Footer ── */
+  .modal-footer { border-top: 1px solid var(--border); padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; }
+  .f-note { font-size: 9px; color: var(--muted2); }
+  .f-note span { color: var(--text); }
+  .f-btns { display: flex; gap: 8px; align-items: center; }
+  .save-ok { font-size: 10px; color: var(--accent); font-family: inherit; }
+  .btn { padding: 6px 14px; border-radius: 4px; border: 1px solid var(--border); font-family: inherit; font-size: 10px; font-weight: 600; cursor: pointer; transition: all .15s; }
+  .btn-g { background: none; color: var(--muted2); }
+  .btn-g:hover { border-color: var(--text); color: var(--text); }
+  .btn-p { border-color: var(--accent-b); background: var(--accent-bg); color: var(--accent); }
+  .btn-p:hover { background: #3fb6a830; }
+
+  /* ── Builder panels ── */
+  .row { display: flex; gap: 20px; flex-wrap: wrap; }
+  .panel { background: var(--canvas); border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; }
+  .panel-sec { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted2); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  .unit-card { border: 1px solid var(--border); border-radius: 6px; padding: 10px 12px; background: var(--surface); margin-bottom: 8px; }
+  .unit-hdr  { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .unit-id   { font-size: 10px; color: var(--muted2); font-family: inherit; }
+  .unit-ok   { font-size: 10px; color: var(--accent); font-family: inherit; }
+  .two-col   { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  .gf-pill   { display: flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 4px; border: 1px solid var(--accent-b); background: var(--accent-bg); color: var(--accent); font-size: 9px; font-family: inherit; font-weight: 600; cursor: pointer; margin-bottom: 8px; }
+  .auth-lbl  { font-size: 10px; color: var(--muted2); margin-bottom: 5px; }
+  .annotation{ font-size: 9px; color: var(--muted2); background: #21262d; border: 1px solid var(--border); border-radius: 4px; padding: 4px 8px; display: inline-block; margin-top: 6px; }
+  .annotation::before { content: '↑ '; color: var(--accent); }
+
+  /* ── Tenant budget rows ── */
+  .trow { display: flex; align-items: center; justify-content: space-between; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; background: var(--surface); margin-bottom: 5px; }
+  .tname { font-size: 10px; color: var(--text); }
+  .tmeta { font-size: 9px; color: var(--muted2); margin-top: 1px; }
+  .tinput-wrap { display: flex; align-items: center; gap: 6px; }
+  .tinput { width: 68px; background: var(--canvas); border: 1px solid var(--border); border-radius: 4px; padding: 4px 6px; font-size: 11px; font-family: inherit; color: var(--text); text-align: right; }
+  .tunit  { font-size: 10px; color: var(--muted2); }
+  .treset { font-size: 9px; color: var(--muted2); cursor: pointer; background: none; border: none; font-family: inherit; }
+  .treset:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="gallery-header">
+  <h1>⚡ GridSignal — Power Management UI Mockups</h1>
+  <p>Interactive mockups of the SWITCHGEAR / PMS modal (3 tabs) and all Scenario Builder additions. Click tabs and buttons to interact.</p>
+</div>
+
+<div class="gallery">
+
+<!-- ═══════════════════════════════════════════════════════
+     1. SWITCHGEAR / PMS MODAL
+════════════════════════════════════════════════════════ -->
+<div>
+  <div class="section-label">① SWITCHGEAR / PMS MODAL — click the node on the plant diagram to open</div>
+
+  <div class="modal">
+
+    <!-- Header -->
+    <div class="modal-header">
+      <div>
+        <div class="modal-eyebrow">⚡ SWITCHGEAR / PMS</div>
+        <div class="modal-title">Power Management Configuration</div>
+        <div class="modal-subtitle">
+          Advisory boundary: GridSignal never issues southbound writes.
+          Authority tiers configure the dispatch advisory loop only —
+          the PMS and operator retain physical switching authority (§6.1).
+        </div>
+      </div>
+      <div class="modal-close">×</div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="auth">Dispatch Authority</button>
+      <button class="tab-btn"        data-tab="tou">TOU Reference</button>
+      <button class="tab-btn"        data-tab="profile">Operator Profile</button>
+    </div>
+
+    <!-- ─── TAB 1: DISPATCH AUTHORITY ─── -->
+    <div class="tab-pane active" id="auth">
+
+      <div>
+        <div class="subsec">Site Operating Tier · §23.4 Ladder A</div>
+        <div class="tier-card t-warn" data-cls="t-warn">
+          <div class="tier-dot"></div>
+          <div><div class="tier-name">Advisory</div>
+          <div class="tier-desc">All recommendations require human approval before any action. No autonomous dispatch.</div></div>
+        </div>
+        <div class="tier-card" data-cls="t-yellow">
+          <div class="tier-dot"></div>
+          <div><div class="tier-name">Supervised</div>
+          <div class="tier-desc">Autonomous dispatch within pre-approved limits. Deviations require confirmation.</div></div>
+        </div>
+        <div class="tier-card" data-cls="t-teal">
+          <div class="tier-dot"></div>
+          <div><div class="tier-name">Autonomous</div>
+          <div class="tier-desc">Full GridSignal autonomous dispatch. No per-action operator approval required.</div></div>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div>
+        <div class="subsec">TOU Calendar Month · EDL Dispatch Pricing</div>
+        <div class="edl-row">
+          <select id="edl-month">
+            <option>January (Winter)</option><option>February (Winter)</option>
+            <option>March (Winter)</option><option>April (Winter)</option>
+            <option>May (Winter)</option><option>June (Summer)</option>
+            <option>July (Summer)</option><option selected>August (Summer)</option>
+            <option>September (Summer)</option><option>October (Winter)</option>
+            <option>November (Winter)</option><option>December (Winter)</option>
+          </select>
+          <div>
+            <div class="season-badge" id="season-badge">Summer (Jun–Sep)</div>
+            <div class="edl-hint">Season used by EconomicDispatchLoop.step() for PG&amp;E B-20 TOU pricing.</div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div>
+        <div class="subsec">Per-Source Dispatch Authority · §2.1 / §6.3</div>
+
+        <div class="src-card">
+          <div class="src-hdr">
+            <div><span class="src-id">BESS-001</span><span class="src-tag">BESS · 20.0 MW</span></div>
+          </div>
+          <div class="pill-group">
+            <div class="pill active"><span>Autonomous</span><span class="pill-sub">EDL dispatches</span></div>
+            <div class="pill"><span>Confirm</span><span class="pill-sub">Needs approval</span></div>
+            <div class="pill"><span>Human only</span><span class="pill-sub">Manual only</span></div>
+          </div>
+        </div>
+
+        <div class="src-card">
+          <div class="src-hdr">
+            <div><span class="src-id">GT-1</span><span class="src-tag">Gas Turbine · 10.0 MW</span></div>
+          </div>
+          <div class="pill-group">
+            <div class="pill"><span>Autonomous</span><span class="pill-sub">EDL dispatches</span></div>
+            <div class="pill active"><span>Confirm</span><span class="pill-sub">Needs approval</span></div>
+            <div class="pill"><span>Human only</span><span class="pill-sub">Manual only</span></div>
+          </div>
+        </div>
+
+        <div class="src-card">
+          <div class="src-hdr">
+            <div><span class="src-id">Solar PV</span><span class="src-tag">Solar · rated 5.0 MW</span></div>
+            <span style="font-size:9px;color:var(--muted2);font-style:italic">Always excluded</span>
+          </div>
+          <div class="src-readonly">
+            <span class="ro-badge">Autonomous</span>
+            <span class="ro-note">Solar is always excluded from EDL ranking (dispatchable = false)</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /auth -->
+
+    <!-- ─── TAB 2: TOU REFERENCE ─── -->
+    <div class="tab-pane" id="tou">
+
+      <div style="font-size:9px;color:var(--muted2);line-height:1.6">
+        PG&amp;E Schedule B-20 (secondary voltage) · Cal. PUC Sheet No. 61081-E, eff. March 1, 2026.
+        Energy-only component; demand charges excluded. Source: GS-IMPL-PSP-002 §7.<br>
+        Rates are read-only catalogue values — modify in <code style="color:var(--text)">gridsignal_parameters.json</code>.
+      </div>
+
+      <div>
+        <div class="tou-head" style="color:var(--warn)">Summer Season <span class="tou-sub">June – September</span></div>
+        <table class="tbl">
+          <thead><tr><th>Period</th><th>Hours (local time)</th><th class="r">Rate ($/MWh)</th></tr></thead>
+          <tbody>
+            <tr><td>Peak</td><td class="dim">12 pm – 6 pm (daily)</td><td class="r">177.02</td></tr>
+            <tr><td>Part-peak</td><td class="dim">2–4 pm · 9–11 pm (daily)</td><td class="r">142.27</td></tr>
+            <tr><td>Off-peak</td><td class="dim">All other hours</td><td class="r">114.82</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div>
+        <div class="tou-head" style="color:var(--blue)">Winter Season <span class="tou-sub">October – May</span></div>
+        <table class="tbl">
+          <thead><tr><th>Period</th><th>Hours (local time)</th><th class="r">Rate ($/MWh)</th><th class="r">Applies</th></tr></thead>
+          <tbody>
+            <tr><td>Peak</td><td class="dim">4 pm – 9 pm (daily)</td><td class="r">156.32</td><td class="r dim" style="font-size:9px">Oct – May</td></tr>
+            <tr><td>Super off-peak</td><td class="dim">9 am – 2 pm (daily)</td><td class="r">58.72</td><td class="r dim" style="font-size:9px">Mar – May only</td></tr>
+            <tr><td>Off-peak</td><td class="dim">All other hours</td><td class="r">114.60</td><td class="r dim" style="font-size:9px">Oct – May</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="bess-box">
+        <div>
+          <div style="font-size:10px;color:var(--text);margin-bottom:2px">BESS marginal cost</div>
+          <div style="font-size:9px;color:var(--muted2)">All-in capex per MWh (Ember Oct 2025, LFP utility-scale). PSP-6 resolved.</div>
+        </div>
+        <div class="bess-rate">$38.00/MWh</div>
+      </div>
+
+      <div class="merit-box">
+        <strong style="color:var(--text)">Merit order (cheapest first):</strong>
+        BESS ($38.00) → Winter super off-peak ($58.72) → Summer off-peak ($114.82) →
+        Winter off-peak ($114.60) → Summer part-peak ($142.27) → Winter peak ($156.32) →
+        Summer peak ($177.02).<br>
+        Solar is always excluded from EDL ranking (dispatchable = false).
+      </div>
+
+    </div><!-- /tou -->
+
+    <!-- ─── TAB 3: OPERATOR PROFILE ─── -->
+    <div class="tab-pane" id="profile">
+
+      <div style="font-size:9px;color:var(--muted2);line-height:1.6">
+        OperatorResponseProfile consumed by PMSTestDouble at simulator startup (§3.4).
+        Generated offline by <code style="color:var(--text)">scripts/scenario_author.py</code>; this panel
+        provides a visual editor. Never used in a production harness (<code style="color:var(--text)">GS_PRODUCTION_HARNESS</code> set).
+      </div>
+
+      <div>
+        <div class="subsec">Default Behaviour</div>
+        <div class="pgrid">
+          <div class="field">
+            <label>Default latency (s)</label>
+            <input type="number" value="30" min="0" max="300" step="5" id="default-latency">
+          </div>
+          <div class="field">
+            <label>Default approve</label>
+            <div class="ab-btns">
+              <button class="ab-btn on" data-grp="default">Approve</button>
+              <button class="ab-btn"    data-grp="default">Reject</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="subsec" style="display:flex;justify-content:space-between;align-items:center">
+          <span>Per-Rank Overrides (1 = cheapest ranked source)</span>
+          <button style="background:none;border:none;color:var(--accent);font-family:inherit;font-size:9px;cursor:pointer">Reset to defaults</button>
+        </div>
+        <table class="rank-tbl">
+          <thead><tr>
+            <th style="width:48px">Rank</th>
+            <th>Response latency (s)</th>
+            <th style="text-align:center;width:136px">Decision</th>
+            <th style="text-align:right;width:24px"><button style="background:none;border:none;color:var(--accent);font-family:inherit;font-size:9px;cursor:pointer">+ Add</button></th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td style="font-family:inherit">#1</td>
+              <td class="slider-cell">
+                <input type="range" min="0" max="300" value="30">
+                <div class="sticks"><span>0 s</span><span class="sval">30 s</span><span>300 s</span></div>
+              </td>
+              <td><div class="dec-wrap">
+                <button class="dec apr">Approve</button>
+                <button class="dec">Reject</button>
+              </div></td>
+              <td style="text-align:right"><button class="rm-btn">×</button></td>
+            </tr>
+            <tr>
+              <td style="font-family:inherit">#2</td>
+              <td class="slider-cell">
+                <input type="range" min="0" max="300" value="60">
+                <div class="sticks"><span>0 s</span><span class="sval">60 s</span><span>300 s</span></div>
+              </td>
+              <td><div class="dec-wrap">
+                <button class="dec apr">Approve</button>
+                <button class="dec">Reject</button>
+              </div></td>
+              <td style="text-align:right"><button class="rm-btn">×</button></td>
+            </tr>
+            <tr>
+              <td style="font-family:inherit">#3</td>
+              <td class="slider-cell">
+                <input type="range" min="0" max="300" value="30">
+                <div class="sticks"><span>0 s</span><span class="sval">30 s</span><span>300 s</span></div>
+              </td>
+              <td><div class="dec-wrap">
+                <button class="dec">Approve</button>
+                <button class="dec rej">Reject</button>
+              </div></td>
+              <td style="text-align:right"><button class="rm-btn">×</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div>
+        <div class="subsec">JSON Preview</div>
+        <pre class="json-pre" id="json-preview">{
+  "response_latency_s": { "1": 30, "2": 60, "3": 30 },
+  "approve":            { "1": true, "2": true, "3": false },
+  "default_latency_s":  30,
+  "default_approve":    true
+}</pre>
+      </div>
+
+    </div><!-- /profile -->
+
+    <!-- Footer -->
+    <div class="modal-footer">
+      <div class="f-note">Scenario: <span>demo-solar-peak</span></div>
+      <div class="f-btns">
+        <span class="save-ok">Saved.</span>
+        <button class="btn btn-g">Close</button>
+        <button class="btn btn-p">Save to scenario</button>
+      </div>
+    </div>
+
+  </div><!-- /modal -->
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     2. SCENARIO BUILDER ADDITIONS
+════════════════════════════════════════════════════════ -->
+<div>
+  <div class="section-label">② SCENARIO BUILDER — authority tier per unit · TOU month · tenant budgets</div>
+
+  <div class="row">
+
+    <!-- BESS unit card -->
+    <div>
+      <div class="panel" style="width:340px">
+        <div class="panel-sec">BESS Units</div>
+        <div class="unit-card">
+          <div class="unit-hdr">
+            <span class="unit-id">BESS-001</span>
+            <span class="unit-ok">0.50 C ✓</span>
+          </div>
+          <div class="two-col">
+            <div class="field"><label>Rated (MW)</label><input type="number" value="20"></div>
+            <div class="field"><label>Usable (MWh)</label><input type="number" value="40"></div>
+          </div>
+          <div class="field" style="margin-bottom:8px">
+            <label>Initial SoC — 0.95</label>
+            <input type="range" min="0.1" max="1.0" step="0.05" value="0.95" style="width:100%;accent-color:var(--accent);display:block;margin-bottom:2px">
+            <div style="display:flex;justify-content:space-between;font-size:8px;color:var(--muted2)"><span>0.10</span><span>1.00</span></div>
+          </div>
+          <div style="margin-bottom:8px">
+            <div class="gf-pill">● Grid-forming anchor</div>
+            <div style="font-size:9px;color:var(--muted2)">Provides voltage/frequency reference. §7.1.2: one unit only.</div>
+          </div>
+          <!-- NEW: authority tier -->
+          <div>
+            <div class="auth-lbl">Dispatch authority · §2.1</div>
+            <div class="pill-group">
+              <div class="pill active"><span>Autonomous</span><span class="pill-sub">EDL dispatches</span></div>
+              <div class="pill"><span>Confirm</span><span class="pill-sub">Needs approval</span></div>
+              <div class="pill"><span>Human only</span><span class="pill-sub">Manual only</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="annotation">New: authority tier per BESS unit</div>
+    </div>
+
+    <!-- Turbine unit card -->
+    <div>
+      <div class="panel" style="width:300px">
+        <div class="panel-sec">Turbine Units</div>
+        <div class="unit-card">
+          <div class="unit-hdr"><span class="unit-id">GT-1</span></div>
+          <div class="two-col">
+            <div class="field"><label>Rated (MW)</label><input type="number" value="10"></div>
+            <div class="field"><label>Ramp rate (MW/s)</label><input type="number" value="0.20"></div>
+          </div>
+          <div style="margin-bottom:8px">
+            <div class="auth-lbl">Initial standby</div>
+            <div class="pill-group">
+              <div class="pill"><span>Hot</span><span class="pill-sub">~5 min</span></div>
+              <div class="pill active"><span>Warm</span><span class="pill-sub">~10 min</span></div>
+              <div class="pill"><span>Cold</span><span class="pill-sub">~15 min</span></div>
+            </div>
+          </div>
+          <!-- NEW: authority tier -->
+          <div>
+            <div class="auth-lbl">Dispatch authority · §2.1</div>
+            <div class="pill-group">
+              <div class="pill"><span>Autonomous</span><span class="pill-sub">EDL dispatches</span></div>
+              <div class="pill active"><span>Confirm</span><span class="pill-sub">Needs approval</span></div>
+              <div class="pill"><span>Human only</span><span class="pill-sub">Manual only</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="annotation">New: authority tier per turbine unit</div>
+    </div>
+
+  </div><!-- /row 1 -->
+
+  <div class="row" style="margin-top:20px">
+
+    <!-- TOU month in Run Parameters -->
+    <div>
+      <div class="panel" style="width:300px">
+        <div class="panel-sec">Run Parameters</div>
+
+        <div class="field" style="margin-bottom:12px">
+          <label>TOU calendar month · EDL dispatch pricing</label>
+          <select style="margin-top:4px;width:100%" id="sb-month">
+            <option>Jan (Winter)</option><option>Feb (Winter)</option>
+            <option>Mar (Winter)</option><option>Apr (Winter)</option>
+            <option>May (Winter)</option><option>Jun (Summer)</option>
+            <option>Jul (Summer)</option><option selected>Aug (Summer)</option>
+            <option>Sep (Summer)</option><option>Oct (Winter)</option>
+            <option>Nov (Winter)</option><option>Dec (Winter)</option>
+          </select>
+          <div id="sb-season" style="font-size:9px;color:var(--accent);margin-top:3px">PG&amp;E B-20 Summer rates · peak 12 pm–6 pm</div>
+        </div>
+
+        <div class="field">
+          <label>Default playback speed</label>
+          <select style="margin-top:4px;width:100%">
+            <option>Max speed</option>
+            <option>1× (real-time)</option>
+            <option selected>10× (fast)</option>
+            <option>60×</option>
+          </select>
+        </div>
+      </div>
+      <div class="annotation">New: TOU month selector in Run Parameters</div>
+    </div>
+
+    <!-- Tenant power budgets -->
+    <div>
+      <div class="panel" style="width:360px">
+        <div class="panel-sec">Tenant Power Budgets</div>
+        <div style="font-size:9px;color:var(--muted2);margin-bottom:10px;line-height:1.5">
+          Per-tenant ceiling enforced by TenantBudgetGate (PSP-002 MT).
+          Leave at contracted value to use the signed agreement ceiling.
+        </div>
+
+        <div class="trow">
+          <div><div class="tname">Tenant A</div><div class="tmeta">Slurm · contract 1.40 MW</div></div>
+          <div class="tinput-wrap">
+            <input type="number" class="tinput" value="1.20" step="0.05">
+            <span class="tunit">MW</span>
+            <button class="treset">reset</button>
+          </div>
+        </div>
+        <div class="trow">
+          <div><div class="tname">Tenant B</div><div class="tmeta">Kubernetes · contract 1.00 MW</div></div>
+          <div class="tinput-wrap">
+            <input type="number" class="tinput" value="1.00" step="0.05">
+            <span class="tunit">MW</span>
+          </div>
+        </div>
+        <div class="trow">
+          <div><div class="tname">Tenant C</div><div class="tmeta">Ray · contract 0.60 MW</div></div>
+          <div class="tinput-wrap">
+            <input type="number" class="tinput" value="0.60" step="0.05">
+            <span class="tunit">MW</span>
+          </div>
+        </div>
+        <div class="trow">
+          <div><div class="tname">Tenant D</div><div class="tmeta">No scheduler · contract 0.80 MW</div></div>
+          <div class="tinput-wrap">
+            <input type="number" class="tinput" value="0.80" step="0.05">
+            <span class="tunit">MW</span>
+          </div>
+        </div>
+        <div class="trow">
+          <div><div class="tname">Tenant E</div><div class="tmeta">No scheduler · contract 0.45 MW</div></div>
+          <div class="tinput-wrap">
+            <input type="number" class="tinput" value="0.45" step="0.05">
+            <span class="tunit">MW</span>
+          </div>
+        </div>
+
+        <div style="margin-top:8px">
+          <button style="background:none;border:none;color:var(--muted2);font-family:inherit;font-size:9px;cursor:pointer">
+            Reset all to contracted defaults
+          </button>
+        </div>
+      </div>
+      <div class="annotation">New: tenant power budget section (PSP-002 MT)</div>
+    </div>
+
+  </div><!-- /row 2 -->
+</div>
+
+</div><!-- /gallery -->
+
+<script>
+// ── Tab switching ──────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const modal = btn.closest('.modal');
+    modal.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    modal.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    modal.querySelector('#' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ── Operating tier ─────────────────────────────────────────────────────────────
+document.querySelectorAll('.tier-card').forEach(card => {
+  card.addEventListener('click', () => {
+    const group = card.closest('.tab-pane, .tab-content');
+    group.querySelectorAll('.tier-card').forEach(c => {
+      c.className = 'tier-card';
+    });
+    card.classList.add(card.dataset.cls);
+  });
+});
+
+// ── Pill groups ────────────────────────────────────────────────────────────────
+document.querySelectorAll('.pill-group').forEach(grp => {
+  grp.querySelectorAll('.pill').forEach(p => {
+    p.addEventListener('click', () => {
+      grp.querySelectorAll('.pill').forEach(x => x.classList.remove('active'));
+      p.classList.add('active');
+    });
+  });
+});
+
+// ── Approve / reject buttons ───────────────────────────────────────────────────
+document.querySelectorAll('.ab-btns').forEach(grp => {
+  grp.querySelectorAll('.ab-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      grp.querySelectorAll('.ab-btn').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+    });
+  });
+});
+document.querySelectorAll('.dec-wrap').forEach(grp => {
+  grp.querySelectorAll('.dec').forEach(b => {
+    b.addEventListener('click', () => {
+      grp.querySelectorAll('.dec').forEach(x => x.className = 'dec');
+      b.classList.add(b.textContent.trim() === 'Approve' ? 'apr' : 'rej');
+    });
+  });
+});
+
+// ── Rank sliders ───────────────────────────────────────────────────────────────
+document.querySelectorAll('.slider-cell input[type=range]').forEach(s => {
+  s.addEventListener('input', () => {
+    const val = s.closest('td').querySelector('.sval');
+    if (val) val.textContent = s.value + ' s';
+  });
+});
+
+// ── EDL month → season label (modal) ──────────────────────────────────────────
+const edlSummer = ['June (Summer)','July (Summer)','August (Summer)','September (Summer)'];
+document.getElementById('edl-month').addEventListener('change', e => {
+  const isSummer = edlSummer.some(m => e.target.value.startsWith(m.split(' ')[0]));
+  document.getElementById('season-badge').textContent =
+    isSummer ? 'Summer (Jun–Sep)' : 'Winter (Oct–May)';
+});
+
+// ── EDL month → season label (builder) ────────────────────────────────────────
+document.getElementById('sb-month').addEventListener('change', e => {
+  const isSummer = e.target.value.includes('Summer');
+  document.getElementById('sb-season').textContent =
+    isSummer ? 'PG\u0026E B-20 Summer rates · peak 12 pm–6 pm'
+             : 'PG\u0026E B-20 Winter rates · peak 4 pm–9 pm';
+});
+</script>
+</body>
+</html>

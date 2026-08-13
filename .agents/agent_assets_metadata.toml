@@ -280,3 +280,10 @@ uri = "file://attached_assets/demo_script_tile_review_updated.md"
 type = "text"
 title = "Tile-by-Tile Demo Script (Section 2).md"
 description = "Updated demo script — tile-by-tile walkthrough covering all zones, Compute Racks modal, AlertDock, scheduler manifests, and GPU Generator auto-arm."
+
+[[outputs]]
+id = "OVpf2lhfYx8Lspd6n9IJK"
+uri = "file://mockup-pms-ui.html"
+type = "text"
+title = "Power Management UI Mockups"
+description = "Interactive HTML mockup — SWITCHGEAR/PMS modal (3 tabs) + Scenario Builder additions"
