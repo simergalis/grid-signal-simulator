@@ -441,12 +441,44 @@ export interface WorkloadEventSpec {
   renewable_shortfall_mw: number
 }
 
+// ── Power Management System (PSP-002) types ──────────────────────────────────
+
+/** Dispatch authority tier per §23.4 / §24.3 (GS-IMPL-PSP-002 §2.1). */
+export type AuthorityTier = 'autonomous' | 'confirm' | 'human_only'
+
+/** Site-level operating tier — controls the dispatch authority ladder (§23.4). */
+export type OperatingTier = 'advisory' | 'supervised' | 'autonomous'
+
+/** Per-tenant power budget ceiling stored with the scenario spec (PSP-002 MT). */
+export interface TenantBudget {
+  tenant_id: string
+  ceiling_mw: number
+}
+
+/**
+ * Simulated operator response profile for PMSTestDouble (PSP-002 §3.4).
+ * Generated offline by scripts/scenario_author.py; embedded in ScenarioSpec
+ * so the simulator can replay scenarios deterministically (TC-C14 / INV-7).
+ */
+export interface OperatorProfileSpec {
+  /** Simulated latency per ranked-source position (1-indexed, seconds). */
+  response_latency_s: Record<number, number>
+  /** Whether simulated operator approves each ranked-source position. */
+  approve: Record<number, boolean>
+  /** Fallback latency for positions not in response_latency_s. Default 30 s. */
+  default_latency_s?: number
+  /** Fallback approval for positions not in approve. Default true. */
+  default_approve?: boolean
+}
+
 export interface BessUnitSpec {
   asset_id: string
   rated_mw: number
   usable_mwh: number
   initial_soc_fraction: number        // [0.1, 1.0]
   grid_forming: boolean
+  /** PSP-002 §2.1: dispatch authority tier (default autonomous). */
+  authority_tier?: AuthorityTier
 }
 
 export interface TurbineUnitSpec {
@@ -497,6 +529,8 @@ export interface TurbineUnitSpec {
   hot_start_s?:  number
   warm_start_s?: number
   cold_start_s?: number
+  /** PSP-002 §2.1: dispatch authority tier (default autonomous). */
+  authority_tier?: AuthorityTier
 }
 
 /** PMS wiring exposed in the Scenario Builder. */
@@ -588,6 +622,16 @@ export interface ScenarioSpec {
   fuel_cell_enabled?: boolean         // true = operator has included FC array
   fuel_cell_rated_mw?: number         // rated MW output per stack
   fuel_cell_stack_count?: number      // number of stacks in the array
+
+  // ── Power Management (PSP-002) ─────────────────────────────────────────────
+  /** §23.4 Ladder A: site-level dispatch authority tier. */
+  operating_tier?: OperatingTier
+  /** Calendar month (1–12) for EDL TOU pricing via pge_price_for_period(). */
+  edl_calendar_month?: number
+  /** Per-tenant power budget ceilings (PSP-002 MT). */
+  tenant_budgets?: TenantBudget[]
+  /** Operator response profile for PMSTestDouble replay (PSP-002 §3.4 / TC-C14). */
+  operator_response_profile?: OperatorProfileSpec
 }
 
 export interface ScenarioSummary {

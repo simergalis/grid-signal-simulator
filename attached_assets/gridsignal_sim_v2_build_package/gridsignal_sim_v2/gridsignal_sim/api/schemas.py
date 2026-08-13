@@ -189,6 +189,14 @@ class BessUnitSpec(BaseModel):
     # of deriving from anchor_reserve_pct.  1.0 MW is the BessConfig default
     # (PROTO-9 / CHOSEN).  San Diego demo scenario uses 2.0 MW explicitly.
     p_anchor_reserve_mw: float = Field(default=1.0, ge=0.0)
+    # PSP-002 §2.1: dispatch authority tier.
+    # "autonomous": EDL allocates without operator action (default).
+    # "confirm": operator/PMS must confirm before dispatch.
+    # "human_only": operator must command directly; always escalated on shortfall.
+    authority_tier: Optional[str] = Field(
+        default="autonomous",
+        pattern=r"^(autonomous|confirm|human_only)$",
+    )
 
     def c_rate(self) -> float:
         return self.rated_mw / self.usable_mwh
@@ -263,6 +271,11 @@ class TurbineUnitSpec(BaseModel):
     valve_actuation_tc_s: Optional[float] = Field(default=None, gt=0.0)
     fuel_to_power_tc_s: Optional[float] = Field(default=None, gt=0.0)
     max_instantaneous_load_step_mw: Optional[float] = Field(default=None, gt=0.0)
+    # PSP-002 §2.1: dispatch authority tier per unit.
+    authority_tier: Optional[str] = Field(
+        default="autonomous",
+        pattern=r"^(autonomous|confirm|human_only)$",
+    )
 
 
 class StepTimingConfigSpec(BaseModel):
@@ -460,6 +473,26 @@ class ScenarioSpec(BaseModel):
     fuel_cell_enabled: bool = False
     fuel_cell_rated_mw: float = Field(default=0.0, ge=0.0)
     fuel_cell_stack_count: int = Field(default=1, ge=1)
+
+    # ── Power Management (GS-IMPL-PSP-002) ──────────────────────────────────────
+    # §23.4 Ladder A: site-level operating tier — controls the authority ladder.
+    # "advisory": all actions require human approval; no autonomous dispatch.
+    # "supervised": autonomous within pre-approved limits; deviations escalated.
+    # "autonomous": full GridSignal autonomous dispatch; no per-action approval.
+    operating_tier: Optional[str] = Field(
+        default=None,
+        pattern=r"^(advisory|supervised|autonomous)$",
+    )
+    # Calendar month (1–12) for TOU pricing in EconomicDispatchLoop.step().
+    # None = caller falls back to current calendar month at runtime (§4.1).
+    edl_calendar_month: Optional[int] = Field(default=None, ge=1, le=12)
+    # Per-tenant power budget ceilings enforced by TenantBudgetGate (MT section).
+    # Each dict: {"tenant_id": str, "ceiling_mw": float (> 0)}.
+    tenant_budgets: Optional[list[dict]] = Field(default=None)
+    # Operator response profile for PMSTestDouble replay (§3.4 / TC-C14 / INV-7).
+    # Injected at run-start when GS_PRODUCTION_HARNESS env var is not set.
+    operator_response_profile: Optional[dict] = Field(default=None)
+
     # GS-DES-CFG-001 §Phase-6 / Item-3: declared design peak site load.
     design_peak_load_mw: Optional[float] = Field(
         default=None, ge=0.0,

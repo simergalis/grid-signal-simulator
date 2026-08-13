@@ -22,7 +22,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useScenarioStore } from '../store/scenarioStore'
-import type { BessUnitSpec, KubeJobSpec, TurbineUnitSpec, ScenarioSpec, TenantWorkloadEvent } from '../types'
+import type { AuthorityTier, BessUnitSpec, KubeJobSpec, TurbineUnitSpec, ScenarioSpec, TenantBudget, TenantWorkloadEvent } from '../types'
 import { ParameterModal, defaultPhysicsParams } from './ParameterModal'
 import type { PhysicsParams } from './ParameterModal'
 import { GpuLoadEditorModal } from './GpuLoadEditorModal'
@@ -807,6 +807,28 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                       </p>
                     </div>
 
+                    {/* Dispatch authority tier */}
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-muted">Dispatch authority · §2.1</span>
+                      <div className="grid grid-cols-3 gap-1">
+                        {(['autonomous', 'confirm', 'human_only'] as const).map(tier => {
+                          const active = (b.authority_tier ?? 'autonomous') === tier
+                          const short: Record<AuthorityTier, string> = { autonomous: 'Autonomous', confirm: 'Confirm', human_only: 'Human only' }
+                          const hint: Record<AuthorityTier, string>  = { autonomous: 'EDL dispatches', confirm: 'Needs approval', human_only: 'Manual only' }
+                          return (
+                            <button key={tier} onClick={() => patchBess(i, { authority_tier: tier })}
+                              className={['flex flex-col items-center py-1 rounded border text-[9px] leading-tight transition-colors',
+                                active ? 'border-accent bg-accent/10 text-accent font-semibold'
+                                       : 'border-border text-muted hover:border-accent/50',
+                              ].join(' ')}>
+                              <span>{short[tier]}</span>
+                              <span className="opacity-60 text-[8px]">{hint[tier]}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+
                     {cRateWarning(b) && (
                       <p className="text-[9px] text-orange-400">{cRateWarning(b)}</p>
                     )}
@@ -862,6 +884,28 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                             >
                               <span>{label}</span>
                               <span className="opacity-60">{hint}</span>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Dispatch authority tier */}
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-muted">Dispatch authority · §2.1</span>
+                      <div className="grid grid-cols-3 gap-1">
+                        {(['autonomous', 'confirm', 'human_only'] as const).map(tier => {
+                          const active = (t.authority_tier ?? 'autonomous') === tier
+                          const short: Record<AuthorityTier, string> = { autonomous: 'Autonomous', confirm: 'Confirm', human_only: 'Human only' }
+                          const hint: Record<AuthorityTier, string>  = { autonomous: 'EDL dispatches', confirm: 'Needs approval', human_only: 'Manual only' }
+                          return (
+                            <button key={tier} onClick={() => patchTurbine(i, { authority_tier: tier })}
+                              className={['flex flex-col items-center py-1 rounded border text-[9px] leading-tight transition-colors',
+                                active ? 'border-accent bg-accent/10 text-accent font-semibold'
+                                       : 'border-border text-muted hover:border-accent/50',
+                              ].join(' ')}>
+                              <span>{short[tier]}</span>
+                              <span className="opacity-60 text-[8px]">{hint[tier]}</span>
                             </button>
                           )
                         })}
@@ -1100,6 +1144,27 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                 </select>
               </label>
 
+              {/* EDL TOU calendar month */}
+              <label className="flex flex-col gap-0.5">
+                <span className="text-[10px] text-muted">TOU calendar month · EDL dispatch pricing</span>
+                <select
+                  className="w-full rounded border border-border bg-canvas px-2 py-1 text-xs text-text
+                             focus:outline-none focus:ring-1 focus:ring-accent"
+                  value={spec.edl_calendar_month ?? (new Date().getMonth() + 1)}
+                  onChange={e => patch({ edl_calendar_month: Number(e.target.value) })}
+                >
+                  {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
+                    <option key={i + 1} value={i + 1}>{`${m} (${i >= 5 && i <= 8 ? 'Summer' : 'Winter'})`}</option>
+                  ))}
+                </select>
+                <span className="text-[9px] text-muted">
+                  {(() => {
+                    const m = spec.edl_calendar_month ?? (new Date().getMonth() + 1)
+                    return m >= 6 && m <= 9 ? 'PG\u0026E B-20 Summer rates · peak 12 pm–6 pm' : 'PG\u0026E B-20 Winter rates · peak 4 pm–9 pm'
+                  })()}
+                </span>
+              </label>
+
               {/* Hardware profile dropdown */}
               <label className="flex flex-col gap-0.5">
                 <span className="text-[10px] text-muted">Hardware profile</span>
@@ -1275,6 +1340,73 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                   ]}
                   onChange={v => patch({ pms_config: { transition_mode: v as 'open_transition' | 'closed_transition' } })}
                 />
+              )}
+            </div>
+          </section>
+
+          {/* ── Section 4.5: Tenant Power Budgets ───────────────────────── */}
+          <section>
+            <SectionHeader title="Tenant Power Budgets" />
+            <div className="space-y-2">
+              <p className="text-[9px] text-muted leading-relaxed">
+                Per-tenant ceiling enforced by TenantBudgetGate (PSP-002 MT).
+                Leave at the contracted value to use the signed agreement ceiling.
+                Lower it to create a tighter cap for this scenario.
+              </p>
+              <div className="space-y-2">
+                {TENANT_CATALOGUE.map(cat => {
+                  const budget = (spec.tenant_budgets ?? []).find((b: TenantBudget) => b.tenant_id === cat.id)
+                  const ceiling = budget?.ceiling_mw ?? cat.contractedMW
+                  const atContract = Math.abs(ceiling - cat.contractedMW) < 0.001
+                  return (
+                    <div key={cat.id}
+                      className="flex items-center gap-3 rounded border border-border bg-canvas px-3 py-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[10px] font-mono text-text">{cat.name}</div>
+                        <div className="text-[9px] text-muted">
+                          {cat.scheduler ?? 'No scheduler'} · contract {cat.contractedMW.toFixed(2)} MW
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <input
+                          type="number"
+                          className="w-20 rounded border border-border bg-canvas px-2 py-1 text-xs text-text
+                                     focus:outline-none focus:ring-1 focus:ring-accent text-right font-mono"
+                          value={ceiling}
+                          min={0.01}
+                          max={cat.contractedMW * 2}
+                          step={0.05}
+                          onChange={e => {
+                            const next = Math.max(0.01, Number(e.target.value))
+                            const rest = (spec.tenant_budgets ?? []).filter((b: TenantBudget) => b.tenant_id !== cat.id)
+                            patch({ tenant_budgets: [...rest, { tenant_id: cat.id, ceiling_mw: next }] })
+                          }}
+                        />
+                        <span className="text-[10px] text-muted">MW</span>
+                        {!atContract && (
+                          <button
+                            className="text-[9px] text-muted hover:text-accent whitespace-nowrap"
+                            title="Reset to contracted MW"
+                            onClick={() => {
+                              const rest = (spec.tenant_budgets ?? []).filter((b: TenantBudget) => b.tenant_id !== cat.id)
+                              patch({ tenant_budgets: rest.length > 0 ? rest : undefined })
+                            }}
+                          >
+                            reset
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              {(spec.tenant_budgets ?? []).length > 0 && (
+                <button
+                  className="text-[9px] text-muted hover:text-accent"
+                  onClick={() => patch({ tenant_budgets: undefined })}
+                >
+                  Reset all to contracted defaults
+                </button>
               )}
             </div>
           </section>

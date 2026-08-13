@@ -27,6 +27,7 @@ import { SubsystemModal }       from '../subsystem/SubsystemModal'
 import { ComputeRacksModal }    from './ComputeRacksModal'
 import { GridConnectionModal }       from './GridConnectionModal'
 import { PowerSupplySourcesModal }   from './PowerSupplySourcesModal'
+import { PowerManagementModal }      from './PowerManagementModal'
 import { SubsystemTile }    from '../readiness/SubsystemTile'
 import type { TileState }   from '../readiness/SubsystemTile'
 import { ReadinessScreen }  from '../readiness/ReadinessScreen'
@@ -39,7 +40,7 @@ const NODE_MODAL_MAP: Record<string, { modalId?: string; tabRoute?: string }> = 
   'solar-pv':        { modalId: 'renewable' },
   'battery-bess':    { modalId: 'storage' },
   'grid-connection': { modalId: 'grid' },
-  'switchgear-pms':  { tabRoute: 'overview' },
+  'switchgear-pms':  { modalId: '__pms__' },   // handled by dedicated PowerManagementModal
   'compute-racks':   { modalId: 'compute' },
   'cooling-plant':   { modalId: 'thermal' },
 }
@@ -57,6 +58,7 @@ export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
   const [computeRacksOpen,   setComputeRacksOpen]   = useState(false)
   const [gridConnOpen,       setGridConnOpen]        = useState(false)
   const [powerSupplyOpen,    setPowerSupplyOpen]     = useState(false)
+  const [pmOpen,             setPmOpen]             = useState(false)
   const [compact,       setCompact]       = useState(false)
   const [solarPreview,  setSolarPreview]  = useState<SolarPreview | null>(null)
   const [liveSolarMW,   setLiveSolarMW]   = useState<number | null>(null)
@@ -122,6 +124,10 @@ export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
     }
     if (nodeId === 'grid-connection') {
       setGridConnOpen(true)
+      return
+    }
+    if (nodeId === 'switchgear-pms') {
+      setPmOpen(true)
       return
     }
     const target = NODE_MODAL_MAP[nodeId]
@@ -205,6 +211,12 @@ export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
       {powerSupplyOpen && (
         <PowerSupplySourcesModal
           onClose={() => setPowerSupplyOpen(false)}
+        />
+      )}
+
+      {pmOpen && (
+        <PowerManagementModal
+          onClose={() => setPmOpen(false)}
         />
       )}
 
