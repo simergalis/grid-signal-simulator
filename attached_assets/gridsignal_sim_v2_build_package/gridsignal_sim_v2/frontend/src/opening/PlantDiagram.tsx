@@ -987,7 +987,7 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, 
   const outlineY = outlineTop
   const outlineW = 171
   const outlineH = outlineBottom - outlineTop
-  const tagY     = outlineY + outlineH + 5   // tag sits just below the rect bottom edge
+  const tagY     = outlineY + outlineH - 1   // bar overlaps bottom border by 1 px for seamless join
 
   return (
     <svg
@@ -1010,8 +1010,8 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, 
             stroke="rgba(63,182,168,0.55)"
             strokeWidth={1.5}
           />
-          {/* "Select Power" button tag — sits just below the outline rect */}
-          <foreignObject x={outlineX + 4} y={tagY} width={148} height={22}>
+          {/* "Select Power" full-width footer bar — seamlessly joined to the outline rect */}
+          <foreignObject x={outlineX} y={tagY} width={outlineW} height={26}>
             <div
               // @ts-expect-error — xmlns required for SVG foreignObject HTML
               xmlns="http://www.w3.org/1999/xhtml"
@@ -1020,27 +1020,38 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, 
               <button
                 onClick={onSelectPowerSupply}
                 style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  width: '100%', height: '100%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  gap: 7,
                   fontFamily: "'JetBrains Mono',ui-monospace,monospace",
-                  fontSize: 8, letterSpacing: '0.04em', fontWeight: 600,
-                  color: 'rgba(63,182,168,0.9)',
-                  background: '#0a0e13',
-                  border: '1.5px solid rgba(63,182,168,0.55)',
-                  borderRadius: 4, padding: '4px 9px',
+                  fontSize: 8, letterSpacing: '0.08em', fontWeight: 600,
+                  color: 'rgba(63,182,168,0.85)',
+                  background: '#0a0f16',
+                  borderTop: '1px solid rgba(63,182,168,0.4)',
+                  borderLeft: '1.5px solid rgba(63,182,168,0.55)',
+                  borderRight: '1.5px solid rgba(63,182,168,0.55)',
+                  borderBottom: '1.5px solid rgba(63,182,168,0.55)',
+                  borderTopLeftRadius: 0, borderTopRightRadius: 0,
+                  borderBottomLeftRadius: 5, borderBottomRightRadius: 5,
                   cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  transition: 'color 0.15s, border-color 0.15s',
+                  transition: 'color 0.15s, background 0.15s',
+                  boxSizing: 'border-box',
                 }}
                 onMouseEnter={e => {
                   e.currentTarget.style.color = '#3fb6a8'
-                  e.currentTarget.style.borderColor = 'rgba(63,182,168,0.9)'
+                  e.currentTarget.style.background = 'rgba(63,182,168,0.07)'
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.color = 'rgba(63,182,168,0.9)'
-                  e.currentTarget.style.borderColor = 'rgba(63,182,168,0.55)'
+                  e.currentTarget.style.color = 'rgba(63,182,168,0.85)'
+                  e.currentTarget.style.background = '#0a0f16'
                 }}
               >
-                ⬡ Select Power
+                <span style={{
+                  width: 7, height: 7, borderRadius: '50%',
+                  border: '1.5px solid currentColor',
+                  display: 'inline-block', flexShrink: 0,
+                }} />
+                Select Power
               </button>
             </div>
           </foreignObject>
