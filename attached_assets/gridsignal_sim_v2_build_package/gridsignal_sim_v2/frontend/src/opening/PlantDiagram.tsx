@@ -11,7 +11,7 @@
  *   · Lead-time callout on the far right (moves below on compact layout).
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useTickStore } from '../store/tickStore'
 import { useScenarioStore } from '../store/scenarioStore'
 import { useBessConfigStore } from '../store/bessConfigStore'
@@ -930,13 +930,45 @@ function LeadTimeCallout({
   )
 }
 
+// ── Source node packing constants (module-level, never change) ────────────────
+interface SourceState { turbine: boolean; solar: boolean; bess: boolean; grid: boolean; fuelCell: boolean }
+
+/** Stacking order, node ids, and tile heights for all source-column nodes. */
+const SOURCE_STACK = [
+  { key: 'turbine'  as keyof SourceState, nodeId: 'gas-turbine',    h: 88 },
+  { key: 'solar'    as keyof SourceState, nodeId: 'solar-pv',        h: 72 },
+  { key: 'bess'     as keyof SourceState, nodeId: 'battery-bess',    h: 72 },
+  { key: 'grid'     as keyof SourceState, nodeId: 'grid-connection', h: 72 },
+  { key: 'fuelCell' as keyof SourceState, nodeId: 'fuel-cell',       h: 72 },
+]
+const SOURCE_TOP = 10   // y of first tile
+const SOURCE_GAP = 12   // px between consecutive tiles
+
+// Switchgear left-centre (x=210, y=172+98/2=221) — target of all source bezier flows
+const SW_IN_X = 210
+const SW_IN_Y = 221
+
+/** Build a source→switchgear cubic-bezier path from a given right-centre y. */
+function makeSrcPath(rightCentreY: number): string {
+  const sx = 155, sy = rightCentreY
+  const cx1 = sx + 36, cx2 = SW_IN_X - 14
+  return `M${sx},${sy} C${cx1},${sy} ${cx2},${SW_IN_Y} ${SW_IN_X},${SW_IN_Y}`
+}
+
+/** Flow id → the source node + tile height needed to recalculate its path. */
+const SRC_FLOW_INFO: Record<string, { nodeId: string; h: number }> = {
+  'gas-to-sw':     { nodeId: 'gas-turbine',    h: 88 },
+  'solar-to-sw':   { nodeId: 'solar-pv',        h: 72 },
+  'battery-to-sw': { nodeId: 'battery-bess',    h: 72 },
+  'grid-to-sw':    { nodeId: 'grid-connection', h: 72 },
+}
+
 export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, onSelectPowerSupply }: PlantDiagramProps) {
   const tick       = useTickStore(s => s.latestTick)
   const selectedId = useScenarioStore(s => s.selectedId)
 
   // Fetch scenario spec to determine which power supply sources are enabled.
   // This drives both the Fuel Cell tile visibility and the dynamic outline.
-  interface SourceState { turbine: boolean; solar: boolean; bess: boolean; grid: boolean; fuelCell: boolean }
   const [sourceState, setSourceState] = useState<SourceState>(
     { turbine: true, solar: true, bess: true, grid: false, fuelCell: false }
   )
@@ -965,22 +997,35 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, 
 
   const fuelCellEnabled = sourceState.fuelCell
 
-  // ── Dynamic outline geometry ───────────────────────────────────────────────
-  // Fixed y/h for each source node in SVG coordinate space.
-  const SOURCE_NODE_GEOM = [
-    { key: 'turbine',  y: 10,  h: 88 },
-    { key: 'solar',    y: 110, h: 72 },
-    { key: 'bess',     y: 210, h: 72 },
-    { key: 'grid',     y: 310, h: 72 },
-    { key: 'fuelCell', y: 392, h: 72 },
-  ] as const
+  // ── Packed source-node positions ──────────────────────────────────────────
+  // Re-stack enabled tiles from SOURCE_TOP downward with SOURCE_GAP between them,
+  // eliminating the blank space left by hidden sources.
+  const packedY = useMemo(() => {
+    const result: Record<string, number> = {}
+    let curY = SOURCE_TOP
+    for (const s of SOURCE_STACK) {
+      if (sourceState[s.key]) {
+        result[s.nodeId] = curY
+        curY += s.h + SOURCE_GAP
+      }
+    }
+    return result
+  }, [sourceState])
 
+  /** Bezier path from a source tile's right-centre to the switchgear, using packed Y. */
+  const packedSrcPath = (nodeId: string, h: number): string => {
+    const py = packedY[nodeId]
+    return py !== undefined ? makeSrcPath(py + h / 2) : ''
+  }
+
+  // ── Dynamic outline geometry ───────────────────────────────────────────────
   const PAD = 6
-  const enabledNodes = SOURCE_NODE_GEOM.filter(n => sourceState[n.key])
+  const enabledStack  = SOURCE_STACK.filter(s => sourceState[s.key])
   // Fall back to full span when nothing is selected (avoids zero-height rect).
-  const outlineTop    = enabledNodes.length > 0 ? enabledNodes[0].y - PAD : 4
-  const outlineBottom = enabledNodes.length > 0
-    ? enabledNodes[enabledNodes.length - 1].y + enabledNodes[enabledNodes.length - 1].h + PAD
+  const outlineTop    = enabledStack.length > 0 ? (packedY[enabledStack[0].nodeId] ?? 4) - PAD : 4
+  const lastInStack   = enabledStack[enabledStack.length - 1]
+  const outlineBottom = enabledStack.length > 0
+    ? (packedY[lastInStack.nodeId] ?? 0) + lastInStack.h + PAD
     : 390
   const outlineX = -8
   const outlineY = outlineTop
@@ -1061,29 +1106,34 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, 
       {FLOWS.filter(flow => {
         // Hide source-side flows whose supply tile is de-selected.
         const flowSourceMap: Record<string, keyof typeof sourceState> = {
-          'gas-to-sw':   'turbine',
-          'solar-to-sw': 'solar',
+          'gas-to-sw':     'turbine',
+          'solar-to-sw':   'solar',
           'battery-to-sw': 'bess',
-          'grid-to-sw':  'grid',
+          'grid-to-sw':    'grid',
         }
         const sk = flowSourceMap[flow.id]
         return sk === undefined || sourceState[sk]
-      }).map(flow => (
-        <FlowLine
-          key={flow.id}
-          d={flow.d}
-          mwValue={getMwForFlow(flow.mwField, flow.staticMW, tick)}
-          maxMW={flow.maxMW}
-          color={flow.color}
-          isGrid={flow.isGrid}
-          marker={flow.marker}
-        />
-      ))}
+      }).map(flow => {
+        // Recompute source→switchgear bezier paths to follow the packed tile positions.
+        const srcInfo = SRC_FLOW_INFO[flow.id]
+        const d = srcInfo ? (packedSrcPath(srcInfo.nodeId, srcInfo.h) || flow.d) : flow.d
+        return (
+          <FlowLine
+            key={flow.id}
+            d={d}
+            mwValue={getMwForFlow(flow.mwField, flow.staticMW, tick)}
+            maxMW={flow.maxMW}
+            color={flow.color}
+            isGrid={flow.isGrid}
+            marker={flow.marker}
+          />
+        )
+      })}
       {/* Fuel Cell flow — only when scenario enables it */}
       {fuelCellEnabled && (
         <FlowLine
           key={FUEL_CELL_FLOW.id}
-          d={FUEL_CELL_FLOW.d}
+          d={packedSrcPath('fuel-cell', 72) || FUEL_CELL_FLOW.d}
           mwValue={0}
           maxMW={FUEL_CELL_FLOW.maxMW}
           color={FUEL_CELL_FLOW.color}
@@ -1095,28 +1145,33 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, 
         // Hide source tiles that the operator has de-selected in Power Supply Sources.
         // Non-source nodes (switchgear, distribution, PDU, racks, cooling) are always shown.
         const sourceKeyMap: Record<string, keyof typeof sourceState> = {
-          'gas-turbine':    'turbine',
-          'solar-pv':       'solar',
-          'battery-bess':   'bess',
+          'gas-turbine':     'turbine',
+          'solar-pv':        'solar',
+          'battery-bess':    'bess',
           'grid-connection': 'grid',
         }
         const sk = sourceKeyMap[node.id]
         return sk === undefined || sourceState[sk]
-      }).map(node => (
-        <PlantNode
-          key={node.id}
-          def={node}
-          tick={tick}
-          onClick={onNodeClick}
-          solarPreview={node.id === 'solar-pv' ? solarPreview : null}
-          liveSolarMW={liveSolarMW}
-        />
-      ))}
+      }).map(node => {
+        // Apply packed Y position for source tiles so they stack without gaps.
+        const py  = packedY[node.id]
+        const def = py !== undefined ? { ...node, y: py } : node
+        return (
+          <PlantNode
+            key={node.id}
+            def={def}
+            tick={tick}
+            onClick={onNodeClick}
+            solarPreview={node.id === 'solar-pv' ? solarPreview : null}
+            liveSolarMW={liveSolarMW}
+          />
+        )
+      })}
       {/* Fuel Cell Module Array tile — only when scenario enables it */}
       {fuelCellEnabled && (
         <PlantNode
           key="fuel-cell"
-          def={FUEL_CELL_NODE}
+          def={{ ...FUEL_CELL_NODE, y: packedY['fuel-cell'] ?? FUEL_CELL_NODE.y }}
           tick={tick}
           onClick={onNodeClick}
         />
