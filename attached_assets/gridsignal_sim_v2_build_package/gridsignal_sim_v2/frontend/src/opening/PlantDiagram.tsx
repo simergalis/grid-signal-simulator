@@ -976,7 +976,8 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, 
   ] as const
 
   const PAD = 6
-  const enabledNodes = SOURCE_NODE_GEOM.filter(n => sourceState[n.key])
+  // Grid Connection is always included in the Power Supply group regardless of island_mode.
+  const enabledNodes = SOURCE_NODE_GEOM.filter(n => n.key === 'grid' || sourceState[n.key])
   // Fall back to full span when nothing is selected (avoids zero-height rect).
   const outlineTop    = enabledNodes.length > 0 ? enabledNodes[0].y - PAD : 4
   const outlineBottom = enabledNodes.length > 0

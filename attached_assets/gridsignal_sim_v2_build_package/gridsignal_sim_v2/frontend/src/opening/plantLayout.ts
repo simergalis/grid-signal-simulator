@@ -115,7 +115,9 @@ export const NODES: NodeDef[] = [
     id: 'grid-connection',
     x: 0, y: 310, w: 155, h: 72,
     label: 'GRID', label2: 'CONNECTION',
-    // Grid is always 0 MW — islanded by design
+    // grid_exchange_mw is exactly 0 in islanded mode (D1); shows live flow in grid-tied mode.
+    mwField: 'grid_exchange_mw',
+    staticMW: 0,
     clickable: true, modalId: 'grid',
     gridStyle: true,
     accentColor: '#5a6673',
