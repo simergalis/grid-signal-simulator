@@ -23,8 +23,9 @@ import { TileTooltip, InfoBtn } from './TileTooltip'
 import { VerdictBand }      from './VerdictBand'
 import { PlantDiagram }     from './PlantDiagram'
 import type { SolarPreview } from './PlantNode'
-import { SubsystemModal }   from '../subsystem/SubsystemModal'
-import { ComputeRacksModal } from './ComputeRacksModal'
+import { SubsystemModal }       from '../subsystem/SubsystemModal'
+import { ComputeRacksModal }    from './ComputeRacksModal'
+import { GridConnectionModal }  from './GridConnectionModal'
 import { SubsystemTile }    from '../readiness/SubsystemTile'
 import type { TileState }   from '../readiness/SubsystemTile'
 import { ReadinessScreen }  from '../readiness/ReadinessScreen'
@@ -51,8 +52,9 @@ interface OpeningScreenProps {
 
 export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
   const [windowWidth,   setWindowWidth]   = useState(() => window.innerWidth)
-  const [activeModal,      setActiveModal]      = useState<string | null>(null)
-  const [computeRacksOpen, setComputeRacksOpen] = useState(false)
+  const [activeModal,        setActiveModal]        = useState<string | null>(null)
+  const [computeRacksOpen,   setComputeRacksOpen]   = useState(false)
+  const [gridConnOpen,       setGridConnOpen]        = useState(false)
   const [compact,       setCompact]       = useState(false)
   const [solarPreview,  setSolarPreview]  = useState<SolarPreview | null>(null)
   const [liveSolarMW,   setLiveSolarMW]   = useState<number | null>(null)
@@ -112,9 +114,12 @@ export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
   // ── Node click handler ──────────────────────────────────────────────────
 
   const handleNodeClick = (nodeId: string) => {
-    // COMPUTE RACKS gets its own multi-tenant modal instead of the generic subsystem view.
     if (nodeId === 'compute-racks') {
       setComputeRacksOpen(true)
+      return
+    }
+    if (nodeId === 'grid-connection') {
+      setGridConnOpen(true)
       return
     }
     const target = NODE_MODAL_MAP[nodeId]
@@ -179,6 +184,13 @@ export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
         <ComputeRacksModal
           tick={tick}
           onClose={() => setComputeRacksOpen(false)}
+        />
+      )}
+
+      {gridConnOpen && (
+        <GridConnectionModal
+          tick={tick}
+          onClose={() => setGridConnOpen(false)}
         />
       )}
 
