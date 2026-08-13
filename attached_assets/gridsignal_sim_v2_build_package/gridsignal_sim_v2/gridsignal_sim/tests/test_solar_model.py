@@ -966,3 +966,57 @@ def test_all_banks_no_comms_snapshot_is_json_safe(sim):
         assert rt is None or isinstance(rt, (int, float)), (
             f"reserve.{scenario_key}.ramp_time_s must be null or a number; got {rt!r}"
         )
+
+
+# ---------------------------------------------------------------------------
+# AC-UI-2  Bank bar fill stays full under 60 % cloud cover
+#
+# The UI bar shows bank_output_mw ÷ bank_expected_mw (output vs expected),
+# NOT output vs nameplate.  Both numerator and denominator scale with POA, so
+# 60 % cloud cover must leave every per-bank ratio near 1.0 (≥ 0.92) while
+# the plant headline p_renewable_mw drops by ~60 %.
+#
+# Regression guard: if the bar formula ever switches to output÷nameplate,
+# a 60 % cloud reduction silently makes bars look 60 % empty — this test
+# catches that immediately.
+# ---------------------------------------------------------------------------
+
+def test_acui2_cloud_cover_leaves_bank_bars_full(sim):
+    """AC-UI-2: per-bank output/expected ratio must stay ≥ 0.92 at cloud_factor=0.4.
+
+    Setting cloud_factor=0.4 reduces POA by 60 %.  Because bank_expected_mw
+    also uses the attenuated POA, the ratio is the plant performance ratio
+    (~97 %), well above the 0.92 bar-fill floor.  The plant total headline
+    p_renewable_mw must drop by approximately 60 %.
+    """
+    cfg, st = sim.cfg, sim.state
+
+    # Record the full-sun baseline.
+    baseline_mw = p_renewable_mw(cfg, st)
+    assert baseline_mw > 0, "precondition: plant must be generating at seed"
+
+    # Apply 60 % cloud cover.
+    st.cloud_factor = 0.4
+
+    # Per-bank bar fill: output ÷ expected must be ≥ 0.92 for every bank.
+    for b in st.blocks:
+        expected = bank_expected_mw(cfg, st, b)
+        output   = bank_output_mw(cfg, st, b)
+
+        # At night (zero irradiance) both sides are zero — skip the ratio.
+        if expected == pytest.approx(0.0, abs=1e-9):
+            continue
+
+        ratio = output / expected
+        assert ratio >= 0.92, (
+            f"bank {b.id}: output/expected ratio {ratio:.4f} < 0.92 after "
+            f"60% cloud cover — bar formula may be using nameplate instead of expected"
+        )
+
+    # Plant headline must have dropped by ~60 % (allow ±5 pp).
+    cloudy_mw = p_renewable_mw(cfg, st)
+    drop_fraction = 1.0 - cloudy_mw / baseline_mw
+    assert 0.55 <= drop_fraction <= 0.65, (
+        f"p_renewable_mw dropped by {drop_fraction*100:.1f}% with cloud_factor=0.4; "
+        f"expected ~60% (baseline={baseline_mw:.4f} MW, cloudy={cloudy_mw:.4f} MW)"
+    )
