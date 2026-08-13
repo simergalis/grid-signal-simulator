@@ -200,9 +200,6 @@ export function GridSignalHeader({ runId, onHowItWorks, displayName, role, onLog
             </span>
           </button>
         )}
-        <div className="font-sans" style={{ fontSize: 10, color: '#7d8b9c', marginTop: 2 }}>
-          Islanded microgrid · supervised tier
-        </div>
       </div>
 
       {/* ── Spacer ────────────────────────────────────────────────────────── */}
