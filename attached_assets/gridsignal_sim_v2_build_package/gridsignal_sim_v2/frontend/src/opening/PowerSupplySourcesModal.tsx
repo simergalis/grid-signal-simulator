@@ -157,11 +157,14 @@ export function PowerSupplySourcesModal({ onClose }: PowerSupplySourcesModalProp
     }
 
     try {
+      // API only supports PUT (full spec replacement — no PATCH endpoint).
+      // Merge toggle-driven fields into the original spec so unchanged fields are preserved.
+      const fullSpec = { ...orig, ...patch }
       const resp = await fetch(`/scenarios/${selectedId}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ spec: patch }),
+        body: JSON.stringify(fullSpec),
       })
       if (!resp.ok) throw new Error(await resp.text())
       setSaved(true)
