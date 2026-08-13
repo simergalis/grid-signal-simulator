@@ -148,6 +148,8 @@ def evaluate_contingency(plant_state: PlantState) -> ContingencyCoverage:
         sum(t.rated_mw for t in online) + bess_bridging_available_mw + fuel_cell_available_mw
     )
 
+    _grid_connected = (island_mode == IslandMode.GRID_TIE)
+
     # Degenerate case: no online turbines — no contingency to select
     if not online:
         return ContingencyCoverage(
@@ -168,6 +170,8 @@ def evaluate_contingency(plant_state: PlantState) -> ContingencyCoverage:
             state=ContingencyState.COVERED,
             dispatchable_mw=dispatchable_mw,
             renewable_mw=plant_state.renewable_mw,
+            fuel_cell_available_mw=fuel_cell_available_mw,
+            grid_connected=_grid_connected,
         )
 
     # §7.4 — contingency selection: online dispatchable with greatest CURRENT output.
@@ -244,4 +248,6 @@ def evaluate_contingency(plant_state: PlantState) -> ContingencyCoverage:
         state=state,
         dispatchable_mw=dispatchable_mw,
         renewable_mw=plant_state.renewable_mw,
+        fuel_cell_available_mw=fuel_cell_available_mw,
+        grid_connected=_grid_connected,
     )

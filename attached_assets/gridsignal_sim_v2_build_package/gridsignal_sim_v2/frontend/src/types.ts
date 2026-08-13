@@ -334,8 +334,11 @@ export interface ContingencyCoverage {
   shed_required_mw: number         // max(0, deficit − headroom_surviving) (TC-80)
   ride_through_s: number           // soc_mwh × 3600 / deficit; 86400 when no deficit
   // §7.5 header-strip figures
-  dispatchable_mw: number          // online turbine rated + anchor-adj BESS bridging (TC-82: solar excluded)
+  dispatchable_mw: number          // online turbine rated + anchor-adj BESS bridging + FC rated (TC-82: solar excluded)
   renewable_mw: number             // solar output as separate non-firm term (TC-81, TC-82)
+  // Source breakdown — used to build the Dispatchable tile subtitle dynamically.
+  fuel_cell_available_mw: number   // FC rated capacity (0 when absent)
+  grid_connected: boolean          // true when island_mode is GRID_TIE
   // Approximate GPU node count for shed_required_mw at current load density.
   // null when compute load is zero or shed_required_mw is 0.
   shed_equivalent_nodes: number | null

@@ -430,6 +430,8 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
                 "ride_through_s":            round(min(tick.contingency_coverage.ride_through_s, 86400.0), 1),
                 "dispatchable_mw":           round(tick.contingency_coverage.dispatchable_mw, 3),
                 "renewable_mw":              round(tick.contingency_coverage.renewable_mw, 3),
+                "fuel_cell_available_mw":    round(tick.contingency_coverage.fuel_cell_available_mw, 3),
+                "grid_connected":            tick.contingency_coverage.grid_connected,
                 "shed_equivalent_nodes":     tick.contingency_coverage.shed_equivalent_nodes,
             }
             if tick.contingency_coverage is not None

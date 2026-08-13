@@ -28,6 +28,24 @@ import { AttentionModal } from './AttentionModal'
 import { LocationPicker } from './LocationPicker'
 import type { ContingencyCoverage } from '../types'
 
+/** Build a human-readable source list for the Dispatchable tile subtitle.
+ *  Reflects which generation/storage/grid assets are armed this tick.
+ *  Falls back to the legacy label when contingency_coverage is absent.
+ */
+function dispatchableSub(cc: ContingencyCoverage | null | undefined): string {
+  if (!cc) return 'turbine + BESS (anchor-adj)'
+  const parts: string[] = []
+  // Turbines: tripped_unit_id is only set when ≥1 online turbine exists
+  if (cc.tripped_unit_id !== null) parts.push('turbine')
+  // BESS: anchor-adjusted bridging capacity > 0
+  if (cc.bess_bridging_available_mw > 0) parts.push('BESS')
+  // Fuel cell: rated capacity present
+  if (cc.fuel_cell_available_mw > 0) parts.push('fuel cell')
+  // Grid: scenario is grid-connected (grid is the slack bus)
+  if (cc.grid_connected) parts.push('grid')
+  return parts.length > 0 ? parts.join(' · ') : '—'
+}
+
 interface FigureProps {
   label: string
   value: string
@@ -268,7 +286,7 @@ export function VerdictBand({ onLocationChanged }: VerdictBandProps = {}) {
         label:     'Dispatchable',
         value:     `${dispMw.toFixed(1)} MW`,
         colour:    '#e0a458',
-        sub:       'turbine + BESS (anchor-adj)',
+        sub:       dispatchableSub(cc),
         colWidth:  140,
         tooltipId: 'dispatchable',
       },
@@ -303,7 +321,7 @@ export function VerdictBand({ onLocationChanged }: VerdictBandProps = {}) {
     // Static defaults — no tick yet.
     // Gen-trip tile is still clickable so users can learn what it means before a run.
     figures = [
-      { label: 'Dispatchable',   value: '45.0 MW',   colour: '#e0a458', sub: 'turbine + BESS (anchor-adj)', colWidth: 140, tooltipId: 'dispatchable' },
+      { label: 'Dispatchable',   value: '45.0 MW',   colour: '#e0a458', sub: 'turbine · BESS',              colWidth: 140, tooltipId: 'dispatchable' },
       { label: 'Renewable',      value: '~5.0 MW',   colour: '#3fb6a8', sub: 'non-firm · solar',             colWidth: 104, tooltipId: 'renewable' },
       { label: 'Gen-trip cover', value: 'N−1 ready', colour: '#4a9fe0', sub: 'click to learn more',          colWidth: 204, onClick: () => setModalOpen(true), tooltipId: 'gen-trip-cover' },
       { label: 'Attention', value: '1 subsystem', colour: '#f0883e', sub: 'click to review', colWidth: 140, tooltipId: 'attention', onClick: () => setAttentionModalOpen(true) },

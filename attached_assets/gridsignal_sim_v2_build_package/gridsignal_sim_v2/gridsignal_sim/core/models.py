@@ -855,6 +855,9 @@ class ContingencyCoverage:
     # §7.5 header-strip figures
     dispatchable_mw: float               # online turbine rated + anchor-adj BESS bridging + fuel cell rated
     renewable_mw: float                  # solar output — displayed separately, never in coverage arithmetic
+    # Source breakdown — used by the UI to build a dynamic subtitle for the Dispatchable tile.
+    fuel_cell_available_mw: float = 0.0  # FC rated capacity (no anchor deduction; 0 when absent)
+    grid_connected: bool = False         # True when island_mode is GRID_TIE (grid is slack bus)
     # Approximate GPU node count that maps to shed_required_mw at current load density.
     # None when compute load is zero (no active jobs) or shed_required_mw is 0.
     # Computed in simulation_core.py after evaluate_contingency().
