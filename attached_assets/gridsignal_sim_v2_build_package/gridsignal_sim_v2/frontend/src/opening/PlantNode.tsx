@@ -140,11 +140,9 @@ function nodeDetail(
       if (!tick) return `armed · ${socPct}% SoC · anchor 1.0 MW`
       const disch   = tick.bess_output_mw ?? 0
       const setpt   = tick.bess_setpoint_mw ?? 0
-      // Excess generation (turbine + solar over current load) flows into BESS as charging
-      const excess  = Math.max(0,
-        (tick.turbine_output_mw ?? 0) + (tick.p_renewable_mw ?? 0)
-        - (tick.p_total_mw ?? 0) - disch
-      )
+      // Physics convention: bess_output_mw < 0 when BESS is charging (negative generation).
+      // Read charging rate directly from the physics field — no derived approximation.
+      const excess  = Math.max(0, -disch)
       // B4: gate the "discharging" label on bess_setpoint_mw (the dispatch command),
       // not bess_output_mw (which lags from a previous discharge due to the BESS
       // first-order lag).  This prevents "BESS standby" while the battery still
@@ -383,18 +381,10 @@ export function PlantNode({ def, tick, onClick, solarPreview, liveSolarMW }: Pla
   // Use liveSolarMW (same value shown on the solar tile) so the BESS excess
   // stays consistent: turbine + solar_tile − load = what the operator sees.
   const isBess = def.id === 'battery-bess'
-  const solarForBess = liveSolarMW ?? tick?.p_renewable_mw ?? 0
-  // Use on_bus_output_mw (not turbine_output_mw) so the BESS excess
-  // matches exactly what the GT tile shows: only loading-layer-managed units.
-  // turbine_output_mw includes RAMPING/AT_TARGET auto-staged units whose output
-  // is real but not yet visible on any tile, making the BESS figure misleading.
-  const bessExcess = isBess && tick
-    ? Math.max(0,
-        (tick.on_bus_output_mw ?? 0) + solarForBess
-        - (tick.p_total_mw ?? 0) - (tick.bess_output_mw ?? 0)
-      )
-    : 0
-  const bessIsCharging = isBess && bessExcess > 0.1 && (mwValue ?? 0) <= 0.1
+  // Physics convention: bess_output_mw < 0 when charging (negative generation).
+  // Read charging rate directly from the physics field — no derived approximation.
+  const bessExcess     = isBess && tick ? Math.max(0, -(tick.bess_output_mw ?? 0)) : 0
+  const bessIsCharging = isBess && bessExcess > 0.1
   const bessIsDischarging = isBess && (mwValue ?? 0) > 0.1
 
   // When BESS is absorbing, show charging flow as the primary MW figure
