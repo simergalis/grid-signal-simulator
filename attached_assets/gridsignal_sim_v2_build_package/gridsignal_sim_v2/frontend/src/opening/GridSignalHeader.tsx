@@ -183,7 +183,7 @@ export function GridSignalHeader({ runId, onHowItWorks, displayName, role, onLog
             title="Click to rename"
             style={{ fontFamily: 'inherit' }}
           >
-            <span className="font-sans font-medium" style={{ fontSize: 13, color: '#e6ecf2' }}>
+            <span className="font-sans font-medium" style={{ fontSize: 20, color: '#e6ecf2' }}>
               {siteName}
             </span>
             <span
