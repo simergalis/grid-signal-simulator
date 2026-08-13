@@ -286,9 +286,10 @@ export const FUEL_CELL_NODE: NodeDef = {
   id: 'fuel-cell',
   x: 0, y: 392, w: 155, h: 72,
   label: 'FUEL CELL', label2: 'MODULE ARRAY',
+  // mwField wired so the tile shows a live MW number and lights up when dispatching.
+  mwField: 'fuel_cell_output_mw',
   staticMW: 0,
   clickable: false,
-  passive: true,
   accentColor: '#3fd490',
 }
 
@@ -298,7 +299,10 @@ const FUEL_RC: [number, number] = [155, 428]
 export const FUEL_CELL_FLOW: FlowDef = {
   id: 'fuel-cell-to-sw',
   d: srcPath(...FUEL_RC),
-  maxMW: 6,
+  // mwField wired so the flow line animates proportionally to FC output.
+  // maxMW raised to match the scenario's 20 MW single-stack rated capacity.
+  mwField: 'fuel_cell_output_mw',
+  maxMW: 20,
   color: '#3fd490',
 }
 

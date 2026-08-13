@@ -154,8 +154,10 @@ function nodeDetail(
     case 'fuel-cell': {
       if (!tick) return 'H₂ fuel cell array · armed'
       const fcMw = (tick as unknown as Record<string, number>).fuel_cell_output_mw ?? 0
+      // fuel_cell_output_mw is always ≥ 0 from the physics engine, but guard with
+      // Math.abs so a floating-point edge case never renders a negative label.
       return fcMw > 0.01
-        ? `dispatching · ${fcMw.toFixed(2)} MW`
+        ? `dispatching · ${Math.abs(fcMw).toFixed(2)} MW`
         : 'H₂ fuel cell array · standby'
     }
     case 'grid-connection':
