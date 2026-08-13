@@ -976,8 +976,7 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, 
   ] as const
 
   const PAD = 6
-  // Grid Connection is always included in the Power Supply group regardless of island_mode.
-  const enabledNodes = SOURCE_NODE_GEOM.filter(n => n.key === 'grid' || sourceState[n.key])
+  const enabledNodes = SOURCE_NODE_GEOM.filter(n => sourceState[n.key])
   // Fall back to full span when nothing is selected (avoids zero-height rect).
   const outlineTop    = enabledNodes.length > 0 ? enabledNodes[0].y - PAD : 4
   const outlineBottom = enabledNodes.length > 0
@@ -1059,7 +1058,17 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, 
       )}
 
       {/* ── Flow lines (behind nodes) ───────────────────────────────────── */}
-      {FLOWS.map(flow => (
+      {FLOWS.filter(flow => {
+        // Hide source-side flows whose supply tile is de-selected.
+        const flowSourceMap: Record<string, keyof typeof sourceState> = {
+          'gas-to-sw':   'turbine',
+          'solar-to-sw': 'solar',
+          'battery-to-sw': 'bess',
+          'grid-to-sw':  'grid',
+        }
+        const sk = flowSourceMap[flow.id]
+        return sk === undefined || sourceState[sk]
+      }).map(flow => (
         <FlowLine
           key={flow.id}
           d={flow.d}
@@ -1082,7 +1091,18 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, 
       )}
 
       {/* ── Nodes ───────────────────────────────────────────────────────── */}
-      {NODES.map(node => (
+      {NODES.filter(node => {
+        // Hide source tiles that the operator has de-selected in Power Supply Sources.
+        // Non-source nodes (switchgear, distribution, PDU, racks, cooling) are always shown.
+        const sourceKeyMap: Record<string, keyof typeof sourceState> = {
+          'gas-turbine':    'turbine',
+          'solar-pv':       'solar',
+          'battery-bess':   'bess',
+          'grid-connection': 'grid',
+        }
+        const sk = sourceKeyMap[node.id]
+        return sk === undefined || sourceState[sk]
+      }).map(node => (
         <PlantNode
           key={node.id}
           def={node}

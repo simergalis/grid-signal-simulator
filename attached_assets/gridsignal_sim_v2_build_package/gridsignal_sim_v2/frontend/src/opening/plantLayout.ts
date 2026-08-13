@@ -119,8 +119,7 @@ export const NODES: NodeDef[] = [
     mwField: 'grid_exchange_mw',
     staticMW: 0,
     clickable: true, modalId: 'grid',
-    gridStyle: true,
-    accentColor: '#5a6673',
+    accentColor: '#3fb6a8',
   },
   // ─── Bus / chain nodes ────────────────────────────────────────────────────
   {

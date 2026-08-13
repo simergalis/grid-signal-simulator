@@ -156,7 +156,7 @@ function nodeDetail(
     case 'fuel-cell':
       return 'H₂ fuel cell array · advisory — not yet dispatched by engine'
     case 'grid-connection':
-      return 'islanded — no utility feed'
+      return tick ? `${(tick.grid_exchange_mw ?? 0) >= 0 ? 'importing' : 'exporting'} · utility feed` : 'grid-connected · utility feed'
     case 'switchgear-pms':
       return 'GridSignal advises —\nnever commands protection'
     case 'distribution':
