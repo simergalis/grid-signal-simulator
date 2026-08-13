@@ -2,21 +2,39 @@
 
 GS-IMPL-PSP-002 §3.2 / §2.3.
 
-This is the Phase 1 reference implementation.  It contains two known defects
-that Phase 2 will correct:
+Phase 2 corrects two defects that were present in the Phase 1 reference
+implementation and are now resolved:
 
-  DEFECT-1 (§2.3.1): The `total_cost_per_hour` field on DispatchResult assumes
-    a full hour of dispatch at every tick.  Phase 2 renames it to `cost_this_tick`
-    and requires it be computed as Σ(allocated_mw × price × tick_duration_hours),
-    where tick_duration_hours is passed into step() explicitly.
+  DEFECT-1 (§2.3.1) — RESOLVED:
+    Phase 1 had `total_cost_per_hour` assuming a full hour per tick.
+    Phase 2 renames to `cost_this_tick` and computes:
+      Σ(allocated_mw × price_mwh × tick_duration_hours)
+    where `tick_duration_hours` is passed into step() explicitly.
 
-  DEFECT-2 (PSP-5 / §3.2.1): `_pge_price_for_hour()` is summer-only.  Phase 2
-    adds a `season` parameter and a `month` parameter to correctly handle winter
-    TOU periods, including the Super Off-Peak window (Mar–May, 9am–2pm) that
-    cannot be expressed by season alone.
+  DEFECT-2 (PSP-5 / §3.2.1) — RESOLVED:
+    Phase 1 had `_pge_price_for_hour()` which was summer-only and used
+    hardcoded rates from an older tariff.
+    Phase 2:
+      - Sources all rates from the parameter catalogue via site_parameters.value().
+      - Takes `season` and `month` as explicit parameters.
+      - Handles the Winter Super Off-Peak window (Mar–May, hours 9–13) which
+        requires month, not just season, to price correctly.
 
-Do not fix either defect in this file during Phase 1.  Phase 2's diff must show
-the before/after clearly.
+  DEFECT-3 (PSP-6 / §7) — RESOLVED:
+    BESS sources now receive their marginal cost from the catalogue
+    (`bess_marginal_cost_mwh`) rather than whatever was on PowerSource at
+    construction time.  This ensures the catalogue's provisional $38/MWh
+    Method-A value is the authoritative cost basis, not a caller-supplied guess.
+
+New signature (keyword-only after t_s — §1 / Phase 2 review note)
+------------------------------------------------------------------
+  step(t_s, *, tick_duration_hours, hour_of_day, month, season, demand_mw, sources)
+
+  The bare `*` after `t_s` is intentional: tick_duration_hours (2nd) and month
+  (4th) are inserted into what was a positional argument list.  Any caller
+  supplying arguments positionally will receive a TypeError immediately rather
+  than silently computing wrong costs.  There are currently zero callers to
+  migrate (confirmed by grep at Phase 2 gate).
 
 Import boundary (§1)
 --------------------
@@ -28,8 +46,9 @@ Import boundary (§1)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Literal, Optional
 
+import core.site_parameters as _sp
 from core.power_source_priority import (
     AdvisoryOutput,
     AuthorityTier,
@@ -40,12 +59,12 @@ from core.power_source_priority import (
 )
 
 
-# ── Output data contracts (§2.3) ──────────────────────────────────────────────
+# ── Output data contracts (§2.3 / §2.3.1 Phase 2 correction) ─────────────────
 
 @dataclass
 class DispatchAllocation:
     """One source's allocation for this tick (§2.3)."""
-    t_s: float          # simulated seconds since run start
+    t_s: float
     source_id: str
     allocated_mw: float
     price_mwh: float
@@ -64,45 +83,86 @@ class ShortfallEvent:
 class DispatchResult:
     """Full output of one EconomicDispatchLoop.step() call (§2.3).
 
-    DEFECT-1 NOTE: `total_cost_per_hour` is the Phase 1 name.  It will be
-    renamed to `cost_this_tick` in Phase 2, and the computation will change
-    from the current "assume 1 hour" assumption to an explicit tick_duration_hours
-    argument.  Do not introduce callers that depend on the field name before
-    Phase 2 is complete.
+    Phase 2 changes vs. Phase 1
+    ----------------------------
+    - `total_cost_per_hour` renamed to `cost_this_tick` (§2.3.1).
+    - `cost_this_tick` = Σ(allocated_mw × price_mwh × tick_duration_hours)
+      where tick_duration_hours is the actual duration of this tick in hours,
+      NOT assumed to be 1.0.
     """
     t_s: float
     allocations: List[DispatchAllocation]
-    total_cost_per_hour: float   # DEFECT-1: renamed + recomputed in Phase 2
+    cost_this_tick: float          # USD; was total_cost_per_hour in Phase 1
     shortfall: Optional[ShortfallEvent]
 
 
-# ── TOU pricing helper (summer-only — DEFECT-2, corrected in Phase 2) ─────────
+# ── TOU pricing helper (Phase 2 — season+month-aware, catalogue-sourced) ──────
 
-# Phase 1 hardcoded summer rates.
-# NOTE: These values are WRONG (pre-March-2026 tariff).
-# Phase 2 replaces them with catalogue reads from site_parameters.value()
-# using the corrected Cal. PUC Sheet 61081-E values catalogued in Phase 0.
-_SUMMER_PEAK_MWH: float      = 177.02   # hour_of_day 16–20
-_SUMMER_PART_PEAK_MWH: float = 142.27   # hour_of_day 14–15, 21–22
-_SUMMER_OFF_PEAK_MWH: float  = 114.82   # all other summer hours
+def _pge_price_for_period(
+    hour_of_day: int,
+    month: int,
+    season: Literal["summer", "winter"],
+) -> tuple[float, str]:
+    """Return (rate_mwh, cost_basis_note) for the given time period.
 
+    All rates read from the parameter catalogue (GS-IMPL-PSP-002 §7).
+    No hardcoded fallback — if a catalogue read fails, the exception propagates
+    to the caller, which is the correct behaviour (§7 / ParameterUnavailable).
 
-def _pge_price_for_hour(hour_of_day: int) -> float:
-    """Return the PG&E B-20 summer energy rate for *hour_of_day* (0–23).
+    Season boundaries (caller's responsibility, per §3.2.1)
+    -------------------------------------------------------
+      Summer: Jun 1 – Sep 30  (months 6–9)
+      Winter: Oct 1 – May 31  (months 10–12, 1–5)
 
-    DEFECT-2: Summer-only.  Phase 2 adds season + month parameters and reads
-    the full winter table (including Super Off-Peak) from the parameter catalogue.
+    Period classification per Cal. P.U.C. Sheet 61081-E (eff. 2026-03-01)
+    -----------------------------------------------------------------------
+    Summer (months 6–9):
+      Peak       hour_of_day 16–20  ($177.02/MWh)
+      Part-peak  hour_of_day 14–15 and 21–22  ($142.27/MWh)
+      Off-peak   all other summer hours  ($114.82/MWh)
 
-    Hour boundaries (Cal. PUC Sheet 61081-E, effective 2026-03-01):
-      Peak:       16–20  (4pm–9pm)
-      Part-peak:  14–15  (2pm–4pm) and 21–22 (9pm–11pm)
-      Off-peak:   all remaining hours
+    Winter (months 10–12, 1–5):
+      Super Off-Peak  months 3–5 AND hour_of_day 9–13  ($58.72/MWh)
+      Peak            hour_of_day 16–20  ($156.32/MWh)
+      Off-peak        all other winter hours  ($114.60/MWh)
+
+    The Super Off-Peak window requires month, not just season — this is why
+    the Phase 1 `season: Literal["summer","winter"]` signature was insufficient
+    and Phase 2 adds `month: int` explicitly.
     """
-    if hour_of_day in (16, 17, 18, 19, 20):
-        return _SUMMER_PEAK_MWH
-    if hour_of_day in (14, 15, 21, 22):
-        return _SUMMER_PART_PEAK_MWH
-    return _SUMMER_OFF_PEAK_MWH
+    if season == "summer":
+        if hour_of_day in (16, 17, 18, 19, 20):
+            rate = _sp.value("pge_tou_summer_peak_mwh")
+            note = f"PG&E B-20 summer peak (hour {hour_of_day})"
+        elif hour_of_day in (14, 15, 21, 22):
+            rate = _sp.value("pge_tou_summer_part_peak_mwh")
+            note = f"PG&E B-20 summer part-peak (hour {hour_of_day})"
+        else:
+            rate = _sp.value("pge_tou_summer_off_peak_mwh")
+            note = f"PG&E B-20 summer off-peak (hour {hour_of_day})"
+    else:  # winter
+        if month in (3, 4, 5) and hour_of_day in (9, 10, 11, 12, 13):
+            rate = _sp.value("pge_tou_winter_super_off_peak_mwh")
+            note = f"PG&E B-20 winter super off-peak (month {month}, hour {hour_of_day})"
+        elif hour_of_day in (16, 17, 18, 19, 20):
+            rate = _sp.value("pge_tou_winter_peak_mwh")
+            note = f"PG&E B-20 winter peak (month {month}, hour {hour_of_day})"
+        else:
+            rate = _sp.value("pge_tou_winter_off_peak_mwh")
+            note = f"PG&E B-20 winter off-peak (month {month}, hour {hour_of_day})"
+
+    return rate, note
+
+
+def _bess_marginal_cost() -> float:
+    """Return the BESS marginal dispatch cost from the parameter catalogue.
+
+    DEFECT-3 resolution: BESS cost is no longer caller-supplied.  The catalogue
+    entry `bess_marginal_cost_mwh` ($38.00/MWh provisional, Method A) is the
+    authoritative source.  If PSP-6 were still open, this would raise
+    ParameterUnavailable, propagating loudly rather than silently defaulting.
+    """
+    return _sp.value("bess_marginal_cost_mwh")
 
 
 # ── EconomicDispatchLoop ──────────────────────────────────────────────────────
@@ -117,18 +177,24 @@ class EconomicDispatchLoop:
 
     Stateless — each step() call is independent.
 
-    Phase 1 defects (corrected in Phase 2)
-    ---------------------------------------
-    DEFECT-1: total_cost_per_hour assumes 1 hour of dispatch per tick.
-    DEFECT-2: _pge_price_for_hour is summer-only; no season or month awareness.
+    Phase 2 changes vs. Phase 1
+    ----------------------------
+    - step() signature: added `tick_duration_hours`, `month`, `season` (keyword-only).
+    - DispatchResult: `total_cost_per_hour` → `cost_this_tick` (correct formula).
+    - Grid pricing: reads from catalogue via `_pge_price_for_period()` (season+month).
+    - BESS pricing: reads from catalogue via `_bess_marginal_cost()`.
     """
 
     def step(
         self,
         t_s: float,
-        hour_of_day: int,
-        demand_mw: float,
-        sources: List[PowerSource],
+        *,                              # all remaining args are keyword-only
+        tick_duration_hours: float,     # NEW (§2.3.1) — duration of this tick in hours
+        hour_of_day: int,               # local hour (0–23) for TOU classification
+        month: int,                     # calendar month (1–12) for Super Off-Peak
+        season: Literal["summer", "winter"],  # NEW (§3.2.1) — derived by caller
+        demand_mw: float,               # steady-state demand after §7 resolves
+        sources: List[PowerSource],     # all sources, all authority tiers
     ) -> DispatchResult:
         """Dispatch one tick.
 
@@ -136,21 +202,32 @@ class EconomicDispatchLoop:
         ----------
         t_s
             Simulated time in seconds since run start.
+        tick_duration_hours
+            Duration of this tick in hours.  E.g. a 5-second tick = 5/3600 h.
+            Used in cost_this_tick = Σ(allocated_mw × price × tick_duration_hours).
         hour_of_day
-            Local hour (0–23) of the simulated calendar time, for TOU pricing.
-            DEFECT-2: Phase 2 adds `season` and `month` alongside this.
+            Local hour (0–23) of the simulated calendar time.
+        month
+            Calendar month (1–12) of the simulated date.  Required to distinguish
+            the Winter Super Off-Peak window (Mar–May, 9am–2pm) from regular
+            winter off-peak — a distinction season alone cannot express.
+        season
+            "summer" (Jun–Sep) or "winter" (Oct–May).  The caller derives this
+            from the simulated calendar date; this module does not read a clock
+            (§3.2.1 / §6.2 no-runtime-clock-reads rule).
         demand_mw
             Steady-state demand to cover (P_total(t) after §7 has resolved).
         sources
             All sources available this tick, at all authority tiers.
-            EconomicDispatchLoop filters to autonomous-tier only (step 3).
+            This method filters to autonomous-tier only (step 3 — mandatory,
+            not configurable per §6.3).
 
         Returns
         -------
         DispatchResult
-            allocations + total_cost_per_hour (DEFECT-1) + optional shortfall.
+            allocations + cost_this_tick + optional shortfall.
         """
-        # Step 1: reprice grid sources for current TOU period.
+        # Step 1: reprice grid and BESS sources for current TOU period.
         repriced: List[PowerSource] = []
         for src in sources:
             if src.source_type in (
@@ -158,7 +235,7 @@ class EconomicDispatchLoop:
                 PowerSourceType.GRID_RESERVED,
                 PowerSourceType.GRID_SPOT,
             ):
-                tou_price = _pge_price_for_hour(hour_of_day)
+                tou_price, tou_note = _pge_price_for_period(hour_of_day, month, season)
                 repriced.append(PowerSource(
                     source_id=src.source_id,
                     source_type=src.source_type,
@@ -168,7 +245,21 @@ class EconomicDispatchLoop:
                     response_latency_class=src.response_latency_class,
                     authority_tier=src.authority_tier,
                     available_mw=src.available_mw,
-                    cost_basis_note=f"PG&E B-20 summer, hour_of_day={hour_of_day}",
+                    cost_basis_note=tou_note,
+                ))
+            elif src.source_type == PowerSourceType.BESS:
+                # DEFECT-3 resolution: BESS cost from catalogue, not caller.
+                bess_cost = _bess_marginal_cost()
+                repriced.append(PowerSource(
+                    source_id=src.source_id,
+                    source_type=src.source_type,
+                    dispatchable=src.dispatchable,
+                    counts_toward_reserve=src.counts_toward_reserve,
+                    marginal_cost_mwh=bess_cost,
+                    response_latency_class=src.response_latency_class,
+                    authority_tier=src.authority_tier,
+                    available_mw=src.available_mw,
+                    cost_basis_note="catalogue: bess_marginal_cost_mwh (Method A, provisional)",
                 ))
             else:
                 repriced.append(src)
@@ -176,8 +267,7 @@ class EconomicDispatchLoop:
         # Step 2: rank all repriced sources.
         advisory: AdvisoryOutput = PowerRanker().rank(repriced)
 
-        # Step 3: filter to autonomous tier only — this filter is NOT optional
-        # and NOT configurable (§6.3 / §3.2 step 3).
+        # Step 3: filter to autonomous tier only — mandatory, not configurable (§6.3).
         autonomous_ranked: List[RankedSource] = [
             rs for rs in advisory.ranked_sources
             if rs.authority_tier == AuthorityTier.AUTONOMOUS
@@ -201,12 +291,11 @@ class EconomicDispatchLoop:
 
         covered_mw = demand_mw - remaining_mw
 
-        # Step 5: cost calculation.
-        # DEFECT-1: Assumes 1 hour of dispatch per tick.  Phase 2 replaces
-        # with: Σ(allocated_mw × price × tick_duration_hours), where
-        # tick_duration_hours is passed in as an explicit argument.
-        total_cost_per_hour: float = sum(
-            a.allocated_mw * a.price_mwh
+        # Step 5: cost calculation (§2.3.1 Phase 2 correction).
+        # cost_this_tick = Σ(allocated_mw × price_mwh × tick_duration_hours)
+        # tick_duration_hours is the actual tick length, NOT assumed to be 1.0.
+        cost_this_tick: float = sum(
+            a.allocated_mw * a.price_mwh * tick_duration_hours
             for a in allocations
         )
 
@@ -214,7 +303,7 @@ class EconomicDispatchLoop:
         # retry, do not reach for confirm/human_only — return and let the
         # caller handle escalation per §4.3.
         shortfall: Optional[ShortfallEvent] = None
-        if remaining_mw > 1e-9:   # tolerance for floating-point noise
+        if remaining_mw > 1e-9:
             shortfall = ShortfallEvent(
                 t_s=t_s,
                 demand_mw=demand_mw,
@@ -225,6 +314,6 @@ class EconomicDispatchLoop:
         return DispatchResult(
             t_s=t_s,
             allocations=allocations,
-            total_cost_per_hour=total_cost_per_hour,
+            cost_this_tick=cost_this_tick,
             shortfall=shortfall,
         )
