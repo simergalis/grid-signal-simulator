@@ -123,6 +123,61 @@ class WorkloadSignal:
 
 
 # ---------------------------------------------------------------------------
+# GS-IMPL-PSP-002 §2.5 — per-tenant power budget contract (from §30.4)
+# ---------------------------------------------------------------------------
+
+@dataclass
+class TenantPowerBudget:
+    """Per-tenant, per-site power ceiling sourced from the colo contract system.
+
+    No record for a (tenant_id, site_id) pair means unbounded — BudgetGate
+    returns None and the job proceeds unimpeded.  This is MT-1 (§10): a known
+    soft spot, not an oversight.  See §10 for the recommended `unbudgeted_tenant`
+    tag that mirrors §17.3's uncalibrated_site pattern.
+
+    effective_from / effective_until are ISO-8601 UTC strings.  BudgetGate does
+    not perform mid-window silent switches (§17.3 pattern) — the caller is
+    responsible for presenting only the currently-effective record.
+    """
+    tenant_id: str
+    site_id: str
+    budget_mw: float           # externally supplied ceiling — not GridSignal-derived
+    source_of_truth: str       # e.g. "colo contract system"
+    effective_from: str        # ISO-8601 UTC
+    effective_until: str       # ISO-8601 UTC
+
+
+# ---------------------------------------------------------------------------
+# GS-IMPL-PSP-002 §2.6 — WorkloadCommand (§23.5 contract, reused not extended)
+# ---------------------------------------------------------------------------
+
+class WorkloadCommandAction(str, Enum):
+    """Actions a WorkloadCommand may carry.
+
+    Phase 3 note: `defer` is the only action BudgetGate issues.
+    No new action type is created by this subsystem — §6.1 / Phase 3 scope.
+    Additional action values may be added by future specs; do not expand here
+    without an explicit §23.5 amendment.
+    """
+    DEFER = "defer"
+
+
+@dataclass
+class WorkloadCommand:
+    """Command written back to the scheduler via the §23.5 write-back path.
+
+    `action`    — what the scheduler should do with the targeted job.
+    `target`    — job_id of the affected job (from WorkloadSignal.job_id).
+    `authority` — operating tier under which this command was issued (§23.4
+                  Ladder A).  BudgetGate callers pass the site's current
+                  OperatingTier so the write-back path can audit authority.
+    """
+    action: WorkloadCommandAction
+    target: str           # job_id
+    authority: "OperatingTier"   # forward ref — OperatingTier defined below
+
+
+# ---------------------------------------------------------------------------
 # Operating mode (Step 3 Item 4 / v2.5 §7.1.2)
 # ---------------------------------------------------------------------------
 

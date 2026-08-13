@@ -81,9 +81,24 @@ Cause: D4 balance routing issue in `simulation_core.py` — turbine output not c
 BESS catalogue repricing moved from `step()` into `PowerRanker.rank()`. Both the autonomous dispatch path (through step()) and the §4.3 escalation path (direct rank() call on confirm/human_only sources) now see the same catalogue-sourced BESS cost. `step()` reprices grid sources only (TOU is legitimately tick-context-dependent; BESS cost is not). `_bess_marginal_cost()` helper removed from `economic_dispatch_loop.py`.
 
 ## Phase 2 test results (after post-review corrections)
-- `test_economic_dispatch_loop.py`: 31 passed (+2 new: season_not_in_step_signature, positional_season_raises)
-- `test_power_source_priority.py`: 22 passed (+5 new: TestBESSCatalogueRepricingInRank)
-- `test_no_forbidden_imports.py`: 6 passed
-- `test_no_hardcoded_parameters.py`: 5 passed
-- Total: 64 passed
+- Total: 64 passed. Pre-existing failure: `test_d10_demo_20mw_bess_fires_and_tapers` (unrelated D4).
+
+## Phase 3 decisions
+
+**Files added:**
+- `core/tenant_budget_gate.py` — QuarantinedSignalError, RotationState, BudgetGate, handle_queued_event()
+- `tests/test_tenant_budget_gate.py` — TC-C6, TC-C7, TC-C8, TC-C9
+
+**models.py additions:** TenantPowerBudget, WorkloadCommandAction(DEFER), WorkloadCommand(action, target, authority: OperatingTier).
+
+**`operating_tier` extension to evaluate() signature:** spec §3.3 doesn't list it, but WorkloadCommand.authority requires it. Added as keyword-only with default SUPERVISED. Decision documented in module docstring.
+
+**Quarantine priority over MT-1:** QuarantinedSignalError raised before MT-1 (budget=None) check. tenant_id=None always quarantines, regardless of budget presence.
+
+**RotationState.persistence_backed=False** logs MT-4 warning at construction. Tests set persistence_backed=True to suppress. Simulator path uses in-memory.
+
+**Grid-TOU repricing scope gap (flagged, not yet fixed):** `_pge_price_for_period()` is only called from step(). If a GRID_FIRM/SPOT/RESERVED source has CONFIRM/HUMAN_ONLY authority tier and appears in §4.3's fresh rank() call, it would be ranked at caller-supplied cost, not the tick's TOU rate. Same class of bug as the BESS scope fix. Deferred to Phase 4 (fix: expose _pge_price_for_period as a public helper callable from both step() and the §4.3 assembler).
+
+## Phase 3 test results
+- Total: 90 passed (26 new Phase 3 tests)
 - Pre-existing failure: `test_d10_demo_20mw_bess_fires_and_tapers` (D4 balance routing, unrelated)
