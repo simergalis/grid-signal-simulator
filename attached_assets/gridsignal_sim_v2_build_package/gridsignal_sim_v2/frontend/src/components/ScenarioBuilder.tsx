@@ -658,10 +658,13 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
             <SectionHeader title="Fleet" />
 
             {/* ── Power Supply Sources — boxed selector ────────────────────── */}
-            <div className="mb-4 rounded border border-border p-3 space-y-2">
-              <span className="text-[10px] text-muted block">
-                Power Supply Sources — click to add or remove from this scenario
-              </span>
+            <div className="mb-4 rounded border-2 border-accent/30 bg-accent/5 p-3 space-y-2">
+              <p className="text-[11px] font-semibold text-accent tracking-wide uppercase leading-none mb-1">
+                Power Supply Sources
+              </p>
+              <p className="text-[9px] text-muted leading-snug">
+                Click to add or remove supply types for this scenario.
+              </p>
               <div className="grid grid-cols-2 gap-1.5">
                 {/* BESS pill */}
                 <button
