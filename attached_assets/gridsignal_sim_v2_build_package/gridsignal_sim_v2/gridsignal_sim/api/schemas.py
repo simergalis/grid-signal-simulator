@@ -455,6 +455,11 @@ class ScenarioSpec(BaseModel):
     turbine_units: list[TurbineUnitSpec] = Field(min_length=0, default_factory=list)
 
     solar_rated_mw: float = Field(default=0.0, ge=0.0)
+
+    # ── Fuel Cell Module Array ────────────────────────────────────────────────
+    fuel_cell_enabled: bool = False
+    fuel_cell_rated_mw: float = Field(default=0.0, ge=0.0)
+    fuel_cell_stack_count: int = Field(default=1, ge=1)
     # GS-DES-CFG-001 §Phase-6 / Item-3: declared design peak site load.
     design_peak_load_mw: Optional[float] = Field(
         default=None, ge=0.0,

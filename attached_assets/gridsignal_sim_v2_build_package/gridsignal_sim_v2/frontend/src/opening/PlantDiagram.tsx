@@ -43,11 +43,6 @@ interface PlantDiagramProps {
    * Clicking the tag calls this handler to open the modal.
    */
   onSelectPowerSupply?: () => void
-  /**
-   * Revision counter incremented by the parent after PowerSupplySourcesModal
-   * saves so the diagram re-fetches sourceState without needing a selectedId change.
-   */
-  sourceStateRev?: number
 }
 
 function getMwForFlow(
@@ -968,37 +963,23 @@ const SRC_FLOW_INFO: Record<string, { nodeId: string; h: number }> = {
   'grid-to-sw':    { nodeId: 'grid-connection', h: 72 },
 }
 
-export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, onSelectPowerSupply, sourceStateRev }: PlantDiagramProps) {
-  const tick       = useTickStore(s => s.latestTick)
-  const selectedId = useScenarioStore(s => s.selectedId)
+export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, onSelectPowerSupply }: PlantDiagramProps) {
+  const tick          = useTickStore(s => s.latestTick)
+  const selectedSpec  = useScenarioStore(s => s.selectedSpec)
 
-  // Fetch scenario spec to determine which power supply sources are enabled.
-  // This drives both the Fuel Cell tile visibility and the dynamic outline.
-  const [sourceState, setSourceState] = useState<SourceState>(
-    { turbine: true, solar: true, bess: true, grid: false, fuelCell: false }
-  )
-  useEffect(() => {
-    if (!selectedId) {
-      setSourceState({ turbine: true, solar: true, bess: true, grid: false, fuelCell: false })
-      return
+  // Derive sourceState directly from the shared store's selectedSpec.
+  // PowerSupplySourcesModal writes the saved spec into the store immediately
+  // after a successful PUT, so this reflects changes with zero latency.
+  const sourceState = useMemo<SourceState>(() => {
+    if (!selectedSpec) return { turbine: true, solar: true, bess: true, grid: false, fuelCell: false }
+    return {
+      turbine:  (selectedSpec.turbine_units?.length  ?? 1) > 0,
+      solar:    (selectedSpec.solar_rated_mw          ?? 1) > 0,
+      bess:     (selectedSpec.bess_units?.length      ?? 1) > 0,
+      grid:     !(selectedSpec.island_mode            ?? true),
+      fuelCell:  selectedSpec.fuel_cell_enabled       ?? false,
     }
-    let cancelled = false
-    fetch(`/scenarios/${selectedId}`)
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (cancelled) return
-        const spec = data?.spec ?? {}
-        setSourceState({
-          turbine:  (spec.turbine_units?.length  ?? 1) > 0,
-          solar:    (spec.solar_rated_mw          ?? 1) > 0,
-          bess:     (spec.bess_units?.length      ?? 1) > 0,
-          grid:     !(spec.island_mode            ?? true),
-          fuelCell: spec.fuel_cell_enabled        ?? false,
-        })
-      })
-      .catch(() => {})
-    return () => { cancelled = true }
-  }, [selectedId, sourceStateRev])
+  }, [selectedSpec])
 
   const fuelCellEnabled = sourceState.fuelCell
 

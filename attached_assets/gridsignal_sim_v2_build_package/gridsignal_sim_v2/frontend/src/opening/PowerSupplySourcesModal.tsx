@@ -19,6 +19,10 @@ import { createPortal } from 'react-dom'
 import { useScenarioStore } from '../store/scenarioStore'
 import type { ScenarioSpec } from '../types'
 
+// Pull setSelectedSpec outside render so handleSave can call it without
+// adding it to hook dependency lists.
+const getSetSelectedSpec = () => useScenarioStore.getState().setSelectedSpec
+
 // ── Types ──────────────────────────────────────────────────────────────────────
 
 interface SourceState {
@@ -77,11 +81,9 @@ function Pill({
 
 interface PowerSupplySourcesModalProps {
   onClose: () => void
-  /** Called after a successful save so the parent can refresh derived state. */
-  onSaved?: () => void
 }
 
-export function PowerSupplySourcesModal({ onClose, onSaved }: PowerSupplySourcesModalProps) {
+export function PowerSupplySourcesModal({ onClose }: PowerSupplySourcesModalProps) {
   const selectedId = useScenarioStore(s => s.selectedId)
 
   // Original spec values — used to restore when a source is re-enabled
@@ -170,7 +172,9 @@ export function PowerSupplySourcesModal({ onClose, onSaved }: PowerSupplySources
       })
       if (!resp.ok) throw new Error(await resp.text())
       setSaved(true)
-      onSaved?.()
+      // Push the saved spec directly into the shared store so PlantDiagram
+      // reflects the change immediately — no round-trip fetch required.
+      getSetSelectedSpec()(fullSpec as ScenarioSpec)
       setTimeout(() => { setSaved(false); onClose() }, 900)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Save failed')

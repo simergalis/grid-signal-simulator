@@ -57,8 +57,6 @@ export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
   const [computeRacksOpen,   setComputeRacksOpen]   = useState(false)
   const [gridConnOpen,       setGridConnOpen]        = useState(false)
   const [powerSupplyOpen,    setPowerSupplyOpen]     = useState(false)
-  // Incremented each time PowerSupplySourcesModal saves so PlantDiagram re-fetches sourceState.
-  const [sourceStateRev,     setSourceStateRev]      = useState(0)
   const [compact,       setCompact]       = useState(false)
   const [solarPreview,  setSolarPreview]  = useState<SolarPreview | null>(null)
   const [liveSolarMW,   setLiveSolarMW]   = useState<number | null>(null)
@@ -167,7 +165,6 @@ export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
             solarPreview={solarPreview}
             liveSolarMW={liveSolarMW}
             onSelectPowerSupply={() => setPowerSupplyOpen(true)}
-            sourceStateRev={sourceStateRev}
           />
         </div>
       </div>
@@ -208,7 +205,6 @@ export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
       {powerSupplyOpen && (
         <PowerSupplySourcesModal
           onClose={() => setPowerSupplyOpen(false)}
-          onSaved={() => setSourceStateRev(r => r + 1)}
         />
       )}
 

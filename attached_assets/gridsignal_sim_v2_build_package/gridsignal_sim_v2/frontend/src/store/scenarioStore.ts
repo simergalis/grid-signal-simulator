@@ -30,6 +30,8 @@ interface ScenarioState {
   fetchScenarios: () => Promise<void>
   selectScenario: (id: string | null) => void
   fetchSelectedSpec: () => Promise<void>
+  /** Directly overwrite selectedSpec (used after a save to reflect changes instantly). */
+  setSelectedSpec: (spec: ScenarioSpec | null) => void
   setWatchingText: (text: string | null) => void
   createScenario: (spec: ScenarioSpec) => Promise<CreateScenarioResponse>
   updateScenario: (id: string, spec: ScenarioSpec) => Promise<CreateScenarioResponse>
@@ -44,6 +46,7 @@ export const useScenarioStore = create<ScenarioState>((set, get) => ({
   error: null,
   watchingText: null,
   setWatchingText: (text) => set({ watchingText: text }),
+  setSelectedSpec: (spec) => set({ selectedSpec: spec }),
 
   fetchScenarios: async () => {
     set({ isLoading: true, error: null })
