@@ -451,8 +451,8 @@ class ScenarioSpec(BaseModel):
         ),
     )
 
-    bess_units: list[BessUnitSpec] = Field(min_length=1)
-    turbine_units: list[TurbineUnitSpec] = Field(min_length=1)
+    bess_units: list[BessUnitSpec] = Field(min_length=0, default_factory=list)
+    turbine_units: list[TurbineUnitSpec] = Field(min_length=0, default_factory=list)
 
     solar_rated_mw: float = Field(default=0.0, ge=0.0)
     # GS-DES-CFG-001 §Phase-6 / Item-3: declared design peak site load.

@@ -927,6 +927,8 @@ def _seed_json_scenarios(store: ScenarioStore) -> None:
         ("demo-10-tenant-full-ceiling", "demo-10-tenant-full-ceiling.json"),
         # 10-tenant 120% overload burst — 15 min at 120% of generation nameplate
         ("demo-10-tenant-overload-120pct", "demo-10-tenant-overload-120pct.json"),
+        # Grid + Fuel Cell + BESS only — same 90-min shaped load, no turbines or solar
+        ("demo-grid-fc-bess-shaped-load", "demo-grid-fc-bess-shaped-load.json"),
     ]
 
     _cfg_dir = _Path("config/scenarios")
