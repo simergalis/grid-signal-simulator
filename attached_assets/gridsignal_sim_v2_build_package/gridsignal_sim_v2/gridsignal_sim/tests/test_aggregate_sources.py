@@ -485,3 +485,277 @@ class TestAllSourcesAggregate:
             "ALL-AGG-10: grid never imported across 20 ticks — test coverage gap; "
             "increase load or reduce local generation"
         )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SWITCHGEAR 3-source path: BESS + GRID + FUEL CELL, no Turbine, no Solar
+# (Tests 11–13)
+#
+# Mirrors the plant-diagram configuration shown in the operator panel:
+#   • BATTERY (BESS)         — 5 MW, 95% SoC, anchor 1.0 MW, grid_forming=True
+#   • GRID CONNECTION        — grid-connected (island_mode=False)
+#   • FUEL CELL MODULE ARRAY — fuel_cell_enabled=True (silent: 0 MW from engine)
+#   • GAS TURBINE            — ABSENT (turbine_units=[])
+#   • SOLAR PV               — ABSENT (solar_rated_mw=0.0)
+#
+# Aggregate identity for this configuration:
+#   p_generation_mw == bess_output_mw + max(0, -grid_exchange_mw)
+#   (turbine_output_mw == 0 always; p_renewable_mw == 0 always)
+# ─────────────────────────────────────────────────────────────────────────────
+
+_SW_BASE_SPEC: dict = {
+    "name": "sw-switchgear-test",
+    "description": (
+        "Switchgear aggregate test — BESS + GRID + FUEL CELL only.  "
+        "No turbine, no solar.  Mirrors operator panel image."
+    ),
+    "frequency_nominal_hz": 50.0,
+    "power_factor": 0.85,
+    "pue_base": 1.03,
+    "island_mode": False,       # grid-connected  ← GRID CONNECTION active
+    "turbine_units": [],        # no Gas Turbine
+    "bess_units": [
+        {
+            "asset_id": "bess-1",
+            "rated_mw": 5.0,
+            "usable_mwh": 2.5,
+            "initial_soc_fraction": 0.95,   # 95% SoC — matches image
+            "p_anchor_reserve_mw": 1.0,     # anchor 1.0 MW — matches image
+            "grid_forming": True,
+        }
+    ],
+    "solar_rated_mw": 0.0,          # no Solar PV
+    "fuel_cell_enabled": True,      # FC tile visible; engine contributes 0 MW
+    "fuel_cell_rated_mw": 5.0,
+    "fuel_cell_stack_count": 2,
+    "workload_events": [],
+    "end_sim_time": 300.0,
+}
+
+
+def _make_sw_ctx(spec_override: dict | None = None):
+    """Build a RunContext for the 3-source switchgear scenario."""
+    from runtime.scenario_factory import build_run_context_from_spec
+
+    spec = {**_SW_BASE_SPEC, **(spec_override or {})}
+    return build_run_context_from_spec(run_id="sw-test", spec_data=spec)
+
+
+def _run_sw_ticks(
+    spec_override: dict | None = None,
+    n: int = 10,
+    dt: float = 5.0,
+    nodes: int = 0,
+):
+    """
+    Build the 3-source context, optionally apply a workload, then run n ticks.
+    Returns (ctx, ticks) so callers can inspect ctx.sim_state if needed.
+    """
+    import contextlib
+    from core._plane_guard import _EVALUATE_TICK_PERMITTED
+    from core.sim_clock import SimClock
+    from core.simulation_core import evaluate_tick
+
+    ctx = _make_sw_ctx(spec_override)
+    if nodes > 0:
+        sig = _starting_signal(nodes=nodes, ramp_s=1.0, timestamp=0.0)
+        ctx.sim_state.apply_workload_signal(sig, dt_lead_seconds=0.0)
+
+    ticks = []
+    token = _EVALUATE_TICK_PERMITTED.set(True)
+    try:
+        for i in range(n):
+            clock = SimClock(
+                sim_time=float(i) * dt,
+                dt_seconds=dt,
+                wall_stamp_utc=float(i) * dt,
+                rate=1.0,
+                tick_seq=i,
+            )
+            ticks.append(evaluate_tick(ctx.sim_state, clock))
+    finally:
+        _EVALUATE_TICK_PERMITTED.reset(token)
+
+    return ctx, ticks
+
+
+class TestSwitchgearThreeSource:
+    """
+    Verifies the switchgear aggregate path for the BESS + GRID + FUEL CELL
+    panel configuration — no Gas Turbine, no Solar PV.
+    """
+
+    def test_SW11_grid_covers_load_without_turbine(self):
+        """
+        SW-AGG-11: In grid-connected mode with no turbine, the armed BESS sits
+        at 0 MW (normal grid-following behaviour — the grid is the slack bus).
+        All load demand is served by grid import.
+
+        This tests the switchgear's aggregation on the GRID path specifically:
+          p_generation_mw == max(0, -grid_exchange_mw)
+        when turbine, renewable and BESS are each zero.
+
+        Setup: 5 MW BESS at 95% SoC (armed, not dispatched), 20 GPU nodes,
+               GRID_TIE, no turbine, FC enabled but silent.
+        Expected:
+          • turbine_output_mw == 0.0 at every tick (absent from state)
+          • p_renewable_mw == 0.0 at every tick (solar_rated_mw=0.0)
+          • grid_exchange_mw < 0 at settlement (grid importing to cover demand)
+          • BESS may be idle (grid-following; no dispatch command issued)
+          • aggregate identity p_gen == bess + max(0,-grid) holds to ≤ 1 µW
+        """
+        _ctx, ticks = _run_sw_ticks(nodes=20, n=10)
+
+        # Turbine must be completely absent from the power balance
+        for i, tick in enumerate(ticks):
+            assert tick.turbine_output_mw == 0.0, (
+                f"SW-AGG-11 tick {i}: turbine_output_mw={tick.turbine_output_mw:.6f} "
+                f"— no turbines in state; must be exactly 0.0"
+            )
+
+        # Solar must also be absent (solar_rated_mw = 0.0 in spec)
+        for i, tick in enumerate(ticks):
+            assert tick.p_renewable_mw == 0.0, (
+                f"SW-AGG-11 tick {i}: p_renewable_mw={tick.p_renewable_mw:.6f} "
+                f"— solar_rated_mw=0.0; must be exactly 0.0"
+            )
+
+        # Grid must import to supply the GPU load (slack bus in grid-connected mode)
+        grid_importing_any = any(t.grid_exchange_mw < -0.01 for t in ticks)
+        assert grid_importing_any, (
+            "SW-AGG-11: grid never imported to cover the 20-node load — "
+            "check island_mode or load-signal application"
+        )
+
+        # The full aggregate identity must hold at every tick
+        failures = []
+        for i, tick in enumerate(ticks):
+            rhs   = _aggregate_identity(tick)
+            delta = tick.p_generation_mw - rhs
+            if abs(delta) >= FLOAT_TOL:
+                failures.append(
+                    f"  tick {i:02d}: p_gen={tick.p_generation_mw:.6f}  "
+                    f"turb={tick.turbine_output_mw:.4f}  "
+                    f"bess={tick.bess_output_mw:.4f}  "
+                    f"renew={tick.p_renewable_mw:.4f}  "
+                    f"grid_ex={tick.grid_exchange_mw:.4f}  "
+                    f"rhs={rhs:.6f}  delta={delta:.2e}"
+                )
+        assert not failures, (
+            "SW-AGG-11: aggregate identity p_gen == turb+bess+renew+max(0,-grid) "
+            "failed (no turbine path):\n"
+            + "\n".join(failures)
+        )
+
+    def test_SW12_grid_import_fills_gap_when_bess_alone_insufficient(self):
+        """
+        SW-AGG-12: Heavy load exceeds what the BESS can supply alone; the grid
+        imports the shortfall and that import appears correctly in p_generation_mw.
+
+        Fuel cell is enabled in the spec but must contribute 0 MW — confirmed by
+        the aggregate closing without an FC term.
+
+        Setup: 5 MW BESS at 95% SoC, anchor 1.0 MW reserved, 80-node job.
+               GPU demand ≈ 80 × 10.2 kW × PUE 1.03 ≈ 0.84 MW.
+               BESS effective headroom = 5 MW - 1 MW anchor = 4 MW → grid not
+               needed at this node count; raise to 120 nodes where PUE-adjusted
+               demand ≈ 1.26 MW and anchor reserve forces grid import.
+        Expected:
+          • grid_exchange_mw < 0 at some ticks (grid importing)
+          • max(0, -grid_exchange_mw) > 0 for those ticks
+          • aggregate identity holds at every tick
+          • turbine_output_mw == 0.0 always
+        """
+        # 120 nodes × 10.2 kW × PUE 1.03 ≈ 1.26 MW demand.
+        # BESS available = 5 MW rated, but 1 MW is held as anchor reserve →
+        # effective ceiling ≈ 4 MW, easily covering 1.26 MW.  To force grid
+        # import we reduce BESS rated to 0.5 MW, making BESS the binding
+        # constraint and grid the swing supplier.
+        _ctx, ticks = _run_sw_ticks(
+            spec_override={
+                "bess_units": [
+                    {
+                        "asset_id": "bess-1",
+                        "rated_mw": 0.5,
+                        "usable_mwh": 0.5,
+                        "initial_soc_fraction": 0.95,
+                        "p_anchor_reserve_mw": 0.0,
+                        "grid_forming": True,
+                    }
+                ]
+            },
+            nodes=120,
+            n=8,
+        )
+
+        grid_imported_any = any(t.grid_exchange_mw < -0.01 for t in ticks)
+        assert grid_imported_any, (
+            "SW-AGG-12: grid never imported — reduce BESS headroom or increase load"
+        )
+
+        failures = []
+        for i, tick in enumerate(ticks):
+            assert tick.turbine_output_mw == 0.0, (
+                f"SW-AGG-12 tick {i}: turbine_output_mw must be 0 (no turbines); "
+                f"got {tick.turbine_output_mw:.6f}"
+            )
+            rhs   = _aggregate_identity(tick)
+            delta = tick.p_generation_mw - rhs
+            if abs(delta) >= FLOAT_TOL:
+                failures.append(
+                    f"  tick {i:02d}: p_gen={tick.p_generation_mw:.6f}  "
+                    f"bess={tick.bess_output_mw:.4f}  "
+                    f"grid_ex={tick.grid_exchange_mw:.4f}  "
+                    f"rhs={rhs:.6f}  delta={delta:.2e}"
+                )
+
+        assert not failures, (
+            "SW-AGG-12: aggregate identity failed — unexpected power term "
+            "(possible fuel-cell physics now wired in?):\n"
+            + "\n".join(failures)
+        )
+
+    def test_SW13_identity_holds_across_15_ticks_turbine_free(self):
+        """
+        SW-AGG-13: The aggregate identity
+            p_generation_mw == bess_output_mw + max(0, -grid_exchange_mw)
+        holds at EVERY tick over a 15-tick settling run in the 3-source
+        (BESS + GRID + FC) configuration with no turbine and no solar.
+
+        This is the regression gate for the switchgear's supply-side summing
+        logic when the turbine and solar paths are both absent from the state.
+
+        Also asserts p_renewable_mw == 0.0 at every tick (no solar configured).
+        """
+        _ctx, ticks = _run_sw_ticks(nodes=40, n=15)
+
+        failures = []
+        for i, tick in enumerate(ticks):
+            # Turbine must be absent from the output
+            if tick.turbine_output_mw != 0.0:
+                failures.append(
+                    f"  tick {i:02d}: turbine_output_mw={tick.turbine_output_mw:.6f} "
+                    f"(should be 0 — no turbines in state)"
+                )
+            # Solar must be absent from the output
+            if tick.p_renewable_mw != 0.0:
+                failures.append(
+                    f"  tick {i:02d}: p_renewable_mw={tick.p_renewable_mw:.6f} "
+                    f"(should be 0 — solar_rated_mw=0.0)"
+                )
+            # Full aggregate identity
+            rhs   = _aggregate_identity(tick)
+            delta = tick.p_generation_mw - rhs
+            if abs(delta) >= FLOAT_TOL:
+                failures.append(
+                    f"  tick {i:02d}: p_gen={tick.p_generation_mw:.6f}  "
+                    f"bess={tick.bess_output_mw:.4f}  "
+                    f"renew={tick.p_renewable_mw:.4f}  "
+                    f"grid_ex={tick.grid_exchange_mw:.4f}  "
+                    f"rhs={rhs:.6f}  delta={delta:.2e}"
+                )
+
+        assert not failures, (
+            "SW-AGG-13: switchgear 3-source identity failed:\n"
+            + "\n".join(failures)
+        )
