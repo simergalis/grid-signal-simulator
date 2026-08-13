@@ -115,6 +115,11 @@ class WorkloadSignal:
     # staging.  Zero for all other event types.  Named _mw (megawatts) not
     # _fraction because staging arithmetic works in absolute power, not ratios.
     renewable_shortfall_mw: float = 0.0
+    # GS-IMPL-PSP-002 §2.4 — tenant identity, required for BudgetGate evaluation.
+    # Optional for backward compatibility; BudgetGate (§3.3) enforces presence
+    # via §17.2 schema validation — a signal with tenant_id=None is quarantined,
+    # never silently defaulted.
+    tenant_id: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------

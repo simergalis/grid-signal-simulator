@@ -1158,93 +1158,87 @@
     },
     {
       "key": "pge_tou_summer_peak_mwh",
-      "value": 117.58,
+      "value": 177.02,
       "unit": "USD/MWh",
       "label": "PG&E B-20 summer peak TOU rate",
       "provenance": "PROPOSED_HERE",
-      "provenance_detail": "PG&E Schedule B-20 (Large Commercial & Industrial), Rate Case A.23-09-016, effective 1 Jan 2024. Summer peak period: Mon–Fri 12:00–18:00, Jun 1–Sep 30. Applies to energy component only; demand charges excluded. Rate: ~$117.58/MWh (approx from published tariff sheets; confirm before production use). Source: pge.com/tariffs/assets/pdf/tariffbook/ELEC_SCHEDS_B-20.pdf. Dated 2024-01. PSP-002 §7.",
-      "spec_ref": "GS-IMPL-PSP-002 §7 / PG&E B-20",
+      "provenance_detail": "PG&E Schedule B-20 (secondary voltage), Cal. P.U.C. Sheet No. 61081-E, effective March 1, 2026. Summer season: Jun 1–Sep 30. Peak period: 4:00pm–9:00pm daily (16:00–20:59 local time, all days including weekends). Energy-only component; demand charges excluded. Rate: $177.02/MWh. Source: Cal. PUC Sheet 61081-E. Cited and dated per GS-IMPL-PSP-002 §7. PSP-5 resolved.",
+      "spec_ref": "GS-IMPL-PSP-002 §7 / PG&E B-20 / Cal. PUC Sheet 61081-E (eff. 2026-03-01)",
       "ui": {
         "control": "readonly",
         "group": "economic_dispatch"
       },
-      "note": "Supply period boundary: 12:00–17:59 local time, summer weekdays. PSP-002 §3.2 uses hour_of_day 12–17 for peak classification."
+      "note": "Peak window: hour_of_day 16–20 inclusive (4pm–9pm). Applies daily Jun–Sep; no weekday restriction on this tariff period. Voltage class: secondary — see pge_voltage_class. PSP-5 resolved (Phase 0 correction, 2026-08-13)."
     },
     {
-      "key": "pge_tou_summer_partial_peak_mwh",
-      "value": 74.90,
+      "key": "pge_tou_summer_part_peak_mwh",
+      "value": 142.27,
       "unit": "USD/MWh",
-      "label": "PG&E B-20 summer partial-peak TOU rate",
+      "label": "PG&E B-20 summer part-peak TOU rate",
       "provenance": "PROPOSED_HERE",
-      "provenance_detail": "PG&E Schedule B-20 partial-peak period: Mon–Fri 08:30–12:00 and 18:00–21:30, Jun 1–Sep 30. Rate: ~$74.90/MWh (approx). Same source as pge_tou_summer_peak_mwh. Confirm against current tariff before production use.",
-      "spec_ref": "GS-IMPL-PSP-002 §7 / PG&E B-20",
+      "provenance_detail": "PG&E Schedule B-20 (secondary voltage), Cal. P.U.C. Sheet No. 61081-E, effective March 1, 2026. Summer season: Jun 1–Sep 30. Part-peak period: 2:00pm–4:00pm (14:00–15:59) and 9:00pm–11:00pm (21:00–22:59) daily. Energy-only component. Rate: $142.27/MWh. Note: the Phase 0 entry named 'partial_peak' used a wrong period (08:30–12:00, 18:00–21:30 from an older tariff version) and a wrong rate ($74.90). This entry replaces it with the correct Cal. PUC 61081-E data. PSP-5 resolved.",
+      "spec_ref": "GS-IMPL-PSP-002 §7 / PG&E B-20 / Cal. PUC Sheet 61081-E (eff. 2026-03-01)",
       "ui": {
         "control": "readonly",
         "group": "economic_dispatch"
       },
-      "note": "EconomicDispatchLoop maps hour_of_day 8–11 and 18–20 to this rate in summer season."
+      "note": "Part-peak windows: hour_of_day 14–15 (2pm–4pm) and hour_of_day 21–22 (9pm–11pm), Jun–Sep. Key renamed from 'pge_tou_summer_partial_peak_mwh' to correct the period name; old key is retired. PSP-5 resolved (Phase 0 correction, 2026-08-13)."
     },
     {
       "key": "pge_tou_summer_off_peak_mwh",
-      "value": 41.08,
+      "value": 114.82,
       "unit": "USD/MWh",
       "label": "PG&E B-20 summer off-peak TOU rate",
       "provenance": "PROPOSED_HERE",
-      "provenance_detail": "PG&E Schedule B-20 off-peak: all hours and days not classified as peak or partial-peak in summer. Rate: ~$41.08/MWh (approx). Same source. Confirm against current tariff.",
-      "spec_ref": "GS-IMPL-PSP-002 §7 / PG&E B-20",
+      "provenance_detail": "PG&E Schedule B-20 (secondary voltage), Cal. P.U.C. Sheet No. 61081-E, effective March 1, 2026. Summer season: Jun 1–Sep 30. Off-peak period: all hours and days not classified as peak (16–20) or part-peak (14–15, 21–22). Includes all hours midnight–2pm and 11pm–midnight. Energy-only component. Rate: $114.82/MWh. Phase 0 value ($41.08) was from an older tariff; corrected to Cal. PUC 61081-E. PSP-5 resolved.",
+      "spec_ref": "GS-IMPL-PSP-002 §7 / PG&E B-20 / Cal. PUC Sheet 61081-E (eff. 2026-03-01)",
       "ui": {
         "control": "readonly",
         "group": "economic_dispatch"
       },
-      "note": "Includes all weekend hours, nights, and early mornings Jun 1–Sep 30."
+      "note": "Off-peak: all summer hours outside peak (16–20) and part-peak (14–15, 21–22). PSP-5 resolved (Phase 0 correction, 2026-08-13)."
     },
     {
       "key": "pge_tou_winter_peak_mwh",
-      "value": null,
+      "value": 156.32,
       "unit": "USD/MWh",
       "label": "PG&E B-20 winter peak TOU rate",
       "provenance": "PROPOSED_HERE",
-      "provenance_detail": "PSP-5 BLOCKING — winter TOU rates not yet catalogued. Value is null intentionally. Accessing this entry raises ParameterUnavailable. Supply the real PG&E B-20 winter tariff rates (Oct 1–May 31 schedule) before any winter-season economic dispatch calculation. Do not approximate from summer rates (GS-IMPL-PSP-002 Phase 0 constraint).",
-      "spec_ref": "GS-IMPL-PSP-002 §7 / PSP-5 (blocking)",
+      "provenance_detail": "PG&E Schedule B-20 (secondary voltage), Cal. P.U.C. Sheet No. 61081-E, effective March 1, 2026. Winter season: Oct 1–May 31. Peak period: 4:00pm–9:00pm daily (16:00–20:59 local time, all days including weekends). Energy-only component; demand charges excluded. Rate: $156.32/MWh. PSP-5 resolved. Note: within the winter season, March/April/May hours 9:00am–2:00pm (9–13) qualify for a separate Super Off-Peak rate (see pge_tou_winter_super_off_peak_mwh) that cannot be expressed by season alone — the caller must pass month (1–12) to EconomicDispatchLoop.step() from Phase 2 onward.",
+      "spec_ref": "GS-IMPL-PSP-002 §7 / PG&E B-20 / Cal. PUC Sheet 61081-E (eff. 2026-03-01)",
       "ui": {
         "control": "readonly",
         "group": "economic_dispatch"
       },
-      "psp_status": "UNAVAILABLE_RAISES",
-      "blocking_open_item": "PSP-5",
-      "note": "PSP-5 blocking open item. Must be resolved before any design-partner-facing use with winter dates."
+      "note": "Peak window: hour_of_day 16–20, Oct–May. PSP-5 resolved (2026-08-13). Phase 2 caller must supply month to distinguish Super Off-Peak within Mar–May."
     },
     {
-      "key": "pge_tou_winter_partial_peak_mwh",
-      "value": null,
+      "key": "pge_tou_winter_super_off_peak_mwh",
+      "value": 58.72,
       "unit": "USD/MWh",
-      "label": "PG&E B-20 winter partial-peak TOU rate",
+      "label": "PG&E B-20 winter super off-peak TOU rate",
       "provenance": "PROPOSED_HERE",
-      "provenance_detail": "PSP-5 BLOCKING — winter TOU rates not yet catalogued. Same constraints as pge_tou_winter_peak_mwh.",
-      "spec_ref": "GS-IMPL-PSP-002 §7 / PSP-5 (blocking)",
+      "provenance_detail": "PG&E Schedule B-20 (secondary voltage), Cal. P.U.C. Sheet No. 61081-E, effective March 1, 2026. Applies ONLY during March, April, and May (months 3–5), 9:00am–2:00pm (09:00–13:59 local time), all days. Rate: $58.72/MWh. This period cannot be expressed by season='winter' + hour_of_day alone — the caller must also pass month. This entry replaces the Phase 0 stub 'pge_tou_winter_partial_peak_mwh' (which was incorrect: B-20 has no winter partial-peak period). PSP-5 resolved.",
+      "spec_ref": "GS-IMPL-PSP-002 §7 / PG&E B-20 / Cal. PUC Sheet 61081-E (eff. 2026-03-01)",
       "ui": {
         "control": "readonly",
         "group": "economic_dispatch"
       },
-      "psp_status": "UNAVAILABLE_RAISES",
-      "blocking_open_item": "PSP-5",
-      "note": "PSP-5 blocking open item."
+      "note": "Super Off-Peak: month in {3,4,5} AND hour_of_day in {9,10,11,12,13}. For all other winter hours use pge_tou_winter_peak_mwh (16–20) or pge_tou_winter_off_peak_mwh (all remaining). Key replaces retired 'pge_tou_winter_partial_peak_mwh'. PSP-5 resolved (2026-08-13)."
     },
     {
       "key": "pge_tou_winter_off_peak_mwh",
-      "value": null,
+      "value": 114.60,
       "unit": "USD/MWh",
       "label": "PG&E B-20 winter off-peak TOU rate",
       "provenance": "PROPOSED_HERE",
-      "provenance_detail": "PSP-5 BLOCKING — winter TOU rates not yet catalogued. Same constraints as pge_tou_winter_peak_mwh.",
-      "spec_ref": "GS-IMPL-PSP-002 §7 / PSP-5 (blocking)",
+      "provenance_detail": "PG&E Schedule B-20 (secondary voltage), Cal. P.U.C. Sheet No. 61081-E, effective March 1, 2026. Winter season: Oct 1–May 31. Off-peak period: all winter hours not classified as peak (16–20) or Super Off-Peak (Mar–May, 9–13). Includes all hours outside those two windows on all days Oct–May. Rate: $114.60/MWh. PSP-5 resolved.",
+      "spec_ref": "GS-IMPL-PSP-002 §7 / PG&E B-20 / Cal. PUC Sheet 61081-E (eff. 2026-03-01)",
       "ui": {
         "control": "readonly",
         "group": "economic_dispatch"
       },
-      "psp_status": "UNAVAILABLE_RAISES",
-      "blocking_open_item": "PSP-5",
-      "note": "PSP-5 blocking open item."
+      "note": "Off-peak: all winter hours outside peak (16–20) and super-off-peak (Mar–May, 9–13). PSP-5 resolved (2026-08-13)."
     },
     {
       "key": "fuel_cell_ppa_rate_mwh",
@@ -1276,19 +1270,59 @@
     },
     {
       "key": "bess_marginal_cost_mwh",
-      "value": null,
+      "value": 38.0,
       "unit": "USD/MWh",
-      "label": "BESS marginal dispatch cost",
+      "label": "BESS marginal dispatch cost (cycle amortisation method)",
       "provenance": "PROPOSED_HERE",
-      "provenance_detail": "PSP-6 BLOCKING — BESS has no defined marginal cost basis anywhere in the spec. Unlike grid, fuel cell, or solar prices, there is no external market reference to validate a wrong number against. The methodology (cycle amortisation? round-trip loss cost? opportunity cost?) is an open product decision. Accessing this entry raises ParameterUnavailable. Do not add a hardcoded fallback.",
-      "spec_ref": "GS-IMPL-PSP-002 §7 / PSP-6 (blocking)",
+      "provenance_detail": "PSP-6 resolved. Methodology: Method A — cycle amortisation. Formula: (battery_capex_per_mwh / cycle_life_cycles) + round_trip_loss_cost_mwh. Component breakdown: (1) Cycle degradation = $125,000/MWh ÷ 5,000 cycles = $25.00/MWh. Source: Ember Oct 2025 assessment, $125/kWh all-in LFP project capex = $125,000/MWh capacity. (2) Round-trip loss cost = 12.5% average loss × $114.82/MWh summer off-peak reference = ~$14.35/MWh charging cost transported to output. Rounded midpoint: $25 + $13 = $38/MWh. This figure covers degradation and round-trip loss only — charging energy cost is NOT included here (would double-count against whatever source charges the battery). Tags both source parameters PROPOSED_HERE per §7; get explicit sign-off before Phase 3 wires BudgetGate. PSP-6 resolved 2026-08-13.",
+      "spec_ref": "GS-IMPL-PSP-002 §7 / PSP-6 (resolved 2026-08-13)",
       "ui": {
         "control": "readonly",
         "group": "economic_dispatch"
       },
-      "psp_status": "UNAVAILABLE_RAISES",
-      "blocking_open_item": "PSP-6",
-      "note": "PSP-6 highest-priority open item. Must be resolved (methodology decided, value sourced) before BESS participates in EconomicDispatchLoop merit-order ranking."
+      "note": "Method A: (battery_capex_per_mwh / cycle_life_cycles) + round_trip_loss. Sourced from Lazard LCOS v10.0 and Ember Oct 2025 public references. Requires explicit sign-off before BudgetGate wiring (Phase 3). PSP-6 resolved."
+    },
+    {
+      "key": "battery_capex_per_mwh",
+      "value": 125000.0,
+      "unit": "USD/MWh",
+      "label": "BESS all-in capital cost per MWh of usable capacity",
+      "provenance": "PROPOSED_HERE",
+      "provenance_detail": "PROPOSED_HERE — $125,000/MWh = $125/kWh. Source: Ember Energy Oct 2025 assessment of degradation/capex-driven BESS cost, utility-scale LFP (lithium iron phosphate) four-hour duration systems. This is an all-in project capex figure including balance-of-plant, EPC, and interconnection but excluding charging energy cost. Lazard LCOS v10.0 (2025) gives $115–$254/MWh unsubsidized for 100MW/4-hour systems (that figure bundles charging energy cost; using Ember's capex-only basis to avoid double-counting). Replace with the actual signed equipment/EPC contract before production deployment. Used in bess_marginal_cost_mwh via Method A formula. PSP-6 resolved 2026-08-13.",
+      "spec_ref": "GS-IMPL-PSP-002 §7 / PSP-6 (resolved 2026-08-13)",
+      "ui": {
+        "control": "readonly",
+        "group": "economic_dispatch"
+      },
+      "note": "All-in capex per MWh of usable storage capacity. Source: Ember Oct 2025 ($125/kWh LFP). Used in bess_marginal_cost_mwh = capex/cycles + loss. PSP-6 resolved."
+    },
+    {
+      "key": "cycle_life_cycles",
+      "value": 5000,
+      "unit": "cycles",
+      "label": "BESS useful cycle life (LFP conservative estimate)",
+      "provenance": "PROPOSED_HERE",
+      "provenance_detail": "PROPOSED_HERE — 5,000 full discharge cycles. Source: conservative LFP (lithium iron phosphate) cycle-life figure from Ember Oct 2025 assessment and NREL battery storage reference data. LFP chemistry typically delivers 4,000–6,000 cycles at 80% depth of discharge to 80% retained capacity; 5,000 is a mid-range conservative figure. NMC chemistry would be ~1,500–3,000 cycles (higher capex amortisation). Replace with the specific cell chemistry and warranted cycle count from the battery vendor before production deployment. Used in bess_marginal_cost_mwh via Method A formula. PSP-6 resolved 2026-08-13.",
+      "spec_ref": "GS-IMPL-PSP-002 §7 / PSP-6 (resolved 2026-08-13)",
+      "ui": {
+        "control": "readonly",
+        "group": "economic_dispatch"
+      },
+      "note": "Conservative LFP cycle life. Used in bess_marginal_cost_mwh = capex/cycles + loss. PSP-6 resolved."
+    },
+    {
+      "key": "pge_voltage_class",
+      "value": "secondary",
+      "unit": "",
+      "label": "PG&E B-20 voltage service class (secondary / primary / transmission)",
+      "provenance": "PROPOSED_HERE",
+      "provenance_detail": "PROPOSED_HERE — 'secondary' is the B-20 default and is correct for behind-the-meter systems served at distribution voltage (typically <1kV). A 5–50MW data-centre site may qualify for primary voltage service (1–50kV) or transmission service (>50kV), where B-20 demand charges and energy rates differ materially (transmission demand winter peak: $2.97/kW vs. secondary $2.32/kW). This is a per-deployment parameter — supply the correct voltage class from the signed utility service agreement before production use. Voltage class does not affect energy rates in the current TOU implementation (energy rates are identical across secondary/primary/transmission on Cal. PUC 61081-E), but affects demand charge calculation (out of scope for Phase 1–5). Raised as a design-time gap by Phase 0 review, 2026-08-13.",
+      "spec_ref": "GS-IMPL-PSP-002 §7 / PG&E B-20 / Cal. PUC Sheet 61081-E (eff. 2026-03-01)",
+      "ui": {
+        "control": "readonly",
+        "group": "economic_dispatch"
+      },
+      "note": "Per-deployment. Energy rates on Cal. PUC 61081-E are class-independent for TOU energy component; demand charges are class-dependent and out of scope for Phase 1–5. Set to actual service class from utility agreement before design-partner use."
     }
   ],
   "excluded": [
