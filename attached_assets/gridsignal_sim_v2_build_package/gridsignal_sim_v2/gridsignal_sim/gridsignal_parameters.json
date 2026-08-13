@@ -1155,6 +1155,140 @@
         "group": "balance"
       },
       "reason": "DR-BAL-2 closed — calibrated from I2a over NAR-001_residuals.jsonl (880 ticks)."
+    },
+    {
+      "key": "pge_tou_summer_peak_mwh",
+      "value": 117.58,
+      "unit": "USD/MWh",
+      "label": "PG&E B-20 summer peak TOU rate",
+      "provenance": "PROPOSED_HERE",
+      "provenance_detail": "PG&E Schedule B-20 (Large Commercial & Industrial), Rate Case A.23-09-016, effective 1 Jan 2024. Summer peak period: Mon–Fri 12:00–18:00, Jun 1–Sep 30. Applies to energy component only; demand charges excluded. Rate: ~$117.58/MWh (approx from published tariff sheets; confirm before production use). Source: pge.com/tariffs/assets/pdf/tariffbook/ELEC_SCHEDS_B-20.pdf. Dated 2024-01. PSP-002 §7.",
+      "spec_ref": "GS-IMPL-PSP-002 §7 / PG&E B-20",
+      "ui": {
+        "control": "readonly",
+        "group": "economic_dispatch"
+      },
+      "note": "Supply period boundary: 12:00–17:59 local time, summer weekdays. PSP-002 §3.2 uses hour_of_day 12–17 for peak classification."
+    },
+    {
+      "key": "pge_tou_summer_partial_peak_mwh",
+      "value": 74.90,
+      "unit": "USD/MWh",
+      "label": "PG&E B-20 summer partial-peak TOU rate",
+      "provenance": "PROPOSED_HERE",
+      "provenance_detail": "PG&E Schedule B-20 partial-peak period: Mon–Fri 08:30–12:00 and 18:00–21:30, Jun 1–Sep 30. Rate: ~$74.90/MWh (approx). Same source as pge_tou_summer_peak_mwh. Confirm against current tariff before production use.",
+      "spec_ref": "GS-IMPL-PSP-002 §7 / PG&E B-20",
+      "ui": {
+        "control": "readonly",
+        "group": "economic_dispatch"
+      },
+      "note": "EconomicDispatchLoop maps hour_of_day 8–11 and 18–20 to this rate in summer season."
+    },
+    {
+      "key": "pge_tou_summer_off_peak_mwh",
+      "value": 41.08,
+      "unit": "USD/MWh",
+      "label": "PG&E B-20 summer off-peak TOU rate",
+      "provenance": "PROPOSED_HERE",
+      "provenance_detail": "PG&E Schedule B-20 off-peak: all hours and days not classified as peak or partial-peak in summer. Rate: ~$41.08/MWh (approx). Same source. Confirm against current tariff.",
+      "spec_ref": "GS-IMPL-PSP-002 §7 / PG&E B-20",
+      "ui": {
+        "control": "readonly",
+        "group": "economic_dispatch"
+      },
+      "note": "Includes all weekend hours, nights, and early mornings Jun 1–Sep 30."
+    },
+    {
+      "key": "pge_tou_winter_peak_mwh",
+      "value": null,
+      "unit": "USD/MWh",
+      "label": "PG&E B-20 winter peak TOU rate",
+      "provenance": "PROPOSED_HERE",
+      "provenance_detail": "PSP-5 BLOCKING — winter TOU rates not yet catalogued. Value is null intentionally. Accessing this entry raises ParameterUnavailable. Supply the real PG&E B-20 winter tariff rates (Oct 1–May 31 schedule) before any winter-season economic dispatch calculation. Do not approximate from summer rates (GS-IMPL-PSP-002 Phase 0 constraint).",
+      "spec_ref": "GS-IMPL-PSP-002 §7 / PSP-5 (blocking)",
+      "ui": {
+        "control": "readonly",
+        "group": "economic_dispatch"
+      },
+      "psp_status": "UNAVAILABLE_RAISES",
+      "blocking_open_item": "PSP-5",
+      "note": "PSP-5 blocking open item. Must be resolved before any design-partner-facing use with winter dates."
+    },
+    {
+      "key": "pge_tou_winter_partial_peak_mwh",
+      "value": null,
+      "unit": "USD/MWh",
+      "label": "PG&E B-20 winter partial-peak TOU rate",
+      "provenance": "PROPOSED_HERE",
+      "provenance_detail": "PSP-5 BLOCKING — winter TOU rates not yet catalogued. Same constraints as pge_tou_winter_peak_mwh.",
+      "spec_ref": "GS-IMPL-PSP-002 §7 / PSP-5 (blocking)",
+      "ui": {
+        "control": "readonly",
+        "group": "economic_dispatch"
+      },
+      "psp_status": "UNAVAILABLE_RAISES",
+      "blocking_open_item": "PSP-5",
+      "note": "PSP-5 blocking open item."
+    },
+    {
+      "key": "pge_tou_winter_off_peak_mwh",
+      "value": null,
+      "unit": "USD/MWh",
+      "label": "PG&E B-20 winter off-peak TOU rate",
+      "provenance": "PROPOSED_HERE",
+      "provenance_detail": "PSP-5 BLOCKING — winter TOU rates not yet catalogued. Same constraints as pge_tou_winter_peak_mwh.",
+      "spec_ref": "GS-IMPL-PSP-002 §7 / PSP-5 (blocking)",
+      "ui": {
+        "control": "readonly",
+        "group": "economic_dispatch"
+      },
+      "psp_status": "UNAVAILABLE_RAISES",
+      "blocking_open_item": "PSP-5",
+      "note": "PSP-5 blocking open item."
+    },
+    {
+      "key": "fuel_cell_ppa_rate_mwh",
+      "value": 65.0,
+      "unit": "USD/MWh",
+      "label": "Fuel cell PPA rate",
+      "provenance": "PROPOSED_HERE",
+      "provenance_detail": "ESTIMATE — $65/MWh is representative of a molten-carbonate or SOFC fuel cell PPA in the 2023–2025 US commercial market (range ~$55–85/MWh depending on fuel type, stack size, and contract term). No measured basis. Replace with the actual signed PPA rate before production deployment. PSP-002 §7.",
+      "spec_ref": "GS-IMPL-PSP-002 §7",
+      "ui": {
+        "control": "readonly",
+        "group": "economic_dispatch"
+      },
+      "note": "Per-deployment parameter. Source: the signed fuel cell PPA contract, not a GridSignal-derived figure. Must be updated to reflect actual contract before design-partner-facing use."
+    },
+    {
+      "key": "solar_ppa_rate_mwh",
+      "value": 28.0,
+      "unit": "USD/MWh",
+      "label": "Solar PPA rate",
+      "provenance": "PROPOSED_HERE",
+      "provenance_detail": "ESTIMATE — $28/MWh is representative of a utility-scale or commercial on-site solar PPA in the 2023–2025 US market (SEIA/Wood Mackenzie Q3 2024 median: $26–32/MWh for commercial behind-the-meter systems). No measured basis. Replace with the actual signed PPA rate before production deployment. PSP-002 §7.",
+      "spec_ref": "GS-IMPL-PSP-002 §7",
+      "ui": {
+        "control": "readonly",
+        "group": "economic_dispatch"
+      },
+      "note": "Per-deployment parameter. Source: the signed solar PPA contract. Solar is non-dispatchable and excluded from PowerRanker.rank() regardless of this price — this value is used for cost accounting only."
+    },
+    {
+      "key": "bess_marginal_cost_mwh",
+      "value": null,
+      "unit": "USD/MWh",
+      "label": "BESS marginal dispatch cost",
+      "provenance": "PROPOSED_HERE",
+      "provenance_detail": "PSP-6 BLOCKING — BESS has no defined marginal cost basis anywhere in the spec. Unlike grid, fuel cell, or solar prices, there is no external market reference to validate a wrong number against. The methodology (cycle amortisation? round-trip loss cost? opportunity cost?) is an open product decision. Accessing this entry raises ParameterUnavailable. Do not add a hardcoded fallback.",
+      "spec_ref": "GS-IMPL-PSP-002 §7 / PSP-6 (blocking)",
+      "ui": {
+        "control": "readonly",
+        "group": "economic_dispatch"
+      },
+      "psp_status": "UNAVAILABLE_RAISES",
+      "blocking_open_item": "PSP-6",
+      "note": "PSP-6 highest-priority open item. Must be resolved (methodology decided, value sourced) before BESS participates in EconomicDispatchLoop merit-order ranking."
     }
   ],
   "excluded": [

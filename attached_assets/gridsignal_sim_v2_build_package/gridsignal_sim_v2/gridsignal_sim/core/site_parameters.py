@@ -46,6 +46,19 @@ class ParameterNotCatalogued(KeyError):
     """
 
 
+class ParameterUnavailable(ValueError):
+    """Raised when a catalogued key is explicitly marked as unavailable.
+
+    This is distinct from ParameterNotCatalogued (key absent entirely).
+    A ParameterUnavailable key exists in the catalogue with a documented
+    open item that must be resolved before the value can be used.
+
+    GS-IMPL-PSP-002 §7: BESS marginal cost (PSP-6) and winter TOU rates
+    (PSP-5) are the canonical examples.  Do not add a hardcoded fallback
+    when this exception fires — that is the defect class it exists to prevent.
+    """
+
+
 class ConformanceWriteError(TypeError):
     """Raised when application code attempts to overwrite a CONFORMANCE entry.
 
@@ -76,6 +89,9 @@ class CatalogueEntry:
     ui: Dict[str, Any]
     options: Optional[List[Any]]        # enumerated entries only
     reason: Optional[str]               # locked entries: why read-only
+    # PSP-002 extension — unavailable stubs (PSP-5, PSP-6)
+    psp_status: Optional[str] = None            # "UNAVAILABLE_RAISES" or None
+    blocking_open_item: Optional[str] = None    # e.g. "PSP-5", "PSP-6"
 
     # ── Derived properties ─────────────────────────────────────────────────
 
@@ -154,6 +170,8 @@ def _parse_raw_entry(raw: Dict[str, Any], section: str) -> CatalogueEntry:
         ui=raw.get("ui", {}),
         options=raw.get("options"),
         reason=raw.get("reason"),
+        psp_status=raw.get("psp_status"),
+        blocking_open_item=raw.get("blocking_open_item"),
     )
 
 
@@ -199,8 +217,25 @@ def value(key: str) -> Any:
 
     Shorthand for get(key).default.
     Raises ParameterNotCatalogued if the key is not in the catalogue.
+    Raises ParameterUnavailable if the entry is a PSP stub (psp_status ==
+    "UNAVAILABLE_RAISES") — meaning it is catalogued but intentionally has no
+    value yet because a blocking open item (e.g. PSP-5, PSP-6) must be
+    resolved first.  Do NOT add a hardcoded fallback at the call site when
+    this is raised — that is the defect class ParameterUnavailable exists to
+    prevent (GS-IMPL-PSP-002 §7).
     """
-    return get(key).default
+    entry = get(key)
+    if entry.psp_status == "UNAVAILABLE_RAISES":
+        raise ParameterUnavailable(
+            f"Parameter {key!r} is catalogued but has no usable value: "
+            f"blocking open item {entry.blocking_open_item!r} must be resolved "
+            f"before this parameter can be accessed. "
+            f"See gridsignal_parameters.json for details and provenance_detail "
+            f"for the resolution path. "
+            f"Do NOT add a hardcoded fallback — supply the real value via the "
+            f"parameter catalogue."
+        )
+    return entry.default
 
 
 def all_entries() -> Dict[str, CatalogueEntry]:
