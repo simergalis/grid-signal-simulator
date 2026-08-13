@@ -132,7 +132,12 @@
   "band_mult_unmapped_hw": 1.5,
   "pre_staging_config": null,
   "pms_config": null,
-  "procurement_config": null,
+  "procurement_config": {
+    "firm_available_mw": 50.0,
+    "reserved_available_mw": 10.0,
+    "non_firm_available_mw": 5.0,
+    "price_curve_seed": 42
+  },
   "maintenance_config": null,
   "ramp_relaxation_config": null,
   "kube_config": null,
