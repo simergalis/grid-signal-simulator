@@ -17,11 +17,27 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useScenarioStore } from '../store/scenarioStore'
-import type { ScenarioSpec } from '../types'
+import type { ScenarioSpec, TurbineUnitSpec, BessUnitSpec } from '../types'
 
 // Pull setSelectedSpec outside render so handleSave can call it without
 // adding it to hook dependency lists.
 const getSetSelectedSpec = () => useScenarioStore.getState().setSelectedSpec
+
+// ── Fallback unit specs ────────────────────────────────────────────────────────
+// Used when enabling a source that was never configured in the spec, or whose
+// units were stripped by a prior save.  Values match the demo-20mw baseline.
+
+const FALLBACK_TURBINE_UNITS: TurbineUnitSpec[] = [
+  {
+    asset_id: 'gt-1', rated_mw: 10.0, r_asset_mw_per_s: 1.0,
+    gt_mode: 'frame', hot_standby: false, breaker_closed: true,
+    no_load_mw: 0.0, msl_mw: 2.8, sync_relay_state: 'permissive',
+  },
+]
+const FALLBACK_BESS_UNITS: BessUnitSpec[] = [
+  { asset_id: 'bess-1', rated_mw: 5.0, usable_mwh: 2.5, initial_soc_fraction: 1.0, grid_forming: false },
+]
+const FALLBACK_SOLAR_MW = 1.0
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -89,6 +105,13 @@ export function PowerSupplySourcesModal({ onClose }: PowerSupplySourcesModalProp
   // Original spec values — used to restore when a source is re-enabled
   const origSpec = useRef<ScenarioSpec | null>(null)
 
+  // Last known non-empty unit arrays / non-zero solar MW.
+  // Pre-seeded with fallback defaults so toggling ON always has something to restore,
+  // even when the scenario was never configured with that source type.
+  const savedTurbineUnits = useRef<TurbineUnitSpec[]>(FALLBACK_TURBINE_UNITS)
+  const savedBessUnits    = useRef<BessUnitSpec[]>(FALLBACK_BESS_UNITS)
+  const savedSolarMW      = useRef<number>(FALLBACK_SOLAR_MW)
+
   const [loading, setSaving_] = useState(true)
   const [saving,  setSaving]  = useState(false)
   const [saved,   setSaved]   = useState(false)
@@ -110,6 +133,10 @@ export function PowerSupplySourcesModal({ onClose }: PowerSupplySourcesModalProp
         const spec = data?.spec
         if (spec) {
           origSpec.current = spec
+          // Update last-known-good refs whenever the spec has real units/values.
+          if (spec.turbine_units?.length)  savedTurbineUnits.current = spec.turbine_units
+          if (spec.bess_units?.length)     savedBessUnits.current    = spec.bess_units
+          if ((spec.solar_rated_mw ?? 0) > 0) savedSolarMW.current  = spec.solar_rated_mw!
           setSources({
             bess:     (spec.bess_units?.length ?? 0) > 0,
             turbine:  (spec.turbine_units?.length ?? 0) > 0,
@@ -151,11 +178,20 @@ export function PowerSupplySourcesModal({ onClose }: PowerSupplySourcesModalProp
     setSaving(true); setError(null)
     const orig = origSpec.current
 
-    // Build patch fields from toggle states
+    // Build patch fields from toggle states.
+    // When re-enabling a source whose units were previously stripped (empty array),
+    // fall back to the last known non-empty units saved in the refs, or to the
+    // module-level fallback defaults when the spec never had that source type.
     const patch: Partial<ScenarioSpec> = {
-      bess_units:       sources.bess     ? (orig.bess_units    ?? []) : [],
-      turbine_units:    sources.turbine  ? (orig.turbine_units ?? []) : [],
-      solar_rated_mw:   sources.solar    ? (orig.solar_rated_mw ?? 0)  : 0,
+      turbine_units:    sources.turbine
+        ? (orig.turbine_units?.length ? orig.turbine_units : savedTurbineUnits.current)
+        : [],
+      bess_units:       sources.bess
+        ? (orig.bess_units?.length    ? orig.bess_units    : savedBessUnits.current)
+        : [],
+      solar_rated_mw:   sources.solar
+        ? ((orig.solar_rated_mw ?? 0) > 0 ? orig.solar_rated_mw : savedSolarMW.current)
+        : 0,
       fuel_cell_enabled: sources.fuelCell,
       island_mode:       !sources.grid,
     }
