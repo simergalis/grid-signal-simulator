@@ -265,7 +265,14 @@ function LeadTimeCallout({
   const appendGccEvent   = useTickStore(s => s.appendGccEvent)
   const triggerGccFlash  = useTickStore(s => s.triggerGccFlash)
   const selectedId       = useScenarioStore(s => s.selectedId)
+  const selectedSpec     = useScenarioStore(s => s.selectedSpec)
   const applyBessPreset  = useBessConfigStore(s => s.applyPreset)
+
+  // True when the active scenario includes at least one turbine generator.
+  // When false the "turbine committed" message is replaced with a BESS/grid
+  // bridging message so operators don't see turbine language for a scenario
+  // that explicitly has no turbines (e.g. Grid + Fuel Cell + BESS only).
+  const hasTurbines = (selectedSpec?.turbine_units?.length ?? 0) > 0
 
   // ── Landing-state tracking ─────────────────────────────────────────────────
   // When Δt_lead transitions from > 0 to 0, show STEP-LOAD LANDED for 30 s.
@@ -563,9 +570,13 @@ function LeadTimeCallout({
     prevCommitActionRef.current = action
   }, [tick])
 
-  // ── Gas turbine start detection ───────────────────────────────────────────
-  // Rising edge of isRunning → step-load countdown just began → log the GCC
-  // dispatch outcome (ramp credit vs forecast step-load size).
+  // ── Step-load countdown detection ────────────────────────────────────────
+  // Rising edge of dt_lead_next_s > 0 → a new GPU job ramp just began.
+  // In scenarios WITH turbines: the turbine commitment language is correct —
+  //   the dispatcher also starts a turbine to cover the incoming load step.
+  // In scenarios WITHOUT turbines (e.g. Grid + Fuel Cell + BESS only): the
+  //   countdown is for the GPU ramp window only; the BESS or grid bridges the
+  //   step-load gap. "Turbine committed" would be incorrect and confusing.
   useEffect(() => {
     if (!tick) return
     const nowRunning = tick.dt_lead_next_s > 0
@@ -573,16 +584,23 @@ function LeadTimeCallout({
       const ts         = `t=${Math.round(tick.sim_time_seconds)}s`
       const forecast   = tick.confidence_upper_mw
       const rampCredit = tick.turbine_ramp_credit_mw
-      const body = rampCredit > 0.1
-        ? `GCC dispatch: ramp credit +${rampCredit.toFixed(1)} MW`
-          + ` of +${forecast.toFixed(1)} MW forecast step-load.`
-        : `GCC dispatch: turbine committed — step-load +${forecast.toFixed(1)} MW incoming.`
+      let body: string
+      if (hasTurbines) {
+        // Turbine scenario: distinguish ramp-credit path from full-commitment path.
+        body = rampCredit > 0.1
+          ? `GCC dispatch: ramp credit +${rampCredit.toFixed(1)} MW`
+            + ` of +${forecast.toFixed(1)} MW forecast step-load.`
+          : `GCC dispatch: turbine committed — step-load +${forecast.toFixed(1)} MW incoming.`
+      } else {
+        // No turbines: BESS / grid covers the step-load — no turbine language.
+        body = `GCC dispatch: step-load +${forecast.toFixed(1)} MW incoming — BESS bridging.`
+      }
       setAtRestLog(prev => [...prev, { ts, body }])
       appendGccEvent({ ts, body })
       triggerGccFlash()
     }
     prevIsRunningRef.current = nowRunning
-  }, [tick])
+  }, [tick, hasTurbines])
 
   // ── BESS discharge / charge / standby detection ───────────────────────────
   // Emits a feed entry whenever the BESS transitions between standby, discharge,
