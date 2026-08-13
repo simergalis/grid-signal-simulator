@@ -1115,25 +1115,6 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
                 </select>
               </label>
 
-              {/* Island mode radio */}
-              <RadioGroup
-                label="Operating mode"
-                value={spec.island_mode ? 'island' : 'grid'}
-                options={[
-                  {
-                    value: 'island',
-                    label: 'Island',
-                    consequence: 'No grid backup. §7.1.2 anchor reserve active; BESS must bridge any deficit.',
-                  },
-                  {
-                    value: 'grid',
-                    label: 'Grid-connected',
-                    consequence: 'Grid provides backup; anchor reserve constraint is relaxed.',
-                  },
-                ]}
-                onChange={v => patch({ island_mode: v === 'island' })}
-              />
-
               {/* Physics Parameters button */}
               <div className="rounded border border-border/60 px-3 py-2 space-y-1">
                 <div className="flex items-center justify-between">
