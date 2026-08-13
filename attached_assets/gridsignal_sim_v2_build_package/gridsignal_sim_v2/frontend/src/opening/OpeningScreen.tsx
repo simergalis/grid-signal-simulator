@@ -25,7 +25,8 @@ import { PlantDiagram }     from './PlantDiagram'
 import type { SolarPreview } from './PlantNode'
 import { SubsystemModal }       from '../subsystem/SubsystemModal'
 import { ComputeRacksModal }    from './ComputeRacksModal'
-import { GridConnectionModal }  from './GridConnectionModal'
+import { GridConnectionModal }       from './GridConnectionModal'
+import { PowerSupplySourcesModal }   from './PowerSupplySourcesModal'
 import { SubsystemTile }    from '../readiness/SubsystemTile'
 import type { TileState }   from '../readiness/SubsystemTile'
 import { ReadinessScreen }  from '../readiness/ReadinessScreen'
@@ -55,6 +56,7 @@ export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
   const [activeModal,        setActiveModal]        = useState<string | null>(null)
   const [computeRacksOpen,   setComputeRacksOpen]   = useState(false)
   const [gridConnOpen,       setGridConnOpen]        = useState(false)
+  const [powerSupplyOpen,    setPowerSupplyOpen]     = useState(false)
   const [compact,       setCompact]       = useState(false)
   const [solarPreview,  setSolarPreview]  = useState<SolarPreview | null>(null)
   const [liveSolarMW,   setLiveSolarMW]   = useState<number | null>(null)
@@ -157,7 +159,13 @@ export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
         </div>
 
         <div className="w-full h-full pt-6">
-          <PlantDiagram onNodeClick={handleNodeClick} compact={compact} solarPreview={solarPreview} liveSolarMW={liveSolarMW} />
+          <PlantDiagram
+            onNodeClick={handleNodeClick}
+            compact={compact}
+            solarPreview={solarPreview}
+            liveSolarMW={liveSolarMW}
+            onSelectPowerSupply={() => setPowerSupplyOpen(true)}
+          />
         </div>
       </div>
 
@@ -191,6 +199,12 @@ export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
         <GridConnectionModal
           tick={tick}
           onClose={() => setGridConnOpen(false)}
+        />
+      )}
+
+      {powerSupplyOpen && (
+        <PowerSupplySourcesModal
+          onClose={() => setPowerSupplyOpen(false)}
         />
       )}
 

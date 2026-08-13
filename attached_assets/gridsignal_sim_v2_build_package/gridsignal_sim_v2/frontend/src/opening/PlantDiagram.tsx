@@ -37,6 +37,12 @@ interface PlantDiagramProps {
    * with the Renewable Supply modal regardless of WebSocket tick age.
    */
   liveSolarMW?: number | null
+  /**
+   * When provided, renders a cyan selection outline around all power-supply
+   * source nodes and a "Select Power Supply" tag at the bottom-left corner.
+   * Clicking the tag calls this handler to open the modal.
+   */
+  onSelectPowerSupply?: () => void
 }
 
 function getMwForFlow(
@@ -924,7 +930,7 @@ function LeadTimeCallout({
   )
 }
 
-export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW }: PlantDiagramProps) {
+export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, onSelectPowerSupply }: PlantDiagramProps) {
   const tick       = useTickStore(s => s.latestTick)
   const selectedId = useScenarioStore(s => s.selectedId)
 
@@ -941,6 +947,17 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW }
     return () => { cancelled = true }
   }, [selectedId])
 
+  // ── Power supply outline geometry ──────────────────────────────────────────
+  // Surrounds Gas Turbine (y=10), Solar PV (y=110), BESS (y=210),
+  // Grid Connection (y=310+72=382), and optionally Fuel Cell (y=392+72=464).
+  const outlineX = -8
+  const outlineY = 4
+  const outlineW = 171
+  const outlineBottomNoFC = 390  // 6 px below Grid Connection bottom (382)
+  const outlineBottomFC   = 472  // 8 px below Fuel Cell bottom (464)
+  const outlineH = fuelCellEnabled ? outlineBottomFC - outlineY : outlineBottomNoFC - outlineY
+  const tagY     = outlineY + outlineH - 28  // tag sits 28 px above the rect bottom
+
   return (
     <svg
       viewBox={`0 0 ${DIAGRAM_W} ${DIAGRAM_H}`}
@@ -949,6 +966,61 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW }
       aria-label="Plant one-line mimic diagram"
     >
       <FlowMarkers />
+
+      {/* ── Power supply selection outline ─────────────────────────────── */}
+      {onSelectPowerSupply && (
+        <>
+          {/* Outline rect */}
+          <rect
+            x={outlineX} y={outlineY}
+            width={outlineW} height={outlineH}
+            rx={6} ry={6}
+            fill="none"
+            stroke="rgba(63,182,168,0.55)"
+            strokeWidth={1.5}
+          />
+          {/* Tag fill — hides the rect border behind the button */}
+          <rect
+            x={outlineX + 4} y={tagY - 1}
+            width={148} height={3}
+            fill="#0a0e13"
+          />
+          {/* "Select Power Supply" button tag */}
+          <foreignObject x={outlineX + 4} y={tagY - 1} width={148} height={26}>
+            <div
+              // @ts-expect-error — xmlns required for SVG foreignObject HTML
+              xmlns="http://www.w3.org/1999/xhtml"
+              style={{ width: '100%', height: '100%' }}
+            >
+              <button
+                onClick={onSelectPowerSupply}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 5,
+                  fontFamily: "'JetBrains Mono',ui-monospace,monospace",
+                  fontSize: 9.5, letterSpacing: '0.04em', fontWeight: 600,
+                  color: 'rgba(63,182,168,0.9)',
+                  background: '#0a0e13',
+                  border: '1.5px solid rgba(63,182,168,0.55)',
+                  borderRadius: 4, padding: '4px 9px',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  transition: 'color 0.15s, border-color 0.15s',
+                }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.color = '#3fb6a8'
+                  e.currentTarget.style.borderColor = 'rgba(63,182,168,0.9)'
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.color = 'rgba(63,182,168,0.9)'
+                  e.currentTarget.style.borderColor = 'rgba(63,182,168,0.55)'
+                }}
+              >
+                ⬡ Select Power Supply
+              </button>
+            </div>
+          </foreignObject>
+        </>
+      )}
 
       {/* ── Flow lines (behind nodes) ───────────────────────────────────── */}
       {FLOWS.map(flow => (
