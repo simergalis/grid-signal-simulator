@@ -987,7 +987,7 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, 
   const outlineY = outlineTop
   const outlineW = 171
   const outlineH = outlineBottom - outlineTop
-  const tagY     = outlineY + outlineH - 28  // tag sits 28 px above the rect bottom
+  const tagY     = outlineY + outlineH + 5   // tag sits just below the rect bottom edge
 
   return (
     <svg
@@ -1010,14 +1010,8 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, 
             stroke="rgba(63,182,168,0.55)"
             strokeWidth={1.5}
           />
-          {/* Tag fill — hides the rect border behind the button */}
-          <rect
-            x={outlineX + 4} y={tagY - 1}
-            width={148} height={3}
-            fill="#0a0e13"
-          />
-          {/* "Select Power Supply" button tag */}
-          <foreignObject x={outlineX + 4} y={tagY - 1} width={148} height={26}>
+          {/* "Select Power" button tag — sits just below the outline rect */}
+          <foreignObject x={outlineX + 4} y={tagY} width={148} height={22}>
             <div
               // @ts-expect-error — xmlns required for SVG foreignObject HTML
               xmlns="http://www.w3.org/1999/xhtml"
