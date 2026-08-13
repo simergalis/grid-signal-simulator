@@ -72,9 +72,18 @@ Test: `test_formulas.py::test_d10_demo_20mw_bess_fires_and_tapers`
 Failure: BESS never tapers; `bess_outputs` stays at [5.0, 5.0, ...] because `gen=9.99 MW` throughout (turbine only outputs ~10 MW despite `rated_mw=25`).
 Cause: D4 balance routing issue in `simulation_core.py` — turbine output not correctly attributed in `p_generation_mw`. Zero PSP-002 code is imported or called by this test.
 
-## Phase 2 test results
-- `test_economic_dispatch_loop.py`: 29 passed
+## Post-review corrections (applied before Phase 3)
+
+**Correction A — `season` dropped from step():**
+`season` is fully derivable from `month` (6–9 → summer, 10–5 → winter). Removed from step() signature; derived internally by `_season_from_month(month)`. `_pge_price_for_period(hour_of_day, month)` no longer takes season. Passing `season=` as a keyword now raises TypeError.
+
+**Correction B — BESS repricing scope fixed:**
+BESS catalogue repricing moved from `step()` into `PowerRanker.rank()`. Both the autonomous dispatch path (through step()) and the §4.3 escalation path (direct rank() call on confirm/human_only sources) now see the same catalogue-sourced BESS cost. `step()` reprices grid sources only (TOU is legitimately tick-context-dependent; BESS cost is not). `_bess_marginal_cost()` helper removed from `economic_dispatch_loop.py`.
+
+## Phase 2 test results (after post-review corrections)
+- `test_economic_dispatch_loop.py`: 31 passed (+2 new: season_not_in_step_signature, positional_season_raises)
+- `test_power_source_priority.py`: 22 passed (+5 new: TestBESSCatalogueRepricingInRank)
 - `test_no_forbidden_imports.py`: 6 passed
-- `test_power_source_priority.py`: 17 passed
-- `test_no_hardcoded_parameters.py`: 2 passed (D1, D3 guards)
+- `test_no_hardcoded_parameters.py`: 5 passed
+- Total: 64 passed
 - Pre-existing failure: `test_d10_demo_20mw_bess_fires_and_tapers` (D4 balance routing, unrelated)

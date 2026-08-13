@@ -9,11 +9,13 @@ Tests covered (Phase 2 gate — all three defect corrections)
   TC-C4: cost_this_tick scales with tick_duration_hours.
          Halving the tick duration halves the reported cost for identical allocation.
   TC-C5: TOU pricing is season-correct.
-         Same hour, season="summer" vs season="winter" → different marginal_cost_mwh.
+         Same hour, month=7 (summer) vs month=11 (winter) → different marginal_cost_mwh.
+         Season is derived internally from month — callers do not supply season.
 
 Additional coverage
 -------------------
-  - BESS cost sourced from catalogue (DEFECT-3 / PSP-6).
+  - BESS cost sourced from catalogue in PowerRanker.rank(), not step() (post-review).
+  - `season` parameter absent from step() — passing it raises TypeError.
   - Greedy allocation covers demand when sources are sufficient.
   - Shortfall emitted (not raised) when autonomous sources are exhausted.
   - Solar excluded from allocation (PowerRanker passthrough).
@@ -21,6 +23,8 @@ Additional coverage
   - Winter Super Off-Peak window correctly priced (month 3–5, hours 9–13).
 """
 from __future__ import annotations
+
+import inspect
 
 import pytest
 
@@ -68,16 +72,18 @@ def _step(
     t_s=0.0,
     tick_duration_hours=5.0/3600.0,
     hour_of_day=10,
-    month=7,
-    season="summer",
+    month=7,           # July (summer) — season derived internally from month
 ) -> DispatchResult:
-    """Convenience wrapper with sensible defaults for a summer off-peak tick."""
+    """Convenience wrapper with sensible defaults for a summer off-peak tick.
+
+    Post-review correction A: `season` removed from this helper and from
+    step(). Month=7 → summer, month=11 → winter; no season argument needed.
+    """
     return EconomicDispatchLoop().step(
         t_s,
         tick_duration_hours=tick_duration_hours,
         hour_of_day=hour_of_day,
         month=month,
-        season=season,
         demand_mw=demand_mw,
         sources=sources,
     )
@@ -169,16 +175,11 @@ class TestTC_C4_CostScalesWithTickDuration:
 
     def test_cost_formula_correctness(self) -> None:
         """cost_this_tick = allocated_mw × price_mwh × tick_duration_hours."""
-        price = 177.02  # summer peak
+        price = 65.0
         available_mw = 10.0
         tick_hours = 5.0 / 3600.0  # 5-second tick
 
-        grid = _src("grid-peak",
-                    source_type=PowerSourceType.GRID_FIRM,
-                    marginal_cost_mwh=price,
-                    available_mw=available_mw)
-
-        # Use a manually set price via a fuel_cell source (won't be repriced)
+        # Fuel cell — not repriced by step() (TOU applies only to grid sources).
         fc = _src("fc-1",
                   source_type=PowerSourceType.FUEL_CELL,
                   marginal_cost_mwh=price,
@@ -210,17 +211,16 @@ class TestTC_C4_CostScalesWithTickDuration:
 # ── TC-C5: TOU pricing is season-correct ─────────────────────────────────────
 
 class TestTC_C5_SeasonCorrectPricing:
-    """Same hour, season=summer vs winter → different marginal_cost_mwh.
-    All rates sourced from parameter catalogue — no hardcoded values in tests."""
+    """Same hour, month=7 (summer) vs month=11 (winter) → different marginal_cost_mwh.
+    All rates sourced from parameter catalogue — no hardcoded values in tests.
+    Season is derived internally from month (post-review correction A)."""
 
     def test_summer_vs_winter_peak_hour_different_price(self) -> None:
         """Hour 17 (5pm) is peak in both seasons but at different rates."""
-        fc = _src("fc", source_type=PowerSourceType.FUEL_CELL,
-                  marginal_cost_mwh=200.0, available_mw=5.0)
         grid = _src("grid", source_type=PowerSourceType.GRID_FIRM, available_mw=50.0)
 
-        summer = _step([grid], demand_mw=10.0, hour_of_day=17, month=7, season="summer")
-        winter = _step([grid], demand_mw=10.0, hour_of_day=17, month=11, season="winter")
+        summer = _step([grid], demand_mw=10.0, hour_of_day=17, month=7)
+        winter = _step([grid], demand_mw=10.0, hour_of_day=17, month=11)
 
         assert summer.allocations and winter.allocations
         summer_price = summer.allocations[0].price_mwh
@@ -237,9 +237,9 @@ class TestTC_C5_SeasonCorrectPricing:
         )
 
     def test_summer_peak_matches_catalogue(self) -> None:
-        """Hour 17 in summer → pge_tou_summer_peak_mwh from catalogue."""
+        """Hour 17 in July (summer) → pge_tou_summer_peak_mwh from catalogue."""
         grid = _src("grid", source_type=PowerSourceType.GRID_FIRM, available_mw=50.0)
-        result = _step([grid], demand_mw=10.0, hour_of_day=17, month=7, season="summer")
+        result = _step([grid], demand_mw=10.0, hour_of_day=17, month=7)
 
         expected = _sp.value("pge_tou_summer_peak_mwh")
         actual = result.allocations[0].price_mwh
@@ -248,36 +248,36 @@ class TestTC_C5_SeasonCorrectPricing:
         )
 
     def test_summer_part_peak_matches_catalogue(self) -> None:
-        """Hour 14 (2pm) in summer → pge_tou_summer_part_peak_mwh."""
+        """Hour 14 (2pm) in August (summer) → pge_tou_summer_part_peak_mwh."""
         grid = _src("grid", source_type=PowerSourceType.GRID_FIRM, available_mw=50.0)
-        result = _step([grid], demand_mw=10.0, hour_of_day=14, month=8, season="summer")
+        result = _step([grid], demand_mw=10.0, hour_of_day=14, month=8)
 
         expected = _sp.value("pge_tou_summer_part_peak_mwh")
         actual = result.allocations[0].price_mwh
         assert actual == pytest.approx(expected)
 
     def test_summer_off_peak_matches_catalogue(self) -> None:
-        """Hour 10 in summer → pge_tou_summer_off_peak_mwh."""
+        """Hour 10 in July (summer) → pge_tou_summer_off_peak_mwh."""
         grid = _src("grid", source_type=PowerSourceType.GRID_FIRM, available_mw=50.0)
-        result = _step([grid], demand_mw=10.0, hour_of_day=10, month=7, season="summer")
+        result = _step([grid], demand_mw=10.0, hour_of_day=10, month=7)
 
         expected = _sp.value("pge_tou_summer_off_peak_mwh")
         actual = result.allocations[0].price_mwh
         assert actual == pytest.approx(expected)
 
     def test_winter_peak_matches_catalogue(self) -> None:
-        """Hour 18 (6pm) in winter → pge_tou_winter_peak_mwh."""
+        """Hour 18 (6pm) in November (winter) → pge_tou_winter_peak_mwh."""
         grid = _src("grid", source_type=PowerSourceType.GRID_FIRM, available_mw=50.0)
-        result = _step([grid], demand_mw=10.0, hour_of_day=18, month=11, season="winter")
+        result = _step([grid], demand_mw=10.0, hour_of_day=18, month=11)
 
         expected = _sp.value("pge_tou_winter_peak_mwh")
         actual = result.allocations[0].price_mwh
         assert actual == pytest.approx(expected)
 
     def test_winter_off_peak_matches_catalogue(self) -> None:
-        """Hour 8 in winter → pge_tou_winter_off_peak_mwh."""
+        """Hour 8 in November (winter) → pge_tou_winter_off_peak_mwh."""
         grid = _src("grid", source_type=PowerSourceType.GRID_FIRM, available_mw=50.0)
-        result = _step([grid], demand_mw=10.0, hour_of_day=8, month=11, season="winter")
+        result = _step([grid], demand_mw=10.0, hour_of_day=8, month=11)
 
         expected = _sp.value("pge_tou_winter_off_peak_mwh")
         actual = result.allocations[0].price_mwh
@@ -287,7 +287,7 @@ class TestTC_C5_SeasonCorrectPricing:
         """Month 3 (March), hour 11 → pge_tou_winter_super_off_peak_mwh.
         The cheapest winter rate — requires month to distinguish from off-peak."""
         grid = _src("grid", source_type=PowerSourceType.GRID_FIRM, available_mw=50.0)
-        result = _step([grid], demand_mw=10.0, hour_of_day=11, month=3, season="winter")
+        result = _step([grid], demand_mw=10.0, hour_of_day=11, month=3)
 
         expected = _sp.value("pge_tou_winter_super_off_peak_mwh")
         actual = result.allocations[0].price_mwh
@@ -296,12 +296,12 @@ class TestTC_C5_SeasonCorrectPricing:
         )
 
     def test_super_off_peak_only_in_march_april_may(self) -> None:
-        """Month 6 (June), same hour 11 — this is summer off-peak, not super off-peak.
+        """Month 6 (June), same hour 11 — summer off-peak, not super off-peak.
         Super Off-Peak is winter-only (months 3–5) even though the hour matches."""
         grid = _src("grid", source_type=PowerSourceType.GRID_FIRM, available_mw=50.0)
 
-        super_off = _step([grid], demand_mw=10.0, hour_of_day=11, month=3, season="winter")
-        summer_off = _step([grid], demand_mw=10.0, hour_of_day=11, month=6, season="summer")
+        super_off = _step([grid], demand_mw=10.0, hour_of_day=11, month=3)
+        summer_off = _step([grid], demand_mw=10.0, hour_of_day=11, month=6)
 
         super_off_rate = _sp.value("pge_tou_winter_super_off_peak_mwh")
         summer_off_rate = _sp.value("pge_tou_summer_off_peak_mwh")
@@ -316,7 +316,7 @@ class TestTC_C5_SeasonCorrectPricing:
         """Month 1 (January), hour 11 — winter off-peak, NOT super off-peak.
         Super Off-Peak only applies in March, April, May."""
         grid = _src("grid", source_type=PowerSourceType.GRID_FIRM, available_mw=50.0)
-        result = _step([grid], demand_mw=10.0, hour_of_day=11, month=1, season="winter")
+        result = _step([grid], demand_mw=10.0, hour_of_day=11, month=1)
 
         expected_off = _sp.value("pge_tou_winter_off_peak_mwh")
         actual = result.allocations[0].price_mwh
@@ -325,24 +325,51 @@ class TestTC_C5_SeasonCorrectPricing:
         )
 
     def test_cost_basis_note_reflects_season_and_hour(self) -> None:
-        """cost_basis_note in the allocation should identify the pricing period."""
+        """Prices differ between summer and winter peak — note logic exercised indirectly."""
         grid = _src("grid", source_type=PowerSourceType.GRID_FIRM, available_mw=50.0)
 
-        summer_result = _step([grid], demand_mw=10.0, hour_of_day=17,
-                               month=7, season="summer")
-        winter_result = _step([grid], demand_mw=10.0, hour_of_day=17,
-                               month=11, season="winter")
+        summer_result = _step([grid], demand_mw=10.0, hour_of_day=17, month=7)
+        winter_result = _step([grid], demand_mw=10.0, hour_of_day=17, month=11)
 
-        assert "summer" in summer_result.allocations[0].price_mwh.__class__.__name__ \
-               or summer_result.allocations  # allocation exists
-        # The note is on the PowerSource passed to PowerRanker; we check the price
-        # is the correct season's value (already covered above).
+        assert summer_result.allocations, "Summer should have an allocation"
+        assert winter_result.allocations, "Winter should have an allocation"
+        # Prices differ → period classification is working
+        assert (summer_result.allocations[0].price_mwh
+                != winter_result.allocations[0].price_mwh)
+
+    def test_season_not_in_step_signature(self) -> None:
+        """Post-review correction A: `season` must not appear in step() parameters.
+        Callers that still pass season= get TypeError immediately."""
+        sig = inspect.signature(EconomicDispatchLoop.step)
+        assert "season" not in sig.parameters, (
+            "step() must not accept `season` as a parameter (post-review correction A). "
+            "Season is derived internally from month via _season_from_month()."
+        )
+
+    def test_positional_season_raises_type_error(self) -> None:
+        """Passing season= as a keyword now raises TypeError (not in signature)."""
+        grid = _src("grid", source_type=PowerSourceType.GRID_FIRM, available_mw=50.0)
+        loop = EconomicDispatchLoop()
+        with pytest.raises(TypeError):
+            loop.step(
+                0.0,
+                tick_duration_hours=5.0/3600.0,
+                hour_of_day=17,
+                month=7,
+                season="summer",   # must raise — removed from signature
+                demand_mw=10.0,
+                sources=[grid],
+            )  # type: ignore[call-arg]
 
 
-# ── PSP-6: BESS cost from catalogue ──────────────────────────────────────────
+# ── PSP-6: BESS cost from catalogue — via PowerRanker.rank() ─────────────────
 
 class TestBESSCostFromCatalogue:
-    """BESS marginal cost must come from the catalogue, not caller-supplied value."""
+    """BESS marginal cost must come from PowerRanker.rank() (catalogue), not caller.
+
+    Post-review correction: BESS repricing moved from step() to rank() so both
+    the autonomous dispatch path (via step()) and the §4.3 escalation path
+    (which calls rank() directly) see the same catalogue-sourced cost."""
 
     def test_bess_repriced_to_catalogue_value(self) -> None:
         """BESS source's original marginal_cost_mwh is overwritten by the catalogue."""
@@ -366,8 +393,7 @@ class TestBESSCostFromCatalogue:
         bess = _src("bess-1", source_type=PowerSourceType.BESS, available_mw=5.0)
         grid = _src("grid-1", source_type=PowerSourceType.GRID_FIRM, available_mw=50.0)
 
-        result = _step([bess, grid], demand_mw=3.0, hour_of_day=17,
-                       month=7, season="summer")
+        result = _step([bess, grid], demand_mw=3.0, hour_of_day=17, month=7)
 
         assert result.allocations
         first = result.allocations[0]
@@ -381,8 +407,7 @@ class TestBESSCostFromCatalogue:
         fc = _src("fc-1", source_type=PowerSourceType.FUEL_CELL,
                   marginal_cost_mwh=65.0, available_mw=50.0)
 
-        result = _step([fc, bess], demand_mw=3.0, hour_of_day=10,
-                       month=7, season="summer")
+        result = _step([fc, bess], demand_mw=3.0, hour_of_day=10, month=7)
 
         assert result.allocations[0].source_id == "bess-1"
 
@@ -411,7 +436,6 @@ class TestKeywordOnlyEnforcement:
             tick_duration_hours=5.0/3600.0,
             hour_of_day=10,
             month=7,
-            season="summer",
             demand_mw=5.0,
             sources=[grid],
         )
@@ -430,7 +454,7 @@ class TestGreedyAllocationAndShortfall:
                          marginal_cost_mwh=177.02, available_mw=50.0)
 
         result = _step([mid, expensive, cheap], demand_mw=20.0,
-                       hour_of_day=10, month=7, season="summer")
+                       hour_of_day=10, month=7)
 
         order = [a.source_id for a in result.allocations]
         assert order[0] == "cheap", "Cheapest source (fuel cell $30) allocated first"

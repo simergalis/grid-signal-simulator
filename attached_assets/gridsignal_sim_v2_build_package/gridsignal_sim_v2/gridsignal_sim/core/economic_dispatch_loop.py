@@ -2,8 +2,8 @@
 
 GS-IMPL-PSP-002 §3.2 / §2.3.
 
-Phase 2 corrects two defects that were present in the Phase 1 reference
-implementation and are now resolved:
+Phase 2 corrects three defects from the Phase 1 reference implementation.
+Phase 2 post-review applies two additional corrections before Phase 3:
 
   DEFECT-1 (§2.3.1) — RESOLVED:
     Phase 1 had `total_cost_per_hour` assuming a full hour per tick.
@@ -14,27 +14,33 @@ implementation and are now resolved:
   DEFECT-2 (PSP-5 / §3.2.1) — RESOLVED:
     Phase 1 had `_pge_price_for_hour()` which was summer-only and used
     hardcoded rates from an older tariff.
-    Phase 2:
-      - Sources all rates from the parameter catalogue via site_parameters.value().
-      - Takes `season` and `month` as explicit parameters.
-      - Handles the Winter Super Off-Peak window (Mar–May, hours 9–13) which
-        requires month, not just season, to price correctly.
+    Phase 2: sources all rates from the parameter catalogue; handles the
+    Winter Super Off-Peak window (Mar–May, hours 9–13) requiring month.
 
-  DEFECT-3 (PSP-6 / §7) — RESOLVED:
-    BESS sources now receive their marginal cost from the catalogue
-    (`bess_marginal_cost_mwh`) rather than whatever was on PowerSource at
-    construction time.  This ensures the catalogue's provisional $38/MWh
-    Method-A value is the authoritative cost basis, not a caller-supplied guess.
+  DEFECT-3 (PSP-6 / §7) — RESOLVED in PowerRanker.rank() (not here):
+    BESS catalogue-sourcing belongs in PowerRanker.rank() so both the
+    autonomous dispatch path AND the §4.3 escalation path (which calls
+    rank() directly, bypassing step()) see the same catalogue cost.
+    step() no longer overrides BESS cost — that was the wrong scope.
+
+  POST-REVIEW CORRECTION A — `season` dropped from step() signature:
+    `season` is fully derivable from `month` (6–9 → summer, 10–5 → winter);
+    no month value is ambiguous about season.  Carrying both as independent
+    parameters created a silent-wrong-value risk (month=7, season="winter"
+    would not raise).  `season` is now derived inside `_season_from_month()`
+    from `month`.  This shrinks the signature back toward Phase 1's shape
+    plus only the two new required fields (tick_duration_hours, month).
+
+  POST-REVIEW CORRECTION B — BESS repricing removed from step():
+    step() now reprices grid sources only (TOU is legitimately tick-context-
+    dependent).  BESS repricing is PowerRanker.rank()'s responsibility.
 
 New signature (keyword-only after t_s — §1 / Phase 2 review note)
 ------------------------------------------------------------------
-  step(t_s, *, tick_duration_hours, hour_of_day, month, season, demand_mw, sources)
+  step(t_s, *, tick_duration_hours, hour_of_day, month, demand_mw, sources)
 
-  The bare `*` after `t_s` is intentional: tick_duration_hours (2nd) and month
-  (4th) are inserted into what was a positional argument list.  Any caller
-  supplying arguments positionally will receive a TypeError immediately rather
-  than silently computing wrong costs.  There are currently zero callers to
-  migrate (confirmed by grep at Phase 2 gate).
+  The bare `*` after `t_s` is intentional: any positional caller after t_s
+  receives TypeError immediately.  Zero callers existed at Phase 2 gate.
 
 Import boundary (§1)
 --------------------
@@ -96,40 +102,46 @@ class DispatchResult:
     shortfall: Optional[ShortfallEvent]
 
 
-# ── TOU pricing helper (Phase 2 — season+month-aware, catalogue-sourced) ──────
+# ── TOU pricing helpers (post-review corrections) ─────────────────────────────
 
-def _pge_price_for_period(
-    hour_of_day: int,
-    month: int,
-    season: Literal["summer", "winter"],
-) -> tuple[float, str]:
-    """Return (rate_mwh, cost_basis_note) for the given time period.
+def _season_from_month(month: int) -> Literal["summer", "winter"]:
+    """Derive the PG&E B-20 season from calendar month.
+
+    Summer: Jun 1 – Sep 30  (months 6–9)
+    Winter: Oct 1 – May 31  (months 10–12 and 1–5)
+
+    month is the single authoritative input.  season is presentation-layer,
+    fully derivable — there is no month value that is ambiguous about season.
+    Carrying both as independent parameters would allow silent wrong-value bugs
+    (e.g. month=7, season="winter") without a TypeError.
+    """
+    return "summer" if month in (6, 7, 8, 9) else "winter"
+
+
+def _pge_price_for_period(hour_of_day: int, month: int) -> tuple[float, str]:
+    """Return (rate_mwh, cost_basis_note) for the given hour and month.
 
     All rates read from the parameter catalogue (GS-IMPL-PSP-002 §7).
     No hardcoded fallback — if a catalogue read fails, the exception propagates
-    to the caller, which is the correct behaviour (§7 / ParameterUnavailable).
+    to the caller (§7 / ParameterUnavailable).
 
-    Season boundaries (caller's responsibility, per §3.2.1)
-    -------------------------------------------------------
-      Summer: Jun 1 – Sep 30  (months 6–9)
-      Winter: Oct 1 – May 31  (months 10–12, 1–5)
+    Season derived internally via _season_from_month().  Callers supply only
+    month — post-review correction A removes season from the public API.
 
     Period classification per Cal. P.U.C. Sheet 61081-E (eff. 2026-03-01)
     -----------------------------------------------------------------------
     Summer (months 6–9):
-      Peak       hour_of_day 16–20  ($177.02/MWh)
-      Part-peak  hour_of_day 14–15 and 21–22  ($142.27/MWh)
-      Off-peak   all other summer hours  ($114.82/MWh)
+      Peak         hour_of_day 16–20  ($177.02/MWh)
+      Part-peak    hour_of_day 14–15 and 21–22  ($142.27/MWh)
+      Off-peak     all other summer hours  ($114.82/MWh)
 
     Winter (months 10–12, 1–5):
       Super Off-Peak  months 3–5 AND hour_of_day 9–13  ($58.72/MWh)
       Peak            hour_of_day 16–20  ($156.32/MWh)
       Off-peak        all other winter hours  ($114.60/MWh)
-
-    The Super Off-Peak window requires month, not just season — this is why
-    the Phase 1 `season: Literal["summer","winter"]` signature was insufficient
-    and Phase 2 adds `month: int` explicitly.
     """
+    season = _season_from_month(month)
+
     if season == "summer":
         if hour_of_day in (16, 17, 18, 19, 20):
             rate = _sp.value("pge_tou_summer_peak_mwh")
@@ -154,17 +166,6 @@ def _pge_price_for_period(
     return rate, note
 
 
-def _bess_marginal_cost() -> float:
-    """Return the BESS marginal dispatch cost from the parameter catalogue.
-
-    DEFECT-3 resolution: BESS cost is no longer caller-supplied.  The catalogue
-    entry `bess_marginal_cost_mwh` ($38.00/MWh provisional, Method A) is the
-    authoritative source.  If PSP-6 were still open, this would raise
-    ParameterUnavailable, propagating loudly rather than silently defaulting.
-    """
-    return _sp.value("bess_marginal_cost_mwh")
-
-
 # ── EconomicDispatchLoop ──────────────────────────────────────────────────────
 
 class EconomicDispatchLoop:
@@ -177,24 +178,23 @@ class EconomicDispatchLoop:
 
     Stateless — each step() call is independent.
 
-    Phase 2 changes vs. Phase 1
-    ----------------------------
-    - step() signature: added `tick_duration_hours`, `month`, `season` (keyword-only).
-    - DispatchResult: `total_cost_per_hour` → `cost_this_tick` (correct formula).
-    - Grid pricing: reads from catalogue via `_pge_price_for_period()` (season+month).
-    - BESS pricing: reads from catalogue via `_bess_marginal_cost()`.
+    Post-review changes (applied before Phase 3)
+    ---------------------------------------------
+    - `season` dropped from step() signature; derived internally from `month`.
+    - BESS repricing removed from step(); now in PowerRanker.rank() so both
+      the autonomous dispatch path and the §4.3 escalation path see the same cost.
+    - step() reprices grid sources only (TOU is legitimately tick-context-dependent).
     """
 
     def step(
         self,
         t_s: float,
-        *,                              # all remaining args are keyword-only
-        tick_duration_hours: float,     # NEW (§2.3.1) — duration of this tick in hours
-        hour_of_day: int,               # local hour (0–23) for TOU classification
-        month: int,                     # calendar month (1–12) for Super Off-Peak
-        season: Literal["summer", "winter"],  # NEW (§3.2.1) — derived by caller
-        demand_mw: float,               # steady-state demand after §7 resolves
-        sources: List[PowerSource],     # all sources, all authority tiers
+        *,                          # all remaining args are keyword-only
+        tick_duration_hours: float, # (§2.3.1) — duration of this tick in hours
+        hour_of_day: int,           # local hour (0–23) for TOU classification
+        month: int,                 # calendar month (1–12); season derived internally
+        demand_mw: float,           # steady-state demand after §7 resolves
+        sources: List[PowerSource], # all sources, all authority tiers
     ) -> DispatchResult:
         """Dispatch one tick.
 
@@ -208,13 +208,9 @@ class EconomicDispatchLoop:
         hour_of_day
             Local hour (0–23) of the simulated calendar time.
         month
-            Calendar month (1–12) of the simulated date.  Required to distinguish
-            the Winter Super Off-Peak window (Mar–May, 9am–2pm) from regular
-            winter off-peak — a distinction season alone cannot express.
-        season
-            "summer" (Jun–Sep) or "winter" (Oct–May).  The caller derives this
-            from the simulated calendar date; this module does not read a clock
-            (§3.2.1 / §6.2 no-runtime-clock-reads rule).
+            Calendar month (1–12) of the simulated date.  Season is derived
+            internally via _season_from_month() — callers do not supply season
+            separately (post-review correction A).
         demand_mw
             Steady-state demand to cover (P_total(t) after §7 has resolved).
         sources
@@ -227,7 +223,8 @@ class EconomicDispatchLoop:
         DispatchResult
             allocations + cost_this_tick + optional shortfall.
         """
-        # Step 1: reprice grid and BESS sources for current TOU period.
+        # Step 1: reprice grid sources for current TOU period.
+        # BESS is repriced by PowerRanker.rank() — not here (post-review correction B).
         repriced: List[PowerSource] = []
         for src in sources:
             if src.source_type in (
@@ -235,7 +232,7 @@ class EconomicDispatchLoop:
                 PowerSourceType.GRID_RESERVED,
                 PowerSourceType.GRID_SPOT,
             ):
-                tou_price, tou_note = _pge_price_for_period(hour_of_day, month, season)
+                tou_price, tou_note = _pge_price_for_period(hour_of_day, month)
                 repriced.append(PowerSource(
                     source_id=src.source_id,
                     source_type=src.source_type,
@@ -246,20 +243,6 @@ class EconomicDispatchLoop:
                     authority_tier=src.authority_tier,
                     available_mw=src.available_mw,
                     cost_basis_note=tou_note,
-                ))
-            elif src.source_type == PowerSourceType.BESS:
-                # DEFECT-3 resolution: BESS cost from catalogue, not caller.
-                bess_cost = _bess_marginal_cost()
-                repriced.append(PowerSource(
-                    source_id=src.source_id,
-                    source_type=src.source_type,
-                    dispatchable=src.dispatchable,
-                    counts_toward_reserve=src.counts_toward_reserve,
-                    marginal_cost_mwh=bess_cost,
-                    response_latency_class=src.response_latency_class,
-                    authority_tier=src.authority_tier,
-                    available_mw=src.available_mw,
-                    cost_basis_note="catalogue: bess_marginal_cost_mwh (Method A, provisional)",
                 ))
             else:
                 repriced.append(src)

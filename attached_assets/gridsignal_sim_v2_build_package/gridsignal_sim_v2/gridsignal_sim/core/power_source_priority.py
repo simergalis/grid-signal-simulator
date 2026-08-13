@@ -25,6 +25,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import List, Optional
 
+import core.site_parameters as _sp
+
 
 # ── Source type / authority enumerations ──────────────────────────────────────
 
@@ -165,9 +167,19 @@ class PowerRanker:
     1. Exclude solar (source_type == SOLAR) → excluded_non_dispatchable.
     2. Exclude dispatchable=False (handles any future non-dispatchable type).
     3. Exclude available_mw <= 0 (cannot contribute; avoids zero-MW phantom ranks).
-    4. Sort remaining sources ascending by marginal_cost_mwh.
-    5. Annotate each with its rank (1 = cheapest).
-    6. Return AdvisoryOutput with ADVISORY_NOTE.
+    4. Reprice BESS sources from the parameter catalogue (§7 / §3.1 spec note).
+    5. Sort remaining sources ascending by marginal_cost_mwh.
+    6. Annotate each with its rank (1 = cheapest).
+    7. Return AdvisoryOutput with ADVISORY_NOTE.
+
+    **BESS catalogue repricing (step 4):** BESS `marginal_cost_mwh` is sourced
+    here, in rank(), not in EconomicDispatchLoop.step().  This ensures both call
+    paths — autonomous dispatch (step()) and human escalation (§4.3's fresh
+    rank() over confirm/human_only sources) — see the same catalogue-sourced
+    cost.  If BESS cost were only overridden inside step(), an operator advisory
+    in the escalation path could show a different BESS cost than what the
+    autonomous dispatch loop was actually using — a "two sources of truth" defect
+    for a number that has exactly one authoritative source (§7).
 
     Note: sources with AuthorityTier.CONFIRM or HUMAN_ONLY are *included* in
     the ranked output.  EconomicDispatchLoop (§3.2 step 3) applies the
@@ -189,6 +201,11 @@ class PowerRanker:
         excluded_non_dispatchable: List[str] = []
         eligible: List[PowerSource] = []
 
+        # Load BESS catalogue cost once — applies to all BESS sources this tick.
+        # Loaded lazily here rather than at import time so tests can reload
+        # the catalogue (site_parameters.reload()) without module re-import.
+        _bess_cost: Optional[float] = None
+
         for src in sources:
             if src.source_type == PowerSourceType.SOLAR:
                 excluded_non_dispatchable.append(src.source_id)
@@ -197,6 +214,21 @@ class PowerRanker:
             elif src.available_mw <= 0.0:
                 pass  # silently drop — zero-available is not an error
             else:
+                # Step 4: reprice BESS from catalogue (§3.1 / §7).
+                if src.source_type == PowerSourceType.BESS:
+                    if _bess_cost is None:
+                        _bess_cost = _sp.value("bess_marginal_cost_mwh")
+                    src = PowerSource(
+                        source_id=src.source_id,
+                        source_type=src.source_type,
+                        dispatchable=src.dispatchable,
+                        counts_toward_reserve=src.counts_toward_reserve,
+                        marginal_cost_mwh=_bess_cost,
+                        response_latency_class=src.response_latency_class,
+                        authority_tier=src.authority_tier,
+                        available_mw=src.available_mw,
+                        cost_basis_note="catalogue: bess_marginal_cost_mwh (Method A, provisional)",
+                    )
                 eligible.append(src)
 
         eligible.sort(key=lambda s: s.marginal_cost_mwh)

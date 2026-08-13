@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import pytest
 
+import core.site_parameters as _sp
 from core.power_source_priority import (
     ADVISORY_NOTE,
     AdvisoryOutput,
@@ -301,3 +302,98 @@ class TestCostBasisNote:
         src = _make_source(source_id="bess-1", cost_basis_note=None)
         result = PowerRanker().rank([src])
         assert result.ranked_sources[0].cost_basis_note is None
+
+
+# ── BESS catalogue repricing in rank() — post-review correction ───────────────
+
+class TestBESSCatalogueRepricingInRank:
+    """PowerRanker.rank() must reprice BESS from the parameter catalogue (§3.1 / §7).
+
+    Post-review correction: BESS catalogue-sourcing moved from step() into rank()
+    so that both the autonomous dispatch path (through step()) and the §4.3
+    escalation path (which calls rank() directly on confirm/human_only sources)
+    see the same catalogue-sourced cost.  A human operator advisory must never
+    show a BESS cost that differs from what the autonomous loop used.
+    """
+
+    def _bess_src(self, source_id: str = "bess-1", marginal_cost_mwh: float = 999.0,
+                  authority_tier: AuthorityTier = AuthorityTier.AUTONOMOUS) -> PowerSource:
+        return _make_source(
+            source_id=source_id,
+            source_type=PowerSourceType.BESS,
+            marginal_cost_mwh=marginal_cost_mwh,
+            available_mw=5.0,
+            authority_tier=authority_tier,
+        )
+
+    def test_bess_ranked_cost_matches_catalogue(self) -> None:
+        """rank() must override caller-supplied BESS cost with catalogue value."""
+        src = self._bess_src(marginal_cost_mwh=999.0)  # caller-supplied: wrong
+        result = PowerRanker().rank([src])
+
+        assert result.ranked_sources, "BESS should appear in ranked output"
+        actual = result.ranked_sources[0].marginal_cost_mwh
+        expected = _sp.value("bess_marginal_cost_mwh")
+
+        assert actual == pytest.approx(expected), (
+            f"rank() must reprice BESS to catalogue value ({expected}), "
+            f"not caller-supplied 999.0; got {actual}"
+        )
+
+    def test_bess_cost_basis_note_set_to_catalogue(self) -> None:
+        """cost_basis_note on the repriced BESS RankedSource must reference catalogue."""
+        src = self._bess_src()
+        result = PowerRanker().rank([src])
+
+        note = result.ranked_sources[0].cost_basis_note
+        assert note is not None and "catalogue" in note.lower(), (
+            f"BESS cost_basis_note should reference catalogue, got: {note!r}"
+        )
+
+    def test_bess_repriced_same_regardless_of_caller_value(self) -> None:
+        """Two BESS sources with different caller-supplied costs rank at the same price."""
+        bess_a = self._bess_src("bess-a", marginal_cost_mwh=1.0)
+        bess_b = self._bess_src("bess-b", marginal_cost_mwh=999.0)
+        result = PowerRanker().rank([bess_a, bess_b])
+
+        prices = {rs.source_id: rs.marginal_cost_mwh for rs in result.ranked_sources}
+        assert prices["bess-a"] == pytest.approx(prices["bess-b"]), (
+            "Both BESS sources must be repriced to the same catalogue value, "
+            f"regardless of caller-supplied cost. Got: {prices}"
+        )
+
+    def test_bess_confirm_tier_still_repriced(self) -> None:
+        """A BESS source at CONFIRM tier (§4.3 escalation path) is also repriced.
+        This is the exact path that step() cannot cover — confirming rank() handles it."""
+        bess_confirm = self._bess_src(
+            source_id="bess-confirm",
+            marginal_cost_mwh=50.0,   # plausible-looking but wrong
+            authority_tier=AuthorityTier.CONFIRM,
+        )
+        result = PowerRanker().rank([bess_confirm])
+
+        assert result.ranked_sources, "CONFIRM BESS must appear in ranked output"
+        actual = result.ranked_sources[0].marginal_cost_mwh
+        expected = _sp.value("bess_marginal_cost_mwh")
+
+        assert actual == pytest.approx(expected), (
+            "§4.3 escalation path: CONFIRM-tier BESS must be repriced by rank() "
+            f"to catalogue ({expected}), not caller-supplied 50.0; got {actual}"
+        )
+
+    def test_non_bess_sources_not_repriced_by_rank(self) -> None:
+        """rank() must not override costs for non-BESS sources (grid, fuel cell, turbine)."""
+        grid = _make_source("grid-1", source_type=PowerSourceType.GRID_FIRM,
+                            marginal_cost_mwh=177.02, available_mw=50.0)
+        fc = _make_source("fc-1", source_type=PowerSourceType.FUEL_CELL,
+                          marginal_cost_mwh=65.0, available_mw=20.0)
+
+        result = PowerRanker().rank([grid, fc])
+        prices = {rs.source_id: rs.marginal_cost_mwh for rs in result.ranked_sources}
+
+        assert prices["grid-1"] == pytest.approx(177.02), (
+            "rank() must not reprice grid sources — TOU is step()'s responsibility"
+        )
+        assert prices["fc-1"] == pytest.approx(65.0), (
+            "rank() must not reprice fuel cell sources"
+        )
