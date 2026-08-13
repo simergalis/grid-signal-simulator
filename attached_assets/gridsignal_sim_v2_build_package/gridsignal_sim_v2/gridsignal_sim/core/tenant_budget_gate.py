@@ -70,8 +70,8 @@ class RotationState:
     selection_count tracks how many times each tenant_id has been selected for
     a deferral within the rolling window.  When multiple tenants are eligible
     to be deferred in the same cycle, the caller uses least_recently_selected()
-    to choose the one with the lowest count (fewest recent deferrals), ensuring
-    no single tenant is perpetually deferred.
+    to identify the candidate set (lowest count), then applies its own tiebreak
+    using priority class and job age per §3.3.1.
 
     BudgetGate.evaluate() does NOT call these methods itself — it evaluates
     one job at a time.  The §4.1 handler calls record_selection() after issuing
@@ -81,33 +81,50 @@ class RotationState:
     MT-4 durability note
     --------------------
     In production, selection_count must persist across a restart (Tier 0 state,
-    §22.3).  This implementation is in-memory only.  A warning is logged when
-    persistence_backed=False (the default).  The simulator path is unaffected —
-    simulator runs are ephemeral and do not require durable rotation state.
+    §22.3).  This implementation is in-memory only.  A warning is always logged
+    at construction — this is intentional and correct.  `persistence_backed` is
+    NOT exposed as a settable flag: no backing store exists yet, so setting a
+    boolean to True would suppress the warning while nothing durable actually
+    happens behind it.  The warning fires unconditionally until MT-4's actual
+    implementation lands.  Simulator runs are ephemeral; the warning is harmless
+    there and correctly reflects the system's state.
     """
     selection_count: dict[str, int] = field(default_factory=dict)
     window_days: int = 30
-    persistence_backed: bool = False   # MT-4: set True only when backed by storage
 
     def __post_init__(self) -> None:
-        if not self.persistence_backed:
-            _log.warning(
-                "RotationState is running in-memory without persistence backing. "
-                "selection_count will be lost on restart (MT-4 / §22.3). "
-                "For production use, wire RotationState to durable storage."
-            )
+        _log.warning(
+            "RotationState is running in-memory without persistence backing. "
+            "selection_count will be lost on restart (MT-4 / §22.3). "
+            "For production use, wire RotationState to durable storage and "
+            "remove this warning from the implementation at that time."
+        )
 
-    def least_recently_selected(self, candidate_tenant_ids: list[str]) -> str:
-        """Return the tenant_id with the lowest selection_count (§30.7).
+    def least_recently_selected(self, candidate_tenant_ids: list[str]) -> list[str]:
+        """Return all candidates tied at the lowest selection_count (§3.3.1 / §30.7).
 
-        Ties are broken by natural string ordering of tenant_id (stable and
-        deterministic).  The caller may apply a secondary tiebreak (priority
-        class, then job age) on top of this result per §30.7's prose.
+        Returns a list — the caller applies tiebreaking using priority class,
+        then job age, per §3.3.1.  This method deliberately does not resolve
+        ties itself: it lacks priority-class and job-age information, and
+        injecting a heuristic (e.g. alphabetical tenant_id order) would
+        silently override the §30.7 fairness intent with a criterion that has
+        no business meaning — permanently disadvantaging tenants whose ids sort
+        late, for no reason related to actual workload priority.
+
+        A single-element list is returned when one candidate has the unique
+        lowest count.  The caller's tiebreak logic need only act when the list
+        has more than one element.
 
         Parameters
         ----------
         candidate_tenant_ids
             Non-empty list of tenant_ids eligible for selection this cycle.
+
+        Returns
+        -------
+        list[str]
+            All candidates tied at the minimum selection_count.  Never empty
+            when candidate_tenant_ids is non-empty.
 
         Raises
         ------
@@ -118,10 +135,13 @@ class RotationState:
             raise ValueError(
                 "least_recently_selected requires at least one candidate tenant_id"
             )
-        return min(
-            candidate_tenant_ids,
-            key=lambda tid: (self.selection_count.get(tid, 0), tid),
+        min_count = min(
+            self.selection_count.get(tid, 0) for tid in candidate_tenant_ids
         )
+        return [
+            tid for tid in candidate_tenant_ids
+            if self.selection_count.get(tid, 0) == min_count
+        ]
 
     def record_selection(self, tenant_id: str) -> None:
         """Increment the selection count for tenant_id (§4.1 step 5).

@@ -91,11 +91,13 @@ BESS catalogue repricing moved from `step()` into `PowerRanker.rank()`. Both the
 
 **models.py additions:** TenantPowerBudget, WorkloadCommandAction(DEFER), WorkloadCommand(action, target, authority: OperatingTier).
 
-**`operating_tier` extension to evaluate() signature:** spec §3.3 doesn't list it, but WorkloadCommand.authority requires it. Added as keyword-only with default SUPERVISED. Decision documented in module docstring.
+**`operating_tier` extension to evaluate() signature:** spec §3.3 doesn't list it, but WorkloadCommand.authority requires it. Added as keyword-only with default SUPERVISED. Phase 4 caller must source this from `SiteConfig.operating_tier` (§23.4 Ladder A) — not a convenient default or cached value.
 
 **Quarantine priority over MT-1:** QuarantinedSignalError raised before MT-1 (budget=None) check. tenant_id=None always quarantines, regardless of budget presence.
 
-**RotationState.persistence_backed=False** logs MT-4 warning at construction. Tests set persistence_backed=True to suppress. Simulator path uses in-memory.
+**RotationState.persistence_backed removed:** Was a boolean flag, but no backing store exists so setting True would suppress the warning dishonestly. MT-4 warning fires unconditionally at construction. Tests no longer suppress it.
+
+**least_recently_selected() returns list[str], not str:** Returns ALL candidates tied at the minimum count. Caller applies tiebreak (priority class, then job age) per §3.3.1. Alphabetical tiebreak was spec deviation — permanently disadvantaged tenants whose IDs sort late with no business justification. test_tie_returns_all_tied_candidates is the key spec-compliance pin test.
 
 **Grid-TOU repricing scope gap (flagged, not yet fixed):** `_pge_price_for_period()` is only called from step(). If a GRID_FIRM/SPOT/RESERVED source has CONFIRM/HUMAN_ONLY authority tier and appears in §4.3's fresh rank() call, it would be ranked at caller-supplied cost, not the tick's TOU rate. Same class of bug as the BESS scope fix. Deferred to Phase 4 (fix: expose _pge_price_for_period as a public helper callable from both step() and the §4.3 assembler).
 

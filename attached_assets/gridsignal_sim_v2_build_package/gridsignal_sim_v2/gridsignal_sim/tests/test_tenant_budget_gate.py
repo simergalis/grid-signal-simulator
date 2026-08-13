@@ -80,12 +80,16 @@ def _budget(
 
 
 def _rotation(counts: dict[str, int] | None = None) -> RotationState:
-    """Return a RotationState with persistence_backed=True to suppress MT-4 warnings."""
-    rs = RotationState(
+    """Return a RotationState for testing.
+
+    MT-4 warning fires unconditionally — persistence_backed is not a settable
+    flag (no backing store exists yet).  Tests accept the warning as correct
+    system behaviour; it is suppressed at the pytest level via filterwarnings
+    if needed, not by setting a misleading boolean.
+    """
+    return RotationState(
         selection_count=dict(counts) if counts else {},
-        persistence_backed=True,
     )
-    return rs
 
 
 # ── TC-C6: unconfigured tenant → None (MT-1) ─────────────────────────────────
@@ -345,47 +349,70 @@ class TestTC_C8_MissingTenantIdQuarantined:
 # ── TC-C9: rotation prevents repeat selection ─────────────────────────────────
 
 class TestTC_C9_RotationPreventsRepeatSelection:
-    """RotationState.least_recently_selected returns lowest-count tenant.
+    """RotationState.least_recently_selected returns all tied lowest-count tenants.
 
-    §30.7: when multiple tenants are eligible for deferral simultaneously, the
-    one with the fewest recent selections is chosen — preventing any single
-    tenant from being perpetually deferred."""
+    §3.3.1 / §30.7: when multiple tenants are eligible for deferral, the caller
+    receives the set of candidates with the minimum selection_count and applies
+    its own tiebreak (priority class, then job age).  least_recently_selected()
+    does not resolve ties — it lacks priority-class and job-age information, and
+    an internal heuristic (e.g. alphabetical) would silently override the §30.7
+    fairness intent for no business reason."""
 
-    def test_unselected_tenant_chosen_over_selected(self) -> None:
-        """Tenant with count=0 wins over tenant with count=1."""
+    def test_unique_lowest_count_returns_single_element_list(self) -> None:
+        """One clear winner → single-element list (caller applies no tiebreak)."""
         rs = _rotation({"tenant-a": 1, "tenant-b": 0})
-        winner = rs.least_recently_selected(["tenant-a", "tenant-b"])
-        assert winner == "tenant-b", (
-            "least_recently_selected must return the tenant with the lowest count (TC-C9)"
+        result = rs.least_recently_selected(["tenant-a", "tenant-b"])
+        assert result == ["tenant-b"], (
+            "Single lowest-count candidate must be returned as a one-element list (TC-C9)"
         )
 
     def test_lowest_count_wins_among_three(self) -> None:
-        """Tenant with count=1 wins when others have count=3."""
+        """Tenant with count=1 uniquely wins when others have count=3."""
         rs = _rotation({"tenant-a": 3, "tenant-b": 1, "tenant-c": 3})
-        winner = rs.least_recently_selected(["tenant-a", "tenant-b", "tenant-c"])
-        assert winner == "tenant-b"
+        result = rs.least_recently_selected(["tenant-a", "tenant-b", "tenant-c"])
+        assert result == ["tenant-b"]
 
     def test_unseen_tenant_treated_as_zero(self) -> None:
         """A tenant not yet in selection_count is treated as count=0."""
         rs = _rotation({"tenant-a": 2})
-        # tenant-new has no entry — should win
-        winner = rs.least_recently_selected(["tenant-a", "tenant-new"])
-        assert winner == "tenant-new"
+        result = rs.least_recently_selected(["tenant-a", "tenant-new"])
+        assert result == ["tenant-new"]
 
-    def test_tie_broken_by_tenant_id_alphabetically(self) -> None:
-        """Equal counts broken by alphabetical order of tenant_id (deterministic)."""
+    def test_tie_returns_all_tied_candidates(self) -> None:
+        """Equal-count candidates are ALL returned — caller resolves the tie.
+
+        This is the key spec compliance test: least_recently_selected() must NOT
+        silently pick one tied candidate (e.g. alphabetically).  Returning all
+        tied candidates preserves the caller's ability to apply §3.3.1's
+        priority-class + job-age tiebreak."""
         rs = _rotation()  # both start at 0
-        winner = rs.least_recently_selected(["tenant-z", "tenant-a"])
-        assert winner == "tenant-a", (
-            "Tie between equal-count tenants must be broken deterministically "
-            "(alphabetical — TC-C9 stability)"
+        result = rs.least_recently_selected(["tenant-z", "tenant-a"])
+        assert set(result) == {"tenant-z", "tenant-a"}, (
+            "Both tied candidates must be returned — not just the alphabetically-first. "
+            "Tiebreaking by tenant_id string order has no business meaning and "
+            "permanently disadvantages tenants whose ids sort late (§3.3.1 / TC-C9)."
         )
 
-    def test_single_candidate_always_selected(self) -> None:
-        """With one candidate, that candidate is always selected regardless of count."""
+    def test_three_way_tie_returns_all_three(self) -> None:
+        """Three-way tie at count=0 → all three returned for caller tiebreak."""
+        rs = _rotation()
+        result = rs.least_recently_selected(["tenant-x", "tenant-y", "tenant-z"])
+        assert set(result) == {"tenant-x", "tenant-y", "tenant-z"}
+
+    def test_partial_tie_returns_only_tied_subset(self) -> None:
+        """Only the subset tied at the minimum count is returned (not all candidates)."""
+        rs = _rotation({"tenant-a": 0, "tenant-b": 0, "tenant-c": 5})
+        result = rs.least_recently_selected(["tenant-a", "tenant-b", "tenant-c"])
+        assert set(result) == {"tenant-a", "tenant-b"}, (
+            "Only candidates at minimum count returned — not the full candidate list"
+        )
+        assert "tenant-c" not in result
+
+    def test_single_candidate_returns_single_element_list(self) -> None:
+        """With one candidate, a one-element list is returned regardless of count."""
         rs = _rotation({"tenant-only": 99})
-        winner = rs.least_recently_selected(["tenant-only"])
-        assert winner == "tenant-only"
+        result = rs.least_recently_selected(["tenant-only"])
+        assert result == ["tenant-only"]
 
     def test_empty_candidates_raises(self) -> None:
         """Empty candidate list must raise ValueError."""
@@ -412,20 +439,24 @@ class TestTC_C9_RotationPreventsRepeatSelection:
             rs.record_selection("tenant-a")
         assert rs.selection_count["tenant-a"] == 5
 
-    def test_rotation_changes_winner_after_selection(self) -> None:
-        """After recording a selection, the other tenant wins on the next query."""
+    def test_rotation_breaks_tie_after_selection(self) -> None:
+        """After recording a selection for one tenant, the other is the sole winner.
+
+        This is the TC-C9 round-trip: confirm that record_selection() correctly
+        moves a tenant out of the tied set, so subsequent calls return only
+        the tenant that has NOT yet been selected this cycle."""
         rs = _rotation({"tenant-a": 0, "tenant-b": 0})
 
-        # First: tie → "tenant-a" wins alphabetically
-        first = rs.least_recently_selected(["tenant-a", "tenant-b"])
-        assert first == "tenant-a"
+        # Tie: both at 0 — both returned
+        tied = rs.least_recently_selected(["tenant-a", "tenant-b"])
+        assert set(tied) == {"tenant-a", "tenant-b"}, "Both should be tied initially"
 
-        # Record selection for tenant-a
+        # Caller selects tenant-a (e.g. via priority-class tiebreak)
         rs.record_selection("tenant-a")
 
-        # Now tenant-a has count=1, tenant-b has count=0 → tenant-b wins
-        second = rs.least_recently_selected(["tenant-a", "tenant-b"])
-        assert second == "tenant-b", (
-            "After recording a selection for tenant-a, tenant-b must be chosen next "
-            "(TC-C9 rotation round-trip)"
+        # Now tenant-a has count=1, tenant-b has count=0 → only tenant-b returned
+        after = rs.least_recently_selected(["tenant-a", "tenant-b"])
+        assert after == ["tenant-b"], (
+            "After recording a selection for tenant-a, only tenant-b must be returned "
+            "(TC-C9 rotation round-trip). tenant-a should no longer be in the tied set."
         )
