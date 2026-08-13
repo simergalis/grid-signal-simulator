@@ -35,6 +35,7 @@ export interface TickPayload {
   p_imbalance_mw:       number | null  // no producer
   turbine_output_mw: number
   bess_output_mw: number
+  fuel_cell_output_mw: number
   bess_setpoint_mw: number    // dispatch command before SoC/power clipping (B4 gate)
   bess_soc_fraction: number   // [0, 1]
 

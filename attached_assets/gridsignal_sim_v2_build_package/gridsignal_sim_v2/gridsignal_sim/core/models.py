@@ -853,7 +853,7 @@ class ContingencyCoverage:
     # Three-state verdict
     state: ContingencyState
     # §7.5 header-strip figures
-    dispatchable_mw: float               # online turbine rated + anchor-adj BESS bridging
+    dispatchable_mw: float               # online turbine rated + anchor-adj BESS bridging + fuel cell rated
     renewable_mw: float                  # solar output — displayed separately, never in coverage arithmetic
     # Approximate GPU node count that maps to shed_required_mw at current load density.
     # None when compute load is zero (no active jobs) or shed_required_mw is 0.
@@ -973,6 +973,10 @@ class TickResult:
     bess_soc_fraction: float
     confidence: ConfidenceBand
     insufficient_reserve_alert: bool = False
+    # H₂ fuel cell array output this tick.  0.0 when fuel_cell_enabled is False
+    # or when BESS + turbines already cover full demand.  Dispatched in merit-order
+    # after BESS, before grid import (§7 / PSP-002).
+    fuel_cell_output_mw: float = 0.0
     # D7 fix: §5.1 onboarding alerts — frozenset of hardware_profile_id strings
     # for which the one-time alert fired on this tick.  Empty frozenset = no new
     # alerts.  Deduplicated per (site_id, hardware_profile_id) in SimulationState

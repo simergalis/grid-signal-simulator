@@ -6,3 +6,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Spec-2 surplus and inertia](spec2-surplus-inertia.md) — §INV-CURT, §INV-INERTIA, S9 rerun, ScenarioSpec thresholds, F-4 dispatch gap.
 - [Phase 2A-7 frequency dynamics](phase2a7-freq-dynamics.md) — UFLS/81U opt-in, governor decoupling, sub-step swing equation, protection_provisional, export gate.
 - [Phase 0/1 balance + droop wiring](phase0-phase1-balance-droop.md) — D4 routing-identity finding, attribute name diffs, catalogue keys, site_parameters import needed, gate surface, test delta.
+- [Fuel cell dispatch wiring](fuel-cell-dispatch-wiring.md) — _sync_ceiling_mw must include FC rated MW or FC never dispatches; full wiring checklist + pre-existing test failures.

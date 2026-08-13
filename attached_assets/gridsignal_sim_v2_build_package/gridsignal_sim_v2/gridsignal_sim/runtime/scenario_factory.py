@@ -654,6 +654,12 @@ def build_run_context_from_spec(
         cooling=cooling,
     )
 
+    # ── Fuel cell rated capacity ──────────────────────────────────────────
+    # Set on SimulationState so evaluate_tick() can dispatch the fuel cell in
+    # merit order (after BESS, before grid import).  0.0 when not enabled.
+    if spec_data.get("fuel_cell_enabled", False):
+        sim_state.fuel_cell_rated_mw = float(spec_data.get("fuel_cell_rated_mw", 0.0))
+
     # ── GPU load profile ──────────────────────────────────────────────────
     _gpu_load_raw = spec_data.get("gpu_load_profile", [])
     if _gpu_load_raw:

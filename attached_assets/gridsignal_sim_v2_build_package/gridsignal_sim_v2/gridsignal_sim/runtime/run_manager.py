@@ -273,6 +273,7 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         "net_demand_mw": round(tick.net_demand_mw, 4),
         "turbine_output_mw": round(tick.turbine_output_mw, 4),
         "bess_output_mw": round(tick.bess_output_mw, 4),
+        "fuel_cell_output_mw": round(tick.fuel_cell_output_mw, 4),
         "bess_soc_fraction": round(tick.bess_soc_fraction, 4),
         "confidence_lower_mw": round(tick.confidence.lower_bound_mw, 4),
         "confidence_upper_mw": round(tick.confidence.upper_bound_mw, 4),

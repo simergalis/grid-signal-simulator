@@ -17,7 +17,7 @@ the display layer (TC-78) and tests can inspect them individually.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from .models import ContingencyCoverage, ContingencyState, IslandMode
 
@@ -54,23 +54,35 @@ class BessSnapshot:
 
 
 @dataclass(frozen=True)
+class FuelCellSnapshot:
+    """Read-only view of the fuel cell array for the contingency computation.
+
+    The full rated MW counts toward dispatchable capacity — no anchor deduction
+    applies (fuel cells are grid-following, never grid-forming).
+    """
+    rated_mw: float
+
+
+@dataclass(frozen=True)
 class PlantState:
     """Complete read-only plant state snapshot for one contingency evaluation.
 
-    turbine_snapshots: all turbines (online and standby) — the function
+    turbine_snapshots:    all turbines (online and standby) — the function
       selects online ones internally.
-    bess_snapshots:    all BESS units.
+    bess_snapshots:       all BESS units.
+    fuel_cell_snapshots:  fuel cell arrays (empty tuple when not enabled).
     curtailable_capacity_mw: sum of §23.2 curtailment tier capacities
       (A+B+C+D, read from CurtailmentLadder.total_capacity_mw()).
     renewable_mw: current solar output — passed through to ContingencyCoverage
       so the UI can display it as a separate non-firm term (§7.5), but never
       enters any coverage arithmetic.
     """
-    turbine_snapshots: tuple  # tuple[TurbineSnapshot, ...]
-    bess_snapshots: tuple     # tuple[BessSnapshot, ...]
+    turbine_snapshots: tuple                  # tuple[TurbineSnapshot, ...]
+    bess_snapshots: tuple                     # tuple[BessSnapshot, ...]
     island_mode: IslandMode
     curtailable_capacity_mw: float
     renewable_mw: float
+    fuel_cell_snapshots: tuple = field(default_factory=tuple)  # tuple[FuelCellSnapshot, ...]
 
 
 # ---------------------------------------------------------------------------
@@ -112,7 +124,8 @@ def evaluate_contingency(plant_state: PlantState) -> ContingencyCoverage:
     """
     island_mode = plant_state.island_mode
 
-    # §7.5: dispatchable = online turbine rated capacity + anchor-adj BESS bridging.
+    # §7.5: dispatchable = online turbine rated capacity + anchor-adj BESS bridging
+    #        + fuel cell rated capacity.
     # "online turbine capacity" = rated MW of synchronized units (not hot standby).
     # Solar is EXCLUDED per §7.1.1 — it reduces the load the fleet must serve but
     # may never be credited toward closing a supply-side gap.
@@ -121,13 +134,18 @@ def evaluate_contingency(plant_state: PlantState) -> ContingencyCoverage:
     )
     bess_usable_energy_mwh = sum(b.soc_mwh for b in plant_state.bess_snapshots)
 
+    # Fuel cell: full rated MW counts (no anchor deduction — grid-following only).
+    fuel_cell_available_mw = sum(
+        fc.rated_mw for fc in plant_state.fuel_cell_snapshots
+    )
+
     # Synchronized online = contributing to generation (not hot standby)
     online: list[TurbineSnapshot] = [
         t for t in plant_state.turbine_snapshots if t.is_synchronized
     ]
 
     dispatchable_mw = (
-        sum(t.rated_mw for t in online) + bess_bridging_available_mw
+        sum(t.rated_mw for t in online) + bess_bridging_available_mw + fuel_cell_available_mw
     )
 
     # Degenerate case: no online turbines — no contingency to select

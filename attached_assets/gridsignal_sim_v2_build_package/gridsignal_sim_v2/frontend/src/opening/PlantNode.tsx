@@ -151,8 +151,13 @@ function nodeDetail(
       if (excess > 0.1) return `absorbing · ${excess.toFixed(1)} MW · ${socPct}% SoC · anchor 1.0 MW`
       return `standby · ${socPct}% SoC · anchor 1.0 MW`
     }
-    case 'fuel-cell':
-      return 'H₂ fuel cell array · advisory — not yet dispatched by engine'
+    case 'fuel-cell': {
+      const fcMw = (tick as unknown as Record<string, number>).fuel_cell_output_mw ?? 0
+      if (!tick) return 'H₂ fuel cell array · armed'
+      return fcMw > 0.01
+        ? `dispatching · ${fcMw.toFixed(2)} MW`
+        : 'H₂ fuel cell array · standby'
+    }
     case 'grid-connection':
       return tick ? `${(tick.grid_exchange_mw ?? 0) < 0 ? 'importing' : 'exporting'} · utility feed` : 'grid-connected · utility feed'
     case 'switchgear-pms':

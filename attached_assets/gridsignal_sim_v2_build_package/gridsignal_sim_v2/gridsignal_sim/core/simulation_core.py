@@ -21,7 +21,7 @@ from typing import Optional
 
 from .asset_modules import BessModule, CoolingModule, GPUModule, SolarModule, TurbineModule, TurbineState
 from .loading import apply_loading, ramp_capability
-from .contingency import BessSnapshot, PlantState, TurbineSnapshot, evaluate_contingency
+from .contingency import BessSnapshot, FuelCellSnapshot, PlantState, TurbineSnapshot, evaluate_contingency
 from .kube_demand import KubeDemandAgent, KubeGridState
 
 _log = logging.getLogger(__name__)
@@ -155,6 +155,13 @@ class SimulationState:
     # ScenarioSpec.tenant_events at run start via scenario_factory.py.
     # Empty list = no extra tenant load (default; fully backward-compat).
     tenant_events: list = field(default_factory=list)  # list[TenantBurstEvent]
+
+    # Fuel cell array rated capacity (MW).  0.0 when fuel_cell_enabled is False.
+    # Set by scenario_factory after SimulationState construction so the dispatch
+    # logic in evaluate_tick() can dispatch the fuel cell in merit order (after
+    # BESS, before grid import).  Fully backward-compatible: default 0.0 means
+    # no fuel cell dispatch in any existing scenario or test.
+    fuel_cell_rated_mw: float = 0.0
 
     # Phase 11.3 — frequency state for the swing equation (islanded mode only).
     # Persisted on SimulationState so df/dt integration accumulates correctly
@@ -811,7 +818,8 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # fleet") and allows the arbitrator to dispatch BESS against real demand.
     _sync_ceiling_mw = (
         sum(t.config.rated_mw for t in state.turbines) +
-        sum(b.config.rated_mw for b in state.bess_units)
+        sum(b.config.rated_mw for b in state.bess_units) +
+        state.fuel_cell_rated_mw   # FC capacity raises the ceiling so dispatch reaches it
     )
     # Derive the Δf clamp from first-stage protective settings (C-4, DR-BAL-1).
     _first_stage_thresholds_hz = [
@@ -989,6 +997,16 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # Phase 13.3: pass the droop-adjusted setpoint so the turbine is staged toward
     # the frequency-corrected target and the BESS covers only the residual shortfall.
     turbine_output_mw, bess_output_mw, _bess_setpoint_mw, _arb_candidates = state.arbitrator.tick(_p_dispatch_droop_mw, dt_seconds)
+
+    # Fuel cell dispatch: merit-order slot after BESS, before grid import.
+    # Covers any remaining shortfall (demand not met by turbines + BESS) up to
+    # the array's rated MW ceiling.  fuel_cell_rated_mw = 0.0 (default) is a
+    # no-op for all scenarios that do not enable a fuel cell.
+    _fuel_cell_setpoint_mw = 0.0
+    if state.fuel_cell_rated_mw > 0.0:
+        _fc_remaining = max(0.0, _p_dispatch_droop_mw - turbine_output_mw - bess_output_mw)
+        _fuel_cell_setpoint_mw = min(state.fuel_cell_rated_mw, _fc_remaining)
+    fuel_cell_output_mw: float = _fuel_cell_setpoint_mw
 
     # ── Phase D Item 5: evaluate_commitment() replaces headroom block ────────
     # Called every tick so commit/decommit hysteresis timers accumulate.
@@ -1355,6 +1373,10 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             )
             for b in state.bess_units
         ),
+        fuel_cell_snapshots=(
+            (FuelCellSnapshot(rated_mw=state.fuel_cell_rated_mw),)
+            if state.fuel_cell_rated_mw > 0.0 else ()
+        ),
         island_mode=state.site.island_mode,
         curtailable_capacity_mw=state.curtailment_ladder.total_capacity_mw(),
         renewable_mw=p_renewable_mw,
@@ -1503,7 +1525,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # in grid-connected mode, the grid absorbs / provides the mismatch.
     # Branch B: _balance_residual_mw is a local scratch variable; it is NOT on
     # TickResult.  D4 is asserted inline below before any use in the swing eq.
-    _p_gen_mw = turbine_output_mw + bess_output_mw + p_renewable_mw
+    _p_gen_mw = turbine_output_mw + bess_output_mw + fuel_cell_output_mw + p_renewable_mw
     _balance_residual_mw = _p_gen_mw - p_demand_mw
 
     # ── Phase 13.2: balance decomposition — three independent channels ────────
@@ -1517,7 +1539,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # demand requirement.  This ensures frequency_forcing_mw reflects the
     # governor's correction and can become negative (restoring force) when
     # frequency is above nominal and the droop pulls the setpoint below demand.
-    _p_commanded_mw = _p_dispatch_droop_mw + _bess_setpoint_mw + p_renewable_mw
+    _p_commanded_mw = _p_dispatch_droop_mw + _bess_setpoint_mw + _fuel_cell_setpoint_mw + p_renewable_mw
 
     # Phase 13.2 + Task #200 B1/B2 — two-channel energy identity, one reporting field.
     #
@@ -1935,6 +1957,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         net_demand_mw=net_demand_mw,
         turbine_output_mw=turbine_output_mw,
         bess_output_mw=bess_output_mw,
+        fuel_cell_output_mw=fuel_cell_output_mw,
         bess_soc_fraction=(state.bess_units[0].soc_fraction if state.bess_units else 1.0),
         confidence=confidence,
         insufficient_reserve_alert=alert_fired,
