@@ -302,7 +302,12 @@ class GPUModule(AssetModule):
         for job_id in list(self._ramp_progress):
             p = self._ramp_progress[job_id]
             if p < 1.0:
-                self._ramp_progress[job_id] = min(1.0, p + dt_seconds / self.ramp_seconds)
+                if self.ramp_seconds <= 0.0:
+                    # dt_lead_seconds=0 (e.g. Kubernetes — no advance notice):
+                    # job reaches full TDP instantly; no ramp window to divide by.
+                    self._ramp_progress[job_id] = 1.0
+                else:
+                    self._ramp_progress[job_id] = min(1.0, p + dt_seconds / self.ramp_seconds)
 
         # Within-step power profile lag (Part 2.2 — transition smoothing).
         # raw_profile switches between 1.0 (compute phase) and p_comm_ratio
