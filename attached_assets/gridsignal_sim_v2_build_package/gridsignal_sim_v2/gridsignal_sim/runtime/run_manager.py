@@ -46,7 +46,42 @@ from core.simulation_core import SimulationState, evaluate_tick
 from core._plane_guard import _EVALUATE_TICK_PERMITTED
 from core.site_parameters import value as _sp_catalogue_value
 
+# GS-IMPL-PSP-002 Phase 4 — Economic Dispatch Loop + §4.3 escalation wiring.
+# runtime/ → core/ is the allowed import direction; these never cross into api/.
+from core.economic_dispatch_loop import (
+    EconomicDispatchLoop as _EconomicDispatchLoop,
+    pge_price_for_period as _edl_pge_price_for_period,
+)
+from core.power_source_priority import (
+    AuthorityTier as _AuthorityTier,
+    PowerRanker as _PowerRanker,
+    PowerSource as _PowerSource,
+    PowerSourceType as _PowerSourceType,
+)
+
+# GS-IMPL-PSP-002 §3.4 / §4.3: Simulator-only PMS test double.
+# runtime/ → runtime/ is permitted.  core/ must never import this.
+from runtime.pms_test_double import (
+    OperatorResponseProfile as _OperatorResponseProfile,
+    PMSTestDouble as _PMSTestDouble,
+)
+
 logger = logging.getLogger("gridsignal.run_manager")
+
+
+# GS-IMPL-PSP-002 §4.3 / TC-C13 — production harness guard.
+# In production, set GS_PRODUCTION_HARNESS=1 to block PMSTestDouble instantiation.
+# Read at call time (not module load) so tests can patch os.environ without
+# reimporting this module.
+def _is_simulator_harness() -> bool:
+    """Return True when PMSTestDouble instantiation is permitted.
+
+    False when GS_PRODUCTION_HARNESS is set to any non-empty value — the §4.3
+    escalation path takes the production log-stub branch instead.  This is a
+    function (not a module-level constant) so that tests can patch os.environ
+    to exercise both branches without reimporting run_manager.
+    """
+    return not bool(_os.environ.get("GS_PRODUCTION_HARNESS"))
 
 # ---------------------------------------------------------------------------
 # Phase 2A (DR-2026-08-08-FREQ): Run-wide protection_provisional tracking.
@@ -691,6 +726,28 @@ class RunContext:
     site_lon:          float = field(default_factory=float)   # 0.0 until scenario_factory writes
     site_utc_offset_h: float = field(default_factory=float)   # 0.0 until scenario_factory writes
     site_name:         str   = ""
+
+    # GS-IMPL-PSP-002 §4.2 / Phase 4 — Economic Dispatch Loop wiring.
+    # edl_sources: list[PowerSource] for steady-state merit-order dispatch.
+    #   Set by scenario_factory / tests.  None → EDL skipped (headless/direct path).
+    # edl_calendar_month: calendar month (1–12) for TOU classification.
+    #   Set to the wall-clock month at run start by scenario_factory; defaults
+    #   to 8 (August) as a conservative mid-summer fallback.  This is not derived
+    #   from sim_time because sim_time is simulated seconds from 0, not calendar time.
+    #
+    # Phase 4 operating_tier sourcing note (§23.4 Ladder A / pre-review confirmation):
+    #   The §4.3 escalation path uses the operating tier from sim_state.site.operating_tier
+    #   when available.  This is the §23.4 authoritative value updated by the curtailment
+    #   ladder each tick — not a startup default or convenience binding.  Callers that
+    #   wire BudgetGate.evaluate() (§4.1) must source operating_tier the same way.
+    edl_sources: Optional[Any] = None        # Optional[List[PowerSource]] from core.power_source_priority
+    edl_calendar_month: int = 8             # calendar month (1–12) for TOU; set by factory
+
+    # GS-IMPL-PSP-002 §4.3 / §3.4 — Simulator PMS response profile.
+    # If set AND _is_simulator_harness() is True, _drive() instantiates
+    # PMSTestDouble(pms_response_profile) for the §4.3 escalation branch.
+    # MUST be None in production (enforced by _is_simulator_harness() guard).
+    pms_response_profile: Optional[Any] = None   # Optional[OperatorResponseProfile]
 
     # AD1: optional engine instances — instantiated by build_run_context_from_spec
     # when the corresponding *_config field is set in ScenarioSpec.
@@ -1427,6 +1484,165 @@ class RunManager:
                         round(tick_result.p_compute_demand_mw, 4),
                     ])
                     _kube_csv_file.flush()  # type: ignore[union-attr]
+
+                # ── A1b: Economic Dispatch Loop (GS-IMPL-PSP-002 §4.2) ───────────
+                # Runs AFTER §7 Dispatch Arbitration (inside ctx.step() above) has
+                # resolved the transient response for this tick.  Reallocates the
+                # resulting steady-state load across autonomous-tier sources in merit
+                # order and emits a ShortfallEvent when autonomous sources are
+                # insufficient (§4.3).
+                #
+                # §4.2 ordering guarantee (§6.4): EDL must never run before or
+                # interleaved with §7.  Both log at the same sim_time; the log entry
+                # for "§4.2 EDL starting" always follows "evaluate_tick" on the same
+                # tick — enforced by sequential code structure (TC-C10).
+                #
+                # Skipped when ctx.edl_sources is None (headless tests, direct path).
+                if ctx.edl_sources is not None:
+                    if _profiling: _t0 = _time_module.perf_counter()
+
+                    # hour_of_day: derived from sim_time (simulated seconds since
+                    # run start, which begins at midnight by convention).  % 24 wraps
+                    # runs that exceed 24 h of simulated time.
+                    _edl_hour_of_day: int = int(tick_result.sim_time_seconds / 3600.0) % 24
+
+                    # operating_tier: sourced from ctx.sim_state.site.operating_tier
+                    # (§23.4 Ladder A — updated by the curtailment ladder each tick).
+                    # Falls back to SUPERVISED when the field is absent so the EDL can
+                    # run in test/headless contexts without a full SiteConfig.
+                    _edl_operating_tier = getattr(
+                        getattr(ctx.sim_state, "site", None),
+                        "operating_tier",
+                        None,
+                    )
+
+                    logger.info(
+                        "PSP-002 §4.2 EDL [t=%.1fs run=%s]: starting — "
+                        "demand=%.3f MW hour=%d month=%d tier=%s",
+                        tick_result.sim_time_seconds,
+                        ctx.run_id,
+                        tick_result.p_demand_mw,
+                        _edl_hour_of_day,
+                        ctx.edl_calendar_month,
+                        _edl_operating_tier,
+                    )
+
+                    _edl_result = _EconomicDispatchLoop().step(
+                        tick_result.sim_time_seconds,
+                        tick_duration_hours=TICK_INTERVAL_SIM_SECONDS / 3600.0,
+                        hour_of_day=_edl_hour_of_day,
+                        month=ctx.edl_calendar_month,
+                        demand_mw=tick_result.p_demand_mw,
+                        sources=ctx.edl_sources,
+                    )
+
+                    if _edl_result.shortfall is None:
+                        logger.info(
+                            "PSP-002 §4.2 EDL [t=%.1fs run=%s]: complete — "
+                            "cost=%.4f USD %d allocation(s) no shortfall",
+                            tick_result.sim_time_seconds,
+                            ctx.run_id,
+                            _edl_result.cost_this_tick,
+                            len(_edl_result.allocations),
+                        )
+                    else:
+                        # ── §4.3 escalation ───────────────────────────────────────
+                        # Shortfall: autonomous sources cannot cover demand this tick.
+                        # Build a confirm/human_only advisory via a fresh rank() call
+                        # so the operator or PMS sees TOU-repriced sources.
+                        #
+                        # Grid-TOU scope fix (Phase 4): pge_price_for_period() is
+                        # called here (not inside step()) so GRID_FIRM/SPOT/RESERVED
+                        # sources in the confirm/human_only tier are priced at the
+                        # tick's actual TOU rate — not at the caller-supplied cost.
+                        # Same fix class as the BESS scope gap resolved in Phase 2
+                        # post-review.
+                        logger.warning(
+                            "PSP-002 §4.3 shortfall [t=%.1fs run=%s]: "
+                            "demand=%.3f MW covered=%.3f MW shortfall=%.3f MW",
+                            tick_result.sim_time_seconds,
+                            ctx.run_id,
+                            _edl_result.shortfall.demand_mw,
+                            _edl_result.shortfall.covered_mw,
+                            _edl_result.shortfall.shortfall_mw,
+                        )
+
+                        # Build repriced confirm/human_only source list.
+                        _tou_rate, _tou_note = _edl_pge_price_for_period(
+                            _edl_hour_of_day, ctx.edl_calendar_month,
+                        )
+                        _confirm_sources: list = []
+                        for _src in ctx.edl_sources:
+                            if getattr(_src, "authority_tier", None) not in (
+                                _AuthorityTier.CONFIRM,
+                                _AuthorityTier.HUMAN_ONLY,
+                            ):
+                                continue
+                            if getattr(_src, "source_type", None) in (
+                                _PowerSourceType.GRID_FIRM,
+                                _PowerSourceType.GRID_RESERVED,
+                                _PowerSourceType.GRID_SPOT,
+                            ):
+                                # Reprice with tick-context TOU rate.
+                                _confirm_sources.append(_PowerSource(
+                                    source_id=_src.source_id,
+                                    source_type=_src.source_type,
+                                    dispatchable=_src.dispatchable,
+                                    counts_toward_reserve=_src.counts_toward_reserve,
+                                    marginal_cost_mwh=_tou_rate,
+                                    response_latency_class=_src.response_latency_class,
+                                    authority_tier=_src.authority_tier,
+                                    available_mw=_src.available_mw,
+                                    cost_basis_note=_tou_note,
+                                ))
+                            else:
+                                _confirm_sources.append(_src)
+
+                        _advisory = _PowerRanker().rank(_confirm_sources)
+
+                        # ── §4.3 harness fork ─────────────────────────────────────
+                        # Simulator branch: PMSTestDouble applies the deterministic
+                        # OperatorResponseProfile.  The fork is guarded by
+                        # _is_simulator_harness() so that production deployments
+                        # (GS_PRODUCTION_HARNESS=1) always take the northbound-publish
+                        # path — PMSTestDouble is never instantiated in production
+                        # (TC-C13).
+                        if _is_simulator_harness() and ctx.pms_response_profile is not None:
+                            _pms = _PMSTestDouble(ctx.pms_response_profile)
+                            _pms_entries = _pms.process(
+                                _advisory, tick_result.sim_time_seconds
+                            )
+                            logger.info(
+                                "PSP-002 §4.3 simulator PMS [t=%.1fs run=%s]: "
+                                "%d source(s) in advisory %d log entries",
+                                tick_result.sim_time_seconds,
+                                ctx.run_id,
+                                len(_advisory.ranked_sources),
+                                len(_pms_entries),
+                            )
+                        else:
+                            # Production branch: publish shortfall + advisory to
+                            # the §28.3 northbound REST/MQTT channel and stop.
+                            # GridSignal has no visibility into what the PMS or
+                            # operator decides (§5 / §6.1 — no southbound writes).
+                            # A real integration would POST/publish here; this
+                            # log-stub is the correct deliverable for Phase 4.
+                            logger.info(
+                                "PSP-002 §4.3 northbound [t=%.1fs run=%s]: "
+                                "ShortfallEvent + advisory published to §28.3 "
+                                "channel (shortfall=%.3f MW, %d confirm/human_only "
+                                "source(s)). GridSignal does not block on PMS/operator "
+                                "response.",
+                                tick_result.sim_time_seconds,
+                                ctx.run_id,
+                                _edl_result.shortfall.shortfall_mw,
+                                len(_advisory.ranked_sources),
+                            )
+
+                    if _profiling:
+                        _sec.setdefault("A1b_edl", []).append(
+                            _time_module.perf_counter() - _t0
+                        )
 
                 # ── A2: telemetry corruption (GT-2) ───────────────────────
                 # Recompute contingency_coverage with a noisy BESS SoC reading

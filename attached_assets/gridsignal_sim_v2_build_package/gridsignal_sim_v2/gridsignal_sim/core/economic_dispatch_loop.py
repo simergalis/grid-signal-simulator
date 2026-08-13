@@ -3,7 +3,10 @@
 GS-IMPL-PSP-002 §3.2 / §2.3.
 
 Phase 2 corrects three defects from the Phase 1 reference implementation.
-Phase 2 post-review applies two additional corrections before Phase 3:
+Phase 2 post-review applies two additional corrections before Phase 3.
+Phase 4 exposes the TOU helpers as public module-level functions so the
+§4.3 escalation assembler in runtime/ can reprice grid sources for a fresh
+rank() call without duplicating the six-key catalogue lookup.
 
   DEFECT-1 (§2.3.1) — RESOLVED:
     Phase 1 had `total_cost_per_hour` assuming a full hour per tick.
@@ -27,13 +30,22 @@ Phase 2 post-review applies two additional corrections before Phase 3:
     `season` is fully derivable from `month` (6–9 → summer, 10–5 → winter);
     no month value is ambiguous about season.  Carrying both as independent
     parameters created a silent-wrong-value risk (month=7, season="winter"
-    would not raise).  `season` is now derived inside `_season_from_month()`
+    would not raise).  `season` is now derived inside `season_from_month()`
     from `month`.  This shrinks the signature back toward Phase 1's shape
     plus only the two new required fields (tick_duration_hours, month).
 
   POST-REVIEW CORRECTION B — BESS repricing removed from step():
     step() now reprices grid sources only (TOU is legitimately tick-context-
     dependent).  BESS repricing is PowerRanker.rank()'s responsibility.
+
+  PHASE 4 — TOU helpers made public:
+    `season_from_month` and `pge_price_for_period` are now module-level public
+    functions (no leading underscore).  The §4.3 escalation path in runtime/
+    calls pge_price_for_period() to reprice GRID_FIRM/SPOT/RESERVED sources
+    for the confirm/human_only advisory rank() call, ensuring the advisory the
+    operator or PMS sees uses the same tick-context TOU rate as the autonomous
+    dispatch.  Underscore aliases (_season_from_month, _pge_price_for_period)
+    are preserved for backward compatibility with any existing callers.
 
 New signature (keyword-only after t_s — §1 / Phase 2 review note)
 ------------------------------------------------------------------
@@ -102,9 +114,20 @@ class DispatchResult:
     shortfall: Optional[ShortfallEvent]
 
 
-# ── TOU pricing helpers (post-review corrections) ─────────────────────────────
+# ── TOU pricing helpers (public — Phase 4 scope-gap fix) ─────────────────────
+#
+# Both functions are module-level public (no underscore) so that the §4.3
+# escalation assembler in runtime/ can reprice GRID_FIRM/SPOT/RESERVED sources
+# for the confirm/human_only advisory rank() call using the same tick-context
+# TOU rate as the autonomous dispatch path.  Keeping them private would force
+# the escalation assembler to either duplicate the six-key catalogue lookup
+# (copy-paste drift risk) or use stale caller-supplied costs (same bug class
+# as the BESS scope gap fixed in Phase 2 post-review).
+#
+# Backward-compat aliases (underscore names) are provided for any existing
+# callers inside this module.
 
-def _season_from_month(month: int) -> Literal["summer", "winter"]:
+def season_from_month(month: int) -> Literal["summer", "winter"]:
     """Derive the PG&E B-20 season from calendar month.
 
     Summer: Jun 1 – Sep 30  (months 6–9)
@@ -118,14 +141,22 @@ def _season_from_month(month: int) -> Literal["summer", "winter"]:
     return "summer" if month in (6, 7, 8, 9) else "winter"
 
 
-def _pge_price_for_period(hour_of_day: int, month: int) -> tuple[float, str]:
+# backward-compat alias (internal callers use _season_from_month)
+_season_from_month = season_from_month
+
+
+def pge_price_for_period(hour_of_day: int, month: int) -> tuple[float, str]:
     """Return (rate_mwh, cost_basis_note) for the given hour and month.
+
+    Public in Phase 4 so the §4.3 escalation assembler can reprice grid
+    sources for the confirm/human_only advisory without duplicating the
+    six-key catalogue lookup.
 
     All rates read from the parameter catalogue (GS-IMPL-PSP-002 §7).
     No hardcoded fallback — if a catalogue read fails, the exception propagates
     to the caller (§7 / ParameterUnavailable).
 
-    Season derived internally via _season_from_month().  Callers supply only
+    Season derived internally via season_from_month().  Callers supply only
     month — post-review correction A removes season from the public API.
 
     Period classification per Cal. P.U.C. Sheet 61081-E (eff. 2026-03-01)
@@ -140,7 +171,7 @@ def _pge_price_for_period(hour_of_day: int, month: int) -> tuple[float, str]:
       Peak            hour_of_day 16–20  ($156.32/MWh)
       Off-peak        all other winter hours  ($114.60/MWh)
     """
-    season = _season_from_month(month)
+    season = season_from_month(month)
 
     if season == "summer":
         if hour_of_day in (16, 17, 18, 19, 20):
@@ -164,6 +195,10 @@ def _pge_price_for_period(hour_of_day: int, month: int) -> tuple[float, str]:
             note = f"PG&E B-20 winter off-peak (month {month}, hour {hour_of_day})"
 
     return rate, note
+
+
+# backward-compat alias (internal callers use _pge_price_for_period)
+_pge_price_for_period = pge_price_for_period
 
 
 # ── EconomicDispatchLoop ──────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 """test_economic_dispatch_loop.py — EconomicDispatchLoop unit tests.
 
-GS-IMPL-PSP-002 §9 / Phase 2 / Phase 5.
+GS-IMPL-PSP-002 §9 / Phase 2 / Phase 4 / Phase 5.
 
 Tests covered (Phase 2 gate — all three defect corrections)
 ------------------------------------------------------------
@@ -21,6 +21,13 @@ Additional coverage
   - Solar excluded from allocation (PowerRanker passthrough).
   - keyword-only enforcement: positional call after t_s raises TypeError.
   - Winter Super Off-Peak window correctly priced (month 3–5, hours 9–13).
+
+Phase 4 additions
+-----------------
+  - pge_price_for_period() and season_from_month() are importable as public names.
+  - test_grid_confirm_tier_priced_correctly_for_tick_context: a GRID_FIRM source at
+    CONFIRM tier priced via pge_price_for_period() matches step()'s TOU repricing
+    for the same tick context — the grid-TOU scope-gap fix (Phase 4).
 """
 from __future__ import annotations
 
@@ -34,6 +41,8 @@ from core.economic_dispatch_loop import (
     DispatchResult,
     EconomicDispatchLoop,
     ShortfallEvent,
+    pge_price_for_period,
+    season_from_month,
 )
 from core.power_source_priority import (
     AuthorityTier,
@@ -485,3 +494,117 @@ class TestGreedyAllocationAndShortfall:
         result = _step([solar], demand_mw=10.0)
         assert result.allocations == []
         assert result.shortfall is not None
+
+
+# ── Phase 4: grid-TOU scope-gap fix ──────────────────────────────────────────
+
+class TestPhase4GridConfirmTierTOUPricing:
+    """pge_price_for_period() applied to GRID_FIRM/SPOT/RESERVED at CONFIRM tier.
+
+    Phase 4 scope-gap fix: a GRID_FIRM source at CONFIRM/HUMAN_ONLY tier that
+    appears in the §4.3 advisory must be priced using the tick-context TOU rate
+    (via the now-public pge_price_for_period()), NOT at its caller-supplied
+    marginal_cost_mwh.
+
+    This is the same bug class as the BESS scope gap fixed in Phase 2
+    post-review (BESS cost was only repriced in step(), so the §4.3 escalation
+    path calling rank() directly saw the caller-supplied cost rather than the
+    $38/MWh catalogue value).  The fix: expose pge_price_for_period() as a
+    public module-level function so both paths share one lookup.
+    """
+
+    def test_pge_price_for_period_is_importable_as_public(self) -> None:
+        """pge_price_for_period is a public module-level function (Phase 4)."""
+        # The import at the top of this file already proved this; this assertion
+        # makes the intent explicit and will fail loudly if the function is
+        # removed or made private again.
+        assert callable(pge_price_for_period), (
+            "pge_price_for_period must be importable as a public name "
+            "(Phase 4 grid-TOU scope-gap fix)"
+        )
+
+    def test_season_from_month_is_importable_as_public(self) -> None:
+        """season_from_month is a public module-level function (Phase 4)."""
+        assert callable(season_from_month), (
+            "season_from_month must be importable as a public name (Phase 4)"
+        )
+
+    def test_grid_confirm_tier_priced_correctly_for_tick_context(self) -> None:
+        """CONFIRM-tier GRID_FIRM source priced via pge_price_for_period() matches
+        the TOU rate step() uses for the same tick context (hour=17, month=7 → peak).
+
+        The §4.3 escalation assembler calls pge_price_for_period() to reprice
+        confirm/human_only grid sources before rank().  This test verifies that
+        the price produced by pge_price_for_period() is the same rate that
+        step() applies to AUTONOMOUS GRID_FIRM sources in the same tick context —
+        confirming both paths share one lookup rather than diverging silently.
+        """
+        hour_of_day = 17   # summer peak hour
+        month = 7          # July (summer)
+
+        # Price via the public helper — what the §4.3 escalation assembler uses.
+        escalation_price, escalation_note = pge_price_for_period(hour_of_day, month)
+
+        # Price that step() would apply to an AUTONOMOUS GRID_FIRM source.
+        autonomous_grid = _src(
+            "grid-autonomous",
+            source_type=PowerSourceType.GRID_FIRM,
+            authority_tier=AuthorityTier.AUTONOMOUS,
+            available_mw=50.0,
+            marginal_cost_mwh=0.0,   # caller-supplied; must be overwritten by step()
+        )
+        step_result = _step(
+            [autonomous_grid], demand_mw=10.0, hour_of_day=hour_of_day, month=month
+        )
+        assert step_result.allocations, "Autonomous GRID_FIRM should be allocated"
+        step_price = step_result.allocations[0].price_mwh
+
+        assert escalation_price == pytest.approx(step_price), (
+            f"pge_price_for_period({hour_of_day}, {month}) returned {escalation_price}, "
+            f"but step() priced the same GRID_FIRM autonomous source at {step_price}. "
+            "Both must produce the same TOU rate so the §4.3 confirm/human_only "
+            "advisory uses the same tick-context price as the autonomous dispatch path. "
+            "(Phase 4 grid-TOU scope-gap fix — test_grid_confirm_tier_priced_correctly_for_tick_context)"
+        )
+
+        # Also verify it is the summer peak rate from the catalogue.
+        expected = _sp.value("pge_tou_summer_peak_mwh")
+        assert escalation_price == pytest.approx(expected), (
+            f"Hour 17, month 7 should produce summer peak rate ({expected}), "
+            f"got {escalation_price}"
+        )
+        assert "summer peak" in escalation_note.lower(), (
+            f"Cost basis note should mention 'summer peak', got {escalation_note!r}"
+        )
+
+    def test_grid_confirm_tier_winter_super_off_peak(self) -> None:
+        """CONFIRM-tier GRID_FIRM at month=3, hour=11 priced at winter super off-peak.
+
+        Confirms pge_price_for_period() handles the most complex rate boundary
+        (month AND hour gating) the same way step() does."""
+        hour_of_day = 11   # within 9–13 super off-peak window
+        month = 3          # March — triggers super off-peak
+
+        escalation_price, _ = pge_price_for_period(hour_of_day, month)
+
+        # Verify against an AUTONOMOUS source through step()
+        autonomous_grid = _src(
+            "grid-auto-winter",
+            source_type=PowerSourceType.GRID_FIRM,
+            authority_tier=AuthorityTier.AUTONOMOUS,
+            available_mw=50.0,
+            marginal_cost_mwh=0.0,
+        )
+        step_result = _step(
+            [autonomous_grid], demand_mw=5.0, hour_of_day=hour_of_day, month=month
+        )
+        assert step_result.allocations
+        step_price = step_result.allocations[0].price_mwh
+
+        assert escalation_price == pytest.approx(step_price), (
+            "Winter super off-peak: pge_price_for_period() and step() must agree "
+            f"(month=3, hour=11): escalation={escalation_price}, step={step_price}"
+        )
+        assert escalation_price == pytest.approx(
+            _sp.value("pge_tou_winter_super_off_peak_mwh")
+        )
