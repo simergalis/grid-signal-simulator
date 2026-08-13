@@ -43,6 +43,11 @@ interface PlantDiagramProps {
    * Clicking the tag calls this handler to open the modal.
    */
   onSelectPowerSupply?: () => void
+  /**
+   * Revision counter incremented by the parent after PowerSupplySourcesModal
+   * saves so the diagram re-fetches sourceState without needing a selectedId change.
+   */
+  sourceStateRev?: number
 }
 
 function getMwForFlow(
@@ -963,7 +968,7 @@ const SRC_FLOW_INFO: Record<string, { nodeId: string; h: number }> = {
   'grid-to-sw':    { nodeId: 'grid-connection', h: 72 },
 }
 
-export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, onSelectPowerSupply }: PlantDiagramProps) {
+export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, onSelectPowerSupply, sourceStateRev }: PlantDiagramProps) {
   const tick       = useTickStore(s => s.latestTick)
   const selectedId = useScenarioStore(s => s.selectedId)
 
@@ -993,7 +998,7 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, 
       })
       .catch(() => {})
     return () => { cancelled = true }
-  }, [selectedId])
+  }, [selectedId, sourceStateRev])
 
   const fuelCellEnabled = sourceState.fuelCell
 

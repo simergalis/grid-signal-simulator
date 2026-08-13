@@ -77,9 +77,11 @@ function Pill({
 
 interface PowerSupplySourcesModalProps {
   onClose: () => void
+  /** Called after a successful save so the parent can refresh derived state. */
+  onSaved?: () => void
 }
 
-export function PowerSupplySourcesModal({ onClose }: PowerSupplySourcesModalProps) {
+export function PowerSupplySourcesModal({ onClose, onSaved }: PowerSupplySourcesModalProps) {
   const selectedId = useScenarioStore(s => s.selectedId)
 
   // Original spec values — used to restore when a source is re-enabled
@@ -168,6 +170,7 @@ export function PowerSupplySourcesModal({ onClose }: PowerSupplySourcesModalProp
       })
       if (!resp.ok) throw new Error(await resp.text())
       setSaved(true)
+      onSaved?.()
       setTimeout(() => { setSaved(false); onClose() }, 900)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Save failed')
