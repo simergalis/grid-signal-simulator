@@ -301,9 +301,12 @@ class TestD4SumIdentity:
         field was `_d4_sum - _balance_residual_mw` -- zero by algebra, a routing
         identity dressed as a diagnostic.
 
-        The defect resolves to zero in Phase 4, when frequency collapse makes UFLS
-        reachable and `p_unserved_mw` becomes non-zero. Until then a non-zero value
-        here is the expected, correct result.
+        D4 = local_gen + import − (demand − cumulative_shed_mw) − losses.
+        With no generation, no import (islanded), and no UFLS shed yet:
+          D4 = 0 + 0 − demand = −demand.
+        The defect resolves to zero in Phase 4, when frequency collapse triggers UFLS
+        and cumulative_shed_mw → demand, collapsing the served-load term to zero.
+        Until then a non-zero defect is the expected, correct result.
         """
         state = _make_state(
             bess_soc=0.0,
@@ -316,8 +319,10 @@ class TestD4SumIdentity:
         for i in range(5):
             tick = _run_tick(state, sim_time=float(i) * 5.0, dt=5.0)
         assert tick.p_generation_mw == pytest.approx(0.0)
-        assert tick.d4_balance_defect_mw == pytest.approx(
-            -(tick.p_demand_mw - tick.p_unserved_mw), rel=1e-9)
+        # D4 = local_gen − demand (no import, no UFLS shed) = −demand.
+        # tick.p_unserved_mw is the generation deficit (demand − p_served_mw),
+        # which differs from the UFLS-shed term used inside D4.
+        assert tick.d4_balance_defect_mw == pytest.approx(-tick.p_demand_mw, rel=1e-9)
         assert tick.d4_balance_defect_mw < -0.05      # a real gap, not rounding
 
     def test_D4_all_ticks_across_ramp(self):

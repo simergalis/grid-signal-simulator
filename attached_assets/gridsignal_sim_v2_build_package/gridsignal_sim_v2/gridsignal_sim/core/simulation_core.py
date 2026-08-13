@@ -1849,7 +1849,14 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # Per-subsystem shed: proportional to demand fraction (same judgement call as
     # before — stage definitions specify block_fraction of total demand only).
     _cumulative_shed_mw = state._cumulative_shed_mw  # monotonic run total
-    _p_served_mw   = min(p_demand_mw - _cumulative_shed_mw, _p_gen_mw)
+    # GS-FIX-SERVED: cap on _p_generation_mw (local gen + grid import) rather than
+    # _p_gen_mw (local gen only).  In grid-connected mode the grid is the slack bus
+    # and covers whatever local generation cannot supply; capping on _p_gen_mw alone
+    # set _p_served_mw = 0 whenever all turbines/BESS were absent or at standby,
+    # reporting SERVED = 0.00 MW even though the grid was actively importing to meet
+    # demand.  In islanded mode _grid_exchange_mw = 0 (D1), so
+    # _p_generation_mw == _p_gen_mw and the fix is a no-op there.
+    _p_served_mw   = min(p_demand_mw - _cumulative_shed_mw, _p_generation_mw)
     _p_unserved_mw = p_demand_mw - _p_served_mw   # shed + generation deficit
     _p_imbalance_mw = _p_generation_mw - _p_served_mw
 
@@ -1862,21 +1869,23 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # when islanded: _grid_exchange_mw=0, _frequency_forcing_mw=_balance_residual_mw
     # → defect = _balance_residual_mw - _balance_residual_mw = 0. Defect #273.
     #
-    # Replacement: supply-demand residual (generation + import − served − losses).
+    # Replacement: supply-demand residual (local_gen + import − served − losses).
     # Sign convention: positive = surplus generation (per core/power_balance.py).
     #
-    # DR-BAL-5 (C-3): p_unserved_mw wired from the current tick's cumulative shed.
-    # Moved to after _p_unserved_mw is computed so the identity accounts for any
-    # load shed that occurred in this tick. Costs nothing while Phase 4 is not yet
-    # wired (_p_unserved_mw is always 0.0); when Phase 4 makes UFLS reachable, a
-    # hardcoded zero would silently double-count shed load and report a deficit that
-    # has in fact been resolved.
+    # Convention note: power_balance.py uses GRID_EXCHANGE_POSITIVE_IS_IMPORT=True,
+    # meaning it expects a positive value for grid import.  simulation_core's
+    # _grid_exchange_mw is negative on import (balance_residual < 0 when local gen
+    # < demand), so we pass −_grid_exchange_mw here to match the convention.
+    #
+    # DR-BAL-5 (C-3): p_unserved_mw = _cumulative_shed_mw (UFLS-shed load only).
+    # Generation deficit is NOT a "shed" for D4 purposes — it shows up as a non-zero
+    # defect (generation + import < served) rather than reducing the served load term.
     # p_losses_mw defaults to 0.0 — the model does not represent losses.
     _d4_balance_defect_mw = _balance_defect_mw(_BalanceTerms(
-        p_generation_mw=_p_generation_mw,
+        p_generation_mw=_p_gen_mw,            # local gen only (turbine+BESS+solar)
         p_demand_mw=p_demand_mw,
-        p_unserved_mw=_p_unserved_mw,
-        grid_exchange_mw=_grid_exchange_mw,
+        p_unserved_mw=_cumulative_shed_mw,     # UFLS-shed only; gen deficit ≠ shed
+        grid_exchange_mw=-_grid_exchange_mw,   # negate: positive = import (POSITIVE_IS_IMPORT=True)
         island_mode=_BAL_ISLANDED if _islanded else _BAL_GRID_TIE,
     ))
     if abs(_d4_balance_defect_mw) >= 1e-3:
