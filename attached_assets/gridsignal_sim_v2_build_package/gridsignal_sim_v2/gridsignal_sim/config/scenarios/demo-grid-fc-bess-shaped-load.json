@@ -101,7 +101,7 @@
   "design_peak_load_mw": 37.8,
   "irradiance_steps": [],
   "fuel_cell_enabled": true,
-  "fuel_cell_rated_mw": 20.0,
+  "fuel_cell_rated_mw": 5.0,
   "fuel_cell_stack_count": 4,
   "gpu_load_profile": [],
   "island_mode": false,

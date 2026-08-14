@@ -471,7 +471,15 @@ class ScenarioSpec(BaseModel):
 
     # ── Fuel Cell Module Array ────────────────────────────────────────────────
     fuel_cell_enabled: bool = False
-    fuel_cell_rated_mw: float = Field(default=0.0, ge=0.0)
+    fuel_cell_rated_mw: float = Field(
+        default=0.0, ge=0.0,
+        description=(
+            "Nameplate MW rating of ONE fuel cell stack. "
+            "The physics engine and EDL use fuel_cell_rated_mw × fuel_cell_stack_count "
+            "as the fleet-total available capacity. "
+            "Example: 5 MW/stack × 4 stacks = 20 MW fleet."
+        ),
+    )
     fuel_cell_stack_count: int = Field(default=1, ge=1)
 
     # ── Power Management (GS-IMPL-PSP-002) ──────────────────────────────────────

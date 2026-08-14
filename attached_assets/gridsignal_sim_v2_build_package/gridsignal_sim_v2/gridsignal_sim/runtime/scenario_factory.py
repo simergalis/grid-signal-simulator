@@ -722,10 +722,19 @@ def build_run_context_from_spec(
     )
 
     # ── Fuel cell rated capacity ──────────────────────────────────────────
+    # fuel_cell_rated_mw is the nameplate rating of ONE stack.  Multiply by
+    # fuel_cell_stack_count to get the fleet-total capacity that the physics
+    # engine and EDL should see.  Default stack_count=1 is backward-compatible.
     # Set on SimulationState so evaluate_tick() can dispatch the fuel cell in
     # merit order (after BESS, before grid import).  0.0 when not enabled.
+    _fc_stack_count: int = int(spec_data.get("fuel_cell_stack_count", 1))
+    _fc_rated_mw_fleet: float = (
+        float(spec_data.get("fuel_cell_rated_mw", 0.0)) * _fc_stack_count
+        if spec_data.get("fuel_cell_enabled", False)
+        else 0.0
+    )
     if spec_data.get("fuel_cell_enabled", False):
-        sim_state.fuel_cell_rated_mw = float(spec_data.get("fuel_cell_rated_mw", 0.0))
+        sim_state.fuel_cell_rated_mw = _fc_rated_mw_fleet
 
     # ── GPU load profile ──────────────────────────────────────────────────
     _gpu_load_raw = spec_data.get("gpu_load_profile", [])
@@ -958,7 +967,8 @@ def build_run_context_from_spec(
             marginal_cost_mwh=float(_sp.value("fuel_cell_ppa_rate_mwh")),
             response_latency_class=_ResponseLatencyClass.RAMP_LIMITED,
             authority_tier=_AuthorityTier.AUTONOMOUS,
-            available_mw=float(spec_data.get("fuel_cell_rated_mw", 0.0)),
+            # fleet-total MW: per-stack rated_mw × stack_count (same as sim_state)
+            available_mw=_fc_rated_mw_fleet,
             cost_basis_note="fuel cell PPA rate (PSP-002 §7)",
         ))
 
