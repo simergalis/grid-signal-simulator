@@ -49,6 +49,7 @@ import core.site_parameters as _sp  # GS-DES-CFG-001 §Phase-6
 from pydantic import TypeAdapter
 
 from runtime.run_manager import InMemoryTimeseriesSink, RunContext
+from runtime.pms_test_double import OperatorResponseProfile as _OperatorResponseProfile
 from runtime.verdict import AssertionSpec as _AssertionSpec
 
 # W1 — advisory, telemetry, and procurement wiring.
@@ -981,6 +982,26 @@ def build_run_context_from_spec(
         spec_data.get("edl_calendar_month") or _datetime.datetime.now().month
     )
 
+    # ── Operator response profile (PSP-002 §3.4 / §4.3) ─────────────────
+    # ScenarioSpec.operator_response_profile is an untyped dict stored in
+    # JSON, so dict keys are always strings.  OperatorResponseProfile expects
+    # Dict[int, ...] keys (rank is 1-indexed int), so coerce on the way in.
+    _raw_pms = spec_data.get("operator_response_profile")
+    _pms_profile: "_OperatorResponseProfile | None" = None
+    if isinstance(_raw_pms, dict):
+        _pms_profile = _OperatorResponseProfile(
+            response_latency_s={
+                int(k): float(v)
+                for k, v in _raw_pms.get("response_latency_s", {}).items()
+            },
+            approve={
+                int(k): bool(v)
+                for k, v in _raw_pms.get("approve", {}).items()
+            },
+            default_latency_s=float(_raw_pms.get("default_latency_s", 30.0)),
+            default_approve=bool(_raw_pms.get("default_approve", True)),
+        )
+
     # ── RunContext ────────────────────────────────────────────────────────
     return RunContext(
         run_id=run_id,
@@ -1089,6 +1110,9 @@ def build_run_context_from_spec(
         edl_sources=_edl_sources,
         # PSP-002 §7 / Task #370 — TOU month for grid repricing.
         edl_calendar_month=_edl_calendar_month,
+        # PSP-002 §4.3 / Task #372 — PMSTestDouble operator response profile.
+        # None when the scenario spec omits operator_response_profile (most runs).
+        pms_response_profile=_pms_profile,
     )
 
 
