@@ -929,6 +929,8 @@ def _seed_json_scenarios(store: ScenarioStore) -> None:
         ("demo-10-tenant-overload-120pct", "demo-10-tenant-overload-120pct.json"),
         # Grid + Fuel Cell + BESS only — same 90-min shaped load, no turbines or solar
         ("demo-grid-fc-bess-shaped-load", "demo-grid-fc-bess-shaped-load.json"),
+        # 20-tenant 1 MW contract — one tenant spikes to ~150% of ceiling at t=5 min
+        ("demo-20-tenant-contract-breach", "demo-20-tenant-contract-breach.json"),
     ]
 
     _cfg_dir = _Path("config/scenarios")

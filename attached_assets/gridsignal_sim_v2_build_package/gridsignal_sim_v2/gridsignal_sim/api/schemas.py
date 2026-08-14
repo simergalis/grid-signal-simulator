@@ -407,6 +407,11 @@ class DqInjectEvent(BaseModel):
 # H100 SXM5 TDP — any change here must match the frontend GPU_TDP_MW constant.
 TENANT_CONTRACTED_MW: dict[str, float] = {
     "a": 1.40, "b": 1.00, "c": 0.60, "d": 0.80, "e": 0.45,
+    # 20-tenant contract-breach scenario — 1 MW ceiling per tenant (t01–t20).
+    "t01": 1.0, "t02": 1.0, "t03": 1.0, "t04": 1.0, "t05": 1.0,
+    "t06": 1.0, "t07": 1.0, "t08": 1.0, "t09": 1.0, "t10": 1.0,
+    "t11": 1.0, "t12": 1.0, "t13": 1.0, "t14": 1.0, "t15": 1.0,
+    "t16": 1.0, "t17": 1.0, "t18": 1.0, "t19": 1.0, "t20": 1.0,
 }
 _DEFAULT_TENANT_CONTRACTED_MW = 0.20   # fallback for custom / unlisted tenant IDs
 _GPU_TDP_MW = 0.0007                   # H100 SXM5 TDP per GPU in MW
