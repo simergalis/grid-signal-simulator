@@ -932,6 +932,29 @@ class ScenarioSpec(BaseModel):
             )
         return self
 
+    @model_validator(mode="after")
+    def _gpu_load_profile_within_duration(self) -> "ScenarioSpec":
+        """Reject any GPU load point whose timestamp exceeds the run duration.
+
+        gpu_load_profile is a zero-order-hold step function keyed by sim_time_s.
+        A point at t > end_sim_time is never reached during the run, so it is
+        either a data entry mistake or a stale point left over after the operator
+        shortened the run.  Either way it should be rejected at save time rather
+        than silently ignored during replay.
+        """
+        bad = [
+            t for t, _frac in self.gpu_load_profile
+            if t > self.end_sim_time
+        ]
+        if bad:
+            bad_str = ", ".join(f"{t:.1f}s" for t in bad)
+            raise ValueError(
+                f"gpu_load_profile contains {len(bad)} point(s) beyond the run "
+                f"duration ({self.end_sim_time:.0f}s): {bad_str}. "
+                f"Remove or adjust these points so every timestamp is ≤ end_sim_time."
+            )
+        return self
+
     def collect_c_rate_warnings(self) -> list[str]:
         """Return all non-None C-rate warnings across the BESS fleet."""
         return [w for u in self.bess_units if (w := u.c_rate_warning()) is not None]
