@@ -567,7 +567,7 @@ export function ScenarioBuilder({ editId, onClose, onSaved }: Props) {
       onClick={onClose}
     >
       <div
-        className="relative z-50 flex flex-col w-[820px] max-h-[92vh] rounded-xl border border-border bg-surface shadow-2xl overflow-hidden"
+        className="relative z-50 flex flex-col w-[1100px] max-w-[96vw] max-h-[92vh] rounded-xl border border-border bg-surface shadow-2xl overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
