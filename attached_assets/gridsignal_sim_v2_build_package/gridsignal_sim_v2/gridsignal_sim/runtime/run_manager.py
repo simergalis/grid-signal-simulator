@@ -161,10 +161,20 @@ _SEND_TIMEOUT_S: float = 0.25
 class WebSocketHub:
     """Per-run pub/sub. Design Spec Section 4.4: broadcast fans out
     concurrently to every subscriber of a run; a slow or dead
-    connection doesn't block the others or the run loop itself."""
+    connection doesn't block the others or the run loop itself.
+
+    FLAG-3 fix: every broadcast is cached in _latest_ticks so that
+    GET /runs/{run_id}/latest-tick can serve the most recent tick
+    payload to server-side pollers (monitoring scripts, CI checks)
+    without requiring a WebSocket connection.  The cache entry is
+    evicted when the run completes; completed run's last tick is
+    available via CompletedRun.tick_dicts[-1].
+    """
 
     def __init__(self) -> None:
         self._subscribers: dict[str, set[WebSocketLike]] = {}
+        # run_id → most-recently-broadcast tick payload dict
+        self._latest_ticks: dict[str, dict] = {}
 
     def subscribe(self, run_id: str, ws: WebSocketLike) -> None:
         self._subscribers.setdefault(run_id, set()).add(ws)
@@ -186,6 +196,12 @@ class WebSocketHub:
         Cancelled runs are NOT notified — the frontend's Stop button already
         calls handleRunStopped directly, which unmounts useTickStream cleanly.
         """
+        # FLAG-3 fix: evict the latest-tick cache for this run.  After completion
+        # the full tick history is in CompletedRun.tick_dicts (accessible via
+        # GET /runs/{run_id}/latest-tick fallback path), so the per-run dict
+        # entry here is no longer needed and would hold stale data indefinitely.
+        self._latest_ticks.pop(run_id, None)
+
         subs = list(self._subscribers.pop(run_id, ()))
         if not subs:
             return
@@ -203,14 +219,25 @@ class WebSocketHub:
 
         await asyncio.gather(*(_send_and_close(ws) for ws in subs))
 
+    def get_latest_tick(self, run_id: str) -> "dict | None":
+        """Return the most recently broadcast tick payload dict, or None.
+
+        Used by GET /runs/{run_id}/latest-tick (FLAG-3 fix) to expose
+        the WebSocket tick stream to server-side REST pollers without
+        requiring a WebSocket connection.
+        """
+        return self._latest_ticks.get(run_id)
+
     async def broadcast(self, run_id: str, tick_result: TickResult) -> None:
         # Phase 2A: propagate protection_provisional flag to run-wide tracker.
         if tick_result.protection_provisional:
             set_run_provisional()
-        subs = list(self._subscribers.get(run_id, ()))
-        if not subs:
-            return
-        payload = _tick_result_to_dict(tick_result)
+
+        # Build the payload dict and stamp wall-clock emit time before caching
+        # and before fanning out to subscribers.  Payload is assembled here even
+        # when there are no WebSocket subscribers so that GET /runs/{run_id}/latest-tick
+        # always has fresh data regardless of whether a browser tab is open.
+        #
         # Phase 10 §12.10 — stamp wall-clock emit time so the frontend can
         # return it to POST /api/session/observe-tick for a server-side round-trip
         # measurement.  Stamped once here (not in _tick_result_to_dict) so the
@@ -219,7 +246,16 @@ class WebSocketHub:
         # Serialised as a *string* to avoid JavaScript safe-integer loss on
         # long-running hosts (monotonic_ns > 2^53 after ~104 days of uptime).
         import time as _t
+        payload = _tick_result_to_dict(tick_result)
         payload["t_emit_ns"] = str(_t.monotonic_ns())
+
+        # FLAG-3 fix: cache for REST polling.  Overwrite unconditionally — only
+        # the latest tick is kept; the full history lives in CompletedRun.tick_dicts.
+        self._latest_ticks[run_id] = payload
+
+        subs = list(self._subscribers.get(run_id, ()))
+        if not subs:
+            return
 
         async def _safe_send(ws: WebSocketLike) -> None:
             try:

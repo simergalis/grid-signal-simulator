@@ -14,6 +14,7 @@ GET    /runs/{run_id}               status of one run
 DELETE /runs/{run_id}               cancel a run
 GET    /runs/{run_id}/result        verdict + assertion details (completed runs)
 GET    /runs/{run_id}/timeseries    full tick history with gap flags (completed runs)
+GET    /runs/{run_id}/latest-tick   most recent WebSocket tick payload via REST (FLAG-3)
 
 Restart / durability scope (Step 9):
   GET /runs/{run_id}/result and GET /runs/{run_id}/timeseries both read from
@@ -709,6 +710,94 @@ async def get_run_timeseries(
         gap_count=completed.verdict.gap_count,
         rows=rows_out,
     )
+
+
+@router.get(
+    "/{run_id}/latest-tick",
+    summary="Latest broadcast tick payload for an active run (FLAG-3 REST polling)",
+    responses={
+        200: {"description": "Most recent tick payload — same shape as the WebSocket broadcast"},
+        202: {"description": "Run is active but no tick has been broadcast yet; retry shortly"},
+        404: {"description": "run_id not found (unknown or predates current server process)"},
+        409: {"description": "Run completed but tick history is unavailable after server restart"},
+    },
+)
+async def get_latest_tick(
+    run_id: str,
+    request: Request,
+    manager: RunManager = Depends(_run_manager),
+) -> dict:
+    """Return the most recently broadcast tick payload for *run_id*.
+
+    This endpoint closes the monitoring gap identified as FLAG-3: the WebSocket
+    tick stream carries all critical energy variables (p_generation_mw,
+    p_demand_mw, d4_balance_defect_mw, bess_output_mw, soc_pct, fuel_cell_output_mw,
+    grid_exchange_mw, bess_bridging_seconds, insufficient_reserve_alert …) but no
+    REST endpoint existed for server-side tooling to read them without a WebSocket.
+
+    Response payload is the verbatim dict broadcast over the WebSocket (same keys,
+    same types), plus the ``t_emit_ns`` monotonic-clock stamp from the server.
+    Suitable for polling: call every 5–10 s (one or two tick intervals) to track
+    the latest physics state from monitoring scripts, CI health-checks, or ops
+    dashboards.
+
+    Active run  → returns the cached payload from the most recent broadcast.
+    Completed run → returns the final tick from CompletedRun.tick_dicts (in-memory).
+    Completed + restarted server → 409 Gone (tick history unavailable after restart).
+    Unknown run_id → 404.
+    """
+    from fastapi.responses import JSONResponse
+
+    hub = request.app.state.ws_hub
+    ctx = manager.get_context(run_id)
+
+    if ctx is not None:
+        # Active run — serve from hub's latest-tick cache.
+        payload = hub.get_latest_tick(run_id)
+        if payload is None:
+            # Run has started but the drive loop hasn't broadcast the first tick yet.
+            return JSONResponse(
+                status_code=status.HTTP_202_ACCEPTED,
+                content={
+                    "detail": (
+                        f"Run {run_id!r} is active but no tick has been broadcast yet. "
+                        "Retry in 5 seconds."
+                    )
+                },
+            )
+        return payload
+
+    # Run is not active — check completed store.
+    completed = manager.get_completed(run_id)
+    if completed is None:
+        # Durability fallback: try the DB (verdict only; tick_dicts not persisted).
+        _db_completed = await _load_completed_from_db(run_id)
+        if _db_completed is not None:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    f"Run {run_id!r} completed before the current server process started. "
+                    "Tick-by-tick data is held in memory only and is not available after "
+                    "a server restart.  The verdict is available via "
+                    "GET /runs/{run_id}/result."
+                ),
+            )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                f"Run {run_id!r} not found. "
+                "It may have been started in a previous server process "
+                "or the run_id is incorrect."
+            ),
+        )
+
+    # Completed run, tick history in memory — return the final tick dict.
+    if not completed.tick_dicts:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Run {run_id!r} completed but recorded no ticks.",
+        )
+    return completed.tick_dicts[-1]
 
 
 @router.get(
