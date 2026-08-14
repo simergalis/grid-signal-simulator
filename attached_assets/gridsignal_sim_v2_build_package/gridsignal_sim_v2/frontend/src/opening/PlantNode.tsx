@@ -30,27 +30,6 @@ export interface SolarPreview {
   plant_rated_ac_mw: number   // AC rated capacity in MW
 }
 
-/**
- * Compute real-time sun elevation angle in degrees.
- * Matches the Python _sun_elevation_deg() physics in api/routes/solar.py.
- * Returns negative values when the sun is below the horizon.
- */
-function computeSunElevationDeg(lat: number, utcOffsetH: number): number {
-  const now = new Date()
-  const utcH = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600
-  const localH = ((utcH + utcOffsetH) % 24 + 24) % 24
-  const hourAngleRad = ((localH - 12.0) * 15.0) * Math.PI / 180
-  // Day of year
-  const startOfYear = Date.UTC(now.getUTCFullYear(), 0, 1)
-  const dayOfYear = Math.floor((now.getTime() - startOfYear) / 86_400_000) + 1
-  const declRad = 23.45 * Math.sin((360.0 / 365.0 * (dayOfYear - 81)) * Math.PI / 180) * Math.PI / 180
-  const latRad = lat * Math.PI / 180
-  const sinElev = (
-    Math.sin(latRad) * Math.sin(declRad)
-    + Math.cos(latRad) * Math.cos(declRad) * Math.cos(hourAngleRad)
-  )
-  return Math.asin(Math.max(-1.0, Math.min(1.0, sinElev))) * 180 / Math.PI
-}
 
 interface PlantNodeProps {
   def: NodeDef
@@ -112,15 +91,10 @@ function nodeDetail(
     }
     case 'solar-pv': {
       if (tick) {
-        // Live run: expected MW from bank telemetry + real-time sun elevation
-        const exp      = (tick as unknown as Record<string, number>).p_expected_mw ?? 0
-        const lat      = solarPreview?.lat ?? 32.72
-        const utcOff   = solarPreview?.utc_offset_h ?? -8.0
-        const elev     = computeSunElevationDeg(lat, utcOff)
-        const elevStr  = elev >= 0
-          ? `sun ${Math.round(elev)}° above horizon`
-          : 'sun below horizon'
-        return `exp ${exp.toFixed(2)} MW · ${elevStr}`
+        // Live run: expected MW from bank telemetry + banks-reporting count
+        const exp            = (tick as unknown as Record<string, number>).p_expected_mw ?? 0
+        const banksReporting = (tick as unknown as Record<string, number>).banks_reporting ?? 0
+        return `expected ${exp.toFixed(2)} MW · ${banksReporting} of 20 banks reporting`
       }
       // Pre-run: expected MW and sun position from solar-preview
       if (solarPreview) {
@@ -514,7 +488,7 @@ export function PlantNode({ def, tick, onClick, solarPreview, liveSolarMW }: Pla
             marginTop: 1,
             marginBottom: 2,
           }}>
-            Rack draw is what gen-trip cover is measured against — if the fleet can't cover a unit
+            Rack draw is what gen-trip cover is measured against — if generators and battery can't cover a unit
             trip, this is the load that pauses. → gen-trip cover tile
           </div>
         )}

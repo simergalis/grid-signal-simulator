@@ -656,7 +656,7 @@ export const renewablePanel: PanelConfig = {
       chartTitle: 'CONTRIBUTION, AND EXPOSURE IF IT STOPS',
       chart,
       statRows: [
-        { label: 'Output',                  value: `${solarMW.toFixed(2)} MW`, sub: 'real-time · instantaneous' },
+        { label: 'Output',                  value: `${solarMW.toFixed(2)} MW`, sub: `real-time · ${tick.banks_reporting ?? 0} of 20 banks reporting` },
         // Expected output from physics model at current sun angle
         {
           label: 'Expected output',
