@@ -120,7 +120,9 @@ interface Job {
  * Derive job list for a full-telemetry tenant.
  *
  * drawMW may be:
- *   • tick.p_compute_mw × tenant.frac   (live run) — jobs scaled so Σ tdpMW = drawMW
+ *   • tick.p_compute_mw × tenant.frac   (live run) — jobs scaled to approximate drawMW;
+ *     Σ tdpMW may differ slightly from drawMW due to integer GPU rounding.
+ *     Callers must use drawMW directly for the authoritative MW figure, not the TDP sum.
  *   • 0 or absent (no run)              — fall back to base GPU counts
  */
 function deriveJobs(tenant: TenantDef, drawMW: number): Job[] {
@@ -568,11 +570,14 @@ export function ComputeRacksModal({ tick, onClose }: Props) {
                 </thead>
                 <tbody>
                   {visibleRows.map(t => {
-                    // Per-tenant MW: from job rollup (full) or tick frac (metered)
-                    const jobs = t.tier === 'full' ? deriveJobs(t, siteMW * t.frac) : []
-                    const tenantMW = t.tier === 'full'
-                      ? jobs.reduce((s, j) => s + j.tdpMW, 0)
-                      : siteMW * t.frac
+                    // Per-tenant MW: always the proportional slice of the live tick value
+                    // so that Σ tenantMW = siteMW and the rollup matches the plant diagram.
+                    // deriveJobs is called for full-telemetry tenants only to derive realistic
+                    // GPU node counts for display — its integer-rounded TDP sum is intentionally
+                    // NOT used as the authoritative MW figure (rounding loss would cause the
+                    // per-row values to diverge from tick.p_compute_mw shown in the hero).
+                    const tenantMW = siteMW * t.frac
+                    const jobs = t.tier === 'full' ? deriveJobs(t, tenantMW) : []
                     const forecast = t.tier === 'full' ? tenantMW * t.forecastMult : null
                     // GPU node count: exact from job rollup (full) or estimated from MW (metered)
                     const gpuNodes = t.tier === 'full'
