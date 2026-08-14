@@ -643,6 +643,15 @@ class TimeseriesSink(Protocol):
     async def get_eval_rows(self, run_id: str) -> list[EvalRow]: ...
     def get_dropped_ticks(self) -> int: ...
     async def get_tick_dicts(self, run_id: str) -> list[dict]: ...
+    async def append_error(
+        self,
+        error_kind: str,
+        run_id: Optional[str],
+        message: str,
+        detail: Optional[str] = None,
+        sim_time_seconds: Optional[float] = None,
+        tick_index: Optional[int] = None,
+    ) -> None: ...
 
 
 class InMemoryTimeseriesSink:
@@ -679,6 +688,17 @@ class InMemoryTimeseriesSink:
     async def get_tick_dicts(self, run_id: str) -> list[dict]:
         """Return all ticks as serialisation dicts (same format as WS broadcast)."""
         return [_tick_result_to_dict(r) for r in self.rows]
+
+    async def append_error(
+        self,
+        error_kind: str,
+        run_id: Optional[str],
+        message: str,
+        detail: Optional[str] = None,
+        sim_time_seconds: Optional[float] = None,
+        tick_index: Optional[int] = None,
+    ) -> None:
+        """No-op for the in-memory / test sink — errors are not persisted."""
 
 
 # ---------------------------------------------------------------------------
@@ -1850,6 +1870,36 @@ class RunManager:
                 await ctx.sink.append(tick_result)                 # I/O -- yields to sibling runs
                 if _profiling: _sec.setdefault("C_sink_append", []).append(_time_module.perf_counter() - _t0)
 
+                # ── Runtime error log: D4 balance violation ───────────────
+                # d4_balance_defect_mw is zero by construction in normal
+                # operation (the balance channels are assigned from the same
+                # residual variable).  A non-zero defect indicates a future
+                # refactoring broke the decomposition; persist the record so
+                # it is discoverable after the run without scanning logs.
+                if abs(tick_result.d4_balance_defect_mw) >= 1e-3:
+                    import json as _json_err
+                    await ctx.sink.append_error(
+                        error_kind="balance_violation",
+                        run_id=ctx.run_id,
+                        message=(
+                            f"D4 balance identity does not close: "
+                            f"{tick_result.d4_balance_defect_mw:+.4g} MW "
+                            f"at tick {tick_result.tick_index} "
+                            f"(sim_time={tick_result.sim_time_seconds:.1f}s)"
+                        ),
+                        detail=_json_err.dumps({
+                            "defect_mw":       round(tick_result.d4_balance_defect_mw, 6),
+                            "p_generation_mw": round(tick_result.p_generation_mw, 4),
+                            "p_demand_mw":     round(tick_result.p_demand_mw, 4),
+                            "grid_exchange_mw": round(tick_result.grid_exchange_mw, 5),
+                            "frequency_forcing_mw": round(tick_result.frequency_forcing_mw, 5),
+                            "asset_delivery_error_mw": round(tick_result.asset_delivery_error_mw, 5),
+                            "islanded":        tick_result.frequency_hz > 0,
+                        }),
+                        sim_time_seconds=tick_result.sim_time_seconds,
+                        tick_index=tick_result.tick_index,
+                    )
+
                 if _profiling: _t0 = _time_module.perf_counter()
                 await self._ws_hub.broadcast(ctx.run_id, tick_result)  # I/O -- yields
                 if _profiling: _sec.setdefault("C_ws_broadcast", []).append(_time_module.perf_counter() - _t0)
@@ -2013,6 +2063,29 @@ class RunManager:
         except asyncio.CancelledError:
             _cancelled_externally = True
             logger.info("run %s cancelled mid-flight", ctx.run_id)
+            raise
+        except Exception as _run_exc:
+            # Unexpected exception — the run cannot continue.  Persist a
+            # structured record before re-raising so the error is discoverable
+            # in the runtime_error_log table without needing to search server
+            # logs.  The try/except here must never suppress the original
+            # exception; if the logging write itself fails it is swallowed.
+            import traceback as _tb
+            import json as _json_exc
+            _exc_detail = _json_exc.dumps({"traceback": _tb.format_exc()})
+            logger.error(
+                "run %s: unexpected exception in _drive — %s: %s",
+                ctx.run_id, type(_run_exc).__name__, _run_exc, exc_info=True,
+            )
+            try:
+                await ctx.sink.append_error(
+                    error_kind="exception",
+                    run_id=ctx.run_id,
+                    message=f"{type(_run_exc).__name__}: {_run_exc}",
+                    detail=_exc_detail,
+                )
+            except Exception:  # noqa: BLE001 — logging failure must not shadow the real error
+                pass
             raise
         finally:
             # Close kube debug CSV if it was opened for this run.

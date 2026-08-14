@@ -517,6 +517,50 @@ class ControlEventAck(Base):
 
 
 # ---------------------------------------------------------------------------
+# Runtime error log
+# ---------------------------------------------------------------------------
+
+class RuntimeErrorLog(Base):
+    """Structured record written whenever the simulator detects an internal
+    error during a run:
+
+      'balance_violation' — d4_balance_defect_mw ≥ 1e-3 on any tick.
+        The D4 power-accounting identity (grid_exchange + frequency_forcing
+        = balance_residual) did not close.  This indicates a model-level
+        accounting bug — a signal that cannot normally fire unless new code
+        introduces a decomposition error.
+
+      'exception' — an unexpected Python exception escaped the main tick
+        loop in RunManager._drive().  The run terminates abnormally; detail
+        carries the full traceback.
+
+    error_kind is constrained to these two values via a CHECK constraint.
+    detail is a JSON string with context-dependent fields:
+      balance_violation → defect_mw, p_generation_mw, p_demand_mw,
+                          grid_exchange_mw, islanded
+      exception         → traceback (formatted string)
+    """
+
+    __tablename__ = "runtime_error_log"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    logged_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    error_kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    run_id: Mapped[Optional[str]] = mapped_column(String(128), nullable=True, index=True)
+    sim_time_seconds: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    tick_index: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    message: Mapped[str] = mapped_column(Text, nullable=False)
+    detail: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # JSON
+
+    __table_args__ = (
+        CheckConstraint(
+            "error_kind IN ('balance_violation', 'exception')",
+            name="ck_runtime_error_log_kind",
+        ),
+    )
+
+
+# ---------------------------------------------------------------------------
 # SqlitePersistedTimeseriesSink
 # ---------------------------------------------------------------------------
 
@@ -755,6 +799,47 @@ class SqlitePersistedTimeseriesSink:
                 "SqlitePersistedTimeseriesSink.start() has not been called"
             )
         self._ce_queue.put_nowait(ce)
+
+    async def append_error(
+        self,
+        error_kind: str,
+        run_id: Optional[str],
+        message: str,
+        detail: Optional[str] = None,
+        sim_time_seconds: Optional[float] = None,
+        tick_index: Optional[int] = None,
+    ) -> None:
+        """Persist a structured runtime error record directly (no queue).
+
+        Errors are rare (balance violations, unexpected exceptions) so a
+        synchronous inline write is used rather than enqueueing.  A failure
+        here is logged at WARNING level and swallowed — the caller must not
+        crash because error logging failed.
+
+        error_kind must be 'balance_violation' or 'exception' (enforced by
+        the DB CHECK constraint; a wrong value will raise on commit).
+        """
+        if self._engine is None:
+            return
+        try:
+            async with AsyncSession(self._engine) as _err_session:
+                async with _err_session.begin():
+                    _err_session.add(
+                        RuntimeErrorLog(
+                            logged_at=datetime.now(timezone.utc),
+                            error_kind=error_kind,
+                            run_id=run_id,
+                            sim_time_seconds=sim_time_seconds,
+                            tick_index=tick_index,
+                            message=message,
+                            detail=detail,
+                        )
+                    )
+        except Exception:  # noqa: BLE001
+            _log.warning(
+                "append_error: failed to persist %s for run %s (swallowed)",
+                error_kind, run_id, exc_info=True,
+            )
 
     async def finalize(self, run_id: str, verdict: str | None) -> None:
         """Flush all pending tick and ControlEvent writes, then record the
