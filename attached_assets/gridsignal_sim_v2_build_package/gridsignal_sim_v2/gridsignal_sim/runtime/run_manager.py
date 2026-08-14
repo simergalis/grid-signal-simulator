@@ -1498,10 +1498,32 @@ class RunManager:
                 # decisions use the per-bank enabled value — not rated_mw * fraction.
                 # SolarSim.set_mistral_fraction() is called here (not in section C)
                 # so the fraction is stable for the entire tick.
+                #
+                # IMPORTANT: SolarSim is a fixed product-level demo whose total
+                # rated capacity (Σ bank_rated_ac_mw) may differ from the
+                # scenario's solar_rated_mw.  Using live_aggregate_mw() raw
+                # inflates (or deflates) the physics input.  Instead, derive an
+                # availability fraction from the SolarSim (which reflects per-bank
+                # enabled/disabled state) and scale it to the scenario's rated MW.
+                _pre_solar_mw: Optional[float] = None  # set below; reused in C backstop
                 if self.solar_sim is not None and ctx.irradiance_profile is not None:
                     _pre_frac = ctx.irradiance_profile.fraction_at(ctx.sim_time)
                     self.solar_sim.set_mistral_fraction(_pre_frac)
-                    _pre_solar_mw = self.solar_sim.live_aggregate_mw()
+                    _solar_sim_raw_mw = self.solar_sim.live_aggregate_mw()
+                    # Compute the availability fraction the SolarSim sees (accounting
+                    # for bank outages, no-comms, etc.) and apply it to the scenario
+                    # rated capacity — not to the SolarSim's own rated capacity.
+                    _solar_sim_rated_total = sum(
+                        b.rated_mw for b in self.solar_sim.state.blocks
+                    )
+                    _scenario_solar_rated = sum(
+                        sm.config.rated_mw for sm in ctx.sim_state.solar_arrays
+                    )
+                    if _solar_sim_rated_total > 0.0 and _scenario_solar_rated > 0.0:
+                        _solar_avail_fraction = _solar_sim_raw_mw / _solar_sim_rated_total
+                        _pre_solar_mw = _solar_avail_fraction * _scenario_solar_rated
+                    else:
+                        _pre_solar_mw = _solar_sim_raw_mw
                     for _sm in ctx.sim_state.solar_arrays:
                         _sm.override_output_mw(_pre_solar_mw)
 
@@ -1856,14 +1878,20 @@ class RunManager:
                     if _profiling: _sec.setdefault("B2_fabric_tick", []).append(_time_module.perf_counter() - _t0)
 
                 # ── C: sink + broadcast ───────────────────────────────────
-                # Safety backstop: re-stamp p_renewable_mw from the live
-                # aggregate.  The fraction was already pushed in A0 (pre-step),
-                # so live_aggregate_mw() returns the same value that was
-                # injected into solar_arrays — no second fraction lookup needed.
+                # Safety backstop: re-stamp p_renewable_mw with the value that
+                # was injected into solar_arrays in A0 (_pre_solar_mw).  That
+                # value is already normalized to the scenario's rated MW so the
+                # tick result is consistent with what the physics engine used.
+                # Fall back to live_aggregate_mw() only when A0 was skipped
+                # (irradiance_profile is None) — an unusual edge case.
                 if self.solar_sim is not None:
                     tick_result = _dc_replace(
                         tick_result,
-                        p_renewable_mw=self.solar_sim.live_aggregate_mw(),
+                        p_renewable_mw=(
+                            _pre_solar_mw
+                            if _pre_solar_mw is not None
+                            else self.solar_sim.live_aggregate_mw()
+                        ),
                     )
 
                 if _profiling: _t0 = _time_module.perf_counter()
