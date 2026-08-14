@@ -45,6 +45,10 @@ from core.models import (
 from core.kube_demand import KubeConfig, KubeDemandAgent
 from core.step_config import LoadProfileConfig, StepTimingConfig
 from core.simulation_core import SimulationState, TenantBurstEvent
+from api.schemas import (
+    TENANT_CONTRACTED_MW as _TENANT_CONTRACTED_MW,
+    _DEFAULT_TENANT_CONTRACTED_MW as _DEFAULT_TENANT_MW,
+)
 import core.site_parameters as _sp  # GS-DES-CFG-001 §Phase-6
 from pydantic import TypeAdapter
 
@@ -746,6 +750,8 @@ def build_run_context_from_spec(
     # ── Tenant workload events ────────────────────────────────────────────
     # Translate ScenarioSpec.tenant_events dicts into TenantBurstEvent instances
     # and store on sim_state so evaluate_tick() can add their MW each tick.
+    # Also populate tenant_contracted_mw so evaluate_tick() can compute per-tenant
+    # overage MWh for billing (draw above 100 % of ceiling, up to 150 %, billed at +50 %).
     _tenant_events_raw = spec_data.get("tenant_events", [])
     if _tenant_events_raw:
         sim_state.tenant_events = [
@@ -758,6 +764,26 @@ def build_run_context_from_spec(
             for ev in _tenant_events_raw
             if int(ev.get("gpus", 0)) > 0
         ]
+        # Build contracted-ceiling lookup from the unique tenant IDs present in the
+        # scenario.  Uses the global catalogue first; falls back to the per-scenario
+        # tenant_budgets list (if provided); then to the default 0.20 MW fallback.
+        _inline_budgets: dict[str, float] = {}
+        for _tb in spec_data.get("tenant_budgets") or []:
+            _tb_id = str(_tb.get("tenant_id", "")).lower()
+            _tb_ceil = float(_tb.get("ceiling_mw", 0.0))
+            if _tb_id and _tb_ceil > 0.0:
+                _inline_budgets[_tb_id] = _tb_ceil
+        _unique_tids = {
+            str(ev.get("tenant_id", "")).lower()
+            for ev in _tenant_events_raw
+            if int(ev.get("gpus", 0)) > 0
+        }
+        sim_state.tenant_contracted_mw = {
+            tid: _inline_budgets.get(
+                tid, _TENANT_CONTRACTED_MW.get(tid, _DEFAULT_TENANT_MW)
+            )
+            for tid in _unique_tids
+        }
 
     # ── Kubernetes demand agent ───────────────────────────────────────────
     # Created after SimulationState so site_id is available.

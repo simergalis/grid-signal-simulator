@@ -2208,6 +2208,27 @@ class RunManager:
                     balance_gate=_balance_gate,
                 )
 
+                # Tenant overage billing summary — emitted once per run when
+                # tenant events were active and any tenant drew above their
+                # contracted ceiling.  Overage is billed at +50 % per MWh on
+                # top of the normal rate (policy: _TENANT_OVERAGE_SURCHARGE_RATE
+                # in api/schemas.py).  Logged at INFO so operators can grep the
+                # server log for "tenant billing" to audit charges.
+                _overage = getattr(ctx.sim_state, "tenant_overage_mwh", {})
+                if _overage:
+                    _SURCHARGE_RATE = 0.50  # mirrors api/schemas._TENANT_OVERAGE_SURCHARGE_RATE
+                    for _tid, _omwh in sorted(_overage.items()):
+                        if _omwh > 1e-6:
+                            logger.info(
+                                "run %s: tenant billing — tenant %r: %.4f MWh over ceiling "
+                                "(surcharge %.4f MWh-equivalent at +%.0f%% per MWh)",
+                                ctx.run_id,
+                                _tid,
+                                _omwh,
+                                _omwh * _SURCHARGE_RATE,
+                                _SURCHARGE_RATE * 100,
+                            )
+
                 # Durability: persist verdict to the durable DB so that
                 # GET /runs/{id}/result survives a server restart.
                 # The hook is set by api/app.py; absent in tests.

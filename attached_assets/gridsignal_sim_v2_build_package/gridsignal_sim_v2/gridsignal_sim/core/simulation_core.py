@@ -156,6 +156,17 @@ class SimulationState:
     # Empty list = no extra tenant load (default; fully backward-compat).
     tenant_events: list = field(default_factory=list)  # list[TenantBurstEvent]
 
+    # Contracted power ceilings (MW) per tenant ID — populated by scenario_factory
+    # alongside tenant_events.  Empty dict when no tenant events are configured.
+    # Used by evaluate_tick() to compute overage MWh when a tenant draws above
+    # 100 % of their contracted ceiling (allowed up to 150 %; billed at +50 %).
+    tenant_contracted_mw: dict = field(default_factory=dict)  # {tenant_id: float}
+
+    # Per-tenant overage energy accumulator (MWh) — incremented each tick for
+    # any tenant drawing above their contracted ceiling.  Zero-initialised;
+    # read by run_manager at end of run to emit the billing summary.
+    tenant_overage_mwh: dict = field(default_factory=dict)    # {tenant_id: float}
+
     # Fuel cell array rated capacity (MW).  0.0 when fuel_cell_enabled is False.
     # Set by scenario_factory after SimulationState construction so the dispatch
     # logic in evaluate_tick() can dispatch the fuel cell in merit order (after
@@ -595,14 +606,31 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # Added AFTER gpu_load_fraction scaling so the profile throttles only the base
     # cluster load; tenant burst jobs are not throttled by the operator load profile.
     # No-op when tenant_events is empty (all existing tests and scenarios unaffected).
+    #
+    # Overage tracking: tenants may draw up to 150 % of their contracted ceiling.
+    # Draw above 100 % is billed at +50 % per MWh; overage_mwh is accumulated here
+    # per tenant and read by run_manager at end of run to emit the billing summary.
     if state.tenant_events:
-        _tenant_extra_mw = sum(
-            ev.tdp_mw
-            for ev in state.tenant_events
-            if ev.t_start <= sim_time < ev.t_start + ev.duration_s
-        )
-        if _tenant_extra_mw > 0.0:
+        # Group active-window events by tenant so simultaneous jobs are combined.
+        _tenant_draw: dict[str, float] = {}
+        for _tev in state.tenant_events:
+            if _tev.t_start <= sim_time < _tev.t_start + _tev.duration_s:
+                _tenant_draw[_tev.tenant_id] = (
+                    _tenant_draw.get(_tev.tenant_id, 0.0) + _tev.tdp_mw
+                )
+        if _tenant_draw:
+            _tenant_extra_mw = sum(_tenant_draw.values())
             p_compute_demand_mw += _tenant_extra_mw
+            # Accumulate overage MWh for any tenant drawing above their ceiling.
+            if state.tenant_contracted_mw:
+                _dt_h = dt_seconds / 3600.0
+                for _tid, _draw_mw in _tenant_draw.items():
+                    _ceil = state.tenant_contracted_mw.get(_tid, 0.0)
+                    if _ceil > 0.0 and _draw_mw > _ceil + 1e-6:
+                        state.tenant_overage_mwh[_tid] = (
+                            state.tenant_overage_mwh.get(_tid, 0.0)
+                            + (_draw_mw - _ceil) * _dt_h
+                        )
 
     state.cooling.record_job_compute(sim_time, _per_job_draws)
 

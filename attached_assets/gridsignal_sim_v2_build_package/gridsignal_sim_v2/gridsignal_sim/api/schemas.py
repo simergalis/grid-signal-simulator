@@ -416,14 +416,24 @@ TENANT_CONTRACTED_MW: dict[str, float] = {
 _DEFAULT_TENANT_CONTRACTED_MW = 0.20   # fallback for custom / unlisted tenant IDs
 _GPU_TDP_MW = 0.0007                   # H100 SXM5 TDP per GPU in MW
 
+# Overage policy: tenants may draw up to _TENANT_BURST_ALLOWANCE × their contracted
+# ceiling before the scenario is rejected.  Any draw above 100% of the ceiling up to
+# this limit is billed at an additional _TENANT_OVERAGE_SURCHARGE_RATE per MWh (i.e.
+# the overage portion costs 1 + _TENANT_OVERAGE_SURCHARGE_RATE times the normal rate).
+_TENANT_BURST_ALLOWANCE       = 1.50  # max draw = 150 % of contracted MW
+_TENANT_OVERAGE_SURCHARGE_RATE = 0.50  # extra 50 % per MWh on the overage portion
+
 
 class TenantWorkloadEvent(BaseModel):
     """A scripted GPU burst job assigned to a specific colo tenant.
 
     Contributes tdp_mw = gpus × 0.0007 MW to p_compute_demand_mw during the
     window [t_start, t_start + duration_s).  Validated against
-    TENANT_CONTRACTED_MW at save time — the scenario is rejected if the event
-    would push the tenant over its contracted power ceiling.
+    TENANT_CONTRACTED_MW at save time — the scenario is rejected if a single
+    event's TDP would exceed 150 % of the tenant's contracted power ceiling.
+    Overage (draw above 100 % of ceiling) is billed at +50 % per MWh on top
+    of the standard rate and is accumulated in SimulationState.tenant_overage_mwh
+    during the run.
     """
     tenant_id: str = Field(
         description="Tenant ID ('a'–'e' for catalogued tenants, or a custom string)."
@@ -920,15 +930,24 @@ class ScenarioSpec(BaseModel):
 
     @model_validator(mode="after")
     def _check_tenant_ceilings(self) -> "ScenarioSpec":
-        """Reject any tenant event whose GPU TDP exceeds the contracted MW ceiling."""
+        """Reject any tenant event whose GPU TDP exceeds 150 % of the contracted ceiling.
+
+        Tenants are permitted to burst up to _TENANT_BURST_ALLOWANCE (1.5×) of their
+        contracted MW.  Draw above 100 % but below 150 % is allowed and billed at a
+        +50 % surcharge per MWh by the runtime engine.  A single event above 150 %
+        is rejected here — author the event as two overlapping events if a blended
+        draw exceeding the per-event burst limit is required by the scenario.
+        """
         for ev in self.tenant_events:
             ceiling = TENANT_CONTRACTED_MW.get(ev.tenant_id.lower(), _DEFAULT_TENANT_CONTRACTED_MW)
-            if ev.tdp_mw > ceiling + 1e-6:
-                max_gpus = int(ceiling / _GPU_TDP_MW)
+            hard_cap = ceiling * _TENANT_BURST_ALLOWANCE
+            if ev.tdp_mw > hard_cap + 1e-6:
+                max_gpus = int(hard_cap / _GPU_TDP_MW)
                 raise ValueError(
                     f"Tenant {ev.tenant_id!r} event '{ev.label or ev.tenant_id}': "
-                    f"{ev.gpus} GPUs = {ev.tdp_mw:.3f} MW exceeds contracted ceiling "
-                    f"{ceiling:.2f} MW. Reduce to ≤ {max_gpus} GPUs."
+                    f"{ev.gpus} GPUs = {ev.tdp_mw:.3f} MW exceeds the 150 % burst cap "
+                    f"({hard_cap:.2f} MW, ceiling {ceiling:.2f} MW × 1.5). "
+                    f"Reduce to ≤ {max_gpus} GPUs."
                 )
         return self
 
