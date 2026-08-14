@@ -339,7 +339,16 @@ function LeadTimeCallout({
   const prevCommitActionRef  = useRef<string | null>(null)
 
   useEffect(() => {
-    if (!tick) return
+    // Run ended — clear lead-time tracking so the next run starts with a clean
+    // baseline.  Without this, a run that ends mid-countdown (dt_lead_next_s > 0)
+    // leaves prevDtLead > 0; the new run's first zero-lead tick then satisfies
+    // "prev > 0 && cur <= 0" and fires a false 30-second STEP-LOAD LANDED banner.
+    if (!tick) {
+      prevDtLead.current  = 0
+      maxDtLead.current   = 0
+      setLandedUntil(0)
+      return
+    }
     const cur  = tick.dt_lead_next_s
     const prev = prevDtLead.current
     if (cur > maxDtLead.current) maxDtLead.current = cur
@@ -578,7 +587,8 @@ function LeadTimeCallout({
   //   countdown is for the GPU ramp window only; the BESS or grid bridges the
   //   step-load gap. "Turbine committed" would be incorrect and confusing.
   useEffect(() => {
-    if (!tick) return
+    // Clear on run end so the next run's first step-load fires correctly.
+    if (!tick) { prevIsRunningRef.current = false; return }
     const nowRunning = tick.dt_lead_next_s > 0
     if (nowRunning && !prevIsRunningRef.current) {
       const ts         = `t=${Math.round(tick.sim_time_seconds)}s`
@@ -637,7 +647,8 @@ function LeadTimeCallout({
   // Skips first-seen ticks (prev === undefined) to avoid false positives on
   // page-load mid-run, and skips units that lack the live state overlay.
   useEffect(() => {
-    if (!tick) return
+    // Clear on run end so the next run starts with no stale per-unit state.
+    if (!tick) { prevTurbineStatesRef.current = {}; return }
     const units = tick.turbine_units ?? []
     if (units.length === 0) return
     const ts = `t=${Math.round(tick.sim_time_seconds)}s`
