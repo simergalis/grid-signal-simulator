@@ -1002,6 +1002,9 @@ class TickResult:
     # ONE producer in simulation_core; summing in the serialiser is prohibited (Spec 19).
     # Sign convention: BESS discharging → positive generation.
     #                  BESS charging    → negative generation (not load).
+    #                  PLANNED ONLY — BessModule has no charge path; the BESS arrives
+    #                  pre-charged via initial_soc_fraction and only discharges
+    #                  during a run.  This sign is reserved for a future charge path.
     #                  Grid import (PCC supplying the site) → positive.
     # In islanded mode grid_exchange_mw = 0, so p_generation_mw = local generation only.
     # Default 0.0 allows pre-existing test TickResult constructors that omit this kwarg
