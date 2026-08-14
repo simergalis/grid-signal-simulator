@@ -33,6 +33,9 @@ const DURATION_OPTIONS = [
   { label: 'No limit', value: 1e15  },
 ]
 
+/** Set of preset second-values for fast membership checks. */
+const PRESET_VALUES = new Set(DURATION_OPTIONS.map(o => o.value))
+
 
 interface Props {
   runId:        string | null
@@ -53,10 +56,11 @@ export function DemoBar({
   const fetchScenarios    = useScenarioStore(s => s.fetchScenarios)
   const setWatchingText   = useScenarioStore(s => s.setWatchingText)
 
-  const [speed,    setSpeed]    = useState(1)
-  const [duration, setDuration] = useState(3600)
-  const [busy,     setBusy]     = useState(false)
-  const [error,    setError]    = useState<string | null>(null)
+  const [speed,      setSpeed]      = useState(1)
+  const [duration,   setDuration]   = useState(3600)
+  const [customMins, setCustomMins] = useState(60)
+  const [busy,       setBusy]       = useState(false)
+  const [error,      setError]      = useState<string | null>(null)
 
   // Log-test button state
   const [logBusy,  setLogBusy]  = useState(false)
@@ -132,7 +136,11 @@ export function DemoBar({
       .then((data: { spec: { default_playback_speed?: number; end_sim_time?: number; demo_description?: string } } | null) => {
         if (cancelled || !data?.spec) return
         if (data.spec.default_playback_speed != null) setSpeed(data.spec.default_playback_speed)
-        if (data.spec.end_sim_time           != null) setDuration(data.spec.end_sim_time)
+        if (data.spec.end_sim_time != null) {
+          setDuration(data.spec.end_sim_time)
+          if (!PRESET_VALUES.has(data.spec.end_sim_time))
+            setCustomMins(Math.max(1, Math.round(data.spec.end_sim_time / 60)))
+        }
         setWatchingText(data.spec.demo_description?.trim() || null)
       })
       .catch(() => {/* leave current values unchanged */})
@@ -225,22 +233,66 @@ export function DemoBar({
         </div>
 
         {/* Duration selector */}
-        <div
-          className="flex items-center gap-1.5 rounded border border-border px-3 py-1.5"
-          style={{ background: '#16202b' }}
-        >
-          <select
-            className="bg-transparent text-text font-sans text-xs focus:outline-none disabled:opacity-50"
-            value={duration}
-            disabled={isRunning || busy}
-            onChange={e => setDuration(Number(e.target.value))}
-          >
-            {DURATION_OPTIONS.map(o => (
-              <option key={o.value} value={o.value} style={{ background: '#1a2b3c', color: '#c8d6e5' }}>{o.label}</option>
-            ))}
-          </select>
-          <span className="text-muted text-xs">▾</span>
-        </div>
+        {(() => {
+          const isCustom = !PRESET_VALUES.has(duration)
+          return (
+            <>
+              <div
+                className="flex items-center gap-1.5 rounded border border-border px-3 py-1.5"
+                style={{ background: '#16202b' }}
+              >
+                <select
+                  className="bg-transparent text-text font-sans text-xs focus:outline-none disabled:opacity-50"
+                  value={isCustom ? '__custom__' : String(duration)}
+                  disabled={isRunning || busy}
+                  onChange={e => {
+                    const v = e.target.value
+                    if (v === '__other__') {
+                      setDuration(customMins * 60)
+                    } else {
+                      setDuration(Number(v))
+                    }
+                  }}
+                >
+                  {DURATION_OPTIONS.map(o => (
+                    <option key={o.value} value={String(o.value)} style={{ background: '#1a2b3c', color: '#c8d6e5' }}>{o.label}</option>
+                  ))}
+                  {isCustom && (
+                    <option value="__custom__" style={{ background: '#1a2b3c', color: '#c8d6e5' }}>
+                      {customMins} min
+                    </option>
+                  )}
+                  <option value="__other__" style={{ background: '#1a2b3c', color: '#c8d6e5' }}>Other…</option>
+                </select>
+                <span className="text-muted text-xs">▾</span>
+              </div>
+              {isCustom && (
+                <div
+                  className="flex items-center gap-1 rounded border border-accent/40 px-2 py-1.5"
+                  style={{ background: '#16202b' }}
+                >
+                  <input
+                    type="number"
+                    min={1}
+                    step={1}
+                    value={customMins}
+                    disabled={isRunning || busy}
+                    onChange={e => {
+                      const m = Math.max(1, Math.floor(Number(e.target.value)))
+                      setCustomMins(m)
+                      setDuration(m * 60)
+                    }}
+                    className="w-14 bg-transparent font-sans text-xs text-text focus:outline-none
+                               disabled:opacity-50 [appearance:textfield]
+                               [&::-webkit-outer-spin-button]:appearance-none
+                               [&::-webkit-inner-spin-button]:appearance-none"
+                  />
+                  <span className="text-xs text-muted">min</span>
+                </div>
+              )}
+            </>
+          )
+        })()}
 
         {/* Speed selector */}
         <div
