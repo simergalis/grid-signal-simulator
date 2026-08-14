@@ -214,6 +214,35 @@ def build_run_context(
         GridCapacity(CapacityType.NON_FIRM, available_mw=_total_turbine_mw * 0.15, price_per_mwh=198.0, t_reserve_s=0.0),
     ]
 
+    # ── EDL sources (PSP-002 §3.2 / Task #371) ───────────────────────────
+    # Wire the single BESS unit + grid so EconomicDispatchLoop.step() runs
+    # every tick for direct-path runs (tests and the legacy API path).
+    # build_run_context_from_spec handles spec-path runs independently.
+    _brc_edl_sources = [
+        _PowerSource(
+            source_id="bess-0",
+            source_type=_PowerSourceType.BESS,
+            dispatchable=True,
+            counts_toward_reserve=True,
+            marginal_cost_mwh=float(_sp.value("bess_marginal_cost_mwh")),
+            response_latency_class=_ResponseLatencyClass.INSTANT,
+            authority_tier=_AuthorityTier.AUTONOMOUS,
+            available_mw=float(bess_rated_mw),
+            cost_basis_note="cycle amortisation (PSP-6)",
+        ),
+        _PowerSource(
+            source_id="grid-firm",
+            source_type=_PowerSourceType.GRID_FIRM,
+            dispatchable=True,
+            counts_toward_reserve=False,
+            marginal_cost_mwh=float(_sp.value("pge_tou_summer_off_peak_mwh")),
+            response_latency_class=_ResponseLatencyClass.INSTANT,
+            authority_tier=_AuthorityTier.AUTONOMOUS,
+            available_mw=999.0,
+            cost_basis_note="PG&E B-20 TOU placeholder — repriced per tick by EDL.step()",
+        ),
+    ]
+
     return RunContext(
         run_id=run_id,
         sim_state=sim_state,
@@ -234,6 +263,9 @@ def build_run_context(
         grid_capacity=_grid_cap,
         _rated_cooling_mw=_rated_cooling_mw,
         _design_peak_load_mw=_design_peak_load_mw,
+        # PSP-002 §3.2 / Task #371 — activate per-tick EDL for direct-path runs.
+        edl_sources=_brc_edl_sources,
+        edl_calendar_month=_datetime.datetime.now().month,
     )
 
 
@@ -345,6 +377,37 @@ def build_load_test_context(
         GridCapacity(CapacityType.NON_FIRM, available_mw=_lt_total_turbine_mw * 0.15, price_per_mwh=198.0, t_reserve_s=0.0),
     ]
 
+    # ── EDL sources (PSP-002 §3.2 / Task #371) ───────────────────────────
+    # Wire all BESS units + grid so EconomicDispatchLoop.step() runs every
+    # tick in load-test runs.  BESS units match the bess_count / bess_rated_mw
+    # parameters supplied by the caller.
+    _lt_edl_sources = [
+        _PowerSource(
+            source_id=f"bess-{_i}",
+            source_type=_PowerSourceType.BESS,
+            dispatchable=True,
+            counts_toward_reserve=True,
+            marginal_cost_mwh=float(_sp.value("bess_marginal_cost_mwh")),
+            response_latency_class=_ResponseLatencyClass.INSTANT,
+            authority_tier=_AuthorityTier.AUTONOMOUS,
+            available_mw=float(bess_rated_mw),
+            cost_basis_note="cycle amortisation (PSP-6)",
+        )
+        for _i in range(bess_count)
+    ] + [
+        _PowerSource(
+            source_id="grid-firm",
+            source_type=_PowerSourceType.GRID_FIRM,
+            dispatchable=True,
+            counts_toward_reserve=False,
+            marginal_cost_mwh=float(_sp.value("pge_tou_summer_off_peak_mwh")),
+            response_latency_class=_ResponseLatencyClass.INSTANT,
+            authority_tier=_AuthorityTier.AUTONOMOUS,
+            available_mw=999.0,
+            cost_basis_note="PG&E B-20 TOU placeholder — repriced per tick by EDL.step()",
+        ),
+    ]
+
     return RunContext(
         run_id=run_id,
         sim_state=sim_state,
@@ -371,6 +434,9 @@ def build_load_test_context(
         grid_capacity=_lt_grid_cap,
         _rated_cooling_mw=_lt_rated_cooling_mw,
         _design_peak_load_mw=_lt_design_peak_load_mw,
+        # PSP-002 §3.2 / Task #371 — activate per-tick EDL for load-test runs.
+        edl_sources=_lt_edl_sources,
+        edl_calendar_month=_datetime.datetime.now().month,
     )
 
 

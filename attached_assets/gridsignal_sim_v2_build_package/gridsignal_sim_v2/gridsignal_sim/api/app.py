@@ -61,6 +61,18 @@ if not _api_log_ns.handlers:
     _api_log_ns.setLevel(logging.INFO)
     _api_log_ns.propagate = False   # avoid double-printing if root gains a handler later
 
+# Emit INFO-level logs from the gridsignal.* namespace (run_manager uses
+# logging.getLogger("gridsignal.run_manager")) so EDL, §4.3 escalation, and
+# other per-tick structured logs appear alongside API logs.
+# Uses the same StreamHandler pattern as the "api" namespace above.
+_gs_log_ns = logging.getLogger("gridsignal")
+if not _gs_log_ns.handlers:
+    _gs_h = logging.StreamHandler()
+    _gs_h.setFormatter(logging.Formatter("%(levelname)s:     %(name)s - %(message)s"))
+    _gs_log_ns.addHandler(_gs_h)
+    _gs_log_ns.setLevel(logging.INFO)
+    _gs_log_ns.propagate = False
+
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
