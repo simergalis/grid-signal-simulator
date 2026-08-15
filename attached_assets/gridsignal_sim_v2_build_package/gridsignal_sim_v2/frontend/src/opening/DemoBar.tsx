@@ -40,14 +40,18 @@ const PRESET_VALUES = new Set(DURATION_OPTIONS.map(o => o.value))
 interface Props {
   runId:        string | null
   lastRunId:    string | null
+  isPaused:     boolean
   onRunStarted: (id: string, speed: number, socFloor?: number, socCeil?: number) => void
   onRunStopped: () => void
+  onRunPaused:  () => void
+  onRunResumed: () => void
   onViewResults:    (id: string) => void
   onManageScenarios:() => void
 }
 
 export function DemoBar({
-  runId, lastRunId, onRunStarted, onRunStopped, onViewResults, onManageScenarios,
+  runId, lastRunId, isPaused, onRunStarted, onRunStopped, onRunPaused, onRunResumed,
+  onViewResults, onManageScenarios,
 }: Props) {
   const scenarios     = useScenarioStore(s => s.scenarios)
   const selectedId    = useScenarioStore(s => s.selectedId)
@@ -174,6 +178,36 @@ export function DemoBar({
       if (!resp.ok && resp.status !== 404)
         throw new Error(`DELETE /runs/${runId} → ${resp.status}: ${await resp.text()}`)
       onRunStopped()
+    } catch (e) {
+      setError(String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handlePause = async () => {
+    if (!runId) return
+    setBusy(true); setError(null)
+    try {
+      const resp = await fetch(`/runs/${runId}/pause`, { method: 'POST' })
+      if (!resp.ok)
+        throw new Error(`POST /runs/${runId}/pause → ${resp.status}: ${await resp.text()}`)
+      onRunPaused()
+    } catch (e) {
+      setError(String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleResume = async () => {
+    if (!runId) return
+    setBusy(true); setError(null)
+    try {
+      const resp = await fetch(`/runs/${runId}/resume`, { method: 'POST' })
+      if (!resp.ok)
+        throw new Error(`POST /runs/${runId}/resume → ${resp.status}: ${await resp.text()}`)
+      onRunResumed()
     } catch (e) {
       setError(String(e))
     } finally {
@@ -312,7 +346,7 @@ export function DemoBar({
           <span className="text-muted text-xs">▾</span>
         </div>
 
-        {/* Start / Stop */}
+        {/* Start / Pause / Resume / Stop */}
         {!isRunning ? (
           <button
             onClick={handleStart}
@@ -324,15 +358,48 @@ export function DemoBar({
             <span>▶</span>
             <span>{busy ? 'Starting…' : 'START'}</span>
           </button>
+        ) : isPaused ? (
+          <>
+            <button
+              onClick={handleResume}
+              disabled={busy}
+              className="flex items-center gap-2 rounded px-5 py-2 font-sans font-bold
+                         text-sm transition-colors disabled:opacity-40"
+              style={{ background: '#3fb6a8', color: '#06231f', minWidth: 100 }}
+            >
+              <span>▶</span>
+              <span>{busy ? 'Resuming…' : 'RESUME'}</span>
+            </button>
+            <button
+              onClick={handleStop}
+              disabled={busy}
+              className="rounded border border-border px-5 py-2 font-sans font-bold
+                         text-sm text-text hover:border-muted/60 transition-colors disabled:opacity-40"
+            >
+              {busy ? 'Stopping…' : 'Stop'}
+            </button>
+          </>
         ) : (
-          <button
-            onClick={handleStop}
-            disabled={busy}
-            className="rounded border border-border px-5 py-2 font-sans font-bold
-                       text-sm text-text hover:border-muted/60 transition-colors disabled:opacity-40"
-          >
-            {busy ? 'Stopping…' : 'Stop'}
-          </button>
+          <>
+            <button
+              onClick={handlePause}
+              disabled={busy}
+              className="rounded border px-4 py-2 font-sans font-bold text-sm
+                         transition-colors disabled:opacity-40"
+              style={{ borderColor: '#2a3a4a', color: '#7d8b9c' }}
+              title="Freeze the simulated clock between ticks"
+            >
+              {busy ? 'Pausing…' : '⏸ Pause'}
+            </button>
+            <button
+              onClick={handleStop}
+              disabled={busy}
+              className="rounded border border-border px-5 py-2 font-sans font-bold
+                         text-sm text-text hover:border-muted/60 transition-colors disabled:opacity-40"
+            >
+              {busy ? 'Stopping…' : 'Stop'}
+            </button>
+          </>
         )}
 
         {/* View Results */}
@@ -397,12 +464,21 @@ export function DemoBar({
       </div>
 
 
-      {/* Running label — scenario + speed */}
+      {/* Running label — scenario + speed (or PAUSED indicator) */}
       {isRunning && (
         <div className="flex items-center gap-2 px-5 shrink-0">
+          {isPaused && (
+            <span
+              className="font-mono font-bold animate-pulse"
+              style={{ fontSize: 11, color: '#f59e0b' }}
+              title="Simulated clock frozen — no ticks are being processed"
+            >
+              ⏸ PAUSED
+            </span>
+          )}
           <span
             className="font-mono font-medium"
-            style={{ fontSize: 12, color: '#e6ecf2' }}
+            style={{ fontSize: 12, color: isPaused ? '#7d8b9c' : '#e6ecf2' }}
           >
             {selectedName} · {speed > 0 ? `${speed}×` : 'MAX'} speed
           </span>

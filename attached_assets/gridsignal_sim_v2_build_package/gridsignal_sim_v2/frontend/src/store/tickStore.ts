@@ -121,6 +121,12 @@ interface TickState {
    * tile.  Null until the first action fires.
    */
   gccFlashAt: number | null
+  /**
+   * True while the backend run is PAUSED (POST /runs/{id}/pause accepted).
+   * When true, drainFrame() suppresses interpolation so the sim-clock display
+   * stays frozen at the exact sim_time the pause occurred (§PAUSE spec).
+   */
+  runPaused: boolean
 
   // ── Actions ───────────────────────────────────────────────────────────────
   /** Called by the WebSocket consumer on each arriving message. */
@@ -128,6 +134,7 @@ interface TickState {
   /** Called by the 4 Hz render loop to move pending ticks into display state. */
   drainFrame: () => void
   setRunMeta: (meta: RunMeta) => void
+  setRunPaused: (paused: boolean) => void
   /**
    * Acknowledge the latched alert identified by tickIndex.
    * Clears latchedAlert when it matches, and records tickIndex in
@@ -157,6 +164,7 @@ export const useTickStore = create<TickState>((set, get) => ({
   _lastFrameWall: 0,
   gccEvents: [],
   gccFlashAt: null,
+  runPaused: false,
 
   pushTick(tick) {
     set(s => ({ pendingTicks: [...s.pendingTicks, tick] }))
@@ -168,6 +176,9 @@ export const useTickStore = create<TickState>((set, get) => ({
     const pending = s.pendingTicks
 
     if (pending.length === 0) {
+      // While paused, suppress interpolation so the clock display stays frozen
+      // at the exact sim_time when PAUSE was pressed (§PAUSE spec requirement).
+      if (s.runPaused) return
       // ── 0 ticks: interpolate on EVERY drain frame for smooth display ───────
       // Re-run each 250 ms call so the display value continuously slides from
       // prevTick toward latestTick rather than snapping to a single midpoint.
@@ -243,6 +254,10 @@ export const useTickStore = create<TickState>((set, get) => ({
     set({ runMeta: meta })
   },
 
+  setRunPaused(paused) {
+    set({ runPaused: paused })
+  },
+
   appendGccEvent(event) {
     set(s => ({ gccEvents: [...s.gccEvents, event] }))
   },
@@ -270,7 +285,7 @@ export const useTickStore = create<TickState>((set, get) => ({
       latestTick: null, isInterpolated: false, prevTick: null,
       history: [], pendingTicks: [], decimationCount: 0,
       runMeta: null, latchedAlert: null, acknowledgedAlerts: new Set(),
-      _lastFrameWall: 0, gccEvents: [],
+      _lastFrameWall: 0, gccEvents: [], runPaused: false,
     })
   },
 }))

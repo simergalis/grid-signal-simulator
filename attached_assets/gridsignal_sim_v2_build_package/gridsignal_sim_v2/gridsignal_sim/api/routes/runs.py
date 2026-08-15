@@ -825,7 +825,69 @@ async def get_run_status(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Run {run_id!r} not found",
         )
-    return RunStatusResponse(run_id=run_id, active=not ctx.is_complete())
+    return RunStatusResponse(run_id=run_id, active=not ctx.is_complete(), paused=ctx.paused)
+
+
+@router.post(
+    "/{run_id}/pause",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Pause a running simulation",
+    responses={
+        404: {"description": "Run not found or already complete"},
+        409: {"description": "Run is not currently active"},
+    },
+)
+async def pause_run(
+    run_id: str,
+    manager: RunManager = Depends(_run_manager),
+) -> None:
+    """Suspend the tick loop between ticks.
+
+    The simulated clock is frozen at its current value; no ticks are processed
+    and no timers advance while the run is paused.  The run can be resumed via
+    POST /runs/{id}/resume or ended via DELETE /runs/{id}.
+
+    PAUSE and STOP (DELETE) are distinct operations:
+      · PAUSE preserves all in-flight state for resume.
+      · STOP (cancel_run) discards all state; a fresh START begins a new run.
+    """
+    ok = manager.pause_run(run_id)
+    if not ok:
+        ctx = manager.get_context(run_id)
+        if ctx is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Run {run_id!r} not found or already complete",
+            )
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Run {run_id!r} is not active",
+        )
+
+
+@router.post(
+    "/{run_id}/resume",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Resume a paused simulation",
+    responses={
+        404: {"description": "Run not found or already complete"},
+    },
+)
+async def resume_run(
+    run_id: str,
+    manager: RunManager = Depends(_run_manager),
+) -> None:
+    """Resume a paused simulation from the exact simulated-clock instant it was paused.
+
+    No sim-time is gained or lost: in-flight timers resume with their remaining
+    duration intact (TC-PAUSE timer invariant).
+    """
+    ok = manager.resume_run(run_id)
+    if not ok:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Run {run_id!r} not found or already complete",
+        )
 
 
 @router.get(

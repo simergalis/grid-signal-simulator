@@ -29,9 +29,10 @@ function speedLabel(playback_speed: number): string {
 
 interface Props {
   onChangePassword?: () => void
+  isPaused?: boolean
 }
 
-export function SimClockHeader({ onChangePassword }: Props) {
+export function SimClockHeader({ onChangePassword, isPaused }: Props) {
   const tick    = useTickStore(s => s.latestTick)
   const meta    = useTickStore(s => s.runMeta)
   const isInterp = useTickStore(s => s.isInterpolated)
@@ -46,16 +47,22 @@ export function SimClockHeader({ onChangePassword }: Props) {
         <div className="font-mono text-sm">
           <span className="text-muted">sim </span>
           <span className="text-text tabular-nums">{formatSimTime(simTime)}</span>
-          {isInterp && (
+          {isInterp && !isPaused && (
             <span className="ml-1.5 text-[10px] italic text-muted" title="Client-side interpolation (§2.2)">
               ~interp
+            </span>
+          )}
+          {isPaused && (
+            <span className="ml-1.5 text-[10px] font-semibold text-amber-400"
+                  title="Simulated clock frozen — no ticks are being processed">
+              frozen
             </span>
           )}
         </div>
 
         {meta && (
           <div className="font-mono text-xs text-muted">
-            {speedLabel(speed)}
+            {isPaused ? 'paused' : speedLabel(speed)}
           </div>
         )}
 

@@ -757,6 +757,12 @@ class RunContext:
     sim_time: float = 0.0
     _next_event_idx: int = 0
     cancelled: bool = False
+    # PAUSE control-plane (§22.3-partial; full timer persistence deferred to §22.3
+    # Tier-0 reconstruction).  _pause_event starts unset; _drive() sets it before
+    # the loop begins.  pause_run() clears it; resume_run() sets it.  cancel_run()
+    # always sets it so a paused loop unblocks, sees ctx.cancelled, and exits.
+    paused: bool = False
+    _pause_event: asyncio.Event = field(default_factory=asyncio.Event)
     # Step 9 — verdict evaluation inputs
     assertions: list = field(default_factory=list)  # list[AssertionSpec]
     scenario_name: str = ""
@@ -1309,9 +1315,45 @@ class RunManager:
         ctx = self._contexts.get(run_id)
         if ctx:
             ctx.cancelled = True
+            # Unblock the pause wait so the loop can see ctx.cancelled and exit.
+            ctx._pause_event.set()
         task = self._tasks.get(run_id)
         if task:
             await task  # let _drive's own cleanup (finally block) run
+
+    def pause_run(self, run_id: str) -> bool:
+        """Suspend the tick loop between ticks.  Returns False when not found/inactive.
+
+        Semantics (§PAUSE spec, §22.3-partial):
+          · Clears _pause_event → _drive() blocks at ``await ctx._pause_event.wait()``
+            between iterations.  No in-progress tick is aborted.
+          · The simulated clock is implicitly frozen: ctx.sim_time does not advance
+            while the loop is blocked, so in-flight timer arithmetic is correct on
+            resume without any explicit timer-state capture (§22.3 Tier-0 deferred).
+          · Sets ctx.paused = True so GET /runs/{id} reports the correct state.
+
+        Note: PAUSE and STOP are distinct paths.  STOP (cancel_run) sets
+        ctx.cancelled and discards all in-flight state; PAUSE preserves it.
+        """
+        ctx = self._contexts.get(run_id)
+        if ctx is None or ctx.is_complete():
+            return False
+        ctx.paused = True
+        ctx._pause_event.clear()
+        return True
+
+    def resume_run(self, run_id: str) -> bool:
+        """Resume a paused run.  Returns False when not found/inactive.
+
+        The simulated clock continues from ctx.sim_time at the instant of pause;
+        no sim-time is gained or lost (TC-PAUSE timer invariant).
+        """
+        ctx = self._contexts.get(run_id)
+        if ctx is None or ctx.is_complete():
+            return False
+        ctx.paused = False
+        ctx._pause_event.set()
+        return True
 
     # ------------------------------------------------------------------
     # Operator unit commands — called by POST /runs/{id}/units/{id}/command
@@ -1495,7 +1537,16 @@ class RunManager:
         _drive_t0: float = _time_module.perf_counter()
 
         try:
+            # Ensure the pause gate starts open (RUNNING) before the first tick.
+            # pause_run() clears this; resume_run()/cancel_run() set it.
+            ctx._pause_event.set()
             while not ctx.is_complete():
+                # TC-PAUSE: suspend between ticks when paused.  No in-progress tick
+                # is aborted — the wait fires at the top of each iteration, before
+                # any physics work, so the simulated clock is frozen cleanly.
+                # cancel_run() sets the event before flagging ctx.cancelled, so a
+                # paused loop unblocks within one cycle and exits normally.
+                await ctx._pause_event.wait()
                 # ── A-1: operator unit commands ───────────────────────────
                 # Drain commands queued by POST /runs/{id}/units/{id}/command.
                 # Applied BEFORE evaluate_tick() so the physics engine sees

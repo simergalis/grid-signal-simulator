@@ -58,13 +58,16 @@ function formatDuration(secs: number): string {
 interface Props {
   runId: string | null
   lastRunId: string | null
+  isPaused: boolean
   onRunStarted: (runId: string, playbackSpeed: number, socFloor?: number, socCeil?: number) => void
   onRunStopped: () => void
+  onRunPaused: () => void
+  onRunResumed: () => void
   onNewScenario: () => void
   onViewResults: (runId: string) => void
 }
 
-export function RunControlBar({ runId, lastRunId, onRunStarted, onRunStopped, onNewScenario, onViewResults }: Props) {
+export function RunControlBar({ runId, lastRunId, isPaused, onRunStarted, onRunStopped, onRunPaused, onRunResumed, onNewScenario, onViewResults }: Props) {
   const scenarios      = useScenarioStore(s => s.scenarios)
   const selectedId     = useScenarioStore(s => s.selectedId)
   const selectedSpec   = useScenarioStore(s => s.selectedSpec)
@@ -143,6 +146,42 @@ export function RunControlBar({ runId, lastRunId, onRunStarted, onRunStopped, on
         throw new Error(`DELETE /runs/${runId} → ${resp.status}: ${text}`)
       }
       onRunStopped()
+    } catch (e) {
+      setError(String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handlePause = async () => {
+    if (!runId) return
+    setBusy(true)
+    setError(null)
+    try {
+      const resp = await fetch(`/runs/${runId}/pause`, { method: 'POST' })
+      if (!resp.ok) {
+        const text = await resp.text()
+        throw new Error(`POST /runs/${runId}/pause → ${resp.status}: ${text}`)
+      }
+      onRunPaused()
+    } catch (e) {
+      setError(String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleResume = async () => {
+    if (!runId) return
+    setBusy(true)
+    setError(null)
+    try {
+      const resp = await fetch(`/runs/${runId}/resume`, { method: 'POST' })
+      if (!resp.ok) {
+        const text = await resp.text()
+        throw new Error(`POST /runs/${runId}/resume → ${resp.status}: ${text}`)
+      }
+      onRunResumed()
     } catch (e) {
       setError(String(e))
     } finally {
@@ -254,7 +293,7 @@ export function RunControlBar({ runId, lastRunId, onRunStarted, onRunStopped, on
         ))}
       </select>
 
-      {/* Start / Stop */}
+      {/* Start / Pause / Resume / Stop — three-state machine */}
       {!isRunning ? (
         <button
           className="rounded bg-accent px-3 py-1 text-xs font-semibold text-white
@@ -264,15 +303,52 @@ export function RunControlBar({ runId, lastRunId, onRunStarted, onRunStopped, on
         >
           {busy ? 'Starting…' : 'Start'}
         </button>
+      ) : isPaused ? (
+        <>
+          {/* PAUSED indicator — must be explicit per spec, not inferred from buttons */}
+          <span className="rounded border border-amber-400/70 px-2 py-0.5 font-mono
+                           text-[10px] font-semibold text-amber-400 animate-pulse select-none"
+                title="Simulation paused — simulated clock is frozen">
+            ⏸ PAUSED
+          </span>
+          <button
+            className="rounded bg-accent px-3 py-1 text-xs font-semibold text-white
+                       hover:bg-accent/80 disabled:opacity-40 transition-colors"
+            disabled={busy}
+            onClick={handleResume}
+          >
+            {busy ? 'Resuming…' : 'Resume'}
+          </button>
+          <button
+            className="rounded border border-danger px-3 py-1 text-xs font-semibold text-danger
+                       hover:bg-danger/10 disabled:opacity-40 transition-colors"
+            disabled={busy}
+            onClick={handleStop}
+          >
+            {busy ? 'Stopping…' : 'Stop'}
+          </button>
+        </>
       ) : (
-        <button
-          className="rounded border border-danger px-3 py-1 text-xs font-semibold text-danger
-                     hover:bg-danger/10 disabled:opacity-40 transition-colors"
-          disabled={busy}
-          onClick={handleStop}
-        >
-          {busy ? 'Stopping…' : 'Stop'}
-        </button>
+        <>
+          <button
+            className="rounded border border-border px-3 py-1 text-xs font-semibold text-muted
+                       hover:border-amber-400/60 hover:text-amber-400 disabled:opacity-40
+                       transition-colors"
+            disabled={busy}
+            onClick={handlePause}
+            title="Freeze the simulated clock between ticks"
+          >
+            {busy ? 'Pausing…' : 'Pause'}
+          </button>
+          <button
+            className="rounded border border-danger px-3 py-1 text-xs font-semibold text-danger
+                       hover:bg-danger/10 disabled:opacity-40 transition-colors"
+            disabled={busy}
+            onClick={handleStop}
+          >
+            {busy ? 'Stopping…' : 'Stop'}
+          </button>
+        </>
       )}
 
       {/* View Results — visible when idle and a run has completed */}

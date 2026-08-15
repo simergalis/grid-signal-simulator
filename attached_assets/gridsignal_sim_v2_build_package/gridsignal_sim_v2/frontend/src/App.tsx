@@ -107,6 +107,7 @@ function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
   const [runId,         setRunId]         = useState<string | null>(null)
   const [lastRunId,     setLastRunId]     = useState<string | null>(null)
   const [resultsRunId,  setResultsRunId]  = useState<string | null>(null)
+  const [isPaused,      setIsPaused]      = useState(false)
   const [drawerOpen,    setDrawerOpen]    = useState(false)
   const [editId,        setEditId]        = useState<string | null>(null)
   const [currentPage,   setCurrentPage]   = useState<PageView>(() =>
@@ -120,6 +121,7 @@ function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
   const drainFrame     = useTickStore(s => s.drainFrame)
   const setRunMeta     = useTickStore(s => s.setRunMeta)
   const reset          = useTickStore(s => s.reset)
+  const setRunPaused   = useTickStore(s => s.setRunPaused)
   const selectScenario = useScenarioStore(s => s.selectScenario)
 
   // 4 Hz render loop — drains pending WS ticks into display state.
@@ -134,13 +136,15 @@ function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
   // Run lifecycle callbacks
   const handleRunStarted = useCallback((id: string, speed: number, socFloor?: number, socCeil?: number) => {
     reset()
+    setIsPaused(false)
+    setRunPaused(false)
     setRunId(id)
     setLastRunId(id)
     setResultsRunId(null)
     setRunMeta({ run_id: id, playback_speed: speed, soc_floor_pct: socFloor, soc_ceil_pct: socCeil })
     // Stay on opening screen — flow lines thicken as the turbine ramps.
     // User navigates to Overview via the tab strip or a modal link.
-  }, [reset, setRunMeta])
+  }, [reset, setRunMeta, setRunPaused])
 
   // Auto-detect a run started externally (e.g. via curl / another client).
   // Polls GET /runs every 2 s when idle; stops once a run is tracked.
@@ -167,8 +171,20 @@ function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
 
   const handleRunStopped = useCallback(() => {
     setRunId(null)
+    setIsPaused(false)
+    setRunPaused(false)
     reset()
-  }, [reset])
+  }, [reset, setRunPaused])
+
+  const handleRunPaused = useCallback(() => {
+    setIsPaused(true)
+    setRunPaused(true)
+  }, [setRunPaused])
+
+  const handleRunResumed = useCallback(() => {
+    setIsPaused(false)
+    setRunPaused(false)
+  }, [setRunPaused])
 
   // WS tick stream — must be called after handleRunStopped so the run_complete
   // sentinel from the server transitions the UI to the completed state instead
@@ -245,8 +261,11 @@ function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
         <DemoBar
           runId={runId}
           lastRunId={lastRunId}
+          isPaused={isPaused}
           onRunStarted={handleRunStarted}
           onRunStopped={handleRunStopped}
+          onRunPaused={handleRunPaused}
+          onRunResumed={handleRunResumed}
           onViewResults={handleViewResults}
           onManageScenarios={() => setScenariosOpen(true)}
         />
@@ -289,13 +308,16 @@ function AuthenticatedApp({ displayName, role, onLogout }: AuthAppProps) {
       <RunControlBar
         runId={runId}
         lastRunId={lastRunId}
+        isPaused={isPaused}
         onRunStarted={handleRunStarted}
         onRunStopped={handleRunStopped}
+        onRunPaused={handleRunPaused}
+        onRunResumed={handleRunResumed}
         onNewScenario={handleNewScenario}
         onViewResults={handleViewResults}
       />
 
-      <SimClockHeader onChangePassword={() => setChangePasswordOpen(true)} />
+      <SimClockHeader onChangePassword={() => setChangePasswordOpen(true)} isPaused={isPaused} />
 
       {/* Page navigation tabs */}
       <div className="flex gap-px border-b border-border bg-border flex-shrink-0">

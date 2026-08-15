@@ -1251,6 +1251,7 @@ class StartRunResponse(BaseModel):
 class RunStatusResponse(BaseModel):
     run_id: str
     active: bool
+    paused: bool = False
 
 
 class RunListResponse(BaseModel):
