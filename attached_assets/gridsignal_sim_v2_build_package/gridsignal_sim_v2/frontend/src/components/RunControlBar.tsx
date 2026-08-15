@@ -23,6 +23,56 @@ import { useScenarioStore } from '../store/scenarioStore'
 import { useBessConfigStore } from '../store/bessConfigStore'
 import { useGpuGeneratorStore } from '../store/gpuGeneratorStore'
 
+// ---------------------------------------------------------------------------
+// Shared export helper — mirrors DemoBar.handleLogTest but callable anywhere
+// ---------------------------------------------------------------------------
+async function triggerExport(
+  exportRunId: string | null,
+  onStatus: (msg: string | null) => void,
+): Promise<void> {
+  const url = exportRunId
+    ? `/api/export/telemetry-log?run_id=${encodeURIComponent(exportRunId)}`
+    : '/api/export/telemetry-log'
+
+  const startResp = await fetch(url, { method: 'POST', credentials: 'include' })
+  if (!startResp.ok) {
+    const txt = await startResp.text()
+    throw new Error(`${startResp.status}: ${txt}`)
+  }
+  const { job_id, eta_s, run_id: resolvedRunId } = await startResp.json() as {
+    job_id: string; eta_s: number; run_id: string | null
+  }
+
+  const label   = resolvedRunId ? resolvedRunId.slice(-8) : '…'
+  const started = Date.now()
+  while (true) {
+    await new Promise(r => setTimeout(r, 500))
+    const elapsed = Math.round((Date.now() - started) / 1000)
+    onStatus(`Building log …${label} (${elapsed}s)`)
+
+    const pollResp = await fetch(`/api/export/telemetry-log/${job_id}/status`, { credentials: 'include' })
+    if (!pollResp.ok) throw new Error(`Poll failed: ${pollResp.status}`)
+    const { status, detail } = await pollResp.json() as { status: string; detail: string }
+
+    if (status === 'error') throw new Error(detail || 'Logger failed')
+    if (status === 'done')  break
+    if (elapsed > eta_s + 35) throw new Error('Timed out waiting for logger')
+  }
+
+  onStatus('Downloading…')
+  const fileResp = await fetch(`/api/export/telemetry-log/${job_id}/file`, { credentials: 'include' })
+  if (!fileResp.ok) throw new Error(`Download failed: ${fileResp.status}`)
+  const blob = await fileResp.blob()
+  const objUrl = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href     = objUrl
+  a.download = resolvedRunId ? `gridsignal_${resolvedRunId.slice(-12)}.csv` : 'gridsignal_export.csv'
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(objUrl)
+}
+
 const SPEED_OPTIONS = [
   { label: '1×',   value: 1 },
   { label: '5×',   value: 5 },
@@ -78,8 +128,10 @@ export function RunControlBar({ runId, lastRunId, isPaused, onRunStarted, onRunS
   const [speed,      setSpeed]      = useState(1)
   const [duration,   setDuration]   = useState(1800)
   const [customMins, setCustomMins] = useState(90)
-  const [busy,       setBusy]       = useState(false)
-  const [error,      setError]      = useState<string | null>(null)
+  const [busy,        setBusy]        = useState(false)
+  const [error,       setError]       = useState<string | null>(null)
+  const [exportBusy,  setExportBusy]  = useState(false)
+  const [exportMsg,   setExportMsg]   = useState<string | null>(null)
   // BESS size overrides — configured via the Energy Storage modal, read here at run-start
   const bessRatedMw   = useBessConfigStore(s => s.ratedMw)
   const bessUsableMwh = useBessConfigStore(s => s.usableMwh)
@@ -189,8 +241,24 @@ export function RunControlBar({ runId, lastRunId, isPaused, onRunStarted, onRunS
     }
   }
 
+  const handleExport = async () => {
+    setExportBusy(true)
+    setExportMsg('Starting…')
+    try {
+      await triggerExport(runId ?? lastRunId, setExportMsg)
+      setExportMsg('✓ Downloaded')
+      setTimeout(() => setExportMsg(null), 3000)
+    } catch (e) {
+      setExportMsg(`✗ ${String(e)}`)
+      setTimeout(() => setExportMsg(null), 5000)
+    } finally {
+      setExportBusy(false)
+    }
+  }
+
   const isRunning = runId !== null
   const canViewResults = !isRunning && lastRunId !== null
+  const canExport = runId !== null || lastRunId !== null
 
   return (
     <div className="flex items-center gap-2 border-b border-border bg-surface px-4 py-2 text-sm">
@@ -362,6 +430,27 @@ export function RunControlBar({ runId, lastRunId, isPaused, onRunStarted, onRunS
           View Results
         </button>
       )}
+
+      {/* Export CSV — available during a run and after completion */}
+      <button
+        className="flex items-center gap-1.5 rounded border px-3 py-1 text-xs font-semibold
+                   transition-colors disabled:opacity-50"
+        style={{
+          borderColor: exportBusy ? '#3fb6a8' : canExport ? '#2a3a4a' : '#1a2530',
+          color:        exportBusy ? '#3fb6a8' : canExport ? '#7d8b9c' : '#3a4a5a',
+          background:   exportBusy ? 'rgba(63,182,168,0.08)' : 'transparent',
+          cursor:       canExport ? 'pointer' : 'not-allowed',
+        }}
+        disabled={exportBusy || !canExport}
+        onClick={handleExport}
+        title={
+          !canExport
+            ? 'Start a run first — export is available once data has been recorded'
+            : exportMsg ?? 'Export full-run telemetry and predictive variables as CSV (up to 60 min)'
+        }
+      >
+        {exportBusy ? exportMsg : '↓ Export CSV'}
+      </button>
 
       {/* Inline error */}
       {error && (
