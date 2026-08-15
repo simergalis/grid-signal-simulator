@@ -545,3 +545,149 @@ async def test_energy_summary_includes_cost_breakdown():
         "PROTO-21-COST grid price must be 120 GBP/MWh; "
         "update ScenarioPlannerPage.tsx COST_CONFIG to match"
     )
+
+
+# 17 ────────────────────────────────────────────────────────────────────────
+def test_TC51_thermal_store_depletes_before_peak_ends():
+    """§8.1 load-shifting: thermal SoC drains in the TickResult timeseries.
+
+    TC-51: integration guard — confirms that evaluate_tick() correctly
+    propagates PreStagingEngine state into TickResult fields across a full
+    charge → peak cycle:
+
+      Phase 1 (charge): solar output >> compute demand → dispatch gap = 0 →
+        engine pre-cools → TickResult.pre_staging_precool_mw > 0 on ≥ 1 tick.
+
+      Phase 2 (discharge/peak): solar removed → gap = full compute demand →
+        engine discharges stored cold → TickResult.pre_staging_shift_mw > 0.
+        Once the SoC is exhausted, shift_mw must drop to 0 — load-shifting
+        fails visibly rather than silently over-serving demand.
+
+    This test is the only place that drives evaluate_tick() through both
+    phases.  The unit-level charge/discharge tests in test_step10_arbitration
+    cover the engine in isolation; this test guards the wiring between the
+    engine and the physics tick.
+    """
+    from core.models import PreStagingConfig
+    from core.dispatch import PreStagingEngine
+    from core.asset_modules import SolarModule, SolarConfig, IrradianceProfile
+
+    # ── Scenario dimensions ──────────────────────────────────────────────────
+    DT = 300.0          # seconds per tick (5-minute steps — matches RunManager)
+    CHARGE_TICKS = 5    # ticks with solar surplus → engine pre-cools
+    PEAK_TICKS = 5      # ticks with no solar → engine discharges, then starves
+    TOTAL_TICKS = CHARGE_TICKS + PEAK_TICKS
+    CHARGE_END_T = CHARGE_TICKS * DT   # sim-time when sun goes off
+    END_SIM_T = TOTAL_TICKS * DT
+
+    # 100 nodes → ~1.6 MW compute draw (enterprise_8gpu_air 12 kW × PUE 1.3)
+    # Large enough to guarantee a dispatch gap the moment solar is removed.
+    NODE_COUNT = 100
+    # Solar: 5 MW >> compute draw; gap = max(0, demand - solar) = 0 during Phase 1.
+    SOLAR_RATED_MW = 5.0
+
+    # ── Build RunContext & mutate for the test ───────────────────────────────
+    ctx = build_run_context(
+        "tc51-thermal-depletion",
+        job_id="j-tc51",
+        node_count=NODE_COUNT,
+        end_sim_time=END_SIM_T,
+        playback_speed=0.0,
+    )
+    state = ctx.sim_state
+
+    # evaluate_tick() does NOT consume ctx.events — that is RunManager's job.
+    # Apply the STARTING signal manually so GPU modules register compute load
+    # before the first tick (mirrors RunManager._drive → _apply_due_events).
+    for signal in ctx.events:
+        if signal.timestamp <= 0.0:
+            state.apply_workload_signal(signal, ctx.dt_lead_seconds)
+
+    # Replace the default solar array with a phase-switching profile:
+    #   irradiance = 1.0 for the charge phase → full SOLAR_RATED_MW output.
+    #   irradiance = 0.0 for the peak phase → zero renewable → full gap.
+    state.solar_arrays = [
+        SolarModule(
+            SolarConfig(asset_id="solar-tc51", rated_mw=SOLAR_RATED_MW),
+            irradiance_profile=IrradianceProfile([
+                (0.0,                   1.0),
+                (CHARGE_END_T - 0.001, 1.0),
+                (CHARGE_END_T,          0.0),
+                (END_SIM_T,             0.0),
+            ]),
+        )
+    ]
+
+    # Attach pre-staging config and engine.
+    # Start with zero SoC so the charge phase must build it before discharge works.
+    ps_config = PreStagingConfig(
+        max_shift_mw=1.0,
+        eta=1.0,
+        thermal_soc_initial_mwh=0.0,
+        initial_temp_c=21.0,       # midpoint of [18, 24] — full headroom to cool
+        inlet_temp_low_c=18.0,
+        inlet_temp_high_c=24.0,
+        cooling_gain_c_per_mw_s=0.05,
+        warmup_rate_c_per_s=0.002,
+        bms_override=False,
+    )
+    state.site.pre_staging_config = ps_config
+    state.pre_staging_engine = PreStagingEngine(ps_config)
+
+    # ── Drive evaluate_tick() through both phases ────────────────────────────
+    results: list = []
+    for seq in range(TOTAL_TICKS):
+        sim_time = seq * DT
+        clock = SimClock(
+            sim_time=sim_time,
+            dt_seconds=DT,
+            wall_stamp_utc=0.0,
+            rate=0.0,
+            tick_seq=seq,
+        )
+        with _guard():
+            tr = evaluate_tick(state, clock)
+        results.append(tr)
+
+    charge_results   = results[:CHARGE_TICKS]
+    peak_results     = results[CHARGE_TICKS:]
+
+    # ── Phase 1 assertion: at least one charge tick pre-cooled ───────────────
+    charge_precool = [
+        (i, r.pre_staging_precool_mw)
+        for i, r in enumerate(charge_results)
+        if r.pre_staging_precool_mw > 1e-9
+    ]
+    assert charge_precool, (
+        "TC-51: expected pre_staging_precool_mw > 0 on at least one charge-phase "
+        f"tick (solar={SOLAR_RATED_MW} MW >> demand, gap should be 0). "
+        f"precool values: {[r.pre_staging_precool_mw for r in charge_results]}"
+    )
+
+    # ── Phase 2 assertion: shift_mw > 0 while SoC lasts, then 0 ────────────
+    # Find the first tick in the peak phase where shift drops to zero.
+    shift_values = [r.pre_staging_shift_mw for r in peak_results]
+
+    # At least the first peak tick must shift (SoC was positive after charging).
+    assert shift_values[0] > 1e-9, (
+        f"TC-51: pre_staging_shift_mw must be > 0 on the first peak tick "
+        f"(SoC was charged during Phase 1). shift_values={shift_values}"
+    )
+
+    # After the SoC is exhausted shift must reach 0 — load-shifting fails visibly.
+    depleted_ticks = [i for i, s in enumerate(shift_values) if s < 1e-9]
+    assert depleted_ticks, (
+        "TC-51: pre_staging_shift_mw never reached 0 during the peak phase — "
+        "the thermal store never depleted. This means the SoC accounting is "
+        f"wrong or the peak phase is too short. shift_values={shift_values}"
+    )
+
+    # Every tick after the first depletion tick must also be zero
+    # (SoC cannot spontaneously refill during a discharge phase).
+    first_depleted = depleted_ticks[0]
+    tail_shifts = shift_values[first_depleted:]
+    assert all(s < 1e-9 for s in tail_shifts), (
+        "TC-51: pre_staging_shift_mw was non-zero after the SoC depleted — "
+        f"the store appeared to refill during the peak phase. "
+        f"shift_values={shift_values}, first_depleted_at_index={first_depleted}"
+    )
