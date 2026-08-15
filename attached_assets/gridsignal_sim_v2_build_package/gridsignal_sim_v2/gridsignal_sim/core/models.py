@@ -1404,6 +1404,16 @@ class TickResult:
     # Stamped by _drive() A1b after PMSTestDouble.process() returns.
     pms_shortfall_log: tuple = field(default_factory=tuple)
 
+    # Source-level bounds audit violations for this tick.
+    # Empty tuple in normal operation.  Non-empty when any generation source
+    # reports outside its rated capacity or the per-source sum disagrees with
+    # p_generation_mw.  Stamped by _drive() before sink.append() via
+    # core.source_audit.audit_tick().  Complements d4_balance_defect_mw (which
+    # only catches aggregate supply/demand mismatches) by catching intra-mix
+    # errors that D4 is blind to (e.g. solar over-reporting while grid absorbs
+    # the surplus).
+    source_audit_violations: tuple[str, ...] = field(default_factory=tuple)
+
     # Phase E+: commitment engine last-decision summary — serialised for fleet modal.
     # Populated by simulation_core.evaluate_tick() each tick from _commit_decision.
     # Defaults produce innocuous values for tests that build TickResult directly.

@@ -1,6 +1,6 @@
 ---
 name: soc-corruption-dashboard
-description: How corrupted SoC is surfaced to the operator dashboard (Task #61) and the field-ordering trap in TickResult.
+description: How corrupted SoC is surfaced to the operator dashboard (Task #61), the field-ordering trap in TickResult, and the source-level bounds audit.
 ---
 
 # SoC Corruption Dashboard Wiring (Task #61)

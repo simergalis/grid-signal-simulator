@@ -41,6 +41,7 @@ from typing import Any, Awaitable, Callable, Optional, Protocol
 from core.asset_modules import TurbineState as _TurbineState   # runtime → core OK
 from core.models import TickResult, WorkloadSignal
 from core.power_balance import GateVerdict as _PbGateVerdict, gate_run as _pb_gate_run
+from core.source_audit import SourceAuditTerms as _SrcAuditTerms, audit_tick as _audit_tick
 from core.sim_clock import SimClock
 from core.simulation_core import SimulationState, evaluate_tick
 from core._plane_guard import _EVALUATE_TICK_PERMITTED
@@ -558,6 +559,11 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # dicts when §4.3 escalated and PMSTestDouble replayed operator profile.
         # Each entry: {t_s, source_id, action, authority_tier, detail}.
         "pms_shortfall_log": list(tick.pms_shortfall_log),
+        # Source-level bounds audit violations — empty list in normal operation.
+        # Non-empty when a generation source exceeds its rated capacity or the
+        # per-source sum disagrees with p_generation_mw.  Complements
+        # d4_balance_defect_mw which only catches aggregate supply/demand errors.
+        "source_audit_violations": list(tick.source_audit_violations),
         # Phase E+: commitment engine last-decision summary — drives fleet modal
         # commitment stat rows (Item 7).  Always present; action="hold" and
         # empty strings are the safe-sentinel defaults (no commitment engine wired).
@@ -1963,6 +1969,34 @@ class RunManager:
                             if _pre_solar_mw is not None
                             else self.solar_sim.live_aggregate_mw()
                         ),
+                    )
+
+                # ── Source-level bounds audit ─────────────────────────────
+                # Independent of D4: checks each generation source against its
+                # rated capacity and verifies the source sum == p_generation_mw.
+                # D4 misses intra-mix errors (e.g. solar over-reporting while
+                # grid absorbs the surplus); this audit catches them per-tick.
+                _src_solar_rated = sum(
+                    sm.config.rated_mw for sm in ctx.sim_state.solar_arrays
+                ) if ctx.sim_state.solar_arrays else 0.0
+                _src_audit_result = _audit_tick(_SrcAuditTerms(
+                    p_renewable_mw=tick_result.p_renewable_mw,
+                    turbine_output_mw=tick_result.turbine_output_mw,
+                    bess_output_mw=tick_result.bess_output_mw,
+                    fuel_cell_output_mw=tick_result.fuel_cell_output_mw,
+                    p_generation_mw=tick_result.p_generation_mw,
+                    solar_rated_mw=_src_solar_rated,
+                    turbine_rated_mw=ctx.turbine_rated_mw,
+                    bess_rated_mw=tick_result.bess_rated_mw,
+                    fc_rated_mw=(
+                        tick_result.contingency_coverage.fuel_cell_available_mw
+                        if tick_result.contingency_coverage is not None else 0.0
+                    ),
+                ))
+                if _src_audit_result.violations:
+                    tick_result = _dc_replace(
+                        tick_result,
+                        source_audit_violations=_src_audit_result.violations,
                     )
 
                 if _profiling: _t0 = _time_module.perf_counter()

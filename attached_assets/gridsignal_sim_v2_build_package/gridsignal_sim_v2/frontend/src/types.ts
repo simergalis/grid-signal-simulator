@@ -92,6 +92,13 @@ export interface TickPayload {
     authority_tier: string
     detail: string
   }>
+  // Source-level bounds audit violations — empty array in normal operation.
+  // Non-empty when any generation source exceeds its rated capacity or the
+  // per-source sum disagrees with p_generation_mw.  Each string is a
+  // human-readable description of the violation kind and magnitude.
+  // Complements d4_balance_defect_mw (aggregate check) by catching intra-mix
+  // errors D4 is blind to (e.g. solar over-reporting absorbed by grid slack).
+  source_audit_violations: string[]
 
   // Confidence band
   confidence_lower_mw: number
