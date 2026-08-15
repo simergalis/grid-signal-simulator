@@ -588,3 +588,133 @@ class TestRngIsolation:
                 f"Sample {i}: rng_load={e:.8f} diverged from control {c:.8f}. "
                 f"rng_step draws leaked into rng_load stream."
             )
+
+    # ------------------------------------------------------------------
+    # Agent-level seed determinism helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _agent_step_sequence(
+        duration_s: float,
+        hz: float,
+        seed: int,
+    ) -> list[dict]:
+        """Drive a real KubeDemandAgent via agent.tick() and collect step firings.
+
+        Constructs KubeDemandAgent with KubeConfig(rng_seed=seed,
+        step_config=StepTimingConfig()) so the full seed derivation path
+        (SeedSequence.spawn(2)[0] → _rng_step → _step_scheduler) is exercised,
+        not the bare StepScheduler helper.
+
+        A step is detected by comparing agent._step_scheduler.step_count before
+        and after each tick — this reads the scheduler's authoritative internal
+        counter and is immune to adjacent/short step boundary edge cases that
+        can cause phase-transition inference to miss firings.
+
+        Returns a list of {"sim_time": float, "kind": str} dicts.
+        """
+        from core.kube_demand import KubeConfig, KubeDemandAgent
+
+        config = KubeConfig(rng_seed=seed, step_config=StepTimingConfig())
+        agent = KubeDemandAgent(config, site_id="test-site")
+        sched = agent._step_scheduler
+        assert sched is not None, (
+            "StepScheduler not created — step_config must be set in KubeConfig."
+        )
+
+        dt = 1.0 / hz
+        n_ticks = round(duration_s / dt)
+        steps = []
+        prev_count = 0
+
+        for i in range(n_ticks):
+            sim_time = i * dt
+            agent.tick(sim_time=sim_time, dt_seconds=dt, grid_state=None)
+            count = sched.step_count
+            if count > prev_count:
+                steps.append({
+                    "sim_time": round(sim_time, 6),
+                    "kind": agent.current_step_kind,
+                })
+                prev_count = count
+
+        return steps
+
+    def test_D4_same_seed_produces_identical_step_sequence(self):
+        """D4 — Two KubeDemandAgents with the same rng_seed fire steps at
+        identical sim_times with identical kinds (deterministic replay).
+
+        KubeDemandAgent derives rng_step inside __init__ via
+        SeedSequence(rng_seed).spawn(2)[0].  A regression that ignores
+        rng_seed, shares a fixed generator, or wires the wrong child would
+        break determinism and fail here.
+        """
+        duration_s = 300.0
+        hz = 10.0
+        seed = 42
+
+        steps_a = self._agent_step_sequence(duration_s, hz, seed)
+        steps_b = self._agent_step_sequence(duration_s, hz, seed)
+
+        assert len(steps_a) > 0, (
+            f"No steps fired in 300 s at 10 Hz with seed={seed}. "
+            f"Check that step_config is wired into KubeDemandAgent."
+        )
+        assert len(steps_a) == len(steps_b), (
+            f"Same seed produced different step counts: "
+            f"A={len(steps_a)}, B={len(steps_b)}. Non-determinism in "
+            f"KubeDemandAgent seed derivation or StepScheduler."
+        )
+        for i, (a, b) in enumerate(zip(steps_a, steps_b)):
+            assert a["sim_time"] == b["sim_time"], (
+                f"Step {i}: sim_time differs between agents with seed={seed}: "
+                f"A={a['sim_time']}, B={b['sim_time']}."
+            )
+            assert a["kind"] == b["kind"], (
+                f"Step {i}: kind differs between agents with seed={seed}: "
+                f"A={a['kind']!r}, B={b['kind']!r}."
+            )
+
+    def test_D5_different_seeds_produce_different_step_sequences(self):
+        """D5 — Every distinct rng_seed pair in the corpus produces divergent
+        step sequences via KubeDemandAgent.tick() (no silent seed-aliasing).
+
+        A regression where all agents share the same child generator regardless
+        of rng_seed would make every sequence identical.  This test generates
+        all pairwise combinations from a seed corpus (not just disjoint pairs),
+        so a defect that aliases any subset of seeds cannot hide.
+        """
+        import itertools
+
+        duration_s = 300.0
+        hz = 10.0
+
+        # Build the full sequence for each seed once, then compare all pairs.
+        seeds = [0, 1, 42, 100, 999]
+        cached: dict[int, list[dict]] = {}
+        for s in seeds:
+            seq = self._agent_step_sequence(duration_s, hz, s)
+            assert seq, (
+                f"No steps fired for seed={s} in {duration_s} s. "
+                f"Check that step_config is wired into KubeDemandAgent."
+            )
+            cached[s] = seq
+
+        for seed_a, seed_b in itertools.combinations(seeds, 2):
+            steps_a = cached[seed_a]
+            steps_b = cached[seed_b]
+
+            # Sequences differ if their lengths differ OR any step time/kind differs.
+            sequences_identical = (
+                len(steps_a) == len(steps_b)
+                and all(
+                    a["sim_time"] == b["sim_time"] and a["kind"] == b["kind"]
+                    for a, b in zip(steps_a, steps_b)
+                )
+            )
+            assert not sequences_identical, (
+                f"Seeds ({seed_a}, {seed_b}) produced identical step sequences "
+                f"via KubeDemandAgent.tick(). This suggests a seed-sharing "
+                f"regression: both agents may be drawing from the same child "
+                f"generator regardless of rng_seed in KubeConfig."
+            )
