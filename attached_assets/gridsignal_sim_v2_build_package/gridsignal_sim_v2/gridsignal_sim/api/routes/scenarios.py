@@ -549,11 +549,15 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             ),
             workload_events=[_evt_start("job-alert", _DEMO_NODES)],
             dt_lead_seconds=30.0,
-            # Small BESS — cannot fully bridge the peak shortfall on its own,
-            # so insufficient_reserve_alert fires at tick 1.  This gives
-            # ComputeWorkloadAgent, StorageAgent, and CalibrationAgent the
-            # alert_count / consecutive_alerts evidence they need to qualify.
-            bess_units=[_bess("bess-0", rated_mw=5.0, usable_mwh=2.5,
+            # Small BESS — rated_mw=1.0 with p_anchor_reserve=1.0 (grid-forming
+            # default) gives bridging_available=0 MW.  At 600 nodes the peak
+            # shortfall is 0.3036 MW, which exceeds the 0 MW fleet ceiling →
+            # power-limited path fires insufficient_reserve_alert at tick 1.
+            # This gives ComputeWorkloadAgent, StorageAgent, and CalibrationAgent
+            # the alert_count / consecutive_alerts evidence they need to qualify.
+            # (Task 173: reduced from 5.0/2.5 MW/MWh — the old 5 MW BESS gave
+            # 4 MW bridging >> 0.3036 MW shortfall at 600 nodes → no alert.)
+            bess_units=[_bess("bess-0", rated_mw=1.0, usable_mwh=0.5,
                                grid_forming=True)],
             # Single large turbine — GenerationAgent reads ramp headroom across
             # the full rated range; simple fleet keeps the advisory evidence clean.
@@ -578,12 +582,23 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
         "demo-alert",
         ScenarioSpec(
             name="demo-alert",
-            description="This scenario demonstrates the reserve alert system by deliberately sizing the battery too small to cover the predicted peak compute load, causing the dashboard to flag a shortfall immediately when the training job starts. The site has a single large generator with ample ramp capacity, but the battery — at 5 MW — cannot bridge the gap between current generation and the forecast peak, so the alert latches on the first assessment cycle and remains visible until an operator acknowledges it. The operator sees the reserve tile change state and the alert banner appear within seconds of the run starting. This matters because early warning of a battery shortfall gives operators time to shed lower-priority jobs before the gap becomes a live stability problem rather than a forecast risk."
-                        "predicted peak — insufficient_reserve_alert fires at tick 1.  "
-                        "Exercises the alert latch (F4) and basis label (F2).",
+            description=(
+                "This scenario demonstrates the reserve alert system by deliberately sizing the battery too small to cover the predicted peak compute load, causing the dashboard to flag a shortfall immediately when the training job starts. "
+                "The site has a single large generator with ample ramp capacity, but the battery — at 1 MW rated, entirely reserved for grid-forming — has zero bridging capacity available for the compute ramp. "
+                "The 600-node job creates a 0.3 MW shortfall that the generator cannot cover within the 30-second warning window, and since the battery cannot contribute any bridging power, the alert latches on the first assessment cycle. "
+                "The operator sees the reserve tile change state and the alert banner appear within seconds of the run starting. "
+                "This matters because early warning of a battery shortfall gives operators time to shed lower-priority jobs before the gap becomes a live stability problem rather than a forecast risk."
+                " — insufficient_reserve_alert fires at tick 1.  "
+                "Exercises the alert latch (F4) and basis label (F2)."
+            ),
             workload_events=[_evt_start("job-alert", _DEMO_NODES)],
             dt_lead_seconds=30.0,
-            bess_units=[_bess("bess-0", rated_mw=5.0, usable_mwh=2.5, grid_forming=True)],
+            # rated_mw=1.0, p_anchor_reserve=1.0 (grid-forming default) →
+            # bridging_available=0 MW.  600-node shortfall=0.3036 MW > 0 MW →
+            # power-limited path fires alert at tick 1.  (Task 173: reduced
+            # from 5.0/2.5 MW/MWh; at 600 nodes the old 5 MW BESS gave
+            # bridging=4 MW >> 0.3036 MW shortfall → no alert.)
+            bess_units=[_bess("bess-0", rated_mw=1.0, usable_mwh=0.5, grid_forming=True)],
             turbine_units=[_turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2)],
             solar_rated_mw=_SOLAR_DEMO,
             end_sim_time=300.0,

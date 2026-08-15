@@ -1274,6 +1274,81 @@ def test_item4_demo_scenarios_alert_behavior():
     )
 
 
+def test_demo_alert_fires_at_600_nodes():
+    """Task 173: demo-alert with 600-node job (post-reduction) must still fire.
+
+    At 1900 nodes the reserve gap was large (shortfall ≈13.97 MW >> 4 MW BESS
+    bridging ceiling).  At 600 nodes the shortfall is tiny:
+
+        delta_p  = 600 × 10.2 kW × 1.03 PUE / 1000 = 6.3036 MW
+        ramp     = 0.2 MW/s × 30 s = 6.0 MW  (turbine covers almost all)
+        shortfall = 6.3036 − 6.0 = 0.3036 MW   gap_s = 1.518 s
+
+    Old sizing (rated_mw=5.0, grid_forming=True, p_anchor=1.0):
+        bridging_available = 5.0 − 1.0 = 4.0 MW >> 0.3036 MW → NO alert.
+        This was the bug: the old BESS was large enough to bridge the small gap.
+
+    New sizing (rated_mw=1.0, grid_forming=True, p_anchor=1.0):
+        bridging_available = max(0, 1.0 − 1.0) = 0.0 MW.
+        0.3036 MW > 0.0 MW fleet ceiling → power-limited path fires alert.
+
+    The test explicitly checks both cases so a future resize regression is
+    caught with a clear failure message.
+    """
+    _ENT_KW  = 10.2    # kW per node (enterprise_8gpu_air)
+    _PUE     = 1.03
+    _NODES   = 600
+    _DT_LEAD = 30.0    # seconds of advance warning
+
+    delta_p_mw = _NODES * _ENT_KW * _PUE / 1000.0   # 6.3036 MW
+
+    site = SiteConfig(
+        frequency_nominal_hz=60.0,
+        power_factor=0.85,
+        site_id="site-t173",
+    )   # island_mode defaults to IslandMode.ISLANDED
+
+    turbine = TurbineModule(TurbineConfig(
+        asset_id="t0", r_asset_mw_per_s=0.2, rated_mw=25.0,
+    ))
+
+    # ── Old sizing: 5 MW BESS must NOT alert (demonstrates the bug) ─────────
+    bess_old = BessModule(BessConfig(
+        asset_id="bess-old", rated_mw=5.0, usable_mwh=2.5,
+        grid_forming=True, p_anchor_reserve_mw=1.0,
+    ))
+    arb_old = DispatchArbitrator(turbines=[turbine], bess_units=[bess_old], site=site)
+    alert_old, _, _ = arb_old.stage_for_predicted_step(
+        delta_p_mw=delta_p_mw, dt_lead_seconds=_DT_LEAD, sim_time=0.0,
+    )
+    assert alert_old is None, (
+        f"Old 5 MW BESS (bridging=4 MW) must NOT alert at 600 nodes "
+        f"(shortfall={delta_p_mw - 0.2*_DT_LEAD:.4f} MW < 4 MW ceiling). "
+        f"If alerting, the reserve formula changed unexpectedly."
+    )
+
+    # ── New sizing: 1 MW BESS must alert (the fix) ──────────────────────────
+    bess_new = BessModule(BessConfig(
+        asset_id="bess-new", rated_mw=1.0, usable_mwh=0.5,
+        grid_forming=True, p_anchor_reserve_mw=1.0,
+    ))
+    # Re-use the same turbine object; stage_for_predicted_step does not mutate
+    # turbine state, so no reset is needed.
+    arb_new = DispatchArbitrator(turbines=[turbine], bess_units=[bess_new], site=site)
+    alert_new, _, _ = arb_new.stage_for_predicted_step(
+        delta_p_mw=delta_p_mw, dt_lead_seconds=_DT_LEAD, sim_time=0.0,
+    )
+    assert alert_new is not None, (
+        f"New 1 MW BESS (bridging=0 MW) must alert at 600 nodes "
+        f"(shortfall={delta_p_mw - 0.2*_DT_LEAD:.4f} MW > 0 MW ceiling). "
+        f"If not alerting, p_anchor_reserve_mw or grid_forming wiring changed."
+    )
+    assert alert_new.gap_duration_s > 0, (
+        f"Alert gap_duration_s must be positive; got {alert_new.gap_duration_s:.4f}. "
+        f"Expected ≈1.518 s (required_ramp=31.518 s − dt_lead=30 s)."
+    )
+
+
 def test_d14_capped_allocation_sum_invariant():
     """D14: _capped_equal_share_allocations must satisfy sum == min(demand, sum(ceilings)).
 
