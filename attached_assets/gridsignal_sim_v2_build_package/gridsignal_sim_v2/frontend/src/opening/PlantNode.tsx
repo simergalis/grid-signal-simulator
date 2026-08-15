@@ -598,6 +598,50 @@ export function PlantNode({ def, tick, onClick, solarPreview, liveSolarMW }: Pla
         {/* Weather badge — solar-pv only, pre-run */}
         {showWeather && <WeatherBadge preview={solarPreview!} />}
 
+        {/* Step-phase badge — compute-racks tile, kube path only */}
+        {def.id === 'compute-racks' && tick?.kube_metrics && (() => {
+          const kind  = tick.step_kind   // "training" | "checkpoint"
+          const phase = tick.step_phase  // [0, 1) within-step position
+          const isCheckpoint = kind === 'checkpoint'
+          const color = isCheckpoint ? '#e0a458' : '#3fb6a8'
+          const label = isCheckpoint ? 'CHECKPOINT' : 'COMPUTE'
+          // Progress bar width: clamp step_phase to [0, 1]
+          const pct = Math.min(1, Math.max(0, phase)) * 100
+          return (
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 3,
+              marginTop: 2,
+              padding: '1px 5px',
+              borderRadius: 3,
+              border: `1px solid ${color}33`,
+              background: `${color}14`,
+              position: 'relative',
+              overflow: 'hidden',
+            }}>
+              {/* Step-phase progress fill */}
+              <div style={{
+                position: 'absolute',
+                left: 0, top: 0, bottom: 0,
+                width: `${pct}%`,
+                background: `${color}20`,
+                pointerEvents: 'none',
+              }} />
+              <div style={{
+                width: 4, height: 4, borderRadius: '50%',
+                background: color, flexShrink: 0,
+              }} />
+              <span style={{
+                fontFamily: "'SF Mono','Roboto Mono',Menlo,Consolas,monospace",
+                fontSize: 8, color, letterSpacing: '0.04em', position: 'relative',
+              }}>
+                {label}
+              </span>
+            </div>
+          )
+        })()}
+
         {/* Detail line (bottom) */}
         {detail && (
           <div style={{

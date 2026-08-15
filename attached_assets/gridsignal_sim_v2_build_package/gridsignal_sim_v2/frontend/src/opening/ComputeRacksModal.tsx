@@ -536,6 +536,55 @@ export function ComputeRacksModal({ tick, onClose }: Props) {
               value={`${TENANTS_REPORTING} / ${TOTAL_CAGES}`}
             />
           </div>
+
+          {/* Step-phase indicator — kube path only (step_kind present and kube_metrics non-null) */}
+          {tick?.kube_metrics && (() => {
+            const kind        = tick.step_kind   // "training" | "checkpoint"
+            const phase       = tick.step_phase  // [0, 1) within-step fractional position
+            const isCheckpoint = kind === 'checkpoint'
+            const color       = isCheckpoint ? '#e0a458' : '#3fb6a8'
+            const label       = isCheckpoint ? 'CHECKPOINT' : 'COMPUTE'
+            const phasePct    = Math.round(Math.min(1, Math.max(0, phase)) * 100)
+            return (
+              <div className="mt-3 flex items-center gap-3">
+                {/* Phase label badge */}
+                <span
+                  className="inline-flex items-center gap-1.5 rounded px-2 py-0.5 text-[11px] font-mono font-semibold"
+                  style={{ background: `${color}18`, border: `1px solid ${color}40`, color }}
+                >
+                  <span
+                    className="inline-block rounded-full"
+                    style={{ width: 5, height: 5, background: color, flexShrink: 0 }}
+                  />
+                  {label}
+                </span>
+
+                {/* Step-phase progress bar */}
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  <div
+                    className="relative flex-1 rounded-full overflow-hidden"
+                    style={{ height: 4, background: '#1e2a36' }}
+                    title={`Step phase: ${phasePct}%`}
+                  >
+                    <div
+                      className="absolute left-0 top-0 bottom-0 rounded-full transition-all duration-300"
+                      style={{ width: `${phasePct}%`, background: color, opacity: 0.7 }}
+                    />
+                  </div>
+                  <span
+                    className="font-mono tabular-nums flex-shrink-0"
+                    style={{ fontSize: 10, color: '#4b5764', minWidth: 28, textAlign: 'right' }}
+                  >
+                    {phasePct}%
+                  </span>
+                </div>
+
+                <span className="text-[10px] text-muted font-mono flex-shrink-0">
+                  step phase
+                </span>
+              </div>
+            )
+          })()}
         </div>
 
         {/* ── Body ────────────────────────────────────────────────────────── */}
