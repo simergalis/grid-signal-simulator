@@ -74,6 +74,10 @@ export interface TickPayload {
   //   frontend falls back to observed peak (labeled as such) when 0.
   bess_anchor_reserve_mw: number  // configured anchor reserve on grid-forming BESS (MW)
   design_peak_load_mw:    number  // declared design peak: peak IT load + rated cooling (MW)
+  // PSP-002 §4.2 / Task #371: EDL dispatch cost attributed this tick (USD).
+  // null on headless / direct job-id paths (edl_sources not wired).
+  // Non-null and ≥ 0 on all spec-path runs.
+  edl_dispatch_cost_usd: number | null
 
   // Confidence band
   confidence_lower_mw: number

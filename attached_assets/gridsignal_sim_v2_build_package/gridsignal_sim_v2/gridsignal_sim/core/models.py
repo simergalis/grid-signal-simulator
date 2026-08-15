@@ -1382,6 +1382,13 @@ class TickResult:
     bess_anchor_reserve_mw: float = _sp.value("bess_anchor_reserve_mw")  # anchor reserve (MW)
     design_peak_load_mw:    float = 0.0  # declared design peak; enriched from ctx._design_peak_load_mw
 
+    # PSP-002 §4.2 / Task #371: EDL dispatch cost attributed to this tick.
+    # None when edl_sources is not wired (headless / direct job-id path).
+    # Non-None and ≥ 0 on all spec-path runs — stamped by _drive() after the
+    # EconomicDispatchLoop.step() call (A1b block) so every tick in the emitted
+    # stream carries a cost attribution.
+    edl_dispatch_cost_usd: Optional[float] = None
+
     # Phase E+: commitment engine last-decision summary — serialised for fleet modal.
     # Populated by simulation_core.evaluate_tick() each tick from _commit_decision.
     # Defaults produce innocuous values for tests that build TickResult directly.

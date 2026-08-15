@@ -538,6 +538,13 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         "alpha_max":              round(tick.alpha_max, 6),
         "bess_anchor_reserve_mw": round(tick.bess_anchor_reserve_mw, 4),
         "design_peak_load_mw":    round(tick.design_peak_load_mw, 4),
+        # PSP-002 §4.2 / Task #371: EDL cost attributed by EconomicDispatchLoop
+        # this tick.  None on headless / direct job-id paths (edl_sources=None);
+        # non-None and ≥ 0 on all spec-path runs.
+        "edl_dispatch_cost_usd": (
+            round(tick.edl_dispatch_cost_usd, 6)
+            if tick.edl_dispatch_cost_usd is not None else None
+        ),
         # Phase E+: commitment engine last-decision summary — drives fleet modal
         # commitment stat rows (Item 7).  Always present; action="hold" and
         # empty strings are the safe-sentinel defaults (no commitment engine wired).
@@ -1627,6 +1634,16 @@ class RunManager:
                         month=ctx.edl_calendar_month,
                         demand_mw=tick_result.p_demand_mw,
                         sources=ctx.edl_sources,
+                    )
+
+                    # TC-C15 / Task #371: stamp EDL cost onto tick_result NOW so
+                    # sections B and C (thermal, fabric, sink, broadcast) all carry
+                    # edl_dispatch_cost_usd in the emitted tick stream.  Without this
+                    # the EDL ran every tick but its result was discarded — invisible
+                    # to the operator dashboard, playback, and any downstream audit.
+                    tick_result = _dc_replace(
+                        tick_result,
+                        edl_dispatch_cost_usd=_edl_result.cost_this_tick,
                     )
 
                     if _edl_result.shortfall is None:
