@@ -421,11 +421,11 @@ export function DemoBar({
           </button>
         )}
 
-        {/* Log and Trace button — 60-second telemetry + predictive-variable capture */}
+        {/* Log and Trace button — full-run telemetry + predictive-variable capture (up to 60 min) */}
         <button
           onClick={handleLogTest}
           disabled={logBusy}
-          title="Capture 60 s of telemetry + predictive variables and download system_stats.csv"
+          title="Export full-run telemetry and predictive variables as CSV (up to 60 min of data)"
           className="flex items-center gap-1.5 rounded border px-3 py-1.5 font-sans text-xs
                      font-semibold transition-colors disabled:opacity-50"
           style={{

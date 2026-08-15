@@ -193,8 +193,10 @@ async def start_telemetry_log(
     }
     asyncio.create_task(_build_csv(job_id, out_path, run_id))
 
-    # eta_s: building from DB is fast (< 5 s for a typical run); 10 s is generous.
-    return JSONResponse({"job_id": job_id, "eta_s": 10, "run_id": run_id})
+    # eta_s: upper bound for the frontend polling timeout.
+    # Set to 3600 s (60 min) to accommodate large runs without the browser
+    # giving up early.  Typical DB-query builds complete in < 10 s regardless.
+    return JSONResponse({"job_id": job_id, "eta_s": 3600, "run_id": run_id})
 
 
 @router.get("/api/export/telemetry-log/{job_id}/status")
