@@ -32,6 +32,7 @@ interfere with siblings.
 from __future__ import annotations
 
 import time
+from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -318,3 +319,182 @@ def test_observe_tick_e2e_broadcast_to_histogram() -> None:
         replay_resp = client.post("/api/session/observe-tick", json={"t_emit_ns": t_emit_ns})
         assert replay_resp.status_code == 400, "replayed nonce must be rejected with 400"
         assert replay_resp.json()["recorded"] is False
+
+
+# ---------------------------------------------------------------------------
+# Duration override: RunContext.end_sim_time must equal the request body's
+# end_sim_time, not the scenario spec's stored default.
+#
+# Regression guard for the bug where build_run_context_from_spec read
+# end_sim_time from spec_data BEFORE the operator override was written back,
+# causing runs to silently stop after 300 s even when 1800 s was requested.
+# ---------------------------------------------------------------------------
+
+def _make_minimal_spec(*, end_sim_time: float = 300.0, with_corruption: bool = False):
+    """Return a minimal ScenarioSpec with no solar, no LLM generators.
+
+    Using solar_rated_mw=0 avoids generate_solar_forecast() so the test
+    never makes a network call.  The spec is deliberately bare-bones to
+    keep POST /runs fast.
+    """
+    from api.schemas import (
+        BessUnitSpec,
+        ScenarioSpec,
+        TelemetryCorruptionConfigSpec,
+        TurbineUnitSpec,
+    )
+
+    return ScenarioSpec(
+        name="test-duration-override",
+        description="Minimal scenario for end_sim_time override regression tests.",
+        bess_units=[
+            BessUnitSpec(
+                asset_id="bess-0",
+                rated_mw=5.0,
+                usable_mwh=2.5,
+                grid_forming=True,
+            )
+        ],
+        turbine_units=[
+            TurbineUnitSpec(
+                asset_id="turbine-0",
+                rated_mw=10.0,
+                r_asset_mw_per_s=0.2,
+            )
+        ],
+        solar_rated_mw=0.0,           # no solar → no generate_solar_forecast call
+        end_sim_time=end_sim_time,
+        telemetry_corruption_config=(
+            TelemetryCorruptionConfigSpec(noise_sigma=0.05) if with_corruption else None
+        ),
+    )
+
+
+def test_scenario_end_sim_time_override_honoured() -> None:
+    """POST /runs with end_sim_time=1e15 must override the stored spec default (300 s).
+
+    The scenario's spec_json stores end_sim_time=300.  The request body supplies
+    end_sim_time=1e15.  RunContext.end_sim_time must equal 1e15, not 300.
+
+    Using 1e15 guarantees the run is still active when we inspect the context
+    (2e14 ticks would take far longer than any test timeout).  This makes the
+    check timing-insensitive: get_context() returns None only if the run
+    completed, which is impossible for end_sim_time=1e15.
+
+    Failure mode if the bug returns: end_sim_time == 300, and get_context()
+    returns None (the run completed almost instantly because spec said 300 s).
+    """
+    SPEC_DEFAULT_S = 300.0
+    OVERRIDE_S = 1e15   # astronomically large — run is guaranteed still in-flight
+
+    with TestClient(create_app()) as client:
+        # Register a minimal scenario whose spec says end_sim_time=SPEC_DEFAULT_S.
+        store = client.app.state.scenario_store
+        rec = store.create(_make_minimal_spec(end_sim_time=SPEC_DEFAULT_S))
+        scenario_id = rec.scenario_id
+
+        # POST /runs with an explicit override.
+        resp = client.post(
+            "/runs",
+            json={
+                "scenario_id": scenario_id,
+                "end_sim_time": OVERRIDE_S,
+                "playback_speed": 0.0,
+            },
+        )
+        assert resp.status_code == 201, f"POST /runs failed: {resp.text}"
+        run_id = resp.json()["run_id"]
+
+        # The run must still be active (end_sim_time=1e15 is unreachable).
+        manager = client.app.state.run_manager
+        ctx = manager.get_context(run_id)
+        assert ctx is not None, (
+            f"Run {run_id!r} is not active — it completed before we could inspect it. "
+            f"This should be impossible for end_sim_time={OVERRIDE_S}; "
+            f"the bug may have caused it to run for only {SPEC_DEFAULT_S} s instead."
+        )
+
+        # The key assertion: the override must reach RunContext, not the spec default.
+        assert ctx.end_sim_time == OVERRIDE_S, (
+            f"RunContext.end_sim_time is {ctx.end_sim_time}, expected {OVERRIDE_S}. "
+            f"If it equals {SPEC_DEFAULT_S}, build_run_context_from_spec is reading "
+            f"end_sim_time from the stored spec_data before the operator override "
+            f"(spec_data['end_sim_time'] = _sim_duration) is applied."
+        )
+        assert ctx.end_sim_time != SPEC_DEFAULT_S, (
+            f"RunContext.end_sim_time matches the spec default ({SPEC_DEFAULT_S} s), "
+            f"not the requested override ({OVERRIDE_S} s)."
+        )
+
+
+def test_scenario_n_ticks_uses_overridden_duration() -> None:
+    """generate_corruption_schedule must be called with n_ticks from the overridden
+    duration, not from the scenario spec's stored end_sim_time.
+
+    The scenario spec stores end_sim_time=300 → n_ticks_spec = 60.
+    The request body supplies end_sim_time=1800 → n_ticks_override = 360.
+
+    We patch generate_corruption_schedule so we can inspect the n_ticks argument
+    it receives without depending on run timing (the patched version still returns
+    a valid schedule so the run can proceed normally).
+
+    If the bug returns: generate_corruption_schedule is called with n_ticks=60
+    (spec default), and a run that actually advances 360 ticks will eventually hit
+    TelemetryCorruptionSchedule.for_tick() out-of-range and raise RuntimeError.
+    """
+    TICK_INTERVAL_S = 5          # TICK_INTERVAL_SIM_SECONDS in run_manager.py
+    SPEC_DEFAULT_S = 300.0
+    OVERRIDE_S = 1800.0
+    expected_n_ticks = max(1, int(OVERRIDE_S / TICK_INTERVAL_S))   # 360
+    wrong_n_ticks    = max(1, int(SPEC_DEFAULT_S / TICK_INTERVAL_S))  # 60
+
+    # We need to capture n_ticks but still return a real schedule object so the
+    # run can start without errors.  Build a thin wrapper around the real function.
+    from runtime.telemetry_corruption import (
+        CorruptionEntry,
+        TelemetryCorruptionSchedule,
+        generate_corruption_schedule as _real_gen,
+    )
+
+    captured_n_ticks: list[int] = []
+
+    def _spy_generate(n_ticks: int, **kwargs) -> TelemetryCorruptionSchedule:
+        captured_n_ticks.append(n_ticks)
+        return _real_gen(n_ticks, **kwargs)
+
+    with patch(
+        "api.routes.runs.generate_corruption_schedule",
+        side_effect=_spy_generate,
+    ):
+        with TestClient(create_app()) as client:
+            store = client.app.state.scenario_store
+            rec = store.create(
+                _make_minimal_spec(
+                    end_sim_time=SPEC_DEFAULT_S,
+                    with_corruption=True,
+                )
+            )
+
+            resp = client.post(
+                "/runs",
+                json={
+                    "scenario_id": rec.scenario_id,
+                    "end_sim_time": OVERRIDE_S,
+                    "playback_speed": 0.0,
+                },
+            )
+            assert resp.status_code == 201, f"POST /runs failed: {resp.text}"
+
+    # Exactly one generate_corruption_schedule call must have occurred during POST.
+    assert len(captured_n_ticks) >= 1, (
+        "generate_corruption_schedule was never called. "
+        "Either the scenario's telemetry_corruption_config was not propagated, "
+        "or the call was gated behind a condition that was not met."
+    )
+
+    actual_n_ticks = captured_n_ticks[0]
+    assert actual_n_ticks == expected_n_ticks, (
+        f"generate_corruption_schedule received n_ticks={actual_n_ticks}, "
+        f"expected {expected_n_ticks} (= {OVERRIDE_S} s / {TICK_INTERVAL_S} s per tick). "
+        f"{'BUG: n_ticks equals the spec default — _sim_duration was not applied before _n_ticks was computed.' if actual_n_ticks == wrong_n_ticks else ''}"
+    )
