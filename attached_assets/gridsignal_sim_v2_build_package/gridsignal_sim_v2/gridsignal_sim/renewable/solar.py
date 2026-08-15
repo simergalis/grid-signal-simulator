@@ -224,8 +224,8 @@ def counted_output_mw(cfg: SiteConfig, st: PlantState, b: BankState) -> float:
     return bank_output_mw(cfg, st, b)
 
 
-def mistral_bank_mw(fraction: float, b: BankState) -> float:
-    """Bank-tier output under the three-tier Mistral aggregation.
+def bank_output_mw_for_fraction(fraction: float, b: BankState) -> float:
+    """Canonical bank-MW formula for a Mistral irradiance fraction.
 
     bank_output_mw = fraction × b.rated_mw   if b.enabled
                    = 0.0                      otherwise
@@ -237,11 +237,20 @@ def mistral_bank_mw(fraction: float, b: BankState) -> float:
     No POA, cloud_factor, soiling, temp_derate, string_loss, b.derate, or
     b.soil_bias is applied here.  Those fields remain on the data model as
     inert defaults (unity/zero) for future second-stage reintroduction.
+
+    This is the single source of truth for the fraction → bank MW conversion.
+    Both live_aggregate_mw() and _build_bank_snapshots() delegate here so that
+    a future formula change can't silently diverge between the two paths.
     """
     if not b.enabled:
         return 0.0
     f = max(0.0, min(1.0, fraction))
     return f * b.rated_mw
+
+
+def mistral_bank_mw(fraction: float, b: BankState) -> float:
+    """Backward-compat alias — delegates to bank_output_mw_for_fraction()."""
+    return bank_output_mw_for_fraction(fraction, b)
 
 
 # Backward-compat alias
@@ -540,7 +549,7 @@ def _build_feeder_snapshots(cfg: SiteConfig, st: PlantState,
         if fraction is None:
             output = sum(counted_output_mw(cfg, st, b) for b in banks)
         else:
-            output = sum(mistral_bank_mw(fraction, b) for b in banks)
+            output = sum(bank_output_mw_for_fraction(fraction, b) for b in banks)
         expected = sum(bank_expected_mw(cfg, st, b) for b in banks)
 
         states = {b.state for b in banks}
@@ -576,7 +585,7 @@ def _build_bank_snapshots(cfg: SiteConfig, st: PlantState,
     def _bank_mw(b: BankState) -> float:
         if fraction is None:
             return counted_output_mw(cfg, st, b)
-        return mistral_bank_mw(fraction, b)
+        return bank_output_mw_for_fraction(fraction, b)
 
     return [{
         "id":                b.id,
@@ -695,7 +704,7 @@ class SolarSim:
         if self._mistral_fraction_received_at is None:
             return p_renewable_mw(self.cfg, self.state)
         fraction = self._current_mistral_fraction()
-        return sum(mistral_bank_mw(fraction, b) for b in self.state.blocks)
+        return sum(bank_output_mw_for_fraction(fraction, b) for b in self.state.blocks)
 
     # kept for back-compat; callers should prefer live_aggregate_mw()
     def operator_override_mw(self) -> float:
