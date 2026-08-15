@@ -423,3 +423,116 @@ def test_op5_reset_snapshot_shows_no_shutdowns(sim):
         assert feeder_snap["operator_shutdown"] is False, (
             f"feeder {feeder_snap['id']}: snapshot operator_shutdown must be False after reset"
         )
+
+
+# ---------------------------------------------------------------------------
+# TC-OP-6  snapshot power.p_renewable_mw must equal online-bank sum, not
+#           full-fleet Mistral total, when banks are operator-shut-down.
+#
+# Regression guard for the snapshot-vs-tick disagreement that caused the hero
+# and the bars to show different values (4.25 MW vs 0.00 MW).  The snapshot
+# must use the same computation path as the run loop — i.e. it must factor in
+# operator shutdowns the same way live_aggregate_mw() does.
+# ---------------------------------------------------------------------------
+
+def test_op6_snapshot_p_renewable_excludes_shutdown_banks_under_mistral(sim):
+    """snapshot power.p_renewable_mw must equal online-bank sum, not full-fleet value.
+
+    Regression test for the snapshot-vs-tick disagreement: if snapshot() ever
+    reverts to summing ALL bank outputs (ignoring operator_shutdown), this test
+    will catch it because the full-fleet total > online-bank total.
+    """
+    FRACTION = 0.748
+    target_feeder = "fdr-B"
+    shut_banks = [b for b in sim.state.blocks if b.feeder_id == target_feeder]
+    assert len(shut_banks) > 0, "precondition: fdr-B must have banks"
+
+    # Shut down one complete feeder's worth of banks.
+    sim.inject("feeder_off", target=target_feeder)
+
+    # Activate a Mistral fraction to simulate an active run.
+    sim.set_mistral_fraction(FRACTION)
+
+    snap = sim.snapshot()
+    reported = snap["power"]["p_renewable_mw"]
+
+    # Expected: only online banks contribute (enabled=True → fraction × rated_mw).
+    online_sum = sum(
+        b.rated_mw * FRACTION
+        for b in sim.state.blocks
+        if b.enabled
+    )
+    # The full-fleet value (what a buggy path would return) includes shutdown banks.
+    full_fleet = sum(b.rated_mw for b in sim.state.blocks) * FRACTION
+
+    assert len(shut_banks) > 0, "precondition: some banks must be shut down"
+    assert full_fleet > online_sum, (
+        "precondition: full-fleet total must exceed online-only sum "
+        f"(full={full_fleet:.4f}, online={online_sum:.4f})"
+    )
+    assert reported == pytest.approx(online_sum, abs=1e-9), (
+        f"snapshot p_renewable_mw={reported:.6f} != online-bank sum={online_sum:.6f}; "
+        "shutdown banks must not contribute to the snapshot plant total"
+    )
+    assert reported < full_fleet - 1e-9, (
+        f"snapshot p_renewable_mw={reported:.6f} looks like the full-fleet Mistral total "
+        f"({full_fleet:.6f}); operator-shutdown banks must be excluded"
+    )
+
+
+def test_op6_snapshot_p_renewable_zero_when_all_banks_operator_shutdown(sim):
+    """snapshot power.p_renewable_mw must be 0.0 when every bank is operator-shut-down.
+
+    With a non-zero Mistral fraction active, a buggy implementation would
+    return fraction × plant_rated_ac_mw.  The correct implementation returns
+    0.0 because no bank is enabled.
+    """
+    FRACTION = 0.9   # non-trivial fraction so a full-fleet path gives a clear non-zero
+
+    # Shut down every feeder.
+    for fid in sim.cfg.feeder_ids:
+        sim.inject("feeder_off", target=fid)
+
+    # Confirm precondition: all banks are shut down.
+    assert all(b.operator_shutdown for b in sim.state.blocks), (
+        "precondition: every bank must be operator-shut-down"
+    )
+
+    # Activate a Mistral fraction (simulates a run being active).
+    sim.set_mistral_fraction(FRACTION)
+
+    snap = sim.snapshot()
+    reported = snap["power"]["p_renewable_mw"]
+
+    # What a buggy path would return.
+    full_fleet_wrong = sim.cfg.plant_rated_ac_mw * FRACTION
+
+    assert reported == pytest.approx(0.0, abs=1e-9), (
+        f"snapshot p_renewable_mw={reported:.6f} MW with all banks operator-shut-down; "
+        f"expected 0.0 MW (full-fleet Mistral would give {full_fleet_wrong:.4f} MW)"
+    )
+
+
+def test_op6_snapshot_p_renewable_uses_live_aggregate_not_raw_mistral(sim):
+    """snapshot power.p_renewable_mw must equal live_aggregate_mw() — the single source.
+
+    This is the direct guard against the hero/bars disagreement: if snapshot()
+    ever computes p_renewable_mw by a different path than live_aggregate_mw(),
+    the two display surfaces diverge.
+    """
+    # Shut down a mix of banks.
+    sim.inject("bank_off",   target="bank-04")
+    sim.inject("bank_off",   target="bank-12")
+    sim.inject("feeder_off", target="fdr-D")
+
+    FRACTION = 0.6
+    sim.set_mistral_fraction(FRACTION)
+
+    live = sim.live_aggregate_mw()
+    snap = sim.snapshot()
+    reported = snap["power"]["p_renewable_mw"]
+
+    assert reported == pytest.approx(live, abs=1e-9), (
+        f"snapshot p_renewable_mw={reported:.9f} != live_aggregate_mw={live:.9f}; "
+        "both must use the same computation path (operator_override_mw / live_aggregate_mw)"
+    )
