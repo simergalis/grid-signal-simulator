@@ -75,7 +75,12 @@ export function DemoBar({
     setLogMsg('Starting…')
     try {
       // 1. Kick off the background job — returns immediately with a job_id.
-      const startResp = await fetch('/api/export/telemetry-log', {
+      //    Pass the active run_id so the export targets the current (or last) run.
+      const exportRunId = lastRunId || runId || ''
+      const exportUrl   = exportRunId
+        ? `/api/export/telemetry-log?run_id=${encodeURIComponent(exportRunId)}`
+        : '/api/export/telemetry-log'
+      const startResp = await fetch(exportUrl, {
         method: 'POST',
         credentials: 'include',
       })
@@ -83,14 +88,17 @@ export function DemoBar({
         const txt = await startResp.text()
         throw new Error(`${startResp.status}: ${txt}`)
       }
-      const { job_id, eta_s } = await startResp.json() as { job_id: string; eta_s: number }
+      const { job_id, eta_s, run_id: resolvedRunId } = await startResp.json() as {
+        job_id: string; eta_s: number; run_id: string | null
+      }
 
       // 2. Poll /status every second until done or error.
+      const runLabel = resolvedRunId ? resolvedRunId.slice(-8) : '…'
       const started = Date.now()
       while (true) {
-        await new Promise(r => setTimeout(r, 1000))
+        await new Promise(r => setTimeout(r, 500))
         const elapsed = Math.round((Date.now() - started) / 1000)
-        setLogMsg(`Logging… ${elapsed}/${Math.round(eta_s)}s`)
+        setLogMsg(`Building log for run …${runLabel} (${elapsed}s)`)
 
         const pollResp = await fetch(`/api/export/telemetry-log/${job_id}/status`, {
           credentials: 'include',
@@ -113,7 +121,7 @@ export function DemoBar({
       const url  = URL.createObjectURL(blob)
       const a    = document.createElement('a')
       a.href     = url
-      a.download = 'system_stats.csv'
+      a.download = resolvedRunId ? `gridsignal_${resolvedRunId.slice(-12)}.csv` : 'gridsignal_export.csv'
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)

@@ -157,6 +157,23 @@ async def create_auth_tables() -> None:
                 await conn.execute(text("DROP TABLE auth_user"))
         await conn.run_sync(Base.metadata.create_all, checkfirst=True)
 
+    # ── Log-and-Trace migration: add tick_json column if absent ──────────────
+    # run_timeseries rows written before this column was introduced store '{}'
+    # (the column DEFAULT).  Rows written after this migration store the full
+    # TickResult JSON; the export endpoint expands them into CSV columns.
+    # Both PostgreSQL (≥9.6) and SQLite (≥3.37) support IF NOT EXISTS here.
+    async with _engine.begin() as _m_conn:
+        try:
+            await _m_conn.execute(
+                text(
+                    "ALTER TABLE run_timeseries "
+                    "ADD COLUMN IF NOT EXISTS tick_json TEXT NOT NULL DEFAULT '{}'"
+                )
+            )
+        except Exception:  # noqa: BLE001
+            # Column already exists — safe to ignore.
+            pass
+
     _log.info(
         "Auth tables ready (backend=%s)",
         "postgresql" if _using_postgres else "sqlite",

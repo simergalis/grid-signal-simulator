@@ -83,6 +83,45 @@ from core.models import TickResult
 
 _log = logging.getLogger(__name__)
 
+
+# ---------------------------------------------------------------------------
+# TickResult → JSON serializer (Log-and-Trace)
+# ---------------------------------------------------------------------------
+
+def _tick_to_json(tick: TickResult) -> str:
+    """Serialize a complete TickResult to a JSON string for tick_json column.
+
+    Covers all ~80 fields: dashboard, GPU-Colo, scheduler, power-supply, and
+    internal physics variables.  Uses dataclasses.asdict() for recursive
+    conversion of nested dataclasses (ConfidenceBand, ContingencyCoverage,
+    KubeMetrics …).  Frozensets, Enums, and IEEE-754 non-finite floats are
+    handled by the _default encoder below.
+    """
+    import dataclasses
+
+    def _default(obj: object) -> object:
+        # frozenset/set → sorted list (handles DataQualityTag frozensets)
+        if isinstance(obj, (frozenset, set)):
+            try:
+                return sorted(x.value for x in obj)   # Enum members
+            except (AttributeError, TypeError):
+                return sorted(str(x) for x in obj)
+        # Enum → primitive value
+        try:
+            return obj.value  # type: ignore[attr-defined]
+        except AttributeError:
+            pass
+        # IEEE-754 non-finite floats are not valid JSON
+        if isinstance(obj, float) and (obj != obj or abs(obj) == float("inf")):
+            return None
+        return str(obj)
+
+    try:
+        return json.dumps(dataclasses.asdict(tick), default=_default)
+    except Exception as exc:  # noqa: BLE001
+        _log.warning("_tick_to_json: serialization failed (%s) — storing {}", exc)
+        return "{}"
+
 # Sentinel placed on _write_queue by stop() to signal the drain task to exit.
 _STOP = object()
 
@@ -209,6 +248,15 @@ class RunTimeseries(Base):
     # Enables forecast-error attribution against real latency (v2.5 §22.8).
     # UTC Unix timestamp (float); 0.0 when a test does not inject a real stamp.
     wall_stamp_utc: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+
+    # ── Log-and-Trace full-capture column ────────────────────────────────────
+    # tick_json: complete JSON serialization of the TickResult (all ~80 fields).
+    # Populated every tick via _tick_to_json(); used by the CSV export to surface
+    # every dashboard, GPU-Colo, scheduler, power-supply, and internal variable
+    # without requiring schema migrations each time a new field is added.
+    # Empty JSON object '{}' is the safe sentinel for rows written before this
+    # column was introduced (pre-migration rows that lack a real value).
+    tick_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
 
 
 class ControlEvent(Base):
@@ -711,6 +759,10 @@ class SqlitePersistedTimeseriesSink:
                                 ),
                                 checkpoint_states=json.dumps(tick.checkpoint_states),
                                 wall_stamp_utc=tick.wall_stamp_utc,
+                                # Log-and-Trace: full serialization of all ~80 fields.
+                                # Dashboard, GPU-Colo, scheduler, power-supply, and
+                                # every internal physics variable are captured here.
+                                tick_json=_tick_to_json(tick),
                             )
                         )
             except Exception:
