@@ -1361,6 +1361,20 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         p.tier.value for p in _curtailment_proposals
     )
 
+    # §6.2 / kube_demand power-cap tier: when the Kube admission gate is
+    # holding new jobs due to low grid headroom, surface "b_power_cap" in the
+    # curtailment_proposal_tiers tuple so the operator UI can show the active
+    # curtailment tier without duplicating the logic from kube_demand.py.
+    # This is tier B in the A→B→C→D ladder (defer→power-cap→suspend→shed).
+    # Only injected when power_cap_active=True to avoid polluting the tiers
+    # list on normal ticks where the Kube gate is not engaged.
+    if (
+        _kube_metrics is not None
+        and _kube_metrics.power_cap_active
+        and "b_power_cap" not in _curtailment_proposal_tiers
+    ):
+        _curtailment_proposal_tiers = _curtailment_proposal_tiers + ("b_power_cap",)
+
     # TC-65: detect PMS/GridSignal shed order conflict (commissioning defect).
     _pms_order_conflict: str | None = None
     if state.pms is not None and _curtailment_proposals:

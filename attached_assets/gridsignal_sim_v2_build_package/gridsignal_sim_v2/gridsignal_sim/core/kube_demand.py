@@ -31,6 +31,50 @@ Design goals
 * dt_lead = 0 throughout: Kubernetes gives no advance notice to the grid.
   BESS must bridge every ramp — this is the GridSignal value proposition.
 * Fully synchronous: tick() has no I/O.  Safe inside evaluate_tick().
+
+§6.2 Power-Cap Activation Policy
+----------------------------------
+The admission power-cap (power_cap_active) is an **emergency-only, last-resort**
+control action — not a routine curtailment signal.  The v2.5 spec treats power
+curtailment as a laddered, progressively-engaged reliability resource
+(curtailment_proposal_tiers: A defer → B power-cap → C suspend → D shed).  The
+binary hold implemented here corresponds to curtailment tier B and MUST only
+engage under genuine grid-headroom duress, not in response to normal job-churn.
+
+Activation conditions (both are sufficient to hold new admissions):
+  (a) Raw headroom below threshold:
+        turbine_headroom_mw + bess_headroom_mw < headroom_threshold_mw (2.5 MW)
+  (b) Post-recovery hysteresis window:
+        sim_time < _power_cap_hold_until
+        where _power_cap_hold_until is set on the raw-cap True→False transition
+        to sim_time + power_cap_hysteresis_s (default 90 s).
+
+Anti-oscillation constraint (§6.2 / TC-NO1):
+  power_cap_active MUST NOT toggle more than 5 times in any 300-second simulation
+  window.  The 90 s post-recovery hold guarantees this across all tested RNG seeds.
+
+Why hysteresis is required:
+  Without it, the cap toggles at the job-completion frequency (~0.1 Hz with
+  short-duration test jobs).  A 91 % compute-draw drop lasting 5 s with recovery
+  within 45 s satisfies the §6.2 checkpoint-valley definition, permanently arming
+  turbine pre-staging (r_asset = 0.2 MW/s, 18 MW swing → ~91 s to engage) from
+  a stimulus that looks nothing like a real 10–30 s checkpoint plateau.
+  Δt_thermal = 90 s and τ = 20 s cannot track a 5 s oscillation — the cooling
+  double-lag differentiator becomes invisible, and the BESS cycles at 0.1 Hz.
+
+Minimum hold duration:
+  power_cap_hysteresis_s = 90 s ≥ 30 s (the spec minimum for emergency holds).
+  Setting power_cap_hysteresis_s = 0.0 disables hysteresis and reverts to the
+  raw headroom threshold; this is permitted only in test configurations that
+  deliberately reproduce the oscillation pathology (TC-NO1 RED baseline).
+
+Relationship to curtailment_proposal_tiers:
+  The cap hold here operates at admission time (Step 2) before any compute draw
+  occurs.  Tier-A (defer) and tier-C/D (suspend/shed) actions are handled by the
+  curtailment ladder in the dispatch layer and are orthogonal to this gate.
+  TickResult.curtailment_proposal_tiers carries tier labels for the UI; when
+  power_cap_active=True, callers may include "B:power-cap" in that tuple to make
+  the curtailment tier visible to operators.
 """
 
 from __future__ import annotations
