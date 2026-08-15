@@ -514,11 +514,12 @@ def test_op6_snapshot_p_renewable_zero_when_all_banks_operator_shutdown(sim):
 
 
 def test_op6_snapshot_p_renewable_uses_live_aggregate_not_raw_mistral(sim):
-    """snapshot power.p_renewable_mw must equal live_aggregate_mw() — the single source.
+    """snapshot power.p_renewable_mw must equal live_aggregate_mw() when no run is
+    active (i.e. update_from_run() has never been called).
 
-    This is the direct guard against the hero/bars disagreement: if snapshot()
-    ever computes p_renewable_mw by a different path than live_aggregate_mw(),
-    the two display surfaces diverge.
+    Guards against the hero/bars disagreement in the standalone (no-run) case.
+    When a run IS active, the snapshot uses the scenario-normalized value written
+    by update_from_run() — see test_403_snapshot_uses_run_normalized_value below.
     """
     # Shut down a mix of banks.
     sim.inject("bank_off",   target="bank-04")
@@ -528,11 +529,95 @@ def test_op6_snapshot_p_renewable_uses_live_aggregate_not_raw_mistral(sim):
     FRACTION = 0.6
     sim.set_mistral_fraction(FRACTION)
 
+    # No call to update_from_run() — _run_p_renewable_mw stays None.
     live = sim.live_aggregate_mw()
     snap = sim.snapshot()
     reported = snap["power"]["p_renewable_mw"]
 
     assert reported == pytest.approx(live, abs=1e-9), (
         f"snapshot p_renewable_mw={reported:.9f} != live_aggregate_mw={live:.9f}; "
-        "both must use the same computation path (operator_override_mw / live_aggregate_mw)"
+        "without an active run, snapshot must fall back to live_aggregate_mw()"
+    )
+
+
+# ---------------------------------------------------------------------------
+# TC-403  snapshot p_renewable_mw must use the scenario-normalized value, not
+#         the raw SolarSim fleet output.
+#
+# Regression guard for: irradiance_steps=[[0.0,0.9]], solar_rated_mw=1.5 →
+# snapshot showed 4.5 MW (20 banks × 0.9 × 0.25 MW, the SolarSim's own fleet)
+# instead of 1.35 MW (0.9 × 1.5 MW, the scenario-rated output).
+#
+# Root cause: snapshot() called live_aggregate_mw() directly, ignoring the
+# scenario-normalized value that RunManager A0 computes and C2 pushes via
+# update_from_run(tick_result.p_renewable_mw).
+# ---------------------------------------------------------------------------
+
+def test_403_snapshot_uses_run_normalized_value_not_solarsim_fleet_total(sim):
+    """snapshot power.p_renewable_mw must equal the run-synchronized value, not
+    the raw SolarSim fleet total.
+
+    Scenario: solar_rated_mw=1.5, irradiance_steps=[[0.0,0.9]].
+    RunManager A0 normalizes: avail_fraction=0.9 → _pre_solar_mw = 0.9×1.5 = 1.35 MW.
+    RunManager C2 pushes that into SolarSim via update_from_run(1.35).
+    snapshot() must return 1.35, not 4.5 (the SolarSim's 20-bank fleet total).
+    """
+    FRACTION = 0.9
+    SCENARIO_RATED_MW = 1.5
+    EXPECTED_MW = FRACTION * SCENARIO_RATED_MW   # 1.35
+
+    sim.set_mistral_fraction(FRACTION)
+
+    # Verify the raw SolarSim fleet output (the value that was incorrectly shown).
+    raw_fleet_mw = sim.live_aggregate_mw()
+    assert raw_fleet_mw == pytest.approx(
+        FRACTION * sim.cfg.plant_rated_ac_mw, abs=1e-6
+    ), (
+        f"live_aggregate_mw()={raw_fleet_mw:.4f} should equal fraction × fleet_rated "
+        f"({FRACTION} × {sim.cfg.plant_rated_ac_mw} = {FRACTION * sim.cfg.plant_rated_ac_mw:.4f})"
+    )
+    assert raw_fleet_mw > EXPECTED_MW + 0.5, (
+        "pre-condition: raw fleet MW must be materially larger than scenario output "
+        f"(raw={raw_fleet_mw:.4f}, scenario={EXPECTED_MW:.4f})"
+    )
+
+    # Simulate RunManager C2: push the scenario-normalized value.
+    sim.update_from_run(EXPECTED_MW)
+
+    snap = sim.snapshot()
+    reported = snap["power"]["p_renewable_mw"]
+
+    assert reported == pytest.approx(EXPECTED_MW, abs=1e-6), (
+        f"snapshot p_renewable_mw={reported:.6f} MW — expected scenario-normalized "
+        f"{EXPECTED_MW:.6f} MW (fraction={FRACTION} × solar_rated_mw={SCENARIO_RATED_MW}), "
+        f"not the SolarSim fleet total {raw_fleet_mw:.6f} MW. "
+        "snapshot() must use update_from_run()'s normalized value during a run."
+    )
+
+
+def test_403_snapshot_falls_back_to_live_aggregate_after_clear_run_sync(sim):
+    """After clear_run_sync(), snapshot() must revert to live_aggregate_mw().
+
+    Ensures the normalization fix doesn't persist across runs: once a run ends,
+    the Solar PV tile returns to the physics-based output.
+    """
+    FRACTION = 0.7
+
+    sim.set_mistral_fraction(FRACTION)
+    sim.update_from_run(0.63)   # simulate an active run with a normalized value
+
+    # End the run.
+    sim.clear_run_sync()
+
+    # After clear_run_sync(), fraction is also reset to 0.0.
+    # Re-set it so live_aggregate_mw() gives a non-zero reference.
+    sim.set_mistral_fraction(FRACTION)
+
+    live = sim.live_aggregate_mw()
+    snap = sim.snapshot()
+    reported = snap["power"]["p_renewable_mw"]
+
+    assert reported == pytest.approx(live, abs=1e-9), (
+        f"After clear_run_sync(), snapshot p_renewable_mw={reported:.9f} should equal "
+        f"live_aggregate_mw={live:.9f}; the run-sync value must not persist beyond the run."
     )

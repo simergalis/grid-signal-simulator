@@ -1115,7 +1115,24 @@ class SolarSim:
         # fraction is the current Mistral value; helpers use mistral_bank_mw.
         fraction = (self._current_mistral_fraction()
                     if self._mistral_fraction_received_at is not None else None)
-        solar      = self.live_aggregate_mw()       # plant tier (POA or Mistral)
+
+        # solar — the value shown in the Solar PV tile:
+        #
+        #   During a run: use _run_p_renewable_mw, which RunManager writes after
+        #   every tick via update_from_run(tick_result.p_renewable_mw).  That value
+        #   is already normalized to the *scenario's* solar_rated_mw (A0 section),
+        #   so the tile matches the physics engine exactly — e.g. a 1.5 MW scenario
+        #   with irradiance_steps=[[0.0,0.9]] shows 1.35 MW, not the SolarSim
+        #   fleet's raw 4.5 MW (20 banks × 0.9 × 0.25 MW).
+        #
+        #   Cold-start / no run active: _run_p_renewable_mw is None (cleared by
+        #   clear_run_sync), so fall back to live_aggregate_mw() which uses POA
+        #   physics or the last Mistral fraction — both are reasonable without a
+        #   scenario context.
+        if self._run_p_renewable_mw is not None:
+            solar = self._run_p_renewable_mw
+        else:
+            solar = self.live_aggregate_mw()        # plant tier (POA or Mistral)
         clear_sky  = p_clear_sky_mw(cfg, st)
         total      = p_demand_mw(cfg, st)
         p_expected = sum(bank_expected_mw(cfg, st, b) for b in st.blocks)
