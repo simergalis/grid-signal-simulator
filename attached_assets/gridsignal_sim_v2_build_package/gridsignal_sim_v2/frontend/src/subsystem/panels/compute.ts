@@ -16,6 +16,13 @@ const TEAL   = '#3fb6a8'
 const AMBER  = '#f0883e'
 const RED    = '#f85149'
 
+// ── per-run power-cap flip tracking ──────────────────────────────────────────
+// Module-level mutable state: persists across ticks within the same run,
+// resets automatically when run_id changes.
+let _capFlipRunId:   string  = ''
+let _capFlipCount:   number  = 0
+let _capFlipPrev:    boolean = false
+
 function fmtCountdown(s: number): string {
   if (s <= 0) return '—'
   if (s >= 60) { const m = Math.floor(s / 60); return `${m}m ${Math.round(s % 60)}s` }
@@ -116,13 +123,30 @@ export const computePanel: PanelConfig = {
       colour: jobs[jid] === 'running' ? TEAL : jobs[jid] === 'starting' ? AMBER : undefined,
     }))
 
+    // ── power-cap flip counter (reset on new run) ────────────────────────────
+    if (kube) {
+      const runId = tick.run_id ?? ''
+      if (runId !== _capFlipRunId) {
+        // New run started — reset all tracking state.
+        _capFlipRunId = runId
+        _capFlipCount = 0
+        _capFlipPrev  = kube.power_cap_active
+      } else if (kube.power_cap_active !== _capFlipPrev) {
+        _capFlipCount++
+        _capFlipPrev = kube.power_cap_active
+      }
+    }
+
     const kubeRows = kube ? [
-      { label: 'K8s utilisation', value: `${(kube.utilization * 100).toFixed(1)}%`,       colour: kube.utilization > 0.78 ? AMBER : TEAL },
-      { label: 'Active jobs',     value: kube.active_jobs.toString(),                      colour: kube.active_jobs > 0 ? TEAL : undefined },
-      { label: 'Admitted nodes',  value: fmtNodes(kube.admitted_nodes) },
-      { label: 'Total nodes',     value: fmtNodes(kube.node_count) },
-      { label: 'Power cap',       value: kube.power_cap_active ? 'ACTIVE' : '—',           colour: kube.power_cap_active ? RED : undefined },
-      { label: 'Grid headroom',   value: kube.headroom_mw > 100 ? '∞' : `${kube.headroom_mw.toFixed(1)} MW` },
+      { label: 'K8s utilisation',      value: `${(kube.utilization * 100).toFixed(1)}%`,       colour: kube.utilization > 0.78 ? AMBER : TEAL },
+      { label: 'Active jobs',          value: kube.active_jobs.toString(),                      colour: kube.active_jobs > 0 ? TEAL : undefined },
+      { label: 'Admitted nodes',       value: fmtNodes(kube.admitted_nodes) },
+      { label: 'Total nodes',          value: fmtNodes(kube.node_count) },
+      { label: 'Power cap',            value: kube.power_cap_active ? 'ACTIVE' : '—',           colour: kube.power_cap_active ? RED : undefined },
+      { label: 'Cap flips this run',   value: _capFlipCount.toString(),                         colour: _capFlipCount > 0 ? AMBER : undefined },
+      { label: 'Grid headroom',        value: kube.headroom_mw > 100 ? '∞' : `${kube.headroom_mw.toFixed(1)} MW` },
+      { label: 'Arrivals this tick',   value: (kube.arrivals_this_tick ?? 0).toString() },
+      { label: 'Requeued (cap hold)',  value: (kube.requeued_this_tick ?? 0).toString(),         colour: (kube.requeued_this_tick ?? 0) > 0 ? AMBER : undefined },
     ] : []
 
     return {

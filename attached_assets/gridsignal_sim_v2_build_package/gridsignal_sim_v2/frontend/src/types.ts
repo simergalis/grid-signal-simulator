@@ -353,6 +353,8 @@ export interface KubeMetrics {
   admitted_nodes: number    // sum of node_count across active jobs (pre min_nodes floor)
   queued_jobs: number       // jobs in the reorder buffer (observed, not yet admitted)
   queued_nodes: number      // sum of node_count across all reorder-buffer jobs
+  arrivals_this_tick: number  // Poisson job arrivals observed this tick
+  requeued_this_tick: number  // jobs held back by power-cap this tick
 }
 
 /**
