@@ -731,10 +731,11 @@ class LadderPosition(int, Enum):
     """
     STORAGE_DISCHARGE      = 0   # BESS (handled by DispatchArbitrator)
     TURBINE_RAMP           = 1   # Turbine ramp (handled by DispatchArbitrator)
-    FIRM_GRID_IMPORT       = 2   # Not yet modelled; placeholder for Step 11+
-    RESERVED_GRID_PURCHASE = 3   # Not yet modelled; placeholder
-    CURTAILMENT_A_B        = 4   # §23.2 tiers A (defer) and B (power-cap)
-    CURTAILMENT_C_D        = 5   # §23.2 tiers C (suspend) and D (preempt)
+    FUEL_CELL_DISPATCH     = 2   # Fuel cell (merit-order after turbine, before grid import)
+    FIRM_GRID_IMPORT       = 3   # Not yet modelled; placeholder for Step 11+
+    RESERVED_GRID_PURCHASE = 4   # Not yet modelled; placeholder
+    CURTAILMENT_A_B        = 5   # §23.2 tiers A (defer) and B (power-cap)
+    CURTAILMENT_C_D        = 6   # §23.2 tiers C (suspend) and D (preempt)
 
 
 @dataclass(frozen=True)

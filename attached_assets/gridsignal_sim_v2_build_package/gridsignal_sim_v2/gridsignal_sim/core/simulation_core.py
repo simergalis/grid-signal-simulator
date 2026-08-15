@@ -1030,11 +1030,28 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # Covers any remaining shortfall (demand not met by turbines + BESS) up to
     # the array's rated MW ceiling.  fuel_cell_rated_mw = 0.0 (default) is a
     # no-op for all scenarios that do not enable a fuel cell.
+    #
+    # Merit order (§EDL): BESS ($38) → Turbine ($55) → FC ($65) → Grid ($114+).
+    # The FC fills the BESS deficit; grid import absorbs only the residual
+    # that all dispatchable sources cannot cover.
     _fuel_cell_setpoint_mw = 0.0
     if state.fuel_cell_rated_mw > 0.0:
         _fc_remaining = max(0.0, _p_dispatch_droop_mw - turbine_output_mw - bess_output_mw)
         _fuel_cell_setpoint_mw = min(state.fuel_cell_rated_mw, _fc_remaining)
     fuel_cell_output_mw: float = _fuel_cell_setpoint_mw
+
+    # FC CandidateResponse for the §26.4 unified pool (attribution + Step-12 ordering).
+    # Position FUEL_CELL_DISPATCH ranks after TURBINE_RAMP and before FIRM_GRID_IMPORT,
+    # matching the economic merit order.  Emitted only when FC actually dispatches.
+    _fc_candidates: list[CandidateResponse] = []
+    if fuel_cell_output_mw > 1e-9:
+        _fc_candidates.append(CandidateResponse(
+            ladder_position=LadderPosition.FUEL_CELL_DISPATCH,
+            estimated_impact_mw=fuel_cell_output_mw,
+            candidate_id="fuel-cell-fleet",
+            response_kind="fuel_cell_dispatch",
+            requires_confirmation=False,
+        ))
 
     # ── Phase D Item 5: evaluate_commitment() replaces headroom block ────────
     # Called every tick so commit/decommit hysteresis timers accumulate.
@@ -1287,8 +1304,12 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         # Scripted inject windows (demo / scenario testing).
         or _dq_injected
     )
+    # Remaining gap passed to the curtailment ladder must account for ALL
+    # dispatched sources — including the fuel cell.  Omitting fuel_cell_output_mw
+    # here caused the ladder to see a false gap equal to the FC's contribution,
+    # potentially triggering curtailment of GPU nodes that FC was already serving.
     _remaining_gap_mw = max(
-        0.0, p_dispatch_required_mw - turbine_output_mw - bess_output_mw
+        0.0, p_dispatch_required_mw - turbine_output_mw - bess_output_mw - fuel_cell_output_mw
     )
 
     # TC-64: if PMS fast shed is active, curtailment is bypassed entirely.
@@ -1310,10 +1331,13 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             sim_time=sim_time,
         )
 
-    # K1 unified pool: storage + turbine (dispatched) + curtailment (proposed).
+    # K1 unified pool: storage + turbine + fuel cell (dispatched) + curtailment (proposed).
+    # FC candidates sit at FUEL_CELL_DISPATCH (position 2), between TURBINE_RAMP (1) and
+    # FIRM_GRID_IMPORT (3), so select_candidates() exhausts all dispatchable sources
+    # before ever reaching curtailment.
     # select_candidates() sorts by total order (position ASC, impact DESC, id ASC)
     # and greedily selects until the gap is covered — TC-49 live path.
-    _unified_pool: list[CandidateResponse] = _arb_candidates + _curtailment_candidates
+    _unified_pool: list[CandidateResponse] = _arb_candidates + _fc_candidates + _curtailment_candidates
     _selected_unified: list[CandidateResponse] = select_candidates(
         _unified_pool, p_dispatch_required_mw
     )

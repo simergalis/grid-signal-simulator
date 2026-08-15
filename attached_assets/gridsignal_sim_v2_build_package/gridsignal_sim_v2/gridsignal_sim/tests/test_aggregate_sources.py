@@ -756,3 +756,148 @@ class TestSwitchgearThreeSource:
             "SW-AGG-13: switchgear 3-source identity failed:\n"
             + "\n".join(failures)
         )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FC-before-curtailment (Test 14)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestFuelCellBeforeCurtailment:
+    """
+    FC-CURT-14: When turbines + BESS cannot cover demand, the fuel cell must
+    dispatch (filling the gap) and the curtailment ladder must see zero
+    remaining gap — not the inflated gap that FC is already covering.
+
+    Guards the fix to _remaining_gap_mw in evaluate_tick() that subtracts
+    fuel_cell_output_mw before handing the gap to the curtailment ladder.
+    Without the fix, the ladder would see a gap equal to the FC output and
+    recommend curtailment of GPU nodes that FC is already serving.
+    """
+
+    def test_FC14_no_curtailment_when_fc_covers_gap(self):
+        """
+        FC-CURT-14: BESS (1 MW) + turbines (3 MW) undersized for 6 MW demand.
+        FC (5 MW rated) must fill the 2 MW gap before the curtailment ladder
+        is consulted.  No curtailment proposal should appear in TickResult.
+        """
+        from core._plane_guard import _EVALUATE_TICK_PERMITTED
+        from core.dispatch import LadderPosition
+        from core.sim_clock import SimClock
+        from core.simulation_core import evaluate_tick
+        from runtime.scenario_factory import build_run_context_from_spec
+
+        SPEC = {
+            "name": "fc-curt-14-test",
+            "description": "",
+            "frequency_nominal_hz": 60.0,
+            "power_factor": 0.95,
+            "pue_base": 1.03,
+            "island_mode": False,           # grid-connected
+            "turbine_units": [
+                {
+                    "asset_id": "gt-1",
+                    "rated_mw": 3.0,
+                    "p_min_stable_frac": 0.0,
+                    "droop_r": 0.05,
+                    "power_factor": 0.95,
+                    "hot_start_s": 300,
+                    "warm_start_s": 600,
+                    "cold_start_s": 900,
+                }
+            ],
+            "bess_units": [
+                {
+                    "asset_id": "bess-1",
+                    "rated_mw": 1.0,        # undersized: 1 MW < 3 MW gap
+                    "usable_mwh": 2.0,
+                    "initial_soc_fraction": 0.90,
+                    "p_anchor_reserve_mw": 0.0,
+                    "grid_forming": False,
+                }
+            ],
+            "solar_rated_mw": 0.0,
+            "fuel_cell_enabled": True,
+            "fuel_cell_rated_mw": 5.0,      # more than enough to cover the gap
+            "fuel_cell_stack_count": 1,
+            "workload_events": [],
+            "end_sim_time": 300.0,
+        }
+
+        ctx = build_run_context_from_spec(run_id="fc14-test", spec_data=SPEC)
+
+        # Force turbine to SYNCHRONISED so it contributes output immediately.
+        from core.asset_modules import TurbineState
+        for t in ctx.sim_state.turbines:
+            t._state = TurbineState.SYNCHRONISED
+            t._current_output_mw = 3.0
+
+        # Apply 600-node load → demand well above BESS + turbine ceiling.
+        sig = _starting_signal(nodes=600, ramp_s=1.0, timestamp=0.0)
+        ctx.sim_state.apply_workload_signal(sig, dt_lead_seconds=0.0)
+
+        token = _EVALUATE_TICK_PERMITTED.set(True)
+        try:
+            ticks = []
+            for i in range(6):
+                clock = SimClock(
+                    sim_time=float(i) * 5.0, dt_seconds=5.0,
+                    wall_stamp_utc=float(i) * 5.0, rate=1.0, tick_seq=i,
+                )
+                ticks.append(evaluate_tick(ctx.sim_state, clock))
+        finally:
+            _EVALUATE_TICK_PERMITTED.reset(token)
+
+        # FC must dispatch on at least one tick where demand > turbine + BESS.
+        overloaded_ticks = [
+            t for t in ticks
+            if t.p_demand_mw > t.turbine_output_mw + t.bess_output_mw + 0.1
+        ]
+        if overloaded_ticks:
+            fc_fired = any(t.fuel_cell_output_mw > 0.1 for t in overloaded_ticks)
+            assert fc_fired, (
+                "FC-CURT-14: fuel cell did not dispatch on any overloaded tick — "
+                "FC dispatch not wired or _sync_ceiling_mw too small. "
+                f"Overloaded ticks: {[(t.sim_time_s, t.p_demand_mw, t.fuel_cell_output_mw) for t in overloaded_ticks]}"
+            )
+
+            # On ticks where FC is dispatching, the curtailment ladder must see
+            # zero remaining gap — not a gap inflated by the FC contribution.
+            curtailment_positions = frozenset({
+                LadderPosition.CURTAILMENT_A_B, LadderPosition.CURTAILMENT_C_D
+            })
+            for tick in overloaded_ticks:
+                if tick.fuel_cell_output_mw < 0.1:
+                    continue
+                # FC covers the gap → remaining_gap passed to curtailment ladder ≈ 0
+                # → no curtailment proposals should appear in TickResult.
+                # TickResult exposes curtailment_proposal_tiers (tuple[str, ...]).
+                has_curtailment = bool(tick.curtailment_proposal_tiers)
+                remaining_after_fc = max(
+                    0.0,
+                    tick.p_demand_mw
+                    - tick.p_renewable_mw
+                    - tick.turbine_output_mw
+                    - tick.bess_output_mw
+                    - tick.fuel_cell_output_mw,
+                )
+                assert remaining_after_fc < 0.5 or not has_curtailment, (
+                    f"FC-CURT-14 at t={tick.sim_time_s:.0f}s: "
+                    f"curtailment proposed {tick.curtailment_proposal_tiers!r} when "
+                    f"FC ({tick.fuel_cell_output_mw:.2f} MW) should have closed the gap. "
+                    f"remaining_after_fc={remaining_after_fc:.3f} MW"
+                )
+
+        # Aggregate identity must hold on every tick.
+        failures = []
+        for i, tick in enumerate(ticks):
+            rhs = _aggregate_identity(tick)
+            delta = tick.p_generation_mw - rhs
+            if abs(delta) >= FLOAT_TOL:
+                failures.append(
+                    f"  tick {i}: p_gen={tick.p_generation_mw:.6f} rhs={rhs:.6f} "
+                    f"fc={tick.fuel_cell_output_mw:.4f} delta={delta:.2e}"
+                )
+        assert not failures, (
+            "FC-CURT-14: aggregate identity fails:\n"
+            + "\n".join(failures)
+        )
