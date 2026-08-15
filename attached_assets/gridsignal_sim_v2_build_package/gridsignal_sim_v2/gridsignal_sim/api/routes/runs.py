@@ -133,6 +133,9 @@ async def _load_completed_from_db(run_id: str) -> "CompletedRun | None":
             verdict=_verdict,
             tick_dicts=[],        # Not persisted — timeseries endpoint returns 410
             dropped_ticks=_v.get("dropped_ticks", 0),
+            # Task #428: restore run-level EDL total persisted in verdict_json.
+            # None when the key is absent (pre-#428 rows) or was null (headless).
+            total_edl_dispatch_cost_usd=_v.get("total_edl_dispatch_cost_usd"),
         )
     except Exception:
         _log.warning("run %s: DB fallback verdict parse failed", run_id, exc_info=True)
@@ -624,6 +627,7 @@ async def get_run_result(
             for a in v.assertions
         ],
         balance_gate=_balance_gate_resp,
+        total_edl_dispatch_cost_usd=completed.total_edl_dispatch_cost_usd,
     )
 
 

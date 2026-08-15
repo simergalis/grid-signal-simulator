@@ -970,6 +970,13 @@ class CompletedRun:
     # When renderable is False the run's derived figures should not be presented
     # as if the identity closed; the reason string carries the detail.
     balance_gate: Optional[_PbGateVerdict] = None
+    # Task #428: Σ edl_dispatch_cost_usd across all ticks.
+    # None on headless runs (ctx.edl_sources is None) where EDL is not wired
+    # and every tick carries edl_dispatch_cost_usd=None.  Non-None on spec-path
+    # runs — equals the total economic dispatch cost for the scenario in USD.
+    # Preserved as None (not 0) so callers can distinguish "EDL not active"
+    # from "EDL active but zero cost".
+    total_edl_dispatch_cost_usd: Optional[float] = None
 
 
 # ---------------------------------------------------------------------------
@@ -2322,6 +2329,39 @@ class RunManager:
                 except Exception:
                     logger.exception("run %s: balance gate evaluation failed", ctx.run_id)
 
+                # Task #428: sum per-tick EDL dispatch costs into a run total.
+                # Nullability is derived from ctx.edl_sources, NOT from tick data.
+                # Rationale: a spec-path run whose ticks were all dropped must still
+                # report 0.0 (EDL was wired, zero retained ticks → zero cost), while
+                # ctx.edl_sources is None (headless path) reports None so callers
+                # can distinguish "EDL not wired" from "EDL active but zero cost".
+                _total_edl_dispatch_cost_usd: Optional[float] = None
+                try:
+                    if ctx.edl_sources is not None:
+                        _total_edl_dispatch_cost_usd = round(
+                            sum(
+                                (td.get("edl_dispatch_cost_usd") or 0.0)
+                                for td in tick_dicts
+                            ),
+                            6,
+                        )
+                except Exception:
+                    logger.exception(
+                        "run %s: total_edl_dispatch_cost_usd accumulation failed",
+                        ctx.run_id,
+                    )
+
+                # Amend verdict_json with total_edl_dispatch_cost_usd so that
+                # the value survives a server restart.  persist_completed_hook
+                # writes verdict_json to the DB; _load_completed_from_db() reads
+                # it back.  Written as null for headless runs so the DB fallback
+                # preserves the "EDL not wired" vs "zero cost" distinction.
+                if verdict_json is not None:
+                    import json as _json_va
+                    _vd = _json_va.loads(verdict_json)
+                    _vd["total_edl_dispatch_cost_usd"] = _total_edl_dispatch_cost_usd
+                    verdict_json = _json_va.dumps(_vd)
+
                 # Store for the results/playback screen.
                 _completed_at = datetime.now(timezone.utc)
                 self._completed[ctx.run_id] = CompletedRun(
@@ -2339,6 +2379,7 @@ class RunManager:
                     dropped_ticks=dropped,
                     turbine_rated_mw=ctx.turbine_rated_mw,
                     balance_gate=_balance_gate,
+                    total_edl_dispatch_cost_usd=_total_edl_dispatch_cost_usd,
                 )
 
                 # Tenant overage billing summary — emitted once per run when

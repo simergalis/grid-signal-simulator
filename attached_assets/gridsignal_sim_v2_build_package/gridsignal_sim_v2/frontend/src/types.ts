@@ -739,6 +739,10 @@ export interface RunResult {
   dropped_ticks: number
   gap_count: number
   assertions: AssertionResult[]
+  // Task #428: total economic dispatch cost across all ticks (USD).
+  // null on headless runs where EDL is not wired; non-null on spec-path runs.
+  // Use to compare scenario economics without aggregating the timeseries.
+  total_edl_dispatch_cost_usd: number | null
 }
 
 export interface TimeseriesRow {

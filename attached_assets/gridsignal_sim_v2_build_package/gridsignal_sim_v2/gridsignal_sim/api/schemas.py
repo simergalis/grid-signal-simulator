@@ -1295,6 +1295,11 @@ class RunResultResponse(BaseModel):
     gap_count: int
     assertions: list[AssertionResultResponse]
     balance_gate: Optional[BalanceGateResponse] = None
+    # Task #428: total economic dispatch cost for the run in USD.
+    # None on headless runs (EDL not wired); non-None on spec-path runs.
+    # Allows operators to compare scenario economics from a single number
+    # without aggregating the per-tick timeseries themselves.
+    total_edl_dispatch_cost_usd: Optional[float] = None
 
 
 class TimeseriesRowResponse(BaseModel):
