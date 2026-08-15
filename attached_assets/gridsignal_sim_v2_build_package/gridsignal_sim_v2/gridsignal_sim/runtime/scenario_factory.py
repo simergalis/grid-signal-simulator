@@ -38,6 +38,7 @@ from core.models import (
     ThermalState,
     TransitionMode,
     TurbineConfig,
+    TurbineState,
     WorkloadClass,
     WorkloadEventType,
     WorkloadSignal,
@@ -674,6 +675,19 @@ def build_run_context_from_spec(
         )
         for i, t in enumerate(spec_data.get("turbine_units", []))
     ]
+
+    # Pre-synchronise every non-hot-standby turbine so the on-bus fleet is
+    # already online when the first tick executes.  In a real facility the
+    # generating units are synchronised to the bus before any GPU workload
+    # arrives; they do not start cold during a run.  TurbineModule defaults to
+    # TurbineState.OFFLINE and requires cold_start_s=900 s (or 300 s hot) to
+    # reach SYNCHRONISED — far longer than any demo or test run.
+    # Hot-standby units (hot_standby=True) must remain OFFLINE per the
+    # operator commitment sequence (TC-89 / PW-1).
+    for _turb in turbines:
+        if not _turb.config.hot_standby:
+            _turb.state              = TurbineState.SYNCHRONISED
+            _turb._current_output_mw = 0.0   # loading layer ramps to MSL each tick
 
     # anchor_reserve_pct wires the scenario-level reserve percentage into the
     # grid-forming unit's BessConfig.  0.0 = use BessConfig default (1.0 MW).

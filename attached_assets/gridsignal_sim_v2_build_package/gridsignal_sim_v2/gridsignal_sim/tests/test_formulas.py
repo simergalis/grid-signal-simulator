@@ -617,6 +617,183 @@ def test_d11_reserve_alert_fires_when_bess_power_insufficient():
 
 
 # ---------------------------------------------------------------------------
+# D12 — turbine visibly contributes MW during the 120 s job ramp, not just BESS
+# ---------------------------------------------------------------------------
+
+def test_d12_turbine_contributes_mw_during_120s_ramp():
+    """D12: with ramp_seconds=120 s (the production default) and the demo-20mw
+    5×7 MW fleet (4 online + 1 hot-standby), the pre-staged turbines must be
+    visibly carrying load by t=60 s and must cover ≥80 % of dispatch at
+    t=120 s.  The BESS must stay at zero throughout.
+
+    Background: ramp_seconds was raised from 45 → 120 s so the 30-second
+    advance warning converts into real turbine output before the load peaks.
+    A regression would silently revert the demo to "battery absorbed 83% of
+    the step" — indistinguishable from no forecast at all.
+
+    Fleet maths:
+      4 active turbines × 0.2 MW/s = 0.8 MW/s combined ramp rate.
+      dt_lead = 30 s → pre-stage credit = 0.8 × 30 = 24 MW (capped to the
+      ≈6.3 MW peak load for 600 nodes).  Turbines reach full staging well
+      before the load peaks, so BESS has nothing to bridge.
+
+    Three acceptance criteria (from §7.2 "done looks like"):
+      1. turbine_output_mw ≥ 3.0 MW at t=60 s (halfway through ramp).
+      2. turbine_output_mw ≥ net_demand_mw × 0.80 at t=120 s (ramp complete).
+      3. bess_output_mw ≈ 0 for all 25 ticks (t=0..120 s).
+
+    This is the "tested separately" counterpart documented in D10, which pins
+    ramp_seconds=45 s to exercise the original fire-then-taper arc.
+    """
+    from core.simulation_core import SimulationState, evaluate_tick
+    from core.models import IslandMode
+
+    NODE_COUNT  = 600       # _DEMO_NODES from api/routes/scenarios.py
+    PROFILE_ID  = "enterprise_8gpu_air"
+    RATED_KW    = 10.2
+    PUE         = 1.03
+
+    library = {PROFILE_ID: HardwareProfile(PROFILE_ID, rated_kw=RATED_KW)}
+    # San Diego / WECC, 60 Hz.  demo-20mw is ISLANDED: all power is generated
+    # on-site by the turbine fleet; no grid import.  SiteConfig default is
+    # ISLANDED; stated explicitly so the test cannot silently drift.
+    site = SiteConfig(
+        frequency_nominal_hz=60.0,
+        power_factor=0.85,
+        site_id="site-d12",
+        pue_base=PUE,
+        island_mode=IslandMode.ISLANDED,
+    )
+
+    # PROTO-7 solar fraction: 25 % of peak compute ≈ 1.576 MW for 600 nodes.
+    solar_rated_mw = 0.25 * NODE_COUNT * RATED_KW * PUE / 1000.0
+
+    # 5×7 MW layout: 4 online + 1 hot-standby (PW-1 / PROTO-R4).
+    turbines = [
+        TurbineModule(TurbineConfig(
+            asset_id="t0", r_asset_mw_per_s=0.2, rated_mw=7.0,
+            p_min_stable_frac=0.40,
+        )),
+        TurbineModule(TurbineConfig(
+            asset_id="t1", r_asset_mw_per_s=0.2, rated_mw=7.0,
+            p_min_stable_frac=0.40,
+        )),
+        TurbineModule(TurbineConfig(
+            asset_id="t2", r_asset_mw_per_s=0.2, rated_mw=7.0,
+            p_min_stable_frac=0.40,
+        )),
+        TurbineModule(TurbineConfig(
+            asset_id="t3", r_asset_mw_per_s=0.2, rated_mw=7.0,
+            p_min_stable_frac=0.40,
+        )),
+        TurbineModule(TurbineConfig(
+            asset_id="t4", r_asset_mw_per_s=0.2, rated_mw=7.0,
+            p_min_stable_frac=0.40, hot_standby=True,
+        )),
+    ]
+    bess = BessModule(BessConfig(
+        asset_id="bess-0", rated_mw=18.0, usable_mwh=8.0,
+    ))
+    solar = SolarModule(
+        SolarConfig(asset_id="solar-0", rated_mw=solar_rated_mw),
+        irradiance_profile=IrradianceProfile([(0.0, 1.0), (600.0, 1.0)]),
+    )
+    # ramp_seconds=120.0 is the production default — must NOT be overridden here.
+    gpu     = GPUModule(asset_id="gpu-0", site=site, hardware_library=library)
+    cooling = CoolingModule(asset_id="cool-0", site=site)
+
+    # Pre-synchronise the 4 active turbines so they are on-bus at t=0.
+    # Rationale: in the real demo, the generating units are already synchronised
+    # to the bus when a GPU job starts.  TurbineModule defaults to OFFLINE and
+    # requires cold_start_s=900 s to reach SYNCHRONISED — far beyond the 120 s
+    # test window — so this initial condition must be set explicitly.
+    # This mirrors build_run_context_from_spec(), which pre-synchronises every
+    # non-hot-standby turbine after constructing the turbines list.
+    # Pattern follows test_unit_trip, test_tc87_tc88, test_tc89_tc90_tc91.
+    # The hot-standby unit (turbines[-1]) must remain OFFLINE per PW-1.
+    from core.models import TurbineState
+    for turb in turbines[:-1]:           # turbines t0–t3: online fleet
+        turb.state              = TurbineState.SYNCHRONISED
+        turb._current_output_mw = 0.0   # idle; loading layer ramps to MSL
+
+    state = SimulationState(
+        run_id="run-d12",
+        site=site,
+        gpu_modules=[gpu],
+        turbines=turbines,
+        bess_units=[bess],
+        solar_arrays=[solar],
+        cooling=cooling,
+    )
+
+    # Staging signal: job arrives with 30 s advance notice (dt_lead=30 s).
+    state.apply_workload_signal(
+        WorkloadSignal(
+            event_id="e1",
+            job_id="job-big",
+            event_type=WorkloadEventType.STARTING,
+            timestamp=0.0,
+            hardware_profile_id=PROFILE_ID,
+            node_count=NODE_COUNT,
+            workload_class=WorkloadClass.TRAINING,
+            site_id="site-d12",
+        ),
+        dt_lead_seconds=30.0,
+    )
+
+    bess_outputs:    list[float] = []
+    turbine_outputs: list[float] = []
+    net_demands:     list[float] = []
+    t = 0.0
+    DT = 5.0
+
+    with _plane_guard_active():
+        # 25 ticks × 5 s = 125 simulated seconds.
+        # tick 12 → sim_time=60 s (halfway through ramp).
+        # tick 24 → sim_time=120 s (ramp complete).
+        for i in range(25):
+            tick = evaluate_tick(state, _make_clock(t, DT, tick_seq=i))
+            bess_outputs.append(tick.bess_output_mw)
+            turbine_outputs.append(tick.turbine_output_mw)
+            net_demands.append(tick.net_demand_mw)
+            t += DT
+
+    # ── Criterion 1: turbine visibly on at t=60 s (tick 12) ─────────────────
+    # PROTO-1 curve at progress=0.5 gives ~59 % of full TDP (≈ 3.7 MW for
+    # 600 nodes).  The turbine, pre-staged for 30 s + 60 s runtime = 90 s of
+    # ramp time (far beyond the 6.3 / 0.8 = 7.9 s needed to reach setpoint),
+    # must be delivering ≥ 3 MW by this point.
+    assert turbine_outputs[12] >= 3.0, (
+        "Turbine must be visibly on at t=60 s (≥ 3.0 MW); "
+        f"got {turbine_outputs[12]:.3f} MW.  "
+        "A near-zero value indicates the turbine was not pre-staged or that "
+        "ramp_seconds has been reverted to the old 45 s value."
+    )
+
+    # ── Criterion 2: turbine covers ≥ 80 % of dispatch at t=120 s (tick 24) ─
+    t120_turbine = turbine_outputs[24]
+    t120_demand  = net_demands[24]
+    assert t120_turbine >= t120_demand * 0.80, (
+        f"Turbine must carry ≥ 80 % of net demand at t=120 s (ramp complete); "
+        f"turbine={t120_turbine:.3f} MW, net_demand={t120_demand:.3f} MW "
+        f"({100.0 * t120_turbine / max(t120_demand, 1e-6):.1f} % coverage).  "
+        "A regression here means the BESS is absorbing load the turbine should cover."
+    )
+
+    # ── Criterion 3: BESS stays at exactly zero throughout the ramp ─────────
+    # With 4 active turbines idling at MSL = 4 × 2.8 = 11.2 MW (far above the
+    # ≈6.3 MW peak load), fleet_shortfall = 0 every tick.  BESS allocation is
+    # exactly 0.0 MW; the assertion uses == 0.0 rather than a loose tolerance
+    # to catch any partial bridging that would indicate turbine under-coverage.
+    assert all(b == 0.0 for b in bess_outputs), (
+        "BESS must stay at exactly 0.0 MW throughout the 120 s ramp when the "
+        "5×7 MW fleet is pre-staged.  Any non-zero value signals a regression: "
+        "turbine staging is broken or ramp_seconds was reverted to 45 s.\n"
+        f"  bess_outputs = {bess_outputs}"
+    )
+
+
+# ---------------------------------------------------------------------------
 # Step 3 Item 1 — per-job draw attribution for checkpoint classifier
 # ---------------------------------------------------------------------------
 
