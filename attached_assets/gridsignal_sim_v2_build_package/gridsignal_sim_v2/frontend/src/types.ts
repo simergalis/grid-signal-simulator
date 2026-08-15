@@ -78,6 +78,16 @@ export interface TickPayload {
   // null on headless / direct job-id paths (edl_sources not wired).
   // Non-null and ≥ 0 on all spec-path runs.
   edl_dispatch_cost_usd: number | null
+  // PSP-002 §4.3 / Task #372: PMSTestDouble decision log for this tick.
+  // Empty array when no EDL shortfall fired; non-empty when §4.3 escalated
+  // and PMSTestDouble replayed the operator response profile.
+  pms_shortfall_log: Array<{
+    t_s: number
+    source_id: string
+    action: string
+    authority_tier: string
+    detail: string
+  }>
 
   // Confidence band
   confidence_lower_mw: number

@@ -402,6 +402,19 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             # observable in a live run.
             calibrated=True,
             gpu_load_profile=[],   # full GPU load throughout (no throttling)
+            # Task #372: grid as CONFIRM tier so the EDL fires a ShortfallEvent
+            # when BESS (3 MW) + turbine (5 MW) = 8 MW < ~15 MW demand,
+            # triggering the §4.3 PMSTestDouble escalation path.
+            grid_authority_tier="confirm",
+            # Operator response profile for PMSTestDouble replay.
+            # Grid-firm is the only CONFIRM source → rank 1 in the advisory.
+            # Simulated operator approves at a 5-second response latency.
+            operator_response_profile={
+                "response_latency_s": {"1": 5.0},
+                "approve": {"1": True},
+                "default_latency_s": 30.0,
+                "default_approve": True,
+            },
         ),
     ),
     (

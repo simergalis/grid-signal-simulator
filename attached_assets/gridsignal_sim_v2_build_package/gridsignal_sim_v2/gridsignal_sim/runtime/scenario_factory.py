@@ -1021,6 +1021,15 @@ def build_run_context_from_spec(
         ))
 
     # Grid is always present as the last-resort source.
+    # Task #372: authority tier is configurable from the spec so the Scenario
+    # Builder UI can promote grid to CONFIRM/HUMAN_ONLY and force §4.3 EDL
+    # shortfall events, enabling PMSTestDouble replay (grid_authority_tier field).
+    # Default "autonomous" preserves all existing behaviour.
+    _grid_tier_raw = spec_data.get("grid_authority_tier", "autonomous")
+    try:
+        _grid_tier = _AuthorityTier(_grid_tier_raw)
+    except ValueError:
+        _grid_tier = _AuthorityTier.AUTONOMOUS
     _edl_sources.append(_PowerSource(
         source_id="grid-firm",
         source_type=_PowerSourceType.GRID_FIRM,
@@ -1028,7 +1037,7 @@ def build_run_context_from_spec(
         counts_toward_reserve=False,
         marginal_cost_mwh=float(_sp.value("pge_tou_summer_off_peak_mwh")),
         response_latency_class=_ResponseLatencyClass.INSTANT,
-        authority_tier=_AuthorityTier.AUTONOMOUS,
+        authority_tier=_grid_tier,
         available_mw=999.0,
         cost_basis_note="PG&E B-20 TOU placeholder — repriced per tick by EDL.step()",
     ))

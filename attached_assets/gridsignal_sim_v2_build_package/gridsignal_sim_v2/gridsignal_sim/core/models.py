@@ -1389,6 +1389,13 @@ class TickResult:
     # stream carries a cost attribution.
     edl_dispatch_cost_usd: Optional[float] = None
 
+    # PSP-002 §4.3 / Task #372: PMSTestDouble decision log for this tick.
+    # Empty tuple when no EDL shortfall occurred or edl_sources is not wired.
+    # Non-empty when §4.3 escalation fired and PMSTestDouble ran — each dict is
+    # a serialised PMSLogEntry: {t_s, source_id, action, authority_tier, detail}.
+    # Stamped by _drive() A1b after PMSTestDouble.process() returns.
+    pms_shortfall_log: tuple = field(default_factory=tuple)
+
     # Phase E+: commitment engine last-decision summary — serialised for fleet modal.
     # Populated by simulation_core.evaluate_tick() each tick from _commit_decision.
     # Defaults produce innocuous values for tests that build TickResult directly.

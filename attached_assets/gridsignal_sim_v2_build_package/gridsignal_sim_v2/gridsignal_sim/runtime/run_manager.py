@@ -545,6 +545,11 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
             round(tick.edl_dispatch_cost_usd, 6)
             if tick.edl_dispatch_cost_usd is not None else None
         ),
+        # PSP-002 §4.3 / Task #372: PMSTestDouble decision log for this tick.
+        # Empty list when no EDL shortfall fired; non-empty list of PMSLogEntry
+        # dicts when §4.3 escalated and PMSTestDouble replayed operator profile.
+        # Each entry: {t_s, source_id, action, authority_tier, detail}.
+        "pms_shortfall_log": list(tick.pms_shortfall_log),
         # Phase E+: commitment engine last-decision summary — drives fleet modal
         # commitment stat rows (Item 7).  Always present; action="hold" and
         # empty strings are the safe-sentinel defaults (no commitment engine wired).
@@ -1729,6 +1734,24 @@ class RunManager:
                                 ctx.run_id,
                                 len(_advisory.ranked_sources),
                                 len(_pms_entries),
+                            )
+                            # TC-C16 / Task #372: stamp PMSLogEntry decisions onto
+                            # tick_result so sections B and C carry the operator
+                            # profile replay decisions in the emitted tick stream.
+                            # Without this stamp _pms_entries was silently discarded
+                            # every tick — the operator profile never "replayed".
+                            tick_result = _dc_replace(
+                                tick_result,
+                                pms_shortfall_log=tuple(
+                                    {
+                                        "t_s":            _e.t_s,
+                                        "source_id":      _e.source_id,
+                                        "action":         _e.action,
+                                        "authority_tier": _e.authority_tier,
+                                        "detail":         _e.detail,
+                                    }
+                                    for _e in _pms_entries
+                                ),
                             )
                         else:
                             # Production branch: publish shortfall + advisory to

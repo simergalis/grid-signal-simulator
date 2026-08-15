@@ -515,6 +515,15 @@ class ScenarioSpec(BaseModel):
     # Operator response profile for PMSTestDouble replay (§3.4 / TC-C14 / INV-7).
     # Injected at run-start when GS_PRODUCTION_HARNESS env var is not set.
     operator_response_profile: Optional[dict] = Field(default=None)
+    # PSP-002 §4.3 / Task #372: dispatch authority tier for the grid-firm source.
+    # "autonomous" (default): grid is always dispatched; EDL shortfall never fires.
+    # "confirm": operator/PMS must confirm; shortfall fires when BESS + turbine +
+    #   FC cannot cover demand, triggering the §4.3 PMSTestDouble escalation.
+    # "human_only": operator must command directly; always escalated on shortfall.
+    grid_authority_tier: Optional[str] = Field(
+        default="autonomous",
+        pattern=r"^(autonomous|confirm|human_only)$",
+    )
 
     # GS-DES-CFG-001 §Phase-6 / Item-3: declared design peak site load.
     design_peak_load_mw: Optional[float] = Field(
