@@ -1,5 +1,5 @@
 """
-tests/test_solar_site_pipeline.py — SP-1 through SP-7
+tests/test_solar_site_pipeline.py — SP-1 through SP-10
 
 Regression tests confirming that Auckland-style (non-US) site coordinates
 propagate correctly through the full solar-to-tick pipeline.
@@ -27,6 +27,12 @@ SP-5  Full Auckland pipeline with broken offset (utc_offset_h=0): same UTC
       time is misread as pre-dawn → zero irradiance → zero p_renewable_mw
 SP-6  Correct and broken offset pipelines produce different p_renewable_mw values
 SP-7  Site params encoded in spec flow through to solar output magnitude
+SP-8  PUT /api/location (Frankfurt) saves longitude_deg; GET /api/location
+      returns longitude_deg=8.68, not the default San Diego value
+SP-9  GET /solar-preview with Frankfurt location and utc_now at Frankfurt
+      solar noon returns p_renewable_mw > 0 (proves timezone-aware physics)
+SP-10 Full location-to-solar-preview round-trip: PUT → GET longitude → GET
+      solar-preview at Frankfurt noon → p_renewable_mw > 0 end-to-end
 """
 
 from __future__ import annotations
@@ -36,9 +42,11 @@ import datetime
 import os
 
 import pytest
+from fastapi.testclient import TestClient
 
+from api.app import create_app
 from runtime.scenario_factory import build_run_context_from_spec
-from runtime.solar_sim import SolarForecast, generate_solar_forecast
+from runtime.solar_sim import SolarForecast, _solar_fraction_at, generate_solar_forecast
 
 
 # ---------------------------------------------------------------------------
@@ -435,4 +443,280 @@ def test_sp7_site_latitude_affects_solar_output():
         f"Equatorial={total_equatorial:.4f} MW·ticks, "
         f"Auckland={total_auckland:.4f} MW·ticks. "
         "If equal, site_latitude is not reaching the physics curve."
+    )
+
+
+# ---------------------------------------------------------------------------
+# Shared HTTP client fixture for SP-8 / SP-9 / SP-10
+# ---------------------------------------------------------------------------
+
+# Frankfurt on the June solstice: CEST = UTC+2, so solar noon local (12:00)
+# corresponds to 10:00 UTC.  At lat=50.11° the sun is well above the horizon.
+_FRANKFURT_NOON_UTC = "2026-06-21T10:00:00"
+_FRANKFURT_LONGITUDE = 8.68
+
+
+@pytest.fixture(scope="module")
+def _pipeline_client():
+    """Single TestClient whose lifespan spans the SP-8/SP-9/SP-10 sub-suite.
+
+    Module scope avoids the asyncpg pool-teardown race that fires when multiple
+    TestClient instances are created sequentially in one pytest session
+    (same pattern as test_solar_routes.py / test_api.py).
+    """
+    with TestClient(create_app()) as client:
+        yield client
+
+
+# ---------------------------------------------------------------------------
+# SP-8  PUT /api/location saves longitude_deg; GET /api/location returns it
+# ---------------------------------------------------------------------------
+
+def test_sp8_location_put_saves_longitude(
+    _pipeline_client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    """Round-trip: PUT /api/location with 'Frankfurt' → GET /api/location must
+    return longitude_deg=8.68 (not 0.0 or the San Diego default -117.16).
+
+    The built-in geocoder table (_KNOWN_LOCATIONS in api/routes/location.py)
+    contains Frankfurt with longitude_deg=8.68 and is used whenever
+    MISTRAL_API_KEY is absent, making the test deterministic with no network call.
+
+    Failure modes caught:
+    - The PUT handler omits longitude_deg when constructing SiteLocation
+    - _loc_to_response() fails to include longitude_deg in the GET response
+    - The legacy alias 'lon' is returned instead of the new 'longitude_deg' key
+    """
+    # Ensure no Mistral key so the built-in table is used (deterministic)
+    monkeypatch.delenv("MISTRAL_API_KEY", raising=False)
+
+    # Redirect the on-disk persistence file so tests don't pollute the repo root
+    monkeypatch.chdir(tmp_path)
+
+    put_resp = _pipeline_client.put(
+        "/api/location",
+        json={"address": "Frankfurt"},
+    )
+    assert put_resp.status_code == 200, (
+        f"PUT /api/location returned {put_resp.status_code}: {put_resp.text}"
+    )
+    put_body = put_resp.json()
+    assert "longitude_deg" in put_body, (
+        "PUT /api/location response is missing 'longitude_deg' key. "
+        "_loc_to_response() must include it (not just the legacy 'lon' alias)."
+    )
+    assert abs(put_body["longitude_deg"] - _FRANKFURT_LONGITUDE) < 1e-3, (
+        f"PUT /api/location returned longitude_deg={put_body['longitude_deg']!r}, "
+        f"expected ≈{_FRANKFURT_LONGITUDE}. "
+        "The built-in Frankfurt entry may have changed or the wrong city was matched."
+    )
+
+    get_resp = _pipeline_client.get("/api/location")
+    assert get_resp.status_code == 200, (
+        f"GET /api/location returned {get_resp.status_code}: {get_resp.text}"
+    )
+    get_body = get_resp.json()
+    assert "longitude_deg" in get_body, (
+        "GET /api/location response is missing 'longitude_deg' key. "
+        "_loc_to_response() must serialise the full SiteLocation dataclass."
+    )
+    assert abs(get_body["longitude_deg"] - _FRANKFURT_LONGITUDE) < 1e-3, (
+        f"GET /api/location returned longitude_deg={get_body['longitude_deg']!r} "
+        f"after PUT with Frankfurt; expected ≈{_FRANKFURT_LONGITUDE}. "
+        "The value was not persisted to app.state.site_location or the "
+        "SiteLocation dataclass dropped the field."
+    )
+
+
+# ---------------------------------------------------------------------------
+# SP-9  solar-preview uses Frankfurt tz when longitude is correct
+# ---------------------------------------------------------------------------
+
+def test_sp9_solar_preview_frankfurt_noon_gives_nonzero_output(
+    _pipeline_client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    """With Frankfurt as the active location and utc_now pinned to Frankfurt
+    solar noon (10:00 UTC on 21 Jun 2026 = 12:00 CEST), GET /solar-preview must:
+    - return p_renewable_mw > 0 (sun is up, physics is applied)
+    - return utc_offset_h == 2.0 (CEST is correctly derived from the override instant)
+    - return expected_fraction that differs from the lon=0.0 baseline, confirming
+      longitude_deg=8.68 drives the true-solar-time model, not just the tz offset
+
+    At UTC 10:00 Frankfurt (lon=8.68) true solar hour ≈ 10.58 h, while lon=0.0
+    gives ≈ 10.0 h; the NOAA equation of time produces measurably different
+    fractions at the same instant, so the comparison catches a longitude-ignored
+    regression even if both sides are above zero.
+    """
+    monkeypatch.delenv("MISTRAL_API_KEY", raising=False)
+    monkeypatch.chdir(tmp_path)
+
+    # Establish Frankfurt as the active location
+    put_resp = _pipeline_client.put(
+        "/api/location",
+        json={"address": "Frankfurt"},
+    )
+    assert put_resp.status_code == 200, (
+        f"PUT /api/location (setup for SP-9) failed: {put_resp.status_code}"
+    )
+
+    # Frankfurt solar noon: 2026-06-21 10:00 UTC = 12:00 CEST (UTC+2 summer)
+    preview_resp = _pipeline_client.get(
+        "/solar-preview",
+        params={"utc_now": _FRANKFURT_NOON_UTC},
+    )
+    assert preview_resp.status_code == 200, (
+        f"GET /solar-preview returned {preview_resp.status_code}: {preview_resp.text}"
+    )
+    body = preview_resp.json()
+
+    assert "p_renewable_mw" in body, (
+        "GET /solar-preview response is missing 'p_renewable_mw'. "
+        "The endpoint must expose this field (= expected_fraction × plant_rated_ac_mw)."
+    )
+    assert "expected_fraction" in body, (
+        "GET /solar-preview response is missing 'expected_fraction'."
+    )
+
+    p_renewable_mw    = body["p_renewable_mw"]
+    expected_fraction = body["expected_fraction"]
+
+    # ── DST guard ─────────────────────────────────────────────────────────────
+    # On 2026-06-21 Frankfurt is in CEST (UTC+2); offset must be 2.0, not 1.0
+    # (CET winter) or 0.0 (broken fallback).  A wrong offset means current server
+    # wall-clock was used for DST resolution rather than the override instant.
+    utc_offset_h_returned = body.get("utc_offset_h")
+    assert utc_offset_h_returned == pytest.approx(2.0, abs=0.01), (
+        f"utc_offset_h={utc_offset_h_returned!r} for Frankfurt on 2026-06-21; "
+        "expected 2.0 (CEST).  The endpoint must resolve DST from the utc_now "
+        "override instant, not from the server's wall-clock date."
+    )
+
+    # ── Physics guard ─────────────────────────────────────────────────────────
+    assert expected_fraction > 0.0, (
+        f"expected_fraction={expected_fraction:.4f} at Frankfurt solar noon "
+        f"(utc_now={_FRANKFURT_NOON_UTC}). "
+        "Solar must be positive at local noon on the June solstice (lat=50.11°)."
+    )
+    assert p_renewable_mw > 0.0, (
+        f"p_renewable_mw={p_renewable_mw:.4f} MW at Frankfurt solar noon. "
+        f"expected_fraction={expected_fraction:.4f}, "
+        f"plant_rated_ac_mw={body.get('plant_rated_ac_mw')}."
+    )
+
+    # ── Longitude-distinguishing guard ────────────────────────────────────────
+    # Compute expected_fraction for lon=0.0 (prime meridian) at the same UTC
+    # instant and latitude.  Frankfurt (lon=8.68) is 0.58 h of solar time east
+    # of Greenwich so its true-solar-time fraction must differ from lon=0.0.
+    _utc_dt = datetime.datetime(2026, 6, 21, 10, 0, 0)
+    frac_lon_zero = _solar_fraction_at(
+        _utc_dt, lat_deg=50.11, longitude_deg=0.0
+    )
+    assert abs(expected_fraction - frac_lon_zero) > 1e-4, (
+        f"expected_fraction with Frankfurt (lon=8.68) = {expected_fraction:.6f} "
+        f"is indistinguishable from lon=0.0 fraction = {frac_lon_zero:.6f}. "
+        "The endpoint is not passing longitude_deg to the physics model; "
+        "it is either using utc_offset_h as a proxy or ignoring longitude entirely."
+    )
+
+
+# ---------------------------------------------------------------------------
+# SP-10 Full round-trip: location PUT → longitude GET → solar-preview MW > 0
+# ---------------------------------------------------------------------------
+
+def test_sp10_frankfurt_location_to_solar_preview_roundtrip(
+    _pipeline_client: TestClient,
+    tmp_path,
+    monkeypatch,
+) -> None:
+    """End-to-end confirmation that the frontend's city-picker POST is wired
+    correctly: saving Frankfurt via PUT, reading longitude_deg back, and then
+    confirming the solar preview returns positive renewable output at noon.
+
+    This is the combined assertion that SP-8 + SP-9 express in isolation.
+    If either part breaks the strict ordering (longitude saved → preview positive),
+    both tests would need to fail independently; SP-10 exists so a reviewer can
+    see the complete round-trip in a single failing assertion chain.
+
+    Steps mirrored:
+    1. PUT /api/location {"address": "Frankfurt"} → HTTP 200
+    2. GET /api/location → longitude_deg == 8.68 (not 0.0)
+    3. GET /solar-preview?utc_now=2026-06-21T10:00:00 → p_renewable_mw > 0
+    """
+    monkeypatch.delenv("MISTRAL_API_KEY", raising=False)
+    monkeypatch.chdir(tmp_path)
+
+    # Step 1 — save Frankfurt location
+    put_resp = _pipeline_client.put(
+        "/api/location",
+        json={"address": "Frankfurt"},
+    )
+    assert put_resp.status_code == 200, (
+        f"Step 1 failed: PUT /api/location returned {put_resp.status_code}: {put_resp.text}"
+    )
+
+    # Step 2 — confirm longitude is 8.68
+    get_resp = _pipeline_client.get("/api/location")
+    assert get_resp.status_code == 200, (
+        f"Step 2 failed: GET /api/location returned {get_resp.status_code}"
+    )
+    lon = get_resp.json().get("longitude_deg", None)
+    assert lon is not None, (
+        "Step 2 failed: GET /api/location response lacks 'longitude_deg' key. "
+        "The SiteLocation SOT refactor must include longitude_deg in _loc_to_response()."
+    )
+    assert abs(lon - _FRANKFURT_LONGITUDE) < 1e-3, (
+        f"Step 2 failed: GET /api/location returned longitude_deg={lon!r}, "
+        f"expected ≈{_FRANKFURT_LONGITUDE} (Frankfurt). "
+        "If 0.0, the frontend's city-picker POST omitted longitude_deg and the "
+        "backend silently fell back to a default."
+    )
+
+    # Step 3 — solar preview at Frankfurt noon must be non-zero AND longitude-driven
+    preview_resp = _pipeline_client.get(
+        "/solar-preview",
+        params={"utc_now": _FRANKFURT_NOON_UTC},
+    )
+    assert preview_resp.status_code == 200, (
+        f"Step 3 failed: GET /solar-preview returned {preview_resp.status_code}: "
+        f"{preview_resp.text}"
+    )
+    preview_body   = preview_resp.json()
+    p_renewable_mw = preview_body.get("p_renewable_mw", 0.0)
+    expected_frac  = preview_body.get("expected_fraction", 0.0)
+
+    # 3a — must be positive (sun is up at Frankfurt noon)
+    assert p_renewable_mw > 0.0, (
+        f"Step 3a failed: p_renewable_mw={p_renewable_mw:.4f} MW at Frankfurt "
+        f"solar noon (utc_now={_FRANKFURT_NOON_UTC}).\n"
+        f"  longitude_deg confirmed at step 2: {lon}\n"
+        f"  utc_offset_h returned by /solar-preview: {preview_body.get('utc_offset_h')}\n"
+        f"  expected_fraction: {expected_frac}\n"
+        "Most likely cause: app.state.site_location was not updated by PUT /api/location, "
+        "or the physics model is not applying the Europe/Berlin UTC offset correctly."
+    )
+
+    # 3b — DST offset must be 2.0 (CEST) for the override date 2026-06-21
+    utc_off = preview_body.get("utc_offset_h")
+    assert utc_off == pytest.approx(2.0, abs=0.01), (
+        f"Step 3b failed: utc_offset_h={utc_off!r} for Frankfurt on 2026-06-21; "
+        "expected 2.0 (CEST).  DST must be resolved from the utc_now override "
+        "instant, not from the server's current wall-clock date."
+    )
+
+    # 3c — expected_fraction must differ from the lon=0.0 baseline, proving
+    #       longitude_deg=8.68 drives the physics, not just tz_name.
+    _utc_dt = datetime.datetime(2026, 6, 21, 10, 0, 0)
+    frac_lon_zero = _solar_fraction_at(
+        _utc_dt, lat_deg=50.11, longitude_deg=0.0
+    )
+    assert abs(expected_frac - frac_lon_zero) > 1e-4, (
+        f"Step 3c failed: expected_fraction with Frankfurt (lon={lon}) = "
+        f"{expected_frac:.6f} is indistinguishable from lon=0.0 fraction = "
+        f"{frac_lon_zero:.6f}.  The endpoint is not passing longitude_deg to "
+        "the physics model; longitude_deg must reach _solar_fraction_at() for "
+        "the NOAA true-solar-time correction to take effect."
     )

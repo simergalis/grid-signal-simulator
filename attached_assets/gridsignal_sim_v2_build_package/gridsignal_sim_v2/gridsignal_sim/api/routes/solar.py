@@ -82,7 +82,16 @@ _VALID_STRESSORS = {
 
 
 @router.get("/solar-preview", tags=["solar"])
-async def get_solar_preview(request: Request) -> JSONResponse:
+async def get_solar_preview(
+    request: Request,
+    utc_now: Optional[str] = Query(
+        None,
+        description=(
+            "Override the current UTC instant (ISO-8601, e.g. '2026-06-21T10:00:00'). "
+            "Intended for testing only; omit in production to use server wall-clock time."
+        ),
+    ),
+) -> JSONResponse:
     """Return the current Mistral solar forecast label for the active site location.
 
     Uses the location stored at app.state.site_location (set by PUT /api/location;
@@ -96,27 +105,55 @@ async def get_solar_preview(request: Request) -> JSONResponse:
     Extended fields (Task-75):
       sun_elevation_deg  — sun elevation angle in degrees; negative = below horizon.
       expected_fraction  — physics-model output fraction at current time [0, 1].
+      p_renewable_mw     — expected_fraction × plant_rated_ac_mw (MW).
       lat                — site latitude degrees North.
       utc_offset_h       — DST-aware UTC offset used for the computation.
       plant_rated_ac_mw  — AC rated capacity of the PV plant in MW.
+
+    Query parameters:
+      utc_now  (optional) — override wall-clock time for testing; ISO-8601 string.
     """
-    from api.routes.location import current_utc_offset_h as _live_offset
-    from site_config import get_site_location_or_default as _gslod
+    from site_config import get_site_location_or_default as _gslod, utc_offset_for_dt as _utc_off
     loc = getattr(request.app.state, "site_location", None) or _gslod()
 
-    utc_now  = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
-    live_offset = _live_offset(loc)
-    local_dt = utc_now + datetime.timedelta(hours=live_offset)
+    if utc_now is not None:
+        try:
+            _parsed = datetime.datetime.fromisoformat(utc_now.replace("Z", "+00:00"))
+            if _parsed.tzinfo is not None:
+                # Convert timezone-aware value to UTC, then drop tzinfo.
+                _utc_now = _parsed.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+            else:
+                # Already a naive UTC string (most common test form).
+                _utc_now = _parsed
+        except ValueError:
+            return JSONResponse(
+                {"error": f"utc_now must be ISO-8601 (e.g. '2026-06-21T10:00:00'); got {utc_now!r}"},
+                status_code=422,
+            )
+    else:
+        _utc_now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+
+    # Derive the DST-aware UTC offset for the *override* instant (not wall-clock now),
+    # so that a June utc_now correctly resolves CEST (+2) rather than CET (+1).
+    _utc_now_aware = _utc_now.replace(tzinfo=datetime.timezone.utc)
+    live_offset = _utc_off(loc.tz_name, _utc_now_aware)
+
+    local_dt   = _utc_now + datetime.timedelta(hours=live_offset)
     local_time = local_dt.strftime("%H:%M")
 
     forecast = generate_solar_forecast(
         sim_duration_s=_PREVIEW_DURATION_S,
-        utc_now=utc_now,
+        utc_now=_utc_now,
         site=loc,           # preferred: longitude-based true solar time
     )
 
-    sun_elev      = _sun_elevation_deg(utc_now, loc.latitude_deg, live_offset)
-    expected_frac = _solar_fraction_at(utc_now, lat_deg=loc.latitude_deg, utc_offset_h=live_offset)
+    # Use longitude-based true solar time (NOAA EoT) for both physics outputs.
+    sun_elev      = _sun_elevation_deg(
+        _utc_now, loc.latitude_deg, live_offset, longitude_deg=loc.longitude_deg
+    )
+    expected_frac = _solar_fraction_at(
+        _utc_now, lat_deg=loc.latitude_deg, longitude_deg=loc.longitude_deg
+    )
 
     # Plant rated MW from the live SolarSim if available, else canonical default.
     solar_sim = getattr(request.app.state, "solar_sim", None)
@@ -130,6 +167,7 @@ async def get_solar_preview(request: Request) -> JSONResponse:
         "site_name":         loc.site_name,
         "sun_elevation_deg": round(sun_elev, 1),
         "expected_fraction": round(expected_frac, 4),
+        "p_renewable_mw":    round(expected_frac * plant_rated_mw, 4),
         "lat":               loc.latitude_deg,
         "utc_offset_h":      live_offset,
         "plant_rated_ac_mw": round(plant_rated_mw, 3),
@@ -257,13 +295,24 @@ def _sun_elevation_deg(
     utc_dt: datetime.datetime,
     lat_deg: float,
     utc_offset_h: float,
+    *,
+    longitude_deg: Optional[float] = None,
 ) -> float:
-    """Return sun elevation angle in degrees (negative when below horizon)."""
-    local_h = (
-        utc_dt.hour + utc_dt.minute / 60.0 + utc_dt.second / 3600.0 + utc_offset_h
-    ) % 24.0
-    hour_angle_rad = math.radians((local_h - 12.0) * 15.0)
+    """Return sun elevation angle in degrees (negative when below horizon).
+
+    When longitude_deg is provided the NOAA equation of time is applied for
+    true solar time (same model as _solar_fraction_at).  Falls back to the
+    legacy UTC-offset approximation when longitude_deg is None.
+    """
     day_of_year = utc_dt.timetuple().tm_yday
+    utc_h = utc_dt.hour + utc_dt.minute / 60.0 + utc_dt.second / 3600.0
+    if longitude_deg is not None:
+        B = math.radians(360.0 / 365.0 * (day_of_year - 81))
+        eot_min = 9.87 * math.sin(2.0 * B) - 7.53 * math.cos(B) - 1.5 * math.sin(B)
+        solar_h = (utc_h + longitude_deg / 15.0 + eot_min / 60.0) % 24.0
+    else:
+        solar_h = (utc_h + utc_offset_h) % 24.0
+    hour_angle_rad = math.radians((solar_h - 12.0) * 15.0)
     decl_rad = math.radians(
         23.45 * math.sin(math.radians(360.0 / 365.0 * (day_of_year - 81)))
     )
