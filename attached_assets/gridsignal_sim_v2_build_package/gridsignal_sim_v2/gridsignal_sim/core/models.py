@@ -921,19 +921,20 @@ class KubeMetrics:
 
     utilization       — admitted_nodes / max_nodes (or min_nodes/max_nodes when idle).
     node_count        — max(min_nodes, admitted_nodes): total nodes powering compute.
-    power_cap_active  — True when grid headroom < headroom_threshold_mw.
+    power_cap_active  — True when (a) grid headroom < headroom_threshold_mw (raw cap),
+                        OR (b) within the post-activation hysteresis window
+                        (KubeConfig.power_cap_hysteresis_s after the last raw-cap tick).
+                        Hysteresis prevents 0.1 Hz BESS cycling by keeping new admissions
+                        suppressed until the cluster has genuinely drained.
     headroom_mw       — turbine_headroom + bess_headroom from the previous tick.
     active_jobs       — number of gang-admitted workloads currently running.
     admitted_nodes    — sum of node_count across active jobs (before min_nodes floor).
     arrivals_this_tick — new Poisson arrivals observed by the informer this tick.
     requeued_this_tick — admissions held by the power-cap and re-queued this tick.
-                         A non-zero value every tick signals the §6.2 oscillation
-                         pathology: the 5 s re-queue delay equals TICK_INTERVAL_SIM_SECONDS,
-                         locking the cap toggle to the tick rate.
     """
     utilization: float       # [0, 1] — total_nodes / max_nodes
     node_count: int          # max(min_nodes, admitted_nodes)
-    power_cap_active: bool   # True when headroom < headroom_threshold_mw
+    power_cap_active: bool   # True when headroom < threshold OR within hysteresis window
     headroom_mw: float       # MW headroom at last grid reading
     active_jobs: int         # count of running gang-admitted workloads
     admitted_nodes: int      # sum of node_count across active jobs (pre-floor)

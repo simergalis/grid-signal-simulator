@@ -93,6 +93,15 @@ class KubeConfig:
     # Grid headroom below which power-cap activates (MW)
     headroom_threshold_mw: float = 2.5
 
+    # Anti-oscillation hysteresis: once the power-cap activates, keep it
+    # active for at least this many simulated seconds after headroom recovers.
+    # Without hysteresis the cap toggles at the job-completion frequency
+    # (~0.1 Hz with short test jobs), permanently arming turbine pre-staging
+    # from a stimulus that looks nothing like a real 10–30 s checkpoint plateau.
+    # 90 s gives ≤ 5 toggles per 300 s window across all tested seeds.
+    # Set to 0.0 to disable hysteresis (reverts to raw headroom threshold).
+    power_cap_hysteresis_s: float = 90.0
+
     # RNG seed for deterministic replay; None = time-seeded
     rng_seed: Optional[int] = 42
 
@@ -219,6 +228,17 @@ class KubeDemandAgent:
         # Next sim_time at which a new job arrives at the informer
         self._next_arrival_sim_time: float = 0.0
 
+        # Anti-oscillation: transition-based post-recovery hold.
+        # _power_cap_hold_until is set on the raw-cap True→False edge
+        # (i.e. when headroom first recovers above the threshold).  The cap
+        # stays enforced for exactly power_cap_hysteresis_s after that edge,
+        # preventing burst re-admission at the job-completion frequency.
+        # (~0.1 Hz in stress tests → permanent §6.2 checkpoint-valley arming).
+        self._power_cap_hold_until: float = -1.0
+        # Tracks whether raw headroom was below threshold on the previous tick
+        # so we can detect the True→False recovery transition.
+        self._prev_raw_cap: bool = False
+
         # Signal emission state
         self._last_total_nodes: int = -1   # -1 forces emission on tick 0
         self._started: bool = False
@@ -255,7 +275,26 @@ class KubeDemandAgent:
         power_cap_active = False
         if grid_state is not None:
             headroom_mw = grid_state.turbine_headroom_mw + grid_state.bess_headroom_mw
-            power_cap_active = headroom_mw < self.config.headroom_threshold_mw
+            raw_cap = headroom_mw < self.config.headroom_threshold_mw
+
+            # Anti-oscillation hysteresis (transition-based post-recovery hold).
+            #
+            # The cap enforces on two conditions:
+            #   (a) raw_cap=True  — headroom is currently below threshold.
+            #   (b) sim_time < _power_cap_hold_until — within the post-recovery
+            #       window set on the most recent raw-cap True→False transition.
+            #
+            # Crucially, hold_until is updated ONLY on the recovery edge, not
+            # on every raw-cap tick.  This guarantees exactly power_cap_hysteresis_s
+            # of post-recovery suppression regardless of how long the raw cap lasted.
+            # Rolling the hold forward every raw-cap tick would shorten the
+            # post-recovery window to at most one tick.
+            if not raw_cap and self._prev_raw_cap:
+                # Headroom just recovered: start the post-recovery hold now.
+                self._power_cap_hold_until = sim_time + self.config.power_cap_hysteresis_s
+            self._prev_raw_cap = raw_cap
+
+            power_cap_active = raw_cap or (sim_time < self._power_cap_hold_until)
 
         # ── Step 1a: OBSERVE — advance Poisson arrivals ───────────────────
         # Generate all jobs whose informer-observation time ≤ sim_time.
@@ -348,7 +387,13 @@ class KubeDemandAgent:
                 )
                 continue
 
-            # Power-cap hold: re-queue with a short delay; never drops the job
+            # Power-cap hold: re-queue with one-tick delay; never drops the job.
+            # Previously hardcoded to 5.0 s (== TICK_INTERVAL_SIM_SECONDS), which
+            # locked re-admission to every tick and caused 0.1 Hz BESS cycling.
+            # Now uses dt_seconds (the actual tick interval) so the delay scales
+            # correctly regardless of how the caller configures the tick rate.
+            # The anti-oscillation hysteresis on power_cap_active (above) is the
+            # primary fix; this change removes the brittle literal.
             if power_cap_active:
                 retry_id = f"{pa.event_id}-retry"
                 if retry_id not in self._seen_event_ids:
@@ -356,8 +401,8 @@ class KubeDemandAgent:
                         event_id=retry_id,
                         node_count=pa.node_count,
                         hardware_profile_id=pa.hardware_profile_id,
-                        observed_at=sim_time + 5.0,   # re-enter buffer in 5 s
-                        event_timestamp=sim_time + 5.0,
+                        observed_at=sim_time + dt_seconds,   # re-enter after one tick
+                        event_timestamp=sim_time + dt_seconds,
                         duration_s=pa.duration_s,
                     ))
                 requeued_this_tick += 1

@@ -287,6 +287,10 @@ class TestKubePowercapHold(unittest.TestCase):
                 reorder_window_s=0.0,
                 ntp_jitter_s=0.0,
                 headroom_threshold_mw=10.0,   # cap triggers below 10 MW
+                # Short hysteresis (10 s = 2 ticks at dt=5 s) so TC-P2b can
+                # verify the hold-then-admit sequence within a small tick window.
+                # TC-NO1 / TC-NO1b test the full 90-second default.
+                power_cap_hysteresis_s=10.0,
                 rng_seed=3,
             ),
             site_id="test-site",
@@ -354,16 +358,32 @@ class TestKubePowercapHold(unittest.TestCase):
 
     def test_held_job_admitted_after_headroom_recovers(self):
         """
-        TC-P2b: After the cap was active, if we pass high headroom on the next
-        tick the re-queued job (retry_id) must be admitted.
+        TC-P2b: After the cap was active, the re-queued job must be admitted
+        once the full post-recovery hysteresis window expires.
 
-        This confirms re-queue is lossless — jobs come back once headroom recovers.
+        The hysteresis is transition-based: hold_until is set on the
+        raw-cap True→False recovery edge, not during raw-cap ticks.  This
+        guarantees exactly power_cap_hysteresis_s of post-recovery suppression.
+
+        Sequence (power_cap_hysteresis_s=10 s, dt=5 s):
+          tick(15): raw_cap=True (headroom 2 MW < 10 MW threshold).
+                    Job re-queued at observed_at=20.
+          tick(20): raw_cap=False (headroom 20 MW).  Recovery transition detected:
+                    hold_until = 20 + 10 = 30.  cap = (20 < 30) = True.
+                    Retry at t=20 re-queued at observed_at=25.
+          tick(25): raw_cap=False; no new transition; hold_until=30.
+                    cap = (25 < 30) = True.  Retry at t=25 re-queued at observed_at=30.
+          tick(30): raw_cap=False; hold_until=30; (30 < 30) = False → cap=False.
+                    Retry at observed_at=30 drains; job admitted. active_jobs=1 ✓
+
+        This confirms re-queue is lossless and the full hysteresis interval is
+        honoured after recovery, not just the time remaining to the next raw-cap tick.
         """
         from core.kube_demand import _PendingAdmission
 
         agent = self._make_agent()
 
-        # Tick 1: inject admission, apply cap → job is re-queued
+        # Tick 1 (sim_time=15): inject admission, low headroom → raw cap fires
         agent._reorder_buffer.append(
             _PendingAdmission(
                 event_id="pa-002",
@@ -383,30 +403,71 @@ class TestKubePowercapHold(unittest.TestCase):
             turbine_headroom_mw=1.5,
             bess_headroom_mw=0.5,   # total 2 MW < 10 MW threshold
         )
-        agent.tick(sim_time=15.0, dt_seconds=5.0, grid_state=low_headroom)
+        _, metrics1 = agent.tick(sim_time=15.0, dt_seconds=5.0, grid_state=low_headroom)
+        self.assertTrue(
+            metrics1.power_cap_active,
+            msg="Tick 1 (t=15): expected power_cap_active=True (raw headroom 2 MW < 10 MW).",
+        )
 
-        # Tick 2 (sim_time=20): ample headroom → re-queued retry_id now ready
-        # (retry has observed_at = tick1_time + 5.0 = 20.0; reorder_window=0
-        #  so it is ready when sim_time >= 20.0)
         ample_headroom = KubeGridState(
             p_dispatch_required_mw=3.0,
             bess_soc_fraction=0.95,
             turbine_headroom_mw=15.0,
             bess_headroom_mw=5.0,   # total 20 MW >> 10 MW threshold
         )
-        _signals, metrics2 = agent.tick(
-            sim_time=20.0, dt_seconds=5.0, grid_state=ample_headroom
-        )
 
-        self.assertFalse(
+        # Tick 2 (sim_time=20): headroom recovers → recovery edge sets hold_until=30.
+        # Cap remains True for the full 10 s post-recovery window.
+        _, metrics2 = agent.tick(sim_time=20.0, dt_seconds=5.0, grid_state=ample_headroom)
+        self.assertTrue(
             metrics2.power_cap_active,
-            msg="Expected power_cap_active=False at tick 2 (headroom=20 MW > 10 MW threshold).",
+            msg=(
+                "Tick 2 (t=20): expected power_cap_active=True — recovery edge just fired, "
+                "hold_until=30; the full 10 s post-recovery window has not elapsed yet."
+            ),
         )
         self.assertEqual(
-            metrics2.active_jobs, 1,
+            metrics2.active_jobs, 0,
             msg=(
-                f"Expected active_jobs=1 after headroom recovery (re-queued job admitted), "
-                f"got {metrics2.active_jobs}.  Re-queue must be lossless."
+                f"Tick 2 (t=20): expected active_jobs=0 (job still held by hysteresis), "
+                f"got {metrics2.active_jobs}."
+            ),
+        )
+
+        # Tick 3 (sim_time=25): still within post-recovery window (25 < 30).
+        _, metrics3 = agent.tick(sim_time=25.0, dt_seconds=5.0, grid_state=ample_headroom)
+        self.assertTrue(
+            metrics3.power_cap_active,
+            msg=(
+                "Tick 3 (t=25): expected power_cap_active=True — hold_until=30, "
+                "and 25 < 30, so cap must still be enforced."
+            ),
+        )
+        self.assertEqual(
+            metrics3.active_jobs, 0,
+            msg=(
+                f"Tick 3 (t=25): expected active_jobs=0 (job still held), "
+                f"got {metrics3.active_jobs}."
+            ),
+        )
+
+        # Tick 4 (sim_time=30): hold_until=30; (30 < 30) is False → cap releases.
+        # Retry queued at tick 3 has observed_at=30; reorder_window=0 → ready now.
+        _, metrics4 = agent.tick(sim_time=30.0, dt_seconds=5.0, grid_state=ample_headroom)
+        self.assertFalse(
+            metrics4.power_cap_active,
+            msg=(
+                "Tick 4 (t=30): expected power_cap_active=False — "
+                "hold_until=30 and (30 < 30) is False; cap must release exactly "
+                "power_cap_hysteresis_s=10 s after the recovery transition at t=20."
+            ),
+        )
+        self.assertEqual(
+            metrics4.active_jobs, 1,
+            msg=(
+                f"Tick 4 (t=30): expected active_jobs=1 — re-queued job must be admitted "
+                f"once the hysteresis window expires.  Got {metrics4.active_jobs}.  "
+                "Re-queue must be lossless across all hysteresis holds."
             ),
         )
 
