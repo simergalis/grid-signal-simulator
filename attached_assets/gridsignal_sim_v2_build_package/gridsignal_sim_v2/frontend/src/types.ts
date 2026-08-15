@@ -38,6 +38,10 @@ export interface TickPayload {
   fuel_cell_output_mw: number
   bess_setpoint_mw: number    // dispatch command before SoC/power clipping (B4 gate)
   bess_soc_fraction: number   // [0, 1]
+  // Task #61: corrupted SoC fraction (sensor reading used by physics for contingency).
+  // null when no corruption active, on dropout ticks, or on clean ticks.
+  // Non-null when telemetry corruption is scheduled and produced an effective change.
+  bess_soc_corrupted_fraction: number | null
 
   // Phase 4 (GS-DES-CFG-001 §Item-1): BESS fleet aggregates — broadcast per tick.
   // bess_rated_mw:   fleet aggregate rated power (Σ config.rated_mw across all units).

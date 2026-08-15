@@ -311,6 +311,14 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         "bess_output_mw": round(tick.bess_output_mw, 4),
         "fuel_cell_output_mw": round(tick.fuel_cell_output_mw, 4),
         "bess_soc_fraction": round(tick.bess_soc_fraction, 4),
+        # Task #61: corrupted SoC fraction from the telemetry corruption schedule.
+        # null when no corruption is active, on dropout ticks, or on clean ticks.
+        # Non-null when _apply_soc_corruption used a corrupted reading for
+        # contingency — dashboard should display this value to match physics.
+        "bess_soc_corrupted_fraction": (
+            round(tick.bess_soc_corrupted_fraction, 4)
+            if tick.bess_soc_corrupted_fraction is not None else None
+        ),
         "confidence_lower_mw": round(tick.confidence.lower_bound_mw, 4),
         "confidence_upper_mw": round(tick.confidence.upper_bound_mw, 4),
         "data_quality_tags": sorted(t.value for t in tick.confidence.tags),
@@ -1142,7 +1150,18 @@ def _apply_soc_corruption(ctx: "RunContext", tick_result: "TickResult") -> "Tick
     )
 
     corrupted_coverage = evaluate_contingency(corrupted_plant)
-    return _dc_replace(tick_result, contingency_coverage=corrupted_coverage)
+    # Task #61: stamp the corrupted SoC fraction alongside the corrupted
+    # contingency_coverage so the dashboard reflects the same reading the
+    # physics engine used — operators see the sensor value, not the physics truth.
+    # Normalise by total_usable_mwh (same basis as bess_soc_fraction).
+    _corrupted_fraction: float = (
+        corrupted_soc_mwh / total_usable if total_usable > 0.0 else 0.0
+    )
+    return _dc_replace(
+        tick_result,
+        contingency_coverage=corrupted_coverage,
+        bess_soc_corrupted_fraction=_corrupted_fraction,
+    )
 
 
 def _update_soc_history(ctx: "RunContext", tick_result: "TickResult") -> None:

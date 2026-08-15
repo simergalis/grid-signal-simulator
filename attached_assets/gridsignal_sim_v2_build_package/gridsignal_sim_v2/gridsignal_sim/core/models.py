@@ -977,6 +977,14 @@ class TickResult:
     bess_soc_fraction: float
     confidence: ConfidenceBand
     insufficient_reserve_alert: bool = False
+    # Task #61: corrupted SoC fraction — set by _apply_soc_corruption when a
+    # non-dropout corruption entry is in effect and produces an effective change.
+    # None on clean ticks, dropout ticks, or when telemetry_corruption is not
+    # attached to the RunContext.  When non-None, equals
+    # corrupted_soc_mwh / total_usable_mwh — the same normalised value the
+    # physics engine used to recompute contingency_coverage, so the dashboard
+    # can show operators the sensor reading rather than the clean physics truth.
+    bess_soc_corrupted_fraction: Optional[float] = None
     # H₂ fuel cell array output this tick.  0.0 when fuel_cell_enabled is False
     # or when BESS + turbines already cover full demand.  Dispatched in merit-order
     # after BESS, before grid import (§7 / PSP-002).
