@@ -1241,6 +1241,20 @@
       "note": "Off-peak: all winter hours outside peak (16–20) and super-off-peak (Mar–May, 9–13). PSP-5 resolved (2026-08-13)."
     },
     {
+      "key": "turbine_variable_per_mwh",
+      "value": 55.0,
+      "unit": "USD/MWh",
+      "label": "Gas turbine variable O&M + fuel cost",
+      "provenance": "PROPOSED_HERE",
+      "provenance_detail": "ESTIMATE — $55/MWh is representative of the short-run marginal cost for a utility-scale gas turbine (fuel + variable O&M). Source: EIA 2024 Annual Energy Outlook marginal cost range for natural-gas simple-cycle units ($48–62/MWh at typical heat rates and Henry Hub pricing). No measured basis. Replace with the actual fuel contract and O&M schedule before production deployment.",
+      "spec_ref": "GS-IMPL-PSP-002 §7",
+      "ui": {
+        "control": "readonly",
+        "group": "economic_dispatch"
+      },
+      "note": "Short-run marginal cost used by the EDL for merit-order advisory and cost attribution. Does not include capital amortization (see turbine_capital_per_mw_year in the end-of-run cost model)."
+    },
+    {
       "key": "fuel_cell_ppa_rate_mwh",
       "value": 65.0,
       "unit": "USD/MWh",

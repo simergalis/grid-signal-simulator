@@ -984,6 +984,28 @@ def build_run_context_from_spec(
             cost_basis_note="cycle amortisation (PSP-6)",
         ))
 
+    # Turbine fleet: add to EDL for merit-order advisory and cost accounting.
+    # available_mw is initialised to the rated fleet total here; run_manager._drive()
+    # updates it each tick to tick_result.turbine_output_mw so cost attribution
+    # reflects actual physics dispatch rather than nameplate capacity.
+    _spec_turbine_units = spec_data.get("turbine_units", [])
+    if _spec_turbine_units:
+        _turbine_fleet_rated_mw = sum(
+            float(t.get("rated_mw", 10.0)) for t in _spec_turbine_units
+        )
+        if _turbine_fleet_rated_mw > 0.0:
+            _edl_sources.append(_PowerSource(
+                source_id="turbine-fleet",
+                source_type=_PowerSourceType.TURBINE,
+                dispatchable=True,
+                counts_toward_reserve=True,
+                marginal_cost_mwh=float(_sp.value("turbine_variable_per_mwh")),
+                response_latency_class=_ResponseLatencyClass.THERMAL_LAG,
+                authority_tier=_AuthorityTier.AUTONOMOUS,
+                available_mw=_turbine_fleet_rated_mw,
+                cost_basis_note="fuel + variable O&M (turbine_variable_per_mwh catalogue)",
+            ))
+
     if spec_data.get("fuel_cell_enabled", False):
         _edl_sources.append(_PowerSource(
             source_id="fuel-cell-0",

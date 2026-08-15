@@ -1608,6 +1608,18 @@ class RunManager:
                         _edl_operating_tier,
                     )
 
+                    # Update turbine-fleet available_mw to the actual physics
+                    # output this tick so the EDL cost attribution reflects
+                    # true dispatch rather than rated nameplate capacity.
+                    # Physics runs before the EDL (§4.2 ordering guarantee), so
+                    # tick_result.turbine_output_mw is already settled here.
+                    for _edl_src in ctx.edl_sources:
+                        if getattr(_edl_src, "source_id", None) == "turbine-fleet":
+                            _edl_src.available_mw = max(
+                                0.0, tick_result.turbine_output_mw
+                            )
+                            break
+
                     _edl_result = _EconomicDispatchLoop().step(
                         tick_result.sim_time_seconds,
                         tick_duration_hours=TICK_INTERVAL_SIM_SECONDS / 3600.0,
