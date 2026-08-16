@@ -482,7 +482,7 @@ export function ComputeRacksModal({ tick, onClose }: Props) {
     >
       <div
         className="relative flex flex-col rounded-xl border border-border bg-surface shadow-2xl overflow-hidden"
-        style={{ width: 860, maxWidth: '95vw', maxHeight: '88vh' }}
+        style={{ width: 1020, maxWidth: '95vw', maxHeight: '88vh' }}
         onMouseDown={e => e.stopPropagation()}
       >
         <div className="absolute inset-x-0 top-0 h-[3px] bg-accent" />

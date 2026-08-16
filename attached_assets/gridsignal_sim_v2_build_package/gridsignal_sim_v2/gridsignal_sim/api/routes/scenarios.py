@@ -747,7 +747,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
         ScenarioSpec(
             name="demo-kube",
             description=(
-                "This scenario demonstrates how GridSignal manages a data centre in which GPU jobs are scheduled by Kubernetes — an industry-standard cluster orchestrator — without any advance power notice to the grid. Unlike scripted scenarios where job arrivals are known in advance, the Kubernetes scheduler makes admission decisions independently and the power system finds out only when current begins to flow; over a 10-minute run, jobs arrive roughly once per minute, each drawing between 50 and several hundred nodes, and the battery and generator must absorb each step reactively. When available headroom falls below 2.5 MW, the platform automatically holds new job admissions; if headroom falls further, it evicts the largest running job to protect grid stability. This matters because Kubernetes is the actual scheduler used in most AI data centres today, and demonstrating that GridSignal can manage a live cluster without requiring the scheduler to share its plans is central to the platform's production viability."
+                "This scenario demonstrates how GridSignal manages a data centre in which GPU jobs are scheduled by Kubernetes — an industry-standard cluster orchestrator — without any advance power notice to the grid. Unlike scripted scenarios where job arrivals are known in advance, the Kubernetes scheduler makes admission decisions independently and the power system finds out only when current begins to flow; over a 10-minute run, jobs arrive roughly every 45 seconds, each drawing between 50 and several hundred nodes, and the battery and generator must absorb each step reactively. When available grid headroom falls below 37 MW, the platform automatically holds new job admissions in the power-cap queue — visible in the Queue tab of the GPU Node Generator — and releases them as headroom recovers; if headroom falls to zero, it evicts the largest running job to protect grid stability. This matters because Kubernetes is the actual scheduler used in most AI data centres today, and demonstrating that GridSignal can manage a live cluster without requiring the scheduler to share its plans is central to the platform's production viability."
             ),
             workload_events=[],      # gang-admission simulator handles all signals
             dt_lead_seconds=0.0,     # no advance notice — dt_lead=0 per spec
@@ -759,7 +759,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
                 hardware_profile_id="enterprise_8gpu_air",
                 max_nodes=1900,
                 min_nodes=200,
-                mean_interarrival_s=60.0,    # ~1 gang admission per minute
+                mean_interarrival_s=45.0,    # ~1.3 gang admissions per minute (busier queue)
                 mean_job_nodes=200,
                 job_node_std=80.0,
                 min_job_nodes=50,
@@ -767,7 +767,7 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
                 min_job_duration_s=30.0,
                 reorder_window_s=10.0,
                 ntp_jitter_s=2.0,
-                headroom_threshold_mw=2.5,
+                headroom_threshold_mw=37.0,  # fires when grid headroom < 37 MW (demo: ~34-40 MW range)
                 rng_seed=42,
             ),
             gpu_load_profile=[],   # full GPU load throughout (no throttling)

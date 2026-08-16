@@ -481,7 +481,12 @@ class KubeDemandAgent:
             # The anti-oscillation hysteresis on power_cap_active (above) is the
             # primary fix; this change removes the brittle literal.
             if power_cap_active:
-                retry_id = f"{pa.event_id}-retry"
+                # Derive a stable base ID by stripping any previous "-retry-N" suffix,
+                # then append the new requeue count.  This prevents the ID from growing
+                # as "job-retry-retry-retry-…" across successive power-cap holds.
+                base_id = pa.event_id.split("-retry")[0]
+                next_count = pa.requeue_count + 1
+                retry_id = f"{base_id}-retry-{next_count}"
                 if retry_id not in self._seen_event_ids:
                     self._reorder_buffer.append(_PendingAdmission(
                         event_id=retry_id,
@@ -493,12 +498,12 @@ class KubeDemandAgent:
                         tenant_id=pa.tenant_id,
                         scheduler_type=pa.scheduler_type,
                         first_queued_at=pa.first_queued_at,  # preserved — never advances on retry
-                        requeue_count=pa.requeue_count + 1,  # incremented each power-cap hold
+                        requeue_count=next_count,
                     ))
                 requeued_this_tick += 1
                 _log.debug(
-                    "kube: power-cap hold %s (headroom=%.2f MW) → queued retry",
-                    pa.event_id, headroom_mw,
+                    "kube: power-cap hold %s (headroom=%.2f MW) → queued retry-%d",
+                    base_id, headroom_mw, next_count,
                 )
                 continue
 
