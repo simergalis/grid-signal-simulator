@@ -882,6 +882,195 @@ class TestDispatchTruthfulness:
             f"p_renewable={tick.p_renewable_mw:.6f} MW)"
         )
 
+    def test_bess_setpoint_tracking(self):
+        """Task-185 B1: step gt_target by +1 MW; bess_setpoint_mw rises
+        ≈ 1 MW within 3 ticks; bess_output_mw follows within 10 ticks.
+
+        Confirms the BESS absorbs demand increases via the dispatch command
+        (setpoint) path, NOT by silently back-solving the balance equation.
+        If bess_output_mw moved without a matching bess_setpoint_mw change,
+        the BESS would be absorbing unmodelled error as a residual term.
+
+        Design
+        ------
+        * Turbine starts OFFLINE (slow ramp 0.2 MW/s) — it cannot absorb a
+          1 MW step within 3 × 0.1 s ticks (max contribution: 0.06 MW), so
+          the BESS must cover the demand step.
+        * BESS tau = 0.3 s: first-order lag makes setpoint and output
+          distinguishable.  Setpoint is the command (issued this tick);
+          output lags behind it by the lag constant.
+        * +1 MW step injected via state.compute_floor_mw so the measured
+          IT load rises without changing the WorkloadSignal or forecast.
+        * After the step (single 10-tick loop; tick 3 and tick 10 both
+          measured from the same post-step origin):
+            – tick 3: bess_setpoint_mw must rise ≥ 0.9 MW (direct command).
+            – tick 10: bess_output_mw must rise ≥ 0.7 MW
+              (tau=0.3 s, 10 × dt=1.0 s → ≈ 96% of step; 0.7 MW is
+              conservative to tolerate rounding and any turbine ramp share).
+        """
+        import warnings as _warnings
+
+        # Build state with explicit tau=0.3 s BESS so output lags setpoint.
+        # Create via SimulationState directly so tau is baked into the config
+        # that the arbitrator's internal bess_units reference shares.
+        _site_b1 = SiteConfig(
+            site_id="test-b1-185",
+            pue_base=1.03, alpha_max=0.20, tau_seconds=20.0,
+            dt_thermal_seconds=90.0, uncalibrated=False,
+            workload_signal_stale_s=30.0,
+            island_mode=IslandMode.ISLANDED,
+            inertia_constant_s=4.0, frequency_nominal_hz=50.0,
+            power_factor=0.85, governor_droop=0.04,
+        )
+        _hw_b1 = {
+            "enterprise_8gpu_air": HardwareProfile(
+                profile_id="enterprise_8gpu_air", rated_kw=10.2
+            )
+        }
+        with _warnings.catch_warnings():
+            _warnings.simplefilter("ignore")
+            _bess_cfg_b1 = BessConfig(
+                asset_id="bess-b1",
+                rated_mw=5.0,
+                usable_mwh=10.0,          # ample energy — SOC won't clip
+                initial_soc_fraction=0.8,
+                p_anchor_reserve_mw=0.0,
+                grid_forming=False,
+                bess_response_tau_s=0.3,  # explicit lag so setpoint ≠ output
+            )
+        from core.simulation_core import SimulationState
+        state = SimulationState(
+            run_id="test-b1-185",
+            site=_site_b1,
+            gpu_modules=[GPUModule(asset_id="gpu-0", site=_site_b1,
+                                   hardware_library=_hw_b1, ramp_seconds=1.0)],
+            turbines=[TurbineModule(TurbineConfig(
+                asset_id="gt-1", rated_mw=10.0,
+                r_asset_mw_per_s=0.2,   # very slow — cannot absorb 1 MW step in 3 ticks
+            ))],
+            bess_units=[BessModule(_bess_cfg_b1)],
+            solar_arrays=[],
+            cooling=CoolingModule(asset_id="cooling-0", site=_site_b1),
+        )
+
+        # Establish baseline load: 10 GPU nodes at full TDP (~0.105 MW).
+        sig = _starting_signal(nodes=10, ramp_s=1.0, timestamp=0.0,
+                               site_id="test-b1-185")
+        state.apply_workload_signal(sig, dt_lead_seconds=0.0)
+        # Pre-advance the GPU ramp so p_compute_demand ≈ 0.105 MW immediately.
+        state.gpu_modules[0].advance(0.0, state.gpu_modules[0].ramp_seconds)
+
+        # Warm-up: 20 ticks so bess_output_mw has settled near bess_setpoint_mw.
+        for i in range(20):
+            _run_tick(state, sim_time=float(i) * 0.1, dt=0.1)
+
+        tick_before = _run_tick(state, sim_time=2.0, dt=0.1)
+        setpoint_before = tick_before.bess_setpoint_mw
+        output_before   = tick_before.bess_output_mw
+
+        # Sanity: after warm-up the BESS is covering load (setpoint > 0).
+        assert setpoint_before > 0.01, (
+            f"B1-185 precondition: bess_setpoint_mw must be > 0 with GPU load; "
+            f"got {setpoint_before:.6f}"
+        )
+
+        # Step gt_target by +1 MW via compute_floor_mw (raises measured IT
+        # load without touching WorkloadSignal or forecast_mw).
+        state.compute_floor_mw = tick_before.p_compute_demand_mw + 1.0
+
+        # ── Single 10-tick loop post-step ─────────────────────────────────
+        # Tick numbers are counted from the demand step (tick 1 = first tick
+        # after the step).  Both assertions reference this same origin so the
+        # timing contract is exact: setpoint by tick 3, output by tick 10.
+        tick3  = None
+        tick10 = None
+        for i in range(1, 11):          # ticks 1 … 10 post-step
+            t = _run_tick(state, sim_time=2.1 + (i - 1) * 0.1, dt=0.1)
+            if i == 3:
+                tick3 = t
+            tick10 = t                  # always updated; final value = tick 10
+
+        # ── Assertion 1: setpoint responds by tick 3 ─────────────────────
+        # bess_setpoint_mw is a dispatch command computed directly from net
+        # demand each tick — it must step with the demand, not lag behind it.
+        assert tick3.bess_setpoint_mw >= setpoint_before + 0.9, (
+            f"B1-185: after +1 MW demand step, bess_setpoint_mw must rise "
+            f"≥ 0.9 MW by tick 3 post-step (setpoint is a command, not a "
+            f"lagged output); before={setpoint_before:.4f} MW, "
+            f"tick3={tick3.bess_setpoint_mw:.4f} MW"
+        )
+
+        # ── Assertion 2: output follows by tick 10 ────────────────────────
+        # With tau=0.3 s and dt=0.1 s: 10 ticks = 1.0 s ≈ 3.3 τ.
+        # Theoretical catch-up: 1 − exp(−10/3) ≈ 96%.  Assert ≥ 70% to
+        # tolerate turbine ramp share and SOC-headroom rounding.
+        assert tick10.bess_output_mw >= output_before + 0.7, (
+            f"B1-185: after +1 MW demand step, bess_output_mw must follow "
+            f"setpoint by tick 10 post-step (tau=0.3 s → ≈96% catch-up "
+            f"expected); before={output_before:.4f} MW, "
+            f"tick10={tick10.bess_output_mw:.4f} MW"
+        )
+
+    def test_forecast_invariant_to_measured_noise(self):
+        """Task-185 F3 (logger): a spike in measured IT load (it_load_mw)
+        must NOT change forecast_mw by more than 0.1 MW.
+
+        Rationale
+        ---------
+        forecast_mw is derived exclusively from WorkloadSignal via
+        ``sum(g.target_output_mw() for g in state.gpu_modules)`` — it must
+        be invariant to transient fluctuations in the measured draw
+        (p_compute_demand_mw / it_load_mw in the CSV).  If forecast_mw
+        changed with a measured-draw spike, the logger column would be
+        re-derived from the sensor reading rather than the demand signal,
+        violating the F3 criterion.
+
+        Mechanism
+        ---------
+        ``state.compute_floor_mw`` clamps p_compute_demand_mw from below,
+        simulating a +5 MW sensor noise spike in the measured IT load
+        without modifying the WorkloadSignal or any GPU job state.
+        ``target_output_mw()`` is unaffected by compute_floor_mw, so
+        forecast_mw must remain bit-identical.
+        """
+        state = _make_state(bess_soc=1.0, island_mode=IslandMode.ISLANDED)
+        sig = _starting_signal(nodes=10, ramp_s=1.0, timestamp=0.0)
+        state.apply_workload_signal(sig, dt_lead_seconds=0.0)
+        # Pre-advance GPU ramp so measured draw and forecast both reflect
+        # a stable, fully-ramped job.
+        state.gpu_modules[0].advance(0.0, state.gpu_modules[0].ramp_seconds)
+
+        # Baseline: record forecast and measured demand before the noise spike.
+        tick_a = _run_tick(state, sim_time=5.0, dt=0.1)
+        forecast_before  = tick_a.forecast_mw
+        p_compute_before = tick_a.p_compute_demand_mw
+
+        # Inject a +5 MW noise spike into measured IT load via compute_floor_mw.
+        # This raises p_compute_demand_mw without touching WorkloadSignal.
+        spike_mw = 5.0
+        state.compute_floor_mw = p_compute_before + spike_mw
+
+        tick_b = _run_tick(state, sim_time=5.1, dt=0.1)
+        forecast_after  = tick_b.forecast_mw
+        p_compute_after = tick_b.p_compute_demand_mw
+
+        # Sanity: the spike DID raise p_compute_demand_mw (test is meaningful).
+        assert p_compute_after >= p_compute_before + spike_mw * 0.9, (
+            f"task-185 F3 precondition: compute_floor_mw must raise "
+            f"p_compute_demand_mw by ≈{spike_mw} MW; "
+            f"before={p_compute_before:.4f}, after={p_compute_after:.4f}"
+        )
+
+        # Key assertion: forecast_mw does NOT change by more than 0.1 MW.
+        # forecast_mw is derived from WorkloadSignal, not from measured draw.
+        assert abs(forecast_after - forecast_before) <= 0.1, (
+            f"task-185 F3: a {spike_mw} MW noise spike in measured IT load "
+            f"must not change forecast_mw by more than 0.1 MW; "
+            f"forecast_before={forecast_before:.6f} MW, "
+            f"forecast_after={forecast_after:.6f} MW, "
+            f"delta={abs(forecast_after - forecast_before):.6f} MW"
+        )
+
 
 # ===========================================================================
 # C1–C4: Cooling thermal lag (Section 8)
