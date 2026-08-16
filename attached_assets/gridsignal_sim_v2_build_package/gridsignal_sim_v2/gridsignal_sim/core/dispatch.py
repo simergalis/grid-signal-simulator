@@ -671,12 +671,12 @@ class DispatchArbitrator:
             if t.is_on_bus
         )
         fleet_shortfall = max(0.0, p_dispatch_required_mw - turbine_output_mw)
+        fleet_surplus   = max(0.0, turbine_output_mw - p_dispatch_required_mw)
         fleet_covered = fleet_shortfall <= 0.0
 
         # P4: hoist island_mode and per-unit bridging ceilings once per tick.
         island_mode = self.site.island_mode
         ceilings = [b.bridging_available_mw(island_mode) for b in self.bess_units]
-        allocations = self._capped_equal_share_allocations(fleet_shortfall, ceilings)
 
         # Phase 11.3: capture the BESS setpoint (what was commanded to the fleet)
         # BEFORE cover_shortfall() may clip it due to SOC or power limits.
@@ -684,10 +684,28 @@ class DispatchArbitrator:
         # bess_output_mw   = the actual measured output after all constraints apply.
         # The difference (bess_setpoint_mw − bess_output_mw) contributes to
         # balance_residual_mw computed in evaluate_tick().
-        bess_setpoint_mw = fleet_shortfall
-        bess_output_mw = 0.0
-        for bess, alloc, ceiling in zip(self.bess_units, allocations, ceilings):
-            bess_output_mw += bess.cover_shortfall(alloc, fleet_covered, dt_seconds, ceiling)
+        #
+        # Surplus absorption path (fleet_surplus > 0):
+        # When turbines at MSL produce more than p_dispatch_required_mw — e.g.
+        # during an UNLOADING ramp-down — the excess is routed to BESS charging
+        # rather than spilling entirely into frequency_forcing_mw.  The BESS acts
+        # as the load-following sink.  bess_setpoint_mw is negative (absorption
+        # command); bess_output_mw is negative (actual absorbed MW).
+        if fleet_surplus > 0.0:
+            bess_absorbed_mw = 0.0
+            remaining = fleet_surplus
+            for bess in self.bess_units:
+                absorbed = bess.absorb_surplus(remaining, dt_seconds)
+                bess_absorbed_mw += absorbed
+                remaining = max(0.0, remaining - absorbed)
+            bess_setpoint_mw = -fleet_surplus       # negative = absorption command
+            bess_output_mw   = -bess_absorbed_mw    # negative = charging (physics sign)
+        else:
+            allocations = self._capped_equal_share_allocations(fleet_shortfall, ceilings)
+            bess_setpoint_mw = fleet_shortfall
+            bess_output_mw = 0.0
+            for bess, alloc, ceiling in zip(self.bess_units, allocations, ceilings):
+                bess_output_mw += bess.cover_shortfall(alloc, fleet_covered, dt_seconds, ceiling)
 
         # K1: build CandidateResponse entries for the dispatched resources.
         # BESS ranks below turbine in §26.4 priority (position 0 vs 1) but

@@ -1169,8 +1169,57 @@ class BessModule(AssetModule):
         self._current_output_mw = discharge_mw
         return discharge_mw
 
+    def absorb_surplus(self, surplus_mw: float, dt_seconds: float) -> float:
+        """Charge this unit to absorb a generation surplus (negative-output mode).
+
+        Called by DispatchArbitrator.tick() when turbine_output_mw exceeds
+        p_dispatch_required_mw — turbines at MSL overproduce relative to demand.
+        The BESS acts as the sink, absorbing as much of the surplus as its SoC
+        headroom and rated power allow.
+
+        Returns the MW actually absorbed (≥ 0).  The caller negates this to set
+        bess_output_mw = −absorbed in the tick result, so _p_gen_mw reflects the
+        real net generation and frequency_forcing_mw is reduced accordingly.
+
+        Design note: absorbing resets the taper timer so that a subsequent
+        shortfall immediately re-engages discharge (no stale-taper false standby).
+        """
+        if surplus_mw <= 0.0:
+            return 0.0
+
+        soc_headroom_mwh = self.config.usable_mwh - self.soc_mwh
+        if soc_headroom_mwh <= 1e-6:
+            # Battery full — cannot absorb more.
+            self._current_output_mw = 0.0
+            return 0.0
+
+        # Reset taper so cover_shortfall re-engages immediately on next shortfall.
+        self._sustained_catchup_seconds = 0.0
+
+        dt_hours = dt_seconds / 3600.0
+        max_by_power  = self.config.rated_mw
+        max_by_energy = soc_headroom_mwh / max(dt_hours, 1e-9)
+        charge_target_mw = min(surplus_mw, max_by_power, max_by_energy)
+
+        # First-order inverter response lag — same tau as the discharge path.
+        # _prev_output_mw is negative when the previous tick was also absorbing;
+        # recover the previous charge rate by negating it (clamp ≥ 0).
+        tau = self.config.bess_response_tau_s
+        if tau > 0.0 and dt_seconds > 0.0:
+            alpha = 1.0 - math.exp(-dt_seconds / tau)
+            prev_charge = max(0.0, -self._prev_output_mw)
+            charge_mw = prev_charge + alpha * (charge_target_mw - prev_charge)
+            charge_mw = max(0.0, min(charge_mw, charge_target_mw))
+        else:
+            charge_mw = charge_target_mw
+
+        self.soc_mwh = min(self.config.usable_mwh, self.soc_mwh + charge_mw * dt_hours)
+        self._prev_output_mw  = -charge_mw   # negative = charging, for next tick's lag
+        self._current_output_mw = -charge_mw
+        return charge_mw
+
     def advance(self, sim_time: float, dt_seconds: float) -> None:
-        return  # state is updated via cover_shortfall(), called by the arbitrator each tick
+        return  # state is updated via cover_shortfall() / absorb_surplus(), called by the arbitrator each tick
 
     def output_mw(self) -> float:
         return self._current_output_mw

@@ -341,30 +341,40 @@ class TestB3BindingConstraint:
 
 
 # ===========================================================================
-# B4 — "BESS standby" means bess_setpoint_mw ≈ 0 at that tick
+# B4 — BESS dispatch modes: standby (setpoint≈0), discharge (setpoint>0),
+#       and absorption (setpoint<0, BESS charges to absorb turbine surplus).
 # ===========================================================================
 
 class TestB4StandbyConsistency:
 
-    def test_B4a_standby_tick_has_zero_setpoint(self):
+    def test_B4a_surplus_tick_has_negative_setpoint(self):
         """
-        When the turbine covers all load (no fleet shortfall), bess_setpoint_mw == 0.
-        This is the tick where the UI would show "BESS standby".
+        When the turbine overproduces (no load, turbine at 5 MW), fleet_surplus > 0.
+        The BESS absorbs the surplus: bess_setpoint_mw < 0 (absorption command)
+        and bess_output_mw ≤ 0 (BESS is charging, negative generation).
+
+        Before the surplus-absorption fix, the 5 MW surplus spilled entirely into
+        frequency_forcing_mw (island-mode frequency runaway).  Now the BESS
+        absorbs it, reducing the residual and damping frequency deviation.
         """
         # No job, turbine pre-ramped well above resting load.
         state = _make_state()
         turb  = state.turbines[0]
-        # Phase E repair: AT_TARGET deleted (Phase C) → SYNCHRONISED; _target_mw removed.
         turb._current_output_mw = 5.0
         turb.state              = TurbineState.SYNCHRONISED
 
         tick = _run_tick(state)
-        assert tick.bess_setpoint_mw == pytest.approx(0.0, abs=0.01), (
-            f"Standby tick: bess_setpoint_mw must be ≈ 0.  "
+        # fleet_surplus = 5.0 MW → absorption command
+        assert tick.bess_setpoint_mw < 0.0, (
+            f"Surplus tick: bess_setpoint_mw must be negative (absorption command).  "
             f"Got {tick.bess_setpoint_mw:.4f} MW."
         )
+        assert tick.bess_output_mw <= 0.0, (
+            f"Surplus tick: bess_output_mw must be ≤ 0 (charging).  "
+            f"Got {tick.bess_output_mw:.4f} MW."
+        )
 
-    def test_B4b_regression_setpoint_is_zero_independent_of_lag_state(self):
+    def test_B4b_regression_setpoint_immediate_independent_of_lag_state(self):
         """
         Regression guard for "BESS standby while battery moves 18.92 MW".
 
@@ -374,13 +384,15 @@ class TestB4StandbyConsistency:
 
         Fix (PlantNode.tsx): gate on bess_setpoint_mw (the dispatch command).
 
-        Physics assertion: when turbine covers all load (no fleet shortfall),
-        bess_setpoint_mw is IMMEDIATELY 0 — independent of the lag state
-        (_prev_output_mw) from any prior dispatch.
+        Physics assertion: bess_setpoint_mw reflects the dispatch command
+        IMMEDIATELY, independent of the lag state (_prev_output_mw).
+        When turbine ≈ demand (tiny surplus from 20 MW vs ~19.96 MW load),
+        setpoint is ≤ 0 (absorption, not discharge) and is NOT the stale 5 MW
+        from the seeded _prev_output_mw.
         """
         state = _make_state()
 
-        # Pre-ramp GPU so there is a meaningful load.
+        # Pre-ramp GPU so there is a meaningful load (~19.96 MW for 100 nodes).
         sig = _starting_signal(nodes=100, ramp_s=1.0)
         state.apply_workload_signal(sig, dt_lead_seconds=0.0)
         state.gpu_modules[0]._ramp_progress["job-1"] = 1.0
@@ -388,34 +400,33 @@ class TestB4StandbyConsistency:
         # Seed the BESS lag state as if it was discharging at 5 MW last tick.
         state.bess_units[0]._prev_output_mw = 5.0
 
-        # Lock turbine at AT_TARGET — advance() is a no-op when state != RAMPING.
         turb = state.turbines[0]
-        # Phase E repair: AT_TARGET deleted (Phase C) → SYNCHRONISED; _target_mw removed.
-        turb._current_output_mw = 20.0   # ample to cover any load
+        turb._current_output_mw = 20.0   # slight surplus above ~19.96 MW load
         turb.state              = TurbineState.SYNCHRONISED
 
         tick = _run_tick(state, sim_time=5.0)
 
-        # Fleet shortfall = max(0, p_dispatch_required − 20.0) = 0.
-        # bess_setpoint must be 0 even though _prev_output_mw was 5 MW.
-        assert tick.bess_setpoint_mw == pytest.approx(0.0, abs=0.01), (
-            f"bess_setpoint_mw must be 0 on standby tick regardless of lag state.  "
+        # Fleet produces ≥ demand (turbine covers load, small surplus ≈ 0.04 MW).
+        # setpoint must be ≤ 0 (no positive discharge commanded) — NOT the stale
+        # +5 MW lag state from the seeded _prev_output_mw.
+        assert tick.bess_setpoint_mw <= 0.01, (
+            f"bess_setpoint_mw must be ≤ 0 (surplus, no discharge commanded).  "
             f"Got {tick.bess_setpoint_mw:.4f} MW (prev_output was 5.0 MW)."
         )
-        # cover_shortfall early-returns 0 when allocated_mw=0, so output is
-        # also 0.  The UI fix: gate standby label on setpoint (the command),
-        # not on output (which could be stale from a previous WebSocket frame).
 
-    def test_B4c_no_binding_constraint_on_standby_tick(self):
+    def test_B4c_no_binding_constraint_on_zero_surplus_tick(self):
         """
-        A standby tick must also have no binding constraint — if setpoint == 0
-        then it trivially cannot exceed the rated floor.
+        A tick with no fleet shortfall and no turbine on-bus (offline state) must
+        have bess_setpoint_mw ≈ 0 and no binding constraint — turbine_output = 0,
+        demand = 0, fleet_surplus = 0, so the BESS receives no command at all.
         """
         state = _make_state()
+        # Default state: turbine OFFLINE, no load → turbine_output = 0, demand = 0,
+        # fleet_shortfall = 0, fleet_surplus = 0 → bess_setpoint = 0.
         tick  = _run_tick(state)
 
         assert tick.bess_setpoint_mw == pytest.approx(0.0, abs=0.01)
         assert tick.binding_constraint is None, (
-            f"Standby tick should have no binding_constraint; "
+            f"Zero-surplus tick should have no binding_constraint; "
             f"got {tick.binding_constraint!r}"
         )
