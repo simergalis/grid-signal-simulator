@@ -753,17 +753,16 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             dt_lead_seconds=0.0,     # no advance notice — dt_lead=0 per spec
             bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
             turbine_units=[
+                # turbine-0 starts online automatically.
                 _turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2),
-                # turbine-1 and turbine-2 start offline but thermally hot —
-                # operator can start either via the unit-command API; hot start
-                # takes 300 s.  hot_standby=True was intentionally avoided:
-                # hot-standby units are dispatch-arbitrator-managed and cannot
-                # be started by the operator.
-                _turbine("turbine-1", rated_mw=25.0, r_mw_per_s=0.2, thermal_state="hot"),
-                _turbine("turbine-2", rated_mw=25.0, r_mw_per_s=0.2, thermal_state="hot"),
+                # turbine-1 and turbine-2 are held in hot standby: the dispatch
+                # arbitrator commits them automatically when generation headroom
+                # is needed.  Hot-start takes 300 s.
+                _turbine("turbine-1", rated_mw=25.0, r_mw_per_s=0.2, hot_standby=True),
+                _turbine("turbine-2", rated_mw=25.0, r_mw_per_s=0.2, hot_standby=True),
             ],
             solar_rated_mw=_SOLAR_20MW,
-            end_sim_time=600.0,      # 10 min — covers several admission / retirement cycles
+            end_sim_time=3600.0,     # 1 hour — covers many admission / retirement cycles
             kube_config=KubeConfigSpec(
                 hardware_profile_id="enterprise_8gpu_air",
                 max_nodes=1900,
