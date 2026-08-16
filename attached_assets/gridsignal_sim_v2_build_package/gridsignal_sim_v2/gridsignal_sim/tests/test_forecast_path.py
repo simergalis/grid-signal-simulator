@@ -54,6 +54,7 @@ from core.models import (
     SiteConfig,
     SolarConfig,
     TurbineConfig,
+    TurbineState,
     WorkloadClass,
     WorkloadEventType,
     WorkloadSignal,
@@ -283,6 +284,98 @@ class TestForecastPath:
             f"expected {expected_mw:.6f}"
         )
 
+    def test_F6_demo_19mw_job_forecast_at_first_tick(self):
+        """F6: For the demo 19.96 MW job (1900 nodes, enterprise_8gpu_air, 120 s ramp),
+        forecast_mw must equal full TDP at the first tick even though the ramped draw
+        (p_compute_demand_mw) is near-zero.
+
+        Root cause guard: Phase 11.0 observed forecast_mw ≈ 0.13 MW on the dashboard
+        for a 19.96 MW job.  Three candidate defects produce this symptom:
+
+          (a) WorkloadSignal timing gap — _node_counts is empty at the time
+              forecast_mw = sum(g.target_output_mw() ...) is evaluated because the
+              STARTING signal was not applied before the first evaluate_tick() call.
+              Concretely: RunContext._apply_due_events() skips the t=0 STARTING event
+              if events[0].timestamp > sim_time (off-by-one or wrong default timestamp).
+              Gives 0.0 MW.
+
+          (b) forecast_mw using output_mw() (ramp-multiplied) instead of
+              target_output_mw() (full TDP, invariant to ramp progress).
+              At tick 0 with 120 s ramp and TICK_INTERVAL_SIM_SECONDS=5 s:
+                ramp_progress = 5/120 = 0.042
+                _ramp_multiplier(0.042) = 0.05 × (0.042/0.20) ≈ 0.010
+                output_mw = 19.96 × 0.010 ≈ 0.20 MW  (0.13 MW at earlier sub-ticks)
+              Gives forecast ≈ p_compute_demand_mw (both near-zero).
+
+          (c) hardware_profile_id absent from the GPU module's hardware_library —
+              falls back to GENERIC_FALLBACK_PROFILE (rated_kw=12.0 kW instead of
+              10.2 kW), shifting forecast_mw to 23.5 MW (not 19.96 MW).
+
+        This test uses the PRODUCTION path — build_run_context() + RunContext.step() —
+        so it covers all three candidates end-to-end:
+
+          - (a): step() calls _apply_due_events() internally; any timing gap in that
+                 function leaves _node_counts empty → forecast_mw = 0.
+          - (b): evaluate_tick() runs inside step() with the real
+                 TICK_INTERVAL_SIM_SECONDS (5 s) ramp cadence.
+          - (c): build_run_context() wires DEFAULT_HARDWARE_LIBRARY; a missing profile
+                 triggers GENERIC_FALLBACK_PROFILE (12.0 kW) → wrong forecast.
+        """
+        from runtime.run_manager import RunContext  # noqa: F401 (import guard)
+        from runtime.scenario_factory import build_run_context
+
+        # Demo-20mw exact parameters (see example_usage.py + scenario_factory.py).
+        # turbine_rated_mw=25 so the turbine can cover the 19.96 MW steady-state load;
+        # this does not affect forecast_mw but avoids "insufficient reserve" alerts.
+        ctx = build_run_context(
+            run_id="test-f6-demo",
+            job_id="job-big",
+            node_count=1900,
+            hardware_profile_id="enterprise_8gpu_air",
+            turbine_rated_mw=25.0,
+        )
+
+        # One step via the production RunContext path (sim_time=0 → 5 s).
+        # _apply_due_events() is called internally before evaluate_tick(), exactly
+        # as it is during a live dashboard run.  No hand-applied signals here.
+        tick = ctx.step()
+
+        # Expected full TDP: 1900 × 10.2 kW × PUE_base / 1000.
+        # PUE_base comes from DEFAULT_HARDWARE_LIBRARY / SiteConfig catalogue defaults,
+        # NOT a hand-injected value, so candidate (c) is exercised by the real library.
+        pue = ctx.sim_state.site.pue_base
+        expected_full_mw = 1900 * 10.2 * pue / 1000.0   # ≈ 19.96 MW
+
+        # Guard (a) + (b): forecast must be at full TDP, not the ramp-suppressed draw.
+        assert tick.forecast_mw >= 19.0, (
+            f"F6: forecast_mw={tick.forecast_mw:.4f} MW for 1900-node demo job "
+            f"must be ≥ 19.0 MW at the first tick (sim_time 0→5 s).  "
+            f"Candidate (a): _node_counts empty at t=0 (timing gap) → 0.0 MW.  "
+            f"Candidate (b): using output_mw() (ramped) → ≈ "
+            f"p_compute_demand_mw={tick.p_compute_demand_mw:.4f} MW instead."
+        )
+        # Guard (c): value matches enterprise_8gpu_air (10.2 kW), not GENERIC_FALLBACK.
+        assert abs(tick.forecast_mw - expected_full_mw) / expected_full_mw < 0.001, (
+            f"F6: forecast_mw={tick.forecast_mw:.4f} MW, expected≈{expected_full_mw:.4f} MW "
+            f"(1900 × 10.2 kW × PUE {pue:.2f} / 1000, ±0.1%).  "
+            f"Candidate (c): GENERIC_FALLBACK 12.0 kW gives "
+            f"{1900 * 12.0 * pue / 1000.0:.4f} MW."
+        )
+        # Ramp guard: at TICK_INTERVAL_SIM_SECONDS=5 s with the 120 s default ramp,
+        # p_compute_demand_mw is ≈ 1–2% of full TDP, confirming the ramp IS active.
+        assert tick.p_compute_demand_mw < expected_full_mw * 0.05, (
+            f"F6 precondition: 120 s ramp should suppress p_compute at the first tick; "
+            f"got {tick.p_compute_demand_mw:.4f} MW "
+            f"(expected < {expected_full_mw * 0.05:.4f} MW = 5% of full TDP)."
+        )
+        # Gap guard: forecast >> p_compute confirms (b) is absent.
+        assert tick.forecast_mw > tick.p_compute_demand_mw * 10, (
+            f"F6: forecast_mw ({tick.forecast_mw:.4f} MW) must be >> p_compute "
+            f"({tick.p_compute_demand_mw:.4f} MW) at the first tick with 120 s ramp.  "
+            f"Equal values indicate forecast is using ramped output_mw, not "
+            f"full-TDP target_output_mw."
+        )
+
 
 # ===========================================================================
 # Q1–Q5: Workload signal quality flags
@@ -483,6 +576,12 @@ class TestDispatchTruthfulness:
         )
         sig = _starting_signal(nodes=10, ramp_s=1.0, timestamp=0.0)
         state.apply_workload_signal(sig, dt_lead_seconds=0.0)
+        # Pre-advance the GPU ramp to completion so p_compute_demand ≈ 0.105 MW.
+        # _run_tick is stateless (it calls advance() for exactly one dt=0.1 s step),
+        # so ramp_progress would only reach 0.1/1.0 = 0.10 in the evaluation tick,
+        # leaving p_compute at ~2.6% of full TDP.  Calling advance() with the full
+        # ramp_seconds here simulates the elapsed time before sim_time=5.0.
+        state.gpu_modules[0].advance(0.0, state.gpu_modules[0].ramp_seconds)
 
         tick = _run_tick(state, sim_time=5.0, dt=0.1)
 
@@ -511,17 +610,19 @@ class TestDispatchTruthfulness:
             f"B1a: p_gen−p_load residual should be non-zero with delivery fault; "
             f"got {_residual:.9f}"
         )
-        # Task #200 B1: in islanded mode, frequency_forcing = balance_residual.
-        # A turbine over-delivering vs setpoint increases p_gen → balance_residual > 0
-        # → frequency_forcing > 0 → frequency RISES above nominal.
-        # Old Phase 13.3 "model error must not move frequency" is superseded by B1.
+        # Task #200 B1: in islanded mode, frequency_forcing = balance_residual
+        # = p_gen − p_demand (simulation_core.py line ~1638).
+        # In this scenario: p_gen = 0 (turbine uncommitted, BESS depleted),
+        # p_demand ≈ 0.105 MW → balance_residual < 0 → frequency FALLS below nominal.
+        # This is under-delivery: supply cannot meet demand → rotors decelerate.
         f_nom = state.site.frequency_nominal_hz  # sourced from config (50.0 EU/APAC)
-        assert tick.frequency_forcing_mw > 0.0, (
-            f"B1a (Task #200 B1): over-delivery → balance_residual > 0 → forcing > 0; "
+        assert tick.frequency_forcing_mw < 0.0, (
+            f"B1a: under-delivery (turbine uncommitted + BESS depleted) → "
+            f"balance_residual < 0 → forcing < 0; "
             f"got frequency_forcing_mw={tick.frequency_forcing_mw:.6f}"
         )
-        assert tick.frequency_hz > f_nom, (
-            f"B1a (Task #200 B1): over-delivery in islanded mode raises frequency above "
+        assert tick.frequency_hz < f_nom, (
+            f"B1a: under-delivery in islanded mode drops frequency below "
             f"nominal {f_nom} Hz; got {tick.frequency_hz:.6f}"
         )
 
@@ -738,8 +839,11 @@ class TestDispatchTruthfulness:
         )
 
         # Verify frequency_hz tracks the swing-equation formula within ±10%.
-        # S_base = rated_mw / power_factor — mirrors simulation_core.py formula.
-        _s_base_mw = 10.0 / _site_b5.power_factor  # turbine_rated_mw / pf
+        # No turbines are on-bus (no GPU job → no dispatch → turbine never committed),
+        # so simulation_core.py uses the virtual S_base path (line ~854):
+        #   _s_base_mva = 1.0 / site.power_factor
+        # NOT the per-unit turbine fleet S_base (rated_mw / pf).
+        _s_base_mw = 1.0 / _site_b5.power_factor  # virtual S_base: 1/pf MVA
         _H = 4.0
         _f0 = _site_b5.frequency_nominal_hz  # sourced from config (50.0 EU/APAC)
         _dt = 0.1
@@ -753,10 +857,19 @@ class TestDispatchTruthfulness:
     def test_B5b_gt_setpoint_mw_equals_dispatch_required(self):
         """B5b: gt_setpoint_mw = p_dispatch_required_mw (what the turbine
         fleet is asked to cover this tick).
+
+        gt_setpoint_mw is gated on _committed_rated_mw_cs > 0 to keep the
+        D5 delivery-error contract self-consistent (simulation_core.py line
+        ~1700: _turb_setpoint_for_error_mw = _p_dispatch_droop_mw if
+        committed > 0 else 0).  The test must therefore place the turbine
+        in SYNCHRONISED state before the assertion tick so the gate is open.
         """
         state = _make_state(bess_soc=1.0)
         sig = _starting_signal(nodes=10, ramp_s=1.0, timestamp=0.0)
         state.apply_workload_signal(sig, dt_lead_seconds=0.0)
+        # Commit the turbine: set SYNCHRONISED so _committed_rated_mw_cs > 0
+        # and the D5 gate opens (_turb_setpoint_for_error_mw = _p_dispatch_droop_mw).
+        state.turbines[0].state = TurbineState.SYNCHRONISED
 
         tick = _run_tick(state, sim_time=5.0)
 
@@ -764,7 +877,9 @@ class TestDispatchTruthfulness:
         expected = max(0.0, tick.p_demand_mw - tick.p_renewable_mw)
         assert tick.gt_setpoint_mw == pytest.approx(expected, abs=1e-9), (
             f"B5b: gt_setpoint_mw={tick.gt_setpoint_mw} should equal "
-            f"p_dispatch_required={expected}"
+            f"p_dispatch_required={expected} "
+            f"(p_demand={tick.p_demand_mw:.6f} MW, "
+            f"p_renewable={tick.p_renewable_mw:.6f} MW)"
         )
 
 
