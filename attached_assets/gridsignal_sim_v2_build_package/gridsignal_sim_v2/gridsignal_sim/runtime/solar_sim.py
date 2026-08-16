@@ -113,8 +113,13 @@ def _build_system_prompt(
     climate_hint: str = "",
 ) -> str:
     """Build a location-specific Mistral system prompt for the solar agent."""
-    lat_dir = "N" if (lat or 0) >= 0 else "S"
-    lon_dir = "E" if (lon or 0) >= 0 else "W"
+    # DIAG-COST-002 consistency fix: use `is not None` so that lat=0.0 (equator)
+    # and lon=0.0 (prime meridian) are classified correctly rather than being
+    # treated as absent.  (0.0 is falsy in Python; `0.0 or 0` would silently
+    # replace a genuine equatorial coordinate with the integer 0 — same result
+    # here, but fragile and inconsistent with project convention.)
+    lat_dir = "N" if (lat is None or lat >= 0.0) else "S"
+    lon_dir = "E" if (lon is None or lon >= 0.0) else "W"
     lat_abs = abs(lat) if lat is not None else 0.0
     lon_abs = abs(lon) if lon is not None else 0.0
     loc_line = (
@@ -630,7 +635,11 @@ def generate_solar_forecast(
             _display_offset = _longitude / 15.0
         local_dt   = utc_now + datetime.timedelta(hours=_display_offset)
     else:
-        local_dt   = utc_now + datetime.timedelta(hours=(_utc_offset or 0.0))
+        # DIAG-COST-002 consistency fix: `is not None` so that UTC+0 (0.0)
+        # is honoured as a valid offset rather than falling through to 0.0 via
+        # the `or` path.  Functionally identical when offset=0.0, but removes
+        # the fragile reliance on 0.0 being falsy.
+        local_dt   = utc_now + datetime.timedelta(hours=(_utc_offset if _utc_offset is not None else 0.0))
     local_time = local_dt.strftime("%H:%M")
 
     user_msg = (

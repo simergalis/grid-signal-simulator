@@ -57,3 +57,35 @@ must preserve AT-7 determinism invariant via seeded RNG.
   Deferred. Must use seeded deterministic generator (AT-7 invariant).
 - **Test gap**: no end-to-end test that verifies `ScenarioSpec.grid_import_price_per_mwh`
   override actually produces the correct cost in the run result API response.
+
+## GS-DIAG-COST-002 — Sweep results + regressions
+
+**Sweep outcome**: No new instances of the `or`-based Optional[float] bug class in
+cost-bearing code paths. Full hit table (all files in runtime/, core/, api/):
+
+| Location | Field | Verdict |
+|---|---|---|
+| run_manager.py:2181 | collapse_frequency_hz | Log-format guard only; not cost-bearing. Safe. |
+| run_manager.py:2467 | edl_dispatch_cost_usd | Defensive sum guard; EDL active path only; None≡missing key, not zero-cost tick. Safe. |
+| scenario_factory.py:921 | design_peak_load_mw (outer or) | 0.0 not a valid domain value (zero peak load is nonsensical). Correct by intent. |
+| scenario_factory.py:938 | design_peak_load_mw | Same — 0.0 means "not provided". Intentional. |
+| scenario_factory.py:1087 | edl_calendar_month | Month 0 doesn't exist; 0 not a valid domain value. Safe. |
+| solar_sim.py:116-117 | lat, lon | Display-only Mistral prompt. 0.0 IS valid (equator/prime meridian). Fixed for consistency. |
+| solar_sim.py:633 | _utc_offset | Display-only Mistral prompt. 0.0 IS valid (UTC+0). Fixed for consistency. |
+| api/routes/runs.py:961 | scenario_name | String or-fallback. Not numeric. Not applicable. |
+| advisory_router.py:92-93 | MISTRAL_API_KEY | Env-var string guard. Not numeric. Not applicable. |
+
+**Consistency fixes applied** (solar_sim.py only, not cost-bearing):
+- `(lat or 0) >= 0` → `lat is None or lat >= 0.0`
+- `(lon or 0) >= 0` → `lon is None or lon >= 0.0`
+- `(_utc_offset or 0.0)` → `_utc_offset if _utc_offset is not None else 0.0`
+
+**Regression tests added** (`tests/test_cost_model_override_regression.py`, 9 tests, all pass):
+- `TestZeroGridImportPriceOverride` — $0.0 override honoured; None falls back to $120; nonzero override applied.
+- `TestBessChargeCostTracksImportPrice` — BESS charge price derives from import price; explicit BESS override wins; $0 BESS override honoured.
+- `TestProcurementPathBIsolation` — Path B market signal (SyntheticPriceCurve) has zero effect on billing; `evaluate_tick()` result confirmed advisory-only via direct call.
+- All 9 tests verified to FAIL against pre-fix `or`-based merge logic.
+
+**evaluate_tick() return dict shape**: flat dict with keys
+`import_mw, new_served_load_mw, reserve_gap_mw_unchanged, proposal_requires_confirmation, spot_price_per_mwh`.
+NOT a nested `proposal` object — the proposal lives in AdvisoryGate.
