@@ -1,0 +1,132 @@
+GS-DIAG-COST-001: Cost Model Audit — Diagnostic & Resolution
+
+Target files: runtime/run_manager.py (_COST_CFG_DEFAULTS), core/procurement.py (SyntheticPriceCurve) Type: Diagnostic-first defect investigation, not a feature change. Discipline: Root cause must be confirmed before any fix is written. Do not tune parameters to make a number "look right" — every change must be traceable to a specific, stated cause.
+
+Context
+
+A review of the current cost model surfaced six items ranging from a likely defect to documentation mismatches. Some may turn out to be intentional and simply under-explained; others may be real bugs. Your job in this pass is to diagnose each item, report findings, and only then propose or make fixes — per stop-and-report gates below. Do not silently "fix" anything by picking whichever value looks more plausible.
+
+Items to investigate, in priority order
+DIAG-1 — Grid import price: two conflicting defaults (highest priority — possible dual-implementation defect)
+
+_COST_CFG_DEFAULTS shows a $55/MWh default used somewhere in scenario cost calculation, and a $120/MWh default used on the energy-summary endpoint. These are more than 2x apart.
+
+Diagnose:
+
+Locate every code path that reads a grid import price. List each one with its file, line, and the constant or variable it resolves to.
+Determine whether $55 and $120 are intended to represent different concepts (e.g., a dispatch/decision price vs. a conservative billing/display price) or whether one is stale/leftover from an earlier iteration.
+Check whether grid_import_price_per_mwh (the scenario-level operator override) is honored by both code paths, or only one. If only one, that is itself a defect — an operator override that silently doesn't apply everywhere is a correctness bug, not a cosmetic issue.
+
+Do not:
+
+Do not just pick one value and delete the other without confirming which (if either) is authoritative.
+Do not rename variables to paper over the discrepancy without resolving the underlying logic.
+
+Report before fixing: which code paths exist, what each resolves to, whether the override is universally honored, and your assessment of whether this is one quantity with two implementations (defect — must be unified per project convention: one authoritative path, the other deleted) or two legitimately distinct quantities (acceptable — but must be renamed and documented so a future reader doesn't need to reverse-engineer the difference again).
+
+DIAG-2 — BESS charging price coupling to grid import price
+
+BESS charging is priced at a flat $60/MWh. Determine whether this is: (a) hardcoded independently of whatever price was actually paid for the imported energy used to charge, or (b) derived from grid_import_price_per_mwh (or the synthetic price curve, if that's what's actually charging the battery) at the time of charge.
+
+Diagnose:
+
+Trace the charge-cost calculation to its source.
+If (a): confirm whether this is a deliberate simplification (e.g., "BESS charges at a fixed contracted rate regardless of spot price") or an oversight where it should be tracking the same import price used elsewhere.
+Check whether this creates an inconsistency when an operator overrides grid_import_price_per_mwh — does BESS charging cost change accordingly, or stay pinned at $60?
+
+Report before fixing: what you found, and whether decoupling is intentional (if so, document the rationale inline) or a bug (if so, propose the fix and confirm before implementing).
+
+DIAG-3 — Turbine capital $/kWh range mischaracterized as a fixed assumption
+
+The doc states turbine capital cost works out to "$0.005–$0.010/kWh at typical duty." This range is only reachable at roughly 50–100% capacity factor. Per the parent spec (Section 7), turbines in this system function as bridging/ramping assets responding to 30–60s staging events — an intermittent, low-duty-cycle role, not baseload. At lower capacity factors (e.g., 10–15%, plausible for this asset's actual role), the same formula produces a materially higher $/kWh figure.
+
+Diagnose:
+
+Confirm the formula: turbine_cost = (rated_mw × capital_per_MW_year × hours/8760) + (gen_mwh × variable_rate). Verify this is what's actually implemented — not just what's documented.
+Run the formula at a range of realistic capacity factors for this deployment profile (e.g., 10%, 25%, 50%, 75%) and report the resulting $/kWh at each.
+This is not a code defect — the formula is correct per Section 21.2's own guidance (capital owed regardless of runtime). The issue is that the documentation presents a duty-cycle-dependent output as if it were a fixed input assumption.
+
+Do not:
+
+Do not change the formula. This item is a documentation fix, not a code fix.
+
+Fix (after reporting): Remove the "$0.005–0.010/kWh at typical duty" characterization from any spec/doc text that presents it as an assumption. Replace with a statement that turbine capital $/kWh is a scenario output, dependent on capacity factor, and cite the actual range produced across realistic capacity factors for this deployment profile.
+
+DIAG-4 — Grid import price vs. sourced utility tariffs
+
+$55–120/MWh ($0.055–0.12/kWh) is plausible as a wholesale/CAISO-style price but is likely well below what a real islanded-microgrid site would pay under PG&E Schedule B-20 or SDG&E AL-TOU (all-in C&I rates commonly $0.15–0.35+/kWh with demand charges and TOU peaks folded in).
+
+Diagnose:
+
+Determine what grid_import_price is actually meant to represent in the model: a wholesale/direct-access import price, or a proxy for the site's real utility bill for firm/reserved grid import (Section 24)?
+If the latter, the current default is understated by roughly 2–4x, which would systematically bias any generate-vs-import conclusion (Section 21.2 workstream 3) toward "import" being cheaper than it actually is.
+
+Report before fixing: which interpretation the current default was built for (check commit history / original design notes if available), and whether it matches its actual use in the model's decision logic.
+
+Fix (after reporting, if warranted): Source actual energy-charge line items from the current PG&E B-20 and SDG&E AL-TOU rate sheets already on file, and either replace the default or add a second named default (e.g., grid_import_price_wholesale vs. grid_import_price_retail_tou) depending on what DIAG-4's diagnosis finds. Tag whichever remains a placeholder as PROPOSED_HERE per catalogue convention.
+
+DIAG-5 — Solar and fuel cell contribute zero cost to the economics screen
+
+Both carry $0/MWh variable cost with no capital component modeled. This is fine for marginal-cost dispatch decisions, but if solar or fuel cell represents a meaningful fraction of a real site's capacity, an economics screen built on this cost model will show 100% of capital cost attributed to the turbine, distorting the capital-efficiency narrative the screen is meant to support.
+
+Diagnose:
+
+Confirm scope: is the economics screen intended to reflect all generation assets' capital efficiency, or only the dispatchable fleet (turbine + BESS)?
+
+Report before fixing: which scope was intended. Do not add capital modeling for solar/fuel cell unless the diagnosis confirms the economics screen is supposed to cover them — this may be correctly out of scope for MVP and just needs a documented exclusion note, not new code.
+
+DIAG-6 — Synthetic price curve shape doesn't produce tail events
+
+The current curve ($55 base ± $22 diurnal ± $8 secondary harmonic) is a smooth sine producing a $25–85/MWh range. Real CAISO-style markets show negative midday prices during solar oversupply and scarcity spikes well above the current $85/MWh ceiling.
+
+Diagnose:
+
+Confirm whether any current or planned narrative/demo output cites this curve to illustrate the value of predictive staging (e.g., "avoiding expensive import windows" or "capturing negative-price charging").
+If so, the smooth-sine shape understates the value proposition, since it never generates the extreme-price hours where predictive staging would matter most.
+
+Report before fixing: whether tail-event modeling is in scope for this pass or a separate backlog item. This may not need a code fix now — flag it as a residual item if out of scope, per the project's open-items registry convention (assign an ID, e.g., PROC-1).
+
+Global constraints (apply to all six items)
+No hardcoded literals without a source citation or PROPOSED_HERE tag. Any new or modified constant must be added to the parameter catalogue with its basis stated.
+No dual implementations. If DIAG-1 confirms $55 and $120 compute the same thing, one path is deleted, not patched around.
+No spec edits during this pass. If resolving any item requires changing the functional spec itself (not just code/docs), stop and produce a proposed amendment for review rather than editing the spec directly.
+AT-7 determinism invariant applies. No change in this pass may introduce runtime RNG or non-determinism into the cost calculation path.
+Stop-and-report gates
+
+Stop and report back before writing any fix for DIAG-1, DIAG-2, and DIAG-4 — these have a real chance of being defects with behavioral impact (silent override bugs, biased generate-vs-import conclusions). Do not proceed to implementation on these three without explicit confirmation.
+
+DIAG-3, DIAG-5, and DIAG-6 are lower risk (documentation/scope clarifications) — you may propose fixes directly, but still report your diagnosis first in a single consolidated summary before touching any files.
+
+Deliverable for this pass
+
+A single report covering all six items with:
+
+What you found (file/line references)
+Whether it's a defect, a documentation mismatch, or working-as-intended
+Your proposed fix (if any) — not yet implemented for DIAG-1/2/4
+Any new open-item IDs to register (e.g., for DIAG-6 if deferred)
+
+Do not implement DIAG-1, DIAG-2, or DIAG-4 fixes until this report has been reviewed.
+
+Project content
+GridSignal
+Created by you
+Kubernetes Priority Scheduling Summary.md
+
+280 lines
+
+MD
+
+Kubernetes Priority Queueing: A Comprehensive Engineering Survey.md
+
+280 lines
+
+MD
+
+GridSignal-Forecast-Engine-Functional-Spec_v2.5.md
+
+1,683 lines
+
+MD
+
+View all 11 files
