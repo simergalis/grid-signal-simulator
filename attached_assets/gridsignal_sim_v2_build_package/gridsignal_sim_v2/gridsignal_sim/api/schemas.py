@@ -958,6 +958,45 @@ class ScenarioSpec(BaseModel):
     ui_bess_rated_mw:  Optional[float] = Field(default=None, ge=0.0)
     ui_bess_usable_mwh: Optional[float] = Field(default=None, ge=0.0)
 
+    # ── §21.2 cost model overrides (DIAG-1 / DIAG-2) ─────────────────────────
+    # Both default to None ("not set by operator") so the cost engine can
+    # distinguish an explicit $0.0 from "use the system fallback".  Use
+    # `is not None` checks everywhere — never `or`-based fallback — because
+    # $0.0 is a valid and meaningful override (fully self-generated site).
+    #
+    # grid_import_price_per_mwh: billing price for grid energy, in $/MWh.
+    #   None → cost engine falls back to _COST_CFG_DEFAULTS ($120/MWh, a
+    #   CAISO-style wholesale/direct-access spot price — see DIAG-4).
+    #   Sites on C&I utility tariffs (e.g. PG&E B-20 all-in: ~$150–350/MWh)
+    #   should supply the relevant energy-charge line item here.
+    #   This is the PATH A billing price; it is SEPARATE from the
+    #   SyntheticPriceCurve.BASE_MARKET_PRICE_PER_MWH ($55) market signal
+    #   used by the advisory procurement layer.
+    grid_import_price_per_mwh: Optional[float] = Field(
+        default=None,
+        ge=0.0,
+        description=(
+            "Grid import energy price for §21.2 cost accounting ($/MWh). "
+            "None = use system default ($120/MWh wholesale spot fallback). "
+            "Set to the all-in energy-charge line item for C&I utility tariffs."
+        ),
+    )
+    # bess_charge_price_override_per_mwh: explicit per-MWh cost for energy
+    #   delivered INTO the BESS (gross charge).  None → cost engine derives
+    #   this from the effective grid_import_price_per_mwh (DIAG-2 fix: BESS
+    #   charging is billed at the same rate as the import it consumes, not a
+    #   flat $60).  Set only if the site has a separate contracted off-peak
+    #   charging tariff that differs from the general import price.
+    bess_charge_price_override_per_mwh: Optional[float] = Field(
+        default=None,
+        ge=0.0,
+        description=(
+            "Override BESS charge price ($/MWh). "
+            "None = derive from effective grid_import_price_per_mwh. "
+            "Set only for sites with a separate contracted charging tariff."
+        ),
+    )
+
     @model_validator(mode="after")
     def _check_tenant_ceilings(self) -> "ScenarioSpec":
         """Reject any tenant event whose GPU TDP exceeds 150 % of the contracted ceiling.

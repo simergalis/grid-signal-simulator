@@ -177,7 +177,12 @@ class SyntheticPriceCurve:
     harmonic.  Fully deterministic for a given seed and sim_time.
     """
 
-    BASE_PRICE_PER_MWH: float = 55.0       # $/MWh base
+    # DIAG-1 rename: this is a LIVE MARKET SIGNAL for the procurement advisory
+    # layer — it is NOT the billing price used by the cost engine.
+    # The billing price is _COST_CFG_DEFAULTS["grid_import_price_per_mwh"] in
+    # runtime/run_manager.py, which defaults to $120/MWh (wholesale spot
+    # fallback) and can be overridden per-scenario.  Do not conflate these two.
+    BASE_MARKET_PRICE_PER_MWH: float = 55.0   # $/MWh base for SyntheticPriceCurve
     AMPLITUDE: float           = 22.0       # $/MWh diurnal swing
     SECONDARY_AMPLITUDE: float = 8.0        # $/MWh secondary harmonic
     PERIOD_S: float            = 86_400.0   # 24-hour diurnal cycle
@@ -195,7 +200,7 @@ class SyntheticPriceCurve:
         secondary = self.SECONDARY_AMPLITUDE * math.sin(
             2 * math.pi * t / self.SECONDARY_PERIOD_S
         )
-        return round(self.BASE_PRICE_PER_MWH + primary + secondary, 2)
+        return round(self.BASE_MARKET_PRICE_PER_MWH + primary + secondary, 2)
 
     def points(
         self,

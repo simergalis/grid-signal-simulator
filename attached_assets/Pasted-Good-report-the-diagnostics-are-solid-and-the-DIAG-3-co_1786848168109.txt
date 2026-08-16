@@ -1,0 +1,45 @@
+Good report — the diagnostics are solid and the DIAG-3 correction (catching that the old range omitted the variable component entirely) is exactly the kind of thing this process should catch. A few things need to be settled before you implement, though — one of them is a real bug in the proposed fix itself.
+
+DIAG-1 — approve the diagnosis, but the proposed fix has a bug and there's an unresolved default mismatch.
+
+The or pattern is broken:
+
+python
+cfg_dict = {**_COST_CFG_DEFAULTS, "grid_import_price_per_mwh": completed.grid_import_price_per_mwh or _COST_CFG_DEFAULTS[...]}
+
+ScenarioSpec.grid_import_price_per_mwh defaults to $55 (per the report), which is truthy — so completed.grid_import_price_per_mwh will always evaluate truthy, and the or fallback to $120 will never fire. As written, this fix doesn't restore operator control, it just silently replaces the $120 default with $55 for every run, unconditionally. Two things need fixing before this ships:
+
+ScenarioSpec.grid_import_price_per_mwh needs to default to None, not 55, so "operator didn't set it" is distinguishable from "operator explicitly set it to $55."
+The merge logic needs is not None, not or — or also breaks silently if an operator ever legitimately overrides to $0.0 (e.g., modeling a fully self-generated site).
+
+That second point matters independent of this bug — worth a general sweep for other or-based float overrides in the codebase, since this is a recurring failure class, not a one-off typo.
+
+Also: the report doesn't say why the schema default was $55 in the first place when the cost engine's real default is $120. That's worth one more diagnostic sentence — is $55 in the schema a leftover copy-paste from SyntheticPriceCurve.BASE_PRICE_PER_MWH? If so, that's a second, smaller instance of exactly the confusion this whole DIAG item is about, and it's worth fixing the schema default to None rather than to 120 — don't have the schema silently assert a value the cost engine doesn't actually use as its default.
+
+Rename to BASE_MARKET_PRICE_PER_MWH — approved.
+
+One more check before I sign off on "Path B has no effect on cost": confirm it also has no effect on ReservationProposal execution downstream — i.e., that an accepted reservation doesn't later get billed at its estimated_cost rather than the true grid_import_price_per_mwh. If a reservation's advisory price ever leaks into actual billing, that's a third instance of this same class of bug.
+
+→ Fix the is not None logic and the schema default, then implement.
+
+DIAG-2 — approve, sequence after DIAG-1's corrected fix, and confirm the source explicitly.
+
+"Derive from the effective grid_import_price_per_mwh" should mean Path A (the billing price), not Path B (the $55 market signal) — say so explicitly in the code comment, since this report has just demonstrated how easily the two get conflated. Use the same is not None override pattern as DIAG-1, not or.
+
+→ Approved, implement after DIAG-1.
+
+DIAG-3 — approved as written, go ahead.
+
+DIAG-4 — approve Option A only, for now. Do not implement Option B yet.
+
+The $220 figure is presented as "sourced from current PG&E B-20 all-in average" — has that actually been pulled from the live rate sheet, or is it an estimate standing in for a source? Per your own parameter-catalogue discipline, don't let a number cross from PROPOSED_HERE to "sourced" without the citation actually being checked against the sheet. If it hasn't been verified, tag it PROPOSED_HERE explicitly rather than implying it's calibrated.
+
+Option A (caveat + scope tag) is the right move for this pass: cheap, doesn't invent a customer-facing number prematurely, and doesn't risk feeding an unverified $220 into anything that touches the Equinix generate-vs-import narrative. Option B (dual named defaults) is the right eventual answer, but should wait until someone actually pulls the current B-20/AL-TOU energy-charge line items rather than approximating them.
+
+→ Implement Option A now. Hold Option B until the tariff sheets are actually sourced.
+
+DIAG-5 — approved as written, go ahead.
+
+DIAG-6 — PROC-1 registration is correct, no action this pass. Good instinct flagging the AT-7 determinism conflict — a seeded generator is the right constraint to note now rather than discover later.
+
+Summary of what to implement this pass: DIAG-3, DIAG-5, DIAG-4 (Option A only). Hold DIAG-1 and DIAG-2 until the is not None correction and schema-default fix are made to the proposed patch — implementing DIAG-1 as currently written would introduce a new silent-default bug in the process of fixing the old one.

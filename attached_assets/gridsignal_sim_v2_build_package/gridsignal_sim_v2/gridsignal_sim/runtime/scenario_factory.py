@@ -1133,6 +1133,12 @@ def build_run_context_from_spec(
         _design_peak_load_mw=_spec_design_peak_load_mw,
         # AB2: for §21.2 cost model in energy-summary endpoint.
         turbine_rated_mw=_spec_total_turbine_mw,
+        # DIAG-1 / DIAG-2: per-scenario cost price overrides.
+        # None when the operator did not set them; cost engine uses
+        # _COST_CFG_DEFAULTS fallback in that case.  `is not None` checks
+        # are used throughout — never `or` — so $0.0 overrides are honoured.
+        grid_import_price_per_mwh=spec_data.get("grid_import_price_per_mwh"),
+        bess_charge_price_override_per_mwh=spec_data.get("bess_charge_price_override_per_mwh"),
         # PROTO-32-AMB: ambient temperature metadata for the Solar PV modal.
         ambient_avg_c=_ambient_avg_c,
         ambient_alpha_scale=_ambient_scale,

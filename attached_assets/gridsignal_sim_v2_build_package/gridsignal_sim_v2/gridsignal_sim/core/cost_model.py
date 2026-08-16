@@ -9,6 +9,16 @@ Three cost streams:
 
 1. Grid import           price_per_mwh × energy_imported_mwh
 
+                         DIAG-4 (scope): grid_import_price_per_mwh represents a
+                         wholesale/direct-access spot price.  It does NOT include
+                         demand charges, TOU adders, or other C&I tariff line items.
+                         The system default ($120/MWh) is a CAISO-style wholesale
+                         fallback; sites on utility tariffs should supply their
+                         all-in energy-charge line item via ScenarioSpec.
+                         Tag: WHOLESALE_SPOT_FALLBACK.  See open item DIAG-4 for
+                         calibration plan (Option B dual-tariff defaults deferred
+                         until PG&E B-20 / SDG&E AL-TOU sheets are sourced).
+
 2. On-site generation    amortised capital + variable O&M.
                          Turbine capacity is typically debt-financed, so the
                          economically relevant question is how often the asset
@@ -19,6 +29,20 @@ Three cost streams:
                            total_gen_cost  = capital_portion + variable_per_mwh
                                            × energy_generated_mwh
 
+                         DIAG-3: turbine $/kWh is a SCENARIO OUTPUT dependent
+                         on capacity factor — it is not a fixed input assumption.
+                         At the turbine defaults ($45 k/MW·year capital, $55/MWh
+                         variable), combined $/kWh by duty cycle:
+                           10% duty (bridging/staging):   ~$0.106/kWh
+                           15% duty:                      ~$0.089/kWh
+                           25% duty:                      ~$0.076/kWh
+                           50% duty:                      ~$0.065/kWh
+                          100% duty (baseload):           ~$0.060/kWh
+                         The old "$0.005–$0.010/kWh" characterisation omitted
+                         the $55/MWh variable component entirely and used a
+                         50–100% duty range that is not realistic for this
+                         deployment profile (bridging/staging ≈ 10–15% duty).
+
 3. Storage round-trip    Charge cost + round-trip loss cost.
                            charge_cost  = charge_mwh × charge_price_per_mwh
                            loss_cost    = charge_mwh × (1 − efficiency)
@@ -26,6 +50,23 @@ Three cost streams:
                          Note: the usable discharge energy (charge_mwh × eff)
                          offsets grid import and is already captured in
                          grid_import_mwh being lower.
+
+                         DIAG-2: storage_charge_price_per_mwh should track the
+                         effective grid_import_price_per_mwh (Path A billing
+                         price) unless the operator supplies an explicit BESS
+                         charge tariff override.  The flat $60/MWh fallback
+                         in _COST_CFG_DEFAULTS is NOT used when an import price
+                         override is present; see compute_run_cost_from_completed.
+
+DIAG-5 (scope): solar PV and fuel cell carry zero modelled variable cost and no
+capital component in this engine.  Their MWh output reduces grid_import_mwh and
+is therefore captured indirectly; their own capital efficiency is out of scope
+for this pass.  If solar or fuel cell capital matters for a scenario comparison,
+add it as a separate input stream.
+
+Open item PROC-1: SyntheticPriceCurve produces a smooth $25–$85/MWh sine with
+no negative-price troughs or scarcity spikes.  Tail-event modeling is deferred;
+any implementation must preserve the AT-7 determinism invariant via seeded RNG.
 
 Plane separation: pure computation, no I/O, no SimulationState imports.
 """

@@ -617,11 +617,37 @@ from runtime.verdict import EvalRow, VerdictResult, evaluate_verdict  # noqa: E4
 # ---------------------------------------------------------------------------
 
 _COST_CFG_DEFAULTS: dict = {
-    "grid_import_price_per_mwh":       120.0,    # CHOSEN PROTO-21-COST: representative spot
+    # DIAG-1 / DIAG-4: This is the BILLING price used by the §21.2 cost engine
+    # — NOT the live market signal (SyntheticPriceCurve.BASE_MARKET_PRICE_PER_MWH
+    # = $55 in core/procurement.py).  These are separate quantities: $120 is a
+    # post-settlement accounting price; $55 is a real-time wholesale signal.
+    # Tag: WHOLESALE_SPOT_FALLBACK — CHOSEN PROTO-21-COST.
+    # DIAG-4 (Option A, scope caveat): $120/MWh is a CAISO-style wholesale /
+    # direct-access price.  It does NOT include demand charges, TOU adders, or
+    # other C&I tariff line items (e.g. PG&E B-20 all-in: ~$150–350+/MWh).
+    # Sites on utility tariffs should supply the energy-charge line item via
+    # ScenarioSpec.grid_import_price_per_mwh.  Option B (dual named defaults
+    # sourced from live tariff sheets) is deferred — see DIAG-4 open item.
+    # This value is only used as a fallback when ScenarioSpec.grid_import_price_per_mwh
+    # is None; see compute_run_cost_from_completed() for the override merge.
+    "grid_import_price_per_mwh":       120.0,
     "turbine_capital_per_mw_year":     45_000.0, # CHOSEN PROTO-21-COST: gas turbine capex amort.
+    # DIAG-3: turbine combined $/kWh is a scenario OUTPUT, not a fixed input.
+    # At these defaults ($45k/MW·yr capital, $55/MWh variable), combined
+    # cost by duty cycle: 10% → ~$0.106/kWh, 15% → ~$0.089/kWh,
+    # 25% → ~$0.076/kWh, 50% → ~$0.065/kWh, 100% → ~$0.060/kWh.
+    # The old "$0.005–$0.010/kWh at typical duty" characterisation omitted
+    # the variable component entirely and assumed 50–100% duty.
     "turbine_variable_per_mwh":        55.0,     # CHOSEN PROTO-21-COST: fuel + variable O&M
     "storage_roundtrip_efficiency":    0.88,     # matches RT_EFF in energy-summary
-    "storage_charge_price_per_mwh":    60.0,     # CHOSEN PROTO-21-COST: off-peak charge cost
+    # DIAG-2: this $60 flat value is the fallback ONLY when no explicit
+    # bess_charge_price_override_per_mwh is set on the scenario spec AND when
+    # grid_import_price_per_mwh is also None.  When an import price override is
+    # present, compute_run_cost_from_completed() derives BESS charge price from
+    # the effective import price (Path A billing price), not this constant.
+    # DIAG-5 (scope): solar PV and fuel cell carry $0 variable cost and no
+    # capital in this model.  Their MWh reduces grid_import_mwh indirectly.
+    "storage_charge_price_per_mwh":    60.0,     # CHOSEN PROTO-21-COST: off-peak charge fallback
     "storage_discharge_price_per_mwh": 0.0,      # CHOSEN PROTO-21-COST: BESS negligible var cost
 }
 
@@ -638,10 +664,44 @@ def compute_run_cost_from_completed(
     Returns (cost_breakdown_dict, cost_model_config_dict).
     runtime/ → core/ is the allowed import direction; api/ must not import
     from core/ directly (plane separation rule).
+
+    DIAG-1 / DIAG-2: per-scenario price overrides are read from CompletedRun
+    (which carries them from ScenarioSpec via RunContext) and merged over
+    _COST_CFG_DEFAULTS using `is not None` — never `or` — so that a legitimate
+    $0.0 override (fully self-generated site) is never shadowed by the fallback.
+
+    DIAG-2: when no explicit bess_charge_price_override_per_mwh is set, BESS
+    charging is billed at the effective grid import price (Path A billing price),
+    not the flat $60 fallback.  This ensures BESS charge cost tracks import cost.
     """
     from core.cost_model import CostModelConfig, CostModelEngine  # lazy — plane-safe
 
-    cfg = CostModelConfig(**_COST_CFG_DEFAULTS)
+    # ── DIAG-1: resolve effective grid import billing price ───────────────────
+    # Use scenario override when present; fall back to $120 wholesale default.
+    # `is not None` (not `or`) so $0.0 is honoured as a valid override.
+    effective_import_price: float = (
+        completed.grid_import_price_per_mwh
+        if completed.grid_import_price_per_mwh is not None
+        else _COST_CFG_DEFAULTS["grid_import_price_per_mwh"]
+    )
+
+    # ── DIAG-2: resolve effective BESS charge price ───────────────────────────
+    # Explicit bess override takes precedence (sites with contracted off-peak
+    # tariff).  Otherwise, derive from effective import price (Path A, billing)
+    # — NOT from SyntheticPriceCurve.BASE_MARKET_PRICE_PER_MWH (Path B, market
+    # signal).  Do not use the flat $60 fallback when an import price is known.
+    effective_bess_charge_price: float = (
+        completed.bess_charge_price_override_per_mwh
+        if completed.bess_charge_price_override_per_mwh is not None
+        else effective_import_price
+    )
+
+    cfg_dict = {
+        **_COST_CFG_DEFAULTS,
+        "grid_import_price_per_mwh":    effective_import_price,
+        "storage_charge_price_per_mwh": effective_bess_charge_price,
+    }
+    cfg = CostModelConfig(**cfg_dict)
     engine = CostModelEngine(cfg)
     result = engine.compute_run_cost(
         grid_import_mwh    = grid_import_mwh,
@@ -659,7 +719,7 @@ def compute_run_cost_from_completed(
             "generation_duty_fraction": result.generation_duty_fraction,
             "grid_fraction":            result.grid_fraction,
         },
-        _COST_CFG_DEFAULTS,
+        cfg_dict,
     )
 
 
@@ -800,6 +860,13 @@ class RunContext:
     # AB2: sum of all turbine rated_mw; set by build_run_context_from_spec
     # for §21.2 cost model in the energy-summary endpoint.  0.0 = unknown.
     turbine_rated_mw: float = 0.0
+    # DIAG-1 / DIAG-2: per-scenario cost override fields, sourced from
+    # ScenarioSpec at run start by scenario_factory.py.  None = "not set by
+    # operator" — the cost engine falls back to _COST_CFG_DEFAULTS in that
+    # case.  Always use `is not None` checks; never `or`-based fallback,
+    # since $0.0 is a valid legitimate override (fully self-generated site).
+    grid_import_price_per_mwh:          Optional[float] = None
+    bess_charge_price_override_per_mwh: Optional[float] = None
 
     # AE2: per-unit turbine specs as plain dicts — stamped onto every TickResult
     # so the fleet modal can drive its display from live data without a separate
@@ -983,6 +1050,12 @@ class CompletedRun:
     # Preserved as None (not 0) so callers can distinguish "EDL not active"
     # from "EDL active but zero cost".
     total_edl_dispatch_cost_usd: Optional[float] = None
+    # DIAG-1 / DIAG-2: per-scenario cost price overrides, carried from
+    # RunContext so compute_run_cost_from_completed() can honour the
+    # operator's settings without re-reading the scenario spec.
+    # None = operator did not override; cost engine uses _COST_CFG_DEFAULTS.
+    grid_import_price_per_mwh:          Optional[float] = None
+    bess_charge_price_override_per_mwh: Optional[float] = None
 
 
 # ---------------------------------------------------------------------------
@@ -2431,6 +2504,11 @@ class RunManager:
                     turbine_rated_mw=ctx.turbine_rated_mw,
                     balance_gate=_balance_gate,
                     total_edl_dispatch_cost_usd=_total_edl_dispatch_cost_usd,
+                    # DIAG-1 / DIAG-2: carry price overrides forward so the
+                    # energy-summary and result endpoints honour the operator's
+                    # settings without re-reading the scenario spec.
+                    grid_import_price_per_mwh=ctx.grid_import_price_per_mwh,
+                    bess_charge_price_override_per_mwh=ctx.bess_charge_price_override_per_mwh,
                 )
 
                 # Tenant overage billing summary — emitted once per run when
