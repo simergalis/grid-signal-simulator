@@ -927,6 +927,12 @@ class QueuedJobSummary:
     observed_at: float           # sim_time when the informer saw the PodGroup
     duration_s: float
     est_draw_mw: float           # node_count × rated_kw_per_node / 1000
+    # Addendum 1 fields — first-queued timestamp and requeue counter.
+    # queued_since_s is the sim_time the job originally entered the buffer;
+    # it does NOT advance on power-cap re-queues so wait-time is monotonic.
+    # requeue_count counts how many times the power-cap held and re-queued it.
+    queued_since_s: float = 0.0  # sim_time of first buffer entry
+    requeue_count: int = 0       # power-cap hold counter (0 = never held)
 
 
 @dataclass(frozen=True)

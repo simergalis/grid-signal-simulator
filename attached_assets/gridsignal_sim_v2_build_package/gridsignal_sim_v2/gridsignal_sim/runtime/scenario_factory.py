@@ -862,6 +862,15 @@ def build_run_context_from_spec(
             _kube_hw_id, DEFAULT_HARDWARE_LIBRARY["enterprise_8gpu_air"]
         )
         _kube_rated_kw = _kube_hw_profile.rated_kw  # single authority: the library
+        if _kube_rated_kw == 0.0:
+            raise ValueError(
+                f"Hardware profile {_kube_hw_id!r} resolved to rated_kw=0.0 from "
+                f"DEFAULT_HARDWARE_LIBRARY.  Either the profile is missing a rated_kw "
+                f"value or the profile ID is not in the library (fell through to the "
+                f"'enterprise_8gpu_air' fallback which also has rated_kw=0.0, "
+                f"which would indicate the library itself is misconfigured).  Fix "
+                f"the scenario spec's kube_config.hardware_profile_id or the library."
+            )
 
         _base_iat = _kube_cfg_fields.get(
             "mean_interarrival_s", KubeConfig().mean_interarrival_s
@@ -887,6 +896,26 @@ def build_run_context_from_spec(
                 site_id=site.site_id,
             )
             sim_state.kube_agents.append(_agent)
+
+        # Fail-loud if any agent's max_nodes disagrees with the others.
+        # The cross-agent admission accumulator (already_admitted_nodes in
+        # simulation_core.py) enforces a shared fleet ceiling by assuming all
+        # agents have the same max_nodes.  If they don't, the ceiling arithmetic
+        # silently enforces the wrong value.  Raise here rather than paper over
+        # a misconfigured spec with a silent coercion.
+        _max_nodes_vals = {a.config.max_nodes for a in sim_state.kube_agents}
+        if len(_max_nodes_vals) > 1:
+            _offenders = [
+                (a.config.tenant_id, a.config.max_nodes)
+                for a in sim_state.kube_agents
+            ]
+            raise ValueError(
+                f"Fleet max_nodes invariant violated: all KubeDemandAgents must "
+                f"share the same max_nodes value, but found disagreement: "
+                f"{_offenders!r}.  Do not set per-tenant max_nodes unless all "
+                f"tenants agree on the value; the shared ceiling is enforced "
+                f"fleet-wide, not per-tenant."
+            )
 
         # Wire load_config / rng_load from the primary agent (A) into GPUModules.
         if sim_state.kube_agents[0].config.load_config is not None:

@@ -296,6 +296,8 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
                 "observed_at":         round(j.observed_at, 2),
                 "duration_s":          round(j.duration_s, 1),
                 "est_draw_mw":         j.est_draw_mw,
+                "queued_since_s":      round(j.queued_since_s, 2),
+                "requeue_count":       j.requeue_count,
             }
             for j in _km.pending_jobs
         ]

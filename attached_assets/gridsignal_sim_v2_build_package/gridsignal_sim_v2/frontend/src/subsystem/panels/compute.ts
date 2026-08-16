@@ -11,6 +11,7 @@ import React from 'react'
 import type { PanelConfig, PanelData } from './index'
 import type { TickPayload, HistoryPoint } from '../../types'
 import { TimeSeries } from '../../charts/TimeSeries'
+import { useGpuGeneratorStore } from '../../store/gpuGeneratorStore'
 
 const TEAL   = '#3fb6a8'
 const AMBER  = '#f0883e'
@@ -146,7 +147,10 @@ export const computePanel: PanelConfig = {
       { label: 'Cap flips this run',   value: _capFlipCount.toString(),                         colour: _capFlipCount > 0 ? AMBER : undefined },
       { label: 'Grid headroom',        value: kube.headroom_mw > 100 ? '∞' : `${kube.headroom_mw.toFixed(1)} MW` },
       { label: 'Arrivals this tick',   value: (kube.arrivals_this_tick ?? 0).toString() },
-      { label: 'Requeued (cap hold)',  value: (kube.requeued_this_tick ?? 0).toString(),         colour: (kube.requeued_this_tick ?? 0) > 0 ? AMBER : undefined },
+      { label: 'Requeued (cap hold)',  value: (kube.requeued_this_tick ?? 0).toString(),         colour: (kube.requeued_this_tick ?? 0) > 0 ? AMBER : undefined,
+        // Click navigates to the Queue tab in the GPU Node Generator modal.
+        onClick: () => useGpuGeneratorStore.getState().setOpenGeneratorAtTab('queue'),
+      },
     ] : []
 
     return {

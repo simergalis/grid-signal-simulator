@@ -13,6 +13,7 @@ export interface StatRow {
   value: string
   sub?: string
   colour?: string  // CSS hex or Tailwind class-safe value; defaults to text colour
+  onClick?: () => void  // if set, the row renders as a clickable link (cursor-pointer)
 }
 
 export interface StatTableProps {
@@ -28,7 +29,14 @@ export function StatTable({ rows, dense = false }: StatTableProps) {
   return (
     <div className="divide-y divide-border">
       {rows.map((row, i) => (
-        <div key={i} className={`flex items-start justify-between gap-4 ${rowPad}`}>
+        <div
+          key={i}
+          className={`flex items-start justify-between gap-4 ${rowPad}${row.onClick ? ' cursor-pointer hover:bg-white/[0.05] active:bg-white/[0.08] rounded transition-colors' : ''}`}
+          onClick={row.onClick}
+          role={row.onClick ? 'button' : undefined}
+          tabIndex={row.onClick ? 0 : undefined}
+          onKeyDown={row.onClick ? (e) => { if (e.key === 'Enter' || e.key === ' ') row.onClick!() } : undefined}
+        >
           <span className={`font-mono text-muted ${fontSize} shrink-0`}>
             {row.label}
           </span>

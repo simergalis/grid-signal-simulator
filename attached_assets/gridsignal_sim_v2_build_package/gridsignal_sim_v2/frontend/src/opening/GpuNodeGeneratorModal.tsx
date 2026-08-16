@@ -139,9 +139,14 @@ function ManifestDrawer({ job, onClose }: { job: AnyJob; onClose: () => void }) 
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-interface Props { onClose: () => void }
+interface Props {
+  onClose: () => void
+  /** When provided, the modal opens directly on this tab (used when navigating
+   *  from the Compute tile's "Requeued (cap hold)" row). */
+  initialTab?: 'config' | 'jobs' | 'feed' | 'queue'
+}
 
-export function GpuNodeGeneratorModal({ onClose }: Props) {
+export function GpuNodeGeneratorModal({ onClose, initialTab }: Props) {
   const { config, running, feed, start, stop, reset, updateConfig } =
     useGpuGeneratorStore()
   const latestTick = useTickStore(s => s.latestTick)
@@ -149,7 +154,7 @@ export function GpuNodeGeneratorModal({ onClose }: Props) {
   const [nlText,       setNlText]       = useState('')
   const [nlLoading,    setNlLoading]    = useState(false)
   const [nlExplanation, setNlExplanation] = useState<string | null>(null)
-  const [activeTab,    setActiveTab]    = useState<'config' | 'jobs' | 'feed'>('config')
+  const [activeTab,    setActiveTab]    = useState<'config' | 'jobs' | 'feed' | 'queue'>(initialTab ?? 'config')
   const [previewJob,   setPreviewJob]   = useState<AnyJob | null>(null)
   const [listening,    setListening]    = useState(false)
   const recognitionRef = useRef<any>(null)
@@ -350,14 +355,27 @@ export function GpuNodeGeneratorModal({ onClose }: Props) {
 
           {/* Tabs */}
           <div className="flex gap-1">
-            {(['config', 'jobs', 'feed'] as const).map(tab => (
-              <button key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-3 py-1 rounded text-xs font-medium transition-colors capitalize ${activeTab === tab ? 'bg-accent/20 text-accent' : 'text-muted hover:text-text'}`}
-              >
-                {tab === 'jobs' ? `Jobs (${allJobs.length})` : tab === 'feed' ? `Feed (${feed.length})` : 'Config'}
-              </button>
-            ))}
+            {(['config', 'jobs', 'queue', 'feed'] as const).map(tab => {
+              const queueCount = kube?.pending_jobs?.length ?? 0
+              const label =
+                tab === 'jobs'  ? `Jobs (${allJobs.length})` :
+                tab === 'feed'  ? `Feed (${feed.length})` :
+                tab === 'queue' ? `Queue${queueCount > 0 ? ` (${queueCount})` : ''}` :
+                'Config'
+              const isAmber = tab === 'queue' && queueCount > 0
+              return (
+                <button key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-3 py-1 rounded text-xs font-medium transition-colors capitalize ${
+                    activeTab === tab
+                      ? isAmber ? 'bg-[#f0883e]/20 text-[#f0883e]' : 'bg-accent/20 text-accent'
+                      : 'text-muted hover:text-text'
+                  }`}
+                >
+                  {label}
+                </button>
+              )
+            })}
           </div>
         </div>
 
@@ -518,6 +536,89 @@ export function GpuNodeGeneratorModal({ onClose }: Props) {
               )}
             </div>
           )}
+
+          {/* QUEUE tab — jobs held by power-cap, sorted longest-waiting first */}
+          {activeTab === 'queue' && (() => {
+            const simNow = latestTick?.sim_time_seconds ?? 0
+            const sortedQueue = [...(kube?.pending_jobs ?? [])].sort(
+              (a, b) => a.queued_since_s - b.queued_since_s   // oldest first
+            )
+            function fmtWait(secs: number): string {
+              if (secs < 0) return '—'
+              if (secs < 60) return `${Math.floor(secs)}s`
+              const m = Math.floor(secs / 60)
+              const s = Math.floor(secs % 60)
+              return s > 0 ? `${m}m ${s}s` : `${m}m`
+            }
+            return (
+              <div>
+                <p className="text-[11px] text-muted mb-3 font-mono">
+                  Jobs held by power-cap — waiting for grid headroom before admission. Sorted longest-waiting first.
+                </p>
+                {sortedQueue.length === 0 ? (
+                  <div className="py-10 text-center text-muted text-sm">
+                    {kube
+                      ? 'No jobs currently held in the power-cap queue.'
+                      : 'Start a run to see queued jobs here.'}
+                  </div>
+                ) : (
+                  <table className="w-full text-sm border-separate border-spacing-0">
+                    <thead>
+                      <tr>
+                        {['Scheduler', 'Job ID', 'Tenant', 'Nodes', 'Est. draw', 'Queued at', 'Wait', 'Requeued'].map((h, i) => (
+                          <th key={i} className="text-left pb-2 pr-3 text-[11px] font-medium uppercase tracking-wider text-muted border-b border-border">
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedQueue.map(job => {
+                        const colour = TENANT_COLOUR_BY_ID[job.tenant_id] ?? '#4b5764'
+                        const wait   = simNow - job.queued_since_s
+                        const isRequeued = job.requeue_count > 0
+                        return (
+                          <tr key={job.event_id}
+                            className="border-b border-border/40 hover:bg-white/[0.025] transition-colors">
+                            <td className="py-2 pr-3">
+                              <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded"
+                                style={{ background: colour + '22', color: colour }}>
+                                {SCHEDULER_BADGE_BY_TYPE[job.scheduler_type] ?? job.scheduler_type}
+                              </span>
+                            </td>
+                            <td className="py-2 pr-3 font-mono text-xs text-muted max-w-[120px] truncate">{job.event_id}</td>
+                            <td className="py-2 pr-3">
+                              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                                style={{ background: colour + '22', color: colour }}>
+                                {job.tenant_id}
+                              </span>
+                            </td>
+                            <td className="py-2 pr-3 font-mono text-xs tabular-nums text-text font-semibold">
+                              {job.node_count.toLocaleString()}
+                            </td>
+                            <td className="py-2 pr-3 font-mono text-xs text-muted">{fmtMW(job.est_draw_mw)}</td>
+                            <td className="py-2 pr-3 font-mono text-xs text-muted tabular-nums">
+                              t={job.queued_since_s.toFixed(0)}s
+                            </td>
+                            <td className="py-2 pr-3 font-mono text-xs tabular-nums font-semibold"
+                              style={{ color: wait > 120 ? '#f85149' : wait > 30 ? '#f0883e' : '#3fb6a8' }}>
+                              {fmtWait(wait)}
+                            </td>
+                            <td className="py-2">
+                              <span className="font-mono text-xs tabular-nums"
+                                style={{ color: isRequeued ? '#f0883e' : '#4b5764' }}>
+                                {isRequeued ? `×${job.requeue_count}` : '—'}
+                              </span>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )
+          })()}
 
           {/* FEED tab */}
           {activeTab === 'feed' && (

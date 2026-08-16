@@ -33,6 +33,8 @@ import type { TileState }   from '../readiness/SubsystemTile'
 import { ReadinessScreen }  from '../readiness/ReadinessScreen'
 import { useSubsystemData } from '../subsystem/useSubsystemData'
 import { SUBSYSTEMS }       from '../readiness/subsystems'
+import { GpuNodeGeneratorModal } from './GpuNodeGeneratorModal'
+import { useGpuGeneratorStore }  from '../store/gpuGeneratorStore'
 
 /** Map from plant node id → subsystem modal id or tabRoute */
 const NODE_MODAL_MAP: Record<string, { modalId?: string; tabRoute?: string }> = {
@@ -66,6 +68,7 @@ export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
 
   const data = useSubsystemData()
   const tick = useTickStore(s => s.latestTick)
+  const { openGeneratorAtTab, setOpenGeneratorAtTab } = useGpuGeneratorStore()
 
   useEffect(() => {
     function onResize() {
@@ -217,6 +220,16 @@ export function OpeningScreen({ onNavigate }: OpeningScreenProps) {
       {pmOpen && (
         <PowerManagementModal
           onClose={() => setPmOpen(false)}
+        />
+      )}
+
+      {/* ── Queue-view shortcut: Compute tile "Requeued (cap hold)" click ── */}
+      {/* Rendered at OpeningScreen level so it works even when ComputeRacksModal  */}
+      {/* is closed.  Cleared by setOpenGeneratorAtTab(null) on modal close.       */}
+      {openGeneratorAtTab && (
+        <GpuNodeGeneratorModal
+          initialTab={openGeneratorAtTab as 'config' | 'jobs' | 'feed' | 'queue'}
+          onClose={() => setOpenGeneratorAtTab(null)}
         />
       )}
 

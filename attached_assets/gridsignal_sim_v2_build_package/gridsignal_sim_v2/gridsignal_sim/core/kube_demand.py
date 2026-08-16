@@ -216,6 +216,13 @@ class _PendingAdmission:
     # Multi-tenant identity — stamped from the agent's KubeConfig at arrival time.
     tenant_id: str = "default"
     scheduler_type: str = "K8S"
+    # Addendum 1: first-queued timestamp preserved across power-cap re-queues.
+    # On the original arrival, first_queued_at == observed_at.  On every
+    # subsequent power-cap retry, first_queued_at is carried forward unchanged
+    # so the frontend can compute a monotonically-increasing wait time.
+    first_queued_at: float = 0.0
+    # Number of times the power-cap has held and re-queued this job (0 = fresh).
+    requeue_count: int = 0
 
 
 @dataclass
@@ -408,6 +415,8 @@ class KubeDemandAgent:
                 duration_s=duration_s,
                 tenant_id=self.config.tenant_id,
                 scheduler_type=self.config.scheduler_type,
+                first_queued_at=self._next_arrival_sim_time,  # stamped once; never overwritten on retry
+                requeue_count=0,
             ))
             arrivals_this_tick += 1
 
@@ -483,6 +492,8 @@ class KubeDemandAgent:
                         duration_s=pa.duration_s,
                         tenant_id=pa.tenant_id,
                         scheduler_type=pa.scheduler_type,
+                        first_queued_at=pa.first_queued_at,  # preserved — never advances on retry
+                        requeue_count=pa.requeue_count + 1,  # incremented each power-cap hold
                     ))
                 requeued_this_tick += 1
                 _log.debug(
@@ -583,6 +594,8 @@ class KubeDemandAgent:
                     observed_at=pa.observed_at,
                     duration_s=pa.duration_s,
                     est_draw_mw=round(pa.node_count * _kw / 1000.0, 4),
+                    queued_since_s=pa.first_queued_at,
+                    requeue_count=pa.requeue_count,
                 )
                 for pa in self._reorder_buffer
             ),

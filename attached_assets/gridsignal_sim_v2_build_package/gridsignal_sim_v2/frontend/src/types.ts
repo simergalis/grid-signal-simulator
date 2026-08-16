@@ -384,6 +384,9 @@ export interface QueuedJobSummary {
   observed_at: number             // sim_time when the informer saw the PodGroup
   duration_s: number
   est_draw_mw: number             // node_count × rated_kw_per_node / 1000
+  // Addendum 1 fields — preserved across power-cap re-queues
+  queued_since_s: number          // sim_time of first buffer entry (monotonic wait origin)
+  requeue_count: number           // power-cap hold counter (0 = never held)
 }
 
 /** Per-job snapshot of a gang-admitted workload currently running. */

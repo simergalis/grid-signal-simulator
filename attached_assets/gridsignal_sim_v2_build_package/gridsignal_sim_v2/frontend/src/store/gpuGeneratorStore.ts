@@ -497,6 +497,12 @@ interface GpuGeneratorState {
   tenantC: RayJob[]
   feed:    FeedEntry[]
 
+  // Queue-view navigation: when set, OpeningScreen opens GpuNodeGeneratorModal
+  // directly at this tab.  compute.ts sets 'queue' when the "Requeued (cap hold)"
+  // stat row is clicked.  Cleared by the modal's onClose handler.
+  openGeneratorAtTab: string | null
+  setOpenGeneratorAtTab: (tab: string | null) => void
+
   start:        () => void
   stop:         () => void
   reset:        () => void
@@ -511,6 +517,9 @@ export const useGpuGeneratorStore = create<GpuGeneratorState>((set, get) => ({
   tenantB: [],
   tenantC: [],
   feed:    [],
+
+  openGeneratorAtTab: null,
+  setOpenGeneratorAtTab(tab) { set({ openGeneratorAtTab: tab }) },
 
   start() {
     if (get().running) return
