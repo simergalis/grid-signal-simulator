@@ -506,6 +506,7 @@ interface GpuGeneratorState {
   start:        () => void
   stop:         () => void
   reset:        () => void
+  restartWith:  (config: GeneratorConfig) => void
   updateConfig: (patch: Partial<GeneratorConfig>) => void
   _tick:        () => void
 }
@@ -540,6 +541,18 @@ export const useGpuGeneratorStore = create<GpuGeneratorState>((set, get) => ({
     _lastEmitAt  = 0
     _nextBurstAt = 0
     set({ tenantA: [], tenantB: [], tenantC: [], feed: [], running: false })
+  },
+
+  restartWith(config: GeneratorConfig) {
+    // Atomically clear any running interval, reset all job/feed state, apply
+    // new config, and set running: true in ONE set() call so no component ever
+    // sees an intermediate running: false flash.
+    if (_intervalId) { clearInterval(_intervalId); _intervalId = null }
+    _counter     = 1
+    _lastEmitAt  = 0
+    _nextBurstAt = 0
+    set({ config, tenantA: [], tenantB: [], tenantC: [], feed: [], running: true })
+    _intervalId = setInterval(() => get()._tick(), 2000)
   },
 
   updateConfig(patch) {

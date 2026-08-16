@@ -172,13 +172,12 @@ export function RunControlBar({ runId, lastRunId, isPaused, onRunStarted, onRunS
       }
       const data = await resp.json() as { run_id: string; soc_floor_pct?: number; soc_ceil_pct?: number }
       onRunStarted(data.run_id, speed, data.soc_floor_pct, data.soc_ceil_pct)
-      // Auto-arm the GPU Generator if the scenario has a generator_config preset
+      // Auto-arm the GPU Generator if the scenario has a generator_config preset.
+      // restartWith() is a single atomic set() so the button jumps directly to
+      // "⏹ Stop" with no intermediate running:false flash.
       if (selectedSpec?.generator_config) {
         const gen = useGpuGeneratorStore.getState()
-        gen.stop()
-        gen.reset()
-        gen.updateConfig(selectedSpec.generator_config as Parameters<typeof gen.updateConfig>[0])
-        gen.start()
+        gen.restartWith(selectedSpec.generator_config as Parameters<typeof gen.restartWith>[0])
       }
     } catch (e) {
       setError(String(e))
