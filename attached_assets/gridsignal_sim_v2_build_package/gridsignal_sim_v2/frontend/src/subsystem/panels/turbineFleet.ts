@@ -776,9 +776,14 @@ function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: nu
   const isDeclaredPeak = tick.design_peak_load_mw > 0
   // Algebraic: use on_bus_output_mw (Σ_{i∈A} p_i) for active-state check
   // and for the FleetTable aggregate — not turbine_output_mw.
-  const syncedCount = tick.units_on_bus_count
-  const syncedMW    = tick.on_bus_output_mw
-  const stateLabel  = syncedCount > 0 ? 'ACTIVE' : 'READY'
+  const syncedCount   = tick.units_on_bus_count
+  const syncedMW      = tick.on_bus_output_mw
+  // Task #211: during the ramp window no units are SYNCHRONISED yet, so on_bus_output_mw
+  // is 0.0 even though turbines are producing.  Fall back to turbine_output_mw so the
+  // hero shows live MW rather than 0.00, and label the state "RAMPING" to be explicit.
+  const turbineRampMW = tick.turbine_output_mw ?? 0
+  const isRamping     = syncedCount === 0 && turbineRampMW > 0
+  const stateLabel    = syncedCount > 0 ? 'ACTIVE' : isRamping ? 'RAMPING' : 'READY'
   // Task #198 item 3: use runtime lead horizon from the dispatch arbitrator.
   // When dt_lead_next_s is 0 (no active step) the ramp figure is also 0.
   const horizonS    = tick.dt_lead_next_s ?? 0
@@ -811,10 +816,12 @@ function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: nu
 
   return {
     stateLabel,
-    stateColour:  TEAL,
+    // Task #211: amber during ramp window (no units on bus yet); teal once synchronised.
+    stateColour:  isRamping ? AMBER : TEAL,
     verdict:      `Single-unit site — N−1 firm capacity 0.0 MW. A unit loss leaves BESS bridge only (~20 min).`,
-    heroValue:    (tick.on_bus_output_mw ?? 0).toFixed(2),
-    heroLabel:    'MW output',
+    // Task #211: show turbine_output_mw during ramp phase (no units SYNCHRONISED yet).
+    heroValue:    (isRamping ? turbineRampMW : (tick.on_bus_output_mw ?? 0)).toFixed(2),
+    heroLabel:    isRamping ? 'MW ramping' : 'MW output',
     chartTitle:   '',
     // 0.1: derived from typed fields — count, rating, gt_mode
     identityLine: _identityLine(units),
@@ -873,6 +880,12 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: number,
   const isDeclaredPeak = tick.design_peak_load_mw > 0
   const peakLabel      = isDeclaredPeak ? 'declared design peak' : 'observed peak'
 
+  // Task #211: during the ramp window no units are SYNCHRONISED yet, so on_bus_output_mw
+  // is 0.0 even though turbines are producing.  Fall back to turbine_output_mw so the
+  // hero shows live MW rather than 0.00, and mark stateLabel 'RAMPING' to be explicit.
+  const turbineRampMW  = tick.turbine_output_mw ?? 0
+  const isRamping      = onlineN === 0 && turbineRampMW > 0
+
   // U-2 fix: ramp_capability_mw is authoritative; fallback removed.
   // (U-1 fix: aggRampMWs was counting all units at fleet-max rate — deleted.)
   const rampEnergyMW = tick.ramp_capability_mw ?? 0
@@ -880,8 +893,9 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: number,
   const rampRateMWs  = horizonS > 0 ? rampEnergyMW / horizonS : 0
   // U-2 fix: rampCovers now compares energy to peak (same units).
   const rampCovers  = horizonS <= 0 || rampEnergyMW >= peakMW
-  const stateLabel  = n1Covers && rampCovers ? 'READY' : 'ATTENTION'
-  const stateColour = n1Covers && rampCovers ? TEAL : AMBER
+  // Task #211: override stateLabel to 'RAMPING' while units are still in the ramp phase.
+  const stateLabel  = isRamping ? 'RAMPING' : (n1Covers && rampCovers ? 'READY' : 'ATTENTION')
+  const stateColour = isRamping ? AMBER : (n1Covers && rampCovers ? TEAL : AMBER)
 
   const marginStr    = n1MarginPct >= 0 ? `+${n1MarginPct}%` : `${n1MarginPct}%`
   const marginColour = n1MarginPct >= 0 ? TEAL : RED
@@ -962,8 +976,9 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: number,
           ? `N−1 firm capacity ${n1FirmMW.toFixed(1)} MW covers the ${peakMW.toFixed(2)} MW ${peakLabel} with ${marginStr} margin.`
           : `N−1 firm capacity ${n1FirmMW.toFixed(1)} MW is below the ${peakMW.toFixed(2)} MW ${peakLabel} — site cannot survive a unit loss.`)
       : `N−1 firm capacity ${n1FirmMW.toFixed(1)} MW (no peak available).`,
-    heroValue:   (tick.on_bus_output_mw ?? 0).toFixed(2),
-    heroLabel:   'MW output',
+    // Task #211: show turbine_output_mw during ramp phase (no units SYNCHRONISED yet).
+    heroValue:   (isRamping ? turbineRampMW : (tick.on_bus_output_mw ?? 0)).toFixed(2),
+    heroLabel:   isRamping ? 'MW ramping' : 'MW output',
     chartTitle:  '',
     // 0.1: derived from typed fields — count, rating, gt_mode
     identityLine: _identityLine(units),
