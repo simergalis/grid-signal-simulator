@@ -908,8 +908,18 @@ def build_run_context_from_spec(
             _spec_peak_it_load_mw + _spec_rated_cooling_mw
         )
     else:
-        # No workload events — do not substitute a literal.
-        _spec_rated_cooling_mw    = 0.0   # unused sizing; defined to avoid NameError
+        # No workload_events: peak IT load is uncomputable from scripted node counts
+        # (kube path, idle run, or GPU-load-step scenarios).  Do NOT set
+        # _spec_rated_cooling_mw = 0.0 — that value propagates to RunContext and gets
+        # broadcast every tick as rated_cooling_mw=0.00, which the UI renders as a
+        # config defect (a 6+ MW facility with zero rated cooling capacity is impossible).
+        #
+        # Proxy: turbine fleet MW × alpha_max × cooling_margin.  The turbine fleet is
+        # sized to power the full site; alpha_max is the fraction that goes to cooling.
+        # This matches how the two event-driven factory paths compute rated cooling MW
+        # (see lines above) and produces a physically coherent rated value even when
+        # no scripted node count is available.
+        _spec_rated_cooling_mw    = site.alpha_max * _spec_total_turbine_mw * _sp.value("cooling_margin")
         # Honour explicit design_peak_load_mw from spec if provided; otherwise 0.
         _spec_design_peak_load_mw = float(spec_data.get("design_peak_load_mw") or 0.0)
     _spec_grid_cap = [
