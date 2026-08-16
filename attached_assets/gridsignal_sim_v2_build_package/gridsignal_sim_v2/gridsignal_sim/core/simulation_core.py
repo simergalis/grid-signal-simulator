@@ -89,9 +89,28 @@ class SimulationState:
     bess_units: list[BessModule]
     solar_arrays: list[SolarModule]
     cooling: CoolingModule
-    # Kubernetes demand agent — present when kube_config is set in ScenarioSpec.
-    # None = standard scripted workload path (all existing tests unaffected).
-    kube_agent: KubeDemandAgent | None = field(default=None)
+    # Kubernetes demand agents — one per tenant in multi-tenant mode, one in
+    # single-agent mode, or empty for the standard scripted workload path.
+    # Fixed iteration order A→B→C enforced by the factory (AT-7 determinism).
+    # Use the kube_agent property for backward-compatible single-agent reads.
+    kube_agents: list[KubeDemandAgent] = field(default_factory=list)
+
+    @property
+    def kube_agent(self) -> KubeDemandAgent | None:
+        """Backward-compat: primary (first) agent, or None when no agents."""
+        return self.kube_agents[0] if self.kube_agents else None
+
+    @kube_agent.setter
+    def kube_agent(self, value: KubeDemandAgent | None) -> None:
+        """Backward-compat setter: replaces kube_agents[0] or clears the list.
+        Used by tests that set a single agent directly on SimulationState.
+        """
+        if value is None:
+            self.kube_agents.clear()
+        elif self.kube_agents:
+            self.kube_agents[0] = value
+        else:
+            self.kube_agents.append(value)
     classifier: CheckpointClassifier = field(default_factory=CheckpointClassifier)
     confidence_engine: ConfidenceEngine = field(default_factory=ConfidenceEngine)
     arbitrator: DispatchArbitrator = field(init=False)
@@ -517,39 +536,74 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     #    calculation.  Uses _kube_grid_state from the previous tick (None at t=0)
     #    so the agent reads last-known headroom rather than in-progress values.
     _kube_metrics: KubeMetrics | None = None
-    if state.kube_agent is not None:
-        _kube_signals, _kube_metrics = state.kube_agent.tick(
-            sim_time, dt_seconds, state._kube_grid_state
-        )
-        for _ks in _kube_signals:
-            # §9 / resolution-log item 5: dt_lead_seconds for a Kubernetes signal
-            # equals GPUModule.ramp_seconds — the physical window from scheduler
-            # allocation to GPUs reaching full TDP.  For spec-built runs this is
-            # wired from dt_lead_seconds in scenario_factory.build_run_context_from_spec.
-            #
-            # Previously this was hard-coded to 0.0, which told the arbitrator
-            # the turbine had no ramp window, so already_ramped_mw = r_asset × 0
-            # = 0 MW (no turbine credit) and the BESS bridging requirement was
-            # sized against the full ΔP rather than the residual after turbine
-            # ramping.  That caused systematic over-alerts on the Kubernetes path
-            # and broke the v0.1 worked-example fixture.
-            #
-            # A zero-lead stressor scenario (Kubernetes with truly instantaneous
-            # load) must be constructed as an explicit scripted WorkloadSignal
-            # with dt_lead_seconds=0 — it is not the default.
-            _kube_ramp_s = (
-                state.gpu_modules[0].ramp_seconds
-                if state.gpu_modules else 45.0
+    if state.kube_agents:
+        # Fixed order A→B→C (AT-7 determinism: list iteration, never dict/set).
+        # already_admitted accumulates cross-agent committed nodes so each agent's
+        # capacity check sees the shared fleet ceiling (JOBQ-001 Phase B §step2).
+        _already_admitted: int = 0
+        _merged_signals: list[WorkloadSignal] = []
+        _merged_metrics: list[KubeMetrics] = []
+        for _agent in state.kube_agents:
+            _ks_list, _km = _agent.tick(
+                sim_time, dt_seconds, state._kube_grid_state,
+                already_admitted_nodes=_already_admitted,
             )
+            _already_admitted += _km.admitted_nodes
+            _merged_signals.extend(_ks_list)
+            _merged_metrics.append(_km)
+
+        # Merge per-agent KubeMetrics into one fleet-level snapshot.
+        # Counts are summed; power_cap_active is ORed (headroom is site-level
+        # and binding for all tenants if any agent sees it active);
+        # headroom_mw is the same for all agents (same KubeGridState input).
+        _kube_metrics = KubeMetrics(
+            utilization=sum(m.utilization for m in _merged_metrics),
+            node_count=sum(m.node_count for m in _merged_metrics),
+            power_cap_active=any(m.power_cap_active for m in _merged_metrics),
+            headroom_mw=_merged_metrics[0].headroom_mw,
+            active_jobs=sum(m.active_jobs for m in _merged_metrics),
+            admitted_nodes=sum(m.admitted_nodes for m in _merged_metrics),
+            arrivals_this_tick=sum(m.arrivals_this_tick for m in _merged_metrics),
+            requeued_this_tick=sum(m.requeued_this_tick for m in _merged_metrics),
+            queued_jobs=sum(m.queued_jobs for m in _merged_metrics),
+            queued_nodes=sum(m.queued_nodes for m in _merged_metrics),
+            pending_jobs=tuple(j for m in _merged_metrics for j in m.pending_jobs),
+            active_jobs_detail=tuple(
+                j for m in _merged_metrics for j in m.active_jobs_detail
+            ),
+        )
+
+        # §9 / resolution-log item 5: dt_lead_seconds for a Kubernetes signal
+        # equals GPUModule.ramp_seconds — the physical window from scheduler
+        # allocation to GPUs reaching full TDP.  For spec-built runs this is
+        # wired from dt_lead_seconds in scenario_factory.build_run_context_from_spec.
+        #
+        # Previously this was hard-coded to 0.0, which told the arbitrator
+        # the turbine had no ramp window, so already_ramped_mw = r_asset × 0
+        # = 0 MW (no turbine credit) and the BESS bridging requirement was
+        # sized against the full ΔP rather than the residual after turbine
+        # ramping.  That caused systematic over-alerts on the Kubernetes path
+        # and broke the v0.1 worked-example fixture.
+        #
+        # A zero-lead stressor scenario (Kubernetes with truly instantaneous
+        # load) must be constructed as an explicit scripted WorkloadSignal
+        # with dt_lead_seconds=0 — it is not the default.
+        _kube_ramp_s = (
+            state.gpu_modules[0].ramp_seconds
+            if state.gpu_modules else 45.0
+        )
+        for _ks in _merged_signals:
             state.apply_workload_signal(_ks, dt_lead_seconds=_kube_ramp_s)
 
-        # ── Propagate step_phase to GPUModules BEFORE advance() ──────────────
+        # ── Propagate step_phase from primary agent (A) to GPUModules ────────
         # The within-step power profile lag (GPUModule.advance()) needs the
         # updated step_phase from the step scheduler.  Setting it here ensures
         # the lag state update in advance() uses the current tick's phase, not
         # the previous tick's.  This must happen between kube_agent.tick() and
         # gpu.advance().
-        _fleet_phase = state.kube_agent.current_step_phase
+        # Primary agent (kube_agents[0]) drives the fleet-level step scheduler.
+        # Per-tenant step phases are deferred to CL-4; not in scope here.
+        _fleet_phase = state.kube_agents[0].current_step_phase
         for _g in state.gpu_modules:
             _g.step_phase = _fleet_phase
 
@@ -574,13 +628,18 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # admitted_nodes is intentionally left unchanged — it reflects the
     # scheduler's raw allocation and is used for capacity planning / eviction
     # decisions that must see the full committed count, not the ramped view.
-    if _kube_metrics is not None and state.gpu_modules and state.kube_agent is not None:
+    if _kube_metrics is not None and state.gpu_modules and state.kube_agents:
         _effective_admitted = sum(g.effective_node_count() for g in state.gpu_modules)
-        _effective_total = max(state.kube_agent.config.min_nodes, _effective_admitted)
+        # Fleet floor = sum of all agents' min_nodes (each tenant has its own idle
+        # baseline). Fleet ceiling = shared max_nodes — one physical cluster used by
+        # all tenants (PROPOSED_HERE: same max_nodes value on every agent = 1900).
+        _fleet_min = sum(a.config.min_nodes for a in state.kube_agents)
+        _fleet_max = state.kube_agents[0].config.max_nodes
+        _effective_total = max(_fleet_min, _effective_admitted)
         _kube_metrics = dataclasses.replace(
             _kube_metrics,
             node_count=_effective_total,
-            utilization=_effective_total / state.kube_agent.config.max_nodes,
+            utilization=_effective_total / _fleet_max,
         )
 
     # Step 3 Item 3: per-job cooling superposition.

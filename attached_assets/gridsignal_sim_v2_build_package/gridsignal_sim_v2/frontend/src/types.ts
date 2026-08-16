@@ -374,6 +374,30 @@ export interface ContingencyCoverage {
   shed_equivalent_nodes: number | null
 }
 
+/** Per-job snapshot of a workload waiting in the physics engine's reorder buffer. */
+export interface QueuedJobSummary {
+  event_id: string
+  tenant_id: string
+  scheduler_type: string          // "SLURM" | "K8S" | "RAY"
+  node_count: number
+  hardware_profile_id: string
+  observed_at: number             // sim_time when the informer saw the PodGroup
+  duration_s: number
+  est_draw_mw: number             // node_count × rated_kw_per_node / 1000
+}
+
+/** Per-job snapshot of a gang-admitted workload currently running. */
+export interface ActiveJobSummary {
+  event_id: string
+  tenant_id: string
+  scheduler_type: string          // "SLURM" | "K8S" | "RAY"
+  node_count: number
+  hardware_profile_id: string
+  admitted_at: number             // sim_time when admitted
+  ends_at: number
+  est_draw_mw: number             // node_count × rated_kw_per_node / 1000
+}
+
 export interface KubeMetrics {
   utilization: number       // admitted_nodes / max_nodes (or min_nodes/max_nodes when idle)
   node_count: number        // max(min_nodes, admitted_nodes) — drives GPUModule
@@ -385,6 +409,8 @@ export interface KubeMetrics {
   queued_nodes: number      // sum of node_count across all reorder-buffer jobs
   arrivals_this_tick: number  // Poisson job arrivals observed this tick
   requeued_this_tick: number  // jobs held back by power-cap this tick
+  pending_jobs: QueuedJobSummary[]       // per-job reorder buffer snapshot (JOBQ-001)
+  active_jobs_detail: ActiveJobSummary[] // per-job active jobs snapshot (JOBQ-001)
 }
 
 /**

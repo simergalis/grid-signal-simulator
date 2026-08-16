@@ -276,6 +276,48 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
     import math as _math  # local import — _tick_result_to_dict is in the runtime layer;
     # math is a stdlib module so there is no plane-separation concern, but keeping
     # the import local avoids polluting the module namespace.
+
+    # ── Hoist kube job-detail lists before the return dict ────────────────────
+    # IMPORTANT: these must NOT be inline list-comprehensions with dict literals
+    # inside the return{} block.  The payload guard (test_payload_guard.py) uses
+    # a brace-stripping regex to identify top-level keys; an inline [{"key": …}]
+    # stalls the stripping and causes kube_metrics sub-keys to falsely appear as
+    # top-level keys.  Building the lists here keeps the return{} kube_metrics
+    # value free of nested {…} so the guard works correctly.
+    _km = tick.kube_metrics
+    _pending_jobs_list = (
+        [
+            {
+                "event_id":            j.event_id,
+                "tenant_id":           j.tenant_id,
+                "scheduler_type":      j.scheduler_type,
+                "node_count":          j.node_count,
+                "hardware_profile_id": j.hardware_profile_id,
+                "observed_at":         round(j.observed_at, 2),
+                "duration_s":          round(j.duration_s, 1),
+                "est_draw_mw":         j.est_draw_mw,
+            }
+            for j in _km.pending_jobs
+        ]
+        if _km is not None else []
+    )
+    _active_jobs_detail_list = (
+        [
+            {
+                "event_id":            j.event_id,
+                "tenant_id":           j.tenant_id,
+                "scheduler_type":      j.scheduler_type,
+                "node_count":          j.node_count,
+                "hardware_profile_id": j.hardware_profile_id,
+                "admitted_at":         round(j.admitted_at, 2),
+                "ends_at":             round(j.ends_at, 2),
+                "est_draw_mw":         j.est_draw_mw,
+            }
+            for j in _km.active_jobs_detail
+        ]
+        if _km is not None else []
+    )
+
     return {
         "run_id": tick.run_id,
         "tick_index": tick.tick_index,
@@ -413,18 +455,20 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # non-null only on runs with kube_config set in the ScenarioSpec.
         "kube_metrics": (
             {
-                "utilization":        round(tick.kube_metrics.utilization, 4),
-                "node_count":         tick.kube_metrics.node_count,
-                "power_cap_active":   tick.kube_metrics.power_cap_active,
-                "headroom_mw":        round(tick.kube_metrics.headroom_mw, 3),
-                "active_jobs":        tick.kube_metrics.active_jobs,
-                "admitted_nodes":     tick.kube_metrics.admitted_nodes,
-                "arrivals_this_tick": tick.kube_metrics.arrivals_this_tick,
-                "requeued_this_tick": tick.kube_metrics.requeued_this_tick,
-                "queued_jobs":        tick.kube_metrics.queued_jobs,
-                "queued_nodes":       tick.kube_metrics.queued_nodes,
+                "utilization":        round(_km.utilization, 4),
+                "node_count":         _km.node_count,
+                "power_cap_active":   _km.power_cap_active,
+                "headroom_mw":        round(_km.headroom_mw, 3),
+                "active_jobs":        _km.active_jobs,
+                "admitted_nodes":     _km.admitted_nodes,
+                "arrivals_this_tick": _km.arrivals_this_tick,
+                "requeued_this_tick": _km.requeued_this_tick,
+                "queued_jobs":        _km.queued_jobs,
+                "queued_nodes":       _km.queued_nodes,
+                "pending_jobs":       _pending_jobs_list,
+                "active_jobs_detail": _active_jobs_detail_list,
             }
-            if tick.kube_metrics is not None
+            if _km is not None
             else None
         ),
         # Solar weather metadata — stamped from RunContext at each tick (constant

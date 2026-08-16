@@ -838,16 +838,47 @@ def build_run_context_from_spec(
                 k: v for k, v in _lc_raw.items()
                 if k in LoadProfileConfig.__dataclass_fields__
             })
-        sim_state.kube_agent = KubeDemandAgent(
-            KubeConfig(**_kube_cfg_fields),
-            site_id=site.site_id,
+        # ── Multi-tenant kube agents (JOBQ-001 Phase B) ───────────────────────
+        # Three KubeDemandAgent instances — one per tenant — sharing one physical
+        # cluster (max_nodes=PROPOSED_HERE: 1900, same across all agents).
+        # Tenant split and scheduler types ported from gpuGeneratorStore.ts:
+        #   A / SLURM / weight 0.40, B / K8S / weight 0.35, C / RAY / weight 0.25
+        # Arrival rates are scaled inversely to weight so that the combined
+        # fleet arrival rate matches mean_interarrival_s on the shared spec.
+        # AT-7: fixed A→B→C list order — never dict/set iteration.
+        _TENANT_DEFS = [
+            # (tenant_id, scheduler_type, weight, rng_seed_offset)
+            ("A", "SLURM", 0.40, 0),
+            ("B", "K8S",   0.35, 1),
+            ("C", "RAY",   0.25, 2),
+        ]
+        _base_iat = _kube_cfg_fields.get(
+            "mean_interarrival_s", KubeConfig().mean_interarrival_s
         )
-        # Wire load_config and the agent's rng_load into every GPUModule so
-        # they all share the same noise stream and use the same profile config.
-        if sim_state.kube_agent.config.load_config is not None:
+        _base_seed = _kube_cfg_fields.get("rng_seed", KubeConfig().rng_seed)
+        for _tid, _stype, _weight, _seed_off in _TENANT_DEFS:
+            _per_tenant_fields = dict(_kube_cfg_fields)
+            _per_tenant_fields["tenant_id"] = _tid
+            _per_tenant_fields["scheduler_type"] = _stype
+            # Scale interarrival time inversely to weight so combined arrival rate
+            # matches the fleet spec.  Floor at 5 s to prevent degenerate configs.
+            _per_tenant_fields["mean_interarrival_s"] = max(
+                5.0, _base_iat / _weight
+            )
+            # Deterministic per-tenant RNG seed offset preserves AT-7 replay.
+            if _base_seed is not None:
+                _per_tenant_fields["rng_seed"] = _base_seed + _seed_off
+            _agent = KubeDemandAgent(
+                KubeConfig(**_per_tenant_fields),
+                site_id=site.site_id,
+            )
+            sim_state.kube_agents.append(_agent)
+
+        # Wire load_config / rng_load from the primary agent (A) into GPUModules.
+        if sim_state.kube_agents[0].config.load_config is not None:
             for _gpu in sim_state.gpu_modules:
-                _gpu.load_config = sim_state.kube_agent.config.load_config
-                _gpu.rng_load = sim_state.kube_agent.rng_load
+                _gpu.load_config = sim_state.kube_agents[0].config.load_config
+                _gpu.rng_load = sim_state.kube_agents[0].rng_load
 
     else:
         # ── Non-kube path: wire top-level load_config (if present) ───────────

@@ -86,7 +86,14 @@ from typing import Optional
 
 import numpy as np
 
-from .models import KubeMetrics, WorkloadClass, WorkloadEventType, WorkloadSignal
+from .models import (
+    KubeMetrics,
+    WorkloadClass,
+    WorkloadEventType,
+    WorkloadSignal,
+    QueuedJobSummary,
+    ActiveJobSummary,
+)
 from .step_config import LoadProfileConfig, StepTimingConfig
 from .step_scheduler import StepScheduler
 
@@ -149,6 +156,17 @@ class KubeConfig:
     # RNG seed for deterministic replay; None = time-seeded
     rng_seed: Optional[int] = 42
 
+    # ── Multi-tenant identity (Phase B, JOBQ-001) ─────────────────────────────
+    # One KubeDemandAgent instance per tenant; these values are fixed per agent
+    # and stamped on every job the agent produces.  PROPOSED_HERE — ported from
+    # gpuGeneratorStore.ts (tenantWeights: A/SLURM=0.40, B/K8S=0.35, C/RAY=0.25).
+    tenant_id: str = "default"
+    scheduler_type: str = "K8S"   # "SLURM" | "K8S" | "RAY"
+
+    # kW per GPU node, used to derive est_draw_mw on per-job summaries.
+    # PROPOSED_HERE — matches enterprise_8gpu_air default (10.2 kW/node).
+    rated_kw_per_node: float = 10.2
+
     # ── Stochastic step timing / load coupling ────────────────────────────────
     # step_config — when set, a StepScheduler is wired to the agent.
     #   None = step scheduler off (default; all existing kube tests unaffected).
@@ -190,6 +208,9 @@ class _PendingAdmission:
     # timestamp carried on the event (observed_at + NTP jitter); used for ordering
     event_timestamp: float
     duration_s: float
+    # Multi-tenant identity — stamped from the agent's KubeConfig at arrival time.
+    tenant_id: str = "default"
+    scheduler_type: str = "K8S"
 
 
 @dataclass
@@ -200,6 +221,9 @@ class _ActiveJob:
     hardware_profile_id: str
     admitted_at: float
     ends_at: float
+    # Multi-tenant identity — threaded from _PendingAdmission at admission time.
+    tenant_id: str = "default"
+    scheduler_type: str = "K8S"
 
 
 # ---------------------------------------------------------------------------
@@ -296,6 +320,7 @@ class KubeDemandAgent:
         sim_time: float,
         dt_seconds: float,
         grid_state: Optional[KubeGridState] = None,
+        already_admitted_nodes: int = 0,
     ) -> tuple[list[WorkloadSignal], KubeMetrics]:
         """Advance the admission simulator by one tick.
 
@@ -376,6 +401,8 @@ class KubeDemandAgent:
                 observed_at=self._next_arrival_sim_time,
                 event_timestamp=event_timestamp,
                 duration_s=duration_s,
+                tenant_id=self.config.tenant_id,
+                scheduler_type=self.config.scheduler_type,
             ))
             arrivals_this_tick += 1
 
@@ -423,6 +450,7 @@ class KubeDemandAgent:
             current_nodes = (
                 sum(j.node_count for j in self._active_jobs)
                 + sum(j.node_count for j in newly_admitted)
+                + already_admitted_nodes          # cross-agent committed nodes (§ JOBQ-001 Phase B)
             )
             if current_nodes + pa.node_count > self.config.max_nodes:
                 _log.debug(
@@ -448,6 +476,8 @@ class KubeDemandAgent:
                         observed_at=sim_time + dt_seconds,   # re-enter after one tick
                         event_timestamp=sim_time + dt_seconds,
                         duration_s=pa.duration_s,
+                        tenant_id=pa.tenant_id,
+                        scheduler_type=pa.scheduler_type,
                     ))
                 requeued_this_tick += 1
                 _log.debug(
@@ -462,6 +492,8 @@ class KubeDemandAgent:
                 hardware_profile_id=pa.hardware_profile_id,
                 admitted_at=sim_time,
                 ends_at=sim_time + pa.duration_s,
+                tenant_id=pa.tenant_id,
+                scheduler_type=pa.scheduler_type,
             )
             newly_admitted.append(job)
             _log.info(
@@ -524,6 +556,7 @@ class KubeDemandAgent:
             self.current_step_phase = _phase
             self.current_step_kind = _kind
 
+        _kw = self.config.rated_kw_per_node
         metrics = KubeMetrics(
             utilization=utilization,
             node_count=total_nodes,
@@ -535,6 +568,32 @@ class KubeDemandAgent:
             requeued_this_tick=requeued_this_tick,
             queued_jobs=len(self._reorder_buffer),
             queued_nodes=sum(pa.node_count for pa in self._reorder_buffer),
+            pending_jobs=tuple(
+                QueuedJobSummary(
+                    event_id=pa.event_id,
+                    tenant_id=pa.tenant_id,
+                    scheduler_type=pa.scheduler_type,
+                    node_count=pa.node_count,
+                    hardware_profile_id=pa.hardware_profile_id,
+                    observed_at=pa.observed_at,
+                    duration_s=pa.duration_s,
+                    est_draw_mw=round(pa.node_count * _kw / 1000.0, 4),
+                )
+                for pa in self._reorder_buffer
+            ),
+            active_jobs_detail=tuple(
+                ActiveJobSummary(
+                    event_id=j.event_id,
+                    tenant_id=j.tenant_id,
+                    scheduler_type=j.scheduler_type,
+                    node_count=j.node_count,
+                    hardware_profile_id=j.hardware_profile_id,
+                    admitted_at=j.admitted_at,
+                    ends_at=j.ends_at,
+                    est_draw_mw=round(j.node_count * _kw / 1000.0, 4),
+                )
+                for j in self._active_jobs
+            ),
         )
         return signals, metrics
 

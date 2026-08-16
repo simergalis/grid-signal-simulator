@@ -909,6 +909,42 @@ class ConfidenceBand:
 
 
 # ---------------------------------------------------------------------------
+# Kubernetes per-job summaries (carried on KubeMetrics each tick)
+# ---------------------------------------------------------------------------
+
+@dataclass(frozen=True)
+class QueuedJobSummary:
+    """Per-job snapshot of a workload waiting in the KubeDemandAgent reorder
+    buffer.  Carried on KubeMetrics.pending_jobs; populated each tick.
+    est_draw_mw is derived from node_count × rated_kw_per_node / 1000 at
+    tick time — not stored redundantly on the physics record itself.
+    """
+    event_id: str
+    tenant_id: str
+    scheduler_type: str          # "SLURM" | "K8S" | "RAY"
+    node_count: int
+    hardware_profile_id: str
+    observed_at: float           # sim_time when the informer saw the PodGroup
+    duration_s: float
+    est_draw_mw: float           # node_count × rated_kw_per_node / 1000
+
+
+@dataclass(frozen=True)
+class ActiveJobSummary:
+    """Per-job snapshot of a gang-admitted workload currently running.
+    Carried on KubeMetrics.active_jobs_detail; populated each tick.
+    """
+    event_id: str
+    tenant_id: str
+    scheduler_type: str          # "SLURM" | "K8S" | "RAY"
+    node_count: int
+    hardware_profile_id: str
+    admitted_at: float           # sim_time when admitted
+    ends_at: float
+    est_draw_mw: float           # node_count × rated_kw_per_node / 1000
+
+
+# ---------------------------------------------------------------------------
 # Kubernetes demand metrics (per-tick snapshot from KubeDemandAgent)
 # ---------------------------------------------------------------------------
 
@@ -942,6 +978,8 @@ class KubeMetrics:
     requeued_this_tick: int  # admissions held by power-cap and re-queued this tick
     queued_jobs: int         # jobs currently sitting in the reorder buffer (observed, not yet admitted)
     queued_nodes: int        # sum of node_count across all jobs in the reorder buffer
+    pending_jobs: tuple[QueuedJobSummary, ...] = field(default_factory=tuple)
+    active_jobs_detail: tuple[ActiveJobSummary, ...] = field(default_factory=tuple)
 
 
 # ---------------------------------------------------------------------------

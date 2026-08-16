@@ -22,6 +22,7 @@ import {
   type GeneratorConfig,
   type AnyJob,
 } from '../store/gpuGeneratorStore'
+import { useTickStore } from '../store/tickStore'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -141,8 +142,9 @@ function ManifestDrawer({ job, onClose }: { job: AnyJob; onClose: () => void }) 
 interface Props { onClose: () => void }
 
 export function GpuNodeGeneratorModal({ onClose }: Props) {
-  const { config, running, tenantA, tenantB, tenantC, feed, start, stop, reset, updateConfig } =
+  const { config, running, feed, start, stop, reset, updateConfig } =
     useGpuGeneratorStore()
+  const latestTick = useTickStore(s => s.latestTick)
 
   const [nlText,       setNlText]       = useState('')
   const [nlLoading,    setNlLoading]    = useState(false)
@@ -221,19 +223,24 @@ export function GpuNodeGeneratorModal({ onClose }: Props) {
     updateConfig({ jobSizes: next })
   }
 
-  // Merged job list
-  const allJobs: { job: AnyJob; tenant: 'A' | 'B' | 'C' }[] = [
-    ...tenantA.map(j => ({ job: j as AnyJob, tenant: 'A' as const })),
-    ...tenantB.map(j => ({ job: j as AnyJob, tenant: 'B' as const })),
-    ...tenantC.map(j => ({ job: j as AnyJob, tenant: 'C' as const })),
-  ].sort((a, b) => b.job.submittedAt - a.job.submittedAt)
+  // Live job data from the physics engine broadcast (JOBQ-001 Phase B).
+  // Source of truth for the Jobs tab; gpuGeneratorStore is for pre-run config only.
+  const kube = latestTick?.kube_metrics
+  type LiveJobRow = { job: { event_id: string; tenant_id: string; scheduler_type: string; node_count: number; est_draw_mw: number }; status: 'RUNNING' | 'QUEUED' }
+  const allLiveJobs: LiveJobRow[] = [
+    ...(kube?.active_jobs_detail ?? []).map(j => ({ job: j, status: 'RUNNING' as const })),
+    ...(kube?.pending_jobs        ?? []).map(j => ({ job: j, status: 'QUEUED'  as const })),
+  ]
+  const liveTotalNodes = (kube?.active_jobs_detail ?? []).reduce((s, j) => s + j.node_count, 0)
+  const liveTotalMW    = (kube?.active_jobs_detail ?? []).reduce((s, j) => s + j.est_draw_mw, 0)
 
-  const totalGPUs = allJobs
-    .filter(({ job }) =>
-      job.status === 'RUNNING' || job.status === 'Running' ||
-      job.status === 'PENDING' || job.status === 'Pending')
-    .reduce((s, { job }) => s + job.totalGPUs, 0)
-  const totalMW = totalGPUs * 0.0007
+  // Map scheduler_type → display label
+  const SCHEDULER_BADGE_BY_TYPE: Record<string, string> = {
+    SLURM: 'Slurm', K8S: 'Kubernetes', RAY: 'Ray',
+  }
+  const TENANT_COLOUR_BY_ID: Record<string, string> = {
+    A: '#3fb6a8', B: '#4a9fe0', C: '#9b6fe0',
+  }
 
   // ── Render ────────────────────────────────────────────────────────────────
   const modal = (
@@ -452,18 +459,20 @@ export function GpuNodeGeneratorModal({ onClose }: Props) {
             </div>
           )}
 
-          {/* JOBS tab */}
+          {/* JOBS tab — sourced exclusively from physics engine broadcast (JOBQ-001) */}
           {activeTab === 'jobs' && (
             <div>
-              {allJobs.length === 0 ? (
+              {allLiveJobs.length === 0 ? (
                 <div className="py-12 text-center text-muted text-sm">
-                  {running ? 'Generating first jobs…' : 'Start the generator to see jobs here.'}
+                  {kube
+                    ? 'No jobs running or queued this tick.'
+                    : 'Start a run to see live job data here.'}
                 </div>
               ) : (
                 <table className="w-full text-sm border-separate border-spacing-0">
                   <thead>
                     <tr>
-                      {['Type', 'Job ID', 'Name', 'GPUs', 'Est. draw', 'Status'].map((h, i) => (
+                      {['Scheduler', 'Job ID', 'Nodes', 'Est. draw', 'Status'].map((h, i) => (
                         <th key={i} className="text-left pb-2 pr-3 text-[11px] font-medium uppercase tracking-wider text-muted border-b border-border">
                           {h}
                         </th>
@@ -471,46 +480,41 @@ export function GpuNodeGeneratorModal({ onClose }: Props) {
                     </tr>
                   </thead>
                   <tbody>
-                    {allJobs.map(({ job, tenant }) => (
-                      <tr key={job.id}
-                        className="border-b border-border/40 hover:bg-white/[0.025] transition-colors cursor-pointer"
-                        onClick={() => setPreviewJob(job)}
-                        title="Click to view scheduler manifest">
-                        <td className="py-2 pr-3">
-                          <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded"
-                            style={{ background: TENANT_COLOUR[tenant] + '22', color: TENANT_COLOUR[tenant] }}>
-                            {SCHEDULER_BADGE[tenant]}
-                          </span>
-                        </td>
-                        <td className="py-2 pr-3 font-mono text-xs text-muted">{job.id}</td>
-                        <td className="py-2 pr-3 text-xs text-text font-medium max-w-[160px] truncate">
-                          {job.type === 'slurm' ? job.name : job.type === 'kubernetes' ? job.name : (job.entrypoint.split(' ')[1] ?? 'ray-job')}
-                        </td>
-                        <td className="py-2 pr-3 font-mono text-xs tabular-nums text-text font-semibold">
-                          {job.totalGPUs.toLocaleString()}
-                        </td>
-                        <td className="py-2 pr-3 font-mono text-xs text-muted">{fmtMW(job.tdpMW)}</td>
-                        <td className="py-2">
-                          <span className="text-[10px] font-semibold"
-                            style={{ color: STATUS_COLOUR[job.status] ?? '#4b5764' }}>
-                            {job.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
+                    {allLiveJobs.map(({ job, status }) => {
+                      const colour = TENANT_COLOUR_BY_ID[job.tenant_id] ?? '#4b5764'
+                      return (
+                        <tr key={job.event_id}
+                          className="border-b border-border/40 hover:bg-white/[0.025] transition-colors">
+                          <td className="py-2 pr-3">
+                            <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded"
+                              style={{ background: colour + '22', color: colour }}>
+                              {SCHEDULER_BADGE_BY_TYPE[job.scheduler_type] ?? job.scheduler_type}
+                            </span>
+                          </td>
+                          <td className="py-2 pr-3 font-mono text-xs text-muted max-w-[130px] truncate">{job.event_id}</td>
+                          <td className="py-2 pr-3 font-mono text-xs tabular-nums text-text font-semibold">
+                            {job.node_count.toLocaleString()}
+                          </td>
+                          <td className="py-2 pr-3 font-mono text-xs text-muted">{fmtMW(job.est_draw_mw)}</td>
+                          <td className="py-2">
+                            <span className="text-[10px] font-semibold"
+                              style={{ color: status === 'RUNNING' ? '#3fb6a8' : '#4b5764' }}>
+                              {status}
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                   <tfoot>
                     <tr>
-                      <td colSpan={3} className="pt-3 text-[11px] text-muted uppercase tracking-wider">Total (active)</td>
-                      <td className="pt-3 font-mono font-bold text-text">{totalGPUs.toLocaleString()}</td>
-                      <td className="pt-3 font-mono font-bold" style={{ color: '#3fb6a8' }}>{fmtMW(totalMW)}</td>
+                      <td colSpan={2} className="pt-3 text-[11px] text-muted uppercase tracking-wider">Total (running)</td>
+                      <td className="pt-3 font-mono font-bold text-text">{liveTotalNodes.toLocaleString()}</td>
+                      <td className="pt-3 font-mono font-bold" style={{ color: '#3fb6a8' }}>{fmtMW(liveTotalMW)}</td>
                       <td />
                     </tr>
                   </tfoot>
                 </table>
-              )}
-              {allJobs.length > 0 && (
-                <p className="mt-3 text-[10px] text-muted">Click any row to view the scheduler manifest.</p>
               )}
             </div>
           )}
@@ -549,9 +553,11 @@ export function GpuNodeGeneratorModal({ onClose }: Props) {
         {/* ── Footer ─────────────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between px-8 py-3 border-t border-border flex-shrink-0">
           <p className="text-[11px] text-muted font-mono">
-            {running
-              ? `Generator active · ${tenantA.length} Slurm · ${tenantB.length} K8s · ${tenantC.length} Ray`
-              : 'Generator stopped — jobs persist until Reset'}
+            {kube
+              ? `Live run · ${kube.active_jobs} running · ${kube.queued_jobs} queued`
+              : running
+                ? 'Generator active — start a run to see live job data'
+                : 'Generator stopped'}
           </p>
           <button onClick={onClose}
             className="rounded px-4 py-1.5 text-sm font-semibold text-white transition-colors"
