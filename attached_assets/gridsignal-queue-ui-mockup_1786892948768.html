@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GridSignal — Queue Tab Mockup</title>
+<style>
+  :root{
+    --void:#0A0C0F;
+    --panel:#12161C;
+    --panel-alt:#161B22;
+    --border:#242B34;
+    --border-soft:#1B2129;
+    --hi:#E8ECEF;
+    --lo:#7C8794;
+    --lo2:#586170;
+    --signal:#5DD9C1;
+    --green:#4ADE80;
+    --amber:#F5A623;
+    --red:#F0554A;
+    --tenant-a:#5B9DD9;
+    --tenant-b:#C084FC;
+    --tenant-c:#5DD9C1;
+    --mono: ui-monospace, "SF Mono", "IBM Plex Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, "Segoe UI", Inter, Roboto, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; background:var(--void); color:var(--hi);
+    font-family:var(--sans);
+    min-height:100vh;
+  }
+  body{
+    background-image:
+      radial-gradient(circle at 15% -10%, rgba(93,217,193,0.06), transparent 40%),
+      radial-gradient(circle at 90% 110%, rgba(240,85,74,0.05), transparent 45%);
+    padding: 28px 16px 60px;
+  }
+  .frame{ max-width: 1180px; margin: 0 auto; }
+
+  .eyebrow{
+    font-family:var(--mono); font-size:11px; letter-spacing:0.14em; color:var(--lo2);
+    text-transform:uppercase; margin-bottom:6px;
+  }
+  h1{
+    font-size: clamp(20px,3vw,26px); margin:0 0 4px; font-weight:650; letter-spacing:-0.01em;
+  }
+  .sub{ color:var(--lo); font-size:13.5px; margin-bottom:34px; max-width:640px; line-height:1.5;}
+
+  .flow{
+    display:flex; align-items:stretch; gap:0;
+    flex-wrap: wrap;
+  }
+  .col{ flex:1 1 340px; min-width:300px; }
+
+  /* ---- Compute tile ---- */
+  .tile{
+    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:18px 18px 8px;
+  }
+  .tile-head{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:14px;
+  }
+  .tile-title{ font-size:13px; font-weight:600; letter-spacing:0.01em; }
+  .tile-tag{
+    font-family:var(--mono); font-size:10px; color:var(--lo2); border:1px solid var(--border-soft);
+    padding:2px 6px; border-radius:4px;
+  }
+  .stat-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:9px 0; border-top:1px solid var(--border-soft);
+    font-size:13px;
+  }
+  .stat-row:first-of-type{ border-top:none; }
+  .stat-label{ color:var(--lo); }
+  .stat-val{ font-family:var(--mono); font-size:12.5px; }
+  .ok{ color:var(--green); }
+  .cap-active{ color:var(--amber); }
+
+  .requeue-row{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:11px 10px; margin: 6px -10px 12px;
+    border-radius:7px; border:1px solid rgba(245,166,35,0.35);
+    background:rgba(245,166,35,0.07);
+    cursor:pointer; position:relative;
+  }
+  .requeue-row:hover{ background:rgba(245,166,35,0.12); }
+  .requeue-label{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--hi); }
+  .dot{
+    width:7px; height:7px; border-radius:50%; background:var(--amber);
+    box-shadow:0 0 0 0 rgba(245,166,35,0.6);
+    animation: pulse 2.2s ease-out infinite;
+  }
+  @keyframes pulse{
+    0%{ box-shadow:0 0 0 0 rgba(245,166,35,0.5); }
+    70%{ box-shadow:0 0 0 7px rgba(245,166,35,0); }
+    100%{ box-shadow:0 0 0 0 rgba(245,166,35,0); }
+  }
+  .requeue-val{ font-family:var(--mono); font-size:13px; color:var(--amber); font-weight:600; }
+  .click-hint{ font-family:var(--mono); font-size:9.5px; color:var(--lo2); letter-spacing:0.06em; text-transform:uppercase; }
+
+  /* ---- Connector ---- */
+  .connector{
+    flex:0 0 64px; display:flex; align-items:center; justify-content:center;
+    min-width:64px;
+  }
+  .connector svg{ width:100%; height:40px; overflow:visible; }
+  .connector-vert{ display:none; }
+
+  /* ---- Modal ---- */
+  .modal{
+    background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    overflow:hidden;
+  }
+  .modal-titlebar{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:12px 16px; border-bottom:1px solid var(--border-soft);
+    background:var(--panel-alt);
+  }
+  .modal-title{ font-size:12.5px; color:var(--lo); font-family:var(--mono); letter-spacing:0.02em; }
+  .modal-close{ color:var(--lo2); font-size:14px; }
+
+  .tabs{
+    display:flex; border-bottom:1px solid var(--border-soft);
+    padding: 0 10px;
+  }
+  .tab{
+    padding:11px 12px; font-size:12.5px; color:var(--lo); cursor:default;
+    border-bottom:2px solid transparent; display:flex; align-items:center; gap:6px;
+  }
+  .tab.active{ color:var(--hi); border-bottom-color:var(--signal); font-weight:600; }
+  .badge{
+    font-family:var(--mono); font-size:10px; background:rgba(245,166,35,0.15);
+    color:var(--amber); padding:1px 6px; border-radius:20px; font-weight:600;
+  }
+
+  .queue-note{
+    font-size:11.5px; color:var(--lo); padding:10px 16px;
+    border-bottom:1px solid var(--border-soft); font-family:var(--mono);
+    background: rgba(255,255,255,0.015);
+  }
+
+  table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  thead th{
+    text-align:left; font-size:10px; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--lo2); padding:9px 12px; font-weight:600; border-bottom:1px solid var(--border-soft);
+    white-space:nowrap;
+  }
+  tbody td{
+    padding:10px 12px; border-bottom:1px solid var(--border-soft);
+    font-family:var(--mono); white-space:nowrap;
+  }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody tr:hover{ background:rgba(255,255,255,0.02); }
+
+  .sched-badge{
+    font-family:var(--mono); font-size:10px; font-weight:700; padding:2px 6px;
+    border-radius:4px; letter-spacing:0.03em;
+  }
+  .sched-K8S{ background:rgba(93,157,217,0.15); color:#7FB2E8; }
+  .sched-SLURM{ background:rgba(192,132,252,0.15); color:#D4A8FD; }
+  .sched-RAY{ background:rgba(93,217,193,0.15); color:var(--signal); }
+
+  .tenant-chip{ display:flex; align-items:center; gap:6px; font-family:var(--sans); font-size:12px; }
+  .tenant-dot{ width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+
+  .wait-green{ color:var(--green); }
+  .wait-amber{ color:var(--amber); }
+  .wait-red{ color:var(--red); font-weight:700; }
+
+  .req-badge{ color:var(--amber); font-weight:600; }
+  .req-none{ color:var(--lo2); }
+
+  .footnote{
+    margin-top:22px; font-size:11.5px; color:var(--lo2); line-height:1.6;
+    border-top:1px solid var(--border-soft); padding-top:16px;
+  }
+  .footnote b{ color:var(--lo); }
+
+  @media (max-width: 860px){
+    .flow{ flex-direction:column; }
+    .connector{ min-width:0; height:44px; }
+    .connector svg{ display:none; }
+    .connector-vert{ display:flex; align-items:center; justify-content:center; height:100%; }
+    .connector-vert svg{ height:44px; width:24px; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .dot{ animation:none; }
+    .flow-dash{ animation:none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="frame">
+  <div class="eyebrow">GridSignal · Simulator UI Reference</div>
+  <h1>Queue tab — reconstructed mockup</h1>
+  <p class="sub">Approximation of the built UI based on the implementation, not a live screenshot. Left: the Compute tile's clickable "Requeued (cap hold)" row. Right: the Generator modal opened directly to the Queue tab. Wait times below tick live.</p>
+
+  <div class="flow">
+    <!-- COMPUTE TILE -->
+    <div class="col">
+      <div class="tile">
+        <div class="tile-head">
+          <div class="tile-title">Compute</div>
+          <div class="tile-tag">K8S · fleet</div>
+        </div>
+        <div class="stat-row"><span class="stat-label">Utilization</span><span class="stat-val">62%</span></div>
+        <div class="stat-row"><span class="stat-label">Active jobs</span><span class="stat-val">14</span></div>
+        <div class="stat-row"><span class="stat-label">Admitted / Total nodes</span><span class="stat-val">742 / 1900</span></div>
+        <div class="stat-row"><span class="stat-label">Power cap</span><span class="stat-val cap-active">ACTIVE</span></div>
+        <div class="stat-row"><span class="stat-label">Grid headroom</span><span class="stat-val">3.2 MW</span></div>
+        <div class="stat-row"><span class="stat-label">Arrivals this tick</span><span class="stat-val">2</span></div>
+
+        <div class="requeue-row" id="requeueRow">
+          <div class="requeue-label"><span class="dot"></span>Requeued (cap hold)</div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span class="requeue-val" id="queueCount">4</span>
+            <span class="click-hint">click →</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONNECTOR (horizontal, desktop) -->
+    <div class="connector">
+      <svg viewBox="0 0 64 40" fill="none">
+        <path d="M2 20 H58" stroke="#F5A623" stroke-width="1.5" stroke-opacity="0.55" stroke-dasharray="4 4" class="flow-dash">
+          <animate attributeName="stroke-dashoffset" from="16" to="0" dur="1s" repeatCount="indefinite" />
+        </path>
+        <path d="M50 13 L60 20 L50 27" stroke="#F5A623" stroke-width="1.5" stroke-opacity="0.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <!-- CONNECTOR (vertical, mobile) -->
+    <div class="connector-vert">
+      <svg viewBox="0 0 24 44" fill="none">
+        <path d="M12 2 V36" stroke="#F5A623" stroke-width="1.5" stroke-opacity="0.55" stroke-dasharray="4 4"/>
+        <path d="M5 30 L12 40 L19 30" stroke="#F5A623" stroke-width="1.5" stroke-opacity="0.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <!-- MODAL -->
+    <div class="col" style="flex:1 1 520px;">
+      <div class="modal">
+        <div class="modal-titlebar">
+          <div class="modal-title">GPU NODE GENERATOR</div>
+          <div class="modal-close">✕</div>
+        </div>
+        <div class="tabs">
+          <div class="tab">Config</div>
+          <div class="tab">Jobs</div>
+          <div class="tab">Feed</div>
+          <div class="tab active">Queue&nbsp;<span class="badge" id="tabBadge">4</span></div>
+        </div>
+        <div class="queue-note">Jobs held by power-cap — waiting for grid headroom before admission.</div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Scheduler</th><th>Job ID</th><th>Tenant</th><th>Nodes</th>
+              <th>Est. draw</th><th>Queued at</th><th>Wait</th><th>Requeued</th>
+            </tr>
+          </thead>
+          <tbody id="queueBody"><!-- rows injected --></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="footnote">
+    <b>Reconstructed, not captured.</b> Layout, columns, sort order, color bands (green &lt;30s, amber 30–120s, red &gt;120s), and the tile→tab click-through are drawn from the implementation as reported in this conversation. Exact spacing, fonts, and chrome are this mockup's own interpretation — the real app may render these differently.
+  </div>
+</div>
+
+<script>
+  const TENANTS = {
+    A: { name: "Tenant A", color: "#5B9DD9" },
+    B: { name: "Tenant B", color: "#C084FC" },
+    C: { name: "Tenant C", color: "#5DD9C1" },
+  };
+
+  // base queued-since offsets (seconds ago) — will count up live
+  let jobs = [
+    { sched:"RAY",   id:"ray-run-118",  tenant:"C", nodes:8, mw:1.6, queuedAtTick:95,  wait: 148, requeue: 3 },
+    { sched:"SLURM", id:"slurm-job-77", tenant:"B", nodes:4, mw:0.8, queuedAtTick:140, wait: 103, requeue: 1 },
+    { sched:"K8S",   id:"kube-job-42",  tenant:"A", nodes:6, mw:1.2, queuedAtTick:205, wait: 38,  requeue: 0 },
+    { sched:"K8S",   id:"kube-job-45",  tenant:"A", nodes:2, mw:0.4, queuedAtTick:228, wait: 15,  requeue: 0 },
+  ];
+
+  function waitClass(s){
+    if (s > 120) return "wait-red";
+    if (s >= 30) return "wait-amber";
+    return "wait-green";
+  }
+  function fmtWait(s){
+    if (s < 60) return `${s}s`;
+    const m = Math.floor(s/60), r = s % 60;
+    return r === 0 ? `${m}m` : `${m}m ${r}s`;
+  }
+
+  function render(){
+    jobs.sort((a,b) => b.wait - a.wait); // longest-waiting first
+    const body = document.getElementById('queueBody');
+    body.innerHTML = jobs.map(j => {
+      const t = TENANTS[j.tenant];
+      return `<tr>
+        <td><span class="sched-badge sched-${j.sched}">${j.sched}</span></td>
+        <td>${j.id}</td>
+        <td><span class="tenant-chip"><span class="tenant-dot" style="background:${t.color}"></span>${t.name}</span></td>
+        <td>${j.nodes}</td>
+        <td>${j.mw.toFixed(1)} MW</td>
+        <td>t=${j.queuedAtTick}s</td>
+        <td class="${waitClass(j.wait)}">${fmtWait(j.wait)}</td>
+        <td>${j.requeue > 0 ? `<span class="req-badge">×${j.requeue}</span>` : `<span class="req-none">—</span>`}</td>
+      </tr>`;
+    }).join("");
+    document.getElementById('queueCount').textContent = jobs.length;
+    document.getElementById('tabBadge').textContent = jobs.length;
+  }
+
+  render();
+  setInterval(() => {
+    jobs.forEach(j => j.wait += 1);
+    render();
+  }, 1000);
+
+  document.getElementById('requeueRow').addEventListener('click', () => {
+    const modal = document.querySelector('.modal');
+    modal.style.outline = '2px solid rgba(93,217,193,0.6)';
+    modal.style.outlineOffset = '2px';
+    setTimeout(() => { modal.style.outline = 'none'; }, 550);
+  });
+</script>
+</body>
+</html>

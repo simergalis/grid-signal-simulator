@@ -235,12 +235,15 @@ export function GpuNodeGeneratorModal({ onClose, initialTab }: Props) {
   const liveTotalNodes = (kube?.active_jobs_detail ?? []).reduce((s, j) => s + j.node_count, 0)
   const liveTotalMW    = (kube?.active_jobs_detail ?? []).reduce((s, j) => s + j.est_draw_mw, 0)
 
-  // Map scheduler_type → display label
-  const SCHEDULER_BADGE_BY_TYPE: Record<string, string> = {
-    SLURM: 'Slurm', K8S: 'Kubernetes', RAY: 'Ray',
+  // Scheduler badge styles — per-type colors matching the mockup.
+  // K8S=steel-blue, SLURM=lavender, RAY=teal (signal color).
+  const SCHEDULER_BADGE_STYLE: Record<string, { bg: string; color: string; label: string }> = {
+    SLURM: { bg: 'rgba(192,132,252,0.15)', color: '#D4A8FD', label: 'SLURM' },
+    K8S:   { bg: 'rgba(93,157,217,0.15)',  color: '#7FB2E8', label: 'K8S'   },
+    RAY:   { bg: 'rgba(93,217,193,0.15)',  color: '#5DD9C1', label: 'RAY'   },
   }
   const TENANT_COLOUR_BY_ID: Record<string, string> = {
-    A: '#3fb6a8', B: '#4a9fe0', C: '#9b6fe0',
+    A: '#5B9DD9', B: '#C084FC', C: '#5DD9C1',
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -348,27 +351,50 @@ export function GpuNodeGeneratorModal({ onClose, initialTab }: Props) {
               <span className="text-text">{feed.length}</span>
             </div>
           </div>
+        </div>
 
-          {/* Tabs */}
-          <div className="flex gap-1">
+        {/* ── Tab strip (underline style, matches mockup) ─────────────────── */}
+        <div className="flex-shrink-0 border-b border-border/60 px-8">
+          <div className="flex gap-0">
             {(['config', 'jobs', 'queue', 'feed'] as const).map(tab => {
               const queueCount = kube?.pending_jobs?.length ?? 0
-              const label =
-                tab === 'jobs'  ? `Jobs (${allLiveJobs.length})` :
-                tab === 'feed'  ? `Feed (${feed.length})` :
-                tab === 'queue' ? `Queue${queueCount > 0 ? ` (${queueCount})` : ''}` :
-                'Config'
-              const isAmber = tab === 'queue' && queueCount > 0
+              const isActive = activeTab === tab
+              const isAmberTab = tab === 'queue' && queueCount > 0
               return (
                 <button key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-3 py-1 rounded text-xs font-medium transition-colors capitalize ${
-                    activeTab === tab
-                      ? isAmber ? 'bg-[#f0883e]/20 text-[#f0883e]' : 'bg-accent/20 text-accent'
-                      : 'text-muted hover:text-text'
-                  }`}
+                  className={`relative flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium transition-colors capitalize
+                    border-b-2 -mb-px
+                    ${isActive
+                      ? isAmberTab
+                        ? 'text-[#f0883e] border-[#f0883e]'
+                        : 'text-accent border-accent font-semibold'
+                      : 'text-muted border-transparent hover:text-text'
+                    }`}
                 >
-                  {label}
+                  {tab === 'jobs'  ? `Jobs` :
+                   tab === 'feed'  ? `Feed` :
+                   tab === 'queue' ? 'Queue' :
+                   'Config'}
+                  {/* Count badges */}
+                  {tab === 'jobs' && allLiveJobs.length > 0 && (
+                    <span className="font-mono text-[10px] px-1.5 py-0 rounded-full"
+                      style={{ background: 'rgba(255,255,255,0.08)', color: '#7c8794' }}>
+                      {allLiveJobs.length}
+                    </span>
+                  )}
+                  {tab === 'feed' && feed.length > 0 && (
+                    <span className="font-mono text-[10px] px-1.5 py-0 rounded-full"
+                      style={{ background: 'rgba(255,255,255,0.08)', color: '#7c8794' }}>
+                      {feed.length}
+                    </span>
+                  )}
+                  {tab === 'queue' && queueCount > 0 && (
+                    <span className="font-mono text-[10px] font-semibold px-1.5 py-0 rounded-full"
+                      style={{ background: 'rgba(240,136,62,0.15)', color: '#f0883e' }}>
+                      {queueCount}
+                    </span>
+                  )}
                 </button>
               )
             })}
@@ -502,7 +528,7 @@ export function GpuNodeGeneratorModal({ onClose, initialTab }: Props) {
                           <td className="py-2 pr-3">
                             <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded"
                               style={{ background: colour + '22', color: colour }}>
-                              {SCHEDULER_BADGE_BY_TYPE[job.scheduler_type] ?? job.scheduler_type}
+                              {SCHEDULER_BADGE_STYLE[job.scheduler_type]?.label ?? job.scheduler_type}
                             </span>
                           </td>
                           <td className="py-2 pr-3 font-mono text-xs text-muted max-w-[130px] truncate">{job.event_id}</td>
@@ -538,70 +564,97 @@ export function GpuNodeGeneratorModal({ onClose, initialTab }: Props) {
             const simNow = latestTick?.sim_time_seconds ?? 0
             const sortedQueue = [...(kube?.pending_jobs ?? [])].sort(compareByQueuedSince)
             return (
-              <div>
-                <p className="text-[11px] text-muted mb-3 font-mono">
-                  Jobs held by power-cap — waiting for grid headroom before admission. Sorted longest-waiting first.
-                </p>
+              <div className="-mx-8 -mt-6">
+                {/* Banner bar — styled monospace note matching the mockup */}
+                <div className="flex items-center px-8 py-2.5 font-mono text-[11px] border-b border-border/60"
+                  style={{ color: '#7c8794', background: 'rgba(255,255,255,0.015)' }}>
+                  Jobs held by power-cap — waiting for grid headroom before admission.
+                </div>
+
                 {sortedQueue.length === 0 ? (
-                  <div className="py-10 text-center text-muted text-sm">
+                  <div className="py-10 text-center font-mono text-xs px-8" style={{ color: '#586170' }}>
                     {kube
                       ? 'No jobs currently held in the power-cap queue.'
                       : 'Start a run to see queued jobs here.'}
                   </div>
                 ) : (
-                  <table className="w-full text-sm border-separate border-spacing-0">
-                    <thead>
-                      <tr>
-                        {['Scheduler', 'Job ID', 'Tenant', 'Nodes', 'Est. draw', 'Queued at', 'Wait', 'Requeued'].map((h, i) => (
-                          <th key={i} className="text-left pb-2 pr-3 text-[11px] font-medium uppercase tracking-wider text-muted border-b border-border">
-                            {h}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sortedQueue.map(job => {
-                        const colour = TENANT_COLOUR_BY_ID[job.tenant_id] ?? '#4b5764'
-                        const wait   = simNow - job.queued_since_s
-                        const isRequeued = job.requeue_count > 0
-                        return (
-                          <tr key={job.event_id}
-                            className="border-b border-border/40 hover:bg-white/[0.025] transition-colors">
-                            <td className="py-2 pr-3">
-                              <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded"
-                                style={{ background: colour + '22', color: colour }}>
-                                {SCHEDULER_BADGE_BY_TYPE[job.scheduler_type] ?? job.scheduler_type}
-                              </span>
-                            </td>
-                            <td className="py-2 pr-3 font-mono text-xs text-muted max-w-[120px] truncate">{job.event_id}</td>
-                            <td className="py-2 pr-3">
-                              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
-                                style={{ background: colour + '22', color: colour }}>
-                                {job.tenant_id}
-                              </span>
-                            </td>
-                            <td className="py-2 pr-3 font-mono text-xs tabular-nums text-text font-semibold">
-                              {job.node_count.toLocaleString()}
-                            </td>
-                            <td className="py-2 pr-3 font-mono text-xs text-muted">{fmtMW(job.est_draw_mw)}</td>
-                            <td className="py-2 pr-3 font-mono text-xs text-muted tabular-nums">
-                              t={job.queued_since_s.toFixed(0)}s
-                            </td>
-                            <td className="py-2 pr-3 font-mono text-xs tabular-nums font-semibold"
-                              style={{ color: queueWaitColour(wait) }}>
-                              {fmtQueueWait(wait)}
-                            </td>
-                            <td className="py-2">
-                              <span className="font-mono text-xs tabular-nums"
-                                style={{ color: isRequeued ? '#f0883e' : '#4b5764' }}>
-                                {isRequeued ? `×${job.requeue_count}` : '—'}
-                              </span>
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm border-collapse">
+                      <thead>
+                        <tr>
+                          {['Scheduler', 'Job ID', 'Tenant', 'Nodes', 'Est. draw', 'Queued at', 'Wait', 'Requeued'].map((h, i) => (
+                            <th key={i}
+                              className="text-left py-2.5 pr-3 font-mono text-[10px] font-semibold uppercase tracking-[0.08em] border-b border-border/60 whitespace-nowrap"
+                              style={{ color: '#586170', paddingLeft: i === 0 ? 32 : undefined }}
+                            >
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {sortedQueue.map(job => {
+                          const tenantColour = TENANT_COLOUR_BY_ID[job.tenant_id] ?? '#4b5764'
+                          const schedStyle = SCHEDULER_BADGE_STYLE[job.scheduler_type]
+                          const wait = simNow - job.queued_since_s
+                          const isRequeued = job.requeue_count > 0
+                          return (
+                            <tr key={job.event_id}
+                              className="border-b border-border/40 hover:bg-white/[0.02] transition-colors">
+                              {/* Scheduler badge — type-specific color */}
+                              <td className="py-2.5 pr-3 pl-8 whitespace-nowrap">
+                                <span className="font-mono text-[10px] font-bold tracking-[0.03em] px-1.5 py-0.5 rounded"
+                                  style={schedStyle
+                                    ? { background: schedStyle.bg, color: schedStyle.color }
+                                    : { background: '#4b576422', color: '#4b5764' }}>
+                                  {schedStyle?.label ?? job.scheduler_type}
+                                </span>
+                              </td>
+                              {/* Job ID */}
+                              <td className="py-2.5 pr-3 font-mono text-xs whitespace-nowrap max-w-[130px] truncate"
+                                style={{ color: '#7c8794' }}>
+                                {job.event_id}
+                              </td>
+                              {/* Tenant chip — dot + "Tenant X" label */}
+                              <td className="py-2.5 pr-3 whitespace-nowrap">
+                                <span className="flex items-center gap-1.5 text-xs font-sans">
+                                  <span className="inline-block w-[7px] h-[7px] rounded-full flex-shrink-0"
+                                    style={{ background: tenantColour }} />
+                                  <span style={{ color: '#e8ecef' }}>Tenant {job.tenant_id}</span>
+                                </span>
+                              </td>
+                              {/* Nodes */}
+                              <td className="py-2.5 pr-3 font-mono text-xs tabular-nums font-semibold whitespace-nowrap"
+                                style={{ color: '#e8ecef' }}>
+                                {job.node_count.toLocaleString()}
+                              </td>
+                              {/* Est. draw */}
+                              <td className="py-2.5 pr-3 font-mono text-xs tabular-nums whitespace-nowrap"
+                                style={{ color: '#7c8794' }}>
+                                {fmtMW(job.est_draw_mw)}
+                              </td>
+                              {/* Queued at (sim tick time) */}
+                              <td className="py-2.5 pr-3 font-mono text-xs tabular-nums whitespace-nowrap"
+                                style={{ color: '#7c8794' }}>
+                                t={job.queued_since_s.toFixed(0)}s
+                              </td>
+                              {/* Wait — color-coded */}
+                              <td className="py-2.5 pr-3 font-mono text-xs tabular-nums font-semibold whitespace-nowrap"
+                                style={{ color: queueWaitColour(wait) }}>
+                                {fmtQueueWait(wait)}
+                              </td>
+                              {/* Requeued count */}
+                              <td className="py-2.5 font-mono text-xs tabular-nums whitespace-nowrap">
+                                {isRequeued
+                                  ? <span style={{ color: '#f0883e', fontWeight: 600 }}>×{job.requeue_count}</span>
+                                  : <span style={{ color: '#586170' }}>—</span>}
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
               </div>
             )

@@ -147,8 +147,12 @@ export const computePanel: PanelConfig = {
       { label: 'Cap flips this run',   value: _capFlipCount.toString(),                         colour: _capFlipCount > 0 ? AMBER : undefined },
       { label: 'Grid headroom',        value: kube.headroom_mw > 100 ? '∞' : `${kube.headroom_mw.toFixed(1)} MW` },
       { label: 'Arrivals this tick',   value: (kube.arrivals_this_tick ?? 0).toString() },
-      { label: 'Requeued (cap hold)',  value: (kube.requeued_this_tick ?? 0).toString(),         colour: (kube.requeued_this_tick ?? 0) > 0 ? AMBER : undefined,
-        // Click navigates to the Queue tab in the GPU Node Generator modal.
+      {
+        label: 'Requeued (cap hold)',
+        value: (kube.requeued_this_tick ?? 0).toString(),
+        colour: AMBER,
+        // Renders as an amber call-to-action card (pulsing dot + "click →" hint).
+        featured: true,
         onClick: () => useGpuGeneratorStore.getState().setOpenGeneratorAtTab('queue'),
       },
     ] : []
