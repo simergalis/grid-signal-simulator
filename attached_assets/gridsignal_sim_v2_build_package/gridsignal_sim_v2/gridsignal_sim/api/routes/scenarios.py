@@ -775,6 +775,19 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
                 rng_seed=42,
             ),
             gpu_load_profile=[],   # full GPU load throughout (no throttling)
+            # Auto-start the GPU Generator when this scenario begins.
+            # Keys match GeneratorConfig in frontend/src/store/gpuGeneratorStore.ts.
+            generator_config={
+                "ratePerMinute":        3,       # steady ~3 jobs/min across tenants
+                "burstMode":            False,
+                "burstSize":            [3, 8],
+                "burstIntervalSeconds": [30, 90],
+                "tenantWeights":        {"a": 0.40, "b": 0.35, "c": 0.25},
+                "jobSizes":             {"small": 0.30, "medium": 0.50, "large": 0.20},
+                "maxJobsPerTenant":     12,
+                "jobDurationRange":     [60, 240],
+                "tenantContracts":      {"a": 1.40, "b": 1.00, "c": 0.60},
+            },
         ),
     ),
     # ── Operator manual trip / start demo ────────────────────────────────
