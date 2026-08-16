@@ -685,10 +685,21 @@ def build_run_context_from_spec(
     # reach SYNCHRONISED — far longer than any demo or test run.
     # Hot-standby units (hot_standby=True) must remain OFFLINE per the
     # operator commitment sequence (TC-89 / PW-1).
+    #
+    # R5 / IP claim 4: set _run_start_s = 0.0 for every pre-synchronised unit.
+    # TurbineModule initialises _run_start_s to NaN (never-started sentinel).
+    # command_stop() enforces t_min_run_s only when _run_start_s is non-NaN
+    # (D-03 pattern: `not math.isnan(self._run_start_s)`).  Without this line
+    # the NaN sentinel bypasses the guard for all factory-built runs, making
+    # R5 inoperative on the live spec path even when min_run_enabled=True.
+    # Setting 0.0 treats pre-synchronised units as having started at t=0 —
+    # consistent with a facility where turbines are already at rated load when
+    # the simulation begins.
     for _turb in turbines:
         if not _turb.config.hot_standby:
             _turb.state              = TurbineState.SYNCHRONISED
             _turb._current_output_mw = 0.0   # loading layer ramps to MSL each tick
+            _turb._run_start_s       = 0.0   # R5: treat as started at t=0 (IP claim 4)
 
     # anchor_reserve_pct wires the scenario-level reserve percentage into the
     # grid-forming unit's BessConfig.  0.0 = use BessConfig default (1.0 MW).

@@ -19,8 +19,11 @@ from core.asset_modules import TurbineModule, TurbineState
 from core.models import (
     BessConfig,
     SiteConfig,
+    ThermalState,
     TurbineConfig,
 )
+from api.routes.scenarios import _SEEDED
+from runtime.scenario_factory import build_run_context_from_spec
 from core.contingency import (
     evaluate_contingency,
     PlantState,
@@ -648,4 +651,219 @@ class TestR8DispatchableFromSingleSource:
         assert result.dispatchable_mw == pytest.approx(10.0, abs=1e-6), (
             f"Hot-standby unit must not appear in dispatchable_mw.  "
             f"Expected 10.0 MW (online t0 only).  Got {result.dispatchable_mw:.3f} MW."
+        )
+
+
+# ===========================================================================
+# Demo-20mw IP claim 4 — R5 prevents OFFLINE during checkpoint valley
+# ===========================================================================
+
+class TestDemo20mwIpClaim4:
+    """
+    IP claim 4 regression guard: the demo-20mw scenario sets
+    p_min_stable_frac=0.45, t_min_run_s=1800, t_min_down_s=900 on its
+    non-hot-standby turbines.  A valley dispatch command issued at t=120 s
+    (the demo scenario's turbine-1 trip time, well inside the 1800 s
+    minimum run window) must be blocked by R5 — the unit stays SYNCHRONISED
+    and never transitions to OFFLINE.
+
+    Uses command_start() / command_stop() — the Phase E API — not the
+    deleted stage_target().
+    """
+
+    @staticmethod
+    def _make_demo_turbine() -> TurbineModule:
+        """Build a TurbineModule with the demo-20mw non-hot-standby config.
+
+        Uses a HOT thermal start (hot_start_s=1.0) so the test advances
+        to SYNCHRONISED in one tick without a 900 s cold-start loop.
+        The R4–R6 constraints (p_min_stable_frac, t_min_run_s, t_min_down_s,
+        min_run_enabled) match the demo scenario exactly.
+        """
+        cfg = TurbineConfig(
+            asset_id="demo-gt",
+            rated_mw=7.0,
+            p_min_stable_frac=0.45,
+            t_min_run_s=1800.0,
+            t_min_down_s=900.0,
+            min_run_enabled=True,
+            min_down_enabled=True,
+            initial_thermal_state=ThermalState.HOT,
+            hot_start_s=1.0,   # fast start so test completes in one advance step
+        )
+        return TurbineModule(cfg)
+
+    def test_demo20mw_r5_stop_before_min_run_deferred(self):
+        """
+        command_stop() at t=120 s (the demo trip time, inside t_min_run_s=1800 s)
+        must be deferred: returns a non-None block reason and the unit remains
+        SYNCHRONISED (not OFFLINE).
+
+        This is the live exercise of IP claim 4: the loading layer calls
+        command_stop() when a valley dispatch would take the turbine below its
+        MSL floor, and R5 holds the unit on-bus rather than cycling it off.
+        """
+        t = self._make_demo_turbine()
+
+        # Bring unit on-bus via HOT start
+        t.command_start(sim_time=0.0)
+        assert t.state == TurbineState.STARTING
+
+        # Advance past the 1 s hot-start countdown → SYNCHRONISED
+        t.advance(sim_time=0.0, dt_seconds=2.0)
+        assert t.state == TurbineState.SYNCHRONISED, (
+            f"Unit must reach SYNCHRONISED after hot start.  State: {t.state}"
+        )
+
+        # Attempt a controlled stop at t=120 s (demo trip time; < 1800 s min run)
+        block_reason = t.command_stop(sim_time=120.0)
+
+        assert block_reason is not None, (
+            "R5 must defer the stop command at t=120 s (< t_min_run_s=1800 s).  "
+            "command_stop() returned None, meaning the stop was accepted — "
+            "IP claim 4 is not being exercised."
+        )
+        assert "r5_min_run_not_elapsed" in block_reason, (
+            f"Block reason must identify R5.  Got: {block_reason!r}"
+        )
+        assert t.state == TurbineState.SYNCHRONISED, (
+            f"Turbine must stay SYNCHRONISED when R5 defers the stop.  "
+            f"Got state={t.state}"
+        )
+        assert t.state != TurbineState.OFFLINE, (
+            "Turbine must not go OFFLINE during a checkpoint valley when "
+            "t_min_run_s has not elapsed — IP claim 4 violated."
+        )
+
+    def test_demo20mw_r5_stop_after_min_run_accepted(self):
+        """
+        command_stop() after t_min_run_s=1800 s has elapsed must be accepted
+        (returns None) and unit transitions to UNLOADING — confirming R5 only
+        blocks premature stops and does not permanently prevent decommit.
+        """
+        t = self._make_demo_turbine()
+
+        t.command_start(sim_time=0.0)
+        t.advance(sim_time=0.0, dt_seconds=2.0)
+        assert t.state == TurbineState.SYNCHRONISED
+
+        # Stop well after the minimum run window
+        block_reason = t.command_stop(sim_time=1900.0)
+
+        assert block_reason is None, (
+            f"Stop at t=1900 s (> t_min_run_s=1800 s) must be accepted.  "
+            f"Got block_reason={block_reason!r}"
+        )
+        assert t.state == TurbineState.UNLOADING, (
+            f"Unit must be UNLOADING after an accepted stop.  Got state={t.state}"
+        )
+
+
+# ===========================================================================
+# Demo-20mw spec-path — factory pre-sync sets _run_start_s so R5 applies live
+# ===========================================================================
+
+class TestDemo20mwSpecPathR5:
+    """
+    Spec-path regression guard: build_run_context_from_spec must set
+    _run_start_s = 0.0 on every pre-synchronised non-hot-standby turbine so
+    that command_stop() enforces R5 (t_min_run_s=1800 s) on the live path.
+
+    Background: build_run_context_from_spec pre-synchronizes non-hot-standby
+    turbines by setting state=SYNCHRONISED directly (bypassing command_start +
+    advance).  TurbineModule initialises _run_start_s to NaN, and command_stop()
+    only enforces R5 when _run_start_s is non-NaN
+    (`not math.isnan(self._run_start_s)`).  Without the factory fix, the NaN
+    sentinel allows every decommit command — making IP claim 4 inoperative on
+    the live spec path even though the config carries t_min_run_s=1800.
+
+    These tests verify the factory fix and the end-to-end spec-path R5 contract.
+    """
+
+    @staticmethod
+    def _get_demo_20mw_spec_dict() -> dict:
+        """Return the demo-20mw ScenarioSpec as a plain dict (JSON-round-trip safe)."""
+        spec_pairs = {sid: ss for sid, ss in _SEEDED}
+        spec = spec_pairs.get("demo-20mw")
+        assert spec is not None, "demo-20mw not found in _SEEDED; check api/routes/scenarios.py"
+        return spec.model_dump()
+
+    def test_spec_path_pre_sync_sets_run_start_s(self):
+        """
+        build_run_context_from_spec must set _run_start_s = 0.0 on every
+        non-hot-standby turbine so R5 enforcement is active from t=0.
+
+        Without this fix the factory left _run_start_s = NaN, which bypasses
+        the `not math.isnan(self._run_start_s)` guard in command_stop() and
+        allows any decommit regardless of how long the unit has been running.
+        """
+        spec_dict = self._get_demo_20mw_spec_dict()
+        ctx = build_run_context_from_spec("test-ip4-factory", spec_dict)
+
+        online_turbines = [
+            t for t in ctx.sim_state.turbines
+            if not t.config.hot_standby
+        ]
+        assert online_turbines, "demo-20mw must have at least one non-hot-standby turbine"
+
+        for turb in online_turbines:
+            assert not math.isnan(turb._run_start_s), (
+                f"Turbine {turb.config.asset_id!r}: _run_start_s must not be NaN "
+                "after factory pre-synchronisation.  NaN bypasses R5 in command_stop()."
+            )
+            assert turb._run_start_s == pytest.approx(0.0, abs=1e-9), (
+                f"Turbine {turb.config.asset_id!r}: _run_start_s must be 0.0 "
+                f"(pre-synchronised at run start).  Got {turb._run_start_s!r}"
+            )
+
+    def test_spec_path_r5_blocks_stop_before_min_run(self):
+        """
+        On the spec path, command_stop() at t=120 s (the demo turbine-1 trip
+        time, inside t_min_run_s=1800 s) must be blocked by R5 and return a
+        non-None block reason.
+
+        This is the live-path IP claim 4 exercise: the commitment engine issues
+        command_stop() on a non-hot-standby turbine early in the run, and R5
+        defers it.  Before the factory fix (_run_start_s was NaN), the stop was
+        silently accepted and the turbine entered UNLOADING at t=300 s.
+        """
+        spec_dict = self._get_demo_20mw_spec_dict()
+        ctx = build_run_context_from_spec("test-ip4-r5", spec_dict)
+
+        # Pick the first non-hot-standby turbine (matches turbine-0 in demo-20mw)
+        online = [t for t in ctx.sim_state.turbines if not t.config.hot_standby]
+        assert online, "demo-20mw must have at least one non-hot-standby turbine"
+        target = online[0]
+
+        assert target.state == TurbineState.SYNCHRONISED, (
+            f"Factory must pre-synchronise non-hot-standby turbines.  "
+            f"Got state={target.state}"
+        )
+        assert target.config.min_run_enabled, (
+            "demo-20mw turbines must have min_run_enabled=True (R5 active)"
+        )
+        assert target.config.t_min_run_s == pytest.approx(1800.0, abs=1.0), (
+            f"demo-20mw turbines must have t_min_run_s=1800 s.  "
+            f"Got {target.config.t_min_run_s}"
+        )
+        assert target.config.p_min_stable_frac == pytest.approx(0.45, abs=1e-9), (
+            f"demo-20mw non-hot-standby turbines must have p_min_stable_frac=0.45.  "
+            f"Got {target.config.p_min_stable_frac}"
+        )
+
+        # Issue stop at t=120 s — should be blocked by R5 (elapsed 120 < 1800 s)
+        block_reason = target.command_stop(sim_time=120.0)
+
+        assert block_reason is not None, (
+            "R5 must block command_stop() at t=120 s on the spec path.  "
+            "command_stop() returned None — the fix to set _run_start_s=0.0 in "
+            "build_run_context_from_spec is not in effect.  IP claim 4 is not "
+            "being exercised on the live demo-20mw path."
+        )
+        assert "r5_min_run_not_elapsed" in block_reason, (
+            f"Block reason must identify R5.  Got: {block_reason!r}"
+        )
+        assert target.state == TurbineState.SYNCHRONISED, (
+            f"Turbine must remain SYNCHRONISED after R5 defers the stop.  "
+            f"Got state={target.state}"
         )

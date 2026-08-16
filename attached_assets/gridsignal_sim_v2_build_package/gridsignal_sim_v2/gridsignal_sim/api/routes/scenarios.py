@@ -473,15 +473,24 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             # the San Diego demo plant).  BessConfig default (1.0 MW) unchanged.
             bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0,
                                grid_forming=True, p_anchor_reserve_mw=2.0)],
-            # PW-1 / §15: p_min_stable_frac = 0.40 on all demo plant turbines.
-            # MSL = 0.40 × 7.0 = 2.8 MW per unit; Σ msl = 14.0 MW for 5 units
-            # (4 online + 1 hot-standby).  Loading layer enforces the floor;
-            # sub_msl_surplus_mw > 0 when P_fleet < 14.0 MW.  CHOSEN (PROTO-R4).
+            # IP claim 4 / R4–R6 turbine constraints (Phase 13.5).
+            # p_min_stable_frac=0.45 — frame-class MSL floor for IP claim 4
+            #   (CHOSEN; 0.45 × 7.0 = 3.15 MW per unit).  Prevents checkpoint
+            #   valleys from dispatching below the lean-extinction threshold and
+            #   producing stop/start cycles (zero OFFLINE transitions expected).
+            # t_min_run_s=1800 — 30 min minimum run time (R5, CHOSEN).
+            # t_min_down_s=900  — 15 min cooling window before restart (R6, CHOSEN).
+            # Hot-standby unit (turbine-4) retains p_min_stable_frac=0.40 as its
+            # MSL floor is not exercise-relevant while it is off-bus.
             turbine_units=[
-                _turbine("turbine-0", rated_mw=7.0, r_mw_per_s=0.2, p_min_stable_frac=0.40),
-                _turbine("turbine-1", rated_mw=7.0, r_mw_per_s=0.2, p_min_stable_frac=0.40),
-                _turbine("turbine-2", rated_mw=7.0, r_mw_per_s=0.2, p_min_stable_frac=0.40),
-                _turbine("turbine-3", rated_mw=7.0, r_mw_per_s=0.2, p_min_stable_frac=0.40),
+                _turbine("turbine-0", rated_mw=7.0, r_mw_per_s=0.2,
+                         p_min_stable_frac=0.45, t_min_run_s=1800, t_min_down_s=900),
+                _turbine("turbine-1", rated_mw=7.0, r_mw_per_s=0.2,
+                         p_min_stable_frac=0.45, t_min_run_s=1800, t_min_down_s=900),
+                _turbine("turbine-2", rated_mw=7.0, r_mw_per_s=0.2,
+                         p_min_stable_frac=0.45, t_min_run_s=1800, t_min_down_s=900),
+                _turbine("turbine-3", rated_mw=7.0, r_mw_per_s=0.2,
+                         p_min_stable_frac=0.45, t_min_run_s=1800, t_min_down_s=900),
                 _turbine("turbine-4", rated_mw=7.0, r_mw_per_s=0.2, hot_standby=True,
                           p_min_stable_frac=0.40),
             ],
