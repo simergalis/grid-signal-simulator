@@ -509,6 +509,19 @@ class ScenarioSpec(BaseModel):
     # Calendar month (1–12) for TOU pricing in EconomicDispatchLoop.step().
     # None = caller falls back to current calendar month at runtime (§4.1).
     edl_calendar_month: Optional[int] = Field(default=None, ge=1, le=12)
+
+    # Energy cost tariff applied to grid import at run completion.
+    # Drives CostModelEngine.compute_run_cost(); the on-site generation and
+    # storage cost parameters use the defaults in _COST_CFG_DEFAULTS (run_manager.py).
+    # Default 55 $/MWh matches the SyntheticPriceCurve BASE_PRICE_PER_MWH.
+    grid_import_price_per_mwh: float = Field(
+        default=55.0, ge=0.0,
+        description=(
+            "Grid import electricity price ($/MWh) used for the run-level "
+            "energy cost calculation.  Defaults to the synthetic price-curve "
+            "base of $55/MWh.  Set to 0 to suppress grid-import cost."
+        ),
+    )
     # Per-tenant power budget ceilings enforced by TenantBudgetGate (MT section).
     # Each dict: {"tenant_id": str, "ceiling_mw": float (> 0)}.
     tenant_budgets: Optional[list[dict]] = Field(default=None)
@@ -1301,6 +1314,23 @@ class RunResultResponse(BaseModel):
     # Allows operators to compare scenario economics from a single number
     # without aggregating the per-tick timeseries themselves.
     total_edl_dispatch_cost_usd: Optional[float] = None
+
+    # Energy accounting — populated for all spec-path runs that complete normally.
+    # None on headless / direct job-id runs where sim_state energy accumulators
+    # are not available (e.g. durability fallback loaded from DB without re-run).
+    #
+    # total_energy_demand_mwh:      total site load (IT + cooling) over the run
+    # total_energy_generation_mwh:  turbine + fuel-cell generation (on-site)
+    # total_energy_solar_mwh:       solar PV delivered (post-curtailment)
+    # total_energy_bess_charge_mwh: gross BESS charging energy (includes RT losses)
+    # total_energy_grid_import_mwh: implied grid import = demand − gen − solar + charge
+    # total_energy_cost_usd:        full run cost from CostModelEngine (grid + gen + storage)
+    total_energy_demand_mwh:      Optional[float] = None
+    total_energy_generation_mwh:  Optional[float] = None
+    total_energy_solar_mwh:       Optional[float] = None
+    total_energy_bess_charge_mwh: Optional[float] = None
+    total_energy_grid_import_mwh: Optional[float] = None
+    total_energy_cost_usd:        Optional[float] = None
 
 
 class TimeseriesRowResponse(BaseModel):

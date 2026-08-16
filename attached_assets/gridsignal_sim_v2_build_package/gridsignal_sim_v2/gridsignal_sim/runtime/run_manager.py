@@ -984,6 +984,16 @@ class CompletedRun:
     # from "EDL active but zero cost".
     total_edl_dispatch_cost_usd: Optional[float] = None
 
+    # Energy accounting — populated for all spec-path runs at completion.
+    # Derived from SimulationState energy accumulators (MW × dt_h = MWh each tick).
+    # None on headless/direct-path runs or durability fallbacks from DB.
+    total_energy_demand_mwh:      Optional[float] = None
+    total_energy_generation_mwh:  Optional[float] = None
+    total_energy_solar_mwh:       Optional[float] = None
+    total_energy_bess_charge_mwh: Optional[float] = None
+    total_energy_grid_import_mwh: Optional[float] = None
+    total_energy_cost_usd:        Optional[float] = None
+
 
 # ---------------------------------------------------------------------------
 # RunManager
@@ -2402,15 +2412,90 @@ class RunManager:
                         ctx.run_id,
                     )
 
-                # Amend verdict_json with total_edl_dispatch_cost_usd so that
-                # the value survives a server restart.  persist_completed_hook
-                # writes verdict_json to the DB; _load_completed_from_db() reads
-                # it back.  Written as null for headless runs so the DB fallback
-                # preserves the "EDL not wired" vs "zero cost" distinction.
+                # ── Energy accounting ──────────────────────────────────────
+                # Pull the per-run MWh accumulators from SimulationState and
+                # run them through CostModelEngine.  Available on any spec-path
+                # run that completed with a sim_state; None on headless/fallback.
+                _energy_demand_mwh:      Optional[float] = None
+                _energy_generation_mwh:  Optional[float] = None
+                _energy_solar_mwh:       Optional[float] = None
+                _energy_bess_charge_mwh: Optional[float] = None
+                _energy_grid_import_mwh: Optional[float] = None
+                _energy_cost_usd:        Optional[float] = None
+                try:
+                    _ss = ctx.sim_state
+                    _energy_demand_mwh      = round(getattr(_ss, "_run_energy_demand_mwh", 0.0), 4)
+                    _energy_generation_mwh  = round(getattr(_ss, "_run_energy_generation_mwh", 0.0), 4)
+                    _energy_solar_mwh       = round(getattr(_ss, "_run_energy_solar_mwh", 0.0), 4)
+                    _energy_bess_charge_mwh = round(getattr(_ss, "_run_energy_bess_charge_mwh", 0.0), 4)
+                    # Grid import is the residual: demand not served by on-site
+                    # generation or solar, plus any BESS charging that drew from
+                    # the grid.  Clamped at 0 — islanded runs naturally produce 0.
+                    _energy_grid_import_mwh = round(
+                        max(
+                            0.0,
+                            _energy_demand_mwh
+                            - _energy_generation_mwh
+                            - _energy_solar_mwh
+                            + _energy_bess_charge_mwh,
+                        ),
+                        4,
+                    )
+                    # Duration from the last tick's interval-end sim_time (seconds).
+                    _run_duration_h = (
+                        tick_dicts[-1].get("sim_time_seconds", 0.0) / 3600.0
+                        if tick_dicts else 0.0
+                    )
+                    from core.cost_model import CostModelConfig, CostModelEngine as _CME
+                    _spec_obj = getattr(ctx, "spec", None)
+                    _grid_price = (
+                        getattr(_spec_obj, "grid_import_price_per_mwh", 55.0)
+                        if _spec_obj is not None else 55.0
+                    )
+                    _cost_cfg = CostModelConfig(
+                        **{**_COST_CFG_DEFAULTS, "grid_import_price_per_mwh": _grid_price}
+                    )
+                    _cost_engine = _CME(_cost_cfg)
+                    _breakdown = _cost_engine.compute_run_cost(
+                        grid_import_mwh=_energy_grid_import_mwh,
+                        generation_mwh=_energy_generation_mwh,
+                        storage_charge_mwh=_energy_bess_charge_mwh,
+                        run_duration_hours=_run_duration_h,
+                        turbine_rated_mw=ctx.turbine_rated_mw,
+                    )
+                    _energy_cost_usd = _breakdown.total_cost
+                    logger.info(
+                        "run %s: energy accounting — demand=%.4f MWh, "
+                        "gen=%.4f MWh, solar=%.4f MWh, "
+                        "bess_charge=%.4f MWh, grid_import=%.4f MWh, "
+                        "total_cost=$%.2f",
+                        ctx.run_id,
+                        _energy_demand_mwh, _energy_generation_mwh,
+                        _energy_solar_mwh, _energy_bess_charge_mwh,
+                        _energy_grid_import_mwh, _energy_cost_usd,
+                    )
+                except Exception:
+                    logger.exception(
+                        "run %s: energy cost calculation failed — "
+                        "energy fields will be None on the result",
+                        ctx.run_id,
+                    )
+
+                # Amend verdict_json with total_edl_dispatch_cost_usd and energy
+                # fields so that the values survive a server restart.
+                # persist_completed_hook writes verdict_json to the DB;
+                # _load_completed_from_db() reads it back.  Written as null for
+                # headless runs so the DB fallback preserves intent.
                 if verdict_json is not None:
                     import json as _json_va
                     _vd = _json_va.loads(verdict_json)
                     _vd["total_edl_dispatch_cost_usd"] = _total_edl_dispatch_cost_usd
+                    _vd["total_energy_demand_mwh"]      = _energy_demand_mwh
+                    _vd["total_energy_generation_mwh"]  = _energy_generation_mwh
+                    _vd["total_energy_solar_mwh"]       = _energy_solar_mwh
+                    _vd["total_energy_bess_charge_mwh"] = _energy_bess_charge_mwh
+                    _vd["total_energy_grid_import_mwh"] = _energy_grid_import_mwh
+                    _vd["total_energy_cost_usd"]        = _energy_cost_usd
                     verdict_json = _json_va.dumps(_vd)
 
                 # Store for the results/playback screen.
@@ -2431,6 +2516,12 @@ class RunManager:
                     turbine_rated_mw=ctx.turbine_rated_mw,
                     balance_gate=_balance_gate,
                     total_edl_dispatch_cost_usd=_total_edl_dispatch_cost_usd,
+                    total_energy_demand_mwh=_energy_demand_mwh,
+                    total_energy_generation_mwh=_energy_generation_mwh,
+                    total_energy_solar_mwh=_energy_solar_mwh,
+                    total_energy_bess_charge_mwh=_energy_bess_charge_mwh,
+                    total_energy_grid_import_mwh=_energy_grid_import_mwh,
+                    total_energy_cost_usd=_energy_cost_usd,
                 )
 
                 # Tenant overage billing summary — emitted once per run when

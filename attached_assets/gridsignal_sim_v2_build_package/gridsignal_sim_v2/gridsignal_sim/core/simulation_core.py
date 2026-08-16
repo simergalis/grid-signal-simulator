@@ -220,6 +220,21 @@ class SimulationState:
     _relay_81u_timer_s: float = field(default=0.0, init=False)
     _relay_81u_fired:   bool  = field(default=False, init=False)
 
+    # ── Energy accumulators (MWh) ─────────────────────────────────────────────
+    # Incremented every tick by evaluate_tick() as MW × dt_seconds / 3600.
+    # Zero-initialised; never reset mid-run.  Read by run_manager at completion
+    # to drive CostModelEngine.compute_run_cost() without a second pass over
+    # the full tick history.
+    #
+    # _run_energy_demand_mwh:      Σ p_demand_mw × dt_h  (IT + cooling, total load)
+    # _run_energy_generation_mwh:  Σ (turbine + fuel cell) MW × dt_h
+    # _run_energy_solar_mwh:       Σ p_renewable_mw × dt_h  (post-curtailment)
+    # _run_energy_bess_charge_mwh: Σ max(0, −bess_output_mw) × dt_h  (charging energy)
+    _run_energy_demand_mwh:      float = field(default=0.0, init=False)
+    _run_energy_generation_mwh:  float = field(default=0.0, init=False)
+    _run_energy_solar_mwh:       float = field(default=0.0, init=False)
+    _run_energy_bess_charge_mwh: float = field(default=0.0, init=False)
+
     def __post_init__(self) -> None:
         # Step 3 Item 4: arbitrator now holds a reference to site so it can
         # read island_mode each tick (mode changes with operating state —
@@ -2007,6 +2022,19 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     _p_compute_unserved_mw = _p_unserved_mw * _compute_demand_frac
     _p_cooling_served_mw   = p_cooling_demand_mw - _p_unserved_mw * _cooling_demand_frac
     _p_cooling_unserved_mw = _p_unserved_mw * _cooling_demand_frac
+
+    # ── Energy accumulators ───────────────────────────────────────────────────
+    # Integrate power over this tick interval (MW × hours = MWh).
+    # Done here — after all asset advance() calls and dispatch — so every
+    # field reflects the physics-corrected values for this interval.
+    _dt_h = dt_seconds / 3600.0
+    state._run_energy_demand_mwh     += p_demand_mw * _dt_h
+    state._run_energy_generation_mwh += (turbine_output_mw + fuel_cell_output_mw) * _dt_h
+    state._run_energy_solar_mwh      += p_renewable_mw * _dt_h
+    # bess_output_mw < 0 means the BESS is absorbing (charging).
+    # Charging energy is tracked separately so cost_model.py can price
+    # round-trip losses without double-counting generation.
+    state._run_energy_bess_charge_mwh += max(0.0, -bess_output_mw) * _dt_h
 
     state.tick_index += 1
     return TickResult(
