@@ -15,7 +15,7 @@ import type { ScenarioSpec } from '../types'
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function isSeeded(id: string): boolean {
-  return id.startsWith('demo-') || /^S\d+_/.test(id) || id === 'demo_solar_peak'
+  return id.startsWith('demo-') || id.startsWith('scenario-') || /^S\d+_/.test(id) || id === 'demo_solar_peak'
 }
 
 function formatDate(iso: string): string {
