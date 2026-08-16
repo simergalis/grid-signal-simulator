@@ -752,7 +752,11 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             workload_events=[],      # gang-admission simulator handles all signals
             dt_lead_seconds=0.0,     # no advance notice — dt_lead=0 per spec
             bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
-            turbine_units=[_turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2)],
+            turbine_units=[
+                _turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2),
+                _turbine("turbine-1", rated_mw=25.0, r_mw_per_s=0.2, hot_standby=True),
+                _turbine("turbine-2", rated_mw=25.0, r_mw_per_s=0.2, hot_standby=True),
+            ],
             solar_rated_mw=_SOLAR_20MW,
             end_sim_time=600.0,      # 10 min — covers several admission / retirement cycles
             kube_config=KubeConfigSpec(
