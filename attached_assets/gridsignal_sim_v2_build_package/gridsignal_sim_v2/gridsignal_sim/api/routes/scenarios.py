@@ -743,9 +743,9 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
     ),
     # ── Kubernetes demand layer ───────────────────────────────────────────
     (
-        "demo-kube",
+        "scenario-kube-peak-overage",
         ScenarioSpec(
-            name="demo-kube",
+            name="scenario-kube-peak-overage",
             description=(
                 "This scenario demonstrates how GridSignal manages a data centre in which GPU jobs are scheduled by Kubernetes — an industry-standard cluster orchestrator — without any advance power notice to the grid. Unlike scripted scenarios where job arrivals are known in advance, the Kubernetes scheduler makes admission decisions independently and the power system finds out only when current begins to flow; over a 10-minute run, jobs arrive roughly every 45 seconds, each drawing between 50 and several hundred nodes, and the battery and generator must absorb each step reactively. When available grid headroom falls below 37 MW, the platform automatically holds new job admissions in the power-cap queue — visible in the Queue tab of the GPU Node Generator — and releases them as headroom recovers; if headroom falls to zero, it evicts the largest running job to protect grid stability. This matters because Kubernetes is the actual scheduler used in most AI data centres today, and demonstrating that GridSignal can manage a live cluster without requiring the scheduler to share its plans is central to the platform's production viability."
             ),

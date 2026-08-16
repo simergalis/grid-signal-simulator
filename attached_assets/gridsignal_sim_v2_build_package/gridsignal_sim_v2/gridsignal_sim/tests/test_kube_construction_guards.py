@@ -41,8 +41,8 @@ from runtime.scenario_factory import build_run_context_from_spec
 def _kube_spec() -> dict:
     """Return the demo-kube spec as a plain dict (JSON-round-trip safe)."""
     store = build_seeded_store()
-    rec = store._data.get("demo-kube")
-    assert rec is not None, "demo-kube not found in seeded store; check build_seeded_store()"
+    rec = store._data.get("scenario-kube-peak-overage")
+    assert rec is not None, "scenario-kube-peak-overage not found in seeded store; check build_seeded_store()"
     return json.loads(rec.spec_json)
 
 
