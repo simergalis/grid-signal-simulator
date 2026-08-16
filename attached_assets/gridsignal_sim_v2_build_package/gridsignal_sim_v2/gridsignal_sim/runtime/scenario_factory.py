@@ -852,6 +852,17 @@ def build_run_context_from_spec(
             ("B", "K8S",   0.35, 1),
             ("C", "RAY",   0.25, 2),
         ]
+        # Resolve rated_kw_per_node from the hardware library so the physics
+        # engine has ONE source of truth for power-per-node.  KubeConfig defaults
+        # to 0.0 (sentinel) — the factory is the only place that writes this.
+        _kube_hw_id = _kube_cfg_fields.get(
+            "hardware_profile_id", KubeConfig().hardware_profile_id
+        )
+        _kube_hw_profile = DEFAULT_HARDWARE_LIBRARY.get(
+            _kube_hw_id, DEFAULT_HARDWARE_LIBRARY["enterprise_8gpu_air"]
+        )
+        _kube_rated_kw = _kube_hw_profile.rated_kw  # single authority: the library
+
         _base_iat = _kube_cfg_fields.get(
             "mean_interarrival_s", KubeConfig().mean_interarrival_s
         )
@@ -860,6 +871,9 @@ def build_run_context_from_spec(
             _per_tenant_fields = dict(_kube_cfg_fields)
             _per_tenant_fields["tenant_id"] = _tid
             _per_tenant_fields["scheduler_type"] = _stype
+            # Authoritative rated_kw_per_node from the hardware library — the
+            # factory is the only place that writes this field on KubeConfig.
+            _per_tenant_fields["rated_kw_per_node"] = _kube_rated_kw
             # Scale interarrival time inversely to weight so combined arrival rate
             # matches the fleet spec.  Floor at 5 s to prevent degenerate configs.
             _per_tenant_fields["mean_interarrival_s"] = max(

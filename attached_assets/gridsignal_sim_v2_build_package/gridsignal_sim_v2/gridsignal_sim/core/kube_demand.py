@@ -164,8 +164,13 @@ class KubeConfig:
     scheduler_type: str = "K8S"   # "SLURM" | "K8S" | "RAY"
 
     # kW per GPU node, used to derive est_draw_mw on per-job summaries.
-    # PROPOSED_HERE — matches enterprise_8gpu_air default (10.2 kW/node).
-    rated_kw_per_node: float = 10.2
+    # SENTINEL DEFAULT — the factory (scenario_factory.py) MUST overwrite this
+    # from DEFAULT_HARDWARE_LIBRARY[hardware_profile_id].rated_kw at agent
+    # construction time.  The default 0.0 produces est_draw_mw = 0.0, which is
+    # a visible-wrong signal rather than a silently-plausible value.
+    # Do NOT change this to 10.2 — that would recreate the second source of
+    # truth this sentinel exists to prevent.
+    rated_kw_per_node: float = 0.0
 
     # ── Stochastic step timing / load coupling ────────────────────────────────
     # step_config — when set, a StepScheduler is wired to the agent.
