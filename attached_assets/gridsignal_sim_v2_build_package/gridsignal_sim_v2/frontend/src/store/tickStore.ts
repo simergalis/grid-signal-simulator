@@ -49,6 +49,9 @@ function toHistoryPoint(t: TickPayload): HistoryPoint {
     p_renewable_mw: t.p_renewable_mw,
     confidence_lower_mw: t.confidence_lower_mw,
     confidence_upper_mw: t.confidence_upper_mw,
+    // Phase 11.5: forecast centre and BESS setpoint for Forecast Quality panel.
+    forecast_mw: t.forecast_mw,
+    bess_setpoint_mw: t.bess_setpoint_mw,
   }
 }
 
@@ -72,6 +75,10 @@ function interpolateTick(a: TickPayload, b: TickPayload, t: number): TickPayload
     bess_soc_fraction: lerp(a.bess_soc_fraction, b.bess_soc_fraction),
     confidence_lower_mw: lerp(a.confidence_lower_mw, b.confidence_lower_mw),
     confidence_upper_mw: lerp(a.confidence_upper_mw, b.confidence_upper_mw),
+    // Phase 11.5: lerp forecast centre and BESS setpoint so the Forecast
+    // Quality panel animates smoothly between ticks (§2.2 interpolation rules).
+    forecast_mw:          lerp(a.forecast_mw,          b.forecast_mw),
+    bess_setpoint_mw:     lerp(a.bess_setpoint_mw,     b.bess_setpoint_mw),
     bess_bridging_seconds: lerp(a.bess_bridging_seconds, b.bess_bridging_seconds),
     dt_lead_next_s:   lerp(a.dt_lead_next_s,     b.dt_lead_next_s),
     // Boolean and string fields: use most-recent tick (b).

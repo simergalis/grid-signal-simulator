@@ -1254,6 +1254,12 @@ class TickResult:
     # D4: sum(grid_exchange_mw + frequency_forcing_mw + asset_delivery_error_mw)
     #     == (_p_gen_mw − p_total_mw) is asserted inline in evaluate_tick().
     frequency_hz:         float = 0.0   # always overwritten by evaluate_tick; 0 = sentinel
+    # Phase 11.5: site nominal frequency — constant for the duration of a run.
+    # Sourced from SiteConfig.frequency_nominal_hz and stamped by run_manager._drive()
+    # via dataclasses.replace() (same enrichment path as dt_thermal_seconds).
+    # Default 60.0 = WECC/SDG&E; 50.0 for EU/APAC/NZ sites.
+    # The frontend reads this to compute frequency deviation without hard-coding 60 Hz.
+    frequency_nominal_hz: float = 60.0  # stamped from SiteConfig in run_manager._drive()
     compute_inlet_temp_c: float = 20.0
     # ── Phase 13.2 — Balance decomposition ───────────────────────────────────
     # Three independently computed channels that sum to balance_residual_mw (D4).

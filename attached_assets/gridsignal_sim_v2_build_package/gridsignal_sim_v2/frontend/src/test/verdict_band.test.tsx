@@ -88,34 +88,102 @@ function makeTick(
     run_id:                    'test-run',
     tick_index:                1,
     sim_time_seconds,
+    // Core power fields
     p_compute_mw:              10.0,
     p_cooling_mw:              2.0,
     p_total_mw:                12.0,
     net_demand_mw:             7.0,
+    // GS-CHG-2026-08-08 Phase 2 — supply/served contract
+    p_compute_demand_mw:       10.0,
+    p_compute_served_mw:       null,
+    p_compute_unserved_mw:     null,
+    p_cooling_demand_mw:       2.0,
+    p_cooling_served_mw:       null,
+    p_cooling_unserved_mw:     null,
+    p_demand_mw:               12.0,
+    p_served_mw:               null,
+    p_unserved_mw:             null,
+    p_generation_mw:           9.0,
+    p_imbalance_mw:            null,
+    // Generation assets
     turbine_output_mw:         9.0,
     bess_output_mw:            0.0,
+    fuel_cell_output_mw:       0.0,
+    bess_setpoint_mw:          0.0,
     bess_soc_fraction:         0.95,
+    bess_soc_corrupted_fraction: null,
+    // BESS fleet aggregates
+    bess_rated_mw:             30.0,
+    bess_usable_mwh:           60.0,
+    bess_unit_count:           1,
+    // Thermal site parameters
+    dt_thermal_seconds:        30.0,
+    alpha_max:                 0.98,
+    bess_anchor_reserve_mw:    1.0,
+    design_peak_load_mw:       14.0,
+    // EDL / PMS
+    edl_dispatch_cost_usd:     null,
+    pms_shortfall_log:         [],
+    source_audit_violations:   [],
+    // Confidence band + forecast
     confidence_lower_mw:       10.0,
     confidence_upper_mw:       14.0,
+    forecast_mw:               12.0,
+    // Balance decomposition channels
+    grid_exchange_mw:          0.0,
+    frequency_forcing_mw:      0.0,
+    asset_delivery_error_mw:   0.0,
+    model_error_mw:            0.0,
+    binding_constraint:        null,
+    // Frequency
+    frequency_hz:              60.0,
+    frequency_nominal_hz:      60.0,
+    // Island collapse
+    island_collapsed:          false,
+    collapse_reason:           null,
+    collapse_tick_index:       null,
+    collapse_frequency_hz:     null,
+    // Protection
+    protection_provisional:    false,
+    // Renewable
     p_renewable_mw:            5.0,
+    p_renewable_curtailed_mw:  0.0,
+    // Bridging / lead
     bess_bridging_seconds:     3060,
     bridging_basis:            'predicted_peak',
+    turbine_ramp_credit_mw:    0.0,
+    peak_shortfall_mw:         0.0,
     dt_lead_next_s,
-    insufficient_reserve_alert: false,
-    data_quality_tags:         [],
-    checkpoint_states:         {},
+    // Thermal headroom
     rated_cooling_mw:          4.59,
     absorbable_mw:             4.59,
     time_to_limit_s:           86400,
     approach_rate_mw_s:        0.0,
+    // Turbine fleet
     turbine_units:             [],
+    units_on_bus_count:        1,
+    on_bus_output_mw:          9.0,
+    ramp_capability_mw:        0.0,
+    // Flags / misc
+    insufficient_reserve_alert: false,
+    data_quality_tags:         [],
+    checkpoint_states:         {},
     kube_metrics:              null,
     solar_weather:             'clear',
     solar_conditions:          'good',
     contingency_coverage:      cc,
     advisory_telemetry:        null,
     fabric:                    null,
-  }
+    // Pre-staging
+    pre_staging_shift_mw:      0.0,
+    pre_staging_precool_mw:    0.0,
+    // PMS
+    pms_fast_shed_active:      false,
+    pms_order_conflict:        null,
+    unrecognised_profile_alerts: [],
+    curtailment_proposal_tiers:  [],
+    scada_commands_issued:     0,
+  } as unknown as TickPayload  // cast needed — fixture omits rarely-read fields
 }
 
 function seedTick(tick: TickPayload) {

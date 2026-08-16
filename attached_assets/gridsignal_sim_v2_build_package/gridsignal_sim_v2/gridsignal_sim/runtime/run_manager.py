@@ -493,10 +493,14 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # gt_setpoint_mw:   total dispatch requirement handed to turbine fleet.
         # balance_residual_mw REMOVED (Branch B): D4 asserted inline in evaluate_tick();
         #   value not broadcast.  Read the three decomposition channels below instead.
-        # frequency_hz: 50 Hz nominal ± swing-equation deviation (islanded only).
-        "bess_setpoint_mw":    round(tick.bess_setpoint_mw, 4),
-        "gt_setpoint_mw":      round(tick.gt_setpoint_mw, 4),
-        "frequency_hz":        round(tick.frequency_hz, 4),
+        # frequency_hz: 50/60 Hz nominal ± swing-equation deviation (islanded only).
+        # frequency_nominal_hz: per-site reference frequency (constant; stamped by _drive).
+        #   60.0 = WECC/SDG&E; 50.0 = EU/APAC/NZ.  Frontend computes deviation as
+        #   frequency_hz − frequency_nominal_hz — never hard-code 60 Hz on the client.
+        "bess_setpoint_mw":      round(tick.bess_setpoint_mw, 4),
+        "gt_setpoint_mw":        round(tick.gt_setpoint_mw, 4),
+        "frequency_hz":          round(tick.frequency_hz, 4),
+        "frequency_nominal_hz":  round(tick.frequency_nominal_hz, 4),
         # ── Phase 13.2: Balance decomposition ────────────────────────────────
         # Three independent channels.  D4 invariant asserted in evaluate_tick().
         # grid_exchange_mw:          PCC flow — exactly 0 in islanded mode (D1).
@@ -2056,6 +2060,10 @@ class RunManager:
                     # alpha_max: base cooling fraction — NOT × ambient_alpha_scale.
                     dt_thermal_seconds=ctx.sim_state.site.dt_thermal_seconds,
                     alpha_max=ctx.sim_state.site.alpha_max,
+                    # Phase 11.5: stamp site nominal frequency — constant for this run.
+                    # The frontend Forecast Quality panel reads this to compute
+                    # frequency deviation without hard-coding 60 Hz (50 Hz for EU/APAC).
+                    frequency_nominal_hz=ctx.sim_state.site.frequency_nominal_hz,
                     # ── Phase 6 (GS-DES-CFG-001 §Phase-6): anchor reserve + design peak ──
                     # bess_anchor_reserve_mw: p_anchor_reserve_mw from the grid-forming BESS
                     #   unit; falls back to TickResult default (catalogue value) when absent.

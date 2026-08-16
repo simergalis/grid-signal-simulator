@@ -126,10 +126,15 @@ export interface TickPayload {
   model_error_mw:            number
   binding_constraint:        string | null
 
-  // Phase 13.3: live frequency measurement — 60 Hz nominal (WECC/SDG&E) ± swing-equation deviation.
+  // Phase 13.3: live frequency measurement ± swing-equation deviation.
   // Islanded: integrated each tick via frequency_forcing_mw (governor droop provides restoring force).
   // Grid-connected: held at site frequency_nominal_hz (grid is the reference; forcing term is 0).
   frequency_hz: number
+  // Phase 11.5: site nominal frequency — constant for the duration of a run.
+  // 60.0 Hz = WECC/SDG&E (US West Coast); 50.0 Hz = EU/APAC/NZ.
+  // Stamped by run_manager._drive() from SiteConfig.frequency_nominal_hz.
+  // Frontend must read this to compute deviation — never hard-code 60 Hz.
+  frequency_nominal_hz: number
 
   // §FP: Frequency protection outcome for this tick.
   // island_collapsed: true on the one tick where a protection threshold fires.
@@ -696,6 +701,12 @@ export type HistoryPoint = {
   p_renewable_mw: number
   confidence_lower_mw: number
   confidence_upper_mw: number
+  // Phase 11.5: forecast centre for the Forecast Quality panel chart.
+  // Matches confidence.point_estimate_mw bit-for-bit (F4 criterion).
+  forecast_mw: number
+  // Phase 11.5: BESS dispatch command (before SoC/power clipping) —
+  // stored in history so the setpoint vs measured gap is chartable.
+  bess_setpoint_mw: number
 }
 
 // ---------------------------------------------------------------------------
