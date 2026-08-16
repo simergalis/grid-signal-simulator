@@ -16,6 +16,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
+import { queueWaitColour, fmtQueueWait, compareByQueuedSince } from './queueUtils'
 import {
   useGpuGeneratorStore,
   DEFAULT_CONFIG,
@@ -540,16 +541,7 @@ export function GpuNodeGeneratorModal({ onClose, initialTab }: Props) {
           {/* QUEUE tab — jobs held by power-cap, sorted longest-waiting first */}
           {activeTab === 'queue' && (() => {
             const simNow = latestTick?.sim_time_seconds ?? 0
-            const sortedQueue = [...(kube?.pending_jobs ?? [])].sort(
-              (a, b) => a.queued_since_s - b.queued_since_s   // oldest first
-            )
-            function fmtWait(secs: number): string {
-              if (secs < 0) return '—'
-              if (secs < 60) return `${Math.floor(secs)}s`
-              const m = Math.floor(secs / 60)
-              const s = Math.floor(secs % 60)
-              return s > 0 ? `${m}m ${s}s` : `${m}m`
-            }
+            const sortedQueue = [...(kube?.pending_jobs ?? [])].sort(compareByQueuedSince)
             return (
               <div>
                 <p className="text-[11px] text-muted mb-3 font-mono">
@@ -574,7 +566,7 @@ export function GpuNodeGeneratorModal({ onClose, initialTab }: Props) {
                     </thead>
                     <tbody>
                       {sortedQueue.map(job => {
-                        const colour = TENANT_COLOUR_BY_ID[job.tenant_id] ?? '#4b5764'
+                        const colour = TENANT_COLOUR[job.tenant_id] ?? '#4b5764'
                         const wait   = simNow - job.queued_since_s
                         const isRequeued = job.requeue_count > 0
                         return (
@@ -583,7 +575,7 @@ export function GpuNodeGeneratorModal({ onClose, initialTab }: Props) {
                             <td className="py-2 pr-3">
                               <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded"
                                 style={{ background: colour + '22', color: colour }}>
-                                {SCHEDULER_BADGE_BY_TYPE[job.scheduler_type] ?? job.scheduler_type}
+                                {SCHEDULER_BADGE[job.scheduler_type] ?? job.scheduler_type}
                               </span>
                             </td>
                             <td className="py-2 pr-3 font-mono text-xs text-muted max-w-[120px] truncate">{job.event_id}</td>
@@ -601,8 +593,8 @@ export function GpuNodeGeneratorModal({ onClose, initialTab }: Props) {
                               t={job.queued_since_s.toFixed(0)}s
                             </td>
                             <td className="py-2 pr-3 font-mono text-xs tabular-nums font-semibold"
-                              style={{ color: wait > 120 ? '#f85149' : wait > 30 ? '#f0883e' : '#3fb6a8' }}>
-                              {fmtWait(wait)}
+                              style={{ color: queueWaitColour(wait) }}>
+                              {fmtQueueWait(wait)}
                             </td>
                             <td className="py-2">
                               <span className="font-mono text-xs tabular-nums"
