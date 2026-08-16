@@ -743,6 +743,14 @@ export interface RunResult {
   // null on headless runs where EDL is not wired; non-null on spec-path runs.
   // Use to compare scenario economics without aggregating the timeseries.
   total_edl_dispatch_cost_usd: number | null
+  // Task #453: run-level energy accounting (MWh and USD).
+  // null on headless/direct-path runs or durability fallback rows from DB.
+  total_energy_demand_mwh:      number | null
+  total_energy_generation_mwh:  number | null
+  total_energy_solar_mwh:       number | null
+  total_energy_bess_charge_mwh: number | null
+  total_energy_grid_import_mwh: number | null
+  total_energy_cost_usd:        number | null
 }
 
 export interface TimeseriesRow {

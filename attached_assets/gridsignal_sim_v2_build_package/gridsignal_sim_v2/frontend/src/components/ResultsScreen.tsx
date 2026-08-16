@@ -18,7 +18,7 @@
  *   ├─────────────────┬───────────────────────────────────┤
  *   │ GapWarning      │  PlaybackChart                    │
  *   │ AssertionList   │  PlaybackScrubber                 │
- *   │                 │  TickDetail                       │
+ *   │ EnergyCostPanel │  TickDetail                       │
  *   └─────────────────┴───────────────────────────────────┘
  */
 
@@ -27,6 +27,7 @@ import type { RunResult, TimeseriesRow } from '../types'
 import { VerdictBanner }    from './VerdictBanner'
 import { GapWarning }       from './GapWarning'
 import { AssertionList }    from './AssertionList'
+import { EnergyCostPanel }  from './EnergyCostPanel'
 import { PlaybackChart }    from './PlaybackChart'
 import { PlaybackScrubber } from './PlaybackScrubber'
 import { TickDetail }       from './TickDetail'
@@ -170,6 +171,13 @@ export function ResultsScreen({ runId, onClose, onRerun }: Props) {
               Assertions
             </h2>
             <AssertionList assertions={result.assertions} />
+          </div>
+
+          <div>
+            <h2 className="mb-1 font-mono text-[10px] uppercase tracking-wider text-muted">
+              Energy cost
+            </h2>
+            <EnergyCostPanel result={result} />
           </div>
         </aside>
 
