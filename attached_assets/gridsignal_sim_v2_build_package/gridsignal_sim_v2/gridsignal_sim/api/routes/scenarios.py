@@ -754,8 +754,13 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0, grid_forming=True)],
             turbine_units=[
                 _turbine("turbine-0", rated_mw=25.0, r_mw_per_s=0.2),
-                _turbine("turbine-1", rated_mw=25.0, r_mw_per_s=0.2, hot_standby=True),
-                _turbine("turbine-2", rated_mw=25.0, r_mw_per_s=0.2, hot_standby=True),
+                # turbine-1 and turbine-2 start offline but thermally hot —
+                # operator can start either via the unit-command API; hot start
+                # takes 300 s.  hot_standby=True was intentionally avoided:
+                # hot-standby units are dispatch-arbitrator-managed and cannot
+                # be started by the operator.
+                _turbine("turbine-1", rated_mw=25.0, r_mw_per_s=0.2, thermal_state="hot"),
+                _turbine("turbine-2", rated_mw=25.0, r_mw_per_s=0.2, thermal_state="hot"),
             ],
             solar_rated_mw=_SOLAR_20MW,
             end_sim_time=600.0,      # 10 min — covers several admission / retirement cycles

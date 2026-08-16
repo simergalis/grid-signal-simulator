@@ -656,8 +656,9 @@ export function ComputeRacksModal({ tick, onClose }: Props) {
                         </td>
                         <td className="py-4 pr-4 min-w-[130px]">
                           {(() => {
-                            const pct = Math.min(1, tenantMW / t.contractedMW)
-                            const barColour = pct > 0.85 ? '#f85149' : pct > 0.70 ? '#f0a500' : '#3fb6a8'
+                            const rawPct = tenantMW / t.contractedMW
+                            const pct    = Math.min(1, rawPct)
+                            const barColour = rawPct > 0.85 ? '#f85149' : rawPct > 0.70 ? '#f0a500' : '#3fb6a8'
                             const maxGPUs   = Math.round(t.contractedMW / GPU_TDP_MW)
                             return (
                               <div>
@@ -673,7 +674,7 @@ export function ComputeRacksModal({ tick, onClose }: Props) {
                                   </div>
                                   <span className="text-[10px] font-mono text-muted shrink-0"
                                     title={`Max ${maxGPUs.toLocaleString()} GPUs (${t.contractedMW.toFixed(2)} MW ÷ 700 W/H100)`}>
-                                    {Math.round(pct * 100)}%
+                                    {Math.round(rawPct * 100)}%
                                   </span>
                                 </div>
                               </div>
