@@ -40,11 +40,6 @@ const TENANT_COLOUR: Record<string, string> = {
 const SCHEDULER_BADGE: Record<string, string> = {
   A: 'Slurm', B: 'Kubernetes', C: 'Ray',
 }
-const STATUS_COLOUR: Record<string, string> = {
-  PENDING: '#4b5764', Pending: '#4b5764',
-  RUNNING: '#3fb6a8', Running: '#3fb6a8',
-  COMPLETING: '#f0a500', Succeeded: '#4b5764', SUCCEEDED: '#4b5764',
-}
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -338,15 +333,15 @@ export function GpuNodeGeneratorModal({ onClose, initialTab }: Props) {
           <div className="flex items-center gap-6 text-xs font-mono">
             <div>
               <span className="text-muted">Active jobs  </span>
-              <span className="text-text font-semibold">{allJobs.filter(({ job }) => job.status === 'RUNNING' || job.status === 'Running').length}</span>
+              <span className="text-text font-semibold">{allLiveJobs.filter(({ status }) => status === 'RUNNING').length}</span>
             </div>
             <div>
               <span className="text-muted">GPU nodes  </span>
-              <span className="text-text font-semibold">{totalGPUs.toLocaleString()}</span>
+              <span className="text-text font-semibold">{liveTotalNodes.toLocaleString()}</span>
             </div>
             <div>
               <span className="text-muted">Est. draw  </span>
-              <span style={{ color: '#3fb6a8' }} className="font-semibold">{fmtMW(totalMW)}</span>
+              <span style={{ color: '#3fb6a8' }} className="font-semibold">{fmtMW(liveTotalMW)}</span>
             </div>
             <div>
               <span className="text-muted">Feed events  </span>
@@ -359,7 +354,7 @@ export function GpuNodeGeneratorModal({ onClose, initialTab }: Props) {
             {(['config', 'jobs', 'queue', 'feed'] as const).map(tab => {
               const queueCount = kube?.pending_jobs?.length ?? 0
               const label =
-                tab === 'jobs'  ? `Jobs (${allJobs.length})` :
+                tab === 'jobs'  ? `Jobs (${allLiveJobs.length})` :
                 tab === 'feed'  ? `Feed (${feed.length})` :
                 tab === 'queue' ? `Queue${queueCount > 0 ? ` (${queueCount})` : ''}` :
                 'Config'
@@ -566,7 +561,7 @@ export function GpuNodeGeneratorModal({ onClose, initialTab }: Props) {
                     </thead>
                     <tbody>
                       {sortedQueue.map(job => {
-                        const colour = TENANT_COLOUR[job.tenant_id] ?? '#4b5764'
+                        const colour = TENANT_COLOUR_BY_ID[job.tenant_id] ?? '#4b5764'
                         const wait   = simNow - job.queued_since_s
                         const isRequeued = job.requeue_count > 0
                         return (
@@ -575,7 +570,7 @@ export function GpuNodeGeneratorModal({ onClose, initialTab }: Props) {
                             <td className="py-2 pr-3">
                               <span className="text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded"
                                 style={{ background: colour + '22', color: colour }}>
-                                {SCHEDULER_BADGE[job.scheduler_type] ?? job.scheduler_type}
+                                {SCHEDULER_BADGE_BY_TYPE[job.scheduler_type] ?? job.scheduler_type}
                               </span>
                             </td>
                             <td className="py-2 pr-3 font-mono text-xs text-muted max-w-[120px] truncate">{job.event_id}</td>
