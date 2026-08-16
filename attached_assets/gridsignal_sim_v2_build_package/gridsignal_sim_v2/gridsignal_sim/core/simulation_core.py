@@ -27,7 +27,6 @@ from .kube_demand import KubeDemandAgent, KubeGridState
 _log = logging.getLogger(__name__)
 
 
-
 from .dispatch import (
     CandidateResponse, CheckpointClassifier, ConfidenceEngine, CurtailmentLadder,
     CurtailmentProposal, CurtailmentTier, DispatchArbitrator, InsufficientReserveAlert,
@@ -150,6 +149,13 @@ class SimulationState:
     # scripted scenarios and tests omit it (empty = no-op, fully backward-compat).
     gpu_load_profile: list[tuple[float, float]] = field(default_factory=list)
 
+    # Phase 11.4 — Workload floor (MW).
+    # Computed from ScenarioSpec.workload_floor_fraction × peak_compute_mw
+    # by core.generation_factory.compute_floor_mw() at run start.
+    # evaluate_tick() clamps p_compute_demand_mw to at least this value every tick.
+    # 0.0 (default) = no floor enforced; fully backward-compatible.
+    compute_floor_mw: float = 0.0
+
     # Scripted tenant workload events — each adds GPU TDP to p_compute_demand_mw
     # during [t_start, t_start + duration_s).  Populated from
     # ScenarioSpec.tenant_events at run start via scenario_factory.py.
@@ -219,21 +225,6 @@ class SimulationState:
     _cumulative_shed_mw: float = field(default=0.0, init=False)
     _relay_81u_timer_s: float = field(default=0.0, init=False)
     _relay_81u_fired:   bool  = field(default=False, init=False)
-
-    # ── Energy accumulators (MWh) ─────────────────────────────────────────────
-    # Incremented every tick by evaluate_tick() as MW × dt_seconds / 3600.
-    # Zero-initialised; never reset mid-run.  Read by run_manager at completion
-    # to drive CostModelEngine.compute_run_cost() without a second pass over
-    # the full tick history.
-    #
-    # _run_energy_demand_mwh:      Σ p_demand_mw × dt_h  (IT + cooling, total load)
-    # _run_energy_generation_mwh:  Σ (turbine + fuel cell) MW × dt_h
-    # _run_energy_solar_mwh:       Σ p_renewable_mw × dt_h  (post-curtailment)
-    # _run_energy_bess_charge_mwh: Σ max(0, −bess_output_mw) × dt_h  (charging energy)
-    _run_energy_demand_mwh:      float = field(default=0.0, init=False)
-    _run_energy_generation_mwh:  float = field(default=0.0, init=False)
-    _run_energy_solar_mwh:       float = field(default=0.0, init=False)
-    _run_energy_bess_charge_mwh: float = field(default=0.0, init=False)
 
     def __post_init__(self) -> None:
         # Step 3 Item 4: arbitrator now holds a reference to site so it can
@@ -646,6 +637,43 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                             state.tenant_overage_mwh.get(_tid, 0.0)
                             + (_draw_mw - _ceil) * _dt_h
                         )
+
+    # Phase 11.4 — Apply workload floor (compute_floor_mw).
+    # Clamps p_compute_demand_mw to at least compute_floor_mw so the Forecast
+    # Quality panel always shows a visible actual-vs-forecast gap.  Only active
+    # when the scenario sets workload_floor_fraction (compute_floor_mw > 0.0).
+    # No-op when compute_floor_mw == 0.0 (default; all existing tests unaffected).
+    #
+    # Cooling-envelope contract: scenario_factory registers a "__floor__" envelope
+    # at run start whenever compute_floor_mw > 0.0.  This block must maintain a
+    # sample for that envelope on every tick to keep the lagged cooling correct:
+    #
+    #   • No active jobs (all load from floor): "__floor__" gets compute_floor_mw;
+    #     job envelopes get nothing (they have no active draw this tick).
+    #   • Jobs active but total < floor: job draws are scaled up to floor_mw;
+    #     "__floor__": 0.0 is recorded so the floor envelope drains to zero and
+    #     does not double-count with the scaled-up job heat.
+    #   • Jobs active and total ≥ floor (floor not binding): job draws are passed
+    #     unchanged; "__floor__": 0.0 is recorded so the floor envelope drains.
+    if state.compute_floor_mw > 0.0:
+        if p_compute_demand_mw < state.compute_floor_mw:
+            p_compute_demand_mw = state.compute_floor_mw
+            _draw_total = sum(_per_job_draws.values()) if _per_job_draws else 0.0
+            if _draw_total > 0.0:
+                # Jobs partially cover demand — scale them up to meet floor.
+                # Record __floor__: 0.0 so its envelope drains and does not
+                # double-count heat with the scaled job envelopes.
+                _scale = state.compute_floor_mw / _draw_total
+                _per_job_draws = {k: v * _scale for k, v in _per_job_draws.items()}
+                _per_job_draws["__floor__"] = 0.0
+            else:
+                # No active jobs: floor carries all the compute load.
+                _per_job_draws = {"__floor__": state.compute_floor_mw}
+        else:
+            # Floor not binding: jobs carry the load.  Zero the floor envelope so
+            # its history drains to zero and does not inflate cooling demand.
+            _per_job_draws = dict(_per_job_draws)
+            _per_job_draws["__floor__"] = 0.0
 
     state.cooling.record_job_compute(sim_time, _per_job_draws)
 
@@ -2022,19 +2050,6 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     _p_compute_unserved_mw = _p_unserved_mw * _compute_demand_frac
     _p_cooling_served_mw   = p_cooling_demand_mw - _p_unserved_mw * _cooling_demand_frac
     _p_cooling_unserved_mw = _p_unserved_mw * _cooling_demand_frac
-
-    # ── Energy accumulators ───────────────────────────────────────────────────
-    # Integrate power over this tick interval (MW × hours = MWh).
-    # Done here — after all asset advance() calls and dispatch — so every
-    # field reflects the physics-corrected values for this interval.
-    _dt_h = dt_seconds / 3600.0
-    state._run_energy_demand_mwh     += p_demand_mw * _dt_h
-    state._run_energy_generation_mwh += (turbine_output_mw + fuel_cell_output_mw) * _dt_h
-    state._run_energy_solar_mwh      += p_renewable_mw * _dt_h
-    # bess_output_mw < 0 means the BESS is absorbing (charging).
-    # Charging energy is tracked separately so cost_model.py can price
-    # round-trip losses without double-counting generation.
-    state._run_energy_bess_charge_mwh += max(0.0, -bess_output_mw) * _dt_h
 
     state.tick_index += 1
     return TickResult(

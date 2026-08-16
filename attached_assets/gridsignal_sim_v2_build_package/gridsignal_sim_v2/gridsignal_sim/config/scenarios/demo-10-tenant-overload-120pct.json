@@ -219,15 +219,37 @@
   "generator_config": {
     "ratePerMinute": 2,
     "burstMode": true,
-    "burstSize": [3, 6],
-    "burstIntervalSeconds": [120, 300],
-    "tenantWeights": { "a": 0.40, "b": 0.35, "c": 0.25 },
-    "jobSizes": { "small": 0.45, "medium": 0.40, "large": 0.15 },
+    "burstSize": [
+      3,
+      6
+    ],
+    "burstIntervalSeconds": [
+      120,
+      300
+    ],
+    "tenantWeights": {
+      "a": 0.4,
+      "b": 0.35,
+      "c": 0.25
+    },
+    "jobSizes": {
+      "small": 0.45,
+      "medium": 0.4,
+      "large": 0.15
+    },
     "maxJobsPerTenant": 15,
-    "jobDurationRange": [60, 300],
-    "tenantContracts": { "a": 1.40, "b": 1.00, "c": 0.60 }
+    "jobDurationRange": [
+      60,
+      300
+    ],
+    "tenantContracts": {
+      "a": 1.4,
+      "b": 1.0,
+      "c": 0.6
+    }
   },
   "assertions": [],
+  "workload_floor_fraction": 0.5,
   "fabric_scenario_id": null,
   "ui_bess_rated_mw": null,
   "ui_bess_usable_mwh": null

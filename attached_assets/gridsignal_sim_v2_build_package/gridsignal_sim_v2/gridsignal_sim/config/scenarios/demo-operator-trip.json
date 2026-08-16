@@ -1,6 +1,6 @@
 {
   "name": "demo-operator-trip",
-  "description": "This scenario demonstrates the operator manual turbine control feature across a full three-hour operational cycle, giving operators direct command over individual generators while the compute workload rises and falls in structured phases. The site starts with a 50-node floor, ramps to 1,000 nodes over 30 minutes, steps down to 500 and back up to 1,000, collapses to 50 and recovers a second time, then winds down to 50 again \u2014 with idle periods between each phase. Across five 15 MW gas turbines, the two fastest to start (turbine-0, already hot; turbine-1, warm) come online first, while the three cold units commit sequentially as load demands it. At any point the operator can trip a synchronised turbine using the Trip button in the Gas Turbine Fleet panel \u2014 its output drops to zero on the next tick and the battery bridges the shortfall \u2014 or start an offline unit with the Start button, re-entering it into the normal ramp-up sequence. The varied workload phases provide multiple natural windows to exercise both commands under different demand conditions. This matters because generator trips are routine in real facilities, and manual control of individual units \u2014 for protection testing, maintenance scheduling, or load rebalancing \u2014 must be available without interrupting the compute workload.",
+  "description": "This scenario demonstrates the operator manual turbine control feature across a full three-hour operational cycle, giving operators direct command over individual generators while the compute workload rises and falls in structured phases. The site starts with a 50-node floor, ramps to 1,000 nodes over 30 minutes, steps down to 500 and back up to 1,000, collapses to 50 and recovers a second time, then winds down to 50 again — with idle periods between each phase. Across five 15 MW gas turbines, the two fastest to start (turbine-0, already hot; turbine-1, warm) come online first, while the three cold units commit sequentially as load demands it. At any point the operator can trip a synchronised turbine using the Trip button in the Gas Turbine Fleet panel — its output drops to zero on the next tick and the battery bridges the shortfall — or start an offline unit with the Start button, re-entering it into the normal ramp-up sequence. The varied workload phases provide multiple natural windows to exercise both commands under different demand conditions. This matters because generator trips are routine in real facilities, and manual control of individual units — for protection testing, maintenance scheduling, or load rebalancing — must be available without interrupting the compute workload.",
   "workload_events": [
     {
       "event_id": "evt-job-base-start",
@@ -1052,6 +1052,7 @@
   "dq_inject_events": [],
   "solar_origin_utc_hour": null,
   "assertions": [],
+  "workload_floor_fraction": 0.5,
   "fabric_scenario_id": null,
   "ui_bess_rated_mw": null,
   "ui_bess_usable_mwh": null

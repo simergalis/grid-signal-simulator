@@ -1,6 +1,6 @@
 {
   "name": "Islanded 8-60-10 MW ramp - sequential commitment and release",
-  "description": "This scenario demonstrates GridSignal managing a full-scale data centre ramp-up and ramp-down over 90 minutes \u2014 the closest approximation to a real operational day in the simulator. Starting from a 1,000-node floor, additional GPU jobs arrive every 35 seconds, driving compute load in steps from 10.5 MW up to 63 MW at 6,000 nodes by the 15-minute mark; a five-minute peak hold follows before the same staircase is reversed, shedding jobs gradually until the site returns to its baseline floor. Throughout the ramp, a fleet of five 15 MW gas turbines commit and decommit in sequence alongside 15 MW of solar and an 18 MW battery, and the operator watches generation staging, N-1 coverage, and reserve status evolve continuously across every phase. This matters because the economics and reliability of the platform are ultimately proven at scale over time, not in short stress tests: this scenario is where investors and operators can see how GridSignal behaves across a complete operational cycle.",
+  "description": "This scenario demonstrates GridSignal managing a full-scale data centre ramp-up and ramp-down over 90 minutes — the closest approximation to a real operational day in the simulator. Starting from a 1,000-node floor, additional GPU jobs arrive every 35 seconds, driving compute load in steps from 10.5 MW up to 63 MW at 6,000 nodes by the 15-minute mark; a five-minute peak hold follows before the same staircase is reversed, shedding jobs gradually until the site returns to its baseline floor. Throughout the ramp, a fleet of five 15 MW gas turbines commit and decommit in sequence alongside 15 MW of solar and an 18 MW battery, and the operator watches generation staging, N-1 coverage, and reserve status evolve continuously across every phase. This matters because the economics and reliability of the platform are ultimately proven at scale over time, not in short stress tests: this scenario is where investors and operators can see how GridSignal behaves across a complete operational cycle.",
   "workload_events": [
     {
       "event_id": "evt-base-start",
@@ -671,6 +671,7 @@
       "threshold": 0.2
     }
   ],
+  "workload_floor_fraction": 0.5,
   "fabric_scenario_id": null,
   "ui_bess_rated_mw": 50,
   "ui_bess_usable_mwh": 50

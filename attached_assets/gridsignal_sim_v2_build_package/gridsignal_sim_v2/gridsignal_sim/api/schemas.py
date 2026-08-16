@@ -510,18 +510,6 @@ class ScenarioSpec(BaseModel):
     # None = caller falls back to current calendar month at runtime (§4.1).
     edl_calendar_month: Optional[int] = Field(default=None, ge=1, le=12)
 
-    # Energy cost tariff applied to grid import at run completion.
-    # Drives CostModelEngine.compute_run_cost(); the on-site generation and
-    # storage cost parameters use the defaults in _COST_CFG_DEFAULTS (run_manager.py).
-    # Default 55 $/MWh matches the SyntheticPriceCurve BASE_PRICE_PER_MWH.
-    grid_import_price_per_mwh: float = Field(
-        default=55.0, ge=0.0,
-        description=(
-            "Grid import electricity price ($/MWh) used for the run-level "
-            "energy cost calculation.  Defaults to the synthetic price-curve "
-            "base of $55/MWh.  Set to 0 to suppress grid-import cost."
-        ),
-    )
     # Per-tenant power budget ceilings enforced by TenantBudgetGate (MT section).
     # Each dict: {"tenant_id": str, "ceiling_mw": float (> 0)}.
     tenant_budgets: Optional[list[dict]] = Field(default=None)
@@ -560,6 +548,26 @@ class ScenarioSpec(BaseModel):
             "Zero-order-hold GPU load profile. Each tuple is (sim_time_s, fraction [0,1]). "
             "Empty = constant 1.0 (full load). The active fraction scales p_compute_demand_mw "
             "each tick so operators can shape GPU utilisation over time."
+        ),
+    )
+
+    # Phase 11.4 — Workload floor fraction.
+    # Sets the minimum compute load as a fraction (0–1) of the scenario's declared
+    # peak compute load (derived from workload_events node counts or kube_config.max_nodes).
+    # When set, evaluate_tick() clamps compute_load_mw to at least
+    #   workload_floor_fraction × peak_compute_mw
+    # throughout the run, ensuring the Forecast Quality panel always has a visible
+    # actual-vs-forecast gap rather than a near-zero flatline when no jobs are active.
+    # None (default) = no floor enforced (backward-compatible with all existing scenarios).
+    workload_floor_fraction: Optional[float] = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "Minimum compute load as a fraction of peak (0.0–1.0). "
+            "When set, p_compute_demand_mw never falls below "
+            "workload_floor_fraction × peak_compute_mw. "
+            "None = no floor (default, backward-compatible)."
         ),
     )
 
@@ -1315,22 +1323,6 @@ class RunResultResponse(BaseModel):
     # without aggregating the per-tick timeseries themselves.
     total_edl_dispatch_cost_usd: Optional[float] = None
 
-    # Energy accounting — populated for all spec-path runs that complete normally.
-    # None on headless / direct job-id runs where sim_state energy accumulators
-    # are not available (e.g. durability fallback loaded from DB without re-run).
-    #
-    # total_energy_demand_mwh:      total site load (IT + cooling) over the run
-    # total_energy_generation_mwh:  turbine + fuel-cell generation (on-site)
-    # total_energy_solar_mwh:       solar PV delivered (post-curtailment)
-    # total_energy_bess_charge_mwh: gross BESS charging energy (includes RT losses)
-    # total_energy_grid_import_mwh: implied grid import = demand − gen − solar + charge
-    # total_energy_cost_usd:        full run cost from CostModelEngine (grid + gen + storage)
-    total_energy_demand_mwh:      Optional[float] = None
-    total_energy_generation_mwh:  Optional[float] = None
-    total_energy_solar_mwh:       Optional[float] = None
-    total_energy_bess_charge_mwh: Optional[float] = None
-    total_energy_grid_import_mwh: Optional[float] = None
-    total_energy_cost_usd:        Optional[float] = None
 
 
 class TimeseriesRowResponse(BaseModel):

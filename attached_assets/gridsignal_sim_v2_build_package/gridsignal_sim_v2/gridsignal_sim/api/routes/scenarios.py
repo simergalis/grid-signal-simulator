@@ -869,6 +869,53 @@ _SEEDED: list[tuple[str, ScenarioSpec]] = [
             gpu_load_profile=[],   # full GPU load throughout (no throttling)
         ),
     ),
+    # ── Phase 11.4: Grid-resonance stress — preserves near-zero floor ────
+    (
+        "grid-resonance-stress",
+        ScenarioSpec(
+            name="grid-resonance-stress",
+            description=(
+                "This scenario preserves the original near-zero communication-phase floor "
+                "for edge-case testing of the Forecast Quality panel under extreme "
+                "actual-vs-forecast conditions. The workload_floor_fraction is set to 0.02 "
+                "(2% of peak), giving a floor of approximately 0.13 MW for the 600-node "
+                "peak load, so the actual compute draw can fall nearly to zero during idle "
+                "and communication phases. Use this scenario to verify that the Forecast "
+                "Quality panel handles near-zero gaps correctly — a sharp divergence "
+                "between the TDP-based forecast and near-zero actual load is the stress "
+                "condition. The main demo scenarios now use a 50% floor so the gap is "
+                "visible throughout the run; this scenario retains the pre-Phase-11.4 "
+                "behaviour for regression and edge-case coverage."
+            ),
+            # Job runs for the first 90 s then ends, leaving an idle phase
+            # (t = 90–300 s) where p_compute_demand_mw is floored at ~0.126 MW.
+            # That near-zero idle stretch is the stress condition this scenario
+            # exists to cover: actual ≈ 0.126 MW vs TDP-forecast ≈ 6.3 MW.
+            workload_events=[
+                _evt_start("job-big", _DEMO_NODES),
+                _evt_job_end("job-big", t=90.0),
+            ],
+            dt_lead_seconds=30.0,
+            bess_units=[_bess("bess-0", rated_mw=18.0, usable_mwh=8.0,
+                               grid_forming=True, p_anchor_reserve_mw=2.0)],
+            turbine_units=[
+                _turbine("turbine-0", rated_mw=7.0, r_mw_per_s=0.2, p_min_stable_frac=0.40),
+                _turbine("turbine-1", rated_mw=7.0, r_mw_per_s=0.2, p_min_stable_frac=0.40),
+                _turbine("turbine-2", rated_mw=7.0, r_mw_per_s=0.2, p_min_stable_frac=0.40),
+                _turbine("turbine-3", rated_mw=7.0, r_mw_per_s=0.2, p_min_stable_frac=0.40),
+                _turbine("turbine-4", rated_mw=7.0, r_mw_per_s=0.2, hot_standby=True,
+                          p_min_stable_frac=0.40),
+            ],
+            solar_rated_mw=_SOLAR_DEMO,
+            end_sim_time=300.0,
+            frequency_nominal_hz=60.0,
+            power_factor=0.85,
+            gpu_load_profile=[],   # full GPU load while job is active
+            # Phase 11.4: near-zero floor — 2% of 6.3036 MW peak ≈ 0.126 MW ≈ 0.13 MW.
+            # Preserved for edge-case testing; main demo scenarios use 0.50.
+            workload_floor_fraction=0.02,
+        ),
+    ),
 ]
 
 

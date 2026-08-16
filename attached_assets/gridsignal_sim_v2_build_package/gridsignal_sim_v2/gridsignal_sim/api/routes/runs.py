@@ -136,14 +136,6 @@ async def _load_completed_from_db(run_id: str) -> "CompletedRun | None":
             # Task #428: restore run-level EDL total persisted in verdict_json.
             # None when the key is absent (pre-#428 rows) or was null (headless).
             total_edl_dispatch_cost_usd=_v.get("total_edl_dispatch_cost_usd"),
-            # Energy accounting — restored from verdict_json when present.
-            # None on pre-energy-accounting rows (key absent) or headless runs.
-            total_energy_demand_mwh=_v.get("total_energy_demand_mwh"),
-            total_energy_generation_mwh=_v.get("total_energy_generation_mwh"),
-            total_energy_solar_mwh=_v.get("total_energy_solar_mwh"),
-            total_energy_bess_charge_mwh=_v.get("total_energy_bess_charge_mwh"),
-            total_energy_grid_import_mwh=_v.get("total_energy_grid_import_mwh"),
-            total_energy_cost_usd=_v.get("total_energy_cost_usd"),
         )
     except Exception:
         _log.warning("run %s: DB fallback verdict parse failed", run_id, exc_info=True)
@@ -636,12 +628,6 @@ async def get_run_result(
         ],
         balance_gate=_balance_gate_resp,
         total_edl_dispatch_cost_usd=completed.total_edl_dispatch_cost_usd,
-        total_energy_demand_mwh=completed.total_energy_demand_mwh,
-        total_energy_generation_mwh=completed.total_energy_generation_mwh,
-        total_energy_solar_mwh=completed.total_energy_solar_mwh,
-        total_energy_bess_charge_mwh=completed.total_energy_bess_charge_mwh,
-        total_energy_grid_import_mwh=completed.total_energy_grid_import_mwh,
-        total_energy_cost_usd=completed.total_energy_cost_usd,
     )
 
 

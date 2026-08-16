@@ -24,6 +24,11 @@ from fastapi.testclient import TestClient
 from api.app import create_app
 from api.schemas import BessUnitSpec, ScenarioSpec, TurbineUnitSpec, WorkloadEventSpec
 from core.asset_modules import IrradianceProfile
+from core.generation_factory import (
+    compute_floor_mw as _compute_floor_mw,
+    peak_compute_mw as _peak_compute_mw,
+    _GPU_TDP_MW,
+)
 from core.models import (
     BessConfig,
     WorkloadClass,
@@ -449,6 +454,7 @@ class TestSeededScenarios:
         expected = {
             "demo-20mw", "demo-alert", "demo-5mw", "demo-baseline",
             "demo-fleet", "demo-tc33-compute", "demo-tc33-renewable",
+            "grid-resonance-stress",  # Phase 11.4: preserves near-zero floor
         }
         assert expected <= ids
 
@@ -494,6 +500,651 @@ class TestSeededScenarios:
         assert len(steps) == 2
         assert steps[0] == [pytest.approx(0.0), pytest.approx(1.0)]
         assert steps[1] == [pytest.approx(30.0), pytest.approx(0.0)]
+
+
+# ---------------------------------------------------------------------------
+# Phase 11.4 — Workload floor fraction assertions (TC-11.4)
+# ---------------------------------------------------------------------------
+
+# JSON-based demo scenario IDs seeded via _seed_json_scenarios().  All of
+# these must carry workload_floor_fraction in [0.40, 0.60] as of Phase 11.4.
+_JSON_DEMO_IDS = [
+    "demo-islanded-ramp",
+    "demo-operator-trip",
+    "demo-10-tenant-random-gpu",
+    "demo-10-tenant-full-ceiling",
+    "demo-10-tenant-overload-120pct",
+    "demo-grid-fc-bess-shaped-load",
+    "demo-20-tenant-contract-breach",
+    "demo-turbine-fc-bess-20-tenants-overage",
+]
+
+
+class TestWorkloadFloorFraction:
+    """TC-11.4 — Validate Phase 11.4 workload_floor_fraction in all demo scenarios."""
+
+    def test_json_demo_scenarios_present(self):
+        """All JSON-based demo scenarios must be available in the scenario list."""
+        with TestClient(create_app()) as client:
+            ids = {s["scenario_id"] for s in client.get("/scenarios").json()}
+        missing = set(_JSON_DEMO_IDS) - ids
+        assert not missing, f"JSON demo scenarios missing from store: {missing}"
+
+    @pytest.mark.parametrize("scenario_id", _JSON_DEMO_IDS)
+    def test_demo_json_floor_fraction_in_range(self, scenario_id: str):
+        """Each JSON demo scenario must have workload_floor_fraction in [0.40, 0.60].
+
+        Phase 11.4 raises the floor so the Forecast Quality panel shows a
+        realistic actual-vs-forecast gap throughout a run, not just during
+        the initial ramp.
+        """
+        with TestClient(create_app()) as client:
+            detail = client.get(f"/scenarios/{scenario_id}").json()
+        spec = detail["spec"]
+        wff = spec.get("workload_floor_fraction")
+        assert wff is not None, (
+            f"{scenario_id}: workload_floor_fraction is absent — must be set to 0.40–0.60"
+        )
+        assert 0.40 <= wff <= 0.60, (
+            f"{scenario_id}: workload_floor_fraction={wff!r} is outside [0.40, 0.60]"
+        )
+
+    def test_grid_resonance_stress_present(self):
+        """Phase 11.4: grid-resonance-stress scenario must be available."""
+        with TestClient(create_app()) as client:
+            ids = {s["scenario_id"] for s in client.get("/scenarios").json()}
+        assert "grid-resonance-stress" in ids
+
+    def test_grid_resonance_stress_low_floor_fraction(self):
+        """grid-resonance-stress must preserve the near-zero (≤0.05) floor fraction.
+
+        This scenario retains the pre-Phase-11.4 behaviour so edge-case tests
+        can exercise the Forecast Quality panel under near-zero actual load.
+        The floor ≈ 0.02 × 6.3036 MW ≈ 0.126 MW ≈ 0.13 MW.
+        """
+        with TestClient(create_app()) as client:
+            detail = client.get("/scenarios/grid-resonance-stress").json()
+        spec = detail["spec"]
+        wff = spec.get("workload_floor_fraction")
+        assert wff is not None, "grid-resonance-stress must have workload_floor_fraction set"
+        assert wff <= 0.05, (
+            f"grid-resonance-stress floor fraction {wff!r} must be ≤0.05 to "
+            f"preserve the near-zero communication-phase floor"
+        )
+        assert wff == pytest.approx(0.02, rel=1e-4), (
+            f"grid-resonance-stress floor fraction expected 0.02, got {wff!r}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Phase 11.4 — Runtime floor tests: computed MW and evaluate_tick() clamp
+# ---------------------------------------------------------------------------
+
+class TestGenerationFactoryPeak:
+    """TC-11.4 unit tests for core.generation_factory peak / floor helpers."""
+
+    def test_single_job_peak(self):
+        """Single STARTING event: peak = nodes × hw_kw × pue / 1000."""
+        spec = {
+            "workload_floor_fraction": 0.5,
+            "workload_events": [
+                {"event_type": "starting", "job_id": "job-1",
+                 "timestamp": 0.0, "node_count": 100},
+            ],
+        }
+        expected_peak = 100 * 10.2 * 1.03 / 1000.0  # 1.0506 MW
+        assert _peak_compute_mw(spec) == pytest.approx(expected_peak, rel=1e-4)
+        assert _compute_floor_mw(spec) == pytest.approx(0.5 * expected_peak, rel=1e-4)
+
+    def test_concurrent_multi_job_peak(self):
+        """Two overlapping STARTING events: peak uses their *concurrent* sum, not the larger alone."""
+        spec = {
+            "workload_floor_fraction": 0.5,
+            "workload_events": [
+                # job-1 starts at t=0 (100 nodes), job-2 at t=10 (200 nodes).
+                # No JOB_END in this window → both active simultaneously at t=10.
+                {"event_type": "starting", "job_id": "job-1",
+                 "timestamp": 0.0, "node_count": 100},
+                {"event_type": "starting", "job_id": "job-2",
+                 "timestamp": 10.0, "node_count": 200},
+            ],
+        }
+        # Max concurrent: 100 + 200 = 300 nodes
+        expected_peak = 300 * 10.2 * 1.03 / 1000.0  # 3.1518 MW
+        # The old single-STARTING-max algorithm would have returned 200 * 10.2 * 1.03 / 1000
+        old_wrong_peak = 200 * 10.2 * 1.03 / 1000.0
+        peak = _peak_compute_mw(spec)
+        assert peak == pytest.approx(expected_peak, rel=1e-4), (
+            f"Concurrent peak should be {expected_peak:.4f} MW (300 nodes); got {peak:.4f} MW. "
+            f"A value near {old_wrong_peak:.4f} MW indicates the old single-event bug."
+        )
+        assert _compute_floor_mw(spec) == pytest.approx(0.5 * expected_peak, rel=1e-4)
+
+    def test_job_end_removes_nodes_from_concurrent_total(self):
+        """After JOB_END, those nodes no longer count toward concurrent peak."""
+        spec = {
+            "workload_floor_fraction": 0.5,
+            "workload_events": [
+                {"event_type": "starting", "job_id": "job-1",
+                 "timestamp": 0.0, "node_count": 500},
+                {"event_type": "job_end", "job_id": "job-1",
+                 "timestamp": 10.0, "node_count": 0},
+                {"event_type": "starting", "job_id": "job-2",
+                 "timestamp": 20.0, "node_count": 100},
+            ],
+        }
+        # Max concurrent: 500 (job-1 alone at t=0); after JOB_END only 100 active
+        expected_peak = 500 * 10.2 * 1.03 / 1000.0
+        assert _peak_compute_mw(spec) == pytest.approx(expected_peak, rel=1e-4)
+
+    def test_custom_pue_scales_peak_correctly(self):
+        """Top-level pue_base is read from spec_data and applied to node power.
+
+        ScenarioSpec serialises pue_base as a top-level field (not nested under
+        site_config); build_run_context_from_spec reads it the same way.  This
+        test uses the real serialised shape to catch any schema mismatch.
+        """
+        # Build a real ScenarioSpec with pue_base=1.35 and serialize it to JSON
+        # the same way build_run_context_from_spec receives it.
+        spec_obj = _minimal_spec(
+            name="pue135-test",
+            pue_base=1.35,
+            workload_floor_fraction=0.5,
+            workload_events=[
+                WorkloadEventSpec(event_id="e0", job_id="job-1",
+                                  event_type="starting", timestamp=0.0, node_count=100),
+            ],
+        )
+        spec_dict = json.loads(spec_obj.model_dump_json())
+        # Confirm the PUE landed at the top level (not nested)
+        assert spec_dict.get("pue_base") == pytest.approx(1.35, rel=1e-4), (
+            f"ScenarioSpec must serialise pue_base at top level; "
+            f"got spec_dict['pue_base']={spec_dict.get('pue_base')!r}"
+        )
+        # PUE 1.35, not 1.03: 100 * 10.2 * 1.35 / 1000 = 1.377 MW
+        expected_peak = 100 * 10.2 * 1.35 / 1000.0
+        default_pue_peak = 100 * 10.2 * 1.03 / 1000.0
+        peak = _peak_compute_mw(spec_dict)
+        assert peak == pytest.approx(expected_peak, rel=1e-4), (
+            f"PUE 1.35 peak should be {expected_peak:.4f} MW; got {peak:.4f} MW. "
+            f"A value near {default_pue_peak:.4f} MW means PUE was not read from spec."
+        )
+
+    def test_tenant_event_peak_uses_concurrent_not_total(self):
+        """Tenant peak must be max simultaneous GPU TDP, not the run-total sum.
+
+        Non-overlapping tenant jobs must produce a peak equal to the largest
+        single-job TDP, not the sum of all jobs.  This prevents the floor from
+        exceeding the actual concurrent load when tenants run sequentially.
+        """
+        spec = {
+            "workload_floor_fraction": 0.5,
+            "tenant_events": [
+                # Two sequential jobs (no overlap)
+                {"tenant_id": "t1", "gpus": 10000, "t_start": 0.0, "duration_s": 100.0},
+                {"tenant_id": "t2", "gpus": 5000,  "t_start": 200.0, "duration_s": 100.0},
+            ],
+        }
+        # Concurrent peak: 10000 GPUs × 0.0007 MW = 7.0 MW (NOT 15000 × 0.0007 = 10.5)
+        expected_peak = 10000 * _GPU_TDP_MW
+        wrong_total_sum = 15000 * _GPU_TDP_MW
+        peak = _peak_compute_mw(spec)
+        assert peak == pytest.approx(expected_peak, rel=1e-4), (
+            f"Non-overlapping tenant peak should be {expected_peak:.3f} MW (max single job); "
+            f"got {peak:.3f} MW. A value near {wrong_total_sum:.3f} MW means all jobs were "
+            f"summed instead of the maximum concurrent draw."
+        )
+        # Floor = 50% of concurrent peak, not 50% of total
+        assert _compute_floor_mw(spec) == pytest.approx(0.5 * expected_peak, rel=1e-4)
+
+    def test_tenant_event_peak_overlapping_jobs(self):
+        """Overlapping tenant jobs contribute to the concurrent peak together."""
+        spec = {
+            "workload_floor_fraction": 0.5,
+            "tenant_events": [
+                # Two overlapping jobs (both active 100–200s)
+                {"tenant_id": "t1", "gpus": 3000, "t_start": 0.0, "duration_s": 200.0},
+                {"tenant_id": "t2", "gpus": 2000, "t_start": 100.0, "duration_s": 200.0},
+            ],
+        }
+        # Concurrent peak at 100–200s: (3000 + 2000) × 0.0007 = 3.5 MW
+        expected_peak = 5000 * _GPU_TDP_MW
+        peak = _peak_compute_mw(spec)
+        assert peak == pytest.approx(expected_peak, rel=1e-4), (
+            f"Overlapping tenant peak should be {expected_peak:.3f} MW; got {peak:.3f} MW"
+        )
+
+    def test_same_timestamp_job_end_and_starting_does_not_create_transient_peak(self):
+        """A JOB_END and a new STARTING at the same timestamp must be applied
+        atomically — the peak must NOT reflect a transient window where both are
+        simultaneously counted.
+
+        Scenario: job-A with 1000 nodes ends at t=100 and job-B with 1000 nodes
+        starts at t=100.  The true peak is 1000 nodes (the jobs replace each other).
+        A per-event sample would briefly see 2000 nodes if the STARTING is applied
+        before the JOB_END, creating a floor at 60% × 2 × peak = 120% of the real
+        maximum and injecting artificial demand.
+        """
+        nodes = 1000
+        spec = {
+            "workload_floor_fraction": 0.6,
+            "workload_events": [
+                # job-A runs 0–100 s
+                {"event_type": "starting", "job_id": "job-A",
+                 "timestamp": 0.0, "node_count": nodes,
+                 "hardware_profile_id": "enterprise_8gpu_air"},
+                {"event_type": "job_end", "job_id": "job-A",
+                 "timestamp": 100.0, "node_count": 0},
+                # job-B starts exactly when job-A ends
+                {"event_type": "starting", "job_id": "job-B",
+                 "timestamp": 100.0, "node_count": nodes,
+                 "hardware_profile_id": "enterprise_8gpu_air"},
+            ],
+        }
+        single_job_mw = nodes * 10.2 * 1.03 / 1000.0  # ≈ 10.506 MW
+        floor = _compute_floor_mw(spec)
+        # 60% of single_job_mw — must NOT be 60% of 2× due to transient peak
+        assert floor == pytest.approx(0.6 * single_job_mw, rel=1e-4), (
+            f"Same-timestamp handoff: floor should be 60% × {single_job_mw:.4f} MW = "
+            f"{0.6 * single_job_mw:.4f} MW; got {floor:.4f} MW. A value near "
+            f"{0.6 * 2 * single_job_mw:.4f} MW indicates a transient 2× peak was counted."
+        )
+
+    def test_kube_max_nodes_plus_tenant_peak_is_additive_when_concurrent(self):
+        """kube_config.max_nodes participates in the unified timeline alongside tenant events.
+
+        evaluate_tick() adds kube demand and tenant demand together, so the floor
+        must be derived from their combined concurrent draw, not from kube alone.
+        """
+        kube_nodes = 100  # enterprise_8gpu_air default
+        tenant_gpus = 5000
+        spec = {
+            "workload_floor_fraction": 0.5,
+            "kube_config": {"max_nodes": kube_nodes},
+            "tenant_events": [
+                # Tenant burst is concurrent with kube capacity
+                {"tenant_id": "t1", "gpus": tenant_gpus,
+                 "t_start": 0.0, "duration_s": 3600.0},
+            ],
+        }
+        kube_mw = kube_nodes * 10.2 * 1.03 / 1000.0  # ≈ 1.0506 MW
+        tenant_mw = tenant_gpus * _GPU_TDP_MW           # 3.5 MW
+        expected_combined_peak = kube_mw + tenant_mw    # ≈ 4.5506 MW
+        wrong_kube_only = kube_mw                       # 1.0506 MW (wrong)
+
+        peak = _peak_compute_mw(spec)
+        assert peak == pytest.approx(expected_combined_peak, rel=1e-4), (
+            f"Kube+tenant concurrent peak should be {expected_combined_peak:.4f} MW "
+            f"(sum); got {peak:.4f} MW. A value near {wrong_kube_only:.4f} MW means "
+            f"kube capacity was not combined with tenant events on the unified timeline."
+        )
+        floor = _compute_floor_mw(spec)
+        assert floor == pytest.approx(0.5 * expected_combined_peak, rel=1e-4)
+
+    def test_combined_workload_and_tenant_peak_coincident_is_additive(self):
+        """Concurrent workload and tenant peaks add together.
+
+        When a workload job and a tenant burst are active at the same time,
+        peak_compute_mw() must return their sum — evaluate_tick() adds both
+        draws on every concurrent tick.
+        """
+        workload_nodes = 100
+        tenant_gpus = 5000
+        spec = {
+            "workload_floor_fraction": 0.5,
+            # Workload job starts at t=0, no job_end → active throughout
+            "workload_events": [
+                {"event_type": "starting", "job_id": "j1",
+                 "timestamp": 0.0, "node_count": workload_nodes,
+                 "hardware_profile_id": "enterprise_8gpu_air"},
+            ],
+            # Tenant burst overlaps the workload job
+            "tenant_events": [
+                {"tenant_id": "t1", "gpus": tenant_gpus,
+                 "t_start": 0.0, "duration_s": 3600.0},
+            ],
+        }
+        workload_peak = workload_nodes * 10.2 * 1.03 / 1000.0  # ≈ 1.0506 MW
+        tenant_peak = tenant_gpus * _GPU_TDP_MW                  # 3.5 MW
+        expected_peak = workload_peak + tenant_peak               # ≈ 4.5506 MW
+
+        peak = _peak_compute_mw(spec)
+        assert peak == pytest.approx(expected_peak, rel=1e-4), (
+            f"Coincident workload+tenant peak should be {expected_peak:.4f} MW (sum); "
+            f"got {peak:.4f} MW."
+        )
+
+    def test_combined_workload_and_tenant_peak_non_overlapping_uses_larger(self):
+        """Non-overlapping workload and tenant sources: peak is the larger single source.
+
+        A workload job that ends before any tenant burst starts must not have its
+        individual maximum added to the tenant maximum.  The unified timeline
+        yields max(workload_peak, tenant_peak) when the windows do not overlap.
+        """
+        workload_nodes = 100
+        tenant_gpus = 5000
+        spec = {
+            "workload_floor_fraction": 0.5,
+            # Workload job runs 0–90 s then ends
+            "workload_events": [
+                {"event_type": "starting", "job_id": "j1",
+                 "timestamp": 0.0, "node_count": workload_nodes,
+                 "hardware_profile_id": "enterprise_8gpu_air"},
+                {"event_type": "job_end", "job_id": "j1",
+                 "timestamp": 90.0, "node_count": 0},
+            ],
+            # Tenant burst starts after workload ends (no overlap)
+            "tenant_events": [
+                {"tenant_id": "t1", "gpus": tenant_gpus,
+                 "t_start": 200.0, "duration_s": 3600.0},
+            ],
+        }
+        workload_peak_mw = workload_nodes * 10.2 * 1.03 / 1000.0  # ≈ 1.0506 MW
+        tenant_peak_mw = tenant_gpus * _GPU_TDP_MW                  # 3.5 MW
+        expected_peak = max(workload_peak_mw, tenant_peak_mw)        # 3.5 MW (tenant wins)
+        wrong_additive = workload_peak_mw + tenant_peak_mw           # 4.5506 MW (wrong)
+
+        peak = _peak_compute_mw(spec)
+        assert peak == pytest.approx(expected_peak, rel=1e-4), (
+            f"Non-overlapping peak should be {expected_peak:.4f} MW (max of the two); "
+            f"got {peak:.4f} MW.  A value near {wrong_additive:.4f} MW means the "
+            f"individual maxima were summed instead of resolved on a unified timeline."
+        )
+        floor = _compute_floor_mw(spec)
+        # Floor must be 50 % of 3.5 MW = 1.75 MW, well below the 3.5 MW actual max.
+        assert floor == pytest.approx(0.5 * expected_peak, rel=1e-4)
+        assert floor < expected_peak, (
+            "Floor must never exceed the actual peak (would inject artificial demand)"
+        )
+
+    def test_combined_workload_and_tenant_peak_partial_overlap(self):
+        """Partially overlapping sources: peak is the maximum concurrent combined draw."""
+        workload_nodes = 100
+        tenant_gpus = 5000
+        spec = {
+            "workload_floor_fraction": 0.5,
+            # Workload job: 0–500 s
+            "workload_events": [
+                {"event_type": "starting", "job_id": "j1",
+                 "timestamp": 0.0, "node_count": workload_nodes,
+                 "hardware_profile_id": "enterprise_8gpu_air"},
+                {"event_type": "job_end", "job_id": "j1",
+                 "timestamp": 500.0, "node_count": 0},
+            ],
+            # Tenant burst: 400–1000 s (overlaps 400–500 s with workload)
+            "tenant_events": [
+                {"tenant_id": "t1", "gpus": tenant_gpus,
+                 "t_start": 400.0, "duration_s": 600.0},
+            ],
+        }
+        wl_mw = workload_nodes * 10.2 * 1.03 / 1000.0  # ≈ 1.0506 MW
+        t_mw = tenant_gpus * _GPU_TDP_MW                 # 3.5 MW
+        # Peak window 400–500 s: both active → 1.0506 + 3.5 = 4.5506 MW
+        expected_peak = wl_mw + t_mw
+
+        peak = _peak_compute_mw(spec)
+        assert peak == pytest.approx(expected_peak, rel=1e-4), (
+            f"Partial-overlap peak should be {expected_peak:.4f} MW (overlap window); "
+            f"got {peak:.4f} MW"
+        )
+
+    def test_tenant_event_floor_is_40_to_60_pct_of_concurrent_peak(self):
+        """Floor fraction 0.5 yields exactly 50% of the concurrent tenant peak."""
+        spec = {
+            "workload_floor_fraction": 0.5,
+            "tenant_events": [
+                {"tenant_id": "t1", "gpus": 4000, "t_start": 0.0, "duration_s": 3600.0},
+                {"tenant_id": "t2", "gpus": 3000, "t_start": 0.0, "duration_s": 3600.0},
+            ],
+        }
+        # Both active from t=0; concurrent peak = 7000 × 0.0007 = 4.9 MW
+        concurrent_peak = 7000 * _GPU_TDP_MW
+        floor = _compute_floor_mw(spec)
+        assert floor == pytest.approx(0.5 * concurrent_peak, rel=1e-4)
+        assert 0.40 * concurrent_peak <= floor <= 0.60 * concurrent_peak
+
+    def test_scale_without_prior_starting_creates_base_cohort(self):
+        """A SCALE event with no prior STARTING must create the initial cohort.
+
+        GPUModule.apply_signal() supports this 'already-running injection' path
+        where a SCALE arrives for a job that was already running before the
+        scenario timeline begins.  The factory must mirror this so the peak
+        includes those nodes rather than returning 0 MW.
+        """
+        spec = {
+            "workload_floor_fraction": 0.5,
+            "workload_events": [
+                # No STARTING event — job is treated as already running
+                {"event_type": "scale", "job_id": "live-job",
+                 "timestamp": 0.0, "node_count": 200,
+                 "hardware_profile_id": "enterprise_8gpu_air"},
+            ],
+        }
+        expected_peak = 200 * 10.2 * 1.03 / 1000.0  # 2.1012 MW
+        peak = _peak_compute_mw(spec)
+        assert peak == pytest.approx(expected_peak, rel=1e-4), (
+            f"SCALE-without-STARTING peak should be {expected_peak:.4f} MW (200 nodes); "
+            f"got {peak:.4f} MW. A value of 0 means the event was ignored."
+        )
+        assert _compute_floor_mw(spec) == pytest.approx(0.5 * expected_peak, rel=1e-4), (
+            "Floor must be 50% of the SCALE-without-STARTING peak"
+        )
+
+    def test_scale_up_with_different_hw_profile_uses_scale_event_kw(self):
+        """SCALE-UP cohort uses the SCALE event's hardware_profile_id, not the original.
+
+        A job that starts on enterprise_8gpu_air (10.2 kW/node) but scales up
+        with nextgen_rack_liquid (126 kW/node) must derive peak from the mix,
+        not from 10.2 kW/node throughout.  This mirrors the runtime's cohort model
+        where the scale-up delta forms its own cohort with the SCALE event's profile.
+        """
+        spec = {
+            "workload_floor_fraction": 0.5,
+            "workload_events": [
+                # Start with 100 enterprise_8gpu_air nodes (10.2 kW)
+                {"event_type": "starting", "job_id": "job-1",
+                 "timestamp": 0.0, "node_count": 100,
+                 "hardware_profile_id": "enterprise_8gpu_air"},
+                # Scale up by 10 nextgen_rack_liquid nodes (126 kW) — new total=110
+                {"event_type": "scale", "job_id": "job-1",
+                 "timestamp": 10.0, "node_count": 110,
+                 "hardware_profile_id": "nextgen_rack_liquid"},
+            ],
+        }
+        # Peak: 100 * 10.2 * 1.03 / 1000  +  10 * 126 * 1.03 / 1000
+        #      = 1.0506  +  1.2978  = 2.3484 MW
+        expected_peak = (100 * 10.2 + 10 * 126.0) * 1.03 / 1000.0
+        wrong_peak_single_profile = 110 * 10.2 * 1.03 / 1000.0
+        peak = _peak_compute_mw(spec)
+        assert peak == pytest.approx(expected_peak, rel=1e-4), (
+            f"Mixed-profile scale peak should be {expected_peak:.4f} MW; got {peak:.4f} MW. "
+            f"A value near {wrong_peak_single_profile:.4f} MW means SCALE kept the "
+            f"original profile for new nodes instead of using the SCALE event's profile."
+        )
+
+    def test_grid_resonance_stress_computed_floor_approx_013_mw(self):
+        """grid-resonance-stress floor ≈ 0.02 × 6.3036 MW ≈ 0.126 MW ≈ 0.13 MW.
+
+        Tests the *computed* floor (not just the stored fraction) so that any
+        change to peak derivation or PUE handling is immediately caught.
+        """
+        with TestClient(create_app()) as client:
+            detail = client.get("/scenarios/grid-resonance-stress").json()
+        spec_dict = detail["spec"]
+        floor = _compute_floor_mw(spec_dict)
+        expected_floor = 0.02 * _NODES * _ENT_KW * _PUE / 1000.0   # 0.02 × 6.3036
+        assert floor == pytest.approx(expected_floor, rel=1e-3), (
+            f"grid-resonance-stress computed floor {floor:.4f} MW ≠ expected "
+            f"{expected_floor:.4f} MW (~0.13 MW)"
+        )
+        assert 0.10 <= floor <= 0.16, (
+            f"grid-resonance-stress floor {floor:.4f} MW outside [0.10, 0.16] MW"
+        )
+
+
+class TestComputeFloorRuntime:
+    """TC-11.4 runtime tests: SimulationState.compute_floor_mw and evaluate_tick() enforcement."""
+
+    def _floor_spec(self, node_count: int = 100, floor_fraction: float = 0.5,
+                    job_start_t: float = 0.0, dt_lead_seconds: float = 30.0) -> dict:
+        """Build a minimal valid spec dict with workload_floor_fraction set."""
+        spec = _minimal_spec(
+            name=f"floor-rt-{node_count}-{floor_fraction}",
+            workload_floor_fraction=floor_fraction,
+            dt_lead_seconds=dt_lead_seconds,
+            workload_events=[
+                WorkloadEventSpec(event_id="e-floor", job_id="job-floor",
+                                  event_type="starting", timestamp=job_start_t,
+                                  node_count=node_count),
+            ],
+            end_sim_time=120.0,
+        )
+        return json.loads(spec.model_dump_json())
+
+    def test_sim_state_compute_floor_mw_set_by_factory(self):
+        """build_run_context_from_spec() must wire compute_floor_mw onto SimulationState.
+
+        The computed value must equal workload_floor_fraction × peak_compute_mw,
+        not a default 0.0 and not a raw fraction.
+        """
+        spec_dict = self._floor_spec(node_count=100, floor_fraction=0.5)
+        ctx = build_run_context_from_spec("run-floor-wire", spec_dict, playback_speed=0.0)
+        expected_floor = _compute_floor_mw(spec_dict)
+        # RunContext exposes SimulationState via .sim_state
+        assert ctx.sim_state.compute_floor_mw == pytest.approx(expected_floor, rel=1e-4), (
+            f"SimulationState.compute_floor_mw={ctx.sim_state.compute_floor_mw:.4f} MW "
+            f"≠ expected {expected_floor:.4f} MW"
+        )
+        assert ctx.sim_state.compute_floor_mw > 0.0, (
+            "compute_floor_mw must be positive when workload_floor_fraction is set"
+        )
+
+    def test_sim_state_no_floor_fraction_leaves_floor_zero(self):
+        """Without workload_floor_fraction, compute_floor_mw must remain 0.0 (backward-compat)."""
+        spec = _minimal_spec(name="no-floor")
+        spec_dict = json.loads(spec.model_dump_json())
+        ctx = build_run_context_from_spec("run-no-floor", spec_dict, playback_speed=0.0)
+        assert ctx.sim_state.compute_floor_mw == pytest.approx(0.0), (
+            f"Without workload_floor_fraction, compute_floor_mw should be 0.0; "
+            f"got {ctx.sim_state.compute_floor_mw}"
+        )
+
+    def test_evaluate_tick_clamps_demand_at_floor_when_no_jobs_active(self):
+        """evaluate_tick() must clamp p_compute_demand_mw >= compute_floor_mw.
+
+        Scenario: job starts at t=50s, floor derived from its 100-node peak.
+        At t=5s (first tick), job is not yet active → raw demand would be 0 MW.
+        The floor must keep tick.p_compute_demand_mw at ≥ floor.
+        """
+        spec_dict = self._floor_spec(node_count=100, floor_fraction=0.5, job_start_t=50.0)
+        ctx = build_run_context_from_spec("run-floor-enforce", spec_dict, playback_speed=0.0)
+        expected_floor = _compute_floor_mw(spec_dict)
+        assert expected_floor > 0.0, "Test precondition: expected_floor must be positive"
+
+        # Step one tick; job has not yet started (t=5 < t_start=50)
+        tick = ctx.step()
+        assert tick.sim_time_seconds == pytest.approx(5.0)
+        assert tick.p_compute_demand_mw >= expected_floor - 1e-6, (
+            f"Floor not enforced at t={tick.sim_time_seconds:.1f}s: "
+            f"p_compute_demand_mw={tick.p_compute_demand_mw:.4f} MW "
+            f"< floor {expected_floor:.4f} MW"
+        )
+
+    def test_grid_resonance_stress_floor_active_after_job_ends(self):
+        """grid-resonance-stress: compute demand must equal the floor after job_end.
+
+        The scenario starts a 600-node job at t=0 then ends it at t=90 s.
+        For ticks after t=90 s, no active jobs remain so the floor clamp
+        must supply 100% of p_compute_demand_mw ≈ 0.126 MW.
+        This proves the idle-phase near-zero stress condition the scenario exists for.
+        """
+        from api.routes.scenarios import _SEEDED
+        spec_dict = next(
+            (sd for sid, ss in _SEEDED if sid == "grid-resonance-stress"
+             for sd in [ss.model_dump()]),
+            None,
+        )
+        assert spec_dict is not None, "grid-resonance-stress scenario not found in _SEEDED"
+
+        ctx = build_run_context_from_spec("run-grs-idle", spec_dict, playback_speed=0.0)
+        expected_floor = _compute_floor_mw(spec_dict)
+        assert expected_floor > 0.0, "Test precondition: floor must be positive"
+
+        # Step the simulation past t=90 s (job_end event timestamp).
+        # With dt=5 s per tick, 90 s / 5 s = 18 ticks to clear the job.
+        ticks_after_job_end: list[float] = []
+        last_tick = None
+        for i in range(35):
+            tick = ctx.step()
+            last_tick = tick
+            if tick.sim_time_seconds > 90.0:
+                ticks_after_job_end.append(tick.p_compute_demand_mw)
+
+        assert ticks_after_job_end, (
+            f"No ticks past t=90 s; last tick at sim_time={last_tick.sim_time_seconds:.1f} s"
+        )
+        for t_idx, demand in enumerate(ticks_after_job_end):
+            assert demand == pytest.approx(expected_floor, rel=0.01), (
+                f"After job_end, p_compute_demand_mw tick {t_idx} = {demand:.4f} MW "
+                f"but floor = {expected_floor:.4f} MW — floor clamp not active."
+            )
+
+    def test_floor_produces_cooling_demand_during_idle_ticks(self):
+        """Floor load must contribute to lagged cooling demand during idle ticks.
+
+        When no jobs are active, the floor holds p_compute_demand_mw at
+        compute_floor_mw.  This compute heat must flow through the cooling model
+        so p_cooling_demand_mw rises above zero after enough ticks — confirming
+        the __floor__ envelope is registered and record_job_compute() records to it.
+        """
+        # Job starts very late so we can step idle ticks before it arrives.
+        spec_dict = self._floor_spec(node_count=100, floor_fraction=0.5, job_start_t=9999.0)
+        ctx = build_run_context_from_spec("run-idle-cool", spec_dict, playback_speed=0.0)
+        expected_floor = _compute_floor_mw(spec_dict)
+        assert expected_floor > 0.0, "Test precondition: floor must be positive"
+
+        # Step enough ticks (dt_thermal_seconds ≈ 90s, interval 5s → ~20 ticks)
+        # so the cooling model accumulates heat from the floor load.
+        cooling_after: list[float] = []
+        for _ in range(30):
+            tick = ctx.step()
+            cooling_after.append(tick.p_cooling_demand_mw)
+            assert tick.p_compute_demand_mw >= expected_floor - 1e-6, (
+                f"Floor not enforced at t={tick.sim_time_seconds:.1f}s"
+            )
+
+        # After dt_thermal seconds of floor load, cooling demand must have risen.
+        max_cooling = max(cooling_after)
+        assert max_cooling > 0.0, (
+            f"p_cooling_demand_mw never rose above 0 over 30 idle ticks with "
+            f"floor={expected_floor:.4f} MW compute load — __floor__ envelope "
+            f"is likely not registered or not contributing to the cooling model."
+        )
+
+    def test_evaluate_tick_demand_equals_job_load_when_job_exceeds_floor(self):
+        """When an active job drives demand above the floor, the floor must not suppress it.
+
+        This verifies the clamp is a floor (minimum), not a cap.  Uses
+        dt_lead_seconds=0.0 so the 1000-node job contributes immediately at t=5s.
+        """
+        # 1000-node job → large demand; floor fraction 0.5 → floor = 500-node equivalent.
+        # dt_lead_seconds=0 so the job contributes to p_compute_demand_mw from the first tick.
+        spec_dict = self._floor_spec(node_count=1000, floor_fraction=0.5,
+                                     job_start_t=0.0, dt_lead_seconds=0.0)
+        ctx = build_run_context_from_spec("run-above-floor", spec_dict, playback_speed=0.0)
+        expected_floor = _compute_floor_mw(spec_dict)
+        # Peak demand ≈ 1000 * 10.2 * 1.03 / 1000 = 10.506 MW
+        expected_full_demand = 1000 * 10.2 * 1.03 / 1000.0
+
+        tick = ctx.step()
+        assert tick.p_compute_demand_mw > expected_floor + 1e-6, (
+            f"Active job demand {tick.p_compute_demand_mw:.4f} MW should exceed "
+            f"floor {expected_floor:.4f} MW — floor must not cap active-job demand"
+        )
+        assert tick.p_compute_demand_mw == pytest.approx(expected_full_demand, rel=0.05), (
+            f"Active job demand {tick.p_compute_demand_mw:.4f} MW should match "
+            f"full 1000-node load ≈ {expected_full_demand:.4f} MW (floor must not cap it)"
+        )
 
 
 # ---------------------------------------------------------------------------

@@ -569,6 +569,7 @@
   ],
   "generator_config": null,
   "assertions": [],
+  "workload_floor_fraction": 0.5,
   "fabric_scenario_id": null,
   "ui_bess_rated_mw": null,
   "ui_bess_usable_mwh": null

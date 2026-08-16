@@ -46,6 +46,7 @@ from core.models import (
 from core.kube_demand import KubeConfig, KubeDemandAgent
 from core.step_config import LoadProfileConfig, StepTimingConfig
 from core.simulation_core import SimulationState, TenantBurstEvent
+from core.generation_factory import compute_floor_mw as _compute_floor_mw
 from api.schemas import (
     TENANT_CONTRACTED_MW as _TENANT_CONTRACTED_MW,
     _DEFAULT_TENANT_CONTRACTED_MW as _DEFAULT_TENANT_MW,
@@ -760,6 +761,19 @@ def build_run_context_from_spec(
         sim_state.gpu_load_profile = sorted(
             (float(t), float(f)) for t, f in _gpu_load_raw
         )
+
+    # ── Phase 11.4: Workload floor ────────────────────────────────────────
+    # Compute the absolute floor MW from workload_floor_fraction × peak and
+    # store on sim_state so evaluate_tick() can enforce it each tick.
+    # No-op when workload_floor_fraction is absent/None (returns 0.0).
+    _floor_mw = _compute_floor_mw(spec_data)
+    if _floor_mw > 0.0:
+        sim_state.compute_floor_mw = _floor_mw
+        # Pre-register the "__floor__" cooling envelope so evaluate_tick()'s
+        # record_job_compute() can record idle-floor heat each tick.
+        # Without this, record_job_compute() silently skips unknown job IDs and
+        # the floor produces no cooling demand during idle periods.
+        sim_state.cooling.register_job_start("__floor__", 0.0)
 
     # ── Tenant workload events ────────────────────────────────────────────
     # Translate ScenarioSpec.tenant_events dicts into TenantBurstEvent instances
