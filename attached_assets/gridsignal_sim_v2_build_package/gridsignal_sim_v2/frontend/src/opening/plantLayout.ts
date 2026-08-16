@@ -146,7 +146,7 @@ export const NODES: NodeDef[] = [
   // ─── Load nodes ───────────────────────────────────────────────────────────
   {
     id: 'compute-racks',
-    x: 716, y: 62, w: 165, h: 90,
+    x: 716, y: 62, w: 165, h: 148,
     label: 'GPU COLO CENTER',
     mwField: 'p_compute_mw',
     staticMW: 0,   // at rest: nodes idle, 0 MW
@@ -202,12 +202,12 @@ function srcPath(sx: number, sy: number): string {
 // Switchgear right: x=360, y=221
 // Distribution left: x=397, y=221  right: x=515, y=221
 // PDU left: x=552, y=221  right: x=670, y=221
-// Compute left-centre: x=716, y=107 (y=62 + h=90/2)
-// Compute bottom-centre: x=798.5, y=152 (y=62+h=90)
+// Compute left-centre: x=716, y=136 (y=62 + h=148/2)
+// Compute bottom-centre: x=798.5, y=210 (y=62+h=148)
 // Cooling top-centre: x=798.5, y=278
 
-const COMP_LEFT_Y = 62 + 90 / 2   // = 107
-const COMP_BTM_Y  = 62 + 90        // = 152
+const COMP_LEFT_Y = 62 + 148 / 2  // = 136
+const COMP_BTM_Y  = 62 + 148       // = 210
 const COOL_TOP_Y  = 278
 const COMP_X_MID  = 716 + 165 / 2  // = 798.5
 
