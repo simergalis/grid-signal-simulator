@@ -1038,6 +1038,9 @@ def _seed_json_scenarios(store: ScenarioStore) -> None:
         ("demo-20-tenant-contract-breach", "demo-20-tenant-contract-breach.json"),
         # Turbine + FC + BESS, 20 tenants, T01 bursts to ~150% ceiling (overage billed at +50%/MWh)
         ("demo-turbine-fc-bess-20-tenants-overage", "demo-turbine-fc-bess-20-tenants-overage.json"),
+        # Islanded 8→60→10 MW ramp — 5×15 MW turbines, 15 MW solar, 18 MW/8 MWh BESS,
+        # sequential job commitment and release over 90 minutes.
+        ("islanded-8-60-10-ramp", "islanded-8-60-10-ramp.json"),
     ]
 
     _cfg_dir = _Path("config/scenarios")
