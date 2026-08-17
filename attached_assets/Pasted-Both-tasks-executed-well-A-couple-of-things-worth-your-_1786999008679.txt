@@ -1,0 +1,12 @@
+Both tasks executed well. A couple of things worth your attention:
+
+Task 1 — good, one soft spot.
+The three-way corrections (spec table, advisory summary, BB-PWR-028 itself) are all consistent, and the PRE_STAGING call was handled exactly as instructed — flagged, not silently added. But note the "PASS" on BB-PWR-028 is by code inspection, not an actual egress log read, because the endpoint still doesn't exist. That's honestly reported, not hidden, which is good — just keep in mind this is the same limitation as the CANNOT-VERIFY cluster; it's really "confirmed correct by reading the code," not "confirmed correct by observing the system's actual output." Worth remembering it's a slightly softer verification than the other closed tests.
+
+Task 2 — all 7 came back PASS, which is a good outcome, but check one thing.
+BB-PWR-017/041 (BESS charging) passing is great — that closes a real gap, since charging behavior was never previously observed. Worth a quick sanity check that demo-islanded-ramp is a scenario your beta plan or investor materials might reference, since it's now become load-bearing for test coverage that used to be untestable — just make sure it's a stable, intentional scenario and not a throwaway one that could get deleted or changed later and silently break this coverage again.
+
+BB-PWR-044 is the most interesting result — flag it for yourself, not Replit.
+This wasn't just "test passed," it's a genuine finding: the !selectedId guard in the SAVE handler is dead code — unreachable from any real user path, because the app always auto-selects a default scenario. That's not a bug, but it is exactly the kind of thing worth a quick decision: either leave the guard as harmless defensive code, or note it in your open-items registry as a confirmed-dead-code observation so nobody spends time "fixing" it later or gets confused wondering why it's never exercised.
+
+Where things stand now: TDD-001 closed, all 7 previously-BLOCKED tests now PASS. Remaining open: the 9-test CANNOT-VERIFY-BLACK-BOX cluster (needs an egress-log endpoint to actually resolve — you said ignore for now), and the DEF-002 focus-ring visibility observation from earlier. Nothing else pending unless you want to revisit the egress endpoint question later.
