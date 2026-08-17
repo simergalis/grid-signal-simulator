@@ -200,6 +200,14 @@ export function SubsystemModal({
               <div className="font-mono text-[18px] text-muted mt-0.5">
                 {panelData.heroLabel}
               </div>
+              {panelData.heroSub && (
+                <div
+                  className="font-mono text-[20px] font-semibold mt-1"
+                  style={{ color: panelData.heroSubColour ?? '#8b949e' }}
+                >
+                  {panelData.heroSub}
+                </div>
+              )}
             </div>
           </div>
 

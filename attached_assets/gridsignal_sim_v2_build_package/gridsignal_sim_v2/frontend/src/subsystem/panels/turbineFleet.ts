@@ -822,6 +822,10 @@ function singleUnitPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: nu
     // Task #211: show turbine_output_mw during ramp phase (no units SYNCHRONISED yet).
     heroValue:    (isRamping ? turbineRampMW : (tick.on_bus_output_mw ?? 0)).toFixed(2),
     heroLabel:    isRamping ? 'MW ramping' : 'MW output',
+    // Task #212: surface N−1 firm capacity as hero subtitle so it is immediately
+    // visible without opening the stat rows.  Single-unit site has zero N−1 firm.
+    heroSub:      '0.0 MW N−1 firm',
+    heroSubColour: RED,
     chartTitle:   '',
     // 0.1: derived from typed fields — count, rating, gt_mode
     identityLine: _identityLine(units),
@@ -979,6 +983,11 @@ function fleetPanel(tick: TickPayload, units: TurbineUnitSpec[], peakMW: number,
     // Task #211: show turbine_output_mw during ramp phase (no units SYNCHRONISED yet).
     heroValue:   (isRamping ? turbineRampMW : (tick.on_bus_output_mw ?? 0)).toFixed(2),
     heroLabel:   isRamping ? 'MW ramping' : 'MW output',
+    // Task #212: N−1 firm capacity as hero subtitle for instant reserve readability.
+    // Shown unconditionally — during ramp n1FirmMW is 0.0 (no units on bus) and that
+    // is the correct, meaningful value for the operator to see in that state.
+    heroSub:      `${n1FirmMW.toFixed(1)} MW N−1 firm`,
+    heroSubColour: n1Covers ? '#3fb6a8' : '#f85149',
     chartTitle:  '',
     // 0.1: derived from typed fields — count, rating, gt_mode
     identityLine: _identityLine(units),

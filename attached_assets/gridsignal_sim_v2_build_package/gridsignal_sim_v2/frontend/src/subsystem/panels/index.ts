@@ -15,6 +15,12 @@ export interface PanelData {
   verdict:     string
   heroValue:   string
   heroLabel:   string
+  /** Optional subtitle rendered below heroLabel — used to surface a second key
+   *  metric alongside the primary hero without adding a stat row.
+   *  E.g. "28.0 MW N−1 firm" on the Gas Turbine Fleet tile. */
+  heroSub?:    string
+  /** Colour override for heroSub text; defaults to muted when omitted. */
+  heroSubColour?: string
   chartTitle:  string
   chart:       ReactNode
   statRows:    StatRow[]
