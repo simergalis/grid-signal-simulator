@@ -134,8 +134,14 @@ function nodeDetail(
         ? `dispatching · ${Math.abs(fcMw).toFixed(2)} MW`
         : 'H₂ fuel cell array · standby'
     }
-    case 'grid-connection':
-      return tick ? `${(tick.grid_exchange_mw ?? 0) < 0 ? 'importing' : 'exporting'} · utility feed` : 'grid-connected · utility feed'
+    case 'grid-connection': {
+      if (!tick) return 'grid-connected · utility feed'
+      const _gx = tick.grid_exchange_mw ?? 0
+      // Dead-band ±0.01 MW: at exactly zero (or floating-point near-zero) the
+      // grid is neither importing nor exporting — show "standby" not "exporting".
+      const _gridFlow = _gx < -0.01 ? 'importing' : _gx > 0.01 ? 'exporting' : 'standby'
+      return `${_gridFlow} · utility feed`
+    }
     case 'switchgear-pms':
       return 'GridSignal advises —\nnever commands protection'
     case 'distribution':
@@ -160,11 +166,15 @@ function nodeDetail(
       if (tick?.kube_metrics) {
         const km        = tick.kube_metrics
         const computeMW = (tick.p_compute_mw ?? 0).toFixed(2)
-        const admitted  = `${km.active_jobs} admitted`
+        const active    = `${km.active_jobs} active`
         const queued    = `${km.queued_jobs ?? 0} queued`
-        const nodes     = `${km.admitted_nodes.toLocaleString()} nodes`
+        // node_count = max(min_nodes, admitted_nodes) — includes the always-on
+        // idle pool (min_nodes floor) so operators see powered nodes even when
+        // no jobs are scheduled above the floor.  admitted_nodes (scheduler-level)
+        // would show 0 nodes while 200 idle nodes are drawing real power.
+        const nodes     = `${km.node_count.toLocaleString()} nodes`
         const capBadge  = km.power_cap_active ? ' · cap active' : ''
-        return `${admitted} · ${queued} · ${nodes} · ${computeMW} MW${capBadge}`
+        return `${active} · ${queued} · ${nodes} · ${computeMW} MW${capBadge}`
       }
       const jobs = tick ? Object.keys(tick.checkpoint_states).length : 0
       if (jobs > 0) {
