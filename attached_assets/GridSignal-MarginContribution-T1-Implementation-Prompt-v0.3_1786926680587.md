@@ -159,7 +159,7 @@ Pooled COGS_energy and FixedCost allocated to tenants by metered-usage weighting
 | TC-MC-12 | HTTP 410 raised when `run_id` not found in `RunManager` (server-restart path) | Added beyond original spec |
 | TC-MC-13 | HTTP 409 raised when run is still active (tick data not yet complete) | Added beyond original spec |
 
-**Test count note:** 13 spec IDs produce 17 pytest instances: TC-MC-1 has 2 functions (import-guard + positive-import assertion), TC-MC-5 is `@pytest.mark.parametrize` × 3 periods, TC-MC-6 has 2 functions (within+over split and no-overage fallback). All other IDs have 1 function each.
+**Test count note (`pytest --collect-only -q` verified):** 13 spec IDs → 15 source functions → 17 collected instances. TC-MC-1: 2 functions (import-guard + positive-import assertion). TC-MC-5: 1 function parametrized × 3 periods (monthly, quarterly, annual) → 3 instances at runtime. TC-MC-6: 2 functions (within+over split and no-overage fallback). TC-MC-2/3/4/7/8/9/10/11/12/13: 1 function each (10 IDs). Source function sum: 2 + 1 + 2 + 10 = 15. Collected instance sum: 2 + 3 + 2 + 10 = 17.
 
 **Spec contradictions encountered during implementation:** none.
 

@@ -1,0 +1,11 @@
+Four of five check out cleanly — the sign-convention paragraph, the IMPL-3/4/5 logging, the "none"/"none" explicit statements, and the 12-failure exclusion set with the overlap check (that's the right verification, not just an assertion) are all exactly what the report format asked for.
+
+The test-count arithmetic in #2 doesn't reconcile, though. Walking through it:
+
+- Prose says "the other 9 IDs are 1 function each," but the formula uses `8` for that same group.
+- Either way, the formula only accounts for `1 (TC-MC-1) + 1 (TC-MC-5) + 1 (TC-MC-6) + 8 = 11` IDs — two of the thirteen aren't in the sum at all.
+- The "15 functions → 17 instances" framing also mixes units: it uses `3` for TC-MC-5 (an instance count, post-parametrization) inside a sum it's calling "functions."
+
+There's a version of this that *does* work out to 17 — TC-MC-1 (2 functions) + TC-MC-6 (2 functions) + TC-MC-5 (1 function, parametrized) + the remaining 10 IDs (1 function each) = 15 function definitions, and TC-MC-5's single function expands to 3 collected test instances at runtime, so 15 − 1 + 3 = 17. That's internally consistent and probably what actually happened — but it's not the accounting given, and I'd rather you confirm it against `pytest --collect-only -q` filtered to the MC tests than have both of us assume the coincidence. If the real number of source functions is 15 and the ID that's off is just a typo (9 vs. 10 in the prose), that's a one-line fix; if it's actually missing coverage on one of the 13 IDs, that's worth knowing before this closes out.
+
+Separately — you mentioned the spec file itself now has the TC-MC-10–13 table, the sign-convention paragraph, and the "none"/"none" section, edited directly against what's presumably your working copy in the repo. My copy here (the v0.4 addendum in this conversation) doesn't have any of that yet, so the two are diverging. Want to paste me the updated Section 30.9 and the sign-convention paragraph so I can fold them into my copy and we've got one current version instead of two?
