@@ -1,0 +1,32 @@
+Here's a single execution prompt covering both actions.
+
+EXECUTION PROMPT — TC-68/BB-PWR-028 correction + BLOCKED test retry
+
+Two tasks. Do not touch DEF-001, DEF-002, or the CANNOT-VERIFY-BLACK-BOX cluster (Category C egress-log tests) — those remain out of scope for this pass.
+
+Task 1 — Update TC-68 and BB-PWR-028 (decision made: 3 command types are acceptable)
+
+Confirmed: TURBINE_SETPOINT, BESS_DISPATCH, and LOAD_CURTAILMENT are all permitted SCADA command types. The implementation is correct as-is; the test/spec wording was stale.
+
+Update acceptance-matrix.md TC-68 wording from "TURBINE_SETPOINT and BESS_DISPATCH are the only permitted SCADA command types" to include all three: TURBINE_SETPOINT, BESS_DISPATCH, and LOAD_CURTAILMENT.
+Update docs/BB-PWR-test-cases.md BB-PWR-028's EXPECTED RESULT to match: "Zero command records exist whose type is not one of TURBINE_SETPOINT, BESS_DISPATCH, or LOAD_CURTAILMENT." Remove the TDD-001 flag once corrected.
+Re-run BB-PWR-028 against the existing shortfall-scenario egress log and confirm PASS under the corrected expected result.
+Report: confirm both files updated, confirm PASS, note if PRE_STAGING (mentioned in the earlier diagnosis) also appears in any egress log — if so, ask before adding it as a fourth permitted type rather than assuming it belongs.
+Task 2 — Retry the 7 BLOCKED tests with improved setup
+
+For each, attempt the fix described, execute, and report PASS/FAIL/still-BLOCKED. Do not modify test wording or tolerances to force a pass.
+
+BB-PWR-008 (page-refresh persistence check): re-run start to finish without interruption. No setup change needed, just complete it.
+BB-PWR-017 / BB-PWR-041 (BESS charging state): find or construct a scenario where BESS charges (negative output) — check the scenario library for one with a demand dip or excess-generation period that would trigger charging. If none exists, report that a charging-capable scenario needs to be added to the library rather than continuing to block silently.
+BB-PWR-038 (Fuel Cell authority-tier lock): re-run against a scenario with fuel_cell_enabled = true instead of the turbine-only demo used before.
+BB-PWR-043 (rapid double-click toggle): use a scripted double-click (two click() calls within ~50–100ms in the test driver) rather than manual clicking, so timing is reliable. Confirm the toggle settles to the correct end state.
+BB-PWR-044 (no-scenario-selected state): since there's no UI control to clear scenario selection, attempt to reach this state another black-box-legitimate way — e.g., load the app fresh before any scenario has ever been selected (new session/incognito), or check if the URL/API allows deep-linking to a no-scenario state. If truly unreachable by any black-box means, report that explicitly rather than leaving it ambiguously blocked — that itself is a useful finding (dead guard code, confirmed unreachable from the UI).
+BB-PWR-046 / BB-PWR-049 (scenario-switch reset behavior): re-run both fully through to the final observation step (confirming aggregate-toggle reset state after switching scenarios) rather than stopping partway.
+
+Report format:
+
+TASK 1: [PASS/FAIL] — TC-68 and BB-PWR-028 updated, re-verified
+TASK 2 RESULTS:
+[BB-PWR-###] — PASS/FAIL/STILL-BLOCKED — brief note
+
+Stop after reporting. Do not proceed to the egress-endpoint question or any other item.
