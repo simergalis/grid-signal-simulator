@@ -287,3 +287,10 @@ uri = "file://mockup-pms-ui.html"
 type = "text"
 title = "Power Management UI Mockups"
 description = "Interactive HTML mockup — SWITCHGEAR/PMS modal (3 tabs) + Scenario Builder additions"
+
+[[outputs]]
+id = "acnS0ucx1zGPzqEkesLQz"
+uri = "file://docs/BB-PWR-test-cases.md"
+type = "text"
+title = "BB-PWR Test Cases — Power Management Select Power"
+description = "50 black-box test cases (BB-PWR-001–050) covering source selection UI state, aggregation correctness, SWITCHGEAR/PMS signal behaviour, and edge cases. Includes spec-gap audit and 10 open items."
