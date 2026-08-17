@@ -1,6 +1,0 @@
-- [gridsignal-sim-v2 overview](gridsignal-sim-v2-overview.md) — codebase root, four verification commands, completed through Step 8.
-- [bess-anchor-reserve](bess-anchor-reserve.md) — IslandMode + grid_forming design; why sum-of-durations not min(); THE TRAP with cover_shortfall taper flag.
-- [cooling-envelope-cursor](cooling-envelope-cursor.md) — deque + absolute cursor design; THE TRAP with popleft() shifting plain integer indices.
-- [sim-clock-convention](sim-clock-convention.md) — sim_time = interval START; TickResult state is at sim_time+dt; Step 8 must use convention (A) consistently.
-- [step8-key-decisions](step8-key-decisions.md) — IrradianceProfile zero-order hold; TC-33 delta_p math; SOLAR_STEP early-return; plane-separation in build_run_context_from_spec.
-- [step14-network-procurement](step14-network-procurement.md) — TC-47/50-52/69-74; gate.validate() entry point; ReservationProposal.requires_confirmation is a property; hardware class index randomised per call.
