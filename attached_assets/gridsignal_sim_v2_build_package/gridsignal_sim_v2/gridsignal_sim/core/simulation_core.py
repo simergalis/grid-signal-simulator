@@ -1164,6 +1164,31 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # PROHIBITED: the pending unit (STARTING) must NOT be included in on_bus
     # or offline — it is not on the bus and must not be counted toward capacity,
     # reserve, ramp, or headroom figures.
+
+    # ── Stale-register recovery ───────────────────────────────────────────
+    # command_start() can silently drop a start command (hot_standby guard,
+    # wrong state, min-down-time not elapsed) while leaving no external signal.
+    # If that happens, record_start() was already called → pending_unit_id is
+    # set, but the unit never reaches STARTING → clear_on_synchronised() never
+    # fires → the register is stuck for the rest of the run, blocking all
+    # future turbine commits permanently.
+    #
+    # Recovery: if the pending unit is back in OFFLINE (not STARTING and not
+    # on bus), the start did not take — clear the register so the engine can
+    # retry on the next commit tick.
+    if not state._pending_start.is_empty:
+        for _stale_t in state.turbines:
+            if _stale_t.config.asset_id == state._pending_start.pending_unit_id:
+                if _stale_t.state == TurbineState.OFFLINE:
+                    _log.warning(
+                        "Commitment engine: clearing stale pending-start register "
+                        "for %r at sim_time=%.1f — unit is OFFLINE, start did not take",
+                        state._pending_start.pending_unit_id, sim_time,
+                    )
+                    state._pending_start.pending_unit_id = None
+                    state._pending_start.start_commanded_at_s = math.nan
+                break
+
     _avail_on_bus  = [t.unit_availability() for t in state.turbines if t.is_on_bus]
     _avail_offline = [t.unit_availability() for t in state.turbines
                       if t.state == TurbineState.OFFLINE]
@@ -1182,11 +1207,26 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         for _cht in state.turbines:
             if _cht.config.asset_id == _commit_decision.target_unit_id:
                 _cht.command_start(sim_time)
-                state._pending_start.record_start(_cht.config.asset_id, sim_time)
-                _log.info(
-                    "Commitment engine: start %r at sim_time=%.1f (%s)",
-                    _cht.config.asset_id, sim_time, _commit_decision.reason,
-                )
+                # Only record the pending start when command_start() actually
+                # transitioned the unit to STARTING.  command_start() can
+                # silently drop (hot_standby guard, min-down-time, wrong state)
+                # without changing state.  Calling record_start() when the
+                # unit stayed OFFLINE would set pending_unit_id permanently —
+                # clear_on_synchronised() never fires → all future commits
+                # blocked for the rest of the run.
+                if _cht.state == TurbineState.STARTING:
+                    state._pending_start.record_start(_cht.config.asset_id, sim_time)
+                    _log.info(
+                        "Commitment engine: start %r at sim_time=%.1f (%s)",
+                        _cht.config.asset_id, sim_time, _commit_decision.reason,
+                    )
+                else:
+                    _log.warning(
+                        "Commitment engine: start %r silently dropped by "
+                        "command_start() at sim_time=%.1f (state=%s) — "
+                        "pending register NOT set; engine will retry next tick",
+                        _cht.config.asset_id, sim_time, _cht.state.name,
+                    )
                 break
     elif _commit_decision.action == "decommit" and _commit_decision.target_unit_id is not None:
         # Phase E Item 6: sequential-stop guard — at most one UNLOADING at a time,

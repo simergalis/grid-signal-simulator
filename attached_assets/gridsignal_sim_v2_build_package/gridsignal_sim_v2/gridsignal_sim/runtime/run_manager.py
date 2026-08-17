@@ -2010,7 +2010,12 @@ class RunManager:
                 if _profiling: _t0 = _time_module.perf_counter()
                 _update_thermal_state(ctx, tick_result)
                 _th_rated    = ctx._rated_cooling_mw
-                _th_absorb   = max(0.0, _th_rated - tick_result.p_cooling_demand_mw)
+                # Clamp cooling demand to ≥ 0 before computing headroom so that
+                # absorbable_mw can never exceed rated_cooling_mw.  CoolingModule
+                # should always produce non-negative output, but a transient sign
+                # error or envelope edge-case at cold-start can make output_mw()
+                # briefly negative, which would produce headroom > rated on the tile.
+                _th_absorb   = max(0.0, _th_rated - max(0.0, tick_result.p_cooling_demand_mw))
                 _th_approach = ctx._approach_rate_mw_s
                 tick_result  = _dc_replace(
                     tick_result,
@@ -2147,6 +2152,14 @@ class RunManager:
                 # Fall back to live_aggregate_mw() only when A0 was skipped
                 # (irradiance_profile is None) — an unusual edge case.
                 if self.solar_sim is not None:
+                    # §7.4 solar bank telemetry: stamp p_expected_mw and
+                    # banks_reporting from SolarSim.snapshot() so the Solar PV
+                    # tile sub-label shows honest figures instead of the
+                    # None → 0 fallback ("expected 0.00 MW · 0 of N banks").
+                    # Both fields remain None in evaluate_tick() (simulation_core.py
+                    # §7.4 comment) because routing them there would create a
+                    # tautology; the SolarSim snapshot is the authoritative source.
+                    _solar_power_snap = self.solar_sim.snapshot().get("power", {})
                     tick_result = _dc_replace(
                         tick_result,
                         p_renewable_mw=(
@@ -2154,6 +2167,8 @@ class RunManager:
                             if _pre_solar_mw is not None
                             else self.solar_sim.live_aggregate_mw()
                         ),
+                        p_expected_mw=_solar_power_snap.get("p_expected_mw"),
+                        banks_reporting=_solar_power_snap.get("banks_reporting"),
                     )
 
                 # ── Source-level bounds audit ─────────────────────────────
