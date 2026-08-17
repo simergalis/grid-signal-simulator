@@ -174,7 +174,10 @@ export function PowerSupplySourcesModal({ onClose }: PowerSupplySourcesModalProp
     setSources(prev => ({ ...prev, [key]: !prev[key] }))
 
   const handleSave = async () => {
-    if (!selectedId || !origSpec.current) return
+    if (!selectedId || !origSpec.current) {
+      setError('Scenario not loaded — please close and reopen the modal.')
+      return
+    }
     setSaving(true); setError(null)
     const orig = origSpec.current
 

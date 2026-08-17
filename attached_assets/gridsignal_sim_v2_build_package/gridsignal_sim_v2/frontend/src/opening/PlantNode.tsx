@@ -484,6 +484,7 @@ export function PlantNode({ def, tick, onClick, solarPreview, liveSolarMW, selec
             {SOURCE_NODE_IDS.has(def.id) && onToggleAggregate && (
               <button
                 onClick={onToggleAggregate}
+                tabIndex={0}
                 title={selectedForAggregate
                   ? 'Included in selected-power total — click to exclude'
                   : 'Excluded from selected-power total — click to include'}

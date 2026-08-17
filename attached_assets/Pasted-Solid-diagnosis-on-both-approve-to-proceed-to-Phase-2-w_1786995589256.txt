@@ -1,0 +1,15 @@
+Solid diagnosis on both — approve to proceed to Phase 2 with the notes below.
+
+**DEF-001 — approved, with two additions:**
+
+The reasoning is sound: distinguishing "the test mock was over-broad" from "there's a real guard that fails silently in a reachable production state" is the right call, not a rationalization to blame the test. The `origSpec.current` null-guard genuinely can be hit outside the test artifact (network blip on modal-open GET), so this is a real fix, not busywork to satisfy a flawed test.
+
+Two additions before Phase 2:
+1. **Update the test file itself.** The corrected fetch mock you wrote for BB-PWR-045 needs to land in `docs/BB-PWR-test-cases.md`, not just live in your verification notes — otherwise the next person who runs this test reintroduces the same false failure. Replace the STEPS/mock description in BB-PWR-045 with the method-scoped version (PUT only, not GET).
+2. **Quick scoped check, not a full audit:** since you found one silent early-return in this file, do a one-pass grep of `PowerSupplySourcesModal.tsx` only for other `if (...) return` guards that could swallow a comparable failure state without setting `error`. If you find another instance, report it — don't fix it in this pass, just flag it as a candidate follow-up defect. Do not expand this check beyond this one file.
+
+**DEF-002 — Option A approved.** Minimal, shares the existing `onClick` handler for mouse and keyboard per the no-dual-implementations principle, no visual or structural change. Correct choice over Option B given the fix satisfies the actual defect without the restructuring risk.
+
+One thing to confirm in Phase 3 specifically: `tabIndex={0}` inserts the element into *natural* DOM-order tab sequence rather than a fixed position, which is what you want — just confirm during verification that the resulting tab order (footer button, pill buttons in the eventual modal, aggregate toggles) lands in a sensible sequence relative to the rest of the page, not just that the elements are reachable at all.
+
+**Proceed to Phase 2 for both, with those two additions folded into DEF-001's scope. Report back after Phase 3 verification for both — same stop-and-report gate as before, don't continue to any other open item.**

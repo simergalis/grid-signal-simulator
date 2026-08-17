@@ -865,13 +865,31 @@ EXPECTED RESULT:
 
 ```
 TEST ID: BB-PWR-045
-PRECONDITION: A scenario is selected. The "Select Power" modal is open.
-  The API server is configured to return an error for the next PUT /scenarios/{id} request
-  (e.g. temporarily return 500 or reject with invalid payload).
+PRECONDITION: A scenario is selected. The “Select Power” modal is CLOSED.
 STEPS:
-  1. Toggle any source pill.
-  2. Click SAVE.
-  3. Observe the modal response.
+  1. Open the “⊙ Select Power” modal and wait for pills to render with actual spec
+     states (allows the loadSpec GET /scenarios/{id} to complete before mock injection).
+  2. Inject a PUT-only fetch mock in the browser console AFTER the modal is open:
+
+       window._origFetch = window.fetch;
+       window.fetch = async (...args) => {
+         if (args[1]?.method === 'PUT' && String(args[0]).includes('/scenarios/'))
+           return new Response(
+             JSON.stringify({ detail: 'injected error' }),
+             { status: 500, headers: { 'Content-Type': 'application/json' } }
+           );
+         return window._origFetch(...args);
+       };
+
+     IMPORTANT: The mock MUST be method-scoped (PUT only). A method-agnostic mock
+     also intercepts GET, preventing loadSpec from populating origSpec. When origSpec
+     is null, handleSave exits silently before the try block (no error shown) -- a
+     false-negative, not a real pass.
+
+  3. Toggle any source pill.
+  4. Click SAVE.
+  5. Observe the modal response.
+  6. Restore the original fetch: window.fetch = window._origFetch;
 EXPECTED RESULT:
   - An error message appears within the modal (styled in red/error colour).
   - The scenario spec in the store is NOT updated.
@@ -880,6 +898,9 @@ EXPECTED RESULT:
   - The operator can dismiss the error and either retry or cancel.
 NOTE: Consistent with a try/catch in handleSave that only commits the store update
   on resp.ok — included here as rationale, not as an independently black-box-verifiable claim.
+NOTE: A second error path exists: if loadSpec fails at modal-open time (e.g. network
+  blip between open and SAVE), handleSave shows "Scenario not loaded — please close
+  and reopen the modal." This is intentional and separate from the PUT-failure path.
 ```
 
 ---

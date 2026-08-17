@@ -1169,6 +1169,7 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, 
             >
               <button
                 onClick={onSelectPowerSupply}
+                tabIndex={0}
                 style={{
                   width: '100%', height: '100%',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
