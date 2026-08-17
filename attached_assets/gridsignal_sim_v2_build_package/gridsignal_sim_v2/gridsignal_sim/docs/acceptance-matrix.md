@@ -202,9 +202,13 @@ on 32 of 60 ticks.
 > _curtailment_proposals`; demo-pms turbine+BESS covers demand, so curtailment proposals
 > are empty and the call never fires.
 > TC-64..TC-67: covered by `test_step16_wiring.py` test 15 (manual injection, col-3).
-> TC-68: `TURBINE_SETPOINT` and `BESS_DISPATCH` commands issued every tick;
-> `deliver_pending()` runs every tick. Protection commands never appear. Invariant
-> trivially holds — but it IS exercised.
+> TC-68: `TURBINE_SETPOINT`, `BESS_DISPATCH`, and `LOAD_CURTAILMENT` are the three
+> permitted non-protection command types; `LOAD_CURTAILMENT` is issued in shortfall
+> scenarios. `deliver_pending()` runs every tick. Protection commands
+> (ISLANDING, SYNCHRO_CHECK, ANTI_ISLANDING, DROOP, PROTECTIVE_SHED) never appear.
+> `PRE_STAGING` is technically accepted by `issue_command()` but is never issued in
+> production code; it does not appear in egress logs. Invariant trivially holds —
+> but it IS exercised.
 
 ---
 

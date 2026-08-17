@@ -20,7 +20,7 @@ per-tile aggregate-toggle indicator (`PlantDiagram` / `PlantNode`)
 | **GS-IMPL-PSP-002 §6.1** | `pms_test_double.py` line 21, `PowerManagementModal.tsx` line 295 | Inviolable advisory boundary: "GridSignal never issues southbound writes." PMS and operator retain physical switching authority. |
 | **GS-IMPL-PSP-002 §3.4 / §5** | `pms_test_double.py` header | PMSTestDouble must not send southbound commands; applies operator response profile to advisory outputs. |
 | **§23.4 Ladder A** | `PowerManagementModal.tsx` line 345 | Site Operating Tier (advisory / supervised / autonomous) for EDL dispatch. |
-| **TC-68** | `acceptance-matrix.md`, `scada_layer.py` | Zero protection commands in egress log — TURBINE_SETPOINT and BESS_DISPATCH are the only permitted SCADA command types. |
+| **TC-68** | `acceptance-matrix.md`, `scada_layer.py` | Zero protection commands in egress log — TURBINE_SETPOINT, BESS_DISPATCH, and LOAD_CURTAILMENT are the three permitted SCADA command types. |
 | **TC-29** | `acceptance-matrix.md` | No PII (site_id, job_id, SKU) in wire payload. |
 | **Build Plan v2.2 Step 7 (Phase 3)** | `GridSignal_Replit_Build_Plan_v2.2.md` | Live Dashboard screen spec; mentions power output tiles but does not specify the "Select Power" source-selection UI or aggregate toggle. |
 
@@ -65,7 +65,7 @@ Two distinct sub-systems share the "Select Power" label. Tests must not conflate
 
 ### Advisory boundary (inviolable — GS-IMPL-PSP-002 §6.1)
 GridSignal never issues southbound writes (Modbus, DNP3, OPC UA, IEC 61850).
-SCADA layer permits only `TURBINE_SETPOINT` and `BESS_DISPATCH` command types (TC-68).
+SCADA layer permits `TURBINE_SETPOINT`, `BESS_DISPATCH`, and `LOAD_CURTAILMENT` command types (TC-68); PROTECTION_COMMANDS (ISLANDING, SYNCHRO_CHECK, ANTI_ISLANDING, DROOP, PROTECTIVE_SHED) are rejected by issue_command() at runtime.
 PMSTestDouble applies an operator response profile to advisory outputs and logs actions;
 it does not command physical switchgear.
 "Enable/disable a power supply module" in GridSignal means writing the scenario spec
@@ -565,13 +565,15 @@ PRECONDITION: Any scenario is selected, any combination of sources enabled or di
   A run of any length has been completed.
 STEPS:
   1. Access the run's SCADA egress log.
-  2. Search for any command record whose type is not TURBINE_SETPOINT and not BESS_DISPATCH
-     (i.e. any protection command, relay command, or breaker command).
+  2. Search for any command record whose type is not TURBINE_SETPOINT, not BESS_DISPATCH,
+     and not LOAD_CURTAILMENT (i.e. any protection command, relay command, or breaker command).
 EXPECTED RESULT:
-  - Zero non-TURBINE_SETPOINT / non-BESS_DISPATCH command records exist in the egress log.
+  - Zero command records exist whose type is not one of TURBINE_SETPOINT, BESS_DISPATCH,
+    or LOAD_CURTAILMENT.
   - This validates TC-68: "Zero protection commands in egress log."
-  - The command types TURBINE_SETPOINT and BESS_DISPATCH are the only permitted types per
-    scada_layer.py. Any other type causes issue_command() to raise ValueError at runtime.
+  - TURBINE_SETPOINT and BESS_DISPATCH are issued every tick; LOAD_CURTAILMENT is issued
+    in shortfall scenarios. PROTECTION_COMMANDS (ISLANDING, SYNCHRO_CHECK, ANTI_ISLANDING,
+    DROOP, PROTECTIVE_SHED) cause issue_command() to raise ValueError and must never appear.
 ```
 
 ---
