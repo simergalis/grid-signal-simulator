@@ -146,7 +146,7 @@ export const NODES: NodeDef[] = [
   // ─── Load nodes ───────────────────────────────────────────────────────────
   {
     id: 'compute-racks',
-    x: 716, y: 62, w: 165, h: 148,
+    x: 716, y: 62, w: 165, h: 188,
     label: 'GPU COLO CENTER',
     mwField: 'p_compute_mw',
     staticMW: 0,   // at rest: nodes idle, 0 MW
