@@ -15,7 +15,7 @@ Attached: `margin-contribution-mockup.html` — a static visual mockup. It is th
 
 ## Governing spec
 
-Forecast Engine Functional Spec Addendum, Section 30, v0.4. Formulas, field definitions, FR/NFR list, and acceptance test matrix (TC-MC-1 through TC-MC-9) are binding.
+Forecast Engine Functional Spec Addendum, Section 30, v0.4. Formulas, field definitions, FR/NFR list, and acceptance test matrix (TC-MC-1 through TC-MC-13) are binding.
 
 ## Design tokens (from the mockup — use exactly)
 
@@ -104,7 +104,9 @@ MarginContribution(period) = Σ Revenue_tenant − Σ COGS_energy − FixedCost 
 ```
 Pooled COGS_energy and FixedCost allocated to tenants by metered-usage weighting (MC-7) — flag explicitly as assumption, never present as measured.
 
-**Acceptance criteria:** TC-MC-1 through TC-MC-9 verbatim from spec Section 30.9, plus:
+**`grid_exchange_mw` sign convention (confirmed, Section 30.5):** positive = grid import (site drawing power from the grid); negative = grid export (site pushing power to the grid). Confirmed at `runtime/simulation_core.py:2089`, where the internal convention is negated before writing the tick dict. COGS_energy must use `max(0, grid_exchange_mw)` — only import ticks contribute to grid purchase cost. Do not treat export ticks as negative cost.
+
+**Acceptance criteria:** TC-MC-1 through TC-MC-13 verbatim from spec Section 30.9, plus:
 - AC-3.1: 410/409 from the timeseries endpoint produces the operator-facing message above, not an error page.
 - AC-3.2: Per-tick duration is read from actual tick data, not assumed constant, unless T0's finding on fixed dt is confirmed correct during implementation.
 
@@ -136,8 +138,32 @@ Pooled COGS_energy and FixedCost allocated to tenants by metered-usage weighting
 **Scope.** Follow the exact pattern in `tests/test_step13_agents.py:151–180` (TC-48): run the same completed scenario twice, serialize the Margin Contribution output, SHA-256 hash both, assert equal. This should hold naturally given `tick_dicts` are themselves deterministic (confirmed by `tests/test_fabric_model.py:39–55`) — the one new risk is the per-tenant MWh summation introducing order-of-operations non-determinism (e.g., dict iteration order). Check for that specifically.
 
 **Acceptance criteria:**
-- AC-5.1: TC-MC-7 passes using the `test_step13_agents.py` hash-comparison structure.
-- AC-5.2: Full suite run, TC-MC-1 through TC-MC-9 passing, reported per the standard format above.
+- AC-5.1: TC-MC-10 (determinism) passes using the `test_step13_agents.py` hash-comparison structure.
+- AC-5.2: Full suite run, TC-MC-1 through TC-MC-13 passing, reported per the standard format above.
+
+**Section 30.9 — Acceptance test matrix (TC-MC-1 through TC-MC-13):**
+
+| ID | What it verifies | Notes |
+|---|---|---|
+| TC-MC-1 | `grid_exchange_mw < 0` (export) contributes zero to COGS; `> 0` (import) contributes correctly | Two test functions in file |
+| TC-MC-2 | Turbine fuel cost proportional to `turbine_output_mw` | — |
+| TC-MC-3 | BESS marginal cost on dispatch only; `bess_output_mw < 0` (charging) excluded | — |
+| TC-MC-4 | Per-tenant MWh: `est_draw_mw × dt_h` summed per tick, grouped by `tenant_id` | — |
+| TC-MC-5 | `scale_factor = target_hours / run_duration_hours` for Monthly (730 h), Quarterly (2190 h), Annual (8760 h) | Parametrized × 3 periods |
+| TC-MC-6 | Revenue split: `within_alloc × base_rate + over_alloc × overage_rate`; zero overage when under contract | Two test functions in file |
+| TC-MC-7 | Pooled COGS allocated by `usage_weight = tenant_mwh / total_mwh` | — |
+| TC-MC-8 | Aggregate margin identity: `total_revenue − total_energy_cogs − total_capex_cost − total_curtailment_cost` | — |
+| TC-MC-9 | Tenant with `overage_rate = None` bills all usage at `base_rate`; no error, no crash (AC-2.5) | — |
+| TC-MC-10 | Determinism: identical inputs → identical SHA-256 hash across two calls | Added beyond original spec |
+| TC-MC-11 | Variable `dt_s`: COGS computed using per-tick duration from `sim_time_seconds` delta, not assumed constant | Added beyond original spec |
+| TC-MC-12 | HTTP 410 raised when `run_id` not found in `RunManager` (server-restart path) | Added beyond original spec |
+| TC-MC-13 | HTTP 409 raised when run is still active (tick data not yet complete) | Added beyond original spec |
+
+**Test count note:** 13 spec IDs produce 17 pytest instances: TC-MC-1 has 2 functions (import-guard + positive-import assertion), TC-MC-5 is `@pytest.mark.parametrize` × 3 periods, TC-MC-6 has 2 functions (within+over split and no-overage fallback). All other IDs have 1 function each.
+
+**Spec contradictions encountered during implementation:** none.
+
+**Out-of-scope temptations declined during implementation:** none.
 
 ---
 

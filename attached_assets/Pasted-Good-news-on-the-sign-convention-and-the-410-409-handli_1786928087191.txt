@@ -1,0 +1,15 @@
+Good news on the sign convention and the 410/409 handling — those were the two "stop and report" gates I flagged as highest-risk, and both landed cleanly. Also glad to see `economicProfileStore.ts` is DB-backed, not the ephemeral Zustand pattern — that was the one place a well-meaning agent could easily have taken the shortcut.
+
+Before I mark this closed and fold it back into the spec, a few gaps between what you've summarized and what the report format in the prompt actually required:
+
+1. **TC-MC-10 through TC-MC-13 aren't in the spec.** Section 30.9 only defines TC-MC-1 through TC-MC-9. What do the four new ones verify? If they're real additional coverage (sounds like it — determinism and the 410/409 paths weren't in the original nine), they need to go into the spec's acceptance test matrix, not just exist in the test file. Undocumented test additions are exactly the kind of drift the spec-discipline standard exists to catch.
+
+2. **17/17 passing, but only 13 IDs named.** What are the other 4? Same test file with helper/parametrized cases, or something in the broader suite that got touched?
+
+3. **Full suite result with exclusions wasn't reported.** Is this 17/17 with zero exclusions, or were any pre-existing failures carried forward and excluded from that count? The report format asks for that explicitly, not just the feature's own tests.
+
+4. **Spec contradictions and out-of-scope temptations weren't addressed.** Even "none" needs to be stated explicitly per the format — silence on those two items usually means they weren't tracked during the build, not that there weren't any.
+
+5. **What are #489–491?** If they're real follow-up work, they should get logged with the project's existing prefix convention (IMPL- for implementation-level gaps, per `docs/open-items.md`) rather than floating as bare numbers — otherwise they're likely to get lost.
+
+Once I have those, I'll do three things to the spec: add TC-MC-10–13 to Section 30.9, close MC-11 as "resolved — implemented per locked decision" rather than leaving it open, and log the confirmed `grid_exchange_mw` sign convention somewhere durable (right now it only exists as a fact in this conversation and a code comment — worth a line in Section 30.5 so the next person doesn't have to re-derive it).

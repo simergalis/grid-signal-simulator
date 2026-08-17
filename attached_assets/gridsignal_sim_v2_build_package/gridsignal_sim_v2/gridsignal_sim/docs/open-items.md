@@ -55,3 +55,73 @@ any other sub-object carried inside `kube_metrics` (or any other nested dict in
 the broadcast) should include a manual check that the TypeScript interface
 mirrors the Python fields.  A sub-field schema test could be added in the
 future to automate this.
+
+---
+
+## IMPL-3 — EconomicProfile DB persistence across server restart (AC-2.6)
+
+**Status:** Unit-tested via ORM; live round-trip not yet verified in production.
+
+`EconomicProfile` and `EconomicProfileTenantRate` rows are created via
+`runtime/persistence.py` ORM classes and picked up by the existing
+`Base.metadata.create_all(checkfirst=True)` call in `create_auth_tables()`
+(lifespan startup).  The persistence path is correct, but a live end-to-end
+verification — create a profile, restart the server process, confirm the
+profile is still present via `GET /api/economic-profiles/` — has not been
+performed.
+
+**What is NOT enforced / future risk:** If the database URL changes between
+restarts, or if `create_auth_tables()` is not called before the first API
+request, profiles created in one session will not be visible after restart.
+The ORM table creation is idempotent (`checkfirst=True`), so adding the
+tables again is always safe.
+
+**Review trigger:** Revisit if the database backend is swapped, if
+`create_auth_tables()` is removed or made conditional, or if any migration
+script drops and recreates the `economic_profiles` or
+`economic_profile_tenant_rates` tables.
+
+---
+
+## IMPL-4 — Margin Report 410 path shows operator-facing message, not blank panel
+
+**Status:** HTTP 410 path is unit-tested (TC-MC-12); frontend rendering of the
+error message has not been visually verified.
+
+`MarginContributionReport.tsx` receives the 410 detail string from the backend
+and must render "This scenario's data is no longer available — re-run it to
+generate a Margin Contribution report" rather than a blank or crashed panel.
+The component has error-state handling wired, but the exact rendering has not
+been confirmed against a live 410 response.
+
+**What is NOT enforced / future risk:** If the error boundary in
+`MarginContributionReport.tsx` catches the 410 but renders a generic error
+rather than the operator-facing string, the UX requirement (AC-3.1) is
+violated silently.
+
+**Review trigger:** Revisit if the error display path in
+`MarginContributionReport.tsx` is refactored, or if the 410 detail string
+format returned by `api/routes/economic_profiles.py` changes.
+
+---
+
+## IMPL-5 — Over-allocation amber bar renders only when `over_alloc_flag = true`
+
+**Status:** Flag is correctly computed and returned in the proforma response;
+conditional rendering in `MarginContributionReport.tsx` (AllocBar component)
+has not been visually verified against a run where a tenant exceeds their
+contracted allocation.
+
+The `over_alloc_flag` field in `TenantProformaRow` drives the hatched amber
+fill on the allocation bar.  The component renders the amber portion as
+`over_alloc_flag ? <AmberSegment> : null`.  This path is exercised by the
+TC-MC-6 unit test but has not been confirmed against a rendered report in a
+live session.
+
+**What is NOT enforced / future risk:** If the amber segment's CSS class is
+accidentally applied unconditionally, or if the `over_alloc_flag` value is
+coerced to a truthy string rather than a boolean in the JSON response,
+the bar will render amber for all tenants regardless of allocation status.
+
+**Review trigger:** Revisit if `TenantProformaRow` or the AllocBar rendering
+logic in `MarginContributionReport.tsx` is changed.
