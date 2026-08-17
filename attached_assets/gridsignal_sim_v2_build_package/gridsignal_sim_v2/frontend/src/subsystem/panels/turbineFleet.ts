@@ -424,6 +424,7 @@ function FleetTable(
     }
 
     const standbyCell: React.ReactNode = (liveSt === 'offline' && !u.hot_standby)
+      // Non-hot-standby offline unit: interactive Cold / Warm / Hot tier buttons.
       ? React.createElement('div', { style: { display: 'flex', gap: 3 } },
           ...(['cold', 'warm', 'hot'] as const).map(tier => {
             const isActiveTier  = currentThermal === tier
@@ -451,6 +452,22 @@ function FleetTable(
             }, tier.charAt(0).toUpperCase() + tier.slice(1))
           }),
         )
+      : (liveSt === 'offline' && u.hot_standby)
+      // Hot-standby unit: managed by dispatch arbitrator — show thermal state read-only.
+      // Same pill styling as the active tier button above, but non-interactive.
+      ? React.createElement('span', {
+          style: {
+            ...MONO, fontSize: 16, fontWeight: 700, letterSpacing: '0.04em',
+            padding: '2px 6px', borderRadius: 3,
+            background: (THERMAL_COLOUR[currentThermal] ?? '#8b949e') + '26',
+            color: THERMAL_COLOUR[currentThermal] ?? '#8b949e',
+            border: `1px solid ${THERMAL_COLOUR[currentThermal] ?? '#2a3a4a'}`,
+          },
+          title: `${u.asset_id} is in hot-standby — thermal tier managed by dispatch arbitrator`,
+        },
+        currentThermal.charAt(0).toUpperCase() + currentThermal.slice(1),
+      )
+      // On-bus, starting, or other state — no standby indicator relevant.
       : React.createElement('span', { style: { ...MONO, fontSize: 18, color: '#2a3a4a' } }, '—')
 
     let actionCell: React.ReactNode
