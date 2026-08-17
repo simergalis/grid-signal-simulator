@@ -1,0 +1,39 @@
+Looking at the GPU Colo Center tile, there's a genuine contradiction in the data being displayed simultaneously:
+
+The anomaly:
+
+0 admitted · 17 queued · 0 nodes — implies zero compute is currently running
+SERVED 2.10 MW / DEMAND 2.10 MW / UNSERVED 0.00 MW — implies 2.10 MW of load is being fully served right now
+
+Zero admitted jobs and zero nodes can't produce 2.10 MW of served demand. Either the admission/node-count readout is wrong, or the SERVED/DEMAND figures are wrong — they can't both be right.
+
+Why this matters given your architecture: this is exactly the class of bug your "single source of truth" principle exists to prevent. If SERVED/DEMAND is coming from simulation_core.py's physics engine (correct, since gpuGeneratorStore.ts was retired as a display source) but admitted/nodes is coming from a different read path — e.g. a job-queue/admission-control state that hasn't been reconciled with the physics engine's notion of "who's actually drawing power" — you'd get exactly this split. It also could be a stale timestamp: SERVED/DEMAND reflecting last tick before an eviction, while admitted/nodes reflects the tick after.
+
+Two secondary items worth flagging in the same pass:
+
+Grid Connection reads 0.00 MW but labels itself "exporting" — exporting 0 MW is a contradictory state label (compare Fuel Cell, which correctly pairs 0.00 MW with "standby," not an active-verb label).
+Queued demand climbs monotonically (13→14→15→16→17 jobs, +12.75 MW queued) with 0 admitted the whole time in the visible window — worth confirming this is expected scenario behavior (queue backing up under scenario-kube-peak-overage) rather than a stuck admission gate.
+
+Here's a discovery-only prompt in your usual format:
+
+DISCOVERY PROMPT — GPU Colo Center admission/served-demand inconsistency
+
+Read-only investigation. Do not modify any files. Do not tune any parameters.
+
+Observed symptom (from live UI, scenario scenario-kube-peak-overage, SV1, t≈360s):
+
+GPU Colo Center tile shows 0 admitted · 17 queued · 0 nodes · 2.10 MW cap active
+Same tile simultaneously shows SERVED 2.10 MW, DEMAND 2.10 MW, UNSERVED 0.00 MW
+
+These are mutually inconsistent: 0 admitted jobs / 0 nodes cannot produce 2.10 MW of served load.
+
+Investigate and report back (no fixes yet):
+
+Trace the data source for admitted / nodes count on the GPU Colo Center tile. Which module computes it, and at what point in the tick does it update?
+Trace the data source for SERVED / DEMAND on the same tile. Confirm whether this is read directly from simulation_core.py's physics engine output (per single-source-of-truth policy) or from a separate aggregation.
+Determine whether these two values are computed from the same tick/snapshot, or whether one lags the other (e.g., admission state updates on job-scheduler callback while SERVED/DEMAND updates on the physics tick).
+Check whether KubeDemandAgent instances (tenants A/B/C) report served MW independent of the admission-count logic that drives admitted/nodes — i.e., are there two code paths computing "is this tenant's load being served" that could disagree?
+Separately: confirm what state the Grid Connection tile's "exporting" label is driven by, and whether it's gated on MW > 0 or is a static/default label unrelated to current flow.
+Do not propose a fix. Report findings as: (a) confirmed root cause, (b) which file/function owns each value, (c) whether this is a display-layer bug or an underlying simulation-state bug, (d) suggested fix approach for review.
+
+Stop after step 6 and report before any code changes.
