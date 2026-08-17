@@ -992,6 +992,25 @@ const SRC_FLOW_INFO: Record<string, { nodeId: string; h: number }> = {
   'grid-to-sw':    { nodeId: 'grid-connection', h: 72 },
 }
 
+// ── Source node → tick MW field mapping ───────────────────────────────────
+// Used by the aggregate calculator; keys match plantLayout nodeId values.
+const SOURCE_AGG_FIELDS: Record<string, string> = {
+  'gas-turbine':     'on_bus_output_mw',
+  'solar-pv':        'p_renewable_mw',
+  'battery-bess':    'bess_output_mw',
+  'grid-connection': 'grid_exchange_mw',
+  'fuel-cell':       'fuel_cell_output_mw',
+}
+
+// Map from nodeId → sourceState key so we know which tiles are enabled.
+const NODE_TO_SOURCE_KEY: Record<string, keyof SourceState> = {
+  'gas-turbine':     'turbine',
+  'solar-pv':        'solar',
+  'battery-bess':    'bess',
+  'grid-connection': 'grid',
+  'fuel-cell':       'fuelCell',
+}
+
 export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, onSelectPowerSupply }: PlantDiagramProps) {
   const tick          = useTickStore(s => s.latestTick)
   const selectedSpec  = useScenarioStore(s => s.selectedSpec)
@@ -1009,6 +1028,78 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, 
       fuelCell:  selectedSpec.fuel_cell_enabled       ?? false,
     }
   }, [selectedSpec])
+
+  // ── Aggregate selection state ─────────────────────────────────────────────
+  // Tracks which source tiles are included in the operator's "selected power"
+  // aggregate.  Initially all enabled tiles are included.  Operator can toggle
+  // individual tiles to include/exclude them from the running MW total shown in
+  // the "Select Power" footer without changing the underlying scenario spec.
+  //
+  // When sourceState changes (PowerSupplySourcesModal saved a new selection):
+  //   – newly disabled source → removed from includedInAggregate
+  //   – newly enabled source  → added to includedInAggregate automatically
+  const [includedInAggregate, setIncludedInAggregate] = useState<Set<string>>(() => {
+    // Initial: include all source node IDs whose sourceState key is enabled.
+    // At construction time sourceState is the defaultState fallback (truthy for turbine/solar/bess).
+    const initial = new Set<string>()
+    initial.add('gas-turbine')
+    initial.add('solar-pv')
+    initial.add('battery-bess')
+    return initial
+  })
+
+  // Keep includedInAggregate in sync when the scenario spec changes.
+  useEffect(() => {
+    setIncludedInAggregate(prev => {
+      const next = new Set(prev)
+      let changed = false
+      for (const [nodeId, key] of Object.entries(NODE_TO_SOURCE_KEY)) {
+        if (sourceState[key]) {
+          // Source became enabled → include it if it wasn't there before
+          if (!next.has(nodeId)) { next.add(nodeId); changed = true }
+        } else {
+          // Source disabled → remove from aggregate (can't produce power)
+          if (next.has(nodeId)) { next.delete(nodeId); changed = true }
+        }
+      }
+      return changed ? next : prev  // stable reference when nothing changed
+    })
+  }, [sourceState])
+
+  const handleToggleAggregate = useCallback((nodeId: string) => {
+    setIncludedInAggregate(prev => {
+      const next = new Set(prev)
+      if (next.has(nodeId)) next.delete(nodeId)
+      else                  next.add(nodeId)
+      return next
+    })
+  }, [])
+
+  // ── Live aggregate MW from included sources ───────────────────────────────
+  // Sums the current tick output for every source node that is both enabled
+  // (in sourceState) and included by the operator (in includedInAggregate).
+  // Solar prefers the polled liveSolarMW over the tick field so the number
+  // stays consistent with the Solar PV tile and the Renewable Supply modal.
+  const selectedAggregateMW = useMemo(() => {
+    const tr = tick as unknown as Record<string, number> | null
+    let total = 0
+    for (const [nodeId, field] of Object.entries(SOURCE_AGG_FIELDS)) {
+      const srcKey = NODE_TO_SOURCE_KEY[nodeId]
+      if (!sourceState[srcKey]) continue          // source disabled
+      if (!includedInAggregate.has(nodeId)) continue // operator excluded it
+
+      let mw: number
+      if (nodeId === 'solar-pv' && liveSolarMW != null) {
+        mw = liveSolarMW
+      } else {
+        mw = tr?.[field] ?? 0
+      }
+      // BESS: only count discharge (positive = delivering power to site)
+      if (nodeId === 'battery-bess') mw = Math.max(0, mw)
+      total += Math.max(0, mw)
+    }
+    return total
+  }, [includedInAggregate, sourceState, tick, liveSolarMW])
 
   const fuelCellEnabled = sourceState.fuelCell
 
@@ -1111,6 +1202,16 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, 
                   display: 'inline-block', flexShrink: 0,
                 }} />
                 Select Power
+                {/* Live aggregate MW for operator-selected sources */}
+                {selectedAggregateMW > 0.005 && (
+                  <span style={{
+                    marginLeft: 5,
+                    opacity: 0.75,
+                    letterSpacing: '0.04em',
+                  }}>
+                    · {selectedAggregateMW.toFixed(2)} MW
+                  </span>
+                )}
               </button>
             </div>
           </foreignObject>
@@ -1171,6 +1272,9 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, 
         // Apply packed Y position for source tiles so they stack without gaps.
         const py  = packedY[node.id]
         const def = py !== undefined ? { ...node, y: py } : node
+        // Source tiles get aggregate-selection toggle props so the operator can
+        // include/exclude individual sources from the "Select Power" MW total.
+        const isSourceNode = node.id in NODE_TO_SOURCE_KEY
         return (
           <PlantNode
             key={node.id}
@@ -1179,6 +1283,10 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, 
             onClick={onNodeClick}
             solarPreview={node.id === 'solar-pv' ? solarPreview : null}
             liveSolarMW={liveSolarMW}
+            selectedForAggregate={isSourceNode ? includedInAggregate.has(node.id) : undefined}
+            onToggleAggregate={isSourceNode && onSelectPowerSupply
+              ? (e: React.MouseEvent) => { e.stopPropagation(); handleToggleAggregate(node.id) }
+              : undefined}
           />
         )
       })}
@@ -1189,6 +1297,10 @@ export function PlantDiagram({ onNodeClick, compact, solarPreview, liveSolarMW, 
           def={{ ...FUEL_CELL_NODE, y: packedY['fuel-cell'] ?? FUEL_CELL_NODE.y }}
           tick={tick}
           onClick={onNodeClick}
+          selectedForAggregate={includedInAggregate.has('fuel-cell')}
+          onToggleAggregate={onSelectPowerSupply
+            ? (e: React.MouseEvent) => { e.stopPropagation(); handleToggleAggregate('fuel-cell') }
+            : undefined}
         />
       )}
 

@@ -44,6 +44,16 @@ interface PlantNodeProps {
    * real-time SolarSim aggregate rather than a stale WebSocket tick value.
    */
   liveSolarMW?: number | null
+  /**
+   * When true the tile shows a small "included in aggregate" toggle indicator.
+   * Only applies to power-supply source tiles (gas-turbine, solar-pv, etc.).
+   */
+  selectedForAggregate?: boolean
+  /**
+   * Called when the operator clicks the aggregate-toggle indicator.
+   * The handler must call e.stopPropagation() to avoid triggering the detail modal.
+   */
+  onToggleAggregate?: (e: React.MouseEvent) => void
 }
 
 function getMwValue(def: NodeDef, tick: TickPayload | null): number | null {
@@ -356,7 +366,12 @@ function WeatherBadge({ preview }: { preview: SolarPreview }) {
   )
 }
 
-export function PlantNode({ def, tick, onClick, solarPreview, liveSolarMW }: PlantNodeProps) {
+// Source tile node IDs — these get the aggregate-toggle indicator
+const SOURCE_NODE_IDS = new Set([
+  'gas-turbine', 'solar-pv', 'battery-bess', 'grid-connection', 'fuel-cell',
+])
+
+export function PlantNode({ def, tick, onClick, solarPreview, liveSolarMW, selectedForAggregate, onToggleAggregate }: PlantNodeProps) {
   // Solar PV tile: prefer the live solar API value when available so the
   // tile stays consistent with the Renewable Supply modal.  Both ultimately
   // read solar_sim.live_aggregate_mw() — but after a run ends the tick value
@@ -437,7 +452,7 @@ export function PlantNode({ def, tick, onClick, solarPreview, liveSolarMW }: Pla
           }} />
         )}
 
-        {/* Header row: label + state dot + chevron */}
+        {/* Header row: label + state dot + aggregate toggle + chevron */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 4 }}>
           <div>
             <div style={{
@@ -465,6 +480,34 @@ export function PlantNode({ def, tick, onClick, solarPreview, liveSolarMW }: Pla
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0 }}>
             <InfoBtn id={def.id} />
+            {/* Aggregate-toggle indicator — only on source tiles */}
+            {SOURCE_NODE_IDS.has(def.id) && onToggleAggregate && (
+              <button
+                onClick={onToggleAggregate}
+                title={selectedForAggregate
+                  ? 'Included in selected-power total — click to exclude'
+                  : 'Excluded from selected-power total — click to include'}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  padding: '1px 2px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  flexShrink: 0,
+                  lineHeight: 1,
+                }}
+              >
+                <div style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: '50%',
+                  background: selectedForAggregate ? def.accentColor : 'transparent',
+                  border: `1.5px solid ${selectedForAggregate ? def.accentColor : '#3a4a58'}`,
+                  transition: 'background 0.18s, border-color 0.18s',
+                }} />
+              </button>
+            )}
             {!isIdle && !isGrid && !def.passive && (
               <div style={{
                 width: 5, height: 5, borderRadius: '50%',
