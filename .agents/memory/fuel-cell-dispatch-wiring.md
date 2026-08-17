@@ -29,11 +29,19 @@ When a "not yet implemented" guard test (asserting a field does NOT exist) is fl
 ## Merit order
 BESS → Fuel Cell → Grid (import). Turbines run in parallel via the arbitrator.
 
+## KubeGridState / admission headroom rule
+Any new dispatchable source added to the merit order must ALSO be added to `KubeGridState` as a `*_headroom_mw: float = 0.0` field and included in the headroom sum at `kube_demand.py` line 358 — otherwise the admission gate is blind to that capacity. Pattern: `max(0.0, state.X_rated_mw - X_output_mw)`, mirroring BESS treatment. FC was added as `fuel_cell_headroom_mw` (IMPL-FC-HEADROOM-001).
+
 ## Known pre-existing test failures (NOT regressions)
 - `test_13_3_frequency.py::TestI3DroopRestoringForce::test_I3_*`
-- `test_kube_no_oscillation.py` (4 sub-tests)
+- `test_kube_no_oscillation.py` (4 sub-tests) — confirmed passing as of IMPL-FC-HEADROOM-001 session
 - `test_telemetry_corruption_wiring.py::test_tc_gt2_*`
 - `test_formulas.py::test_d10_demo_20mw_bess_fires_and_tapers`
 - `test_forecast_path.py::TestDispatchTruthfulness::test_B1a_*`, `test_B5_*`, `test_B5b_*`
 - `test_fabric_scenarios_e2e.py` (7 sub-tests) — missing `config/fabric_fixture_default.json`
 - `test_fabric_tick_payload.py` (7 sub-tests) — same missing fixture file
+- `test_bootstrap.py::test_bootstrap_one_time_code_is_usable_for_login`
+- `test_cooling_ambient_timezone.py::test_ca7_scenario_factory_physics_block_has_no_wall_clock_usage`
+- `test_f5_sim_time_interval_end.py::test_internal_elapsed_unaffected_by_f5`
+- `test_operator_unit_commands.py::test_tc_203_2/5c/5d`
+- `test_tc89_tc90_tc91_sequential_start.py::test_tc89_*`, `test_tc91b_*`

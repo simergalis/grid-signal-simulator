@@ -1672,6 +1672,13 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             ),
             turbine_headroom_mw=max(0.0, _k_turbine_rated - turbine_output_mw),
             bess_headroom_mw=max(0.0, _k_bess_rated - bess_output_mw),
+            # IMPL-FC-HEADROOM-001: include idle FC capacity in the headroom
+            # signal so the kube admission gate is not blind to available FC MW.
+            # Mirrors BESS treatment exactly: rated − current_output, floored at 0.
+            # fuel_cell_rated_mw is 0.0 when no FC is configured — safe unconditionally.
+            fuel_cell_headroom_mw=max(
+                0.0, state.fuel_cell_rated_mw - fuel_cell_output_mw
+            ),
         )
 
     # ── Collect stochastic-step fields for TickResult ─────────────────────────

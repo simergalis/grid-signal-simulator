@@ -194,8 +194,9 @@ class KubeGridState:
     """
     p_dispatch_required_mw: float
     bess_soc_fraction: float
-    turbine_headroom_mw: float   # rated_mw_total − turbine_output_mw
-    bess_headroom_mw: float      # available BESS discharge headroom
+    turbine_headroom_mw: float      # rated_mw_total (on-bus only) − turbine_output_mw
+    bess_headroom_mw: float         # rated_mw_total − bess_output_mw
+    fuel_cell_headroom_mw: float = 0.0  # rated_mw − fc_output_mw; 0.0 when no FC configured
 
 
 # ---------------------------------------------------------------------------
@@ -355,7 +356,13 @@ class KubeDemandAgent:
         headroom_mw = 999.0
         power_cap_active = False
         if grid_state is not None:
-            headroom_mw = grid_state.turbine_headroom_mw + grid_state.bess_headroom_mw
+            # IMPL-FC-HEADROOM-001: include FC idle capacity so the admission gate
+            # is not blind to available fuel-cell MW when BESS headroom is tight.
+            headroom_mw = (
+                grid_state.turbine_headroom_mw
+                + grid_state.bess_headroom_mw
+                + grid_state.fuel_cell_headroom_mw
+            )
             raw_cap = headroom_mw < self.config.headroom_threshold_mw
 
             # Anti-oscillation hysteresis (transition-based post-recovery hold).

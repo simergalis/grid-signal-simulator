@@ -1,0 +1,61 @@
+IMPL-FC-HEADROOM-001 — Phase 2 (Implementation)
+
+Phase 1 discovery is complete and confirmed. Findings below are settled — do not re-derive them, implement against them directly.
+
+Confirmed facts (from Phase 1)
+KubeGridState (core/kube_demand.py lines 188–199) has no fuel-cell field. Add one: fuel_cell_headroom_mw: float.
+Derating formula, mirroring BESS treatment exactly (core/simulation_core.py ~line 1670): fuel_cell_headroom_mw = max(0.0, state.fuel_cell_rated_mw - fuel_cell_output_mw)
+state.fuel_cell_rated_mw is a float, defaults to 0.0 when no FC is configured (runtime/scenario_factory.py lines 755–767). No None sentinel exists — no is not None guard needed. Adding this term is safe unconditionally.
+The bug is at core/kube_demand.py line 358: headroom_mw = turbine_headroom_mw + bess_headroom_mw — add + fuel_cell_headroom_mw.
+This formula feeds: the admission gate (line 359), the eviction gate (line 529), and KubeMetrics.headroom_mw (line 585) which propagates to simulation_core.py line 563 and from there to the WS payload / frontend display. All three are intended to change together — no call site should be excluded from the fix.
+No existing test in test_kube_powercap.py configures a fuel cell; a new field with a 0.0 default is additive and will not break TC-P1/TC-P2/TC-P3.
+Step 1 — Acceptance test (write first, confirm it fails pre-fix)
+
+Add to test_kube_powercap.py. Structure:
+
+Configure a scenario/run context with fuel_cell_rated_mw set (e.g. 2.0 MW), fuel cell idle (fuel_cell_output_mw = 0.0).
+Set turbine + BESS headroom such that their sum alone is below headroom_threshold_mw (2.5 MW) — e.g. turbine headroom 1.0 MW, BESS headroom 1.0 MW, sum 2.0 MW.
+Pre-fix expectation: admission gate blocks (raw_cap fires) because headroom_mw = 2.0 MW.
+Post-fix expectation: with FC headroom (2.0 MW) included, headroom_mw = 4.0 MW, gate does not fire, job is admitted.
+Assert on the end-to-end value, not just the intermediate sum: check KubeMetrics.headroom_mw (or whatever the tick output / WS payload surfaces) reflects the FC-inclusive figure — not only the internal kube_demand.py calculation. This confirms the fix reaches the value the operator/scheduler actually sees, not just an internal number.
+Run this test now and confirm it fails against current (pre-fix) code. Report the failure output before proceeding to Step 2.
+
+Stop here and report the failing test output before writing the fix.
+
+Step 2 — Implement
+Add fuel_cell_headroom_mw: float = 0.0 to KubeGridState.
+Compute it in simulation_core.py alongside the existing turbine/BESS headroom computation, using the formula above.
+Update line 358 in kube_demand.py to include it in the sum.
+Do not modify the eviction threshold, the admission threshold (2.5 MW), or anything in simulation_core.py's BESS → FC → Grid merit-order dispatch logic — those are confirmed correct and out of scope.
+Do not add a second/parallel computation of FC headroom anywhere else — this is the one place it's computed; everything downstream reads from KubeGridState.
+Step 3 — Report
+Confirm the new acceptance test now passes.
+Report full suite delta (not just the new test) — test_kube_powercap.py in full, plus anything else touching KubeGridState or KubeMetrics.
+File IMPL-FC-HEADROOM-001 in docs/open-items.md as resolved, with a one-line pointer to the acceptance test.
+Project content
+GridSignal
+Created by you
+Kubernetes Priority Scheduling Summary.md
+
+280 lines
+
+MD
+
+Kubernetes Priority Queueing: A Comprehensive Engineering Survey.md
+
+280 lines
+
+MD
+
+GridSignal-Forecast-Engine-Functional-Spec_v2.5.md
+
+1,683 lines
+
+MD
+
+View all 11 files
+Content
+
+Phase 1 complete. Here are the findings against all five items. --- ## Phase 1 Report — IMPL-FC-HEADROOM-001 --- ### 1. KubeGridState field inventory **File:** `core/kube_demand.py` lines 188–199 ```python @dataclass class KubeGridState: p_dispatch_required_mw: float # n
+
+PASTED

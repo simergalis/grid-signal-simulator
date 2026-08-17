@@ -125,3 +125,38 @@ the bar will render amber for all tenants regardless of allocation status.
 
 **Review trigger:** Revisit if `TenantProformaRow` or the AllocBar rendering
 logic in `MarginContributionReport.tsx` is changed.
+
+---
+
+## IMPL-FC-HEADROOM-001 — Fuel cell capacity excluded from kube admission headroom *(resolved)*
+
+**Status:** Fixed. Acceptance test `TC-FC1a/TC-FC1b` in `tests/test_kube_powercap.py`.
+
+**What was wrong:** `kube_demand.py` line 358 computed
+`headroom_mw = turbine_headroom_mw + bess_headroom_mw`, omitting fuel cell idle
+capacity. The kube admission gate (`power_cap_active` fires when
+`headroom_mw < 2.5 MW`) was therefore blind to up to `fc_rated_mw` of available
+headroom whenever a fuel cell asset was present but not yet dispatched, causing
+the scheduler to hold jobs earlier than the true power balance required.
+
+**Fix (three files):**
+
+1. `core/kube_demand.py` — added `fuel_cell_headroom_mw: float = 0.0` to
+   `KubeGridState` dataclass. Field defaults to `0.0` so non-FC scenarios are
+   unaffected. Updated line 358 to include the new term in the headroom sum.
+2. `core/simulation_core.py` — computed `fuel_cell_headroom_mw` alongside the
+   existing turbine/BESS headroom at `KubeGridState` construction time, using
+   `max(0.0, state.fuel_cell_rated_mw - fuel_cell_output_mw)` — same treatment
+   as BESS (flat rated minus current output, floored at zero).
+3. `tests/test_kube_powercap.py` — added `TestKubePowercapFuelCellHeadroom`
+   (TC-FC1a: cap clears when FC brings total above threshold; TC-FC1b: non-FC
+   scenarios unaffected).
+
+**Scope:** The fix propagates to all three consumers of `headroom_mw` — the
+admission gate (line 359), the eviction gate (line 529), and
+`KubeMetrics.headroom_mw` (line 585 → WS payload → operator display). All three
+are intended to include FC headroom.
+
+**Review trigger:** Revisit if a new dispatchable source (hydrogen storage,
+backup diesel) is added to the merit order — it must also be added to
+`KubeGridState` and the headroom sum, per the same pattern.

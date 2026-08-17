@@ -576,5 +576,152 @@ class TestKubePowercapAlertNotMasked(unittest.TestCase):
         )
 
 
+# ---------------------------------------------------------------------------
+# TC-FC1: Acceptance test — fuel cell headroom included in admission gate
+# ---------------------------------------------------------------------------
+
+class TestKubePowercapFuelCellHeadroom(unittest.TestCase):
+    """
+    TC-FC1: IMPL-FC-HEADROOM-001 acceptance test.
+
+    The admission gate (power_cap_active) must include fuel cell headroom in
+    its headroom_mw sum.  Without the fix:
+
+        headroom_mw = turbine_headroom_mw + bess_headroom_mw   # bug
+
+    With the fix:
+
+        headroom_mw = turbine_headroom_mw + bess_headroom_mw + fuel_cell_headroom_mw
+
+    Scenario (TC-FC1a):
+      turbine_headroom_mw   = 1.0 MW
+      bess_headroom_mw      = 1.0 MW
+      fuel_cell_headroom_mw = 2.0 MW  (FC idle — full rated capacity available)
+      headroom_threshold_mw = 2.5 MW  (default)
+
+      Pre-fix:  headroom_mw = 2.0 < 2.5 → power_cap fires, job held
+      Post-fix: headroom_mw = 4.0 > 2.5 → gate clears, job admitted
+
+    TC-FC1b verifies the fix is additive: non-FC scenarios (fuel_cell_headroom_mw
+    defaulting to 0.0) must not have their headroom inflated.
+    """
+
+    def _make_agent_with_pending(self) -> "KubeDemandAgent":
+        from core.kube_demand import KubeConfig, KubeDemandAgent, _PendingAdmission
+
+        agent = KubeDemandAgent(
+            KubeConfig(
+                max_nodes=2000,
+                min_nodes=0,
+                mean_interarrival_s=1e6,   # suppress Poisson arrivals
+                reorder_window_s=0.0,
+                ntp_jitter_s=0.0,
+                headroom_threshold_mw=2.5,  # default threshold
+                power_cap_hysteresis_s=0.0, # disable hysteresis for clean assertion
+                rng_seed=99,
+            ),
+            site_id="test-fc-headroom",
+        )
+        agent._next_arrival_sim_time = 1e9  # skip initial Poisson arrival
+        # Pre-inject one pending admission into the reorder buffer
+        from core.kube_demand import _PendingAdmission
+        agent._reorder_buffer.append(
+            _PendingAdmission(
+                event_id="fc-test-job-1",
+                node_count=50,
+                hardware_profile_id="enterprise_8gpu_air",
+                observed_at=0.0,
+                event_timestamp=0.0,
+                duration_s=300.0,
+            )
+        )
+        agent._started = True
+        agent._last_total_nodes = 0
+        return agent
+
+    def test_fc1a_fc_headroom_clears_admission_gate(self):
+        """
+        TC-FC1a: When turbine+BESS headroom (2.0 MW) is below the threshold
+        (2.5 MW) but FC headroom (2.0 MW) brings the total to 4.0 MW, the
+        power cap must NOT fire and the job must be admitted.
+
+        Also asserts KubeMetrics.headroom_mw == 4.0 so the operator-facing
+        display reflects the FC-inclusive figure.
+        """
+        agent = self._make_agent_with_pending()
+
+        grid_state = KubeGridState(
+            p_dispatch_required_mw=3.0,
+            bess_soc_fraction=0.9,
+            turbine_headroom_mw=1.0,
+            bess_headroom_mw=1.0,
+            fuel_cell_headroom_mw=2.0,  # FC idle — 2 MW rated, 0 MW output
+        )
+
+        _signals, metrics = agent.tick(
+            sim_time=10.0, dt_seconds=5.0, grid_state=grid_state
+        )
+
+        self.assertAlmostEqual(
+            metrics.headroom_mw, 4.0, places=6,
+            msg=(
+                f"KubeMetrics.headroom_mw must be 4.0 MW "
+                f"(turb 1.0 + BESS 1.0 + FC 2.0), got {metrics.headroom_mw}. "
+                f"FC headroom is missing from the admission-gate sum."
+            ),
+        )
+        self.assertFalse(
+            metrics.power_cap_active,
+            msg=(
+                f"power_cap_active must be False when FC-inclusive headroom "
+                f"(4.0 MW) > threshold (2.5 MW). Got True — FC headroom is "
+                f"excluded from the gate comparison."
+            ),
+        )
+        self.assertEqual(
+            metrics.active_jobs, 1,
+            msg=(
+                f"Job must be admitted when headroom clears the gate after FC "
+                f"is included. Got active_jobs={metrics.active_jobs}."
+            ),
+        )
+
+    def test_fc1b_zero_fc_headroom_does_not_inflate_non_fc_scenarios(self):
+        """
+        TC-FC1b: When no FC is configured (fuel_cell_headroom_mw defaults to
+        0.0), headroom_mw must equal turbine + BESS only (2.0 MW), and the
+        cap must still fire. Ensures the fix is additive and non-breaking.
+        """
+        agent = self._make_agent_with_pending()
+
+        # fuel_cell_headroom_mw omitted → defaults to 0.0
+        grid_state = KubeGridState(
+            p_dispatch_required_mw=3.0,
+            bess_soc_fraction=0.9,
+            turbine_headroom_mw=1.0,
+            bess_headroom_mw=1.0,
+        )
+
+        _signals, metrics = agent.tick(
+            sim_time=10.0, dt_seconds=5.0, grid_state=grid_state
+        )
+
+        self.assertAlmostEqual(
+            metrics.headroom_mw, 2.0, places=6,
+            msg=(
+                f"headroom_mw must be 2.0 MW (turb 1.0 + BESS 1.0 + FC 0.0) "
+                f"when no FC is configured. Got {metrics.headroom_mw}."
+            ),
+        )
+        self.assertTrue(
+            metrics.power_cap_active,
+            msg=(
+                f"power_cap_active must be True when headroom (2.0 MW) < "
+                f"threshold (2.5 MW) with no FC. Got False — non-FC headroom "
+                f"was incorrectly inflated."
+            ),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
