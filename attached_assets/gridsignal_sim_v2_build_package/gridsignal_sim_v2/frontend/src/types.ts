@@ -818,3 +818,93 @@ export interface TimeseriesResponse {
   gap_count: number
   rows: TimeseriesRow[]
 }
+
+// ---------------------------------------------------------------------------
+// Margin Contribution Tool — Economic Profile (§30)
+// ---------------------------------------------------------------------------
+
+export interface TenantRateSpec {
+  id?: number
+  tenant_id: string            // "A" | "B" | "C"
+  billing_basis: string        // "per_mw_committed" | "per_mwh_consumed" | "per_gpu_hour"
+  base_rate: number
+  contracted_allocation: number
+  overage_rate?: number | null
+  sla_credit?: number | null
+}
+
+export interface EconomicProfileSpec {
+  name: string
+  grid_peak_rate_per_mwh?: number | null
+  grid_offpeak_rate_per_mwh?: number | null
+  turbine_fuel_per_mwh?: number | null
+  turbine_capex_per_mwh?: number | null
+  bess_marginal_per_mwh?: number | null
+  bess_capex_per_mwh?: number | null
+  solar_capex_per_mwh?: number | null
+  curtailment_per_mwh?: number | null
+  /** List of field names tagged PROPOSED_HERE (amber badge) by the operator */
+  proposed_here_fields: string[]
+  tenant_rates: TenantRateSpec[]
+}
+
+export interface EconomicProfileSummary {
+  profile_id: string
+  name: string
+  created_at: string
+  proposed_here_count: number
+}
+
+export interface EconomicProfileDetail extends EconomicProfileSpec {
+  profile_id: string
+  created_at: string
+}
+
+export interface CreateEconomicProfileResponse {
+  profile_id: string
+  name: string
+}
+
+// ---------------------------------------------------------------------------
+// Margin Contribution Proforma response (§30.5 formulas)
+// ---------------------------------------------------------------------------
+
+export interface TenantProformaRow {
+  tenant_id: string
+  billing_basis: string
+  usage_mwh: number             // approximate (MC-10)
+  contracted_allocation: number
+  within_alloc: number
+  over_alloc: number
+  revenue: number
+  revenue_within_alloc: number
+  revenue_over_alloc: number
+  allocated_cogs: number
+  allocated_fixed_cost: number
+  margin_contribution: number
+  margin_pct: number
+  over_alloc_flag: boolean
+  usage_weight: number
+}
+
+export interface ProformaResponse {
+  run_id: string
+  scenario_name: string
+  profile_id: string
+  profile_name: string
+  period: string
+  scale_factor: number
+  run_duration_hours: number
+  target_hours: number
+  proposed_here_fields: string[]
+  proposed_here_count: number
+  tenant_rows: TenantProformaRow[]
+  total_revenue: number
+  total_energy_cogs: number
+  total_capex_cost: number
+  total_curtailment_cost: number
+  total_margin_contribution: number
+  total_margin_pct: number
+  disclosure_tenant_mwh_is_approx: boolean
+  disclosure_session_scoped: boolean
+}

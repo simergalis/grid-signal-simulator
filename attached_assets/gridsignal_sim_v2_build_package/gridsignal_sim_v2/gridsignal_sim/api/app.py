@@ -89,6 +89,7 @@ from site_config import SiteLocation, set_site_location
 from api.routes import auth_routes, admin_routes
 from api.routes import export as export_routes
 from api.routes import ai as ai_routes
+from api.routes import economic_profiles as economic_profiles_routes
 from api.auth_utils import COOKIE_NAME, decode_access_token
 from api.db import create_auth_tables, _SessionLocal
 from runtime.persistence import AuthUser
@@ -348,6 +349,7 @@ def create_app() -> FastAPI:
     application.include_router(location_routes.router)  # operator location picker
     application.include_router(export_routes.router)    # telemetry-log CSV download
     application.include_router(ai_routes.router)        # AI copy generation
+    application.include_router(economic_profiles_routes.router)  # §30 Margin Contribution
 
     # ── §10.2 static frontend (Step 16) ─────────────────────────────────
     # Catch-all GET route: serve real static assets by file path, then fall

@@ -259,6 +259,78 @@ class RunTimeseries(Base):
     tick_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
 
 
+class EconomicProfile(Base):
+    """Margin Contribution Tool — Economic Profile.
+
+    One row per operator-saved rate card.  site_id FK matches the pattern
+    used by AssetConfig (persistence.py:163–165) and Scenario (196–198) —
+    locked decision 2: site_id scoping, no tenant_id + RLS.
+
+    All cost fields are Optional[float] — None means "not configured" (the
+    operator did not supply a value for that cost component).  The calculation
+    engine treats None as 0.0 for that component, not as a fallback default.
+    See api/routes/runs.py:194–200 for the is-not-None discipline this follows.
+
+    The `proposed_here_fields` JSON column stores a list of field names the
+    operator tagged as third-party estimates pending validation (PROPOSED_HERE
+    amber-tag in the UI).  Example: '["turbine_capex_per_mwh","bess_capex_per_mwh"]'.
+    """
+
+    __tablename__ = "economic_profile"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True)  # UUID
+    site_id: Mapped[Optional[str]] = mapped_column(
+        String, ForeignKey("site.site_id"), nullable=True, index=True
+    )
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+    # ── Energy cost fields (variable + amortised capital) ─────────────────
+    # Grid TOU rates ($/MWh imported at PCC).  grid_exchange_mw is
+    # positive-on-import in tick_dicts (simulation_core.py:2089 negation).
+    grid_peak_rate_per_mwh: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    grid_offpeak_rate_per_mwh: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    # Turbine: fuel (variable $/MWh) + amortised capital ($/MWh)
+    turbine_fuel_per_mwh: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    turbine_capex_per_mwh: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    # BESS: marginal charge cost (variable $/MWh dispatched) + amortised capital
+    bess_marginal_per_mwh: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    bess_capex_per_mwh: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    # Solar: amortised capital only (zero fuel cost)
+    solar_capex_per_mwh: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    # Curtailment SLA credit ($/MWh curtailed or $/job-hour — stored as $/MWh curtailed)
+    curtailment_per_mwh: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+
+    # JSON list of field names tagged PROPOSED_HERE by the operator.
+    # e.g. '["turbine_capex_per_mwh","bess_capex_per_mwh","grid_peak_rate_per_mwh"]'
+    proposed_here_fields: Mapped[str] = mapped_column(Text, nullable=False, default="[]")
+
+
+class EconomicProfileTenantRate(Base):
+    """Per-tenant billing parameters within one EconomicProfile.
+
+    One row per (economic_profile_id, tenant_id) pair.
+    tenant_id matches the values in scenario_factory._TENANT_DEFS: "A", "B", "C".
+    billing_basis: "per_mw_committed" | "per_mwh_consumed" | "per_gpu_hour".
+    overage_rate is Optional — None means flat billing with no overage tier
+    (AC-2.5 / TC-MC-9: a tenant with no overage_rate bills at base_rate only,
+    no error state).
+    """
+
+    __tablename__ = "economic_profile_tenant_rate"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    economic_profile_id: Mapped[str] = mapped_column(
+        String, ForeignKey("economic_profile.id"), nullable=False, index=True
+    )
+    tenant_id: Mapped[str] = mapped_column(String, nullable=False)  # "A" | "B" | "C"
+    billing_basis: Mapped[str] = mapped_column(String, nullable=False)
+    base_rate: Mapped[float] = mapped_column(Float, nullable=False)
+    contracted_allocation: Mapped[float] = mapped_column(Float, nullable=False)
+    overage_rate: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    sla_credit: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+
+
 class ControlEvent(Base):
     """§8.1 ControlEvent: append-only log of all workload signals received
     by a run.  Acknowledgments live in ControlEventAck so this table

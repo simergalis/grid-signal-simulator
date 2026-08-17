@@ -19,6 +19,9 @@
  * Reservations and capacity changes are proposed via the advisory gate.
  */
 import { useState, useCallback, useEffect, useRef } from 'react'
+import { EconomicProfileModal } from './EconomicProfileModal'
+import { MarginContributionReport } from './MarginContributionReport'
+import { useEconomicProfileStore } from '../store/economicProfileStore'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -150,6 +153,17 @@ export function ScenarioPlannerPage({ runId }: ScenarioPlannerPageProps) {
   const [baselineMixIdx, setBaselineMixIdx] = useState(0)
   const [altMixIdx,      setAltMixIdx]      = useState(1)
   const [result, setResult] = useState<ScenarioResult | null>(null)
+
+  // ── §30 Margin Contribution Tool state ────────────────────────────────
+  const [economicModalOpen, setEconomicModalOpen] = useState(false)
+  const [reportRunId, setReportRunId] = useState<string | null>(null)
+  const econStore = useEconomicProfileStore()
+
+  // Fetch economic profiles once on mount so the selector is populated.
+  useEffect(() => {
+    econStore.fetchProfiles()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // When runId changes, poll energy-summary until the run completes.
   // (409 = still active; 200 = sealed — add to history.)
@@ -286,16 +300,65 @@ export function ScenarioPlannerPage({ runId }: ScenarioPlannerPageProps) {
               </div>
             </div>
 
-            <button
-              onClick={runScenario}
-              style={{
-                padding: '8px 20px', background: '#3b82f6', color: '#fff',
-                border: 'none', borderRadius: '4px', fontSize: '12px', cursor: 'pointer',
-                fontFamily: 'monospace',
-              }}
-            >
-              Run Scenario →
-            </button>
+            {/* ── §30 Economics selector ── */}
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <label style={{ fontSize: '11px', color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+                  Economic Profile (Margin Contribution)
+                </label>
+                <select
+                  value={econStore.selectedProfileId ?? ''}
+                  onChange={(e) => econStore.selectProfile(e.target.value || null)}
+                  style={{ width: '100%', background: '#0f172a', color: '#e2e8f0', border: '1px solid #334155', borderRadius: '4px', padding: '6px', fontSize: '12px' }}
+                >
+                  <option value="">— no profile selected —</option>
+                  {econStore.profiles.map((p) => (
+                    <option key={p.profile_id} value={p.profile_id}>
+                      {p.name}{p.proposed_here_count > 0 ? ` [${p.proposed_here_count} PROPOSED]` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                onClick={() => setEconomicModalOpen(true)}
+                style={{
+                  padding: '6px 13px', fontSize: '11px', cursor: 'pointer',
+                  background: 'rgba(45,212,191,0.1)', color: '#2DD4BF',
+                  border: '1px solid rgba(45,212,191,0.35)', borderRadius: '4px',
+                  marginTop: '16px', whiteSpace: 'nowrap',
+                }}
+              >
+                + Configure Economics
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={runScenario}
+                style={{
+                  padding: '8px 20px', background: '#3b82f6', color: '#fff',
+                  border: 'none', borderRadius: '4px', fontSize: '12px', cursor: 'pointer',
+                  fontFamily: 'monospace',
+                }}
+              >
+                Run Scenario →
+              </button>
+              {result && econStore.selectedProfileId && (
+                <button
+                  onClick={() => setReportRunId(reportRunId === result.run_id ? null : result.run_id)}
+                  style={{
+                    padding: '8px 16px', fontSize: '12px', cursor: 'pointer',
+                    background: reportRunId === result.run_id
+                      ? 'rgba(45,212,191,0.25)' : 'rgba(45,212,191,0.1)',
+                    color: '#2DD4BF',
+                    border: '1px solid rgba(45,212,191,0.35)', borderRadius: '4px',
+                    fontFamily: 'monospace',
+                  }}
+                >
+                  {reportRunId === result.run_id ? '▲ Hide Margin Report' : '▼ Show Margin Report'}
+                </button>
+              )}
+            </div>
           </>
         )}
       </div>
@@ -383,9 +446,27 @@ export function ScenarioPlannerPage({ runId }: ScenarioPlannerPageProps) {
         </div>
       )}
 
+      {/* ── §30 Margin Contribution Report ── */}
+      {reportRunId && econStore.selectedProfileId && (
+        <MarginContributionReport
+          runId={reportRunId}
+          profileId={econStore.selectedProfileId}
+          profileName={econStore.selectedProfile?.name}
+          scenarioName={result?.run_id}
+        />
+      )}
+
       <div style={{ marginTop: '16px', fontSize: '11px', color: '#475569', textAlign: 'center' }}>
         §21.2 workstream-3 cost model · Turbine cost = amortised capital vs duty cycle · Commits nothing
       </div>
+
+      {/* ── §30 Economic Profile modal ── */}
+      {economicModalOpen && (
+        <EconomicProfileModal
+          onClose={() => setEconomicModalOpen(false)}
+          editProfileId={econStore.selectedProfileId}
+        />
+      )}
     </div>
   )
 }
