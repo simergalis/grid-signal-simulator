@@ -193,6 +193,14 @@ export function PowerSupplySourcesModal({ onClose }: PowerSupplySourcesModalProp
         ? ((orig.solar_rated_mw ?? 0) > 0 ? orig.solar_rated_mw : savedSolarMW.current)
         : 0,
       fuel_cell_enabled: sources.fuelCell,
+      // When enabling FC, ensure fuel_cell_rated_mw is non-zero so the physics
+      // engine can actually dispatch it.  Mirrors solar_rated_mw treatment:
+      // preserve the spec's existing value if positive, else default to 1.8 MW
+      // (one stack — the ScenarioBuilder default).  When disabling, preserve the
+      // rated_mw value so it can be restored if the operator re-enables later.
+      fuel_cell_rated_mw: sources.fuelCell
+        ? ((orig.fuel_cell_rated_mw ?? 0) > 0 ? orig.fuel_cell_rated_mw : 1.8)
+        : (orig.fuel_cell_rated_mw ?? 0),
       island_mode:       !sources.grid,
     }
 
