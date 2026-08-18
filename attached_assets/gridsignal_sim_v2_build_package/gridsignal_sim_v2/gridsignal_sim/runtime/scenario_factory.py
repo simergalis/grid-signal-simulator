@@ -632,6 +632,13 @@ def build_run_context_from_spec(
             fast_shed_duration_s=float(_pms_raw.get("fast_shed_duration_s", 30.0)),
         )
 
+    # Cascade commit fraction — optional per-scenario override.
+    # When present, the commitment engine triggers the next standby-turbine start
+    # when the last on-bus active turbine's output reaches this fraction of rated.
+    _cascade_raw = spec_data.get("cascade_commit_fraction")
+    if _cascade_raw is not None:
+        site.cascade_commit_fraction = float(_cascade_raw)
+
     hw_id = spec_data.get("hardware_profile_id", "enterprise_8gpu_air")
 
     # ── Modules ───────────────────────────────────────────────────────────
