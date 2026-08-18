@@ -13,3 +13,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [SoC corruption dashboard wiring](soc-corruption-dashboard.md) — bess_soc_corrupted_fraction must follow confidence: ConfidenceBand in TickResult (field ordering constraint); corruption stamps both contingency_coverage and the fraction together.
 - [PAUSE control-plane](pause-control-plane.md) — asyncio.Event gate in _drive(); §22.3 timer persistence deferred; STOP vs PAUSE semantics.
 - [Frontend build + modal naming traps](gridsignal-frontend-build.md) — prod serves pre-built bundle; must run build_prod.sh + restart after any src/ edit. Two overlapping constant sets in GpuNodeGeneratorModal; Queue tab needs component-level TENANT_COLOUR_BY_ID / SCHEDULER_BADGE_BY_TYPE.
+- [Hot-standby cascade](hot-standby-cascade.md) — hot-standby turbines are OFFLINE (not SYNCHRONISED); clear config.hot_standby then call command_start(); never look for SYNCHRONISED state.
