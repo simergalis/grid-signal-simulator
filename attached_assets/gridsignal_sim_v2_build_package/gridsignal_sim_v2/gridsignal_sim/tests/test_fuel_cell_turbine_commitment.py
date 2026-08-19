@@ -17,7 +17,11 @@ from core.models import (
     TurbineState,
 )
 from core.sim_clock import SimClock
-from core.simulation_core import SimulationState, evaluate_tick
+from core.simulation_core import (
+    SimulationState,
+    _gpu_load_fraction_at,
+    evaluate_tick,
+)
 from runtime.scenario_factory import build_run_context_from_spec
 
 
@@ -258,3 +262,26 @@ def test_turbine_scenario_wires_80_percent_policy() -> None:
         turbine.thermal_state
         for turbine in ctx.sim_state.turbines
     ] == [ThermalState.HOT, ThermalState.WARM, ThermalState.COLD]
+    assert ctx.sim_state.gpu_load_profile[:3] == [
+        (0.0, 1.2),
+        (600.0, 1.0),
+        (720.0, 0.5),
+    ]
+
+
+def test_turbine_scenario_has_120_percent_gpu_peak_for_ten_minutes() -> None:
+    scenario_path = (
+        Path(__file__).resolve().parents[1]
+        / "config"
+        / "scenarios"
+        / "scenario-turbine-01.json"
+    )
+    spec = ScenarioSpec.model_validate_json(scenario_path.read_text())
+
+    assert spec.gpu_load_profile[:3] == [
+        (0.0, 1.2),
+        (600.0, 1.0),
+        (720.0, 0.5),
+    ]
+    assert _gpu_load_fraction_at(spec.gpu_load_profile, 599.999) == pytest.approx(1.2)
+    assert _gpu_load_fraction_at(spec.gpu_load_profile, 600.0) == pytest.approx(1.0)

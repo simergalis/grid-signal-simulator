@@ -19,3 +19,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [PUE calibration contract](pue-calibration-contract.md) — pue_base excludes cooling; derive total PUE and validate the runtime base value against the declared catalogue range.
 - [BESS escalation semantics](bess-escalation-semantics.md) — bridge-floor and turbine-catch-up are independent; do not redefine legacy reserve-alert verdicts.
 - [Additive load validation](additive-load-validation.md) — Kube scenarios need tenant bursts for reliable site-level load injections; scripted job events are not additive there.
+- [GPU load multipliers](gpu-load-multipliers.md) — profiles are non-negative demand multipliers; values above 1.0 model planned GPU over-peak demand.

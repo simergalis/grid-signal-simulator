@@ -522,10 +522,11 @@ def _promote_reserve_standby_labels(
 def _gpu_load_fraction_at(profile: list[tuple[float, float]], t: float) -> float:
     """Zero-order-hold lookup for gpu_load_profile.
 
-    Returns the fraction (0-1) that applies at sim-time t.
+    Returns the non-negative load multiplier that applies at sim-time t.
     The last entry whose time_s <= t wins; if t precedes all entries the first
     entry's value is used.  Returns 1.0 for an empty profile (full load, no-op).
-    Clamped to [0, 1] so out-of-range authored values are safe.
+    Negative authored values are clamped to zero; values above 1.0 intentionally
+    model planned GPU over-peak demand.
     """
     if not profile:
         return 1.0
@@ -535,7 +536,7 @@ def _gpu_load_fraction_at(profile: list[tuple[float, float]], t: float) -> float
             frac = value
         else:
             break
-    return max(0.0, min(1.0, frac))
+    return max(0.0, frac)
 
 
 def _cost_ranked_dispatch_allocations(

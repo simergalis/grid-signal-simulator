@@ -663,9 +663,10 @@ class ScenarioSpec(BaseModel):
     gpu_load_profile: list[tuple[float, float]] = Field(
         default_factory=list,
         description=(
-            "Zero-order-hold GPU load profile. Each tuple is (sim_time_s, fraction [0,1]). "
-            "Empty = constant 1.0 (full load). The active fraction scales p_compute_demand_mw "
-            "each tick so operators can shape GPU utilisation over time."
+            "Zero-order-hold GPU load profile. Each tuple is (sim_time_s, non-negative "
+            "load multiplier), where 1.0 is nominal full load and values above 1.0 model "
+            "a planned GPU over-peak. Empty = constant 1.0. The active multiplier scales "
+            "p_compute_demand_mw each tick so operators can shape GPU utilisation over time."
         ),
     )
 
