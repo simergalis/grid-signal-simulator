@@ -418,6 +418,12 @@ class SiteConfig:
     # unlimited grid-balancing behavior.  The ceiling applies only to imports;
     # grid export remains unconstrained.
     grid_import_limit_mw: Optional[float] = None
+    # Normal-operation BESS depth of discharge, measured as a fraction of the
+    # unit's configured initial SoC.  Once this depth has been used, normal
+    # economic dispatch preserves the remaining charge for an emergency where
+    # fuel-cell capacity plus available grid import cannot cover demand.
+    # 0.0 preserves the historical BESS-first behavior.
+    bess_normal_dispatch_depth_fraction: float = 0.0
     # Early-warning BESS bridge escalation controls. PROPOSED_HERE pending
     # commissioning data; scenario specs may override every value.
     bess_bridging_floor_fraction: float = _sp.value("bess_bridging_floor_fraction")

@@ -98,6 +98,7 @@ def test_scenario_schema_and_requested_capacities() -> None:
     assert spec.site_utc_offset_h == pytest.approx(-8.0)
     assert spec.island_mode is False
     assert spec.grid_import_limit_mw == pytest.approx(5.0)
+    assert spec.bess_normal_dispatch_depth_fraction == pytest.approx(0.03)
     assert len(spec.bess_units) == 1
     assert spec.bess_units[0].rated_mw == pytest.approx(30.0)
     assert spec.bess_units[0].usable_mwh == pytest.approx(60.0)
@@ -112,6 +113,7 @@ def test_sj1_pue_calibration_is_derived_and_guarded() -> None:
     assert spec.pue_base == pytest.approx(1.074)
     assert spec.alpha_max == pytest.approx(0.276)
     assert ctx.sim_state.site.effective_pue == pytest.approx(1.370424)
+    assert ctx.sim_state.site.bess_normal_dispatch_depth_fraction == pytest.approx(0.03)
     assert [assertion.check for assertion in spec.assertions] == [
         "pue_base_in_declared_range"
     ]
@@ -128,6 +130,98 @@ def test_sj1_pue_calibration_is_derived_and_guarded() -> None:
         uncalibrated=True,
     )
     assert persisted.effective_pue == pytest.approx(ctx.sim_state.site.effective_pue)
+
+
+def _bess_reserve_spec(
+    *,
+    fuel_cell_enabled: bool = True,
+    grid_import_limit_mw: float = 5.0,
+) -> dict:
+    return {
+        "name": "bess-operating-reserve-test",
+        "description": "",
+        "frequency_nominal_hz": 60.0,
+        "power_factor": 0.85,
+        "pue_base": 1.03,
+        "island_mode": False,
+        "grid_import_limit_mw": grid_import_limit_mw,
+        # A 95% starting SoC with 3% normal discharge holds a 92% reserve.
+        "bess_normal_dispatch_depth_fraction": 0.03,
+        "bess_units": [{
+            "asset_id": "bess-0",
+            "rated_mw": 30.0,
+            "usable_mwh": 60.0,
+            "initial_soc_fraction": 0.95,
+            "grid_forming": True,
+            "p_anchor_reserve_mw": 1.0,
+        }],
+        "turbine_units": [],
+        "solar_rated_mw": 0.0,
+        "fuel_cell_enabled": fuel_cell_enabled,
+        "fuel_cell_rated_mw": 6.0,
+        "fuel_cell_stack_count": 4,
+        "workload_events": [],
+        "end_sim_time": 60.0,
+    }
+
+
+def _bess_reserve_tick(
+    spec: dict,
+    *,
+    bess_soc_fraction: float,
+    nodes: int = 2_000,
+):
+    ctx = build_run_context_from_spec("bess-operating-reserve", spec)
+    bess = ctx.sim_state.bess_units[0]
+    bess.soc_mwh = bess.config.usable_mwh * bess_soc_fraction
+    ctx.sim_state.apply_workload_signal(
+        _starting_signal(nodes=nodes, ramp_s=1.0, timestamp=0.0),
+        dt_lead_seconds=0.0,
+    )
+    return _run_tick(ctx.sim_state, sim_time=0.0, dt=5.0)
+
+
+def test_bess_serves_normal_load_until_the_three_percent_depth_is_used() -> None:
+    tick = _bess_reserve_tick(_bess_reserve_spec(), bess_soc_fraction=0.95)
+
+    assert tick.bess_output_mw > 0.1
+    assert tick.fuel_cell_output_mw == pytest.approx(0.0)
+
+
+def test_fuel_cell_takes_over_at_the_normal_bess_reserve_floor() -> None:
+    tick = _bess_reserve_tick(_bess_reserve_spec(), bess_soc_fraction=0.92)
+
+    assert tick.bess_output_mw == pytest.approx(0.0, abs=1e-6)
+    assert tick.fuel_cell_output_mw > 0.1
+    assert tick.p_unserved_mw == pytest.approx(0.0, abs=1e-6)
+
+
+def test_high_normal_load_cannot_release_reserve_before_the_floor() -> None:
+    # This load is above the 24 MW fuel-cell fleet plus the 5 MW PCC limit.
+    # The BESS has enough normal energy for only this final tick before 92% SoC.
+    tick = _bess_reserve_tick(
+        _bess_reserve_spec(),
+        bess_soc_fraction=0.9201,
+        nodes=110_000,
+    )
+
+    assert tick.bess_output_mw > 0.1
+    assert tick.fuel_cell_output_mw > 0.1
+    assert tick.bess_soc_fraction >= 0.92 - 1e-6
+
+
+def test_bess_reserve_releases_when_fuel_cell_and_grid_are_unavailable() -> None:
+    # A zero PCC import limit and disabled fuel cell model the stated dual-source
+    # emergency. The BESS is at its normal reserve floor but must still serve load.
+    tick = _bess_reserve_tick(
+        _bess_reserve_spec(fuel_cell_enabled=False, grid_import_limit_mw=0.0),
+        bess_soc_fraction=0.92,
+    )
+
+    assert tick.fuel_cell_output_mw == pytest.approx(0.0)
+    assert tick.grid_exchange_mw == pytest.approx(0.0, abs=1e-6)
+    assert tick.bess_output_mw > 0.1
+    assert tick.p_unserved_mw == pytest.approx(0.0, abs=1e-6)
 
 
 def test_sj1_zero_solar_ignores_global_solarsim_output() -> None:

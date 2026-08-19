@@ -699,6 +699,18 @@ class ScenarioSpec(BaseModel):
             "exports are not capped."
         ),
     )
+    bess_normal_dispatch_depth_fraction: float = Field(
+        default=0.0,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "Fractional BESS depth of discharge permitted in normal operation, "
+            "measured from each unit's configured initial SoC. Once used, the "
+            "remaining BESS charge is held for an emergency that fuel-cell "
+            "capacity plus available grid import cannot cover. 0 = historical "
+            "BESS-first dispatch with no operating reserve."
+        ),
+    )
     bess_bridging_floor_fraction: float = Field(default=0.15, gt=0.0, le=1.0)
     bess_bridging_floor_anchor_multiple: float = Field(default=2.0, ge=1.0)
     bess_material_discharge_fraction: float = Field(default=0.05, gt=0.0, le=1.0)

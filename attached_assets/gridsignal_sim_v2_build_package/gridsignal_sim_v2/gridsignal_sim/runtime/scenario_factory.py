@@ -539,6 +539,9 @@ def build_run_context_from_spec(
             if spec_data.get("grid_import_limit_mw") is not None
             else None
         ),
+        bess_normal_dispatch_depth_fraction=float(
+            spec_data.get("bess_normal_dispatch_depth_fraction", 0.0)
+        ),
         bess_bridging_floor_fraction=float(spec_data.get("bess_bridging_floor_fraction", _sp.value("bess_bridging_floor_fraction"))),
         bess_bridging_floor_anchor_multiple=float(spec_data.get("bess_bridging_floor_anchor_multiple", _sp.value("bess_bridging_floor_anchor_multiple"))),
         bess_material_discharge_fraction=float(spec_data.get("bess_material_discharge_fraction", _sp.value("bess_material_discharge_fraction"))),

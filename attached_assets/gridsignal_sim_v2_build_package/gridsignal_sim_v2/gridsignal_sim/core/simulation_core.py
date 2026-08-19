@@ -1245,7 +1245,14 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # only the power ceiling is ranked, an empty/near-empty BESS reserves cheap
     # MW it cannot deliver and the fuel cell can incorrectly fill that gap while
     # cheaper turbine headroom remains unused.
-    _bess_dispatch_ceilings_mw: list[float] = []
+    #
+    # A scenario may additionally reserve the BESS after a configured normal
+    # depth of discharge. The held charge stays out of the normal merit order,
+    # but is released below when fuel-cell capacity and available grid import
+    # cannot cover the demand.
+    _bess_physical_ceilings_mw: list[float] = []
+    _bess_normal_dispatch_ceilings_mw: list[float] = []
+    _normal_bess_depth_fraction = state.site.bess_normal_dispatch_depth_fraction
     for _bess in state.bess_units:
         _bess_power_ceiling_mw = _bess.bridging_available_mw(
             state.site.island_mode
@@ -1255,10 +1262,33 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             if dt_seconds > 0.0
             else _bess_power_ceiling_mw
         )
-        _bess_dispatch_ceilings_mw.append(
-            min(_bess_power_ceiling_mw, _bess_energy_ceiling_mw)
+        _physical_ceiling_mw = min(
+            _bess_power_ceiling_mw,
+            _bess_energy_ceiling_mw,
         )
-    _bess_available_mw = sum(_bess_dispatch_ceilings_mw)
+        _bess_physical_ceilings_mw.append(_physical_ceiling_mw)
+        if _normal_bess_depth_fraction <= 0.0:
+            _bess_normal_dispatch_ceilings_mw.append(_physical_ceiling_mw)
+            continue
+
+        _reserve_soc_fraction = max(
+            0.0,
+            _bess.config.initial_soc_fraction - _normal_bess_depth_fraction,
+        )
+        _normal_energy_mwh = max(
+            0.0,
+            _bess.soc_mwh
+            - _bess.config.usable_mwh * _reserve_soc_fraction,
+        )
+        _normal_energy_ceiling_mw = (
+            _normal_energy_mwh / (dt_seconds / 3600.0)
+            if dt_seconds > 0.0
+            else _physical_ceiling_mw
+        )
+        _bess_normal_dispatch_ceilings_mw.append(
+            min(_physical_ceiling_mw, _normal_energy_ceiling_mw)
+        )
+    _bess_available_mw = sum(_bess_normal_dispatch_ceilings_mw)
     _economic_demand_mw = max(
         0.0,
         _p_dispatch_droop_mw - _turbine_must_run_mw,
@@ -1338,8 +1368,57 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     _post_loading_turbine_output_mw = sum(
         t.output_mw() for t in state.turbines if t.is_on_bus
     )
+    _reserve_bess_ceilings_mw = [
+        max(0.0, physical - normal)
+        for physical, normal in zip(
+            _bess_physical_ceilings_mw,
+            _bess_normal_dispatch_ceilings_mw,
+        )
+    ]
+    # Do not release the retained reserve until normal BESS energy is fully
+    # consumed. This is intentionally stricter than a power-based test: in the
+    # final normal-dispatch tick, the available normal energy may be less than
+    # the BESS MW rating but must be exhausted before any held charge is used.
+    _normal_bess_energy_exhausted = _bess_available_mw <= 1e-9
+    if _normal_bess_energy_exhausted:
+        _grid_emergency_support_mw = (
+            0.0
+            if _islanded
+            else (
+                float("inf")
+                if state.site.grid_import_limit_mw is None
+                else max(0.0, state.site.grid_import_limit_mw)
+            )
+        )
+        # An emergency is an actual residual after every non-BESS source
+        # available to this model: online turbine output, fuel-cell nameplate,
+        # and PCC import. Only the retained BESS reserve is released for it.
+        _emergency_gap_mw = max(
+            0.0,
+            _p_dispatch_droop_mw
+            - _post_loading_turbine_output_mw
+            - state.fuel_cell_rated_mw
+            - _grid_emergency_support_mw,
+        )
+        _emergency_bess_target_mw = min(
+            _emergency_gap_mw,
+            sum(_reserve_bess_ceilings_mw),
+        )
+    else:
+        _emergency_bess_target_mw = 0.0
+    if _emergency_bess_target_mw > 0.0:
+        _reserve_total_mw = sum(_reserve_bess_ceilings_mw)
+        _bess_dispatch_ceilings_mw = [
+            normal + _emergency_bess_target_mw * reserve / _reserve_total_mw
+            for normal, reserve in zip(
+                _bess_normal_dispatch_ceilings_mw,
+                _reserve_bess_ceilings_mw,
+            )
+        ]
+    else:
+        _bess_dispatch_ceilings_mw = _bess_normal_dispatch_ceilings_mw
     _effective_bess_setpoint_mw = min(
-        _planned_bess_setpoint_mw,
+        _planned_bess_setpoint_mw + _emergency_bess_target_mw,
         max(0.0, _p_dispatch_droop_mw - _post_loading_turbine_output_mw),
     )
     turbine_output_mw, bess_output_mw, _bess_setpoint_mw, _arb_candidates = state.arbitrator.tick(
