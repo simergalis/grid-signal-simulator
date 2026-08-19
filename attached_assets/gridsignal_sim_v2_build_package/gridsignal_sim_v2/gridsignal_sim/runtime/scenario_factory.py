@@ -520,6 +520,11 @@ def build_run_context_from_spec(
         power_factor=float(_pf_raw),
         pue_base=spec_data.get("pue_base", 1.03),
         island_mode=island,
+        grid_import_limit_mw=(
+            float(spec_data["grid_import_limit_mw"])
+            if spec_data.get("grid_import_limit_mw") is not None
+            else None
+        ),
         # AD2: calibrated=True in spec → uncalibrated=False in SiteConfig.
         # Required for scenarios where the TC-43 curtailment dwell must fire
         # (e.g. demo-pms-shortfall).  Default False preserves §17.3 behaviour.

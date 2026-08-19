@@ -1972,7 +1972,10 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # Phase 13.2 + Task #200 B1/B2 — two-channel energy identity, one reporting field.
     #
     # D1: islanded → grid_exchange_mw = 0.0 exactly (PCC open).
-    # D2: grid-connected → frequency_forcing_mw = 0.0 exactly (grid holds f).
+    # D2: grid-connected with an unconstrained PCC → frequency_forcing_mw = 0.0
+    #     exactly (grid holds f).  When grid_import_limit_mw is configured and
+    #     saturated, the excess deficit remains on frequency_forcing_mw so D4
+    #     continues to expose the unserved power rather than inventing grid import.
     # D4: grid_exchange + frequency_forcing = balance_residual.
     #     Two channels only; holds in BOTH modes without any conditional or RHS term.
     # D5: asset_delivery_error_mw is NOT a term in D4.  Computed independently
@@ -2025,8 +2028,19 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         _grid_exchange_mw     = 0.0                    # PCC open (D1)
         _frequency_forcing_mw = _balance_residual_mw   # actual supply-demand → rotors
     else:
-        _grid_exchange_mw     = _balance_residual_mw   # actual supply-demand → PCC
-        _frequency_forcing_mw = 0.0                    # grid holds frequency (D2)
+        _grid_import_limit_mw = state.site.grid_import_limit_mw
+        if _grid_import_limit_mw is None:
+            _grid_exchange_mw     = _balance_residual_mw
+            _frequency_forcing_mw = 0.0                # unlimited grid holds frequency (D2)
+        else:
+            # Negative grid_exchange_mw means import.  Clamp only that direction;
+            # positive export remains unconstrained.  Any deficit beyond the PCC
+            # ceiling stays visible in the second D4 energy channel.
+            _grid_exchange_mw = max(
+                _balance_residual_mw,
+                -max(0.0, _grid_import_limit_mw),
+            )
+            _frequency_forcing_mw = _balance_residual_mw - _grid_exchange_mw
 
     # GS-CHG-2026-08-08 successor Phase 1 — P_generation aggregate producer.
     # ONE computation site; the serialiser must NOT sum these components again (Spec 19 / TC-92).
