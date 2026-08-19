@@ -444,6 +444,16 @@ class KubeConfigSpec(BaseModel):
     load_config: Optional[LoadProfileConfigSpec] = None
 
 
+class KubeClusterSpec(KubeConfigSpec):
+    """One independently capacity-constrained scheduler cluster."""
+
+    cluster_id: str = Field(min_length=1)
+    tenant_id: str = Field(min_length=1)
+    scheduler_type: Literal["SLURM", "K8S", "RAY"]
+    capacity_unit: Literal["node", "rack"] = "node"
+    workload_share: float = Field(gt=0.0, le=1.0)
+
+
 class DqInjectEvent(BaseModel):
     """A scripted data-quality tag injection window.
 
@@ -924,6 +934,9 @@ class ScenarioSpec(BaseModel):
     # When set, the agent emits STARTING then SCALE signals each tick, driven by
     # an OU process + EMA.  Power-cap fires when grid headroom < headroom_threshold_mw.
     kube_config: Optional[KubeConfigSpec] = None
+    # Heterogeneous multi-cluster path.  Each entry receives an independent
+    # capacity ceiling and RNG stream.  Mutually exclusive with kube_config.
+    kube_clusters: list[KubeClusterSpec] = Field(default_factory=list)
 
     # ── Within-step compute load profile (scripted-event / non-kube path) ────
     # Activates compute-phase vs allreduce-phase power variation for scenarios
@@ -1109,6 +1122,30 @@ class ScenarioSpec(BaseModel):
             "Set only for sites with a separate contracted charging tariff."
         ),
     )
+
+    @model_validator(mode="after")
+    def _validate_kube_clusters(self) -> "ScenarioSpec":
+        """Keep legacy and multi-cluster scheduler configuration unambiguous."""
+        if self.kube_config is not None and self.kube_clusters:
+            raise ValueError(
+                "kube_config and kube_clusters are mutually exclusive"
+            )
+        if not self.kube_clusters:
+            return self
+
+        cluster_ids = [cluster.cluster_id for cluster in self.kube_clusters]
+        if len(cluster_ids) != len(set(cluster_ids)):
+            raise ValueError("kube_clusters cluster_id values must be unique")
+
+        workload_share = sum(
+            cluster.workload_share for cluster in self.kube_clusters
+        )
+        if abs(workload_share - 1.0) > 1e-6:
+            raise ValueError(
+                "kube_clusters workload_share values must sum to 1.0 "
+                f"(got {workload_share:.6f})"
+            )
+        return self
 
     @model_validator(mode="after")
     def _check_tenant_ceilings(self) -> "ScenarioSpec":

@@ -15,3 +15,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Frontend build + modal naming traps](gridsignal-frontend-build.md) — prod serves pre-built bundle; must run build_prod.sh + restart after any src/ edit. Two overlapping constant sets in GpuNodeGeneratorModal; Queue tab needs component-level TENANT_COLOUR_BY_ID / SCHEDULER_BADGE_BY_TYPE.
 - [Hot-standby cascade](hot-standby-cascade.md) — hot-standby turbines are OFFLINE (not SYNCHRONISED); clear config.hot_standby then call command_start(); never look for SYNCHRONISED state.
 - [Grid import cap routing](grid-import-cap-routing.md) — PCC import caps clamp only negative exchange; excess deficit stays on frequency_forcing and appears as unserved load.
+- [SJ-1 compute target](sj1-compute-target.md) — the mixed fleet’s 16.9632 MW IT sum is deliberately presented as the §2 17.0 MW target; keep IT and PUE-inclusive site demand separate.

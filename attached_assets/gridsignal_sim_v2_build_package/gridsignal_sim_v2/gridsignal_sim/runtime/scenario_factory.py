@@ -87,8 +87,22 @@ _assertion_adapter: TypeAdapter = TypeAdapter(_AssertionSpec)
 
 
 DEFAULT_HARDWARE_LIBRARY = {
-    "enterprise_8gpu_air": HardwareProfile("enterprise_8gpu_air", rated_kw=10.2),
-    "nextgen_rack_liquid": HardwareProfile("nextgen_rack_liquid", rated_kw=126.0),
+    "enterprise_8gpu_air": HardwareProfile(
+        "enterprise_8gpu_air",
+        rated_kw=10.2,
+        description="H100-class 8-GPU air-cooled node",
+        counting_unit="chassis",
+        gpus_per_unit=8,
+        vintage_generation="h100",
+    ),
+    "nextgen_rack_liquid": HardwareProfile(
+        "nextgen_rack_liquid",
+        rated_kw=120.0,
+        description="GB200 NVL72-class 120 kW liquid-cooled rack",
+        counting_unit="cabinet",
+        gpus_per_unit=72,
+        vintage_generation="gb200-nvl72",
+    ),
 }
 
 
@@ -857,113 +871,103 @@ def build_run_context_from_spec(
     # Only instantiated when kube_config is present in the spec; all existing
     # scripted scenarios (and every unit test) are unaffected.
     _kube_raw = spec_data.get("kube_config")
-    if _kube_raw is not None:
-        _kube_cfg_fields = {
-            k: v for k, v in _kube_raw.items()
-            if k in KubeConfig.__dataclass_fields__
-        }
-        # Convert step_config dict → StepTimingConfig dataclass (if present).
-        # The API layer passes raw JSON dicts; KubeConfig expects typed dataclasses.
-        if isinstance(_kube_cfg_fields.get("step_config"), dict):
-            _sc_raw = _kube_cfg_fields["step_config"]
-            _kube_cfg_fields["step_config"] = StepTimingConfig(**{
-                k: v for k, v in _sc_raw.items()
-                if k in StepTimingConfig.__dataclass_fields__
-            })
-        # Convert load_config dict → LoadProfileConfig dataclass (if present).
-        if isinstance(_kube_cfg_fields.get("load_config"), dict):
-            _lc_raw = _kube_cfg_fields["load_config"]
-            _kube_cfg_fields["load_config"] = LoadProfileConfig(**{
-                k: v for k, v in _lc_raw.items()
-                if k in LoadProfileConfig.__dataclass_fields__
-            })
-        # ── Multi-tenant kube agents (JOBQ-001 Phase B) ───────────────────────
-        # Three KubeDemandAgent instances — one per tenant — sharing one physical
-        # cluster (max_nodes=PROPOSED_HERE: 1900, same across all agents).
-        # Tenant split and scheduler types ported from gpuGeneratorStore.ts:
-        #   A / SLURM / weight 0.40, B / K8S / weight 0.35, C / RAY / weight 0.25
-        # Arrival rates are scaled inversely to weight so that the combined
-        # fleet arrival rate matches mean_interarrival_s on the shared spec.
-        # AT-7: fixed A→B→C list order — never dict/set iteration.
-        _TENANT_DEFS = [
-            # (tenant_id, scheduler_type, weight, rng_seed_offset)
-            ("A", "SLURM", 0.40, 0),
-            ("B", "K8S",   0.35, 1),
-            ("C", "RAY",   0.25, 2),
-        ]
-        # Resolve rated_kw_per_node from the hardware library so the physics
-        # engine has ONE source of truth for power-per-node.  KubeConfig defaults
-        # to 0.0 (sentinel) — the factory is the only place that writes this.
-        _kube_hw_id = _kube_cfg_fields.get(
-            "hardware_profile_id", KubeConfig().hardware_profile_id
-        )
-        _kube_hw_profile = DEFAULT_HARDWARE_LIBRARY.get(
-            _kube_hw_id, DEFAULT_HARDWARE_LIBRARY["enterprise_8gpu_air"]
-        )
-        _kube_rated_kw = _kube_hw_profile.rated_kw  # single authority: the library
-        if _kube_rated_kw == 0.0:
-            raise ValueError(
-                f"Hardware profile {_kube_hw_id!r} resolved to rated_kw=0.0 from "
-                f"DEFAULT_HARDWARE_LIBRARY.  Either the profile is missing a rated_kw "
-                f"value or the profile ID is not in the library (fell through to the "
-                f"'enterprise_8gpu_air' fallback which also has rated_kw=0.0, "
-                f"which would indicate the library itself is misconfigured).  Fix "
-                f"the scenario spec's kube_config.hardware_profile_id or the library."
+    _kube_cluster_raws = spec_data.get("kube_clusters") or []
+    if _kube_raw is not None or _kube_cluster_raws:
+        if _kube_cluster_raws:
+            _agent_defs = list(_kube_cluster_raws)
+        else:
+            # Legacy shared-fleet path: preserve A/B/C scheduler mix, arrival
+            # scaling, event IDs, and deterministic seed partitioning.
+            _agent_defs = []
+            _base_seed = _kube_raw.get("rng_seed", KubeConfig().rng_seed)
+            for _tid, _stype, _weight, _seed_off in (
+                ("A", "SLURM", 0.40, 0),
+                ("B", "K8S",   0.35, 1),
+                ("C", "RAY",   0.25, 2),
+            ):
+                _definition = dict(_kube_raw)
+                _definition.update(
+                    cluster_id="legacy-shared-fleet",
+                    tenant_id=_tid,
+                    scheduler_type=_stype,
+                    capacity_unit="node",
+                    workload_share=_weight,
+                    rng_seed=(
+                        None if _base_seed is None
+                        else int(_base_seed) + _seed_off
+                    ),
+                )
+                _agent_defs.append(_definition)
+
+        for _definition in _agent_defs:
+            _share = float(_definition.get("workload_share", 1.0))
+            _cfg = {
+                k: v for k, v in _definition.items()
+                if k in KubeConfig.__dataclass_fields__
+            }
+            _cfg["mean_interarrival_s"] = max(
+                5.0,
+                float(_definition.get(
+                    "mean_interarrival_s", KubeConfig().mean_interarrival_s
+                )) / _share,
+            )
+            if isinstance(_cfg.get("step_config"), dict):
+                _cfg["step_config"] = StepTimingConfig(**{
+                    k: v for k, v in _cfg["step_config"].items()
+                    if k in StepTimingConfig.__dataclass_fields__
+                })
+            if isinstance(_cfg.get("load_config"), dict):
+                _cfg["load_config"] = LoadProfileConfig(**{
+                    k: v for k, v in _cfg["load_config"].items()
+                    if k in LoadProfileConfig.__dataclass_fields__
+                })
+
+            _hw_id = _cfg.get(
+                "hardware_profile_id", KubeConfig().hardware_profile_id
+            )
+            if _hw_id not in DEFAULT_HARDWARE_LIBRARY:
+                raise ValueError(
+                    f"Kubernetes hardware profile {_hw_id!r} is not in "
+                    "DEFAULT_HARDWARE_LIBRARY"
+                )
+            _profile = DEFAULT_HARDWARE_LIBRARY[_hw_id]
+            if _profile.rated_kw <= 0.0:
+                raise ValueError(
+                    f"Hardware profile {_hw_id!r} resolved to rated_kw=0.0 "
+                    "from DEFAULT_HARDWARE_LIBRARY"
+                )
+            _cfg["rated_kw_per_node"] = _profile.rated_kw
+            _cfg["gpus_per_unit"] = _profile.gpus_per_unit
+            if _kube_cluster_raws:
+                _cfg["event_id_prefix"] = str(_cfg["cluster_id"])
+                # The old MW gate is node-based and cannot safely combine mixed
+                # scheduling-unit powers. Site headroom remains the global gate.
+                _cfg["capacity_ceiling_mw"] = None
+            else:
+                _cap_ceiling = float(spec_data.get("design_peak_load_mw") or 0.0)
+                if _cap_ceiling > 0.0:
+                    _cfg["capacity_ceiling_mw"] = _cap_ceiling
+
+            sim_state.kube_agents.append(
+                KubeDemandAgent(KubeConfig(**_cfg), site_id=site.site_id)
             )
 
-        _base_iat = _kube_cfg_fields.get(
-            "mean_interarrival_s", KubeConfig().mean_interarrival_s
-        )
-        _base_seed = _kube_cfg_fields.get("rng_seed", KubeConfig().rng_seed)
-        for _tid, _stype, _weight, _seed_off in _TENANT_DEFS:
-            _per_tenant_fields = dict(_kube_cfg_fields)
-            _per_tenant_fields["tenant_id"] = _tid
-            _per_tenant_fields["scheduler_type"] = _stype
-            # Authoritative rated_kw_per_node from the hardware library — the
-            # factory is the only place that writes this field on KubeConfig.
-            _per_tenant_fields["rated_kw_per_node"] = _kube_rated_kw
-            # Scale interarrival time inversely to weight so combined arrival rate
-            # matches the fleet spec.  Floor at 5 s to prevent degenerate configs.
-            _per_tenant_fields["mean_interarrival_s"] = max(
-                5.0, _base_iat / _weight
-            )
-            # Deterministic per-tenant RNG seed offset preserves AT-7 replay.
-            if _base_seed is not None:
-                _per_tenant_fields["rng_seed"] = _base_seed + _seed_off
-            # Contracted capacity gate: propagate declared design peak as the
-            # compute ceiling so the admission loop enforces it fleet-wide.
-            # spec_data["design_peak_load_mw"] is the same value later written
-            # to RunContext._design_peak_load_mw (see lines ~1005-1023 below).
-            # None disables the gate (backward-compatible with existing scenarios
-            # that lack design_peak_load_mw or set it to 0.0).
-            _cap_ceiling = float(spec_data.get("design_peak_load_mw") or 0.0)
-            if _cap_ceiling > 0.0:
-                _per_tenant_fields["capacity_ceiling_mw"] = _cap_ceiling
-            _agent = KubeDemandAgent(
-                KubeConfig(**_per_tenant_fields),
-                site_id=site.site_id,
-            )
-            sim_state.kube_agents.append(_agent)
-
-        # Fail-loud if any agent's max_nodes disagrees with the others.
-        # The cross-agent admission accumulator (already_admitted_nodes in
-        # simulation_core.py) enforces a shared fleet ceiling by assuming all
-        # agents have the same max_nodes.  If they don't, the ceiling arithmetic
-        # silently enforces the wrong value.  Raise here rather than paper over
-        # a misconfigured spec with a silent coercion.
-        _max_nodes_vals = {a.config.max_nodes for a in sim_state.kube_agents}
-        if len(_max_nodes_vals) > 1:
-            _offenders = [
-                (a.config.tenant_id, a.config.max_nodes)
-                for a in sim_state.kube_agents
-            ]
-            raise ValueError(
-                f"Fleet max_nodes invariant violated: all KubeDemandAgents must "
-                f"share the same max_nodes value, but found disagreement: "
-                f"{_offenders!r}.  Do not set per-tenant max_nodes unless all "
-                f"tenants agree on the value; the shared ceiling is enforced "
-                f"fleet-wide, not per-tenant."
-            )
+        # Agents sharing one cluster_id must agree on that cluster's ceiling.
+        _max_by_cluster: dict[str, int] = {}
+        for _agent in sim_state.kube_agents:
+            _key = _agent.config.cluster_id or "legacy-shared-fleet"
+            _prior = _max_by_cluster.setdefault(_key, _agent.config.max_nodes)
+            if _prior != _agent.config.max_nodes:
+                _offenders = [
+                    (a.config.tenant_id, a.config.max_nodes)
+                    for a in sim_state.kube_agents
+                    if (a.config.cluster_id or "legacy-shared-fleet") == _key
+                ]
+                raise ValueError(
+                    "Fleet max_nodes invariant violated for cluster "
+                    f"{_key!r}: agents sharing a cluster_id must agree, "
+                    f"but found {_offenders!r}"
+                )
 
         # Wire load_config / rng_load from the primary agent (A) into GPUModules.
         if sim_state.kube_agents[0].config.load_config is not None:

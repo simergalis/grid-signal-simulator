@@ -37,7 +37,7 @@ from .commitment import (
     SustainedCondition, evaluate_commitment,
 )
 from .scada_layer import CommandType, SimulatedPMS, SimulatedScadaLayer
-from .models import DataQualityTag, GENERIC_FALLBACK_PROFILE, IslandMode, KubeMetrics, SiteConfig, TickResult, WorkloadEventType, WorkloadSignal
+from .models import DataQualityTag, GENERIC_FALLBACK_PROFILE, IslandMode, KubeClusterMetrics, KubeMetrics, SiteConfig, TickResult, WorkloadEventType, WorkloadSignal
 from ._plane_guard import _EVALUATE_TICK_PERMITTED
 from .sim_clock import SimClock
 from . import site_parameters as _sp
@@ -609,27 +609,87 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     #    so the agent reads last-known headroom rather than in-progress values.
     _kube_metrics: KubeMetrics | None = None
     if state.kube_agents:
-        # Fixed order A→B→C (AT-7 determinism: list iteration, never dict/set).
-        # already_admitted accumulates cross-agent committed nodes so each agent's
-        # capacity check sees the shared fleet ceiling (JOBQ-001 Phase B §step2).
-        _already_admitted: int = 0
+        # Fixed declaration order (AT-7 determinism: list iteration, never
+        # dict/set iteration).  Admission totals are isolated by cluster_id:
+        # legacy A/B/C agents intentionally share one ID and one fleet ceiling;
+        # heterogeneous multi-cluster scenarios use distinct IDs and ceilings.
+        _admitted_by_cluster: dict[str, int] = {}
         _merged_signals: list[WorkloadSignal] = []
         _merged_metrics: list[KubeMetrics] = []
         for _agent in state.kube_agents:
+            _cluster_key = _agent.config.cluster_id or "legacy-shared-fleet"
+            _already_admitted = _admitted_by_cluster.get(_cluster_key, 0)
             _ks_list, _km = _agent.tick(
                 sim_time, dt_seconds, state._kube_grid_state,
                 already_admitted_nodes=_already_admitted,
             )
-            _already_admitted += _km.admitted_nodes
+            _admitted_by_cluster[_cluster_key] = (
+                _already_admitted + _km.admitted_nodes
+            )
             _merged_signals.extend(_ks_list)
             _merged_metrics.append(_km)
 
-        # Merge per-agent KubeMetrics into one fleet-level snapshot.
-        # Counts are summed; power_cap_active is ORed (headroom is site-level
-        # and binding for all tenants if any agent sees it active);
-        # headroom_mw is the same for all agents (same KubeGridState input).
+        # Merge per-agent metrics into independently capacity-constrained
+        # cluster summaries.  Legacy shared-cluster agents collapse into one
+        # summary; new scheduler clusters stay separate.
+        _cluster_rollup: dict[str, dict[str, object]] = {}
+        for _agent, _metric in zip(state.kube_agents, _merged_metrics):
+            _cluster_key = _agent.config.cluster_id or "legacy-shared-fleet"
+            _entry = _cluster_rollup.setdefault(
+                _cluster_key,
+                {
+                    "agent": _agent,
+                    "scheduled_units": 0,
+                    "admitted_units": 0,
+                },
+            )
+            _entry["scheduled_units"] = int(_entry["scheduled_units"]) + _metric.node_count
+            _entry["admitted_units"] = int(_entry["admitted_units"]) + _metric.admitted_nodes
+
+        _cluster_metrics = []
+        for _cluster_key, _entry in _cluster_rollup.items():
+            _agent = _entry["agent"]
+            _scheduled_units = int(_entry["scheduled_units"])
+            _admitted_units = int(_entry["admitted_units"])
+            _max_units = _agent.config.max_nodes
+            _capacity_mw = _max_units * _agent.config.rated_kw_per_node / 1000.0
+            _cluster_metrics.append(KubeClusterMetrics(
+                cluster_id=_cluster_key,
+                tenant_id=_agent.config.tenant_id,
+                scheduler_type=_agent.config.scheduler_type,
+                hardware_profile_id=_agent.config.hardware_profile_id,
+                capacity_unit=_agent.config.capacity_unit,
+                gpus_per_unit=_agent.config.gpus_per_unit,
+                max_units=_max_units,
+                scheduled_units=_scheduled_units,
+                admitted_units=_admitted_units,
+                gpu_capacity=_max_units * _agent.config.gpus_per_unit,
+                rated_capacity_mw=round(_capacity_mw, 4),
+                utilization=_scheduled_units / _max_units,
+            ))
+
+        _total_capacity_mw = sum(m.rated_capacity_mw for m in _cluster_metrics)
+        _total_capacity_units = sum(m.max_units for m in _cluster_metrics)
+        _scheduled_units = sum(m.scheduled_units for m in _cluster_metrics)
+        _scheduled_mw = sum(
+            m.scheduled_units
+            * next(
+                a.config.rated_kw_per_node
+                for a in state.kube_agents
+                if (a.config.cluster_id or "legacy-shared-fleet") == m.cluster_id
+            )
+            / 1000.0
+            for m in _cluster_metrics
+        )
         _kube_metrics = KubeMetrics(
-            utilization=sum(m.utilization for m in _merged_metrics),
+            utilization=(
+                _scheduled_mw / _total_capacity_mw
+                if _total_capacity_mw > 0.0
+                else (
+                    _scheduled_units / _total_capacity_units
+                    if _total_capacity_units > 0 else 0.0
+                )
+            ),
             node_count=sum(m.node_count for m in _merged_metrics),
             power_cap_active=any(m.power_cap_active for m in _merged_metrics),
             headroom_mw=_merged_metrics[0].headroom_mw,
@@ -644,6 +704,9 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             active_jobs_detail=tuple(
                 j for m in _merged_metrics for j in m.active_jobs_detail
             ),
+            cluster_metrics=tuple(_cluster_metrics),
+            total_gpu_capacity=sum(m.gpu_capacity for m in _cluster_metrics),
+            total_capacity_mw=round(_total_capacity_mw, 4),
         )
 
         # §9 / resolution-log item 5: dt_lead_seconds for a Kubernetes signal
@@ -703,16 +766,16 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # decisions that must see the full committed count, not the ramped view.
     if _kube_metrics is not None and state.gpu_modules and state.kube_agents:
         _effective_admitted = sum(g.effective_node_count() for g in state.gpu_modules)
-        # Fleet floor = sum of all agents' min_nodes (each tenant has its own idle
-        # baseline). Fleet ceiling = shared max_nodes — one physical cluster used by
-        # all tenants (PROPOSED_HERE: same max_nodes value on every agent = 1900).
         _fleet_min = sum(a.config.min_nodes for a in state.kube_agents)
-        _fleet_max = state.kube_agents[0].config.max_nodes
         _effective_total = max(_fleet_min, _effective_admitted)
+        _raw_total = max(1, _kube_metrics.node_count)
         _kube_metrics = dataclasses.replace(
             _kube_metrics,
             node_count=_effective_total,
-            utilization=_effective_total / _fleet_max,
+            utilization=min(
+                1.0,
+                _kube_metrics.utilization * (_effective_total / _raw_total),
+            ),
         )
 
     # Step 3 Item 3: per-job cooling superposition.

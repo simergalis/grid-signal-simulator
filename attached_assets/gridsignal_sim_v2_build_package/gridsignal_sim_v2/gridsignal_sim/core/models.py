@@ -50,6 +50,10 @@ class HardwareProfile:
     # validation is deferred to Step 10.  Optional so existing call-sites that
     # omit it are not broken.
     counting_unit: Optional[str] = None    # chassis|cabinet|package|die|accelerator
+    # Physical accelerators represented by one scheduling/counting unit.  This
+    # prevents a GB200 NVL72 rack from being treated as one H100 node in capacity
+    # reporting while preserving node_count as the legacy scheduling-unit field.
+    gpus_per_unit: int = 1
     # v2.5 §5.3 — profile vintage.  Optional for the same reason.
     vintage_generation: Optional[str] = None   # e.g. "gen4", "h100", "grace-hopper"
     vintage_established: Optional[str] = None  # ISO-8601 date string, e.g. "2024-Q1"
@@ -120,6 +124,11 @@ class WorkloadSignal:
     # via §17.2 schema validation — a signal with tenant_id=None is quarantined,
     # never silently defaulted.
     tenant_id: Optional[str] = None
+    # Optional scheduler-cluster provenance for heterogeneous kube scenarios.
+    cluster_id: Optional[str] = None
+    scheduler_type: Optional[str] = None
+    capacity_unit: Optional[str] = None
+    gpus_per_unit: int = 1
 
 
 # ---------------------------------------------------------------------------
@@ -944,6 +953,9 @@ class QueuedJobSummary:
     # requeue_count counts how many times the power-cap held and re-queued it.
     queued_since_s: float = 0.0  # sim_time of first buffer entry
     requeue_count: int = 0       # power-cap hold counter (0 = never held)
+    cluster_id: str = ""
+    capacity_unit: str = "node"
+    gpus_per_unit: int = 1
 
 
 @dataclass(frozen=True)
@@ -959,6 +971,27 @@ class ActiveJobSummary:
     admitted_at: float           # sim_time when admitted
     ends_at: float
     est_draw_mw: float           # node_count × rated_kw_per_node / 1000
+    cluster_id: str = ""
+    capacity_unit: str = "node"
+    gpus_per_unit: int = 1
+
+
+@dataclass(frozen=True)
+class KubeClusterMetrics:
+    """Capacity and load snapshot for one independently admitted cluster."""
+
+    cluster_id: str
+    tenant_id: str
+    scheduler_type: str
+    hardware_profile_id: str
+    capacity_unit: str
+    gpus_per_unit: int
+    max_units: int
+    scheduled_units: int
+    admitted_units: int
+    gpu_capacity: int
+    rated_capacity_mw: float
+    utilization: float
 
 
 # ---------------------------------------------------------------------------
@@ -998,6 +1031,9 @@ class KubeMetrics:
     queued_nodes: int = 0    # sum of node_count across all jobs in the reorder buffer
     pending_jobs: tuple[QueuedJobSummary, ...] = field(default_factory=tuple)
     active_jobs_detail: tuple[ActiveJobSummary, ...] = field(default_factory=tuple)
+    cluster_metrics: tuple[KubeClusterMetrics, ...] = field(default_factory=tuple)
+    total_gpu_capacity: int = 0
+    total_capacity_mw: float = 0.0
 
 
 # ---------------------------------------------------------------------------
