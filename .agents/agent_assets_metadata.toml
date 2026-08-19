@@ -301,3 +301,10 @@ uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/
 type = "text"
 title = "Current scenario JSON reference"
 description = "Complete literal listing and byte-for-byte contents of all 21 files in config/scenarios/."
+
+[[outputs]]
+id = "tXjTRf2ozZBiNS9ues0m0"
+uri = "file://scenario_library.zip"
+type = "unspecified"
+title = "scenario_library.zip"
+description = "ZIP archive of all 21 current JSON files from config/scenarios/."
