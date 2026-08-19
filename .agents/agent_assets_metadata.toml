@@ -308,3 +308,10 @@ uri = "file://scenario_library.zip"
 type = "unspecified"
 title = "scenario_library.zip"
 description = "ZIP archive of all 21 current JSON files from config/scenarios/."
+
+[[outputs]]
+id = "JOCbBIqhfZz5XPIwoJ5CE"
+uri = "file://scenario-equinox-sj-1_customer_summary.md"
+type = "text"
+title = "SJ-1 GPU Colo Center Customer Summary"
+description = "Comprehensive Markdown brief covering GPU capacity, facility demand, power supply, dispatch behavior, workload topology, validation burst, and modeling caveats."
