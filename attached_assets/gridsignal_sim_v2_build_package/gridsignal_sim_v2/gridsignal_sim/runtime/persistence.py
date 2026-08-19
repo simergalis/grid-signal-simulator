@@ -1081,8 +1081,17 @@ class SqlitePersistedTimeseriesSink:
             )
             result = await session.execute(stmt)
             rows = result.scalars().all()
-        return [
-            {
+        tick_dicts: list[dict] = []
+        for r in rows:
+            try:
+                full_tick = json.loads(r.tick_json)
+                if not isinstance(full_tick, dict):
+                    full_tick = {}
+            except (json.JSONDecodeError, TypeError):
+                full_tick = {}
+            # Preserve the endpoint's historical aliases while rehydrating all
+            # newer evidence from the complete tick_json record.
+            full_tick.update({
                 "run_id": r.run_id,
                 "tick_index": r.tick_index,
                 "sim_time_seconds": r.sim_time_seconds,
@@ -1102,6 +1111,6 @@ class SqlitePersistedTimeseriesSink:
                 "bess_bridging_seconds": 86400.0,  # not stored; sentinel = "full reserve"
                 "dt_lead_next_s": 0.0,
                 "bridging_basis": "current_demand",
-            }
-            for r in rows
-        ]
+            })
+            tick_dicts.append(full_tick)
+        return tick_dicts

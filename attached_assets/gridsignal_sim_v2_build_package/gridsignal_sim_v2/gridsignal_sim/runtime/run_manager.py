@@ -398,6 +398,17 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         "confidence_upper_mw": round(tick.confidence.upper_bound_mw, 4),
         "data_quality_tags": sorted(t.value for t in tick.confidence.tags),
         "insufficient_reserve_alert": tick.insufficient_reserve_alert,
+        "bess_escalation_active": tick.bess_escalation_active,
+        "bess_escalation_reason": tick.bess_escalation_reason,
+        "bess_bridging_available_mw": round(tick.bess_bridging_available_mw, 3),
+        "bess_bridging_floor_mw": round(tick.bess_bridging_floor_mw, 3),
+        "bess_material_discharge_threshold_mw": round(tick.bess_material_discharge_threshold_mw, 3),
+        "bess_discharge_sustained_s": round(tick.bess_discharge_sustained_s, 1),
+        "turbine_observed_ramp_mw_per_s": round(tick.turbine_observed_ramp_mw_per_s, 4),
+        "turbine_estimated_time_to_close_s": (
+            round(tick.turbine_estimated_time_to_close_s, 1)
+            if tick.turbine_estimated_time_to_close_s is not None else None
+        ),
         # balance_alert: fires when |p_generation_mw − p_demand_mw| exceeds 0.5 MW.
         # A deficit (negative imbalance) means the fleet cannot fully cover site load.
         # A surplus (positive imbalance) means generation exceeds demand.
@@ -885,6 +896,99 @@ class InMemoryTimeseriesSink:
 TICK_INTERVAL_SIM_SECONDS = 5.0  # source spec Section 3.1 evaluation cadence
 
 
+def _apply_bess_bridge_escalation(ctx: "RunContext", tick: TickResult) -> TickResult:
+    """Evaluate the two independent BESS bridge early-warning conditions.
+
+    This runtime enrichment is deliberately downstream of physics: it observes
+    the anchor-adjusted contingency figure and actual asset outputs, but never
+    changes dispatch.  Mutable timing/slope state is isolated on RunContext.
+    """
+    site = ctx.sim_state.site
+    bess_units = ctx.sim_state.bess_units
+    rated_mw = sum(max(0.0, b.config.rated_mw) for b in bess_units)
+    anchor_mw = sum(
+        max(0.0, b.config.p_anchor_reserve_mw)
+        for b in bess_units
+        if b.config.grid_forming
+    )
+    floor_mw = max(
+        site.bess_bridging_floor_fraction * rated_mw,
+        site.bess_bridging_floor_anchor_multiple * anchor_mw,
+    )
+    material_mw = max(
+        site.bess_material_discharge_min_mw,
+        site.bess_material_discharge_fraction * rated_mw,
+    )
+    coverage = tick.contingency_coverage
+    available_mw = (
+        max(0.0, coverage.bess_bridging_available_mw)
+        if coverage is not None else 0.0
+    )
+    floor_active = rated_mw > 0.0 and available_mw < floor_mw
+
+    eligible_turbines = [
+        t for t in ctx.sim_state.turbines
+        if t.state in (
+            _TurbineState.STARTING,
+            _TurbineState.SYNCHRONISED,
+            _TurbineState.UNLOADING,
+        )
+    ]
+    material_discharge = tick.bess_output_mw > material_mw
+    if eligible_turbines and material_discharge:
+        ctx._bess_discharge_sustained_s += TICK_INTERVAL_SIM_SECONDS
+    else:
+        ctx._bess_discharge_sustained_s = 0.0
+
+    now = tick.sim_time_seconds
+    ctx._turbine_output_history.append((now, tick.turbine_output_mw))
+    keep_after = now - max(site.bess_catchup_slope_window_s, TICK_INTERVAL_SIM_SECONDS)
+    while (
+        len(ctx._turbine_output_history) > 2
+        and ctx._turbine_output_history[1][0] <= keep_after
+    ):
+        ctx._turbine_output_history.pop(0)
+    window_start = ctx._turbine_output_history[0]
+    elapsed = max(0.0, now - window_start[0])
+    observed_ramp = (
+        max(0.0, tick.turbine_output_mw - window_start[1]) / elapsed
+        if elapsed > 0.0 else 0.0
+    )
+    estimated_close_s = (
+        tick.bess_output_mw / observed_ramp
+        if observed_ramp > 0.0 and tick.bess_output_mw > 0.0 else None
+    )
+    cannot_close_in_time = (
+        estimated_close_s is None
+        or estimated_close_s
+        > site.bess_catchup_bridge_margin * tick.bess_bridging_seconds
+    )
+    catchup_active = (
+        bool(eligible_turbines)
+        and material_discharge
+        and ctx._bess_discharge_sustained_s >= site.bess_catchup_sustain_s
+        and cannot_close_in_time
+    )
+
+    reasons = []
+    if floor_active:
+        reasons.append("bridging_floor")
+    if catchup_active:
+        reasons.append("turbine_catchup")
+    active = bool(reasons)
+    return _dc_replace(
+        tick,
+        bess_escalation_active=active,
+        bess_escalation_reason="+".join(reasons),
+        bess_bridging_available_mw=available_mw,
+        bess_bridging_floor_mw=floor_mw,
+        bess_material_discharge_threshold_mw=material_mw,
+        bess_discharge_sustained_s=ctx._bess_discharge_sustained_s,
+        turbine_observed_ramp_mw_per_s=observed_ramp,
+        turbine_estimated_time_to_close_s=estimated_close_s,
+    )
+
+
 @dataclass
 class RunContext:
     """One active scenario run's isolated state. No field on this
@@ -964,6 +1068,9 @@ class RunContext:
     # API call.  Set by build_run_context_from_spec from spec_data["turbine_units"].
     # Empty tuple for contexts built without a spec (tests, load test).
     turbine_unit_specs: tuple = field(default_factory=tuple)
+    # Per-run state for the BESS bridge escalation evaluator.
+    _bess_discharge_sustained_s: float = 0.0
+    _turbine_output_history: list[tuple[float, float]] = field(default_factory=list)
 
     # SD-1: site identity — stamped onto every TickResult so the WS header
     # physically cannot drift from the physics after a server restart or
@@ -2047,6 +2154,12 @@ class RunManager:
                 elif ctx.telemetry_corruption is not None:
                     # contingency_coverage is None (no turbines) — still track history.
                     _update_soc_history(ctx, tick_result)
+
+                # ── A3: BESS bridge early-warning escalation ──────────────
+                # Observe anchor-adjusted capability and actual turbine ramp
+                # after optional SoC telemetry corruption, before persistence
+                # and broadcast. This does not alter physical dispatch.
+                tick_result = _apply_bess_bridge_escalation(ctx, tick_result)
 
                 # ── B: thermal state (BEFORE sink/broadcast) ──────────────
                 # Enrich the frozen TickResult with thermal fields via

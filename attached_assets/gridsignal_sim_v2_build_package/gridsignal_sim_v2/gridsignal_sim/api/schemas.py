@@ -699,6 +699,13 @@ class ScenarioSpec(BaseModel):
             "exports are not capped."
         ),
     )
+    bess_bridging_floor_fraction: float = Field(default=0.15, gt=0.0, le=1.0)
+    bess_bridging_floor_anchor_multiple: float = Field(default=2.0, ge=1.0)
+    bess_material_discharge_fraction: float = Field(default=0.05, gt=0.0, le=1.0)
+    bess_material_discharge_min_mw: float = Field(default=1.0, ge=0.0)
+    bess_catchup_sustain_s: float = Field(default=30.0, gt=0.0)
+    bess_catchup_slope_window_s: float = Field(default=15.0, gt=0.0)
+    bess_catchup_bridge_margin: float = Field(default=0.8, gt=0.0, le=1.0)
     # A1 / Task #200: site nominal grid frequency.
     # San Diego (SDG&E territory) = 60 Hz; EU/APAC grids = 50 Hz.
     # Default 60.0 — primary deployment site is WECC.  Override explicitly for
@@ -1566,6 +1573,14 @@ class TimeseriesRowResponse(BaseModel):
     confidence_lower_mw: float
     confidence_upper_mw: float
     insufficient_reserve_alert: bool
+    bess_escalation_active: bool = False
+    bess_escalation_reason: str = ""
+    bess_bridging_available_mw: float = 0.0
+    bess_bridging_floor_mw: float = 0.0
+    bess_material_discharge_threshold_mw: float = 0.0
+    bess_discharge_sustained_s: float = 0.0
+    turbine_observed_ramp_mw_per_s: float = 0.0
+    turbine_estimated_time_to_close_s: Optional[float] = None
     p_renewable_mw: float
     bess_bridging_seconds: float
     dt_lead_next_s: float

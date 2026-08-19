@@ -418,6 +418,15 @@ class SiteConfig:
     # unlimited grid-balancing behavior.  The ceiling applies only to imports;
     # grid export remains unconstrained.
     grid_import_limit_mw: Optional[float] = None
+    # Early-warning BESS bridge escalation controls. PROPOSED_HERE pending
+    # commissioning data; scenario specs may override every value.
+    bess_bridging_floor_fraction: float = _sp.value("bess_bridging_floor_fraction")
+    bess_bridging_floor_anchor_multiple: float = _sp.value("bess_bridging_floor_anchor_multiple")
+    bess_material_discharge_fraction: float = _sp.value("bess_material_discharge_fraction")
+    bess_material_discharge_min_mw: float = _sp.value("bess_material_discharge_min_mw")
+    bess_catchup_sustain_s: float = _sp.value("bess_catchup_sustain_s")
+    bess_catchup_slope_window_s: float = _sp.value("bess_catchup_slope_window_s")
+    bess_catchup_bridge_margin: float = _sp.value("bess_catchup_bridge_margin")
     # Step 10 — §26.2: authority tier, read each tick by the curtailment ladder.
     # Default SUPERVISED: conservative, same rationale as ISLANDED.
     # Full tier machinery deferred to a later step.
@@ -1074,6 +1083,14 @@ class TickResult:
     bess_soc_fraction: float
     confidence: ConfidenceBand
     insufficient_reserve_alert: bool = False
+    bess_escalation_active: bool = False
+    bess_escalation_reason: str = ""
+    bess_bridging_available_mw: float = 0.0
+    bess_bridging_floor_mw: float = 0.0
+    bess_material_discharge_threshold_mw: float = 0.0
+    bess_discharge_sustained_s: float = 0.0
+    turbine_observed_ramp_mw_per_s: float = 0.0
+    turbine_estimated_time_to_close_s: Optional[float] = None
     # Task #61: corrupted SoC fraction — set by _apply_soc_corruption when a
     # non-dropout corruption entry is in effect and produces an effective change.
     # None on clean ticks, dropout ticks, or when telemetry_corruption is not

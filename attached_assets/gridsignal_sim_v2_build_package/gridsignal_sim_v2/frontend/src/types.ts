@@ -163,6 +163,14 @@ export interface TickPayload {
 
   // Alerts
   insufficient_reserve_alert: boolean
+  bess_escalation_active: boolean
+  bess_escalation_reason: '' | 'bridging_floor' | 'turbine_catchup' | 'bridging_floor+turbine_catchup'
+  bess_bridging_available_mw: number
+  bess_bridging_floor_mw: number
+  bess_material_discharge_threshold_mw: number
+  bess_discharge_sustained_s: number
+  turbine_observed_ramp_mw_per_s: number
+  turbine_estimated_time_to_close_s: number | null
   /** |p_generation_mw − p_demand_mw| > 0.5 MW. Latched by AlertDock until acknowledged. */
   balance_alert: boolean
   checkpoint_states: Record<string, string>
