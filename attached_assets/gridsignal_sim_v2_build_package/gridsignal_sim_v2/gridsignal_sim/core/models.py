@@ -545,6 +545,11 @@ class SiteConfig:
     # CHOSEN: 0.5 for scenario-kube-peak-overage — each unit commits the next at 50% load.
     cascade_commit_fraction: Optional[float] = None
 
+    @property
+    def effective_pue(self) -> float:
+        """Total steady-state PUE including the separate cooling term."""
+        return self.pue_base * (1.0 + self.alpha_max)
+
 
 class TurbineState(str, Enum):
     """Phase C canonical turbine unit states (five states).

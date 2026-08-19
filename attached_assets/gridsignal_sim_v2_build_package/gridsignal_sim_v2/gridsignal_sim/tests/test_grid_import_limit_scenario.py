@@ -10,6 +10,7 @@ import pytest
 from api.routes.scenarios import build_seeded_store
 from api.schemas import ScenarioSpec
 from core.kube_demand import KubeConfig, KubeDemandAgent
+from runtime.persistence import Site
 from runtime.run_manager import _tick_result_to_dict
 from runtime.scenario_factory import build_run_context_from_spec
 from tests.test_forecast_path import _run_tick, _starting_signal
@@ -96,6 +97,31 @@ def test_scenario_schema_and_requested_capacities() -> None:
     assert spec.bess_units[0].usable_mwh == pytest.approx(60.0)
     assert spec.turbine_units == []
     assert spec.fuel_cell_rated_mw * spec.fuel_cell_stack_count == pytest.approx(24.0)
+
+
+def test_sj1_pue_calibration_is_derived_and_guarded() -> None:
+    spec = ScenarioSpec.model_validate_json(_SCENARIO_PATH.read_text())
+    ctx = build_run_context_from_spec("sj1-pue-calibration", spec.model_dump(mode="json"))
+
+    assert spec.pue_base == pytest.approx(1.074)
+    assert spec.alpha_max == pytest.approx(0.276)
+    assert ctx.sim_state.site.effective_pue == pytest.approx(1.370424)
+    assert [assertion.check for assertion in spec.assertions] == [
+        "pue_base_in_declared_range"
+    ]
+    assert "industry-average estimate" in spec.description
+    assert "Equinix's disclosed 2025 global portfolio average" in spec.description
+    assert "not an Equinix- or SJ-1-specific measurement" in spec.description
+
+    persisted = Site(
+        site_id="sj1-pue-calibration",
+        pue_base=spec.pue_base,
+        alpha_max=spec.alpha_max,
+        tau_seconds=spec.tau_seconds,
+        dt_thermal_seconds=spec.dt_thermal_seconds,
+        uncalibrated=True,
+    )
+    assert persisted.effective_pue == pytest.approx(ctx.sim_state.site.effective_pue)
 
 
 def test_scenario_preserves_generator_timing_and_caps_each_job_below_7mw() -> None:
