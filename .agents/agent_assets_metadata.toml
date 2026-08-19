@@ -315,3 +315,10 @@ uri = "file://scenario-equinox-sj-1_customer_summary.md"
 type = "text"
 title = "SJ-1 GPU Colo Center Customer Summary"
 description = "Comprehensive Markdown brief covering GPU capacity, facility demand, power supply, dispatch behavior, workload topology, validation burst, and modeling caveats."
+
+[[outputs]]
+id = "5FXgpnB6fpmLJ1LlF-Ygl"
+uri = "file://deliverables/GridSignal_Functional_Specification_2026-08.md"
+type = "text"
+title = "GridSignal Functional Specification — August 2026"
+description = "Current-state functional specification covering the active simulator, operator workflows, technical boundaries, deployment gaps, and customer-demand validation plan."
