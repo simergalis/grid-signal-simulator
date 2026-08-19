@@ -1765,7 +1765,11 @@ class RunManager:
                 # availability fraction from the SolarSim (which reflects per-bank
                 # enabled/disabled state) and scale it to the scenario's rated MW.
                 _pre_solar_mw: Optional[float] = None  # set below; reused in C backstop
-                if self.solar_sim is not None and ctx.irradiance_profile is not None:
+                if (
+                    self.solar_sim is not None
+                    and ctx.irradiance_profile is not None
+                    and ctx.sim_state.solar_arrays
+                ):
                     _pre_frac = ctx.irradiance_profile.fraction_at(ctx.sim_time)
                     self.solar_sim.set_mistral_fraction(_pre_frac)
                     _solar_sim_raw_mw = self.solar_sim.live_aggregate_mw()
@@ -1782,7 +1786,11 @@ class RunManager:
                         _solar_avail_fraction = _solar_sim_raw_mw / _solar_sim_rated_total
                         _pre_solar_mw = _solar_avail_fraction * _scenario_solar_rated
                     else:
-                        _pre_solar_mw = _solar_sim_raw_mw
+                        # A SolarSim product instance must never create a source
+                        # that the scenario did not configure.  This fallback is
+                        # defensive for an empty/invalid SolarSim block list; it is
+                        # not a licence to use the product demo's raw MW.
+                        _pre_solar_mw = 0.0
                     for _sm in ctx.sim_state.solar_arrays:
                         _sm.override_output_mw(_pre_solar_mw)
 
@@ -2199,13 +2207,11 @@ class RunManager:
                     if _profiling: _sec.setdefault("B2_fabric_tick", []).append(_time_module.perf_counter() - _t0)
 
                 # ── C: sink + broadcast ───────────────────────────────────
-                # Safety backstop: re-stamp p_renewable_mw with the value that
-                # was injected into solar_arrays in A0 (_pre_solar_mw).  That
-                # value is already normalized to the scenario's rated MW so the
-                # tick result is consistent with what the physics engine used.
-                # Fall back to live_aggregate_mw() only when A0 was skipped
-                # (irradiance_profile is None) — an unusual edge case.
-                if self.solar_sim is not None:
+                # Safety backstop: only solar-configured scenarios may re-stamp
+                # p_renewable_mw from SolarSim.  A product-level SolarSim exists
+                # globally for the dashboard, but it must never create phantom
+                # generation for a scenario with no solar arrays.
+                if self.solar_sim is not None and ctx.sim_state.solar_arrays:
                     # §7.4 solar bank telemetry: stamp p_expected_mw and
                     # banks_reporting from SolarSim.snapshot() so the Solar PV
                     # tile sub-label shows honest figures instead of the
@@ -2219,7 +2225,7 @@ class RunManager:
                         p_renewable_mw=(
                             _pre_solar_mw
                             if _pre_solar_mw is not None
-                            else self.solar_sim.live_aggregate_mw()
+                            else 0.0
                         ),
                         p_expected_mw=_solar_power_snap.get("p_expected_mw"),
                         banks_reporting=_solar_power_snap.get("banks_reporting"),

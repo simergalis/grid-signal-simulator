@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from pathlib import Path
 
@@ -11,7 +12,12 @@ from api.routes.scenarios import build_seeded_store
 from api.schemas import ScenarioSpec
 from core.kube_demand import KubeConfig, KubeDemandAgent
 from runtime.persistence import Site
-from runtime.run_manager import _tick_result_to_dict
+from runtime.run_manager import (
+    InMemoryTimeseriesSink,
+    RunManager,
+    WebSocketHub,
+    _tick_result_to_dict,
+)
 from runtime.scenario_factory import build_run_context_from_spec
 from tests.test_forecast_path import _run_tick, _starting_signal
 
@@ -122,6 +128,50 @@ def test_sj1_pue_calibration_is_derived_and_guarded() -> None:
         uncalibrated=True,
     )
     assert persisted.effective_pue == pytest.approx(ctx.sim_state.site.effective_pue)
+
+
+def test_sj1_zero_solar_ignores_global_solarsim_output() -> None:
+    """A product-level SolarSim must not create renewable MW for SJ-1."""
+
+    class _NonzeroSolarSim:
+        def set_mistral_fraction(self, _fraction: float) -> None:
+            pass
+
+        def live_aggregate_mw(self) -> float:
+            return 3.9411
+
+        def snapshot(self) -> dict:
+            return {"power": {"p_expected_mw": 3.9411, "banks_reporting": 20}}
+
+        def update_from_run(self, _renewable_mw: float) -> None:
+            pass
+
+        def clear_run_sync(self) -> None:
+            pass
+
+    spec_data = _load_raw(_SCENARIO_PATH)
+    spec_data["end_sim_time"] = 5.0
+    ctx = build_run_context_from_spec("sj1-no-solar", spec_data)
+    sink = InMemoryTimeseriesSink()
+    ctx.sink = sink
+
+    manager = RunManager(WebSocketHub())
+    manager.solar_sim = _NonzeroSolarSim()
+
+    async def run() -> None:
+        await manager.start_run(ctx)
+        task = manager._tasks.get(ctx.run_id)
+        if task is not None:
+            await task
+
+    asyncio.run(run())
+
+    assert sink.rows
+    assert all(tick.p_renewable_mw == pytest.approx(0.0) for tick in sink.rows)
+    assert all(
+        not tick.source_audit_violations
+        for tick in sink.rows
+    ), "zero-solar SJ-1 must not report phantom renewable generation"
 
 
 def test_scenario_preserves_generator_timing_and_caps_each_job_below_7mw() -> None:
