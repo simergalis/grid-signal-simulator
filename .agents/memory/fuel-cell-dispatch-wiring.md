@@ -26,8 +26,25 @@ When a "not yet implemented" guard test (asserting a field does NOT exist) is fl
 - The module docstring source table must be updated.
 - The `TestSwitchgearThreeSource` scenarios must be reviewed — scenarios that expected grid to cover shortfalls may now see FC covering them instead.
 
+## Fuel-cell-first balance guard
+When the fuel-cell array is prioritised ahead of additional turbine loading, its
+setpoint must be capped by the **actual output of turbines already on the bus**:
+
+`min(fc_rated_mw, max(0, dispatch_requirement - committed_turbine_output_mw))`.
+
+**Why:** A committed turbine can remain at minimum stable load or under a
+minimum-run timer. Allocating the FC against the whole dispatch requirement
+while that turbine keeps producing double-counts supply, creating an apparent
+production surplus even though each individual source is within its rating.
+
+**How to apply:** Preserve the committed turbine output as a cap on the FC
+allocation, but keep the turbine loading target as the true residual demand so
+the BESS can still absorb a genuine zero-load turbine surplus.
+
 ## Merit order
-BESS → Fuel Cell → Grid (import). Turbines run in parallel via the arbitrator.
+An enabled fuel-cell array is preferred ahead of *additional* turbine loading.
+Committed turbines retain their unavoidable output; BESS remains the balancing
+resource for residual shortfall or surplus absorption.
 
 ## KubeGridState / admission headroom rule
 Any new dispatchable source added to the merit order must ALSO be added to `KubeGridState` as a `*_headroom_mw: float = 0.0` field and included in the headroom sum at `kube_demand.py` line 358 — otherwise the admission gate is blind to that capacity. Pattern: `max(0.0, state.X_rated_mw - X_output_mw)`, mirroring BESS treatment. FC was added as `fuel_cell_headroom_mw` (IMPL-FC-HEADROOM-001).
