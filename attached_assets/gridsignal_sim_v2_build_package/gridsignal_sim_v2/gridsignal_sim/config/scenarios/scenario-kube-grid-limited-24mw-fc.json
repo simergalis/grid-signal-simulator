@@ -1,6 +1,10 @@
 {
   "name": "scenario-kube-grid-limited-24mw-fc",
-  "description": "This grid-tied Kubernetes scenario preserves the deterministic arrival timing and job-duration behavior of scenario-kube-peak-overage while testing a site with a 30 MW / 60 MWh BESS, a 24 MW fuel-cell fleet, and a point-of-common-coupling import ceiling of 10 MW. Jobs arrive without advance power notice at an average interval of 45 seconds. The cluster ceiling limits every individual gang to at most 600 enterprise GPU nodes, equal to 6.3036 MW including the configured PUE, so no generated GPU job reaches 7 MW. Local generation and storage respond first, grid draw can never exceed 10 MW, and any remaining deficit stays visible through the simulator's reserve and balance channels.",
+  "description": "This grid-tied Kubernetes scenario preserves the deterministic arrival timing and job-duration behavior of scenario-kube-peak-overage while testing a site with a 30 MW / 60 MWh BESS, a 24 MW fuel-cell fleet, and a point-of-common-coupling import ceiling of 5 MW. Jobs arrive without advance power notice at an average interval of 45 seconds. The cluster ceiling limits every individual gang to at most 600 enterprise GPU nodes, equal to 6.3036 MW including the configured PUE, so no generated GPU job reaches 7 MW. Local generation and storage respond first, grid draw can never exceed 5 MW, and any remaining deficit stays visible through the simulator's reserve and balance channels.",
+  "site_name": "San Jose, CA, USA",
+  "site_latitude": 37.3382,
+  "site_longitude": -121.8863,
+  "site_utc_offset_h": -8.0,
   "workload_events": [],
   "hardware_profile_id": "enterprise_8gpu_air",
   "dt_lead_seconds": 0.0,
@@ -48,7 +52,7 @@
   ],
   "workload_floor_fraction": null,
   "island_mode": false,
-  "grid_import_limit_mw": 10.0,
+  "grid_import_limit_mw": 5.0,
   "frequency_nominal_hz": 60.0,
   "uf_warning_hz": null,
   "ufls_stage1_hz": null,
@@ -61,7 +65,7 @@
   "power_factor": 0.85,
   "pue_base": 1.03,
   "end_sim_time": 3600.0,
-  "demo_description": "## What this scenario simulates\n\nA grid-tied Kubernetes GPU site with no advance scheduler notice, a 30 MW / 60 MWh battery, a 24 MW fuel-cell array, and a hard 10 MW grid-import ceiling.\n\n## What to watch\n\n1. Individual generated gangs remain below 7 MW.\n2. The battery and fuel cell respond to each admission step before grid balancing.\n3. Grid import never exceeds 10 MW.\n4. If local sources and the capped grid cannot cover demand, reserve and balance indicators remain visibly short rather than inventing additional grid power.",
+  "demo_description": "## What this scenario simulates\n\nA grid-tied Kubernetes GPU site with no advance scheduler notice, a 30 MW / 60 MWh battery, a 24 MW fuel-cell array, and a hard 5 MW grid-import ceiling.\n\n## What to watch\n\n1. Individual generated gangs remain below 7 MW.\n2. The battery and fuel cell respond to each admission step before grid balancing.\n3. Grid import never exceeds 5 MW.\n4. If local sources and the capped grid cannot cover demand, reserve and balance indicators remain visibly short rather than inventing additional grid power.",
   "default_playback_speed": 1.0,
   "dt_thermal_seconds": 90.0,
   "plant_dt_thermal_seconds": null,
@@ -77,7 +81,7 @@
   "pre_staging_config": null,
   "pms_config": null,
   "procurement_config": {
-    "firm_available_mw": 10.0,
+    "firm_available_mw": 5.0,
     "reserved_available_mw": 0.0,
     "non_firm_available_mw": 0.0,
     "price_curve_seed": 42

@@ -59,8 +59,12 @@ def _grid_only_tick(grid_import_limit_mw: float | None):
 def test_scenario_schema_and_requested_capacities() -> None:
     spec = ScenarioSpec.model_validate_json(_SCENARIO_PATH.read_text())
 
+    assert spec.site_name == "San Jose, CA, USA"
+    assert spec.site_latitude == pytest.approx(37.3382)
+    assert spec.site_longitude == pytest.approx(-121.8863)
+    assert spec.site_utc_offset_h == pytest.approx(-8.0)
     assert spec.island_mode is False
-    assert spec.grid_import_limit_mw == pytest.approx(10.0)
+    assert spec.grid_import_limit_mw == pytest.approx(5.0)
     assert len(spec.bess_units) == 1
     assert spec.bess_units[0].rated_mw == pytest.approx(30.0)
     assert spec.bess_units[0].usable_mwh == pytest.approx(60.0)
@@ -100,13 +104,17 @@ def test_seeded_store_exposes_scenario_and_factory_wires_grid_limit() -> None:
     record = build_seeded_store().get(_SCENARIO_ID)
     assert record is not None
     spec = ScenarioSpec.model_validate_json(record.spec_json)
-    assert spec.grid_import_limit_mw == pytest.approx(10.0)
+    assert spec.grid_import_limit_mw == pytest.approx(5.0)
 
     ctx = build_run_context_from_spec(
         "grid-limited-seed-test",
         spec.model_dump(mode="json"),
     )
-    assert ctx.sim_state.site.grid_import_limit_mw == pytest.approx(10.0)
+    assert ctx.site_name == "San Jose, CA, USA"
+    assert ctx.site_lat == pytest.approx(37.3382)
+    assert ctx.site_lon == pytest.approx(-121.8863)
+    assert ctx.site_utc_offset_h == pytest.approx(-8.0)
+    assert ctx.sim_state.site.grid_import_limit_mw == pytest.approx(5.0)
 
 
 def test_grid_import_is_physically_capped_and_d4_remains_balanced() -> None:
