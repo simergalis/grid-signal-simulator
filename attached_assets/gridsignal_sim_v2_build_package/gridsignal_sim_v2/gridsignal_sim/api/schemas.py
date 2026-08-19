@@ -410,6 +410,14 @@ class KubeConfigSpec(BaseModel):
                                 description="Std deviation of gang size")
     min_job_nodes: int = Field(default=50, ge=1,
                                description="Minimum nodes per admission")
+    max_job_nodes: Optional[int] = Field(
+        default=None,
+        ge=1,
+        description=(
+            "Per-job scheduling-unit ceiling. When omitted, the legacy "
+            "max_nodes/2 fallback is used."
+        ),
+    )
 
     # Job duration distribution (exponential, clipped)
     mean_job_duration_s: float = Field(default=300.0, ge=10.0,
@@ -442,6 +450,17 @@ class KubeConfigSpec(BaseModel):
     # ── Within-step load profile (spec Part 2) ───────────────────────────────
     # None (default) = no profile modulation; compute_load_mw is a pure ramp.
     load_config: Optional[LoadProfileConfigSpec] = None
+
+    @model_validator(mode="after")
+    def _validate_job_unit_bounds(self) -> "KubeConfigSpec":
+        if (
+            self.max_job_nodes is not None
+            and self.max_job_nodes < self.min_job_nodes
+        ):
+            raise ValueError(
+                "max_job_nodes must be greater than or equal to min_job_nodes"
+            )
+        return self
 
 
 class KubeClusterSpec(KubeConfigSpec):

@@ -9,6 +9,7 @@ import pytest
 
 from api.routes.scenarios import build_seeded_store
 from api.schemas import ScenarioSpec
+from core.kube_demand import KubeConfig, KubeDemandAgent
 from runtime.run_manager import _tick_result_to_dict
 from runtime.scenario_factory import build_run_context_from_spec
 from tests.test_forecast_path import _run_tick, _starting_signal
@@ -115,6 +116,7 @@ def test_scenario_preserves_generator_timing_and_caps_each_job_below_7mw() -> No
             key: source_kube[key] for key in timing_fields
         }
 
+    assert [cluster["max_job_nodes"] for cluster in clusters] == [300, 300, 42]
     assert [cluster["rng_seed"] for cluster in clusters] == [42, 1042, 2042]
     assert sum(cluster["workload_share"] for cluster in clusters) == pytest.approx(1.0)
     aggregate_arrival_rate = sum(
@@ -145,7 +147,7 @@ def test_scenario_preserves_generator_timing_and_caps_each_job_below_7mw() -> No
         "nextgen_rack_liquid": 120.0,
     }
     for cluster in clusters:
-        max_job_units = cluster["max_nodes"] // 2
+        max_job_units = min(cluster["max_job_nodes"], cluster["max_nodes"])
         max_job_mw_including_pue = (
             max_job_units
             * profile_kw[cluster["hardware_profile_id"]]
@@ -153,6 +155,58 @@ def test_scenario_preserves_generator_timing_and_caps_each_job_below_7mw() -> No
             / 1000.0
         )
         assert max_job_mw_including_pue < 7.0
+
+
+def test_sj1_job_caps_are_cluster_specific_and_capacity_bounded() -> None:
+    spec = ScenarioSpec.model_validate_json(_SCENARIO_PATH.read_text())
+    ctx = build_run_context_from_spec(
+        "sj1-job-cap-policy",
+        spec.model_dump(mode="json"),
+    )
+    by_cluster = {
+        agent.config.cluster_id: agent.config
+        for agent in ctx.sim_state.kube_agents
+    }
+
+    assert by_cluster["sj1-k8s-h100"].max_job_nodes == 300
+    assert by_cluster["sj1-slurm-h100"].max_job_nodes == 300
+    assert by_cluster["sj1-ray-gb200"].max_job_nodes == 42
+
+    # The policy ceiling is per cluster, and a policy ceiling cannot override
+    # the cluster's own total capacity (21 racks for Ray).
+    assert min(
+        by_cluster["sj1-k8s-h100"].max_job_nodes,
+        by_cluster["sj1-k8s-h100"].max_nodes,
+    ) == 300
+    assert min(
+        by_cluster["sj1-ray-gb200"].max_job_nodes,
+        by_cluster["sj1-ray-gb200"].max_nodes,
+    ) == 21
+
+
+def test_per_cluster_job_cap_bounds_generated_job_units() -> None:
+    def first_job_units(*, max_nodes: int, max_job_nodes: int) -> int:
+        agent = KubeDemandAgent(
+            KubeConfig(
+                max_nodes=max_nodes,
+                min_nodes=1,
+                min_job_nodes=1,
+                max_job_nodes=max_job_nodes,
+                mean_job_nodes=10_000,
+                job_node_std=0.0,
+                reorder_window_s=0.0,
+                ntp_jitter_s=0.0,
+                rng_seed=7,
+            )
+        )
+        signals, _metrics = agent.tick(sim_time=0.0, dt_seconds=1.0)
+        assert len(signals) == 1
+        return signals[0].node_count
+
+    assert first_job_units(max_nodes=708, max_job_nodes=300) == 300
+    # The per-cluster policy can express a 42-rack ceiling, but cannot make a
+    # 21-rack cluster admit more capacity than it owns.
+    assert first_job_units(max_nodes=21, max_job_nodes=42) == 21
 
 
 def test_sj1_factory_builds_requested_independent_cluster_fleet() -> None:
@@ -326,6 +380,16 @@ def test_multicluster_schema_rejects_ambiguous_or_unbalanced_config() -> None:
                     "workload_share": 0.3,
                 },
             ],
+        })
+
+    with pytest.raises(ValueError, match="max_job_nodes"):
+        ScenarioSpec.model_validate({
+            **base,
+            "kube_clusters": [{
+                **cluster,
+                "min_job_nodes": 50,
+                "max_job_nodes": 49,
+            }],
         })
 
 

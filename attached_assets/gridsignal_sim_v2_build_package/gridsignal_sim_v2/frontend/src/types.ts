@@ -637,6 +637,7 @@ export interface KubeJobSpec {
   hardware_profile_id: string
   max_nodes: number   // peak cluster capacity (nodes)
   min_nodes: number   // idle-baseline nodes — cluster never fully drains
+  max_job_nodes?: number | null // per-job cap; null preserves legacy fallback
 }
 // Alias kept for backwards compat; backend field is kube_config
 export type KubeConfigSpec = KubeJobSpec
