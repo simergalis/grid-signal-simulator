@@ -28,3 +28,16 @@ telemetry. Allocate BESS first, then incremental turbine headroom, then
 fuel-cell capacity. Reconcile final fuel-cell output from actual BESS and
 turbine delivery so ramp or SoC clipping cannot double-count supply, and
 preserve the source-sum identity.
+
+## SJ-1 storage interpretation
+
+The SJ-1 site keeps its 30 MW / 60 MWh BESS as storage. “Only fuel cell and
+grid” excludes solar generation; it does not disable battery discharge.
+
+**Why:** The site specification deliberately includes the BESS, and the
+confirmed merit order makes its lower-cost discharge the expected first source
+while energy remains available.
+
+**How to apply:** Treat a zero-solar SJ-1 tick with BESS output as correct.
+Fuel-cell and grid output take over only after the battery cannot meet demand
+within its state-of-charge and power constraints.
