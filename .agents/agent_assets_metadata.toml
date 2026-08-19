@@ -294,3 +294,10 @@ uri = "file://docs/BB-PWR-test-cases.md"
 type = "text"
 title = "BB-PWR Test Cases — Power Management Select Power"
 description = "50 black-box test cases (BB-PWR-001–050) covering source selection UI state, aggregation correctness, SWITCHGEAR/PMS signal behaviour, and edge cases. Includes spec-gap audit and 10 open items."
+
+[[outputs]]
+id = "yCDJhpsWPP3D-iK8N8aBi"
+uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/attached_assets/scenarios-reference-current.txt"
+type = "text"
+title = "Current scenario JSON reference"
+description = "Complete literal listing and byte-for-byte contents of all 21 files in config/scenarios/."
