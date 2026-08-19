@@ -1,5 +1,5 @@
 {
-  "name": "scenario-kube-grid-limited-24mw-fc",
+  "name": "scenario-equinix-sj-1",
   "description": "This grid-tied Kubernetes scenario preserves the deterministic arrival timing and job-duration behavior of scenario-kube-peak-overage while testing a site with a 30 MW / 60 MWh BESS, a 24 MW fuel-cell fleet, and a point-of-common-coupling import ceiling of 5 MW. Jobs arrive without advance power notice at an average interval of 45 seconds. The cluster ceiling limits every individual gang to at most 600 enterprise GPU nodes, equal to 6.3036 MW including the configured PUE, so no generated GPU job reaches 7 MW. Local generation and storage respond first, grid draw can never exceed 5 MW, and any remaining deficit stays visible through the simulator's reserve and balance channels.",
   "site_name": "San Jose, CA, USA",
   "site_latitude": 37.3382,

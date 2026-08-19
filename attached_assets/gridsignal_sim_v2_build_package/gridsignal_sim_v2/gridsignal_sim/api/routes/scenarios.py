@@ -1122,7 +1122,7 @@ def _seed_json_scenarios(store: ScenarioStore) -> None:
         ("scenario-kube-peak-overage", "scenario-kube-peak-overage.json"),
         # Kubernetes demand with 30 MW / 60 MWh BESS, 24 MW fuel cell,
         # and a physically enforced 10 MW PCC import ceiling.
-        ("scenario-kube-grid-limited-24mw-fc", "scenario-kube-grid-limited-24mw-fc.json"),
+        ("scenario-equinix-sj-1", "scenario-equinix-sj-1.json"),
     ]
 
     _cfg_dir = _Path("config/scenarios")

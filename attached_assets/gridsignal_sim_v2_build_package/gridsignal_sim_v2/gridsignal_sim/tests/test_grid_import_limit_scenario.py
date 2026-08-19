@@ -13,7 +13,7 @@ from runtime.scenario_factory import build_run_context_from_spec
 from tests.test_forecast_path import _run_tick, _starting_signal
 
 
-_SCENARIO_ID = "scenario-kube-grid-limited-24mw-fc"
+_SCENARIO_ID = "scenario-equinix-sj-1"
 _SCENARIO_PATH = (
     Path(__file__).parents[1]
     / "config"
