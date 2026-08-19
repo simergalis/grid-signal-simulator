@@ -361,6 +361,21 @@ def test_scenario_preserves_generator_timing_and_caps_each_job_below_7mw() -> No
         assert max_job_mw_including_pue < 7.0
 
 
+def test_sj1_gpu_capacity_targets_thirty_mw_facility_demand() -> None:
+    spec = ScenarioSpec.model_validate_json(_SCENARIO_PATH.read_text())
+    ctx = build_run_context_from_spec("sj1-capacity-target", spec.model_dump(mode="json"))
+
+    h100_nodes = 950 + 950
+    gb200_racks = 21
+    total_gpus = h100_nodes * 8 + gb200_racks * 72
+    it_capacity_mw = h100_nodes * 10.2 / 1000.0 + gb200_racks * 120.0 / 1000.0
+    facility_capacity_mw = it_capacity_mw * ctx.sim_state.site.effective_pue
+
+    assert total_gpus == 16_712
+    assert it_capacity_mw == pytest.approx(21.9)
+    assert facility_capacity_mw == pytest.approx(30.0123, abs=0.05)
+
+
 def test_sj1_job_caps_are_cluster_specific_and_capacity_bounded() -> None:
     spec = ScenarioSpec.model_validate_json(_SCENARIO_PATH.read_text())
     ctx = build_run_context_from_spec(
@@ -432,8 +447,8 @@ def test_sj1_factory_builds_requested_independent_cluster_fleet() -> None:
         )
         for agent in agents
     ] == [
-        ("sj1-k8s-h100", "K8S", "enterprise_8gpu_air", 708, "node", 8),
-        ("sj1-slurm-h100", "SLURM", "enterprise_8gpu_air", 708, "node", 8),
+        ("sj1-k8s-h100", "K8S", "enterprise_8gpu_air", 950, "node", 8),
+        ("sj1-slurm-h100", "SLURM", "enterprise_8gpu_air", 950, "node", 8),
         ("sj1-ray-gb200", "RAY", "nextgen_rack_liquid", 21, "rack", 72),
     ]
 
@@ -447,17 +462,17 @@ def test_sj1_factory_builds_requested_independent_cluster_fleet() -> None:
         for agent in agents
         if agent.config.hardware_profile_id == "nextgen_rack_liquid"
     )
-    assert h100_gpus == 11_328
+    assert h100_gpus == 15_200
     assert gb200_gpus == 1_512
-    assert h100_gpus + gb200_gpus == 12_840
+    assert h100_gpus + gb200_gpus == 16_712
 
-    h100_mw = 2 * 708 * 10.2 / 1000.0
+    h100_mw = 2 * 950 * 10.2 / 1000.0
     gb200_mw = 21 * 120.0 / 1000.0
     total_it_mw = h100_mw + gb200_mw
-    assert total_it_mw == pytest.approx(16.9632)
-    assert round(total_it_mw, 1) == pytest.approx(17.0)
-    assert h100_mw / total_it_mw == pytest.approx(0.8514, abs=1e-4)
-    assert gb200_mw / total_it_mw == pytest.approx(0.1486, abs=1e-4)
+    assert total_it_mw == pytest.approx(21.9)
+    assert round(total_it_mw, 1) == pytest.approx(21.9)
+    assert h100_mw / total_it_mw == pytest.approx(0.8849, abs=1e-4)
+    assert gb200_mw / total_it_mw == pytest.approx(0.1151, abs=1e-4)
 
 
 def test_sj1_cluster_admission_is_independent_and_payload_keeps_identity() -> None:
@@ -481,16 +496,16 @@ def test_sj1_cluster_admission_is_independent_and_payload_keeps_identity() -> No
         "sj1-ray-gb200",
     }
     assert all(m.admitted_units <= m.max_units for m in by_cluster.values())
-    # Both H100 clusters can admit beyond one 708-node shared ceiling in
+    # Both H100 clusters can admit beyond one 950-node shared ceiling in
     # aggregate, proving their capacity accumulators are independent.
     assert (
         by_cluster["sj1-k8s-h100"].admitted_units
         + by_cluster["sj1-slurm-h100"].admitted_units
-    ) > 708
-    assert metrics.total_gpu_capacity == 12_840
+    ) > 950
+    assert metrics.total_gpu_capacity == 16_712
 
     payload = _tick_result_to_dict(tick)
-    assert payload["kube_metrics"]["total_gpu_capacity"] == 12_840
+    assert payload["kube_metrics"]["total_gpu_capacity"] == 16_712
     assert {
         cluster["capacity_unit"]
         for cluster in payload["kube_metrics"]["cluster_metrics"]
