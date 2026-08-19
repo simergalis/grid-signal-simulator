@@ -13,7 +13,7 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [SoC corruption dashboard wiring](soc-corruption-dashboard.md) — bess_soc_corrupted_fraction must follow confidence: ConfidenceBand in TickResult (field ordering constraint); corruption stamps both contingency_coverage and the fraction together.
 - [PAUSE control-plane](pause-control-plane.md) — asyncio.Event gate in _drive(); §22.3 timer persistence deferred; STOP vs PAUSE semantics.
 - [Frontend build + modal naming traps](gridsignal-frontend-build.md) — prod serves pre-built bundle; must run build_prod.sh + restart after any src/ edit. Two overlapping constant sets in GpuNodeGeneratorModal; Queue tab needs component-level TENANT_COLOUR_BY_ID / SCHEDULER_BADGE_BY_TYPE.
-- [Hot-standby cascade](hot-standby-cascade.md) — hot-standby turbines are OFFLINE (not SYNCHRONISED); clear config.hot_standby then call command_start(); never look for SYNCHRONISED state.
+- [Hot-standby release policy](hot-standby-cascade.md) — explicit FC/cascade policies release reserved units; normal commitment must not preempt them.
 - [Grid import cap routing](grid-import-cap-routing.md) — PCC import caps clamp only negative exchange; excess deficit stays on frequency_forcing and appears as unserved load.
 - [SJ-1 compute target](sj1-compute-target.md) — the mixed fleet’s 16.9632 MW IT sum is deliberately presented as the §2 17.0 MW target; keep IT and PUE-inclusive site demand separate.
 - [PUE calibration contract](pue-calibration-contract.md) — pue_base excludes cooling; derive total PUE and validate the runtime base value against the declared catalogue range.

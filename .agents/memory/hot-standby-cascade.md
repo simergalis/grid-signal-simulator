@@ -36,3 +36,14 @@ but the state machine treats them identically to cold-offline units.
 `command_start()` returns silently for any unit with `config.hot_standby=True`. The
 cascade must clear the flag first. OFFLINE standby units (without `hot_standby`) CAN
 go through the normal `force_commit_trigger` → `evaluate_commitment` path.
+
+## Explicit release boundary
+Reserved standby turbines must stay out of ordinary capacity commitment. Only explicit
+fuel-cell and cascade policies may release them.
+
+**Why:** ordinary commitment would preempt the intended BESS → fuel-cell → turbine
+sequence before fuel-cell support reaches its configured commitment threshold.
+
+**How to apply:** keep normal demand and reserve rules from consuming standby units;
+make a release policy choose readiness deliberately and restore the intended reserve
+tiers after it consumes one.
