@@ -171,7 +171,112 @@
   "calibrated": false,
   "dq_inject_events": [],
   "solar_origin_utc_hour": null,
-  "tenant_events": [],
+  "tenant_events": [
+    {
+      "tenant_id": "t01",
+      "scheduler": "Kubernetes",
+      "label": "PCC import validation burst 1/13",
+      "gpus": 2142,
+      "t_start": 900.0,
+      "duration_s": 60.0
+    },
+    {
+      "tenant_id": "t02",
+      "scheduler": "Kubernetes",
+      "label": "PCC import validation burst 2/13",
+      "gpus": 2142,
+      "t_start": 900.0,
+      "duration_s": 60.0
+    },
+    {
+      "tenant_id": "t03",
+      "scheduler": "Kubernetes",
+      "label": "PCC import validation burst 3/13",
+      "gpus": 2142,
+      "t_start": 900.0,
+      "duration_s": 60.0
+    },
+    {
+      "tenant_id": "t04",
+      "scheduler": "Kubernetes",
+      "label": "PCC import validation burst 4/13",
+      "gpus": 2142,
+      "t_start": 900.0,
+      "duration_s": 60.0
+    },
+    {
+      "tenant_id": "t05",
+      "scheduler": "Kubernetes",
+      "label": "PCC import validation burst 5/13",
+      "gpus": 2142,
+      "t_start": 900.0,
+      "duration_s": 60.0
+    },
+    {
+      "tenant_id": "t06",
+      "scheduler": "Kubernetes",
+      "label": "PCC import validation burst 6/13",
+      "gpus": 2142,
+      "t_start": 900.0,
+      "duration_s": 60.0
+    },
+    {
+      "tenant_id": "t07",
+      "scheduler": "Kubernetes",
+      "label": "PCC import validation burst 7/13",
+      "gpus": 2142,
+      "t_start": 900.0,
+      "duration_s": 60.0
+    },
+    {
+      "tenant_id": "t08",
+      "scheduler": "Kubernetes",
+      "label": "PCC import validation burst 8/13",
+      "gpus": 2142,
+      "t_start": 900.0,
+      "duration_s": 60.0
+    },
+    {
+      "tenant_id": "t09",
+      "scheduler": "Kubernetes",
+      "label": "PCC import validation burst 9/13",
+      "gpus": 2142,
+      "t_start": 900.0,
+      "duration_s": 60.0
+    },
+    {
+      "tenant_id": "t10",
+      "scheduler": "Kubernetes",
+      "label": "PCC import validation burst 10/13",
+      "gpus": 2142,
+      "t_start": 900.0,
+      "duration_s": 60.0
+    },
+    {
+      "tenant_id": "t11",
+      "scheduler": "Kubernetes",
+      "label": "PCC import validation burst 11/13",
+      "gpus": 2142,
+      "t_start": 900.0,
+      "duration_s": 60.0
+    },
+    {
+      "tenant_id": "t12",
+      "scheduler": "Kubernetes",
+      "label": "PCC import validation burst 12/13",
+      "gpus": 2142,
+      "t_start": 900.0,
+      "duration_s": 60.0
+    },
+    {
+      "tenant_id": "t13",
+      "scheduler": "Kubernetes",
+      "label": "PCC import validation burst 13/13",
+      "gpus": 2142,
+      "t_start": 900.0,
+      "duration_s": 60.0
+    }
+  ],
   "generator_config": {
     "ratePerMinute": 3,
     "burstMode": false,

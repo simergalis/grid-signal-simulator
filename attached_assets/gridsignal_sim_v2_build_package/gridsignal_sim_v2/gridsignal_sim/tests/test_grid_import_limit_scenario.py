@@ -224,6 +224,40 @@ def test_bess_reserve_releases_when_fuel_cell_and_grid_are_unavailable() -> None
     assert tick.p_unserved_mw == pytest.approx(0.0, abs=1e-6)
 
 
+def test_sj1_validation_burst_uses_fuel_cell_then_capped_grid_import() -> None:
+    """The scheduled surge must exercise the normal 92%-SoC source handoff."""
+    spec_data = _load_raw(_SCENARIO_PATH)
+    spec_data["end_sim_time"] = 970.0
+    ctx = build_run_context_from_spec("sj1-pcc-import-validation", spec_data)
+    ctx.playback_speed = 0.0
+    sink = InMemoryTimeseriesSink()
+    ctx.sink = sink
+    manager = RunManager(WebSocketHub())
+
+    async def run() -> None:
+        await manager.start_run(ctx)
+        task = manager._tasks.get(ctx.run_id)
+        if task is not None:
+            await task
+
+    asyncio.run(run())
+    validation_ticks = [
+        tick for tick in sink.rows
+        if 900.0 <= tick.sim_time_seconds < 960.0
+    ]
+
+    assert validation_ticks
+    assert all(tick.bess_output_mw == pytest.approx(0.0, abs=1e-6)
+               for tick in validation_ticks)
+    assert all(tick.bess_soc_fraction == pytest.approx(0.92, abs=1e-6)
+               for tick in validation_ticks)
+    assert max(tick.fuel_cell_output_mw for tick in validation_ticks) == pytest.approx(24.0)
+    assert min(tick.grid_exchange_mw for tick in validation_ticks) < 0.0
+    assert min(tick.grid_exchange_mw for tick in validation_ticks) >= -5.0 - 1e-6
+    assert all(tick.p_unserved_mw == pytest.approx(0.0, abs=1e-6)
+               for tick in validation_ticks)
+
+
 def test_sj1_zero_solar_ignores_global_solarsim_output() -> None:
     """A product-level SolarSim must not create renewable MW for SJ-1."""
 

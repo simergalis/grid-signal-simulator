@@ -18,3 +18,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [SJ-1 compute target](sj1-compute-target.md) — the mixed fleet’s 16.9632 MW IT sum is deliberately presented as the §2 17.0 MW target; keep IT and PUE-inclusive site demand separate.
 - [PUE calibration contract](pue-calibration-contract.md) — pue_base excludes cooling; derive total PUE and validate the runtime base value against the declared catalogue range.
 - [BESS escalation semantics](bess-escalation-semantics.md) — bridge-floor and turbine-catch-up are independent; do not redefine legacy reserve-alert verdicts.
+- [Additive load validation](additive-load-validation.md) — Kube scenarios need tenant bursts for reliable site-level load injections; scripted job events are not additive there.
