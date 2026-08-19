@@ -64,6 +64,7 @@ def test_scenario_schema_and_requested_capacities() -> None:
     assert len(spec.bess_units) == 1
     assert spec.bess_units[0].rated_mw == pytest.approx(30.0)
     assert spec.bess_units[0].usable_mwh == pytest.approx(60.0)
+    assert spec.turbine_units == []
     assert spec.fuel_cell_rated_mw * spec.fuel_cell_stack_count == pytest.approx(24.0)
 
 
