@@ -56,6 +56,30 @@ def _grid_only_tick(grid_import_limit_mw: float | None):
     return _run_tick(ctx.sim_state, sim_time=5.0, dt=5.0)
 
 
+def test_scenario_location_defaults_to_santa_clara() -> None:
+    spec = ScenarioSpec.model_validate(
+        {
+            "name": "default-location-test",
+            "description": "Uses the canonical scenario location.",
+        }
+    )
+
+    assert spec.site_name == "Santa Clara, CA, USA"
+    assert spec.site_latitude == pytest.approx(37.3541)
+    assert spec.site_longitude == pytest.approx(-121.9552)
+    assert spec.site_utc_offset_h == pytest.approx(-8.1303466667)
+
+
+def test_seeded_scenario_without_location_uses_santa_clara_defaults() -> None:
+    record = build_seeded_store().get("demo-alert")
+    assert record is not None
+
+    spec = ScenarioSpec.model_validate_json(record.spec_json)
+    assert spec.site_name == "Santa Clara, CA, USA"
+    assert spec.site_latitude == pytest.approx(37.3541)
+    assert spec.site_longitude == pytest.approx(-121.9552)
+
+
 def test_scenario_schema_and_requested_capacities() -> None:
     spec = ScenarioSpec.model_validate_json(_SCENARIO_PATH.read_text())
 

@@ -526,13 +526,34 @@ class ScenarioSpec(BaseModel):
     name: str = Field(min_length=1)
     description: str = ""
 
-    # Optional per-scenario site identity.  When omitted, runs use the
-    # operator-configured site location; when present, these values override
-    # the global location for this scenario's run header and solar pipeline.
-    site_name: Optional[str] = Field(default=None, min_length=1)
-    site_latitude: Optional[float] = Field(default=None, ge=-90.0, le=90.0)
-    site_longitude: Optional[float] = Field(default=None, ge=-180.0, le=180.0)
-    site_utc_offset_h: Optional[float] = Field(default=None, ge=-14.0, le=14.0)
+    @staticmethod
+    def _default_site_location():
+        # Keep geographic literals centralized in site_config.py; scenario
+        # defaults should not duplicate coordinates in the API schema.
+        from site_config import get_default_site_location
+        return get_default_site_location()
+
+    # Per-scenario site identity.  When omitted, runs use the Santa Clara
+    # defaults; explicit scenario values still override them.
+    site_name: str = Field(
+        default_factory=lambda: ScenarioSpec._default_site_location().site_name,
+        min_length=1,
+    )
+    site_latitude: float = Field(
+        default_factory=lambda: ScenarioSpec._default_site_location().latitude_deg,
+        ge=-90.0,
+        le=90.0,
+    )
+    site_longitude: float = Field(
+        default_factory=lambda: ScenarioSpec._default_site_location().longitude_deg,
+        ge=-180.0,
+        le=180.0,
+    )
+    site_utc_offset_h: float = Field(
+        default_factory=lambda: ScenarioSpec._default_site_location().longitude_deg / 15.0,
+        ge=-14.0,
+        le=14.0,
+    )
 
     # Workload events ordered by timestamp.  Empty list = no scripted events
     # (idle run or run with pre-existing state from t<0, which is not yet
