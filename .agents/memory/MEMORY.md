@@ -20,3 +20,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [BESS escalation semantics](bess-escalation-semantics.md) — bridge-floor and turbine-catch-up are independent; do not redefine legacy reserve-alert verdicts.
 - [Additive load validation](additive-load-validation.md) — Kube scenarios need tenant bursts for reliable site-level load injections; scripted job events are not additive there.
 - [GPU load multipliers](gpu-load-multipliers.md) — profiles are non-negative demand multipliers; values above 1.0 model planned GPU over-peak demand.
+- [BESS-first turbine rundown](bess-first-turbine-rundown.md) — only decommit after physical BESS charge capacity saturates; reserve excludes unloading units.

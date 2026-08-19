@@ -1200,6 +1200,11 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             0.0,
             min(p_dispatch_required_mw + _droop_correction_mw, _sync_ceiling_mw),
         )
+    # Commitment is a capacity/reserve decision, so it must use the actual
+    # residual site requirement.  The droop command is an actuator target that
+    # may be frequency-adjusted and capped by installed dispatch capacity; it is
+    # correct for loading but can understate the N-1 reserve requirement.
+    _commitment_demand_mw = max(0.0, p_dispatch_required_mw)
 
     # 4. Turbine advance + Phase 1b loading layer + BESS shortfall coverage
     #
@@ -1485,6 +1490,55 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         bess_dispatch_target_mw=_effective_bess_setpoint_mw,
         bess_dispatch_ceilings_mw=_bess_dispatch_ceilings_mw,
     )
+    # A turbine rundown may start only after the BESS has had first refusal on
+    # the generation surplus.  Use the measured output, not the charge command:
+    # it correctly catches both a full BESS and a charge-power-limited BESS.
+    #
+    # Signed convention: a charging BESS reports a negative output.  Therefore
+    # the unabsorbed surplus is turbine generation minus demand minus the MW the
+    # BESS actually absorbed.  This is deliberately calculated after
+    # DispatchArbitrator.tick() so the BESS's SoC, taper, power and energy limits
+    # are all reflected in the gate.
+    _turbine_surplus_before_bess_mw = max(
+        0.0, turbine_output_mw - _p_dispatch_droop_mw
+    )
+    _bess_absorbed_surplus_mw = max(0.0, -bess_output_mw)
+    _unabsorbed_turbine_surplus_mw = max(
+        0.0,
+        _turbine_surplus_before_bess_mw - _bess_absorbed_surplus_mw,
+    )
+    _dt_hours = dt_seconds / 3600.0
+    _bess_charge_acceptance_ceiling_mw = sum(
+        min(
+            bess.config.rated_mw,
+            max(0.0, bess.config.usable_mwh - bess.soc_mwh)
+            / max(_dt_hours, 1e-9),
+        )
+        for bess in state.bess_units
+    )
+    # Do not mistake inverter response lag for charge saturation.  A lagged
+    # BESS can temporarily absorb less than its command while retaining enough
+    # physical charge headroom and MW capacity to absorb the entire surplus on
+    # the next interval.  Rundown begins only when the remaining physical charge
+    # acceptance itself is insufficient.
+    _bess_charge_saturated = (
+        bool(state.bess_units)
+        and _turbine_surplus_before_bess_mw
+        > _bess_charge_acceptance_ceiling_mw + 1e-9
+    )
+    _bess_rundown_enabled = not state.bess_units or _bess_charge_saturated
+    _bess_full = bool(state.bess_units) and all(
+        bess.soc_mwh >= bess.config.usable_mwh - 1e-6
+        for bess in state.bess_units
+    )
+    if _bess_charge_saturated:
+        _bess_rundown_reason = (
+            f"BESS {'full' if _bess_full else 'charge-saturated'}; "
+            f"{_unabsorbed_turbine_surplus_mw:.2f} MW turbine surplus remains "
+            f"after BESS absorbed {_bess_absorbed_surplus_mw:.2f} MW"
+        )
+    else:
+        _bess_rundown_reason = None
 
     # Fuel cell is the highest-cost local source in the catalogue.  It therefore
     # fills only the residual left by actual BESS and turbine delivery.  Using
@@ -1546,7 +1600,14 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                     state._pending_start.start_commanded_at_s = math.nan
                 break
 
-    _avail_on_bus = [t.unit_availability() for t in state.turbines if t.is_on_bus]
+    # Reserve and commitment capacity are limited to synchronised units with
+    # upward headroom.  UNLOADING turbines remain on-bus for output and balance
+    # accounting, but are pinned at MSL and cannot contribute contingency
+    # reserve; using them here would make the commitment decision disagree with
+    # the operator-facing reserve summary during the controlled rundown.
+    _avail_on_bus = [
+        t.unit_availability() for t in state.turbines if t.contributes_to_reserve
+    ]
     _avail_offline = [
         t.unit_availability()
         for t in _offline_turbines_by_thermal_priority(state.turbines)
@@ -1740,7 +1801,11 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     _commit_decision: CommitmentDecision = evaluate_commitment(
         on_bus               = _avail_on_bus,
         offline              = _avail_offline,
-        p_demand_mw          = _thermal_dispatch_target_mw,
+        # Commitment reserve and decommit eligibility concern actual residual
+        # site demand, not MSL generation already forced on the bus or a
+        # governor-adjusted loading command.  Passing the MSL-inflated target
+        # here makes a safe post-BESS shutdown look like a reserve violation.
+        p_demand_mw          = _commitment_demand_mw,
         pending              = state._pending_start,
         commit_cond          = state._commit_cond,
         decommit_cond        = state._decommit_cond,
@@ -1748,6 +1813,8 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         dt_s                 = dt_seconds,
         sim_time             = sim_time,
         force_commit_trigger = _cascade_trigger,
+        decommit_enabled     = _bess_rundown_enabled,
+        decommit_reason_context = _bess_rundown_reason,
     )
     if (
         not _fc_commit_started
@@ -1829,6 +1896,22 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                         )
                     break
         else:
+            _stop_deferral = (
+                "another turbine is still in the controlled unloading sequence"
+                if _n_unloading > 0
+                else (
+                    "waiting for breaker-open settling interval "
+                    f"({_settle_s:.0f} s)"
+                )
+            )
+            _commit_decision = CommitmentDecision(
+                action="hold",
+                target_unit_id=_commit_decision.target_unit_id,
+                reason=_commit_decision.reason,
+                blocked_by=_stop_deferral,
+                floor_mw=_commit_decision.floor_mw,
+                floor_violated=_commit_decision.floor_violated,
+            )
             _log.debug(
                 "Decommit of %r deferred: n_unloading=%d settle_ok=%s (sim_time=%.1f)",
                 _commit_decision.target_unit_id, _n_unloading, _settle_ok, sim_time,
@@ -1853,7 +1936,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         _cmt_on_bus_rated = [u.rated_mw for u in _avail_on_bus if not u.hot_standby]
         _cmt_total_rated  = sum(_cmt_on_bus_rated)
         _cmt_largest      = max(_cmt_on_bus_rated, default=0.0)
-        _cmt_U            = (_thermal_dispatch_target_mw / _cmt_total_rated
+        _cmt_U            = (_commitment_demand_mw / _cmt_total_rated
                              if _cmt_total_rated > 0.0 else 0.0)
         _cmt_floor_deficit = _commit_decision.floor_mw - _cmt_total_rated
         _cmt_bess_soc_pct  = (state.bess_units[0].soc_fraction * 100.0
@@ -1864,7 +1947,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         _cmt_line = (
             f"CMT001 "
             f"t={sim_time:.1f} commit_raised={_commit_decision.action == 'commit'} action={_commit_decision.action!r} "
-            f"U={_cmt_U:.4f} p_demand_mw={_thermal_dispatch_target_mw:.3f} total_rated_mw={_cmt_total_rated:.3f} largest_mw={_cmt_largest:.3f} "
+            f"U={_cmt_U:.4f} p_demand_mw={_commitment_demand_mw:.3f} total_rated_mw={_cmt_total_rated:.3f} largest_mw={_cmt_largest:.3f} "
             f"floor_mw={_commit_decision.floor_mw:.3f} floor_violated={_commit_decision.floor_violated} floor_deficit={_cmt_floor_deficit:.3f} "
             f"commit_sustained_s={state._commit_cond.sustained_s:.1f} commit_confirm_s={state._commit_cfg.commit_confirm_s} "
             f"pending_id={state._pending_start.pending_unit_id!r} pending_since={state._pending_start.start_commanded_at_s:.1f} "
@@ -1887,7 +1970,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     _avail_reserve        = [t.unit_availability() for t in state.turbines if t.contributes_to_reserve]
     _committed_rated_mw_cs = sum(u.rated_mw for u in _avail_reserve)
     _fleet_utilisation_cs = (
-        _thermal_dispatch_target_mw / _committed_rated_mw_cs
+        _commitment_demand_mw / _committed_rated_mw_cs
         if _committed_rated_mw_cs > 0.0 else 0.0
     )
     # Item 1: reserve_floor_mw and reserve_satisfied from CommitmentDecision — one source.
