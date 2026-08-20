@@ -179,7 +179,7 @@ Only three fields are required.  Every other field has a default.
 | `calibrated` | bool | `false` | no | Treat site as calibrated (enables curtailment ladder) |
 | `solar_origin_utc_hour` | int [0,23]\|null | `null` | no | Fix the UTC hour for solar forecast generation. Use `20` for 12:00 PST. |
 | `assertions` | `AssertionSpec[]` | `[]` | no | Pass/fail checks evaluated at run end |
-| `fabric_scenario_id` | string\|null | `null` | no | ID of an S1–S8 fabric stress scenario JSON (e.g. `"S2_checkpoint_hotspot"`) |
+| `fabric_scenario_id` | string\|null | `null` | no | ID of a fabric regression scenario JSON (e.g. `"regression-test-checkpoint-storage-hotspot"`) |
 | `pre_staging_config` | `PreStagingConfigSpec`\|null | `null` | no | Thermal load-shifting pre-staging engine |
 | `pms_config` | `PmsConfigSpec`\|null | `null` | no | Simulated Power Management System |
 | `procurement_config` | `ProcurementConfigSpec`\|null | `null` | no | Grid procurement / non-firm import layer |

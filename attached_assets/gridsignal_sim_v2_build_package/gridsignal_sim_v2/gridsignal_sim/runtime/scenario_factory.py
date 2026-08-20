@@ -1403,8 +1403,24 @@ def _build_fabric_engine(run_id: str, fabric_scenario_id: str | None = None):
         if fabric_scenario_id:
             from pathlib import Path as _Path
             _cfg_dir = _Path("config/scenarios")
+            # The regression scenarios use descriptive public IDs.  Their
+            # historical filenames remain stable so existing source links and
+            # archived artifacts do not break.  Older saved IDs still resolve
+            # directly through the fallback below.
+            _legacy_filenames = {
+                "regression-test-healthy-training-baseline": "S1_baseline_training",
+                "regression-test-checkpoint-storage-hotspot": "S2_checkpoint_hotspot",
+                "regression-test-clean-job-termination": "S3_job_end_withholds",
+                "regression-test-control-path-latency-isolation": "S4_control_path_nfr2_breach",
+                "regression-test-gray-link-failure": "S5_gray_failure",
+                "regression-test-degraded-fabric-observability": "S6_baseline_tier_degradation",
+                "regression-test-slow-checkpoint": "S7_slow_checkpoint",
+                "regression-test-transceiver-degradation": "S8_transceiver_degrade",
+                "regression-test-islanded-ramp-protection": "S9_islanded_ramp_protection",
+            }
+            _filename = _legacy_filenames.get(fabric_scenario_id, fabric_scenario_id)
             _candidates = [
-                _cfg_dir / f"{fabric_scenario_id}.json",
+                _cfg_dir / f"{_filename}.json",
             ]
             for _path in _candidates:
                 if _path.exists():
