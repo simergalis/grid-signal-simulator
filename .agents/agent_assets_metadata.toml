@@ -322,3 +322,24 @@ uri = "file://deliverables/GridSignal_Functional_Specification_2026-08.md"
 type = "text"
 title = "GridSignal Functional Specification — August 2026"
 description = "Current-state functional specification covering the active simulator, operator workflows, technical boundaries, deployment gaps, and customer-demand validation plan."
+
+[[outputs]]
+id = "F0E9rQSn7vYIMjTZhibED"
+uri = "file://deliverables/GridSignal_Customer_Scenarios_2026-08.md"
+type = "text"
+title = "GridSignal Customer Scenarios"
+description = "Complete customer-scenario reference for the grid-tied and islanded San Jose GPU data-center scenarios, including the full JSON definitions as appendices."
+
+[[outputs]]
+id = "KwXi-rqBM-9BE4ne8dYOM"
+uri = "file://deliverables/customer-scenarios/scenario-equinix-sj-1.json"
+type = "unspecified"
+title = "scenario-equinix-sj-1.json"
+description = "Grid-tied customer scenario JSON snapshot."
+
+[[outputs]]
+id = "Nqj3vCY0RkgKE_GTzWAnP"
+uri = "file://deliverables/customer-scenarios/scenario-turbine-01.json"
+type = "unspecified"
+title = "scenario-turbine-01.json"
+description = "Islanded customer scenario JSON snapshot."
