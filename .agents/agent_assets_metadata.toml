@@ -343,3 +343,10 @@ uri = "file://deliverables/customer-scenarios/scenario-turbine-01.json"
 type = "unspecified"
 title = "scenario-turbine-01.json"
 description = "Islanded customer scenario JSON snapshot."
+
+[[outputs]]
+id = "z-ycQlWRb8Eyd-tAUs6_j"
+uri = "file://deliverables/GridSignal_Customer_Scenarios_2026-08.zip"
+type = "unspecified"
+title = "GridSignal Customer Scenarios ZIP"
+description = "ZIP archive containing the complete customer scenario document and both scenario JSON files."
