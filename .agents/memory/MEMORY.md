@@ -26,3 +26,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Standalone analytical proposals](standalone-capacity-proposals.md) — Capacity Outlook uses the normal advisory gate without requiring a physics RunContext.
 - [Reserve alert dispositions](reserve-alert-dispositions.md) — insufficient-reserve alerts create Generation turbine-ramp proposals; Approve/Reject are advisory-only and Modify remains deferred.
 - [AI remediation guardrails](ai-remediation-guardrails.md) — recommendations stay allowlisted and advisory; approval revalidates the latest tick before typed simulator commands execute.
+- [Rolling shortfall alerts](rolling-shortfall-alerts.md) — 15-minute–4-hour planning projection is advisory and simulator-backed, distinct from current balance/reserve alerts.
