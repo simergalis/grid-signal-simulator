@@ -7,4 +7,4 @@ An insufficient-reserve alert is linked to a deterministic Generation `turbine_r
 
 **Why:** The current simulator computes aggregate reserve/ramp shortfall and exposes no ranked or alternate generation choices, so a deterministic single recommendation is safer than inventing candidate controls.
 
-**How to apply:** Carry the proposal ID in the tick payload, record reviewer identity and disposition time in the proposal, and keep local alert dismissal contingent on a successful review response.
+**How to apply:** Carry the proposal ID in the tick payload, record reviewer identity and disposition time in the proposal, and keep local alert dismissal contingent on a successful review response. A newly latched alert should also open an interruptive modal; closing it leaves the dock alert latched until disposition.
