@@ -350,3 +350,10 @@ uri = "file://deliverables/GridSignal_Customer_Scenarios_2026-08.zip"
 type = "unspecified"
 title = "GridSignal Customer Scenarios ZIP"
 description = "ZIP archive containing the complete customer scenario document and both scenario JSON files."
+
+[[outputs]]
+id = "FrDFgIfd9_xgYpXWfLvQU"
+uri = "file://attached_assets/image_1787585211296_annotated.png"
+type = "image"
+title = "Overview tab click location"
+description = "Annotated screenshot showing where the Overview tab should be located. The red circle marks the second tab in the page-navigation row, directly below the top status header."
