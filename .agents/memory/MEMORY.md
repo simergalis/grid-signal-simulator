@@ -27,3 +27,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Reserve alert dispositions](reserve-alert-dispositions.md) — insufficient-reserve alerts create Generation turbine-ramp proposals; Approve/Reject are advisory-only and Modify remains deferred.
 - [AI remediation guardrails](ai-remediation-guardrails.md) — recommendations stay allowlisted and advisory; approval revalidates the latest tick before typed simulator commands execute.
 - [Rolling shortfall alerts](rolling-shortfall-alerts.md) — 15-minute–4-hour planning projection is advisory and simulator-backed, distinct from current balance/reserve alerts.
+- [Alert clustering and dispositions](alert-clustering-dispositions.md) — proposals never mutate instances; bulk actions remain catalogue-gated and write one audited row per instance.
