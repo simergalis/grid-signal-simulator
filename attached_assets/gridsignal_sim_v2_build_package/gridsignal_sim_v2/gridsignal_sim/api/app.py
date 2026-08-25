@@ -93,6 +93,7 @@ from api.routes import economic_profiles as economic_profiles_routes
 from api.routes import trace_import as trace_import_routes
 from api.routes import trace_comparison as trace_comparison_routes
 from api.routes import capacity_outlook as capacity_outlook_routes
+from api.routes import reference_forecast as reference_forecast_routes
 from api.routes import ingest as ingest_routes
 from api.auth_utils import COOKIE_NAME, decode_access_token
 from api.db import create_auth_tables, _SessionLocal
@@ -367,6 +368,7 @@ def create_app() -> FastAPI:
     application.include_router(trace_import_routes.router)  # Phase 1 trace import
     application.include_router(trace_comparison_routes.router)  # Phase 2 read-only comparison
     application.include_router(capacity_outlook_routes.router)
+    application.include_router(reference_forecast_routes.router)
     application.include_router(ingest_routes.router)
 
     # ── §10.2 static frontend (Step 16) ─────────────────────────────────
