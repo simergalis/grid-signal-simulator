@@ -30,3 +30,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Rolling planning forecast timeline](rolling-planning-forecast-timeline.md) — project future scripted peaks from scheduled starts/ends, not the current live forecast or a second simulation.
 - [Alert clustering and dispositions](alert-clustering-dispositions.md) — proposals never mutate instances; bulk actions remain catalogue-gated and write one audited row per instance.
 - [Reference forecast MW assumptions](reference-forecast-mw-assumptions.md) — derive counts with existing H100/GB200 catalog profiles and generic PUE, while preserving explicit assumption provenance.
+- [Live Slurm ingestion](live-slurm-ingestion.md) — Slurm state determines authoritative TRES metadata; preserve monotonic job lifecycle ordering and physical topology checks.
