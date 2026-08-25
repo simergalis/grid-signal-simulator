@@ -119,6 +119,42 @@ async def _solar_tick_loop(sim) -> None:
             sim._log("Tick error: %s" % exc, "bad")
 
 
+async def _ensure_reference_forecast() -> None:
+    """Bootstrap the persisted baseline when a published DB is newly created.
+
+    Development and production use separate managed databases.  The reference
+    forecast is intentionally read-only at the API boundary, but its seed data
+    must exist before that boundary can serve the dataset.  The importer is
+    idempotent, so this is safe across restarts and multiple VM processes.
+    """
+    if not os.environ.get("DATABASE_URL") or os.environ.get("PYTEST_CURRENT_TEST"):
+        return
+
+    from scripts.import_reference_forecast import (
+        DEFAULT_DATASET_ID,
+        DEFAULT_WORKBOOK,
+        import_dataset,
+        parse_args,
+    )
+
+    # Keep the importer's canonical display name and source path without
+    # constructing an argparse Namespace or duplicating its defaults.
+    display_name = "Equinix SJ-2 52-Week Reference Forecast v1"
+    scenario_count, resolved_count, skipped = await import_dataset(
+        DEFAULT_WORKBOOK,
+        DEFAULT_DATASET_ID,
+        display_name,
+    )
+    action = "skipped existing" if skipped else "imported"
+    _log.info(
+        "Reference forecast baseline %s: dataset_id=%s scenarios=%d rows=%d",
+        action,
+        DEFAULT_DATASET_ID,
+        scenario_count,
+        resolved_count,
+    )
+
+
 @asynccontextmanager
 async def _lifespan(application: FastAPI):
     """Create process-lifetime singletons and attach them to app.state.
@@ -134,6 +170,7 @@ async def _lifespan(application: FastAPI):
     """
     # Ensure AuthUser table exists before any requests arrive.
     await create_auth_tables()
+    await _ensure_reference_forecast()
 
     # Log the portal URL that will be embedded in every outgoing welcome email
     # so operators can confirm it's correct without sending a test email.
