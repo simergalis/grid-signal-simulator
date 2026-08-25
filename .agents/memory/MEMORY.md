@@ -29,3 +29,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Rolling shortfall alerts](rolling-shortfall-alerts.md) — 15-minute–4-hour planning projection is advisory and simulator-backed, distinct from current balance/reserve alerts.
 - [Rolling planning forecast timeline](rolling-planning-forecast-timeline.md) — project future scripted peaks from scheduled starts/ends, not the current live forecast or a second simulation.
 - [Alert clustering and dispositions](alert-clustering-dispositions.md) — proposals never mutate instances; bulk actions remain catalogue-gated and write one audited row per instance.
+- [Reference forecast MW assumptions](reference-forecast-mw-assumptions.md) — derive counts with existing H100/GB200 catalog profiles and generic PUE, while preserving explicit assumption provenance.
