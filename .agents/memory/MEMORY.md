@@ -22,6 +22,7 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [GPU load multipliers](gpu-load-multipliers.md) — profiles are non-negative demand multipliers; values above 1.0 model planned GPU over-peak demand.
 - [BESS-first turbine rundown](bess-first-turbine-rundown.md) — only decommit after physical BESS charge capacity saturates; reserve excludes unloading units.
 - [Gridley query catalogue](gridley-query-catalogue.md) — read-only answers use a versioned snapshot-backed catalogue; unknown metrics never default to Energy Flow.
+- [Gridley RAG grounding](gridley-rag-grounding.md) — Claude writes read-only replies from local curated chunks plus normalized simulator facts; controls remain deterministic.
 - [Simulation tick timestamps](simulation-tick-timestamps.md) — exported ticks are interval-end timestamps; a step reset is visible beginning on the following tick.
 - [Standalone analytical proposals](standalone-capacity-proposals.md) — Capacity Outlook uses the normal advisory gate without requiring a physics RunContext.
 - [Reserve alert dispositions](reserve-alert-dispositions.md) — insufficient-reserve alerts create Generation turbine-ramp proposals; Approve/Reject are advisory-only and Modify remains deferred.
