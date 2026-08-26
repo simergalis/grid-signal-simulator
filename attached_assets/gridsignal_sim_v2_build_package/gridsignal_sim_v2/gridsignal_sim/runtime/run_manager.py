@@ -402,9 +402,9 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # Confidence widening metadata is serialized from the authoritative
         # ConfidenceEngine constants so presentation layers do not maintain a
         # second, potentially divergent percentage table.
-        "confidence_widening": {
-            "base_fraction": _ConfidenceEngine.BASE_BAND_FRACTION,
-            "per_tag": {
+        "confidence_widening": dict(
+            base_fraction=_ConfidenceEngine.BASE_BAND_FRACTION,
+            per_tag={
                 tag.value: widening
                 for tag, widening in _ConfidenceEngine.WIDENING_PER_TAG.items()
             },
@@ -412,8 +412,8 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
             # declared tag has not received a calibrated entry yet.  The
             # ConfidenceEngine's DEFAULT_WIDENING remains authoritative for
             # such a tag at calculation time.
-            "known_tags": sorted(tag.value for tag in _DataQualityTag),
-        },
+            known_tags=sorted(tag.value for tag in _DataQualityTag),
+        ),
         "insufficient_reserve_alert": tick.insufficient_reserve_alert,
         "insufficient_reserve_proposal_id": tick.insufficient_reserve_proposal_id,
         "bess_escalation_active": tick.bess_escalation_active,
