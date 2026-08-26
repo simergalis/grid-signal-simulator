@@ -15,6 +15,14 @@ The actual supply-demand residual is `_balance_residual_mw = _p_gen_mw - p_deman
 
 **Why:** `p_unserved_mw` is not yet computed at the D4 site (~line 1402); shed is evaluated downstream (~line 1676). Integration guide says `p_unserved_mw=0.0` for Phase 0.
 
+## Physical invariant independence caveat
+
+The later physical invariant currently passes `served = min(demand - shed, local_generation + grid_import)` and `unserved = demand - served`, while grid-tied import is itself derived from `_balance_residual_mw` when the PCC is not saturated; losses are a constant zero. It is therefore a partial aggregate supply-vs-demand check, not an independent five-term measurement, and can be tautological on the unrestricted grid-tie path.
+
+**Why:** exact cancellation in a balanced SJ-1 trace is structural: the dispatch/grid routing and served/unserved definitions reuse the same demand and supply values, so a zero residual is not evidence of floating-point headroom.
+
+**How to apply:** a genuinely independent gate must use explicit load-side shed (not a supply-capped served remainder), an independent PCC import/meter value for grid-tied runs, and a real loss model or an explicit islanded-only scope.
+
 ## Phase 1 — droop attribute names
 
 The integration guide uses field names that do not match the codebase:
