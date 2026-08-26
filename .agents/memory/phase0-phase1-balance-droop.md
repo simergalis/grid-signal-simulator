@@ -29,7 +29,7 @@ The integration guide uses field names that do not match the codebase:
 
 - `governor_deadband_hz` = 0.02 — was class literal `_GOVERNOR_DEADBAND_HZ` in simulation_core.py. Sub-step governor loop at ~line 1525 still uses `_GOVERNOR_DEADBAND_HZ`.
 - `droop_max_frequency_error_hz` = null — DR-BAL-1 open. Phase 1 bounded droop is gated: falls back to unbounded formula while null.
-- `balance_defect_tolerance_mw` = 0.0 — calibrated from demo-baseline (11 ticks, I1 = 0.0 exactly). DR-BAL-2 open.
+- `balance_defect_tolerance_mw` = `1.9913e-14` MW — the current catalogue noise floor used by the authoritative physical balance invariant; do not widen it to hide MW-scale defects.
 
 ## simulation_core.py import needed
 
@@ -41,5 +41,5 @@ The integration guide uses field names that do not match the codebase:
 
 ## Test delta
 
-- Phase 0: 1 new failure — `test_D4_depleted_bess` (was asserting routing identity = 0; now computes real defect). Expected.
+- Phase 0: the legacy D4 routing check remains separate from the authoritative physical balance invariant; tests must distinguish the two identities.
 - Phase 1: 0 new failures. All 13 pre-existing failures are unrelated to droop/balance.
