@@ -32,3 +32,16 @@ The Queue tab must use the **component-level** versions (`TENANT_COLOUR_BY_ID`, 
 Live-stats header variables in the component are `allLiveJobs`, `liveTotalNodes`, `liveTotalMW` — not `allJobs`/`totalGPUs`/`totalMW` (those names no longer exist).
 
 **Why:** The component was refactored to use physics-engine broadcast data (JOBQ-001 Phase B) and variables were renamed, but the header stat section retained the old names until fixed in JOBQ-001 Addendum 4.
+
+---
+
+## Plant-diagram tile click-through has two independent gates
+
+A plant-diagram node only opens a modal when clicked if **both** are true:
+
+1. `NODE_MODAL_MAP` (in `OpeningScreen.tsx`) has an entry for the node's id.
+2. The node's `NodeDef.clickable` flag (in `plantLayout.ts`) is `true` — `PlantNode.tsx` computes `canClick = def.clickable && !def.passive` and only attaches `onClick` when that's true.
+
+**Why:** These two gates were added independently and neither one alone is sufficient. A node can have a correct `NODE_MODAL_MAP` entry, a working `PANEL_CONFIGS` panel, and correct `SubsystemModal` chrome aliasing, and still silently do nothing on click if `clickable` is `false` on its `NodeDef` — the click handler is never even attached to the DOM element, so there's no console error or other signal.
+
+**How to apply:** When a plant-diagram tile "does nothing" on click, check both gates, not just the modal-routing map. Don't assume a fix is complete after confirming `NODE_MODAL_MAP` + `PANEL_CONFIGS` + chrome alias are correct — also grep the node's `NodeDef` literal in `plantLayout.ts` for `clickable: true`.
