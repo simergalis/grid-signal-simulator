@@ -15,13 +15,23 @@ The actual supply-demand residual is `_balance_residual_mw = _p_gen_mw - p_deman
 
 **Why:** `p_unserved_mw` is not yet computed at the D4 site (~line 1402); shed is evaluated downstream (~line 1676). Integration guide says `p_unserved_mw=0.0` for Phase 0.
 
-## Physical invariant independence caveat
+## Physical invariant authority
 
-The later physical invariant currently passes `served = min(demand - shed, local_generation + grid_import)` and `unserved = demand - served`, while grid-tied import is itself derived from `_balance_residual_mw` when the PCC is not saturated; losses are a constant zero. It is therefore a partial aggregate supply-vs-demand check, not an independent five-term measurement, and can be tautological on the unrestricted grid-tie path.
+The balance ledger now keeps load-side and supply-side accounting separate:
+`p_unserved_mw` is explicit UFLS/curtailment shed only; `p_served_mw` is
+demand minus that shed; and `p_imbalance_mw` retains the resulting supply
+shortfall or surplus. Islanded results are serialized as independently
+verified; grid-tied results are serialized as provisional.
 
-**Why:** exact cancellation in a balanced SJ-1 trace is structural: the dispatch/grid routing and served/unserved definitions reuse the same demand and supply values, so a zero residual is not evidence of floating-point headroom.
+**Why:** using supply-capped served load silently converted a missing MW of
+generation into “unserved” load and made the ledger partly circular. Grid-tied
+PCC exchange is still residual-derived, so a small grid-tied defect is not
+independent physical metering evidence.
 
-**How to apply:** a genuinely independent gate must use explicit load-side shed (not a supply-capped served remainder), an independent PCC import/meter value for grid-tied runs, and a real loss model or an explicit islanded-only scope.
+**How to apply:** use explicit shed for protection/action displays and
+`p_imbalance_mw` for supply-shortfall alerts. Keep grid-tied conclusions
+labelled provisional until an independent PCC meter or scenario-measured
+exchange exists; `losses_mw=0.0` remains an explicit no-loss-model assumption.
 
 ## Phase 1 — droop attribute names
 

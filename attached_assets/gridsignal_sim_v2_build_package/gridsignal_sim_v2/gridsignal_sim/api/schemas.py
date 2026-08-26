@@ -1643,6 +1643,9 @@ class BalanceGateResponse(BaseModel):
     worst_defect_mw: float
     worst_tick_index: Optional[int] = None
     n_violating: int
+    # Null means the run predates physical-balance authority reporting.
+    independent: Optional[bool] = None
+    verification_mode: Optional[str] = None
 
 
 class RunResultResponse(BaseModel):
