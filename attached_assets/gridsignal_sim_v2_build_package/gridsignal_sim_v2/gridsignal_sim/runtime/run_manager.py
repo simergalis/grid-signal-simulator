@@ -39,7 +39,9 @@ from datetime import datetime, timezone
 from typing import Any, Awaitable, Callable, Optional, Protocol
 
 from core.asset_modules import TurbineState as _TurbineState   # runtime → core OK
+from core.models import DataQualityTag as _DataQualityTag
 from core.models import TickResult, WorkloadEventType, WorkloadSignal
+from core.dispatch import ConfidenceEngine as _ConfidenceEngine
 from core.power_balance import GateVerdict as _PbGateVerdict, gate_run as _pb_gate_run
 from core.source_audit import SourceAuditTerms as _SrcAuditTerms, audit_tick as _audit_tick
 from core.sim_clock import SimClock
@@ -397,6 +399,21 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         "confidence_lower_mw": round(tick.confidence.lower_bound_mw, 4),
         "confidence_upper_mw": round(tick.confidence.upper_bound_mw, 4),
         "data_quality_tags": sorted(t.value for t in tick.confidence.tags),
+        # Confidence widening metadata is serialized from the authoritative
+        # ConfidenceEngine constants so presentation layers do not maintain a
+        # second, potentially divergent percentage table.
+        "confidence_widening": {
+            "base_fraction": _ConfidenceEngine.BASE_BAND_FRACTION,
+            "per_tag": {
+                tag.value: widening
+                for tag, widening in _ConfidenceEngine.WIDENING_PER_TAG.items()
+            },
+            # Keep the complete enum visible to consumers even if a newly
+            # declared tag has not received a calibrated entry yet.  The
+            # ConfidenceEngine's DEFAULT_WIDENING remains authoritative for
+            # such a tag at calculation time.
+            "known_tags": sorted(tag.value for tag in _DataQualityTag),
+        },
         "insufficient_reserve_alert": tick.insufficient_reserve_alert,
         "insufficient_reserve_proposal_id": tick.insufficient_reserve_proposal_id,
         "bess_escalation_active": tick.bess_escalation_active,
