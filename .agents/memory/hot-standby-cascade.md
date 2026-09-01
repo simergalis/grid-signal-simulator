@@ -38,12 +38,13 @@ cascade must clear the flag first. OFFLINE standby units (without `hot_standby`)
 go through the normal `force_commit_trigger` → `evaluate_commitment` path.
 
 ## Explicit release boundary
-Reserved standby turbines must stay out of ordinary capacity commitment. Only explicit
-fuel-cell and cascade policies may release them.
+Reserved standby turbines must stay out of ordinary capacity commitment. Explicit
+fuel-cell, cascade, and contingency-coverage policies may release them.
 
 **Why:** ordinary commitment would preempt the intended BESS → fuel-cell → turbine
 sequence before fuel-cell support reaches its configured commitment threshold.
 
 **How to apply:** keep normal demand and reserve rules from consuming standby units;
-make a release policy choose readiness deliberately and restore the intended reserve
-tiers after it consumes one.
+make each release policy choose readiness deliberately and restore the intended reserve
+tiers after it consumes one. The contingency policy re-arms only after a full COVERED
+tick, so a single sustained N-1 risk episode releases at most one standby.
