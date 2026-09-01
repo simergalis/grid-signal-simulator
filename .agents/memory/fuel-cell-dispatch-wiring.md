@@ -43,3 +43,20 @@ while energy remains available.
 **How to apply:** Treat a zero-solar SJ-1 tick with BESS output as correct.
 Fuel-cell and grid output take over only after the battery cannot meet demand
 within its state-of-charge and power constraints.
+
+## Regression-test contract
+
+Tests for FC-backed scenarios must derive expected output from the module's
+minimum stable floor, ramp rate, timestep, and fixed target. Small-load cases
+should expect BESS charging when FC output exceeds demand, not an idle FC or
+positive BESS dispatch.
+
+**Why:** The old tests encoded residual-fill behavior and therefore failed even
+when the measured asset output and aggregate balance were correct.
+
+**How to apply:** Advance commitment fixtures through the module's real ramp to
+cross utilization thresholds. To test hysteresis re-arm, change the configured
+baseload target and let the module ramp down/up; changing site demand alone must
+not change fixed FC output. Keep positive cascade coverage in direct commitment
+tests; the kube black-box fixture is below its cascade threshold once FC is
+fixed-baseload-driven.
