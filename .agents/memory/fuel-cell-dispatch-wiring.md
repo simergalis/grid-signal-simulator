@@ -60,3 +60,19 @@ baseload target and let the module ramp down/up; changing site demand alone must
 not change fixed FC output. Keep positive cascade coverage in direct commitment
 tests; the kube black-box fixture is below its cascade threshold once FC is
 fixed-baseload-driven.
+
+## Ordinary commitment with fixed FC baseload
+
+Ordinary turbine commitment must evaluate `max(0, dispatch_required - measured
+FC output)`. The former FC-output threshold trigger is compatibility-only; it
+must not release hot standby or override ordinary commitment.
+
+**Why:** FC output is a fixed, rate-limited asset contribution. Treating its
+startup ramp as a turbine-staging signal can commit generation without a site
+reserve need, while failing to net its measured contribution makes reserve
+utilisation overly conservative.
+
+**How to apply:** Keep hot-standby exclusion in the ordinary offline candidate
+filter until a separate release design exists. Test demand-based starts with
+non-hot offline units, and separately assert that FC ramp crossings alone do
+not stage turbines.
