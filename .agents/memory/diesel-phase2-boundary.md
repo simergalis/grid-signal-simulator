@@ -1,10 +1,10 @@
 ---
 name: Diesel Phase 2 boundary
-description: Phase 2 diesel behavior is coordinated and tested independently of live dispatch.
+description: Phase 2 diesel state coordination is now consumed by the Phase 3 live accounting path.
 ---
 
-Phase 2 diesel state and fleet coordination must remain standalone; do not add diesel to dispatch arithmetic, balance residuals, UI, or telemetry until the later integration phase.
+Keep DieselFleetCoordinator outside DispatchArbitrator: evaluate_tick() supplies the pre-diesel measured gap, steps the coordinator once, then reuses its aggregate measured output for curtailment and local-generation accounting.
 
-**Why:** The state machine, failover, unloading reversal, and shared fuel-yard behavior need deterministic regression coverage before changing the simulator's established power-balance path.
+**Why:** Diesel remains advisory/read-only under TC-68, while its validated state machine must affect both the curtailment gap and physical balance without becoming a commanded arbitrator source.
 
-**How to apply:** Use `SimulationState.diesel_units` and `DieselFleetCoordinator` for isolated scenarios. Treat live dispatch/EDL/balance wiring as a separate, explicitly scoped change.
+**How to apply:** Preserve the empty-fleet `0.0` output contract and never add diesel commands or an arbitrator constructor/tick parameter unless a later phase explicitly changes the authority boundary.
