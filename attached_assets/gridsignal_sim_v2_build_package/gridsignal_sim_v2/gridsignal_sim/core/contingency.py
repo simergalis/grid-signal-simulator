@@ -57,10 +57,13 @@ class BessSnapshot:
 class FuelCellSnapshot:
     """Read-only view of the fuel cell array for the contingency computation.
 
-    The full rated MW counts toward dispatchable capacity — no anchor deduction
-    applies (fuel cells are grid-following, never grid-forming).
+    ``eligible_reserve_mw`` is the readiness-window-qualified upward reserve
+    for a block fleet.  None preserves the legacy aggregate contract, where
+    the scalar rated MW was the only available capacity signal.
     """
     rated_mw: float
+    eligible_reserve_mw: float | None = None
+    cold_warming_capacity_mw: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -124,8 +127,8 @@ def evaluate_contingency(plant_state: PlantState) -> ContingencyCoverage:
     """
     island_mode = plant_state.island_mode
 
-    # §7.5: dispatchable = online turbine rated capacity + anchor-adj BESS bridging
-    #        + fuel cell rated capacity.
+    # §7.5: dispatchable = online turbine rated capacity + anchor-adj BESS
+    #        bridging + readiness-qualified fuel-cell upward reserve.
     # "online turbine capacity" = rated MW of synchronized units (not hot standby).
     # Solar is EXCLUDED per §7.1.1 — it reduces the load the fleet must serve but
     # may never be credited toward closing a supply-side gap.
@@ -134,9 +137,27 @@ def evaluate_contingency(plant_state: PlantState) -> ContingencyCoverage:
     )
     bess_usable_energy_mwh = sum(b.soc_mwh for b in plant_state.bess_snapshots)
 
-    # Fuel cell: full rated MW counts (no anchor deduction — grid-following only).
+    # Block fleets supply readiness-qualified upward reserve.  Legacy aggregate
+    # modules omit that field and retain their historical full-rated behavior.
+    _fuel_cell_accounting_components: list[tuple[float, bool, bool]] = []
+    for fc in plant_state.fuel_cell_snapshots:
+        if fc.eligible_reserve_mw is None:
+            # Legacy aggregate: rated MW remains admitted as before.
+            _fuel_cell_accounting_components.append(
+                (max(0.0, fc.rated_mw), True, False)
+            )
+        else:
+            _fuel_cell_accounting_components.extend((
+                (max(0.0, fc.eligible_reserve_mw), True, False),
+                (max(0.0, fc.cold_warming_capacity_mw), False, True),
+            ))
     fuel_cell_available_mw = sum(
-        fc.rated_mw for fc in plant_state.fuel_cell_snapshots
+        mw for mw, admitted, _ in _fuel_cell_accounting_components if admitted
+    )
+    fuel_cell_cold_warming_contribution_mw = sum(
+        mw
+        for mw, admitted, cold_or_warming in _fuel_cell_accounting_components
+        if admitted and cold_or_warming
     )
 
     # Synchronized online = contributing to generation (not hot standby)
@@ -171,6 +192,9 @@ def evaluate_contingency(plant_state: PlantState) -> ContingencyCoverage:
             dispatchable_mw=dispatchable_mw,
             renewable_mw=plant_state.renewable_mw,
             fuel_cell_available_mw=fuel_cell_available_mw,
+            fuel_cell_cold_warming_contribution_mw=(
+                fuel_cell_cold_warming_contribution_mw
+            ),
             grid_connected=_grid_connected,
         )
 
@@ -185,7 +209,7 @@ def evaluate_contingency(plant_state: PlantState) -> ContingencyCoverage:
     ]
 
     # Surviving headroom: Σ(rated_i − current_output_i) for surviving online units
-    headroom_surviving_mw = sum(
+    headroom_surviving_mw = fuel_cell_available_mw + sum(
         max(0.0, t.rated_mw - t.current_output_mw) for t in surviving
     )
 
@@ -249,5 +273,8 @@ def evaluate_contingency(plant_state: PlantState) -> ContingencyCoverage:
         dispatchable_mw=dispatchable_mw,
         renewable_mw=plant_state.renewable_mw,
         fuel_cell_available_mw=fuel_cell_available_mw,
+        fuel_cell_cold_warming_contribution_mw=(
+            fuel_cell_cold_warming_contribution_mw
+        ),
         grid_connected=_grid_connected,
     )

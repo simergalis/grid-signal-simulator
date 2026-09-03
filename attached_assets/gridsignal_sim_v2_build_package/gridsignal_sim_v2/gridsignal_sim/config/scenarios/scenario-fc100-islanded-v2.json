@@ -1,0 +1,38 @@
+{
+  "name": "FC100 Islanded Readiness Reference",
+  "description": "Addendum G-1 reference: islanded block fuel-cell array, deterministic 20 MW to 80 MW twenty-minute demand step, grid-forming BESS bridge, and advisory-only diesel final reserve.",
+  "site_name": "FC100 Islanded Reference Plant",
+  "workload_events": [
+    {"event_id": "fc-base-start", "job_id": "fc-base", "event_type": "starting", "timestamp": 0, "node_count": 1961, "hardware_profile_id": "enterprise_8gpu_air"},
+    {"event_id": "fc-peak-start", "job_id": "fc-peak", "event_type": "starting", "timestamp": 60, "node_count": 5882, "hardware_profile_id": "enterprise_8gpu_air"},
+    {"event_id": "fc-peak-end", "job_id": "fc-peak", "event_type": "job_end", "timestamp": 1260, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air"},
+    {"event_id": "fc-base-end", "job_id": "fc-base", "event_type": "job_end", "timestamp": 1320, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air"}
+  ],
+  "dt_lead_seconds": 0,
+  "bess_units": [{"asset_id": "bess-fc100", "rated_mw": 60, "usable_mwh": 40, "initial_soc_fraction": 0.95, "grid_forming": true, "p_anchor_reserve_mw": 0}],
+  "turbine_units": [],
+  "diesel_power_block": {"enabled": true, "target_capacity_mw": 20, "unit_rating_mw": 20, "p_start": 1, "target_reliability": 1, "f_block": 1, "delta_t_start_s": 3600, "residual_ramp_s": 60, "start_stagger_interval_s": 1, "authority_tier": "advisory_only"},
+  "solar_rated_mw": 0,
+  "fuel_cell_units": [{
+    "asset_id": "fc100-array", "block_rated_mw": 0.325, "block_count": 246,
+    "initial_running_blocks": 62, "initial_hot_standby_blocks": 92,
+    "commit_rate_blocks_per_s": 1.5333333333, "decommit_rate_blocks_per_s": 1,
+    "cold_start_s": 28800, "warm_start_s": 14400, "hot_start_s": 60,
+    "min_stable_frac": 0, "hot_standby_floor_blocks": 92,
+    "dispatch_mechanism": "hybrid", "readiness_dwell_s": 0
+  }],
+  "island_mode": true,
+  "bess_normal_dispatch_depth_fraction": 1,
+  "frequency_nominal_hz": 60,
+  "power_factor": 0.85,
+  "pue_base": 1,
+  "calibrated": true,
+  "end_sim_time": 1320,
+  "gpu_load_profile": [],
+  "assertions": [
+    {"check": "persistent_fuel_cell_deficit", "expected_deficit_mw": 29.95, "duration_s": 1135, "tick_seconds": 5, "tolerance_mw": 0.325},
+    {"check": "peak_fuel_cell_array_output", "expected_mw": 50.05, "tolerance_mw": 0.325},
+    {"check": "no_cold_warming_contingency_capacity", "block_rated_mw": 0.325},
+    {"check": "fuel_cell_commanded_and_achieved_reported"}
+  ]
+}

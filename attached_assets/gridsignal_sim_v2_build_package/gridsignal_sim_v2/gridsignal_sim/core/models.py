@@ -929,10 +929,13 @@ class ContingencyCoverage:
     # Three-state verdict
     state: ContingencyState
     # §7.5 header-strip figures
-    dispatchable_mw: float               # online turbine rated + anchor-adj BESS bridging + fuel cell rated
+    dispatchable_mw: float               # online turbine rated + anchor-adj BESS + eligible FC reserve
     renewable_mw: float                  # solar output — displayed separately, never in coverage arithmetic
     # Source breakdown — used by the UI to build a dynamic subtitle for the Dispatchable tile.
-    fuel_cell_available_mw: float = 0.0  # FC rated capacity (no anchor deduction; 0 when absent)
+    fuel_cell_available_mw: float = 0.0  # readiness-qualified FC upward reserve (legacy: rated MW)
+    # Portion of cold/warming FC capacity actually admitted to contingency
+    # arithmetic.  Block-fleet snapshots keep this at zero by construction.
+    fuel_cell_cold_warming_contribution_mw: float = 0.0
     grid_connected: bool = False         # True when island_mode is GRID_TIE (grid is slack bus)
     # Approximate GPU node count that maps to shed_required_mw at current load density.
     # None when compute load is zero (no active jobs) or shed_required_mw is 0.
@@ -1156,6 +1159,27 @@ class TickResult:
     # the array is not in a readiness countdown (or is not configured).
     fuel_cell_state: Optional[str] = None
     fuel_cell_time_to_ready_s: Optional[float] = None
+    # Addendum G-1 block-fleet telemetry.  Legacy aggregate arrays leave these
+    # at their zero/empty sentinels while retaining the fields above unchanged.
+    fuel_cell_commanded_output_mw: float = 0.0
+    fuel_cell_achieved_output_mw: float = 0.0
+    fuel_cell_cold_blocks: int = 0
+    fuel_cell_warming_blocks: int = 0
+    fuel_cell_hot_standby_blocks: int = 0
+    fuel_cell_running_blocks: int = 0
+    fuel_cell_controlled_cooling_blocks: int = 0
+    fuel_cell_available_now_mw: float = 0.0
+    fuel_cell_available_fast_mw: float = 0.0
+    # G-1 audit telemetry: cold/warming blocks must never supply firm
+    # contingency/reserve capacity.  This is distinct from available_now.
+    fuel_cell_cold_warming_contingency_contribution_mw: float = 0.0
+    fuel_cell_minimum_output_mw: float = 0.0
+    fuel_cell_provenance: dict[str, dict[str, str]] = field(default_factory=dict)
+    # Separate records intentionally do not alter insufficient_reserve_alert.
+    # Declining means hot reserve can close part of the gap in the event window;
+    # persistent means cold/warming hardware cannot, after BESS substitution.
+    fuel_cell_declining_reserve_alert: Optional[dict] = None
+    fuel_cell_persistent_reserve_alert: Optional[dict] = None
     # Diesel Generation Power Block aggregate telemetry.  These fields are
     # sourced from the single DieselFleetCoordinator snapshot produced during
     # evaluate_tick(); the run manager only serializes them.

@@ -1182,12 +1182,37 @@ class SqlitePersistedTimeseriesSink:
             )
             result = await session.execute(stmt)
             rows = result.scalars().all()
+        # G-1 fields live in tick_json rather than forcing a table migration for
+        # each telemetry addition.  Pre-G-1 rows retain None and verdicts then
+        # report the unavailable evidence explicitly.
         return [
             EvalRow(
                 tick_index=r.tick_index,
                 p_demand_mw=r.p_demand_mw,
                 bess_soc_fraction=r.bess_soc_fraction,
                 insufficient_reserve_alert=r.insufficient_reserve_alert,
+                fuel_cell_commanded_output_mw=json.loads(r.tick_json).get(
+                    "fuel_cell_commanded_output_mw"
+                ),
+                fuel_cell_achieved_output_mw=json.loads(r.tick_json).get(
+                    "fuel_cell_achieved_output_mw"
+                ),
+                fuel_cell_available_now_mw=json.loads(r.tick_json).get(
+                    "fuel_cell_available_now_mw"
+                ),
+                fuel_cell_running_blocks=json.loads(r.tick_json).get(
+                    "fuel_cell_running_blocks"
+                ),
+                fuel_cell_cold_blocks=json.loads(r.tick_json).get(
+                    "fuel_cell_cold_blocks"
+                ),
+                fuel_cell_warming_blocks=json.loads(r.tick_json).get(
+                    "fuel_cell_warming_blocks"
+                ),
+                sim_time_seconds=r.sim_time_seconds,
+                fuel_cell_cold_warming_contingency_contribution_mw=json.loads(
+                    r.tick_json
+                ).get("fuel_cell_cold_warming_contingency_contribution_mw"),
             )
             for r in rows
         ]

@@ -14,7 +14,13 @@ TC-85  Re-rated assets counted at re-rated ramp capability
 import math
 import pytest
 
-from core.contingency import BessSnapshot, PlantState, TurbineSnapshot, evaluate_contingency
+from core.contingency import (
+    BessSnapshot,
+    FuelCellSnapshot,
+    PlantState,
+    TurbineSnapshot,
+    evaluate_contingency,
+)
 from core.models import ContingencyState, IslandMode
 
 
@@ -304,6 +310,26 @@ def test_tc82_dispatchable_uses_rated_not_current_output():
     result = evaluate_contingency(_plant(turbines, bess))
     # dispatchable = rated(7) + bess(10) = 17 MW; not output(3.5) + 10 = 13.5
     assert abs(result.dispatchable_mw - 17.0) < 1e-6
+
+
+def test_legacy_aggregate_fuel_cell_snapshot_retains_rated_capacity_credit():
+    """A scalar legacy snapshot has no block-readiness signal to narrow it."""
+    turbines = [_turbine("t-0", output_mw=5.0, rated_mw=7.0)]
+    plant = _plant(turbines, [])
+    plant = PlantState(
+        turbine_snapshots=plant.turbine_snapshots,
+        bess_snapshots=plant.bess_snapshots,
+        island_mode=plant.island_mode,
+        curtailable_capacity_mw=plant.curtailable_capacity_mw,
+        renewable_mw=plant.renewable_mw,
+        fuel_cell_snapshots=(FuelCellSnapshot(rated_mw=4.0),),
+    )
+
+    result = evaluate_contingency(plant)
+
+    assert result.fuel_cell_available_mw == pytest.approx(4.0)
+    assert result.headroom_surviving_mw == pytest.approx(4.0)
+    assert result.dispatchable_mw == pytest.approx(11.0)
 
 
 # ---------------------------------------------------------------------------

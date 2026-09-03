@@ -11,6 +11,11 @@ from core.asset_modules import (
     TurbineState,
 )
 from core.commitment import CommitmentConfig
+from core.fuel_cell_module import (
+    BlockFuelCellArray,
+    BlockFuelCellConfig,
+    BlockFuelCellFleet,
+)
 from core.models import (
     BessConfig,
     ContingencyState,
@@ -156,6 +161,40 @@ def test_phase3b_unit_trip_degrades_coverage_and_releases_one_hot_standby():
     assert payload["contingency_release_coverage_state"] == "COVERED_WITH_SHED"
     assert payload["contingency_release_shed_mw"] == 6.0
     assert payload["contingency_release_sim_time_s"] == 60.0
+
+
+def test_fully_loaded_block_fuel_cell_has_zero_contingency_credit_after_trip():
+    """Only block readiness headroom, never running nameplate, survives N-1."""
+    state = _make_state(hot_start_s=120.0)
+    state.fuel_cell_module = BlockFuelCellFleet([
+        BlockFuelCellArray(BlockFuelCellConfig(
+            asset_id="fc-blocks",
+            block_rated_mw=2.0,
+            block_count=3,
+            initial_running_blocks=1,
+            initial_hot_standby_blocks=0,
+            min_stable_frac=1.0,
+            hot_start_s=60.0,
+            warm_start_s=120.0,
+            cold_start_s=240.0,
+        ))
+    ])
+    state.fuel_cell_rated_mw = 6.0
+
+    _warm_to_steady_state(state)
+    state.apply_workload_signal(_trip("turbine-2", 50.0), dt_lead_seconds=0.0)
+    result = _tick(state, 50.0)
+
+    assert result.dt_lead_next_s == 0.0
+    assert result.fuel_cell_achieved_output_mw == 2.0
+    assert result.fuel_cell_available_fast_mw == 0.0
+    assert result.contingency_coverage.fuel_cell_available_mw == 0.0
+    assert result.fuel_cell_cold_blocks + result.fuel_cell_warming_blocks > 0
+    assert result.fuel_cell_cold_warming_contingency_contribution_mw == 0.0
+    assert (
+        result.contingency_coverage.fuel_cell_cold_warming_contribution_mw
+        == 0.0
+    )
 
 
 def test_phase3b_elevated_demand_without_trip_does_not_release_hot_standby():

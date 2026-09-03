@@ -391,6 +391,22 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
             round(tick.fuel_cell_time_to_ready_s, 1)
             if tick.fuel_cell_time_to_ready_s is not None else None
         ),
+        "fuel_cell_commanded_output_mw": round(tick.fuel_cell_commanded_output_mw, 4),
+        "fuel_cell_achieved_output_mw": round(tick.fuel_cell_achieved_output_mw, 4),
+        "fuel_cell_cold_blocks": tick.fuel_cell_cold_blocks,
+        "fuel_cell_warming_blocks": tick.fuel_cell_warming_blocks,
+        "fuel_cell_hot_standby_blocks": tick.fuel_cell_hot_standby_blocks,
+        "fuel_cell_running_blocks": tick.fuel_cell_running_blocks,
+        "fuel_cell_controlled_cooling_blocks": tick.fuel_cell_controlled_cooling_blocks,
+        "fuel_cell_available_now_mw": round(tick.fuel_cell_available_now_mw, 4),
+        "fuel_cell_available_fast_mw": round(tick.fuel_cell_available_fast_mw, 4),
+        "fuel_cell_cold_warming_contingency_contribution_mw": round(
+            tick.fuel_cell_cold_warming_contingency_contribution_mw, 4
+        ),
+        "fuel_cell_minimum_output_mw": round(tick.fuel_cell_minimum_output_mw, 4),
+        "fuel_cell_provenance": tick.fuel_cell_provenance,
+        "fuel_cell_declining_reserve_alert": tick.fuel_cell_declining_reserve_alert,
+        "fuel_cell_persistent_reserve_alert": tick.fuel_cell_persistent_reserve_alert,
         "diesel_enabled": tick.diesel_enabled,
         "diesel_output_mw": round(tick.diesel_output_mw, 4),
         "diesel_n_synced": tick.diesel_n_synced,
@@ -931,6 +947,16 @@ class InMemoryTimeseriesSink:
                 p_demand_mw=r.p_demand_mw,
                 bess_soc_fraction=r.bess_soc_fraction,
                 insufficient_reserve_alert=r.insufficient_reserve_alert,
+                fuel_cell_commanded_output_mw=r.fuel_cell_commanded_output_mw,
+                fuel_cell_achieved_output_mw=r.fuel_cell_achieved_output_mw,
+                fuel_cell_available_now_mw=r.fuel_cell_available_now_mw,
+                fuel_cell_running_blocks=r.fuel_cell_running_blocks,
+                fuel_cell_cold_blocks=r.fuel_cell_cold_blocks,
+                fuel_cell_warming_blocks=r.fuel_cell_warming_blocks,
+                sim_time_seconds=r.sim_time_seconds,
+                fuel_cell_cold_warming_contingency_contribution_mw=(
+                    r.fuel_cell_cold_warming_contingency_contribution_mw
+                ),
             )
             for r in self.rows
         ]
@@ -1142,6 +1168,9 @@ class RunContext:
     # Types are Any to avoid circular runtime/ → advisory/ imports at module
     # load time; the concrete types are instantiated in scenario_factory.py.
     registry: Optional[Any] = None            # AgentRegistry
+    # G-1 readiness planner is observation/advisory only.  The factory wires
+    # it only for block-addressable fleets and shares registry's gate.
+    fuel_cell_readiness_controller: Optional[Any] = None
     tick_history: list = field(default_factory=list)  # recent TickResults for agents
     # Reserve-alert proposals are keyed by the deterministic alert tick so a
     # repeated serialization/broadcast path cannot create duplicate proposals.
@@ -1376,10 +1405,31 @@ class RunContext:
         finally:
             _EVALUATE_TICK_PERMITTED.reset(_token)
         self.sim_time += TICK_INTERVAL_SIM_SECONDS
-        return _dc_replace(
+        result = _dc_replace(
             result,
             planning_forecast_mw=self._planning_forecast(result.forecast_mw),
         )
+        # G-1: forecast planning may create only a reviewed AdvisoryGate
+        # proposal.  It has no command path to the fuel-cell fleet and runs
+        # before the async advisory-agent fanout so proposal expiry remains
+        # driven by the shared registry gate in _drive().
+        if self.fuel_cell_readiness_controller is not None:
+            forecast = [result.forecast_mw] + [
+                point["forecast_mw"] for point in result.planning_forecast_mw
+            ]
+            # The controller plans individual block arrays; the fleet keeps
+            # the compatibility-shaped aggregate dispatch interface.
+            for array in getattr(self.sim_state.fuel_cell_module, "arrays", ()):
+                self.fuel_cell_readiness_controller.evaluate(
+                    array,
+                    forecast,
+                    sim_time=result.sim_time_seconds,
+                    # Any data-quality tag makes the forecast degraded.  The
+                    # controller consequently emits no action proposal.
+                    confidence=1.0 if not result.confidence.tags else 0.0,
+                    degraded=bool(result.confidence.tags),
+                )
+        return result
 
     def wall_clock_sleep_seconds(self) -> float:
         """How long the RunManager should await between ticks. At

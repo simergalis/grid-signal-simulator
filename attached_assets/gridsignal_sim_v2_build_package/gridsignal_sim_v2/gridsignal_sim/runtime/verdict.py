@@ -74,6 +74,38 @@ class PueBaseInDeclaredRangeAssertion(BaseModel):
     check: Literal["pue_base_in_declared_range"] = "pue_base_in_declared_range"
 
 
+class PersistentFuelCellDeficitAssertion(BaseModel):
+    """Assert a contiguous, commanded-minus-achieved fuel-cell deficit."""
+    check: Literal["persistent_fuel_cell_deficit"] = "persistent_fuel_cell_deficit"
+    expected_deficit_mw: float = Field(ge=0.0)
+    duration_s: float = Field(gt=0.0)
+    tick_seconds: float = Field(default=15.0, gt=0.0)
+    tolerance_mw: float = Field(default=0.325, ge=0.0)
+
+
+class PeakFuelCellArrayOutputAssertion(BaseModel):
+    """Assert the peak achieved block-array output, with one-block tolerance."""
+    check: Literal["peak_fuel_cell_array_output"] = "peak_fuel_cell_array_output"
+    expected_mw: float = Field(ge=0.0)
+    tolerance_mw: float = Field(default=0.325, ge=0.0)
+
+
+class NoColdWarmingContingencyCapacityAssertion(BaseModel):
+    """Assert cold/warming blocks are absent from immediately available capacity."""
+    check: Literal["no_cold_warming_contingency_capacity"] = (
+        "no_cold_warming_contingency_capacity"
+    )
+    block_rated_mw: float = Field(default=0.325, gt=0.0)
+    tolerance_mw: float = Field(default=1e-9, ge=0.0)
+
+
+class FuelCellCommandedAndAchievedReportedAssertion(BaseModel):
+    """Assert both fuel-cell dispatch request and measured output were captured."""
+    check: Literal["fuel_cell_commanded_and_achieved_reported"] = (
+        "fuel_cell_commanded_and_achieved_reported"
+    )
+
+
 # Pydantic v2 discriminated union — validated via TypeAdapter(AssertionSpec)
 AssertionSpec = Annotated[
     Union[
@@ -82,6 +114,10 @@ AssertionSpec = Annotated[
         MaxPTotalAssertion,
         MinFinalBessSocAssertion,
         PueBaseInDeclaredRangeAssertion,
+        PersistentFuelCellDeficitAssertion,
+        PeakFuelCellArrayOutputAssertion,
+        NoColdWarmingContingencyCapacityAssertion,
+        FuelCellCommandedAndAchievedReportedAssertion,
     ],
     Field(discriminator="check"),
 ]
@@ -96,6 +132,20 @@ class EvalRow(NamedTuple):
     p_demand_mw: float
     bess_soc_fraction: float
     insufficient_reserve_alert: bool
+    # G-1 telemetry. Defaults retain compatibility with Step 9 callers.
+    fuel_cell_commanded_output_mw: Optional[float] = None
+    fuel_cell_achieved_output_mw: Optional[float] = None
+    fuel_cell_available_now_mw: Optional[float] = None
+    fuel_cell_running_blocks: Optional[int] = None
+    fuel_cell_cold_blocks: Optional[int] = None
+    fuel_cell_warming_blocks: Optional[int] = None
+    # Interval-end simulation timestamp.  Deficit duration is proved from
+    # adjacent retained timestamps, never from assertion-supplied cadence.
+    sim_time_seconds: Optional[float] = None
+    # Explicit value supplied to contingency/reserve accounting from blocks
+    # that are cold or warming.  It must be zero; available_now alone cannot
+    # prove that accounting did not include those blocks elsewhere.
+    fuel_cell_cold_warming_contingency_contribution_mw: Optional[float] = None
 
 
 # ---------------------------------------------------------------------------
@@ -165,10 +215,123 @@ def _eval_one(
         check: str = assertion["check"]
         threshold_mw = assertion.get("threshold_mw", 0.0)
         threshold = assertion.get("threshold", 0.0)
+        expected_deficit_mw = assertion.get("expected_deficit_mw", 0.0)
+        duration_s = assertion.get("duration_s", 0.0)
+        tick_seconds = assertion.get("tick_seconds", 15.0)
+        expected_mw = assertion.get("expected_mw", 0.0)
+        tolerance_mw = assertion.get("tolerance_mw", 0.325)
+        block_rated_mw = assertion.get("block_rated_mw", 0.325)
     else:
         check = assertion.check  # type: ignore[union-attr]
         threshold_mw = getattr(assertion, "threshold_mw", 0.0)
         threshold = getattr(assertion, "threshold", 0.0)
+        expected_deficit_mw = getattr(assertion, "expected_deficit_mw", 0.0)
+        duration_s = getattr(assertion, "duration_s", 0.0)
+        tick_seconds = getattr(assertion, "tick_seconds", 15.0)
+        expected_mw = getattr(assertion, "expected_mw", 0.0)
+        tolerance_mw = getattr(assertion, "tolerance_mw", 0.325)
+        block_rated_mw = getattr(assertion, "block_rated_mw", 0.325)
+
+    if check == "persistent_fuel_cell_deficit":
+        # ``tick_seconds`` is retained in the input schema for compatibility,
+        # but is deliberately not evidence: callers can supply a cadence that
+        # does not match the retained simulation.  A qualifying duration is
+        # the sum of actual timestamp deltas across adjacent tick indices.
+        longest_s = 0.0
+        run_s = 0.0
+        previous_matching: Optional[EvalRow] = None
+        matching_timestamp_missing = False
+        for row in rows:
+            matching = (
+                row.fuel_cell_commanded_output_mw is not None
+                and row.fuel_cell_achieved_output_mw is not None
+                and abs(
+                    (row.fuel_cell_commanded_output_mw -
+                     row.fuel_cell_achieved_output_mw) - expected_deficit_mw
+                ) <= tolerance_mw
+            )
+            if not matching:
+                previous_matching = None
+                run_s = 0.0
+                continue
+            if row.sim_time_seconds is None:
+                matching_timestamp_missing = True
+            if (
+                previous_matching is not None
+                and row.tick_index == previous_matching.tick_index + 1
+                and row.sim_time_seconds is not None
+                and previous_matching.sim_time_seconds is not None
+                and row.sim_time_seconds > previous_matching.sim_time_seconds
+            ):
+                run_s += row.sim_time_seconds - previous_matching.sim_time_seconds
+            else:
+                run_s = 0.0
+            longest_s = max(longest_s, run_s)
+            previous_matching = row
+        if longest_s >= duration_s:
+            return AssertionResult(check, "PASS",
+                f"Fuel-cell deficit {expected_deficit_mw:.3f} MW ± {tolerance_mw:.3f} "
+                f"persisted {longest_s:.0f} s from adjacent retained timestamps "
+                f"(required {duration_s:.0f} s)")
+        if has_gaps:
+            return AssertionResult(check, "INCONCLUSIVE",
+                f"Longest timestamp-proven matching deficit was {longest_s:.0f} s; "
+                "gaps could contain the interval needed for PASS")
+        if matching_timestamp_missing:
+            return AssertionResult(check, "INCONCLUSIVE",
+                "Matching deficit rows omitted simulation timestamps; cannot prove duration")
+        return AssertionResult(check, "FAIL",
+            f"Longest timestamp-proven matching fuel-cell deficit was {longest_s:.0f} s, "
+            f"required {duration_s:.0f} s")
+
+    if check == "peak_fuel_cell_array_output":
+        values = [r.fuel_cell_achieved_output_mw for r in rows
+                  if r.fuel_cell_achieved_output_mw is not None]
+        if not values:
+            return AssertionResult(check, "INCONCLUSIVE", "No achieved fuel-cell telemetry retained")
+        peak = max(values)
+        status = "PASS" if abs(peak - expected_mw) <= tolerance_mw else "FAIL"
+        return AssertionResult(check, status,
+            f"Peak achieved fuel-cell output {peak:.3f} MW; expected "
+            f"{expected_mw:.3f} MW ± {tolerance_mw:.3f} MW")
+
+    if check == "no_cold_warming_contingency_capacity":
+        missing = sum(
+            r.fuel_cell_cold_warming_contingency_contribution_mw is None
+            for r in rows
+        )
+        violations = [
+            r for r in rows
+            if r.fuel_cell_cold_warming_contingency_contribution_mw is not None
+            and abs(r.fuel_cell_cold_warming_contingency_contribution_mw) > tolerance_mw
+        ]
+        if violations:
+            return AssertionResult(check, "FAIL",
+                f"{len(violations)} tick(s) contributed cold/warming fuel-cell capacity "
+                "to contingency accounting")
+        if missing:
+            return AssertionResult(check, "INCONCLUSIVE",
+                f"{missing} / {len(rows)} retained ticks omitted cold/warming "
+                "contingency-contribution telemetry")
+        if has_gaps:
+            return AssertionResult(check, "INCONCLUSIVE",
+                "Cold/warming contingency contribution was zero in retained rows, but gaps exist")
+        return AssertionResult(check, "PASS",
+            "Cold/warming fuel-cell contingency contribution was 0 MW on all retained ticks")
+
+    if check == "fuel_cell_commanded_and_achieved_reported":
+        missing = sum(
+            r.fuel_cell_commanded_output_mw is None or
+            r.fuel_cell_achieved_output_mw is None for r in rows
+        )
+        if missing:
+            return AssertionResult(check, "FAIL",
+                f"{missing} / {len(rows)} retained ticks omitted commanded or achieved fuel-cell output")
+        if has_gaps:
+            return AssertionResult(check, "INCONCLUSIVE",
+                "Commanded and achieved output present in retained rows, but gaps exist")
+        return AssertionResult(check, "PASS",
+            f"Commanded and achieved fuel-cell output reported on all {len(rows)} ticks")
 
     if check == "no_insufficient_reserve_alert":
         alert_count = sum(1 for r in rows if r.insufficient_reserve_alert)
@@ -334,7 +497,8 @@ def evaluate_verdict(
     details.  INCONCLUSIVE when assertions is empty.
 
     H1 gap rules:
-      - Universal assertions (no_insufficient_reserve_alert, max_p_total_mw):
+       - Universal assertions (no_insufficient_reserve_alert, max_p_total_mw,
+         no_cold_warming_contingency_capacity):
         FAIL if a retained tick violates; INCONCLUSIVE if no violation but gaps
         exist; PASS only when all retained ticks pass AND no gaps.
       - Existential assertion (alert_fires):

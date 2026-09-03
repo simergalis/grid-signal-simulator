@@ -28,7 +28,7 @@ from .asset_modules import (
     TurbineModule,
     TurbineState,
 )
-from .fuel_cell_module import FuelCellModule
+from .fuel_cell_module import BlockFuelCellFleet, FuelCellModule
 from .loading import apply_loading, ramp_capability
 from .contingency import BessSnapshot, FuelCellSnapshot, PlantState, TurbineSnapshot, evaluate_contingency
 from .kube_demand import KubeDemandAgent, KubeGridState
@@ -237,7 +237,7 @@ class SimulationState:
     # One aggregate fuel-cell array for an enabled scenario.  The scalar above
     # remains a compatibility/reporting field; live output comes from this
     # module's measured state.
-    fuel_cell_module: FuelCellModule | None = None
+    fuel_cell_module: FuelCellModule | BlockFuelCellFleet | None = None
 
     # Phase 11.3 — frequency state for the swing equation (islanded mode only).
     # Persisted on SimulationState so df/dt integration accumulates correctly
@@ -1365,6 +1365,22 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         if state.fuel_cell_module is not None
         else None
     )
+    # G-1: block readiness is a separate capacity view, never inferred from
+    # achieved output.  Its event-window-specific summary is calculated after
+    # dt_lead_next_s is known below.  In particular, no synthetic minimum
+    # window may qualify hot standby capacity when the actual event lead is 0.
+    _fc_summary: dict[str, float | int] = {}
+    _fc_provenance: dict[str, dict[str, str]] = {}
+    if isinstance(state.fuel_cell_module, BlockFuelCellFleet):
+        _fc_provenance = state.fuel_cell_module.provenance
+    _fc_commanded_mw = (
+        state.fuel_cell_module.commanded_output_mw
+        if isinstance(state.fuel_cell_module, BlockFuelCellFleet)
+        else (
+            state.fuel_cell_module.target_output_mw
+            if state.fuel_cell_module is not None else 0.0
+        )
+    )
     # Commitment is a capacity/reserve decision, so it must credit the
     # measured fuel-cell contribution.  The droop command is an actuator target
     # that may be frequency-adjusted and capped by installed dispatch capacity;
@@ -2051,6 +2067,12 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     )
     dt_lead_next_s = _dt_lead_raw if _dt_lead_raw < math.inf else 0.0
 
+    if isinstance(state.fuel_cell_module, BlockFuelCellFleet):
+        # Readiness credit is tied exclusively to the actual next event lead.
+        # This deliberately leaves hot blocks out at zero lead unless their
+        # configured hot-start plus dwell is itself zero.
+        _fc_summary = state.fuel_cell_module.readiness_summary(dt_lead_next_s)
+
     # 4c. bess_bridging_seconds + bridging_basis: fleet bridging duration at the
     # BINDING demand — max(net_demand_mw, pending predicted peak shortfall).
     #
@@ -2104,6 +2126,69 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                 )
         else:
             bess_bridging_seconds = 0.0
+
+    # G-1 readiness-aware reserve records.  The staging engine's peak
+    # shortfall is the event requirement; diesel is intentionally absent from
+    # every term because it is not firm reserve.  RUNNING capacity is usable
+    # now, while only standby blocks whose hot-start+dwell fit dt_lead_next_s
+    # can reduce the event gap.  Cold/warming/cooling blocks never do.
+    _fc_declining_alert: dict | None = None
+    _fc_persistent_alert: dict | None = None
+    # A block array's commanded-minus-achieved gap is independently material:
+    # it persists after a staged-event window has elapsed, unlike the pending
+    # peak marker.  Keep it as a distinct readiness record rather than hiding
+    # it when the BESS is covering the electrical balance.
+    _fc_dispatch_deficit_mw = max(0.0, _fc_commanded_mw - fuel_cell_output_mw)
+    _event_shortfall_mw = max(
+        0.0, state._pending_peak_shortfall_mw, _fc_dispatch_deficit_mw
+    )
+    if _fc_summary and _event_shortfall_mw > 0.0:
+        _fc_now_mw = float(_fc_summary["available_now_mw"])
+        _fc_fast_mw = float(_fc_summary["available_fast_mw"])
+        _shortfall_after_now_mw = max(0.0, _event_shortfall_mw - _fc_now_mw)
+        _hot_closure_mw = min(
+            _shortfall_after_now_mw, max(0.0, _fc_fast_mw - _fc_now_mw)
+        )
+        _persistent_before_bess_mw = max(
+            _fc_dispatch_deficit_mw,
+            0.0, _shortfall_after_now_mw - _hot_closure_mw
+        )
+        if _hot_closure_mw > 0.0:
+            _fc_declining_alert = {
+                "event_fast_window_s": dt_lead_next_s,
+                "shortfall_mw": _shortfall_after_now_mw,
+                "closing_mw": _hot_closure_mw,
+                "remaining_mw": _persistent_before_bess_mw,
+            }
+        if _persistent_before_bess_mw > 0.0:
+            _firm_bess_mw = sum(
+                b.bridging_available_mw(state.site.island_mode)
+                for b in state.bess_units
+            )
+            _bess_substitution_mw = min(_persistent_before_bess_mw, _firm_bess_mw)
+            if _bess_substitution_mw > 0.0 and state.bess_units:
+                _reserve_ceilings = [
+                    b.bridging_available_mw(state.site.island_mode)
+                    for b in state.bess_units
+                ]
+                _reserve_allocations = state.arbitrator._capped_equal_share_allocations(
+                    _bess_substitution_mw, _reserve_ceilings
+                )
+                _bess_endurance_s = min(
+                    b.max_sustainable_seconds(allocation, state.site.island_mode)
+                    for b, allocation in zip(state.bess_units, _reserve_allocations)
+                )
+            else:
+                _bess_endurance_s = 0.0
+            _fc_persistent_alert = {
+                "event_fast_window_s": dt_lead_next_s,
+                "persistent_shortfall_mw": _persistent_before_bess_mw,
+                "bess_substitution_mw": _bess_substitution_mw,
+                "bess_endurance_seconds_before_unserved_load": _bess_endurance_s,
+                "unserved_load_mw_after_bess": max(
+                    0.0, _persistent_before_bess_mw - _bess_substitution_mw
+                ),
+            }
 
     # 4d. §26.4 unified selection + §23.2 curtailment ladder (Step 10/11).
     #
@@ -2278,8 +2363,29 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             for b in state.bess_units
         ),
         fuel_cell_snapshots=(
-            (FuelCellSnapshot(rated_mw=state.fuel_cell_rated_mw),)
-            if state.fuel_cell_rated_mw > 0.0 else ()
+            (
+                FuelCellSnapshot(
+                    rated_mw=state.fuel_cell_module.rated_mw,
+                    eligible_reserve_mw=float(
+                        _fc_summary.get("available_fast_mw", 0.0)
+                    ),
+                    # Pass excluded state capacity through the same contingency
+                    # accounting path so its reported contribution is derived,
+                    # not stamped as a telemetry constant.
+                    cold_warming_capacity_mw=sum(
+                        sum(
+                            block.state.value in {"cold", "warming"}
+                            for block in array.blocks
+                        ) * array.config.block_rated_mw
+                        for array in state.fuel_cell_module.arrays
+                    ),
+                ),
+            )
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet)
+            else (
+                (FuelCellSnapshot(rated_mw=state.fuel_cell_rated_mw),)
+                if state.fuel_cell_rated_mw > 0.0 else ()
+            )
         ),
         island_mode=state.site.island_mode,
         curtailable_capacity_mw=state.curtailment_ladder.total_capacity_mw(),
@@ -2336,6 +2442,15 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     if any(g.has_active_unmapped_jobs() for g in state.gpu_modules):
         tags.add(DataQualityTag.UNMAPPED_HARDWARE)
     if state.site.uncalibrated:
+        tags.add(DataQualityTag.UNCALIBRATED_SITE)
+    # Existing confidence taxonomy has no fuel-cell-specific provenance tag.
+    # Reuse its low-confidence site-calibration tag rather than silently
+    # accepting proposed thermal/readiness values.
+    if any(
+        tag == "proposed"
+        for fields in _fc_provenance.values()
+        for tag in fields.values()
+    ):
         tags.add(DataQualityTag.UNCALIBRATED_SITE)
     # Phase 11.2: workload signal quality tags (flags were computed at 4d,
     # before the curtailment interlock that uses them).
@@ -2916,6 +3031,24 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         fuel_cell_output_mw=fuel_cell_output_mw,
         fuel_cell_state=fuel_cell_state,
         fuel_cell_time_to_ready_s=fuel_cell_time_to_ready_s,
+        fuel_cell_commanded_output_mw=_fc_commanded_mw,
+        fuel_cell_achieved_output_mw=fuel_cell_output_mw,
+        fuel_cell_cold_blocks=int(_fc_summary.get("cold", 0)),
+        fuel_cell_warming_blocks=int(_fc_summary.get("warming", 0)),
+        fuel_cell_hot_standby_blocks=int(_fc_summary.get("hot_standby", 0)),
+        fuel_cell_running_blocks=int(_fc_summary.get("running", 0)),
+        fuel_cell_controlled_cooling_blocks=int(
+            _fc_summary.get("controlled_cooling", 0)
+        ),
+        fuel_cell_available_now_mw=float(_fc_summary.get("available_now_mw", 0.0)),
+        fuel_cell_available_fast_mw=float(_fc_summary.get("available_fast_mw", 0.0)),
+        fuel_cell_cold_warming_contingency_contribution_mw=(
+            _contingency_coverage.fuel_cell_cold_warming_contribution_mw
+        ),
+        fuel_cell_minimum_output_mw=float(_fc_summary.get("minimum_output_mw", 0.0)),
+        fuel_cell_provenance=_fc_provenance,
+        fuel_cell_declining_reserve_alert=_fc_declining_alert,
+        fuel_cell_persistent_reserve_alert=_fc_persistent_alert,
         diesel_enabled=diesel_enabled,
         diesel_output_mw=diesel_output_mw,
         diesel_n_synced=_diesel_snapshot.synchronised_count,

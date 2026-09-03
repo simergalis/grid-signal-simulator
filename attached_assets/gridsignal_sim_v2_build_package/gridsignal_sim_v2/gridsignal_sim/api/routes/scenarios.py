@@ -1148,6 +1148,8 @@ def _seed_json_scenarios(store: ScenarioStore) -> None:
         # BESS and an 11 x 10 MW N+1 diesel backup plant.
         ("scenario-100mw-fuel-cell-bess-diesel",
          "scenario-100mw-fuel-cell-bess-diesel.json"),
+        # Addendum G-1 block-array readiness/deficit acceptance reference.
+        ("scenario-fc100-islanded-v2", "scenario-fc100-islanded-v2.json"),
     ]
     _DISPLAY_NAME_OVERRIDES = {
         "scenario-equinix-sj-1": "Customer Scenario - scenario-equinix-sj-1",

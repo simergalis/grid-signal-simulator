@@ -28,7 +28,14 @@ from core.asset_modules import (
     SolarModule,
     TurbineModule,
 )
-from core.fuel_cell_module import FuelCellConfig, FuelCellModule, FuelCellState
+from core.fuel_cell_module import (
+    BlockFuelCellArray,
+    BlockFuelCellConfig,
+    BlockFuelCellFleet,
+    FuelCellConfig,
+    FuelCellModule,
+    FuelCellState,
+)
 from core.models import (
     BessConfig,
     DieselConfig,
@@ -66,6 +73,7 @@ from runtime.verdict import AssertionSpec as _AssertionSpec
 # because advisory/ imports from runtime/advisory_gate).
 from runtime.advisory_router import AdvisoryRouter, DeterministicRouter
 from advisory.agent_registry import AgentRegistry
+from runtime.fuel_cell_readiness import BlockFuelCellReadinessController
 from core.network_telemetry import NetworkTelemetryIngestor
 from core.corroboration import FabricCorroborator
 from core.procurement import (
@@ -866,6 +874,42 @@ def build_run_context_from_spec(
     )
 
     # ── Fuel cell rated capacity ──────────────────────────────────────────
+    # G-1 units take precedence over the legacy aggregate wire fields.  The
+    # aggregate path below is intentionally unchanged for existing scenarios.
+    _fc_units_raw = spec_data.get("fuel_cell_units", [])
+    if _fc_units_raw:
+        _fc_arrays = [
+            BlockFuelCellArray(
+                BlockFuelCellConfig(
+                    asset_id=str(unit["asset_id"]),
+                    block_rated_mw=float(unit["block_rated_mw"]),
+                    block_count=int(unit["block_count"]),
+                    initial_running_blocks=int(unit.get("initial_running_blocks", 0)),
+                    initial_hot_standby_blocks=int(unit.get("initial_hot_standby_blocks", 0)),
+                    commit_rate_blocks_per_s=float(unit.get("commit_rate_blocks_per_s", 1.0)),
+                    decommit_rate_blocks_per_s=float(unit.get("decommit_rate_blocks_per_s", 1.0)),
+                    cold_start_s=float(unit.get("cold_start_s", 8.0 * 60.0 * 60.0)),
+                    warm_start_s=float(unit.get("warm_start_s", 4.0 * 60.0 * 60.0)),
+                    hot_start_s=float(unit.get("hot_start_s", 60.0)),
+                    controlled_cooling_s=(
+                        float(unit["controlled_cooling_s"])
+                        if unit.get("controlled_cooling_s") is not None
+                        else None
+                    ),
+                    hot_standby=bool(unit.get("hot_standby", True)),
+                    min_stable_frac=float(unit.get("min_stable_frac", 0.5)),
+                    hot_standby_floor_blocks=int(unit.get("hot_standby_floor_blocks", 0)),
+                    dispatch_mechanism=str(unit.get("dispatch_mechanism", "hybrid")),
+                    readiness_dwell_s=float(unit.get("readiness_dwell_s", 0.0)),
+                    provenance=dict(unit.get("provenance", {})),
+                )
+            )
+            for unit in _fc_units_raw
+        ]
+        _fc_fleet = BlockFuelCellFleet(_fc_arrays)
+        sim_state.fuel_cell_rated_mw = _fc_fleet.rated_mw
+        sim_state.fuel_cell_module = _fc_fleet
+
     # fuel_cell_rated_mw is the nameplate rating of ONE stack.  Multiply by
     # fuel_cell_stack_count to get the fleet-total capacity that the physics
     # engine and EDL should see.  Default stack_count=1 is backward-compatible.
@@ -877,7 +921,7 @@ def build_run_context_from_spec(
         if spec_data.get("fuel_cell_enabled", False)
         else 0.0
     )
-    if spec_data.get("fuel_cell_enabled", False):
+    if not _fc_units_raw and spec_data.get("fuel_cell_enabled", False):
         sim_state.fuel_cell_rated_mw = _fc_rated_mw_fleet
         _fc_state_raw = spec_data.get("fuel_cell_initial_state")
         if _fc_state_raw is None:
@@ -1428,6 +1472,12 @@ def build_run_context_from_spec(
         )
 
     # ── RunContext ────────────────────────────────────────────────────────
+    _registry = AgentRegistry(
+        router=DeterministicRouter() if os.environ.get('PYTEST_CURRENT_TEST')
+               else AdvisoryRouter(),
+        enabled=True,
+        max_proposal_mw=float(spec_data.get("advisory_max_mw", 20.0)),
+    )
     return RunContext(
         run_id=run_id,
         sim_state=sim_state,
@@ -1439,11 +1489,10 @@ def build_run_context_from_spec(
         assertions=assertions,
         scenario_name=str(spec_data.get("name", "")),
         # W1 fields
-        registry=AgentRegistry(
-            router=DeterministicRouter() if os.environ.get('PYTEST_CURRENT_TEST')
-                   else AdvisoryRouter(),
-            enabled=True,
-            max_proposal_mw=float(spec_data.get("advisory_max_mw", 20.0)),
+        registry=_registry,
+        fuel_cell_readiness_controller=(
+            BlockFuelCellReadinessController(_registry.get_gate())
+            if _fc_units_raw else None
         ),
         telemetry_ingestor=NetworkTelemetryIngestor(),
         corroborator=FabricCorroborator(),

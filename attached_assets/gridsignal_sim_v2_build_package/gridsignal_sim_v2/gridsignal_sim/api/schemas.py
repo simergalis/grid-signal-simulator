@@ -303,6 +303,63 @@ class BessUnitSpec(BaseModel):
         return None
 
 
+class FuelCellUnitSpec(BaseModel):
+    """A block-addressable fuel-cell unit (Addendum G-1).
+
+    Capacity is deliberately derived from ``block_rated_mw * block_count``.
+    There is no independently authorable ``rated_mw`` field for this model.
+    """
+
+    asset_id: str = Field(min_length=1)
+    block_rated_mw: float = Field(gt=0.0)
+    block_count: int = Field(ge=1)
+    initial_running_blocks: int = Field(default=0, ge=0)
+    initial_hot_standby_blocks: int = Field(default=0, ge=0)
+    commit_rate_blocks_per_s: float = Field(default=1.0, gt=0.0)
+    decommit_rate_blocks_per_s: float = Field(default=1.0, gt=0.0)
+    cold_start_s: float = Field(default=8.0 * 60.0 * 60.0, gt=0.0)
+    warm_start_s: float = Field(default=4.0 * 60.0 * 60.0, gt=0.0)
+    hot_start_s: float = Field(default=60.0, gt=0.0)
+    controlled_cooling_s: Optional[float] = Field(default=None, gt=0.0)
+    hot_standby: bool = True
+    min_stable_frac: float = Field(default=0.5, ge=0.0, le=1.0)
+    hot_standby_floor_blocks: int = Field(default=0, ge=0)
+    dispatch_mechanism: Literal["discrete_blocks", "modulating", "hybrid"] = "hybrid"
+    readiness_dwell_s: float = Field(default=0.0, ge=0.0)
+    provenance: Dict[
+        str, Literal["vendor_published", "derived", "proposed", "site_specific"]
+    ] = Field(default_factory=dict)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _reject_independent_rated_mw(cls, value: Any) -> Any:
+        if isinstance(value, dict) and "rated_mw" in value:
+            raise ValueError(
+                "fuel_cell_units derive rated_mw from block_rated_mw * block_count; "
+                "do not provide rated_mw"
+            )
+        return value
+
+    @model_validator(mode="after")
+    def _validate_block_counts(self) -> "FuelCellUnitSpec":
+        if self.initial_running_blocks + self.initial_hot_standby_blocks > self.block_count:
+            raise ValueError(
+                "initial_running_blocks + initial_hot_standby_blocks cannot exceed block_count"
+            )
+        if self.hot_standby_floor_blocks > self.block_count:
+            raise ValueError("hot_standby_floor_blocks cannot exceed block_count")
+        if not self.hot_standby and self.hot_standby_floor_blocks:
+            raise ValueError("hot_standby_floor_blocks requires hot_standby=true")
+        if not self.hot_start_s <= self.warm_start_s <= self.cold_start_s:
+            raise ValueError("expected hot_start_s <= warm_start_s <= cold_start_s")
+        return self
+
+    @property
+    def rated_mw(self) -> float:
+        """Derived unit nameplate; omitted from the serialized request model."""
+        return self.block_rated_mw * self.block_count
+
+
 # TODO: When diesel gets a real PowerSource entry wired into
 # core/power_source_priority.py / core/economic_dispatch_loop.py in a later
 # phase, it MUST be tagged AuthorityTier.CONFIRM, never AUTONOMOUS — diesel
@@ -878,6 +935,10 @@ class ScenarioSpec(BaseModel):
 
     bess_units: list[BessUnitSpec] = Field(min_length=0, default_factory=list)
     turbine_units: list[TurbineUnitSpec] = Field(min_length=0, default_factory=list)
+    # Addendum G-1 block-addressable fleet.  When populated it supersedes the
+    # legacy aggregate fuel_cell_* fields below; those fields remain wire
+    # compatible for existing scenarios.
+    fuel_cell_units: list[FuelCellUnitSpec] = Field(min_length=0, default_factory=list)
     diesel_power_block: Optional[DieselPowerBlockSpec] = None
     # Materialized from diesel_power_block during ScenarioSpec validation.
     # Callers should configure the block rather than hand-authoring this list.

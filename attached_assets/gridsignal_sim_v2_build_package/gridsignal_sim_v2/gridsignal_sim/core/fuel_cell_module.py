@@ -24,7 +24,7 @@ controlled cooling instead.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 from .asset_modules import AssetModule
@@ -275,3 +275,399 @@ class FuelCellModule(AssetModule):
 
     def output_mw(self) -> float:
         return self._current_output_mw
+
+
+@dataclass
+class BlockFuelCellConfig:
+    """Configuration for one G-1 block-addressable fuel-cell unit."""
+
+    asset_id: str
+    block_rated_mw: float
+    block_count: int
+    initial_running_blocks: int = 0
+    initial_hot_standby_blocks: int = 0
+    commit_rate_blocks_per_s: float = 1.0
+    decommit_rate_blocks_per_s: float = 1.0
+    cold_start_s: float = 8.0 * 60.0 * 60.0
+    warm_start_s: float = 4.0 * 60.0 * 60.0
+    hot_start_s: float = 60.0
+    hot_standby: bool = True
+    min_stable_frac: float = 0.5
+    hot_standby_floor_blocks: int = 0
+    dispatch_mechanism: str = "hybrid"
+    readiness_dwell_s: float = 0.0
+    # Per-input source labels supplied by FuelCellUnitSpec.  Kept with the
+    # runtime configuration so telemetry never has to reconstruct provenance.
+    provenance: dict[str, str] = field(default_factory=dict)
+    # Appended to retain positional compatibility with the original G-1
+    # configuration.  A supplied value is a cooling duration, not a start
+    # duration; omitted legacy payloads use the compatibility fallback below.
+    controlled_cooling_s: float | None = None
+
+    def __post_init__(self) -> None:
+        if not self.asset_id or self.block_rated_mw <= 0 or self.block_count < 1:
+            raise ValueError("fuel-cell block asset_id, rating, and count must be valid")
+        if self.initial_running_blocks + self.initial_hot_standby_blocks > self.block_count:
+            raise ValueError("initial block states cannot exceed block_count")
+        if self.hot_standby_floor_blocks > self.block_count:
+            raise ValueError("hot_standby_floor_blocks cannot exceed block_count")
+        if self.commit_rate_blocks_per_s <= 0 or self.decommit_rate_blocks_per_s <= 0:
+            raise ValueError("block commit/decommit rates must be positive")
+        if min(self.cold_start_s, self.warm_start_s, self.hot_start_s) <= 0:
+            raise ValueError("fuel-cell start durations must be positive")
+        if self.controlled_cooling_s is not None and self.controlled_cooling_s <= 0:
+            raise ValueError("controlled_cooling_s must be positive when supplied")
+        if not self.hot_start_s <= self.warm_start_s <= self.cold_start_s:
+            raise ValueError("expected hot_start_s <= warm_start_s <= cold_start_s")
+        if not 0 <= self.min_stable_frac <= 1:
+            raise ValueError("min_stable_frac must be between zero and one")
+        if self.dispatch_mechanism not in {"discrete_blocks", "modulating", "hybrid"}:
+            raise ValueError("unknown fuel-cell dispatch mechanism")
+
+    @property
+    def rated_mw(self) -> float:
+        return self.block_rated_mw * self.block_count
+
+    @property
+    def cooling_duration_s(self) -> float:
+        """Duration of the controlled hot-to-warm thermal transition.
+
+        ``warm_start_s`` was used as this timer in the first G-1 model.  Keep
+        that value as the compatibility fallback, while retaining it as the
+        actual warm-start path below.
+        """
+        return (
+            self.warm_start_s
+            if self.controlled_cooling_s is None
+            else self.controlled_cooling_s
+        )
+
+
+@dataclass
+class _FuelCellBlock:
+    state: FuelCellState
+    timer_s: float = 0.0
+    output_mw: float = 0.0
+    dwell_s: float = 0.0
+    # Off hardware can be thermally cold or retained at warm readiness.  HOT
+    # is represented by HOT_STANDBY/RUNNING; retaining it here while cooling
+    # makes the hot -> warm decay explicit.
+    thermal_readiness: str = "cold"
+
+
+@dataclass
+class BlockFuelCellArray(AssetModule):
+    """G-1 block-level array with explicit thermal eligibility.
+
+    ``available_mw`` intentionally counts RUNNING blocks only: cold, warming,
+    and hot-standby hardware supplies neither dispatch capacity nor contingency
+    reserve until it has completed its start/dwell transition.
+    """
+
+    config: BlockFuelCellConfig
+    blocks: list[_FuelCellBlock] = field(default_factory=list)
+    _load_following_target_mw: float | None = None
+    _commit_credit: float = 0.0
+    _decommit_credit: float = 0.0
+
+    def __post_init__(self) -> None:
+        if not self.blocks:
+            self.blocks = [
+                _FuelCellBlock(
+                    FuelCellState.RUNNING if i < self.config.initial_running_blocks
+                    else FuelCellState.HOT_STANDBY
+                    if i < self.config.initial_running_blocks + self.config.initial_hot_standby_blocks
+                    else FuelCellState.COLD,
+                    output_mw=(
+                        self._running_block_floor_mw
+                        if i < self.config.initial_running_blocks else 0.0
+                    ),
+                    thermal_readiness=(
+                        "hot"
+                        if i < self.config.initial_running_blocks + self.config.initial_hot_standby_blocks
+                        else "cold"
+                    ),
+                )
+                for i in range(self.config.block_count)
+            ]
+
+    @property
+    def asset_id(self) -> str:
+        return self.config.asset_id
+
+    @property
+    def state(self) -> FuelCellState:
+        # Retains the old module's scalar status API while favouring the state
+        # that is currently producing.
+        if any(b.state == FuelCellState.RUNNING for b in self.blocks):
+            return FuelCellState.RUNNING
+        if any(b.state == FuelCellState.WARMING for b in self.blocks):
+            return FuelCellState.WARMING
+        if any(b.state == FuelCellState.HOT_STANDBY for b in self.blocks):
+            return FuelCellState.HOT_STANDBY
+        if any(b.state == FuelCellState.CONTROLLED_COOLING for b in self.blocks):
+            return FuelCellState.CONTROLLED_COOLING
+        return FuelCellState.COLD
+
+    @property
+    def time_to_ready_s(self) -> float | None:
+        timers = [b.timer_s for b in self.blocks if b.state == FuelCellState.WARMING]
+        if timers:
+            return min(timers)
+        return 0.0 if any(b.state == FuelCellState.HOT_STANDBY for b in self.blocks) else None
+
+    @property
+    def available_mw(self) -> float:
+        return self.config.block_rated_mw * sum(
+            b.state == FuelCellState.RUNNING for b in self.blocks
+        )
+
+    def output_mw(self) -> float:
+        return sum(b.output_mw for b in self.blocks)
+
+    @property
+    def _running_block_floor_mw(self) -> float:
+        """Smallest physically valid output of one committed block."""
+        if self.config.dispatch_mechanism == "discrete_blocks":
+            return self.config.block_rated_mw
+        return self.config.block_rated_mw * self.config.min_stable_frac
+
+    @property
+    def minimum_dispatchable_output_mw(self) -> float:
+        """Current physical output floor of committed, running blocks."""
+        return sum(
+            self._running_block_floor_mw
+            for block in self.blocks
+            if block.state == FuelCellState.RUNNING
+        )
+
+    @property
+    def commanded_output_mw(self) -> float:
+        """Dispatch request, distinct from the rate/readiness-limited output."""
+        return self.config.rated_mw if self._load_following_target_mw is None else self._load_following_target_mw
+
+    def readiness_summary(self, fast_window_s: float) -> dict[str, float | int]:
+        counts = {
+            state.value: sum(block.state == state for block in self.blocks)
+            for state in FuelCellState
+        }
+        # A running block's rated capacity is already installed on the bus; it
+        # is not reserve.  Only the unused upward margin above its achieved
+        # output can respond to the event.
+        running_headroom_mw = sum(
+            max(0.0, self.config.block_rated_mw - block.output_mw)
+            for block in self.blocks
+            if block.state == FuelCellState.RUNNING
+        )
+        # A standby block remains unavailable *now*.  It is fast reserve only
+        # when its synchronisation and required dwell fit the event window.
+        fast_hot = sum(
+            block.state == FuelCellState.HOT_STANDBY
+            and self.config.hot_start_s + self.config.readiness_dwell_s <= fast_window_s
+            for block in self.blocks
+        )
+        return {
+            **counts,
+            "available_now_mw": running_headroom_mw,
+            "available_fast_mw": (
+                running_headroom_mw + fast_hot * self.config.block_rated_mw
+            ),
+            "minimum_output_mw": self.minimum_dispatchable_output_mw,
+        }
+
+    def set_load_following_target_mw(self, target_mw: float) -> None:
+        if not math.isfinite(target_mw):
+            raise ValueError("fuel-cell load-following target must be finite")
+        self._load_following_target_mw = max(0.0, min(self.config.rated_mw, target_mw))
+
+    def command_start(self, sim_time: float) -> bool:
+        del sim_time
+        # Retained-warm hardware is deliberately selected first.  It follows
+        # the warm-start path; genuinely cold hardware follows cold-start.
+        cold = next(
+            (
+                b for b in self.blocks
+                if b.state == FuelCellState.COLD and b.thermal_readiness == "warm"
+            ),
+            None,
+        )
+        if cold is None:
+            cold = next(
+                (
+                    b for b in self.blocks
+                    if b.state == FuelCellState.COLD and b.thermal_readiness == "cold"
+                ),
+                None,
+            )
+        if cold is None:
+            return False
+        cold.timer_s = (
+            self.config.warm_start_s
+            if cold.thermal_readiness == "warm"
+            else self.config.cold_start_s
+        )
+        cold.state = FuelCellState.WARMING
+        return True
+
+    def command_run(self, sim_time: float) -> bool:
+        del sim_time
+        # A block already in its hot-start/readiness dwell is committed; do not
+        # select and restart its timer on each dispatch tick.
+        standby = next(
+            (b for b in self.blocks
+             if b.state == FuelCellState.HOT_STANDBY and b.dwell_s == 0.0),
+            None,
+        )
+        if standby is None:
+            return False
+        # Hot standby still needs its configured hot-start synchronisation plus
+        # any site-specific readiness dwell before it becomes dispatchable.
+        standby.dwell_s = self.config.hot_start_s + self.config.readiness_dwell_s
+        if standby.dwell_s == 0:
+            standby.state = FuelCellState.RUNNING
+            standby.output_mw = self._running_block_floor_mw
+            standby.thermal_readiness = "hot"
+        return True
+
+    def command_stop(self, sim_time: float) -> bool:
+        del sim_time
+        running = [b for b in self.blocks if b.state == FuelCellState.RUNNING]
+        if not running:
+            return False
+        block = running[-1]
+        block.output_mw = 0.0
+        if self.config.hot_standby and sum(b.state == FuelCellState.HOT_STANDBY for b in self.blocks) < self.config.hot_standby_floor_blocks:
+            block.state = FuelCellState.HOT_STANDBY
+            block.thermal_readiness = "hot"
+        else:
+            # Cooling is non-interruptible.  On completion the block is off
+            # but retained warm, so its next start uses warm_start_s rather
+            # than falling through the cold-start path.
+            block.state = FuelCellState.CONTROLLED_COOLING
+            block.timer_s = self.config.cooling_duration_s
+            block.thermal_readiness = "hot"
+        return True
+
+    def _requested_running_blocks(self, target_mw: float) -> int:
+        """Return the commitment implied by the selected physical mechanism.
+
+        Discrete blocks are binary sources: any committed block produces its
+        full rating.  Modulating hardware keeps all blocks online whenever it
+        is requested, so its aggregate minimum is all block minimums.  Hybrid
+        commitment selects only enough blocks to cover the request, then
+        modulates those blocks.  Thus requests below a relevant stable floor
+        intentionally produce that floor rather than an unreported fraction.
+        """
+        if target_mw <= 0.0:
+            return 0
+        blocks_to_cover_request = math.ceil(target_mw / self.config.block_rated_mw)
+        if self.config.dispatch_mechanism == "modulating":
+            return self.config.block_count
+        return min(self.config.block_count, blocks_to_cover_request)
+
+    def advance(self, sim_time: float, dt_seconds: float) -> None:
+        del sim_time
+        if dt_seconds < 0:
+            raise ValueError("BlockFuelCellArray.advance() requires non-negative dt")
+        target = self._load_following_target_mw
+        if target is None:
+            target = self.config.rated_mw
+        wanted = self._requested_running_blocks(target)
+        self._commit_credit += self.config.commit_rate_blocks_per_s * dt_seconds
+        while sum(b.state == FuelCellState.RUNNING for b in self.blocks) < wanted and self._commit_credit >= 1:
+            if not self.command_run(0.0):
+                if not self.command_start(0.0):
+                    break
+            self._commit_credit -= 1
+        self._decommit_credit += self.config.decommit_rate_blocks_per_s * dt_seconds
+        while sum(b.state == FuelCellState.RUNNING for b in self.blocks) > wanted and self._decommit_credit >= 1:
+            if not self.command_stop(0.0):
+                break
+            self._decommit_credit -= 1
+        for block in self.blocks:
+            if block.state in (FuelCellState.WARMING, FuelCellState.CONTROLLED_COOLING):
+                block.timer_s = max(0.0, block.timer_s - dt_seconds)
+                if block.timer_s == 0:
+                    if block.state == FuelCellState.WARMING:
+                        block.state = FuelCellState.HOT_STANDBY
+                        block.thermal_readiness = "hot"
+                    else:
+                        block.state = FuelCellState.COLD
+                        block.thermal_readiness = "warm"
+            elif block.state == FuelCellState.HOT_STANDBY and block.dwell_s:
+                block.dwell_s = max(0.0, block.dwell_s - dt_seconds)
+                if block.dwell_s == 0:
+                    block.state = FuelCellState.RUNNING
+                    block.output_mw = self._running_block_floor_mw
+                    block.thermal_readiness = "hot"
+            elif block.state == FuelCellState.RUNNING:
+                per_block_target = target / max(1, sum(b.state == FuelCellState.RUNNING for b in self.blocks))
+                if self.config.dispatch_mechanism == "discrete_blocks":
+                    per_block_target = self.config.block_rated_mw
+                block.output_mw = max(
+                    self.config.block_rated_mw * self.config.min_stable_frac,
+                    min(self.config.block_rated_mw, per_block_target),
+                )
+
+
+@dataclass
+class BlockFuelCellFleet:
+    """Compatibility-shaped aggregate view over multiple block arrays."""
+
+    arrays: list[BlockFuelCellArray]
+    _target_mw: float | None = None
+
+    @property
+    def state(self) -> FuelCellState:
+        return next(
+            (a.state for a in self.arrays if a.state == FuelCellState.RUNNING),
+            next((a.state for a in self.arrays if a.state == FuelCellState.WARMING),
+                 FuelCellState.COLD),
+        )
+
+    @property
+    def time_to_ready_s(self) -> float | None:
+        values = [a.time_to_ready_s for a in self.arrays if a.time_to_ready_s is not None]
+        return min(values) if values else None
+
+    @property
+    def available_mw(self) -> float:
+        return sum(a.available_mw for a in self.arrays)
+
+    @property
+    def rated_mw(self) -> float:
+        return sum(a.config.rated_mw for a in self.arrays)
+
+    def output_mw(self) -> float:
+        return sum(a.output_mw() for a in self.arrays)
+
+    @property
+    def commanded_output_mw(self) -> float:
+        return self.rated_mw if self._target_mw is None else self._target_mw
+
+    def readiness_summary(self, fast_window_s: float) -> dict[str, float | int]:
+        result: dict[str, float | int] = {
+            state.value: 0 for state in FuelCellState
+        }
+        result.update(available_now_mw=0.0, available_fast_mw=0.0, minimum_output_mw=0.0)
+        for array in self.arrays:
+            summary = array.readiness_summary(fast_window_s)
+            for key, value in summary.items():
+                result[key] += value
+        return result
+
+    @property
+    def provenance(self) -> dict[str, dict[str, str]]:
+        return {array.asset_id: dict(array.config.provenance) for array in self.arrays}
+
+    def set_load_following_target_mw(self, target_mw: float) -> None:
+        if not math.isfinite(target_mw):
+            raise ValueError("fuel-cell load-following target must be finite")
+        self._target_mw = max(0.0, min(self.rated_mw, target_mw))
+
+    def advance(self, sim_time: float, dt_seconds: float) -> None:
+        remaining = self.rated_mw if self._target_mw is None else self._target_mw
+        for array in self.arrays:
+            array.set_load_following_target_mw(min(array.config.rated_mw, remaining))
+            array.advance(sim_time, dt_seconds)
+            remaining = max(0.0, remaining - array.config.rated_mw)
