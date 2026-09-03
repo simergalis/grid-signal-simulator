@@ -27,3 +27,29 @@ re-render/network timing, at the cost of one extra small request per action.
 field from a store populated by an untracked/unawaited fetch elsewhere,
 prefer a scoped fresh fetch over reading the shared store field, or
 explicitly await the in-flight fetch before deciding.
+
+## Multiple start surfaces
+
+Every user-facing run creation path must apply the same scoped preset fetch.
+The opening/readiness screen has its own DemoBar start handler, separate from
+the inner-page RunControlBar; fixing only one leaves the other path silently
+without generator wiring.
+
+**Why:** the 100 MW scenario was correctly seeded and the backend override
+logic worked, but opening-screen runs bypassed the patched control because they
+used a different component.
+
+**How to apply:** search for every POST /runs caller when changing run-start
+behavior, not just the primary run-control component.
+
+## Stale run IDs after a server restart
+
+When latest-tick returns 404 for a tracked run, treat the run ID as stale and
+return the UI to idle. Preserve 202 as a valid “active but no first tick yet”
+state.
+
+**Why:** restarting the dev server removes in-memory runs while the browser can
+still hold the old run ID, otherwise the UI remains stuck in a reconnect loop.
+
+**How to apply:** distinguish unknown runs (404) from valid startup (202) in
+tick-stream recovery.
