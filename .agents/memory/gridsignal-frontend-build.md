@@ -16,6 +16,16 @@ The gridsignal web artifact runs `start_prod.sh`, which serves a **pre-compiled*
 
 ---
 
+## Workflow ownership
+
+The `artifacts/gridsignal: web` workflow owns both the Python simulator API on port 22126 and the compiled frontend. The separately registered `artifacts/api-server: GridSignal Simulator` workflow is a Node service and does not reload Python route changes.
+
+**Why:** Restarting only the Node API workflow leaves the simulator's uvicorn process unchanged, so Python tests can pass while live `/api/*` behavior still comes from stale code.
+
+**How to apply:** After changes under `gridsignal_sim/api/`, restart `artifacts/gridsignal: web` and verify the endpoint on port 22126.
+
+---
+
 ## GpuNodeGeneratorModal — naming traps
 
 Two sets of lookup constants exist with similar names. Using the wrong one causes silent wrong data or TypeScript errors:

@@ -1,10 +1,10 @@
 {
-  "site_name": "San Diego, CA",
-  "latitude_deg": 32.72,
-  "longitude_deg": -117.16,
+  "site_name": "San Jose, CA",
+  "latitude_deg": 37.3382,
+  "longitude_deg": -121.8863,
   "tz_name": "America/Los_Angeles",
   "source": "configured",
-  "climate_hint": "Marine layer ('June Gloom') common before 10:00; clear afternoons; coastal moderate humidity.",
-  "ambient_temp_base_c": 14.0,
+  "climate_hint": "Mediterranean; dry, sunny summers; mild wetter winters; occasional coastal morning cloud.",
+  "ambient_temp_base_c": 15.0,
   "schema_version": 1
 }

@@ -247,6 +247,13 @@ _KNOWN_LOCATIONS: dict[str, SiteLocation] = {
         climate_hint="Mediterranean; abundant sunshine; coastal morning stratus clears by midday; low annual rainfall.",
         ambient_temp_base_c=16.0,
     ),
+    "san jose":   SiteLocation(
+        site_name="San Jose, CA",
+        latitude_deg=37.3382, longitude_deg=-121.8863,
+        tz_name="America/Los_Angeles",
+        climate_hint="Mediterranean; dry, sunny summers; mild wetter winters; occasional coastal morning cloud.",
+        ambient_temp_base_c=15.0,
+    ),
     "chicago":     SiteLocation(
         site_name="Chicago, IL",
         latitude_deg=41.88, longitude_deg=-87.63,

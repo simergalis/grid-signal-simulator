@@ -383,7 +383,28 @@ def test_preview_returns_mistral_source_san_diego(preview_client: TestClient) ->
 
 
 # ---------------------------------------------------------------------------
-# TC-PV-9  Physics fallback when MISTRAL_API_KEY is absent
+# TC-PV-9  San Jose full state name resolves through the built-in fallback
+# ---------------------------------------------------------------------------
+
+def test_location_resolves_san_jose_full_state_name(preview_client: TestClient) -> None:
+    """A common autocomplete-free entry must work when Mistral is unavailable."""
+    response = preview_client.put(
+        "/api/location",
+        json={"address": "San Jose, California"},
+        headers={"X-Admin-Secret": "test-secret"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["source"] == "builtin"
+    assert body["site_name"] == "San Jose, CA"
+    assert body["lat"] == pytest.approx(37.3382)
+    assert body["lon"] == pytest.approx(-121.8863)
+    assert body["tz_name"] == "America/Los_Angeles"
+
+
+# ---------------------------------------------------------------------------
+# TC-PV-10  Physics fallback when MISTRAL_API_KEY is absent
 # ---------------------------------------------------------------------------
 
 def test_preview_falls_back_to_physics_without_api_key(preview_client: TestClient) -> None:
