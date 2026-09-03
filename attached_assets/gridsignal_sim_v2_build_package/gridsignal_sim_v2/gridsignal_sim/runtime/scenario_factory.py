@@ -1111,27 +1111,104 @@ def build_run_context_from_spec(
 
     # ── Workload events ───────────────────────────────────────────────────
     events: list[WorkloadSignal] = []
-    for evt in spec_data.get("workload_events", []):
-        event_id = evt.get("event_id") or f"evt-{_uuid.uuid4().hex[:8]}"
-        job_id = evt.get("job_id") or f"job-{_uuid.uuid4().hex[:8]}"
-        events.append(
-            WorkloadSignal(
-                event_id=event_id,
-                job_id=job_id,
-                event_type=WorkloadEventType(evt["event_type"]),
-                timestamp=float(evt["timestamp"]),
-                hardware_profile_id=evt.get("hardware_profile_id") or hw_id,
-                node_count=int(evt.get("node_count", 0)),
-                workload_class=WorkloadClass(evt.get("workload_class", "training")),
-                site_id=site.site_id,
-                request_rate=(
-                    float(evt["request_rate"])
-                    if evt.get("request_rate") is not None else None
-                ),
-                scheduler_domain=evt.get("scheduler_domain"),
-                renewable_shortfall_mw=float(evt.get("renewable_shortfall_mw", 0.0)),
-            )
+
+    def _scripted_signal(
+        evt: dict,
+        *,
+        event_type: WorkloadEventType | None = None,
+        event_id: str | None = None,
+        job_id: str | None = None,
+        node_count: int | None = None,
+    ) -> WorkloadSignal:
+        resolved_event_id = (
+            event_id or evt.get("event_id") or f"evt-{_uuid.uuid4().hex[:8]}"
         )
+        resolved_job_id = job_id or evt.get("job_id") or f"job-{_uuid.uuid4().hex[:8]}"
+        return WorkloadSignal(
+            event_id=resolved_event_id,
+            job_id=resolved_job_id,
+            event_type=event_type or WorkloadEventType(evt["event_type"]),
+            timestamp=float(evt["timestamp"]),
+            hardware_profile_id=evt.get("hardware_profile_id") or hw_id,
+            node_count=(
+                int(evt.get("node_count", 0))
+                if node_count is None else node_count
+            ),
+            workload_class=WorkloadClass(evt.get("workload_class", "training")),
+            site_id=site.site_id,
+            request_rate=(
+                float(evt["request_rate"])
+                if evt.get("request_rate") is not None else None
+            ),
+            scheduler_domain=evt.get("scheduler_domain"),
+            renewable_shortfall_mw=float(evt.get("renewable_shortfall_mw", 0.0)),
+            tenant_id=evt.get("tenant_id"),
+            cluster_id=evt.get("cluster_id"),
+            scheduler_type=evt.get("scheduler_type"),
+            capacity_unit=evt.get("capacity_unit"),
+            gpus_per_unit=int(evt.get("gpus_per_unit", 1)),
+        )
+
+    # Scheduler-authored job cohorts at one timestamp are applied atomically per
+    # cluster, then emitted as one persistent cluster allocation.  This mirrors
+    # the aggregate STARTING/SCALE signals produced by KubeDemandAgent and avoids
+    # resetting GPU ramp state when one set of jobs hands off to the next level.
+    _raw_events = list(spec_data.get("workload_events", []))
+    _clustered_by_time: dict[float, list[dict]] = {}
+    for evt in _raw_events:
+        _event_type = str(evt.get("event_type", ""))
+        if (
+            evt.get("cluster_id")
+            and evt.get("scheduler_type")
+            and _event_type in {"starting", "scale", "job_end", "cancelled"}
+        ):
+            _clustered_by_time.setdefault(float(evt["timestamp"]), []).append(evt)
+        else:
+            events.append(_scripted_signal(evt))
+
+    _active_cluster_jobs: dict[str, dict[str, int]] = {}
+    _last_cluster_total: dict[str, int] = {}
+    _started_clusters: set[str] = set()
+    for _timestamp in sorted(_clustered_by_time):
+        _changed_clusters: list[str] = []
+        _cluster_metadata: dict[str, dict] = {}
+        for evt in _clustered_by_time[_timestamp]:
+            _cluster_id = str(evt["cluster_id"])
+            if _cluster_id not in _changed_clusters:
+                _changed_clusters.append(_cluster_id)
+            _cluster_metadata[_cluster_id] = evt
+            _jobs = _active_cluster_jobs.setdefault(_cluster_id, {})
+            _event_type = WorkloadEventType(evt["event_type"])
+            _job_id = str(evt.get("job_id") or "")
+            if _event_type in {WorkloadEventType.STARTING, WorkloadEventType.SCALE}:
+                _jobs[_job_id] = int(evt.get("node_count", 0))
+            elif _event_type in {WorkloadEventType.JOB_END, WorkloadEventType.CANCELLED}:
+                _jobs.pop(_job_id, None)
+
+        for _cluster_id in _changed_clusters:
+            _total_nodes = sum(_active_cluster_jobs[_cluster_id].values())
+            _prior_nodes = _last_cluster_total.get(_cluster_id)
+            if _prior_nodes == _total_nodes:
+                continue
+            if _cluster_id not in _started_clusters:
+                if _total_nodes <= 0:
+                    continue
+                _aggregate_type = WorkloadEventType.STARTING
+                _started_clusters.add(_cluster_id)
+            elif _total_nodes > 0:
+                _aggregate_type = WorkloadEventType.SCALE
+            else:
+                _aggregate_type = WorkloadEventType.JOB_END
+
+            _metadata = _cluster_metadata[_cluster_id]
+            events.append(_scripted_signal(
+                _metadata,
+                event_type=_aggregate_type,
+                event_id=f"{_cluster_id}-scripted-t{int(_timestamp * 10)}",
+                job_id=f"scripted-admission-{_cluster_id}",
+                node_count=_total_nodes,
+            ))
+            _last_cluster_total[_cluster_id] = _total_nodes
     events.sort(key=lambda e: e.timestamp)
 
     # ── Assertions (Step 9) ───────────────────────────────────────────────

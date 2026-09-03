@@ -207,6 +207,14 @@ class WorkloadEventSpec(BaseModel):
     hardware_profile_id: str = "enterprise_8gpu_air"
     workload_class: Literal["training", "inference", "other"] = "training"
     scheduler_domain: Optional[str] = None
+    # Scheduler provenance for deterministic scripted jobs.  These fields let
+    # scenario-authored workload events retain the same K8S/SLURM/RAY identity
+    # used by live scheduler ingestion and the multi-cluster kube path.
+    tenant_id: Optional[str] = None
+    cluster_id: Optional[str] = None
+    scheduler_type: Optional[Literal["SLURM", "K8S", "RAY"]] = None
+    capacity_unit: Optional[str] = None
+    gpus_per_unit: int = Field(default=1, ge=1)
     request_rate: Optional[float] = Field(default=None, ge=0.0)
     # §7.1.1 SOLAR_STEP: magnitude of the renewable drop that triggers staging.
     # Zero for all other event types.
