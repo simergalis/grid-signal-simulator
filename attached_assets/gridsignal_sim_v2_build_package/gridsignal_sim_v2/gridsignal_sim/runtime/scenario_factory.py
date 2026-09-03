@@ -904,6 +904,18 @@ def build_run_context_from_spec(
                 asset_id="fuel-cell-fleet",
                 rated_mw=_fc_rated_mw_fleet,
                 baseload_target_mw=_fc_target_mw,
+                load_following=bool(spec_data.get("fuel_cell_load_following", False)),
+                ramp_rate_mw_per_s=float(
+                    spec_data.get("fuel_cell_ramp_rate_mw_per_s", 0.02)
+                ),
+                ramp_down_rate_mw_per_s=(
+                    float(spec_data["fuel_cell_ramp_down_rate_mw_per_s"])
+                    if spec_data.get("fuel_cell_ramp_down_rate_mw_per_s") is not None
+                    else None
+                ),
+                min_stable_frac=float(
+                    spec_data.get("fuel_cell_min_stable_fraction", 0.5)
+                ),
             ),
             state=_fc_initial_state,
         )

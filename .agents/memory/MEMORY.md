@@ -37,3 +37,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Run-start auto-wiring races](run-start-autowiring-races.md) — never gate a post-POST-/runs auto-arm on a component's async-fetched store field; fetch fresh scoped to the just-started scenario id instead.
 - [Diesel Phase 2 boundary](diesel-phase2-boundary.md) — keep diesel state/fleet coordination standalone until the later dispatch and balance integration phase.
 - [Reserve threshold reconciliation](reserve-reconciliation.md) — one max reserve threshold feeds both upstream ceilings and downstream SoC enforcement; emergency release may zero it for one tick.
+- [Pulse-driven fuel-cell dispatch](pulse-driven-fuel-cell-dispatch.md) — pulse-only islanded sites must opt into load-following FC output with BESS-sized rise/fall ramps.

@@ -60,11 +60,13 @@ class FuelCellConfig:
     asset_id: str
     rated_mw: float = 10.0
     ramp_rate_mw_per_s: float = 0.02
+    ramp_down_rate_mw_per_s: float | None = None
     min_stable_frac: float = 0.50
     cold_start_s: float = 8.0 * 60.0 * 60.0
     controlled_cooling_s: float = 60.0 * 60.0
     min_setpoint_interval_s: float = 60.0 * 60.0
     monitoring_only: bool = False
+    load_following: bool = False
     # Kept after the Phase 1 fields so existing positional construction remains
     # compatible while the target becomes fixed scenario configuration.
     baseload_target_mw: float | None = None
@@ -87,6 +89,12 @@ class FuelCellConfig:
         if self.ramp_rate_mw_per_s <= 0.0:
             raise ValueError(
                 "FuelCellConfig.ramp_rate_mw_per_s must be greater than zero"
+            )
+        if self.ramp_down_rate_mw_per_s is None:
+            self.ramp_down_rate_mw_per_s = self.ramp_rate_mw_per_s
+        if self.ramp_down_rate_mw_per_s <= 0.0:
+            raise ValueError(
+                "FuelCellConfig.ramp_down_rate_mw_per_s must be greater than zero"
             )
         if not 0.0 <= self.min_stable_frac <= 1.0:
             raise ValueError(
@@ -118,6 +126,7 @@ class FuelCellModule(AssetModule):
     state: FuelCellState = FuelCellState.COLD
     _current_output_mw: float = 0.0
     _time_remaining_s: float = 0.0
+    _load_following_target_mw: float | None = None
 
     def __post_init__(self) -> None:
         # A scenario may restore a thermal state without carrying transient
@@ -144,7 +153,20 @@ class FuelCellModule(AssetModule):
 
     @property
     def target_output_mw(self) -> float:
+        if self.config.load_following and self._load_following_target_mw is not None:
+            return self._load_following_target_mw
         return float(self.config.baseload_target_mw)
+
+    def set_load_following_target_mw(self, target_mw: float) -> None:
+        """Update the runtime demand target for a load-following array."""
+        if not self.config.load_following:
+            return
+        if not math.isfinite(target_mw):
+            raise ValueError("fuel-cell load-following target must be finite")
+        self._load_following_target_mw = max(
+            0.0,
+            min(self.config.rated_mw, target_mw),
+        )
 
     @property
     def time_remaining_s(self) -> float:
@@ -239,7 +261,12 @@ class FuelCellModule(AssetModule):
             return
 
         delta_mw = self.target_output_mw - self._current_output_mw
-        max_step_mw = self.config.ramp_rate_mw_per_s * dt_seconds
+        ramp_rate_mw_per_s = (
+            self.config.ramp_rate_mw_per_s
+            if delta_mw >= 0.0
+            else float(self.config.ramp_down_rate_mw_per_s)
+        )
+        max_step_mw = ramp_rate_mw_per_s * dt_seconds
         step_mw = max(-max_step_mw, min(max_step_mw, delta_mw))
         self._current_output_mw = max(
             self.min_stable_mw,

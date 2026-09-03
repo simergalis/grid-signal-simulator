@@ -913,9 +913,35 @@ class ScenarioSpec(BaseModel):
         default=None,
         ge=0.0,
         description=(
-            "Fixed aggregate fuel-cell baseload target in MW. "
-            "When omitted, defaults to the full fleet nameplate."
+            "Fixed aggregate fuel-cell baseload target in MW when load-following "
+            "is disabled. When omitted, defaults to the full fleet nameplate."
         ),
+    )
+    fuel_cell_load_following: bool = Field(
+        default=False,
+        description=(
+            "When true, the running fuel-cell array follows live net site demand "
+            "instead of holding the fixed baseload target."
+        ),
+    )
+    fuel_cell_ramp_rate_mw_per_s: float = Field(
+        default=0.02,
+        gt=0.0,
+        description="Aggregate fuel-cell output ramp rate in MW per simulated second.",
+    )
+    fuel_cell_ramp_down_rate_mw_per_s: Optional[float] = Field(
+        default=None,
+        gt=0.0,
+        description=(
+            "Aggregate fuel-cell ramp-down rate in MW per simulated second. "
+            "When omitted, uses the ramp-up rate."
+        ),
+    )
+    fuel_cell_min_stable_fraction: float = Field(
+        default=0.5,
+        ge=0.0,
+        le=1.0,
+        description="Minimum stable output as a fraction of aggregate nameplate.",
     )
 
     # ── Power Management (GS-IMPL-PSP-002) ──────────────────────────────────────

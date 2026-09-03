@@ -1341,10 +1341,14 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     for turbine in state.turbines:
         turbine.advance(sim_time, dt_seconds)
 
-    # Fuel-cell output is an asset measurement, not an algebraic residual fill.
-    # Advance the aggregate module beside the other assets, then use the
-    # measured output for every downstream shortfall/surplus calculation.
+    # Fuel-cell output remains a rate-limited asset measurement.  Fixed-baseload
+    # arrays retain their configured target.  Explicit load-following arrays
+    # receive the live net-demand target before advancing; the BESS covers the
+    # physical ramp gap rather than absorbing a permanent idle surplus.
     if state.fuel_cell_module is not None:
+        state.fuel_cell_module.set_load_following_target_mw(
+            _p_dispatch_droop_mw
+        )
         state.fuel_cell_module.advance(sim_time, dt_seconds)
     fuel_cell_output_mw = (
         state.fuel_cell_module.output_mw()
