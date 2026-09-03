@@ -1144,6 +1144,10 @@ def _seed_json_scenarios(store: ScenarioStore) -> None:
         # hot, warm, and cold standby; no PCC import or procurement path.
         ("scenario-turbine-01", "scenario-turbine-01.json"),
         ("scenario-uneven-multisched-01", "scenario-uneven-multisched-01.json"),
+        # 100 MW islanded fuel-cell-primary data center with 25 MW / 25 MWh
+        # BESS and an 11 x 10 MW N+1 diesel backup plant.
+        ("scenario-100mw-fuel-cell-bess-diesel",
+         "scenario-100mw-fuel-cell-bess-diesel.json"),
     ]
     _DISPLAY_NAME_OVERRIDES = {
         "scenario-equinix-sj-1": "Customer Scenario - scenario-equinix-sj-1",
