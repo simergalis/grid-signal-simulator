@@ -7,4 +7,4 @@ The rolling-planning UI consumes a deterministic backend timeline of full-TDP co
 
 **Why:** The live TickResult forecast is intentionally current-state-only, so using it alone makes future scheduled peaks appear as “No projected shortfall.” A second simulation would risk diverging from authoritative physics.
 
-**How to apply:** When adding scripted planning scenarios, give each peak a matching end event if distinct overload windows are intended, and keep the wire field optional for direct/headless runs.
+**How to apply:** When adding scripted planning scenarios, give each peak a matching end event if distinct overload windows are intended, keep the wire field optional for direct/headless runs, and let scripted points override the reference-day shape numerically as well as by label.
