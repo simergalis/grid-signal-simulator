@@ -1,0 +1,118 @@
+{
+  "name": "Rolling Planning — Three Forecast Peaks",
+  "description": "A four-hour planning scenario with three deterministic GPU demand peaks scheduled at 15 minutes, 1 hour, and 3 hours. Use it to exercise the rolling planning forecast view and compare the operator urgency tiers as the forecast horizon changes.",
+  "workload_events": [
+    {
+      "event_id": "evt-rolling-base-start",
+      "job_id": "rolling-base",
+      "event_type": "starting",
+      "timestamp": 0.0,
+      "node_count": 600,
+      "hardware_profile_id": "enterprise_8gpu_air",
+      "renewable_shortfall_mw": 0.0
+    },
+    {
+      "event_id": "evt-rolling-15m-peak",
+      "job_id": "rolling-15m-peak",
+      "event_type": "starting",
+      "timestamp": 900.0,
+      "node_count": 2400,
+      "hardware_profile_id": "enterprise_8gpu_air",
+      "renewable_shortfall_mw": 0.0
+    },
+    {
+      "event_id": "evt-rolling-1h-peak",
+      "job_id": "rolling-1h-peak",
+      "event_type": "starting",
+      "timestamp": 3600.0,
+      "node_count": 2400,
+      "hardware_profile_id": "enterprise_8gpu_air",
+      "renewable_shortfall_mw": 0.0
+    },
+    {
+      "event_id": "evt-rolling-15m-peak-end",
+      "job_id": "rolling-15m-peak",
+      "event_type": "job_end",
+      "timestamp": 1800.0,
+      "node_count": 0,
+      "hardware_profile_id": "enterprise_8gpu_air",
+      "renewable_shortfall_mw": 0.0
+    },
+    {
+      "event_id": "evt-rolling-1h-peak-end",
+      "job_id": "rolling-1h-peak",
+      "event_type": "job_end",
+      "timestamp": 4500.0,
+      "node_count": 0,
+      "hardware_profile_id": "enterprise_8gpu_air",
+      "renewable_shortfall_mw": 0.0
+    },
+    {
+      "event_id": "evt-rolling-3h-peak",
+      "job_id": "rolling-3h-peak",
+      "event_type": "starting",
+      "timestamp": 10800.0,
+      "node_count": 2400,
+      "hardware_profile_id": "enterprise_8gpu_air",
+      "renewable_shortfall_mw": 0.0
+    },
+    {
+      "event_id": "evt-rolling-3h-peak-end",
+      "job_id": "rolling-3h-peak",
+      "event_type": "job_end",
+      "timestamp": 11700.0,
+      "node_count": 0,
+      "hardware_profile_id": "enterprise_8gpu_air",
+      "renewable_shortfall_mw": 0.0
+    }
+  ],
+  "hardware_profile_id": "enterprise_8gpu_air",
+  "dt_lead_seconds": 30.0,
+  "bess_units": [
+    {
+      "asset_id": "bess-0",
+      "rated_mw": 18.0,
+      "usable_mwh": 8.0,
+      "initial_soc_fraction": 0.85,
+      "grid_forming": true,
+      "p_anchor_reserve_mw": 2.0
+    }
+  ],
+  "turbine_units": [
+    {
+      "asset_id": "turbine-0",
+      "rated_mw": 10.0,
+      "r_asset_mw_per_s": 0.2,
+      "hot_standby": false
+    },
+    {
+      "asset_id": "turbine-1",
+      "rated_mw": 10.0,
+      "r_asset_mw_per_s": 0.2,
+      "hot_standby": true
+    }
+  ],
+  "solar_rated_mw": 0.0,
+  "design_peak_load_mw": 12.0,
+  "irradiance_steps": [],
+  "gpu_load_profile": [],
+  "island_mode": false,
+  "frequency_nominal_hz": 60.0,
+  "power_factor": 0.85,
+  "pue_base": 1.03,
+  "end_sim_time": 14400.0,
+  "default_playback_speed": 1.0,
+  "band_enabled": true,
+  "band_pct_calibrated": 4.0,
+  "calibrated": true,
+  "workload_floor_fraction": 0.5,
+  "procurement_config": {
+    "firm_available_mw": 50.0,
+    "reserved_available_mw": 10.0,
+    "non_firm_available_mw": 5.0,
+    "price_curve_seed": 42
+  },
+  "kube_config": null,
+  "tenant_events": [],
+  "assertions": []
+}

@@ -1,0 +1,44 @@
+{
+  "scenario_id": "regression-test-degraded-fabric-observability",
+  "seed": 42,
+  "duration_s": 30.0,
+  "dt_s": 0.25,
+  "capability_tier": "degraded",
+  "asset_class": "turbine",
+  "profiles": "workload_traffic_profiles.json",
+  "fixture": "fabric_fixture_default.json",
+  "constants": "fabric_constants.json",
+  "jobs": [
+    {
+      "job_id": "job-alpha",
+      "start_s": 0.0,
+      "phases": [
+        {
+          "name": "training",
+          "duration_s": 30.0
+        }
+      ]
+    }
+  ],
+  "stressors": [],
+  "assertions": [
+    {
+      "id": "S6-A1",
+      "check": "capability_tier_assertion",
+      "tier": "degraded",
+      "description": "discrimination block reports the degraded capability tier"
+    },
+    {
+      "id": "S6-A2",
+      "check": "phase_discrimination_false",
+      "description": "phase discrimination is unavailable at degraded tier"
+    },
+    {
+      "id": "S6-A3",
+      "check": "verdict_never",
+      "verdict": "checkpoint_corroborated",
+      "description": "no corroboration verdict emitted at degraded tier"
+    }
+  ],
+  "description": "This scenario demonstrates how the platform behaves when the network fabric it is operating on has lower capabilities than the full-featured configuration, with certain diagnostic functions unavailable. In this configuration, the system cannot distinguish between different phases of training traffic or verify whether checkpoints have completed successfully, limiting the monitoring detail visible to the operator. The platform adapts to these constraints and continues operating within the bounds of what the fabric tier supports, rather than raising false alerts about missing functions. This matters because not every site will have the same network infrastructure, and operators deploying on more limited hardware need to understand clearly which protections and diagnostics are available to them and which require an upgrade."
+}

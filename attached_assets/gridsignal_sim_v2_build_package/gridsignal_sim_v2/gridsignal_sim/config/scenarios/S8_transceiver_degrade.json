@@ -1,0 +1,41 @@
+{
+  "scenario_id": "regression-test-transceiver-degradation",
+  "seed": 42,
+  "duration_s": 30.0,
+  "dt_s": 0.25,
+  "capability_tier": "current",
+  "asset_class": "turbine",
+  "profiles": "workload_traffic_profiles.json",
+  "fixture": "fabric_fixture_default.json",
+  "constants": "fabric_constants.json",
+  "jobs": [
+    {
+      "job_id": "job-alpha",
+      "start_s": 0.0,
+      "phases": [
+        {
+          "name": "training",
+          "duration_s": 30.0
+        }
+      ]
+    }
+  ],
+  "stressors": [
+    {
+      "kind": "degraded_transceiver",
+      "link_id": "compute/leaf5/up2",
+      "severity": 0.8,
+      "start_s": 5.0,
+      "end_s": 30.0
+    }
+  ],
+  "assertions": [
+    {
+      "id": "S8-A1",
+      "check": "crc_errors_present",
+      "link_id": "compute/leaf5/up2",
+      "description": "degraded transceiver produces non-zero CRC error counters"
+    }
+  ],
+  "description": "This scenario demonstrates hardware-level optical degradation in which a physically worn network transceiver begins generating data errors on the link it serves, detectable as checksum failures in the packet stream. The monitoring system identifies the rising error rate before it reaches the threshold at which packets begin to be dropped and lost entirely, giving the operator early warning of a component that needs replacement. The dashboard surfaces the affected link and the error rate trend, distinguishing this from a configuration or software issue. This matters because optical transceivers are consumable hardware that degrades gradually rather than failing cleanly, and catching a deteriorating transceiver before it causes training job failures or data corruption avoids both downtime and the much harder problem of diagnosing why a completed training run produced unexpected results."
+}

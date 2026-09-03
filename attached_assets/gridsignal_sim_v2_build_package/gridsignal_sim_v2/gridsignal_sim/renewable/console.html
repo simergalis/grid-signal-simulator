@@ -1,0 +1,1553 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GridSignal — Renewable Supply Console</title>
+<style>
+  :root{
+    --bg:#0b0d0f;
+    --surface:#131719;
+    --surface-2:#181d20;
+    --line:#242b30;
+    --line-soft:#1c2226;
+    --ink:#d6dce1;
+    --ink-2:#98a3ab;
+    --ink-3:#5f6a72;
+    --amber:#f2c14e;
+    --teal:#3fbfae;
+    --coral:#ef5a4c;
+    --violet:#8b8fd6;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Roboto Mono", Menlo, Consolas, monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink); font-family:var(--mono);
+    font-size:13px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit}
+  .eyebrow{
+    font-size:10px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--ink-3); font-weight:500;
+  }
+  .cap{font-size:10.5px; color:var(--ink-3); letter-spacing:.02em}
+  .num{font-variant-numeric:tabular-nums}
+
+  /* ---------- chrome ---------- */
+  header.topbar{
+    display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+    padding:12px 22px; border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#101416,#0b0d0f);
+    position:sticky; top:0; z-index:20;
+  }
+  .brand{font-size:13px; letter-spacing:.2em; text-transform:uppercase; color:var(--ink)}
+  .brand b{color:var(--amber); font-weight:600}
+  .sitepill{
+    border:1px solid var(--line); border-radius:2px; padding:3px 9px;
+    font-size:10.5px; color:var(--ink-2); letter-spacing:.06em;
+  }
+  .sitepill.island{border-color:#463a12; color:var(--amber); background:#1a1509}
+  .spacer{flex:1}
+  .clock{font-size:11px; color:var(--ink-2)}
+  .tickdot{width:6px;height:6px;border-radius:50%;background:var(--teal);display:inline-block;margin-right:6px}
+  .tickdot.beat{animation:beat 1s ease-out infinite}
+  @keyframes beat{0%{opacity:1}70%{opacity:.15}100%{opacity:1}}
+
+  nav.tabs{display:flex; gap:0; border-bottom:1px solid var(--line); padding:0 14px; background:#0e1113;
+    position:sticky; top:49px; z-index:19; overflow-x:auto}
+  nav.tabs button{
+    background:none; border:0; border-bottom:2px solid transparent; color:var(--ink-3);
+    font-family:inherit; font-size:11px; letter-spacing:.12em; text-transform:uppercase;
+    padding:11px 16px; cursor:pointer; white-space:nowrap;
+  }
+  nav.tabs button:hover{color:var(--ink-2)}
+  nav.tabs button[aria-selected="true"]{color:var(--amber); border-bottom-color:var(--amber)}
+  nav.tabs button:focus-visible{outline:1px solid var(--teal); outline-offset:-3px}
+
+  main{padding:20px 22px 70px; max-width:1440px; margin:0 auto}
+  .screen{display:none}
+  .screen.on{display:block}
+
+  .panel{border:1px solid var(--line); background:var(--surface); border-radius:3px}
+  .panel > .ph{padding:11px 14px 9px; border-bottom:1px solid var(--line-soft); display:flex; align-items:baseline; gap:10px}
+  .panel > .pb{padding:14px}
+
+  .grid{display:grid; gap:14px}
+  .g-2{grid-template-columns:1fr 1fr}
+  .g-32{grid-template-columns:1.35fr .95fr}
+  .g-23{grid-template-columns:.9fr 1.4fr}
+  @media(max-width:1080px){ .g-2,.g-32,.g-23{grid-template-columns:1fr} }
+
+  /* ---------- kpi strip ---------- */
+  .kpis{display:grid; grid-template-columns:repeat(6,1fr); border:1px solid var(--line);
+    background:var(--surface); border-radius:3px; margin-bottom:14px}
+  @media(max-width:1080px){ .kpis{grid-template-columns:repeat(3,1fr)} }
+  @media(max-width:620px){ .kpis{grid-template-columns:repeat(2,1fr)} }
+  .kpi{padding:12px 14px; border-right:1px solid var(--line-soft)}
+  .kpi:last-child{border-right:0}
+  .kpi .v{font-size:21px; letter-spacing:-.01em; margin-top:5px; font-variant-numeric:tabular-nums}
+  .kpi .s{font-size:10px; color:var(--ink-3); margin-top:2px}
+  .v.amber{color:var(--amber)} .v.teal{color:var(--teal)} .v.coral{color:var(--coral)} .v.violet{color:var(--violet)}
+
+  /* ---------- ledger rows ---------- */
+  .ledger{display:flex; flex-direction:column}
+  .lrow{display:flex; justify-content:space-between; align-items:flex-start; gap:16px;
+    padding:9px 0; border-bottom:1px solid var(--line-soft)}
+  .lrow:last-child{border-bottom:0}
+  .lrow .k{font-size:12px; color:var(--ink)}
+  .lrow .r{text-align:right; min-width:44%}
+  .lrow .r .val{font-size:12.5px; font-variant-numeric:tabular-nums}
+  .lrow .r .sub{font-size:10px; color:var(--ink-3); margin-top:2px; line-height:1.45}
+
+  /* ---------- verdict ---------- */
+  .verdict{border:1px solid #4a3d13; background:#171307; border-radius:3px;
+    padding:13px 16px; display:flex; justify-content:space-between; gap:20px; align-items:flex-start}
+  .verdict.bad{border-color:#4d2320; background:#180c0b}
+  .verdict .t{font-size:14.5px; line-height:1.45}
+  .verdict .big{font-size:30px; color:var(--amber); text-align:right; line-height:1; font-variant-numeric:tabular-nums}
+  .verdict.bad .big{color:var(--coral)}
+  .verdict .biglab{font-size:9.5px; color:var(--ink-3); text-align:right; margin-top:5px; letter-spacing:.06em}
+
+  /* ---------- bars ---------- */
+  .bar{margin-top:14px}
+  .bar .bl{display:flex; justify-content:space-between; font-size:10px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--ink-3)}
+  .bar .bl .amt{letter-spacing:0; text-transform:none; font-size:11.5px; font-variant-numeric:tabular-nums}
+  .track{height:9px; background:#1d2226; border-radius:1px; margin:6px 0 4px; overflow:hidden; position:relative}
+  .fill{height:100%; transition:width .5s ease}
+  .fill.amber{background:var(--amber)} .fill.coral{background:var(--coral)}
+  .fill.teal{background:var(--teal)} .fill.violet{background:var(--violet)}
+  .bar .note{font-size:10px; color:var(--ink-3)}
+
+  /* ---------- Layer 1: coverage bar ---------- */
+  #coverageWrap{
+    border:1px solid var(--line); background:var(--surface); border-radius:3px;
+    padding:14px 18px; margin-bottom:14px;
+  }
+  .cvg-headline{font-size:15px; line-height:1.5; color:var(--ink); margin-bottom:3px}
+  .cvg-subline{font-size:11.5px; color:var(--ink-2); margin-bottom:12px; line-height:1.6}
+  .cvg-bar-outer{position:relative; height:24px; background:#1d2226; border-radius:2px;
+    overflow:hidden; margin-bottom:8px; display:flex}
+  .cvg-seg{height:100%; transition:width .6s ease; flex-shrink:0}
+  .cvg-seg.solar{background:repeating-linear-gradient(45deg,
+    #f2c14e 0,#f2c14e 3px,#2a1d04 3px,#2a1d04 7px)}
+  .cvg-seg.turbine{background:var(--teal)}
+  .cvg-seg.bess{background:var(--violet)}
+  .cvg-seg.gap{background:repeating-linear-gradient(45deg,
+    #4d2320 0,#4d2320 3px,#120808 3px,#120808 7px);
+    outline:1px solid var(--coral); outline-offset:-1px}
+  .cvg-bar-legend{display:flex; gap:16px; font-size:10px; color:var(--ink-3); flex-wrap:wrap}
+  .cvg-bar-legend span i{
+    display:inline-block; width:13px; height:10px; margin-right:5px; vertical-align:middle;
+    border-radius:1px;
+  }
+  .cvg-gap-msg{font-size:11px; margin-top:6px; display:none}
+  .cvg-gap-msg.on{display:block}
+  .cvg-gap-msg.ok{color:var(--teal)}
+  .cvg-gap-msg.bad{color:var(--coral)}
+  .cvg-sim-row{margin-top:10px; display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+
+  /* ---------- Layer 2: bank list ---------- */
+  .bank-list{display:flex; flex-direction:column}
+  .bank-col-hdr{display:grid; grid-template-columns:72px 1fr 54px 84px 1fr;
+    gap:8px; padding:2px 6px 6px; border-bottom:1px solid var(--line-soft); margin-bottom:2px}
+  .bank-col-hdr span{font-size:9px; letter-spacing:.13em; text-transform:uppercase; color:var(--ink-3)}
+  .bank-col-hdr .r{text-align:right}
+  .fdr-group{margin-bottom:2px}
+  .fdr-group-hdr{
+    display:flex; align-items:baseline; gap:9px; padding:7px 6px 5px;
+    border-top:1px solid var(--line-soft); margin-top:4px; cursor:pointer;
+  }
+  .fdr-group-hdr:first-child{border-top:0; margin-top:0}
+  .fdr-id{font-size:9.5px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--ink-3); font-weight:500; white-space:nowrap}
+  .fdr-sub{font-size:11px; color:var(--ink-2)}
+  .fdr-cc-badge{
+    font-size:9px; letter-spacing:.1em; text-transform:uppercase; padding:2px 7px;
+    border-radius:1px; background:#1a1509; color:var(--amber); border:1px solid #463a12;
+    margin-left:auto; white-space:nowrap;
+  }
+  .fdr-group.common-cause{
+    border-left:3px solid var(--amber); padding-left:9px; margin-left:-9px;
+  }
+  .bank-row{
+    display:grid; grid-template-columns:72px 1fr 54px 84px 1fr;
+    align-items:center; gap:8px; padding:6px 6px; border-bottom:1px solid #141a1d;
+    cursor:pointer; transition:background .12s;
+  }
+  .bank-row:hover{background:#0f1416}
+  .bank-row.selected{background:#111618}
+  .br-id{font-size:11px; color:var(--ink-2); font-variant-numeric:tabular-nums}
+  .br-track{height:6px; background:#1d2226; border-radius:1px; overflow:hidden}
+  .br-fill{height:100%; transition:width .5s ease; background:var(--teal)}
+  .bank-row[data-st="degraded"] .br-fill{background:var(--amber)}
+  .bank-row[data-st="out"] .br-fill{background:var(--coral)}
+  .bank-row[data-st="no_comms"] .br-fill{background:var(--violet)}
+  .br-mw{font-size:12px; font-variant-numeric:tabular-nums; text-align:right}
+  .br-state{font-size:9px; letter-spacing:.1em; text-transform:uppercase}
+  .br-state.ok{color:var(--teal)} .br-state.warn{color:var(--amber)}
+  .br-state.bad{color:var(--coral)} .br-state.dim{color:var(--violet)}
+  .br-reason{font-size:10px; color:var(--ink-3)}
+  .bank-detail{
+    background:var(--surface-2); border-left:2px solid var(--line-soft);
+    padding:10px 14px; margin:0 0 4px; display:none;
+  }
+  .bank-detail.on{display:block}
+
+  /* ---------- legacy array tiles (kept for backward-compat, unused by new list) ---------- */
+  .array{display:grid; grid-template-columns:repeat(5,1fr); gap:9px}
+  @media(max-width:900px){ .array{grid-template-columns:repeat(2,1fr)} }
+  .blk{border:1px solid var(--line); background:var(--surface-2); border-radius:2px; padding:10px 11px;
+    cursor:pointer; transition:border-color .15s}
+  .blk:hover{border-color:#3a444b}
+  .blk[data-st="out"]{border-color:#4d2320}
+  .blk[data-st="degraded"]{border-color:#4a3d13}
+  .blk[data-st="no_comms"]{border-color:#2e3166}
+  .blk .id{font-size:11px; letter-spacing:.08em; display:flex; justify-content:space-between; align-items:center}
+  .blk .out{font-size:18px; margin-top:7px; font-variant-numeric:tabular-nums}
+  .blk .of{font-size:10px; color:var(--ink-3)}
+  .blk .mini{height:5px; background:#1d2226; margin-top:8px; border-radius:1px; overflow:hidden}
+  .blk .mini i{display:block; height:100%; background:var(--teal); transition:width .5s}
+  .blk[data-st="out"] .mini i{background:var(--coral)}
+  .blk[data-st="degraded"] .mini i{background:var(--amber)}
+  .blk[data-st="no_comms"] .mini i{background:var(--violet)}
+  .blk .meta{font-size:9.5px; color:var(--ink-3); margin-top:7px; line-height:1.5}
+  .dot{width:5px;height:5px;border-radius:50%;display:inline-block;margin-right:5px;vertical-align:middle}
+  .dot.ok{background:var(--teal)} .dot.warn{background:var(--amber)} .dot.bad{background:var(--coral)} .dot.dim{background:var(--violet)}
+  .feeder-hdr{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-3);
+    padding:10px 0 4px; grid-column:1/-1; border-top:1px solid var(--line-soft); margin-top:4px}
+  .feeder-hdr:first-child{border-top:0; margin-top:0; padding-top:0}
+  .st{font-size:9.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-3)}
+  .st.ok{color:var(--teal)} .st.warn{color:var(--amber)} .st.bad{color:var(--coral)}
+
+  /* ---------- tables ---------- */
+  table{width:100%; border-collapse:collapse; font-size:11.5px}
+  th{font-size:9.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--ink-3);
+    text-align:left; font-weight:500; padding:0 10px 8px 0; border-bottom:1px solid var(--line-soft)}
+  td{padding:8px 10px 8px 0; border-bottom:1px solid var(--line-soft); font-variant-numeric:tabular-nums;
+    vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  td.r,th.r{text-align:right; padding-right:0}
+
+  /* ---------- controls ---------- */
+  .btn{background:#1a2024; border:1px solid var(--line); color:var(--ink-2); font-family:inherit;
+    font-size:10.5px; letter-spacing:.08em; padding:7px 11px; border-radius:2px; cursor:pointer}
+  .btn:hover{border-color:#3a444b; color:var(--ink)}
+  .btn:focus-visible{outline:1px solid var(--teal); outline-offset:1px}
+  .btn.on{border-color:var(--amber); color:var(--amber); background:#191408}
+  .btn.primary{background:var(--amber); border-color:var(--amber); color:#0b0d0f; font-weight:600}
+  .btnrow{display:flex; gap:7px; flex-wrap:wrap}
+
+  /* ---------- modal ---------- */
+  .scrim{position:fixed; inset:0; background:rgba(5,7,8,.72); backdrop-filter:blur(2px);
+    display:none; z-index:60; padding:26px; overflow:auto}
+  .scrim.on{display:block}
+  .modal{max-width:1120px; margin:0 auto; background:var(--surface); border:1px solid var(--line);
+    border-top:2px solid var(--amber); border-radius:3px}
+  .modal .mh{padding:16px 20px 13px; border-bottom:1px solid var(--line-soft);
+    display:flex; justify-content:space-between; align-items:flex-start; gap:16px}
+  .modal .mt{font-size:15px; letter-spacing:.14em; text-transform:uppercase}
+  .modal .mb{padding:18px 20px}
+  .modal .mf{padding:12px 20px; border-top:1px solid var(--line-soft); display:flex;
+    justify-content:flex-end; gap:9px}
+  .x{background:none;border:1px solid var(--line);color:var(--ink-2);width:26px;height:26px;
+    border-radius:50%;cursor:pointer;font-family:inherit;line-height:1}
+  .x:hover{border-color:#3a444b;color:var(--ink)}
+
+  .adv{font-size:9.5px; letter-spacing:.14em; color:var(--teal); text-transform:uppercase}
+
+  svg{display:block; width:100%; overflow:visible}
+  .gl{stroke:#20262a; stroke-width:1}
+  .gl.dash{stroke-dasharray:2 4}
+  .ax{fill:var(--ink-3); font-size:9px; font-family:var(--mono)}
+  .legend{display:flex; gap:16px; flex-wrap:wrap; font-size:10px; color:var(--ink-3); margin-top:8px}
+  .legend i{width:14px;height:2px;display:inline-block;margin-right:6px;vertical-align:middle}
+
+  .why{border-top:1px solid var(--line-soft); margin-top:16px; padding-top:13px}
+  .why p{margin:0 0 5px; font-size:11.5px; color:var(--ink-2); line-height:1.65}
+  .ref{color:var(--ink-3)}
+
+  .log{font-size:11px}
+  .log .e{display:flex; gap:12px; padding:7px 0; border-bottom:1px solid var(--line-soft)}
+  .log .e:last-child{border-bottom:0}
+  .log .ts{color:var(--ink-3); white-space:nowrap; font-variant-numeric:tabular-nums}
+  .log .msg{flex:1}
+  .log .e.bad .msg{color:var(--coral)}
+  .log .e.warn .msg{color:var(--amber)}
+
+  .banner{border:1px solid #4d2320; background:#170c0b; border-radius:3px; padding:11px 14px;
+    margin-bottom:14px; font-size:12px; display:none}
+  .banner.on{display:block}
+  .banner b{color:var(--coral)}
+  .banner.advisory{border-color:#4a3d13; background:#161206}
+  .banner.advisory b{color:var(--amber)}
+
+  /* ---------- advisory panel (FR-SOL-1 / FR-SOL-2) ---------- */
+  .adv-item{
+    border:1px solid #4a3d13; background:#161206; border-radius:3px;
+    padding:9px 13px; font-size:12px; margin-bottom:6px;
+    display:flex; gap:12px; align-items:flex-start;
+  }
+  .adv-item.critical{border-color:#4d2320; background:#170c0b}
+  .adv-code{
+    font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--amber); font-weight:500; white-space:nowrap; min-width:190px; padding-top:1px;
+  }
+  .adv-code.critical{color:var(--coral)}
+  .adv-msg{color:var(--ink-2); flex:1}
+  .adv-sub{font-size:10.5px; color:var(--ink-3); margin-top:3px}
+
+  @media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important} }
+</style>
+
+<header class="topbar">
+  <div class="brand"><b>GridSignal</b> &nbsp;renewable supply</div>
+  <span class="sitepill" id="sitePill">SITE&nbsp; datacenter-01</span>
+  <span class="sitepill island">ISLANDED &middot; BESS is grid-forming anchor</span>
+  <span class="spacer"></span>
+  <span class="clock"><span class="tickdot beat"></span><span id="clk">--:--:--</span> &nbsp;PT &nbsp;&middot;&nbsp; tick 1 Hz</span>
+  <span class="sitepill" id="modePill" title="where the numbers are computed">LOCAL SIM</span>
+  <button class="btn" id="pauseBtn">Pause</button>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button role="tab" aria-selected="true" data-s="plant">Plant &amp; array</button>
+  <button role="tab" aria-selected="false" data-s="forecast">Forecast &amp; reserve</button>
+  <button role="tab" aria-selected="false" data-s="history">History &amp; accuracy</button>
+  <button role="tab" aria-selected="false" data-s="events">Loss events</button>
+</nav>
+
+<main>
+  <div class="banner" id="alertBanner"></div>
+  <!-- advisory panel: FR-SOL-1 reconciliation_divergence / FR-SOL-2 common_cause -->
+  <div id="advisoryPanel"></div>
+
+  <!-- ============================ PLANT ============================ -->
+  <section class="screen on" id="s-plant">
+    <div class="kpis">
+      <div class="kpi"><div class="eyebrow">Output</div><div class="v amber num" id="k-out">4.29</div><div class="s" id="k-outsub">MW AC &middot; instantaneous</div></div>
+      <div class="kpi"><div class="eyebrow">Of rated</div><div class="v num" id="k-pct">85.8%</div><div class="s" id="k-rated">5.00 MW AC &middot; 6.50 MWp DC</div></div>
+      <div class="kpi"><div class="eyebrow">Performance ratio</div><div class="v teal num" id="k-pr">93.5%</div><div class="s" id="k-prsub">measured vs clear-sky model</div></div>
+      <div class="kpi"><div class="eyebrow">POA irradiance</div><div class="v num" id="k-poa">969</div><div class="s" id="k-poasub">W/m&sup2; &middot; module 48 &deg;C</div></div>
+      <div class="kpi"><div class="eyebrow">Share of what site uses</div><div class="v violet num" id="k-share">35.6%</div><div class="s" id="k-sharesub">of site draw P_total &middot; live</div></div>
+      <div class="kpi"><div class="eyebrow">Generators &amp; battery covering</div><div class="v teal num" id="k-net">7.76</div><div class="s" id="k-netsub">MW &middot; dispatch requirement</div></div>
+    </div>
+
+    <!-- Layer 1: plain-language headline + coverage bar -->
+    <div id="coverageWrap">
+      <div class="cvg-headline" id="cvg-headline">The sun is covering — of the — MW this site is using.</div>
+      <div class="cvg-subline" id="cvg-subline">Generators and battery are covering the rest.</div>
+      <div class="cvg-bar-outer" id="cvgBar" title="Full bar width = total site draw (P_total)">
+        <div class="cvg-seg solar"   id="cvg-solar"   style="width:0%"></div>
+        <div class="cvg-seg turbine" id="cvg-turbine" style="width:0%"></div>
+        <div class="cvg-seg bess"    id="cvg-bess"    style="width:0%"></div>
+        <div class="cvg-seg gap"     id="cvg-gap"     style="width:0%"></div>
+      </div>
+      <div class="cvg-bar-legend">
+        <span><i style="background:repeating-linear-gradient(45deg,#f2c14e 0,#f2c14e 3px,#2a1d04 3px,#2a1d04 7px)"></i>Solar PV (non-dispatchable)</span>
+        <span><i style="background:var(--teal)"></i>Gas turbines</span>
+        <span><i style="background:var(--violet)"></i>Battery (BESS)</span>
+        <span id="cvg-gap-legend" style="display:none"><i style="background:repeating-linear-gradient(45deg,#4d2320 0,#4d2320 3px,#120808 3px,#120808 7px);outline:1px solid var(--coral)"></i>Uncovered gap</span>
+      </div>
+      <div class="cvg-gap-msg" id="cvgGapMsg"></div>
+      <div class="cvg-sim-row">
+        <button class="btn" id="solarStopBtn">If solar stopped this second</button>
+        <span class="cap" id="solarStopHint">Animate what happens to the supply bar</span>
+      </div>
+    </div>
+
+    <div class="grid g-32">
+      <div class="panel">
+        <div class="ph"><span class="eyebrow">Live output &middot; 120 s window</span><span class="spacer"></span>
+          <span class="cap" id="trendnote">measured tracking clear-sky within band</span></div>
+        <div class="pb">
+          <svg id="liveChart" viewBox="0 0 720 260" preserveAspectRatio="none" style="height:260px"></svg>
+          <div class="legend">
+            <span><i style="background:#f2c14e"></i>measured</span>
+            <span><i style="background:#3fbfae"></i>clear-sky model</span>
+            <span><i style="background:#8b8fd6;height:0;border-top:2px dashed #8b8fd6"></i>forecast T+60 s</span>
+            <span><i style="background:#ef5a4c"></i>net demand after solar</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="ph"><span class="eyebrow">Exposure &middot; what a loss would cost right now</span></div>
+        <div class="pb">
+          <div class="bar">
+            <div class="bl"><span id="e1label">N&minus;1 &middot; largest feeder trips</span><span class="amt" id="e1">1.07 MW</span></div>
+            <div class="track"><i class="fill amber" id="e1f" style="width:17%"></i></div>
+            <div class="note" id="e1n">step change, &Delta;t_lead = 0 &middot; covered by BESS bridging</div>
+          </div>
+          <div class="bar">
+            <div class="bl"><span>If solar stopped this second (POI or plant-controller trip)</span><span class="amt" id="e2">4.29 MW</span></div>
+            <div class="track"><i class="fill coral" id="e2f" style="width:86%"></i></div>
+            <div class="note" id="e2n">step change, &Delta;t_lead = 0 &middot; worst credible electrical contingency</div>
+          </div>
+          <div class="bar">
+            <div class="bl"><span>Cloud transient &middot; ramp-limited by array diversity</span><span class="amt" id="e3">&minus;0.42 MW/s</span></div>
+            <div class="track"><i class="fill violet" id="e3f" style="width:38%"></i></div>
+            <div class="note">not a step &mdash; spatial diversity across 20 banks on 4 feeders bounds the plant-wide ramp. Forecastable at reduced confidence from sky-imager data.</div>
+          </div>
+          <div class="why">
+            <p>The three rows above are different physics and must not be summed into one number. Only the first two are step changes the reserve check sizes against.</p>
+            <p class="ref">Reserve treatment &sect;7.1.1 &middot; arbitration &sect;7.2 step 4</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Layer 2: bank list (feeder-grouped rows) -->
+    <div class="panel" style="margin-top:14px">
+      <div class="ph">
+        <span class="eyebrow">Banks &middot; <span id="blkcount">20 online / 20</span></span>
+        <span class="spacer"></span>
+        <span class="cap" id="bankCommonCauseHdr"></span>
+        <span class="cap" style="margin-left:6px">click a bank for string detail &middot; read-only</span>
+      </div>
+      <div class="pb" style="padding-top:8px">
+        <div class="bank-list" id="bankList"></div>
+      </div>
+    </div>
+
+    <!-- Layer 3: plant conditions + stressor injection -->
+    <div class="grid g-2" style="margin-top:14px">
+      <div class="panel">
+        <div class="ph"><span class="eyebrow">Plant conditions</span></div>
+        <div class="pb"><div class="ledger" id="conditions"></div></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><span class="eyebrow">Inject a stressor &middot; simulator only</span></div>
+        <div class="pb">
+          <div class="btnrow">
+            <button class="btn" data-inj="cloud">Cloud transient</button>
+            <button class="btn" data-inj="trip">Trip a bank</button>
+            <button class="btn" data-inj="poi">Lose plant at POI</button>
+            <button class="btn" data-inj="soil">Soiling event</button>
+            <button class="btn" data-inj="spike">Compute step-load +6 MW</button>
+            <button class="btn" data-inj="turbine">Take a turbine offline</button>
+            <button class="btn" data-inj="bess">Drain BESS to 30% SoC</button>
+            <button class="btn" data-inj="feeder_open" title="Trips all 5 banks on fdr-B simultaneously — raises one common-cause advisory (FR-SOL-2)">Open fdr-B feeder</button>
+            <button class="btn" data-inj="comms_loss" title="Drops telemetry on fdr-A while banks keep generating — raises reconciliation_divergence after 5 ticks (FR-SOL-1)">fdr-A comms loss</button>
+            <button class="btn" data-inj="bank_derate" title="Inverter overtemp on one random bank — bank moves to degraded state, counted at measured capability">Derate a bank</button>
+            <button class="btn" data-inj="reset">Reset to nominal</button>
+          </div>
+          <div class="why"><p>Renewable output is an engine input, so every scenario above is seed data rather than a
+            special-case code path. A compute spike and a supply collapse enter the arbitrator as the same event class.</p>
+            <p class="ref">Scenario framework interaction &sect;7.1.1</p></div>
+          <div style="margin-top:12px"><button class="btn primary" id="openModal">Open supply verdict</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ FORECAST ============================ -->
+  <section class="screen" id="s-forecast">
+    <div class="grid g-32">
+      <div class="panel">
+        <div class="ph"><span class="eyebrow">Adaptive forecast &middot; T&minus;10 min to T+15 min</span><span class="spacer"></span>
+          <span class="cap">confidence band widens with horizon</span></div>
+        <div class="pb">
+          <svg id="fcChart" viewBox="0 0 720 280" preserveAspectRatio="none" style="height:280px"></svg>
+          <div class="legend">
+            <span><i style="background:#f2c14e"></i>measured (past)</span>
+            <span><i style="background:#8b8fd6"></i>forecast (mean)</span>
+            <span><i style="background:#3a3d63"></i>80% confidence band</span>
+            <span><i style="background:#3fbfae"></i>clear-sky ceiling</span>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="ph"><span class="eyebrow">Horizon ladder</span></div>
+        <div class="pb">
+          <table>
+            <thead><tr><th>Horizon</th><th>Source</th><th class="r">Mean</th><th class="r">P10</th><th class="r">Conf.</th></tr></thead>
+            <tbody id="ladder"></tbody>
+          </table>
+          <div class="why">
+            <p>Dispatch consumes the <b>P10</b> column, never the mean. A forecast segment carrying a low-confidence tag
+              cannot support ramp relaxation.</p>
+            <p class="ref">Conservative-by-default &sect;12 &middot; relaxation constraint &sect;23.7.2 (TC-75)</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid g-23" style="margin-top:14px">
+      <div class="panel">
+        <div class="ph"><span class="eyebrow">Reserve check &middot; &sect;7.2 step 4</span><span class="spacer"></span>
+          <span id="rvVerdict" class="st ok">pass</span></div>
+        <div class="pb"><div class="ledger" id="reserve"></div></div>
+      </div>
+
+      <div class="panel">
+        <div class="ph"><span class="eyebrow">Worked arithmetic &middot; worst credible compound event</span></div>
+        <div class="pb">
+          <div id="worked" style="font-size:11.5px; line-height:1.9"></div>
+          <div class="why">
+            <p>This calculation is a planning instrument. It runs continuously, but a compound failure is an
+              advisory rather than an alarm &mdash; the alarm fires when the contingency the site is actually exposed to
+              right now cannot be covered.</p>
+            <p>Solar is subtracted from the load the generators and battery must serve and is never added to ramp capability.
+              Turbine ramp rate and anchor-adjusted BESS discharge are the only terms that close a gap.</p>
+            <p class="ref">Availability, not dispatchability &sect;7.1.1 &middot; anchor constraint &sect;7.1.2</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:14px">
+      <div class="ph"><span class="eyebrow">Adaptive model state &middot; learning plane proposals</span><span class="spacer"></span>
+        <span class="cap">proposals only &mdash; nothing here reaches dispatch without review</span></div>
+      <div class="pb">
+        <table>
+          <thead><tr><th>Parameter</th><th>In force</th><th>Proposed</th><th>Evidence window</th><th>State</th></tr></thead>
+          <tbody>
+            <tr><td>soiling_loss_coeff</td><td>0.030</td><td>0.041</td><td>21 d &middot; 1,842 samples</td><td><span class="st warn">under_review</span></td></tr>
+            <tr><td>temp_derate_pct_per_K</td><td>0.38</td><td>0.35</td><td>34 d &middot; 4,110 samples</td><td><span class="st ok">applied</span></td></tr>
+            <tr><td>cloud_ramp_bound_MW_s</td><td>0.42</td><td>0.55</td><td>9 d &middot; 63 transients</td><td><span class="st">proposed</span></td></tr>
+            <tr><td>clear_sky_bias_correction</td><td>+1.2%</td><td>+0.4%</td><td>30 d &middot; 2,690 samples</td><td><span class="st warn">under_review</span></td></tr>
+            <tr><td>poi_loss_probability</td><td>&mdash;</td><td>2.1e&minus;4 /h</td><td>insufficient</td><td><span class="st bad">rejected</span></td></tr>
+          </tbody>
+        </table>
+        <div class="why"><p class="ref">Promotion gate &sect;21.6 &middot; a raised rating requires a longer window than a lowered one (&sect;27.5)</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ HISTORY ============================ -->
+  <section class="screen" id="s-history">
+    <div class="kpis">
+      <div class="kpi"><div class="eyebrow">Energy today</div><div class="v amber num" id="h-today">22.4</div><div class="s">MWh &middot; to 14:07</div></div>
+      <div class="kpi"><div class="eyebrow">Last 30 days</div><div class="v num" id="h-30">861</div><div class="s">MWh delivered</div></div>
+      <div class="kpi"><div class="eyebrow">Plant availability</div><div class="v teal num">99.2%</div><div class="s">30 d &middot; inverter-weighted</div></div>
+      <div class="kpi"><div class="eyebrow">Capacity factor</div><div class="v num">23.9%</div><div class="s">30 d &middot; against 5.00 MW AC</div></div>
+      <div class="kpi"><div class="eyebrow">Clipping loss</div><div class="v num">1.4%</div><div class="s">DC/AC 1.30 &middot; 11 h clipped</div></div>
+      <div class="kpi"><div class="eyebrow">Soiling loss</div><div class="v coral num">4.1%</div><div class="s">since last wash &middot; 26 d</div></div>
+    </div>
+
+    <div class="panel">
+      <div class="ph"><span class="eyebrow">Daily generation &middot; 30 days</span><span class="spacer"></span>
+        <span class="cap">bar height = MWh delivered &middot; notch = clear-sky expectation</span></div>
+      <div class="pb"><svg id="histChart" viewBox="0 0 720 220" preserveAspectRatio="none" style="height:220px"></svg></div>
+    </div>
+
+    <div class="grid g-2" style="margin-top:14px">
+      <div class="panel">
+        <div class="ph"><span class="eyebrow">Forecast accuracy by horizon &middot; 30 d</span></div>
+        <div class="pb">
+          <table>
+            <thead><tr><th>Horizon</th><th>Method</th><th class="r">MAPE</th><th class="r">P10 breach</th><th class="r">n</th></tr></thead>
+            <tbody>
+              <tr><td>T+60 s</td><td>persistence + POA slope</td><td class="r">1.8%</td><td class="r">0.4%</td><td class="r">2.59 M</td></tr>
+              <tr><td>T+5 min</td><td>sky imager, cloud advection</td><td class="r">4.6%</td><td class="r">1.9%</td><td class="r">8,640</td></tr>
+              <tr><td>T+15 min</td><td>sky imager + satellite blend</td><td class="r">9.1%</td><td class="r">3.7%</td><td class="r">2,880</td></tr>
+              <tr><td>T+1 h</td><td>satellite NWP blend</td><td class="r">17.3%</td><td class="r">6.2%</td><td class="r">720</td></tr>
+              <tr><td>T+4 h</td><td>NWP</td><td class="r">24.8%</td><td class="r">9.8%</td><td class="r">180</td></tr>
+            </tbody>
+          </table>
+          <div class="why"><p>P10 breach is the number that matters for dispatch: it counts intervals where actual output
+            fell below the lower bound the reserve check was sized against.</p></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="ph"><span class="eyebrow">Retention &middot; what is kept and where</span></div>
+        <div class="pb">
+          <table>
+            <thead><tr><th>Tier</th><th>Resolution</th><th>Window</th><th>Store</th></tr></thead>
+            <tbody>
+              <tr><td>Tier 0</td><td>1 s, per inverter</td><td>72 h</td><td>edge appliance, local</td></tr>
+              <tr><td>Tier 1</td><td>10 s, plant + per bank</td><td>90 d</td><td>site learning store</td></tr>
+              <tr><td>Tier 2</td><td>1 min rollup + events</td><td>7 y</td><td>S3-compatible object store</td></tr>
+              <tr><td>Events</td><td>full fidelity, &plusmn;5 min</td><td>7 y</td><td>Tier 2, never downsampled</td></tr>
+            </tbody>
+          </table>
+          <div class="why"><p>Loss events are captured at full fidelity on both sides of the step, because a downsampled
+            record of a step change cannot answer whether the reserve held.</p>
+            <p class="ref">Storage tiers &sect;22.1&ndash;22.2</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ EVENTS ============================ -->
+  <section class="screen" id="s-events">
+    <div class="grid g-23">
+      <div class="panel">
+        <div class="ph"><span class="eyebrow">Session log</span></div>
+        <div class="pb"><div class="log" id="eventLog"></div></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><span class="eyebrow">Historical loss events &middot; 90 days</span><span class="spacer"></span>
+          <span class="cap">did the reserve hold?</span></div>
+        <div class="pb">
+          <table>
+            <thead><tr><th>When</th><th>Cause</th><th class="r">&Delta;P</th><th class="r">&Delta;t_lead</th><th class="r">Bridged in</th><th>Outcome</th></tr></thead>
+            <tbody>
+              <tr><td>2026-07-24 11:52</td><td>inv-03 DC arc-fault trip</td><td class="r">0.91 MW</td><td class="r">0 s</td><td class="r">2.3 s</td><td><span class="st ok">held</span></td></tr>
+              <tr><td>2026-07-19 15:31</td><td>cumulus field, 40% depth</td><td class="r">1.74 MW</td><td class="r">~90 s</td><td class="r">n/a</td><td><span class="st ok">forecast</span></td></tr>
+              <tr><td>2026-07-11 09:08</td><td>POI breaker, utility fault</td><td class="r">3.60 MW</td><td class="r">0 s</td><td class="r">4.1 s</td><td><span class="st warn">held, 0.4 Hz dip</span></td></tr>
+              <tr><td>2026-06-28 13:44</td><td>inv-05 IGBT overtemp derate</td><td class="r">0.44 MW</td><td class="r">0 s</td><td class="r">1.1 s</td><td><span class="st ok">held</span></td></tr>
+              <tr><td>2026-06-14 12:19</td><td>plant controller comms loss</td><td class="r">4.42 MW</td><td class="r">0 s</td><td class="r">&mdash;</td><td><span class="st bad">curtailed 2.1 MW</span></td></tr>
+              <tr><td>2026-05-30 16:02</td><td>tracker &mdash; n/a, fixed mount</td><td class="r">&mdash;</td><td class="r">&mdash;</td><td class="r">&mdash;</td><td><span class="st">n/a</span></td></tr>
+            </tbody>
+          </table>
+          <div class="why">
+            <p>The June 14 row is the one worth reading twice. A comms loss to the plant controller presents identically to a
+              generation loss and was handled as one &mdash; correctly, but at the cost of 2.1 MW of curtailed compute that the
+              arbitrator staged down before confirming the source.</p>
+            <p class="ref">Comms loss vs generation loss &sect;4.4 &middot; FR-SOL-1 reconciliation check</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============================ MODAL ============================ -->
+<div class="scrim" id="scrim" role="dialog" aria-modal="true" aria-labelledby="mtitle">
+  <div class="modal">
+    <div class="mh">
+      <div>
+        <div class="mt" id="mtitle">Renewable supply <span class="adv">&bull; advisory</span></div>
+        <div class="cap" style="margin-top:5px" id="msub">solar-0 &middot; fixed-mount PV &middot; 20 &times; 0.25 MW banks &middot; 4 feeders &middot; non-dispatchable</div>
+      </div>
+      <button class="x" id="closeX" aria-label="Close">&times;</button>
+    </div>
+    <div class="mb">
+      <div class="verdict" id="verdict">
+        <div>
+          <div class="eyebrow">Verdict</div>
+          <div class="t" id="vtext">Contributing 4.29 MW &mdash; and 4.29 MW of it can vanish with no warning.</div>
+        </div>
+        <div>
+          <div class="big num" id="vbig">4.29</div>
+          <div class="biglab">MW, non-dispatchable</div>
+        </div>
+      </div>
+
+      <div class="grid g-32" style="margin-top:16px">
+        <div>
+          <div class="eyebrow" style="margin-bottom:8px">Contribution, and exposure if it stops</div>
+          <svg id="modalChart" viewBox="0 0 620 250" preserveAspectRatio="none" style="height:250px"></svg>
+          <div class="legend">
+            <span><i style="background:#f2c14e"></i>solar output</span>
+            <span><i style="background:#3fbfae"></i>site total draw</span>
+            <span><i style="background:#ef5a4c"></i>net demand after solar</span>
+          </div>
+
+          <div class="bar">
+            <div class="bl"><span>Current output against rated</span><span class="amt" id="m1">4.29 / 5.00 MW</span></div>
+            <div class="track"><i class="fill amber" id="m1f" style="width:86%"></i></div>
+            <div class="note" id="m1n">85.8% of AC nameplate &middot; not clipping</div>
+          </div>
+          <div class="bar">
+            <div class="bl"><span id="m2label">If the largest feeder trips (N&minus;1)</span><span class="amt" id="m2">1.07 MW</span></div>
+            <div class="track"><i class="fill violet" id="m2f" style="width:17%"></i></div>
+            <div class="note" id="m2note">probable contingency &middot; one feeder, &Delta;t_lead = 0</div>
+          </div>
+          <div class="bar">
+            <div class="bl"><span>If solar stopped this second (POI trip)</span><span class="amt" id="m3">4.29 MW</span></div>
+            <div class="track"><i class="fill coral" id="m3f" style="width:86%"></i></div>
+            <div class="note" id="m3n">sizing contingency &middot; &Delta;t_lead = 0</div>
+          </div>
+        </div>
+
+        <div><div class="ledger" id="mledger"></div></div>
+      </div>
+
+      <div class="why">
+        <div class="eyebrow" style="margin-bottom:8px">Why this matters</div>
+        <p>Renewable output is subtracted from the load the generators and battery must serve. It is never added to ramp capability,
+          because it cannot be commanded and carries no lead time on loss.</p>
+        <p>Nothing on this panel is a control. Solar is a passive collector, and a control that does nothing is worse
+          than no control at all.</p>
+        <p class="ref">&sect;7.1.1 non-dispatchable supply &middot; &sect;7.2 dispatch arbitration &middot; &sect;19.5 generation page</p>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn" id="toPlant">Open full page</button>
+      <button class="btn primary" id="closeBtn">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------------- site constants (populated from SRV.site on first connect) ----------------
+  // Defaults match the San Diego seed so render calls are safe before the first poll returns.
+  var SITE = {
+    plantRatedAC:    5.00,   // MW AC nameplate
+    plantRatedDC:    6.50,   // MWp DC nameplate
+    stringsPerBank:  6,
+    cloudRampBound:  0.42,   // MW/s plant-wide
+    bessRatedMW:     10.0,
+    bessMWh:         5.0,
+    anchorReserveMW: 2.0
+  };
+
+  // ---------------- mutable state (render layer only — no local physics) ----------------
+  var S = {
+    t: 0, running: true,
+    // atmosphere mirrors — set by applySnapshot(); read by renderConditions/renderForecast
+    poa: 0, clearSkyPoa: 0, moduleC: 25,
+    soiling: 0, cloudFactor: 1.0, cloudTarget: 1.0,
+    pCompute: 0,
+    blocks: [], feeders: [], hist: [], fault: null, log: [],
+    advisories: []
+  };
+
+  // Layer 1 "if solar stops" simulation state
+  var _solarStopSim = false;
+  var _solarStopTimer = null;
+
+  // ---------------- server mode ----------------
+  var SRV = null, SERVER_MODE = false, srvBusy = false;
+
+  function applySnapshot(d){
+    SRV = d;
+    S.t = d.t;
+    S.poa = d.atmosphere.poa; S.clearSkyPoa = d.atmosphere.poa_clear_sky;
+    S.cloudFactor = d.atmosphere.cloud_factor; S.moduleC = d.atmosphere.module_temp_c;
+    S.soiling = d.atmosphere.soiling;
+    S.pCompute = d.power.p_compute_mw;
+    // Keep cloudTarget in sync with the actual factor so renderForecast projects
+    // from the current server-reported conditions rather than a stale local value.
+    S.cloudTarget = S.cloudFactor;
+    // Populate SITE from the server's authoritative config (replaces local CFG).
+    if (d.site) {
+      SITE.plantRatedAC    = d.site.plant_rated_ac_mw;
+      SITE.plantRatedDC    = d.site.plant_rated_dc_mwp;
+      SITE.stringsPerBank  = d.site.strings_per_bank;
+      SITE.cloudRampBound  = d.site.cloud_ramp_bound_mw_per_s;
+      SITE.bessRatedMW     = d.site.bess_rated_mw;
+      SITE.bessMWh         = d.site.bess_mwh;
+      SITE.anchorReserveMW = d.site.anchor_reserve_mw;
+    }
+    // Consume `banks` (new contract); fall back to `blocks` for compat.
+    var bankList = d.banks || d.blocks || [];
+    S.blocks = bankList.map(function(b){
+      // Four-state classifier: nominal / degraded / out / no_comms.
+      var st = b.state || 'nominal';
+      if (st === 'fault')   st = 'out';
+      if (st === 'derated') st = 'degraded';
+      if (st === 'ok')      st = 'nominal';
+      return { id:b.id, feederId:b.feeder_id||'', rated:b.rated_mw, state:st,
+               derate:1.0, stringsOut:b.strings_out||0,
+               invC:b.inverter_temp_c||40, soilBias:1,
+               srvOut:b.counted_output_mw,   // 0 for out/no_comms
+               srvCs:b.expected_mw,
+               fault:b.fault||null, reason:b.reason||null,
+               telemetryAge:b.telemetry_age_s||0 }; });
+    // Feeder subtotals for feeder-level N−1 and the feeder status row.
+    S.feeders = d.feeders || [];
+    S.log = d.log.slice();
+    // Advisory list (FR-SOL-1 reconciliation_divergence / FR-SOL-2 common_cause)
+    S.advisories = d.advisories || [];
+  }
+
+  function pollServer(){
+    if (srvBusy) return Promise.resolve(false);
+    srvBusy = true;
+    return fetch('/api/solar/state', {cache:'no-store'})
+      .then(function(r){ if(!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function(d){ applySnapshot(d); srvBusy=false; return true; })
+      .catch(function(){ srvBusy=false; return false; });
+  }
+
+  // ---------------- helpers ----------------
+  function $(id){ return document.getElementById(id); }
+  function f(n, d){
+    if (n === null || n === undefined || !isFinite(n)) return '\u221e';
+    return Number(n).toFixed(d === undefined ? 2 : d);
+  }
+  function clamp(v,a,b){ return v<a?a:(v>b?b:v); }
+  function pct(a,b){ return b===0?0:(a/b*100); }
+
+  function log(msg, kind){
+    var d = new Date();
+    S.log.unshift({ ts: d.toTimeString().slice(0,8), msg: msg, kind: kind || '' });
+    if (S.log.length > 40) S.log.pop();
+    renderLog();
+  }
+
+  // ---------------- render helpers (server-read; no local physics) ----------------
+  // All power and state scalars come from SRV (populated by applySnapshot).
+  // Functions return 0 / [] / '-' when the server has not yet responded.
+
+  function blockOutput(b)   { return b.srvOut !== undefined ? b.srvOut : 0; }
+  function clearSkyBlock(b) { return b.srvCs  !== undefined ? b.srvCs  : 0; }
+
+  function pRenewable()  { return SRV ? SRV.power.p_renewable_mw          : 0; }
+  function pClearSky()   { return SRV ? SRV.power.p_clear_sky_mw          : 0; }
+  function pCooling()    { return SRV ? SRV.power.p_cooling_mw            : 0; }
+  function pTotal()      { return SRV ? SRV.power.p_total_mw              : 0; }
+  function pNet()        { return SRV ? SRV.power.p_dispatch_required_mw  : 0; }
+  function pExpected()   { return SRV ? SRV.power.p_expected_mw           : 0; }
+
+  function banksReporting() { return SRV ? SRV.power.banks_reporting : 0; }
+  function banksTotal()     { return SRV ? SRV.power.banks_total     : 0; }
+
+  function largestFeederId() { return SRV && SRV.exposure ? SRV.exposure.largest_feeder_id : '-'; }
+
+  function onlineTurbines() {
+    return SRV ? SRV.fleet.turbines.filter(function(t){ return t.online; }) : [];
+  }
+  function fleetRamp() { return SRV ? SRV.fleet.fleet_ramp_mw_per_s : 0; }
+
+  function bessBridging()  { return SRV ? SRV.fleet.bess_bridging_mw : 0; }
+  function bessUsableMWh() { return SRV ? SRV.fleet.bess_usable_mwh  : 0; }
+
+  // N−1 is sized on the largest FEEDER loss (§5), not the largest individual bank.
+  function largestFeederMW() {
+    return SRV && SRV.reserve && SRV.reserve.n1_feeder
+      ? SRV.reserve.n1_feeder.delta_p_mw : 0;
+  }
+  function largestBankMW() { return SRV && SRV.exposure ? SRV.exposure.largest_bank_mw : 0; }
+  function largestBlockMW(){ return largestBankMW(); }
+
+  // Reserve check results — read from the server's authoritative pre-computed payload.
+  // The server re-runs reserve_check() after every run-sync scaling step, so these
+  // values always reconcile with p_renewable_mw.  Infinity JSON-nulls are restored.
+  function _mapRC(r) {
+    if (!r) return { pass:false, dP:0, rampTime:Infinity, gap:0, peak:0, bridge:0,
+                     energyNeeded:0, sustainSec:Infinity, deficitMW:0, deficitSec:0 };
+    return {
+      dP:          r.delta_p_mw,
+      rampTime:    r.ramp_time_s            === null ? Infinity : r.ramp_time_s,
+      gap:         r.gap_s,
+      peak:        r.peak_shortfall_mw,
+      bridge:      r.bridging_available_mw,
+      energyNeeded: r.energy_needed_mwh,
+      sustainSec:  r.sustainable_duration_s === null ? Infinity : r.sustainable_duration_s,
+      pass:        r.passes,
+      deficitMW:   r.deficit_mw,
+      deficitSec:  r.deficit_s,
+    };
+  }
+  function rcPlant()    { return SRV ? _mapRC(SRV.reserve.plant)     : _mapRC(null); }
+  function rcN1Feeder() { return SRV ? _mapRC(SRV.reserve.n1_feeder) : _mapRC(null); }
+  function rcN1Bank()   { return SRV ? _mapRC(SRV.reserve.n1_bank)   : _mapRC(null); }
+  function rcCompound() { return SRV ? _mapRC(SRV.reserve.compound)  : _mapRC(null); }
+
+  // ---------------- svg drawing ----------------
+  function ns(tag, attrs){
+    var e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+  function drawLine(svg, pts, x0,y0,w,h, xmin,xmax,ymin,ymax, color, dash, width){
+    if (pts.length < 2) return;
+    var d = '';
+    for (var i=0;i<pts.length;i++){
+      var X = x0 + (pts[i][0]-xmin)/(xmax-xmin)*w;
+      var Y = y0 + h - (clamp(pts[i][1],ymin,ymax)-ymin)/(ymax-ymin)*h;
+      d += (i?'L':'M') + f(X,1) + ' ' + f(Y,1) + ' ';
+    }
+    var p = ns('path', {d:d, fill:'none', stroke:color, 'stroke-width':width||1.8,
+      'stroke-linejoin':'round','stroke-linecap':'round'});
+    if (dash) p.setAttribute('stroke-dasharray', dash);
+    svg.appendChild(p);
+  }
+  function axes(svg, x0,y0,w,h, ymin,ymax, yticks, xlabels, xmin, xmax){
+    for (var i=0;i<=yticks;i++){
+      var v = ymin + (ymax-ymin)*i/yticks;
+      var Y = y0 + h - (v-ymin)/(ymax-ymin)*h;
+      svg.appendChild(ns('line',{x1:x0,y1:Y,x2:x0+w,y2:Y,class:'gl dash'}));
+      var t = ns('text',{x:x0-8,y:Y+3,class:'ax','text-anchor':'end'});
+      t.textContent = f(v, ymax>=20?0:1); svg.appendChild(t);
+    }
+    (xlabels||[]).forEach(function(L){
+      var X = x0 + (L[0]-xmin)/(xmax-xmin)*w;
+      var t = ns('text',{x:X,y:y0+h+15,class:'ax','text-anchor':'middle'});
+      t.textContent = L[1]; svg.appendChild(t);
+    });
+  }
+
+  // ---------------- rendering: live chart ----------------
+  function renderLive(){
+    var svg = $('liveChart'); svg.innerHTML='';
+    var x0=44,y0=10,w=650,h=205;
+    var H = S.hist; if (!H.length) return;
+    var xmin = H[0].t, xmax = Math.max(H[H.length-1].t, xmin+30);
+    var peak = 0; H.forEach(function(p){ if(p.tot>peak) peak=p.tot; });
+    var ymax = Math.max(6, Math.ceil(peak*1.15/2)*2), ymin = 0;
+    var xl = []; for (var s=Math.ceil(xmin/15)*15; s<=xmax; s+=15) xl.push([s, s+'s']);
+    axes(svg,x0,y0,w,h,ymin,ymax,4,xl,xmin,xmax);
+    drawLine(svg, H.map(function(p){return [p.t,p.net];}), x0,y0,w,h,xmin,xmax,ymin,ymax,'#ef5a4c');
+    drawLine(svg, H.map(function(p){return [p.t,p.tot];}), x0,y0,w,h,xmin,xmax,ymin,ymax,'#3fbfae');
+    drawLine(svg, H.map(function(p){return [p.t,p.cs];}),  x0,y0,w,h,xmin,xmax,ymin,ymax,'#2a6b64','3 3',1.3);
+    drawLine(svg, H.map(function(p){return [p.t,p.sol];}), x0,y0,w,h,xmin,xmax,ymin,ymax,'#f2c14e',null,2.2);
+    var last = H[H.length-1];
+    var fx = xmax, fy = last.sol * (S.cloudTarget/Math.max(S.cloudFactor,0.01));
+    drawLine(svg, [[last.t,last.sol],[fx, clamp(fy,0,ymax)]], x0,y0,w,h,xmin,xmax,ymin,ymax,'#8b8fd6','4 3',1.6);
+    var t = ns('text',{x:x0+w,y:y0+h+15,class:'ax','text-anchor':'end'});
+    t.textContent='seconds from session start'; svg.appendChild(t);
+  }
+
+  // ---------------- rendering: forecast chart ----------------
+  function renderForecast(){
+    var svg = $('fcChart'); svg.innerHTML='';
+    var x0=44,y0=10,w=650,h=220;
+    var xmin=-600, xmax=900, ymin=0, ymax=6;
+    axes(svg,x0,y0,w,h,ymin,ymax,4,
+      [[-600,'T\u221210m'],[-300,'T\u22125m'],[0,'now'],[300,'T+5m'],[600,'T+10m'],[900,'T+15m']],xmin,xmax);
+
+    var cur = pRenewable(), past=[];
+    for (var s=-600;s<=0;s+=20){
+      var wob = Math.sin(s/97)*0.07 + Math.sin(s/211)*0.05;
+      past.push([s, clamp(cur*(1+wob) + s*0.00008*cur, 0, SITE.plantRatedAC)]);
+    }
+    var mean=[], hi=[], lo=[];
+    for (var q=0;q<=900;q+=30){
+      var decay = 1 - q*0.000075;
+      var m = cur*decay*S.cloudTarget/Math.max(S.cloudFactor,0.01);
+      m = clamp(m,0,SITE.plantRatedAC);
+      var sigma = 0.018 + q*0.000115;
+      mean.push([q,m]); hi.push([q, clamp(m*(1+sigma*1.9),0,6)]); lo.push([q, Math.max(0,m*(1-sigma*2.6))]);
+    }
+    var band='';
+    hi.forEach(function(p,i){ var X=x0+(p[0]-xmin)/(xmax-xmin)*w, Y=y0+h-(clamp(p[1],ymin,ymax))/(ymax-ymin)*h;
+      band += (i?'L':'M')+f(X,1)+' '+f(Y,1)+' '; });
+    for (var j=lo.length-1;j>=0;j--){ var X2=x0+(lo[j][0]-xmin)/(xmax-xmin)*w,
+      Y2=y0+h-(clamp(lo[j][1],ymin,ymax))/(ymax-ymin)*h; band+='L'+f(X2,1)+' '+f(Y2,1)+' '; }
+    svg.appendChild(ns('path',{d:band+'Z', fill:'#3a3d63', opacity:'.38', stroke:'none'}));
+
+    var cs = pClearSky(), ceil=[];
+    for (var k=-600;k<=900;k+=50) ceil.push([k, cs*(1-Math.max(0,k)*0.00009)]);
+    drawLine(svg, ceil, x0,y0,w,h,xmin,xmax,ymin,ymax,'#2a6b64','3 3',1.3);
+    drawLine(svg, past, x0,y0,w,h,xmin,xmax,ymin,ymax,'#f2c14e',null,2.2);
+    drawLine(svg, mean, x0,y0,w,h,xmin,xmax,ymin,ymax,'#8b8fd6','5 3',2);
+    var nx = x0 + (0-xmin)/(xmax-xmin)*w;
+    svg.appendChild(ns('line',{x1:nx,y1:y0,x2:nx,y2:y0+h,stroke:'#4a545c','stroke-width':1}));
+
+    var rows='', hs=[[60,'T+60 s','persistence + POA slope',0.018,'high'],
+                     [300,'T+5 min','sky imager advection',0.052,'high'],
+                     [900,'T+15 min','imager + satellite blend',0.108,'medium'],
+                     [3600,'T+1 h','satellite NWP blend',0.191,'low'],
+                     [14400,'T+4 h','NWP',0.262,'low']];
+    hs.forEach(function(r){
+      var m = clamp(cur*(1-r[0]*0.000075)*S.cloudTarget/Math.max(S.cloudFactor,0.01),0,6);
+      var p10 = Math.max(0, m*(1-r[3]*2.6));
+      var cls = r[4]==='high'?'ok':(r[4]==='medium'?'warn':'bad');
+      rows += '<tr><td>'+r[1]+'</td><td style="color:var(--ink-3)">'+r[2]+'</td><td class="r">'+f(m)+
+              ' MW</td><td class="r" style="color:var(--amber)">'+f(p10)+' MW</td><td class="r"><span class="st '+
+              cls+'">'+r[4]+'</span></td></tr>';
+    });
+    $('ladder').innerHTML = rows;
+  }
+
+  // ---------------- rendering: history chart ----------------
+  function renderHistory(){
+    var svg = $('histChart'); svg.innerHTML='';
+    var x0=44,y0=10,w=650,h=165, ymax=40;
+    axes(svg,x0,y0,w,h,0,ymax,4,[[0,'30 d ago'],[15,'15 d ago'],[29,'today']],0,29);
+    var seed=7, tot=0;
+    for (var d=0; d<30; d++){
+      seed = (seed*1103515245 + 12345) % 2147483648;
+      var noise = (seed/2147483648);
+      var expect = 34 + Math.sin(d/5)*2.4;
+      var actual = expect * (0.62 + noise*0.42);
+      if (d===29) actual = 22.4;
+      tot += actual;
+      var X = x0 + d/29*w, bw = w/30*0.62;
+      var Y = y0 + h - actual/ymax*h;
+      var color = actual/expect < 0.72 ? '#5c4a1e' : '#f2c14e';
+      svg.appendChild(ns('rect',{x:f(X-bw/2,1),y:f(Y,1),width:f(bw,1),height:f(y0+h-Y,1),fill:color,opacity: d===29?'1':'.85'}));
+      var eY = y0 + h - expect/ymax*h;
+      svg.appendChild(ns('line',{x1:f(X-bw/2,1),y1:f(eY,1),x2:f(X+bw/2,1),y2:f(eY,1),stroke:'#3fbfae','stroke-width':1.4,opacity:'.8'}));
+    }
+    $('h-30').textContent = Math.round(tot);
+    var t = ns('text',{x:x0-8,y:y0-2,class:'ax','text-anchor':'end'}); t.textContent='MWh'; svg.appendChild(t);
+  }
+
+  // ---------------- rendering: modal chart ----------------
+  function renderModalChart(){
+    var svg = $('modalChart'); if(!svg) return; svg.innerHTML='';
+    var x0=44,y0=10,w=550,h=195;
+    var H = S.hist; if (!H.length) return;
+    var peak=0; H.forEach(function(p){ if(p.tot>peak) peak=p.tot; });
+    var ymax = Math.max(6, Math.ceil(peak*1.15/2)*2);
+    var xmin=H[0].t, xmax=Math.max(H[H.length-1].t, xmin+30);
+    var xl=[]; for(var s=Math.ceil(xmin/15)*15;s<=xmax;s+=15) xl.push([s,String(s)]);
+    axes(svg,x0,y0,w,h,0,ymax,4,xl,xmin,xmax);
+    var band='';
+    H.forEach(function(p,i){ var X=x0+(p.t-xmin)/(xmax-xmin)*w, Y=y0+h-clamp(p.sol,0,ymax)/ymax*h;
+      band+=(i?'L':'M')+f(X,1)+' '+f(Y,1)+' '; });
+    band += 'L'+f(x0+w,1)+' '+f(y0+h,1)+' L'+f(x0,1)+' '+f(y0+h,1)+' Z';
+    svg.appendChild(ns('path',{d:band,fill:'#f2c14e',opacity:'.10',stroke:'none'}));
+    drawLine(svg,H.map(function(p){return [p.t,p.net];}),x0,y0,w,h,xmin,xmax,0,ymax,'#ef5a4c');
+    drawLine(svg,H.map(function(p){return [p.t,p.tot];}),x0,y0,w,h,xmin,xmax,0,ymax,'#3fbfae');
+    drawLine(svg,H.map(function(p){return [p.t,p.sol];}),x0,y0,w,h,xmin,xmax,0,ymax,'#f2c14e',null,2.2);
+    var t=ns('text',{x:x0+w,y:y0+h+15,class:'ax','text-anchor':'end'});
+    t.textContent='seconds from session start'; svg.appendChild(t);
+  }
+
+  // ---------------- rendering: Layer 1 headline + coverage bar ----------------
+  function renderLayer1(){
+    var solar = pRenewable(), tot = pTotal();
+    var bridge = bessBridging();
+    var simOn = _solarStopSim;
+
+    // Headline (AC-UI-1 honesty: zero output is unremarkable at night)
+    var hl = $('cvg-headline'), sl = $('cvg-subline');
+    if (hl){
+      if (solar < 0.05){
+        hl.textContent = 'Solar is not contributing right now. Generators and battery are carrying the full ' + f(tot) + ' MW.';
+      } else {
+        hl.textContent = 'The sun is covering ' + f(solar) + ' MW of the ' + f(tot) + ' MW this site is using.';
+      }
+    }
+    if (sl){
+      if (solar < 0.05){
+        sl.textContent = 'Zero solar output is expected at night or after a plant-level trip. No action required.';
+      } else {
+        sl.textContent = 'Generators and battery are covering the remaining ' + f(pNet(),2)
+          + ' MW. Solar is non-dispatchable and carries no lead time on loss.';
+      }
+    }
+
+    // Coverage bar segments — full width = P_total
+    // Layout: [solar][turbines][bess][gap if sim + insufficient reserve]
+    var solarFrac, turbineFrac, bessFrac, gapFrac;
+    if (!simOn){
+      solarFrac   = tot > 0 ? clamp(solar / tot, 0, 1) : 0;
+      bessFrac    = tot > 0 ? clamp(bridge / tot, 0, 1 - solarFrac) : 0;
+      turbineFrac = clamp(1 - solarFrac - bessFrac, 0, 1);
+      gapFrac     = 0;
+    } else {
+      // Simulate solar going to zero; reserve tries to fill
+      var rc = rcPlant();
+      solarFrac   = 0;
+      if (rc.pass){
+        bessFrac    = tot > 0 ? clamp(bridge / tot, 0, 1) : 0;
+        turbineFrac = clamp(1 - bessFrac, 0, 1);
+        gapFrac     = 0;
+      } else {
+        gapFrac     = tot > 0 ? clamp(rc.deficitMW / tot, 0, 1) : 0;
+        bessFrac    = tot > 0 ? clamp(bridge / tot, 0, 1 - gapFrac) : 0;
+        turbineFrac = clamp(1 - bessFrac - gapFrac, 0, 1);
+      }
+    }
+
+    var segSolar   = $('cvg-solar'), segTurbine = $('cvg-turbine');
+    var segBess    = $('cvg-bess'),  segGap = $('cvg-gap');
+    var gapLegend  = $('cvg-gap-legend'), gapMsg = $('cvgGapMsg');
+    if (segSolar)   segSolar.style.width   = f(solarFrac   * 100, 1) + '%';
+    if (segTurbine) segTurbine.style.width = f(turbineFrac * 100, 1) + '%';
+    if (segBess)    segBess.style.width    = f(bessFrac    * 100, 1) + '%';
+    if (segGap)     segGap.style.width     = f(gapFrac     * 100, 1) + '%';
+    if (gapLegend)  gapLegend.style.display = (gapFrac > 0) ? '' : 'none';
+
+    // Gap message below bar
+    if (gapMsg){
+      if (!simOn){
+        gapMsg.className = 'cvg-gap-msg';
+        gapMsg.textContent = '';
+      } else {
+        var rc2 = rcPlant();
+        if (rc2.pass){
+          gapMsg.className = 'cvg-gap-msg on ok';
+          gapMsg.textContent = 'Reserve covers the loss. BESS bridges a ' + f(rc2.peak, 2)
+            + ' MW peak shortfall for ' + f(rc2.gap, 1) + ' s while turbines ramp up.';
+        } else {
+          gapMsg.className = 'cvg-gap-msg on bad';
+          gapMsg.textContent = 'Gap: ' + f(rc2.deficitMW, 2) + ' MW uncovered \u2014 '
+            + (isFinite(rc2.sustainSec) ? f(rc2.sustainSec, 0) + ' s at current BESS SoC'
+                                        : 'BESS SoC too low to bridge')
+            + '. Stage a turbine or ladder curtailment (\u00a723.2).';
+        }
+      }
+    }
+
+    // Button label
+    var btn = $('solarStopBtn'), hint = $('solarStopHint');
+    if (btn){
+      btn.className = 'btn' + (simOn ? ' on' : '');
+      btn.textContent = simOn ? 'Restore solar' : 'If solar stopped this second';
+    }
+    if (hint && !simOn){
+      hint.textContent = 'Animate what happens to the supply bar';
+    }
+  }
+
+  // ---------------- rendering: bank list (Layer 2) ----------------
+  var _selectedBank = null;
+  function renderBankList(){
+    var el = $('bankList'); if (!el) return;
+    var online = 0, reporting = 0;
+
+    // Build feeder map maintaining insertion order
+    var feederOrder = [], feederMap = {};
+    S.blocks.forEach(function(b){
+      var fid = b.feederId || 'fdr-?';
+      if (!feederMap[fid]){ feederMap[fid]=[]; feederOrder.push(fid); }
+      feederMap[fid].push(b);
+    });
+
+    // Which feeders have a common_cause advisory
+    var ccFeeders = {};
+    (S.advisories || []).forEach(function(a){
+      if (a.code === 'common_cause' && a.feeder) ccFeeders[a.feeder] = true;
+    });
+
+    var html = '';
+
+    // Column headers
+    html += '<div class="bank-col-hdr">'
+          + '<span>Bank</span><span>Output vs expected</span>'
+          + '<span class="r">MW</span><span>State</span><span>Reason</span></div>';
+
+    feederOrder.forEach(function(fid){
+      var banks = feederMap[fid];
+      var fdrOut = 0, fdrExp = 0, fdrOnline = 0, fdrReporting = 0;
+      banks.forEach(function(b){
+        fdrOut += blockOutput(b);
+        fdrExp += clearSkyBlock(b);
+        if (b.state === 'nominal' || b.state === 'degraded'){ fdrOnline++; online++; }
+        if (b.state !== 'no_comms') fdrReporting++;
+        reporting++;
+      });
+      var isCC = !!ccFeeders[fid];
+      html += '<div class="fdr-group' + (isCC ? ' common-cause' : '') + '">';
+      // Feeder header
+      html += '<div class="fdr-group-hdr" data-fdr="' + fid + '">'
+            + '<span class="fdr-id">' + fid + '</span>'
+            + '<span class="fdr-sub">' + f(fdrOut) + ' MW &middot; '
+            + fdrOnline + '/' + banks.length + ' banks &middot; exp ' + f(fdrExp) + ' MW</span>'
+            + (isCC ? '<span class="fdr-cc-badge">common cause</span>' : '')
+            + '</div>';
+
+      // Bank rows
+      banks.forEach(function(b){
+        var o = blockOutput(b), cs = clearSkyBlock(b);
+        var st = b.state || 'nominal';
+        var fillPct = (cs > 0) ? clamp(o / cs * 100, 0, 100) : (o > 0 ? 100 : 0);
+        var stCls, stLabel;
+        if (st === 'out')         { stCls='bad';  stLabel='out'; }
+        else if (st === 'no_comms'){ stCls='dim';  stLabel='no comms'; }
+        else if (st === 'degraded'){ stCls='warn'; stLabel='degraded'; }
+        else                      { stCls='ok';   stLabel='nominal'; }
+        var reasonStr = b.reason ? String(b.reason).replace(/_/g,'\u00a0') : (b.fault ? String(b.fault).replace(/_/g,'\u00a0') : '\u2014');
+        var isSelected = (b.id === _selectedBank);
+        html += '<div class="bank-row' + (isSelected?' selected':'') + '" data-st="' + st + '" data-id="' + b.id + '" tabindex="0">'
+              + '<span class="br-id">' + b.id + '</span>'
+              + '<div class="br-track"><div class="br-fill" style="width:' + f(fillPct,0) + '%"></div></div>'
+              + '<span class="br-mw num">' + f(o) + '</span>'
+              + '<span class="br-state ' + stCls + '">' + stLabel + '</span>'
+              + '<span class="br-reason">' + reasonStr + '</span>'
+              + '</div>';
+        // Expandable detail panel
+        html += '<div class="bank-detail' + (isSelected?' on':'') + '" id="bd-' + b.id + '">';
+        if (isSelected) html += buildBankDetail(b, o, cs);
+        html += '</div>';
+      });
+      html += '</div>'; // fdr-group
+    });
+
+    el.innerHTML = html;
+
+    // Summary header
+    var totalBanks = S.blocks.length;
+    var reportingCount = banksReporting(), totalCount = banksTotal();
+    $('blkcount').textContent = online + ' of ' + totalBanks + ' online \u00b7 '
+      + reportingCount + ' of ' + totalCount + ' reporting';
+
+    // Common-cause hint in panel header
+    var ccHdr = $('bankCommonCauseHdr');
+    if (ccHdr){
+      var ccAdv = (S.advisories || []).filter(function(a){ return a.code === 'common_cause'; });
+      ccHdr.textContent = ccAdv.length ? ccAdv.length + ' feeder(s) with simultaneous bank trips' : '';
+      ccHdr.style.color = ccAdv.length ? 'var(--amber)' : '';
+    }
+
+    // Wire click handlers
+    Array.prototype.forEach.call(el.querySelectorAll('.bank-row'), function(n){
+      n.addEventListener('click', function(){
+        _selectedBank = (_selectedBank === n.dataset.id) ? null : n.dataset.id;
+        renderBankList();
+      });
+      n.addEventListener('keydown', function(e){
+        if (e.key==='Enter'||e.key===' '){ e.preventDefault();
+          _selectedBank = (_selectedBank === n.dataset.id) ? null : n.dataset.id;
+          renderBankList(); }
+      });
+    });
+  }
+
+  function buildBankDetail(b, o, cs){
+    var stateNote = '';
+    if (b.state === 'no_comms')
+      stateNote = '<div class="cap" style="color:var(--violet);margin-top:5px">No telemetry for '
+        + f(b.telemetryAge||0,1)+' s \u2014 counted as zero until comms restored (\u00a727.4).</div>';
+    else if (b.state === 'out')
+      stateNote = '<div class="cap" style="color:var(--coral);margin-top:5px">Bank tripped'
+        + (b.fault?' \u2014 '+b.fault:'')+'. Counted as zero.</div>';
+    var rows = '';
+    for (var s=1; s<=SITE.stringsPerBank; s++){
+      var out = s <= b.stringsOut;
+      rows += '<span title="string '+s+'" style="width:13px;height:13px;display:inline-block;margin:2px;'
+           + 'background:'+(out?'#4d2320':'#26463f')+';border:1px solid '+(out?'#ef5a4c':'#2f5a52')+'"></span>';
+    }
+    return '<div style="display:flex;gap:18px;flex-wrap:wrap;font-size:11px">'
+      + '<div><div class="cap" style="margin-bottom:4px">Strings ('+(SITE.stringsPerBank-b.stringsOut)+'/'+SITE.stringsPerBank+' active)</div>'+rows+'</div>'
+      + '<div class="ledger" style="min-width:220px">'
+      + '<div class="lrow"><div class="k">Measured output</div><div class="r"><div class="val num">'+f(o)+' MW</div></div></div>'
+      + '<div class="lrow"><div class="k">Expected now</div><div class="r"><div class="val num">'+f(cs)+' MW</div><div class="sub">clear-sky model</div></div></div>'
+      + '<div class="lrow"><div class="k">Inverter temp</div><div class="r"><div class="val num">'+f(b.invC||40,0)+' \u00b0C</div></div></div>'
+      + '<div class="lrow"><div class="k">Telemetry age</div><div class="r"><div class="val num">'+f(b.telemetryAge||0,1)+' s</div></div></div>'
+      + (b.fault ? '<div class="lrow"><div class="k">Fault code</div><div class="r"><div class="val" style="color:var(--coral)">'+b.fault+'</div></div></div>' : '')
+      + '</div>'
+      + '</div>'
+      + stateNote
+      + '<div class="cap" style="margin-top:7px">'
+      + (b.stringsOut ? b.stringsOut+' string(s) open \u2014 bank counted at re-rated capability, not excluded (\u00a727.4).'
+         : (b.state==='out'||b.state==='no_comms'?'':'All strings reporting. Nothing to action.'))
+      + '</div>';
+  }
+
+  // ---------------- rendering: ledgers ----------------
+  function row(k, val, sub, cls){
+    return '<div class="lrow"><div class="k">'+k+'</div><div class="r"><div class="val'+(cls?' '+cls:'')+'">'
+      + val+'</div>'+(sub?'<div class="sub">'+sub+'</div>':'')+'</div></div>';
+  }
+
+  function renderConditions(){
+    var cs = pClearSky(), cur = pRenewable();
+    var sky = S.cloudFactor > 0.94 ? 'clear' : (S.cloudFactor > 0.7 ? 'scattered cloud' : 'heavy cloud');
+    $('conditions').innerHTML =
+      row('Sky condition', sky, 'derived from POA vs clear-sky model, not from a weather feed', '')
+    + row('POA irradiance', f(S.poa*S.cloudFactor,0)+' W/m&sup2;', 'clear-sky reference '+f(S.clearSkyPoa,0)+' W/m&sup2;')
+    + row('Module temperature', f(S.moduleC,0)+' &deg;C', 'derate 0.38%/K above 25 &deg;C &middot; costs '
+          + f((cs-cur)*0.4,2)+' MW at present')
+    + row('Soiling loss', f(S.soiling*100,1)+'%', '26 days since last wash &middot; proposed coefficient revision pending review')
+    + row('Inverter clipping', cur >= SITE.plantRatedAC*0.995 ? 'active' : 'none',
+          'DC/AC 1.30 &middot; clipping begins near '+f(SITE.plantRatedAC,2)+' MW AC')
+    + row('Mount type', 'fixed', 'no tracker faults to report; no tracker to stow')
+    + row('Control surface', 'none', 'passive collector \u2014 nothing to command', '')
+    + row('Agent authority', 'advisory only', 'by construction \u2014 no dispatch path exists to this asset');
+  }
+
+  function renderReserve(){
+    var solar = pRenewable();
+    var rc = rcPlant();
+    var n1 = largestFeederMW();
+    var n1Id = largestFeederId();
+    var rcN1 = rcN1Feeder();
+    var compound = rcCompound();
+
+    $('rvVerdict').textContent = rc.pass ? 'pass' : 'fail';
+    $('rvVerdict').className = 'st ' + (rc.pass ? 'ok' : 'bad');
+
+    // Update exposure panel N−1 label with feeder id
+    var e1label = $('e1label');
+    if (e1label) e1label.textContent = 'N\u22121 \u00b7 ' + n1Id + ' trips';
+
+    // Update modal N−1 label too
+    var m2label = $('m2label');
+    if (m2label) m2label.textContent = 'If the largest feeder trips (N\u22121 \u00b7 ' + n1Id + ')';
+    var m2note = $('m2note');
+    if (m2note) m2note.textContent = 'probable contingency \u00b7 ' + n1Id + ', \u0394t_lead = 0';
+
+    $('reserve').innerHTML =
+      row('Net dispatch requirement', f(pNet())+' MW',
+          'P_total '+f(pTotal())+' \u2212 P_renewable '+f(solar), 'num')
+    + row('Expected now', f(pExpected())+' MW',
+          'clear-sky model \u00b7 what the plant would produce at current irradiance with all banks online', 'num')
+    + row('Banks reporting', banksReporting()+' of '+banksTotal(),
+          S.blocks.filter(function(b){ return b.state==='no_comms'; }).length + ' in no-comms state')
+    + row('Turbines online', onlineTurbines().length + ' / ' + (SRV ? SRV.fleet.turbines.length : 0),
+          'ramp '+f(fleetRamp(),2)+' MW/s \u00b7 '
+          + f(onlineTurbines().reduce(function(a,t){return a+t.mw;},0),1)+' MW capacity')
+    + row('BESS rated', f(SITE.bessRatedMW,1)+' MW / '+f(SITE.bessMWh,1)+' MWh',
+          'state of charge '+f((SRV?SRV.fleet.bess_soc:0)*100,0)+'%')
+    + row('Anchor reserve withheld', '\u2212'+f(SITE.anchorReserveMW,1)+' MW',
+          'BESS is grid-forming while islanded \u00b7 \u00a77.1.2', 'num')
+    + row('Bridging available', f(bessBridging(),2)+' MW',
+          'anchor-adjusted \u2014 this is the figure the check uses', 'num')
+    + row('N\u22121 \u00b7 ' + n1Id, f(rcN1.dP)+' MW \u2192 '+(rcN1.pass?'covered':'shortfall'),
+          n1Id+' trips \u00b7 ramp time '+f(rcN1.rampTime,1)+' s \u00b7 bridge for '+f(rcN1.gap,1)+' s',
+          rcN1.pass?'':'coral')
+    + row('If solar stopped this second', f(rc.dP)+' MW \u2192 '+(rc.pass?'covered':'shortfall'),
+          'ramp time '+f(rc.rampTime,1)+' s \u00b7 bridge for '+f(rc.gap,1)+' s',
+          rc.pass?'':'coral')
+    + row('Compound worst case', f(compound.dP)+' MW \u2192 '+(compound.pass?'covered':'shortfall'),
+          'solar loss + 6 MW compute step \u00b7 additive, the case the reserve must size against',
+          compound.pass?'':'coral');
+
+    var w = compound;
+    $('worked').innerHTML =
+      '<div style="color:var(--ink-3)">If solar stopped this second, coincident with a 6 MW compute step-load.</div>'
+    + '<div>\u0394P = '+f(solar)+' MW solar + 6.00 MW compute = <b>'+f(w.dP)+' MW</b></div>'
+    + '<div>\u0394t_lead = <b>0 s</b> \u2014 the supply term carries no advance signal, so the compute term\u2019s 30 s of queue warning does not apply to the combined event</div>'
+    + '<div>Turbine ramp time = '+f(w.dP)+' / '+f(fleetRamp(),2)+' MW/s = <b>'+f(w.rampTime,1)+' s</b></div>'
+    + '<div>Gap the BESS must bridge = '+f(w.rampTime,1)+' \u2212 0 = <b>'+f(w.gap,1)+' s</b>, shortfall declining from '
+      + f(w.peak)+' MW to zero</div>'
+    + '<div>Bridging available = min('+f(SITE.bessRatedMW,1)+', '+f(SITE.bessRatedMW*(SRV?SRV.fleet.bess_soc:0),2)
+      + ') \u2212 '+f(SITE.anchorReserveMW,1)+' = <b>'+f(w.bridge,2)+' MW</b></div>'
+    + '<div>Sustainable duration at '+f(w.peak)+' MW = <b>'+(isFinite(w.sustainSec)?f(w.sustainSec,0):'\u221e')+' s</b>'
+      + ' vs a '+f(w.gap,1)+' s gap</div>'
+    + '<div style="margin-top:8px;color:'+(w.pass?'var(--teal)':'var(--coral)')+'">'
+      + (w.pass ? '&#10003; Reserve check passes. No insufficient-reserve alert.'
+                : '&#10007; Insufficient reserve: short by '+f(w.deficitMW)+' MW'
+                  + (w.deficitSec>0? ' and '+f(w.deficitSec,0)+' s':'')+'. Alert raised at staging time, not after the fact.')
+      + '</div>';
+
+    // banner
+    var b = $('alertBanner');
+    if (!rc.pass){
+      b.className='banner on';
+      b.innerHTML='<b>INSUFFICIENT RESERVE \u00b7 hard alert</b> \u2014 if solar stopped this second, '
+        + f(rc.deficitMW)+' MW would be uncovered'+(rc.deficitSec>0?' for '+f(rc.deficitSec,0)+' s':'')
+        + '. Turbine ramp cannot close it and solar cannot be commanded. Stage gt-03 or ladder curtailment (\u00a723.2).';
+    } else if (!compound.pass){
+      b.className='banner on advisory';
+      b.innerHTML='<b>COMPOUND EXPOSURE \u00b7 advisory</b> \u2014 the site is covered for a solar loss alone, but a '
+        + 'solar loss coincident with a 6 MW compute step would leave '+f(compound.deficitMW)
+        + ' MW uncovered. This is a planning figure, not a dispatch alarm \u2014 nothing is wrong right now.';
+    } else { b.className='banner'; }
+  }
+
+  function renderModalLedger(){
+    var solar = pRenewable(), tot = pTotal();
+    var rc = rcPlant();
+    $('mledger').innerHTML =
+      row('Output', f(solar)+' MW',
+          'real-time \u00b7 ' + banksReporting() + ' of ' + banksTotal() + ' banks reporting', 'num')
+    + row('Expected now', f(pExpected())+' MW',
+          'clear-sky model at current irradiance, all banks online', 'num')
+    + row('Rated', f(SITE.plantRatedAC)+' MW AC',
+          f(SITE.plantRatedDC)+' MWp DC \u00b7 DC/AC 1.30', 'num')
+    + row('Against expectation', f(pct(solar,pClearSky()),1)+'%',
+          'measured vs clear-sky model \u2014 performance ratio', 'num')
+    + row('Generators and battery covering', f(pNet())+' MW',
+          'net demand after solar offset \u00b7 live', 'num teal')
+    + row(f(pct(solar,tot),1)+'% of what the site is using',
+          f(tot)+' MW total', 'P_total at current compute load', 'num')
+    + row('Counted toward reserve', 'never',
+          'availability, not dispatchability \u00b7 \u00a77.1.1')
+    + row('Control surface', 'none',
+          'passive collector \u2014 nothing to command')
+    + row('Lead time on loss', '0 s',
+          'no advance signal exists for an electrical fault')
+    + row('Cloud ramp bound', '\u2212'+f(SITE.cloudRampBound,2)+' MW/s',
+          'spatial diversity across 20 banks on 4 feeders \u2014 a transient is not a step')
+    + row('Forecast treatment', 'subtracted',
+          'reduces demand, never closes a gap')
+    + row('If solar stopped this second', rc.pass ? 'bridged' : 'shortfall',
+          rc.pass
+            ? 'BESS covers a '+f(rc.peak)+' MW declining shortfall for '+f(rc.gap,1)+' s'
+            : 'short by '+f(rc.deficitMW)+' MW \u2014 insufficient-reserve alert active',
+          rc.pass?'':'coral')
+    + row('Agent authority', 'advisory only',
+          'by construction \u2014 no dispatch path');
+  }
+
+  function renderLog(){
+    var el = $('eventLog'); if(!el) return;
+    if (!S.log.length){ el.innerHTML='<div class="cap">Nothing logged this session.</div>'; return; }
+    el.innerHTML = S.log.map(function(e){
+      return '<div class="e '+e.kind+'"><span class="ts">'+e.ts+'</span><span class="msg">'+e.msg+'</span></div>';
+    }).join('');
+  }
+
+  // Advisory panel — FR-SOL-1 reconciliation_divergence / FR-SOL-2 common_cause.
+  function renderAdvisories(){
+    var el = $('advisoryPanel'); if(!el) return;
+    var advs = (SRV && S.advisories) ? S.advisories : [];
+    if (!advs.length){ el.innerHTML = ''; return; }
+
+    el.innerHTML = advs.map(function(a){
+      var isCritical = a.code === 'reconciliation_divergence';
+      var itemCls  = 'adv-item' + (isCritical ? ' critical' : '');
+      var codeCls  = 'adv-code' + (isCritical ? ' critical' : '');
+      var label    = a.code.replace(/_/g, '\u00a0');
+      var feederLine = a.feeder
+        ? '<div class="adv-sub">Feeder: ' + a.feeder + '</div>'
+        : '';
+      var banksLine = (a.banks && a.banks.length)
+        ? '<div class="adv-sub">Banks: ' + a.banks.join(', ') + '</div>'
+        : '';
+      return '<div class="' + itemCls + '">'
+        + '<div class="' + codeCls + '">' + label + '</div>'
+        + '<div class="adv-msg">' + a.message + feederLine + banksLine + '</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  // ---------------- top-level render ----------------
+  function render(){
+    var solar = pRenewable(), tot = pTotal(), cs = pClearSky();
+    $('k-out').textContent = f(solar);
+    $('k-pct').textContent = f(pct(solar,SITE.plantRatedAC),1)+'%';
+    $('k-pr').textContent  = f(pct(solar,cs),1)+'%';
+    $('k-poa').textContent = f(S.poa*S.cloudFactor,0);
+    $('k-poasub').innerHTML = 'W/m&sup2; &middot; module '+f(S.moduleC,0)+' &deg;C';
+    $('k-share').textContent = f(pct(solar,tot),1)+'%';
+    $('k-net').textContent = f(pNet());
+    $('k-prsub').textContent = solar < cs*0.9 ? 'below clear-sky model' : 'measured vs clear-sky model';
+
+    // k-outsub: expected + banks reporting (SLD tile sub-field per §7 spec)
+    var outsub = $('k-outsub');
+    if (outsub) outsub.textContent = 'exp ' + f(pExpected()) + ' MW \u00b7 '
+      + banksReporting() + ' of ' + banksTotal() + ' banks reporting';
+
+    var n1 = largestFeederMW();
+    var n1Id = largestFeederId();
+    $('e1').textContent = f(n1)+' MW';
+    $('e1f').style.width = clamp(pct(n1,SITE.plantRatedAC),0,100)+'%';
+    $('e2').textContent = f(solar)+' MW';
+    $('e2f').style.width = clamp(pct(solar,SITE.plantRatedAC),0,100)+'%';
+    $('e3').innerHTML = '\u2212'+f(SITE.cloudRampBound,2)+' MW/s';
+    var rcN1 = rcN1Feeder();
+    $('e1n').innerHTML = 'step change, \u0394t_lead = 0 \u00b7 '+(rcN1.pass?'covered by BESS bridging in '+f(rcN1.gap,1)+' s':'NOT covered');
+    var rcAll = rcPlant();
+    $('e2n').innerHTML = 'step change, \u0394t_lead = 0 \u00b7 '+(rcAll.pass?'bridged in '+f(rcAll.gap,1)+' s':'shortfall '+f(rcAll.deficitMW)+' MW');
+
+    $('trendnote').textContent = solar < cs*0.85 ? 'measured below clear-sky \u2014 cloud attenuation'
+      : 'measured tracking clear-sky within band';
+
+    renderLayer1();
+    renderLive();
+    renderBankList();
+    renderConditions();
+    renderReserve();
+    renderAdvisories();
+    if ($('s-forecast').classList.contains('on')) renderForecast();
+    if ($('scrim').classList.contains('on')){ renderModalChart(); renderModalVerdict(); renderModalLedger(); }
+  }
+
+  function renderModalVerdict(){
+    var solar = pRenewable();
+    var rc = rcPlant();
+    var n1 = largestFeederMW();
+    var n1Id = largestFeederId();
+    $('vbig').textContent = f(solar);
+    $('verdict').className = 'verdict' + (rc.pass ? '' : ' bad');
+    $('vtext').innerHTML = solar <= 0.01
+      ? 'Contributing nothing. Generators and battery are carrying the entire site.'
+      : 'Contributing '+f(solar)+' MW \u2014 and '+f(solar)+' MW of it can vanish with no warning.';
+    $('m1').textContent = f(solar)+' / '+f(SITE.plantRatedAC)+' MW';
+    $('m1f').style.width = clamp(pct(solar,SITE.plantRatedAC),0,100)+'%';
+    $('m1n').innerHTML = f(pct(solar,SITE.plantRatedAC),1)+'% of AC nameplate \u00b7 '
+      + (solar>=SITE.plantRatedAC*0.995?'clipping':'not clipping');
+    $('m2').textContent = f(n1)+' MW';
+    $('m2f').style.width = clamp(pct(n1,SITE.plantRatedAC),0,100)+'%';
+    $('m3').textContent = f(solar)+' MW';
+    $('m3f').style.width = clamp(pct(solar,SITE.plantRatedAC),0,100)+'%';
+    $('m3n').innerHTML = 'sizing contingency \u00b7 \u0394t_lead = 0 \u00b7 '
+      + (rc.pass?'reserve check passes':'<span style="color:var(--coral)">reserve check FAILS</span>');
+    $('msub').innerHTML = 'solar-0 \u00b7 fixed-mount PV \u00b7 '
+      + banksReporting() + ' of ' + banksTotal() + ' banks reporting \u00b7 expected '
+      + f(pExpected()) + ' MW \u00b7 non-dispatchable';
+  }
+
+  // ---------------- tick ----------------
+  function tick(){
+    if (!S.running) return;
+
+    if (SERVER_MODE){
+      pollServer().then(function(ok){
+        if (!ok){
+          SERVER_MODE = false;
+          $('modePill').textContent = 'SERVER UNREACHABLE';
+          $('modePill').style.borderColor = '#5c2020';
+          $('modePill').style.color = '#ef5a4c';
+          log('Server unreachable \u2014 live data unavailable. Reload to reconnect.', 'warn');
+          return;
+        }
+        S.hist.push({ t:S.t, sol:pRenewable(), tot:pTotal(), net:pNet(), cs:pClearSky() });
+        if (S.hist.length > 120) S.hist.shift();
+        $('clk').textContent = SRV.wall_clock;
+        render();
+      });
+      return;
+    }
+
+    // Server not yet connected — wait for the first poll (boot) to succeed.
+    // No in-browser physics fallback; the server is the single source of truth.
+  }
+
+  // ---------------- stressors ----------------
+  function inject(kind){
+    if (SERVER_MODE){
+      fetch('/api/solar/inject/' + kind, {method:'POST'})
+        .then(function(r){ return r.json(); })
+        .then(function(){ return pollServer(); })
+        .then(function(){ render(); })
+        .catch(function(){ log('Injection failed \u2014 server did not accept the stressor.', 'bad'); });
+      return;
+    }
+    log('Stressor injection requires a live server connection.', 'warn');
+  }
+
+  // ---------------- wiring ----------------
+  Array.prototype.forEach.call(document.querySelectorAll('nav.tabs button'), function(btn){
+    btn.addEventListener('click', function(){
+      Array.prototype.forEach.call(document.querySelectorAll('nav.tabs button'), function(b){
+        b.setAttribute('aria-selected', b===btn ? 'true':'false');
+      });
+      Array.prototype.forEach.call(document.querySelectorAll('.screen'), function(s){ s.classList.remove('on'); });
+      $('s-'+btn.dataset.s).classList.add('on');
+      if (btn.dataset.s === 'forecast') renderForecast();
+      if (btn.dataset.s === 'history') renderHistory();
+      if (btn.dataset.s === 'events') renderLog();
+    });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-inj]'), function(b){
+    b.addEventListener('click', function(){ inject(b.dataset.inj); });
+  });
+  function openModal(){ $('scrim').classList.add('on'); renderModalChart(); renderModalVerdict(); renderModalLedger();
+    $('closeBtn').focus(); }
+  function closeModal(){ $('scrim').classList.remove('on'); }
+  $('openModal').addEventListener('click', openModal);
+  $('closeX').addEventListener('click', closeModal);
+  $('closeBtn').addEventListener('click', closeModal);
+  $('toPlant').addEventListener('click', function(){ closeModal(); document.querySelector('nav.tabs button').click(); });
+  $('scrim').addEventListener('click', function(e){ if (e.target === $('scrim')) closeModal(); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeModal(); });
+  $('pauseBtn').addEventListener('click', function(){
+    S.running = !S.running;
+    $('pauseBtn').textContent = S.running ? 'Pause' : 'Resume';
+    document.querySelector('.tickdot').classList.toggle('beat', S.running);
+  });
+
+  // Layer 1 "if solar stops" simulation toggle
+  $('solarStopBtn').addEventListener('click', function(){
+    _solarStopSim = !_solarStopSim;
+    if (_solarStopSim){
+      // Auto-cancel after 8 s so the bar resets even if they forget
+      if (_solarStopTimer) clearTimeout(_solarStopTimer);
+      _solarStopTimer = setTimeout(function(){
+        _solarStopSim = false; _solarStopTimer = null; renderLayer1();
+      }, 8000);
+    } else {
+      if (_solarStopTimer){ clearTimeout(_solarStopTimer); _solarStopTimer = null; }
+    }
+    renderLayer1();
+  });
+
+  // ---------------- boot ----------------
+  log('Connecting to server \u2014 live data will appear on the first successful poll.', '');
+  renderHistory(); renderForecast();
+
+  pollServer().then(function(ok){
+    if (ok){
+      SERVER_MODE = true;
+      $('modePill').textContent = 'SERVER \u00b7 ' + (SRV.site.id || 'live');
+      $('modePill').style.borderColor = '#1e4a44';
+      $('modePill').style.color = '#3fbfae';
+      S.hist = [];
+      for (var k=0;k<40;k++) S.hist.push({ t:S.t-40+k, sol:pRenewable(), tot:pTotal(),
+        net:pNet(), cs:pClearSky() });
+    } else {
+      $('modePill').textContent = 'SERVER REQUIRED';
+      $('modePill').style.borderColor = '#5c2020';
+      $('modePill').style.color = '#ef5a4c';
+      log('Server unreachable \u2014 live data unavailable. Reload to reconnect.', 'warn');
+    }
+    render();
+  });
+  setInterval(tick, 1000);
+})();
+</script>

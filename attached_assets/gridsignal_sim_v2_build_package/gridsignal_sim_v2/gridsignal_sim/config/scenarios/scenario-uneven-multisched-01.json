@@ -1,0 +1,99 @@
+{
+  "name": "Uneven Multi-Scheduler Turbine Demo",
+  "description": "Kubernetes, Slurm, and Ray jobs admitted on staggered, uneven intervals to create demand peaks, layered with scripted GPU bursts that guarantee a 45s Job Signal (Δt_lead) lead-time window. Full generation stack: 3 gas turbines (hot/warm/cold standby), fuel cell array, and grid-forming BESS. Turbine commitment triggers at 80% fuel-cell utilization; hot/warm/cold startup durations are 5/10/20 minutes respectively, so any committed unit produces a Turbine Online countdown of 5+ minutes.",
+
+  "hardware_profile_id": "enterprise_8gpu_air",
+  "dt_lead_seconds": 45.0,
+  "island_mode": true,
+  "frequency_nominal_hz": 60.0,
+  "power_factor": 0.85,
+  "end_sim_time": 3600.0,
+
+  "kube_clusters": [
+    {
+      "cluster_id": "um-k8s-h100",
+      "tenant_id": "K8S-H100",
+      "scheduler_type": "K8S",
+      "capacity_unit": "node",
+      "workload_share": 0.40,
+      "hardware_profile_id": "enterprise_8gpu_air",
+      "max_nodes": 900,
+      "min_nodes": 150,
+      "mean_interarrival_s": 40.0,
+      "mean_job_nodes": 180,
+      "job_node_std": 90.0,
+      "min_job_nodes": 50,
+      "max_job_nodes": 320,
+      "mean_job_duration_s": 280.0,
+      "min_job_duration_s": 40.0,
+      "reorder_window_s": 8.0,
+      "ntp_jitter_s": 2.0,
+      "headroom_threshold_mw": 37.0,
+      "rng_seed": 51
+    },
+    {
+      "cluster_id": "um-slurm-h100",
+      "tenant_id": "SLURM-H100",
+      "scheduler_type": "SLURM",
+      "capacity_unit": "node",
+      "workload_share": 0.40,
+      "hardware_profile_id": "enterprise_8gpu_air",
+      "max_nodes": 900,
+      "min_nodes": 150,
+      "mean_interarrival_s": 95.0,
+      "mean_job_nodes": 220,
+      "job_node_std": 100.0,
+      "min_job_nodes": 60,
+      "max_job_nodes": 340,
+      "mean_job_duration_s": 340.0,
+      "min_job_duration_s": 45.0,
+      "rng_seed": 1051
+    },
+    {
+      "cluster_id": "um-ray-gb200",
+      "tenant_id": "RAY-GB200",
+      "scheduler_type": "RAY",
+      "capacity_unit": "rack",
+      "workload_share": 0.20,
+      "hardware_profile_id": "nextgen_rack_liquid",
+      "max_nodes": 40,
+      "min_nodes": 3,
+      "mean_interarrival_s": 65.0,
+      "mean_job_nodes": 6,
+      "job_node_std": 3.0,
+      "min_job_nodes": 1,
+      "max_job_nodes": 40,
+      "mean_job_duration_s": 260.0,
+      "min_job_duration_s": 30.0,
+      "rng_seed": 2051
+    }
+  ],
+
+  "workload_events": [
+    { "event_id": "evt-signal-burst-01-start", "job_id": "signal-burst-01", "event_type": "starting", "timestamp": 30.0, "node_count": 150, "hardware_profile_id": "enterprise_8gpu_air" },
+    { "event_id": "evt-signal-burst-01-end", "job_id": "signal-burst-01", "event_type": "job_end", "timestamp": 630.0, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air" },
+    { "event_id": "evt-signal-burst-02-start", "job_id": "signal-burst-02", "event_type": "starting", "timestamp": 310.0, "node_count": 300, "hardware_profile_id": "enterprise_8gpu_air" },
+    { "event_id": "evt-signal-burst-02-end", "job_id": "signal-burst-02", "event_type": "job_end", "timestamp": 910.0, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air" },
+    { "event_id": "evt-signal-burst-03-start", "job_id": "signal-burst-03", "event_type": "starting", "timestamp": 920.0, "node_count": 120, "hardware_profile_id": "enterprise_8gpu_air" },
+    { "event_id": "evt-signal-burst-03-end", "job_id": "signal-burst-03", "event_type": "job_end", "timestamp": 1520.0, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air" },
+    { "event_id": "evt-signal-burst-04-start", "job_id": "signal-burst-04", "event_type": "starting", "timestamp": 1850.0, "node_count": 280, "hardware_profile_id": "enterprise_8gpu_air" },
+    { "event_id": "evt-signal-burst-04-end", "job_id": "signal-burst-04", "event_type": "job_end", "timestamp": 2450.0, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air" },
+    { "event_id": "evt-signal-burst-05-start", "job_id": "signal-burst-05", "event_type": "starting", "timestamp": 2700.0, "node_count": 200, "hardware_profile_id": "enterprise_8gpu_air" },
+    { "event_id": "evt-signal-burst-05-end", "job_id": "signal-burst-05", "event_type": "job_end", "timestamp": 3300.0, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air" }
+  ],
+
+  "turbine_units": [
+    { "asset_id": "gt-hot-01", "rated_mw": 25.0, "r_asset_mw_per_s": 0.2, "hot_standby": true, "thermal_state": "hot", "hot_start_s": 300.0, "warm_start_s": 600.0, "cold_start_s": 1200.0 },
+    { "asset_id": "gt-warm-01", "rated_mw": 25.0, "r_asset_mw_per_s": 0.2, "hot_standby": true, "thermal_state": "warm", "hot_start_s": 300.0, "warm_start_s": 600.0, "cold_start_s": 1200.0 },
+    { "asset_id": "gt-cold-01", "rated_mw": 25.0, "r_asset_mw_per_s": 0.2, "hot_standby": true, "thermal_state": "cold", "hot_start_s": 300.0, "warm_start_s": 600.0, "cold_start_s": 1200.0 }
+  ],
+
+  "bess_units": [
+    { "asset_id": "bess-0", "rated_mw": 30.0, "usable_mwh": 60.0, "initial_soc_fraction": 0.95, "grid_forming": true, "p_anchor_reserve_mw": 1.0, "authority_tier": "autonomous" }
+  ],
+
+  "fuel_cell_enabled": true,
+  "fuel_cell_rated_mw": 6.0,
+  "fuel_cell_stack_count": 4,
+  "fuel_cell_turbine_commit_fraction": 0.8
+}

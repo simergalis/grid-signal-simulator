@@ -1,0 +1,192 @@
+{
+  "name": "Grid · Fuel Cell · BESS — Shaped Load 5%→40%→120%→40%→20% (90 min)",
+  "description": "90-minute shaped load profile supplied by grid import, fuel cell array, and BESS (grid-tied to PG&E at 50 MW firm; 20 MW / 4-stack fuel cell module array; 6 MW / 8 MWh BESS starting at 85% SoC). No gas turbines, no solar. Load advances through five phases: t=0:00 warm-up floor at ~5% (2 MW); t=10:00 step to 40% (16.1 MW facility); t=30:00 overload burst to 120% (48.3 MW — BESS discharges to cover transient spikes; grid absorbs base load); t=50:00 recovery back to 40%; t=60:00 step down to 20% (8.1 MW) and hold to end of run. Use to exercise grid-import metering, fuel cell dispatch, and BESS SoC depletion and recovery in a clean zero-combustion-turbine configuration. (Deterministic — workload-event driven.)",
+  "workload_events": [
+    {
+      "event_id": "evt-495e7993",
+      "job_id": "phase-floor",
+      "event_type": "starting",
+      "timestamp": 0.0,
+      "node_count": 146,
+      "hardware_profile_id": "enterprise_8gpu_air",
+      "renewable_shortfall_mw": 0.0
+    },
+    {
+      "event_id": "evt-2f9e3201",
+      "job_id": "phase-floor",
+      "event_type": "job_end",
+      "timestamp": 600.0,
+      "node_count": 0,
+      "hardware_profile_id": "enterprise_8gpu_air",
+      "renewable_shortfall_mw": 0.0
+    },
+    {
+      "event_id": "evt-b1c21ea1",
+      "job_id": "phase-40a",
+      "event_type": "starting",
+      "timestamp": 600.0,
+      "node_count": 1169,
+      "hardware_profile_id": "enterprise_8gpu_air",
+      "renewable_shortfall_mw": 0.0
+    },
+    {
+      "event_id": "evt-04cdf839",
+      "job_id": "phase-40a",
+      "event_type": "job_end",
+      "timestamp": 1800.0,
+      "node_count": 0,
+      "hardware_profile_id": "enterprise_8gpu_air",
+      "renewable_shortfall_mw": 0.0
+    },
+    {
+      "event_id": "evt-933e2f33",
+      "job_id": "phase-120",
+      "event_type": "starting",
+      "timestamp": 1800.0,
+      "node_count": 3508,
+      "hardware_profile_id": "enterprise_8gpu_air",
+      "renewable_shortfall_mw": 0.0
+    },
+    {
+      "event_id": "evt-641a6ab4",
+      "job_id": "phase-120",
+      "event_type": "job_end",
+      "timestamp": 3000.0,
+      "node_count": 0,
+      "hardware_profile_id": "enterprise_8gpu_air",
+      "renewable_shortfall_mw": 0.0
+    },
+    {
+      "event_id": "evt-f004bf6b",
+      "job_id": "phase-40b",
+      "event_type": "starting",
+      "timestamp": 3000.0,
+      "node_count": 1169,
+      "hardware_profile_id": "enterprise_8gpu_air",
+      "renewable_shortfall_mw": 0.0
+    },
+    {
+      "event_id": "evt-8e7ee1b1",
+      "job_id": "phase-40b",
+      "event_type": "job_end",
+      "timestamp": 3600.0,
+      "node_count": 0,
+      "hardware_profile_id": "enterprise_8gpu_air",
+      "renewable_shortfall_mw": 0.0
+    },
+    {
+      "event_id": "evt-ef302259",
+      "job_id": "phase-20",
+      "event_type": "starting",
+      "timestamp": 3600.0,
+      "node_count": 585,
+      "hardware_profile_id": "enterprise_8gpu_air",
+      "renewable_shortfall_mw": 0.0
+    }
+  ],
+  "hardware_profile_id": "enterprise_8gpu_air",
+  "dt_lead_seconds": 30.0,
+  "bess_units": [
+    {
+      "asset_id": "bess-1",
+      "rated_mw": 6.0,
+      "usable_mwh": 8.0,
+      "initial_soc_fraction": 0.85,
+      "grid_forming": false,
+      "p_anchor_reserve_mw": 1.0
+    }
+  ],
+  "turbine_units": [],
+  "solar_rated_mw": 0.0,
+  "design_peak_load_mw": 37.8,
+  "irradiance_steps": [],
+  "fuel_cell_enabled": true,
+  "fuel_cell_rated_mw": 5.0,
+  "fuel_cell_stack_count": 4,
+  "gpu_load_profile": [],
+  "island_mode": false,
+  "frequency_nominal_hz": 60.0,
+  "uf_warning_hz": null,
+  "ufls_stage1_hz": null,
+  "island_collapse_hz": null,
+  "of_warning_hz": null,
+  "of_trip_hz": null,
+  "ufls_stages": null,
+  "relay_81u_threshold_hz": null,
+  "relay_81u_delay_s": null,
+  "power_factor": 0.85,
+  "pue_base": 1.35,
+  "end_sim_time": 5400.0,
+  "demo_description": "## What this scenario simulates\n\nA GPU data center draws power in unpredictable bursts — training runs launch, checkpoints fire, and batch jobs pile on without warning. This scenario stress-tests the site's ability to ride through one of those bursts safely.\n\nThe site has a fixed generation fleet: three 10 MW gas turbines (30 MW total), a 5 MW solar array, and a 6 MW battery (8 MWh usable, starting at 85% charge). Together they can reliably serve up to roughly 40 MW of facility load. The scenario deliberately pushes demand 20% above that ceiling for twenty minutes, then recovers.\n\n---\n\n## The five load phases\n\n**Phase 1 — Warm-up (t = 0:00 – 10:00, ~2 MW)**\nThe data center is at a quiet floor — only 146 GPU nodes are drawing power. At this level one gas turbine barely needs to idle. Operators use this window to verify generation is committed, weather data is live, and the battery is fully charged ahead of the coming ramp.\n\n**Phase 2 — Normal operations (t = 10:00 – 30:00, ~16 MW)**\nThe scheduler releases a large batch of work and node count jumps to 1,169. Facility draw climbs to ~16 MW — about 40% of nameplate capacity. Two turbines are now online; the third remains on warm standby. Battery is holding charge in reserve. This is the baseline \"healthy\" operating state the site is designed around.\n\n**Phase 3 — Overload burst ⚠️ (t = 30:00 – 50:00, ~48 MW)**\nNode count surges to 3,508 — nearly every rack is active simultaneously. Facility draw hits ~48 MW, which is 8 MW above the site's total generation nameplate of ~40 MW. This is the critical window:\n\n- All three turbines commit at full output (30 MW). The cold turbine (gt-3) takes several minutes to ramp up — during that ramp, the gap is wider.\n- Solar contributes ~5 MW (irradiance is fixed at 85% in this scenario).\n- The battery discharges at its full 6 MW rate to cover the remaining shortfall.\n- Even with everything running, supply still falls short. The **Reserve-Gap alert fires** — this is the simulator telling operators that the site cannot sustain this load level from generation alone, and that any further loss (a turbine trip, a cloud passing over the solar array) would cause an involuntary load shed.\n- The battery's state of charge drops steadily throughout this 20-minute window. If the burst ran longer, the battery would fully deplete and the shortfall would grow.\n\n**Phase 4 — Recovery (t = 50:00 – 60:00, ~16 MW)**\nLoad steps back down to 40% as the scheduler drains the overload queue. The turbines throttle back, the reserve-gap alert clears, and the battery begins recharging. Operators can observe the re-commitment sequencing — how quickly each turbine adjusts and whether the minimum-run-time constraints (turbines must stay on for 30 minutes once committed) create any surplus generation.\n\n**Phase 5 — Low-load coast (t = 60:00 – 90:00, ~8 MW)**\nOnly 585 nodes remain active. With ~8 MW of draw, one turbine comfortably covers the site. Operators observe whether the other two turbines successfully de-commit against their minimum-down-time rules, and whether the battery finishes recharging before the run ends.\n\n---\n\n## What the scheduler layer shows\n\nWhile the physics engine drives the power curves above, the Compute Racks panel shows the actual job traffic that would be causing this load profile in a real facility:\n\n- **Tenant A (Slurm)** submits HPC batch jobs using the slurmrestd wire format — the same JSON a real Slurm cluster would send to GridSignal. Each job shows the node range it occupies, GPU resource strings, and its current queue state.\n- **Tenant B (Kubernetes)** submits GPU training workloads as `batch/v1` Job manifests — the format Kubernetes itself uses when you inspect a running job.\n- **Tenant C (Ray)** submits distributed training and inference deployments as WorkloadSignal events — each carrying a unique ULID, a hardware profile ID, and the live event type (queued → starting → running → job_end).\n\nJobs arrive in bursts roughly every 2–5 minutes throughout the run, with individual jobs lasting 1–5 minutes. During the overload phase you will see the queues fill faster than jobs complete — exactly the condition that causes the power spike.\n\n---\n\n## What to watch as an operator\n\n1. **Reserve-gap alert** — fires at t ≈ 30:00 and should clear by t ≈ 50:00. If it does not clear, a turbine may have failed to ramp.\n2. **Battery SoC bar** — should decline steadily during Phase 3 and recover in Phases 4 and 5. If SoC hits zero during the burst, the site has no cushion against any further disturbance.\n3. **Turbine commitment** — gt-1 (hot start) comes online immediately. gt-2 (warm, ~10 min ramp) and gt-3 (cold, ~5 min ramp) take time. Watch the generation output climb in steps.\n4. **Tenant MW bars** — each tenant's bar in the Compute Racks panel should stay below its contracted ceiling. If a tenant's jobs exceed ceiling, the generator stops submitting new work for that tenant.\n\n## What to watch as an investor\n\nThis scenario demonstrates the core value proposition: the site can absorb a 120% demand spike without manual operator intervention, hold for twenty minutes while the battery buffers the shortfall, and return to stable operation automatically. The reserve-gap alert is a signal to the grid operator — not a failure. The site never goes dark. The key metrics to track across runs are how quickly the gap closes (ramp rate), how much battery headroom remains at the end of Phase 3, and whether the overload event triggers any load-shed events (it should not at 120%).",
+  "default_playback_speed": 1.0,
+  "dt_thermal_seconds": 90.0,
+  "plant_dt_thermal_seconds": null,
+  "alpha_max": 0.2,
+  "plant_alpha_max": null,
+  "tau_seconds": 20.0,
+  "plant_tau_seconds": null,
+  "anchor_reserve_pct": 0.0,
+  "band_enabled": false,
+  "band_pct_calibrated": 0.0,
+  "band_mult_uncalibrated": 2.0,
+  "band_mult_unmapped_hw": 1.5,
+  "pre_staging_config": null,
+  "pms_config": null,
+  "procurement_config": {
+    "firm_available_mw": 50.0,
+    "reserved_available_mw": 10.0,
+    "non_firm_available_mw": 5.0,
+    "price_curve_seed": 42
+  },
+  "maintenance_config": null,
+  "ramp_relaxation_config": null,
+  "kube_config": null,
+  "load_config": null,
+  "ambient_steps": [],
+  "cluster_gen_config": null,
+  "stressor_gen_config": null,
+  "param_sampling_config": null,
+  "telemetry_corruption_config": null,
+  "generation_block": null,
+  "calibrated": false,
+  "dq_inject_events": [],
+  "solar_origin_utc_hour": null,
+  "tenant_events": [],
+  "generator_config": {
+    "ratePerMinute": 2,
+    "burstMode": true,
+    "burstSize": [
+      3,
+      6
+    ],
+    "burstIntervalSeconds": [
+      120,
+      300
+    ],
+    "tenantWeights": {
+      "a": 0.4,
+      "b": 0.35,
+      "c": 0.25
+    },
+    "jobSizes": {
+      "small": 0.45,
+      "medium": 0.4,
+      "large": 0.15
+    },
+    "maxJobsPerTenant": 15,
+    "jobDurationRange": [
+      60,
+      300
+    ],
+    "tenantContracts": {
+      "a": 1.4,
+      "b": 1.0,
+      "c": 0.6
+    }
+  },
+  "assertions": [],
+  "workload_floor_fraction": 0.5,
+  "fabric_scenario_id": null,
+  "ui_bess_rated_mw": null,
+  "ui_bess_usable_mwh": null
+}

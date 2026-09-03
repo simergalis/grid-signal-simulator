@@ -1,0 +1,7 @@
+{
+  "alert_review": {
+    "max_history_entries": 100,
+    "cluster_time_window_seconds": 900,
+    "bulk_disposition_allow_list": []
+  }
+}

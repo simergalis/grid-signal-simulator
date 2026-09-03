@@ -1,0 +1,10 @@
+{
+  "site_name": "San Diego, CA",
+  "latitude_deg": 32.72,
+  "longitude_deg": -117.16,
+  "tz_name": "America/Los_Angeles",
+  "source": "configured",
+  "climate_hint": "Marine layer ('June Gloom') common before 10:00; clear afternoons; coastal moderate humidity.",
+  "ambient_temp_base_c": 14.0,
+  "schema_version": 1
+}

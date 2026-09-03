@@ -1,0 +1,37 @@
+{
+  "_comment": "Fabric model thresholds, tiers, and emission config. Simulator Spec 12.5-12.9. Values chosen for shape, not fitted to a site (see README).",
+  "link_metrics": {
+    "U_KNEE": 0.90,
+    "P_MAX": 0.05,
+    "U_CONGEST": 0.85,
+    "U_CONGEST_SUSTAIN_TICKS": 2,
+    "SPRAY_IMBALANCE_SIGMA": 0.05,
+    "K_RTX": 8.0
+  },
+  "pfc": {
+    "PFC_THRESHOLD_Q_FRAC": 0.5,
+    "PFC_MULTIPLIER_MEDIAN": 1.0,
+    "PFC_MULTIPLIER_SIGMA": 0.08
+  },
+  "control_path": {
+    "JITTER_SIGMA": 0.04
+  },
+  "capability_tiers": {
+    "current": {
+      "phase_discrimination": true,
+      "signal_classes": ["congestion_queue_depth", "elephant_flow", "microburst"]
+    },
+    "degraded": {
+      "phase_discrimination": false,
+      "signal_classes": ["congestion_queue_depth"]
+    },
+    "advanced": {
+      "phase_discrimination": true,
+      "signal_classes": ["congestion_queue_depth", "elephant_flow", "microburst", "flow_table"]
+    }
+  },
+  "emission": {
+    "fabric_emission_interval_ms": 250,
+    "mode": "on_change"
+  }
+}
