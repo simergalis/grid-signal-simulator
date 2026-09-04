@@ -136,6 +136,9 @@ class Proposal:
     reviewer_id:          str  = ""
     accepted_at_sim_time: Optional[float] = None
     rejected_at_sim_time: Optional[float] = None
+    # G-2 structured, advisory-only fuel-hold estimate. Empty on other proposal
+    # kinds for wire compatibility.
+    fuel_hold_estimate: dict = field(default_factory=dict)
 
     @property
     def is_terminal(self) -> bool:

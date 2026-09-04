@@ -931,6 +931,14 @@ def build_run_context_from_spec(
                     dispatch_mechanism=str(unit.get("dispatch_mechanism", "hybrid")),
                     readiness_dwell_s=float(unit.get("readiness_dwell_s", 0.0)),
                     provenance=dict(unit.get("provenance", {})),
+                    electrical_groups=[(str(g["electrical_group_id"]), int(g["block_count"])) for g in unit.get("electrical_groups", [])],
+                    beginning_of_life_heat_rate_btu_per_kwh=float(unit.get("beginning_of_life_heat_rate_btu_per_kwh", 5811.0)),
+                    end_of_life_heat_rate_btu_per_kwh=float(unit.get("end_of_life_heat_rate_btu_per_kwh", 7127.0)),
+                    degradation_fraction=float(unit.get("degradation_fraction", 0.5)),
+                    part_load_heat_rate_multiplier=float(unit.get("part_load_heat_rate_multiplier", 1.0)),
+                    gas_heating_value_btu_per_scf=float(unit.get("gas_heating_value_btu_per_scf", 1030.0)),
+                    hot_standby_fuel_fraction=float(unit.get("hot_standby_fuel_fraction", 0.10)),
+                    gas_price_usd_per_mmbtu=unit.get("gas_price_usd_per_mmbtu", 5.0),
                 )
             )
             for unit in _fc_units_raw
@@ -1220,6 +1228,7 @@ def build_run_context_from_spec(
             scheduler_type=evt.get("scheduler_type"),
             capacity_unit=evt.get("capacity_unit"),
             gpus_per_unit=int(evt.get("gpus_per_unit", 1)),
+            electrical_group_id=evt.get("electrical_group_id"),
         )
 
     # Scheduler-authored job cohorts at one timestamp are applied atomically per

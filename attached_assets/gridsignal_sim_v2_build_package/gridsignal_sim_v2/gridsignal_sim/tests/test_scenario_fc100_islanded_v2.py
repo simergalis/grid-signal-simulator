@@ -127,7 +127,7 @@ def test_fc100_reference_is_registered_and_exercises_all_hot_standby_ramp():
         )
     )
     proposals = context.registry.get_gate().all_proposals()
-    assert proposals and all(proposal.requires_confirmation for proposal in proposals)
+    assert not any(proposal.kind == "pre_staging" for proposal in proposals)
 
     rows = [
         EvalRow(t.tick_index, t.p_demand_mw, t.bess_soc_fraction,

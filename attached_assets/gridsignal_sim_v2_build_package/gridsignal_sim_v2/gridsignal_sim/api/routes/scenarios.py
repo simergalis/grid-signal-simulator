@@ -186,18 +186,23 @@ def _evt_solar_step(t: float, shortfall_mw: float) -> WorkloadEventSpec:
     )
 
 
-def _evt_unit_trip(t: float, asset_id: str) -> WorkloadEventSpec:
-    """TC-84: turbine trip event — forces the named unit offline immediately.
+def _evt_unit_trip(
+    t: float,
+    asset_id: str,
+    electrical_group_id: str | None = None,
+) -> WorkloadEventSpec:
+    """TC-84/G-2: generating-unit or fuel-cell-board trip event.
 
     asset_id is carried in job_id (non-job event); node_count and
     hardware_profile_id are ignored by apply_workload_signal().
     """
     return WorkloadEventSpec(
         event_id=f"evt-unit-trip-{asset_id}-{int(t)}s",
-        job_id=asset_id,          # carries the turbine asset_id to the runtime
+        job_id=asset_id,
         event_type="unit_trip",
         timestamp=t,
         node_count=0,
+        electrical_group_id=electrical_group_id,
     )
 
 

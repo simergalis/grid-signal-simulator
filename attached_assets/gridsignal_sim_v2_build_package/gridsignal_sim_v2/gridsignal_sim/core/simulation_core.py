@@ -400,6 +400,14 @@ class SimulationState:
                         signal.timestamp,
                     )
                     break
+            if isinstance(self.fuel_cell_module, BlockFuelCellFleet):
+                _tripped_blocks = self.fuel_cell_module.trip(
+                    _tripped_asset_id, signal.electrical_group_id
+                )
+                if _tripped_blocks:
+                    _matched = True
+                    _log.info("UNIT_TRIP: fuel-cell %r group=%r forced COLD (%d blocks).",
+                              _tripped_asset_id, signal.electrical_group_id, _tripped_blocks)
             if not _matched:
                 _log.warning(
                     "UNIT_TRIP: asset_id %r not found in turbine fleet "
@@ -3067,6 +3075,22 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         ),
         fuel_cell_minimum_output_mw=float(_fc_summary.get("minimum_output_mw", 0.0)),
         fuel_cell_provenance=_fc_provenance,
+        fuel_cell_total_fuel_demand_scfm=(
+            state.fuel_cell_module.total_fuel_demand_scfm
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else 0.0
+        ),
+        fuel_cell_hot_standby_parasitic_scfm=(
+            state.fuel_cell_module.hot_standby_parasitic_scfm
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else 0.0
+        ),
+        fuel_cell_cumulative_fuel_mmbtu=(
+            state.fuel_cell_module.cumulative_fuel_mmbtu
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else 0.0
+        ),
+        fuel_cell_cumulative_co2_tonnes=(
+            state.fuel_cell_module.cumulative_co2_tonnes
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else 0.0
+        ),
         fuel_cell_declining_reserve_alert=_fc_declining_alert,
         fuel_cell_persistent_reserve_alert=_fc_persistent_alert,
         diesel_enabled=diesel_enabled,

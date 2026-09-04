@@ -59,6 +59,7 @@ class ProposalOut(BaseModel):
     reviewer_id: str
     accepted_at_sim_time: Optional[float]
     rejected_at_sim_time: Optional[float]
+    fuel_hold_estimate: dict = {}
 
 
 class ProposalsResponse(BaseModel):
@@ -127,6 +128,7 @@ async def list_proposals(run_id: str, request: Request) -> ProposalsResponse:
                 reviewer_id=p.reviewer_id,
                 accepted_at_sim_time=p.accepted_at_sim_time,
                 rejected_at_sim_time=p.rejected_at_sim_time,
+                fuel_hold_estimate=p.fuel_hold_estimate,
             )
             for p in sorted(proposals, key=lambda p: p.created_at_sim_time)
         ],

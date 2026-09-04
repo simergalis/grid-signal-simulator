@@ -35,6 +35,12 @@ from core.models import (
 )
 from core.simulation_core import SimulationState
 from core.sim_clock import SimClock
+from core.fuel_cell_module import (
+    BlockFuelCellArray,
+    BlockFuelCellConfig,
+    BlockFuelCellFleet,
+    FuelCellState,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -74,8 +80,12 @@ def _make_bess() -> BessModule:
     )
 
 
-def _unit_trip_signal(asset_id: str, t: float = 120.0) -> WorkloadSignal:
-    """Build a UNIT_TRIP WorkloadSignal targeting the given turbine asset_id."""
+def _unit_trip_signal(
+    asset_id: str,
+    t: float = 120.0,
+    electrical_group_id: str | None = None,
+) -> WorkloadSignal:
+    """Build a UNIT_TRIP signal targeting a generating asset or FC group."""
     return WorkloadSignal(
         event_id=f"evt-unit-trip-{asset_id}",
         job_id=asset_id,           # asset_id is carried in job_id for non-job events
@@ -85,10 +95,14 @@ def _unit_trip_signal(asset_id: str, t: float = 120.0) -> WorkloadSignal:
         node_count=0,
         workload_class=WorkloadClass.OTHER,
         site_id="test-site",
+        electrical_group_id=electrical_group_id,
     )
 
 
-def _make_state(turbines: list[TurbineModule]) -> SimulationState:
+def _make_state(
+    turbines: list[TurbineModule],
+    fuel_cell_module: BlockFuelCellFleet | None = None,
+) -> SimulationState:
     site = _make_site()
     return SimulationState(
         run_id="tc84-run",
@@ -109,7 +123,19 @@ def _make_state(turbines: list[TurbineModule]) -> SimulationState:
             )
         ],
         cooling=CoolingModule(asset_id="cooling-0", site=site),
+        fuel_cell_module=fuel_cell_module,
     )
+
+
+def _make_fuel_cell_fleet() -> BlockFuelCellFleet:
+    return BlockFuelCellFleet([BlockFuelCellArray(BlockFuelCellConfig(
+        asset_id="fc-array-1",
+        block_rated_mw=.325,
+        block_count=6,
+        initial_running_blocks=6,
+        initial_hot_standby_blocks=0,
+        electrical_groups=[("board-a", 4), ("board-b", 2)],
+    ))])
 
 
 # ---------------------------------------------------------------------------
@@ -236,6 +262,40 @@ def test_tc84e_tripped_turbine_stays_offline_after_advance():
 
     assert state.turbines[0].state == TurbineState.OFFLINE
     assert state.turbines[0].output_mw() == 0.0
+
+
+def test_g2_unit_trip_can_trip_one_fuel_cell_electrical_group():
+    fleet = _make_fuel_cell_fleet()
+    state = _make_state([], fuel_cell_module=fleet)
+
+    state.apply_workload_signal(
+        _unit_trip_signal("fc-array-1", electrical_group_id="board-b"),
+        dt_lead_seconds=0.0,
+    )
+
+    array = fleet.arrays[0]
+    assert [b.state for b in array.blocks[:4]] == [FuelCellState.RUNNING] * 4
+    assert [b.state for b in array.blocks[4:]] == [FuelCellState.COLD] * 2
+    assert all(b.tripped for b in array.blocks[4:])
+    array.set_load_following_target_mw(array.config.rated_mw)
+    array.advance(125.0, 5.0)
+    assert [b.state for b in array.blocks[4:]] == [FuelCellState.COLD] * 2
+
+
+def test_g2_unit_trip_can_trip_whole_fuel_cell_array():
+    fleet = _make_fuel_cell_fleet()
+    state = _make_state([], fuel_cell_module=fleet)
+
+    state.apply_workload_signal(
+        _unit_trip_signal("fc-array-1"),
+        dt_lead_seconds=0.0,
+    )
+
+    array = fleet.arrays[0]
+    assert all(b.state == FuelCellState.COLD and b.tripped for b in array.blocks)
+    assert array.output_mw() == 0.0
+    array.advance(125.0, 5.0)
+    assert all(b.state == FuelCellState.COLD for b in array.blocks)
 
 
 # ---------------------------------------------------------------------------

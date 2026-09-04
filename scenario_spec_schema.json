@@ -398,6 +398,26 @@
       "title": "FuelCellCommandedAndAchievedReportedAssertion",
       "type": "object"
     },
+    "FuelCellElectricalGroupSpec": {
+      "properties": {
+        "electrical_group_id": {
+          "minLength": 1,
+          "title": "Electrical Group Id",
+          "type": "string"
+        },
+        "block_count": {
+          "exclusiveMinimum": 0,
+          "title": "Block Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "electrical_group_id",
+        "block_count"
+      ],
+      "title": "FuelCellElectricalGroupSpec",
+      "type": "object"
+    },
     "FuelCellOutputNonzeroAssertion": {
       "description": "Implicitly require a declared block array to deliver some output.",
       "properties": {
@@ -436,10 +456,17 @@
           "type": "integer"
         },
         "initial_hot_standby_blocks": {
-          "default": 0,
-          "minimum": 0,
-          "title": "Initial Hot Standby Blocks",
-          "type": "integer"
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Initial Hot Standby Blocks"
         },
         "commit_rate_blocks_per_s": {
           "default": 1.0,
@@ -466,7 +493,7 @@
           "type": "number"
         },
         "hot_start_s": {
-          "default": 60.0,
+          "default": 5.0,
           "exclusiveMinimum": 0.0,
           "title": "Hot Start S",
           "type": "number"
@@ -517,6 +544,63 @@
           "minimum": 0.0,
           "title": "Readiness Dwell S",
           "type": "number"
+        },
+        "electrical_groups": {
+          "items": {
+            "$ref": "#/$defs/FuelCellElectricalGroupSpec"
+          },
+          "title": "Electrical Groups",
+          "type": "array"
+        },
+        "beginning_of_life_heat_rate_btu_per_kwh": {
+          "default": 5811.0,
+          "exclusiveMinimum": 0,
+          "title": "Beginning Of Life Heat Rate Btu Per Kwh",
+          "type": "number"
+        },
+        "end_of_life_heat_rate_btu_per_kwh": {
+          "default": 7127.0,
+          "exclusiveMinimum": 0,
+          "title": "End Of Life Heat Rate Btu Per Kwh",
+          "type": "number"
+        },
+        "degradation_fraction": {
+          "default": 0.5,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Degradation Fraction",
+          "type": "number"
+        },
+        "part_load_heat_rate_multiplier": {
+          "default": 1.0,
+          "exclusiveMinimum": 0,
+          "title": "Part Load Heat Rate Multiplier",
+          "type": "number"
+        },
+        "gas_heating_value_btu_per_scf": {
+          "default": 1030.0,
+          "exclusiveMinimum": 0,
+          "title": "Gas Heating Value Btu Per Scf",
+          "type": "number"
+        },
+        "hot_standby_fuel_fraction": {
+          "default": 0.1,
+          "minimum": 0,
+          "title": "Hot Standby Fuel Fraction",
+          "type": "number"
+        },
+        "gas_price_usd_per_mmbtu": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 5.0,
+          "title": "Gas Price Usd Per Mmbtu"
         },
         "provenance": {
           "additionalProperties": {
@@ -1789,7 +1873,7 @@
       "type": "object"
     },
     "WorkloadEventSpec": {
-      "description": "One scripted workload event (GPU job or renewable step) within a scenario.\n\nevent_type must be a WorkloadEventType string value:\n  \"starting\"   — GPU job ramp begins; staging fires with dt_lead_seconds.\n  \"job_end\"    — GPU job finishes.\n  \"solar_step\" — Renewable curtailment; staging fires with dt_lead=0 (§7.1.1).\n  \"unit_trip\"  — Force a generating unit offline immediately (TC-84).\n                 job_id carries the turbine asset_id; node_count and\n                 hardware_profile_id are ignored.\n  Any other WorkloadEventType value is forwarded as-is.\n\nFor solar_step events job_id, node_count, and hardware_profile_id are\nignored by the runtime; renewable_shortfall_mw carries the staging delta.",
+      "description": "One scripted workload event (GPU job or renewable step) within a scenario.\n\nevent_type must be a WorkloadEventType string value:\n  \"starting\"   — GPU job ramp begins; staging fires with dt_lead_seconds.\n  \"job_end\"    — GPU job finishes.\n  \"solar_step\" — Renewable curtailment; staging fires with dt_lead=0 (§7.1.1).\n  \"unit_trip\"  — Force a generating unit offline immediately (TC-84/G-2).\n                 job_id carries a turbine or fuel-cell asset_id. For a\n                 block fuel-cell array, electrical_group_id optionally\n                 addresses one declared group; omission trips the array.\n                 node_count and hardware_profile_id are ignored.\n  Any other WorkloadEventType value is forwarded as-is.\n\nFor solar_step events job_id, node_count, and hardware_profile_id are\nignored by the runtime; renewable_shortfall_mw carries the staging delta.",
       "properties": {
         "event_id": {
           "title": "Event Id",
@@ -1919,6 +2003,18 @@
           "minimum": 0.0,
           "title": "Renewable Shortfall Mw",
           "type": "number"
+        },
+        "electrical_group_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Electrical Group Id"
         }
       },
       "required": [

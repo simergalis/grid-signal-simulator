@@ -101,6 +101,26 @@ class BlockFuelCellReadinessController:
             max(0.1, abs(delta_blocks or warm_gap) * array.config.block_rated_mw),
         )
         action = "warm" if delta_blocks > 0 or warm_gap > 0 else "hold"
+        standby_scfm = (
+            target.target_hot_blocks
+            * array.config.block_rated_mw
+            * 1000
+            * array.effective_heat_rate_btu_per_kwh
+            / array.config.gas_heating_value_btu_per_scf
+            / 60
+            * array.config.hot_standby_fuel_fraction
+        )
+        standby_scf = standby_scfm * target.horizon_s / 60.0
+        standby_mmbtu = (
+            standby_scf
+            * array.config.gas_heating_value_btu_per_scf
+            / 1_000_000
+        )
+        monetary_cost = (
+            None
+            if array.config.gas_price_usd_per_mmbtu is None
+            else standby_mmbtu * array.config.gas_price_usd_per_mmbtu
+        )
         proposal = make_proposal(
             kind="pre_staging",
             estimated_impact_mw=impact_mw,
@@ -108,11 +128,26 @@ class BlockFuelCellReadinessController:
             reasoning=(
                 f"fuel_cell_{action}_target: hot={target.target_hot_blocks}; "
                 f"warming={target.target_warming_blocks}; peak={target.forecast_peak_mw:.3f}MW; "
-                f"horizon={target.horizon_s:.0f}s; advisory_only_hot_hold_fuel_cost_unknown"
+                f"horizon={target.horizon_s:.0f}s; low-confidence proposed hot-standby fuel fraction; "
+                + (
+                    f"estimated standby fuel={standby_mmbtu:.3f} MMBtu; estimated gas cost=${monetary_cost:.2f}"
+                    if monetary_cost is not None
+                    else "no gas price configured; quantity only"
+                )
             ),
             created_at_sim_time=sim_time,
         )
         proposal.requires_confirmation = True
+        proposal.fuel_hold_estimate = {
+            "target_hot_block_count": target.target_hot_blocks,
+            "hold_duration_s": target.horizon_s,
+            "horizon_s": target.horizon_s,
+            "total_standby_fuel_scf": standby_scf,
+            "total_standby_fuel_mmbtu": standby_mmbtu,
+            "gas_price_usd_per_mmbtu": array.config.gas_price_usd_per_mmbtu,
+            "monetary_cost_usd": monetary_cost,
+            "confidence_qualification": "low-confidence: hot_standby_fuel_fraction is proposed",
+        }
         if not self._gate.validate(proposal):
             return proposal
         old_id = self._last_proposal_id.get(array.asset_id)

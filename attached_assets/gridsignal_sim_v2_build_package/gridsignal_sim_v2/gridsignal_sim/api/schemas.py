@@ -192,9 +192,11 @@ class WorkloadEventSpec(BaseModel):
       "starting"   — GPU job ramp begins; staging fires with dt_lead_seconds.
       "job_end"    — GPU job finishes.
       "solar_step" — Renewable curtailment; staging fires with dt_lead=0 (§7.1.1).
-      "unit_trip"  — Force a generating unit offline immediately (TC-84).
-                     job_id carries the turbine asset_id; node_count and
-                     hardware_profile_id are ignored.
+      "unit_trip"  — Force a generating unit offline immediately (TC-84/G-2).
+                     job_id carries a turbine or fuel-cell asset_id. For a
+                     block fuel-cell array, electrical_group_id optionally
+                     addresses one declared group; omission trips the array.
+                     node_count and hardware_profile_id are ignored.
       Any other WorkloadEventType value is forwarded as-is.
 
     For solar_step events job_id, node_count, and hardware_profile_id are
@@ -220,6 +222,7 @@ class WorkloadEventSpec(BaseModel):
     # §7.1.1 SOLAR_STEP: magnitude of the renewable drop that triggers staging.
     # Zero for all other event types.
     renewable_shortfall_mw: float = Field(default=0.0, ge=0.0)
+    electrical_group_id: Optional[str] = None
 
 
 class SlurmJobPayload(BaseModel):
@@ -304,6 +307,21 @@ class BessUnitSpec(BaseModel):
         return None
 
 
+class FuelCellElectricalGroupSpec(BaseModel):
+    electrical_group_id: str = Field(min_length=1)
+    block_count: int = Field(gt=0)
+
+    @model_validator(mode="after")
+    def _meaningful_name(self) -> "FuelCellElectricalGroupSpec":
+        name = self.electrical_group_id.strip()
+        if not name or not any(character.isalpha() for character in name):
+            raise ValueError(
+                "electrical_group_id must be a human-meaningful name containing a letter"
+            )
+        self.electrical_group_id = name
+        return self
+
+
 class FuelCellUnitSpec(BaseModel):
     """A block-addressable fuel-cell unit (Addendum G-1).
 
@@ -327,6 +345,14 @@ class FuelCellUnitSpec(BaseModel):
     hot_standby_floor_blocks: int = Field(default=0, ge=0)
     dispatch_mechanism: Literal["discrete_blocks", "modulating", "hybrid"] = "hybrid"
     readiness_dwell_s: float = Field(default=0.0, ge=0.0)
+    electrical_groups: list[FuelCellElectricalGroupSpec] = Field(default_factory=list)
+    beginning_of_life_heat_rate_btu_per_kwh: float = Field(default=5811.0, gt=0)
+    end_of_life_heat_rate_btu_per_kwh: float = Field(default=7127.0, gt=0)
+    degradation_fraction: float = Field(default=0.5, ge=0, le=1)
+    part_load_heat_rate_multiplier: float = Field(default=1.0, gt=0)
+    gas_heating_value_btu_per_scf: float = Field(default=1030.0, gt=0)
+    hot_standby_fuel_fraction: float = Field(default=0.10, ge=0)
+    gas_price_usd_per_mmbtu: Optional[float] = Field(default=5.0, ge=0)
     provenance: Dict[
         str, Literal["vendor_published", "derived", "proposed", "site_specific"]
     ] = Field(default_factory=dict)
@@ -359,6 +385,23 @@ class FuelCellUnitSpec(BaseModel):
             raise ValueError("hot_standby_floor_blocks requires hot_standby=true")
         if not self.hot_start_s <= self.warm_start_s <= self.cold_start_s:
             raise ValueError("expected hot_start_s <= warm_start_s <= cold_start_s")
+        ids = [group.electrical_group_id for group in self.electrical_groups]
+        if len(ids) != len(set(ids)):
+            raise ValueError("electrical group names must be unique within unit")
+        if self.electrical_groups and sum(g.block_count for g in self.electrical_groups) != self.block_count:
+            raise ValueError("electrical group block_count values must sum exactly to block_count")
+        defaults = {
+            "beginning_of_life_heat_rate_btu_per_kwh": "vendor_published",
+            "end_of_life_heat_rate_btu_per_kwh": "vendor_published",
+            "degradation_fraction": "site_specific",
+            "part_load_heat_rate_multiplier": "proposed",
+            "gas_heating_value_btu_per_scf": "site_specific",
+            "hot_standby_fuel_fraction": "proposed",
+            "gas_price_usd_per_mmbtu": "site_specific",
+        }
+        # G-2 assigns these source classes normatively. In particular, callers
+        # must never relabel the hot-standby placeholder as vendor-published.
+        self.provenance = {**self.provenance, **defaults}
         return self
 
     @property

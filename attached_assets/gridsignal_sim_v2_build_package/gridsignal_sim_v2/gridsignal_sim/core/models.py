@@ -132,6 +132,8 @@ class WorkloadSignal:
     scheduler_type: Optional[str] = None
     capacity_unit: Optional[str] = None
     gpus_per_unit: int = 1
+    # G-2: optional topology address for a block fuel-cell UNIT_TRIP.
+    electrical_group_id: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -1175,6 +1177,12 @@ class TickResult:
     fuel_cell_cold_warming_contingency_contribution_mw: float = 0.0
     fuel_cell_minimum_output_mw: float = 0.0
     fuel_cell_provenance: dict[str, dict[str, str]] = field(default_factory=dict)
+    # Addendum G-2 fuel telemetry.  Aggregate legacy fuel cells deliberately
+    # retain these explicit zero values.
+    fuel_cell_total_fuel_demand_scfm: float = 0.0
+    fuel_cell_hot_standby_parasitic_scfm: float = 0.0
+    fuel_cell_cumulative_fuel_mmbtu: float = 0.0
+    fuel_cell_cumulative_co2_tonnes: float = 0.0
     # Separate records intentionally do not alter insufficient_reserve_alert.
     # Declining means hot reserve can close part of the gap in the event window;
     # persistent means cold/warming hardware cannot, after BESS substitution.

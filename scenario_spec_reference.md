@@ -246,7 +246,7 @@ catalogue defaults in that comparison.
 
 ---
 
-### `FuelCellUnitSpec` (Addendum G-1)
+### `FuelCellUnitSpec` (Addenda G-1 and G-2)
 
 Fuel-cell capacity is derived as `block_rated_mw * block_count`. Do **not**
 submit an independent `rated_mw` field. `initial_running_blocks +
@@ -261,18 +261,26 @@ must satisfy `hot_start_s ≤ warm_start_s ≤ cold_start_s`.
 | `block_rated_mw` | float > 0 | — | **Required.** Nameplate output of one block (MW) |
 | `block_count` | int ≥ 1 | — | **Required.** Number of blocks in the unit |
 | `initial_running_blocks` | int ≥ 0 | `0` | Blocks initially producing power |
-| `initial_hot_standby_blocks` | int ≥ 0 | `0` | Blocks initially hot and available for hot start |
+| `initial_hot_standby_blocks` | int ≥ 0 \| null | `null` | When omitted, every non-running block starts in hot standby |
 | `commit_rate_blocks_per_s` | float > 0 | `1.0` | Block commitment rate |
 | `decommit_rate_blocks_per_s` | float > 0 | `1.0` | Block decommitment rate |
 | `cold_start_s` | float > 0 | `28800.0` | Cold-start duration (s) |
 | `warm_start_s` | float > 0 | `14400.0` | Warm-start duration (s) |
-| `hot_start_s` | float > 0 | `60.0` | Hot-start duration (s) |
+| `hot_start_s` | float > 0 | parameter catalog (`5.0`) | Hot-start duration (s) |
 | `controlled_cooling_s` | float > 0 \| null | `null` | Optional controlled-cooling duration (s) |
 | `hot_standby` | bool | `true` | Whether this unit supports hot standby |
 | `min_stable_frac` | float [0, 1] | `0.5` | Minimum stable output fraction |
 | `hot_standby_floor_blocks` | int ≥ 0 | `0` | Minimum blocks retained in hot standby |
 | `dispatch_mechanism` | `"discrete_blocks"` \| `"modulating"` \| `"hybrid"` | `"hybrid"` | Dispatch behavior of the array |
 | `readiness_dwell_s` | float ≥ 0 | `0.0` | Required dwell time before a block is considered ready (s) |
+| `electrical_groups` | array | `[]` | Named contiguous groups with block counts. Names must be unique and meaningful; counts must sum exactly to `block_count`. Empty means one implicit all-block group |
+| `beginning_of_life_heat_rate_btu_per_kwh` | float > 0 | `5811.0` | Beginning-of-life HHV heat rate; provenance `vendor_published` |
+| `end_of_life_heat_rate_btu_per_kwh` | float > 0 | `7127.0` | End-of-life HHV heat rate; provenance `vendor_published` |
+| `degradation_fraction` | float [0, 1] | `0.5` | Linear BOL-to-EOL interpolation fraction; provenance `site_specific` |
+| `part_load_heat_rate_multiplier` | float > 0 | `1.0` | Heat-rate multiplier; provenance `proposed` |
+| `gas_heating_value_btu_per_scf` | float > 0 | `1030.0` | Site gas heating value; provenance `site_specific` |
+| `hot_standby_fuel_fraction` | float ≥ 0 | `0.10` | Fraction of rated fuel input burned in hot standby; provenance `proposed` |
+| `gas_price_usd_per_mmbtu` | float ≥ 0 \| null | `5.0` | Placeholder site gas price; explicit null suppresses monetary estimates |
 | `provenance` | object | `{}` | Per-field source labels: `vendor_published`, `derived`, `proposed`, or `site_specific` |
 
 ---
@@ -288,12 +296,13 @@ must satisfy `hot_start_s ≤ warm_start_s ≤ cold_start_s`.
 | `node_count` | int ≥ 0 | `0` | GPU node count for `starting` events |
 | `hardware_profile_id` | string | `"enterprise_8gpu_air"` | Hardware profile for power formula |
 | `renewable_shortfall_mw` | float ≥ 0 | `0.0` | Drop magnitude for `solar_step` events (MW) |
+| `electrical_group_id` | string \| null | `null` | For a fuel-cell `unit_trip`, optionally targets one named electrical group |
 
 **Event type semantics:**
 - `starting` — GPU job ramp begins; turbine staging fires `dt_lead_seconds` ahead.
 - `job_end` — GPU job ends; load drops.
 - `solar_step` — Renewable curtailment; staging fires immediately (dt_lead=0).
-- `unit_trip` — Forces a turbine offline immediately. Set `job_id` to the turbine's `asset_id`.
+- `unit_trip` — Forces a turbine or block-addressable fuel-cell unit offline immediately. Set `job_id` to its `asset_id`. For fuel cells, omit `electrical_group_id` to trip the whole array or provide a declared group name to trip only that contiguous board group. Tripped blocks enter `cold` with zero output.
 
 ---
 

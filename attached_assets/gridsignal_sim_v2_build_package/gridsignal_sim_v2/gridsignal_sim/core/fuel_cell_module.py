@@ -311,6 +311,15 @@ class BlockFuelCellConfig:
     # configuration.  A supplied value is a cooling duration, not a start
     # duration; omitted legacy payloads use the compatibility fallback below.
     controlled_cooling_s: float | None = None
+    # G-2 fuel and topology inputs. Group membership is addressing only.
+    electrical_groups: list[tuple[str, int]] = field(default_factory=list)
+    beginning_of_life_heat_rate_btu_per_kwh: float = 5811.0
+    end_of_life_heat_rate_btu_per_kwh: float = 7127.0
+    degradation_fraction: float = 0.5
+    part_load_heat_rate_multiplier: float = 1.0
+    gas_heating_value_btu_per_scf: float = 1030.0
+    hot_standby_fuel_fraction: float = 0.10
+    gas_price_usd_per_mmbtu: float | None = 5.0
 
     def __post_init__(self) -> None:
         if not self.asset_id or self.block_rated_mw <= 0 or self.block_count < 1:
@@ -335,6 +344,38 @@ class BlockFuelCellConfig:
             raise ValueError("min_stable_frac must be between zero and one")
         if self.dispatch_mechanism not in {"discrete_blocks", "modulating", "hybrid"}:
             raise ValueError("unknown fuel-cell dispatch mechanism")
+        if self.beginning_of_life_heat_rate_btu_per_kwh <= 0 or self.end_of_life_heat_rate_btu_per_kwh <= 0:
+            raise ValueError("fuel-cell heat rates must be positive")
+        if not 0 <= self.degradation_fraction <= 1 or self.part_load_heat_rate_multiplier <= 0:
+            raise ValueError("fuel-cell degradation/multiplier invalid")
+        if self.gas_heating_value_btu_per_scf <= 0 or self.hot_standby_fuel_fraction < 0:
+            raise ValueError("fuel inputs must be non-negative with positive heating value")
+        if self.gas_price_usd_per_mmbtu is not None and self.gas_price_usd_per_mmbtu < 0:
+            raise ValueError("gas price must be non-negative")
+        if not self.electrical_groups:
+            self.electrical_groups = [("all_blocks", self.block_count)]
+        if (sum(n for _, n in self.electrical_groups) != self.block_count
+                or any(
+                    not name.strip()
+                    or not any(character.isalpha() for character in name)
+                    or n <= 0
+                    for name, n in self.electrical_groups
+                )
+                or len({name for name, _ in self.electrical_groups}) != len(self.electrical_groups)):
+            raise ValueError(
+                "electrical groups must have unique human-meaningful names, "
+                "positive counts, and sum to block_count"
+            )
+        self.provenance = {
+            **self.provenance,
+            "beginning_of_life_heat_rate_btu_per_kwh": "vendor_published",
+            "end_of_life_heat_rate_btu_per_kwh": "vendor_published",
+            "degradation_fraction": "site_specific",
+            "part_load_heat_rate_multiplier": "proposed",
+            "gas_heating_value_btu_per_scf": "site_specific",
+            "hot_standby_fuel_fraction": "proposed",
+            "gas_price_usd_per_mmbtu": "site_specific",
+        }
 
     @property
     def rated_mw(self) -> float:
@@ -365,6 +406,8 @@ class _FuelCellBlock:
     # is represented by HOT_STANDBY/RUNNING; retaining it here while cooling
     # makes the hot -> warm decay explicit.
     thermal_readiness: str = "cold"
+    electrical_group_id: str = "all_blocks"
+    tripped: bool = False
 
 
 @dataclass
@@ -381,9 +424,14 @@ class BlockFuelCellArray(AssetModule):
     _load_following_target_mw: float | None = None
     _commit_credit: float = 0.0
     _decommit_credit: float = 0.0
+    cumulative_fuel_mmbtu: float = 0.0
+    cumulative_co2_tonnes: float = 0.0
+    total_fuel_demand_scfm: float = 0.0
+    hot_standby_parasitic_scfm: float = 0.0
 
     def __post_init__(self) -> None:
         if not self.blocks:
+            group_ids = [name for name, count in self.config.electrical_groups for _ in range(count)]
             self.blocks = [
                 _FuelCellBlock(
                     FuelCellState.RUNNING if i < self.config.initial_running_blocks
@@ -399,6 +447,7 @@ class BlockFuelCellArray(AssetModule):
                         if i < self.config.initial_running_blocks + self.config.initial_hot_standby_blocks
                         else "cold"
                     ),
+                    electrical_group_id=group_ids[i],
                 )
                 for i in range(self.config.block_count)
             ]
@@ -436,6 +485,28 @@ class BlockFuelCellArray(AssetModule):
 
     def output_mw(self) -> float:
         return sum(b.output_mw for b in self.blocks)
+
+    @property
+    def effective_heat_rate_btu_per_kwh(self) -> float:
+        cfg = self.config
+        return (cfg.beginning_of_life_heat_rate_btu_per_kwh +
+                (cfg.end_of_life_heat_rate_btu_per_kwh - cfg.beginning_of_life_heat_rate_btu_per_kwh)
+                * cfg.degradation_fraction) * cfg.part_load_heat_rate_multiplier
+
+    def fuel_telemetry(self) -> dict[str, float]:
+        return {"total_fuel_demand_scfm": self.total_fuel_demand_scfm,
+                "hot_standby_parasitic_scfm": self.hot_standby_parasitic_scfm,
+                "cumulative_fuel_mmbtu": self.cumulative_fuel_mmbtu,
+                "cumulative_co2_tonnes": self.cumulative_co2_tonnes}
+
+    def trip(self, electrical_group_id: str | None = None) -> int:
+        """Force addressed blocks cold; ordinary advance never revives them."""
+        selected = [b for b in self.blocks if electrical_group_id is None or b.electrical_group_id == electrical_group_id]
+        for block in selected:
+            block.state, block.timer_s, block.dwell_s, block.output_mw, block.thermal_readiness = (
+                FuelCellState.COLD, 0.0, 0.0, 0.0, "cold")
+            block.tripped = True
+        return len(selected)
 
     @property
     def _running_block_floor_mw(self) -> float:
@@ -514,7 +585,9 @@ class BlockFuelCellArray(AssetModule):
         cold = next(
             (
                 b for b in self.blocks
-                if b.state == FuelCellState.COLD and b.thermal_readiness == "warm"
+                if not b.tripped
+                and b.state == FuelCellState.COLD
+                and b.thermal_readiness == "warm"
             ),
             None,
         )
@@ -522,7 +595,9 @@ class BlockFuelCellArray(AssetModule):
             cold = next(
                 (
                     b for b in self.blocks
-                    if b.state == FuelCellState.COLD and b.thermal_readiness == "cold"
+                    if not b.tripped
+                    and b.state == FuelCellState.COLD
+                    and b.thermal_readiness == "cold"
                 ),
                 None,
             )
@@ -667,6 +742,23 @@ class BlockFuelCellArray(AssetModule):
                 self.config.block_rated_mw * self.config.min_stable_frac,
                 min(self.config.block_rated_mw, per_block_target),
             )
+        # Integrate once, at the interval-end state. HOT_STANDBY includes a
+        # block in hot-start dwell by design.
+        rate = self.effective_heat_rate_btu_per_kwh / self.config.gas_heating_value_btu_per_scf / 60.0
+        running_scfm = self.output_mw() * 1000.0 * rate
+        self.hot_standby_parasitic_scfm = sum(
+            b.state == FuelCellState.HOT_STANDBY for b in self.blocks
+        ) * self.config.block_rated_mw * 1000.0 * rate * self.config.hot_standby_fuel_fraction
+        self.total_fuel_demand_scfm = running_scfm + self.hot_standby_parasitic_scfm
+        used_mmbtu = (
+            self.total_fuel_demand_scfm
+            * dt_seconds
+            / 60.0
+            * self.config.gas_heating_value_btu_per_scf
+            / 1_000_000.0
+        )
+        self.cumulative_fuel_mmbtu += used_mmbtu
+        self.cumulative_co2_tonnes += used_mmbtu * 53.06 / 1000.0
 
 
 @dataclass
@@ -699,6 +791,28 @@ class BlockFuelCellFleet:
 
     def output_mw(self) -> float:
         return sum(a.output_mw() for a in self.arrays)
+
+    @property
+    def total_fuel_demand_scfm(self) -> float:
+        return sum(a.total_fuel_demand_scfm for a in self.arrays)
+
+    @property
+    def hot_standby_parasitic_scfm(self) -> float:
+        return sum(a.hot_standby_parasitic_scfm for a in self.arrays)
+
+    @property
+    def cumulative_fuel_mmbtu(self) -> float:
+        return sum(a.cumulative_fuel_mmbtu for a in self.arrays)
+
+    @property
+    def cumulative_co2_tonnes(self) -> float:
+        return sum(a.cumulative_co2_tonnes for a in self.arrays)
+
+    def trip(self, asset_id: str, electrical_group_id: str | None = None) -> int:
+        for array in self.arrays:
+            if array.asset_id == asset_id:
+                return array.trip(electrical_group_id)
+        return 0
 
     @property
     def commanded_output_mw(self) -> float:
