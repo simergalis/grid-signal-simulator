@@ -22,3 +22,9 @@ Any non-empty block fuel-cell declaration is authoritative source enablement. UI
 **Why:** A named fuel-cell scenario that silently runs as battery/diesel-only can produce plausible but invalid results.
 
 **How to apply:** Derive source visibility from declared units rather than a legacy toggle. Model whole-array absence as a named variant or timeline trip, never by disabling the declared source.
+
+Fuel-cell reference fixtures with GPU demand must include cooling power in the site balance. Calibrate compute below the total-site target so delayed cooling settles into, rather than adds on top of, that target.
+
+**Why:** Setting cooling demand to zero makes the electrical trace deterministic but physically invalid for operating GPUs.
+
+**How to apply:** Preserve the intended settled total-site envelope, expose compute and cooling separately, and calibrate transient assertions around the cooling plant's thermal delay.

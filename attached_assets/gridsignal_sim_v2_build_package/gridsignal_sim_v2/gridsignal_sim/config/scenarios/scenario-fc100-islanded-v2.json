@@ -1,10 +1,10 @@
 {
   "name": "FC100 Islanded Readiness Reference",
-  "description": "Addendum G-1 reference: islanded block fuel-cell array, deterministic 20 MW to 80 MW twenty-minute demand step, grid-forming BESS bridge, and advisory-only diesel final reserve. Dynamic cooling is explicitly disabled (alpha_max=0) so the scripted workload is the complete 20-to-80 MW site-demand fixture rather than a thermal-response exercise.",
+  "description": "Addendum G-1 reference: islanded block fuel-cell array, deterministic 20 MW to 80 MW settled total-site demand step, grid-forming BESS bridge, and advisory-only diesel final reserve. GPU compute rises from approximately 16.67 MW to 66.67 MW while the cooling plant rises from approximately 3.33 MW to 13.33 MW after its thermal delay.",
   "site_name": "FC100 Islanded Reference Plant",
   "workload_events": [
-    {"event_id": "fc-base-start", "job_id": "fc-base", "event_type": "running", "timestamp": 0, "node_count": 1961, "hardware_profile_id": "enterprise_8gpu_air"},
-    {"event_id": "fc-peak-start", "job_id": "fc-peak", "event_type": "starting", "timestamp": 30, "node_count": 5882, "hardware_profile_id": "enterprise_8gpu_air"},
+    {"event_id": "fc-base-start", "job_id": "fc-base", "event_type": "running", "timestamp": 0, "node_count": 1634, "hardware_profile_id": "enterprise_8gpu_air"},
+    {"event_id": "fc-peak-start", "job_id": "fc-peak", "event_type": "starting", "timestamp": 30, "node_count": 4902, "hardware_profile_id": "enterprise_8gpu_air"},
     {"event_id": "fc-peak-end", "job_id": "fc-peak", "event_type": "job_end", "timestamp": 1260, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air"},
     {"event_id": "fc-base-end", "job_id": "fc-base", "event_type": "job_end", "timestamp": 1320, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air"}
   ],
@@ -27,12 +27,12 @@
   "frequency_nominal_hz": 60,
   "power_factor": 0.85,
   "pue_base": 1,
-  "alpha_max": 0,
+  "alpha_max": 0.2,
   "calibrated": true,
   "end_sim_time": 1320,
   "gpu_load_profile": [],
   "assertions": [
-    {"check": "persistent_fuel_cell_deficit", "expected_deficit_mw": 29.95, "duration_s": 1135, "tick_seconds": 5, "tolerance_mw": 0.325},
+    {"check": "persistent_fuel_cell_deficit", "expected_deficit_mw": 29.95, "duration_s": 1065, "tick_seconds": 5, "tolerance_mw": 0.325},
     {"check": "peak_fuel_cell_array_output", "expected_mw": 50.05, "tolerance_mw": 0.325},
     {"check": "no_cold_warming_contingency_capacity", "block_rated_mw": 0.325},
     {"check": "fuel_cell_commanded_and_achieved_reported"},

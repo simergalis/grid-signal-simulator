@@ -1,10 +1,10 @@
 {
   "name": "FC100 Islanded Zero-Hot-Standby Reference",
-  "description": "Addendum G-1 zero-hot-standby control: identical to the FC100 reference except no fuel-cell blocks begin in hot standby, proving the physical BESS ceiling and residual unserved load. Dynamic cooling is explicitly disabled (alpha_max=0), retaining the deterministic 20-to-80 MW total-site fixture.",
+  "description": "Addendum G-1 zero-hot-standby control: identical to the FC100 reference except no fuel-cell blocks begin in hot standby, proving the physical BESS ceiling and residual unserved load. GPU compute and cooling together settle at the deterministic 20-to-80 MW total-site demand levels.",
   "site_name": "FC100 Islanded Reference Plant",
   "workload_events": [
-    {"event_id": "fc-base-start", "job_id": "fc-base", "event_type": "running", "timestamp": 0, "node_count": 1961, "hardware_profile_id": "enterprise_8gpu_air"},
-    {"event_id": "fc-peak-start", "job_id": "fc-peak", "event_type": "starting", "timestamp": 30, "node_count": 5882, "hardware_profile_id": "enterprise_8gpu_air"},
+    {"event_id": "fc-base-start", "job_id": "fc-base", "event_type": "running", "timestamp": 0, "node_count": 1634, "hardware_profile_id": "enterprise_8gpu_air"},
+    {"event_id": "fc-peak-start", "job_id": "fc-peak", "event_type": "starting", "timestamp": 30, "node_count": 4902, "hardware_profile_id": "enterprise_8gpu_air"},
     {"event_id": "fc-peak-end", "job_id": "fc-peak", "event_type": "job_end", "timestamp": 1260, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air"},
     {"event_id": "fc-base-end", "job_id": "fc-base", "event_type": "job_end", "timestamp": 1320, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air"}
   ],
@@ -27,7 +27,7 @@
   "frequency_nominal_hz": 60,
   "power_factor": 0.85,
   "pue_base": 1,
-  "alpha_max": 0,
+  "alpha_max": 0.2,
   "calibrated": true,
   "end_sim_time": 1320,
   "gpu_load_profile": [],
