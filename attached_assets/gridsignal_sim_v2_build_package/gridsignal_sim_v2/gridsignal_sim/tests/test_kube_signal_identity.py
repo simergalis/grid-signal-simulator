@@ -115,6 +115,37 @@ class TestKubeAggregateSignalIdentity(unittest.TestCase):
             "All aggregate signals from one KubeDemandAgent must share one job_id.",
         )
 
+    def test_concurrent_arrivals_are_counted_once_in_the_cluster_total(self):
+        """Admissions drained together emit one aggregate equal to their sum."""
+        agent = self._make_agent()
+        site = SiteConfig(site_id="test-site", pue_base=1.03)
+        gpu = GPUModule(asset_id="gpu-0", site=site, hardware_library={})
+
+        self._queue_admission(
+            agent,
+            event_id="arrival-1",
+            nodes=200,
+            observed_at=0.0,
+        )
+        self._queue_admission(
+            agent,
+            event_id="arrival-2",
+            nodes=300,
+            observed_at=0.0,
+        )
+
+        signals, metrics = agent.tick(sim_time=0.0, dt_seconds=5.0)
+
+        self.assertEqual(len(signals), 1)
+        self.assertEqual(signals[0].job_id, "kube-admission-default")
+        self.assertEqual(signals[0].node_count, 500)
+        self.assertEqual(metrics.admitted_nodes, 500)
+
+        gpu.apply_signal(signals[0])
+
+        self.assertEqual(sum(gpu._node_counts.values()), 500)
+        self.assertEqual(sum(gpu._desired_node_counts.values()), 500)
+
     def test_tenants_use_distinct_stable_aggregate_identities(self):
         """Multi-tenant agents remain separate while each agent stays stable."""
         agent_a = self._make_agent("A")
