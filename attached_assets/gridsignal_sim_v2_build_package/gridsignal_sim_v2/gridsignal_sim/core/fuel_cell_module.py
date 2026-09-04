@@ -463,7 +463,19 @@ class BlockFuelCellArray(AssetModule):
         # when its synchronisation and required dwell fit the event window.
         fast_hot = sum(
             block.state == FuelCellState.HOT_STANDBY
+            and block.dwell_s == 0.0
             and self.config.hot_start_s + self.config.readiness_dwell_s <= fast_window_s
+            for block in self.blocks
+        )
+        # This is deliberately distinct from both available_now and
+        # available_fast.  It describes the capacity of hardware that is
+        # already thermally HOT and will close a dispatch deficit after its
+        # outstanding hot-start transition.  Blocks already in that dwell are
+        # included: they remain HOT_STANDBY until it completes.  It is not
+        # event/contingency credit because neither idle nor synchronising
+        # standby hardware is delivering power now.
+        eventual_hot_closure = sum(
+            block.state == FuelCellState.HOT_STANDBY
             for block in self.blocks
         )
         return {
@@ -471,6 +483,9 @@ class BlockFuelCellArray(AssetModule):
             "available_now_mw": running_headroom_mw,
             "available_fast_mw": (
                 running_headroom_mw + fast_hot * self.config.block_rated_mw
+            ),
+            "eventual_hot_closure_mw": (
+                eventual_hot_closure * self.config.block_rated_mw
             ),
             "minimum_output_mw": self.minimum_dispatchable_output_mw,
         }
@@ -565,6 +580,23 @@ class BlockFuelCellArray(AssetModule):
             return self.config.block_count
         return min(self.config.block_count, blocks_to_cover_request)
 
+    @property
+    def _committed_blocks(self) -> int:
+        """Blocks producing now or already committed through hot-start dwell.
+
+        A synchronising hot-standby block is an outstanding commitment, but it
+        is deliberately not RUNNING: it has no output or contingency credit
+        until the dwell completes.
+        """
+        return sum(
+            block.state == FuelCellState.RUNNING
+            or (
+                block.state == FuelCellState.HOT_STANDBY
+                and block.dwell_s > 0.0
+            )
+            for block in self.blocks
+        )
+
     def advance(self, sim_time: float, dt_seconds: float) -> None:
         del sim_time
         if dt_seconds < 0:
@@ -573,8 +605,15 @@ class BlockFuelCellArray(AssetModule):
         if target is None:
             target = self.config.rated_mw
         wanted = self._requested_running_blocks(target)
-        self._commit_credit += self.config.commit_rate_blocks_per_s * dt_seconds
-        while sum(b.state == FuelCellState.RUNNING for b in self.blocks) < wanted and self._commit_credit >= 1:
+        # Commitment bandwidth is an interval-local physical rate, not stored
+        # dispatch credit.  In particular, a settled baseline must not bank
+        # unused starts and spend them at the next peak.  Dwell blocks count as
+        # already committed so repeated ticks cannot over-command transitions.
+        if self._committed_blocks >= wanted:
+            self._commit_credit = 0.0
+        else:
+            self._commit_credit += self.config.commit_rate_blocks_per_s * dt_seconds
+        while self._committed_blocks < wanted and self._commit_credit >= 1:
             if not self.command_run(0.0):
                 if not self.command_start(0.0):
                     break
@@ -584,6 +623,9 @@ class BlockFuelCellArray(AssetModule):
             if not self.command_stop(0.0):
                 break
             self._decommit_credit -= 1
+        # First complete every thermal transition.  Output allocation follows
+        # in a separate pass so an interval-end snapshot cannot report a block
+        # as RUNNING before that same block has been assigned its output.
         for block in self.blocks:
             if block.state in (FuelCellState.WARMING, FuelCellState.CONTROLLED_COOLING):
                 block.timer_s = max(0.0, block.timer_s - dt_seconds)
@@ -600,14 +642,19 @@ class BlockFuelCellArray(AssetModule):
                     block.state = FuelCellState.RUNNING
                     block.output_mw = self._running_block_floor_mw
                     block.thermal_readiness = "hot"
-            elif block.state == FuelCellState.RUNNING:
-                per_block_target = target / max(1, sum(b.state == FuelCellState.RUNNING for b in self.blocks))
-                if self.config.dispatch_mechanism == "discrete_blocks":
-                    per_block_target = self.config.block_rated_mw
-                block.output_mw = max(
-                    self.config.block_rated_mw * self.config.min_stable_frac,
-                    min(self.config.block_rated_mw, per_block_target),
-                )
+
+        running_blocks = [
+            block for block in self.blocks
+            if block.state == FuelCellState.RUNNING
+        ]
+        per_block_target = target / max(1, len(running_blocks))
+        if self.config.dispatch_mechanism == "discrete_blocks":
+            per_block_target = self.config.block_rated_mw
+        for block in running_blocks:
+            block.output_mw = max(
+                self.config.block_rated_mw * self.config.min_stable_frac,
+                min(self.config.block_rated_mw, per_block_target),
+            )
 
 
 @dataclass
@@ -649,7 +696,12 @@ class BlockFuelCellFleet:
         result: dict[str, float | int] = {
             state.value: 0 for state in FuelCellState
         }
-        result.update(available_now_mw=0.0, available_fast_mw=0.0, minimum_output_mw=0.0)
+        result.update(
+            available_now_mw=0.0,
+            available_fast_mw=0.0,
+            eventual_hot_closure_mw=0.0,
+            minimum_output_mw=0.0,
+        )
         for array in self.arrays:
             summary = array.readiness_summary(fast_window_s)
             for key, value in summary.items():

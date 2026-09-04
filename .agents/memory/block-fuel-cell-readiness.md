@@ -10,3 +10,9 @@ For block fuel-cell arrays, contingency capacity is state- and time-dependent. C
 **How to apply:** Keep declining hot-commitment and persistent cold-capacity deficits as separate records. Readiness changes remain advisory until hot-hold fuel cost is calibrated, and diesel final reserve changes consequences rather than firm-reserve sufficiency.
 
 BESS dispatch must follow signed physical net imbalance after achieved fuel-cell output: positive imbalance discharges, negative imbalance charges, and zero leaves the battery idle. Fuel-cell commanded-versus-achieved gaps remain readiness telemetry and must not independently dispatch the battery. In island mode, grid-forming BESS discharge remains capped at rated power minus anchor reserve; excess physical deficit is unserved load.
+
+Block commitment-rate credit is interval-local and must not accumulate while existing running or already-synchronising blocks cover the requested commitment. A block completing hot-start dwell must receive output in the same interval-end snapshot in which it becomes RUNNING.
+
+**Why:** Banked rate credit creates impossible burst commitments, and state-before-output ordering reports blocks as RUNNING before they produce. Synchronising dwell blocks are eventual closure capacity only, never fast or contingency reserve.
+
+**How to apply:** Count RUNNING plus active hot-start dwell for commitment throttling, but count only producing RUNNING blocks in running telemetry and reserve-now. Keep dwell blocks in a separately named eventual-closure quantity.

@@ -27,9 +27,9 @@ def test_fc100_reference_is_registered_and_exercises_block_deficit():
     context = build_run_context_from_spec("fc100-acceptance", spec, playback_speed=0)
     ticks = [context.step() for _ in range(int(spec["end_sim_time"] / 5))]
 
-    # The peak STARTING event is submitted at t=30 and its 30-second GPU
-    # ramp lands the 80 MW load at t=60.  The staged hot-block path is already
-    # active while that warning window is still open.
+    # The peak STARTING event is submitted at t=30 and its 30-second GPU ramp
+    # lands the 80 MW load at t=60.  The settled baseline cannot bank unused
+    # start-rate credit for the peak.
     peak_event = next(e for e in spec["workload_events"] if e["event_id"] == "fc-peak-start")
     base_event = next(e for e in spec["workload_events"] if e["event_id"] == "fc-base-start")
     assert base_event["event_type"] == "running"
@@ -44,11 +44,18 @@ def test_fc100_reference_is_registered_and_exercises_block_deficit():
         and t.sim_time_seconds >= 30
     ]
     assert peak_declining
-    assert peak_declining[0].sim_time_seconds == pytest.approx(35)
+    assert peak_declining[0].sim_time_seconds == pytest.approx(60)
     assert [t.sim_time_seconds for t in peak_declining] == pytest.approx(
-        [35, 40, 45, 50, 55]
+        list(range(60, 125, 5))
     )
-    assert peak_declining[0].fuel_cell_declining_reserve_alert["event_fast_window_s"] == pytest.approx(25)
+    first_declining = peak_declining[0].fuel_cell_declining_reserve_alert
+    assert first_declining["event_fast_window_s"] == pytest.approx(0)
+    # At the physical 80 MW load arrival, 62 HOT blocks remain.  This
+    # closable 20.15 MW is separate from the irreducible ~29.95 MW deficit.
+    assert first_declining["shortfall_mw"] == pytest.approx(50.0986, abs=.325)
+    assert first_declining["closing_mw"] == pytest.approx(62 * .325)
+    assert first_declining["remaining_mw"] == pytest.approx(29.95, abs=.325)
+    assert first_declining["eventual_hot_closure_mw"] == pytest.approx(62 * .325)
     # Decommit is deliberately disabled for this fixed 20→80 MW exercise:
     # all initially running blocks remain online and every hot block commits.
     settled_baseline = [t for t in ticks if 5 <= t.sim_time_seconds <= 30]
@@ -58,17 +65,20 @@ def test_fc100_reference_is_registered_and_exercises_block_deficit():
     assert not any(t.fuel_cell_persistent_reserve_alert for t in settled_baseline)
     assert next(
         t.fuel_cell_running_blocks for t in ticks if t.sim_time_seconds == 60
-    ) == 111
+    ) == 92
     assert next(
         t.fuel_cell_achieved_output_mw for t in ticks if t.sim_time_seconds == 60
-    ) == pytest.approx(34.775)
+    ) == pytest.approx(29.9)
     assert next(
         t.sim_time_seconds for t in ticks
         if t.fuel_cell_achieved_output_mw == pytest.approx(50.05)
-    ) == pytest.approx(120)
+    ) == pytest.approx(125)
+    assert not next(
+        t for t in ticks if t.sim_time_seconds == 125
+    ).fuel_cell_declining_reserve_alert
 
     # Cold/warming blocks make an explicit zero contingency contribution.
-    plateau = [t for t in ticks if 120 <= t.sim_time_seconds <= 1260]
+    plateau = [t for t in ticks if 125 <= t.sim_time_seconds <= 1260]
     assert max(t.fuel_cell_achieved_output_mw for t in plateau) == pytest.approx(50.05)
     assert all(
         t.fuel_cell_commanded_output_mw - t.fuel_cell_achieved_output_mw
@@ -87,6 +97,15 @@ def test_fc100_reference_is_registered_and_exercises_block_deficit():
     )
     assert any(t.fuel_cell_declining_reserve_alert for t in ticks)
     assert any(t.fuel_cell_persistent_reserve_alert for t in plateau)
+    physical_peak = [
+        t for t in ticks if 60 <= t.sim_time_seconds < 1260
+    ]
+    assert all(t.fuel_cell_persistent_reserve_alert for t in physical_peak)
+    assert all(
+        t.fuel_cell_persistent_reserve_alert["persistent_shortfall_mw"]
+        == pytest.approx(29.95, abs=.325)
+        for t in physical_peak
+    )
     for tick in ticks:
         for alert in (
             tick.fuel_cell_declining_reserve_alert,
@@ -149,6 +168,13 @@ def test_fc100_zero_hot_variant_exposes_physical_bess_ceiling_and_unserved_load(
     # The physical BESS path retains its 1 MW grid-forming anchor reserve.
     assert max(t.bess_output_mw for t in peak) == pytest.approx(59.0)
     assert all(t.bess_output_mw <= 59.0 + 1e-9 for t in peak)
+    assert not any(t.fuel_cell_declining_reserve_alert for t in peak)
+    assert all(
+        t.fuel_cell_persistent_reserve_alert
+        and t.fuel_cell_persistent_reserve_alert["persistent_shortfall_mw"]
+        == pytest.approx(59.9, abs=.325)
+        for t in peak
+    )
 
     # Residual site demand is explicitly shed/unserved, not fabricated supply.
     constrained = [t for t in peak if t.p_unserved_mw and t.p_unserved_mw > 0]

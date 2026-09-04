@@ -16,7 +16,7 @@
   "fuel_cell_units": [{
     "asset_id": "fc100-array", "block_rated_mw": 0.325, "block_count": 246,
     "initial_running_blocks": 62, "initial_hot_standby_blocks": 0,
-    "commit_rate_blocks_per_s": 0.82, "decommit_rate_blocks_per_s": 0.0001,
+    "commit_rate_blocks_per_s": 1.0, "decommit_rate_blocks_per_s": 0.0001,
     "cold_start_s": 28800, "warm_start_s": 14400, "hot_start_s": 5,
     "min_stable_frac": 0, "hot_standby_floor_blocks": 92,
     "dispatch_mechanism": "hybrid", "readiness_dwell_s": 0

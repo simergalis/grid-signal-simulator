@@ -2137,11 +2137,14 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         else:
             bess_bridging_seconds = 0.0
 
-    # G-1 readiness-aware reserve records.  The staging engine's peak
-    # shortfall is the event requirement; diesel is intentionally absent from
-    # every term because it is not firm reserve.  RUNNING capacity is usable
-    # now, while only standby blocks whose hot-start+dwell fit dt_lead_next_s
-    # can reduce the event gap.  Cold/warming/cooling blocks never do.
+    # G-1 readiness-aware dispatch-deficit records.  These describe the
+    # post-load physical fuel-cell gap, not a forecast reserve requirement:
+    # authoritative contingency accounting continues to use available_fast.
+    # Diesel is intentionally absent from every term because it is not firm
+    # reserve.  HOT_STANDBY blocks (including blocks in their hot-start dwell)
+    # are eventually closable capacity, but are never credited as available
+    # now or contingency reserve.  Cold/warming/cooling blocks never close
+    # this record.
     _fc_declining_alert: dict | None = None
     _fc_persistent_alert: dict | None = None
     # A block array's commanded-minus-achieved gap is independently material:
@@ -2149,26 +2152,31 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # peak marker.  Keep it as a distinct readiness record rather than hiding
     # it when the BESS is covering the electrical balance.
     _fc_dispatch_deficit_mw = max(0.0, _fc_commanded_mw - fuel_cell_output_mw)
-    _event_shortfall_mw = max(
-        0.0, state._pending_peak_shortfall_mw, _fc_dispatch_deficit_mw
-    )
-    if _fc_summary and _event_shortfall_mw > 0.0:
-        _fc_now_mw = float(_fc_summary["available_now_mw"])
-        _fc_fast_mw = float(_fc_summary["available_fast_mw"])
-        _shortfall_after_now_mw = max(0.0, _event_shortfall_mw - _fc_now_mw)
+    # A positive lead is still a forecast/ramp window.  Do not publish these
+    # physical records until the load has landed; otherwise a forecast gap is
+    # mislabeled as an irreducible present deficit.
+    # Ramped GPU intervals can leave a round-off-sized positive lead at the
+    # exact load-landing boundary (for example t=60 in the G-1 reference).
+    # Treat that as post-load rather than suppressing the physical record for
+    # one tick; a material remaining lead remains forecast-only.
+    _load_has_landed = math.isclose(dt_lead_next_s, 0.0, abs_tol=1e-9)
+    if _fc_summary and _fc_dispatch_deficit_mw > 0.0 and _load_has_landed:
+        _eventual_hot_closure_mw = float(
+            _fc_summary["eventual_hot_closure_mw"]
+        )
         _hot_closure_mw = min(
-            _shortfall_after_now_mw, max(0.0, _fc_fast_mw - _fc_now_mw)
+            _fc_dispatch_deficit_mw, _eventual_hot_closure_mw
         )
         _persistent_before_bess_mw = max(
-            _fc_dispatch_deficit_mw,
-            0.0, _shortfall_after_now_mw - _hot_closure_mw
+            0.0, _fc_dispatch_deficit_mw - _hot_closure_mw
         )
         if _hot_closure_mw > 0.0:
             _fc_declining_alert = {
                 "event_fast_window_s": dt_lead_next_s,
-                "shortfall_mw": _shortfall_after_now_mw,
+                "shortfall_mw": _fc_dispatch_deficit_mw,
                 "closing_mw": _hot_closure_mw,
                 "remaining_mw": _persistent_before_bess_mw,
+                "eventual_hot_closure_mw": _eventual_hot_closure_mw,
             }
         if _persistent_before_bess_mw > 0.0:
             _firm_bess_mw = sum(

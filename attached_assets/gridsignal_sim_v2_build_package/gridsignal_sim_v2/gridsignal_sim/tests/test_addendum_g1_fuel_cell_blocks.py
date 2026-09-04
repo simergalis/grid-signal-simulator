@@ -2,6 +2,7 @@ import pytest
 from pydantic import ValidationError
 
 from api.schemas import FuelCellUnitSpec
+from core.contingency import FuelCellSnapshot, PlantState, evaluate_contingency
 from core.fuel_cell_module import (
     BlockFuelCellArray,
     BlockFuelCellConfig,
@@ -9,6 +10,7 @@ from core.fuel_cell_module import (
     FuelCellModule,
     FuelCellState,
 )
+from core.models import IslandMode
 
 
 def test_unit_schema_derives_capacity_and_rejects_independent_rating():
@@ -44,6 +46,93 @@ def test_cold_and_warming_blocks_are_not_available_until_ready():
     assert array.available_mw == 2
 
 
+def test_settled_baseline_does_not_bank_commit_credit_for_a_later_peak():
+    array = BlockFuelCellArray(BlockFuelCellConfig(
+        asset_id="fc-a", block_rated_mw=2, block_count=2,
+        initial_running_blocks=1, initial_hot_standby_blocks=1,
+        commit_rate_blocks_per_s=1, hot_start_s=1,
+    ))
+    array.set_load_following_target_mw(2)
+    array.advance(0, 30)
+
+    assert array._commit_credit == 0
+    array.set_load_following_target_mw(4)
+    array.advance(30, .5)
+    assert sum(block.dwell_s > 0 for block in array.blocks) == 0
+    assert sum(block.state == FuelCellState.RUNNING for block in array.blocks) == 1
+
+    # The new request earns only this interval's 0.5 block of rate credit.
+    array.advance(30.5, .5)
+    assert sum(block.dwell_s > 0 for block in array.blocks) == 1
+    assert sum(block.state == FuelCellState.RUNNING for block in array.blocks) == 1
+    array.advance(31, .5)
+    assert sum(block.state == FuelCellState.RUNNING for block in array.blocks) == 2
+
+
+def test_hot_standby_commit_rate_produces_exactly_thirty_blocks_in_thirty_seconds():
+    array = BlockFuelCellArray(BlockFuelCellConfig(
+        asset_id="fc-a", block_rated_mw=.325, block_count=246,
+        initial_running_blocks=62, initial_hot_standby_blocks=92,
+        commit_rate_blocks_per_s=1, hot_start_s=5,
+        dispatch_mechanism="hybrid", min_stable_frac=0,
+    ))
+    array.set_load_following_target_mw(80)
+    for sim_time in (0, 5, 10, 15, 20, 25):
+        array.advance(sim_time, 5)
+
+    assert sum(block.state == FuelCellState.RUNNING for block in array.blocks) == 92
+
+
+def test_hot_start_dwell_is_committed_but_not_running_or_contingency_capacity():
+    array = BlockFuelCellArray(BlockFuelCellConfig(
+        asset_id="fc-a", block_rated_mw=2, block_count=3,
+        initial_hot_standby_blocks=2, commit_rate_blocks_per_s=10,
+        hot_start_s=10,
+    ))
+    array.set_load_following_target_mw(4)
+    array.advance(0, 1)
+
+    assert sum(block.dwell_s > 0 for block in array.blocks) == 2
+    assert sum(block.state == FuelCellState.RUNNING for block in array.blocks) == 0
+    assert array.available_mw == 0
+    assert array.readiness_summary(fast_window_s=0)["available_now_mw"] == 0
+    # The two dwell transitions already meet the commitment and must not start
+    # the otherwise-cold third block on the next tick.
+    array.advance(1, 1)
+    assert array.blocks[2].state == FuelCellState.COLD
+
+
+def test_dwell_completion_allocates_output_in_the_same_interval_end_snapshot():
+    array = BlockFuelCellArray(BlockFuelCellConfig(
+        asset_id="fc-a", block_rated_mw=2, block_count=2,
+        initial_hot_standby_blocks=2, commit_rate_blocks_per_s=2,
+        hot_start_s=5, dispatch_mechanism="hybrid", min_stable_frac=0,
+    ))
+    array.set_load_following_target_mw(4)
+    array.advance(0, 5)
+
+    running = [block for block in array.blocks if block.state == FuelCellState.RUNNING]
+    assert len(running) == 2
+    assert all(block.output_mw == pytest.approx(2) for block in running)
+    assert array.output_mw() == pytest.approx(
+        len(running) * array.config.block_rated_mw
+    )
+
+
+def test_hybrid_running_block_count_can_exceed_modulated_output_in_block_units():
+    array = BlockFuelCellArray(BlockFuelCellConfig(
+        asset_id="fc-a", block_rated_mw=2, block_count=2,
+        initial_running_blocks=2, dispatch_mechanism="hybrid",
+        min_stable_frac=0, decommit_rate_blocks_per_s=.0001,
+    ))
+    array.set_load_following_target_mw(.5)
+    array.advance(0, 1)
+
+    running = sum(block.state == FuelCellState.RUNNING for block in array.blocks)
+    assert running == 2
+    assert running > array.output_mw() / array.config.block_rated_mw
+
+
 def test_readiness_summary_does_not_manufacture_fast_credit_at_zero_lead():
     """Hot standby is not event reserve until its actual start+dwell fits."""
     array = BlockFuelCellArray(BlockFuelCellConfig(
@@ -55,6 +144,55 @@ def test_readiness_summary_does_not_manufacture_fast_credit_at_zero_lead():
 
     assert summary["available_now_mw"] == 0.0
     assert summary["available_fast_mw"] == 0.0
+    # This separate eventual quantity is for dispatch-deficit attribution only;
+    # it must not change the authoritative zero-lead contingency credit above.
+    assert summary["eventual_hot_closure_mw"] == 2.0
+
+
+def test_eventual_hot_closure_includes_blocks_already_in_hot_start_dwell():
+    array = BlockFuelCellArray(BlockFuelCellConfig(
+        asset_id="fc-a", block_rated_mw=2, block_count=2,
+        initial_hot_standby_blocks=2, commit_rate_blocks_per_s=2,
+        hot_start_s=10,
+    ))
+    array.set_load_following_target_mw(4)
+    array.advance(0, 1)
+
+    summary = array.readiness_summary(fast_window_s=0.0)
+
+    assert all(block.dwell_s > 0.0 for block in array.blocks)
+    assert summary["available_now_mw"] == 0.0
+    assert summary["available_fast_mw"] == 0.0
+    assert summary["eventual_hot_closure_mw"] == 4.0
+
+
+def test_hot_start_dwell_has_no_fast_or_eligible_contingency_reserve():
+    array = BlockFuelCellArray(BlockFuelCellConfig(
+        asset_id="fc-a", block_rated_mw=2, block_count=1,
+        initial_hot_standby_blocks=1, hot_start_s=10,
+    ))
+    assert array.command_run(0)
+
+    # The positive window is intentionally longer than hot_start_s.  A block
+    # already synchronising is still in transition and cannot be admitted as
+    # fast/contingency reserve, even though it remains eventual closure.
+    summary = array.readiness_summary(fast_window_s=60)
+    coverage = evaluate_contingency(PlantState(
+        turbine_snapshots=(),
+        bess_snapshots=(),
+        fuel_cell_snapshots=(FuelCellSnapshot(
+            rated_mw=array.config.rated_mw,
+            eligible_reserve_mw=float(summary["available_fast_mw"]),
+        ),),
+        island_mode=IslandMode.ISLANDED,
+        curtailable_capacity_mw=0.0,
+        renewable_mw=0.0,
+    ))
+
+    assert array.blocks[0].dwell_s == 10
+    assert summary["available_fast_mw"] == 0.0
+    assert summary["eventual_hot_closure_mw"] == 2.0
+    assert coverage.fuel_cell_available_mw == 0.0
 
 
 def test_readiness_summary_counts_running_headroom_not_running_nameplate():
