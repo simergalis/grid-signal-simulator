@@ -65,7 +65,11 @@ from api.schemas import (
 from runtime.cluster_gen import generate_cluster_forecast
 from runtime.param_sampler import sample_run_parameters
 from runtime.run_manager import RunManager, compute_run_cost_from_completed
-from runtime.scenario_factory import build_run_context, build_run_context_from_spec
+from runtime.scenario_factory import (
+    build_run_context,
+    build_run_context_from_spec,
+    validate_fuel_cell_source_consistency,
+)
 from runtime.solar_sim import generate_solar_forecast
 from runtime.stressor_gen import generate_stressor_forecast
 from runtime.telemetry_corruption import generate_corruption_schedule
@@ -240,8 +244,17 @@ async def start_run(
                 detail=f"Scenario {body.scenario_id!r} not found. "
                        f"Use GET /scenarios to list available scenarios.",
             )
-        scenario_store.link_run(body.scenario_id, run_id)
         spec_data = json.loads(record.spec_json)
+        try:
+            # Validate before linking or scheduling anything: a contradictory
+            # persisted scenario must never silently begin a run.
+            validate_fuel_cell_source_consistency(spec_data)
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(exc),
+            ) from exc
+        scenario_store.link_run(body.scenario_id, run_id)
 
         # ── Operator BESS size overrides (RunControlBar) ──────────────────
         # Apply before any generator pipelines so that the corrected sizing

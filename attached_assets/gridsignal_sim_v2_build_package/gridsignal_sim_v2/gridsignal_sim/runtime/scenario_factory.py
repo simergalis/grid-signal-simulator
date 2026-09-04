@@ -504,6 +504,31 @@ def build_load_test_context(
 # Step 8: build_run_context_from_spec
 # ---------------------------------------------------------------------------
 
+def validate_fuel_cell_source_consistency(spec_data: dict) -> None:
+    """Reject a disabled Fuel Cell Module Array before a run can start.
+
+    ``fuel_cell_units`` is the authoritative declaration of the
+    block-addressable array.  Keeping a legacy ``fuel_cell_enabled=false``
+    beside it previously let an author describe an array as disabled while
+    the block path still built it.  That ambiguity is unsafe for every caller
+    of the spec factory, including future run-start endpoints.
+    """
+    if not spec_data.get("fuel_cell_units"):
+        return
+    if "fuel_cell_enabled" not in spec_data:
+        # Direct factory callers may supply pre-schema legacy dictionaries.
+        # Preserve the same effective-enable rule that ScenarioSpec applies.
+        spec_data["fuel_cell_enabled"] = True
+        return
+    if not spec_data["fuel_cell_enabled"]:
+        raise ValueError(
+            "Fuel Cell Module Array is declared by fuel_cell_units but "
+            "fuel_cell_enabled is false. Set fuel_cell_enabled=true. For a "
+            "legitimate absent-array experiment, use a named scenario variant "
+            "or a named UNIT_TRIP event; do not disable the array with this toggle."
+        )
+
+
 def build_run_context_from_spec(
     run_id: str,
     spec_data: dict,
@@ -530,6 +555,8 @@ def build_run_context_from_spec(
     Step 9 will swap ScenarioRecord.spec_json reads from in-memory to
     SQLAlchemy while calling this function identically.
     """
+    validate_fuel_cell_source_consistency(spec_data)
+
     # ── Site configuration ────────────────────────────────────────────────
     island = (
         IslandMode.ISLANDED
@@ -1261,6 +1288,14 @@ def build_run_context_from_spec(
     # so that RunContext.assertions always holds typed Pydantic objects.
     raw_assertions = spec_data.get("assertions", [])
     assertions = [_assertion_adapter.validate_python(a) for a in raw_assertions]
+    # This guard is intentionally injected by the factory rather than authored
+    # in individual JSON files: every declared block array must prove that it
+    # produced nonzero achieved output at least once during a completed run.
+    # It cannot be omitted by a scenario author.
+    if spec_data.get("fuel_cell_units"):
+        assertions.append(
+            _assertion_adapter.validate_python({"check": "fuel_cell_output_nonzero"})
+        )
 
     # ── W1 advisory, telemetry, procurement wiring (spec path) ───────────
     _spec_turbine_mws = [float(t.get("rated_mw", 10.0)) for t in spec_data.get("turbine_units", [])]

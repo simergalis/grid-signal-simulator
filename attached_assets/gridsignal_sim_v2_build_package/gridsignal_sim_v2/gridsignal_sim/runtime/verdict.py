@@ -118,6 +118,11 @@ class FuelCellCommandedAndAchievedReportedAssertion(BaseModel):
     )
 
 
+class FuelCellOutputNonzeroAssertion(BaseModel):
+    """Implicitly require a declared block array to deliver some output."""
+    check: Literal["fuel_cell_output_nonzero"] = "fuel_cell_output_nonzero"
+
+
 # Pydantic v2 discriminated union — validated via TypeAdapter(AssertionSpec)
 AssertionSpec = Annotated[
     Union[
@@ -131,6 +136,7 @@ AssertionSpec = Annotated[
         PeakFuelCellArrayOutputAssertion,
         NoColdWarmingContingencyCapacityAssertion,
         FuelCellCommandedAndAchievedReportedAssertion,
+        FuelCellOutputNonzeroAssertion,
     ],
     Field(discriminator="check"),
 ]
@@ -368,6 +374,36 @@ def _eval_one(
                 "Commanded and achieved output present in retained rows, but gaps exist")
         return AssertionResult(check, "PASS",
             f"Commanded and achieved fuel-cell output reported on all {len(rows)} ticks")
+
+    if check == "fuel_cell_output_nonzero":
+        """Implicit guard for every scenario that declares fuel_cell_units."""
+        values = [
+            row.fuel_cell_achieved_output_mw
+            for row in rows
+            if row.fuel_cell_achieved_output_mw is not None
+        ]
+        if any(value > 0.0 for value in values):
+            peak = max(values)
+            return AssertionResult(
+                check, "PASS",
+                f"Achieved fuel-cell output was nonzero (peak {peak:.3f} MW)",
+            )
+        if has_gaps:
+            return AssertionResult(
+                check, "INCONCLUSIVE",
+                "Achieved fuel-cell output was zero in retained telemetry, "
+                "but gaps prevent proving it was zero for the entire run",
+            )
+        if not values:
+            return AssertionResult(
+                check, "FAIL",
+                "No achieved fuel-cell output telemetry was retained for the "
+                "declared Fuel Cell Module Array",
+            )
+        return AssertionResult(
+            check, "FAIL",
+            "Achieved fuel-cell output was zero for the entire completed run",
+        )
 
     if check == "no_insufficient_reserve_alert":
         alert_count = sum(1 for r in rows if r.insufficient_reserve_alert)

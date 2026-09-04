@@ -38,6 +38,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from api.app import create_app
+from api.schemas import ScenarioSpec
 
 
 # ---------------------------------------------------------------------------
@@ -75,6 +76,27 @@ def test_post_run_returns_201_and_run_id() -> None:
     assert "run_id" in body
     assert isinstance(body["run_id"], str)
     assert body["run_id"].startswith("run-")
+
+
+def test_post_run_rejects_disabled_declared_fuel_cell_module_array() -> None:
+    """A contradictory persisted array must not link or start a run."""
+    raw_spec = {
+        "name": "contradictory fuel-cell array",
+        "fuel_cell_enabled": False,
+        "fuel_cell_units": [{
+            "asset_id": "fc-array", "block_rated_mw": 1.0, "block_count": 1,
+        }],
+    }
+    with TestClient(create_app()) as client:
+        record = client.app.state.scenario_store.create(
+            ScenarioSpec.model_validate(raw_spec)
+        )
+        response = client.post("/runs", json={"scenario_id": record.scenario_id})
+
+        assert response.status_code == 422
+        assert "Fuel Cell Module Array" in response.json()["detail"]
+        assert "UNIT_TRIP" in response.json()["detail"]
+        assert client.app.state.scenario_store.get(record.scenario_id).last_run_id is None
 
 
 # ---------------------------------------------------------------------------

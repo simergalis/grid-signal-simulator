@@ -1,5 +1,7 @@
 from core.fuel_cell_module import BlockFuelCellArray, BlockFuelCellConfig
+from api.schemas import ScenarioSpec
 from runtime.advisory_gate import AdvisoryGate
+from runtime.scenario_factory import build_run_context_from_spec
 from runtime.fuel_cell_readiness import BlockFuelCellReadinessController
 from runtime.verdict import EvalRow, evaluate_verdict
 
@@ -109,3 +111,34 @@ def test_cold_warming_assertion_requires_accounting_telemetry():
         dropped_ticks=0,
     )
     assert result.assertions[0].status == "INCONCLUSIVE"
+
+
+def test_declared_array_auto_enables_and_injects_nonzero_output_verdict_guard():
+    spec_data = {
+        "name": "array-source-of-truth",
+        "fuel_cell_units": [{
+            "asset_id": "fc-array", "block_rated_mw": 1.0, "block_count": 1,
+        }],
+    }
+    # Legacy JSON that omits the toggle has an effective explicit enable.
+    spec = ScenarioSpec.model_validate(spec_data)
+    assert spec.fuel_cell_enabled is True
+    context = build_run_context_from_spec(
+        "fc-guard", spec.model_dump(mode="json")
+    )
+    assert context.assertions[-1].check == "fuel_cell_output_nonzero"
+
+    failed = evaluate_verdict(
+        context.assertions,
+        [EvalRow(1, 1.0, .9, False, fuel_cell_achieved_output_mw=0.0)],
+        dropped_ticks=0,
+    )
+    passed = evaluate_verdict(
+        context.assertions,
+        [EvalRow(1, 1.0, .9, False, fuel_cell_achieved_output_mw=0.1)],
+        dropped_ticks=0,
+    )
+    assert failed.overall == "FAIL"
+    assert failed.assertions[-1].status == "FAIL"
+    assert passed.overall == "PASS"
+    assert passed.assertions[-1].status == "PASS"

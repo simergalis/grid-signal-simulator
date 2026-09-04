@@ -16,3 +16,9 @@ Block commitment-rate credit is interval-local and must not accumulate while exi
 **Why:** Banked rate credit creates impossible burst commitments, and state-before-output ordering reports blocks as RUNNING before they produce. Synchronising dwell blocks are eventual closure capacity only, never fast or contingency reserve.
 
 **How to apply:** Count RUNNING plus active hot-start dwell for commitment throttling, but count only producing RUNNING blocks in running telemetry and reserve-now. Keep dwell blocks in a separately named eventual-closure quantity.
+
+Any non-empty block fuel-cell declaration is authoritative source enablement. UI source controls must lock it on, run construction must reject an explicit disabled contradiction, and every such scenario must implicitly fail verdict evaluation if retained achieved output is zero throughout.
+
+**Why:** A named fuel-cell scenario that silently runs as battery/diesel-only can produce plausible but invalid results.
+
+**How to apply:** Derive source visibility from declared units rather than a legacy toggle. Model whole-array absence as a named variant or timeline trip, never by disabling the declared source.

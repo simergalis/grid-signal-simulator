@@ -398,6 +398,19 @@
       "title": "FuelCellCommandedAndAchievedReportedAssertion",
       "type": "object"
     },
+    "FuelCellOutputNonzeroAssertion": {
+      "description": "Implicitly require a declared block array to deliver some output.",
+      "properties": {
+        "check": {
+          "const": "fuel_cell_output_nonzero",
+          "default": "fuel_cell_output_nonzero",
+          "title": "Check",
+          "type": "string"
+        }
+      },
+      "title": "FuelCellOutputNonzeroAssertion",
+      "type": "object"
+    },
     "FuelCellUnitSpec": {
       "description": "A block-addressable fuel-cell unit (Addendum G-1).\n\nCapacity is deliberately derived from ``block_rated_mw * block_count``.\nThere is no independently authorable ``rated_mw`` field for this model.",
       "properties": {
@@ -2820,6 +2833,7 @@
             "alert_fires": "#/$defs/AlertFiresAssertion",
             "declining_fuel_cell_reserve_alert_fires": "#/$defs/DecliningFuelCellReserveAlertFiresAssertion",
             "fuel_cell_commanded_and_achieved_reported": "#/$defs/FuelCellCommandedAndAchievedReportedAssertion",
+            "fuel_cell_output_nonzero": "#/$defs/FuelCellOutputNonzeroAssertion",
             "max_p_total_mw": "#/$defs/MaxPTotalAssertion",
             "min_final_bess_soc": "#/$defs/MinFinalBessSocAssertion",
             "no_cold_warming_contingency_capacity": "#/$defs/NoColdWarmingContingencyCapacityAssertion",
@@ -2860,6 +2874,9 @@
           },
           {
             "$ref": "#/$defs/FuelCellCommandedAndAchievedReportedAssertion"
+          },
+          {
+            "$ref": "#/$defs/FuelCellOutputNonzeroAssertion"
           }
         ]
       },

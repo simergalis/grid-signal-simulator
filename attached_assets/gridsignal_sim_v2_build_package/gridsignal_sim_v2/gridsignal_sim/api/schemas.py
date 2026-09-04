@@ -889,7 +889,20 @@ class ScenarioSpec(BaseModel):
     @classmethod
     def _remove_internal_test_paths(cls, value: Any) -> Any:
         """Keep implementation-only paths out of every ScenarioSpec write."""
-        return sanitize_scenario_payload(value)
+        value = sanitize_scenario_payload(value)
+        # A block-addressable fleet is the Fuel Cell Module Array.  Its
+        # presence is itself an enable declaration; materialize that fact when
+        # older scenario JSON omitted the legacy boolean.  An explicitly false
+        # value is deliberately retained so the run-start guard can reject the
+        # contradictory stored specification with an actionable error instead
+        # of silently operating an array that the author disabled.
+        if (
+            isinstance(value, dict)
+            and value.get("fuel_cell_units")
+            and "fuel_cell_enabled" not in value
+        ):
+            value = {**value, "fuel_cell_enabled": True}
+        return value
 
     @staticmethod
     def _default_site_location():

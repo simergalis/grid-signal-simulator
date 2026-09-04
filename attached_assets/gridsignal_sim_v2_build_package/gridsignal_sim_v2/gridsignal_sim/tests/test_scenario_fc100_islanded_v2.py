@@ -6,6 +6,7 @@ import json
 import pytest
 
 from api.routes.scenarios import build_seeded_store
+from api.schemas import ScenarioSpec
 from runtime.scenario_factory import build_run_context_from_spec
 from runtime.verdict import EvalRow, evaluate_verdict
 
@@ -18,6 +19,7 @@ def test_fc100_reference_is_registered_and_exercises_block_deficit():
     record = build_seeded_store().get(SCENARIO_ID)
     assert record is not None
     spec = json.loads(record.spec_json)
+    assert spec["fuel_cell_enabled"] is True
     unit = spec["fuel_cell_units"][0]
     assert (unit["block_count"], unit["block_rated_mw"]) == (246, .325)
     assert (unit["initial_running_blocks"], unit["initial_hot_standby_blocks"]) == (62, 92)
@@ -148,6 +150,7 @@ def test_fc100_zero_hot_variant_exposes_physical_bess_ceiling_and_unserved_load(
     record = build_seeded_store().get(ZERO_HOT_SCENARIO_ID)
     assert record is not None
     spec = json.loads(record.spec_json)
+    assert spec["fuel_cell_enabled"] is True
     assert spec["fuel_cell_units"][0]["initial_hot_standby_blocks"] == 0
     assert next(
         e["event_type"] for e in spec["workload_events"]

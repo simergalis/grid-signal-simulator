@@ -13,6 +13,7 @@
   "turbine_units": [],
   "diesel_power_block": {"enabled": true, "target_capacity_mw": 20, "unit_rating_mw": 20, "p_start": 1, "target_reliability": 1, "f_block": 1, "delta_t_start_s": 3600, "residual_ramp_s": 60, "start_stagger_interval_s": 1, "authority_tier": "advisory_only"},
   "solar_rated_mw": 0,
+  "fuel_cell_enabled": true,
   "fuel_cell_units": [{
     "asset_id": "fc100-array", "block_rated_mw": 0.325, "block_count": 246,
     "initial_running_blocks": 62, "initial_hot_standby_blocks": 0,
