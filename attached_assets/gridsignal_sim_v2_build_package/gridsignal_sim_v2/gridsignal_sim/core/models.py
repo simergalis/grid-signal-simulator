@@ -1177,6 +1177,14 @@ class TickResult:
     fuel_cell_cold_warming_contingency_contribution_mw: float = 0.0
     fuel_cell_minimum_output_mw: float = 0.0
     fuel_cell_provenance: dict[str, dict[str, str]] = field(default_factory=dict)
+    # Addendum G Stage 3 Option C: reactive values are additive telemetry only;
+    # the simulator has no site-wide reactive-power/voltage model.
+    fuel_cell_reactive_output_mvar: float = 0.0
+    fuel_cell_apparent_power_mva: float = 0.0
+    fuel_cell_apparent_loading_fraction: float = 0.0
+    island_reactive_balance_mvar: float = 0.0
+    fuel_cell_ride_through_trips: list[dict] = field(default_factory=list)
+    fuel_cell_ride_through_status: list[dict] = field(default_factory=list)
     # Addendum G-2 fuel telemetry.  Aggregate legacy fuel cells deliberately
     # retain these explicit zero values.
     fuel_cell_total_fuel_demand_scfm: float = 0.0

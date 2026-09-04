@@ -405,6 +405,13 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         ),
         "fuel_cell_minimum_output_mw": round(tick.fuel_cell_minimum_output_mw, 4),
         "fuel_cell_provenance": tick.fuel_cell_provenance,
+        "fuel_cell_reactive_output_mvar": round(tick.fuel_cell_reactive_output_mvar, 4),
+        "fuel_cell_apparent_power_mva": round(tick.fuel_cell_apparent_power_mva, 4),
+        "fuel_cell_apparent_loading_fraction": round(tick.fuel_cell_apparent_loading_fraction, 4),
+        # Additive only: no site-wide reactive/voltage model is represented.
+        "island_reactive_balance_mvar": round(tick.island_reactive_balance_mvar, 4),
+        "fuel_cell_ride_through_trips": tick.fuel_cell_ride_through_trips,
+        "fuel_cell_ride_through_status": tick.fuel_cell_ride_through_status,
         "fuel_cell_total_fuel_demand_scfm": round(tick.fuel_cell_total_fuel_demand_scfm, 6),
         "fuel_cell_hot_standby_parasitic_scfm": round(tick.fuel_cell_hot_standby_parasitic_scfm, 6),
         "fuel_cell_cumulative_fuel_mmbtu": round(tick.fuel_cell_cumulative_fuel_mmbtu, 6),

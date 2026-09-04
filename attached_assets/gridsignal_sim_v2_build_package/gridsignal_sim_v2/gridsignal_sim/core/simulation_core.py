@@ -2720,12 +2720,34 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     _island_collapsed_this_tick: bool = False
     _fp_collapse_reason: Optional[str] = None
     _fp_collapse_frequency_hz: Optional[float] = None
+    _fc_ride_through_trips: list[dict] = []
+    # FC trips can change the supply imbalance during this outer tick.  Keep a
+    # mutable forcing for the sub-step integrator; the public forcing is
+    # reconciled to the post-trip balance below.
+    _dynamic_frequency_forcing_mw = _frequency_forcing_mw
     # Phase 2A: protection_provisional — True for every islanded tick.
     # D_eff uses d_motor + fixed_speed_cooling_fraction (both PROVISIONAL-UNMEASURED).
     _protection_provisional: bool = _islanded
 
     if _islanded:
         _f0 = state.site.frequency_nominal_hz
+        # An island has no infinite-bus reference.  A configured grid-forming
+        # FC hardware counts only while actually delivering real power. A BESS
+        # grid-forming inverter may establish voltage at zero net MW exchange,
+        # but not after its usable energy is exhausted.
+        _bess_forming_live = any(
+            unit.config.grid_forming and unit.soc_mwh > 1e-9
+            for unit in state.bess_units
+        )
+        _fc_forming_live = (
+            isinstance(state.fuel_cell_module, BlockFuelCellFleet)
+            and any(array.config.grid_forming and array.output_mw() > 1e-9
+                    for array in state.fuel_cell_module.arrays)
+        )
+        if not (_bess_forming_live or _fc_forming_live):
+            _island_collapsed_this_tick = True
+            _fp_collapse_reason = "island_collapse_no_grid_forming_source"
+            _fp_collapse_frequency_hz = state._frequency_hz
 
         # Phase 3 assertion: sub-step ≤ shortest_protection_delay / 10.
         # Shortest delay = min(relay_81u_delay_s, min UFLS stage delay_s).
@@ -2760,6 +2782,8 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         _f = state._frequency_hz  # working frequency across sub-steps
 
         for _k in range(_n_sub):
+            if _island_collapsed_this_tick:
+                break
             _f_dev = _f - _f0
 
             # Phase 3: Swing equation sub-step.
@@ -2782,7 +2806,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             # reduces the effective load immediately (sub-step granularity).
             if _s_base_mva > 0.0 and _h_aggregate > 0.0:
                 _p_net_pu = (
-                    (_frequency_forcing_mw + _shed_this_tick_mw)
+                    (_dynamic_frequency_forcing_mw + _shed_this_tick_mw)
                     / _s_base_mva
                 )
                 _df_dt_sub = (
@@ -2790,6 +2814,29 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                 ) / (2.0 * _h_aggregate)
                 _f += _df_dt_sub * _dt_sub
             # If _s_base_mva==0 or _h_aggregate==0: degenerate; f unchanged.
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet):
+                _fc_output_before_trip_mw = state.fuel_cell_module.output_mw()
+                _fc_trip_records = state.fuel_cell_module.evaluate_ride_through(
+                    _f, _df_dt_sub if _s_base_mva > 0.0 and _h_aggregate > 0.0 else 0.0,
+                    _dt_sub,
+                )
+                _fc_ride_through_trips.extend(_fc_trip_records)
+                if _fc_trip_records:
+                    _dynamic_frequency_forcing_mw -= (
+                        _fc_output_before_trip_mw
+                        - state.fuel_cell_module.output_mw()
+                    )
+                # A frequency/ROCOF trip can remove the final live grid-former.
+                if not any(a.config.grid_forming and a.output_mw() > 1e-9
+                           for a in state.fuel_cell_module.arrays) and not any(
+                    unit.config.grid_forming and unit.soc_mwh > 1e-9
+                    for unit in state.bess_units
+                ):
+                    _island_collapsed_this_tick = True
+                    _fp_collapse_reason = "island_collapse_no_grid_forming_source"
+                    _fp_collapse_frequency_hz = _f
+                    state._frequency_hz = _f
+                    break
 
             # Phase 4: Advance per-unit bounded governor cascade (valve lag → fuel lag).
             # Governor reads the instantaneous frequency deviation and advances its
@@ -2925,6 +2972,24 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         # Grid-connected: frequency is the grid's reference; not integrated.
         state._frequency_hz = state.site.frequency_nominal_hz
         _protection_provisional = False  # No PROVISIONAL physics in grid-connected mode
+
+    # Ride-through is island-only.  A protection trip changes the asset state
+    # after dispatch accounting was assembled, so reconcile every downstream
+    # ledger and FC telemetry input to its achieved, post-trip state.
+    if _fc_ride_through_trips and isinstance(state.fuel_cell_module, BlockFuelCellFleet):
+        fuel_cell_output_mw = state.fuel_cell_module.output_mw()
+        fuel_cell_state = state.fuel_cell_module.state.value
+        fuel_cell_time_to_ready_s = state.fuel_cell_module.time_to_ready_s
+        _fc_summary = state.fuel_cell_module.readiness_summary(dt_lead_next_s)
+        _p_gen_mw = (
+            turbine_output_mw + bess_output_mw + fuel_cell_output_mw
+            + p_renewable_mw + diesel_output_mw
+        )
+        _balance_residual_mw = _p_gen_mw - p_demand_mw
+        # The protection path runs only with PCC open, so grid exchange stays
+        # exactly zero and local generation is the public aggregate.
+        _frequency_forcing_mw = _balance_residual_mw
+        _p_generation_mw = _p_gen_mw
 
     # ── Phase 11.6: compute inlet temperature (Section 8 thermal model) ───────
     # T_inlet = T_ambient_base + cooling_fraction × T_rise_max_c
@@ -3075,6 +3140,31 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         ),
         fuel_cell_minimum_output_mw=float(_fc_summary.get("minimum_output_mw", 0.0)),
         fuel_cell_provenance=_fc_provenance,
+        fuel_cell_reactive_output_mvar=(
+            state.fuel_cell_module.reactive_output_mvar
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else 0.0
+        ),
+        fuel_cell_apparent_power_mva=(
+            state.fuel_cell_module.apparent_power_mva
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else fuel_cell_output_mw
+        ),
+        fuel_cell_apparent_loading_fraction=(
+            state.fuel_cell_module.apparent_power_mva
+            / state.fuel_cell_module.apparent_power_capacity_mva
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet)
+            and state.fuel_cell_module.apparent_power_capacity_mva > 0.0 else 0.0
+        ),
+        # No other island reactive model exists; this is the FC contribution,
+        # not a claim of a site-wide VAR solution.
+        island_reactive_balance_mvar=(
+            state.fuel_cell_module.reactive_output_mvar
+            if _islanded and isinstance(state.fuel_cell_module, BlockFuelCellFleet) else 0.0
+        ),
+        fuel_cell_ride_through_trips=_fc_ride_through_trips,
+        fuel_cell_ride_through_status=(
+            state.fuel_cell_module.ride_through_telemetry
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else []
+        ),
         fuel_cell_total_fuel_demand_scfm=(
             state.fuel_cell_module.total_fuel_demand_scfm
             if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else 0.0

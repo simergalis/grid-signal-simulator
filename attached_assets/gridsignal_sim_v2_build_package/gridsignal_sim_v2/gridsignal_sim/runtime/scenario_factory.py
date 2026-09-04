@@ -933,6 +933,12 @@ def build_run_context_from_spec(
                     hot_standby_floor_blocks=int(unit.get("hot_standby_floor_blocks", 0)),
                     dispatch_mechanism=str(unit.get("dispatch_mechanism", "hybrid")),
                     readiness_dwell_s=float(unit.get("readiness_dwell_s", 0.0)),
+                    grid_forming=bool(unit.get("grid_forming", False)),
+                    power_factor=float(unit.get("power_factor", 1.0)),
+                    reactive_capability_mvar=(
+                        float(unit["reactive_capability_mvar"])
+                        if unit.get("reactive_capability_mvar") is not None else None),
+                    ieee_1547_category=int(unit.get("ieee_1547_category", 3)),
                     provenance=dict(unit.get("provenance", {})),
                     electrical_groups=[(str(g["electrical_group_id"]), int(g["block_count"])) for g in unit.get("electrical_groups", [])],
                     beginning_of_life_heat_rate_btu_per_kwh=float(unit.get("beginning_of_life_heat_rate_btu_per_kwh", 5811.0)),

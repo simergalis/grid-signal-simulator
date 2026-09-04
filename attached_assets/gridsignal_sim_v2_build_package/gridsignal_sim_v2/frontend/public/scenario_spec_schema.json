@@ -558,6 +558,41 @@
           "title": "Readiness Dwell S",
           "type": "number"
         },
+        "grid_forming": {
+          "default": false,
+          "title": "Grid Forming",
+          "type": "boolean"
+        },
+        "power_factor": {
+          "default": 1.0,
+          "exclusiveMinimum": 0.0,
+          "maximum": 1.0,
+          "title": "Power Factor",
+          "type": "number"
+        },
+        "reactive_capability_mvar": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reactive Capability Mvar"
+        },
+        "ieee_1547_category": {
+          "default": 3,
+          "enum": [
+            1,
+            2,
+            3
+          ],
+          "title": "Ieee 1547 Category",
+          "type": "integer"
+        },
         "electrical_groups": {
           "items": {
             "$ref": "#/$defs/FuelCellElectricalGroupSpec"

@@ -176,11 +176,29 @@ def test_fc100_zero_hot_variant_exposes_physical_bess_ceiling_and_unserved_load(
         for t in peak if t.sim_time_seconds >= 200
     )
     assert not any(t.fuel_cell_declining_reserve_alert for t in peak)
+    # Before IEEE 1547 protection operates, the original cold-start shortfall
+    # remains unchanged.
     assert all(
         t.fuel_cell_persistent_reserve_alert
         and t.fuel_cell_persistent_reserve_alert["persistent_shortfall_mw"]
         == pytest.approx(59.9, abs=.325)
-        for t in peak if t.sim_time_seconds >= 200
+        for t in peak if 200 <= t.sim_time_seconds < 230
+    )
+    # At 230 s the frequency crosses below 56.5 Hz for 0.16 s. Category III
+    # uses the same IEEE frequency timing as Categories I/II, so all 62 running
+    # blocks trip and the persistent shortfall increases by their 20.15 MW.
+    ride_through_tick = next(t for t in peak if t.fuel_cell_ride_through_trips)
+    assert ride_through_tick.sim_time_seconds == pytest.approx(230.0)
+    assert len(ride_through_tick.fuel_cell_ride_through_trips) == 62
+    assert all(
+        record["reason"] == "under_56_5"
+        for record in ride_through_tick.fuel_cell_ride_through_trips
+    )
+    assert all(
+        t.fuel_cell_persistent_reserve_alert
+        and t.fuel_cell_persistent_reserve_alert["persistent_shortfall_mw"]
+        == pytest.approx(79.95, abs=.325)
+        for t in peak if t.sim_time_seconds >= 235
     )
 
     # Residual site demand is explicitly shed/unserved, not fabricated supply.

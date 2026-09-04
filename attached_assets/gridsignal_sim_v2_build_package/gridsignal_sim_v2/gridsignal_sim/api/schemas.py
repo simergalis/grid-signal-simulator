@@ -383,6 +383,12 @@ class FuelCellUnitSpec(BaseModel):
     hot_standby_floor_blocks: int = Field(default=0, ge=0)
     dispatch_mechanism: Literal["discrete_blocks", "modulating", "hybrid"] = "hybrid"
     readiness_dwell_s: float = Field(default=0.0, ge=0.0)
+    # Addendum G Stage 3 Option C.  These are per-array operating properties,
+    # not electrical-group properties.
+    grid_forming: bool = False
+    power_factor: float = Field(default=1.0, gt=0.0, le=1.0)
+    reactive_capability_mvar: Optional[float] = Field(default=None, ge=0.0)
+    ieee_1547_category: Literal[1, 2, 3] = 3
     electrical_groups: list[FuelCellElectricalGroupSpec] = Field(default_factory=list)
     beginning_of_life_heat_rate_btu_per_kwh: float = Field(default=5811.0, gt=0)
     end_of_life_heat_rate_btu_per_kwh: float = Field(default=7127.0, gt=0)
@@ -433,6 +439,10 @@ class FuelCellUnitSpec(BaseModel):
         if self.electrical_groups and sum(g.block_count for g in self.electrical_groups) != self.block_count:
             raise ValueError("electrical group block_count values must sum exactly to block_count")
         defaults = {
+            "grid_forming": "site_specific",
+            "power_factor": "site_specific",
+            "reactive_capability_mvar": "proposed",
+            "ieee_1547_category": "site_specific",
             "beginning_of_life_heat_rate_btu_per_kwh": "vendor_published",
             "end_of_life_heat_rate_btu_per_kwh": "vendor_published",
             "degradation_fraction": "site_specific",
@@ -1724,19 +1734,6 @@ class ScenarioSpec(BaseModel):
                     f"({hard_cap:.2f} MW, ceiling {ceiling:.2f} MW × 1.5). "
                     f"Reduce to ≤ {max_gpus} GPUs."
                 )
-        return self
-
-    @model_validator(mode="after")
-    def _single_grid_forming_anchor(self) -> "ScenarioSpec":
-        """§7.1.2: only one BESS unit may be the grid-forming anchor."""
-        forming = [u for u in self.bess_units if u.grid_forming]
-        if len(forming) > 1:
-            ids = [u.asset_id for u in forming]
-            raise ValueError(
-                f"§7.1.2: at most one BESS unit may have grid_forming=True "
-                f"(found {len(forming)}: {ids}). "
-                f"Only the designated island-frequency anchor holds the anchor reserve."
-            )
         return self
 
     @model_validator(mode="after")

@@ -200,7 +200,8 @@ minimal scenario can be created with a name alone.
 
 ### `BessUnitSpec`
 
-**Validation:** at most one unit per scenario may have `grid_forming: true`.
+**Validation:** multiple units may have `grid_forming: true`; runtime operation,
+not scenario shape, determines whether an island has a live forming source.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
@@ -208,7 +209,7 @@ minimal scenario can be created with a name alone.
 | `rated_mw` | float > 0 | — | **Required.** Peak discharge power (MW) |
 | `usable_mwh` | float > 0 | — | **Required.** Usable energy capacity (MWh) |
 | `initial_soc_fraction` | float [0.1, 1.0] | `0.95` | State of charge at t=0 |
-| `grid_forming` | bool | `false` | True = this unit is the island-frequency anchor. Only one unit may be `true`. |
+| `grid_forming` | bool | `false` | True = this unit may form the island while actually producing. Multiple units may be configured. |
 
 C-rate = `rated_mw / usable_mwh`. Values outside 0.25–4.0 C are accepted with a warning.
 
@@ -246,7 +247,7 @@ catalogue defaults in that comparison.
 
 ---
 
-### `FuelCellUnitSpec` (Addenda G-1 and G-2)
+### `FuelCellUnitSpec` (Addenda G-1, G-2, and G Stage 3 Option C)
 
 Fuel-cell capacity is derived as `block_rated_mw * block_count`. Do **not**
 submit an independent `rated_mw` field. `initial_running_blocks +
@@ -273,6 +274,10 @@ must satisfy `hot_start_s ≤ warm_start_s ≤ cold_start_s`.
 | `hot_standby_floor_blocks` | int ≥ 0 | `0` | Minimum blocks retained in hot standby |
 | `dispatch_mechanism` | `"discrete_blocks"` \| `"modulating"` \| `"hybrid"` | `"hybrid"` | Dispatch behavior of the array |
 | `readiness_dwell_s` | float ≥ 0 | `0.0` | Required dwell time before a block is considered ready (s) |
+| `grid_forming` | bool | `false` | A running, actually-producing array may form an island; provenance `site_specific`. |
+| `power_factor` | float (0,1] | `1.0` | Per-array PF; reactive output is `P × tan(acos(PF))`; provenance `site_specific`. |
+| `reactive_capability_mvar` | float ≥ 0 \| null | `null` | Optional Q capability; omitted derives the rated-MW/PF nameplate capability; provenance `proposed`. |
+| `ieee_1547_category` | `1`, `2`, or `3` | `3` | IEEE 1547-2018 abnormal-operation category; controls ROCOF trip at 0.5/2/3 Hz/s; provenance `site_specific`. |
 | `electrical_groups` | array | `[]` | Named contiguous groups with block counts. Names must be unique and meaningful; counts must sum exactly to `block_count`. Empty means one implicit all-block group |
 | `beginning_of_life_heat_rate_btu_per_kwh` | float > 0 | `5811.0` | Beginning-of-life HHV heat rate; provenance `vendor_published` |
 | `end_of_life_heat_rate_btu_per_kwh` | float > 0 | `7127.0` | End-of-life HHV heat rate; provenance `vendor_published` |
@@ -283,6 +288,16 @@ must satisfy `hot_start_s ≤ warm_start_s ≤ cold_start_s`.
 | `gas_price_usd_per_mmbtu` | float ≥ 0 \| null | `5.0` | Placeholder site gas price; explicit null suppresses monetary estimates |
 | `fuel_system` | object \| null | `null` | Optional G-2 common-manifold fuel model. Omit for G-1 ideal/infinite-volume supply compatibility. Defaults when supplied: supply/minimum/trip pressure 15/12/9.5 psig, volume 920 ft³, regulator/delivery time constants 2/3 s, droop 0.05, distribution loss 0.5 psi, utilisation maximum 0.85; `maximum_supply_flow_scfm: null` means unlimited. With unlimited supply, regulator flow lags the pre-staged command directly; with a finite cap it uses `min(qmax, qcmd + qmax*droop*(Ps-P)/Ps)`. |
 | `provenance` | object | `{}` | Per-field source labels: `vendor_published`, `derived`, `proposed`, or `site_specific` |
+
+In islanded mode a running fuel-cell block is a grid-forming source only when
+its output is above the simulator epsilon. Fuel-cell reactive telemetry reports
+achieved Q, apparent power, and loading; `island_reactive_balance_mvar` is only
+the fuel-cell contribution because GridSignal does not model site-wide VAR
+balance, voltage, or current. IEEE 1547-2018 ride-through telemetry identifies
+the current continuous (58.8–61.2 Hz), mandatory (57.0–58.8 and 61.2–61.8 Hz),
+or trip region. It trips producing blocks after `>62 Hz` for 0.16 s,
+`>61.2 Hz` for 300 s, `<58.5 Hz` for 300 s, or `<56.5 Hz` for 0.16 s;
+category ROCOF limits are 0.5, 2, and 3 Hz/s for categories 1, 2, and 3.
 
 ---
 
@@ -570,7 +585,12 @@ The currently supported `hardware_profile_id` value is:
 1. `name` must be non-empty.
 2. `bess_units` must have at least one entry.
 3. `turbine_units` must have at least one entry.
-4. At most **one** `BessUnitSpec` may have `grid_forming: true`.
+4. Multiple BESS and fuel-cell arrays may be configured `grid_forming`. In
+   islanded operation, a BESS former remains live while its inverter is
+   energized and usable charge remains, including at zero net MW exchange. A
+   fuel-cell former must have a running block producing real power. If neither
+   remains, the run collapses with
+   `island_collapse_no_grid_forming_source`.
 5. `irradiance_steps` entries are zero-order-hold: `[sim_time_s, fraction]`. Fractions outside [0, 1] are accepted (e.g. cloud-front overshoot).
 6. `kube_config` and `workload_events` are mutually exclusive in practice: when `kube_config` is set, `workload_events` is ignored by the engine.
 7. `ambient_steps` and `generation_block` are engine-populated — do not set them in a submitted payload.

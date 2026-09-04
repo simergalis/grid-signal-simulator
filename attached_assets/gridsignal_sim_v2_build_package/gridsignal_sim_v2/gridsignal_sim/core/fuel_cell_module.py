@@ -347,6 +347,10 @@ class BlockFuelCellConfig:
     hot_standby_floor_blocks: int = 0
     dispatch_mechanism: str = "hybrid"
     readiness_dwell_s: float = 0.0
+    grid_forming: bool = False
+    power_factor: float = 1.0
+    reactive_capability_mvar: float | None = None
+    ieee_1547_category: int = 3
     # Per-input source labels supplied by FuelCellUnitSpec.  Kept with the
     # runtime configuration so telemetry never has to reconstruct provenance.
     provenance: dict[str, str] = field(default_factory=dict)
@@ -391,6 +395,12 @@ class BlockFuelCellConfig:
             raise ValueError("expected hot_start_s <= warm_start_s <= cold_start_s")
         if not 0 <= self.min_stable_frac <= 1:
             raise ValueError("min_stable_frac must be between zero and one")
+        if not 0 < self.power_factor <= 1:
+            raise ValueError("fuel-cell power_factor must be in (0, 1]")
+        if self.reactive_capability_mvar is not None and self.reactive_capability_mvar < 0:
+            raise ValueError("reactive_capability_mvar must be non-negative")
+        if self.ieee_1547_category not in (1, 2, 3):
+            raise ValueError("ieee_1547_category must be 1, 2, or 3")
         if self.dispatch_mechanism not in {"discrete_blocks", "modulating", "hybrid"}:
             raise ValueError("unknown fuel-cell dispatch mechanism")
         if self.beginning_of_life_heat_rate_btu_per_kwh <= 0 or self.end_of_life_heat_rate_btu_per_kwh <= 0:
@@ -417,6 +427,10 @@ class BlockFuelCellConfig:
             )
         self.provenance = {
             **self.provenance,
+            "grid_forming": "site_specific",
+            "power_factor": "site_specific",
+            "reactive_capability_mvar": "proposed",
+            "ieee_1547_category": "site_specific",
             "beginning_of_life_heat_rate_btu_per_kwh": "vendor_published",
             "end_of_life_heat_rate_btu_per_kwh": "vendor_published",
             "degradation_fraction": "site_specific",
@@ -459,6 +473,7 @@ class _FuelCellBlock:
     thermal_readiness: str = "cold"
     electrical_group_id: str = "all_blocks"
     tripped: bool = False
+    ride_through_timer_s: dict[str, float] = field(default_factory=dict)
 
 
 @dataclass
@@ -494,6 +509,8 @@ class BlockFuelCellArray(AssetModule):
     supply_limit_alert: dict | None = None
     _regulator_flow_scfm: float = 0.0
     _fuel_limited_capacity_mw: float | None = None
+    ride_through_trip_records: list[dict] = field(default_factory=list)
+    ride_through_region: str = "continuous"
 
     def __post_init__(self) -> None:
         if not self.blocks:
@@ -584,6 +601,99 @@ class BlockFuelCellArray(AssetModule):
         return sum(b.output_mw for b in self.blocks)
 
     @property
+    def reactive_capability_mvar(self) -> float:
+        """Nameplate Q capability, derived from rated MW and PF when omitted."""
+        if self.config.reactive_capability_mvar is not None:
+            return self.config.reactive_capability_mvar
+        pf = self.config.power_factor
+        return self.config.rated_mw * math.tan(math.acos(pf))
+
+    @property
+    def reactive_output_mvar(self) -> float:
+        requested = self.output_mw() * math.tan(math.acos(self.config.power_factor))
+        return min(requested, self.reactive_capability_mvar)
+
+    @property
+    def apparent_power_mva(self) -> float:
+        # An authored Q cap can prevent the requested PF from being achieved.
+        # S therefore follows achieved P/Q, not the nominal PF shortcut.
+        return math.hypot(self.output_mw(), self.reactive_output_mvar)
+
+    def evaluate_ride_through(self, frequency_hz: float, rocof_hz_per_s: float,
+                              dt_seconds: float) -> list[dict]:
+        """Apply IEEE 1547 frequency/ROCOF protection at physics sub-step rate."""
+        if frequency_hz > 62.0:
+            region = "trip_over_62hz"
+        elif frequency_hz > 61.8:
+            region = "outside_mandatory_over"
+        elif frequency_hz > 61.2:
+            region = "mandatory_over"
+        elif frequency_hz < 56.5:
+            region = "trip_under_56_5hz"
+        elif frequency_hz < 58.5:
+            region = (
+                "outside_mandatory_under" if frequency_hz < 57.0
+                else "mandatory_under"
+            )
+        elif frequency_hz < 58.8:
+            region = "mandatory_under"
+        elif frequency_hz <= 61.2:
+            region = "continuous"
+        else:
+            region = "mandatory_over"
+        self.ride_through_region = region
+        active_timers = {
+            "over_62": frequency_hz > 62.0,
+            "over_61_2": frequency_hz > 61.2,
+            "under_56_5": frequency_hz < 56.5,
+            "under_58_5": frequency_hz < 58.5,
+        }
+        delays = {
+            "over_62": .16, "over_61_2": 300.0,
+            "under_56_5": .16, "under_58_5": 300.0,
+        }
+        records: list[dict] = []
+        rocof_limit = {1: .5, 2: 2.0, 3: 3.0}[self.config.ieee_1547_category]
+        for index, block in enumerate(self.blocks):
+            if block.tripped:
+                continue
+            if block.state != FuelCellState.RUNNING or block.output_mw <= 1e-9:
+                block.ride_through_timer_s.clear()
+                continue
+            reason = None
+            if abs(rocof_hz_per_s) > rocof_limit:
+                reason = "rocof"
+            # Every timer is independently accumulated or reset on each
+            # substep. This avoids both missed .16 s trips and banking across
+            # separated excursions.
+            for key, active in active_timers.items():
+                block.ride_through_timer_s[key] = (
+                    block.ride_through_timer_s.get(key, 0.0) + dt_seconds
+                    if active else 0.0
+                )
+            if reason is None:
+                reason = next(
+                    (key for key in ("over_62", "over_61_2", "under_56_5", "under_58_5")
+                     if block.ride_through_timer_s[key] >= delays[key]),
+                    None,
+                )
+            if reason is not None:
+                record = {"asset_id": self.asset_id, "block_index": index,
+                          "category": self.config.ieee_1547_category, "region": region,
+                          "reason": reason, "frequency_hz": frequency_hz,
+                          "rocof_hz_per_s": rocof_hz_per_s}
+                self.trip_block(block)
+                self.ride_through_trip_records.append(record)
+                records.append(record)
+        return records
+
+    @staticmethod
+    def trip_block(block: _FuelCellBlock) -> None:
+        block.state, block.timer_s, block.dwell_s, block.output_mw, block.thermal_readiness = (
+            FuelCellState.COLD, 0.0, 0.0, 0.0, "cold")
+        block.tripped = True
+
+    @property
     def effective_heat_rate_btu_per_kwh(self) -> float:
         cfg = self.config
         return (cfg.beginning_of_life_heat_rate_btu_per_kwh +
@@ -600,9 +710,7 @@ class BlockFuelCellArray(AssetModule):
         """Force addressed blocks cold; ordinary advance never revives them."""
         selected = [b for b in self.blocks if electrical_group_id is None or b.electrical_group_id == electrical_group_id]
         for block in selected:
-            block.state, block.timer_s, block.dwell_s, block.output_mw, block.thermal_readiness = (
-                FuelCellState.COLD, 0.0, 0.0, 0.0, "cold")
-            block.tripped = True
+            self.trip_block(block)
         return len(selected)
 
     @property
@@ -1090,6 +1198,38 @@ class BlockFuelCellFleet:
 
     def output_mw(self) -> float:
         return sum(a.output_mw() for a in self.arrays)
+
+    @property
+    def reactive_output_mvar(self) -> float:
+        return sum(a.reactive_output_mvar for a in self.arrays)
+
+    @property
+    def apparent_power_mva(self) -> float:
+        # Fleet telemetry is measured at the common connection point: real and
+        # achieved reactive components aggregate before calculating magnitude.
+        return math.hypot(self.output_mw(), self.reactive_output_mvar)
+
+    @property
+    def apparent_power_capacity_mva(self) -> float:
+        """Common-point nameplate S from aggregate rated P and Q capability."""
+        return math.hypot(
+            self.rated_mw,
+            sum(array.reactive_capability_mvar for array in self.arrays),
+        )
+
+    @property
+    def ride_through_trip_records(self) -> list[dict]:
+        return [record for array in self.arrays for record in array.ride_through_trip_records]
+
+    @property
+    def ride_through_telemetry(self) -> list[dict]:
+        return [{"asset_id": a.asset_id, "category": a.config.ieee_1547_category,
+                 "region": a.ride_through_region} for a in self.arrays]
+
+    def evaluate_ride_through(self, frequency_hz: float, rocof_hz_per_s: float,
+                              dt_seconds: float) -> list[dict]:
+        return [record for array in self.arrays
+                for record in array.evaluate_ride_through(frequency_hz, rocof_hz_per_s, dt_seconds)]
 
     @property
     def total_fuel_demand_scfm(self) -> float:
