@@ -70,7 +70,8 @@ physical range.  This is informational only — out-of-range values are accepted
 
 ## Minimal valid payload
 
-Only three fields are required.  Every other field has a default.
+Only `name` is required. Every fleet and runtime field has a default, so a
+minimal scenario can be created with a name alone.
 
 ```json
 {
@@ -156,8 +157,9 @@ Only three fields are required.  Every other field has a default.
 |-------|------|---------|----------|-------------|
 | `name` | string | — | **yes** | Display name (non-empty) |
 | `description` | string | `""` | no | Free-text description |
-| `bess_units` | `BessUnitSpec[]` | — | **yes** | At least one BESS unit |
-| `turbine_units` | `TurbineUnitSpec[]` | — | **yes** | At least one turbine |
+| `bess_units` | `BessUnitSpec[]` | `[]` | no | BESS fleet |
+| `turbine_units` | `TurbineUnitSpec[]` | `[]` | no | Gas-turbine fleet |
+| `fuel_cell_units` | `FuelCellUnitSpec[]` | `[]` | no | Block-addressable fuel-cell fleet (Addendum G-1). When set, this supersedes the legacy aggregate `fuel_cell_*` fields. |
 | `workload_events` | `WorkloadEventSpec[]` | `[]` | no | Scripted GPU/solar events |
 | `hardware_profile_id` | string | `"enterprise_8gpu_air"` | no | Default profile for events without an explicit one |
 | `dt_lead_seconds` | float [0, 300] | `30.0` | no | Advance warning time for `starting` events (s). `solar_step` always uses 0. |
@@ -221,6 +223,57 @@ C-rate = `rated_mw / usable_mwh`. Values outside 0.25–4.0 C are accepted with 
 | `r_asset_mw_per_s` | float > 0 | `0.2` | Ramp rate (MW/s) |
 | `run_hours_h` | float ≥ 0 \| null | `null` | Operating hours counter (display only) |
 | `hot_standby` | bool | `false` | Commissioned but not synchronised; excluded from dispatch and contingency ramp |
+| `p_min_stable_frac` | float [0, 1] | `0.40` | Minimum stable output as a fraction of `rated_mw` |
+| `t_min_run_s` | float ≥ 0 | `1800.0` | Minimum stable run duration used when `min_run_enabled` is true |
+| `min_run_enabled` | bool | `true` | Enables the minimum-run guard |
+| `t_min_down_s` | float ≥ 0 | `900.0` | Minimum down/cooling duration used when `min_down_enabled` is true |
+| `min_down_enabled` | bool | `true` | Enables the minimum-down guard |
+| `cold_start_s` | float > 0 \| null | `null` | Cold-start duration override; `null` uses the catalogue value (900 s) |
+| `warm_start_s` | float > 0 \| null | `null` | Warm-start duration override; `null` uses the catalogue value (600 s) |
+| `hot_start_s` | float > 0 \| null | `null` | Hot-start duration override; `null` uses the catalogue value (300 s) |
+| `thermal_state` | `"hot"` \| `"warm"` \| `"cold"` \| null | `"cold"` | Initial thermal classification |
+| `power_factor` | float (0, 1] \| null | `null` | Per-unit power-factor override |
+| `inertia_constant_s` | float > 0 \| null | `null` | Per-unit inertia-constant override (s) |
+| `droop_r` | float [0, 1] \| null | `null` | Per-unit governor-droop override |
+| `valve_actuation_tc_s` | float > 0 \| null | `null` | Per-unit valve-actuation time-constant override (s) |
+| `fuel_to_power_tc_s` | float > 0 \| null | `null` | Per-unit fuel-to-power time-constant override (s) |
+| `max_instantaneous_load_step_mw` | float > 0 \| null | `null` | Maximum instantaneous load step accepted by this unit (MW) |
+| `authority_tier` | `"autonomous"` \| `"confirm"` \| `"human_only"` \| null | `"autonomous"` | Dispatch authority for this unit |
+
+When any start-duration override is supplied, the effective durations must
+satisfy `hot_start_s < warm_start_s < cold_start_s`; omitted values use the
+catalogue defaults in that comparison.
+
+---
+
+### `FuelCellUnitSpec` (Addendum G-1)
+
+Fuel-cell capacity is derived as `block_rated_mw * block_count`. Do **not**
+submit an independent `rated_mw` field. `initial_running_blocks +
+initial_hot_standby_blocks` must not exceed `block_count`;
+`hot_standby_floor_blocks` must not exceed `block_count`; and, when
+`hot_standby` is false, `hot_standby_floor_blocks` must be zero. Start times
+must satisfy `hot_start_s ≤ warm_start_s ≤ cold_start_s`.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `asset_id` | non-empty string | — | **Required.** Unique fuel-cell unit identifier |
+| `block_rated_mw` | float > 0 | — | **Required.** Nameplate output of one block (MW) |
+| `block_count` | int ≥ 1 | — | **Required.** Number of blocks in the unit |
+| `initial_running_blocks` | int ≥ 0 | `0` | Blocks initially producing power |
+| `initial_hot_standby_blocks` | int ≥ 0 | `0` | Blocks initially hot and available for hot start |
+| `commit_rate_blocks_per_s` | float > 0 | `1.0` | Block commitment rate |
+| `decommit_rate_blocks_per_s` | float > 0 | `1.0` | Block decommitment rate |
+| `cold_start_s` | float > 0 | `28800.0` | Cold-start duration (s) |
+| `warm_start_s` | float > 0 | `14400.0` | Warm-start duration (s) |
+| `hot_start_s` | float > 0 | `60.0` | Hot-start duration (s) |
+| `controlled_cooling_s` | float > 0 \| null | `null` | Optional controlled-cooling duration (s) |
+| `hot_standby` | bool | `true` | Whether this unit supports hot standby |
+| `min_stable_frac` | float [0, 1] | `0.5` | Minimum stable output fraction |
+| `hot_standby_floor_blocks` | int ≥ 0 | `0` | Minimum blocks retained in hot standby |
+| `dispatch_mechanism` | `"discrete_blocks"` \| `"modulating"` \| `"hybrid"` | `"hybrid"` | Dispatch behavior of the array |
+| `readiness_dwell_s` | float ≥ 0 | `0.0` | Required dwell time before a block is considered ready (s) |
+| `provenance` | object | `{}` | Per-field source labels: `vendor_published`, `derived`, `proposed`, or `site_specific` |
 
 ---
 
@@ -246,7 +299,7 @@ C-rate = `rated_mw / usable_mwh`. Values outside 0.25–4.0 C are accepted with 
 
 ### `AssertionSpec` (pass/fail checks)
 
-Each element is one of four check types, discriminated on `"check"`:
+Each element is one of the following check types, discriminated on `"check"`:
 
 #### `no_insufficient_reserve_alert`
 Passes if no tick fires an insufficient-reserve alert.
@@ -269,7 +322,49 @@ Passes if peak total load stays at or below the threshold.
 #### `min_final_bess_soc`
 Passes if the BESS SoC at the final retained tick meets the minimum.
 ```json
-{ "check": "min_final_bess_soc", "threshold_fraction": 0.20 }
+{ "check": "min_final_bess_soc", "threshold": 0.20 }
+```
+
+#### `pue_base_in_declared_range`
+Passes when the runtime PUE base remains within the declared parameter range.
+```json
+{ "check": "pue_base_in_declared_range" }
+```
+
+#### `declining_fuel_cell_reserve_alert_fires`
+Passes when a retained tick fires the fuel-cell block-array declining-reserve
+alert. It is existential: missing evidence with timeseries gaps is inconclusive.
+```json
+{ "check": "declining_fuel_cell_reserve_alert_fires" }
+```
+
+#### `persistent_fuel_cell_deficit`
+Passes when the commanded-minus-achieved fuel-cell deficit remains at the
+expected value for a contiguous, timestamp-proven duration.
+```json
+{ "check": "persistent_fuel_cell_deficit", "expected_deficit_mw": 1.0, "duration_s": 60.0 }
+```
+`tick_seconds` defaults to `15.0` and `tolerance_mw` to `0.325`; duration is
+proved from retained timestamps rather than the supplied cadence.
+
+#### `peak_fuel_cell_array_output`
+Passes when peak achieved block-array output is within the tolerance.
+```json
+{ "check": "peak_fuel_cell_array_output", "expected_mw": 3.25, "tolerance_mw": 0.325 }
+```
+
+#### `no_cold_warming_contingency_capacity`
+Passes when cold and warming fuel-cell blocks contribute no contingency
+capacity. `block_rated_mw` defaults to `0.325` and `tolerance_mw` to `1e-9`.
+```json
+{ "check": "no_cold_warming_contingency_capacity" }
+```
+
+#### `fuel_cell_commanded_and_achieved_reported`
+Passes when every retained tick includes both fuel-cell command and achieved
+output telemetry.
+```json
+{ "check": "fuel_cell_commanded_and_achieved_reported" }
 ```
 
 ---

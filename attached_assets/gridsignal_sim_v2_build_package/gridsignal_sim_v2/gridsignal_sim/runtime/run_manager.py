@@ -957,6 +957,7 @@ class InMemoryTimeseriesSink:
                 fuel_cell_cold_warming_contingency_contribution_mw=(
                     r.fuel_cell_cold_warming_contingency_contribution_mw
                 ),
+                fuel_cell_declining_reserve_alert=r.fuel_cell_declining_reserve_alert,
             )
             for r in self.rows
         ]

@@ -85,8 +85,8 @@ def test_grid_tied_balance_is_explicitly_provisional() -> None:
     assert result.to_dict()["independent"] is False
 
 
-def test_islanded_generation_deficit_remains_a_real_balance_residual() -> None:
-    """Supply deficit must not be converted into unserved load by accounting."""
+def test_islanded_generation_deficit_is_reported_as_unserved_load() -> None:
+    """An islanded physical supply deficit is genuine unserved load."""
     state = _make_state(
         bess_soc=0.0,
         bess_mwh=0.01,
@@ -106,8 +106,8 @@ def test_islanded_generation_deficit_remains_a_real_balance_residual() -> None:
     assert balance.independent is True
     assert balance.verification_mode == "islanded_verified"
     assert tick.p_generation_mw == 0.0
-    assert tick.p_unserved_mw == 0.0
-    assert tick.p_served_mw == tick.p_demand_mw
-    assert tick.p_imbalance_mw == -tick.p_demand_mw
-    assert balance.passed is False
-    assert balance.defect_mw == tick.p_imbalance_mw
+    assert tick.p_unserved_mw == tick.p_demand_mw
+    assert tick.p_served_mw == 0.0
+    assert tick.p_imbalance_mw == 0.0
+    assert balance.passed is True
+    assert balance.defect_mw == 0.0

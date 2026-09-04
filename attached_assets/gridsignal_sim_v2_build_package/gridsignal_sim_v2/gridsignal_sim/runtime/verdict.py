@@ -49,6 +49,18 @@ class AlertFiresAssertion(BaseModel):
     check: Literal["alert_fires"] = "alert_fires"
 
 
+class DecliningFuelCellReserveAlertFiresAssertion(BaseModel):
+    """Assert that the block-array declining-reserve alert was retained.
+
+    This is an existential assertion.  A retained alert is sufficient evidence
+    even when timeseries writes have gaps; without retained evidence, gaps make
+    the result INCONCLUSIVE rather than FAIL.
+    """
+    check: Literal["declining_fuel_cell_reserve_alert_fires"] = (
+        "declining_fuel_cell_reserve_alert_fires"
+    )
+
+
 class MaxPTotalAssertion(BaseModel):
     """Assert that p_total_mw ≤ threshold_mw on every tick.
 
@@ -111,6 +123,7 @@ AssertionSpec = Annotated[
     Union[
         NoReserveAlertAssertion,
         AlertFiresAssertion,
+        DecliningFuelCellReserveAlertFiresAssertion,
         MaxPTotalAssertion,
         MinFinalBessSocAssertion,
         PueBaseInDeclaredRangeAssertion,
@@ -146,6 +159,9 @@ class EvalRow(NamedTuple):
     # that are cold or warming.  It must be zero; available_now alone cannot
     # prove that accounting did not include those blocks elsewhere.
     fuel_cell_cold_warming_contingency_contribution_mw: Optional[float] = None
+    # The full alert record is retained because its event-window evidence is
+    # useful to callers, while verdict evaluation only needs its presence.
+    fuel_cell_declining_reserve_alert: Optional[dict] = None
 
 
 # ---------------------------------------------------------------------------
@@ -231,6 +247,26 @@ def _eval_one(
         expected_mw = getattr(assertion, "expected_mw", 0.0)
         tolerance_mw = getattr(assertion, "tolerance_mw", 0.325)
         block_rated_mw = getattr(assertion, "block_rated_mw", 0.325)
+
+    if check == "declining_fuel_cell_reserve_alert_fires":
+        alert_count = sum(
+            1 for row in rows if row.fuel_cell_declining_reserve_alert is not None
+        )
+        if alert_count:
+            return AssertionResult(
+                check, "PASS",
+                f"{alert_count} / {len(rows)} retained ticks fired the declining fuel-cell reserve alert",
+            )
+        if has_gaps:
+            return AssertionResult(
+                check, "INCONCLUSIVE",
+                "No declining fuel-cell reserve alert in retained rows, "
+                "but gaps exist — dropped ticks may have fired",
+            )
+        return AssertionResult(
+            check, "FAIL",
+            f"0 / {len(rows)} retained ticks fired the declining fuel-cell reserve alert",
+        )
 
     if check == "persistent_fuel_cell_deficit":
         # ``tick_seconds`` is retained in the input schema for compatibility,
@@ -501,7 +537,8 @@ def evaluate_verdict(
          no_cold_warming_contingency_capacity):
         FAIL if a retained tick violates; INCONCLUSIVE if no violation but gaps
         exist; PASS only when all retained ticks pass AND no gaps.
-      - Existential assertion (alert_fires):
+       - Existential assertions (alert_fires,
+         declining_fuel_cell_reserve_alert_fires):
         PASS if any retained tick fired; INCONCLUSIVE if none fired but gaps
         exist; FAIL only when no retained tick fired AND no gaps.
       - Final-point assertion (min_final_bess_soc):

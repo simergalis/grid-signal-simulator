@@ -1213,6 +1213,9 @@ class SqlitePersistedTimeseriesSink:
                 fuel_cell_cold_warming_contingency_contribution_mw=json.loads(
                     r.tick_json
                 ).get("fuel_cell_cold_warming_contingency_contribution_mw"),
+                fuel_cell_declining_reserve_alert=json.loads(r.tick_json).get(
+                    "fuel_cell_declining_reserve_alert"
+                ),
             )
             for r in rows
         ]

@@ -1606,6 +1606,18 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # final normal-dispatch tick, the available normal energy may be less than
     # the BESS MW rating but must be exhausted before any held charge is used.
     _normal_bess_energy_exhausted = _bess_available_mw <= 1e-9
+    # BESS is a physical balance resource.  In particular, do not use the
+    # droop/FC command as its demand signal: a fuel-cell command can differ
+    # from measured output while the measured fleet already covers the site.
+    # That command-achieved difference remains a readiness/telemetry signal
+    # below, but must not create a baseline BESS discharge (or artificial
+    # charging surplus).
+    _physical_bess_shortfall_mw = max(
+        0.0,
+        p_dispatch_required_mw
+        - _post_loading_turbine_output_mw
+        - fuel_cell_output_mw,
+    )
     _emergency_release_authorized = False
     if _normal_bess_energy_exhausted:
         _grid_emergency_support_mw = (
@@ -1622,9 +1634,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         # output, and PCC import. Only the retained BESS reserve is released.
         _emergency_gap_mw = max(
             0.0,
-            _p_dispatch_droop_mw
-            - _post_loading_turbine_output_mw
-            - fuel_cell_output_mw
+            _physical_bess_shortfall_mw
             # Diesel coordination runs after BESS arbitration, so use the
             # previous tick's diesel output here.  A same-tick value is not
             # available without reordering the pipeline or making diesel
@@ -1654,12 +1664,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         _bess_dispatch_ceilings_mw = _bess_normal_dispatch_ceilings_mw
     _effective_bess_setpoint_mw = min(
         _planned_bess_setpoint_mw + _emergency_bess_target_mw,
-        max(
-            0.0,
-            _p_dispatch_droop_mw
-            - fuel_cell_output_mw
-            - _post_loading_turbine_output_mw,
-        ),
+        _physical_bess_shortfall_mw,
     )
     # The same reconciled threshold that shaped the upstream ceiling is the
     # downstream physical floor.  The existing emergency-release condition
@@ -1671,7 +1676,12 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         else _bess_reconciled_reserve_mwh
     )
     turbine_output_mw, bess_output_mw, _bess_setpoint_mw, _arb_candidates = state.arbitrator.tick(
-        _p_dispatch_droop_mw - fuel_cell_output_mw,
+        # Pass the signed physical net demand after achieved FC output, never
+        # a command-achieved residual.  Positive values let tick() discharge
+        # against an actual shortfall; negative values preserve its existing
+        # surplus-absorption path so fixed FC overproduction charges the BESS.
+        # tick() removes measured turbine output exactly once.
+        p_dispatch_required_mw - fuel_cell_output_mw,
         dt_seconds,
         bess_dispatch_target_mw=_effective_bess_setpoint_mw,
         bess_dispatch_ceilings_mw=_bess_dispatch_ceilings_mw,
@@ -2922,17 +2932,29 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     _compute_inlet_temp_c = _T_AMBIENT_BASE_C + _cooling_fraction * _T_RISE_MAX_C
 
     # ── Phase 6: Load-side served/shed producers ───────────────────────────────
-    # The served/unserved split is a load-side accounting result, not a
-    # supply-capped calculation. It must not reference _p_generation_mw: doing so
-    # would absorb a generation deficit into unserved load and make the physical
-    # ledger circular. Explicit UFLS/curtailment shed is the only unserved load.
+    # The served/unserved split includes explicit UFLS/curtailment shedding and,
+    # for an islanded site, any remaining physical supply deficit.  A power
+    # ceiling is not merely a telemetry constraint: demand above it is genuinely
+    # unserved.  This keeps a grid-forming BESS's anchor reserve out of normal
+    # dispatch (e.g. 60 MW rated - 1 MW anchor = 59 MW deliverable) instead of
+    # silently treating the withheld MW as served load.
     #
-    # Supply shortfall remains visible separately in _p_imbalance_mw, while the
-    # swing equation continues to use _balance_residual_mw directly.
+    # Grid-tied deficits are supplied through the PCC accounting path, so only
+    # islanded residuals are load-side unserved here.  The swing equation still
+    # uses _balance_residual_mw directly.
     # Per-subsystem shed is proportional to demand fraction because stage
     # definitions specify a block fraction of total demand only.
     _cumulative_shed_mw = state._cumulative_shed_mw  # monotonic run total
-    _p_unserved_mw = _cumulative_shed_mw
+    _islanded_supply_shortfall_mw = (
+        max(0.0, p_demand_mw - _p_gen_mw) if _islanded else 0.0
+    )
+    _p_unserved_mw = min(
+        p_demand_mw,
+        # UFLS is the intentional load reduction that closes a supply gap, not
+        # an additional deficit on top of that same gap.  Keep the larger
+        # independently observed amount rather than double-counting it.
+        max(_cumulative_shed_mw, _islanded_supply_shortfall_mw),
+    )
     _p_served_mw = p_demand_mw - _p_unserved_mw
     _p_imbalance_mw = _p_generation_mw - _p_served_mw
 
@@ -2953,14 +2975,15 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # _grid_exchange_mw is negative on import (balance_residual < 0 when local gen
     # < demand), so we pass −_grid_exchange_mw here to match the convention.
     #
-    # DR-BAL-5 (C-3): p_unserved_mw = _cumulative_shed_mw (UFLS-shed load only).
-    # Generation deficit is NOT a "shed" for D4 purposes — it shows up as a non-zero
-    # defect (generation + import < served) rather than reducing the served load term.
+    # p_unserved_mw contains deliberate UFLS shed or an islanded physical
+    # generation deficit, whichever is larger.  In both cases it reduces served
+    # load for D4: an anchor-reserved MW above the BESS bridge ceiling cannot be
+    # reported as electrically served.
     # p_losses_mw defaults to 0.0 — the model does not represent losses.
     _balance_terms = _BalanceTerms(
         p_generation_mw=_p_gen_mw,            # local generation, including diesel
         p_demand_mw=p_demand_mw,
-        p_unserved_mw=_cumulative_shed_mw,     # UFLS-shed only; gen deficit ≠ shed
+        p_unserved_mw=_p_unserved_mw,
         grid_exchange_mw=-_grid_exchange_mw,   # negate: positive = import (POSITIVE_IS_IMPORT=True)
         island_mode=_BAL_ISLANDED if _islanded else _BAL_GRID_TIE,
     )

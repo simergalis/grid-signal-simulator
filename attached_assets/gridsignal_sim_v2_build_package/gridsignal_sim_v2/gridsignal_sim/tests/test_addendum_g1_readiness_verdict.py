@@ -76,6 +76,32 @@ def test_deficit_gap_cannot_be_used_to_prove_duration():
     assert result.assertions[0].status == "INCONCLUSIVE"
 
 
+def test_declining_fuel_cell_reserve_alert_is_existential_and_gap_aware():
+    retained_alert = EvalRow(
+        1, 80., .8, False,
+        fuel_cell_declining_reserve_alert={"event_fast_window_s": 30.0},
+    )
+    assert evaluate_verdict(
+        [{"check": "declining_fuel_cell_reserve_alert_fires"}],
+        [retained_alert],
+        dropped_ticks=1,
+    ).assertions[0].status == "PASS"
+
+    missing_with_gap = evaluate_verdict(
+        [{"check": "declining_fuel_cell_reserve_alert_fires"}],
+        [EvalRow(1, 80., .8, False)],
+        dropped_ticks=1,
+    )
+    assert missing_with_gap.assertions[0].status == "INCONCLUSIVE"
+
+    missing_without_gap = evaluate_verdict(
+        [{"check": "declining_fuel_cell_reserve_alert_fires"}],
+        [EvalRow(1, 80., .8, False)],
+        dropped_ticks=0,
+    )
+    assert missing_without_gap.assertions[0].status == "FAIL"
+
+
 def test_cold_warming_assertion_requires_accounting_telemetry():
     result = evaluate_verdict(
         [{"check": "no_cold_warming_contingency_capacity"}],

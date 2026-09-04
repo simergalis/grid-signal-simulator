@@ -1,6 +1,6 @@
 {
-  "name": "FC100 Islanded Readiness Reference",
-  "description": "Addendum G-1 reference: islanded block fuel-cell array, deterministic 20 MW to 80 MW twenty-minute demand step, grid-forming BESS bridge, and advisory-only diesel final reserve. Dynamic cooling is explicitly disabled (alpha_max=0) so the scripted workload is the complete 20-to-80 MW site-demand fixture rather than a thermal-response exercise.",
+  "name": "FC100 Islanded Zero-Hot-Standby Reference",
+  "description": "Addendum G-1 zero-hot-standby control: identical to the FC100 reference except no fuel-cell blocks begin in hot standby, proving the physical BESS ceiling and residual unserved load. Dynamic cooling is explicitly disabled (alpha_max=0), retaining the deterministic 20-to-80 MW total-site fixture.",
   "site_name": "FC100 Islanded Reference Plant",
   "workload_events": [
     {"event_id": "fc-base-start", "job_id": "fc-base", "event_type": "running", "timestamp": 0, "node_count": 1961, "hardware_profile_id": "enterprise_8gpu_air"},
@@ -15,7 +15,7 @@
   "solar_rated_mw": 0,
   "fuel_cell_units": [{
     "asset_id": "fc100-array", "block_rated_mw": 0.325, "block_count": 246,
-    "initial_running_blocks": 62, "initial_hot_standby_blocks": 92,
+    "initial_running_blocks": 62, "initial_hot_standby_blocks": 0,
     "commit_rate_blocks_per_s": 0.82, "decommit_rate_blocks_per_s": 0.0001,
     "cold_start_s": 28800, "warm_start_s": 14400, "hot_start_s": 5,
     "min_stable_frac": 0, "hot_standby_floor_blocks": 92,
@@ -31,10 +31,6 @@
   "end_sim_time": 1320,
   "gpu_load_profile": [],
   "assertions": [
-    {"check": "persistent_fuel_cell_deficit", "expected_deficit_mw": 29.95, "duration_s": 1135, "tick_seconds": 5, "tolerance_mw": 0.325},
-    {"check": "peak_fuel_cell_array_output", "expected_mw": 50.05, "tolerance_mw": 0.325},
-    {"check": "no_cold_warming_contingency_capacity", "block_rated_mw": 0.325},
-    {"check": "fuel_cell_commanded_and_achieved_reported"},
-    {"check": "declining_fuel_cell_reserve_alert_fires"}
+    {"check": "fuel_cell_commanded_and_achieved_reported"}
   ]
 }

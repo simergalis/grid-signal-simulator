@@ -11,6 +11,7 @@ from runtime.verdict import EvalRow, evaluate_verdict
 
 
 SCENARIO_ID = "scenario-fc100-islanded-v2"
+ZERO_HOT_SCENARIO_ID = "scenario-fc100-islanded-zero-hot-v2"
 
 
 def test_fc100_reference_is_registered_and_exercises_block_deficit():
@@ -20,28 +21,60 @@ def test_fc100_reference_is_registered_and_exercises_block_deficit():
     unit = spec["fuel_cell_units"][0]
     assert (unit["block_count"], unit["block_rated_mw"]) == (246, .325)
     assert (unit["initial_running_blocks"], unit["initial_hot_standby_blocks"]) == (62, 92)
+    # This is a total-site-load fixture, not a thermal-response fixture.
+    assert spec["alpha_max"] == 0
 
     context = build_run_context_from_spec("fc100-acceptance", spec, playback_speed=0)
     ticks = [context.step() for _ in range(int(spec["end_sim_time"] / 5))]
 
-    # This is a zero-lead scenario: hot standby receives no fast credit and
-    # requires its full configured transition before reaching the plateau.
-    assert all(t.dt_lead_next_s == 0 for t in ticks)
-    # available_fast reports physical hot readiness, not credited reserve;
-    # a zero event window must therefore produce no declining/fast credit.
-    assert not any(t.fuel_cell_declining_reserve_alert for t in ticks)
-    assert max(
-        t.fuel_cell_achieved_output_mw
-        for t in ticks if 60 < t.sim_time_seconds < 120
-    ) < 50.05
+    # The peak STARTING event is submitted at t=30 and its 30-second GPU
+    # ramp lands the 80 MW load at t=60.  The staged hot-block path is already
+    # active while that warning window is still open.
+    peak_event = next(e for e in spec["workload_events"] if e["event_id"] == "fc-peak-start")
+    base_event = next(e for e in spec["workload_events"] if e["event_id"] == "fc-base-start")
+    assert base_event["event_type"] == "running"
+    assert (peak_event["timestamp"], spec["dt_lead_seconds"]) == (30, 30)
+    assert any(
+        30 < t.sim_time_seconds < 60 and t.dt_lead_next_s > 0
+        for t in ticks
+    )
+    peak_declining = [
+        t for t in ticks
+        if t.fuel_cell_declining_reserve_alert
+        and t.sim_time_seconds >= 30
+    ]
+    assert peak_declining
+    assert peak_declining[0].sim_time_seconds == pytest.approx(35)
+    assert [t.sim_time_seconds for t in peak_declining] == pytest.approx(
+        [35, 40, 45, 50, 55]
+    )
+    assert peak_declining[0].fuel_cell_declining_reserve_alert["event_fast_window_s"] == pytest.approx(25)
+    # Decommit is deliberately disabled for this fixed 20→80 MW exercise:
+    # all initially running blocks remain online and every hot block commits.
+    settled_baseline = [t for t in ticks if 5 <= t.sim_time_seconds <= 30]
+    assert all(t.fuel_cell_running_blocks == 62 for t in settled_baseline)
+    assert all(t.bess_output_mw == pytest.approx(0.0, abs=1e-9) for t in settled_baseline)
+    assert not any(t.fuel_cell_declining_reserve_alert for t in settled_baseline)
+    assert not any(t.fuel_cell_persistent_reserve_alert for t in settled_baseline)
+    assert next(
+        t.fuel_cell_running_blocks for t in ticks if t.sim_time_seconds == 60
+    ) == 111
+    assert next(
+        t.fuel_cell_achieved_output_mw for t in ticks if t.sim_time_seconds == 60
+    ) == pytest.approx(34.775)
     assert next(
         t.sim_time_seconds for t in ticks
         if t.fuel_cell_achieved_output_mw == pytest.approx(50.05)
-    ) == pytest.approx(125)
+    ) == pytest.approx(120)
 
     # Cold/warming blocks make an explicit zero contingency contribution.
-    plateau = [t for t in ticks if 125 <= t.sim_time_seconds <= 1260]
+    plateau = [t for t in ticks if 120 <= t.sim_time_seconds <= 1260]
     assert max(t.fuel_cell_achieved_output_mw for t in plateau) == pytest.approx(50.05)
+    assert all(
+        t.fuel_cell_commanded_output_mw - t.fuel_cell_achieved_output_mw
+        == pytest.approx(29.95, abs=.325)
+        for t in plateau
+    )
     assert any(t.fuel_cell_cold_blocks or t.fuel_cell_warming_blocks for t in plateau)
     # RUNNING blocks credit only their upward margin; already-achieved output
     # is generation, not reserve.
@@ -52,9 +85,7 @@ def test_fc100_reference_is_registered_and_exercises_block_deficit():
         t.fuel_cell_cold_warming_contingency_contribution_mw == 0
         for t in ticks
     )
-    # This scenario has no scheduler lead.  Its hot blocks need 60 s, so none
-    # can be manufactured into fast/declining reserve by an evaluation tick.
-    assert not any(t.fuel_cell_declining_reserve_alert for t in ticks)
+    assert any(t.fuel_cell_declining_reserve_alert for t in ticks)
     assert any(t.fuel_cell_persistent_reserve_alert for t in plateau)
     for tick in ticks:
         for alert in (
@@ -66,6 +97,7 @@ def test_fc100_reference_is_registered_and_exercises_block_deficit():
                     tick.dt_lead_next_s
                 )
     assert min(t.bess_soc_fraction for t in ticks) < .95
+    assert ticks[-1].bess_soc_fraction == pytest.approx(.691, abs=.01)
     assert max(t.diesel_output_mw for t in ticks) == 0
     # Diesel is advisory-only and must not appear in firm fuel-cell reserve.
     assert all(
@@ -85,8 +117,44 @@ def test_fc100_reference_is_registered_and_exercises_block_deficit():
                 t.fuel_cell_achieved_output_mw, t.fuel_cell_available_now_mw,
                 t.fuel_cell_running_blocks, t.fuel_cell_cold_blocks,
                 t.fuel_cell_warming_blocks, t.sim_time_seconds,
-                t.fuel_cell_cold_warming_contingency_contribution_mw)
+                t.fuel_cell_cold_warming_contingency_contribution_mw,
+                t.fuel_cell_declining_reserve_alert)
         for t in ticks
     ]
     verdict = evaluate_verdict(spec["assertions"], rows, dropped_ticks=0)
     assert verdict.overall == "PASS"
+
+
+def test_fc100_zero_hot_variant_exposes_physical_bess_ceiling_and_unserved_load():
+    record = build_seeded_store().get(ZERO_HOT_SCENARIO_ID)
+    assert record is not None
+    spec = json.loads(record.spec_json)
+    assert spec["fuel_cell_units"][0]["initial_hot_standby_blocks"] == 0
+    assert next(
+        e["event_type"] for e in spec["workload_events"]
+        if e["event_id"] == "fc-base-start"
+    ) == "running"
+
+    context = build_run_context_from_spec("fc100-zero-hot-acceptance", spec, playback_speed=0)
+    ticks = [context.step() for _ in range(int(spec["end_sim_time"] / 5))]
+    peak = [t for t in ticks if 60 <= t.sim_time_seconds < 1260]
+    baseline = [t for t in ticks if 5 <= t.sim_time_seconds <= 30]
+    assert all(t.bess_output_mw == pytest.approx(0.0, abs=1e-9) for t in baseline)
+    assert not any(t.fuel_cell_declining_reserve_alert for t in baseline)
+    assert not any(t.fuel_cell_persistent_reserve_alert for t in baseline)
+
+    # With no initially-hot blocks, the cold-start horizon prevents the array
+    # from materially increasing beyond its 62 running blocks (20.15 MW).
+    assert max(t.fuel_cell_achieved_output_mw for t in peak) == pytest.approx(20.15)
+    # The physical BESS path retains its 1 MW grid-forming anchor reserve.
+    assert max(t.bess_output_mw for t in peak) == pytest.approx(59.0)
+    assert all(t.bess_output_mw <= 59.0 + 1e-9 for t in peak)
+
+    # Residual site demand is explicitly shed/unserved, not fabricated supply.
+    constrained = [t for t in peak if t.p_unserved_mw and t.p_unserved_mw > 0]
+    assert constrained
+    assert all(t.p_imbalance_mw == pytest.approx(0.0, abs=1e-9) for t in constrained)
+    assert all(
+        t.p_generation_mw + t.p_unserved_mw == pytest.approx(t.p_demand_mw)
+        for t in constrained
+    )

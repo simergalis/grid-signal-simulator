@@ -8,3 +8,5 @@ For block fuel-cell arrays, contingency capacity is state- and time-dependent. C
 **Why:** Crediting running nameplate double-counts output already serving load, while crediting cold or not-yet-synchronized blocks can make reserve appear sufficient when generation cannot physically arrive.
 
 **How to apply:** Keep declining hot-commitment and persistent cold-capacity deficits as separate records. Readiness changes remain advisory until hot-hold fuel cost is calibrated, and diesel final reserve changes consequences rather than firm-reserve sufficiency.
+
+BESS dispatch must follow signed physical net imbalance after achieved fuel-cell output: positive imbalance discharges, negative imbalance charges, and zero leaves the battery idle. Fuel-cell commanded-versus-achieved gaps remain readiness telemetry and must not independently dispatch the battery. In island mode, grid-forming BESS discharge remains capped at rated power minus anchor reserve; excess physical deficit is unserved load.
