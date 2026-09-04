@@ -280,6 +280,9 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
     # math is a stdlib module so there is no plane-separation concern, but keeping
     # the import local avoids polluting the module namespace.
 
+    def _round_optional(value: float | None, digits: int) -> float | None:
+        return round(value, digits) if value is not None else None
+
     # ── Hoist kube job-detail lists before the return dict ────────────────────
     # IMPORTANT: these must NOT be inline list-comprehensions with dict literals
     # inside the return{} block.  The payload guard (test_payload_guard.py) uses
@@ -387,35 +390,37 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         "bess_output_mw": round(tick.bess_output_mw, 4),
         "fuel_cell_output_mw": round(tick.fuel_cell_output_mw, 4),
         "fuel_cell_state": tick.fuel_cell_state,
+        "fuel_cell_configuration_mode": tick.fuel_cell_configuration_mode,
         "fuel_cell_time_to_ready_s": (
             round(tick.fuel_cell_time_to_ready_s, 1)
             if tick.fuel_cell_time_to_ready_s is not None else None
         ),
-        "fuel_cell_commanded_output_mw": round(tick.fuel_cell_commanded_output_mw, 4),
-        "fuel_cell_achieved_output_mw": round(tick.fuel_cell_achieved_output_mw, 4),
+        "fuel_cell_commanded_output_mw": _round_optional(tick.fuel_cell_commanded_output_mw, 4),
+        "fuel_cell_achieved_output_mw": _round_optional(tick.fuel_cell_achieved_output_mw, 4),
         "fuel_cell_cold_blocks": tick.fuel_cell_cold_blocks,
         "fuel_cell_warming_blocks": tick.fuel_cell_warming_blocks,
         "fuel_cell_hot_standby_blocks": tick.fuel_cell_hot_standby_blocks,
         "fuel_cell_running_blocks": tick.fuel_cell_running_blocks,
         "fuel_cell_controlled_cooling_blocks": tick.fuel_cell_controlled_cooling_blocks,
-        "fuel_cell_available_now_mw": round(tick.fuel_cell_available_now_mw, 4),
-        "fuel_cell_available_fast_mw": round(tick.fuel_cell_available_fast_mw, 4),
-        "fuel_cell_cold_warming_contingency_contribution_mw": round(
+        "fuel_cell_available_now_mw": _round_optional(tick.fuel_cell_available_now_mw, 4),
+        "fuel_cell_available_fast_mw": _round_optional(tick.fuel_cell_available_fast_mw, 4),
+        "fuel_cell_cold_warming_contingency_contribution_mw": _round_optional(
             tick.fuel_cell_cold_warming_contingency_contribution_mw, 4
         ),
-        "fuel_cell_minimum_output_mw": round(tick.fuel_cell_minimum_output_mw, 4),
+        "fuel_cell_minimum_output_mw": _round_optional(tick.fuel_cell_minimum_output_mw, 4),
         "fuel_cell_provenance": tick.fuel_cell_provenance,
-        "fuel_cell_reactive_output_mvar": round(tick.fuel_cell_reactive_output_mvar, 4),
-        "fuel_cell_apparent_power_mva": round(tick.fuel_cell_apparent_power_mva, 4),
-        "fuel_cell_apparent_loading_fraction": round(tick.fuel_cell_apparent_loading_fraction, 4),
+        "fuel_cell_reactive_output_mvar": _round_optional(tick.fuel_cell_reactive_output_mvar, 4),
+        "fuel_cell_apparent_power_mva": _round_optional(tick.fuel_cell_apparent_power_mva, 4),
+        "fuel_cell_apparent_loading_fraction": _round_optional(tick.fuel_cell_apparent_loading_fraction, 4),
+        "fuel_cell_apparent_power_rating_assumed": tick.fuel_cell_apparent_power_rating_assumed,
         # Additive only: no site-wide reactive/voltage model is represented.
-        "island_reactive_balance_mvar": round(tick.island_reactive_balance_mvar, 4),
+        "island_reactive_balance_mvar": _round_optional(tick.island_reactive_balance_mvar, 4),
         "fuel_cell_ride_through_trips": tick.fuel_cell_ride_through_trips,
         "fuel_cell_ride_through_status": tick.fuel_cell_ride_through_status,
-        "fuel_cell_total_fuel_demand_scfm": round(tick.fuel_cell_total_fuel_demand_scfm, 6),
-        "fuel_cell_hot_standby_parasitic_scfm": round(tick.fuel_cell_hot_standby_parasitic_scfm, 6),
-        "fuel_cell_cumulative_fuel_mmbtu": round(tick.fuel_cell_cumulative_fuel_mmbtu, 6),
-        "fuel_cell_cumulative_co2_tonnes": round(tick.fuel_cell_cumulative_co2_tonnes, 6),
+        "fuel_cell_total_fuel_demand_scfm": _round_optional(tick.fuel_cell_total_fuel_demand_scfm, 6),
+        "fuel_cell_hot_standby_parasitic_scfm": _round_optional(tick.fuel_cell_hot_standby_parasitic_scfm, 6),
+        "fuel_cell_cumulative_fuel_mmbtu": _round_optional(tick.fuel_cell_cumulative_fuel_mmbtu, 6),
+        "fuel_cell_cumulative_co2_tonnes": _round_optional(tick.fuel_cell_cumulative_co2_tonnes, 6),
         "fuel_cell_manifold_pressure_psig": (
             round(tick.fuel_cell_manifold_pressure_psig, 4)
             if tick.fuel_cell_manifold_pressure_psig is not None else None),
@@ -428,11 +433,11 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         "fuel_cell_minimum_inlet_pressure_psig": (
             round(tick.fuel_cell_minimum_inlet_pressure_psig, 4)
             if tick.fuel_cell_minimum_inlet_pressure_psig is not None else None),
-        "fuel_cell_delivered_fuel_scfm": round(tick.fuel_cell_delivered_fuel_scfm, 6),
+        "fuel_cell_delivered_fuel_scfm": _round_optional(tick.fuel_cell_delivered_fuel_scfm, 6),
         "fuel_cell_pressure_derated_block_count": tick.fuel_cell_pressure_derated_block_count,
         "fuel_cell_utilisation_clamped_block_count": tick.fuel_cell_utilisation_clamped_block_count,
-        "fuel_cell_requested_commit_rate_blocks_per_s": round(tick.fuel_cell_requested_commit_rate_blocks_per_s, 6),
-        "fuel_cell_achieved_commit_rate_blocks_per_s": round(tick.fuel_cell_achieved_commit_rate_blocks_per_s, 6),
+        "fuel_cell_requested_commit_rate_blocks_per_s": _round_optional(tick.fuel_cell_requested_commit_rate_blocks_per_s, 6),
+        "fuel_cell_achieved_commit_rate_blocks_per_s": _round_optional(tick.fuel_cell_achieved_commit_rate_blocks_per_s, 6),
         "fuel_cell_fuel_binding_constraint": tick.fuel_cell_fuel_binding_constraint,
         "fuel_cell_pressure_derate_alert": tick.fuel_cell_pressure_derate_alert,
         "fuel_cell_pressure_trip_alert": tick.fuel_cell_pressure_trip_alert,
@@ -1031,11 +1036,13 @@ def _apply_bess_bridge_escalation(ctx: "RunContext", tick: TickResult) -> TickRe
     """
     site = ctx.sim_state.site
     bess_units = ctx.sim_state.bess_units
-    rated_mw = sum(max(0.0, b.config.rated_mw) for b in bess_units)
+    rated_mw = sum(
+        max(0.0, b.config.rated_mw) for b in bess_units if not b.tripped
+    )
     anchor_mw = sum(
         max(0.0, b.config.p_anchor_reserve_mw)
         for b in bess_units
-        if b.config.grid_forming
+        if b.config.grid_forming and not b.tripped
     )
     floor_mw = max(
         site.bess_bridging_floor_fraction * rated_mw,
@@ -1686,7 +1693,7 @@ def _apply_soc_corruption(ctx: "RunContext", tick_result: "TickResult") -> "Tick
             p_anchor_reserve_mw=b.config.p_anchor_reserve_mw,
             grid_forming=b.config.grid_forming,
         )
-        for b in ctx.sim_state.bess_units
+        for b in ctx.sim_state.bess_units if not b.tripped
     )
 
     # Rebuild turbine snapshots from current sim_state (valid between ticks).

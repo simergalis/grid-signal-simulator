@@ -25,6 +25,19 @@ gridsignal_sim/
 
 ## Design-spec correspondence
 
+## Fuel-cell inverter MVA assumption
+
+For a block-addressable fuel-cell unit,
+`apparent_power_rating_mva_per_block` is fixed installed inverter hardware
+rating and the array rating is `block_count × rating`; it is never inferred
+from power factor. When omitted it defaults exactly to `block_rated_mw`. That
+equality is an assumption, not vendor data: vendor inverter kVA is unpublished,
+so dependent real-capacity, reactive, apparent-loading, reserve, and
+commitment telemetry is explicitly marked low confidence. Authors should supply
+the site-specific MVA rating to restore normal site confidence. Real output per
+block is physically limited to
+`min(block_rated_mw, apparent_power_rating_mva_per_block × power_factor)`.
+
 | Skeleton piece | Design Spec section |
 |---|---|
 | `core/*` being plain sync Python with zero `asyncio` imports | §2 principle 2 ("fidelity over cleverness") and §4.3 |

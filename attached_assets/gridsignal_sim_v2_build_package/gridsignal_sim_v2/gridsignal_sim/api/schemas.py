@@ -193,7 +193,7 @@ class WorkloadEventSpec(BaseModel):
       "job_end"    — GPU job finishes.
       "solar_step" — Renewable curtailment; staging fires with dt_lead=0 (§7.1.1).
       "unit_trip"  — Force a generating unit offline immediately (TC-84/G-2).
-                     job_id carries a turbine or fuel-cell asset_id. For a
+                      job_id carries a turbine, BESS, or fuel-cell asset_id. For a
                      block fuel-cell array, electrical_group_id optionally
                      addresses one declared group; omission trips the array.
                      node_count and hardware_profile_id are ignored.
@@ -361,13 +361,24 @@ class FuelSystemSpec(BaseModel):
 class FuelCellUnitSpec(BaseModel):
     """A block-addressable fuel-cell unit (Addendum G-1).
 
-    Capacity is deliberately derived from ``block_rated_mw * block_count``.
+    Real capacity is derived from the PF-limited block output. Fixed inverter
+    hardware MVA is ``block_count * apparent_power_rating_mva_per_block`` and
+    is never PF-derived.
     There is no independently authorable ``rated_mw`` field for this model.
     """
 
     asset_id: str = Field(min_length=1)
     block_rated_mw: float = Field(gt=0.0)
     block_count: int = Field(ge=1)
+    apparent_power_rating_mva_per_block: Optional[float] = Field(
+        default=None,
+        gt=0.0,
+        description=(
+            "Fixed inverter MVA per block. Omitted defaults exactly to "
+            "block_rated_mw as a low-confidence assumption because vendor "
+            "inverter kVA is unpublished; dependent results are low confidence."
+        ),
+    )
     initial_running_blocks: int = Field(default=0, ge=0)
     initial_hot_standby_blocks: Optional[int] = Field(default=None, ge=0)
     requested_commit_rate_blocks_per_s: float = Field(default=1.0, gt=0.0)

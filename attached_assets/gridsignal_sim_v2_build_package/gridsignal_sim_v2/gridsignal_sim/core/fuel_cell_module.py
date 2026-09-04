@@ -332,6 +332,10 @@ class BlockFuelCellConfig:
     asset_id: str
     block_rated_mw: float
     block_count: int
+    # Fixed inverter hardware rating.  An omitted value deliberately defaults
+    # to the MW block rating only as a low-confidence assumption: the vendor's
+    # inverter kVA rating is unpublished and must be confirmed for a site.
+    apparent_power_rating_mva_per_block: float | None = None
     initial_running_blocks: int = 0
     initial_hot_standby_blocks: int | None = None
     # requested_* is the G-2 public contract.  The old spelling remains an
@@ -372,6 +376,13 @@ class BlockFuelCellConfig:
     def __post_init__(self) -> None:
         if not self.asset_id or self.block_rated_mw <= 0 or self.block_count < 1:
             raise ValueError("fuel-cell block asset_id, rating, and count must be valid")
+        self.apparent_power_rating_is_assumed = (
+            self.apparent_power_rating_mva_per_block is None
+        )
+        if self.apparent_power_rating_mva_per_block is None:
+            self.apparent_power_rating_mva_per_block = self.block_rated_mw
+        if self.apparent_power_rating_mva_per_block <= 0:
+            raise ValueError("apparent_power_rating_mva_per_block must be positive")
         if self.initial_hot_standby_blocks is None:
             self.initial_hot_standby_blocks = (
                 self.block_count - self.initial_running_blocks
@@ -429,6 +440,7 @@ class BlockFuelCellConfig:
             **self.provenance,
             "grid_forming": "site_specific",
             "power_factor": "site_specific",
+            "apparent_power_rating_mva_per_block": "site_specific",
             "reactive_capability_mvar": "proposed",
             "ieee_1547_category": "site_specific",
             "beginning_of_life_heat_rate_btu_per_kwh": "vendor_published",
@@ -444,7 +456,20 @@ class BlockFuelCellConfig:
 
     @property
     def rated_mw(self) -> float:
-        return self.block_rated_mw * self.block_count
+        """PF-limited real capacity; fixed inverter MVA is separate."""
+        return self.effective_block_rated_mw * self.block_count
+
+    @property
+    def effective_block_rated_mw(self) -> float:
+        return min(
+            self.block_rated_mw,
+            float(self.apparent_power_rating_mva_per_block) * self.power_factor,
+        )
+
+    @property
+    def apparent_power_capacity_mva(self) -> float:
+        """Installed hardware MVA, never a PF-derived quantity."""
+        return self.block_count * float(self.apparent_power_rating_mva_per_block)
 
     @property
     def cooling_duration_s(self) -> float:
@@ -545,7 +570,7 @@ class BlockFuelCellArray(AssetModule):
             # starved solely because fuel-system telemetry was enabled.
             rate = self.effective_heat_rate_btu_per_kwh / self.config.gas_heating_value_btu_per_scf / 60.0
             initial = self.output_mw() * 1000.0 * rate
-            initial += sum(b.state == FuelCellState.HOT_STANDBY for b in self.blocks) * self.config.block_rated_mw * 1000.0 * rate * self.config.hot_standby_fuel_fraction
+            initial += sum(b.state == FuelCellState.HOT_STANDBY for b in self.blocks) * self.config.effective_block_rated_mw * 1000.0 * rate * self.config.hot_standby_fuel_fraction
             self._regulator_flow_scfm = (
                 initial
                 if self.config.fuel_system.maximum_supply_flow_scfm is None
@@ -556,7 +581,7 @@ class BlockFuelCellArray(AssetModule):
             )
             self.fuel_delivered_scfm = initial
             self._fuel_limited_capacity_mw = (
-                self.config.block_rated_mw
+                self.config.effective_block_rated_mw
                 * sum(b.state == FuelCellState.RUNNING for b in self.blocks)
             )
 
@@ -587,7 +612,7 @@ class BlockFuelCellArray(AssetModule):
 
     @property
     def available_mw(self) -> float:
-        state_capacity_mw = self.config.block_rated_mw * sum(
+        state_capacity_mw = self.config.effective_block_rated_mw * sum(
             b.state == FuelCellState.RUNNING for b in self.blocks
         )
         if self.config.fuel_system is None:
@@ -611,7 +636,11 @@ class BlockFuelCellArray(AssetModule):
     @property
     def reactive_output_mvar(self) -> float:
         requested = self.output_mw() * math.tan(math.acos(self.config.power_factor))
-        return min(requested, self.reactive_capability_mvar)
+        mva_limited_q = math.sqrt(max(
+            0.0,
+            self.config.apparent_power_capacity_mva ** 2 - self.output_mw() ** 2,
+        ))
+        return min(requested, self.reactive_capability_mvar, mva_limited_q)
 
     @property
     def apparent_power_mva(self) -> float:
@@ -717,8 +746,8 @@ class BlockFuelCellArray(AssetModule):
     def _running_block_floor_mw(self) -> float:
         """Smallest physically valid output of one committed block."""
         if self.config.dispatch_mechanism == "discrete_blocks":
-            return self.config.block_rated_mw
-        return self.config.block_rated_mw * self.config.min_stable_frac
+            return self.config.effective_block_rated_mw
+        return self.config.effective_block_rated_mw * self.config.min_stable_frac
 
     @property
     def minimum_dispatchable_output_mw(self) -> float:
@@ -744,7 +773,7 @@ class BlockFuelCellArray(AssetModule):
         # output can respond to the event.
         if self.config.fuel_system is None:
             running_headroom_mw = sum(
-                max(0.0, self.config.block_rated_mw - block.output_mw)
+                max(0.0, self.config.effective_block_rated_mw - block.output_mw)
                 for block in self.blocks
                 if block.state == FuelCellState.RUNNING
             )
@@ -785,10 +814,10 @@ class BlockFuelCellArray(AssetModule):
             **counts,
             "available_now_mw": running_headroom_mw,
             "available_fast_mw": (
-                running_headroom_mw + fast_hot * self.config.block_rated_mw
+                running_headroom_mw + fast_hot * self.config.effective_block_rated_mw
             ),
             "eventual_hot_closure_mw": (
-                eventual_hot_closure * self.config.block_rated_mw
+                eventual_hot_closure * self.config.effective_block_rated_mw
             ),
             "minimum_output_mw": self.minimum_dispatchable_output_mw,
         }
@@ -882,7 +911,7 @@ class BlockFuelCellArray(AssetModule):
         """
         if target_mw <= 0.0:
             return 0
-        blocks_to_cover_request = math.ceil(target_mw / self.config.block_rated_mw)
+        blocks_to_cover_request = math.ceil(target_mw / self.config.effective_block_rated_mw)
         if self.config.dispatch_mechanism == "modulating":
             return self.config.block_count
         return min(self.config.block_count, blocks_to_cover_request)
@@ -959,11 +988,11 @@ class BlockFuelCellArray(AssetModule):
         ]
         per_block_target = target / max(1, len(running_blocks))
         if self.config.dispatch_mechanism == "discrete_blocks":
-            per_block_target = self.config.block_rated_mw
+            per_block_target = self.config.effective_block_rated_mw
         for block in running_blocks:
             block.output_mw = max(
-                self.config.block_rated_mw * self.config.min_stable_frac,
-                min(self.config.block_rated_mw, per_block_target),
+                self.config.effective_block_rated_mw * self.config.min_stable_frac,
+                min(self.config.effective_block_rated_mw, per_block_target),
             )
         # Integrate once, at the interval-end state. HOT_STANDBY includes a
         # block in hot-start dwell by design.
@@ -971,7 +1000,7 @@ class BlockFuelCellArray(AssetModule):
         running_scfm = self.output_mw() * 1000.0 * rate
         self.hot_standby_parasitic_scfm = sum(
             b.state == FuelCellState.HOT_STANDBY for b in self.blocks
-        ) * self.config.block_rated_mw * 1000.0 * rate * self.config.hot_standby_fuel_fraction
+        ) * self.config.effective_block_rated_mw * 1000.0 * rate * self.config.hot_standby_fuel_fraction
         self.total_fuel_demand_scfm = running_scfm + self.hot_standby_parasitic_scfm
         used_mmbtu = (
             self.total_fuel_demand_scfm
@@ -1109,12 +1138,12 @@ class BlockFuelCellArray(AssetModule):
         # synchronisation, but only RUNNING blocks can draw current.
         electrically_drawable_mw = min(
             demand_mw,
-            len(running) * self.config.block_rated_mw,
+            len(running) * self.config.effective_block_rated_mw,
         )
         desired_mw = electrically_drawable_mw * pressure_factor
         actual_mw = min(desired_mw, supported_mw)
         self._fuel_limited_capacity_mw = min(
-            len(running) * self.config.block_rated_mw * pressure_factor,
+            len(running) * self.config.effective_block_rated_mw * pressure_factor,
             supported_mw,
         )
         self.utilisation_clamp_alert = (
@@ -1126,10 +1155,10 @@ class BlockFuelCellArray(AssetModule):
             actual_mw = 0.0
         elif self.config.dispatch_mechanism == "discrete_blocks":
             # A binary block cannot claim a fractional electrical output.
-            actual_mw = min(actual_mw, len(running) * self.config.block_rated_mw)
+            actual_mw = min(actual_mw, len(running) * self.config.effective_block_rated_mw)
         per_block = actual_mw / len(running) if running else 0.0
         for block in running:
-            block.output_mw = min(self.config.block_rated_mw, per_block)
+            block.output_mw = min(self.config.effective_block_rated_mw, per_block)
         self.total_fuel_demand_scfm = command
         used = delivered_scf * cfg_or_hv(self.config) / 1_000_000.0
         # replace the optimistic pre-hydraulic accounting added by G-1 above.
@@ -1144,7 +1173,7 @@ class BlockFuelCellArray(AssetModule):
         # utilisation starvation removes commitment credit.  The ideal G-1
         # branch above deliberately retains its historical state-count result.
         newly_running = max(0, sum(b.state == FuelCellState.RUNNING for b in self.blocks) - running_before)
-        productive_equivalent = max(0.0, self.output_mw() - productive_output_before) / self.config.block_rated_mw
+        productive_equivalent = max(0.0, self.output_mw() - productive_output_before) / self.config.effective_block_rated_mw
         achieved = (productive_equivalent / dt_seconds) if dt_seconds else 0.0
         achieved = min(achieved, newly_running / dt_seconds if dt_seconds else 0.0,
                        float(self.config.requested_commit_rate_blocks_per_s))
@@ -1211,10 +1240,13 @@ class BlockFuelCellFleet:
 
     @property
     def apparent_power_capacity_mva(self) -> float:
-        """Common-point nameplate S from aggregate rated P and Q capability."""
-        return math.hypot(
-            self.rated_mw,
-            sum(array.reactive_capability_mvar for array in self.arrays),
+        """Installed inverter hardware MVA, never derived from power factor."""
+        return sum(array.config.apparent_power_capacity_mva for array in self.arrays)
+
+    @property
+    def apparent_power_rating_is_assumed(self) -> bool:
+        return any(
+            array.config.apparent_power_rating_is_assumed for array in self.arrays
         )
 
     @property

@@ -432,7 +432,7 @@
       "type": "object"
     },
     "FuelCellUnitSpec": {
-      "description": "A block-addressable fuel-cell unit (Addendum G-1).\n\nCapacity is deliberately derived from ``block_rated_mw * block_count``.\nThere is no independently authorable ``rated_mw`` field for this model.",
+      "description": "A block-addressable fuel-cell unit (Addendum G-1).\n\nReal capacity is derived from the PF-limited block output. Fixed inverter\nhardware MVA is ``block_count * apparent_power_rating_mva_per_block`` and\nis never PF-derived.\nThere is no independently authorable ``rated_mw`` field for this model.",
       "properties": {
         "asset_id": {
           "minLength": 1,
@@ -448,6 +448,20 @@
           "minimum": 1,
           "title": "Block Count",
           "type": "integer"
+        },
+        "apparent_power_rating_mva_per_block": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Fixed inverter MVA per block. Omitted defaults exactly to block_rated_mw as a low-confidence assumption because vendor inverter kVA is unpublished; dependent results are low confidence.",
+          "title": "Apparent Power Rating Mva Per Block"
         },
         "initial_running_blocks": {
           "default": 0,
@@ -2021,7 +2035,7 @@
       "type": "object"
     },
     "WorkloadEventSpec": {
-      "description": "One scripted workload event (GPU job or renewable step) within a scenario.\n\nevent_type must be a WorkloadEventType string value:\n  \"starting\"   — GPU job ramp begins; staging fires with dt_lead_seconds.\n  \"job_end\"    — GPU job finishes.\n  \"solar_step\" — Renewable curtailment; staging fires with dt_lead=0 (§7.1.1).\n  \"unit_trip\"  — Force a generating unit offline immediately (TC-84/G-2).\n                 job_id carries a turbine or fuel-cell asset_id. For a\n                 block fuel-cell array, electrical_group_id optionally\n                 addresses one declared group; omission trips the array.\n                 node_count and hardware_profile_id are ignored.\n  Any other WorkloadEventType value is forwarded as-is.\n\nFor solar_step events job_id, node_count, and hardware_profile_id are\nignored by the runtime; renewable_shortfall_mw carries the staging delta.",
+      "description": "One scripted workload event (GPU job or renewable step) within a scenario.\n\nevent_type must be a WorkloadEventType string value:\n  \"starting\"   — GPU job ramp begins; staging fires with dt_lead_seconds.\n  \"job_end\"    — GPU job finishes.\n  \"solar_step\" — Renewable curtailment; staging fires with dt_lead=0 (§7.1.1).\n  \"unit_trip\"  — Force a generating unit offline immediately (TC-84/G-2).\n                  job_id carries a turbine, BESS, or fuel-cell asset_id. For a\n                 block fuel-cell array, electrical_group_id optionally\n                 addresses one declared group; omission trips the array.\n                 node_count and hardware_profile_id are ignored.\n  Any other WorkloadEventType value is forwarded as-is.\n\nFor solar_step events job_id, node_count, and hardware_profile_id are\nignored by the runtime; renewable_shortfall_mw carries the staging delta.",
       "properties": {
         "event_id": {
           "title": "Event Id",

@@ -910,6 +910,11 @@ def build_run_context_from_spec(
                     asset_id=str(unit["asset_id"]),
                     block_rated_mw=float(unit["block_rated_mw"]),
                     block_count=int(unit["block_count"]),
+                    apparent_power_rating_mva_per_block=(
+                        float(unit["apparent_power_rating_mva_per_block"])
+                        if unit.get("apparent_power_rating_mva_per_block") is not None
+                        else None
+                    ),
                     initial_running_blocks=int(unit.get("initial_running_blocks", 0)),
                     initial_hot_standby_blocks=int(unit.get("initial_hot_standby_blocks", 0)),
                     requested_commit_rate_blocks_per_s=float(unit.get(

@@ -34,6 +34,7 @@ from core.models import (
     WorkloadSignal,
 )
 from core.simulation_core import SimulationState
+from core.contingency import BessSnapshot, PlantState, evaluate_contingency
 from core.sim_clock import SimClock
 from core.fuel_cell_module import (
     BlockFuelCellArray,
@@ -172,6 +173,51 @@ def test_tc84a_unit_trip_forces_turbine_offline():
     assert state.turbines[1].output_mw() == 0.0, (
         f"Expected tripped turbine-1 output_mw == 0.0; got {state.turbines[1].output_mw()}"
     )
+
+
+def test_unit_trip_forces_bess_offline_and_removes_grid_forming_capability():
+    """A charged GF BESS cannot remain a dispatch or former after UNIT_TRIP."""
+    state = _make_state([])
+    bess = state.bess_units[0]
+    bess._current_output_mw = 4.0
+
+    state.apply_workload_signal(_unit_trip_signal("bess-0"), dt_lead_seconds=0.0)
+
+    assert bess.tripped is True
+    assert bess.soc_mwh > 0.0  # retained measurement is not operational credit
+    assert bess.output_mw() == 0.0
+    assert bess.bridging_available_mw(IslandMode.ISLANDED) == 0.0
+    assert bess.cover_shortfall(4.0, False, 1.0, 4.0) == 0.0
+    assert bess.absorb_surplus(4.0, 1.0) == 0.0
+
+
+def test_tripped_bess_receives_no_contingency_power_or_energy_credit():
+    state = _make_state([])
+    bess = state.bess_units[0]
+    state.apply_workload_signal(_unit_trip_signal("bess-0"), dt_lead_seconds=0.0)
+
+    snapshots = tuple(
+        BessSnapshot(
+            asset_id=b.config.asset_id,
+            rated_mw=b.config.rated_mw,
+            soc_mwh=b.soc_mwh,
+            usable_mwh=b.config.usable_mwh,
+            p_anchor_reserve_mw=b.config.p_anchor_reserve_mw,
+            grid_forming=b.config.grid_forming,
+        )
+        for b in state.bess_units
+        if not b.tripped
+    )
+    coverage = evaluate_contingency(PlantState(
+        turbine_snapshots=(),
+        bess_snapshots=snapshots,
+        island_mode=IslandMode.ISLANDED,
+        curtailable_capacity_mw=0.0,
+        renewable_mw=0.0,
+    ))
+    assert bess.soc_mwh > 0.0
+    assert coverage.bess_bridging_available_mw == 0.0
+    assert coverage.bess_usable_energy_mwh == 0.0
 
 
 # ---------------------------------------------------------------------------

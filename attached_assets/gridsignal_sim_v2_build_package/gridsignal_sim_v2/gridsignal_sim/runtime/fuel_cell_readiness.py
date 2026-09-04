@@ -50,7 +50,7 @@ class BlockFuelCellReadinessController:
         peak = max((max(0.0, float(value)) for value in forecast_mw), default=0.0)
         required_ready = min(
             array.config.block_count,
-            math.ceil(peak / array.config.block_rated_mw),
+            math.ceil(peak / array.config.effective_block_rated_mw),
         )
         running = sum(b.state == FuelCellState.RUNNING for b in array.blocks)
         hot = sum(b.state == FuelCellState.HOT_STANDBY for b in array.blocks)
@@ -98,12 +98,12 @@ class BlockFuelCellReadinessController:
 
         impact_mw = min(
             20.0,
-            max(0.1, abs(delta_blocks or warm_gap) * array.config.block_rated_mw),
+            max(0.1, abs(delta_blocks or warm_gap) * array.config.effective_block_rated_mw),
         )
         action = "warm" if delta_blocks > 0 or warm_gap > 0 else "hold"
         standby_scfm = (
             target.target_hot_blocks
-            * array.config.block_rated_mw
+            * array.config.effective_block_rated_mw
             * 1000
             * array.effective_heat_rate_btu_per_kwh
             / array.config.gas_heating_value_btu_per_scf

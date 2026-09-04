@@ -9,11 +9,23 @@ Fuel-cell Stage 3 is intentionally limited to grid-forming viability, power-fact
 
 **How to apply:** Keep fault-duty keys entirely absent from schemas and payloads—not zero or null. Electrical groups remain only a human-meaningful name and block count.
 
-A fuel-cell former counts only while a running block produces real power. A BESS former can establish voltage at zero net MW exchange while energized and holding usable charge; an exhausted BESS does not count. Multiple formers are allowed.
+A fuel-cell former counts only while a running block produces real power. A BESS former can establish voltage at zero net MW exchange while energized and holding usable charge; an exhausted or explicitly tripped BESS does not count. Multiple formers are allowed.
 
 **Why:** Grid-forming voltage synthesis does not require positive BESS real-power flow, but it does require a live inverter and energy source. Requiring positive BESS MW incorrectly collapses balanced islands.
 
 **How to apply:** Collapse with the distinct reason `island_collapse_no_grid_forming_source` when neither condition remains.
+
+Fuel-cell inverter apparent-power rating is fixed hardware, not derived from configured power factor. Its per-block default equals the real-power block rating only as a low-confidence, site-specific assumption because the vendor does not publish inverter kVA sizing.
+
+**Why:** Deriving kVA from PF silently enlarges the inverter as PF falls and normalizes away the constraint. Fixed kVA makes lower PF reduce achievable real MW and increases the blocks required for a target.
+
+**How to apply:** Bound each block's real capability by fixed MVA × PF, bound Q so achieved S stays within fixed MVA, and divide loading by fixed installed MVA. Propagate the effective real rating through readiness, reserve, commitment, dispatch, and fuel calculations.
+
+Legacy aggregate fuel-cell runs must never fabricate block telemetry. Their block counts and block-derived readiness fields are unavailable/null, and the payload identifies aggregate versus block-addressable configuration.
+
+**Why:** Zero running/hot/cold blocks is a real block-fleet observation and falsely states that an aggregate asset has no readiness.
+
+**How to apply:** Preserve genuine zeros only for block-addressable fleets; keep aggregate nulls through serialization, persistence, verdict logic, and UI rendering without null-to-zero coercion.
 
 Ride-through timers are contiguous-excursion timers and must run at frequency-physics substep resolution. Stop/non-producing intervals reset timers; protection trips remain persistent.
 

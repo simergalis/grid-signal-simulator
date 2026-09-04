@@ -1338,6 +1338,9 @@ class DieselModule(AssetModule):
 class BessModule(AssetModule):
     config: BessConfig
     soc_mwh: float = field(init=False)
+    # A UNIT_TRIP is an equipment state, not a dispatch preference.  Keep it on
+    # the runtime asset so it survives every subsequent tick of this run.
+    tripped: bool = False
     _current_output_mw: float = 0.0
     _sustained_catchup_seconds: float = 0.0
     # _prev_output_mw: lag filter state — last-tick actual output.
@@ -1377,6 +1380,8 @@ class BessModule(AssetModule):
         anchor deduction.  The anchor role must be explicitly assigned; it
         must not be assumed.
         """
+        if self.tripped:
+            return 0.0
         anchor_deduction = (
             self.config.p_anchor_reserve_mw
             if self.config.grid_forming and island_mode == IslandMode.ISLANDED
@@ -1417,6 +1422,10 @@ class BessModule(AssetModule):
           reserve preservation.  The default of 0.0 preserves the historical
           behavior for direct callers that do not provide a diesel-derived floor.
         """
+        if self.tripped:
+            self._current_output_mw = 0.0
+            self._prev_output_mw = 0.0
+            return 0.0
         if fleet_covered:
             self._sustained_catchup_seconds += dt_seconds
         else:
@@ -1471,6 +1480,10 @@ class BessModule(AssetModule):
         Design note: absorbing resets the taper timer so that a subsequent
         shortfall immediately re-engages discharge (no stale-taper false standby).
         """
+        if self.tripped:
+            self._current_output_mw = 0.0
+            self._prev_output_mw = 0.0
+            return 0.0
         if surplus_mw <= 0.0:
             return 0.0
 
@@ -1506,10 +1519,13 @@ class BessModule(AssetModule):
         return charge_mw
 
     def advance(self, sim_time: float, dt_seconds: float) -> None:
+        if self.tripped:
+            self._current_output_mw = 0.0
+            self._prev_output_mw = 0.0
         return  # state is updated via cover_shortfall() / absorb_surplus(), called by the arbitrator each tick
 
     def output_mw(self) -> float:
-        return self._current_output_mw
+        return 0.0 if self.tripped else self._current_output_mw
 
     def max_sustainable_seconds(self, discharge_mw: float, island_mode: IslandMode) -> float:
         """Used by the insufficient-reserve check (dispatch.py):
@@ -1527,6 +1543,8 @@ class BessModule(AssetModule):
         allow an anchor to appear capable when it is not — exactly the TC-61/
         TC-63 failure mode the constraint exists to prevent.
         """
+        if self.tripped:
+            return 0.0
         if discharge_mw <= 0:
             return math.inf
         effective_ceiling = self.bridging_available_mw(island_mode)

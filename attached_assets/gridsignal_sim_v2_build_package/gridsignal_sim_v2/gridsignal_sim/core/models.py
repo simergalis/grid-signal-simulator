@@ -16,7 +16,7 @@ from __future__ import annotations
 import logging as _logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional
+from typing import Literal, Optional
 
 # site_parameters: runtime catalogue loader (GS-DES-CFG-001 v1.0).
 # Imported here so SiteConfig field defaults read from gridsignal_parameters.json
@@ -1161,47 +1161,56 @@ class TickResult:
     # the array is not in a readiness countdown (or is not configured).
     fuel_cell_state: Optional[str] = None
     fuel_cell_time_to_ready_s: Optional[float] = None
-    # Addendum G-1 block-fleet telemetry.  Legacy aggregate arrays leave these
-    # at their zero/empty sentinels while retaining the fields above unchanged.
-    fuel_cell_commanded_output_mw: float = 0.0
-    fuel_cell_achieved_output_mw: float = 0.0
-    fuel_cell_cold_blocks: int = 0
-    fuel_cell_warming_blocks: int = 0
-    fuel_cell_hot_standby_blocks: int = 0
-    fuel_cell_running_blocks: int = 0
-    fuel_cell_controlled_cooling_blocks: int = 0
-    fuel_cell_available_now_mw: float = 0.0
-    fuel_cell_available_fast_mw: float = 0.0
+    # Discriminator for the additive block-addressable telemetry below.  An
+    # aggregate FuelCellModule has no observable blocks, so null is important:
+    # zero would falsely claim that a block inventory was measured and empty.
+    fuel_cell_configuration_mode: Optional[
+        Literal["aggregate", "block_addressable"]
+    ] = None
+    # Addendum G block-fleet telemetry.  It is null, never a fabricated
+    # zero/empty sentinel, for aggregate FuelCellModule configurations.
+    fuel_cell_commanded_output_mw: Optional[float] = None
+    fuel_cell_achieved_output_mw: Optional[float] = None
+    fuel_cell_cold_blocks: Optional[int] = None
+    fuel_cell_warming_blocks: Optional[int] = None
+    fuel_cell_hot_standby_blocks: Optional[int] = None
+    fuel_cell_running_blocks: Optional[int] = None
+    fuel_cell_controlled_cooling_blocks: Optional[int] = None
+    fuel_cell_available_now_mw: Optional[float] = None
+    fuel_cell_available_fast_mw: Optional[float] = None
     # G-1 audit telemetry: cold/warming blocks must never supply firm
     # contingency/reserve capacity.  This is distinct from available_now.
-    fuel_cell_cold_warming_contingency_contribution_mw: float = 0.0
-    fuel_cell_minimum_output_mw: float = 0.0
-    fuel_cell_provenance: dict[str, dict[str, str]] = field(default_factory=dict)
+    fuel_cell_cold_warming_contingency_contribution_mw: Optional[float] = None
+    fuel_cell_minimum_output_mw: Optional[float] = None
+    fuel_cell_provenance: Optional[dict[str, dict[str, str]]] = None
     # Addendum G Stage 3 Option C: reactive values are additive telemetry only;
     # the simulator has no site-wide reactive-power/voltage model.
-    fuel_cell_reactive_output_mvar: float = 0.0
-    fuel_cell_apparent_power_mva: float = 0.0
-    fuel_cell_apparent_loading_fraction: float = 0.0
-    island_reactive_balance_mvar: float = 0.0
-    fuel_cell_ride_through_trips: list[dict] = field(default_factory=list)
-    fuel_cell_ride_through_status: list[dict] = field(default_factory=list)
-    # Addendum G-2 fuel telemetry.  Aggregate legacy fuel cells deliberately
-    # retain these explicit zero values.
-    fuel_cell_total_fuel_demand_scfm: float = 0.0
-    fuel_cell_hot_standby_parasitic_scfm: float = 0.0
-    fuel_cell_cumulative_fuel_mmbtu: float = 0.0
-    fuel_cell_cumulative_co2_tonnes: float = 0.0
+    fuel_cell_reactive_output_mvar: Optional[float] = None
+    fuel_cell_apparent_power_mva: Optional[float] = None
+    fuel_cell_apparent_loading_fraction: Optional[float] = None
+    # True only when the block inverter MVA defaulted to block_rated_mw. The
+    # default is an unpublished-vendor-kVA assumption, so dependent P/Q/S and
+    # loading telemetry is explicitly low confidence.
+    fuel_cell_apparent_power_rating_assumed: Optional[bool] = None
+    island_reactive_balance_mvar: Optional[float] = None
+    fuel_cell_ride_through_trips: Optional[list[dict]] = None
+    fuel_cell_ride_through_status: Optional[list[dict]] = None
+    # Addendum G-2 fuel telemetry is block-fleet telemetry as well.
+    fuel_cell_total_fuel_demand_scfm: Optional[float] = None
+    fuel_cell_hot_standby_parasitic_scfm: Optional[float] = None
+    fuel_cell_cumulative_fuel_mmbtu: Optional[float] = None
+    fuel_cell_cumulative_co2_tonnes: Optional[float] = None
     # G-2 common-manifold telemetry. Null pressure means the optional fuel
     # system was omitted and the G-1 ideal supply contract remains in force.
     fuel_cell_manifold_pressure_psig: Optional[float] = None
     fuel_cell_furthest_inlet_pressure_psig: Optional[float] = None
     fuel_cell_minimum_manifold_pressure_psig: Optional[float] = None
     fuel_cell_minimum_inlet_pressure_psig: Optional[float] = None
-    fuel_cell_delivered_fuel_scfm: float = 0.0
-    fuel_cell_pressure_derated_block_count: int = 0
-    fuel_cell_utilisation_clamped_block_count: int = 0
-    fuel_cell_requested_commit_rate_blocks_per_s: float = 0.0
-    fuel_cell_achieved_commit_rate_blocks_per_s: float = 0.0
+    fuel_cell_delivered_fuel_scfm: Optional[float] = None
+    fuel_cell_pressure_derated_block_count: Optional[int] = None
+    fuel_cell_utilisation_clamped_block_count: Optional[int] = None
+    fuel_cell_requested_commit_rate_blocks_per_s: Optional[float] = None
+    fuel_cell_achieved_commit_rate_blocks_per_s: Optional[float] = None
     fuel_cell_fuel_binding_constraint: Optional[str] = None
     fuel_cell_pressure_derate_alert: Optional[dict] = None
     fuel_cell_pressure_trip_alert: Optional[dict] = None

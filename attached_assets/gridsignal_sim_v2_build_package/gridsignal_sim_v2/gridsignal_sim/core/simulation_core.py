@@ -400,6 +400,20 @@ class SimulationState:
                         signal.timestamp,
                     )
                     break
+            # UNIT_TRIP uses the established target contract: job_id is the
+            # physical asset_id.  Preserve SOC as observed state while removing
+            # the BESS from dispatch and all live capability calculations.
+            for _b in self.bess_units:
+                if _b.config.asset_id == _tripped_asset_id:
+                    _b.tripped = True
+                    _b._current_output_mw = 0.0
+                    _b._prev_output_mw = 0.0
+                    _matched = True
+                    _log.info(
+                        "UNIT_TRIP: BESS %r forced offline at sim_time=%.1f.",
+                        _tripped_asset_id, signal.timestamp,
+                    )
+                    break
             if isinstance(self.fuel_cell_module, BlockFuelCellFleet):
                 _tripped_blocks = self.fuel_cell_module.trip(
                     _tripped_asset_id, signal.electrical_group_id
@@ -1221,7 +1235,9 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         #   GF-BESS provides virtual inertia H_vsm; sub-step swing equation applies.
         # This enables realistic frequency dynamics during the zero-machine phase
         # (e.g., S9 zero-machine phase where GF-BESS held f at 60 Hz).
-        _gf_bess_units = [b for b in state.bess_units if b.config.grid_forming]
+        _gf_bess_units = [
+            b for b in state.bess_units if b.config.grid_forming and not b.tripped
+        ]
         if _gf_bess_units and state.site.anchor_mode == "vsm":
             # VSM: GF-BESS contributes virtual inertia on its own MVA base.
             _vsm_s = sum(b.config.rated_mw / state.site.power_factor for b in _gf_bess_units)
@@ -1267,7 +1283,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # fleet") and allows the arbitrator to dispatch BESS against real demand.
     _sync_ceiling_mw = (
         sum(t.config.rated_mw for t in state.turbines) +
-        sum(b.config.rated_mw for b in state.bess_units) +
+        sum(b.config.rated_mw for b in state.bess_units if not b.tripped) +
         state.fuel_cell_rated_mw   # FC capacity raises the ceiling so dispatch reaches it
     )
     # Derive the Δf clamp from first-stage protective settings (C-4, DR-BAL-1).
@@ -1736,7 +1752,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             max(0.0, bess.config.usable_mwh - bess.soc_mwh)
             / max(_dt_hours, 1e-9),
         )
-        for bess in state.bess_units
+        for bess in state.bess_units if not bess.tripped
     )
     # Do not mistake inverter response lag for charge saturation.  A lagged
     # BESS can temporarily absorb less than its command while retaining enough
@@ -1750,7 +1766,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     )
     _bess_rundown_enabled = not state.bess_units or _bess_charge_saturated
     _bess_full = bool(state.bess_units) and all(
-        bess.soc_mwh >= bess.config.usable_mwh - 1e-6
+        bess.tripped or bess.soc_mwh >= bess.config.usable_mwh - 1e-6
         for bess in state.bess_units
     )
     if _bess_charge_saturated:
@@ -2062,7 +2078,9 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # total rated power ceiling.  Surfaced in TickResult for dashboard / alerts.
     _binding_constraint: Optional[str] = (
         "bess_power_saturated"
-        if _bess_setpoint_mw > sum(b.config.rated_mw for b in state.bess_units)
+        if _bess_setpoint_mw > sum(
+            b.config.rated_mw for b in state.bess_units if not b.tripped
+        )
         else None
     )
 
@@ -2382,9 +2400,10 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                 soc_mwh=b.soc_mwh,
                 usable_mwh=b.config.usable_mwh,
                 p_anchor_reserve_mw=b.config.p_anchor_reserve_mw,
-                grid_forming=b.config.grid_forming,
+                grid_forming=b.config.grid_forming and not b.tripped,
             )
             for b in state.bess_units
+            if not b.tripped
         ),
         fuel_cell_snapshots=(
             (
@@ -2400,7 +2419,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                         sum(
                             block.state.value in {"cold", "warming"}
                             for block in array.blocks
-                        ) * array.config.block_rated_mw
+                        ) * array.config.effective_block_rated_mw
                         for array in state.fuel_cell_module.arrays
                     ),
                 ),
@@ -2474,6 +2493,14 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         tag == "proposed"
         for fields in _fc_provenance.values()
         for tag in fields.values()
+    ):
+        tags.add(DataQualityTag.UNCALIBRATED_SITE)
+    # The default MVA equality is only an assumption while vendor inverter kVA
+    # is unpublished. Keep site-specific provenance for the field itself, but
+    # mark every dependent tick low-confidence until an author supplies it.
+    if (
+        isinstance(state.fuel_cell_module, BlockFuelCellFleet)
+        and state.fuel_cell_module.apparent_power_rating_is_assumed
     ):
         tags.add(DataQualityTag.UNCALIBRATED_SITE)
     # Phase 11.2: workload signal quality tags (flags were computed at 4d,
@@ -2550,7 +2577,9 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         _k_turbine_rated = sum(
             t.config.rated_mw for t in state.turbines if t.is_on_bus
         )
-        _k_bess_rated    = sum(b.config.rated_mw for b in state.bess_units)
+        _k_bess_rated    = sum(
+            b.config.rated_mw for b in state.bess_units if not b.tripped
+        )
         state._kube_grid_state = KubeGridState(
             p_dispatch_required_mw=net_demand_mw,
             bess_soc_fraction=(
@@ -2736,7 +2765,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         # grid-forming inverter may establish voltage at zero net MW exchange,
         # but not after its usable energy is exhausted.
         _bess_forming_live = any(
-            unit.config.grid_forming and unit.soc_mwh > 1e-9
+            unit.config.grid_forming and not unit.tripped and unit.soc_mwh > 1e-9
             for unit in state.bess_units
         )
         _fc_forming_live = (
@@ -2829,7 +2858,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                 # A frequency/ROCOF trip can remove the final live grid-former.
                 if not any(a.config.grid_forming and a.output_mw() > 1e-9
                            for a in state.fuel_cell_module.arrays) and not any(
-                    unit.config.grid_forming and unit.soc_mwh > 1e-9
+                    unit.config.grid_forming and not unit.tripped and unit.soc_mwh > 1e-9
                     for unit in state.bess_units
                 ):
                     _island_collapsed_this_tick = True
@@ -3124,62 +3153,98 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         fuel_cell_output_mw=fuel_cell_output_mw,
         fuel_cell_state=fuel_cell_state,
         fuel_cell_time_to_ready_s=fuel_cell_time_to_ready_s,
-        fuel_cell_commanded_output_mw=_fc_commanded_mw,
-        fuel_cell_achieved_output_mw=fuel_cell_output_mw,
-        fuel_cell_cold_blocks=int(_fc_summary.get("cold", 0)),
-        fuel_cell_warming_blocks=int(_fc_summary.get("warming", 0)),
-        fuel_cell_hot_standby_blocks=int(_fc_summary.get("hot_standby", 0)),
-        fuel_cell_running_blocks=int(_fc_summary.get("running", 0)),
-        fuel_cell_controlled_cooling_blocks=int(
-            _fc_summary.get("controlled_cooling", 0)
+        fuel_cell_configuration_mode=(
+            "block_addressable"
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet)
+            else ("aggregate" if state.fuel_cell_module is not None else None)
         ),
-        fuel_cell_available_now_mw=float(_fc_summary.get("available_now_mw", 0.0)),
-        fuel_cell_available_fast_mw=float(_fc_summary.get("available_fast_mw", 0.0)),
+        fuel_cell_commanded_output_mw=(
+            _fc_commanded_mw if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
+        ),
+        fuel_cell_achieved_output_mw=(
+            fuel_cell_output_mw if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
+        ),
+        fuel_cell_cold_blocks=(
+            int(_fc_summary["cold"]) if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
+        ),
+        fuel_cell_warming_blocks=(
+            int(_fc_summary["warming"]) if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
+        ),
+        fuel_cell_hot_standby_blocks=(
+            int(_fc_summary["hot_standby"]) if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
+        ),
+        fuel_cell_running_blocks=(
+            int(_fc_summary["running"]) if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
+        ),
+        fuel_cell_controlled_cooling_blocks=int(
+            _fc_summary["controlled_cooling"]
+        ) if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None,
+        fuel_cell_available_now_mw=(
+            float(_fc_summary["available_now_mw"])
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
+        ),
+        fuel_cell_available_fast_mw=(
+            float(_fc_summary["available_fast_mw"])
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
+        ),
         fuel_cell_cold_warming_contingency_contribution_mw=(
             _contingency_coverage.fuel_cell_cold_warming_contribution_mw
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
         ),
-        fuel_cell_minimum_output_mw=float(_fc_summary.get("minimum_output_mw", 0.0)),
-        fuel_cell_provenance=_fc_provenance,
+        fuel_cell_minimum_output_mw=(
+            float(_fc_summary["minimum_output_mw"])
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
+        ),
+        fuel_cell_provenance=(
+            _fc_provenance if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
+        ),
         fuel_cell_reactive_output_mvar=(
             state.fuel_cell_module.reactive_output_mvar
-            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else 0.0
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
         ),
         fuel_cell_apparent_power_mva=(
             state.fuel_cell_module.apparent_power_mva
-            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else fuel_cell_output_mw
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
         ),
         fuel_cell_apparent_loading_fraction=(
             state.fuel_cell_module.apparent_power_mva
             / state.fuel_cell_module.apparent_power_capacity_mva
             if isinstance(state.fuel_cell_module, BlockFuelCellFleet)
-            and state.fuel_cell_module.apparent_power_capacity_mva > 0.0 else 0.0
+            and state.fuel_cell_module.apparent_power_capacity_mva > 0.0 else None
+        ),
+        fuel_cell_apparent_power_rating_assumed=(
+            state.fuel_cell_module.apparent_power_rating_is_assumed
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
         ),
         # No other island reactive model exists; this is the FC contribution,
         # not a claim of a site-wide VAR solution.
         island_reactive_balance_mvar=(
             state.fuel_cell_module.reactive_output_mvar
-            if _islanded and isinstance(state.fuel_cell_module, BlockFuelCellFleet) else 0.0
+            if _islanded and isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
         ),
-        fuel_cell_ride_through_trips=_fc_ride_through_trips,
+        fuel_cell_ride_through_trips=(
+            _fc_ride_through_trips
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
+        ),
         fuel_cell_ride_through_status=(
             state.fuel_cell_module.ride_through_telemetry
-            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else []
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
         ),
         fuel_cell_total_fuel_demand_scfm=(
             state.fuel_cell_module.total_fuel_demand_scfm
-            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else 0.0
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
         ),
         fuel_cell_hot_standby_parasitic_scfm=(
             state.fuel_cell_module.hot_standby_parasitic_scfm
-            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else 0.0
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
         ),
         fuel_cell_cumulative_fuel_mmbtu=(
             state.fuel_cell_module.cumulative_fuel_mmbtu
-            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else 0.0
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
         ),
         fuel_cell_cumulative_co2_tonnes=(
             state.fuel_cell_module.cumulative_co2_tonnes
-            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else 0.0
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
         ),
         fuel_cell_manifold_pressure_psig=(
             state.fuel_cell_module.manifold_pressure_psig
@@ -3199,23 +3264,23 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         ),
         fuel_cell_delivered_fuel_scfm=(
             state.fuel_cell_module.fuel_delivered_scfm
-            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else 0.0
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
         ),
         fuel_cell_pressure_derated_block_count=(
             state.fuel_cell_module.pressure_derated_block_count
-            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else 0
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
         ),
         fuel_cell_utilisation_clamped_block_count=(
             state.fuel_cell_module.utilisation_clamped_block_count
-            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else 0
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
         ),
         fuel_cell_requested_commit_rate_blocks_per_s=(
             state.fuel_cell_module.requested_commit_rate_blocks_per_s
-            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else 0.0
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
         ),
         fuel_cell_achieved_commit_rate_blocks_per_s=(
             state.fuel_cell_module.achieved_commit_rate_blocks_per_s
-            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else 0.0
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
         ),
         fuel_cell_fuel_binding_constraint=(
             state.fuel_cell_module.fuel_binding_constraint
@@ -3237,8 +3302,12 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             state.fuel_cell_module.supply_limit_alert
             if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
         ),
-        fuel_cell_declining_reserve_alert=_fc_declining_alert,
-        fuel_cell_persistent_reserve_alert=_fc_persistent_alert,
+        fuel_cell_declining_reserve_alert=(
+            _fc_declining_alert if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
+        ),
+        fuel_cell_persistent_reserve_alert=(
+            _fc_persistent_alert if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
+        ),
         diesel_enabled=diesel_enabled,
         diesel_output_mw=diesel_output_mw,
         diesel_n_synced=_diesel_snapshot.synchronised_count,
