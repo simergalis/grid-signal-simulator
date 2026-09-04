@@ -38,6 +38,46 @@ DEFAULT_BLOCK_FUEL_CELL_HOT_START_S = float(
 )
 
 
+@dataclass
+class FuelSystemConfig:
+    """Optional, deliberately simple common-manifold fuel model (G-2).
+
+    Omission is significant: callers which do not author this object retain
+    the G-1 ideal, infinite-volume, instantaneous-regulator behaviour.
+    """
+    supply_pressure_psig: float = 15.0
+    minimum_block_inlet_pressure_psig: float = 12.0
+    block_trip_pressure_psig: float = 10.0
+    manifold_volume_ft3: float = 767.0
+    regulator_time_constant_s: float = 2.0
+    regulator_droop_fraction: float = 0.05
+    distribution_loss_psi: float = 0.5
+    maximum_supply_flow_scfm: float | None = None
+    delivered_to_cell_time_constant_s: float = 3.0
+    max_fuel_utilisation: float = 0.85
+    provenance: dict[str, str] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if (self.supply_pressure_psig <= self.minimum_block_inlet_pressure_psig
+                or self.minimum_block_inlet_pressure_psig <= self.block_trip_pressure_psig):
+            raise ValueError("fuel pressure bands must satisfy supply > minimum > trip")
+        if self.manifold_volume_ft3 <= 0 or self.regulator_time_constant_s <= 0:
+            raise ValueError("manifold volume and regulator time constant must be positive")
+        if self.delivered_to_cell_time_constant_s <= 0:
+            raise ValueError("delivered-to-cell time constant must be positive")
+        if not 0 < self.max_fuel_utilisation <= 1 or not 0 <= self.regulator_droop_fraction < 1:
+            raise ValueError("fuel utilisation/droop fractions must be in range")
+        if self.maximum_supply_flow_scfm is not None and self.maximum_supply_flow_scfm <= 0:
+            raise ValueError("maximum_supply_flow_scfm must be positive when supplied")
+        self.provenance = {**self.provenance,
+            "supply_pressure_psig": "vendor_published",
+            "minimum_block_inlet_pressure_psig": "vendor_published",
+            "block_trip_pressure_psig": "proposed", "manifold_volume_ft3": "proposed",
+            "regulator_time_constant_s": "proposed", "regulator_droop_fraction": "proposed",
+            "distribution_loss_psi": "proposed", "maximum_supply_flow_scfm": "site_specific",
+            "delivered_to_cell_time_constant_s": "proposed", "max_fuel_utilisation": "proposed"}
+
+
 class FuelCellState(str, Enum):
     """Thermal/operational states for a fuel-cell array."""
 
@@ -294,7 +334,10 @@ class BlockFuelCellConfig:
     block_count: int
     initial_running_blocks: int = 0
     initial_hot_standby_blocks: int | None = None
-    commit_rate_blocks_per_s: float = 1.0
+    # requested_* is the G-2 public contract.  The old spelling remains an
+    # input alias so saved G-1 scenarios and direct Python construction work.
+    requested_commit_rate_blocks_per_s: float | None = None
+    commit_rate_blocks_per_s: float | None = None
     decommit_rate_blocks_per_s: float = 1.0
     cold_start_s: float = 8.0 * 60.0 * 60.0
     warm_start_s: float = 4.0 * 60.0 * 60.0
@@ -320,6 +363,7 @@ class BlockFuelCellConfig:
     gas_heating_value_btu_per_scf: float = 1030.0
     hot_standby_fuel_fraction: float = 0.10
     gas_price_usd_per_mmbtu: float | None = 5.0
+    fuel_system: FuelSystemConfig | None = None
 
     def __post_init__(self) -> None:
         if not self.asset_id or self.block_rated_mw <= 0 or self.block_count < 1:
@@ -332,8 +376,13 @@ class BlockFuelCellConfig:
             raise ValueError("initial block states cannot exceed block_count")
         if self.hot_standby_floor_blocks > self.block_count:
             raise ValueError("hot_standby_floor_blocks cannot exceed block_count")
-        if self.commit_rate_blocks_per_s <= 0 or self.decommit_rate_blocks_per_s <= 0:
+        if self.requested_commit_rate_blocks_per_s is None:
+            self.requested_commit_rate_blocks_per_s = (
+                1.0 if self.commit_rate_blocks_per_s is None else self.commit_rate_blocks_per_s)
+        if self.requested_commit_rate_blocks_per_s <= 0 or self.decommit_rate_blocks_per_s <= 0:
             raise ValueError("block commit/decommit rates must be positive")
+        # Canonicalize the legacy member too; code outside this module used it.
+        self.commit_rate_blocks_per_s = self.requested_commit_rate_blocks_per_s
         if min(self.cold_start_s, self.warm_start_s, self.hot_start_s) <= 0:
             raise ValueError("fuel-cell start durations must be positive")
         if self.controlled_cooling_s is not None and self.controlled_cooling_s <= 0:
@@ -376,6 +425,8 @@ class BlockFuelCellConfig:
             "hot_standby_fuel_fraction": "proposed",
             "gas_price_usd_per_mmbtu": "site_specific",
         }
+        if self.fuel_system is not None:
+            self.provenance.update(self.fuel_system.provenance)
 
     @property
     def rated_mw(self) -> float:
@@ -428,6 +479,20 @@ class BlockFuelCellArray(AssetModule):
     cumulative_co2_tonnes: float = 0.0
     total_fuel_demand_scfm: float = 0.0
     hot_standby_parasitic_scfm: float = 0.0
+    manifold_pressure_psig: float | None = None
+    furthest_inlet_pressure_psig: float | None = None
+    minimum_manifold_pressure_psig: float | None = None
+    minimum_inlet_pressure_psig: float | None = None
+    fuel_delivered_scfm: float = 0.0
+    pressure_derated_block_count: int = 0
+    utilisation_clamped_block_count: int = 0
+    achieved_commit_rate_blocks_per_s: float = 0.0
+    fuel_binding_constraint: str = "request"
+    pressure_derate_alert: dict | None = None
+    pressure_trip_alert: dict | None = None
+    utilisation_clamp_alert: dict | None = None
+    supply_limit_alert: dict | None = None
+    _regulator_flow_scfm: float = 0.0
 
     def __post_init__(self) -> None:
         if not self.blocks:
@@ -451,6 +516,20 @@ class BlockFuelCellArray(AssetModule):
                 )
                 for i in range(self.config.block_count)
             ]
+        if self.config.fuel_system is not None and self.manifold_pressure_psig is None:
+            self.manifold_pressure_psig = self.config.fuel_system.supply_pressure_psig
+            self.furthest_inlet_pressure_psig = (
+                self.manifold_pressure_psig - self.config.fuel_system.distribution_loss_psi)
+            self.minimum_manifold_pressure_psig = self.manifold_pressure_psig
+            self.minimum_inlet_pressure_psig = self.furthest_inlet_pressure_psig
+            # Existing running plant is already in gas-flow equilibrium.  This
+            # prevents an authored initial-running state being spuriously
+            # starved solely because fuel-system telemetry was enabled.
+            rate = self.effective_heat_rate_btu_per_kwh / self.config.gas_heating_value_btu_per_scf / 60.0
+            initial = self.output_mw() * 1000.0 * rate
+            initial += sum(b.state == FuelCellState.HOT_STANDBY for b in self.blocks) * self.config.block_rated_mw * 1000.0 * rate * self.config.hot_standby_fuel_fraction
+            self._regulator_flow_scfm = initial
+            self.fuel_delivered_scfm = initial
 
     @property
     def asset_id(self) -> str:
@@ -692,6 +771,7 @@ class BlockFuelCellArray(AssetModule):
         if target is None:
             target = self.config.rated_mw
         wanted = self._requested_running_blocks(target)
+        committed_before = self._committed_blocks
         # Commitment bandwidth is an interval-local physical rate, not stored
         # dispatch credit.  In particular, a settled baseline must not bank
         # unused starts and spend them at the next peak.  Dwell blocks count as
@@ -759,6 +839,145 @@ class BlockFuelCellArray(AssetModule):
         )
         self.cumulative_fuel_mmbtu += used_mmbtu
         self.cumulative_co2_tonnes += used_mmbtu * 53.06 / 1000.0
+        self.achieved_commit_rate_blocks_per_s = (
+            max(0, self._committed_blocks - committed_before) / dt_seconds
+            if dt_seconds else 0.0
+        )
+        if self.config.fuel_system is not None:
+            self._apply_fuel_system(target, dt_seconds, self.total_fuel_demand_scfm)
+
+    def _apply_fuel_system(self, demand_mw: float, dt_seconds: float,
+                           pre_hydraulic_total_scfm: float) -> None:
+        """Advance the coupled regulator/manifold/cell loop in small substeps.
+
+        Gas inventory is ideal-gas standard cubic feet:
+        C = V/14.7 [scf/psi], so dP/dt = (q_reg-q_cell)/C.  The regulator and
+        cell delivery are first-order lags.  No fitted pressure constants are
+        used; the only conversion is atmospheric pressure at standard volume.
+        """
+        cfg = self.config.fuel_system
+        assert cfg is not None
+        rate = self.effective_heat_rate_btu_per_kwh / cfg_or_hv(self.config) / 60.0
+        demand_scfm = max(0.0, demand_mw) * 1000.0 * rate
+        standby = self.hot_standby_parasitic_scfm
+        command = demand_scfm + standby
+        pressure = float(self.manifold_pressure_psig or cfg.supply_pressure_psig)
+        # At least ten hydraulic evaluations per report interval, capped at
+        # 100 ms to resolve the 2 s regulator without report-tick dependence.
+        n = max(1, math.ceil(dt_seconds / 0.1))
+        h = dt_seconds / n
+        self.pressure_derate_alert = self.pressure_trip_alert = None
+        self.utilisation_clamp_alert = self.supply_limit_alert = None
+        self.minimum_manifold_pressure_psig = pressure
+        self.minimum_inlet_pressure_psig = pressure - cfg.distribution_loss_psi
+        tripped = False
+        for _ in range(n):
+            inlet = pressure - cfg.distribution_loss_psi
+            # A droop regulator requests more flow as outlet pressure falls.
+            droop_span = max(1e-9, cfg.supply_pressure_psig * cfg.regulator_droop_fraction)
+            requested_supply = command + command * max(0.0, cfg.supply_pressure_psig - pressure) / droop_span
+            if cfg.maximum_supply_flow_scfm is not None:
+                if requested_supply > cfg.maximum_supply_flow_scfm:
+                    self.supply_limit_alert = {
+                        "asset_id": self.asset_id, "maximum_supply_flow_scfm": cfg.maximum_supply_flow_scfm,
+                        "requested_supply_flow_scfm": requested_supply}
+                requested_supply = min(requested_supply, cfg.maximum_supply_flow_scfm)
+            self._regulator_flow_scfm += (requested_supply - self._regulator_flow_scfm) * min(1.0, h / cfg.regulator_time_constant_s)
+            # The cell's commanded draw has its own transport/chemical lag.
+            # It is intentionally not made to follow regulator flow: the
+            # resulting inventory difference is precisely the manifold
+            # pressure transient the model exists to resolve.
+            self.fuel_delivered_scfm += (command - self.fuel_delivered_scfm) * min(1.0, h / cfg.delivered_to_cell_time_constant_s)
+            # Manifold outflow is the commanded metering-valve draw.  Delivered
+            # fuel is separately lagged for electrochemical power support; using
+            # that delayed signal here would invent gas inventory during a load
+            # step and erase the regulator transient.
+            pressure += ((self._regulator_flow_scfm - command) / 60.0
+                         * h / (cfg.manifold_volume_ft3 / 14.7))
+            pressure = min(cfg.supply_pressure_psig, max(0.0, pressure))
+            inlet_after = pressure - cfg.distribution_loss_psi
+            self.minimum_manifold_pressure_psig = min(self.minimum_manifold_pressure_psig, pressure)
+            self.minimum_inlet_pressure_psig = min(self.minimum_inlet_pressure_psig, inlet_after)
+            # Latch the band event at the substep where it occurred.  It must
+            # survive a later pressure recovery in the same report interval.
+            if inlet_after < cfg.block_trip_pressure_psig and not tripped:
+                tripped = True
+                self.pressure_trip_alert = {
+                    "common_mode": True, "asset_id": self.asset_id,
+                    "affected_block_count": len(self.blocks),
+                    "minimum_inlet_pressure_psig": inlet_after,
+                    "minimum_block_inlet_pressure_psig": cfg.minimum_block_inlet_pressure_psig,
+                    "block_trip_pressure_psig": cfg.block_trip_pressure_psig}
+            elif inlet_after < cfg.minimum_block_inlet_pressure_psig and self.pressure_derate_alert is None:
+                self.pressure_derate_alert = {
+                    "common_mode": True, "asset_id": self.asset_id,
+                    "affected_block_count": len(self.blocks),
+                    "minimum_inlet_pressure_psig": inlet_after,
+                    "minimum_block_inlet_pressure_psig": cfg.minimum_block_inlet_pressure_psig,
+                    "block_trip_pressure_psig": cfg.block_trip_pressure_psig}
+        inlet = pressure - cfg.distribution_loss_psi
+        self.manifold_pressure_psig, self.furthest_inlet_pressure_psig = pressure, inlet
+        for alert in (self.pressure_derate_alert, self.pressure_trip_alert):
+            if alert is not None:
+                alert["minimum_inlet_pressure_psig"] = self.minimum_inlet_pressure_psig
+        running = [b for b in self.blocks if b.state == FuelCellState.RUNNING]
+        pressure_factor = 1.0
+        if tripped:
+            # This is one manifold common-mode event, not a collection of
+            # independent component failures; do not set block.tripped.
+            for block in self.blocks:
+                block.state, block.timer_s, block.dwell_s, block.output_mw = (
+                    FuelCellState.COLD, 0.0, 0.0, 0.0)
+                block.thermal_readiness = "cold"
+            running = []
+            pressure_factor = 0.0
+        elif self.pressure_derate_alert is not None:
+            pressure_factor = ((self.minimum_inlet_pressure_psig - cfg.block_trip_pressure_psig) /
+                               (cfg.minimum_block_inlet_pressure_psig - cfg.block_trip_pressure_psig))
+        self.pressure_derated_block_count = len(running) if pressure_factor < 1 else 0
+        # Heat-rate demand is fuel input at the configured operating point.
+        # Utilisation = demanded_fuel / delivered_fuel; therefore enforcing
+        # utilisation <= Umax gives Pmax=q_delivered/(scfm_per_mw * Umax).
+        supported_mw = self.fuel_delivered_scfm / (1000.0 * rate * cfg.max_fuel_utilisation)
+        desired_mw = min(demand_mw, self.config.rated_mw) * pressure_factor
+        actual_mw = min(desired_mw, supported_mw)
+        self.utilisation_clamp_alert = (
+            {"asset_id": self.asset_id, "demand_mw": desired_mw,
+             "supported_mw": supported_mw, "max_fuel_utilisation": cfg.max_fuel_utilisation}
+            if actual_mw + 1e-9 < desired_mw else None)
+        self.utilisation_clamped_block_count = len(running) if self.utilisation_clamp_alert is not None else 0
+        if not running:
+            actual_mw = 0.0
+        elif self.config.dispatch_mechanism == "discrete_blocks":
+            # A binary block cannot claim a fractional electrical output.
+            actual_mw = min(actual_mw, len(running) * self.config.block_rated_mw)
+        per_block = actual_mw / len(running) if running else 0.0
+        for block in running:
+            block.output_mw = min(self.config.block_rated_mw, per_block)
+        self.total_fuel_demand_scfm = command
+        used = self.fuel_delivered_scfm * dt_seconds / 60.0 * cfg_or_hv(self.config) / 1_000_000.0
+        # replace the optimistic pre-hydraulic accounting added by G-1 above.
+        self.cumulative_fuel_mmbtu -= (
+            pre_hydraulic_total_scfm * dt_seconds / 60.0 * cfg_or_hv(self.config) / 1_000_000.0)
+        self.cumulative_fuel_mmbtu += used
+        self.cumulative_co2_tonnes -= (
+            pre_hydraulic_total_scfm * dt_seconds / 60.0 * cfg_or_hv(self.config) / 1_000_000.0) * 53.06 / 1000.0
+        self.cumulative_co2_tonnes += used * 53.06 / 1000.0
+        if self.pressure_trip_alert is not None:
+            self.fuel_binding_constraint = "fuel_pressure"
+        elif self.pressure_derate_alert is not None:
+            self.fuel_binding_constraint = "fuel_pressure"
+        elif self.utilisation_clamp_alert is not None:
+            self.fuel_binding_constraint = "utilisation"
+        elif self.achieved_commit_rate_blocks_per_s + 1e-9 < float(self.config.requested_commit_rate_blocks_per_s):
+            self.fuel_binding_constraint = "thermal"
+        else:
+            self.fuel_binding_constraint = "request"
+
+
+def cfg_or_hv(config: BlockFuelCellConfig) -> float:
+    """Named helper keeps fuel equations explicit at their heating-value basis."""
+    return config.gas_heating_value_btu_per_scf
 
 
 @dataclass
@@ -799,6 +1018,68 @@ class BlockFuelCellFleet:
     @property
     def hot_standby_parasitic_scfm(self) -> float:
         return sum(a.hot_standby_parasitic_scfm for a in self.arrays)
+
+    @property
+    def manifold_pressure_psig(self) -> float | None:
+        values = [a.manifold_pressure_psig for a in self.arrays if a.manifold_pressure_psig is not None]
+        return min(values) if values else None
+
+    @property
+    def minimum_manifold_pressure_psig(self) -> float | None:
+        values = [a.minimum_manifold_pressure_psig for a in self.arrays if a.minimum_manifold_pressure_psig is not None]
+        return min(values) if values else None
+
+    @property
+    def minimum_inlet_pressure_psig(self) -> float | None:
+        values = [a.minimum_inlet_pressure_psig for a in self.arrays if a.minimum_inlet_pressure_psig is not None]
+        return min(values) if values else None
+
+    @property
+    def furthest_inlet_pressure_psig(self) -> float | None:
+        values = [a.furthest_inlet_pressure_psig for a in self.arrays if a.furthest_inlet_pressure_psig is not None]
+        return min(values) if values else None
+
+    @property
+    def fuel_delivered_scfm(self) -> float:
+        return sum(a.fuel_delivered_scfm for a in self.arrays)
+
+    @property
+    def pressure_derated_block_count(self) -> int:
+        return sum(a.pressure_derated_block_count for a in self.arrays)
+
+    @property
+    def utilisation_clamped_block_count(self) -> int:
+        return sum(a.utilisation_clamped_block_count for a in self.arrays)
+
+    @property
+    def requested_commit_rate_blocks_per_s(self) -> float:
+        return sum(float(a.config.requested_commit_rate_blocks_per_s) for a in self.arrays)
+
+    @property
+    def achieved_commit_rate_blocks_per_s(self) -> float:
+        return sum(a.achieved_commit_rate_blocks_per_s for a in self.arrays)
+
+    @property
+    def fuel_binding_constraint(self) -> str:
+        order = ("fuel_pressure", "utilisation", "thermal", "request")
+        values = {a.fuel_binding_constraint for a in self.arrays}
+        return next(item for item in order if item in values)
+
+    @property
+    def pressure_derate_alert(self) -> dict | None:
+        return next((a.pressure_derate_alert for a in self.arrays if a.pressure_derate_alert is not None), None)
+
+    @property
+    def pressure_trip_alert(self) -> dict | None:
+        return next((a.pressure_trip_alert for a in self.arrays if a.pressure_trip_alert is not None), None)
+
+    @property
+    def utilisation_clamp_alert(self) -> dict | None:
+        return next((a.utilisation_clamp_alert for a in self.arrays if a.utilisation_clamp_alert is not None), None)
+
+    @property
+    def supply_limit_alert(self) -> dict | None:
+        return next((a.supply_limit_alert for a in self.arrays if a.supply_limit_alert is not None), None)
 
     @property
     def cumulative_fuel_mmbtu(self) -> float:

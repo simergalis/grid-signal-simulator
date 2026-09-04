@@ -3091,6 +3091,62 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             state.fuel_cell_module.cumulative_co2_tonnes
             if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else 0.0
         ),
+        fuel_cell_manifold_pressure_psig=(
+            state.fuel_cell_module.manifold_pressure_psig
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
+        ),
+        fuel_cell_furthest_inlet_pressure_psig=(
+            state.fuel_cell_module.furthest_inlet_pressure_psig
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
+        ),
+        fuel_cell_minimum_manifold_pressure_psig=(
+            state.fuel_cell_module.minimum_manifold_pressure_psig
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
+        ),
+        fuel_cell_minimum_inlet_pressure_psig=(
+            state.fuel_cell_module.minimum_inlet_pressure_psig
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
+        ),
+        fuel_cell_delivered_fuel_scfm=(
+            state.fuel_cell_module.fuel_delivered_scfm
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else 0.0
+        ),
+        fuel_cell_pressure_derated_block_count=(
+            state.fuel_cell_module.pressure_derated_block_count
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else 0
+        ),
+        fuel_cell_utilisation_clamped_block_count=(
+            state.fuel_cell_module.utilisation_clamped_block_count
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else 0
+        ),
+        fuel_cell_requested_commit_rate_blocks_per_s=(
+            state.fuel_cell_module.requested_commit_rate_blocks_per_s
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else 0.0
+        ),
+        fuel_cell_achieved_commit_rate_blocks_per_s=(
+            state.fuel_cell_module.achieved_commit_rate_blocks_per_s
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else 0.0
+        ),
+        fuel_cell_fuel_binding_constraint=(
+            state.fuel_cell_module.fuel_binding_constraint
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
+        ),
+        fuel_cell_pressure_derate_alert=(
+            state.fuel_cell_module.pressure_derate_alert
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
+        ),
+        fuel_cell_pressure_trip_alert=(
+            state.fuel_cell_module.pressure_trip_alert
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
+        ),
+        fuel_cell_utilisation_clamp_alert=(
+            state.fuel_cell_module.utilisation_clamp_alert
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
+        ),
+        fuel_cell_supply_limit_alert=(
+            state.fuel_cell_module.supply_limit_alert
+            if isinstance(state.fuel_cell_module, BlockFuelCellFleet) else None
+        ),
         fuel_cell_declining_reserve_alert=_fc_declining_alert,
         fuel_cell_persistent_reserve_alert=_fc_persistent_alert,
         diesel_enabled=diesel_enabled,

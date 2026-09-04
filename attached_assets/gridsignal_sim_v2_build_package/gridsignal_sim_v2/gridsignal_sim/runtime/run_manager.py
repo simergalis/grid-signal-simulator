@@ -409,6 +409,28 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         "fuel_cell_hot_standby_parasitic_scfm": round(tick.fuel_cell_hot_standby_parasitic_scfm, 6),
         "fuel_cell_cumulative_fuel_mmbtu": round(tick.fuel_cell_cumulative_fuel_mmbtu, 6),
         "fuel_cell_cumulative_co2_tonnes": round(tick.fuel_cell_cumulative_co2_tonnes, 6),
+        "fuel_cell_manifold_pressure_psig": (
+            round(tick.fuel_cell_manifold_pressure_psig, 4)
+            if tick.fuel_cell_manifold_pressure_psig is not None else None),
+        "fuel_cell_furthest_inlet_pressure_psig": (
+            round(tick.fuel_cell_furthest_inlet_pressure_psig, 4)
+            if tick.fuel_cell_furthest_inlet_pressure_psig is not None else None),
+        "fuel_cell_minimum_manifold_pressure_psig": (
+            round(tick.fuel_cell_minimum_manifold_pressure_psig, 4)
+            if tick.fuel_cell_minimum_manifold_pressure_psig is not None else None),
+        "fuel_cell_minimum_inlet_pressure_psig": (
+            round(tick.fuel_cell_minimum_inlet_pressure_psig, 4)
+            if tick.fuel_cell_minimum_inlet_pressure_psig is not None else None),
+        "fuel_cell_delivered_fuel_scfm": round(tick.fuel_cell_delivered_fuel_scfm, 6),
+        "fuel_cell_pressure_derated_block_count": tick.fuel_cell_pressure_derated_block_count,
+        "fuel_cell_utilisation_clamped_block_count": tick.fuel_cell_utilisation_clamped_block_count,
+        "fuel_cell_requested_commit_rate_blocks_per_s": round(tick.fuel_cell_requested_commit_rate_blocks_per_s, 6),
+        "fuel_cell_achieved_commit_rate_blocks_per_s": round(tick.fuel_cell_achieved_commit_rate_blocks_per_s, 6),
+        "fuel_cell_fuel_binding_constraint": tick.fuel_cell_fuel_binding_constraint,
+        "fuel_cell_pressure_derate_alert": tick.fuel_cell_pressure_derate_alert,
+        "fuel_cell_pressure_trip_alert": tick.fuel_cell_pressure_trip_alert,
+        "fuel_cell_utilisation_clamp_alert": tick.fuel_cell_utilisation_clamp_alert,
+        "fuel_cell_supply_limit_alert": tick.fuel_cell_supply_limit_alert,
         "fuel_cell_declining_reserve_alert": tick.fuel_cell_declining_reserve_alert,
         "fuel_cell_persistent_reserve_alert": tick.fuel_cell_persistent_reserve_alert,
         "diesel_enabled": tick.diesel_enabled,

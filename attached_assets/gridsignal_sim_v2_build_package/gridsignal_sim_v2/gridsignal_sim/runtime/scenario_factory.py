@@ -31,6 +31,7 @@ from core.fuel_cell_module import (
     BlockFuelCellArray,
     BlockFuelCellConfig,
     BlockFuelCellFleet,
+    FuelSystemConfig,
     FuelCellConfig,
     FuelCellModule,
     FuelCellState,
@@ -911,7 +912,9 @@ def build_run_context_from_spec(
                     block_count=int(unit["block_count"]),
                     initial_running_blocks=int(unit.get("initial_running_blocks", 0)),
                     initial_hot_standby_blocks=int(unit.get("initial_hot_standby_blocks", 0)),
-                    commit_rate_blocks_per_s=float(unit.get("commit_rate_blocks_per_s", 1.0)),
+                    requested_commit_rate_blocks_per_s=float(unit.get(
+                        "requested_commit_rate_blocks_per_s",
+                        unit.get("commit_rate_blocks_per_s", 1.0))),
                     decommit_rate_blocks_per_s=float(unit.get("decommit_rate_blocks_per_s", 1.0)),
                     cold_start_s=float(unit.get("cold_start_s", 8.0 * 60.0 * 60.0)),
                     warm_start_s=float(unit.get("warm_start_s", 4.0 * 60.0 * 60.0)),
@@ -939,6 +942,10 @@ def build_run_context_from_spec(
                     gas_heating_value_btu_per_scf=float(unit.get("gas_heating_value_btu_per_scf", 1030.0)),
                     hot_standby_fuel_fraction=float(unit.get("hot_standby_fuel_fraction", 0.10)),
                     gas_price_usd_per_mmbtu=unit.get("gas_price_usd_per_mmbtu", 5.0),
+                    fuel_system=(
+                        FuelSystemConfig(**unit["fuel_system"])
+                        if unit.get("fuel_system") is not None else None
+                    ),
                 )
             )
             for unit in _fc_units_raw

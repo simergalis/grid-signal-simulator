@@ -322,6 +322,26 @@ class FuelCellElectricalGroupSpec(BaseModel):
         return self
 
 
+class FuelSystemSpec(BaseModel):
+    """Optional G-2 common-manifold fuel system; absent keeps ideal G-1 fuel."""
+    supply_pressure_psig: float = Field(default=15.0, gt=0)
+    minimum_block_inlet_pressure_psig: float = Field(default=12.0, gt=0)
+    block_trip_pressure_psig: float = Field(default=10.0, gt=0)
+    manifold_volume_ft3: float = Field(default=767.0, gt=0)
+    regulator_time_constant_s: float = Field(default=2.0, gt=0)
+    regulator_droop_fraction: float = Field(default=0.05, ge=0, lt=1)
+    distribution_loss_psi: float = Field(default=0.5, ge=0)
+    maximum_supply_flow_scfm: Optional[float] = Field(default=None, gt=0)
+    delivered_to_cell_time_constant_s: float = Field(default=3.0, gt=0)
+    max_fuel_utilisation: float = Field(default=0.85, gt=0, le=1)
+
+    @model_validator(mode="after")
+    def _bands(self) -> "FuelSystemSpec":
+        if not self.supply_pressure_psig > self.minimum_block_inlet_pressure_psig > self.block_trip_pressure_psig:
+            raise ValueError("fuel pressure bands must satisfy supply > minimum > trip")
+        return self
+
+
 class FuelCellUnitSpec(BaseModel):
     """A block-addressable fuel-cell unit (Addendum G-1).
 
@@ -334,7 +354,9 @@ class FuelCellUnitSpec(BaseModel):
     block_count: int = Field(ge=1)
     initial_running_blocks: int = Field(default=0, ge=0)
     initial_hot_standby_blocks: Optional[int] = Field(default=None, ge=0)
-    commit_rate_blocks_per_s: float = Field(default=1.0, gt=0.0)
+    requested_commit_rate_blocks_per_s: float = Field(default=1.0, gt=0.0)
+    # Legacy G-1 spelling accepted only as a backwards-compatible alias.
+    commit_rate_blocks_per_s: Optional[float] = Field(default=None, gt=0.0)
     decommit_rate_blocks_per_s: float = Field(default=1.0, gt=0.0)
     cold_start_s: float = Field(default=8.0 * 60.0 * 60.0, gt=0.0)
     warm_start_s: float = Field(default=4.0 * 60.0 * 60.0, gt=0.0)
@@ -353,6 +375,7 @@ class FuelCellUnitSpec(BaseModel):
     gas_heating_value_btu_per_scf: float = Field(default=1030.0, gt=0)
     hot_standby_fuel_fraction: float = Field(default=0.10, ge=0)
     gas_price_usd_per_mmbtu: Optional[float] = Field(default=5.0, ge=0)
+    fuel_system: Optional[FuelSystemSpec] = None
     provenance: Dict[
         str, Literal["vendor_published", "derived", "proposed", "site_specific"]
     ] = Field(default_factory=dict)
@@ -365,6 +388,9 @@ class FuelCellUnitSpec(BaseModel):
                 "fuel_cell_units derive rated_mw from block_rated_mw * block_count; "
                 "do not provide rated_mw"
             )
+        if isinstance(value, dict) and "commit_rate_blocks_per_s" in value and "requested_commit_rate_blocks_per_s" not in value:
+            value = dict(value)
+            value["requested_commit_rate_blocks_per_s"] = value["commit_rate_blocks_per_s"]
         return value
 
     @model_validator(mode="after")

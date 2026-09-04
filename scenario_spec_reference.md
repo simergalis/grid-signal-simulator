@@ -262,7 +262,7 @@ must satisfy `hot_start_s ≤ warm_start_s ≤ cold_start_s`.
 | `block_count` | int ≥ 1 | — | **Required.** Number of blocks in the unit |
 | `initial_running_blocks` | int ≥ 0 | `0` | Blocks initially producing power |
 | `initial_hot_standby_blocks` | int ≥ 0 \| null | `null` | When omitted, every non-running block starts in hot standby |
-| `commit_rate_blocks_per_s` | float > 0 | `1.0` | Block commitment rate |
+| `requested_commit_rate_blocks_per_s` | float > 0 | `1.0` | Requested block commitment rate. `commit_rate_blocks_per_s` is accepted as a legacy input alias. |
 | `decommit_rate_blocks_per_s` | float > 0 | `1.0` | Block decommitment rate |
 | `cold_start_s` | float > 0 | `28800.0` | Cold-start duration (s) |
 | `warm_start_s` | float > 0 | `14400.0` | Warm-start duration (s) |
@@ -281,6 +281,7 @@ must satisfy `hot_start_s ≤ warm_start_s ≤ cold_start_s`.
 | `gas_heating_value_btu_per_scf` | float > 0 | `1030.0` | Site gas heating value; provenance `site_specific` |
 | `hot_standby_fuel_fraction` | float ≥ 0 | `0.10` | Fraction of rated fuel input burned in hot standby; provenance `proposed` |
 | `gas_price_usd_per_mmbtu` | float ≥ 0 \| null | `5.0` | Placeholder site gas price; explicit null suppresses monetary estimates |
+| `fuel_system` | object \| null | `null` | Optional G-2 common-manifold fuel model. Omit for G-1 ideal/infinite-volume supply compatibility. Defaults when supplied: supply/minimum/trip pressure 15/12/10 psig, volume 767 ft³, regulator/delivery time constants 2/3 s, droop 0.05, distribution loss 0.5 psi, utilisation maximum 0.85; `maximum_supply_flow_scfm: null` means unlimited. |
 | `provenance` | object | `{}` | Per-field source labels: `vendor_published`, `derived`, `proposed`, or `site_specific` |
 
 ---

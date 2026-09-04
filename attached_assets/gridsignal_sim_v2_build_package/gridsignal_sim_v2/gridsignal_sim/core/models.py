@@ -1183,6 +1183,22 @@ class TickResult:
     fuel_cell_hot_standby_parasitic_scfm: float = 0.0
     fuel_cell_cumulative_fuel_mmbtu: float = 0.0
     fuel_cell_cumulative_co2_tonnes: float = 0.0
+    # G-2 common-manifold telemetry. Null pressure means the optional fuel
+    # system was omitted and the G-1 ideal supply contract remains in force.
+    fuel_cell_manifold_pressure_psig: Optional[float] = None
+    fuel_cell_furthest_inlet_pressure_psig: Optional[float] = None
+    fuel_cell_minimum_manifold_pressure_psig: Optional[float] = None
+    fuel_cell_minimum_inlet_pressure_psig: Optional[float] = None
+    fuel_cell_delivered_fuel_scfm: float = 0.0
+    fuel_cell_pressure_derated_block_count: int = 0
+    fuel_cell_utilisation_clamped_block_count: int = 0
+    fuel_cell_requested_commit_rate_blocks_per_s: float = 0.0
+    fuel_cell_achieved_commit_rate_blocks_per_s: float = 0.0
+    fuel_cell_fuel_binding_constraint: Optional[str] = None
+    fuel_cell_pressure_derate_alert: Optional[dict] = None
+    fuel_cell_pressure_trip_alert: Optional[dict] = None
+    fuel_cell_utilisation_clamp_alert: Optional[dict] = None
+    fuel_cell_supply_limit_alert: Optional[dict] = None
     # Separate records intentionally do not alter insufficient_reserve_alert.
     # Declining means hot reserve can close part of the gap in the event window;
     # persistent means cold/warming hardware cannot, after BESS substitution.
