@@ -468,11 +468,24 @@
           "default": null,
           "title": "Initial Hot Standby Blocks"
         },
-        "commit_rate_blocks_per_s": {
+        "requested_commit_rate_blocks_per_s": {
           "default": 1.0,
           "exclusiveMinimum": 0.0,
-          "title": "Commit Rate Blocks Per S",
+          "title": "Requested Commit Rate Blocks Per S",
           "type": "number"
+        },
+        "commit_rate_blocks_per_s": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Commit Rate Blocks Per S"
         },
         "decommit_rate_blocks_per_s": {
           "default": 1.0,
@@ -602,6 +615,17 @@
           "default": 5.0,
           "title": "Gas Price Usd Per Mmbtu"
         },
+        "fuel_system": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FuelSystemSpec"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
         "provenance": {
           "additionalProperties": {
             "enum": [
@@ -622,6 +646,95 @@
         "block_count"
       ],
       "title": "FuelCellUnitSpec",
+      "type": "object"
+    },
+    "FuelSystemSpec": {
+      "description": "Optional G-2 common-manifold fuel system; absent keeps ideal G-1 fuel.",
+      "properties": {
+        "supply_pressure_psig": {
+          "default": 15.0,
+          "exclusiveMinimum": 0,
+          "title": "Supply Pressure Psig",
+          "type": "number"
+        },
+        "minimum_block_inlet_pressure_psig": {
+          "default": 12.0,
+          "exclusiveMinimum": 0,
+          "title": "Minimum Block Inlet Pressure Psig",
+          "type": "number"
+        },
+        "block_trip_pressure_psig": {
+          "default": 9.5,
+          "exclusiveMinimum": 0,
+          "title": "Block Trip Pressure Psig",
+          "type": "number"
+        },
+        "manifold_volume_ft3": {
+          "default": 920.0,
+          "exclusiveMinimum": 0,
+          "title": "Manifold Volume Ft3",
+          "type": "number"
+        },
+        "regulator_time_constant_s": {
+          "default": 2.0,
+          "exclusiveMinimum": 0,
+          "title": "Regulator Time Constant S",
+          "type": "number"
+        },
+        "regulator_droop_fraction": {
+          "default": 0.05,
+          "exclusiveMaximum": 1,
+          "minimum": 0,
+          "title": "Regulator Droop Fraction",
+          "type": "number"
+        },
+        "distribution_loss_psi": {
+          "default": 0.5,
+          "minimum": 0,
+          "title": "Distribution Loss Psi",
+          "type": "number"
+        },
+        "maximum_supply_flow_scfm": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Maximum Supply Flow Scfm"
+        },
+        "delivered_to_cell_time_constant_s": {
+          "default": 3.0,
+          "exclusiveMinimum": 0,
+          "title": "Delivered To Cell Time Constant S",
+          "type": "number"
+        },
+        "max_fuel_utilisation": {
+          "default": 0.85,
+          "exclusiveMinimum": 0,
+          "maximum": 1,
+          "title": "Max Fuel Utilisation",
+          "type": "number"
+        },
+        "provenance": {
+          "additionalProperties": {
+            "enum": [
+              "vendor_published",
+              "derived",
+              "proposed",
+              "site_specific"
+            ],
+            "type": "string"
+          },
+          "title": "Provenance",
+          "type": "object"
+        }
+      },
+      "title": "FuelSystemSpec",
       "type": "object"
     },
     "GenerationBlock": {

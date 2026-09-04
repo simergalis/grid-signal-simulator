@@ -40,3 +40,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Pulse-driven fuel-cell dispatch](pulse-driven-fuel-cell-dispatch.md) — pulse-only islanded sites must opt into load-following FC output with BESS-sized rise/fall ramps.
 - [Block fuel-cell readiness](block-fuel-cell-readiness.md) — reserve counts actual-window hot commitment and running headroom only; cold/warming blocks stay excluded.
 - [BESS bridge denominator](bess-bridge-denominator.md) — bridge endurance uses the residual gap after measured firm generation, never total site demand.
+- [Fuel manifold physics](fuel-manifold-physics.md) — inlet bands use 15/12/9.5 psig and 920 ft³ default; manifold inventory may bridge a capped regulator while pressure falls.

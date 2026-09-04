@@ -326,19 +326,35 @@ class FuelSystemSpec(BaseModel):
     """Optional G-2 common-manifold fuel system; absent keeps ideal G-1 fuel."""
     supply_pressure_psig: float = Field(default=15.0, gt=0)
     minimum_block_inlet_pressure_psig: float = Field(default=12.0, gt=0)
-    block_trip_pressure_psig: float = Field(default=10.0, gt=0)
-    manifold_volume_ft3: float = Field(default=767.0, gt=0)
+    block_trip_pressure_psig: float = Field(default=9.5, gt=0)
+    manifold_volume_ft3: float = Field(default=920.0, gt=0)
     regulator_time_constant_s: float = Field(default=2.0, gt=0)
     regulator_droop_fraction: float = Field(default=0.05, ge=0, lt=1)
     distribution_loss_psi: float = Field(default=0.5, ge=0)
     maximum_supply_flow_scfm: Optional[float] = Field(default=None, gt=0)
     delivered_to_cell_time_constant_s: float = Field(default=3.0, gt=0)
     max_fuel_utilisation: float = Field(default=0.85, gt=0, le=1)
+    provenance: Dict[
+        str, Literal["vendor_published", "derived", "proposed", "site_specific"]
+    ] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def _bands(self) -> "FuelSystemSpec":
         if not self.supply_pressure_psig > self.minimum_block_inlet_pressure_psig > self.block_trip_pressure_psig:
             raise ValueError("fuel pressure bands must satisfy supply > minimum > trip")
+        self.provenance = {
+            **self.provenance,
+            "supply_pressure_psig": "vendor_published",
+            "minimum_block_inlet_pressure_psig": "vendor_published",
+            "block_trip_pressure_psig": "proposed",
+            "manifold_volume_ft3": "proposed",
+            "regulator_time_constant_s": "proposed",
+            "regulator_droop_fraction": "proposed",
+            "distribution_loss_psi": "proposed",
+            "maximum_supply_flow_scfm": "site_specific",
+            "delivered_to_cell_time_constant_s": "proposed",
+            "max_fuel_utilisation": "proposed",
+        }
         return self
 
 

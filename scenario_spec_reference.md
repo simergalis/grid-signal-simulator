@@ -281,7 +281,7 @@ must satisfy `hot_start_s ≤ warm_start_s ≤ cold_start_s`.
 | `gas_heating_value_btu_per_scf` | float > 0 | `1030.0` | Site gas heating value; provenance `site_specific` |
 | `hot_standby_fuel_fraction` | float ≥ 0 | `0.10` | Fraction of rated fuel input burned in hot standby; provenance `proposed` |
 | `gas_price_usd_per_mmbtu` | float ≥ 0 \| null | `5.0` | Placeholder site gas price; explicit null suppresses monetary estimates |
-| `fuel_system` | object \| null | `null` | Optional G-2 common-manifold fuel model. Omit for G-1 ideal/infinite-volume supply compatibility. Defaults when supplied: supply/minimum/trip pressure 15/12/10 psig, volume 767 ft³, regulator/delivery time constants 2/3 s, droop 0.05, distribution loss 0.5 psi, utilisation maximum 0.85; `maximum_supply_flow_scfm: null` means unlimited. |
+| `fuel_system` | object \| null | `null` | Optional G-2 common-manifold fuel model. Omit for G-1 ideal/infinite-volume supply compatibility. Defaults when supplied: supply/minimum/trip pressure 15/12/9.5 psig, volume 920 ft³, regulator/delivery time constants 2/3 s, droop 0.05, distribution loss 0.5 psi, utilisation maximum 0.85; `maximum_supply_flow_scfm: null` means unlimited. With unlimited supply, regulator flow lags the pre-staged command directly; with a finite cap it uses `min(qmax, qcmd + qmax*droop*(Ps-P)/Ps)`. |
 | `provenance` | object | `{}` | Per-field source labels: `vendor_published`, `derived`, `proposed`, or `site_specific` |
 
 ---
