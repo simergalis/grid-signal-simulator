@@ -39,3 +39,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Reserve threshold reconciliation](reserve-reconciliation.md) — one max reserve threshold feeds both upstream ceilings and downstream SoC enforcement; emergency release may zero it for one tick.
 - [Pulse-driven fuel-cell dispatch](pulse-driven-fuel-cell-dispatch.md) — pulse-only islanded sites must opt into load-following FC output with BESS-sized rise/fall ramps.
 - [Block fuel-cell readiness](block-fuel-cell-readiness.md) — reserve counts actual-window hot commitment and running headroom only; cold/warming blocks stay excluded.
+- [BESS bridge denominator](bess-bridge-denominator.md) — bridge endurance uses the residual gap after measured firm generation, never total site demand.

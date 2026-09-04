@@ -2084,10 +2084,10 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         _fc_summary = state.fuel_cell_module.readiness_summary(dt_lead_next_s)
 
     # 4c. bess_bridging_seconds + bridging_basis: fleet bridging duration at the
-    # BINDING demand — max(net_demand_mw, pending predicted peak shortfall).
+    # BINDING residual — max(actual BESS shortfall, pending predicted shortfall).
     #
     # F2 fix: when a step has been staged and its predicted peak shortfall exceeds
-    # current net demand (typical at t=0: GPU hasn't ramped yet but the alert is
+    # current residual gap (typical at t=0: GPU hasn't ramped yet but the alert is
     # live), the panel must answer the same question as the alert banner ("can the
     # BESS sustain the predicted peak?"), not the easier question ("can it sustain
     # the near-zero current demand?").  Using net_demand_mw at t=0 produces
@@ -2107,14 +2107,18 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         if state._pending_alert is not None
         else 0.0
     )
-    _binding_demand_mw = max(net_demand_mw, _pending_peak_mw)
+    # Use the same measured post-generation residual that drives physical BESS
+    # dispatch. Total site demand is not a valid bridge denominator once firm
+    # turbine or fuel-cell output is already serving part of that demand.
+    _current_bess_gap_mw = _physical_bess_shortfall_mw
+    _binding_demand_mw = max(_current_bess_gap_mw, _pending_peak_mw)
 
     if _binding_demand_mw <= 0.0:
         bridging_basis = "no_load"
         bess_bridging_seconds = math.inf
     else:
         bridging_basis = (
-            "predicted_peak" if _pending_peak_mw > net_demand_mw else "current_demand"
+            "predicted_peak" if _pending_peak_mw > _current_bess_gap_mw else "current_demand"
         )
         if state.bess_units:
             _bbs_island_mode = state.site.island_mode

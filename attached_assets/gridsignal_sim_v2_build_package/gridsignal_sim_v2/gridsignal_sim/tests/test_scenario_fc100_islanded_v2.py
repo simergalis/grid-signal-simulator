@@ -85,6 +85,7 @@ def test_fc100_reference_is_registered_and_exercises_block_deficit():
     plateau = [t for t in ticks if 195 <= t.sim_time_seconds <= 1260]
     assert max(t.fuel_cell_achieved_output_mw for t in plateau) == pytest.approx(50.05)
     assert all(t.p_cooling_demand_mw > 0 for t in plateau)
+    assert all(t.bess_bridging_seconds > 0 for t in plateau)
     settled_tick = next(t for t in ticks if t.sim_time_seconds == 1260)
     assert settled_tick.p_compute_demand_mw == pytest.approx(66.6672, abs=.01)
     assert settled_tick.p_cooling_demand_mw == pytest.approx(13.3334, abs=.01)
@@ -177,6 +178,10 @@ def test_fc100_zero_hot_variant_exposes_physical_bess_ceiling_and_unserved_load(
     # The physical BESS path retains its 1 MW grid-forming anchor reserve.
     assert max(t.bess_output_mw for t in peak) == pytest.approx(59.0)
     assert all(t.bess_output_mw <= 59.0 + 1e-9 for t in peak)
+    assert all(
+        t.bess_bridging_seconds == pytest.approx(0.0)
+        for t in peak if t.sim_time_seconds >= 200
+    )
     assert not any(t.fuel_cell_declining_reserve_alert for t in peak)
     assert all(
         t.fuel_cell_persistent_reserve_alert
