@@ -42,3 +42,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [BESS bridge denominator](bess-bridge-denominator.md) — bridge endurance uses the residual gap after measured firm generation, never total site demand.
 - [Fuel manifold physics](fuel-manifold-physics.md) — inlet bands use 15/12/9.5 psig and 920 ft³ default; manifold inventory may bridge a capped regulator while pressure falls.
 - [Fuel-cell Option C boundary](fuel-cell-option-c.md) — grid forming, PF/reactive loading, and IEEE ride-through only; fault-duty figures and group electrical properties stay absent.
+- [Legacy fuel-cell scenario representation](legacy-fuel-cell-scenarios.md) — eleven authored scenarios stay aggregate because no block translation preserved behavior.
