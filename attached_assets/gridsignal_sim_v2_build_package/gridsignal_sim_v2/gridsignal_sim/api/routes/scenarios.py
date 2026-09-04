@@ -1051,7 +1051,7 @@ def _seed_fabric_scenarios(store: ScenarioStore) -> None:
         ("regression-test-transceiver-degradation", "Regression test — Transceiver degradation", 30.0, "regression-test-transceiver-degradation", "current"),
     ]
 
-    _cfg_dir = _Path("config/scenarios")
+    _cfg_dir = _Path(__file__).resolve().parents[2] / "config" / "scenarios"
 
     for store_id, display_name, duration, fab_id, _cap_tier in FABRIC_ENTRIES:
         # Load the fabric scenario JSON to extract the description.
@@ -1160,7 +1160,7 @@ def _seed_json_scenarios(store: ScenarioStore) -> None:
         "scenario-turbine-01": "Customer Scenario - scenario-turbine-01",
     }
 
-    _cfg_dir = _Path("config/scenarios")
+    _cfg_dir = _Path(__file__).resolve().parents[2] / "config" / "scenarios"
     for store_id, filename in _JSON_ENTRIES:
         _jpath = _cfg_dir / filename
         try:

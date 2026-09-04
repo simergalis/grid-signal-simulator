@@ -15,7 +15,6 @@ is the concurrency layer).
 
 from __future__ import annotations
 
-import datetime as _datetime
 import os
 import uuid as _uuid
 
@@ -95,6 +94,11 @@ from core.power_source_priority import (
 # build_run_context_from_spec.  Created once at module level (not per-call)
 # to avoid repeated schema compilation overhead.
 _assertion_adapter: TypeAdapter = TypeAdapter(_AssertionSpec)
+
+# A simulation calendar must be part of its inputs.  Direct factory paths do
+# not accept a calendar override, so use this stable baseline rather than the
+# machine's wall clock.
+_DEFAULT_EDL_CALENDAR_MONTH = 1
 
 
 DEFAULT_HARDWARE_LIBRARY = {
@@ -218,6 +222,13 @@ def build_run_context(
         solar_arrays=solar_arrays,
         cooling=cooling,
     )
+    # The convenience factory represents an already operating facility.  The
+    # scenario-spec factory below deliberately does not do this: its authored
+    # fleet starts OFFLINE and exercises the sequential commitment path.
+    for turbine in turbines:
+        turbine.state = TurbineState.SYNCHRONISED
+        turbine._current_output_mw = 0.0
+        turbine._run_start_s = 0.0
 
     events = [
         WorkloadSignal(
@@ -309,7 +320,7 @@ def build_run_context(
         _design_peak_load_mw=_design_peak_load_mw,
         # PSP-002 §3.2 / Task #371 — activate per-tick EDL for direct-path runs.
         edl_sources=_brc_edl_sources,
-        edl_calendar_month=_datetime.datetime.now().month,
+        edl_calendar_month=_DEFAULT_EDL_CALENDAR_MONTH,
     )
 
 
@@ -496,7 +507,7 @@ def build_load_test_context(
         _design_peak_load_mw=_lt_design_peak_load_mw,
         # PSP-002 §3.2 / Task #371 — activate per-tick EDL for load-test runs.
         edl_sources=_lt_edl_sources,
-        edl_calendar_month=_datetime.datetime.now().month,
+        edl_calendar_month=_DEFAULT_EDL_CALENDAR_MONTH,
     )
 
 
@@ -786,29 +797,16 @@ def build_run_context_from_spec(
         for i, t in enumerate(spec_data.get("turbine_units", []))
     ]
 
-    # Pre-synchronise every non-hot-standby turbine so the on-bus fleet is
-    # already online when the first tick executes.  In a real facility the
-    # generating units are synchronised to the bus before any GPU workload
-    # arrives; they do not start cold during a run.  TurbineModule defaults to
-    # TurbineState.OFFLINE and requires cold_start_s=900 s (or 300 s hot) to
-    # reach SYNCHRONISED — far longer than any demo or test run.
-    # Hot-standby units (hot_standby=True) must remain OFFLINE per the
-    # operator commitment sequence (TC-89 / PW-1).
-    #
-    # R5 / IP claim 4: set _run_start_s = 0.0 for every pre-synchronised unit.
-    # TurbineModule initialises _run_start_s to NaN (never-started sentinel).
-    # command_stop() enforces t_min_run_s only when _run_start_s is non-NaN
-    # (D-03 pattern: `not math.isnan(self._run_start_s)`).  Without this line
-    # the NaN sentinel bypasses the guard for all factory-built runs, making
-    # R5 inoperative on the live spec path even when min_run_enabled=True.
-    # Setting 0.0 treats pre-synchronised units as having started at t=0 —
-    # consistent with a facility where turbines are already at rated load when
-    # the simulation begins.
-    for _turb in turbines:
-        if not _turb.config.hot_standby:
-            _turb.state              = TurbineState.SYNCHRONISED
-            _turb._current_output_mw = 0.0   # loading layer ramps to MSL each tick
-            _turb._run_start_s       = 0.0   # R5: treat as started at t=0 (IP claim 4)
+    # A fleet with one designated non-standby lead and standby followers models
+    # an already-operating bus anchor: place only that lead on-bus at run start.
+    # Multi-active fleets remain OFFLINE so the shared pending-start register can
+    # enforce the sequential-start contract on their first and later ticks.
+    _active_turbines = [t for t in turbines if not t.config.hot_standby]
+    if len(_active_turbines) == 1:
+        _lead_turbine = _active_turbines[0]
+        _lead_turbine.state = TurbineState.SYNCHRONISED
+        _lead_turbine._current_output_mw = 0.0
+        _lead_turbine._run_start_s = 0.0
 
     # anchor_reserve_pct wires the scenario-level reserve percentage into the
     # grid-forming unit's BessConfig.  0.0 = use BessConfig default (1.0 MW).
@@ -917,7 +915,11 @@ def build_run_context_from_spec(
                     decommit_rate_blocks_per_s=float(unit.get("decommit_rate_blocks_per_s", 1.0)),
                     cold_start_s=float(unit.get("cold_start_s", 8.0 * 60.0 * 60.0)),
                     warm_start_s=float(unit.get("warm_start_s", 4.0 * 60.0 * 60.0)),
-                    hot_start_s=float(unit.get("hot_start_s", 60.0)),
+                    **(
+                        {}
+                        if unit.get("hot_start_s") is None
+                        else {"hot_start_s": float(unit["hot_start_s"])}
+                    ),
                     controlled_cooling_s=(
                         float(unit["controlled_cooling_s"])
                         if unit.get("controlled_cooling_s") is not None
@@ -1481,9 +1483,12 @@ def build_run_context_from_spec(
 
     # Calendar month for TOU classification (Task #370).
     # Honour spec field when the Scenario Builder has overridden it;
-    # fall back to the real wall-clock month at run start.
+    # fall back to a stable simulation baseline.  Using the host wall clock
+    # would make otherwise identical scenario inputs produce different physics.
     _edl_calendar_month: int = int(
-        spec_data.get("edl_calendar_month") or _datetime.datetime.now().month
+        spec_data.get("edl_calendar_month")
+        if spec_data.get("edl_calendar_month") is not None
+        else _DEFAULT_EDL_CALENDAR_MONTH
     )
 
     # ── Operator response profile (PSP-002 §3.4 / §4.3) ─────────────────
@@ -1663,7 +1668,9 @@ def _build_fabric_engine(run_id: str, fabric_scenario_id: str | None = None):
         scenario_data = None
         if fabric_scenario_id:
             from pathlib import Path as _Path
-            _cfg_dir = _Path("config/scenarios")
+            _cfg_dir = (
+                _Path(__file__).resolve().parents[1] / "config" / "scenarios"
+            )
             # The regression scenarios use descriptive public IDs.  Their
             # historical filenames remain stable so existing source links and
             # archived artifacts do not break.  Older saved IDs still resolve

@@ -8,19 +8,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.db import fetch_reference_forecast_rows, get_db_session
-from core.site_parameters import value as catalogue_value
-from runtime.scenario_factory import DEFAULT_HARDWARE_LIBRARY
 from runtime.persistence import ReferenceForecastResolved, ReferenceForecastScenario
+from runtime.reference_forecast import reference_forecast_conversion_context
 
 router = APIRouter(prefix="/api/reference-forecast", tags=["reference-forecast"])
 
 DATASET_ID = "equinix-sj-2-52wk-v1"
 MAX_ROWS = 10_000
-REFERENCE_PROFILE_IDS = {
-    "kubernetes": "enterprise_8gpu_air",
-    "slurm": "enterprise_8gpu_air",
-    "ray": "nextgen_rack_liquid",
-}
 
 
 @router.get("/{dataset_id}")
@@ -105,13 +99,9 @@ async def get_reference_forecast_rows(
         end_day,
         end_hour,
     )
-    profiles = {
-        domain: DEFAULT_HARDWARE_LIBRARY[profile_id]
-        for domain, profile_id in REFERENCE_PROFILE_IDS.items()
-    }
+    profiles, pue_base = reference_forecast_conversion_context()
     # This intentionally uses PARAM-06's generic catalogue default (currently
     # 1.03), not an Equinix SJ-2 calibration. Revisit when SJ-2 has a real PUE.
-    pue_base = float(catalogue_value("pue_base"))
 
     def with_derived_metrics(row: dict[str, int]) -> dict[str, Any]:
         kubernetes_mw = (

@@ -1252,7 +1252,11 @@ def test_rolling_planning_peaks_seed_preserves_forecast_horizons():
     spec = detail.json()["spec"]
     peak_events = [
         event for event in spec["workload_events"]
-        if event["job_id"].startswith("rolling-") and event["job_id"] != "rolling-base"
+        if (
+            event["job_id"].startswith("rolling-")
+            and event["job_id"] != "rolling-base"
+            and event["event_type"] == "starting"
+        )
     ]
     assert [event["timestamp"] for event in peak_events] == [900.0, 3600.0, 10800.0]
     assert spec["end_sim_time"] == 14400.0

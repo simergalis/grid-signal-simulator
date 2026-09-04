@@ -1635,12 +1635,9 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         _emergency_gap_mw = max(
             0.0,
             _physical_bess_shortfall_mw
-            # Diesel coordination runs after BESS arbitration, so use the
-            # previous tick's diesel output here.  A same-tick value is not
-            # available without reordering the pipeline or making diesel
-            # react to its own contribution, both out of scope for this fix.
-            # Diesel start delay (>=10 s) and ramp dynamics are much slower
-            # than one tick, making this accepted one-tick approximation.
+            # Diesel coordination runs after BESS arbitration.  Use measured
+            # delivery from the preceding interval when deciding whether the
+            # retained reserve must be released.
             - state._prev_diesel_output_mw
             - _grid_emergency_support_mw,
         )
@@ -1687,9 +1684,9 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         bess_dispatch_ceilings_mw=_bess_dispatch_ceilings_mw,
         bess_soc_floors_mwh=_bess_soc_floors_mwh,
     )
-    # Phase 3 diesel integration: coordinate the validated fleet from the
-    # measured post-arbitration gap. Diesel output is deliberately excluded
-    # from this input so the fleet cannot react to its own contribution.
+    # Coordinate diesel from the measured residual after primary source
+    # arbitration. Diesel must not reduce the BESS planner's input and then
+    # leave the same MW in the turbine dispatch demand.
     _gap_before_diesel_mw = max(
         0.0,
         p_dispatch_required_mw
@@ -1697,8 +1694,6 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         - bess_output_mw
         - fuel_cell_output_mw,
     )
-    # Always take exactly one coordinator snapshot per tick.  Disabled/empty
-    # fleets receive a zero gap so they remain "idle" and contribute 0.0 MW.
     diesel_enabled = bool(state.diesel_units)
     _diesel_snapshot = state.diesel_fleet_coordinator.step(
         gap_mw=_gap_before_diesel_mw if diesel_enabled else 0.0,
@@ -1706,7 +1701,6 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         dt_seconds=dt_seconds,
     )
     diesel_output_mw = float(_diesel_snapshot.output_mw)
-    # Keep empty/disabled fleets at the backward-compatible zero value.
     state._prev_diesel_output_mw = diesel_output_mw if diesel_enabled else 0.0
 
     # A turbine rundown may start only after the BESS has had first refusal on
@@ -2659,7 +2653,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # The gating criterion: _committed_rated_mw_cs > 0 ↔ at least one
     # SYNCHRONISED turbine has headroom and can act on the setpoint.
     _turb_setpoint_for_error_mw = (
-        _thermal_dispatch_target_mw if _committed_rated_mw_cs > 0.0 else 0.0
+        _p_dispatch_droop_mw if _committed_rated_mw_cs > 0.0 else 0.0
     )
     _asset_delivery_error_mw = (           # reporting only — NOT a D4 term
         (turbine_output_mw - _turb_setpoint_for_error_mw)
@@ -2945,15 +2939,9 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
 
     # ── Phase 6: Load-side served/shed producers ───────────────────────────────
     # The served/unserved split includes explicit UFLS/curtailment shedding and,
-    # for an islanded site, any remaining physical supply deficit.  A power
-    # ceiling is not merely a telemetry constraint: demand above it is genuinely
-    # unserved.  This keeps a grid-forming BESS's anchor reserve out of normal
-    # dispatch (e.g. 60 MW rated - 1 MW anchor = 59 MW deliverable) instead of
-    # silently treating the withheld MW as served load.
-    #
-    # Grid-tied deficits are supplied through the PCC accounting path, so only
-    # islanded residuals are load-side unserved here.  The swing equation still
-    # uses _balance_residual_mw directly.
+    # for an islanded site, any remaining physical supply deficit. A power
+    # ceiling is not merely telemetry: demand above deliverable generation is
+    # electrically unserved.
     # Per-subsystem shed is proportional to demand fraction because stage
     # definitions specify a block fraction of total demand only.
     _cumulative_shed_mw = state._cumulative_shed_mw  # monotonic run total
@@ -2962,9 +2950,6 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     )
     _p_unserved_mw = min(
         p_demand_mw,
-        # UFLS is the intentional load reduction that closes a supply gap, not
-        # an additional deficit on top of that same gap.  Keep the larger
-        # independently observed amount rather than double-counting it.
         max(_cumulative_shed_mw, _islanded_supply_shortfall_mw),
     )
     _p_served_mw = p_demand_mw - _p_unserved_mw

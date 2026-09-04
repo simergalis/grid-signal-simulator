@@ -181,7 +181,11 @@ async def _otp_upsert(
     return row
 
 
-async def inject_otp(email: str, code: str) -> None:
+async def inject_otp(
+    email: str,
+    code: str,
+    db: AsyncSession | None = None,
+) -> None:
     """Inject a pre-generated OTP code directly into the database.
 
     Used by the bootstrap endpoint and admin helpers to create a usable
@@ -189,12 +193,14 @@ async def inject_otp(email: str, code: str) -> None:
     The injected code expires after the standard TTL and is consumed on first
     use.
 
-    This is a standalone async function that opens its own session so callers
-    that already have a session (admin routes) and callers that do not (tests)
-    can both use it without a parameter change.  Admin routes that hold an open
-    write transaction should ``await db.commit()`` first to avoid lock
-    conflicts on SQLite.
+    Callers that already hold a request-scoped session must pass it so the OTP
+    is written to the same database selected by dependency injection.  The
+    optional standalone path remains for callers that genuinely have no
+    session.
     """
+    if db is not None:
+        await _otp_upsert(email.lower(), code, db)
+        return
     async with _SessionLocal() as session:
         await _otp_upsert(email.lower(), code, session)
 

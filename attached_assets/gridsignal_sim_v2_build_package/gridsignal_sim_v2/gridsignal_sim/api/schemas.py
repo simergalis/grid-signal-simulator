@@ -22,6 +22,7 @@ from typing import Any, Dict, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from runtime.fuel_cell_defaults import DEFAULT_BLOCK_FUEL_CELL_HOT_START_S
 # Step 9: AssertionSpec lives in runtime/verdict.py so that runtime/ code can
 # import it without creating a runtime/ → api/ circular dependency.
 from runtime.verdict import AssertionSpec  # noqa: F401 (re-exported for callers)
@@ -319,7 +320,7 @@ class FuelCellUnitSpec(BaseModel):
     decommit_rate_blocks_per_s: float = Field(default=1.0, gt=0.0)
     cold_start_s: float = Field(default=8.0 * 60.0 * 60.0, gt=0.0)
     warm_start_s: float = Field(default=4.0 * 60.0 * 60.0, gt=0.0)
-    hot_start_s: float = Field(default=60.0, gt=0.0)
+    hot_start_s: float = Field(default=DEFAULT_BLOCK_FUEL_CELL_HOT_START_S, gt=0.0)
     controlled_cooling_s: Optional[float] = Field(default=None, gt=0.0)
     hot_standby: bool = True
     min_stable_frac: float = Field(default=0.5, ge=0.0, le=1.0)

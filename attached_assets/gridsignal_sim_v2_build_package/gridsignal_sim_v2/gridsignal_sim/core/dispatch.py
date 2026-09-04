@@ -615,7 +615,11 @@ class DispatchArbitrator:
                 if _gate_open:
                     _ht = _offline[0]
                     _ht.command_start(sim_time)
-                    if _ps is not None:
+                    # A rejected command (for example a min-down interlock)
+                    # must not occupy the shared sequencing register.  Doing so
+                    # would prevent both the staging and commitment paths from
+                    # ever retrying this unit.
+                    if _ps is not None and _ht.state == TurbineState.STARTING:
                         _ps.record_start(_ht.config.asset_id, sim_time)  # type: ignore[union-attr]
 
             # On-bus units are driven by apply_loading() toward the fleet setpoint.

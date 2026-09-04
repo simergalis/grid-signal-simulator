@@ -41,6 +41,14 @@ where Δf = current `state._frequency_hz - frequency_nominal_hz`, S_i = per-unit
 
 **Why instantaneous formula works:** After one outer tick (5s), the governor cascade FULLY converges to the instantaneous target (valve_tc=0.2s → settled in 1s; fuel_tc=1.0s → settled in 5s). So the instantaneous formula and the terminal state give the same result on all ticks except the first, making the distinction irrelevant for multi-tick runs.
 
+## Isolating over-frequency droop in tests
+
+**Rule:** A droop-direction fixture needs a protection threshold above the injected frequency, nonzero turbine output with downward headroom, and no available BESS discharge.
+
+**Why:** A threshold below the disturbance correctly trips protection, a turbine at zero cannot reduce generation, and an energized BESS correctly fills the droop-created gap. Each condition masks the governor’s restoring-force signal.
+
+**How to apply:** Author an over-frequency trip above the test disturbance, start the synchronized turbine above zero with its MSL floor disabled when appropriate, and deplete or omit BESS when asserting raw `frequency_forcing_mw`.
+
 ## protection_provisional: True for ALL islanded ticks
 
 **Rule:** `TickResult.protection_provisional = True` whenever `_islanded` is True. Set unconditionally in the islanded branch.

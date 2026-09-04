@@ -143,15 +143,15 @@ def test_internal_elapsed_unaffected_by_f5() -> None:
     """Internal elapsed checks (dt_lead countdown etc.) use clock.sim_time, not
     TickResult.sim_time_seconds.  F5 only changes the output field, not the logic.
 
-    Proof: dt_lead_next_s on the first tick is 40.0 (45 - 5 = 40; advance consumed
-    one dt_seconds step before the reading).  If internal logic had been shifted to
-    use the interval-end time, the remaining ramp calculation would be wrong.
+    Proof: dt_lead_next_s on the first tick is the configured GPU ramp duration
+    minus one dt_seconds step consumed by advance(). If internal logic had been
+    shifted to use interval-end time, the remaining ramp calculation would be wrong.
     """
     from core.models import (
         WorkloadClass, WorkloadEventType, WorkloadSignal,
     )
     state = _idle_state()
-    # Inject a GPU job with 45 s ramp (default r_asset_mw_per_s=0.5 for 10 kW node)
+    # Inject a GPU job using the configured production ramp duration.
     hw = {"hw-a": HardwareProfile("hw-a", rated_kw=10.0)}
     signal = WorkloadSignal(
         event_id="evt-f5", job_id="job-f5",
@@ -168,8 +168,8 @@ def test_internal_elapsed_unaffected_by_f5() -> None:
 
     # sim_time_seconds is now 5.0 (interval-end) — F5
     assert result.sim_time_seconds == pytest.approx(5.0)
-    # But the ramp countdown is still 40.0 (45 - 5 = 40 s remaining after advance)
-    assert result.dt_lead_next_s == pytest.approx(40.0, abs=1.0), (
-        f"dt_lead_next_s should be ~40 s after first advance(); "
+    expected_lead_s = state.gpu_modules[0].ramp_seconds - clock.dt_seconds
+    assert result.dt_lead_next_s == pytest.approx(expected_lead_s, abs=1.0), (
+        f"dt_lead_next_s should be ~{expected_lead_s:.1f} s after first advance(); "
         f"got {result.dt_lead_next_s:.1f}. Internal logic must still use clock.sim_time."
     )

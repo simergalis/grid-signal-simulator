@@ -781,23 +781,26 @@ class TestDemo20mwSpecPathR5:
     """
 
     @staticmethod
-    def _get_demo_20mw_spec_dict() -> dict:
-        """Return the demo-20mw ScenarioSpec as a plain dict (JSON-round-trip safe)."""
+    def _get_single_lead_spec_dict() -> dict:
+        """Return a spec with one operating lead and standby followers."""
         spec_pairs = {sid: ss for sid, ss in _SEEDED}
         spec = spec_pairs.get("demo-20mw")
         assert spec is not None, "demo-20mw not found in _SEEDED; check api/routes/scenarios.py"
-        return spec.model_dump()
+        spec_dict = spec.model_dump()
+        for turbine in spec_dict["turbine_units"][1:]:
+            turbine["hot_standby"] = True
+        return spec_dict
 
     def test_spec_path_pre_sync_sets_run_start_s(self):
         """
-        build_run_context_from_spec must set _run_start_s = 0.0 on every
-        non-hot-standby turbine so R5 enforcement is active from t=0.
+        build_run_context_from_spec must set _run_start_s = 0.0 on the sole
+        non-hot-standby lead so R5 enforcement is active from t=0.
 
         Without this fix the factory left _run_start_s = NaN, which bypasses
         the `not math.isnan(self._run_start_s)` guard in command_stop() and
         allows any decommit regardless of how long the unit has been running.
         """
-        spec_dict = self._get_demo_20mw_spec_dict()
+        spec_dict = self._get_single_lead_spec_dict()
         ctx = build_run_context_from_spec("test-ip4-factory", spec_dict)
 
         online_turbines = [
@@ -827,7 +830,7 @@ class TestDemo20mwSpecPathR5:
         defers it.  Before the factory fix (_run_start_s was NaN), the stop was
         silently accepted and the turbine entered UNLOADING at t=300 s.
         """
-        spec_dict = self._get_demo_20mw_spec_dict()
+        spec_dict = self._get_single_lead_spec_dict()
         ctx = build_run_context_from_spec("test-ip4-r5", spec_dict)
 
         # Pick the first non-hot-standby turbine (matches turbine-0 in demo-20mw)

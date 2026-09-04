@@ -283,6 +283,14 @@ class TestI3DroopRestoringForce:
     def test_I3_droop_creates_restoring_force_when_f_above_nominal(self):
         """I3: f > 50 Hz with active load → droop produces negative frequency_forcing."""
         state = _make_state(island_mode=IslandMode.ISLANDED)
+        # Dispatch droop is intentionally opt-in: its frequency-error clamp is
+        # derived from an authored first-stage protection threshold.
+        state.site.of_trip_hz = 53.0
+        # Isolate droop direction from the turbine minimum-stable-load floor.
+        state.turbines[0].config.p_min_stable_frac = 0.0
+        # Storage would correctly fill the droop-created gap and mask the
+        # turbine response in frequency_forcing_mw.
+        state.bess_units[0].soc_mwh = 0.0
         sig = _starting_signal(nodes=10, ramp_s=1.0, timestamp=0.0)
         state.apply_workload_signal(sig, dt_lead_seconds=0.0)
 
@@ -295,13 +303,13 @@ class TestI3DroopRestoringForce:
         f_elevated = 52.0
         state._frequency_hz = f_elevated
 
-        # B1: pre-synchronise the turbine so the loading layer drives it to the
-        # droop-corrected setpoint (0 MW at f=52 Hz, well above nominal).
+        # Pre-synchronise with measurable output so the headroom-bounded droop
+        # controller has real generation available to reduce.
         # Without this, apply_workload_signal leaves the turbine RAMPING toward
         # its pre-staged target, cancelling the balance_residual that should
         # produce the restoring frequency_forcing signal.
         state.turbines[0].state = TurbineState.SYNCHRONISED
-        state.turbines[0]._current_output_mw = 0.0
+        state.turbines[0]._current_output_mw = 1.0
 
         # Droop correction = −2.0 / (0.04 × 50) × 10 = −10 MW → _p_dispatch_droop = 0.
         # Loading layer drives SYNCHRONISED turbine to 0 MW (droop setpoint).
@@ -341,6 +349,7 @@ class TestI3DroopRestoringForce:
                 inertia_constant_s=4.0,
                 frequency_nominal_hz=50.0, power_factor=0.85,
                 governor_droop=droop_val,
+                of_trip_hz=53.0,
             )
             st = SimulationState(
                 run_id="test",
@@ -348,11 +357,12 @@ class TestI3DroopRestoringForce:
                 gpu_modules=[GPUModule(asset_id="gpu-0", site=_site,
                                        hardware_library=hw, ramp_seconds=1.0)],
                 turbines=[TurbineModule(TurbineConfig(
-                    asset_id="gt-1", rated_mw=10.0, r_asset_mw_per_s=5.0
+                    asset_id="gt-1", rated_mw=10.0, r_asset_mw_per_s=5.0,
+                    droop_r=droop_val, p_min_stable_frac=0.0,
                 ))],
                 bess_units=[BessModule(BessConfig(
                     asset_id="bess-1", rated_mw=5.0, usable_mwh=2.0,
-                    initial_soc_fraction=1.0, p_anchor_reserve_mw=0.0,
+                    initial_soc_fraction=0.0, p_anchor_reserve_mw=0.0,
                     grid_forming=False,
                 ))],
                 solar_arrays=[],
@@ -361,10 +371,10 @@ class TestI3DroopRestoringForce:
             st.apply_workload_signal(sig, dt_lead_seconds=0.0)
             st.gpu_modules[0]._ramp_progress["job-1"] = 1.0
             st._frequency_hz = 52.0
-            # B1: pre-synchronise so the loading layer drives the turbine to the
-            # droop-corrected setpoint (not the pre-staged RAMPING target).
+            # Begin with measurable generation so over-frequency droop has
+            # downward output headroom; zero output cannot be reduced further.
             st.turbines[0].state = TurbineState.SYNCHRONISED
-            st.turbines[0]._current_output_mw = 0.0
+            st.turbines[0]._current_output_mw = 1.0
             return _run_tick(st, sim_time=5.0, dt=5.0).frequency_hz
 
         f_with_droop    = _run_with_droop(0.04)

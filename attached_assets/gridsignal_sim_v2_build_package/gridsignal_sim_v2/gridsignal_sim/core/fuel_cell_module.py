@@ -28,6 +28,14 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 from .asset_modules import AssetModule
+from .site_parameters import value as catalogue_value
+
+
+# This is deliberately resolved from the package's authoritative catalogue,
+# rather than duplicated as a numeric literal in the block-array model.
+DEFAULT_BLOCK_FUEL_CELL_HOT_START_S = float(
+    catalogue_value("fuel_cell_hot_start_s")
+)
 
 
 class FuelCellState(str, Enum):
@@ -290,7 +298,7 @@ class BlockFuelCellConfig:
     decommit_rate_blocks_per_s: float = 1.0
     cold_start_s: float = 8.0 * 60.0 * 60.0
     warm_start_s: float = 4.0 * 60.0 * 60.0
-    hot_start_s: float = 60.0
+    hot_start_s: float = DEFAULT_BLOCK_FUEL_CELL_HOT_START_S
     hot_standby: bool = True
     min_stable_frac: float = 0.5
     hot_standby_floor_blocks: int = 0

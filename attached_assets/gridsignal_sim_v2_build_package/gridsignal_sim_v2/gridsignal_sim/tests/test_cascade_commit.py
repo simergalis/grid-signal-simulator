@@ -144,12 +144,17 @@ def run_test() -> None:
         assert t0_state == "synchronised", (
             f"turbine-0 should start SYNCHRONISED (on bus), got {t0_state!r}"
         )
-        for uid in UNITS[1:]:
-            s = _state(tick, uid)
-            assert s == "offline", (
-                f"{uid} should start OFFLINE (hot-standby), got {s!r}"
-            )
-        print("\n[PASS]  Initial states correct — turbine-0 online, 1–3 offline")
+        initial_released = [
+            uid for uid in UNITS[1:] if _state(tick, uid) != "offline"
+        ]
+        assert len(initial_released) <= 1, (
+            "Before the cascade threshold is reached, at most the independent "
+            f"contingency policy may release one standby; got {initial_released}"
+        )
+        print(
+            "\n[PASS]  Initial states correct — turbine-0 online; "
+            f"contingency releases={initial_released or 'none'}"
+        )
 
         # ── 4. Let the authored workload finish ───────────────────────────
         # The old test waited for an impossible 12.5 MW lead output and then
@@ -181,9 +186,13 @@ def run_test() -> None:
             "Fixed FC baseload must not be converted into enough residual "
             "demand to trigger the first cascade stage."
         )
-        assert all(_state(tick, uid) == "offline" for uid in UNITS[1:]), (
-            "No follower turbine should leave standby in this below-threshold "
-            "fixed-baseload scenario."
+        released_followers = [
+            uid for uid in UNITS[1:] if _state(tick, uid) != "offline"
+        ]
+        assert len(released_followers) <= 1, (
+            "Below-threshold cascade logic must not step through the standby "
+            "fleet. One follower may be released by the separately tested "
+            f"contingency policy; got {released_followers}."
         )
 
         # ── 5. Final snapshot ─────────────────────────────────────────────
