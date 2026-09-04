@@ -315,7 +315,7 @@ class FuelCellUnitSpec(BaseModel):
     block_rated_mw: float = Field(gt=0.0)
     block_count: int = Field(ge=1)
     initial_running_blocks: int = Field(default=0, ge=0)
-    initial_hot_standby_blocks: int = Field(default=0, ge=0)
+    initial_hot_standby_blocks: Optional[int] = Field(default=None, ge=0)
     commit_rate_blocks_per_s: float = Field(default=1.0, gt=0.0)
     decommit_rate_blocks_per_s: float = Field(default=1.0, gt=0.0)
     cold_start_s: float = Field(default=8.0 * 60.0 * 60.0, gt=0.0)
@@ -343,6 +343,12 @@ class FuelCellUnitSpec(BaseModel):
 
     @model_validator(mode="after")
     def _validate_block_counts(self) -> "FuelCellUnitSpec":
+        if self.initial_hot_standby_blocks is None:
+            # Operational scenarios assume every non-running block is retained
+            # hot unless an explicit diagnostic fixture authors another state.
+            self.initial_hot_standby_blocks = (
+                self.block_count - self.initial_running_blocks
+            )
         if self.initial_running_blocks + self.initial_hot_standby_blocks > self.block_count:
             raise ValueError(
                 "initial_running_blocks + initial_hot_standby_blocks cannot exceed block_count"

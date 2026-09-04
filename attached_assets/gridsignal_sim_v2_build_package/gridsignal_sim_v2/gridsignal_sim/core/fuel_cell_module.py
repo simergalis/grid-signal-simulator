@@ -293,7 +293,7 @@ class BlockFuelCellConfig:
     block_rated_mw: float
     block_count: int
     initial_running_blocks: int = 0
-    initial_hot_standby_blocks: int = 0
+    initial_hot_standby_blocks: int | None = None
     commit_rate_blocks_per_s: float = 1.0
     decommit_rate_blocks_per_s: float = 1.0
     cold_start_s: float = 8.0 * 60.0 * 60.0
@@ -315,6 +315,10 @@ class BlockFuelCellConfig:
     def __post_init__(self) -> None:
         if not self.asset_id or self.block_rated_mw <= 0 or self.block_count < 1:
             raise ValueError("fuel-cell block asset_id, rating, and count must be valid")
+        if self.initial_hot_standby_blocks is None:
+            self.initial_hot_standby_blocks = (
+                self.block_count - self.initial_running_blocks
+            )
         if self.initial_running_blocks + self.initial_hot_standby_blocks > self.block_count:
             raise ValueError("initial block states cannot exceed block_count")
         if self.hot_standby_floor_blocks > self.block_count:

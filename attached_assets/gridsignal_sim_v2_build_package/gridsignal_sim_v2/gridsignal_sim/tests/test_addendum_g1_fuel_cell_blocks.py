@@ -16,10 +16,25 @@ from core.models import IslandMode
 def test_unit_schema_derives_capacity_and_rejects_independent_rating():
     unit = FuelCellUnitSpec(asset_id="fc-a", block_rated_mw=2.5, block_count=4)
     assert unit.rated_mw == 10.0
+    assert unit.initial_hot_standby_blocks == 4
     with pytest.raises(ValidationError):
         FuelCellUnitSpec(
             asset_id="fc-a", block_rated_mw=2.5, block_count=4, rated_mw=10.0
         )
+
+
+def test_runtime_defaults_every_non_running_block_to_hot_standby():
+    array = BlockFuelCellArray(BlockFuelCellConfig(
+        asset_id="fc-a", block_rated_mw=.325, block_count=4,
+        initial_running_blocks=1,
+    ))
+    assert sum(
+        block.state == FuelCellState.HOT_STANDBY for block in array.blocks
+    ) == 3
+    assert not any(
+        block.state in {FuelCellState.COLD, FuelCellState.WARMING}
+        for block in array.blocks
+    )
 
 
 def test_unit_schema_rejects_impossible_initial_block_total():
@@ -33,6 +48,7 @@ def test_unit_schema_rejects_impossible_initial_block_total():
 def test_cold_and_warming_blocks_are_not_available_until_ready():
     array = BlockFuelCellArray(BlockFuelCellConfig(
         asset_id="fc-a", block_rated_mw=2, block_count=1,
+        initial_hot_standby_blocks=0,
         cold_start_s=2, warm_start_s=1, hot_start_s=0.5,
     ))
     array.set_load_following_target_mw(2)
@@ -252,6 +268,7 @@ def test_blocks_follow_distinct_cold_warm_and_hot_start_paths():
     # A genuinely cold block still takes the independent cold-start path.
     cold = BlockFuelCellArray(BlockFuelCellConfig(
         asset_id="fc-b", block_rated_mw=2, block_count=1,
+        initial_hot_standby_blocks=0,
         cold_start_s=9, warm_start_s=4, hot_start_s=1,
     ))
     assert cold.command_start(0)

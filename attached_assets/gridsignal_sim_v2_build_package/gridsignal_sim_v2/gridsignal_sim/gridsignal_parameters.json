@@ -1347,11 +1347,11 @@
     },
     {
       "key": "fuel_cell_hot_start_s",
-      "value": 60.0,
+      "value": 5.0,
       "unit": "s",
       "label": "Fuel-cell block hot-start synchronisation time",
       "provenance": "CHOSEN",
-      "provenance_detail": "CHOSEN — 60 s is the retained-hot block synchronisation duration in the G-1 fuel-cell model. It is distinct from frame-turbine hot_start_s (300 s). Replace with the installed fuel-cell vendor's hot-standby synchronisation data before production use.",
+      "provenance_detail": "CHOSEN — 5 s is the retained-hot block synchronisation duration used by the FC100 reference model. It is a simulator assumption, not a vendor measurement. Replace with installed-system hot-standby synchronisation data before production use.",
       "spec_ref": "Addendum G-1",
       "ui": {
         "control": "readonly",
