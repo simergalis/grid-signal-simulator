@@ -164,6 +164,8 @@ minimal scenario can be created with a name alone.
 | `hardware_profile_id` | string | `"enterprise_8gpu_air"` | no | Default profile for events without an explicit one |
 | `dt_lead_seconds` | float [0, 300] | `30.0` | no | Advance warning time for `starting` events (s). `solar_step` always uses 0. |
 | `solar_rated_mw` | float ≥ 0 | `0.0` | no | Peak solar capacity (MW) |
+| `fuel_cell_rated_mw` | float ≥ 0 | `0.0` | no | **Legacy aggregate field: nameplate MW per stack, not fleet-total MW.** Total legacy-array capacity is `fuel_cell_rated_mw × fuel_cell_stack_count`. Ignored when `fuel_cell_units` is populated. |
+| `fuel_cell_stack_count` | int ≥ 1 | `1` | no | **Legacy aggregate field:** number of equal-rated stacks. Multiply by the per-stack `fuel_cell_rated_mw` value for total legacy-array capacity. Ignored when `fuel_cell_units` is populated. |
 | `irradiance_steps` | `[float, float][]` | `[[0.0, 1.0]]` | no | Zero-order-hold irradiance profile. Each entry is `[sim_time_s, fraction_0_to_1]`. |
 | `island_mode` | bool | `true` | no | Run in islanded grid-forming mode |
 | `pue_base` | float [1.0, 2.0] | `1.03` | no | Power Usage Effectiveness baseline |

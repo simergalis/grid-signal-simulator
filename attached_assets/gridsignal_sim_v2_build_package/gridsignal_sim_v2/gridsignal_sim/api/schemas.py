@@ -1078,15 +1078,26 @@ class ScenarioSpec(BaseModel):
     # ── Fuel Cell Module Array ────────────────────────────────────────────────
     fuel_cell_enabled: bool = False
     fuel_cell_rated_mw: float = Field(
-        default=0.0, ge=0.0,
+        default=0.0,
+        ge=0.0,
+        title="Legacy Fuel Cell Per-Stack Rated MW",
         description=(
-            "Nameplate MW rating of ONE fuel cell stack. "
-            "The physics engine and EDL use fuel_cell_rated_mw × fuel_cell_stack_count "
-            "as the fleet-total available capacity. "
-            "Example: 5 MW/stack × 4 stacks = 20 MW fleet."
+            "LEGACY AGGREGATE FIELD: nameplate MW rating PER STACK, not the "
+            "fleet-total rating. The physics engine and EDL calculate total "
+            "legacy-array capacity as fuel_cell_rated_mw × fuel_cell_stack_count. "
+            "Example: 5 MW per stack × 4 stacks = 20 MW total. Ignored when "
+            "fuel_cell_units is populated."
         ),
     )
-    fuel_cell_stack_count: int = Field(default=1, ge=1)
+    fuel_cell_stack_count: int = Field(
+        default=1,
+        ge=1,
+        description=(
+            "LEGACY AGGREGATE FIELD: number of equal-rated stacks. Multiply this "
+            "count by the per-stack fuel_cell_rated_mw value to obtain total "
+            "legacy-array capacity. Ignored when fuel_cell_units is populated."
+        ),
+    )
     fuel_cell_initial_state: Optional[
         Literal["cold", "warming", "hot_standby", "running", "controlled_cooling"]
     ] = Field(

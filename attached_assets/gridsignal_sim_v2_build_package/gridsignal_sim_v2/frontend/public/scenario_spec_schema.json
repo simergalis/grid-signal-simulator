@@ -2298,13 +2298,14 @@
     },
     "fuel_cell_rated_mw": {
       "default": 0.0,
-      "description": "Nameplate MW rating of ONE fuel cell stack. The physics engine and EDL use fuel_cell_rated_mw × fuel_cell_stack_count as the fleet-total available capacity. Example: 5 MW/stack × 4 stacks = 20 MW fleet.",
+      "description": "LEGACY AGGREGATE FIELD: nameplate MW rating PER STACK, not the fleet-total rating. The physics engine and EDL calculate total legacy-array capacity as fuel_cell_rated_mw × fuel_cell_stack_count. Example: 5 MW per stack × 4 stacks = 20 MW total. Ignored when fuel_cell_units is populated.",
       "minimum": 0.0,
-      "title": "Fuel Cell Rated Mw",
+      "title": "Legacy Fuel Cell Per-Stack Rated MW",
       "type": "number"
     },
     "fuel_cell_stack_count": {
       "default": 1,
+      "description": "LEGACY AGGREGATE FIELD: number of equal-rated stacks. Multiply this count by the per-stack fuel_cell_rated_mw value to obtain total legacy-array capacity. Ignored when fuel_cell_units is populated.",
       "minimum": 1,
       "title": "Fuel Cell Stack Count",
       "type": "integer"
