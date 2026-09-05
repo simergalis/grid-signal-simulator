@@ -84,12 +84,13 @@ def test_fc_achieved_output_equal_to_demand_does_not_dispatch_bess() -> None:
 
     tick = _tick(state)
 
-    assert tick.fuel_cell_achieved_output_mw == pytest.approx(tick.p_demand_mw)
+    assert tick.fuel_cell_output_mw == pytest.approx(tick.p_demand_mw)
     assert tick.bess_setpoint_mw == pytest.approx(0.0)
     assert tick.bess_output_mw == pytest.approx(0.0)
-    # Command and achievement are independently retained for telemetry.
-    assert tick.fuel_cell_commanded_output_mw == pytest.approx(5.0)
-    assert tick.fuel_cell_achieved_output_mw == pytest.approx(5.0)
+    # Command/achievement are block-only telemetry; aggregate output remains
+    # available through the legacy scalar field.
+    assert tick.fuel_cell_commanded_output_mw is None
+    assert tick.fuel_cell_achieved_output_mw is None
 
 
 def test_fixed_fc_surplus_is_absorbed_by_bess() -> None:
@@ -118,7 +119,8 @@ def test_fixed_fc_surplus_is_absorbed_by_bess() -> None:
 
     tick = _tick(state)
 
-    assert tick.fuel_cell_achieved_output_mw == pytest.approx(10.0)
+    assert tick.fuel_cell_output_mw == pytest.approx(10.0)
+    assert tick.fuel_cell_achieved_output_mw is None
     assert tick.bess_setpoint_mw == pytest.approx(-5.0)
     assert tick.bess_output_mw == pytest.approx(-5.0)
     assert tick.p_unserved_mw == pytest.approx(0.0)

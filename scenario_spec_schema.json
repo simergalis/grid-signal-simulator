@@ -550,6 +550,20 @@
           "title": "Min Stable Frac",
           "type": "number"
         },
+        "intrinsic_output_ramp_rate_mw_per_s": {
+          "anyOf": [
+            {
+              "exclusiveMinimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Always-on real-power ramp limit per block in MW/s. Omitted derives effective_block_rated_mw / 3 s, the initial-slope equivalent of the canonical fuel-to-power first-order lag. Applied whether or not fuel_system is declared; fuel constraints can only reduce output further. Provenance: proposed.",
+          "title": "Intrinsic Output Ramp Rate Mw Per S"
+        },
         "hot_standby_floor_blocks": {
           "default": 0,
           "minimum": 0,

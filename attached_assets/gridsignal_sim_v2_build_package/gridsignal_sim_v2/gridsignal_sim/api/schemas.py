@@ -391,6 +391,17 @@ class FuelCellUnitSpec(BaseModel):
     controlled_cooling_s: Optional[float] = Field(default=None, gt=0.0)
     hot_standby: bool = True
     min_stable_frac: float = Field(default=0.5, ge=0.0, le=1.0)
+    intrinsic_output_ramp_rate_mw_per_s: Optional[float] = Field(
+        default=None,
+        gt=0.0,
+        description=(
+            "Always-on real-power ramp limit per block in MW/s. Omitted derives "
+            "effective_block_rated_mw / 3 s, the initial-slope equivalent of the "
+            "canonical fuel-to-power first-order lag. Applied whether or not "
+            "fuel_system is declared; fuel constraints can only reduce output "
+            "further. Provenance: proposed."
+        ),
+    )
     hot_standby_floor_blocks: int = Field(default=0, ge=0)
     dispatch_mechanism: Literal["discrete_blocks", "modulating", "hybrid"] = "hybrid"
     readiness_dwell_s: float = Field(default=0.0, ge=0.0)
@@ -452,6 +463,7 @@ class FuelCellUnitSpec(BaseModel):
         defaults = {
             "grid_forming": "site_specific",
             "power_factor": "site_specific",
+            "intrinsic_output_ramp_rate_mw_per_s": "proposed",
             "reactive_capability_mvar": "proposed",
             "ieee_1547_category": "site_specific",
             "beginning_of_life_heat_rate_btu_per_kwh": "vendor_published",

@@ -36,6 +36,10 @@ from .site_parameters import value as catalogue_value
 DEFAULT_BLOCK_FUEL_CELL_HOT_START_S = float(
     catalogue_value("fuel_cell_hot_start_s")
 )
+# A first-order fuel-to-power lag has initial full-scale slope P/tau.  The
+# intrinsic block ramp uses that directly derivable constant-rate equivalent;
+# an authored fuel system remains a separate, additional exponential limit.
+DEFAULT_BLOCK_FUEL_TO_POWER_TIME_CONSTANT_S = 3.0
 
 
 @dataclass
@@ -53,7 +57,9 @@ class FuelSystemConfig:
     regulator_droop_fraction: float = 0.05
     distribution_loss_psi: float = 0.5
     maximum_supply_flow_scfm: float | None = None
-    delivered_to_cell_time_constant_s: float = 3.0
+    delivered_to_cell_time_constant_s: float = (
+        DEFAULT_BLOCK_FUEL_TO_POWER_TIME_CONSTANT_S
+    )
     max_fuel_utilisation: float = 0.85
     provenance: dict[str, str] = field(default_factory=dict)
 
@@ -348,6 +354,7 @@ class BlockFuelCellConfig:
     hot_start_s: float = DEFAULT_BLOCK_FUEL_CELL_HOT_START_S
     hot_standby: bool = True
     min_stable_frac: float = 0.5
+    intrinsic_output_ramp_rate_mw_per_s: float | None = None
     hot_standby_floor_blocks: int = 0
     dispatch_mechanism: str = "hybrid"
     readiness_dwell_s: float = 0.0
@@ -406,6 +413,18 @@ class BlockFuelCellConfig:
             raise ValueError("expected hot_start_s <= warm_start_s <= cold_start_s")
         if not 0 <= self.min_stable_frac <= 1:
             raise ValueError("min_stable_frac must be between zero and one")
+        if self.intrinsic_output_ramp_rate_mw_per_s is None:
+            self.intrinsic_output_ramp_rate_mw_per_s = (
+                self.effective_block_rated_mw
+                / DEFAULT_BLOCK_FUEL_TO_POWER_TIME_CONSTANT_S
+            )
+        if (
+            not math.isfinite(self.intrinsic_output_ramp_rate_mw_per_s)
+            or self.intrinsic_output_ramp_rate_mw_per_s <= 0
+        ):
+            raise ValueError(
+                "intrinsic_output_ramp_rate_mw_per_s must be positive and finite"
+            )
         if not 0 < self.power_factor <= 1:
             raise ValueError("fuel-cell power_factor must be in (0, 1]")
         if self.reactive_capability_mvar is not None and self.reactive_capability_mvar < 0:
@@ -441,6 +460,7 @@ class BlockFuelCellConfig:
             "grid_forming": "site_specific",
             "power_factor": "site_specific",
             "apparent_power_rating_mva_per_block": "site_specific",
+            "intrinsic_output_ramp_rate_mw_per_s": "proposed",
             "reactive_capability_mvar": "proposed",
             "ieee_1547_category": "site_specific",
             "beginning_of_life_heat_rate_btu_per_kwh": "vendor_published",
@@ -965,6 +985,11 @@ class BlockFuelCellArray(AssetModule):
         # First complete every thermal transition.  Output allocation follows
         # in a separate pass so an interval-end snapshot cannot report a block
         # as RUNNING before that same block has been assigned its output.
+        productive_seconds_by_block: dict[int, float] = {
+            id(block): dt_seconds
+            for block in self.blocks
+            if block.state == FuelCellState.RUNNING
+        }
         for block in self.blocks:
             if block.state in (FuelCellState.WARMING, FuelCellState.CONTROLLED_COOLING):
                 block.timer_s = max(0.0, block.timer_s - dt_seconds)
@@ -976,11 +1001,16 @@ class BlockFuelCellArray(AssetModule):
                         block.state = FuelCellState.COLD
                         block.thermal_readiness = "warm"
             elif block.state == FuelCellState.HOT_STANDBY and block.dwell_s:
+                dwell_before_s = block.dwell_s
                 block.dwell_s = max(0.0, block.dwell_s - dt_seconds)
                 if block.dwell_s == 0:
                     block.state = FuelCellState.RUNNING
                     block.output_mw = self._running_block_floor_mw
                     block.thermal_readiness = "hot"
+                    productive_seconds_by_block[id(block)] = max(
+                        0.0,
+                        dt_seconds - dwell_before_s,
+                    )
 
         running_blocks = [
             block for block in self.blocks
@@ -990,10 +1020,20 @@ class BlockFuelCellArray(AssetModule):
         if self.config.dispatch_mechanism == "discrete_blocks":
             per_block_target = self.config.effective_block_rated_mw
         for block in running_blocks:
-            block.output_mw = max(
+            desired_output_mw = max(
                 self.config.effective_block_rated_mw * self.config.min_stable_frac,
                 min(self.config.effective_block_rated_mw, per_block_target),
             )
+            maximum_step_mw = (
+                float(self.config.intrinsic_output_ramp_rate_mw_per_s)
+                * productive_seconds_by_block.get(id(block), 0.0)
+            )
+            delta_mw = desired_output_mw - block.output_mw
+            block.output_mw += max(
+                -maximum_step_mw,
+                min(maximum_step_mw, delta_mw),
+            )
+        ramp_limited_output_mw = self.output_mw()
         # Integrate once, at the interval-end state. HOT_STANDBY includes a
         # block in hot-start dwell by design.
         rate = self.effective_heat_rate_btu_per_kwh / self.config.gas_heating_value_btu_per_scf / 60.0
@@ -1017,11 +1057,14 @@ class BlockFuelCellArray(AssetModule):
         )
         if self.config.fuel_system is not None:
             self._apply_fuel_system(
-                target, dt_seconds, self.total_fuel_demand_scfm,
+                target, ramp_limited_output_mw,
+                dt_seconds, self.total_fuel_demand_scfm,
                 productive_output_before, running_before, wanted, committed_before,
             )
 
-    def _apply_fuel_system(self, demand_mw: float, dt_seconds: float,
+    def _apply_fuel_system(self, demand_mw: float,
+                           ramp_limited_output_mw: float,
+                           dt_seconds: float,
                            pre_hydraulic_total_scfm: float,
                            productive_output_before: float,
                            running_before: int, wanted_blocks: int,
@@ -1137,7 +1180,7 @@ class BlockFuelCellArray(AssetModule):
         # Fuel may be pre-staged for the full target before electrical
         # synchronisation, but only RUNNING blocks can draw current.
         electrically_drawable_mw = min(
-            demand_mw,
+            ramp_limited_output_mw,
             len(running) * self.config.effective_block_rated_mw,
         )
         desired_mw = electrically_drawable_mw * pressure_factor

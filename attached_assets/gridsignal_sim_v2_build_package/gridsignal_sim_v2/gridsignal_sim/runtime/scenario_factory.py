@@ -935,6 +935,11 @@ def build_run_context_from_spec(
                     ),
                     hot_standby=bool(unit.get("hot_standby", True)),
                     min_stable_frac=float(unit.get("min_stable_frac", 0.5)),
+                    intrinsic_output_ramp_rate_mw_per_s=(
+                        float(unit["intrinsic_output_ramp_rate_mw_per_s"])
+                        if unit.get("intrinsic_output_ramp_rate_mw_per_s") is not None
+                        else None
+                    ),
                     hot_standby_floor_blocks=int(unit.get("hot_standby_floor_blocks", 0)),
                     dispatch_mechanism=str(unit.get("dispatch_mechanism", "hybrid")),
                     readiness_dwell_s=float(unit.get("readiness_dwell_s", 0.0)),

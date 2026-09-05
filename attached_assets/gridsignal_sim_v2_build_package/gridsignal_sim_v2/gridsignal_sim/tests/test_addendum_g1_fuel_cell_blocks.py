@@ -17,6 +17,7 @@ def test_unit_schema_derives_capacity_and_rejects_independent_rating():
     unit = FuelCellUnitSpec(asset_id="fc-a", block_rated_mw=2.5, block_count=4)
     assert unit.rated_mw == 10.0
     assert unit.initial_hot_standby_blocks == 4
+    assert unit.provenance["intrinsic_output_ramp_rate_mw_per_s"] == "proposed"
     with pytest.raises(ValidationError):
         FuelCellUnitSpec(
             asset_id="fc-a", block_rated_mw=2.5, block_count=4, rated_mw=10.0
@@ -122,7 +123,8 @@ def test_dwell_completion_allocates_output_in_the_same_interval_end_snapshot():
     array = BlockFuelCellArray(BlockFuelCellConfig(
         asset_id="fc-a", block_rated_mw=2, block_count=2,
         initial_hot_standby_blocks=2, commit_rate_blocks_per_s=2,
-        hot_start_s=5, dispatch_mechanism="hybrid", min_stable_frac=0,
+        hot_start_s=4, dispatch_mechanism="hybrid", min_stable_frac=0,
+        intrinsic_output_ramp_rate_mw_per_s=2,
     ))
     array.set_load_following_target_mw(4)
     array.advance(0, 5)
@@ -240,6 +242,88 @@ def test_dispatch_modes_have_expected_block_output(mode, expected):
     array.set_load_following_target_mw(3)
     array.advance(0, 1)
     assert array.output_mw() == expected
+
+
+def test_intrinsic_output_ramp_applies_without_a_fuel_system():
+    array = BlockFuelCellArray(BlockFuelCellConfig(
+        asset_id="fc-small",
+        block_rated_mw=2,
+        block_count=1,
+        initial_running_blocks=1,
+        initial_hot_standby_blocks=0,
+        intrinsic_output_ramp_rate_mw_per_s=0.1,
+    ))
+    array.set_load_following_target_mw(2)
+
+    array.advance(0, 5)
+
+    assert array.minimum_dispatchable_output_mw == pytest.approx(1.0)
+    assert array.output_mw() == pytest.approx(1.5)
+
+
+def test_default_intrinsic_output_ramp_is_derived_from_three_second_lag():
+    array = BlockFuelCellArray(BlockFuelCellConfig(
+        asset_id="fc-default-ramp",
+        block_rated_mw=2,
+        block_count=1,
+        initial_running_blocks=1,
+        initial_hot_standby_blocks=0,
+    ))
+
+    assert array.config.intrinsic_output_ramp_rate_mw_per_s == pytest.approx(2 / 3)
+
+
+def test_intrinsic_output_ramp_limits_upward_and_downward_changes():
+    array = BlockFuelCellArray(BlockFuelCellConfig(
+        asset_id="fc-symmetric-ramp",
+        block_rated_mw=2,
+        block_count=1,
+        initial_running_blocks=1,
+        initial_hot_standby_blocks=0,
+        intrinsic_output_ramp_rate_mw_per_s=0.2,
+    ))
+    array.set_load_following_target_mw(2)
+    array.advance(0, 1)
+    assert array.output_mw() == pytest.approx(1.2)
+
+    array.set_load_following_target_mw(1)
+    array.advance(1, 1)
+    assert array.output_mw() == pytest.approx(1.0)
+
+
+def test_dwell_completion_does_not_receive_unearned_interval_ramp_credit():
+    array = BlockFuelCellArray(BlockFuelCellConfig(
+        asset_id="fc-dwell-ramp",
+        block_rated_mw=2,
+        block_count=1,
+        initial_running_blocks=0,
+        initial_hot_standby_blocks=1,
+        hot_start_s=5,
+        intrinsic_output_ramp_rate_mw_per_s=0.1,
+    ))
+    array.set_load_following_target_mw(2)
+
+    array.advance(0, 5)
+    assert array.output_mw() == pytest.approx(1.0)
+
+    array.advance(5, 1)
+    assert array.output_mw() == pytest.approx(1.1)
+
+
+def test_multi_block_target_redistribution_is_ramp_limited_per_block():
+    array = BlockFuelCellArray(BlockFuelCellConfig(
+        asset_id="fc-redistribution",
+        block_rated_mw=2,
+        block_count=2,
+        initial_running_blocks=2,
+        initial_hot_standby_blocks=0,
+        intrinsic_output_ramp_rate_mw_per_s=0.1,
+    ))
+    array.set_load_following_target_mw(4)
+
+    array.advance(0, 1)
+
+    assert [block.output_mw for block in array.blocks] == pytest.approx([1.1, 1.1])
 
 
 def test_blocks_follow_distinct_cold_warm_and_hot_start_paths():

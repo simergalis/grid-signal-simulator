@@ -273,6 +273,7 @@ must satisfy `hot_start_s ≤ warm_start_s ≤ cold_start_s`.
 | `controlled_cooling_s` | float > 0 \| null | `null` | Optional controlled-cooling duration (s) |
 | `hot_standby` | bool | `true` | Whether this unit supports hot standby |
 | `min_stable_frac` | float [0, 1] | `0.5` | Minimum stable output fraction |
+| `intrinsic_output_ramp_rate_mw_per_s` | float > 0 \| null | `null` | Always-on real-power ramp limit for each synchronized, producing block (MW/s), provenance `proposed`. Omitted derives `effective_block_rated_mw / 3 s`, matching the initial full-scale slope of the canonical first-order fuel-to-power lag. It applies with or without `fuel_system`; pressure, delivery, and utilisation constraints may reduce output further but cannot bypass this limit. Synchronization establishes the minimum-stable floor after start dwell; stop and protection trips disconnect to zero rather than operating below that floor. |
 | `hot_standby_floor_blocks` | int ≥ 0 | `0` | Minimum blocks retained in hot standby |
 | `dispatch_mechanism` | `"discrete_blocks"` \| `"modulating"` \| `"hybrid"` | `"hybrid"` | Dispatch behavior of the array |
 | `readiness_dwell_s` | float ≥ 0 | `0.0` | Required dwell time before a block is considered ready (s) |

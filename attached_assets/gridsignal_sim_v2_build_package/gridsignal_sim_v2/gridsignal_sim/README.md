@@ -38,6 +38,20 @@ the site-specific MVA rating to restore normal site confidence. Real output per
 block is physically limited to
 `min(block_rated_mw, apparent_power_rating_mva_per_block × power_factor)`.
 
+## Fuel-cell intrinsic output ramp
+
+Every synchronized, producing block-addressable fuel-cell block has an
+always-on real-power ramp limit, including when no optional fuel manifold is
+configured. The default proposed rate is `effective_block_rated_mw / 3 s`: the
+initial-slope equivalent `P/τ` of the existing three-second first-order
+fuel-to-power lag. A constant MW/s ramp cannot duplicate an exponential
+response at every instant; this derivation matches its maximum initial slope
+without inventing a settling threshold. Optional pressure, delivered-fuel, and
+utilisation constraints are applied after the intrinsic ramp and may only
+reduce achievable output further. Synchronization establishes the
+minimum-stable floor after start dwell; stops and protection trips disconnect
+to zero rather than operating below that stable floor.
+
 | Skeleton piece | Design Spec section |
 |---|---|
 | `core/*` being plain sync Python with zero `asyncio` imports | §2 principle 2 ("fidelity over cleverness") and §4.3 |
