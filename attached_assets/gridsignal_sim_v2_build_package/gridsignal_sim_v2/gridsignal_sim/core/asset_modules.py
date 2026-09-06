@@ -1440,7 +1440,11 @@ class BessModule(AssetModule):
 
         max_by_power = power_ceiling_mw
         max_by_energy = (
-            max(0.0, self.soc_mwh - soc_floor_mwh) / (dt_seconds / 3600.0)
+            (
+                max(0.0, self.soc_mwh - soc_floor_mwh)
+                * self.config.discharge_efficiency
+            )
+            / (dt_seconds / 3600.0)
             if dt_seconds > 0
             else max_by_power
         )
@@ -1460,7 +1464,13 @@ class BessModule(AssetModule):
         else:
             discharge_mw = discharge_target_mw
 
-        self.soc_mwh = max(0.0, self.soc_mwh - discharge_mw * (dt_seconds / 3600.0))
+        self.soc_mwh = max(
+            0.0,
+            self.soc_mwh
+            - discharge_mw
+            * (dt_seconds / 3600.0)
+            / self.config.discharge_efficiency,
+        )
         self._prev_output_mw = discharge_mw
         self._current_output_mw = discharge_mw
         return discharge_mw
@@ -1513,7 +1523,10 @@ class BessModule(AssetModule):
         else:
             charge_mw = charge_target_mw
 
-        self.soc_mwh = min(self.config.usable_mwh, self.soc_mwh + charge_mw * dt_hours)
+        self.soc_mwh = min(
+            self.config.usable_mwh,
+            self.soc_mwh + charge_mw * dt_hours * self.config.charge_efficiency,
+        )
         self._prev_output_mw  = -charge_mw   # negative = charging, for next tick's lag
         self._current_output_mw = -charge_mw
         return charge_mw
