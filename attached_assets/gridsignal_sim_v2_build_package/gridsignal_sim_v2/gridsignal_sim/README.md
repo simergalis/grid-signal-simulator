@@ -42,15 +42,22 @@ block is physically limited to
 
 Every synchronized, producing block-addressable fuel-cell block has an
 always-on real-power ramp limit, including when no optional fuel manifold is
-configured. The default proposed rate is `effective_block_rated_mw / 3 s`: the
-initial-slope equivalent `P/τ` of the existing three-second first-order
-fuel-to-power lag. A constant MW/s ramp cannot duplicate an exponential
-response at every instant; this derivation matches its maximum initial slope
-without inventing a settling threshold. Optional pressure, delivered-fuel, and
-utilisation constraints are applied after the intrinsic ramp and may only
-reduce achievable output further. Synchronization establishes the
-minimum-stable floor after start dwell; stops and protection trips disconnect
-to zero rather than operating below that stable floor.
+configured. It represents the stack's own capability. The default proposed
+rate is `effective_block_rated_mw / (3 × 3 s)`, using the approximate 95%
+settling point of the existing three-second first-order fuel-to-power lag. It
+reaches full scale in about nine seconds, or about 667% of rating per minute.
+This engineering placeholder is deliberately below the manufacturer's
+published 2,000%/min extreme-case figure: that is a system-level measurement
+achieved with supercapacitor banks discharging while the stack recovers, not
+the stack's intrinsic capability. No manufacturer-published step-load response
+time in seconds exists for this equipment, so neither this block default nor
+the aggregate model's 60%/min value is validated as the equipment response.
+Optional pressure, delivered-fuel, and utilisation constraints are applied
+after the intrinsic ramp and may only reduce achievable output further.
+Synchronization establishes the minimum-stable floor after start dwell; stops
+and protection trips disconnect to zero rather than operating below that
+stable floor. The standard five-second reporting cadence can conceal the
+within-tick ramp trajectory; use one-second results when comparing ramp models.
 
 | Skeleton piece | Design Spec section |
 |---|---|

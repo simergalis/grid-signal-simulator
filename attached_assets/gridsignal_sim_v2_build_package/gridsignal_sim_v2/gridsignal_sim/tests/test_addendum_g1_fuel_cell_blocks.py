@@ -238,6 +238,7 @@ def test_dispatch_modes_have_expected_block_output(mode, expected):
     array = BlockFuelCellArray(BlockFuelCellConfig(
         asset_id="fc-a", block_rated_mw=2, block_count=2,
         initial_running_blocks=2, dispatch_mechanism=mode,
+        intrinsic_output_ramp_rate_mw_per_s=2,
     ))
     array.set_load_following_target_mw(3)
     array.advance(0, 1)
@@ -261,7 +262,7 @@ def test_intrinsic_output_ramp_applies_without_a_fuel_system():
     assert array.output_mw() == pytest.approx(1.5)
 
 
-def test_default_intrinsic_output_ramp_is_derived_from_three_second_lag():
+def test_default_intrinsic_output_ramp_uses_three_time_constant_settling_point():
     array = BlockFuelCellArray(BlockFuelCellConfig(
         asset_id="fc-default-ramp",
         block_rated_mw=2,
@@ -270,7 +271,7 @@ def test_default_intrinsic_output_ramp_is_derived_from_three_second_lag():
         initial_hot_standby_blocks=0,
     ))
 
-    assert array.config.intrinsic_output_ramp_rate_mw_per_s == pytest.approx(2 / 3)
+    assert array.config.intrinsic_output_ramp_rate_mw_per_s == pytest.approx(2 / 9)
 
 
 def test_intrinsic_output_ramp_limits_upward_and_downward_changes():

@@ -36,10 +36,14 @@ from .site_parameters import value as catalogue_value
 DEFAULT_BLOCK_FUEL_CELL_HOT_START_S = float(
     catalogue_value("fuel_cell_hot_start_s")
 )
-# A first-order fuel-to-power lag has initial full-scale slope P/tau.  The
-# intrinsic block ramp uses that directly derivable constant-rate equivalent;
-# an authored fuel system remains a separate, additional exponential limit.
 DEFAULT_BLOCK_FUEL_TO_POWER_TIME_CONSTANT_S = 3.0
+# Engineering placeholder for the stack's own capability: use the approximate
+# 95% settling point (3*tau), not the first-order lag's assisted initial slope.
+# The manufacturer's published 2,000% of rating/min extreme-case figure is a
+# system-level measurement with supercapacitor discharge while the stack
+# recovers; it is not an intrinsic stack limit.  No manufacturer-published
+# step-load response time in seconds exists for this equipment.
+DEFAULT_BLOCK_INTRINSIC_RAMP_SETTLING_TIME_CONSTANTS = 3.0
 
 
 @dataclass
@@ -416,7 +420,10 @@ class BlockFuelCellConfig:
         if self.intrinsic_output_ramp_rate_mw_per_s is None:
             self.intrinsic_output_ramp_rate_mw_per_s = (
                 self.effective_block_rated_mw
-                / DEFAULT_BLOCK_FUEL_TO_POWER_TIME_CONSTANT_S
+                / (
+                    DEFAULT_BLOCK_INTRINSIC_RAMP_SETTLING_TIME_CONSTANTS
+                    * DEFAULT_BLOCK_FUEL_TO_POWER_TIME_CONSTANT_S
+                )
             )
         if (
             not math.isfinite(self.intrinsic_output_ramp_rate_mw_per_s)

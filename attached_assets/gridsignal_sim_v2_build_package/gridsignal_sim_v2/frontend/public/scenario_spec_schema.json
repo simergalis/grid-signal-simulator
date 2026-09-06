@@ -561,7 +561,7 @@
             }
           ],
           "default": null,
-          "description": "Always-on real-power ramp limit per block in MW/s. Omitted derives effective_block_rated_mw / 3 s, the initial-slope equivalent of the canonical fuel-to-power first-order lag. Applied whether or not fuel_system is declared; fuel constraints can only reduce output further. Provenance: proposed.",
+          "description": "Always-on intrinsic stack real-power ramp limit per block in MW/s. Omitted derives effective_block_rated_mw / (3 * the 3 s fuel-to-power time constant), reaching full scale in about 9 s (about 667% of rating/min). This proposed engineering placeholder is deliberately below the manufacturer's 2,000%/min extreme-case system figure, which includes supercapacitor assistance while the stack recovers and is not an intrinsic stack limit. No manufacturer-published step-load response time in seconds exists for this equipment; this block placeholder and the aggregate model's 60%/min rate therefore bracket an unvalidated response. Applied whether or not fuel_system is declared; fuel constraints can only reduce output further. The standard 5 s reporting cadence can hide the ramp; use 1 s results for model comparisons. Provenance: proposed.",
           "title": "Intrinsic Output Ramp Rate Mw Per S"
         },
         "hot_standby_floor_blocks": {
