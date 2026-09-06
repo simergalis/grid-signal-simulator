@@ -14,6 +14,7 @@ these dataclasses to stored rows (Design Spec Section 6).
 from __future__ import annotations
 
 import logging as _logging
+import math as _math
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Literal, Optional
@@ -819,6 +820,9 @@ class BessConfig:
     rated_mw: float = 5.0
     usable_mwh: float = 2.0
     initial_soc_fraction: float = 1.0
+    bess_round_trip_efficiency: float = _sp.value("bess_round_trip_efficiency")
+    charge_efficiency: float = field(init=False)
+    discharge_efficiency: float = field(init=False)
     # Step 3 Item 4 — v2.5 §7.1.2: anchor reserve.
     # p_anchor_reserve_mw: power withheld from bridging when this unit is the
     #   island's grid-forming anchor (grid_forming=True, island_mode=ISLANDED).
@@ -868,6 +872,14 @@ class BessConfig:
         range are not blocked.
         """
         import warnings
+        if not 0.0 < self.bess_round_trip_efficiency <= 1.0:
+            raise ValueError(
+                "bess_round_trip_efficiency must be greater than 0 and at most 1 "
+                f"(got {self.bess_round_trip_efficiency})"
+            )
+        _one_way_efficiency = _math.sqrt(self.bess_round_trip_efficiency)
+        self.charge_efficiency = _one_way_efficiency
+        self.discharge_efficiency = _one_way_efficiency
         _c_rate = self.rated_mw / self.usable_mwh
         if not (0.25 <= _c_rate <= 4.0):
             warnings.warn(

@@ -1360,6 +1360,20 @@
       "note": "Authoritative default for BlockFuelCellConfig.hot_start_s and FuelCellUnitSpec.hot_start_s. Hot standby blocks remain unavailable until this duration, plus any configured readiness dwell, has elapsed."
     },
     {
+      "key": "bess_round_trip_efficiency",
+      "value": 0.917,
+      "unit": "dimensionless",
+      "label": "BESS AC-to-AC round-trip efficiency",
+      "provenance": "PROPOSED_HERE",
+      "provenance_detail": "0.917 is the Tesla Megapack 2 XL published AC-to-AC round-trip efficiency at two-hour duration, measured on a full-depth cycle at 25 C, inclusive of power-conversion and thermal or parasitic losses, per the Megapack 2 XL datasheet. The four-hour figure is 93.7 percent and the two-hour figure is chosen as the conservative anchor. No measured basis exists for this site. Replace with the design partner's commissioning result measured per IEC 62933-2 before any bridging-duration figure is quoted externally.",
+      "spec_ref": "DR-2026-09-06-BESS-RTE",
+      "ui": {
+        "control": "readonly",
+        "group": "bess"
+      },
+      "note": "Locked default for BessConfig.bess_round_trip_efficiency. AC-to-AC and inclusive of power-conversion and thermal or parasitic losses."
+    },
+    {
       "key": "solar_ppa_rate_mwh",
       "value": 28.0,
       "unit": "USD/MWh",
