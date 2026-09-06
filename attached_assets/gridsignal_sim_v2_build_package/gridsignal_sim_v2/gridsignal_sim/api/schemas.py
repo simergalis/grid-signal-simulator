@@ -272,16 +272,7 @@ class BessUnitSpec(BaseModel):
     rated_mw: float = Field(gt=0)
     usable_mwh: float = Field(gt=0)
     initial_soc_fraction: float = Field(default=0.95, ge=0.1, le=1.0)
-    grid_forming: bool = Field(
-        default=False,
-        description=(
-            "Declares this BESS as the scenario's grid-forming source. GridSignal "
-            "supports at most one declared grid-forming source across the complete "
-            "scenario because coordination between multiple grid-forming sources "
-            "is not modelled; this is a simulator scope limitation, not an "
-            "electrical prohibition (§7.1.2)."
-        ),
-    )
+    grid_forming: bool = False
     # PW-3 / §15: explicit per-unit anchor-reserve override (MW).
     # When present, build_run_context_from_spec uses this value directly instead
     # of deriving from anchor_reserve_pct.  1.0 MW is the BessConfig default
@@ -422,16 +413,7 @@ class FuelCellUnitSpec(BaseModel):
     readiness_dwell_s: float = Field(default=0.0, ge=0.0)
     # Addendum G Stage 3 Option C.  These are per-array operating properties,
     # not electrical-group properties.
-    grid_forming: bool = Field(
-        default=False,
-        description=(
-            "Declares this fuel-cell array as the scenario's grid-forming source. "
-            "GridSignal supports at most one declared grid-forming source across "
-            "the complete scenario because coordination between multiple "
-            "grid-forming sources is not modelled; this is a simulator scope "
-            "limitation, not an electrical prohibition (§7.1.2)."
-        ),
-    )
+    grid_forming: bool = False
     power_factor: float = Field(default=1.0, gt=0.0, le=1.0)
     reactive_capability_mvar: Optional[float] = Field(default=None, ge=0.0)
     ieee_1547_category: Literal[1, 2, 3] = 3
@@ -1108,23 +1090,6 @@ class ScenarioSpec(BaseModel):
         min_length=0,
         default_factory=list,
     )
-
-    @model_validator(mode="after")
-    def _validate_single_grid_forming_source(self) -> "ScenarioSpec":
-        """Enforce the simulator's single-former modelling boundary (§7.1.2)."""
-        declared_formers = sum(unit.grid_forming for unit in self.bess_units)
-        declared_formers += sum(unit.grid_forming for unit in self.fuel_cell_units)
-        if declared_formers > 1:
-            raise ValueError(
-                "§7.1.2: GridSignal supports only one declared grid-forming "
-                "source per scenario because coordination between multiple "
-                "grid-forming sources—including droop coordination, reactive "
-                "power sharing, and circulating current—is not modelled. Real "
-                "power systems may operate multiple grid-forming sources in "
-                "parallel; this validation is a simulator modelling-scope "
-                "limitation, not a rule of electrical design."
-            )
-        return self
 
     solar_rated_mw: float = Field(default=0.0, ge=0.0)
 

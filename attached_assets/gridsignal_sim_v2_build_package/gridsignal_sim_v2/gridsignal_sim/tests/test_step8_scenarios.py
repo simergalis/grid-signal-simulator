@@ -6,7 +6,7 @@ Covers:
   B-fix  SOLAR_STEP triggers stage_for_predicted_step through apply_workload_signal.
   C-fix  D12/PROTO-9 C-rate guard: out-of-range warns, never 400.
   D-fix  ScenarioStore aligned with Step 2 Scenario ORM entity shape.
-  E-fix  §7.1.2 single grid_forming anchor validated on ScenarioSpec.
+  E-fix  Grid-forming anchor reserve applied to BESS bridging (§7.1.2).
   Minor  IrradianceProfile zero-order hold; irradiance_steps convention.
   CRUD   POST / GET list / GET detail / PUT / DELETE /scenarios.
   Seeded demo-fleet, demo-tc33-compute, demo-tc33-renewable present.
@@ -357,23 +357,14 @@ class TestCRateGuard:
 
 
 # ---------------------------------------------------------------------------
-# E-fix: §7.1.2 single grid_forming anchor
+# Retired contract tests:
+# The former service/API tests here asserted an at-most-one-grid-forming-source
+# rule. Addendum G-2 §G2.6.2 deliberately removed that rule, and §7.1.2 was
+# cited for a constraint it does not state. Multiple declared formers are valid;
+# runtime viability instead requires at least one declared former to remain live.
 # ---------------------------------------------------------------------------
 
 class TestGridFormingConstraint:
-    def test_two_grid_forming_units_rejected(self):
-        with pytest.raises(ValueError, match="§7.1.2"):
-            ScenarioSpec(
-                name="bad",
-                workload_events=[WorkloadEventSpec(event_id="e", job_id="j", event_type="starting",
-                                                   timestamp=0.0, node_count=1)],
-                bess_units=[
-                    BessUnitSpec(asset_id="bess-0", rated_mw=5.0, usable_mwh=2.0, grid_forming=True),
-                    BessUnitSpec(asset_id="bess-1", rated_mw=5.0, usable_mwh=2.0, grid_forming=True),
-                ],
-                turbine_units=[TurbineUnitSpec(asset_id="t-0")],
-            )
-
     def test_single_grid_forming_accepted(self):
         spec = ScenarioSpec(
             name="ok-anchor",
@@ -387,20 +378,6 @@ class TestGridFormingConstraint:
         )
         forming = [u for u in spec.bess_units if u.grid_forming]
         assert len(forming) == 1
-
-    def test_api_two_grid_forming_returns_422(self):
-        with TestClient(create_app()) as client:
-            spec_dict = _minimal_spec().model_dump()
-            spec_dict["bess_units"] = [
-                {"asset_id": "bess-0", "rated_mw": 5.0, "usable_mwh": 2.0,
-                 "initial_soc_fraction": 0.95, "grid_forming": True},
-                {"asset_id": "bess-1", "rated_mw": 5.0, "usable_mwh": 2.0,
-                 "initial_soc_fraction": 0.95, "grid_forming": True},
-            ]
-            resp = client.post("/scenarios", json=spec_dict)
-        assert resp.status_code == 422
-        assert "7.1.2" in resp.text
-
 
 # ---------------------------------------------------------------------------
 # Scenario CRUD

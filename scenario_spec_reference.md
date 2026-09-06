@@ -211,7 +211,7 @@ not scenario shape, determines whether an island has a live forming source.
 | `rated_mw` | float > 0 | — | **Required.** Peak discharge power (MW) |
 | `usable_mwh` | float > 0 | — | **Required.** Usable energy capacity (MWh) |
 | `initial_soc_fraction` | float [0.1, 1.0] | `0.95` | State of charge at t=0 |
-| `grid_forming` | bool | `false` | True = this unit may form the island while actually producing. Multiple units may be configured. |
+| `grid_forming` | bool | `false` | True = this unit may form the island while energized with usable charge. Multiple units may be configured. **Known modelling limitation:** when multiple grid-forming sources are simultaneously live, GridSignal still uses one site-wide frequency state and one swing equation; it does not model inter-former droop coordination, reactive-power sharing, or circulating current. Results do not represent those interactions. |
 
 C-rate = `rated_mw / usable_mwh`. Values outside 0.25–4.0 C are accepted with a warning.
 
@@ -277,7 +277,7 @@ must satisfy `hot_start_s ≤ warm_start_s ≤ cold_start_s`.
 | `hot_standby_floor_blocks` | int ≥ 0 | `0` | Minimum blocks retained in hot standby |
 | `dispatch_mechanism` | `"discrete_blocks"` \| `"modulating"` \| `"hybrid"` | `"hybrid"` | Dispatch behavior of the array |
 | `readiness_dwell_s` | float ≥ 0 | `0.0` | Required dwell time before a block is considered ready (s) |
-| `grid_forming` | bool | `false` | A running, actually-producing array may form an island; provenance `site_specific`. |
+| `grid_forming` | bool | `false` | A running, actually-producing array may form an island; provenance `site_specific`. Multiple arrays and BESS units may be configured. **Known modelling limitation:** simultaneously live formers share the simulator's single site-wide frequency state; inter-former droop coordination, reactive-power sharing, and circulating current are not modelled. |
 | `power_factor` | float (0,1] | `1.0` | Per-array PF; reactive output is `P × tan(acos(PF))`; provenance `site_specific`. |
 | `reactive_capability_mvar` | float ≥ 0 \| null | `null` | Optional Q capability; omitted derives the rated-MW/PF nameplate capability; provenance `proposed`. |
 | `ieee_1547_category` | `1`, `2`, or `3` | `3` | IEEE 1547-2018 abnormal-operation category; controls ROCOF trip at 0.5/2/3 Hz/s; provenance `site_specific`. |
@@ -593,7 +593,13 @@ The currently supported `hardware_profile_id` value is:
    energized and usable charge remains, including at zero net MW exchange. A
    fuel-cell former must have a running block producing real power. If neither
    remains, the run collapses with
-   `island_collapse_no_grid_forming_source`.
+   `island_collapse_no_grid_forming_source`. **Known modelling limitation:** if
+   multiple formers are live simultaneously, the simulator still holds one
+   site-wide frequency state and integrates one swing equation. It does not
+   model droop coordination, reactive-power sharing, or circulating current
+   between those sources, so the resulting trace must not be interpreted as a
+   coordinated multi-former electrical solution. This is a model limitation,
+   not a validation rule or runtime warning.
 5. `irradiance_steps` entries are zero-order-hold: `[sim_time_s, fraction]`. Fractions outside [0, 1] are accepted (e.g. cloud-front overshoot).
 6. `kube_config` and `workload_events` are mutually exclusive in practice: when `kube_config` is set, `workload_events` is ignored by the engine.
 7. `ambient_steps` and `generation_block` are engine-populated — do not set them in a submitted payload.

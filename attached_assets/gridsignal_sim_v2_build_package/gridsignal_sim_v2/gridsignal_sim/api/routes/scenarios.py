@@ -11,8 +11,8 @@ ScenarioStore is an in-memory dict aligned with the Step 2 Scenario ORM
 entity (runtime/persistence.py Scenario class + spec_json column).
 Step 9 replaces _data with SQLAlchemy session calls using the same entity.
 
-§7.1.2 single-anchor invariant is validated by ScenarioSpec's model_validator,
-so it fires on both create and update without any additional logic here.
+§7.1.2 anchor reserve affects BESS bridging headroom; it does not limit how many
+grid-forming sources a scenario may declare.
 
 D12 / PROTO-9 C-rate guard: out-of-range C-rates are returned as a warning
 list field, never as a 400.  The bound is chosen without measured basis.

@@ -9,11 +9,11 @@ Fuel-cell Stage 3 is intentionally limited to grid-forming viability, power-fact
 
 **How to apply:** Keep fault-duty keys entirely absent from schemas and payloads—not zero or null. Electrical groups remain only a human-meaningful name and block count.
 
-A fuel-cell former counts only while a running block produces real power. A BESS former can establish voltage at zero net MW exchange while energized and holding usable charge; an exhausted or explicitly tripped BESS does not count. The intended Stage-3 contract permits one declared grid-forming anchor and rejects a second. Grid-forming viability enforcement is opt-in: scenarios declaring no grid-forming FC or BESS source retain the legacy unconstrained island path.
+A fuel-cell former counts only while a running block produces real power. A BESS former can establish voltage at zero net MW exchange while energized and holding usable charge; an exhausted or explicitly tripped BESS does not count. Addendum G-2 §G2.6.2 deliberately permits multiple declared grid-forming sources; viability requires at least one live former, not exactly one. Grid-forming viability enforcement is opt-in: scenarios declaring no grid-forming FC or BESS source retain the legacy unconstrained island path.
 
-**Why:** Grid-forming voltage synthesis does not require positive BESS real-power flow, but it does require a live inverter and energy source. Requiring positive BESS MW incorrectly collapses balanced islands. Applying this newer concept to legacy scenarios that never declared a former caused first-tick collapse and broad run-lifecycle regressions.
+**Why:** §7.1.2 governs anchor reserve in BESS bridging, not the number of declared formers. Grid-forming voltage synthesis does not require positive BESS real-power flow, but it does require a live inverter and energy source. Applying this newer concept to legacy scenarios that never declared a former caused first-tick collapse and broad run-lifecycle regressions.
 
-**How to apply:** First detect whether any FC array or BESS unit is configured grid-forming. Only for those opted-in scenarios, collapse with the distinct reason `island_collapse_no_grid_forming_source` when no configured former remains live.
+**How to apply:** Never reject a scenario for declaring multiple formers. First detect whether any FC array or BESS unit is configured grid-forming. Only for those opted-in scenarios, collapse with the distinct reason `island_collapse_no_grid_forming_source` when no configured former remains live. Document that concurrent formers share one site-wide frequency state; do not turn that modelling gap into validation or a runtime warning.
 
 Fuel-cell inverter apparent-power rating is fixed hardware, not derived from configured power factor. Its per-block default equals the real-power block rating only as a low-confidence, site-specific assumption because the vendor does not publish inverter kVA sizing.
 
