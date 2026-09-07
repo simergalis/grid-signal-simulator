@@ -1,16 +1,18 @@
 ---
 name: soc-corruption-dashboard
-description: How corrupted SoC is surfaced to the operator dashboard (Task #61), the field-ordering trap in TickResult, and the source-level bounds audit.
+description: Stored-domain telemetry corruption, deliverable contingency energy, and the TickResult field-ordering trap.
 ---
 
-# SoC Corruption Dashboard Wiring (Task #61)
+# SoC Corruption Dashboard Wiring
 
 ## The rule
-`_apply_soc_corruption()` must stamp **both** `contingency_coverage` and `bess_soc_corrupted_fraction` in the same `_dc_replace` call. These two must always agree:
+Telemetry corruption applies to stored SoC first. Discharge efficiency applies afterwards when contingency logic converts that corrupted stored reading to deliverable energy.
 
-    bess_soc_corrupted_fraction × total_usable_mwh ≈ contingency_coverage.bess_usable_energy_mwh
+The dashboard's corrupted SoC remains a stored-domain fraction. Contingency usable energy is a deliverable-domain quantity, so these values must not be equated after round-trip-efficiency support lands.
 
-**Why:** Without this stamp the dashboard showed `bess_soc_fraction` (clean physics), not the sensor reading the physics engine used for contingency. Operators saw a different SoC than what drove the contingency state.
+**Why:** A sensor fault changes the measured stored charge, not the stored-to-deliverable conversion. Equating stored SoC with deliverable energy either omits efficiency or risks applying corruption in the wrong domain.
+
+**How to apply:** Preserve both the corrupted stored fraction and the corresponding deliverable contingency energy. Tests should verify `deliverable = corrupted_stored × discharge_efficiency`, while comparisons between dashboard SoC and physical SoC must continue to compare stored quantities.
 
 ## Field ordering trap
 `TickResult` is a frozen dataclass. `bess_soc_corrupted_fraction: Optional[float] = None` must come **after** `confidence: ConfidenceBand` (which has no default), otherwise Python raises `TypeError: non-default argument 'confidence' follows default argument`. Any new Optional/default field must be placed after all required (no-default) fields.

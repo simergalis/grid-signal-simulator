@@ -1389,6 +1389,13 @@ class BessModule(AssetModule):
         )
         return max(0.0, self.config.rated_mw - anchor_deduction)
 
+    def deliverable_energy_mwh(self, soc_floor_mwh: float = 0.0) -> float:
+        """Return AC-deliverable energy above a stored-domain SoC floor."""
+        return (
+            max(0.0, self.soc_mwh - soc_floor_mwh)
+            * self.config.discharge_efficiency
+        )
+
     def cover_shortfall(
         self,
         allocated_mw: float,
@@ -1440,10 +1447,7 @@ class BessModule(AssetModule):
 
         max_by_power = power_ceiling_mw
         max_by_energy = (
-            (
-                max(0.0, self.soc_mwh - soc_floor_mwh)
-                * self.config.discharge_efficiency
-            )
+            self.deliverable_energy_mwh(soc_floor_mwh)
             / (dt_seconds / 3600.0)
             if dt_seconds > 0
             else max_by_power
@@ -1563,7 +1567,7 @@ class BessModule(AssetModule):
         effective_ceiling = self.bridging_available_mw(island_mode)
         if discharge_mw > effective_ceiling:
             return 0.0
-        hours = self.soc_mwh / discharge_mw
+        hours = self.deliverable_energy_mwh() / discharge_mw
         return hours * 3600.0
 
 

@@ -1692,6 +1692,7 @@ def _apply_soc_corruption(ctx: "RunContext", tick_result: "TickResult") -> "Tick
             usable_mwh=b.config.usable_mwh,
             p_anchor_reserve_mw=b.config.p_anchor_reserve_mw,
             grid_forming=b.config.grid_forming,
+            discharge_efficiency=b.config.discharge_efficiency,
         )
         for b in ctx.sim_state.bess_units if not b.tripped
     )

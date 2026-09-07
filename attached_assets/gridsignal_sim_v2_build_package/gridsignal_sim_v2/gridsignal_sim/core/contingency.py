@@ -51,6 +51,7 @@ class BessSnapshot:
     usable_mwh: float        # nameplate usable capacity
     p_anchor_reserve_mw: float
     grid_forming: bool
+    discharge_efficiency: float = 1.0
 
 
 @dataclass(frozen=True)
@@ -135,7 +136,10 @@ def evaluate_contingency(plant_state: PlantState) -> ContingencyCoverage:
     bess_bridging_available_mw = sum(
         _bess_bridging_mw(b, island_mode) for b in plant_state.bess_snapshots
     )
-    bess_usable_energy_mwh = sum(b.soc_mwh for b in plant_state.bess_snapshots)
+    bess_usable_energy_mwh = sum(
+        max(0.0, b.soc_mwh) * b.discharge_efficiency
+        for b in plant_state.bess_snapshots
+    )
 
     # Block fleets supply readiness-qualified upward reserve.  Legacy aggregate
     # modules omit that field and retain their historical full-rated behavior.

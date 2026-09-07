@@ -10,7 +10,7 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Solar sim capacity mismatch](solar-sim-capacity-mismatch.md) — SolarSim total rated MW ≠ scenario solar_rated_mw; A0 override and C backstop must normalize by ratio or dispatch starves.
 - [Payload guard contract](payload-guard-contract.md) — every key added to _tick_result_to_dict() must also be typed in frontend/src/types.ts TickPayload or test_payload_guard fails.
 - [Operator profile replay](operator-profile-replay.md) — §4.3 PMSTestDouble has a 3-part gate (grid_authority_tier, non-null profile, pms_shortfall_log stamp); all three must be open or it silently does nothing.
-- [SoC corruption dashboard wiring](soc-corruption-dashboard.md) — bess_soc_corrupted_fraction must follow confidence: ConfidenceBand in TickResult (field ordering constraint); corruption stamps both contingency_coverage and the fraction together.
+- [SoC corruption dashboard wiring](soc-corruption-dashboard.md) — corruption is applied to stored SoC before efficiency; dashboard SoC and contingency deliverable energy must not be equated.
 - [PAUSE control-plane](pause-control-plane.md) — asyncio.Event gate in _drive(); §22.3 timer persistence deferred; STOP vs PAUSE semantics.
 - [Frontend build + modal naming traps](gridsignal-frontend-build.md) — prod serves pre-built bundle; must run build_prod.sh + restart after any src/ edit. Two overlapping constant sets in GpuNodeGeneratorModal; Queue tab needs component-level TENANT_COLOUR_BY_ID / SCHEDULER_BADGE_BY_TYPE.
 - [Hot-standby release policy](hot-standby-cascade.md) — explicit FC/cascade policies release reserved units; normal commitment must not preempt them.

@@ -1505,7 +1505,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             state.site.island_mode
         )
         _bess_energy_ceiling_mw = (
-            _bess.soc_mwh / (dt_seconds / 3600.0)
+            _bess.deliverable_energy_mwh() / (dt_seconds / 3600.0)
             if dt_seconds > 0.0
             else _bess_power_ceiling_mw
         )
@@ -1524,9 +1524,8 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             _bess_normal_dispatch_ceilings_mw.append(_physical_ceiling_mw)
             continue
 
-        _normal_energy_mwh = max(
-            0.0,
-            _bess.soc_mwh - _reconciled_reserved_energy_mwh,
+        _normal_energy_mwh = _bess.deliverable_energy_mwh(
+            _reconciled_reserved_energy_mwh
         )
         _normal_energy_ceiling_mw = (
             _normal_energy_mwh / (dt_seconds / 3600.0)
@@ -2401,6 +2400,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                 usable_mwh=b.config.usable_mwh,
                 p_anchor_reserve_mw=b.config.p_anchor_reserve_mw,
                 grid_forming=b.config.grid_forming and not b.tripped,
+                discharge_efficiency=b.config.discharge_efficiency,
             )
             for b in state.bess_units
             if not b.tripped
