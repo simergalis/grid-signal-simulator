@@ -1559,14 +1559,15 @@
       "t_gap_s": 69.9,
       "turbine_output_at_load_arrival_mw": 6.0,
       "peak_shortfall_mw": 13.98,
-      "bridge_energy_mwh": 0.1417,
+      "bridge_energy_mwh": 0.1357,
+      "bridge_stored_energy_mwh": 0.1417,
       "p_bridge_avail_mw": 14.0,
       "point_estimate_result": "pass_by_0.02_mw",
       "band_evaluated_result": "alert_short_by_1.10_mw",
       "checkpoint_drop_threshold_mw": 2.997,
       "checkpoint_recovery_threshold_mw": 17.982
     },
-    "note": "The 8% band is illustrative only. v2.5 §12 requires a band but does not fix its magnitude — see PARAM-13 and OI-2. Bridge energy is stored-domain energy: (0.5 × 13.98 MW × 69.9 s / 3600) / sqrt(0.917) = 0.1417317609 MWh, rounded to 0.1417 MWh. The 14.0 MW bridge-available power ceiling is not scaled by efficiency."
+    "note": "The 8% band is illustrative only. v2.5 §12 requires a band but does not fix its magnitude — see PARAM-13 and OI-2. bridge_energy_mwh is the delivered energy under the shortfall triangle: 0.5 × 13.98 MW × 69.9 s / 3600 = 0.1357 MWh. bridge_stored_energy_mwh is the stored charge required to deliver it: 0.1357 MWh / sqrt(0.917) = 0.1417 MWh. The 14.0 MW bridge-available power ceiling is a power quantity and is not scaled by efficiency."
   },
   "open_items": {
     "OI-1": "P_anchor_reserve is a property of the island's dynamic stability study, not the battery nameplate. The 8% default is a placeholder pending a commissioning value.",
