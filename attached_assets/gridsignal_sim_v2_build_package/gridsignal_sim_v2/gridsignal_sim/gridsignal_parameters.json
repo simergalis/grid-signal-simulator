@@ -1514,6 +1514,16 @@
       "id": "INV-10",
       "statement": "NetworkTelemetry is dispatch-path ineligible by contract.",
       "test": "TC-74"
+    },
+    {
+      "id": "INV-11",
+      "statement": "Round-trip efficiency is applied exactly once per energy conversion and only in the energy domain; a power ceiling is never scaled by an efficiency term; and every conversion from stored energy to deliverable power uses the same single rule, with one implementation that all call sites consume.",
+      "test": "TC-103, TC-105"
+    },
+    {
+      "id": "INV-12",
+      "statement": "The round-trip efficiency figure is AC-to-AC and inclusive of thermal and parasitic losses; no separate BESS auxiliary or parasitic load term may be added without correspondingly raising this value, or the loss is counted twice.",
+      "test": "TC-101"
     }
   ],
   "worked_example": {
@@ -1532,6 +1542,7 @@
       "bess_rated_mw": 15.0,
       "soc_pct": 100,
       "anchor_reserve_mw": 1.0,
+      "bess_round_trip_efficiency": 0.917,
       "grid_mode": "islanded",
       "band_pct_illustrative": 8
     },
@@ -1548,14 +1559,14 @@
       "t_gap_s": 69.9,
       "turbine_output_at_load_arrival_mw": 6.0,
       "peak_shortfall_mw": 13.98,
-      "bridge_energy_mwh": 0.1357,
+      "bridge_energy_mwh": 0.1417,
       "p_bridge_avail_mw": 14.0,
       "point_estimate_result": "pass_by_0.02_mw",
       "band_evaluated_result": "alert_short_by_1.10_mw",
       "checkpoint_drop_threshold_mw": 2.997,
       "checkpoint_recovery_threshold_mw": 17.982
     },
-    "note": "The 8% band is illustrative only. v2.5 §12 requires a band but does not fix its magnitude — see PARAM-13 and OI-2."
+    "note": "The 8% band is illustrative only. v2.5 §12 requires a band but does not fix its magnitude — see PARAM-13 and OI-2. Bridge energy is stored-domain energy: (0.5 × 13.98 MW × 69.9 s / 3600) / sqrt(0.917) = 0.1417317609 MWh, rounded to 0.1417 MWh. The 14.0 MW bridge-available power ceiling is not scaled by efficiency."
   },
   "open_items": {
     "OI-1": "P_anchor_reserve is a property of the island's dynamic stability study, not the battery nameplate. The 8% default is a placeholder pending a commissioning value.",

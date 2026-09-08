@@ -156,7 +156,7 @@ File: `runtime/persistence.py`
 
 **Highest TC- number in repo:** `TC-203` (in `tests/test_operator_unit_commands.py`)
 
-The number space is not contiguous: TC-21, TC-47, TC-52, TC-61 through TC-98, TC-203. The range TC-100 through TC-202 is empty.
+The number space is not contiguous: TC-21, TC-47, TC-52, TC-61 through TC-98, TC-100 through TC-108, TC-203. TC-100 through TC-108 are assigned to DR-2026-09-06-BESS-RTE; the remaining free range is TC-109 through TC-202.
 
 | ID type | IDs found |
 |---|---|
