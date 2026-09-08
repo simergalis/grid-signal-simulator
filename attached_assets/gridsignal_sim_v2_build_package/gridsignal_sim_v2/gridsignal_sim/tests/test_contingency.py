@@ -21,7 +21,7 @@ from core.contingency import (
     TurbineSnapshot,
     evaluate_contingency,
 )
-from core.models import ContingencyState, IslandMode
+from core.models import BessConfig, ContingencyState, IslandMode
 
 
 # ---------------------------------------------------------------------------
@@ -42,6 +42,11 @@ def _turbine(asset_id: str, output_mw: float, rated_mw: float,
 def _bess(asset_id: str = "bess-0", rated_mw: float = 10.0, soc_mwh: float = 5.0,
           usable_mwh: float = 10.0, anchor_mw: float = 1.0,
           grid_forming: bool = True) -> BessSnapshot:
+    config = BessConfig(
+        asset_id=asset_id,
+        rated_mw=rated_mw,
+        usable_mwh=usable_mwh,
+    )
     return BessSnapshot(
         asset_id=asset_id,
         rated_mw=rated_mw,
@@ -49,6 +54,7 @@ def _bess(asset_id: str = "bess-0", rated_mw: float = 10.0, soc_mwh: float = 5.0
         usable_mwh=usable_mwh,
         p_anchor_reserve_mw=anchor_mw,
         grid_forming=grid_forming,
+        discharge_efficiency=config.discharge_efficiency,
     )
 
 
@@ -148,8 +154,16 @@ def test_tc79_anchor_reduces_bridging_available():
         _turbine("t-0", output_mw=5.0, rated_mw=7.0),
         _turbine("t-1", output_mw=3.0, rated_mw=7.0),
     ]
-    bess_spec = dict(asset_id="bess-0", rated_mw=10.0, soc_mwh=5.0,
-                     usable_mwh=10.0, p_anchor_reserve_mw=2.0, grid_forming=True)
+    bess_config = BessConfig(asset_id="bess-0", rated_mw=10.0, usable_mwh=10.0)
+    bess_spec = dict(
+        asset_id="bess-0",
+        rated_mw=10.0,
+        soc_mwh=5.0,
+        usable_mwh=10.0,
+        p_anchor_reserve_mw=2.0,
+        grid_forming=True,
+        discharge_efficiency=bess_config.discharge_efficiency,
+    )
 
     # Grid-following (anchor deduction = 0)
     bess_following = BessSnapshot(**{**bess_spec, "grid_forming": False})

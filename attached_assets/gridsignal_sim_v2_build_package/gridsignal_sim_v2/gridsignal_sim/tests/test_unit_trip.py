@@ -204,6 +204,7 @@ def test_tripped_bess_receives_no_contingency_power_or_energy_credit():
             usable_mwh=b.config.usable_mwh,
             p_anchor_reserve_mw=b.config.p_anchor_reserve_mw,
             grid_forming=b.config.grid_forming,
+            discharge_efficiency=b.config.discharge_efficiency,
         )
         for b in state.bess_units
         if not b.tripped

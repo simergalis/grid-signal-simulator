@@ -562,6 +562,11 @@ class TestR8DispatchableFromSingleSource:
                     usable_mwh=bess_rated,         # 1 MWh per MW rated
                     p_anchor_reserve_mw=anchor_reserve,
                     grid_forming=grid_forming,
+                    discharge_efficiency=BessConfig(
+                        asset_id="bess-0",
+                        rated_mw=bess_rated,
+                        usable_mwh=bess_rated,
+                    ).discharge_efficiency,
                 ),
             )
             if bess_rated > 0

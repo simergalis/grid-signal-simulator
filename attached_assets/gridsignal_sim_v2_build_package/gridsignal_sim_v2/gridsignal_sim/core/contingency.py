@@ -51,7 +51,7 @@ class BessSnapshot:
     usable_mwh: float        # nameplate usable capacity
     p_anchor_reserve_mw: float
     grid_forming: bool
-    discharge_efficiency: float = 1.0
+    discharge_efficiency: float
 
 
 @dataclass(frozen=True)
