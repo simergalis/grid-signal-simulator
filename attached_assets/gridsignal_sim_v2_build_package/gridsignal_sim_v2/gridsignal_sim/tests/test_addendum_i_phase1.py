@@ -186,7 +186,8 @@ def test_tc_i4_discharge_is_capped_at_floor() -> None:
         soc_floor_mwh=floor_mwh,
     )
 
-    assert output_mw == pytest.approx(0.75)
+    expected_output_mw = 0.75 * bess.config.discharge_efficiency
+    assert output_mw == pytest.approx(expected_output_mw)
     assert bess.soc_mwh == pytest.approx(floor_mwh)
 
 
@@ -209,4 +210,5 @@ def test_soc_floor_zero_preserves_existing_cover_shortfall_behavior() -> None:
     )
 
     assert output_without_floor == pytest.approx(1.5)
-    assert bess.soc_mwh == pytest.approx(0.5)
+    expected_soc_mwh = 2.0 - (1.5 / bess.config.discharge_efficiency)
+    assert bess.soc_mwh == pytest.approx(expected_soc_mwh)

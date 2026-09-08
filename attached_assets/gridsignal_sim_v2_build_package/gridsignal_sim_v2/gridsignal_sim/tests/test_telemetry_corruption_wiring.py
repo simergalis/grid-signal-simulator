@@ -126,8 +126,12 @@ def test_tc_gt2_a_staleness_substitutes_historical_soc():
 
     cov = result.contingency_coverage
     assert cov is not None
-    assert cov.bess_usable_energy_mwh == pytest.approx(_STALE_SOC_LOW, abs=1e-6), (
-        f"Expected stale SoC {_STALE_SOC_LOW} MWh, got {cov.bess_usable_energy_mwh:.6f}"
+    expected_deliverable_mwh = (
+        _STALE_SOC_LOW * ctx.sim_state.bess_units[0].config.discharge_efficiency
+    )
+    assert cov.bess_usable_energy_mwh == pytest.approx(expected_deliverable_mwh, abs=1e-6), (
+        f"Expected deliverable stale energy {expected_deliverable_mwh} MWh, "
+        f"got {cov.bess_usable_energy_mwh:.6f}"
     )
     # Physics SoC fraction must be unchanged
     assert result.bess_soc_fraction == tick.bess_soc_fraction, (
@@ -265,9 +269,14 @@ def test_tc_gt2_f_state_flips_when_soc_crosses_threshold():
     corrupted_cov = result.contingency_coverage
     assert corrupted_cov is not None
 
-    # bess_usable_energy_mwh must now reflect the stale value
-    assert corrupted_cov.bess_usable_energy_mwh == pytest.approx(_STALE_SOC_LOW, abs=1e-6), (
-        f"Expected stale SoC {_STALE_SOC_LOW} in coverage, "
+    # Coverage reports grid-deliverable energy from the stale stored-energy value.
+    expected_deliverable_mwh = (
+        _STALE_SOC_LOW * ctx.sim_state.bess_units[0].config.discharge_efficiency
+    )
+    assert corrupted_cov.bess_usable_energy_mwh == pytest.approx(
+        expected_deliverable_mwh, abs=1e-6
+    ), (
+        f"Expected deliverable stale energy {expected_deliverable_mwh} in coverage, "
         f"got {corrupted_cov.bess_usable_energy_mwh:.6f}"
     )
 
@@ -306,8 +315,12 @@ def test_tc_gt2_g_staleness_2_reads_two_ticks_ago():
     cov = result.contingency_coverage
     assert cov is not None
     # staleness=2 → history[-2] = _STALE_SOC_LOW (not _STALE_SOC_HIGH)
-    assert cov.bess_usable_energy_mwh == pytest.approx(_STALE_SOC_LOW, abs=1e-6), (
-        f"staleness=2 must read history[-2]={_STALE_SOC_LOW}, "
+    expected_deliverable_mwh = (
+        _STALE_SOC_LOW * ctx.sim_state.bess_units[0].config.discharge_efficiency
+    )
+    assert cov.bess_usable_energy_mwh == pytest.approx(expected_deliverable_mwh, abs=1e-6), (
+        f"staleness=2 must produce deliverable energy {expected_deliverable_mwh} "
+        f"from history[-2]={_STALE_SOC_LOW}, "
         f"got {cov.bess_usable_energy_mwh:.6f}"
     )
 
@@ -381,9 +394,12 @@ def test_tc_gt2_i_gaussian_noise_corrupts_soc_deterministically():
         # Noise was negligible — fast path might be taken; coverage unchanged
         return
 
-    assert cov.bess_usable_energy_mwh == pytest.approx(expected_corrupted, abs=1e-6), (
+    expected_deliverable_mwh = (
+        expected_corrupted * ctx.sim_state.bess_units[0].config.discharge_efficiency
+    )
+    assert cov.bess_usable_energy_mwh == pytest.approx(expected_deliverable_mwh, abs=1e-6), (
         f"bess_usable_energy_mwh {cov.bess_usable_energy_mwh:.6f} "
-        f"!= expected corrupted value {expected_corrupted:.6f}"
+        f"!= expected deliverable corrupted value {expected_deliverable_mwh:.6f}"
     )
 
     # bess_soc_fraction (physics value) must be unchanged

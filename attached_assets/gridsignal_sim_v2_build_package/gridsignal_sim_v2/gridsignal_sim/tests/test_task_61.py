@@ -305,23 +305,24 @@ class TestTC_61_CorruptedSoCReflectedOnDashboard:
     # ── 61-8: corrupted fraction consistent with contingency energy ────────
 
     def test_corrupted_fraction_consistent_with_contingency_energy(self) -> None:
-        """Key assertion for Task #61: dashboard value and physics contingency agree.
+        """Key assertion for Task #61: dashboard value reflects the stored snapshot.
 
-        After staleness corruption the physics engine recomputes contingency_coverage
-        using corrupted_soc_mwh.  The stamped bess_soc_corrupted_fraction is
-        corrupted_soc_mwh / total_usable_mwh.  Therefore:
+        After staleness corruption, bess_soc_corrupted_fraction is the stored-energy
+        snapshot divided by total usable energy.  Contingency coverage is expressed
+        in grid-deliverable energy, so it is intentionally not the comparison target.
+        Therefore:
 
             bess_soc_corrupted_fraction × total_usable_mwh
-            ≈ contingency_coverage.bess_usable_energy_mwh
+            ≈ stored snapshot energy
 
-        This is the invariant that guarantees the dashboard shows exactly the
-        same SoC value the physics engine used for contingency decisions.
+        This guarantees the dashboard shows exactly the corrupted stored SoC reading.
         """
         ctx, tick = _make_ctx_and_warmed_tick(bess_soc_mwh=BESS_USABLE_MWH)
         ctx.telemetry_corruption = _make_schedule_uniform(
             CorruptionEntry(noise_sigma=0.0, dropout=False, staleness=1)
         )
         ctx._bess_soc_history = [_STALE_SOC_HIGH]
+        stored_snapshot_soc_mwh = ctx._bess_soc_history[-1]
 
         result = _apply_soc_corruption(ctx, tick)
 
@@ -331,11 +332,10 @@ class TestTC_61_CorruptedSoCReflectedOnDashboard:
 
         total_usable = BESS_USABLE_MWH  # single BESS unit in the fixture
         dashboard_soc_mwh = result.bess_soc_corrupted_fraction * total_usable
-        physics_soc_mwh   = result.contingency_coverage.bess_usable_energy_mwh
 
-        assert dashboard_soc_mwh == pytest.approx(physics_soc_mwh, abs=1e-6), (
+        assert dashboard_soc_mwh == pytest.approx(stored_snapshot_soc_mwh, abs=1e-6), (
             f"Dashboard SoC (fraction × usable = {dashboard_soc_mwh:.6f} MWh) "
-            f"must equal physics contingency energy ({physics_soc_mwh:.6f} MWh). "
-            "Divergence here means operators see a different value than what "
-            "drove the contingency calculation — the core bug of Task #61."
+            f"must equal stored snapshot energy ({stored_snapshot_soc_mwh:.6f} MWh). "
+            "Divergence here means operators see a different value than the "
+            "corrupted stored SoC snapshot."
         )

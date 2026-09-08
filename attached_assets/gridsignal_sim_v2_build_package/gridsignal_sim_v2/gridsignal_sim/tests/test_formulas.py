@@ -703,7 +703,9 @@ def test_d11_reserve_alert_fires_when_bess_power_insufficient():
         f"got {bess.max_sustainable_seconds(14.0, _mode)}"
     )
     # Energy-limited path still works: at or below rated power, energy governs.
-    expected_s = (10.0 / 4.0) * 3600.0   # 4 MW ≤ 5 MW rated → 9000 s
+    expected_s = (
+        10.0 * bess.config.discharge_efficiency / 4.0
+    ) * 3600.0  # DR-2026-09-06-BESS-RTE: deliverable energy at 4 MW
     assert bess.max_sustainable_seconds(4.0, _mode) == expected_s, (
         f"max_sustainable_seconds(4.0) should be {expected_s} s (energy-limited); "
         f"got {bess.max_sustainable_seconds(4.0, _mode)}"
@@ -1554,8 +1556,11 @@ def test_d13_min_not_sum_fleet_endurance():
     alloc_each = 10.0  # proportional share for each equal-rated unit
     dur_a = bess_a.max_sustainable_seconds(alloc_each, island_mode)
     dur_b = bess_b.max_sustainable_seconds(alloc_each, island_mode)
-    assert math.isclose(dur_a, 360.0, rel_tol=1e-9), (
-        f"Unit A should sustain 360 s at 10 MW; got {dur_a:.1f} s"
+    expected_dur_a = (
+        1.0 * bess_a.config.discharge_efficiency / alloc_each
+    ) * 3600.0
+    assert math.isclose(dur_a, expected_dur_a, rel_tol=1e-9), (
+        f"Unit A should sustain {expected_dur_a:.1f} s at 10 MW; got {dur_a:.1f} s"
     )
     assert dur_a + dur_b > 400.0, (
         f"Regression guard: sum={dur_a + dur_b:.0f} s > 400 s (sum path would miss the alert)"

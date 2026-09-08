@@ -210,7 +210,7 @@ def test_bess_bridging_seconds_within_power_ceiling():
     """BESS within its power ceiling: result = (usable_mwh / demand_mw) × 3600.
 
     Setup: rated_mw=10, usable_mwh=1.0, demand=5 MW (below ceiling).
-    Expected: (1.0 / 5.0) × 3600 = 720 s.
+    Expected: (1.0 × discharge_efficiency / 5.0) × 3600.
     """
     bess = BessModule(
         config=BessConfig(
@@ -223,8 +223,11 @@ def test_bess_bridging_seconds_within_power_ceiling():
     )
     island_mode = IslandMode.ISLANDED
     result = bess.max_sustainable_seconds(5.0, island_mode)
-    assert result == pytest.approx(720.0, abs=0.01), (
-        f"expected 720 s, got {result}"
+    expected_seconds = (
+        1.0 * bess.config.discharge_efficiency / 5.0
+    ) * 3600.0
+    assert result == pytest.approx(expected_seconds, abs=0.01), (
+        f"expected {expected_seconds} s, got {result}"
     )
 
 
