@@ -1,0 +1,35 @@
+{
+  "name": "Lead-time collection — H100 SXM5 8-way NVL4 — inference",
+  "description": "Measurement-only lead-time fixture for the supported H100 SXM5 8-GPU NVLink profile and inference workload.",
+  "workload_events": [
+    {
+      "event_id": "evt-lead-time",
+      "job_id": "lead-time-job",
+      "event_type": "starting",
+      "timestamp": 0.0,
+      "node_count": 1,
+      "hardware_profile_id": "h100-sxm5-8way-nvl4",
+      "workload_class": "inference"
+    }
+  ],
+  "hardware_profile_id": "h100-sxm5-8way-nvl4",
+  "dt_lead_seconds": 30.0,
+  "bess_units": [
+    {
+      "asset_id": "bess-0",
+      "rated_mw": 5.0,
+      "usable_mwh": 2.0,
+      "initial_soc_fraction": 0.95
+    }
+  ],
+  "turbine_units": [
+    {
+      "asset_id": "turbine-0",
+      "rated_mw": 10.0,
+      "r_asset_mw_per_s": 0.2,
+      "thermal_state": "hot"
+    }
+  ],
+  "solar_rated_mw": 0.0,
+  "end_sim_time": 60.0
+}
