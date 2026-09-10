@@ -950,6 +950,19 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         for _g in state.gpu_modules:
             _g.step_phase = _fleet_phase
 
+    # Capture the pre-tick telemetry sample before GPU ramps advance.  The
+    # no-noise read avoids consuming the load RNG solely for instrumentation.
+    _lead_time_pre_draws: dict[str, float] = {}
+    for job_id in state.lead_time_observations.pending_job_ids():
+        for gpu in state.gpu_modules:
+            if job_id not in gpu._node_counts:
+                continue
+            _lead_time_pre_draws[job_id] = gpu.per_job_compute_mw(
+                job_id,
+                include_noise=False,
+            )
+            break
+
     # 1. Compute term — advance GPU ramps first (Step 3 Item 2: Δt_lead ramp).
     # GPU advance() is no longer a no-op: it advances the per-job ramp_progress
     # by dt_seconds/ramp_seconds so that P_compute grows realistically from near-0
@@ -960,8 +973,8 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
 
     # Phase 1 lead-time instrumentation.  Read the already-computed per-job
     # draw after the existing GPU advance; do not modify any physics state or
-    # decision input.  TickResult timestamps are interval-end timestamps, so
-    # the observation uses the same interval-end simulated time.
+    # decision input.  Interpolate between the pre/post samples to avoid
+    # quantizing the observation to the interval-end timestamp.
     for job_id in state.lead_time_observations.pending_job_ids():
         for gpu in state.gpu_modules:
             if job_id not in gpu._node_counts:
@@ -971,6 +984,8 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                 sim_time_seconds=sim_time + dt_seconds,
                 current_draw_mw=gpu.per_job_compute_mw(job_id),
                 target_draw_mw=gpu.per_job_target_mw(job_id),
+                previous_draw_mw=_lead_time_pre_draws.get(job_id, 0.0),
+                previous_sim_time_seconds=sim_time,
             )
             break
 

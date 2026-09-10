@@ -29,8 +29,22 @@ def test_records_first_high_draw_observation_only():
     recorder = LeadTimeObservationRecorder()
     recorder.record_start("run-1", _starting_signal())
 
-    assert recorder.observe_high_draw("job-1", 20.0, 9.4, 10.0) is None
-    observation = recorder.observe_high_draw("job-1", 25.0, 9.5, 10.0)
+    assert recorder.observe_high_draw(
+        "job-1",
+        20.0,
+        9.4,
+        10.0,
+        previous_draw_mw=9.0,
+        previous_sim_time_seconds=15.0,
+    ) is None
+    observation = recorder.observe_high_draw(
+        "job-1",
+        25.0,
+        9.5,
+        10.0,
+        previous_draw_mw=9.4,
+        previous_sim_time_seconds=20.0,
+    )
     assert observation is not None
     assert observation.start_sim_time_seconds == 10.0
     assert observation.high_draw_sim_time_seconds == 25.0
@@ -39,8 +53,33 @@ def test_records_first_high_draw_observation_only():
     assert observation.workload_type == "training"
     assert observation.threshold_fraction == HIGH_DRAW_THRESHOLD_FRACTION
 
-    assert recorder.observe_high_draw("job-1", 30.0, 10.0, 10.0) is None
+    assert recorder.observe_high_draw(
+        "job-1",
+        30.0,
+        10.0,
+        10.0,
+        previous_draw_mw=9.5,
+        previous_sim_time_seconds=25.0,
+    ) is None
     assert recorder.drain_completed() == (observation,)
+
+
+def test_interpolates_high_draw_crossing_within_tick():
+    recorder = LeadTimeObservationRecorder()
+    recorder.record_start("run-1", _starting_signal())
+
+    observation = recorder.observe_high_draw(
+        "job-1",
+        sim_time_seconds=15.0,
+        current_draw_mw=10.0,
+        target_draw_mw=10.0,
+        previous_draw_mw=9.0,
+        previous_sim_time_seconds=10.0,
+    )
+
+    assert observation is not None
+    assert observation.high_draw_sim_time_seconds == 12.5
+    assert observation.lead_time_seconds == 2.5
 
 
 def test_threshold_is_explicitly_exposed_as_unvalidated_measurement_setting():

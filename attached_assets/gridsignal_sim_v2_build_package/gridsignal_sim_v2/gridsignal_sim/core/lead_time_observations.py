@@ -70,13 +70,30 @@ class LeadTimeObservationRecorder:
         sim_time_seconds: float,
         current_draw_mw: float,
         target_draw_mw: float,
+        previous_draw_mw: float,
+        previous_sim_time_seconds: float,
     ) -> Optional[LeadTimeObservation]:
-        """Complete an observation on the first high-draw sample."""
+        """Complete an observation on the first high-draw crossing."""
         pending = self._pending.get(job_id)
         if pending is None or target_draw_mw <= 0.0:
             return None
-        if current_draw_mw < target_draw_mw * self.threshold_fraction:
+        threshold_draw_mw = target_draw_mw * self.threshold_fraction
+        if current_draw_mw < threshold_draw_mw:
             return None
+
+        if previous_draw_mw >= threshold_draw_mw:
+            high_draw_sim_time_seconds = previous_sim_time_seconds
+        elif current_draw_mw <= previous_draw_mw:
+            high_draw_sim_time_seconds = sim_time_seconds
+        else:
+            crossing_fraction = (
+                threshold_draw_mw - previous_draw_mw
+            ) / (current_draw_mw - previous_draw_mw)
+            high_draw_sim_time_seconds = (
+                previous_sim_time_seconds
+                + crossing_fraction
+                * (sim_time_seconds - previous_sim_time_seconds)
+            )
 
         observation = LeadTimeObservation(
             run_id=pending.run_id,
@@ -85,8 +102,10 @@ class LeadTimeObservationRecorder:
             hardware_profile_id=pending.hardware_profile_id,
             workload_type=pending.workload_type,
             start_sim_time_seconds=pending.start_sim_time_seconds,
-            high_draw_sim_time_seconds=sim_time_seconds,
-            lead_time_seconds=sim_time_seconds - pending.start_sim_time_seconds,
+            high_draw_sim_time_seconds=high_draw_sim_time_seconds,
+            lead_time_seconds=(
+                high_draw_sim_time_seconds - pending.start_sim_time_seconds
+            ),
             threshold_fraction=self.threshold_fraction,
         )
         self._pending.pop(job_id, None)

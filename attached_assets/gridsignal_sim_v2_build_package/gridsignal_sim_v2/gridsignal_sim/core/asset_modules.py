@@ -368,7 +368,12 @@ class GPUModule(AssetModule):
         """Sum of current (ramped) per-job draws across all active jobs."""
         return sum(self.per_job_compute_mw(job_id) for job_id in self._node_counts)
 
-    def per_job_compute_mw(self, job_id: str) -> float:
+    def per_job_compute_mw(
+        self,
+        job_id: str,
+        *,
+        include_noise: bool = True,
+    ) -> float:
         """Current (ramped) draw for job_id: Nodes_i × kW_i × PUE_base / 1000
         × _ramp_multiplier(progress).
 
@@ -406,7 +411,7 @@ class GPUModule(AssetModule):
             result = base_draw * effective_mult
             # Gaussian noise: small fractional sigma so the checkpoint classifier's
             # 15% threshold is unaffected (0.5% << 15%).
-            if self.rng_load is not None:
+            if include_noise and self.rng_load is not None:
                 noise = self.rng_load.normal(
                     0.0, base_draw * self.load_config.noise_sigma_fraction
                 )
