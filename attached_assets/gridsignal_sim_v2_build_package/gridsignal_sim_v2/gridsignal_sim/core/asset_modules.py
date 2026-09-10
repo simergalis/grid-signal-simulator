@@ -88,6 +88,7 @@ class GPUModule(AssetModule):
     hardware_library: dict[str, HardwareProfile]
     _node_counts: dict[str, int] = field(default_factory=dict)  # job_id -> nodes
     _job_profiles: dict[str, str] = field(default_factory=dict)  # job_id -> profile_id
+    _job_workload_classes: dict[str, WorkloadClass | None] = field(default_factory=dict)
     unmapped_profile_seen: set[str] = field(default_factory=set)
     # Step 3 Item 2: Δt_lead ramp state.
     # ramp_seconds — the window over which a newly-allocated job ramps from
@@ -208,6 +209,7 @@ class GPUModule(AssetModule):
         if signal.event_type == WorkloadEventType.STARTING:
             self._node_counts[signal.job_id] = signal.node_count
             self._job_profiles[signal.job_id] = signal.hardware_profile_id
+            self._job_workload_classes[signal.job_id] = signal.workload_class
             self._ramp_progress[signal.job_id] = 0.0          # begin Δt_lead ramp
             # Seed the authoritative desired count so SCALE deltas compute correctly.
             self._desired_node_counts[signal.job_id] = signal.node_count
@@ -217,6 +219,7 @@ class GPUModule(AssetModule):
             # contribute its full draw on the next physics tick.
             self._node_counts[signal.job_id] = signal.node_count
             self._job_profiles[signal.job_id] = signal.hardware_profile_id
+            self._job_workload_classes[signal.job_id] = signal.workload_class
             self._ramp_progress[signal.job_id] = 1.0
             self._desired_node_counts[signal.job_id] = signal.node_count
         elif signal.event_type == WorkloadEventType.SCALE:
@@ -232,6 +235,7 @@ class GPUModule(AssetModule):
                 # injection pattern — nodes were live before monitoring began).
                 self._node_counts[signal.job_id] = new_desired
                 self._job_profiles[signal.job_id] = signal.hardware_profile_id
+                self._job_workload_classes[signal.job_id] = signal.workload_class
                 self._ramp_progress[signal.job_id] = 1.0
                 self._desired_node_counts[signal.job_id] = new_desired
             elif new_desired > old_desired:
@@ -243,6 +247,7 @@ class GPUModule(AssetModule):
                 cohort_key = f"{signal.job_id}-cohort-{cohort_n}"
                 self._node_counts[cohort_key] = delta_nodes
                 self._job_profiles[cohort_key] = signal.hardware_profile_id
+                self._job_workload_classes[cohort_key] = signal.workload_class
                 self._ramp_progress[cohort_key] = 0.0         # cold-start ramp
                 self._job_cohorts.setdefault(signal.job_id, []).append(cohort_key)
                 self._desired_node_counts[signal.job_id] = new_desired
@@ -262,6 +267,7 @@ class GPUModule(AssetModule):
                         # Remove this cohort entirely — record it for cooling cleanup.
                         self._node_counts.pop(cohort_key, None)
                         self._job_profiles.pop(cohort_key, None)
+                        self._job_workload_classes.pop(cohort_key, None)
                         self._ramp_progress.pop(cohort_key, None)
                         self._job_cohorts[signal.job_id].remove(cohort_key)
                         self._last_scale_removed_cohort_keys.append(cohort_key)
@@ -281,11 +287,13 @@ class GPUModule(AssetModule):
         elif signal.event_type in (WorkloadEventType.JOB_END, WorkloadEventType.CANCELLED):
             self._node_counts.pop(signal.job_id, None)
             self._job_profiles.pop(signal.job_id, None)
+            self._job_workload_classes.pop(signal.job_id, None)
             self._ramp_progress.pop(signal.job_id, None)
             # Clean up all scale-up cohorts spawned from this job.
             for cohort_key in self._job_cohorts.pop(signal.job_id, []):
                 self._node_counts.pop(cohort_key, None)
                 self._job_profiles.pop(cohort_key, None)
+                self._job_workload_classes.pop(cohort_key, None)
                 self._ramp_progress.pop(cohort_key, None)
             self._cohort_counters.pop(signal.job_id, None)
             self._desired_node_counts.pop(signal.job_id, None)
@@ -366,15 +374,23 @@ class GPUModule(AssetModule):
             self._lag_raw_profile += alpha * (raw_profile - self._lag_raw_profile)
 
     def _ramp_seconds_for_job(self, job_id: str) -> float:
-        """Return the profile-specific ramp window, if one is explicitly set.
+        """Return the most-specific configured ramp window for a job.
 
         Existing profiles intentionally leave HardwareProfile.ramp_seconds as
         None.  They therefore use the historical module-level value exactly.
         """
         profile_id = self._job_profiles.get(job_id, "")
         profile = self.hardware_library.get(profile_id)
-        if profile is not None and profile.ramp_seconds is not None:
-            return profile.ramp_seconds
+        if profile is not None:
+            workload_class = self._job_workload_classes.get(job_id)
+            if workload_class is not None:
+                workload_ramp = profile.ramp_seconds_by_workload_class.get(
+                    workload_class.value
+                )
+                if workload_ramp is not None:
+                    return workload_ramp
+            if profile.ramp_seconds is not None:
+                return profile.ramp_seconds
         return self.ramp_seconds
 
     def output_mw(self) -> float:

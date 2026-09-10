@@ -62,6 +62,9 @@ class HardwareProfile:
     # Optional GPU cold-start ramp override.  None preserves the existing
     # module-level GPUModule.ramp_seconds / scenario dt_lead_seconds path.
     ramp_seconds: Optional[float] = None
+    # Optional workload-signature-specific ramp overrides.  An empty mapping
+    # preserves the existing profile-level/module-level fallback path.
+    ramp_seconds_by_workload_class: dict[str, float] = field(default_factory=dict)
 
 
 GENERIC_FALLBACK_PROFILE = HardwareProfile(
@@ -103,6 +106,7 @@ class WorkloadEventType(str, Enum):
 class WorkloadClass(str, Enum):
     TRAINING = "training"
     INFERENCE = "inference"
+    CHECKPOINTING = "checkpointing"
     OTHER = "other"
 
 

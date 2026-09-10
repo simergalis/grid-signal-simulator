@@ -153,6 +153,22 @@ DEFAULT_HARDWARE_LIBRARY = {
         vintage_generation="validation-only",
         ramp_seconds=60.0,
     ),
+    "addendum_h_cav1_workload_ramp": HardwareProfile(
+        "addendum_h_cav1_workload_ramp",
+        rated_kw=10.2,
+        description=(
+            "H-CAV-1 validation-only profile; unvalidated workload-signature "
+            "ramp timings"
+        ),
+        counting_unit="chassis",
+        gpus_per_unit=8,
+        vintage_generation="validation-only",
+        ramp_seconds_by_workload_class={
+            "training": 15.0,
+            "inference": 45.0,
+            "checkpointing": 75.0,
+        },
+    ),
 }
 
 
@@ -579,8 +595,8 @@ def build_run_context_from_spec(
       by §21.1 plane-separation).  The caller (api/routes/runs.py) is
       responsible for validating the spec via Pydantic and serialising it;
       this function only reads a plain dict.
-    - WorkloadClass is always TRAINING.  The scenario builder does not
-      distinguish class types; that's a Step 10 concern.
+    - WorkloadClass is read from each scripted event, defaulting to TRAINING
+      for backward compatibility with existing scenario specs.
     - An empty workload_events list is valid (idle run or TC-33 compute
       where the job starts at t>0).
     - SOLAR_STEP events are forwarded with event_type=WorkloadEventType.SOLAR_STEP;

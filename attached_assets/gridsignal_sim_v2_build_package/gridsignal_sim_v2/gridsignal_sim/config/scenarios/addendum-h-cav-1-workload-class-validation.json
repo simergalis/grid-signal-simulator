@@ -1,0 +1,55 @@
+{
+  "name": "Addendum H-CAV-1 — workload-class ramp validation",
+  "description": "Validation-only scenario for workload-signature-specific ramp timings. Not a production workload characterization.",
+  "workload_events": [
+    {
+      "event_id": "evt-h-cav-1-training",
+      "job_id": "h-cav-1-training",
+      "event_type": "starting",
+      "timestamp": 0.0,
+      "node_count": 1,
+      "hardware_profile_id": "addendum_h_cav1_workload_ramp",
+      "workload_class": "training"
+    },
+    {
+      "event_id": "evt-h-cav-1-inference",
+      "job_id": "h-cav-1-inference",
+      "event_type": "starting",
+      "timestamp": 0.0,
+      "node_count": 1,
+      "hardware_profile_id": "addendum_h_cav1_workload_ramp",
+      "workload_class": "inference"
+    },
+    {
+      "event_id": "evt-h-cav-1-checkpointing",
+      "job_id": "h-cav-1-checkpointing",
+      "event_type": "starting",
+      "timestamp": 0.0,
+      "node_count": 1,
+      "hardware_profile_id": "addendum_h_cav1_workload_ramp",
+      "workload_class": "checkpointing"
+    }
+  ],
+  "hardware_profile_id": "addendum_h_cav1_workload_ramp",
+  "dt_lead_seconds": 45.0,
+  "frequency_nominal_hz": 50.0,
+  "power_factor": 0.85,
+  "bess_units": [
+    {
+      "asset_id": "bess-0",
+      "rated_mw": 5.0,
+      "usable_mwh": 2.0,
+      "initial_soc_fraction": 0.95
+    }
+  ],
+  "turbine_units": [
+    {
+      "asset_id": "turbine-0",
+      "rated_mw": 10.0,
+      "r_asset_mw_per_s": 0.2,
+      "thermal_state": "hot"
+    }
+  ],
+  "solar_rated_mw": 0.0,
+  "end_sim_time": 90.0
+}

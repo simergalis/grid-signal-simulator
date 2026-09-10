@@ -102,6 +102,12 @@ _SCENARIO_PATH = (
     / "scenarios"
     / "addendum-h-lead-time-profile-validation.json"
 )
+_H_CAV_1_SCENARIO_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "config"
+    / "scenarios"
+    / "addendum-h-cav-1-workload-class-validation.json"
+)
 
 
 @contextlib.contextmanager
@@ -203,3 +209,68 @@ def test_profile_ramp_override_flows_to_dt_lead_next_s():
     # evaluate_tick advances the 20 s profile by 0.1 s before calculating
     # the remaining countdown: (1 - (0.5 + 0.1 / 20)) * 20 = 9.9 s.
     assert tick.dt_lead_next_s == pytest.approx(9.9, abs=1e-9)
+
+
+def _run_h_cav_1_validation_scenario():
+    spec = json.loads(_H_CAV_1_SCENARIO_PATH.read_text())
+    ctx = build_run_context_from_spec(
+        "tc-h-cav-1-workload-class-validation",
+        spec,
+        playback_speed=0.0,
+    )
+    for signal in ctx.events:
+        ctx.sim_state.apply_workload_signal(signal, ctx.dt_lead_seconds)
+
+    observations = []
+    sim_time = 0.0
+    for tick_seq in range(1000):
+        with _plane_guard_active():
+            evaluate_tick(
+                ctx.sim_state,
+                SimClock(
+                    sim_time=sim_time,
+                    dt_seconds=0.1,
+                    wall_stamp_utc=0.0,
+                    rate=1.0,
+                    tick_seq=tick_seq,
+                ),
+            )
+        observations.extend(ctx.sim_state.lead_time_observations.drain_completed())
+        if len(observations) == 3:
+            break
+        sim_time += 0.1
+    assert len(observations) == 3
+    return {
+        observation.workload_type: observation
+        for observation in observations
+    }
+
+
+def test_H_CAV_1_training_matches_15_second_known_answer():
+    observations = _run_h_cav_1_validation_scenario()
+    assert observations["training"].lead_time_seconds == pytest.approx(
+        10.5, abs=1e-9
+    )
+
+
+def test_H_CAV_1_inference_matches_45_second_known_answer():
+    observations = _run_h_cav_1_validation_scenario()
+    assert observations["inference"].lead_time_seconds == pytest.approx(
+        31.5, abs=1e-9
+    )
+
+
+def test_H_CAV_1_checkpointing_matches_75_second_known_answer():
+    observations = _run_h_cav_1_validation_scenario()
+    assert observations["checkpointing"].lead_time_seconds == pytest.approx(
+        52.5, abs=1e-9
+    )
+
+
+def test_H_CAV_1_workload_class_distributions_are_pairwise_distinguishable():
+    observations = _run_h_cav_1_validation_scenario()
+    recovered = [
+        observations[workload].lead_time_seconds
+        for workload in ("training", "inference", "checkpointing")
+    ]
+    assert len(set(recovered)) == 3
