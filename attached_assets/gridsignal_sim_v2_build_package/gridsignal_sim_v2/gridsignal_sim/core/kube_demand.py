@@ -117,6 +117,12 @@ class KubeConfig:
     max_nodes: int = 1900
     min_nodes: int = 200           # idle baseline — cluster is never fully empty
     hardware_profile_id: str = "enterprise_8gpu_air"
+    # Workload metadata for the power model.  Empty workload_class preserves
+    # the legacy training classification; specifying model_id alone selects
+    # inference so model sensitivity cannot be applied accidentally to a
+    # training workload.
+    workload_class: Optional[str] = None
+    model_id: Optional[str] = None
 
     # Gang-admission arrival pattern (Poisson process)
     # mean_interarrival_s is the average simulated seconds between successive
@@ -682,13 +688,22 @@ class KubeDemandAgent:
                 timestamp=sim_time,
                 hardware_profile_id=self.config.hardware_profile_id,
                 node_count=total_nodes,
-                workload_class=WorkloadClass.TRAINING,
+                workload_class=(
+                    WorkloadClass(self.config.workload_class)
+                    if self.config.workload_class is not None
+                    else (
+                        WorkloadClass.INFERENCE
+                        if self.config.model_id is not None
+                        else WorkloadClass.TRAINING
+                    )
+                ),
                 site_id=self.site_id,
                 tenant_id=self.config.tenant_id,
                 cluster_id=self.config.cluster_id or None,
                 scheduler_type=self.config.scheduler_type,
                 capacity_unit=self.config.capacity_unit,
                 gpus_per_unit=self.config.gpus_per_unit,
+                model_id=self.config.model_id,
             ))
             self._started = True
             self._last_total_nodes = total_nodes
@@ -953,13 +968,22 @@ class KubeDemandAgent:
                 timestamp=sim_time,
                 hardware_profile_id=self.config.hardware_profile_id,
                 node_count=total_nodes,
-                workload_class=WorkloadClass.TRAINING,
+                workload_class=(
+                    WorkloadClass(self.config.workload_class)
+                    if self.config.workload_class is not None
+                    else (
+                        WorkloadClass.INFERENCE
+                        if self.config.model_id is not None
+                        else WorkloadClass.TRAINING
+                    )
+                ),
                 site_id=self.site_id,
                 tenant_id=self.config.tenant_id,
                 cluster_id=self.config.cluster_id or None,
                 scheduler_type=self.config.scheduler_type,
                 capacity_unit=self.config.capacity_unit,
                 gpus_per_unit=self.config.gpus_per_unit,
+                model_id=self.config.model_id,
             ))
             self._started = True
             self._last_total_nodes = total_nodes

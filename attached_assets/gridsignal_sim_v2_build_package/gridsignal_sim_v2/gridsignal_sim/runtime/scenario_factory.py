@@ -103,10 +103,24 @@ _DEFAULT_EDL_CALENDAR_MONTH = 1
 
 
 DEFAULT_HARDWARE_LIBRARY = {
+    # Canonical H100/Hopper profile.  DynamoLLM HPCA 2025 Fig. 8 reports
+    # approximately 250--800 W/GPU across P50/P90/P99 inference operating
+    # points; 10.2 kW/chassis is retained as the conservative full-node
+    # envelope (1.275 kW/GPU), including host/network/cooling overhead.
+    # Citation: Stojkovic et al., "DynamoLLM", HPCA 2025, Fig. 8.
+    "hopper_8gpu_air": HardwareProfile(
+        "hopper_8gpu_air",
+        rated_kw=10.2,
+        description="H100/Hopper-class 8-GPU air-cooled chassis; DynamoLLM Fig. 8 calibrated envelope",
+        counting_unit="chassis",
+        gpus_per_unit=8,
+        vintage_generation="h100",
+    ),
+    # Backward-compatible identifier used by existing scenarios and fixtures.
     "enterprise_8gpu_air": HardwareProfile(
         "enterprise_8gpu_air",
         rated_kw=10.2,
-        description="H100-class 8-GPU air-cooled node",
+        description="Legacy alias for hopper_8gpu_air; H100-class 8-GPU air-cooled node",
         counting_unit="chassis",
         gpus_per_unit=8,
         vintage_generation="h100",
@@ -1293,6 +1307,7 @@ def build_run_context_from_spec(
             capacity_unit=evt.get("capacity_unit"),
             gpus_per_unit=int(evt.get("gpus_per_unit", 1)),
             electrical_group_id=evt.get("electrical_group_id"),
+            model_id=evt.get("model_id"),
         )
 
     # Scheduler-authored job cohorts at one timestamp are applied atomically per

@@ -142,6 +142,9 @@ class WorkloadSignal:
     gpus_per_unit: int = 1
     # G-2: optional topology address for a block fuel-cell UNIT_TRIP.
     electrical_group_id: Optional[str] = None
+    # Optional inference model identity used by the published DynamoLLM
+    # calibration.  None preserves the legacy hardware-only power path.
+    model_id: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------

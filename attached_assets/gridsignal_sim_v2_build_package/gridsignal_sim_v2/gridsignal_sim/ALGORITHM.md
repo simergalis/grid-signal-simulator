@@ -49,10 +49,30 @@ The agent passes the `KubeMetrics` snapshot (utilisation, active jobs, power-cap
 **Formula:**
 
 ```
-P_compute(t) = Σ_jobs  nodes_k × kW_k × PUE_base / 1000  ×  ρ(progress_k)
+P_compute(t) = Σ_jobs  nodes_k × kW_k × M_k × PUE_base / 1000  ×  ρ(progress_k)
 ```
 
-where `kW_k` comes from the hardware profile library and `ρ(progress)` is the **Δt\_lead ramp multiplier**:
+`kW_k` comes from the hardware profile library. `M_k` is 1.0 unless the
+signal is explicitly classified as inference and carries a recognized
+DynamoLLM Table III model id. For those signals, `M_k` is the model's
+lower-envelope medium-request/medium-load energy divided by the 0.98 Wh
+reference value. This is a workload sensitivity, not a replacement for the
+hardware rating, and it is applied once in `GPUModule` to both current and
+target draw. Training, checkpointing, other workloads, and unknown models
+remain at `M_k = 1.0` because DynamoLLM does not characterize them.
+
+Calibration source: J. Stojkovic, C. Zhang, I. Goiri, J. Torrellas, and
+E. Choukse, “DynamoLLM: Designing LLM Inference Clusters for Performance and
+Energy Efficiency,” HPCA 2025, Fig. 8 and Table III,
+https://arxiv.org/html/2408.00741v1. Figure 8's GPU-power bars are
+approximately 250–800 W/GPU at P50/P90/P99 across the evaluated systems.
+The companion cluster-power panel spans approximately 18–56 kW for the
+evaluated 12-server cluster.
+The H100/Hopper profile remains 10.2 kW per 8-GPU chassis (1.275 kW/GPU)
+as a conservative chassis envelope including non-GPU overhead; the old flat
+300 W/GPU assumption is not used by the power path.
+
+`ρ(progress)` is the **Δt\_lead ramp multiplier**:
 
 | Phase | Progress range | Output fraction |
 |---|---|---|

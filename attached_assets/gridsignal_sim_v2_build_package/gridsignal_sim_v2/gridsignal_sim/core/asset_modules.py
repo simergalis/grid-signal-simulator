@@ -40,6 +40,7 @@ from .models import (
     WorkloadEventType,
     WorkloadSignal,
 )
+from .dynamollm_calibration import dynamollm_model_multiplier
 from .step_config import LoadProfileConfig
 
 
@@ -89,6 +90,7 @@ class GPUModule(AssetModule):
     _node_counts: dict[str, int] = field(default_factory=dict)  # job_id -> nodes
     _job_profiles: dict[str, str] = field(default_factory=dict)  # job_id -> profile_id
     _job_workload_classes: dict[str, WorkloadClass | None] = field(default_factory=dict)
+    _job_model_ids: dict[str, str | None] = field(default_factory=dict)
     unmapped_profile_seen: set[str] = field(default_factory=set)
     # Step 3 Item 2: Δt_lead ramp state.
     # ramp_seconds — the window over which a newly-allocated job ramps from
@@ -210,6 +212,7 @@ class GPUModule(AssetModule):
             self._node_counts[signal.job_id] = signal.node_count
             self._job_profiles[signal.job_id] = signal.hardware_profile_id
             self._job_workload_classes[signal.job_id] = signal.workload_class
+            self._job_model_ids[signal.job_id] = signal.model_id
             self._ramp_progress[signal.job_id] = 0.0          # begin Δt_lead ramp
             # Seed the authoritative desired count so SCALE deltas compute correctly.
             self._desired_node_counts[signal.job_id] = signal.node_count
@@ -220,6 +223,7 @@ class GPUModule(AssetModule):
             self._node_counts[signal.job_id] = signal.node_count
             self._job_profiles[signal.job_id] = signal.hardware_profile_id
             self._job_workload_classes[signal.job_id] = signal.workload_class
+            self._job_model_ids[signal.job_id] = signal.model_id
             self._ramp_progress[signal.job_id] = 1.0
             self._desired_node_counts[signal.job_id] = signal.node_count
         elif signal.event_type == WorkloadEventType.SCALE:
@@ -229,6 +233,8 @@ class GPUModule(AssetModule):
             # count the delta on every subsequent SCALE.
             old_desired = self._desired_node_counts.get(signal.job_id, 0)
             new_desired = signal.node_count
+            self._job_workload_classes[signal.job_id] = signal.workload_class
+            self._job_model_ids[signal.job_id] = signal.model_id
 
             if old_desired == 0:
                 # No prior STARTING: snap to full (Kubernetes "already-running"
@@ -236,6 +242,7 @@ class GPUModule(AssetModule):
                 self._node_counts[signal.job_id] = new_desired
                 self._job_profiles[signal.job_id] = signal.hardware_profile_id
                 self._job_workload_classes[signal.job_id] = signal.workload_class
+                self._job_model_ids[signal.job_id] = signal.model_id
                 self._ramp_progress[signal.job_id] = 1.0
                 self._desired_node_counts[signal.job_id] = new_desired
             elif new_desired > old_desired:
@@ -248,6 +255,7 @@ class GPUModule(AssetModule):
                 self._node_counts[cohort_key] = delta_nodes
                 self._job_profiles[cohort_key] = signal.hardware_profile_id
                 self._job_workload_classes[cohort_key] = signal.workload_class
+                self._job_model_ids[cohort_key] = signal.model_id
                 self._ramp_progress[cohort_key] = 0.0         # cold-start ramp
                 self._job_cohorts.setdefault(signal.job_id, []).append(cohort_key)
                 self._desired_node_counts[signal.job_id] = new_desired
@@ -268,6 +276,7 @@ class GPUModule(AssetModule):
                         self._node_counts.pop(cohort_key, None)
                         self._job_profiles.pop(cohort_key, None)
                         self._job_workload_classes.pop(cohort_key, None)
+                        self._job_model_ids.pop(cohort_key, None)
                         self._ramp_progress.pop(cohort_key, None)
                         self._job_cohorts[signal.job_id].remove(cohort_key)
                         self._last_scale_removed_cohort_keys.append(cohort_key)
@@ -288,12 +297,14 @@ class GPUModule(AssetModule):
             self._node_counts.pop(signal.job_id, None)
             self._job_profiles.pop(signal.job_id, None)
             self._job_workload_classes.pop(signal.job_id, None)
+            self._job_model_ids.pop(signal.job_id, None)
             self._ramp_progress.pop(signal.job_id, None)
             # Clean up all scale-up cohorts spawned from this job.
             for cohort_key in self._job_cohorts.pop(signal.job_id, []):
                 self._node_counts.pop(cohort_key, None)
                 self._job_profiles.pop(cohort_key, None)
                 self._job_workload_classes.pop(cohort_key, None)
+                self._job_model_ids.pop(cohort_key, None)
                 self._ramp_progress.pop(cohort_key, None)
             self._cohort_counters.pop(signal.job_id, None)
             self._desired_node_counts.pop(signal.job_id, None)
@@ -420,7 +431,16 @@ class GPUModule(AssetModule):
             return 0.0
         profile_id = self._job_profiles.get(job_id, "")
         profile = self.hardware_library.get(profile_id, GENERIC_FALLBACK_PROFILE)
-        full_kw = nodes * profile.rated_kw * self.site.pue_base / 1000.0
+        workload_class = self._job_workload_classes.get(job_id)
+        model_id = self._job_model_ids.get(job_id)
+        model_multiplier = dynamollm_model_multiplier(workload_class, model_id)
+        full_kw = (
+            nodes
+            * profile.rated_kw
+            * model_multiplier
+            * self.site.pue_base
+            / 1000.0
+        )
         progress = self._ramp_progress.get(job_id, 1.0)  # 1.0 = fully ramped
         base_draw = full_kw * self._ramp_multiplier(progress)
 
@@ -466,7 +486,17 @@ class GPUModule(AssetModule):
             return 0.0
         profile_id = self._job_profiles.get(job_id, "")
         profile = self.hardware_library.get(profile_id, GENERIC_FALLBACK_PROFILE)
-        return nodes * profile.rated_kw * self.site.pue_base / 1000.0
+        model_multiplier = dynamollm_model_multiplier(
+            self._job_workload_classes.get(job_id),
+            self._job_model_ids.get(job_id),
+        )
+        return (
+            nodes
+            * profile.rated_kw
+            * model_multiplier
+            * self.site.pue_base
+            / 1000.0
+        )
 
     def target_output_mw(self) -> float:
         """Sum of full-TDP draws across all active jobs (no ramp adjustment).
