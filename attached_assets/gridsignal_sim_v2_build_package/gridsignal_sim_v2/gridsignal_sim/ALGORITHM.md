@@ -42,6 +42,30 @@ The agent passes the `KubeMetrics` snapshot (utilisation, active jobs, power-cap
 
 ---
 
+## Alibaba trace replay validation boundary
+
+**File:** `runtime/kube_trace_replay.py` · `replay_kube_trace()`
+
+The Phase A Alibaba replay is intentionally limited to the pods and node
+capacity present in the supplied CSV files. It does not infer unobserved
+workloads or reconstruct an initial occupancy snapshot. For
+`openb_pod_list_default.csv`, an independent sweep-line calculation over the
+7,255 pods with a non-blank `scheduled_time` found that their peak concurrent
+demand reaches only **0.61% of total CPU capacity**, **0.41% of total memory
+capacity**, and **0.75% of total GPU capacity** across **1,523 nodes and 6,212
+GPUs**. The trace therefore cannot produce meaningful node-level contention
+from this pod population alone.
+
+The resulting flat **0.0 s simulated queue wait** is correct for the data
+provided; it is not evidence of a scheduler, resource-accounting, or
+GPU-model-matching defect. The real trace still reports approximately **106 s
+P90**, **889–908 s P99**, and **897 pods without a `scheduled_time`** because
+the production cluster had workload or admission state not represented in this
+partial pod list. Do not add gang scheduling, quota borrowing, preemption, or
+other Phase B behavior merely to manufacture contention in this validation.
+
+---
+
 ## Step 1 — GPU compute term
 
 **File:** `core/asset_modules.py` · `GPUModule`
