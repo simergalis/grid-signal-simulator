@@ -59,6 +59,9 @@ class HardwareProfile:
     # v2.5 §5.3 — profile vintage.  Optional for the same reason.
     vintage_generation: Optional[str] = None   # e.g. "gen4", "h100", "grace-hopper"
     vintage_established: Optional[str] = None  # ISO-8601 date string, e.g. "2024-Q1"
+    # Optional GPU cold-start ramp override.  None preserves the existing
+    # module-level GPUModule.ramp_seconds / scenario dt_lead_seconds path.
+    ramp_seconds: Optional[float] = None
 
 
 GENERIC_FALLBACK_PROFILE = HardwareProfile(

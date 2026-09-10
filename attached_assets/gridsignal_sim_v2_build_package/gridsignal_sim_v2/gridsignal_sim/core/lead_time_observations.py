@@ -60,7 +60,13 @@ class LeadTimeObservationRecorder:
             site_id=signal.site_id,
             job_id=signal.job_id,
             hardware_profile_id=signal.hardware_profile_id,
-            workload_type=signal.workload_class.value,
+            # Low-level simulator tests may omit the optional workload class;
+            # telemetry must not make those otherwise valid signals fail.
+            workload_type=(
+                signal.workload_class.value
+                if signal.workload_class is not None
+                else "unknown"
+            ),
             start_sim_time_seconds=signal.timestamp,
         )
 

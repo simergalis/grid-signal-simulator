@@ -131,6 +131,28 @@ DEFAULT_HARDWARE_LIBRARY = {
         gpus_per_unit=72,
         vintage_generation="gb200-nvl72",
     ),
+    # Addendum H validation-only profiles.  These are deliberately
+    # unvalidated placeholder timings for the lead-time pipeline test; they
+    # are not hardware characterizations and must not be used for production
+    # calibration.
+    "addendum_h_test_ramp_20s": HardwareProfile(
+        "addendum_h_test_ramp_20s",
+        rated_kw=10.2,
+        description="Addendum H validation-only profile; unvalidated 20 s ramp",
+        counting_unit="chassis",
+        gpus_per_unit=8,
+        vintage_generation="validation-only",
+        ramp_seconds=20.0,
+    ),
+    "addendum_h_test_ramp_60s": HardwareProfile(
+        "addendum_h_test_ramp_60s",
+        rated_kw=10.2,
+        description="Addendum H validation-only profile; unvalidated 60 s ramp",
+        counting_unit="chassis",
+        gpus_per_unit=8,
+        vintage_generation="validation-only",
+        ramp_seconds=60.0,
+    ),
 }
 
 

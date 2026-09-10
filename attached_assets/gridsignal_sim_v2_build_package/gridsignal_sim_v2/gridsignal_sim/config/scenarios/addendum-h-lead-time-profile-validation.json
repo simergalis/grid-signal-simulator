@@ -1,0 +1,46 @@
+{
+  "name": "Addendum H — lead-time profile validation",
+  "description": "Validation-only scenario for two unvalidated hardware-profile ramp overrides. Not a production hardware characterization.",
+  "workload_events": [
+    {
+      "event_id": "evt-addendum-h-ramp-20",
+      "job_id": "addendum-h-ramp-20",
+      "event_type": "starting",
+      "timestamp": 0.0,
+      "node_count": 1,
+      "hardware_profile_id": "addendum_h_test_ramp_20s",
+      "workload_class": "training"
+    },
+    {
+      "event_id": "evt-addendum-h-ramp-60",
+      "job_id": "addendum-h-ramp-60",
+      "event_type": "starting",
+      "timestamp": 0.0,
+      "node_count": 1,
+      "hardware_profile_id": "addendum_h_test_ramp_60s",
+      "workload_class": "training"
+    }
+  ],
+  "hardware_profile_id": "addendum_h_test_ramp_20s",
+  "dt_lead_seconds": 45.0,
+  "frequency_nominal_hz": 50.0,
+  "power_factor": 0.85,
+  "bess_units": [
+    {
+      "asset_id": "bess-0",
+      "rated_mw": 5.0,
+      "usable_mwh": 2.0,
+      "initial_soc_fraction": 0.95
+    }
+  ],
+  "turbine_units": [
+    {
+      "asset_id": "turbine-0",
+      "rated_mw": 10.0,
+      "r_asset_mw_per_s": 0.2,
+      "thermal_state": "hot"
+    }
+  ],
+  "solar_rated_mw": 0.0,
+  "end_sim_time": 90.0
+}

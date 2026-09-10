@@ -313,12 +313,13 @@ class GPUModule(AssetModule):
         for job_id in list(self._ramp_progress):
             p = self._ramp_progress[job_id]
             if p < 1.0:
-                if self.ramp_seconds <= 0.0:
+                ramp_seconds = self._ramp_seconds_for_job(job_id)
+                if ramp_seconds <= 0.0:
                     # dt_lead_seconds=0 (e.g. Kubernetes — no advance notice):
                     # job reaches full TDP instantly; no ramp window to divide by.
                     self._ramp_progress[job_id] = 1.0
                 else:
-                    self._ramp_progress[job_id] = min(1.0, p + dt_seconds / self.ramp_seconds)
+                    self._ramp_progress[job_id] = min(1.0, p + dt_seconds / ramp_seconds)
 
         # Within-step power profile lag (Part 2.2 — transition smoothing).
         # raw_profile switches between 1.0 (compute phase) and p_comm_ratio
@@ -363,6 +364,18 @@ class GPUModule(AssetModule):
                 -dt_seconds / max(self.load_config.tau_gpu_s, 1e-9)
             )
             self._lag_raw_profile += alpha * (raw_profile - self._lag_raw_profile)
+
+    def _ramp_seconds_for_job(self, job_id: str) -> float:
+        """Return the profile-specific ramp window, if one is explicitly set.
+
+        Existing profiles intentionally leave HardwareProfile.ramp_seconds as
+        None.  They therefore use the historical module-level value exactly.
+        """
+        profile_id = self._job_profiles.get(job_id, "")
+        profile = self.hardware_library.get(profile_id)
+        if profile is not None and profile.ramp_seconds is not None:
+            return profile.ramp_seconds
+        return self.ramp_seconds
 
     def output_mw(self) -> float:
         """Sum of current (ramped) per-job draws across all active jobs."""

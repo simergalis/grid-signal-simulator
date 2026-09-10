@@ -1174,6 +1174,8 @@ def _seed_json_scenarios(store: ScenarioStore) -> None:
          "lead-time-nextgen-rack-liquid-training.json"),
         ("lead-time-nextgen-rack-liquid-inference",
          "lead-time-nextgen-rack-liquid-inference.json"),
+        ("addendum-h-lead-time-profile-validation",
+         "addendum-h-lead-time-profile-validation.json"),
     ]
     _DISPLAY_NAME_OVERRIDES = {
         "scenario-equinix-sj-1": "Customer Scenario - scenario-equinix-sj-1",

@@ -45,3 +45,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Legacy fuel-cell scenario representation](legacy-fuel-cell-scenarios.md) — eleven authored scenarios stay aggregate because no block translation preserved behavior.
 - [Intrinsic block fuel-cell ramp](block-fuel-cell-intrinsic-ramp.md) — producing blocks always obey a proposed MW/s machine limit before optional fuel constraints.
 - [Lead-time collection scope](lead-time-collection-scope.md) — collect only catalogue-backed hardware and training/inference workload classes; checkpointing and missing profiles stay explicitly skipped.
+- [Per-profile lead ramp overrides](per-profile-lead-ramp.md) — non-null HardwareProfile ramp timing overrides apply per job; None preserves module-level behavior.
