@@ -36,10 +36,11 @@ DEFAULT_QOS_PRIORITIES: dict[str, int] = {
     "burstable": 200,
     "besteffort": 100,
     "best-effort": 100,
+    "be": 100,
 }
 
 NODE_ALIASES: dict[str, tuple[str, ...]] = {
-    "node_id": ("node_id", "node", "name", "hostname", "host"),
+    "node_id": ("node_id", "node", "name", "hostname", "host", "sn"),
     "cpu_milli": ("cpu_milli", "cpu", "cpu_capacity_milli", "available_cpu"),
     "memory_mib": ("memory_mib", "memory", "memory_capacity_mib", "available_memory"),
     "gpu_count": ("gpu_count", "num_gpu", "gpu", "gpus", "gpu_capacity"),
@@ -118,6 +119,7 @@ class KubeTraceDataset:
     quarantined: tuple[dict[str, Any], ...]
     node_file: str
     pod_file: str
+    timestamp_unit: str
 
     def parser_report(self) -> dict[str, Any]:
         by_file = Counter(item["file"] for item in self.quarantined)
@@ -192,7 +194,13 @@ def _number(raw: str, field: str, *, allow_blank: bool = False) -> float:
     return value
 
 
-def _timestamp(raw: str, field: str, *, allow_blank: bool = False) -> Optional[datetime]:
+def _timestamp(
+    raw: str,
+    field: str,
+    *,
+    allow_blank: bool = False,
+    timestamp_unit: str = "auto",
+) -> Optional[datetime]:
     if not raw and allow_blank:
         return None
     if not raw:
@@ -200,9 +208,14 @@ def _timestamp(raw: str, field: str, *, allow_blank: bool = False) -> Optional[d
     try:
         numeric = float(raw)
         if math.isfinite(numeric):
-            # Alibaba exports are commonly Unix seconds; accept milliseconds too.
-            if abs(numeric) >= 100_000_000_000:
+            if timestamp_unit == "milliseconds":
                 numeric /= 1000.0
+            elif timestamp_unit == "auto":
+                # Absolute Unix timestamps are distinguishable by their epoch
+                # magnitude. Alibaba's relative trace timestamps are millisecond
+                # offsets from the trace start (for example, 12_901_761).
+                if abs(numeric) >= 100_000_000_000 or abs(numeric) < 946_684_800:
+                    numeric /= 1000.0
             return datetime.fromtimestamp(numeric, tz=timezone.utc)
     except ValueError:
         pass
@@ -252,8 +265,11 @@ def load_kube_trace(
     pod_csv: Path | str,
     *,
     qos_priorities: Mapping[str, int] | None = None,
+    timestamp_unit: str = "auto",
 ) -> KubeTraceDataset:
     """Parse node/pod CSVs and quarantine malformed rows independently."""
+    if timestamp_unit not in {"auto", "seconds", "milliseconds"}:
+        raise ValueError("timestamp_unit must be auto, seconds, or milliseconds")
     node_path = Path(node_csv)
     pod_path = Path(pod_csv)
     priorities = {**DEFAULT_QOS_PRIORITIES, **(qos_priorities or {})}
@@ -313,12 +329,22 @@ def load_kube_trace(
                     raise ValueError("pod_id is required")
                 if pod_id in seen_pods:
                     raise ValueError(f"duplicate pod_id {pod_id!r}")
-                creation = _timestamp(_raw(row, columns, "creation_time"), "creation_time")
+                creation = _timestamp(
+                    _raw(row, columns, "creation_time"),
+                    "creation_time",
+                    timestamp_unit=timestamp_unit,
+                )
                 scheduled = _timestamp(
-                    _raw(row, columns, "scheduled_time"), "scheduled_time", allow_blank=True
+                    _raw(row, columns, "scheduled_time"),
+                    "scheduled_time",
+                    allow_blank=True,
+                    timestamp_unit=timestamp_unit,
                 )
                 deletion = _timestamp(
-                    _raw(row, columns, "deletion_time"), "deletion_time", allow_blank=True
+                    _raw(row, columns, "deletion_time"),
+                    "deletion_time",
+                    allow_blank=True,
+                    timestamp_unit=timestamp_unit,
                 )
                 assert creation is not None
                 if scheduled is not None and scheduled < creation:
@@ -360,6 +386,7 @@ def load_kube_trace(
         quarantined=tuple(quarantined),
         node_file=str(node_path),
         pod_file=str(pod_path),
+        timestamp_unit=timestamp_unit,
     )
 
 
@@ -450,12 +477,15 @@ def replay_kube_trace(
     )
     times: list[tuple[float, int]] = []
     sequence = 0
+    scheduled_times: set[float] = set()
     for value in sorted(initial_times):
         heapq.heappush(times, (value, sequence))
         sequence += 1
+        scheduled_times.add(value)
     all_events: list[Any] = []
     while times:
         sim_time, _ = heapq.heappop(times)
+        scheduled_times.discard(sim_time)
         while pending_index < len(pending) and relative_creation[pending[pending_index].pod_id] <= sim_time:
             trace_pod = pending[pending_index]
             deletion = relative_deletion[trace_pod.pod_id]
@@ -488,9 +518,10 @@ def replay_kube_trace(
             wakeup = engine.next_wakeup_time
             if wakeup is not None and wakeup <= sim_time:
                 continue
-            if wakeup is not None:
+            if wakeup is not None and wakeup not in scheduled_times:
                 heapq.heappush(times, (wakeup, sequence))
                 sequence += 1
+                scheduled_times.add(wakeup)
             break
 
     node_selected: dict[str, float] = {}
@@ -599,6 +630,11 @@ def replay_kube_trace(
             "backoff_duration_s": backoff_duration_s,
             "max_backoff_retries": max_backoff_retries,
             "gpu_milli_policy": "ceil_to_integer_gpu",
+            "timestamp_unit": dataset.timestamp_unit,
+            "timestamp_auto_policy": (
+                "absolute Unix timestamps use their epoch unit; relative numeric "
+                "timestamps before 2000-01-01 are treated as milliseconds"
+            ),
         },
         "queue_wait": {
             "actual": _stats(row["actual_wait_s"] for row in pod_rows if row["actual_wait_s"] is not None),
@@ -672,6 +708,15 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser.add_argument("--backoff-duration-s", type=float, default=10.0)
     parser.add_argument("--max-backoff-retries", type=int, default=1)
     parser.add_argument(
+        "--timestamp-unit",
+        choices=("auto", "seconds", "milliseconds"),
+        default="auto",
+        help=(
+            "numeric timestamp unit; auto handles Unix epochs and relative "
+            "Alibaba millisecond offsets"
+        ),
+    )
+    parser.add_argument(
         "--qos-priority",
         action="append",
         default=[],
@@ -681,7 +726,12 @@ def main(argv: Optional[list[str]] = None) -> int:
     args = parser.parse_args(argv)
     try:
         priorities = _parse_qos_overrides(args.qos_priority)
-        dataset = load_kube_trace(args.nodes, args.pods, qos_priorities=priorities)
+        dataset = load_kube_trace(
+            args.nodes,
+            args.pods,
+            qos_priorities=priorities,
+            timestamp_unit=args.timestamp_unit,
+        )
         report = replay_kube_trace(
             dataset,
             backoff_duration_s=args.backoff_duration_s,

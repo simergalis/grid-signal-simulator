@@ -42,6 +42,32 @@ def test_loader_quarantines_bad_rows_without_discarding_valid_rows(tmp_path):
     assert dataset.parser_report()["quarantined_rows"] == 3
 
 
+def test_loader_accepts_alibaba_node_ids_and_relative_millisecond_timestamps(tmp_path):
+    node_path = tmp_path / "nodes.csv"
+    pod_path = tmp_path / "pods.csv"
+    node_path.write_text(
+        "sn,cpu_milli,memory_mib,gpu,model\n"
+        "node-a,8000,16000,1,V100M32\n",
+        encoding="utf-8",
+    )
+    pod_path.write_text(
+        "name,cpu_milli,memory_mib,num_gpu,gpu_milli,gpu_spec,qos,"
+        "pod_phase,creation_time,deletion_time,scheduled_time\n"
+        "pod-a,4000,4000,1,1000,,BE,Running,1000,5000,2000\n",
+        encoding="utf-8",
+    )
+
+    dataset = load_kube_trace(node_path, pod_path)
+
+    assert dataset.nodes[0].node_id == "node-a"
+    assert dataset.pods[0].qos == "BE"
+    assert dataset.pods[0].priority == 100
+    assert dataset.pods[0].scheduled_time is not None
+    assert (
+        dataset.pods[0].scheduled_time - dataset.pods[0].creation_time
+    ).total_seconds() == 1.0
+
+
 def test_gpu_spec_selects_compatible_heterogeneous_node(tmp_path):
     node_path, pod_path = _write_trace(
         tmp_path,

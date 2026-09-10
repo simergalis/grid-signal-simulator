@@ -7,6 +7,7 @@ uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/
 type = "text"
 title = "GridSignal Algorithm Reference"
 description = "Detailed technical summary of the GridSignal Simulator algorithm — all 11 evaluation steps, formulas, interlocks, and fixed step-order summary."
+logical_id = "373ebe08-0847-4a5d-bf57-c85a1f7d4d1d"
 
 [[outputs]]
 id = "bbSoaYbi1zBIhexCcTHpZ"
@@ -14,13 +15,16 @@ uri = "file://attached_assets/gridsignal_auth_spec.md"
 type = "text"
 title = "GridSignal Auth System Specification"
 description = "Complete specification of the existing single-tenant auth DB, logic, and UI — ready for Claude to design a multi-tenant version from."
+logical_id = "08bd6ad2-7b62-4fb5-9793-85eb142a2348"
 
 [[outputs]]
 id = "BGHUDbgkt769Ce1kLxjPO"
 uri = "file://attached_assets/welcome_email_template.html"
-type = "unspecified"
+type = "text"
 title = "Welcome Email Template"
 description = "Standalone HTML email template for new GridSignal operator accounts."
+logical_id = "5c734b0a-d4eb-4f20-bea0-f440ffaacc7d"
+content_type = "text/html"
 
 [[outputs]]
 id = "gQC8jKLw9e3ilC9rQJJXI"
@@ -28,6 +32,7 @@ uri = "file://gridsignal_sim_v2_release.zip"
 type = "unspecified"
 title = "GridSignal Simulator v2.2 — Release Package (reviewed)"
 description = "All five review items addressed. 3.0 MB, 293 files. No DB file, no __pycache__."
+logical_id = "cdc60268-44eb-475e-badd-09e8289066f2"
 
 [[outputs]]
 id = "B46hTnUnFvv9FvZM2SsHK"
@@ -35,6 +40,7 @@ uri = "file://scenario_spec_schema.json"
 type = "unspecified"
 title = "ScenarioSpec JSON Schema"
 description = "Machine-readable JSON Schema (Draft 2020-12) generated directly from the Pydantic ScenarioSpec model. Use with any JSON Schema validator or code generator."
+logical_id = "de59c8cb-768f-4d04-a665-b6c59eec17c6"
 
 [[outputs]]
 id = "sbVpgyF3Ju_Vvg-MiXl9S"
@@ -42,6 +48,7 @@ uri = "file://scenario_spec_reference.md"
 type = "text"
 title = "ScenarioSpec API Reference"
 description = "Full field reference, validation rules, example payloads, and endpoint documentation for uploading custom scenarios to GridSignal."
+logical_id = "1651a4ae-10c2-4ce0-a200-6cf1ae3d45d3"
 
 [[outputs]]
 id = "ekhM0RjavOHOgDmHz-Efu"
@@ -49,6 +56,7 @@ uri = "file://attached_assets/scenario_solar_single_turbine_300pct_surge.json"
 type = "unspecified"
 title = "GridSignal Scenario — Solar + Single Turbine, 300% Traffic Surge"
 description = "Upload via POST /scenarios or the scenario selector in GridSignal. 30-minute run, 6 staged job waves, single 15 MW turbine, 6 MW solar anchored at noon."
+logical_id = "b2ce5aeb-208a-4756-9325-4663016e0d34"
 
 [[outputs]]
 id = "lJkVrPgT4ET5zNrn_u-gJ"
@@ -56,6 +64,7 @@ uri = "file://gridsignal_source_review.zip"
 type = "unspecified"
 title = "GridSignal Source Review Package"
 description = "282 source files, 2.6 MB — Python backend, React frontend, shared TypeScript libs, and workspace config. Excludes node_modules, __pycache__, .pythonlibs, dist, .git, and binary/lock files."
+logical_id = "c6be9ccb-2ff6-432b-a125-c766ab7f1657"
 
 [[outputs]]
 id = "h4SFAP4qstHMPr3_HQMYc"
@@ -63,6 +72,7 @@ uri = "file://gridsignal_ui_components.zip"
 type = "unspecified"
 title = "GridSignal UI Components Package"
 description = "138 source files, 293 KB — all dashboard screens, modals, chart primitives, subsystem panels, state stores, and shadcn/ui primitives with build config."
+logical_id = "5debcc02-3b4e-4a7f-b393-f46abcdc1dd7"
 
 [[outputs]]
 id = "IGhjrhOVS16rxplbk6rYV"
@@ -70,6 +80,7 @@ uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/
 type = "text"
 title = "Phase 6 Completion Report"
 description = "GS-DES-CFG-001 Phase 6 — Peak load reconcile, catalogue additions, design_peak_load_mw wire field, N-1 fleet modal switch."
+logical_id = "ad5ad548-fa3b-47ee-9cd8-6ef98ae32088"
 
 [[outputs]]
 id = "iQH4E7rcjRyqNDR5xBn3p"
@@ -77,6 +88,7 @@ uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/
 type = "text"
 title = "Phase D Completion Report"
 description = "DR-2026-08-06 Phase D — commitment engine wired. Gate: 38 failed / 946 passed / 0 regressions."
+logical_id = "78396ab2-0601-42a6-946e-fef0e7ad9ee3"
 
 [[outputs]]
 id = "M8rc6gt23oMNMRqzgUbfE"
@@ -84,6 +96,7 @@ uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/
 type = "text"
 title = "Phase E Completion Report"
 description = "DR-2026-08-06 Phase E — stop sequencing, sequential base-loading, physical constraints. Final gate: 13 failed / 975 passed / 16 xfailed."
+logical_id = "f05bc489-678d-49fb-929e-bdae6fc3b820"
 
 [[outputs]]
 id = "zyu16Ojjw8aMnA0Hljbs1"
@@ -91,6 +104,7 @@ uri = "file://reports/items_4_9_implementation_report.md"
 type = "text"
 title = "Items 4–9 Implementation Report"
 description = "Gas Turbine Fleet Modal — Phase E+ backend wiring, UI defect fixes (U-1 through U-8), commitment stat rows, per-unit bar, TC-98/TC-99 smoke tests."
+logical_id = "7590221e-4cac-41f4-ba28-a8bc30eec42a"
 
 [[outputs]]
 id = "YRd0SAVZn6fm46UFWaGmh"
@@ -98,6 +112,7 @@ uri = "file://reports/gridsignal_correction_conformance_items1_5.md"
 type = "text"
 title = "GridSignal Correction & Conformance — Items 1–5 Gate Report"
 description = "Summary of all five Phase E+ modal corrections: reserve_floor_mw fix, committed_rated_mw SYNCHRONISED-only, U-3 headroom clamp, levelled_off sustained predicate, and TC-98 backend assertion. Test delta: 15 failed / 975 passed / 16 xfailed."
+logical_id = "72f5edb4-6b0d-43b2-abd8-3afa64585a91"
 
 [[outputs]]
 id = "06sdzgF3LibfDhaCVV44C"
@@ -105,6 +120,7 @@ uri = "file://reports/gridsignal_item6_conformance_report.md"
 type = "text"
 title = "GridSignal Item 6 — Conformance Report (A–C Gate + Mockup Pass)"
 description = "Items A–C gate results + element-by-element conformance against the fleet modal mockup. Suite: 15 failed / 975 passed / 16 xfailed / 29 frontend / TSC clean."
+logical_id = "794622b1-6b5e-47ec-af1e-b485fc05430e"
 
 [[outputs]]
 id = "37PvYAYUfNd029YSsGpJ0"
@@ -112,6 +128,7 @@ uri = "file://reports/gridsignal_close_conformance_gaps_report.md"
 type = "text"
 title = "GridSignal Conformance Gaps — Session Report"
 description = "Full session report: Item 1 integration path verification, Item 2 unload_tail_s catalogue, Gaps 1+2/5/7/9 closed in turbineFleet.ts, Guard E self-consistency test, uncatalogued sweep. Suite: 15/976/16, 29 frontend, tsc clean."
+logical_id = "b4d72c86-98b3-4b8d-8f88-88e0cd9ff24c"
 
 [[outputs]]
 id = "irxJ6NHwXWhcKZlR8LR0q"
@@ -119,6 +136,7 @@ uri = "file://reports/gridsignal_verify_catalogue_open_params_report.md"
 type = "text"
 title = "Verify Integration Path, Restore MSL, Catalogue Open Parameters"
 description = "Item 1: commitment_block verified from emitted payload (satisfied U=22%, violated U=79%). Item 2: MSL MW restored in bar sub-annotation. Item 3: 11 open parameters catalogued — D3 call sites 15→26, D2 backlog empty. 0 regressions."
+logical_id = "96800756-cec3-4d18-85df-4308892bc2a5"
 
 [[outputs]]
 id = "zcfiNyRnQLUjeuqZvNC_5"
@@ -126,6 +144,7 @@ uri = "file://reports/gridsignal_diagnose_remaining_failures_report.md"
 type = "text"
 title = "GS Diagnose Remaining Failures — Full Report"
 description = "Items 1–3: warm_start_s separation, commit harness trace, and all 15 failure classifications (Groups A–D). Ready for Claude AI."
+logical_id = "04b99dce-69f1-4f8c-929b-0c7371e73096"
 
 [[outputs]]
 id = "1OnQ4z0dq8_MeWufKw0Pl"
@@ -133,6 +152,7 @@ uri = "file://reports/gridsignal_droop_setpoint_report.md"
 type = "text"
 title = "GridSignal Droop & Setpoint Gate Report"
 description = "Full session report: Item 1 droop runaway diagnosis, Item 2 OFFLINE setpoint gate fix, Item 3 warmup sweep, Item 4 surplus-netting verdict. Suite result: 15 → 13 failures."
+logical_id = "98b4ad6d-cc4a-41c5-9ae3-9306e9d61c35"
 
 [[outputs]]
 id = "RdqbVh4RxFzLhNIJZUmR0"
@@ -140,6 +160,7 @@ uri = "file://reports/gridsignal_frequency_protection_report.md"
 type = "text"
 title = "GridSignal Frequency Protection Report"
 description = "Items 1–4: gt_setpoint_mw contradiction resolved, §7.2 withdrawn, droop clamp applied, frequency protection diagnosis with proposed minimal protection layer."
+logical_id = "d99bcb14-5d9d-4cfd-b5ad-1d8e9b6c81ad"
 
 [[outputs]]
 id = "tkrn4XCXLNPeGVoDC-IB1"
@@ -147,6 +168,7 @@ uri = "file://attached_assets/gridsignal_review_package.zip"
 type = "unspecified"
 title = "GridSignal — 60 Hz & Protection Review Package"
 description = "Reports, test trace, full suite log, and changed source files for Items 1–5 (IEEE 1547-2018 Cat I protection layer + S9 scenario test)."
+logical_id = "2f305f1c-6ce1-4fdf-9282-eea0080b67f1"
 
 [[outputs]]
 id = "FksfNpQ-9ltq3GT1fG_6r"
@@ -154,6 +176,7 @@ uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/
 type = "text"
 title = "S9 Catalogued Rerun — Full Report"
 description = "Items 1–4: collapse analysis, demand schedule, F-1/F-2/F-3 findings, schema validation, 60 Hz coverage."
+logical_id = "14097d3b-34c3-4a0c-aa7e-e4131a6246e7"
 
 [[outputs]]
 id = "AlR__NfnEOyzyuiTJ-Y31"
@@ -161,6 +184,7 @@ uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/
 type = "table"
 title = "S9 Per-Tick Trace CSV"
 description = "Full per-tick simulation log (1 tick; collapse at sim_time=5 s). Columns: demand, per-unit state/output/setpoint/MSL, fleet totals, BESS, frequency, collapse fields."
+logical_id = "9598872b-b94f-468c-9353-d07829ba6bd7"
 
 [[outputs]]
 id = "mZD1UhJF6-Y-MBdrfnTrk"
@@ -168,6 +192,7 @@ uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/
 type = "unspecified"
 title = "S9 Test — Catalogued Invariant Assertions"
 description = "Rewritten test: catalogued physics, enterprise_8gpu_air demand schedule, 9 invariant assertions (I-1 through I-9), CSV export."
+logical_id = "6fb793fc-98df-43bd-acf2-e066e488527c"
 
 [[outputs]]
 id = "KjFrGxJsilA3DgTEV9aS8"
@@ -175,6 +200,7 @@ uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/
 type = "unspecified"
 title = "S9 Catalogued Review Bundle"
 description = "ZIP containing: S9_catalogued_rerun_report.md, S9_catalogued_invariants.csv, test_s9_islanded_ramp.py"
+logical_id = "622c59eb-626f-4263-94e2-ff93ecd50d31"
 
 [[outputs]]
 id = "HWEDk7sZv_S_aRbU9Ma7D"
@@ -182,6 +208,7 @@ uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/
 type = "text"
 title = "S9 Surplus & Inertia — Spec 2 Report"
 description = "Implementation report for GS_prompt_surplus_and_inertia_1786133005321: §INV-CURT, §INV-INERTIA S_base fix, S9 rerun results, ScenarioSpec thresholds, and findings F-2 through F-4."
+logical_id = "5f410338-2e8d-46cc-9f1a-d9e6fb02019a"
 
 [[outputs]]
 id = "4j0GufnFpc6mTvkimpjmG"
@@ -189,6 +216,7 @@ uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/
 type = "unspecified"
 title = "islanded_8_60_10_ramp.json"
 description = "Updated scenario: 14 MWh BESS, cold_start_s per turbine, frequency_nominal_hz/power_factor explicit, description rewritten. Verdict: PASS (both assertions)."
+logical_id = "b333b9d2-51a3-4af9-b8e6-b8f7b418fbd8"
 
 [[outputs]]
 id = "Xa5E-P2KnIOix07BTRuRG"
@@ -196,6 +224,7 @@ uri = "file://docs/inventory/NAR-001_phase0_orientation.md"
 type = "text"
 title = "NAR-001 Phase 0 Orientation Report"
 description = "Read-only variable inventory orientation report — module map, enumerations, IDs, and Phase 1 coverage forecast."
+logical_id = "eb684035-09ae-43e3-8d0b-b224b4def9ac"
 
 [[outputs]]
 id = "BHF_OhQUmE9wGTwR_GCAv"
@@ -203,6 +232,7 @@ uri = "file://docs/inventory/NAR-001_variable_inventory.md"
 type = "text"
 title = "NAR-001 Variable Inventory"
 description = "Complete Phase 1 signal inventory — sections A–K, TickResult wire diff, tolerance keys, and targeted questions Q2–Q14."
+logical_id = "858b9523-d789-42e3-85bb-f504383e12db"
 
 [[outputs]]
 id = "WePZ6vEzOsKx_mch9dulp"
@@ -210,6 +240,7 @@ uri = "file://reports/NAR-001_phase_A_prime_part1_report.md"
 type = "text"
 title = "NAR-001 Phase A′ Part 1 Report"
 description = "Schema inventory, run availability, field coverage, and two stop-condition findings."
+logical_id = "41591ada-fda4-453f-b206-889f207e8e9b"
 
 [[outputs]]
 id = "RpkAbn3e7YhAzFva51ZKW"
@@ -217,6 +248,7 @@ uri = "file://reports/NAR-001_phase_A_prime_part0_part3_report.md"
 type = "text"
 title = "NAR-001 Phase A′ — Part 0 & Part 3 Report"
 description = "Part 0: two persistence defects (sink never wired, schema mismatch). Part 3: static conformance findings on reserve arithmetic, anchor-adjustment, dispatch droop, and rated_mw."
+logical_id = "aac5b65d-4a5f-4871-87d8-f0cb57646e74"
 
 [[outputs]]
 id = "fF2S-YLqW3VNX6be7Am3R"
@@ -224,6 +256,7 @@ uri = "file://reports/NAR-001_phase_A_prime_part2a_precheck.md"
 type = "text"
 title = "NAR-001 Phase A′ — Part 2a Pre-Check Report"
 description = "Four gates: POST /runs endpoint shape, WebSocket auth (none required), durable output location (workspace volume), and multi-subscriber concurrency (confirmed)."
+logical_id = "d7162d61-ec6d-4c26-afce-5892240693f6"
 
 [[outputs]]
 id = "Te70_mob206BJDM5mpwxy"
@@ -231,6 +264,7 @@ uri = "file://reports/NAR-001_phase_A_prime_part2a_build_report.md"
 type = "text"
 title = "NAR-001 Part 2a Build Report"
 description = "Recorder build findings, TC-118–121 results, and Part 2a.5 smoke validation. Stopped at leading-ticks gate."
+logical_id = "4441fb7d-0e78-4c21-8ecc-8022225f2829"
 
 [[outputs]]
 id = "ohWdEEsTYuhKtGLKxTmpy"
@@ -238,6 +272,7 @@ uri = "file://reports/NAR-001_phase_A_prime_part2b_R1_R2_findings.md"
 type = "text"
 title = "NAR-001 Part 2b Pre-flight: R1 & R2 Findings"
 description = "Catalogue key discrepancy (R1) and generator pipeline / ScenarioSpec analysis (R2). Stopped at ScenarioSpec gate."
+logical_id = "3d7a4407-b80c-4e8c-9c98-1861e5137a40"
 
 [[outputs]]
 id = "KQTv9ZlcCcJoeu1159yun"
@@ -245,6 +280,7 @@ uri = "file://reports/NAR-001_phase_A_prime_part2b_report.md"
 type = "text"
 title = "NAR-001 Part 2b Report"
 description = "Run set, C1–C6 coverage, 3 clean recordings, two stop conditions: demo-kube ZeroDivisionError (#272) and no grid-connected scenario (C3)."
+logical_id = "27a4d4a0-c81d-436d-b5f0-e51213ac7708"
 
 [[outputs]]
 id = "_XuLubf04uLphoNxpAU16"
@@ -252,6 +288,7 @@ uri = "file://reports/NAR-001_invariant_residuals.md"
 type = "text"
 title = "NAR-001 Invariant Residuals"
 description = "Full invariant residual report across 880 ticks from 6 recordings."
+logical_id = "47fdd06d-37ab-494a-88de-94ba6657c418"
 
 [[outputs]]
 id = "jyzLCDvPg4Tm11qRlMJju"
@@ -259,6 +296,7 @@ uri = "file://reports/NAR-001_residuals.jsonl"
 type = "unspecified"
 title = "NAR-001 Residuals (JSONL)"
 description = "Per-tick ResidualRecord stream for all invariants, 880 ticks."
+logical_id = "afef6eaa-0df6-41d5-b8bb-d5ef420d45ba"
 
 [[outputs]]
 id = "uYjjV5egaFgUJ9nFxitgi"
@@ -266,6 +304,7 @@ uri = "file://islanded-8-60-10mw-ramp-sequential.json"
 type = "unspecified"
 title = "Islanded 8-60-10 MW ramp — sequential commitment and release"
 description = "Full scenario spec including kube_config, workload_events, fleet, and assertions. 21 KB JSON."
+logical_id = "06d3e398-dd84-4da4-b07b-60b4d695bf00"
 
 [[outputs]]
 id = "Khu-7SlfBEDV5ptYZkZWF"
@@ -273,6 +312,7 @@ uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/
 type = "unspecified"
 title = "islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs.json"
 description = "ScenarioSpec JSON — 3-hour islanded ramp, 97 workload events, 5×15 MW turbines, 18 MW / 14 MWh BESS, 15 MW solar, 50→1 000 GPU nodes"
+logical_id = "b8aeaacc-1763-4501-bc09-08df05051f04"
 
 [[outputs]]
 id = "n50abTqOJtgr5cP6FcmnU"
@@ -280,6 +320,7 @@ uri = "file://attached_assets/demo_script_tile_review_updated.md"
 type = "text"
 title = "Tile-by-Tile Demo Script (Section 2).md"
 description = "Updated demo script — tile-by-tile walkthrough covering all zones, Compute Racks modal, AlertDock, scheduler manifests, and GPU Generator auto-arm."
+logical_id = "114e19dd-ffba-4c72-9155-9051edfbea02"
 
 [[outputs]]
 id = "OVpf2lhfYx8Lspd6n9IJK"
@@ -287,6 +328,8 @@ uri = "file://mockup-pms-ui.html"
 type = "text"
 title = "Power Management UI Mockups"
 description = "Interactive HTML mockup — SWITCHGEAR/PMS modal (3 tabs) + Scenario Builder additions"
+logical_id = "98862f2b-48ee-4c20-9ecb-4731aae67995"
+content_type = "text/html"
 
 [[outputs]]
 id = "acnS0ucx1zGPzqEkesLQz"
@@ -294,6 +337,7 @@ uri = "file://docs/BB-PWR-test-cases.md"
 type = "text"
 title = "BB-PWR Test Cases — Power Management Select Power"
 description = "50 black-box test cases (BB-PWR-001–050) covering source selection UI state, aggregation correctness, SWITCHGEAR/PMS signal behaviour, and edge cases. Includes spec-gap audit and 10 open items."
+logical_id = "d8a2e633-9bb6-44cd-a311-23a040d58c24"
 
 [[outputs]]
 id = "yCDJhpsWPP3D-iK8N8aBi"
@@ -301,6 +345,7 @@ uri = "file://attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/
 type = "text"
 title = "Current scenario JSON reference"
 description = "Complete literal listing and byte-for-byte contents of all 21 files in config/scenarios/."
+logical_id = "9544e26e-fd50-4ee8-954c-912de778bdf7"
 
 [[outputs]]
 id = "tXjTRf2ozZBiNS9ues0m0"
@@ -308,6 +353,7 @@ uri = "file://scenario_library.zip"
 type = "unspecified"
 title = "scenario_library.zip"
 description = "ZIP archive of all 21 current JSON files from config/scenarios/."
+logical_id = "54afdd27-29dc-45b2-91c9-b7530c44da66"
 
 [[outputs]]
 id = "JOCbBIqhfZz5XPIwoJ5CE"
@@ -315,6 +361,7 @@ uri = "file://scenario-equinox-sj-1_customer_summary.md"
 type = "text"
 title = "SJ-1 GPU Colo Center Customer Summary"
 description = "Comprehensive Markdown brief covering GPU capacity, facility demand, power supply, dispatch behavior, workload topology, validation burst, and modeling caveats."
+logical_id = "83fbb597-37d9-44b5-a6b7-9e1304a36cf9"
 
 [[outputs]]
 id = "5FXgpnB6fpmLJ1LlF-Ygl"
@@ -322,6 +369,7 @@ uri = "file://deliverables/GridSignal_Functional_Specification_2026-08.md"
 type = "text"
 title = "GridSignal Functional Specification — August 2026"
 description = "Current-state functional specification covering the active simulator, operator workflows, technical boundaries, deployment gaps, and customer-demand validation plan."
+logical_id = "fcd83e77-5b6d-4689-8aeb-4dbac91c0681"
 
 [[outputs]]
 id = "F0E9rQSn7vYIMjTZhibED"
@@ -329,6 +377,7 @@ uri = "file://deliverables/GridSignal_Customer_Scenarios_2026-08.md"
 type = "text"
 title = "GridSignal Customer Scenarios"
 description = "Complete customer-scenario reference for the grid-tied and islanded San Jose GPU data-center scenarios, including the full JSON definitions as appendices."
+logical_id = "7131278f-65a9-4f98-851b-1cbe5a44b2e4"
 
 [[outputs]]
 id = "KwXi-rqBM-9BE4ne8dYOM"
@@ -336,6 +385,7 @@ uri = "file://deliverables/customer-scenarios/scenario-equinix-sj-1.json"
 type = "unspecified"
 title = "scenario-equinix-sj-1.json"
 description = "Grid-tied customer scenario JSON snapshot."
+logical_id = "8435b5c4-fe4d-4c18-9119-c71fb9fc07e4"
 
 [[outputs]]
 id = "Nqj3vCY0RkgKE_GTzWAnP"
@@ -343,6 +393,7 @@ uri = "file://deliverables/customer-scenarios/scenario-turbine-01.json"
 type = "unspecified"
 title = "scenario-turbine-01.json"
 description = "Islanded customer scenario JSON snapshot."
+logical_id = "0fae6d53-e6e3-4faa-826a-483a2c7bb778"
 
 [[outputs]]
 id = "z-ycQlWRb8Eyd-tAUs6_j"
@@ -350,6 +401,7 @@ uri = "file://deliverables/GridSignal_Customer_Scenarios_2026-08.zip"
 type = "unspecified"
 title = "GridSignal Customer Scenarios ZIP"
 description = "ZIP archive containing the complete customer scenario document and both scenario JSON files."
+logical_id = "3ce027c5-3199-417b-b097-3744b04c5660"
 
 [[outputs]]
 id = "FrDFgIfd9_xgYpXWfLvQU"
@@ -357,3 +409,18 @@ uri = "file://attached_assets/image_1787585211296_annotated.png"
 type = "image"
 title = "Overview tab click location"
 description = "Annotated screenshot showing where the Overview tab should be located. The red circle marks the second tab in the page-navigation row, directly below the top status header."
+logical_id = "35bfeb20-f4a9-4c15-9bc4-94c4a4e70390"
+
+[[outputs]]
+id = "N6GGv2kYiXh0fWxd_7dXn"
+uri = "file://attached_assets/alibaba-kube-trace-replay-summary.json"
+type = "unspecified"
+title = "Alibaba Kubernetes trace replay summary"
+description = "Aggregate replay results for 19 lifecycle-complete Alibaba pod traces, plus explicit schema skips for 4 resource-only multigpu files."
+logical_id = "325c0e09-7d2e-43e7-ab0f-83891b62c25d"
+content_hash = "sha256:8bbc00c929e07351169eb263c7878ab3ab0e4e251ce18d953f2e544fdee47ee1"
+size = 9509
+mtime_ms = 1789059694819
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:560e4bb4-a12b-40d1-a7c1-4cae34d4602a/325c0e09-7d2e-43e7-ab0f-83891b62c25d/4f093f91-29e7-46eb-a376-65f504d65df0"
+storage_version_token = "1789059700411818"
+content_type = "application/octet-stream"
