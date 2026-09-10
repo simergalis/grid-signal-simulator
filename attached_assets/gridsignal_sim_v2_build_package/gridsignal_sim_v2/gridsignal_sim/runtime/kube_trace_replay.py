@@ -199,7 +199,7 @@ def _timestamp(
     field: str,
     *,
     allow_blank: bool = False,
-    timestamp_unit: str = "auto",
+    timestamp_unit: str = "seconds",
 ) -> Optional[datetime]:
     if not raw and allow_blank:
         return None
@@ -211,10 +211,13 @@ def _timestamp(
             if timestamp_unit == "milliseconds":
                 numeric /= 1000.0
             elif timestamp_unit == "auto":
-                # Absolute Unix timestamps are distinguishable by their epoch
-                # magnitude. Alibaba's relative trace timestamps are millisecond
-                # offsets from the trace start (for example, 12_901_761).
-                if abs(numeric) >= 100_000_000_000 or abs(numeric) < 946_684_800:
+                # Absolute Unix millisecond timestamps are distinguishable by
+                # their epoch magnitude. Relative numeric timestamps are
+                # seconds by default; Alibaba's openb trace documents
+                # creation/scheduled/deletion columns in seconds. Callers with
+                # a relative millisecond trace must opt into
+                # timestamp_unit="milliseconds".
+                if abs(numeric) >= 100_000_000_000:
                     numeric /= 1000.0
             return datetime.fromtimestamp(numeric, tz=timezone.utc)
     except ValueError:
@@ -265,7 +268,7 @@ def load_kube_trace(
     pod_csv: Path | str,
     *,
     qos_priorities: Mapping[str, int] | None = None,
-    timestamp_unit: str = "auto",
+    timestamp_unit: str = "seconds",
 ) -> KubeTraceDataset:
     """Parse node/pod CSVs and quarantine malformed rows independently."""
     if timestamp_unit not in {"auto", "seconds", "milliseconds"}:
@@ -412,6 +415,7 @@ def _stats(values: Iterable[float]) -> dict[str, Any]:
     return {
         "count": len(values),
         "p50_s": _percentile(values, 0.50),
+        "p90_s": _percentile(values, 0.90),
         "p95_s": _percentile(values, 0.95),
         "p99_s": _percentile(values, 0.99),
     }
@@ -632,8 +636,8 @@ def replay_kube_trace(
             "gpu_milli_policy": "ceil_to_integer_gpu",
             "timestamp_unit": dataset.timestamp_unit,
             "timestamp_auto_policy": (
-                "absolute Unix timestamps use their epoch unit; relative numeric "
-                "timestamps before 2000-01-01 are treated as milliseconds"
+                "absolute Unix millisecond timestamps are detected by epoch "
+                "magnitude; relative numeric timestamps are treated as seconds"
             ),
         },
         "queue_wait": {
@@ -710,10 +714,10 @@ def main(argv: Optional[list[str]] = None) -> int:
     parser.add_argument(
         "--timestamp-unit",
         choices=("auto", "seconds", "milliseconds"),
-        default="auto",
+        default="seconds",
         help=(
-            "numeric timestamp unit; auto handles Unix epochs and relative "
-            "Alibaba millisecond offsets"
+            "numeric timestamp unit; Alibaba trace timestamps default to seconds "
+            "and relative milliseconds require an explicit override"
         ),
     )
     parser.add_argument(
