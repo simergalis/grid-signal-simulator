@@ -27,6 +27,7 @@ class KubeNode:
     cpu_capacity_milli: int
     memory_capacity_mib: int
     gpu_capacity: int
+    gpu_type: Optional[str] = None
     cpu_allocated_milli: int = 0
     memory_allocated_mib: int = 0
     gpu_allocated: int = 0
@@ -36,6 +37,11 @@ class KubeNode:
             self.cpu_allocated_milli + pod.cpu_milli <= self.cpu_capacity_milli
             and self.memory_allocated_mib + pod.memory_mib <= self.memory_capacity_mib
             and self.gpu_allocated + pod.gpu_count <= self.gpu_capacity
+            and (
+                pod.gpu_count == 0
+                or not pod.gpu_types
+                or self.gpu_type in pod.gpu_types
+            )
         )
 
     def allocate(self, pod: "KubePod") -> None:
@@ -63,6 +69,8 @@ class KubePod:
     gpu_count: int
     duration_s: float
     hardware_profile_id: str
+    gpu_types: tuple[str, ...] = ()
+    completion_time: Optional[float] = None
     enqueue_sequence: int = 0
     attempts: int = 0
     node_id: Optional[str] = None
@@ -90,8 +98,9 @@ class KubeSchedulerEngine:
         backoff_duration_s: float = 10.0,
         max_backoff_retries: int = 1,
         container_start_delay_s: float = 0.0,
+        node_inventory: Optional[list[KubeNode]] = None,
     ) -> None:
-        self.nodes = [
+        self.nodes = list(node_inventory) if node_inventory is not None else [
             KubeNode(
                 node_id=f"k8s-node-{index:05d}",
                 cpu_capacity_milli=node_cpu_milli,
@@ -114,6 +123,16 @@ class KubeSchedulerEngine:
     @property
     def backoff_queue(self) -> tuple[KubePod, ...]:
         return tuple(item[2] for item in sorted(self._backoff_queue))
+
+    @property
+    def next_wakeup_time(self) -> Optional[float]:
+        """Return the next scheduler-owned time that may change state."""
+        candidates = [item[0] for item in self._backoff_queue]
+        candidates.extend(
+            pod.ends_at for pod in self.running_pods.values()
+            if pod.ends_at is not None
+        )
+        return min(candidates) if candidates else None
 
     def submit(self, pod: KubePod) -> tuple[KubeSchedulerEvent, ...]:
         """Create a pod and enqueue it in activeQ."""
@@ -144,12 +163,19 @@ class KubeSchedulerEngine:
         # same priority/enqueue key used for normal activeQ pops.
         while self._backoff_queue and self._backoff_queue[0][0] <= sim_time:
             ready_at, _sequence, pod = heapq.heappop(self._backoff_queue)
+            if self._expired(pod, sim_time):
+                events.append(self._event(pod, "pod_expired", sim_time, reason="deletion_time_reached"))
+                continue
             self.active_queue.append(pod)
             events.append(self._event(pod, "backoff_expired", sim_time, reason=f"ready_at={ready_at:.3f}"))
             events.append(self._event(pod, "queue_entered", sim_time, reason="activeQ"))
 
         if completed and self.unschedulable_pods:
-            for pod in self.unschedulable_pods.values():
+            for pod in tuple(self.unschedulable_pods.values()):
+                if self._expired(pod, sim_time):
+                    events.append(self._event(pod, "pod_expired", sim_time, reason="deletion_time_reached"))
+                    del self.unschedulable_pods[pod.pod_id]
+                    continue
                 self.active_queue.append(pod)
                 events.append(self._event(pod, "cluster_event_requeue", sim_time, reason="node_resources_freed"))
                 events.append(self._event(pod, "queue_entered", sim_time, reason="activeQ"))
@@ -160,6 +186,9 @@ class KubeSchedulerEngine:
         while self.active_queue:
             self.active_queue.sort(key=lambda pod: (-pod.priority, pod.enqueue_time, pod.enqueue_sequence))
             pod = self.active_queue.pop(0)
+            if self._expired(pod, sim_time):
+                events.append(self._event(pod, "pod_expired", sim_time, reason="deletion_time_reached"))
+                continue
             pod.attempts += 1
             events.append(self._event(pod, "scheduling_attempt", sim_time, attempt=pod.attempts))
             node = self._best_fit_node(pod)
@@ -177,7 +206,11 @@ class KubeSchedulerEngine:
             node.allocate(pod)
             pod.node_id = node.node_id
             pod.started_at = sim_time + self.container_start_delay_s
-            pod.ends_at = pod.started_at + pod.duration_s
+            pod.ends_at = (
+                pod.completion_time
+                if pod.completion_time is not None
+                else pod.started_at + pod.duration_s
+            )
             self.running_pods[pod.pod_id] = pod
             events.append(self._event(pod, "node_selected", sim_time, node_id=node.node_id))
             events.append(self._event(pod, "bound", sim_time, node_id=node.node_id))
@@ -221,6 +254,10 @@ class KubeSchedulerEngine:
             if node.node_id == node_id:
                 return node
         raise KeyError(node_id)
+
+    @staticmethod
+    def _expired(pod: KubePod, sim_time: float) -> bool:
+        return pod.completion_time is not None and pod.completion_time <= sim_time
 
     @staticmethod
     def _event(
