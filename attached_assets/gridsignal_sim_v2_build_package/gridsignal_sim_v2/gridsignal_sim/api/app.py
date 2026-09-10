@@ -97,7 +97,7 @@ from api.routes import reference_forecast as reference_forecast_routes
 from api.routes import ingest as ingest_routes
 from api.auth_utils import COOKIE_NAME, decode_access_token
 from api.db import create_auth_tables, _SessionLocal
-from runtime.persistence import AuthUser
+from runtime.persistence import AuthUser, LeadTimeObservation
 
 # §10.2: built frontend lives two levels above this file (api/ → gridsignal_sim/ → gridsignal_sim_v2/)
 #   __file__ = .../gridsignal_sim_v2/gridsignal_sim/api/app.py
@@ -238,6 +238,29 @@ async def _lifespan(application: FastAPI):
         _log.debug("run %s: verdict persisted to DB", run_id)
 
     manager.persist_completed_hook = _persist_completed_run
+
+    async def _persist_lead_time_observation(observation) -> None:
+        """Persist measurement-only GPU lead-time telemetry."""
+        from datetime import datetime as _dt, timezone as _tz
+
+        async with _SL() as _session:
+            async with _session.begin():
+                _session.add(
+                    LeadTimeObservation(
+                        run_id=observation.run_id,
+                        site_id=observation.site_id,
+                        job_id=observation.job_id,
+                        hardware_profile_id=observation.hardware_profile_id,
+                        workload_type=observation.workload_type,
+                        start_sim_time_seconds=observation.start_sim_time_seconds,
+                        high_draw_sim_time_seconds=observation.high_draw_sim_time_seconds,
+                        lead_time_seconds=observation.lead_time_seconds,
+                        threshold_fraction=observation.threshold_fraction,
+                        created_at=_dt.now(_tz.utc),
+                    )
+                )
+
+    manager.persist_lead_time_observation_hook = _persist_lead_time_observation
 
     # Renewable Supply Console — one SolarSim per process, ticked continuously.
     from renewable.solar import SolarSim

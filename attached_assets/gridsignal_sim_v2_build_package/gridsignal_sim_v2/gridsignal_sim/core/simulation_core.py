@@ -32,6 +32,7 @@ from .fuel_cell_module import BlockFuelCellFleet, FuelCellModule
 from .loading import apply_loading, ramp_capability
 from .contingency import BessSnapshot, FuelCellSnapshot, PlantState, TurbineSnapshot, evaluate_contingency
 from .kube_demand import KubeDemandAgent, KubeGridState
+from .lead_time_observations import LeadTimeObservationRecorder
 
 _log = logging.getLogger(__name__)
 
@@ -185,6 +186,11 @@ class SimulationState:
     # Carries the previous tick's grid metrics so the agent can read headroom
     # without accessing the current tick's in-progress values.
     _kube_grid_state: KubeGridState | None = field(default=None, init=False)
+    # Phase 1 lead-time instrumentation.  This recorder is observe-only and is
+    # never read by dispatch, staging, forecast, or balance logic.
+    lead_time_observations: LeadTimeObservationRecorder = field(
+        default_factory=LeadTimeObservationRecorder
+    )
 
     # Phase 11.2 — workload signal staleness / absence tracking.
     # _last_workload_signal_sim_time: sim_time of the most recent WorkloadSignal
@@ -437,6 +443,10 @@ class SimulationState:
         if signal.event_type in (WorkloadEventType.JOB_END, WorkloadEventType.CANCELLED):
             _cohort_keys_before_end = list(gpu._job_cohorts.get(signal.job_id, []))
         new_unmapped = gpu.apply_signal(signal)
+        if signal.event_type == WorkloadEventType.STARTING:
+            # Instrumentation only: preserve the event timestamp before any
+            # GPU ramp advances.  This does not alter the staging call below.
+            self.lead_time_observations.record_start(self.run_id, signal)
         # Unmapped-hardware confidence tagging is per-tick via evaluate_tick step 6.
         # D7 fix: §5.1 onboarding alert — fire once per unique unmapped
         # hardware_profile_id per site.  Deduplicated by _unmapped_profile_alerted;
@@ -947,6 +957,22 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # to full TDP in a single tick.
     for gpu in state.gpu_modules:
         gpu.advance(sim_time, dt_seconds)
+
+    # Phase 1 lead-time instrumentation.  Read the already-computed per-job
+    # draw after the existing GPU advance; do not modify any physics state or
+    # decision input.  TickResult timestamps are interval-end timestamps, so
+    # the observation uses the same interval-end simulated time.
+    for job_id in state.lead_time_observations.pending_job_ids():
+        for gpu in state.gpu_modules:
+            if job_id not in gpu._node_counts:
+                continue
+            state.lead_time_observations.observe_high_draw(
+                job_id=job_id,
+                sim_time_seconds=sim_time + dt_seconds,
+                current_draw_mw=gpu.per_job_compute_mw(job_id),
+                target_draw_mw=gpu.per_job_target_mw(job_id),
+            )
+            break
 
     # Node-count ramp patch (§9 cosmetic fix, Task #39):
     # kube_agent.tick() computes node_count = max(min_nodes, admitted_nodes)

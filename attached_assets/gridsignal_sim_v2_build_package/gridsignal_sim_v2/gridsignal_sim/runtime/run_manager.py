@@ -1830,6 +1830,10 @@ class RunManager:
         #                                   completed_at, verdict_json) -> None
         # Left as None in tests (in-memory only) — _drive() guards the call.
         self.persist_completed_hook: Optional[Any] = None
+        # Phase 1 lead-time instrumentation hook.  The recorder is drained
+        # after evaluate_tick; this hook only persists observations and is
+        # never consulted by any simulator decision path.
+        self.persist_lead_time_observation_hook: Optional[Any] = None
 
     def active_run_ids(self) -> list[str]:
         return list(self._contexts.keys())
@@ -2276,6 +2280,23 @@ class RunManager:
                 if _profiling: _t0 = _time_module.perf_counter()
                 tick_result = ctx.step()                           # sync, in-budget (Design Spec 4.3)
                 if _profiling: _sec.setdefault("A_evaluate_tick", []).append(_time_module.perf_counter() - _t0)
+
+                if self.persist_lead_time_observation_hook is not None:
+                    for _observation in (
+                        ctx.sim_state.lead_time_observations.drain_completed()
+                    ):
+                        try:
+                            await self.persist_lead_time_observation_hook(_observation)
+                        except Exception:  # noqa: BLE001
+                            # Phase 1 telemetry is strictly non-control-plane.
+                            # A store outage must not change run completion,
+                            # tick timing decisions, or physics state.
+                            logger.exception(
+                                "run %s: lead-time observation persistence failed "
+                                "for job %s",
+                                ctx.run_id,
+                                _observation.job_id,
+                            )
 
                 # ── A1: kube debug CSV ────────────────────────────────────
                 # Written every tick when kube_metrics is present.  One line:

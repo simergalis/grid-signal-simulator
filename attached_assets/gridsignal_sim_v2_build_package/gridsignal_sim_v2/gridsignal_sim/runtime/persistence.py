@@ -330,6 +330,30 @@ class RunTimeseries(Base):
     tick_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
 
 
+class LeadTimeObservation(Base):
+    """Dedicated store for observed workload start-to-high-draw timings.
+
+    This table is intentionally separate from run timeseries, control events,
+    dispatch records, and forecast data.  It is measurement data only.
+    """
+
+    __tablename__ = "gpu_lead_time_observation"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    run_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    site_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    job_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    hardware_profile_id: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    workload_type: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    start_sim_time_seconds: Mapped[float] = mapped_column(Float, nullable=False)
+    high_draw_sim_time_seconds: Mapped[float] = mapped_column(Float, nullable=False)
+    lead_time_seconds: Mapped[float] = mapped_column(Float, nullable=False)
+    threshold_fraction: Mapped[float] = mapped_column(Float, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+
+
 class EconomicProfile(Base):
     """Margin Contribution Tool — Economic Profile.
 
