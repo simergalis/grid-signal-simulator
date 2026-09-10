@@ -173,3 +173,33 @@ def test_TC_H3_profile_lead_time_ranges_are_non_overlapping():
     long_lead = observations["addendum_h_test_ramp_60s"].lead_time_seconds
 
     assert short_lead < long_lead
+
+
+def test_profile_ramp_override_flows_to_dt_lead_next_s():
+    spec = json.loads(_SCENARIO_PATH.read_text())
+    ctx = build_run_context_from_spec(
+        "tc-h-dt-lead-profile-override",
+        spec,
+        playback_speed=0.0,
+    )
+    signal = ctx.events[0]
+    ctx.sim_state.apply_workload_signal(signal, ctx.dt_lead_seconds)
+
+    gpu = ctx.sim_state.gpu_modules[0]
+    gpu._ramp_progress[signal.job_id] = 0.5
+
+    with _plane_guard_active():
+        tick = evaluate_tick(
+            ctx.sim_state,
+            SimClock(
+                sim_time=0.0,
+                dt_seconds=0.1,
+                wall_stamp_utc=0.0,
+                rate=1.0,
+                tick_seq=0,
+            ),
+        )
+
+    # evaluate_tick advances the 20 s profile by 0.1 s before calculating
+    # the remaining countdown: (1 - (0.5 + 0.1 / 20)) * 20 = 9.9 s.
+    assert tick.dt_lead_next_s == pytest.approx(9.9, abs=1e-9)

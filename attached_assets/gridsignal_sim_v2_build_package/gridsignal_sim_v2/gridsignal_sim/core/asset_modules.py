@@ -506,8 +506,8 @@ class GPUModule(AssetModule):
         not correspond to any physical event.
         """
         remaining = (
-            (1.0 - p) * self.ramp_seconds
-            for p in self._ramp_progress.values()
+            (1.0 - p) * self._ramp_seconds_for_job(job_id)
+            for job_id, p in self._ramp_progress.items()
             if p < 1.0
         )
         return min(remaining, default=math.inf)
