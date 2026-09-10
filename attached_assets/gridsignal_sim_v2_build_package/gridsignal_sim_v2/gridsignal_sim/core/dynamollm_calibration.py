@@ -2,9 +2,9 @@
 
 The values in this module are deliberately narrow in scope.  DynamoLLM
 characterizes inference energy for medium-sized requests at medium load; it
-does not provide a training or checkpointing power model.  Therefore the
-model multiplier is applied only when a workload is explicitly classified as
-inference and carries a recognized model id.
+does not provide a training or checkpointing power model.  Table III reports
+Wh per request, not instantaneous kW.  Therefore the model multiplier is a
+duration/energy multiplier and must never be multiplied into hardware power.
 
 Source:
     J. Stojkovic, C. Zhang, I. Goiri, J. Torrellas, and E. Choukse,
@@ -12,11 +12,12 @@ Source:
     Efficiency," HPCA 2025, Fig. 8 and Table III.
     https://arxiv.org/html/2408.00741v1
 
-Table III values below are the lowest reported Wh value for each model across
-the listed TP/frequency configurations.  Using the lower envelope gives a
-stable model-size sensitivity without pretending that the simulator knows the
-request shape, tensor parallelism, or GPU frequency.  The full table's
-observed range is 0.98--10.34 Wh/request.
+Table III values below are the SinglePool baseline: TP8 at the highest tested
+GPU frequency (1980 MHz / the paper's 2.0 GHz table column).  This is the
+state-of-practice fixed configuration used before DynamoLLM's dynamic
+optimization, so it is the representative baseline for an unoptimized
+design-partner cluster.  The full table's observed range is 0.98--10.34
+Wh/request.
 """
 
 from __future__ import annotations
@@ -43,18 +44,22 @@ DYNAMOLLM_FIGURE8_GPU_POWER_RANGE_W = (250.0, 800.0)
 DYNAMOLLM_FIGURE8_CLUSTER_POWER_RANGE_KW = (18.0, 56.0)
 DYNAMOLLM_H100_CHASSIS_RATED_KW = 10.2
 
-# Table III, medium request / medium load, lower envelope by model.  The
-# values remain explicit so a future calibration can replace them with a
-# request-shape-specific table rather than silently changing the baseline.
-DYNAMOLLM_TABLE_III_MIN_ENERGY_WH: Mapping[str, float] = {
-    "llama2-13b": 0.99,
-    "mixtral-8x7b": 0.98,
-    "llama2-70b": 3.91,
-    "llama3-70b": 4.28,
-    "mixtral-8x22b": 3.23,
-    "falcon-180b": 5.96,
+# Table III, medium request / medium load, SinglePool baseline by model.
+# SinglePool is TP8 at 1980 MHz.  The values remain explicit so a future
+# calibration can replace them with a request-shape-specific table rather than
+# silently changing the baseline.
+DYNAMOLLM_TABLE_III_SINGLEPOOL_ENERGY_WH: Mapping[str, float] = {
+    "llama2-13b": 3.45,
+    "mixtral-8x7b": 4.66,
+    "llama2-70b": 5.44,
+    "llama3-70b": 6.45,
+    "mixtral-8x22b": 4.03,
+    "falcon-180b": 10.34,
 }
-DYNAMOLLM_REFERENCE_ENERGY_WH = 0.98
+DYNAMOLLM_DEFAULT_MODEL_ID = "llama2-70b"
+DYNAMOLLM_REFERENCE_ENERGY_WH = DYNAMOLLM_TABLE_III_SINGLEPOOL_ENERGY_WH[
+    DYNAMOLLM_DEFAULT_MODEL_ID
+]
 
 
 def normalize_dynamollm_model_id(model_id: str | None) -> str | None:
@@ -77,10 +82,12 @@ def dynamollm_model_multiplier(
     workload_class: WorkloadClass | str | None,
     model_id: str | None,
 ) -> float:
-    """Return the one-time inference model multiplier for compute power.
+    """Return the inference duration/energy multiplier.
 
-    Unknown models and non-inference workloads intentionally return 1.0.
-    That is an explicit no-calibration path, not a silent estimate.
+    Table III is Wh/request, so this ratio belongs on the modeled request
+    duration (or an equivalent work quantity), not on instantaneous hardware
+    power.  The default reference model is Llama2-70B.  Unknown explicit
+    models and non-inference workloads intentionally return 1.0.
     """
     try:
         workload = WorkloadClass(workload_class) if workload_class is not None else None
@@ -89,10 +96,10 @@ def dynamollm_model_multiplier(
     if workload is not WorkloadClass.INFERENCE:
         return 1.0
     model_key = normalize_dynamollm_model_id(model_id)
+    if model_key is None:
+        model_key = DYNAMOLLM_DEFAULT_MODEL_ID
     energy_wh = (
-        DYNAMOLLM_TABLE_III_MIN_ENERGY_WH.get(model_key)
-        if model_key is not None
-        else None
+        DYNAMOLLM_TABLE_III_SINGLEPOOL_ENERGY_WH.get(model_key)
     )
     if energy_wh is None:
         return 1.0

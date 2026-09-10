@@ -49,17 +49,36 @@ The agent passes the `KubeMetrics` snapshot (utilisation, active jobs, power-cap
 **Formula:**
 
 ```
-P_compute(t) = Σ_jobs  nodes_k × kW_k × M_k × PUE_base / 1000  ×  ρ(progress_k)
+P_compute(t) = Σ_jobs  nodes_k × kW_k × PUE_base / 1000  ×  ρ(progress_k)
 ```
 
-`kW_k` comes from the hardware profile library. `M_k` is 1.0 unless the
-signal is explicitly classified as inference and carries a recognized
-DynamoLLM Table III model id. For those signals, `M_k` is the model's
-lower-envelope medium-request/medium-load energy divided by the 0.98 Wh
-reference value. This is a workload sensitivity, not a replacement for the
-hardware rating, and it is applied once in `GPUModule` to both current and
-target draw. Training, checkpointing, other workloads, and unknown models
-remain at `M_k = 1.0` because DynamoLLM does not characterize them.
+`kW_k` comes from the hardware profile library and is the physical
+per-node/nameplate draw. There is no model multiplier in this instantaneous
+power equation. A GPU or chassis therefore cannot draw above its documented
+hardware rating because a larger model was selected.
+
+DynamoLLM Table III reports **Wh per request**, which combines power and
+request processing time. The simulator applies the resulting model ratio to
+the modeled Kube job duration, not to `kW_k`:
+
+```
+duration_model_multiplier = SinglePool_energy(model) / SinglePool_energy(Llama2-70B)
+```
+
+The Kube path owns generated job durations, so this represents a larger model
+as a longer sustained hardware allocation while keeping instantaneous power
+at the rated draw. Scripted workload events already carry explicit
+`JOB_END` timestamps; those authored timelines remain authoritative rather
+than being silently rewritten. Physical `node_count` is not multiplied by
+model size because it represents allocated hardware, not an abstract work
+quantity.
+
+The calibration is DynamoLLM's SinglePool baseline: TP8 at 1980 MHz, the
+state-of-practice fixed configuration before dynamic optimization. Values are
+for medium requests at medium system load. The 70B Llama2 value is the
+reference/default model, so its multiplier is 1.0. Non-inference workloads,
+unknown explicit models, and workloads without a model in a non-inference
+classification remain uncalibrated at 1.0.
 
 Calibration source: J. Stojkovic, C. Zhang, I. Goiri, J. Torrellas, and
 E. Choukse, “DynamoLLM: Designing LLM Inference Clusters for Performance and
@@ -70,7 +89,8 @@ The companion cluster-power panel spans approximately 18–56 kW for the
 evaluated 12-server cluster.
 The H100/Hopper profile remains 10.2 kW per 8-GPU chassis (1.275 kW/GPU)
 as a conservative chassis envelope including non-GPU overhead; the old flat
-300 W/GPU assumption is not used by the power path.
+300 W/GPU assumption is not used by the power path. The Table III energy
+ratio is never allowed to raise this hardware draw.
 
 `ρ(progress)` is the **Δt\_lead ramp multiplier**:
 

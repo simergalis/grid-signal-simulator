@@ -96,6 +96,7 @@ from .models import (
     ActiveJobSummary,
 )
 from .kube_scheduler import KubePod, KubeSchedulerEngine
+from .dynamollm_calibration import dynamollm_model_multiplier
 from .step_config import LoadProfileConfig, StepTimingConfig
 from .step_scheduler import StepScheduler
 
@@ -299,6 +300,23 @@ class KubeDemandAgent:
     the synchronous evaluate_tick() function.
     """
 
+    def _model_duration_multiplier(self) -> float:
+        """Scale modeled inference duration, never instantaneous node power.
+
+        DynamoLLM Table III contains Wh/request.  KubeDemandAgent is the
+        simulator path that owns request/job duration, so applying the ratio
+        here preserves each hardware profile's rated draw while representing
+        larger-model work as a longer sustained allocation.
+        """
+        workload_class = self.config.workload_class
+        if workload_class is None:
+            workload_class = (
+                WorkloadClass.INFERENCE.value
+                if self.config.model_id is not None
+                else WorkloadClass.TRAINING.value
+            )
+        return dynamollm_model_multiplier(workload_class, self.config.model_id)
+
     def __init__(
         self,
         config: KubeConfig,
@@ -478,7 +496,7 @@ class KubeDemandAgent:
             duration_s = max(
                 self.config.min_job_duration_s,
                 self._rng.expovariate(1.0 / self.config.mean_job_duration_s),
-            )
+            ) * self._model_duration_multiplier()
 
             # NTP jitter on the event timestamp (±ntp_jitter_s)
             jitter = self._rng.uniform(-self.config.ntp_jitter_s, self.config.ntp_jitter_s)
@@ -842,7 +860,7 @@ class KubeDemandAgent:
             duration_s = max(
                 self.config.min_job_duration_s,
                 self._rng.expovariate(1.0 / self.config.mean_job_duration_s),
-            )
+            ) * self._model_duration_multiplier()
             jitter = self._rng.uniform(-self.config.ntp_jitter_s, self.config.ntp_jitter_s)
             observed_at = self._next_arrival_sim_time
             self._reorder_buffer.append(_PendingAdmission(

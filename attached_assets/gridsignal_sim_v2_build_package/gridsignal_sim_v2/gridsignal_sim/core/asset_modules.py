@@ -40,7 +40,6 @@ from .models import (
     WorkloadEventType,
     WorkloadSignal,
 )
-from .dynamollm_calibration import dynamollm_model_multiplier
 from .step_config import LoadProfileConfig
 
 
@@ -432,12 +431,9 @@ class GPUModule(AssetModule):
         profile_id = self._job_profiles.get(job_id, "")
         profile = self.hardware_library.get(profile_id, GENERIC_FALLBACK_PROFILE)
         workload_class = self._job_workload_classes.get(job_id)
-        model_id = self._job_model_ids.get(job_id)
-        model_multiplier = dynamollm_model_multiplier(workload_class, model_id)
         full_kw = (
             nodes
             * profile.rated_kw
-            * model_multiplier
             * self.site.pue_base
             / 1000.0
         )
@@ -486,14 +482,9 @@ class GPUModule(AssetModule):
             return 0.0
         profile_id = self._job_profiles.get(job_id, "")
         profile = self.hardware_library.get(profile_id, GENERIC_FALLBACK_PROFILE)
-        model_multiplier = dynamollm_model_multiplier(
-            self._job_workload_classes.get(job_id),
-            self._job_model_ids.get(job_id),
-        )
         return (
             nodes
             * profile.rated_kw
-            * model_multiplier
             * self.site.pue_base
             / 1000.0
         )
