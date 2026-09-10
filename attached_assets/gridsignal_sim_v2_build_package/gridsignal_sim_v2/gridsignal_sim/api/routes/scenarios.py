@@ -1159,6 +1159,21 @@ def _seed_json_scenarios(store: ScenarioStore) -> None:
         # ceiling and residual unserved load remain directly observable.
         ("scenario-fc100-islanded-zero-hot-v2",
          "scenario-fc100-islanded-zero-hot-v2.json"),
+        # Measurement-only GPU lead-time collection fixtures.  These deliberately
+        # cover only hardware/workload combinations represented by the current
+        # catalogue and WorkloadEventSpec contract.
+        ("lead-time-enterprise-8gpu-air-training",
+         "lead-time-enterprise-8gpu-air-training.json"),
+        ("lead-time-enterprise-8gpu-air-inference",
+         "lead-time-enterprise-8gpu-air-inference.json"),
+        ("lead-time-h100-sxm5-8way-nvl4-training",
+         "lead-time-h100-sxm5-8way-nvl4-training.json"),
+        ("lead-time-h100-sxm5-8way-nvl4-inference",
+         "lead-time-h100-sxm5-8way-nvl4-inference.json"),
+        ("lead-time-nextgen-rack-liquid-training",
+         "lead-time-nextgen-rack-liquid-training.json"),
+        ("lead-time-nextgen-rack-liquid-inference",
+         "lead-time-nextgen-rack-liquid-inference.json"),
     ]
     _DISPLAY_NAME_OVERRIDES = {
         "scenario-equinix-sj-1": "Customer Scenario - scenario-equinix-sj-1",
