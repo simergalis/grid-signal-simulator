@@ -44,3 +44,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Fuel-cell Option C boundary](fuel-cell-option-c.md) — grid forming, PF/reactive loading, and IEEE ride-through only; fault-duty figures and group electrical properties stay absent.
 - [Legacy fuel-cell scenario representation](legacy-fuel-cell-scenarios.md) — eleven authored scenarios stay aggregate because no block translation preserved behavior.
 - [Intrinsic block fuel-cell ramp](block-fuel-cell-intrinsic-ramp.md) — producing blocks always obey a proposed MW/s machine limit before optional fuel constraints.
+- [Lead-time collection scope](lead-time-collection-scope.md) — collect only catalogue-backed hardware and training/inference workload classes; checkpointing and missing profiles stay explicitly skipped.
