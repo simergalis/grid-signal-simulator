@@ -95,6 +95,7 @@ class KubeSchedulerEngine:
         node_cpu_milli: int,
         node_memory_mib: int,
         node_gpu_count: int,
+        node_gpu_type: Optional[str] = None,
         backoff_duration_s: float = 10.0,
         max_backoff_retries: int = 1,
         container_start_delay_s: float = 0.0,
@@ -106,6 +107,7 @@ class KubeSchedulerEngine:
                 cpu_capacity_milli=node_cpu_milli,
                 memory_capacity_mib=node_memory_mib,
                 gpu_capacity=node_gpu_count,
+                gpu_type=node_gpu_type,
             )
             for index in range(max_nodes)
         ]

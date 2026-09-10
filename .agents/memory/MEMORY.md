@@ -49,3 +49,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Ignored simulator source tracking](ignored-simulator-source.md) — new source under attached_assets is ignored and must be explicitly tracked.
 - [Alibaba trace replay](kube-trace-replay-runtime.md) — relative Alibaba timestamps are milliseconds; deduplicate scheduler wakeups or replay time grows superlinearly.
 - [DynamoLLM power calibration](dynamollm-power-calibration.md) — H100 chassis stays a 10.2 kW envelope; inference-only model factors use Table III lower-envelope Wh values.
+- [Phase A scheduler demo](phase-a-demo-scenario.md) — real queueing needs bounded capacity, overloaded arrival-duration product, and finite backoff retries; startup delay alone is not proof.

@@ -1142,6 +1142,10 @@ def _seed_json_scenarios(store: ScenarioStore) -> None:
         # Kubernetes demand with 30 MW / 60 MWh BESS, 24 MW fuel cell,
         # and a physically enforced 10 MW PCC import ceiling.
         ("scenario-equinix-sj-1", "scenario-equinix-sj-1.json"),
+        # Explicit K8S Phase A queue/resource demonstration.  This has no
+        # scripted workload events; all demand comes from the K8S cluster agent.
+        ("scenario-kubernetes-scheduler-demo",
+         "scenario-kubernetes-scheduler-demo.json"),
         # Full-day SJ-2 customer replay — stored compressed to keep its
         # 100-event scheduler timeline as one deterministic catalog asset.
         ("scenario-equinix-sj-2-24h", "scenario-equinix-sj-2-24h.json.gz.b64"),

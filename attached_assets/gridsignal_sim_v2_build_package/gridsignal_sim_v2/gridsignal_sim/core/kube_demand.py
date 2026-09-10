@@ -215,9 +215,11 @@ class KubeConfig:
     node_cpu_milli: int = 96_000
     node_memory_mib: int = 1_500_000
     node_gpu_count: Optional[int] = None
+    node_gpu_type: Optional[str] = None
     pod_cpu_milli: Optional[int] = None
     pod_memory_mib: Optional[int] = None
     pod_gpu_count: Optional[int] = None
+    pod_gpu_types: tuple[str, ...] = ()
     pod_priority: int = 0
     backoff_duration_s: float = 10.0
     max_backoff_retries: int = 1
@@ -391,6 +393,7 @@ class KubeDemandAgent:
                 node_cpu_milli=config.node_cpu_milli,
                 node_memory_mib=config.node_memory_mib,
                 node_gpu_count=config.node_gpu_count or config.gpus_per_unit,
+                node_gpu_type=config.node_gpu_type,
                 backoff_duration_s=config.backoff_duration_s,
                 max_backoff_retries=config.max_backoff_retries,
                 container_start_delay_s=config.container_start_delay_s,
@@ -958,6 +961,7 @@ class KubeDemandAgent:
                     gpu_count=self.config.pod_gpu_count or (
                         self.config.node_gpu_count or self.config.gpus_per_unit
                     ),
+                    gpu_types=tuple(self.config.pod_gpu_types),
                     duration_s=admission.duration_s,
                     hardware_profile_id=admission.hardware_profile_id,
                 )
