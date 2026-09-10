@@ -914,6 +914,14 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             cluster_metrics=tuple(_cluster_metrics),
             total_gpu_capacity=sum(m.gpu_capacity for m in _cluster_metrics),
             total_capacity_mw=round(_total_capacity_mw, 4),
+            active_queue_depth=sum(m.active_queue_depth for m in _merged_metrics),
+            backoff_queue_depth=sum(m.backoff_queue_depth for m in _merged_metrics),
+            unschedulable_pods=sum(m.unschedulable_pods for m in _merged_metrics),
+            scheduler_events=tuple(
+                event
+                for metric in _merged_metrics
+                for event in metric.scheduler_events
+            ),
         )
 
         # §9 / resolution-log item 5: dt_lead_seconds for a Kubernetes signal

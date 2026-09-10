@@ -95,6 +95,7 @@ from .models import (
     QueuedJobSummary,
     ActiveJobSummary,
 )
+from .kube_scheduler import KubePod, KubeSchedulerEngine
 from .step_config import LoadProfileConfig, StepTimingConfig
 from .step_scheduler import StepScheduler
 
@@ -199,6 +200,21 @@ class KubeConfig:
     # overhead), matching design_peak_load_mw semantics in TickResult.
     # Set to None to disable (default; no existing tests affected).
     capacity_ceiling_mw: Optional[float] = None
+
+    # ── Phase A kube-scheduler-shaped engine ─────────────────────────────────
+    # These resources are the node inventory for the K8S leg.  The scenario
+    # factory fills node_gpu_count from the selected HardwareProfile's real
+    # GPU-per-unit catalogue value.
+    node_cpu_milli: int = 96_000
+    node_memory_mib: int = 1_500_000
+    node_gpu_count: Optional[int] = None
+    pod_cpu_milli: Optional[int] = None
+    pod_memory_mib: Optional[int] = None
+    pod_gpu_count: Optional[int] = None
+    pod_priority: int = 0
+    backoff_duration_s: float = 10.0
+    max_backoff_retries: int = 1
+    container_start_delay_s: float = 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -343,6 +359,18 @@ class KubeDemandAgent:
         # Signal emission state
         self._last_total_nodes: int = -1   # -1 forces emission on tick 0
         self._started: bool = False
+        self._scheduler_events: tuple = ()
+        self._kube_scheduler: Optional[KubeSchedulerEngine] = None
+        if config.scheduler_type == "K8S":
+            self._kube_scheduler = KubeSchedulerEngine(
+                max_nodes=config.max_nodes,
+                node_cpu_milli=config.node_cpu_milli,
+                node_memory_mib=config.node_memory_mib,
+                node_gpu_count=config.node_gpu_count or config.gpus_per_unit,
+                backoff_duration_s=config.backoff_duration_s,
+                max_backoff_retries=config.max_backoff_retries,
+                container_start_delay_s=config.container_start_delay_s,
+            )
 
     # ------------------------------------------------------------------
     # Public API
@@ -372,6 +400,14 @@ class KubeDemandAgent:
                      Empty when no admission changes node count this tick.
             metrics: KubeMetrics snapshot for this tick (wire + UI).
         """
+        # A few compatibility callers preload the legacy _active_jobs list to
+        # test GridSignal's power/capacity gates in isolation. Keep that
+        # fixture path on the original gate implementation; live K8S runs
+        # never populate _active_jobs and use the Phase A engine below.
+        if self._kube_scheduler is not None and not self._active_jobs:
+            return self._tick_kubernetes(
+                sim_time, dt_seconds, grid_state, already_admitted_nodes
+            )
         # ── Grid headroom from previous tick ─────────────────────────────
         headroom_mw = 999.0
         power_cap_active = False
@@ -743,6 +779,284 @@ class KubeDemandAgent:
                 self.config.max_nodes * self.config.rated_kw_per_node / 1000.0,
                 4,
             ),
+        )
+        return signals, metrics
+
+    def _tick_kubernetes(
+        self,
+        sim_time: float,
+        dt_seconds: float,
+        grid_state: Optional[KubeGridState],
+        already_admitted_nodes: int,
+    ) -> tuple[list[WorkloadSignal], KubeMetrics]:
+        """Run Phase A only for K8S; Slurm/Ray retain the legacy agent below."""
+        del already_admitted_nodes
+        headroom_mw = 999.0
+        power_cap_active = False
+        if grid_state is not None:
+            headroom_mw = (
+                grid_state.turbine_headroom_mw
+                + grid_state.bess_headroom_mw
+                + grid_state.fuel_cell_headroom_mw
+            )
+            raw_cap = headroom_mw < self.config.headroom_threshold_mw
+            if not raw_cap and self._prev_raw_cap:
+                self._power_cap_hold_until = (
+                    sim_time + self.config.power_cap_hysteresis_s
+                )
+            self._prev_raw_cap = raw_cap
+            power_cap_active = raw_cap or sim_time < self._power_cap_hold_until
+
+        arrivals_this_tick = 0
+        while self._next_arrival_sim_time <= sim_time:
+            self._job_counter += 1
+            prefix = f"{self.config.event_id_prefix}-" if self.config.event_id_prefix else ""
+            event_id = f"{prefix}kube-job-{self._job_counter}"
+            cap = (
+                min(self.config.max_job_nodes, self.config.max_nodes)
+                if self.config.max_job_nodes is not None
+                else self.config.max_nodes // 2
+            )
+            node_count = int(round(max(
+                float(self.config.min_job_nodes),
+                min(float(cap), self._rng.gauss(
+                    float(self.config.mean_job_nodes),
+                    float(self.config.job_node_std),
+                )),
+            )))
+            duration_s = max(
+                self.config.min_job_duration_s,
+                self._rng.expovariate(1.0 / self.config.mean_job_duration_s),
+            )
+            jitter = self._rng.uniform(-self.config.ntp_jitter_s, self.config.ntp_jitter_s)
+            observed_at = self._next_arrival_sim_time
+            self._reorder_buffer.append(_PendingAdmission(
+                event_id=event_id,
+                node_count=node_count,
+                hardware_profile_id=self.config.hardware_profile_id,
+                observed_at=observed_at,
+                event_timestamp=observed_at + jitter,
+                duration_s=duration_s,
+                tenant_id=self.config.tenant_id,
+                scheduler_type=self.config.scheduler_type,
+                first_queued_at=observed_at,
+            ))
+            arrivals_this_tick += 1
+            self._next_arrival_sim_time += self._rng.expovariate(
+                1.0 / self.config.mean_interarrival_s
+            )
+
+        ready = sorted(
+            (
+                pa for pa in self._reorder_buffer
+                if pa.observed_at + self.config.reorder_window_s <= sim_time
+            ),
+            key=lambda pa: pa.event_timestamp,
+        )
+        self._reorder_buffer = [
+            pa for pa in self._reorder_buffer
+            if pa.observed_at + self.config.reorder_window_s > sim_time
+        ]
+
+        assert self._kube_scheduler is not None
+        events = []
+        requeued_this_tick = 0
+        cap_gate_deferred = 0
+        accepted_nodes = len(self._kube_scheduler.running_pods)
+        for admission in ready:
+            if admission.event_id in self._seen_event_ids:
+                continue
+            self._seen_event_ids.add(admission.event_id)
+            if (
+                self.config.capacity_ceiling_mw is not None
+                and (
+                    accepted_nodes + admission.node_count
+                ) * self.config.rated_kw_per_node / 1000.0
+                > self.config.capacity_ceiling_mw
+            ):
+                retry_id = (
+                    f"{admission.event_id.split('-capdefer')[0]}-capdefer-"
+                    f"{admission.requeue_count + 1}"
+                )
+                self._reorder_buffer.append(_PendingAdmission(
+                    event_id=retry_id,
+                    node_count=admission.node_count,
+                    hardware_profile_id=admission.hardware_profile_id,
+                    observed_at=sim_time + dt_seconds,
+                    event_timestamp=sim_time + dt_seconds,
+                    duration_s=admission.duration_s,
+                    tenant_id=admission.tenant_id,
+                    scheduler_type=admission.scheduler_type,
+                    first_queued_at=admission.first_queued_at,
+                    requeue_count=admission.requeue_count,
+                ))
+                cap_gate_deferred += 1
+                continue
+            if power_cap_active:
+                retry_id = (
+                    f"{admission.event_id.split('-retry')[0]}-retry-"
+                    f"{admission.requeue_count + 1}"
+                )
+                self._reorder_buffer.append(_PendingAdmission(
+                    event_id=retry_id,
+                    node_count=admission.node_count,
+                    hardware_profile_id=admission.hardware_profile_id,
+                    observed_at=sim_time + dt_seconds,
+                    event_timestamp=sim_time + dt_seconds,
+                    duration_s=admission.duration_s,
+                    tenant_id=admission.tenant_id,
+                    scheduler_type=admission.scheduler_type,
+                    first_queued_at=admission.first_queued_at,
+                    requeue_count=admission.requeue_count + 1,
+                ))
+                requeued_this_tick += 1
+                continue
+            accepted_nodes += admission.node_count
+            for pod_index in range(admission.node_count):
+                pod_id = f"{admission.event_id}-pod-{pod_index + 1}"
+                pod = KubePod(
+                    pod_id=pod_id,
+                    workload_id=admission.event_id,
+                    created_at=admission.observed_at,
+                    enqueue_time=sim_time,
+                    priority=self.config.pod_priority,
+                    cpu_milli=self.config.pod_cpu_milli or self.config.node_cpu_milli,
+                    memory_mib=self.config.pod_memory_mib or self.config.node_memory_mib,
+                    gpu_count=self.config.pod_gpu_count or (
+                        self.config.node_gpu_count or self.config.gpus_per_unit
+                    ),
+                    duration_s=admission.duration_s,
+                    hardware_profile_id=admission.hardware_profile_id,
+                )
+                events.extend(self._kube_scheduler.submit(pod))
+
+        scheduler_tick = self._kube_scheduler.tick(sim_time)
+        events.extend(scheduler_tick.events)
+        self._scheduler_events = tuple(events)
+
+        running = tuple(self._kube_scheduler.running_pods.values())
+        admitted_nodes = len(running)
+        total_nodes = max(self.config.min_nodes, admitted_nodes)
+        active_workloads = len({pod.workload_id for pod in running})
+        utilization = total_nodes / self.config.max_nodes
+        signals: list[WorkloadSignal] = []
+        if not self._started or total_nodes != self._last_total_nodes:
+            event_type = (
+                WorkloadEventType.STARTING if not self._started
+                else WorkloadEventType.SCALE
+            )
+            prefix = f"{self.config.cluster_id}-" if self.config.cluster_id else ""
+            signals.append(WorkloadSignal(
+                event_id=f"{prefix}kube-signal-t{int(sim_time * 10)}",
+                job_id=f"kube-admission-{self.config.cluster_id or self.config.tenant_id}",
+                event_type=event_type,
+                timestamp=sim_time,
+                hardware_profile_id=self.config.hardware_profile_id,
+                node_count=total_nodes,
+                workload_class=WorkloadClass.TRAINING,
+                site_id=self.site_id,
+                tenant_id=self.config.tenant_id,
+                cluster_id=self.config.cluster_id or None,
+                scheduler_type=self.config.scheduler_type,
+                capacity_unit=self.config.capacity_unit,
+                gpus_per_unit=self.config.gpus_per_unit,
+            ))
+            self._started = True
+            self._last_total_nodes = total_nodes
+
+        if self._step_scheduler is not None:
+            _fired, phase, kind = self._step_scheduler.tick(
+                sim_time, dt_seconds, self._rng_step
+            )
+            self.current_step_phase = phase
+            self.current_step_kind = kind
+
+        kw = self.config.rated_kw_per_node
+        metrics = KubeMetrics(
+            utilization=utilization,
+            node_count=total_nodes,
+            power_cap_active=power_cap_active,
+            headroom_mw=headroom_mw,
+            active_jobs=active_workloads,
+            admitted_nodes=admitted_nodes,
+            arrivals_this_tick=arrivals_this_tick,
+            requeued_this_tick=requeued_this_tick,
+            cap_gate_deferred_count=cap_gate_deferred,
+            queued_jobs=(
+                len(self._reorder_buffer)
+                + len(self._kube_scheduler.active_queue)
+                + len(self._kube_scheduler.backoff_queue)
+                + len(self._kube_scheduler.unschedulable_pods)
+            ),
+            queued_nodes=sum(pa.node_count for pa in self._reorder_buffer),
+            pending_jobs=tuple(
+                QueuedJobSummary(
+                    event_id=pa.event_id,
+                    tenant_id=pa.tenant_id,
+                    scheduler_type=pa.scheduler_type,
+                    node_count=pa.node_count,
+                    hardware_profile_id=pa.hardware_profile_id,
+                    observed_at=pa.observed_at,
+                    duration_s=pa.duration_s,
+                    est_draw_mw=round(pa.node_count * kw / 1000.0, 4),
+                    queued_since_s=pa.first_queued_at,
+                    requeue_count=pa.requeue_count,
+                    cluster_id=self.config.cluster_id,
+                    capacity_unit=self.config.capacity_unit,
+                    gpus_per_unit=self.config.gpus_per_unit,
+                )
+                for pa in self._reorder_buffer
+            ),
+            active_jobs_detail=tuple(
+                ActiveJobSummary(
+                    event_id=workload_id,
+                    tenant_id=self.config.tenant_id,
+                    scheduler_type=self.config.scheduler_type,
+                    node_count=sum(pod.workload_id == workload_id for pod in running),
+                    hardware_profile_id=self.config.hardware_profile_id,
+                    admitted_at=min(
+                        pod.started_at or sim_time
+                        for pod in running
+                        if pod.workload_id == workload_id
+                    ),
+                    ends_at=max(
+                        pod.ends_at or sim_time
+                        for pod in running
+                        if pod.workload_id == workload_id
+                    ),
+                    est_draw_mw=round(
+                        sum(pod.workload_id == workload_id for pod in running)
+                        * kw / 1000.0,
+                        4,
+                    ),
+                    cluster_id=self.config.cluster_id,
+                    capacity_unit=self.config.capacity_unit,
+                    gpus_per_unit=self.config.gpus_per_unit,
+                )
+                for workload_id in sorted({pod.workload_id for pod in running})
+            ),
+            cluster_metrics=(
+                KubeClusterMetrics(
+                    cluster_id=self.config.cluster_id or self.config.tenant_id,
+                    tenant_id=self.config.tenant_id,
+                    scheduler_type=self.config.scheduler_type,
+                    hardware_profile_id=self.config.hardware_profile_id,
+                    capacity_unit=self.config.capacity_unit,
+                    gpus_per_unit=self.config.gpus_per_unit,
+                    max_units=self.config.max_nodes,
+                    scheduled_units=total_nodes,
+                    admitted_units=admitted_nodes,
+                    gpu_capacity=self.config.max_nodes * self.config.gpus_per_unit,
+                    rated_capacity_mw=round(self.config.max_nodes * kw / 1000.0, 4),
+                    utilization=utilization,
+                ),
+            ),
+            total_gpu_capacity=self.config.max_nodes * self.config.gpus_per_unit,
+            total_capacity_mw=round(self.config.max_nodes * kw / 1000.0, 4),
+            active_queue_depth=len(self._kube_scheduler.active_queue),
+            backoff_queue_depth=len(self._kube_scheduler.backoff_queue),
+            unschedulable_pods=len(self._kube_scheduler.unschedulable_pods),
+            scheduler_events=self._scheduler_events,
         )
         return signals, metrics
 

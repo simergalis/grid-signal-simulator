@@ -351,6 +351,22 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         ]
         if _km is not None else []
     )
+    _scheduler_events_list = (
+        [
+            {
+                "event_id": event.event_id,
+                "pod_id": event.pod_id,
+                "workload_id": event.workload_id,
+                "stage": event.stage,
+                "timestamp": round(event.timestamp, 6),
+                "node_id": event.node_id,
+                "reason": event.reason,
+                "attempt": event.attempt,
+            }
+            for event in _km.scheduler_events
+        ]
+        if _km is not None else []
+    )
 
     return {
         "run_id": tick.run_id,
@@ -614,6 +630,10 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
                 "requeued_this_tick": _km.requeued_this_tick,
                 "queued_jobs":        _km.queued_jobs,
                 "queued_nodes":       _km.queued_nodes,
+                "active_queue_depth":  _km.active_queue_depth,
+                "backoff_queue_depth": _km.backoff_queue_depth,
+                "unschedulable_pods":  _km.unschedulable_pods,
+                "scheduler_events":    _scheduler_events_list,
                 "pending_jobs":       _pending_jobs_list,
                 "active_jobs_detail": _active_jobs_detail_list,
                 "cluster_metrics":    _cluster_metrics_list,

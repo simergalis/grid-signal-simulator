@@ -904,6 +904,20 @@ class KubeConfigSpec(BaseModel):
 
     rng_seed: Optional[int] = None
 
+    # Phase A kube-scheduler-shaped single-pod baseline.  These defaults model
+    # the existing H100-class node profile; the factory overwrites GPU count
+    # from the selected hardware catalogue entry.
+    node_cpu_milli: int = Field(default=96_000, ge=1)
+    node_memory_mib: int = Field(default=1_500_000, ge=1)
+    node_gpu_count: Optional[int] = Field(default=None, ge=1)
+    pod_cpu_milli: Optional[int] = Field(default=None, ge=1)
+    pod_memory_mib: Optional[int] = Field(default=None, ge=1)
+    pod_gpu_count: Optional[int] = Field(default=None, ge=1)
+    pod_priority: int = Field(default=0)
+    backoff_duration_s: float = Field(default=10.0, ge=0.0)
+    max_backoff_retries: int = Field(default=1, ge=0)
+    container_start_delay_s: float = Field(default=0.0, ge=0.0)
+
     # ── Stochastic step timing (spec Part 1) ──────────────────────────────────
     # None (default) = step scheduler off; period falls back to no step events.
     step_config: Optional[StepTimingConfigSpec] = None

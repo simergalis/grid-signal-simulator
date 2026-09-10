@@ -1057,6 +1057,20 @@ class ActiveJobSummary:
 
 
 @dataclass(frozen=True)
+class KubeSchedulerEvent:
+    """Timestamped Phase A scheduler lifecycle event for one Kubernetes pod."""
+
+    event_id: str
+    pod_id: str
+    workload_id: str
+    stage: str
+    timestamp: float
+    node_id: Optional[str] = None
+    reason: Optional[str] = None
+    attempt: int = 0
+
+
+@dataclass(frozen=True)
 class KubeClusterMetrics:
     """Capacity and load snapshot for one independently admitted cluster."""
 
@@ -1114,6 +1128,10 @@ class KubeMetrics:
     cluster_metrics: tuple[KubeClusterMetrics, ...] = field(default_factory=tuple)
     total_gpu_capacity: int = 0
     total_capacity_mw: float = 0.0
+    active_queue_depth: int = 0
+    backoff_queue_depth: int = 0
+    unschedulable_pods: int = 0
+    scheduler_events: tuple[KubeSchedulerEvent, ...] = field(default_factory=tuple)
 
 
 # ---------------------------------------------------------------------------
