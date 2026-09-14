@@ -1100,6 +1100,254 @@ def _seed_fabric_scenarios(store: ScenarioStore) -> None:
         store._seed(store_id, _spec)
 
 
+def _build_persistent_slurm_gpu_peak_scenario() -> ScenarioSpec:
+    """Build the deterministic 90-minute Slurm/GPU peak scenario.
+
+    This scenario was originally authored through the CRUD API.  Keeping it
+    as a generated seeded spec avoids checking in a multi-megabyte JSON file
+    containing one record for every simulated node, while still making the
+    authored scenario available after a process or deployment restart.
+    """
+    import json as _json
+    from pathlib import Path as _Path
+
+    _cfg_dir = _Path(__file__).resolve().parents[2] / "config" / "scenarios"
+    _base = _json.loads(
+        (_cfg_dir / "scenario-fc100-islanded-v2.json").read_text()
+    )
+
+    _base.update(
+        {
+            "name": "Islanded FC + BESS + Diesel — Slurm GPU Peaks (90 min)",
+            "description": (
+                "Islanded 90-minute deterministic Slurm GPU replay with "
+                "6,354 H100 nodes, three continuously allocated workload "
+                "shards, two queued waiters, gradual GPU phase changes, "
+                "fuel-cell load following, BESS bridging, and advisory diesel "
+                "reserve."
+            ),
+            "site_name": "Islanded Slurm Peak Test Plant",
+            "site_latitude": 37.3541,
+            "site_longitude": -121.9552,
+            "site_utc_offset_h": -8.130346666666666,
+            "workload_events": [],
+            "dt_lead_seconds": 30.0,
+            "solar_rated_mw": 0.0,
+            "gpu_load_profile": [],
+            "fuel_cell_enabled": True,
+            "fuel_cell_rated_mw": 0.0,
+            "fuel_cell_stack_count": 1,
+            "fuel_cell_load_following": True,
+            "fuel_cell_min_stable_fraction": 0.5,
+            "island_mode": True,
+            "pue_base": 1.0,
+            "power_factor": 0.85,
+            "alpha_max": 0.2,
+            "bess_normal_dispatch_depth_fraction": 1.0,
+            "bess_bridging_floor_fraction": 0.15,
+            "bess_material_discharge_fraction": 0.05,
+            "end_sim_time": 5400.0,
+            "diesel_power_block": {
+                "enabled": True,
+                "target_capacity_mw": 20.0,
+                "unit_rating_mw": 20.0,
+                "p_start": 1.0,
+                "target_reliability": 1.0,
+                "f_block": 1.0,
+                "delta_t_start_s": 3600.0,
+                "residual_ramp_s": 60.0,
+                "start_stagger_interval_s": 1.0,
+                "debounce_s": 1.0,
+                "restore_hold_s": 300.0,
+                "min_run_s": 900.0,
+                "min_down_s": 300.0,
+                "min_stable_load_mw_fraction": 0.3,
+                "cooldown_s": 300.0,
+                "fuel_burn_gal_per_hr_per_unit_at_full_load": 230.0,
+                "fuel_type": "diesel",
+                "min_fuel_runtime_hours": 48.0,
+                "authority_tier": "advisory_only",
+            },
+            "diesel_units": [
+                {
+                    "asset_id": "diesel-000",
+                    "rated_mw": 20.0,
+                    "role": "primary",
+                    "start_offset_s": 0.0,
+                    "delta_t_start_s": 3600.0,
+                    "f_block": 1.0,
+                    "residual_ramp_s": 60.0,
+                    "min_stable_load_mw": 6.0,
+                    "min_run_s": 900.0,
+                    "min_down_s": 300.0,
+                    "cooldown_s": 300.0,
+                    "authority_tier": "advisory_only",
+                }
+            ],
+            "fuel_cell_units": [
+                {
+                    "asset_id": "fc100-array",
+                    "block_rated_mw": 0.325,
+                    "block_count": 246,
+                    "initial_running_blocks": 62,
+                    "initial_hot_standby_blocks": 184,
+                    "commit_rate_blocks_per_s": 1.0,
+                    "decommit_rate_blocks_per_s": 0.02,
+                    "cold_start_s": 28800.0,
+                    "warm_start_s": 14400.0,
+                    "hot_start_s": 5.0,
+                    "min_stable_frac": 0.0,
+                    "hot_standby_floor_blocks": 92,
+                    "dispatch_mechanism": "hybrid",
+                    "readiness_dwell_s": 0.0,
+                }
+            ],
+        }
+    )
+
+    _node_ids = [
+        f"slurm-node-{index:04d}" for index in range(1, 6355)
+    ]
+    _base["slurm_config"] = {
+        "cluster_name": "islanded-gpu-fleet",
+        "select_type": "cons_tres",
+        "topology_plugin": "flat",
+        "priority_type": "multifactor",
+        "preempt_mode": "off",
+        "accounting_enforce": [],
+        "cgroup_enforce": True,
+        "max_job_count": 1000,
+        "max_array_size": 10000,
+        "nodes": [
+            {
+                "node_id": node_id,
+                "partition": "gpu",
+                "gpus": 8,
+                "gpu_model": "H100-SXM",
+                "cpus": 192,
+                "memory_mb": 1536000,
+                "features": [],
+                "state": "IDLE",
+                "sockets": 1,
+                "cores_per_socket": 1,
+                "threads_per_core": 1,
+                "topology": {},
+                "gres": {"gpu": 8},
+            }
+            for node_id in _node_ids
+        ],
+        "partitions": [
+            {
+                "name": "gpu",
+                "nodes": _node_ids,
+                "state": "UP",
+                "default": True,
+                "max_time_s": None,
+                "allow_accounts": [],
+                "allow_qos": [],
+                "oversubscribe": False,
+            }
+        ],
+        "qos": [],
+        "accounts": [],
+        "licenses": [],
+        "burst_buffers": [],
+        "federation": None,
+        "qos_weights": {},
+        "reservations": [],
+        "backfill": False,
+    }
+
+    # Five-minute phase cells approach and leave each requested peak instead
+    # of switching the entire 6,354-node fleet at a single timestamp.
+    _profile = [
+        (0.30, 600), (0.40, 150), (0.50, 150), (0.40, 150),
+        (0.30, 150), (0.30, 150), (0.30, 150), (0.45, 150),
+        (0.70, 150), (0.55, 150), (0.40, 150), (0.30, 150),
+        (0.30, 150), (0.50, 150), (0.70, 150), (0.90, 150),
+        (0.70, 150), (0.50, 150), (0.40, 150), (0.30, 150),
+        (0.30, 150), (0.40, 150), (0.50, 150), (0.40, 150),
+        (0.30, 150), (0.30, 150), (0.50, 150), (0.65, 150),
+        (0.80, 150), (0.65, 150), (0.50, 150), (0.40, 150),
+        (0.30, 150),
+    ]
+
+    def _phase(multiplier: float, duration_s: int) -> dict[str, object]:
+        return {
+            "kind": "compute",
+            "duration_s": float(duration_s),
+            "gpu_utilization": multiplier,
+            "gpu_memory_mb": 0,
+            "power_multiplier": multiplier,
+            "checkpoint": False,
+            "failure": False,
+            "failure_reason": None,
+        }
+
+    _jobs: list[dict[str, object]] = []
+    for shard, (node_count, _unused) in enumerate(
+        ((2000, 0), (2000, 0), (2354, 0)), start=1
+    ):
+        _jobs.append(
+            {
+                "job_id": f"slurm-realistic-fleet-shard-{shard}",
+                "job_name": f"Realistic 90-minute GPU fleet shard {shard}",
+                "user": "simulator",
+                "arrival_time": 0.0,
+                "duration": 5400.0,
+                "time_limit_s": 5400.0,
+                "node_count": node_count,
+                "ntasks": node_count,
+                "cpus_per_task": 192,
+                "cpus_per_node": 192,
+                "memory_mb_per_node": 1536000,
+                "gpus_per_node": 8,
+                "gpu_model": "H100-SXM",
+                "gres": {"gpu": 8},
+                "partition": "gpu",
+                "exclusive": True,
+                "priority": 100.0,
+                "qos": "normal",
+                "hardware_profile_id": "enterprise_8gpu_air",
+                "workload_class": "training",
+                "command": "simulated-gpu-peak-profile",
+                "phases": [_phase(multiplier, duration) for multiplier, duration in _profile],
+                "gpu_power_kw": 10.2,
+            }
+        )
+
+    for waiter in range(1, 3):
+        _jobs.append(
+            {
+                "job_id": f"slurm-queued-waiter-{waiter}",
+                "job_name": f"Queued GPU waiter {waiter}",
+                "user": "simulator",
+                "arrival_time": 0.0,
+                "duration": 5400.0,
+                "time_limit_s": 5400.0,
+                "node_count": 1000,
+                "ntasks": 1000,
+                "cpus_per_task": 192,
+                "cpus_per_node": 192,
+                "memory_mb_per_node": 1536000,
+                "gpus_per_node": 8,
+                "gpu_model": "H100-SXM",
+                "gres": {"gpu": 8},
+                "partition": "gpu",
+                "exclusive": True,
+                "priority": 1.0,
+                "qos": "normal",
+                "hardware_profile_id": "enterprise_8gpu_air",
+                "workload_class": "training",
+                "command": "simulated-queued-waiter",
+                "phases": [_phase(1.0, 5400)],
+                "gpu_power_kw": 10.2,
+            }
+        )
+    _base["slurm_config"]["jobs"] = _jobs
+    return ScenarioSpec.model_validate(_base)
+
+
 def _seed_json_scenarios(store: ScenarioStore) -> None:
     """Seed scenarios stored as full ScenarioSpec JSON files in config/scenarios/.
 
@@ -1214,6 +1462,10 @@ def build_seeded_store() -> ScenarioStore:
         store._seed(sid, spec)
     _seed_fabric_scenarios(store)
     _seed_json_scenarios(store)
+    store._seed(
+        "islanded-fc-bess-diesel-slurm-gpu-peaks",
+        _build_persistent_slurm_gpu_peak_scenario(),
+    )
     return store
 
 
