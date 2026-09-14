@@ -473,6 +473,10 @@ export interface SlurmMetrics {
   allocated_gpus: number
   allocated_cpus: number
   allocated_memory_mb: number
+  preempted: number
+  requeued: number
+  allocated_licenses: Record<string, number>
+  burst_buffer_mb: number
   jobs: Array<{
     job_id: string
     state: string
@@ -484,6 +488,12 @@ export interface SlurmMetrics {
     allocated_gpus: number
     allocated_cpus: number
     allocated_memory_mb: number
+    allocated_licenses: Record<string, number>
+    burst_buffer: string | null
+    burst_buffer_mb: number
+    array_parent_id: string | null
+    array_task_id: number | null
+    preemptions: number
     command: string | null
   }>
 }

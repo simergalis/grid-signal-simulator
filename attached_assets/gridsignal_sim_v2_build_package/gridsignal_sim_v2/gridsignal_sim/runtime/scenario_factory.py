@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import os
 import uuid as _uuid
+from dataclasses import replace as _replace
 
 from core.asset_modules import (
     BessModule,
@@ -1286,6 +1287,15 @@ def build_run_context_from_spec(
                 cpus=int(node.get("cpus", 0)),
                 memory_mb=int(node.get("memory_mb", 0)),
                 features=frozenset(str(v) for v in node.get("features", [])),
+                state=str(node.get("state", "IDLE")),
+                topology={
+                    str(key): str(value)
+                    for key, value in (node.get("topology") or {}).items()
+                },
+                gres={
+                    str(key): int(value)
+                    for key, value in (node.get("gres") or {}).items()
+                },
             )
             for node in _slurm_raw.get("nodes", [])
         )
@@ -1305,8 +1315,7 @@ def build_run_context_from_spec(
                     f"Slurm hardware profile {profile_id!r} is not in "
                     "DEFAULT_HARDWARE_LIBRARY"
                 )
-            _slurm_specs.append(
-                SlurmJobSpec(
+            _base_slurm_job = SlurmJobSpec(
                     job_id=str(raw_job["job_id"]),
                     arrival_time=float(raw_job.get("arrival_time", 0.0)),
                     duration=float(raw_job.get("duration", 60.0)),
@@ -1336,8 +1345,80 @@ def build_run_context_from_spec(
                             for key, value in (raw_job.get("environment") or {}).items()
                         )
                     ),
-                )
+                    job_name=raw_job.get("job_name"),
+                    user=str(raw_job.get("user", "simulator")),
+                    account=raw_job.get("account"),
+                    time_limit_s=(
+                        float(raw_job["time_limit_s"])
+                        if raw_job.get("time_limit_s") is not None
+                        else None
+                    ),
+                    deadline=(
+                        float(raw_job["deadline"])
+                        if raw_job.get("deadline") is not None
+                        else None
+                    ),
+                    ntasks=int(raw_job.get("ntasks", 1)),
+                    cpus_per_task=int(raw_job.get("cpus_per_task", 1)),
+                    memory_mb_per_cpu=(
+                        int(raw_job["memory_mb_per_cpu"])
+                        if raw_job.get("memory_mb_per_cpu") is not None
+                        else None
+                    ),
+                    tmp_disk_mb=int(raw_job.get("tmp_disk_mb", 0)),
+                    gres=raw_job.get("gres") or {},
+                    topology=raw_job.get("topology"),
+                    exclusive=bool(raw_job.get("exclusive", False)),
+                    oversubscribe=bool(raw_job.get("oversubscribe", False)),
+                    licenses=raw_job.get("licenses") or {},
+                    burst_buffer=raw_job.get("burst_buffer"),
+                    burst_buffer_mb=int(raw_job.get("burst_buffer_mb", 0)),
+                    tres_per_job=raw_job.get("tres_per_job") or {},
+                    requeue=bool(raw_job.get("requeue", False)),
+                    preemptible=bool(raw_job.get("preemptible", True)),
+                    checkpoint_interval_s=(
+                        float(raw_job["checkpoint_interval_s"])
+                        if raw_job.get("checkpoint_interval_s") is not None
+                        else None
+                    ),
+                    checkpoint_signal_s=(
+                        float(raw_job["checkpoint_signal_s"])
+                        if raw_job.get("checkpoint_signal_s") is not None
+                        else None
+                    ),
+                    hetero_group_id=raw_job.get("hetero_group_id"),
+                    hetero_component=(
+                        int(raw_job["hetero_component"])
+                        if raw_job.get("hetero_component") is not None
+                        else None
+                    ),
+                    federation=raw_job.get("federation"),
+                    cluster=raw_job.get("cluster"),
+                    array_max_concurrent=(
+                        int(raw_job["array_max_concurrent"])
+                        if raw_job.get("array_max_concurrent") is not None
+                        else None
+                    ),
             )
+            _array_start = raw_job.get("array_start")
+            _array_end = raw_job.get("array_end")
+            if _array_start is not None and _array_end is not None:
+                _array_parent = str(raw_job["job_id"])
+                for _task_id in range(
+                    int(_array_start),
+                    int(_array_end) + 1,
+                    int(raw_job.get("array_step", 1)),
+                ):
+                    _slurm_specs.append(
+                        _replace(
+                            _base_slurm_job,
+                            job_id=f"{_array_parent}_{_task_id}",
+                            array_parent_id=_array_parent,
+                            array_task_id=_task_id,
+                        )
+                    )
+            else:
+                _slurm_specs.append(_base_slurm_job)
         _slurm_job_specs = tuple(
             sorted(_slurm_specs, key=lambda job: (job.arrival_time, job.job_id))
         )
@@ -1349,6 +1430,7 @@ def build_run_context_from_spec(
             },
             reservations=_slurm_reservations,
             backfill=bool(_slurm_raw.get("backfill", True)),
+            config=_slurm_raw,
         )
 
     # ── Workload events ───────────────────────────────────────────────────

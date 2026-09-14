@@ -12,6 +12,7 @@ from core.slurm_scheduler import (
     SlurmSchedulerError,
     SlurmSchedulerEngine,
 )
+from api.schemas import SlurmConfigSpec, SlurmJobConfigSpec
 from runtime.scenario_factory import build_run_context_from_spec
 
 
@@ -241,3 +242,109 @@ def test_internal_scheduler_state_does_not_leak_between_runs() -> None:
     assert first.slurm_scheduler is not second.slurm_scheduler
     assert first.slurm_scheduler.summary("only-job").state == "COMPLETED"
     assert second.slurm_scheduler.summary("only-job").state == "RUNNING"
+
+
+def test_job_arrays_honor_maximum_concurrency() -> None:
+    engine = SlurmSchedulerEngine(
+        [SlurmNode(node_id="n01", gpus=0, cpus=4, memory_mb=100)]
+    )
+    base = SlurmJobSpec(
+        job_id="array",
+        duration=5.0,
+        cpus_per_node=2,
+        array_parent_id="array",
+        array_max_concurrent=1,
+    )
+    engine.submit_array(base, start=0, end=2, max_concurrent=1)
+    engine.advance(0.0)
+    assert [job.job_id for job in engine.running_snapshot()] == ["array_0"]
+    engine.advance(5.0)
+    assert [job.job_id for job in engine.running_snapshot()] == ["array_1"]
+
+
+def test_heterogeneous_components_start_as_one_allocation_decision() -> None:
+    engine = SlurmSchedulerEngine(
+        [
+            SlurmNode(node_id="n01", cpus=4, memory_mb=100),
+            SlurmNode(node_id="n02", cpus=8, memory_mb=200),
+        ]
+    )
+    engine.submit(SlurmJobSpec(
+        job_id="hetero-0",
+        node_count=1,
+        cpus_per_node=4,
+        hetero_group_id="hetero",
+        hetero_component=0,
+    ))
+    engine.submit(SlurmJobSpec(
+        job_id="hetero-1",
+        node_count=1,
+        cpus_per_node=8,
+        hetero_group_id="hetero",
+        hetero_component=1,
+    ))
+    events = engine.advance(0.0)
+    assert [event.job_id for event in events if event.event_type == WorkloadEventType.RUNNING] == [
+        "hetero-0",
+        "hetero-1",
+    ]
+
+
+def test_license_and_burst_buffer_capacity_are_released_on_completion() -> None:
+    engine = SlurmSchedulerEngine(
+        [SlurmNode(node_id="n01", cpus=8, memory_mb=1000)],
+        config={
+            "licenses": [{"name": "sim-license", "count": 1}],
+            "burst_buffers": [{"name": "bb", "capacity_mb": 100}],
+        },
+    )
+    engine.submit(SlurmJobSpec(
+        job_id="license-holder",
+        duration=5.0,
+        licenses={"sim-license": 1},
+        burst_buffer="bb",
+        burst_buffer_mb=100,
+    ))
+    engine.submit(SlurmJobSpec(
+        job_id="license-waiter",
+        licenses={"sim-license": 1},
+        burst_buffer="bb",
+        burst_buffer_mb=100,
+    ))
+    engine.advance(0.0)
+    assert engine.summary("license-holder").state == "RUNNING"
+    assert engine.summary("license-waiter").state == "PENDING"
+    engine.advance(5.0)
+    assert engine.summary("license-waiter").state == "RUNNING"
+    assert engine.metrics().burst_buffer_mb == 100
+
+
+def test_preemption_requeues_lower_priority_job_and_checkpoint_signals_are_emitted() -> None:
+    engine = SlurmSchedulerEngine(
+        [SlurmNode(node_id="n01", gpus=8, gpu_model="h100")],
+        config={"preempt_mode": "requeue"},
+    )
+    engine.submit(SlurmJobSpec(job_id="low", duration=20.0, gpus_per_node=8, priority=1.0))
+    engine.advance(0.0)
+    engine.submit(SlurmJobSpec(
+        job_id="high",
+        duration=5.0,
+        gpus_per_node=8,
+        priority=10.0,
+        checkpoint_interval_s=2.0,
+    ))
+    events = engine.advance(2.0)
+    assert engine.summary("low").state == "PENDING"
+    assert engine.summary("high").state == "RUNNING"
+    events = engine.advance(4.0)
+    assert any(event.event_type == WorkloadEventType.CHECKPOINT_START for event in events)
+
+
+def test_slurm_schema_rejects_unmodeled_options_and_invalid_array_ranges() -> None:
+    with pytest.raises(ValueError):
+        SlurmJobConfigSpec(job_id="bad", array_start=4, array_end=1)
+    with pytest.raises(ValueError):
+        SlurmConfigSpec(
+            nodes=[{"node_id": "n01"}],
+            jobs=[{"job_id": "bad", "not_a_slurm_option": True}],
+        )

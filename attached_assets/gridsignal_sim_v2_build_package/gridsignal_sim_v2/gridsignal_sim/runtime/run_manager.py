@@ -1432,7 +1432,21 @@ class RunContext:
                 spec,
                 arrival_time=self.sim_time,
             )
-        queued = self.slurm_scheduler.submit(runtime_spec, now=self.sim_time)
+        if (
+            runtime_spec.array_start is not None
+            and runtime_spec.array_end is not None
+        ):
+            queued_events = self.slurm_scheduler.submit_array(
+                runtime_spec,
+                start=runtime_spec.array_start,
+                end=runtime_spec.array_end,
+                step=runtime_spec.array_step,
+                max_concurrent=runtime_spec.array_max_concurrent,
+                now=self.sim_time,
+            )
+            queued = queued_events[0]
+        else:
+            queued = self.slurm_scheduler.submit(runtime_spec, now=self.sim_time)
         self.slurm_scheduler.advance(self.sim_time)
         self._append_internal_slurm_events()
         return queued
@@ -1456,6 +1470,12 @@ class RunContext:
                 "allocated_gpus": allocation.gpus if allocation else 0,
                 "allocated_cpus": allocation.cpus if allocation else 0,
                 "allocated_memory_mb": allocation.memory_mb if allocation else 0,
+                "allocated_licenses": dict(allocation.licenses) if allocation else {},
+                "burst_buffer": allocation.burst_buffer if allocation else None,
+                "burst_buffer_mb": allocation.burst_buffer_mb if allocation else 0,
+                "array_parent_id": summary.array_parent_id,
+                "array_task_id": summary.array_task_id,
+                "preemptions": summary.preemptions,
                 "command": summary.command,
             })
         return {
@@ -1468,6 +1488,10 @@ class RunContext:
             "allocated_gpus": metrics.allocated_gpus,
             "allocated_cpus": metrics.allocated_cpus,
             "allocated_memory_mb": metrics.allocated_memory_mb,
+            "preempted": metrics.preempted,
+            "requeued": metrics.requeued,
+            "allocated_licenses": metrics.allocated_licenses,
+            "burst_buffer_mb": metrics.burst_buffer_mb,
             "jobs": jobs,
         }
 

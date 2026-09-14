@@ -155,7 +155,15 @@ The engine evaluates pending jobs at each simulation boundary using:
 - `afterok`, `afterany`, `aftercorr`, and `after` dependencies;
 - partitions, node features, GPU model, CPU, memory, and node count;
 - named time-bounded reservations; and
-- simulated node/GPU allocation and release at completion.
+- simulated node/GPU/CPU/memory allocation and release at completion;
+- typed job arrays with maximum-concurrency limits;
+- heterogeneous job components, which start atomically;
+- finite licenses and burst-buffer capacity pools;
+- node state and topology constraints, including drain/down nodes;
+- account associations, TRES limits, QOS limits, and usage-weighted fair-share;
+- configurable preemption with cancellation or requeue;
+- checkpoint lifecycle signals at configured intervals; and
+- explicit federation/cluster routing validation.
 
 Queued jobs emit no running workload and therefore add no compute load. Running
 jobs emit `RUNNING`; completion emits `JOB_END`. The resulting scheduler view is
@@ -175,10 +183,14 @@ The `command` and `environment` fields are metadata only. They are not passed
 to a shell, and no arbitrary host process is launched. The duration models
 simulated application execution.
 
-The supported internal contract is intentionally smaller than the complete
-Slurm configuration surface. Unsupported Slurm options are not silently
-interpreted as implemented; add them as an explicit scheduler slice with
-dedicated validation and tests.
+The internal configuration is a typed compatibility contract, not a claim of
+binary compatibility with every Slurm release. The simulator now rejects
+unknown fields in the modeled node, job, partition, QOS, account, license,
+burst-buffer, federation, and cluster-policy blocks instead of silently
+dropping them. Fields that affect host execution, such as `command`,
+`environment`, and cgroup enforcement, remain simulation metadata or
+deterministic resource accounting; they do not create host processes or Linux
+cgroups.
 
 The behavior is covered by `tests/test_slurm_ingest.py` and
 `tests/test_slurm_scheduler.py`, including state mapping, H100 validation,

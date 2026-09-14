@@ -953,6 +953,8 @@ class KubeClusterSpec(KubeConfigSpec):
 class SlurmNodeConfigSpec(BaseModel):
     """One simulated Slurm node and its schedulable resources."""
 
+    model_config = ConfigDict(extra="forbid")
+
     node_id: str = Field(min_length=1)
     partition: Optional[str] = None
     gpus: int = Field(default=0, ge=0)
@@ -960,6 +962,14 @@ class SlurmNodeConfigSpec(BaseModel):
     cpus: int = Field(default=0, ge=0)
     memory_mb: int = Field(default=0, ge=0)
     features: list[str] = Field(default_factory=list)
+    state: Literal[
+        "IDLE", "ALLOCATED", "MIXED", "DOWN", "DRAIN", "DRAINING", "FAIL", "FUTURE"
+    ] = "IDLE"
+    sockets: int = Field(default=1, ge=1)
+    cores_per_socket: int = Field(default=1, ge=1)
+    threads_per_core: int = Field(default=1, ge=1)
+    topology: dict[str, str] = Field(default_factory=dict)
+    gres: dict[str, int] = Field(default_factory=dict)
 
 
 class SlurmReservationConfigSpec(BaseModel):
@@ -977,6 +987,79 @@ class SlurmReservationConfigSpec(BaseModel):
         return self
 
 
+class SlurmPartitionConfigSpec(BaseModel):
+    """The partition-level scheduling controls used by the simulator."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1)
+    nodes: list[str] = Field(default_factory=list)
+    state: Literal["UP", "DOWN", "DRAIN", "INACTIVE"] = "UP"
+    default: bool = False
+    max_time_s: Optional[float] = Field(default=None, gt=0.0)
+    allow_accounts: list[str] = Field(default_factory=list)
+    allow_qos: list[str] = Field(default_factory=list)
+    oversubscribe: bool = False
+
+
+class SlurmQosConfigSpec(BaseModel):
+    """QOS limits and priority/preemption policy for a simulated queue."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1)
+    priority_factor: float = Field(default=1.0, ge=0.0)
+    max_jobs: Optional[int] = Field(default=None, ge=0)
+    max_tres: dict[str, float] = Field(default_factory=dict)
+    max_wall_time_s: Optional[float] = Field(default=None, gt=0.0)
+    allowed_accounts: list[str] = Field(default_factory=list)
+    preempt_mode: Literal["off", "cancel", "requeue"] = "off"
+    preempt_exempt_time_s: float = Field(default=0.0, ge=0.0)
+
+
+class SlurmAccountConfigSpec(BaseModel):
+    """Association and fair-share controls for an account."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1)
+    parent: Optional[str] = None
+    fairshare_weight: float = Field(default=1.0, gt=0.0)
+    max_jobs: Optional[int] = Field(default=None, ge=0)
+    max_tres: dict[str, float] = Field(default_factory=dict)
+    allowed_qos: list[str] = Field(default_factory=list)
+
+
+class SlurmLicenseConfigSpec(BaseModel):
+    """A finite license token pool consumed by running jobs."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1)
+    count: int = Field(ge=0)
+
+
+class SlurmBurstBufferConfigSpec(BaseModel):
+    """A finite burst-buffer capacity pool."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1)
+    capacity_mb: int = Field(gt=0)
+    bandwidth_mb_s: float = Field(default=0.0, ge=0.0)
+
+
+class SlurmFederationConfigSpec(BaseModel):
+    """Cluster membership and routing policy for a simulated federation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    cluster_name: str = Field(min_length=1)
+    sibling_clusters: list[str] = Field(default_factory=list)
+    default_cluster: Optional[str] = None
+    route_submissions: bool = False
+
+
 class SlurmJobConfigSpec(BaseModel):
     """A deterministic simulated Slurm job submission.
 
@@ -985,27 +1068,79 @@ class SlurmJobConfigSpec(BaseModel):
     never executed by the simulator.
     """
 
+    model_config = ConfigDict(extra="forbid")
+
     job_id: str = Field(min_length=1)
+    job_name: Optional[str] = None
+    user: str = "simulator"
+    account: Optional[str] = None
     arrival_time: float = Field(default=0.0, ge=0.0)
     duration: float = Field(default=60.0, ge=0.0)
+    time_limit_s: Optional[float] = Field(default=None, gt=0.0)
+    deadline: Optional[float] = Field(default=None, ge=0.0)
     node_count: int = Field(default=1, ge=1)
+    ntasks: int = Field(default=1, ge=1)
+    cpus_per_task: int = Field(default=1, ge=1)
     gpus_per_node: int = Field(default=0, ge=0)
     cpus_per_node: int = Field(default=0, ge=0)
     memory_mb_per_node: int = Field(default=0, ge=0)
+    memory_mb_per_cpu: Optional[int] = Field(default=None, ge=0)
+    tmp_disk_mb: int = Field(default=0, ge=0)
     gpu_model: Optional[str] = None
+    gres: dict[str, int] = Field(default_factory=dict)
     partition: Optional[str] = None
     features: list[str] = Field(default_factory=list)
+    topology: Optional[str] = None
+    exclusive: bool = False
+    oversubscribe: bool = False
+    licenses: dict[str, int] = Field(default_factory=dict)
+    burst_buffer: Optional[str] = None
+    burst_buffer_mb: int = Field(default=0, ge=0)
+    tres_per_job: dict[str, float] = Field(default_factory=dict)
     priority: float = 0.0
     qos: str = "normal"
     qos_weight: float = Field(default=1.0, ge=0.0)
     fair_share_usage: float = Field(default=0.0, ge=0.0)
     dependencies: list[str] = Field(default_factory=list)
     reservation: Optional[str] = None
+    requeue: bool = False
+    preemptible: bool = True
+    checkpoint_interval_s: Optional[float] = Field(default=None, gt=0.0)
+    checkpoint_signal_s: Optional[float] = Field(default=None, ge=0.0)
+    array_start: Optional[int] = None
+    array_end: Optional[int] = None
+    array_step: int = Field(default=1, gt=0)
+    array_max_concurrent: Optional[int] = Field(default=None, gt=0)
+    hetero_group_id: Optional[str] = None
+    hetero_component: Optional[int] = Field(default=None, ge=0)
+    federation: Optional[str] = None
+    cluster: Optional[str] = None
     hardware_profile_id: str = "enterprise_8gpu_air"
     workload_class: Literal["training", "inference", "other"] = "training"
     tenant_id: Optional[str] = None
     command: Optional[str] = None
     environment: dict[str, str] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _validate_job_semantics(self) -> "SlurmJobConfigSpec":
+        if self.time_limit_s is not None and self.duration not in (0.0, 60.0):
+            if abs(self.time_limit_s - self.duration) > 1e-9:
+                raise ValueError("duration and time_limit_s must agree when both are provided")
+        if self.array_start is None and self.array_end is not None:
+            raise ValueError("array_start is required when array_end is provided")
+        if self.array_start is not None and self.array_end is None:
+            raise ValueError("array_end is required when array_start is provided")
+        if (
+            self.array_start is not None
+            and self.array_end is not None
+            and self.array_end < self.array_start
+        ):
+            raise ValueError("array_end must be greater than or equal to array_start")
+        if (self.hetero_group_id is None) != (self.hetero_component is None):
+            raise ValueError("hetero_group_id and hetero_component must be supplied together")
+        if self.checkpoint_signal_s is not None and self.checkpoint_interval_s is None:
+            raise ValueError("checkpoint_interval_s is required with checkpoint_signal_s")
+        return self
 
 
 class SlurmConfigSpec(BaseModel):
@@ -1015,8 +1150,27 @@ class SlurmConfigSpec(BaseModel):
     scenarios retain their current behavior.
     """
 
+    model_config = ConfigDict(extra="forbid")
+
+    cluster_name: str = "sim-cluster"
+    select_type: Literal["cons_tres", "linear"] = "cons_tres"
+    topology_plugin: Literal["flat", "tree", "torus"] = "flat"
+    priority_type: Literal["multifactor", "fifo"] = "multifactor"
+    preempt_mode: Literal["off", "cancel", "requeue"] = "off"
+    accounting_enforce: list[
+        Literal["associations", "limits", "qos", "safe", "wckeys"]
+    ] = Field(default_factory=list)
+    cgroup_enforce: bool = True
+    max_job_count: Optional[int] = Field(default=None, ge=1)
+    max_array_size: int = Field(default=10000, ge=1)
     nodes: list[SlurmNodeConfigSpec] = Field(min_length=1)
     jobs: list[SlurmJobConfigSpec] = Field(default_factory=list)
+    partitions: list[SlurmPartitionConfigSpec] = Field(default_factory=list)
+    qos: list[SlurmQosConfigSpec] = Field(default_factory=list)
+    accounts: list[SlurmAccountConfigSpec] = Field(default_factory=list)
+    licenses: list[SlurmLicenseConfigSpec] = Field(default_factory=list)
+    burst_buffers: list[SlurmBurstBufferConfigSpec] = Field(default_factory=list)
+    federation: Optional[SlurmFederationConfigSpec] = None
     qos_weights: dict[str, float] = Field(default_factory=dict)
     reservations: list[SlurmReservationConfigSpec] = Field(default_factory=list)
     # When true, a lower-priority pending job may use currently idle nodes
@@ -1041,6 +1195,61 @@ class SlurmConfigSpec(BaseModel):
                 raise ValueError(
                     f"reservation {reservation.name!r} references unknown nodes: "
                     f"{sorted(unknown)!r}"
+                )
+        partition_names = [partition.name for partition in self.partitions]
+        if len(partition_names) != len(set(partition_names)):
+            raise ValueError("slurm_config partition names must be unique")
+        qos_names = [policy.name for policy in self.qos]
+        if len(qos_names) != len(set(qos_names)):
+            raise ValueError("slurm_config qos names must be unique")
+        account_names = [account.name for account in self.accounts]
+        if len(account_names) != len(set(account_names)):
+            raise ValueError("slurm_config account names must be unique")
+        license_names = [license_.name for license_ in self.licenses]
+        if len(license_names) != len(set(license_names)):
+            raise ValueError("slurm_config license names must be unique")
+        burst_buffer_names = [buffer.name for buffer in self.burst_buffers]
+        if len(burst_buffer_names) != len(set(burst_buffer_names)):
+            raise ValueError("slurm_config burst buffer names must be unique")
+        if self.federation and self.federation.default_cluster:
+            members = {
+                self.federation.cluster_name,
+                *self.federation.sibling_clusters,
+            }
+            if self.federation.default_cluster not in members:
+                raise ValueError("federation default_cluster must be a federation member")
+        partition_nodes = set(node_ids)
+        for partition in self.partitions:
+            unknown = set(partition.nodes) - partition_nodes
+            if unknown:
+                raise ValueError(
+                    f"partition {partition.name!r} references unknown nodes: "
+                    f"{sorted(unknown)!r}"
+                )
+        if any(weight < 0.0 for weight in self.qos_weights.values()):
+            raise ValueError("qos_weights cannot be negative")
+        if self.max_job_count is not None and len(self.jobs) > self.max_job_count:
+            raise ValueError("slurm_config exceeds max_job_count")
+        if any(
+            job.array_start is not None
+            and job.array_end is not None
+            and ((job.array_end - job.array_start) // job.array_step + 1) > self.max_array_size
+            for job in self.jobs
+        ):
+            raise ValueError("slurm_config job array exceeds max_array_size")
+        configured_qos = set(qos_names)
+        configured_accounts = set(account_names)
+        configured_partitions = set(partition_names)
+        for job in self.jobs:
+            if configured_qos and job.qos not in configured_qos:
+                raise ValueError(f"job {job.job_id!r} references unknown QOS {job.qos!r}")
+            if job.account and configured_accounts and job.account not in configured_accounts:
+                raise ValueError(
+                    f"job {job.job_id!r} references unknown account {job.account!r}"
+                )
+            if job.partition and configured_partitions and job.partition not in configured_partitions:
+                raise ValueError(
+                    f"job {job.job_id!r} references unknown partition {job.partition!r}"
                 )
         return self
 
