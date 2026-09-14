@@ -475,8 +475,23 @@ export interface SlurmMetrics {
   allocated_memory_mb: number
   preempted: number
   requeued: number
+  failed: number
+  timed_out: number
   allocated_licenses: Record<string, number>
   burst_buffer_mb: number
+  job_telemetry: Record<string, {
+    gpu_ids: string[]
+    phase_index: number | null
+    phase_kind: string | null
+    phase_elapsed_s: number
+    gpu_utilization: number
+    gpu_memory_mb: number
+    power_multiplier: number
+    utilization: number
+    energy_mwh: number
+    energy_mwh_per_gpu: number
+    elapsed_s: number
+  }>
   jobs: Array<{
     job_id: string
     state: string
@@ -486,6 +501,7 @@ export interface SlurmMetrics {
     reason: string | null
     node_ids: string[]
     allocated_gpus: number
+    gpu_ids: string[]
     allocated_cpus: number
     allocated_memory_mb: number
     allocated_licenses: Record<string, number>
@@ -495,6 +511,16 @@ export interface SlurmMetrics {
     array_task_id: number | null
     preemptions: number
     command: string | null
+    phase_index: number | null
+    phase_kind: string | null
+    phase_elapsed_s: number
+    gpu_utilization: number
+    gpu_memory_mb: number
+    power_multiplier: number
+    utilization: number
+    energy_mwh: number
+    energy_mwh_per_gpu: number
+    elapsed_s: number
   }>
 }
 

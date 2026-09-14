@@ -170,6 +170,29 @@ jobs emit `RUNNING`; completion emits `JOB_END`. The resulting scheduler view is
 included in each tick as `slurm_metrics`, including queue depth, allocations,
 and per-job state.
 
+Jobs may also declare a `phases` list. Each phase is deterministic and
+simulation-only:
+
+```json
+{
+  "kind": "checkpoint",
+  "duration_s": 20,
+  "gpu_utilization": 0.35,
+  "gpu_memory_mb": 24576,
+  "power_multiplier": 0.6,
+  "checkpoint": true
+}
+```
+
+The runner advances phases from simulation time, binds each allocated GPU to a
+stable identifier such as `node-01:gpu-3`, and emits `PHASE_UPDATE` signals
+without executing `command` or starting a host process. A phase may request a
+deterministic failure. A job whose `time_limit_s` expires emits `JOB_TIMEOUT`;
+phase failures emit `JOB_FAILED`; preemption emits `JOB_PREEMPTED` and may
+requeue the job according to policy. `slurm_metrics.jobs` and
+`slurm_metrics.job_telemetry` expose the current phase, per-GPU binding and
+utilization, and accumulated modeled GPU energy in MWh.
+
 Runtime submission is available to an authenticated operator for an active
 internal-scheduler run:
 

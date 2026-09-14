@@ -25,6 +25,32 @@ class UnknownJobError(SlurmSchedulerError):
 
 
 @dataclass(frozen=True)
+class SlurmPhaseSpec:
+    """One deterministic, non-executable phase of a simulated job."""
+
+    kind: str = "compute"
+    duration_s: float = 1.0
+    gpu_utilization: float = 1.0
+    gpu_memory_mb: int = 0
+    power_multiplier: float = 1.0
+    checkpoint: bool = False
+    failure: bool = False
+    failure_reason: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if not self.kind:
+            raise ImpossibleJobError("phase kind must not be empty")
+        if self.duration_s <= 0:
+            raise ImpossibleJobError("phase duration_s must be positive")
+        if not 0.0 <= self.gpu_utilization <= 1.0:
+            raise ImpossibleJobError("phase gpu_utilization must be between 0 and 1")
+        if self.gpu_memory_mb < 0:
+            raise ImpossibleJobError("phase gpu_memory_mb cannot be negative")
+        if self.power_multiplier < 0:
+            raise ImpossibleJobError("phase power_multiplier cannot be negative")
+
+
+@dataclass(frozen=True)
 class SlurmJobSpec:
     job_id: str
     arrival_time: float = 0.0
@@ -80,6 +106,8 @@ class SlurmJobSpec:
     hetero_component: Optional[int] = None
     federation: Optional[str] = None
     cluster: Optional[str] = None
+    phases: tuple[SlurmPhaseSpec, ...] = ()
+    gpu_power_kw: float = 10.2
 
     def __post_init__(self) -> None:
         if self.node_count < 1 or self.duration < 0:
@@ -108,6 +136,8 @@ class SlurmJobSpec:
             raise ImpossibleJobError("checkpoint_signal_s cannot be negative")
         if self.array_step <= 0:
             raise ImpossibleJobError("array_step must be positive")
+        if self.gpu_power_kw < 0:
+            raise ImpossibleJobError("gpu_power_kw cannot be negative")
         if (self.array_start is None) != (self.array_end is None):
             raise ImpossibleJobError("array_start and array_end must be supplied together")
         if self.array_start is not None and self.array_end is not None and self.array_end < self.array_start:
@@ -116,6 +146,7 @@ class SlurmJobSpec:
         object.__setattr__(self, "gres", tuple(sorted((str(k), int(v)) for k, v in dict(self.gres).items())))
         object.__setattr__(self, "licenses", tuple(sorted((str(k), int(v)) for k, v in dict(self.licenses).items())))
         object.__setattr__(self, "tres_per_job", tuple(sorted((str(k), float(v)) for k, v in dict(self.tres_per_job).items())))
+        object.__setattr__(self, "phases", tuple(self.phases))
 
 
 @dataclass(frozen=True)
@@ -153,6 +184,7 @@ class SlurmAllocation:
     licenses: tuple[tuple[str, int], ...] = ()
     burst_buffer: Optional[str] = None
     burst_buffer_mb: int = 0
+    gpu_ids: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -185,6 +217,9 @@ class SlurmMetrics:
     requeued: int = 0
     allocated_licenses: dict[str, int] = field(default_factory=dict)
     burst_buffer_mb: int = 0
+    failed: int = 0
+    timed_out: int = 0
+    job_telemetry: dict[str, dict] = field(default_factory=dict)
 
 
 class SlurmSchedulerEngine:
@@ -242,6 +277,12 @@ class SlurmSchedulerEngine:
         self._preemptions: dict[str, int] = {}
         self._requeued = 0
         self._checkpoint_cursor: dict[str, float] = {}
+        self._phase_cursor: dict[str, int] = {}
+        self._runner_cursor: dict[str, float] = {}
+        self._job_energy_mwh: dict[str, float] = {}
+        self._job_utilization_seconds: dict[str, float] = {}
+        self._job_gpu_seconds: dict[str, float] = {}
+        self._job_gpu_ids: dict[str, tuple[str, ...]] = {}
         self._fairshare_usage: dict[str, float] = {}
         self._sequence = 0
         self.time = 0.0
@@ -348,7 +389,20 @@ class SlurmSchedulerEngine:
 
     @staticmethod
     def _effective_duration(spec: SlurmJobSpec) -> float:
-        return float(spec.time_limit_s if spec.time_limit_s is not None else spec.duration)
+        phases = spec.phases or (SlurmPhaseSpec(duration_s=max(spec.duration, 1e-9)),)
+        phase_duration = sum(phase.duration_s for phase in phases)
+        failure_ends = [
+            sum(phase.duration_s for phase in phases[: index + 1])
+            for index, phase in enumerate(phases)
+            if phase.failure
+        ]
+        if failure_ends:
+            phase_duration = min(phase_duration, min(failure_ends))
+        return float(
+            min(spec.time_limit_s, phase_duration)
+            if spec.time_limit_s is not None
+            else phase_duration
+        )
 
     @staticmethod
     def _requested_resources(spec: SlurmJobSpec) -> tuple[int, int, int]:
@@ -394,6 +448,7 @@ class SlurmSchedulerEngine:
         emitted: list[WorkloadSignal] = []
         for jid, allocation in sorted(self._allocations.items()):
             spec = self._jobs[jid]
+            emitted.extend(self._advance_virtual_job(jid, allocation, spec, self.time))
             interval = spec.checkpoint_interval_s
             next_checkpoint = self._checkpoint_cursor.get(jid)
             if interval and next_checkpoint is None:
@@ -422,14 +477,27 @@ class SlurmSchedulerEngine:
     def cancel(self, job_id: str, now: Optional[float] = None) -> WorkloadSignal:
         if job_id not in self._jobs:
             raise UnknownJobError(job_id)
-        if self._state[job_id] in {"COMPLETED", "CANCELLED", "PREEMPTED"}:
+        if self._state[job_id] in {
+            "COMPLETED",
+            "CANCELLED",
+            "PREEMPTED",
+            "FAILED",
+            "TIMEOUT",
+        }:
             raise SlurmSchedulerError(f"job {job_id!r} is terminal")
         when = self.time if now is None else float(now)
         self.time = max(self.time, when)
-        self._allocations.pop(job_id, None)
+        allocation = self._allocations.pop(job_id, None)
         self._release_resources(self._jobs[job_id])
         self._state[job_id] = "CANCELLED"
-        event = self._signal(self._jobs[job_id], WorkloadEventType.CANCELLED, when)
+        self._runner_cursor.pop(job_id, None)
+        self._phase_cursor.pop(job_id, None)
+        event = self._signal(
+            self._jobs[job_id],
+            WorkloadEventType.CANCELLED,
+            when,
+            allocation=allocation,
+        )
         self._events.append(event)
         return event
 
@@ -467,15 +535,23 @@ class SlurmSchedulerEngine:
 
     def _preempt(self, job_id: str, when: float, requeue: bool) -> WorkloadSignal:
         spec = self._jobs[job_id]
+        allocation = self._allocations.get(job_id)
         self._allocations.pop(job_id, None)
         self._release_resources(spec)
         self._preemptions[job_id] = self._preemptions.get(job_id, 0) + 1
+        self._runner_cursor.pop(job_id, None)
+        self._phase_cursor.pop(job_id, None)
         if requeue or spec.requeue:
             self._state[job_id] = "PENDING"
             self._requeued += 1
         else:
             self._state[job_id] = "PREEMPTED"
-        return self._signal(spec, WorkloadEventType.CANCELLED, when)
+        return self._signal(
+            spec,
+            WorkloadEventType.JOB_PREEMPTED,
+            when,
+            allocation=allocation,
+        )
 
     def summary(self, job_id: str) -> SlurmJobSummary:
         if job_id not in self._jobs:
@@ -516,7 +592,64 @@ class SlurmSchedulerEngine:
             requeued=self._requeued,
             allocated_licenses=dict(self._license_used),
             burst_buffer_mb=sum(self._burst_buffer_used.values()),
+            failed=sum(v == "FAILED" for v in self._state.values()),
+            timed_out=sum(v == "TIMEOUT" for v in self._state.values()),
+            job_telemetry=self.job_telemetry(),
         )
+
+    def job_telemetry(self) -> dict[str, dict]:
+        """Return stable current/aggregate virtual execution telemetry."""
+        result: dict[str, dict] = {}
+        for job_id in sorted(self._jobs):
+            spec = self._jobs[job_id]
+            allocation = self._allocations.get(job_id)
+            phase_index, phase, phase_elapsed = self._phase_at(
+                spec,
+                max(0.0, self.time - (allocation.start_time if allocation else 0.0)),
+            )
+            gpu_ids = (
+                allocation.gpu_ids
+                if allocation is not None
+                else self._job_gpu_ids.get(job_id, ())
+            )
+            elapsed = max(
+                0.0,
+                (self.time - allocation.start_time)
+                if allocation is not None
+                else (
+                    self._times.get(job_id, (None, self.time))[1] or self.time
+                ) - (self._times.get(job_id, (0.0, None))[0] or 0.0),
+            )
+            result[job_id] = {
+                "gpu_ids": list(gpu_ids),
+                "phase_index": phase_index if self._state[job_id] == "RUNNING" else None,
+                "phase_kind": phase.kind if self._state[job_id] == "RUNNING" else None,
+                "phase_elapsed_s": round(phase_elapsed, 6) if self._state[job_id] == "RUNNING" else 0.0,
+                "gpu_utilization": (
+                    round(phase.gpu_utilization, 6)
+                    if self._state[job_id] == "RUNNING"
+                    else 0.0
+                ),
+                "gpu_memory_mb": phase.gpu_memory_mb if self._state[job_id] == "RUNNING" else 0,
+                "power_multiplier": (
+                    round(phase.power_multiplier, 6)
+                    if self._state[job_id] == "RUNNING"
+                    else 0.0
+                ),
+                "utilization": round(
+                    self._job_utilization_seconds.get(job_id, 0.0)
+                    / max(self._job_gpu_seconds.get(job_id, 0.0), 1e-9),
+                    6,
+                ),
+                "energy_mwh": round(self._job_energy_mwh.get(job_id, 0.0), 9),
+                "energy_mwh_per_gpu": round(
+                    round(self._job_energy_mwh.get(job_id, 0.0), 9)
+                    / max(len(gpu_ids), 1),
+                    12,
+                ),
+                "elapsed_s": round(elapsed, 6),
+            }
+        return result
 
     def events(self) -> tuple[WorkloadSignal, ...]:
         return tuple(self._events)
@@ -553,6 +686,146 @@ class SlurmSchedulerEngine:
         if s.burst_buffer and s.burst_buffer_mb > self._burst_buffers.get(s.burst_buffer, 0):
             return False
         return True
+
+    @staticmethod
+    def _phases(spec: SlurmJobSpec) -> tuple[SlurmPhaseSpec, ...]:
+        if spec.phases:
+            return spec.phases
+        return (SlurmPhaseSpec(duration_s=max(spec.duration, 1e-9)),)
+
+    @classmethod
+    def _phase_total_duration(cls, spec: SlurmJobSpec) -> float:
+        return sum(phase.duration_s for phase in cls._phases(spec))
+
+    @classmethod
+    def _phase_at(
+        cls,
+        spec: SlurmJobSpec,
+        elapsed_s: float,
+    ) -> tuple[int, SlurmPhaseSpec, float]:
+        elapsed = max(0.0, elapsed_s)
+        cursor = 0.0
+        phases = cls._phases(spec)
+        for index, phase in enumerate(phases):
+            phase_end = cursor + phase.duration_s
+            if elapsed < phase_end or index == len(phases) - 1:
+                return index, phase, max(0.0, elapsed - cursor)
+            cursor = phase_end
+        return len(phases) - 1, phases[-1], phases[-1].duration_s
+
+    def _advance_virtual_job(
+        self,
+        job_id: str,
+        allocation: SlurmAllocation,
+        spec: SlurmJobSpec,
+        now: float,
+    ) -> list[WorkloadSignal]:
+        """Advance a job without invoking its command or a host process."""
+        previous = self._runner_cursor.get(job_id, allocation.start_time)
+        upper = min(now, allocation.end_time)
+        if upper < previous:
+            return []
+        elapsed_before = max(0.0, previous - allocation.start_time)
+        elapsed_after = max(0.0, upper - allocation.start_time)
+        self._integrate_virtual_job(spec, len(allocation.gpu_ids), elapsed_before, elapsed_after)
+        out: list[WorkloadSignal] = []
+        phase_index_before = self._phase_cursor.get(job_id, 0)
+        phase_index_after, _, _ = self._phase_at(spec, elapsed_after)
+        phases = self._phases(spec)
+        cursor = 0.0
+        for index, phase in enumerate(phases):
+            start = cursor
+            end = cursor + phase.duration_s
+            start_time = allocation.start_time + start
+            end_time = allocation.start_time + end
+            if index > phase_index_before and start_time <= upper:
+                out.append(self._signal(
+                    spec,
+                    WorkloadEventType.PHASE_UPDATE,
+                    start_time,
+                    allocation=allocation,
+                    phase_index=index,
+                    phase=phase,
+                ))
+                if phase.checkpoint:
+                    out.append(self._signal(
+                        spec, WorkloadEventType.CHECKPOINT_START, start_time,
+                        allocation=allocation, phase_index=index, phase=phase,
+                    ))
+            if phase.checkpoint and start_time > previous and start_time <= upper and index == 0:
+                out.append(self._signal(
+                    spec, WorkloadEventType.CHECKPOINT_START, start_time,
+                    allocation=allocation, phase_index=index, phase=phase,
+                ))
+            if phase.checkpoint and end_time > previous and end_time <= upper:
+                out.append(self._signal(
+                    spec, WorkloadEventType.CHECKPOINT_END, end_time,
+                    allocation=allocation, phase_index=index, phase=phase,
+                ))
+            cursor = end
+        self._phase_cursor[job_id] = phase_index_after
+        self._runner_cursor[job_id] = upper
+
+        if upper < allocation.end_time:
+            return out
+        failure_elapsed = self._failure_elapsed_s(spec)
+        if (
+            spec.time_limit_s is not None
+            and spec.time_limit_s <= self._phase_total_duration(spec)
+            and (
+                failure_elapsed is None
+                or spec.time_limit_s <= failure_elapsed
+            )
+        ):
+            out.append(self._finish(job_id, allocation.end_time, WorkloadEventType.JOB_TIMEOUT))
+            return out
+        if failure_elapsed is not None:
+            out.append(self._finish(job_id, allocation.end_time, WorkloadEventType.JOB_FAILED))
+            return out
+        out.append(self._finish(job_id, allocation.end_time, WorkloadEventType.JOB_END))
+        return out
+
+    @classmethod
+    def _failure_elapsed_s(cls, spec: SlurmJobSpec) -> Optional[float]:
+        phases = cls._phases(spec)
+        elapsed = 0.0
+        for phase in phases:
+            elapsed += phase.duration_s
+            if phase.failure:
+                return elapsed
+        return None
+
+    def _integrate_virtual_job(
+        self,
+        spec: SlurmJobSpec,
+        gpu_count: int,
+        elapsed_before: float,
+        elapsed_after: float,
+    ) -> None:
+        if gpu_count <= 0 or elapsed_after <= elapsed_before:
+            return
+        phases = self._phases(spec)
+        start = elapsed_before
+        while start < elapsed_after:
+            index, phase, phase_elapsed = self._phase_at(spec, start)
+            phase_remaining = max(1e-9, phase.duration_s - phase_elapsed)
+            duration = min(phase_remaining, elapsed_after - start)
+            self._job_gpu_seconds[spec.job_id] = (
+                self._job_gpu_seconds.get(spec.job_id, 0.0) + gpu_count * duration
+            )
+            self._job_utilization_seconds[spec.job_id] = (
+                self._job_utilization_seconds.get(spec.job_id, 0.0)
+                + gpu_count * phase.gpu_utilization * duration
+            )
+            self._job_energy_mwh[spec.job_id] = (
+                self._job_energy_mwh.get(spec.job_id, 0.0)
+                + gpu_count
+                * spec.gpu_power_kw
+                * phase.power_multiplier
+                * duration
+                / 3_600_000.0
+            )
+            start += duration
 
     def _matching_nodes(
         self,
@@ -738,7 +1011,7 @@ class SlurmSchedulerEngine:
                         break
                     continue
                 for component, chosen in chosen_by_component:
-                    out.append(self._start_job(component, chosen, now))
+                    out.extend(self._start_job(component, chosen, now))
                 continue
             if not self._dependency_ready(s, now):
                 continue
@@ -755,7 +1028,7 @@ class SlurmSchedulerEngine:
                     break
                 continue
             chosen = tuple(n.node_id for n in available[:s.node_count])
-            out.append(self._start_job(s, chosen, now))
+            out.extend(self._start_job(s, chosen, now))
         return out
 
     def _start_job(
@@ -763,8 +1036,9 @@ class SlurmSchedulerEngine:
         spec: SlurmJobSpec,
         node_ids: tuple[str, ...],
         now: float,
-    ) -> WorkloadSignal:
+    ) -> tuple[WorkloadSignal, ...]:
         gpus, cpus, memory = self._requested_resources(spec)
+        gpu_ids = self._allocate_gpu_ids(node_ids, gpus)
         allocation = SlurmAllocation(
             job_id=spec.job_id,
             node_ids=node_ids,
@@ -780,25 +1054,93 @@ class SlurmSchedulerEngine:
             licenses=spec.licenses,
             burst_buffer=spec.burst_buffer,
             burst_buffer_mb=spec.burst_buffer_mb,
+            gpu_ids=gpu_ids,
         )
         self._allocations[spec.job_id] = allocation
         self._acquire_resources(spec)
         self._times[spec.job_id] = (now, allocation.end_time)
         self._checkpoint_cursor.pop(spec.job_id, None)
+        self._phase_cursor[spec.job_id] = 0
+        self._runner_cursor[spec.job_id] = now
+        self._job_gpu_ids[spec.job_id] = gpu_ids
+        self._job_energy_mwh.setdefault(spec.job_id, 0.0)
+        self._job_utilization_seconds.setdefault(spec.job_id, 0.0)
+        self._job_gpu_seconds.setdefault(spec.job_id, 0.0)
         self._state[spec.job_id] = "RUNNING"
         owner = spec.account or spec.user
         self._fairshare_usage[owner] = (
             self._fairshare_usage.get(owner, 0.0) + self._effective_duration(spec)
         )
-        return self._signal(spec, WorkloadEventType.RUNNING, now)
+        phase = self._phases(spec)[0]
+        event = self._signal(
+            spec,
+            WorkloadEventType.RUNNING,
+            now,
+            allocation=allocation,
+            phase_index=0,
+            phase=phase,
+        )
+        if phase.checkpoint:
+            return (
+                event,
+                self._signal(
+                    spec,
+                    WorkloadEventType.CHECKPOINT_START,
+                    now,
+                    allocation=allocation,
+                    phase_index=0,
+                    phase=phase,
+                ),
+            )
+        return (event,)
 
-    def _finish(self, job_id: str, when: float) -> WorkloadSignal:
+    def _finish(
+        self,
+        job_id: str,
+        when: float,
+        event_type: WorkloadEventType = WorkloadEventType.JOB_END,
+    ) -> WorkloadSignal:
         s = self._jobs[job_id]
+        allocation = self._allocations.get(job_id)
         self._allocations.pop(job_id, None)
         self._release_resources(s)
         self._times[job_id] = (self._times.get(job_id, (None, None))[0], when)
-        self._state[job_id] = "COMPLETED"
-        return self._signal(s, WorkloadEventType.JOB_END, when)
+        self._state[job_id] = {
+            WorkloadEventType.JOB_END: "COMPLETED",
+            WorkloadEventType.JOB_FAILED: "FAILED",
+            WorkloadEventType.JOB_TIMEOUT: "TIMEOUT",
+        }.get(event_type, "COMPLETED")
+        self._runner_cursor.pop(job_id, None)
+        self._phase_cursor.pop(job_id, None)
+        return self._signal(s, event_type, when, allocation=allocation)
+
+    def _allocate_gpu_ids(
+        self,
+        node_ids: tuple[str, ...],
+        gpus_per_node: int,
+    ) -> tuple[str, ...]:
+        if gpus_per_node <= 0:
+            return ()
+        occupied = {
+            gpu_id
+            for allocation in self._allocations.values()
+            for gpu_id in allocation.gpu_ids
+        }
+        result: list[str] = []
+        for node_id in node_ids:
+            node = next(node for node in self.nodes if node.node_id == node_id)
+            capacity = self._node_resource_capacity(node)[0]
+            node_ids_for_job = 0
+            for index in range(capacity):
+                gpu_id = f"{node_id}:gpu-{index}"
+                if gpu_id in occupied:
+                    continue
+                result.append(gpu_id)
+                occupied.add(gpu_id)
+                node_ids_for_job += 1
+                if node_ids_for_job >= gpus_per_node:
+                    break
+        return tuple(result)
 
     def _qos_priority_factor(self, spec: SlurmJobSpec) -> float:
         policy = self._qos_policies.get(spec.qos, {})
@@ -856,10 +1198,29 @@ class SlurmSchedulerEngine:
                     return False
         return True
 
-    def _signal(self, s: SlurmJobSpec, kind: WorkloadEventType, when: float) -> WorkloadSignal:
+    def _signal(
+        self,
+        s: SlurmJobSpec,
+        kind: WorkloadEventType,
+        when: float,
+        *,
+        allocation: Optional[SlurmAllocation] = None,
+        phase_index: Optional[int] = None,
+        phase: Optional[SlurmPhaseSpec] = None,
+    ) -> WorkloadSignal:
         return WorkloadSignal(event_id=f"slurm-{s.job_id}-{kind.value}-{int(when * 1000000)}",
                               job_id=s.job_id, event_type=kind, timestamp=when,
                               hardware_profile_id=s.hardware_profile_id, node_count=s.node_count,
                               workload_class=s.workload_class, site_id=s.site_id,
                               scheduler_type="slurm", scheduler_domain=s.partition,
-                              tenant_id=s.tenant_id, gpus_per_unit=s.gpus_per_node or 1)
+                              tenant_id=s.tenant_id, gpus_per_unit=s.gpus_per_node or 1,
+                              gpu_ids=(
+                                  allocation.gpu_ids
+                                  if allocation is not None
+                                  else self._job_gpu_ids.get(s.job_id, ())
+                              ),
+                              phase_kind=phase.kind if phase else None,
+                              phase_index=phase_index,
+                              gpu_utilization=phase.gpu_utilization if phase else None,
+                              gpu_memory_mb=phase.gpu_memory_mb if phase else None,
+                              gpu_power_multiplier=phase.power_multiplier if phase else None)

@@ -1060,6 +1060,21 @@ class SlurmFederationConfigSpec(BaseModel):
     route_submissions: bool = False
 
 
+class SlurmPhaseConfigSpec(BaseModel):
+    """Declarative phase for the simulation-only virtual job runner."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: str = Field(default="compute", min_length=1)
+    duration_s: float = Field(gt=0.0)
+    gpu_utilization: float = Field(default=1.0, ge=0.0, le=1.0)
+    gpu_memory_mb: int = Field(default=0, ge=0)
+    power_multiplier: float = Field(default=1.0, ge=0.0)
+    checkpoint: bool = False
+    failure: bool = False
+    failure_reason: Optional[str] = None
+
+
 class SlurmJobConfigSpec(BaseModel):
     """A deterministic simulated Slurm job submission.
 
@@ -1120,6 +1135,8 @@ class SlurmJobConfigSpec(BaseModel):
     tenant_id: Optional[str] = None
     command: Optional[str] = None
     environment: dict[str, str] = Field(default_factory=dict)
+    phases: list[SlurmPhaseConfigSpec] = Field(default_factory=list)
+    gpu_power_kw: float = Field(default=10.2, ge=0.0)
 
     @model_validator(mode="after")
     def _validate_job_semantics(self) -> "SlurmJobConfigSpec":

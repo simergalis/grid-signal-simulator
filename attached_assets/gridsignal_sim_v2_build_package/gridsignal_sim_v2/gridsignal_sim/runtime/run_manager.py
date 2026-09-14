@@ -1456,9 +1456,11 @@ class RunContext:
         if self.slurm_scheduler is None:
             return None
         metrics = self.slurm_scheduler.metrics()
+        telemetry = metrics.job_telemetry
         jobs = []
         for summary in self.slurm_scheduler.snapshot():
             allocation = summary.allocation
+            job_telemetry = telemetry.get(summary.job_id, {})
             jobs.append({
                 "job_id": summary.job_id,
                 "state": summary.state,
@@ -1468,6 +1470,7 @@ class RunContext:
                 "reason": summary.reason,
                 "node_ids": list(allocation.node_ids) if allocation else [],
                 "allocated_gpus": allocation.gpus if allocation else 0,
+                "gpu_ids": list(allocation.gpu_ids) if allocation else job_telemetry.get("gpu_ids", []),
                 "allocated_cpus": allocation.cpus if allocation else 0,
                 "allocated_memory_mb": allocation.memory_mb if allocation else 0,
                 "allocated_licenses": dict(allocation.licenses) if allocation else {},
@@ -1477,6 +1480,16 @@ class RunContext:
                 "array_task_id": summary.array_task_id,
                 "preemptions": summary.preemptions,
                 "command": summary.command,
+                "phase_index": job_telemetry.get("phase_index"),
+                "phase_kind": job_telemetry.get("phase_kind"),
+                "phase_elapsed_s": job_telemetry.get("phase_elapsed_s", 0.0),
+                "gpu_utilization": job_telemetry.get("gpu_utilization", 0.0),
+                "gpu_memory_mb": job_telemetry.get("gpu_memory_mb", 0),
+                "power_multiplier": job_telemetry.get("power_multiplier", 0.0),
+                "utilization": job_telemetry.get("utilization", 0.0),
+                "energy_mwh": job_telemetry.get("energy_mwh", 0.0),
+                "energy_mwh_per_gpu": job_telemetry.get("energy_mwh_per_gpu", 0.0),
+                "elapsed_s": job_telemetry.get("elapsed_s", 0.0),
             })
         return {
             "timestamp": metrics.timestamp,
@@ -1490,8 +1503,11 @@ class RunContext:
             "allocated_memory_mb": metrics.allocated_memory_mb,
             "preempted": metrics.preempted,
             "requeued": metrics.requeued,
+            "failed": metrics.failed,
+            "timed_out": metrics.timed_out,
             "allocated_licenses": metrics.allocated_licenses,
             "burst_buffer_mb": metrics.burst_buffer_mb,
+            "job_telemetry": telemetry,
             "jobs": jobs,
         }
 

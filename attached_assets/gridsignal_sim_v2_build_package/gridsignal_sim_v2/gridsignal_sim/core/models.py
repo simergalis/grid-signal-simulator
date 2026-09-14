@@ -81,8 +81,12 @@ class WorkloadEventType(str, Enum):
     SCALE = "scale"
     CHECKPOINT_START = "checkpoint_start"
     CHECKPOINT_END = "checkpoint_end"
+    PHASE_UPDATE = "phase_update"
     JOB_END = "job_end"
     CANCELLED = "cancelled"
+    JOB_FAILED = "job_failed"
+    JOB_TIMEOUT = "job_timeout"
+    JOB_PREEMPTED = "job_preempted"
     # Step 8 scaffolding (§7.1.1) — keeps SOLAR_STEP in the workload enum so the
     # arbitrator's stage_for_predicted_step path is exercised with dt_lead=0,
     # proving TC-33 symmetry (identical delta_p_mw → identical staging arithmetic
@@ -145,6 +149,15 @@ class WorkloadSignal:
     # Optional inference model identity used by the published DynamoLLM
     # calibration.  None preserves the legacy hardware-only power path.
     model_id: Optional[str] = None
+    # Internal Slurm execution metadata.  These fields are intentionally
+    # optional so external scheduler snapshots and legacy scripted signals keep
+    # the original wire contract.
+    gpu_ids: tuple[str, ...] = ()
+    phase_kind: Optional[str] = None
+    phase_index: Optional[int] = None
+    gpu_utilization: Optional[float] = None
+    gpu_memory_mb: Optional[int] = None
+    gpu_power_multiplier: Optional[float] = None
 
 
 # ---------------------------------------------------------------------------

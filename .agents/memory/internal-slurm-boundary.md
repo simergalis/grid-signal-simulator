@@ -20,3 +20,14 @@ option look implemented when the deterministic simulator had not modeled it.
 **How to apply:** Add new Slurm options as a deliberate scheduler slice with
 schema validation, engine behavior, and focused tests; do not widen the
 execution boundary as part of a schema-only change.
+
+Virtual execution events whose timestamps precede the current run boundary must
+be emitted atomically with the allocation event rather than appended later.
+
+**Why:** The run manager consumes the scheduler event list with a monotonic
+cursor; retroactively inserting a timestamp-zero checkpoint or phase event can
+shift the list and cause that event to be skipped.
+
+**How to apply:** Emit phase-start and checkpoint-start signals from the same
+allocation transition that emits `RUNNING`; emit later transitions only at the
+boundary where they become observable.

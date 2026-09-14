@@ -15,7 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from api.schemas import SlurmJobConfigSpec, SlurmJobPayload, WorkloadSignalResponse
 from api.routes.admin_routes import _require_admin
 from core.models import WorkloadClass
-from core.slurm_scheduler import SlurmJobSpec, SlurmSchedulerError
+from core.slurm_scheduler import SlurmJobSpec, SlurmPhaseSpec, SlurmSchedulerError
 from runtime.run_manager import RunManager
 from runtime.slurm_ingest import (
     SlurmTranslationError,
@@ -222,6 +222,20 @@ async def submit_internal_slurm(
         array_max_concurrent=payload.array_max_concurrent,
         federation=payload.federation,
         cluster=payload.cluster,
+        phases=tuple(
+            SlurmPhaseSpec(
+                kind=phase.kind,
+                duration_s=phase.duration_s,
+                gpu_utilization=phase.gpu_utilization,
+                gpu_memory_mb=phase.gpu_memory_mb,
+                power_multiplier=phase.power_multiplier,
+                checkpoint=phase.checkpoint,
+                failure=phase.failure,
+                failure_reason=phase.failure_reason,
+            )
+            for phase in payload.phases
+        ),
+        gpu_power_kw=payload.gpu_power_kw,
     )
     try:
         signal = ctx.submit_internal_slurm_job(spec)

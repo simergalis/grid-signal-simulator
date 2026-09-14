@@ -90,6 +90,11 @@ class GPUModule(AssetModule):
     _job_profiles: dict[str, str] = field(default_factory=dict)  # job_id -> profile_id
     _job_workload_classes: dict[str, WorkloadClass | None] = field(default_factory=dict)
     _job_model_ids: dict[str, str | None] = field(default_factory=dict)
+    _job_gpu_ids: dict[str, tuple[str, ...]] = field(default_factory=dict)
+    _job_phase_kinds: dict[str, str] = field(default_factory=dict)
+    _job_gpu_utilization: dict[str, float] = field(default_factory=dict)
+    _job_gpu_memory_mb: dict[str, int] = field(default_factory=dict)
+    _job_power_multipliers: dict[str, float] = field(default_factory=dict)
     unmapped_profile_seen: set[str] = field(default_factory=set)
     # Step 3 Item 2: Δt_lead ramp state.
     # ramp_seconds — the window over which a newly-allocated job ramps from
@@ -212,6 +217,7 @@ class GPUModule(AssetModule):
             self._job_profiles[signal.job_id] = signal.hardware_profile_id
             self._job_workload_classes[signal.job_id] = signal.workload_class
             self._job_model_ids[signal.job_id] = signal.model_id
+            self._install_phase(signal)
             self._ramp_progress[signal.job_id] = 0.0          # begin Δt_lead ramp
             # Seed the authoritative desired count so SCALE deltas compute correctly.
             self._desired_node_counts[signal.job_id] = signal.node_count
@@ -223,6 +229,7 @@ class GPUModule(AssetModule):
             self._job_profiles[signal.job_id] = signal.hardware_profile_id
             self._job_workload_classes[signal.job_id] = signal.workload_class
             self._job_model_ids[signal.job_id] = signal.model_id
+            self._install_phase(signal)
             self._ramp_progress[signal.job_id] = 1.0
             self._desired_node_counts[signal.job_id] = signal.node_count
         elif signal.event_type == WorkloadEventType.SCALE:
@@ -292,11 +299,18 @@ class GPUModule(AssetModule):
                     self._node_counts[signal.job_id] = max(0, base - reduction)
                 self._desired_node_counts[signal.job_id] = new_desired
             # new_desired == old_desired: desired count already correct, no-op.
-        elif signal.event_type in (WorkloadEventType.JOB_END, WorkloadEventType.CANCELLED):
+        elif signal.event_type in (
+            WorkloadEventType.JOB_END,
+            WorkloadEventType.CANCELLED,
+            WorkloadEventType.JOB_FAILED,
+            WorkloadEventType.JOB_TIMEOUT,
+            WorkloadEventType.JOB_PREEMPTED,
+        ):
             self._node_counts.pop(signal.job_id, None)
             self._job_profiles.pop(signal.job_id, None)
             self._job_workload_classes.pop(signal.job_id, None)
             self._job_model_ids.pop(signal.job_id, None)
+            self._clear_phase(signal.job_id)
             self._ramp_progress.pop(signal.job_id, None)
             # Clean up all scale-up cohorts spawned from this job.
             for cohort_key in self._job_cohorts.pop(signal.job_id, []):
@@ -307,6 +321,8 @@ class GPUModule(AssetModule):
                 self._ramp_progress.pop(cohort_key, None)
             self._cohort_counters.pop(signal.job_id, None)
             self._desired_node_counts.pop(signal.job_id, None)
+        elif signal.event_type == WorkloadEventType.PHASE_UPDATE:
+            self._install_phase(signal)
         # checkpoint_start/checkpoint_end intentionally leave node_count
         # untouched -- the classifier (dispatch.py) reads the resulting
         # draw shape, it doesn't get a node-count signal of its own.
@@ -314,6 +330,44 @@ class GPUModule(AssetModule):
         if unmapped:
             self.unmapped_profile_seen.add(signal.hardware_profile_id)
         return unmapped
+
+    def _install_phase(self, signal: WorkloadSignal) -> None:
+        if signal.gpu_ids:
+            self._job_gpu_ids[signal.job_id] = tuple(signal.gpu_ids)
+        if signal.phase_kind is not None:
+            self._job_phase_kinds[signal.job_id] = signal.phase_kind
+        if signal.gpu_utilization is not None:
+            self._job_gpu_utilization[signal.job_id] = max(
+                0.0, min(1.0, signal.gpu_utilization)
+            )
+        if signal.gpu_memory_mb is not None:
+            self._job_gpu_memory_mb[signal.job_id] = max(0, signal.gpu_memory_mb)
+        if signal.gpu_power_multiplier is not None:
+            self._job_power_multipliers[signal.job_id] = max(
+                0.0, signal.gpu_power_multiplier
+            )
+
+    def _clear_phase(self, job_id: str) -> None:
+        self._job_gpu_ids.pop(job_id, None)
+        self._job_phase_kinds.pop(job_id, None)
+        self._job_gpu_utilization.pop(job_id, None)
+        self._job_gpu_memory_mb.pop(job_id, None)
+        self._job_power_multipliers.pop(job_id, None)
+
+    def per_gpu_phase_loads(self, job_id: str) -> list[dict[str, object]]:
+        """Return the deterministic binding and current phase for each GPU."""
+        gpu_ids = self._job_gpu_ids.get(job_id, ())
+        return [
+            {
+                "gpu_id": gpu_id,
+                "job_id": job_id,
+                "phase_kind": self._job_phase_kinds.get(job_id, "compute"),
+                "utilization": self._job_gpu_utilization.get(job_id, 1.0),
+                "memory_mb": self._job_gpu_memory_mb.get(job_id, 0),
+                "power_multiplier": self._job_power_multipliers.get(job_id, 1.0),
+            }
+            for gpu_id in gpu_ids
+        ]
 
     def advance(self, sim_time: float, dt_seconds: float) -> None:
         """Advance the Δt_lead ramp for every job currently in mid-ramp.
@@ -439,6 +493,7 @@ class GPUModule(AssetModule):
         )
         progress = self._ramp_progress.get(job_id, 1.0)  # 1.0 = fully ramped
         base_draw = full_kw * self._ramp_multiplier(progress)
+        base_draw *= self._job_power_multipliers.get(job_id, 1.0)
 
         # ── Stochastic-step Part 2: within-step power profile ─────────────────
         # Only applied when load_config is set (kube path with step scheduler).

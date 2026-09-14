@@ -55,7 +55,12 @@ from core.models import (
     WorkloadSignal,
 )
 from core.kube_demand import KubeConfig, KubeDemandAgent
-from core.slurm_scheduler import SlurmJobSpec, SlurmNode, SlurmSchedulerEngine
+from core.slurm_scheduler import (
+    SlurmJobSpec,
+    SlurmNode,
+    SlurmPhaseSpec,
+    SlurmSchedulerEngine,
+)
 from core.step_config import LoadProfileConfig, StepTimingConfig
 from core.simulation_core import SimulationState, TenantBurstEvent
 from core.generation_factory import compute_floor_mw as _compute_floor_mw
@@ -1399,6 +1404,20 @@ def build_run_context_from_spec(
                         if raw_job.get("array_max_concurrent") is not None
                         else None
                     ),
+                    phases=tuple(
+                        SlurmPhaseSpec(
+                            kind=str(phase.get("kind", "compute")),
+                            duration_s=float(phase["duration_s"]),
+                            gpu_utilization=float(phase.get("gpu_utilization", 1.0)),
+                            gpu_memory_mb=int(phase.get("gpu_memory_mb", 0)),
+                            power_multiplier=float(phase.get("power_multiplier", 1.0)),
+                            checkpoint=bool(phase.get("checkpoint", False)),
+                            failure=bool(phase.get("failure", False)),
+                            failure_reason=phase.get("failure_reason"),
+                        )
+                        for phase in raw_job.get("phases", [])
+                    ),
+                    gpu_power_kw=float(raw_job.get("gpu_power_kw", 10.2)),
             )
             _array_start = raw_job.get("array_start")
             _array_end = raw_job.get("array_end")

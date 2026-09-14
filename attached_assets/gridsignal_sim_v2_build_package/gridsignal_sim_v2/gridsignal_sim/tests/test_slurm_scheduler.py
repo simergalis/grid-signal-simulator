@@ -9,6 +9,7 @@ from core.slurm_scheduler import (
     ImpossibleJobError,
     SlurmJobSpec,
     SlurmNode,
+    SlurmPhaseSpec,
     SlurmSchedulerError,
     SlurmSchedulerEngine,
 )
@@ -340,6 +341,83 @@ def test_preemption_requeues_lower_priority_job_and_checkpoint_signals_are_emitt
     assert any(event.event_type == WorkloadEventType.CHECKPOINT_START for event in events)
 
 
+def test_virtual_runner_binds_gpus_and_reports_phase_energy() -> None:
+    engine = _engine()
+    engine.submit(SlurmJobSpec(
+        job_id="phased",
+        duration=99.0,
+        gpus_per_node=8,
+        phases=(
+            SlurmPhaseSpec(
+                kind="load",
+                duration_s=2.0,
+                gpu_utilization=0.25,
+                gpu_memory_mb=1024,
+                power_multiplier=0.5,
+            ),
+            SlurmPhaseSpec(
+                kind="train",
+                duration_s=3.0,
+                gpu_utilization=0.9,
+                gpu_memory_mb=8192,
+            ),
+        ),
+    ))
+    running = engine.advance(0.0)
+    running_signal = next(
+        event for event in running if event.event_type == WorkloadEventType.RUNNING
+    )
+    assert running_signal.phase_kind == "load"
+    assert running_signal.gpu_ids == tuple(f"n00:gpu-{i}" for i in range(8))
+
+    phase_events = engine.advance(2.0)
+    phase_update = next(
+        event for event in phase_events
+        if event.event_type == WorkloadEventType.PHASE_UPDATE
+    )
+    assert phase_update.phase_kind == "train"
+    assert phase_update.gpu_utilization == 0.9
+
+    engine.advance(5.0)
+    telemetry = engine.metrics().job_telemetry["phased"]
+    assert telemetry["utilization"] == pytest.approx((0.25 * 2 + 0.9 * 3) / 5)
+    assert telemetry["energy_mwh"] > 0.0
+    assert telemetry["energy_mwh_per_gpu"] == pytest.approx(
+        telemetry["energy_mwh"] / 8
+    )
+    assert engine.summary("phased").state == "COMPLETED"
+
+
+def test_virtual_runner_has_deterministic_failure_and_timeout_outcomes() -> None:
+    engine = _engine()
+    engine.submit(SlurmJobSpec(
+        job_id="fails",
+        gpus_per_node=8,
+        phases=(
+            SlurmPhaseSpec(kind="warmup", duration_s=1.0),
+            SlurmPhaseSpec(kind="bad", duration_s=2.0, failure=True),
+        ),
+    ))
+    engine.advance(0.0)
+    events = engine.advance(3.0)
+    assert any(event.event_type == WorkloadEventType.JOB_FAILED for event in events)
+    assert engine.summary("fails").state == "FAILED"
+
+    timeout = SlurmSchedulerEngine([
+        SlurmNode(node_id="n00", gpus=8, gpu_model="h100"),
+    ])
+    timeout.submit(SlurmJobSpec(
+        job_id="timeout",
+        gpus_per_node=8,
+        time_limit_s=2.0,
+        phases=(SlurmPhaseSpec(kind="long", duration_s=5.0),),
+    ))
+    timeout.advance(0.0)
+    events = timeout.advance(2.0)
+    assert any(event.event_type == WorkloadEventType.JOB_TIMEOUT for event in events)
+    assert timeout.summary("timeout").state == "TIMEOUT"
+
+
 def test_slurm_schema_rejects_unmodeled_options_and_invalid_array_ranges() -> None:
     with pytest.raises(ValueError):
         SlurmJobConfigSpec(job_id="bad", array_start=4, array_end=1)
@@ -348,3 +426,14 @@ def test_slurm_schema_rejects_unmodeled_options_and_invalid_array_ranges() -> No
             nodes=[{"node_id": "n01"}],
             jobs=[{"job_id": "bad", "not_a_slurm_option": True}],
         )
+    phase_job = SlurmJobConfigSpec(
+        job_id="phase-job",
+        phases=[{
+            "kind": "checkpoint",
+            "duration_s": 2.0,
+            "gpu_utilization": 0.2,
+            "gpu_memory_mb": 256,
+            "power_multiplier": 0.4,
+        }],
+    )
+    assert phase_job.phases[0].kind == "checkpoint"

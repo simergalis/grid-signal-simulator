@@ -440,7 +440,13 @@ class SimulationState:
         gpu = self._owning_gpu_module(signal)
         # Capture cohort keys before apply_signal() clears _job_cohorts on JOB_END.
         _cohort_keys_before_end: list[str] = []
-        if signal.event_type in (WorkloadEventType.JOB_END, WorkloadEventType.CANCELLED):
+        if signal.event_type in (
+            WorkloadEventType.JOB_END,
+            WorkloadEventType.CANCELLED,
+            WorkloadEventType.JOB_FAILED,
+            WorkloadEventType.JOB_TIMEOUT,
+            WorkloadEventType.JOB_PREEMPTED,
+        ):
             _cohort_keys_before_end = list(gpu._job_cohorts.get(signal.job_id, []))
         new_unmapped = gpu.apply_signal(signal)
         if signal.event_type == WorkloadEventType.STARTING:
@@ -533,7 +539,13 @@ class SimulationState:
             # samples fill in via record_job_compute(); no intervention needed there.
             for _removed_key in gpu._last_scale_removed_cohort_keys:
                 self.cooling.register_job_end(_removed_key, signal.timestamp)
-        elif signal.event_type in (WorkloadEventType.JOB_END, WorkloadEventType.CANCELLED):
+        elif signal.event_type in (
+            WorkloadEventType.JOB_END,
+            WorkloadEventType.CANCELLED,
+            WorkloadEventType.JOB_FAILED,
+            WorkloadEventType.JOB_TIMEOUT,
+            WorkloadEventType.JOB_PREEMPTED,
+        ):
             # Step 3 Item 3: mark the envelope ended so the retention window
             # starts.  Heat is already in the room; the buffer drains over
             # dt_thermal + 5·τ — it must not drop in one tick.
