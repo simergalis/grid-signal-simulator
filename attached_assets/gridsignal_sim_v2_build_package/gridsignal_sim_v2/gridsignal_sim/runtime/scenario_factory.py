@@ -54,6 +54,7 @@ from core.models import (
     WorkloadSignal,
 )
 from core.kube_demand import KubeConfig, KubeDemandAgent
+from core.slurm_scheduler import SlurmJobSpec, SlurmNode, SlurmSchedulerEngine
 from core.step_config import LoadProfileConfig, StepTimingConfig
 from core.simulation_core import SimulationState, TenantBurstEvent
 from core.generation_factory import compute_floor_mw as _compute_floor_mw
@@ -1268,6 +1269,88 @@ def build_run_context_from_spec(
                 _gpu.load_config = _top_lc
                 _gpu._auto_step_period_s = _STEP_PERIOD_S
 
+    # ── Internal Slurm scheduler ───────────────────────────────────────────
+    # This opt-in path is intentionally separate from KubeDemandAgent.  Legacy
+    # scenarios with scheduler_type=SLURM keep their existing stochastic
+    # behavior unless they provide an explicit slurm_config block.
+    _slurm_engine: SlurmSchedulerEngine | None = None
+    _slurm_job_specs: tuple[SlurmJobSpec, ...] = ()
+    _slurm_raw = spec_data.get("slurm_config")
+    if _slurm_raw is not None:
+        _slurm_nodes = tuple(
+            SlurmNode(
+                node_id=str(node["node_id"]),
+                partition=node.get("partition"),
+                gpus=int(node.get("gpus", 0)),
+                gpu_model=node.get("gpu_model"),
+                cpus=int(node.get("cpus", 0)),
+                memory_mb=int(node.get("memory_mb", 0)),
+                features=frozenset(str(v) for v in node.get("features", [])),
+            )
+            for node in _slurm_raw.get("nodes", [])
+        )
+        _slurm_reservations = {
+            str(reservation["name"]): (
+                float(reservation.get("start_time", 0.0)),
+                float(reservation["end_time"]),
+                tuple(str(node_id) for node_id in reservation.get("nodes", [])),
+            )
+            for reservation in _slurm_raw.get("reservations", [])
+        }
+        _slurm_specs: list[SlurmJobSpec] = []
+        for raw_job in _slurm_raw.get("jobs", []):
+            profile_id = str(raw_job.get("hardware_profile_id") or hw_id)
+            if profile_id not in DEFAULT_HARDWARE_LIBRARY:
+                raise ValueError(
+                    f"Slurm hardware profile {profile_id!r} is not in "
+                    "DEFAULT_HARDWARE_LIBRARY"
+                )
+            _slurm_specs.append(
+                SlurmJobSpec(
+                    job_id=str(raw_job["job_id"]),
+                    arrival_time=float(raw_job.get("arrival_time", 0.0)),
+                    duration=float(raw_job.get("duration", 60.0)),
+                    node_count=int(raw_job.get("node_count", 1)),
+                    gpus_per_node=int(raw_job.get("gpus_per_node", 0)),
+                    cpus_per_node=int(raw_job.get("cpus_per_node", 0)),
+                    memory_mb_per_node=int(raw_job.get("memory_mb_per_node", 0)),
+                    gpu_model=raw_job.get("gpu_model"),
+                    partition=raw_job.get("partition"),
+                    features=frozenset(str(v) for v in raw_job.get("features", [])),
+                    priority=float(raw_job.get("priority", 0.0)),
+                    qos=str(raw_job.get("qos", "normal")),
+                    qos_weight=float(raw_job.get("qos_weight", 1.0)),
+                    fair_share_usage=float(raw_job.get("fair_share_usage", 0.0)),
+                    dependencies=tuple(str(v) for v in raw_job.get("dependencies", [])),
+                    reservation=raw_job.get("reservation"),
+                    hardware_profile_id=profile_id,
+                    workload_class=WorkloadClass(
+                        str(raw_job.get("workload_class", "training"))
+                    ),
+                    site_id=site.site_id,
+                    tenant_id=raw_job.get("tenant_id"),
+                    command=raw_job.get("command"),
+                    environment=tuple(
+                        sorted(
+                            (str(key), str(value))
+                            for key, value in (raw_job.get("environment") or {}).items()
+                        )
+                    ),
+                )
+            )
+        _slurm_job_specs = tuple(
+            sorted(_slurm_specs, key=lambda job: (job.arrival_time, job.job_id))
+        )
+        _slurm_engine = SlurmSchedulerEngine(
+            _slurm_nodes,
+            qos_weights={
+                str(name): float(weight)
+                for name, weight in (_slurm_raw.get("qos_weights") or {}).items()
+            },
+            reservations=_slurm_reservations,
+            backfill=bool(_slurm_raw.get("backfill", True)),
+        )
+
     # ── Workload events ───────────────────────────────────────────────────
     events: list[WorkloadSignal] = []
 
@@ -1626,6 +1709,8 @@ def build_run_context_from_spec(
         corroborator=FabricCorroborator(),
         price_curve=SyntheticPriceCurve(seed=42),
         grid_capacity=_spec_grid_cap,
+        slurm_scheduler=_slurm_engine,
+        slurm_job_specs=_slurm_job_specs,
         _rated_cooling_mw=_spec_rated_cooling_mw,
         _design_peak_load_mw=_spec_design_peak_load_mw,
         # AB2: for §21.2 cost model in energy-summary endpoint.

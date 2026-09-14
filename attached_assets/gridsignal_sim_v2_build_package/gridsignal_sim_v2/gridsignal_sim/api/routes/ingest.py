@@ -12,8 +12,10 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 
-from api.schemas import SlurmJobPayload, WorkloadSignalResponse
+from api.schemas import SlurmJobConfigSpec, SlurmJobPayload, WorkloadSignalResponse
 from api.routes.admin_routes import _require_admin
+from core.models import WorkloadClass
+from core.slurm_scheduler import SlurmJobSpec, SlurmSchedulerError
 from runtime.run_manager import RunManager
 from runtime.slurm_ingest import (
     SlurmTranslationError,
@@ -116,6 +118,93 @@ async def ingest_slurm(
             status_code=status.HTTP_409_CONFLICT,
             detail={"code": result_code, "message": detail},
         )
+    return WorkloadSignalResponse(
+        event_id=signal.event_id,
+        job_id=signal.job_id,
+        event_type=signal.event_type.value,
+        timestamp=signal.timestamp,
+        hardware_profile_id=signal.hardware_profile_id,
+        node_count=signal.node_count,
+        workload_class=signal.workload_class.value,
+        site_id=signal.site_id,
+        scheduler_domain=signal.scheduler_domain,
+        tenant_id=signal.tenant_id,
+        scheduler_type=signal.scheduler_type,
+        capacity_unit=signal.capacity_unit,
+        gpus_per_unit=signal.gpus_per_unit,
+    )
+
+
+@router.post(
+    "/slurm/submit",
+    response_model=WorkloadSignalResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Submit one job to the internal Slurm scheduler",
+)
+async def submit_internal_slurm(
+    payload: SlurmJobConfigSpec,
+    request: Request,
+    run_id: Optional[str] = Query(
+        default=None,
+        description="Target active run. Omit only when exactly one run is active.",
+    ),
+    _: None = Depends(_require_admin),
+) -> WorkloadSignalResponse:
+    """Submit a simulated application to an opt-in internal Slurm queue.
+
+    The command and environment are retained as submission metadata by the
+    wire schema but are never executed on the host.  The scheduler allocates
+    simulated nodes/GPUs and the normal physics loop models the resulting
+    workload until the requested duration elapses.
+    """
+    manager = _manager(request)
+    selected_run_id, ctx = _select_run(manager, run_id)
+    available_profiles = {
+        profile_id
+        for module in ctx.sim_state.gpu_modules
+        for profile_id in module.hardware_library
+    }
+    if payload.hardware_profile_id not in available_profiles:
+        raise _unprocessable(
+            "unmapped_hardware",
+            f"Hardware profile {payload.hardware_profile_id!r} is not available "
+            "on the active run.",
+            field="hardware_profile_id",
+            value=payload.hardware_profile_id,
+        )
+    spec = SlurmJobSpec(
+        job_id=payload.job_id,
+        arrival_time=ctx.sim_time,
+        duration=payload.duration,
+        node_count=payload.node_count,
+        gpus_per_node=payload.gpus_per_node,
+        cpus_per_node=payload.cpus_per_node,
+        memory_mb_per_node=payload.memory_mb_per_node,
+        gpu_model=payload.gpu_model,
+        partition=payload.partition,
+        features=frozenset(payload.features),
+        priority=payload.priority,
+        qos=payload.qos,
+        qos_weight=payload.qos_weight,
+        fair_share_usage=payload.fair_share_usage,
+        dependencies=tuple(payload.dependencies),
+        reservation=payload.reservation,
+        hardware_profile_id=payload.hardware_profile_id,
+        workload_class=WorkloadClass(payload.workload_class),
+        site_id=ctx.sim_state.site.site_id,
+        tenant_id=payload.tenant_id,
+        command=payload.command,
+        environment=tuple(sorted(payload.environment.items())),
+    )
+    try:
+        signal = ctx.submit_internal_slurm_job(spec)
+    except SlurmSchedulerError as exc:
+        raise _unprocessable(
+            "slurm_submission_rejected",
+            str(exc),
+            field="job_id",
+            value=payload.job_id,
+        ) from exc
     return WorkloadSignalResponse(
         event_id=signal.event_id,
         job_id=signal.job_id,

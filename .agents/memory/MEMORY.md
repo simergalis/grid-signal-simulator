@@ -32,6 +32,7 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Alert clustering and dispositions](alert-clustering-dispositions.md) — proposals never mutate instances; bulk actions remain catalogue-gated and write one audited row per instance.
 - [Reference forecast MW assumptions](reference-forecast-mw-assumptions.md) — derive counts with existing H100/GB200 catalog profiles and generic PUE, while preserving explicit assumption provenance.
 - [Live Slurm ingestion](live-slurm-ingestion.md) — Slurm state determines authoritative TRES metadata; preserve monotonic job lifecycle ordering and physical topology checks.
+- [Internal Slurm boundary](internal-slurm-boundary.md) — opt-in deterministic scheduling is separate from live snapshot ingestion; commands remain metadata, never host execution.
 - [Production baseline seeding](production-baseline-seeding.md) — published DB data may be absent and shell entrypoints may be bypassed; seed required read-only datasets in FastAPI lifespan.
 - [Live tick stream recovery](live-tick-stream-recovery.md) — the UI needs REST latest-tick rehydration because a dropped server subscriber can leave an apparently open WebSocket silent.
 - [Run-start auto-wiring races](run-start-autowiring-races.md) — never gate a post-POST-/runs auto-arm on a component's async-fetched store field; fetch fresh scoped to the just-started scenario id instead.

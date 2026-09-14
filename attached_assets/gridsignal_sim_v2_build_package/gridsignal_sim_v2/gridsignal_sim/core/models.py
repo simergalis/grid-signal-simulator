@@ -1749,3 +1749,7 @@ class TickResult:
     commit_utilisation_threshold: Optional[float] = None
     # pending_start_unit_id: asset_id of the unit currently in STARTING; None when empty.
     pending_start_unit_id: Optional[str] = None
+    # Internal Slurm scheduler state.  None for scenarios that do not opt into
+    # slurm_config; a plain dict keeps the transport layer independent from the
+    # scheduler engine's dataclasses.
+    slurm_metrics: Optional[dict] = None

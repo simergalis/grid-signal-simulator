@@ -49,6 +49,7 @@ from core.simulation_core import SimulationState, evaluate_tick
 from core._plane_guard import _EVALUATE_TICK_PERMITTED
 from core.site_parameters import get as _sp_catalogue_get
 from core.site_parameters import value as _sp_catalogue_value
+from core.slurm_scheduler import SlurmJobSpec, SlurmSchedulerEngine
 
 # GS-IMPL-PSP-002 Phase 4 — Economic Dispatch Loop + §4.3 escalation wiring.
 # runtime/ → core/ is the allowed import direction; these never cross into api/.
@@ -643,6 +644,10 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
             if _km is not None
             else None
         ),
+        # Internal Slurm queue/allocation state — null when slurm_config is not
+        # active.  This is authored by the scheduler engine and only serialized
+        # here; the transport layer does not infer queue state.
+        "slurm_metrics": tick.slurm_metrics,
         # Solar weather metadata — stamped from RunContext at each tick (constant
         # per run).  Empty strings when solar is absent or run started via direct path.
         "solar_weather":    tick.solar_weather,
@@ -1347,6 +1352,13 @@ class RunContext:
     # Latest accepted Slurm state per job.  Polling can arrive out of order;
     # never let a delayed RUNNING snapshot resurrect a terminal job.
     _slurm_job_states: dict[str, WorkloadEventType] = field(default_factory=dict, repr=False)
+    # Optional deterministic internal Slurm scheduler.  It is deliberately
+    # separate from KubeDemandAgent so legacy SLURM-labelled and Ray scenarios
+    # retain their existing stochastic behavior.
+    slurm_scheduler: Optional[SlurmSchedulerEngine] = None
+    slurm_job_specs: tuple[SlurmJobSpec, ...] = field(default_factory=tuple)
+    _next_slurm_job_idx: int = 0
+    _slurm_event_cursor: int = 0
 
     def is_complete(self) -> bool:
         return self.cancelled or self.sim_time >= self.end_sim_time
@@ -1370,6 +1382,94 @@ class RunContext:
             signal = self.events[self._next_event_idx]
             self.sim_state.apply_workload_signal(signal, self.dt_lead_seconds)
             self._next_event_idx += 1
+
+    def _advance_internal_slurm(self) -> None:
+        """Submit due internal jobs and append newly emitted lifecycle events.
+
+        The engine owns queue ordering and simulated node allocations.  RunContext
+        only bridges its deterministic signals into the existing workload-event
+        boundary, so SimulationState remains the single physics integration point.
+        """
+        if self.slurm_scheduler is None:
+            return
+        while (
+            self._next_slurm_job_idx < len(self.slurm_job_specs)
+            and self.slurm_job_specs[self._next_slurm_job_idx].arrival_time
+            <= self.sim_time
+        ):
+            spec = self.slurm_job_specs[self._next_slurm_job_idx]
+            self.slurm_scheduler.submit(spec, now=spec.arrival_time)
+            self._next_slurm_job_idx += 1
+        self.slurm_scheduler.advance(self.sim_time)
+        self._append_internal_slurm_events()
+
+    def _append_internal_slurm_events(self) -> None:
+        """Bridge any new scheduler signals into the run's event timeline."""
+        if self.slurm_scheduler is None:
+            return
+        emitted = self.slurm_scheduler.events()
+        if self._slurm_event_cursor >= len(emitted):
+            return
+        self.events.extend(emitted[self._slurm_event_cursor:])
+        self.events.sort(key=lambda event: event.timestamp)
+        self._slurm_event_cursor = len(emitted)
+
+    def submit_internal_slurm_job(self, spec: SlurmJobSpec) -> WorkloadSignal:
+        """Submit a job to the active internal scheduler at the current tick.
+
+        Runtime submissions are intentionally immediate.  Scenario-authored
+        future arrivals use ``slurm_job_specs`` and are submitted by the clock
+        bridge above, which prevents a future submission from moving the engine
+        clock forward.
+        """
+        if self.slurm_scheduler is None:
+            raise ValueError("this run has no internal Slurm scheduler")
+        if spec.site_id != self.sim_state.site.site_id:
+            raise ValueError("Slurm job site_id does not match the active run")
+        runtime_spec = spec
+        if spec.arrival_time != self.sim_time:
+            runtime_spec = _dc_replace(
+                spec,
+                arrival_time=self.sim_time,
+            )
+        queued = self.slurm_scheduler.submit(runtime_spec, now=self.sim_time)
+        self.slurm_scheduler.advance(self.sim_time)
+        self._append_internal_slurm_events()
+        return queued
+
+    def _slurm_metrics_payload(self) -> Optional[dict]:
+        """Serialize the internal Slurm queue and allocation state for the UI."""
+        if self.slurm_scheduler is None:
+            return None
+        metrics = self.slurm_scheduler.metrics()
+        jobs = []
+        for summary in self.slurm_scheduler.snapshot():
+            allocation = summary.allocation
+            jobs.append({
+                "job_id": summary.job_id,
+                "state": summary.state,
+                "arrival_time": summary.arrival_time,
+                "start_time": summary.start_time,
+                "end_time": summary.end_time,
+                "reason": summary.reason,
+                "node_ids": list(allocation.node_ids) if allocation else [],
+                "allocated_gpus": allocation.gpus if allocation else 0,
+                "allocated_cpus": allocation.cpus if allocation else 0,
+                "allocated_memory_mb": allocation.memory_mb if allocation else 0,
+                "command": summary.command,
+            })
+        return {
+            "timestamp": metrics.timestamp,
+            "queued": metrics.queued,
+            "running": metrics.running,
+            "completed": metrics.completed,
+            "cancelled": metrics.cancelled,
+            "allocated_nodes": metrics.allocated_nodes,
+            "allocated_gpus": metrics.allocated_gpus,
+            "allocated_cpus": metrics.allocated_cpus,
+            "allocated_memory_mb": metrics.allocated_memory_mb,
+            "jobs": jobs,
+        }
 
     def _planning_forecast(self, current_forecast_mw: float) -> tuple[dict[str, float], ...]:
         """Project scripted future workload additions at 15-minute samples.
@@ -1452,6 +1552,7 @@ class RunContext:
         layer can record both clocks alongside every RunTimeseries row, enabling
         forecast-error attribution against real latency (v2.5 §22.8).
         """
+        self._advance_internal_slurm()
         self._apply_due_events()
         clock = SimClock(
             sim_time=self.sim_time,
@@ -1469,6 +1570,7 @@ class RunContext:
         result = _dc_replace(
             result,
             planning_forecast_mw=self._planning_forecast(result.forecast_mw),
+            slurm_metrics=self._slurm_metrics_payload(),
         )
         # G-1: forecast planning may create only a reviewed AdvisoryGate
         # proposal.  It has no command path to the fuel-cell fleet and runs

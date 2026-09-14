@@ -950,6 +950,101 @@ class KubeClusterSpec(KubeConfigSpec):
     workload_share: float = Field(gt=0.0, le=1.0)
 
 
+class SlurmNodeConfigSpec(BaseModel):
+    """One simulated Slurm node and its schedulable resources."""
+
+    node_id: str = Field(min_length=1)
+    partition: Optional[str] = None
+    gpus: int = Field(default=0, ge=0)
+    gpu_model: Optional[str] = None
+    cpus: int = Field(default=0, ge=0)
+    memory_mb: int = Field(default=0, ge=0)
+    features: list[str] = Field(default_factory=list)
+
+
+class SlurmReservationConfigSpec(BaseModel):
+    """A time-bounded reservation over a set of simulated nodes."""
+
+    name: str = Field(min_length=1)
+    start_time: float = Field(default=0.0, ge=0.0)
+    end_time: float = Field(gt=0.0)
+    nodes: list[str] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def _validate_window(self) -> "SlurmReservationConfigSpec":
+        if self.end_time <= self.start_time:
+            raise ValueError("end_time must be greater than start_time")
+        return self
+
+
+class SlurmJobConfigSpec(BaseModel):
+    """A deterministic simulated Slurm job submission.
+
+    This is deliberately a scheduling model rather than a raw slurmrestd
+    snapshot.  ``command`` is metadata for the simulated application and is
+    never executed by the simulator.
+    """
+
+    job_id: str = Field(min_length=1)
+    arrival_time: float = Field(default=0.0, ge=0.0)
+    duration: float = Field(default=60.0, ge=0.0)
+    node_count: int = Field(default=1, ge=1)
+    gpus_per_node: int = Field(default=0, ge=0)
+    cpus_per_node: int = Field(default=0, ge=0)
+    memory_mb_per_node: int = Field(default=0, ge=0)
+    gpu_model: Optional[str] = None
+    partition: Optional[str] = None
+    features: list[str] = Field(default_factory=list)
+    priority: float = 0.0
+    qos: str = "normal"
+    qos_weight: float = Field(default=1.0, ge=0.0)
+    fair_share_usage: float = Field(default=0.0, ge=0.0)
+    dependencies: list[str] = Field(default_factory=list)
+    reservation: Optional[str] = None
+    hardware_profile_id: str = "enterprise_8gpu_air"
+    workload_class: Literal["training", "inference", "other"] = "training"
+    tenant_id: Optional[str] = None
+    command: Optional[str] = None
+    environment: dict[str, str] = Field(default_factory=dict)
+
+
+class SlurmConfigSpec(BaseModel):
+    """Internal deterministic Slurm scheduler configuration.
+
+    The scheduler is opt-in.  Existing ``kube_config`` and ``kube_clusters``
+    scenarios retain their current behavior.
+    """
+
+    nodes: list[SlurmNodeConfigSpec] = Field(min_length=1)
+    jobs: list[SlurmJobConfigSpec] = Field(default_factory=list)
+    qos_weights: dict[str, float] = Field(default_factory=dict)
+    reservations: list[SlurmReservationConfigSpec] = Field(default_factory=list)
+    # When true, a lower-priority pending job may use currently idle nodes
+    # while an earlier eligible job waits for a larger allocation.
+    backfill: bool = True
+
+    @model_validator(mode="after")
+    def _validate_identity(self) -> "SlurmConfigSpec":
+        node_ids = [node.node_id for node in self.nodes]
+        if len(node_ids) != len(set(node_ids)):
+            raise ValueError("slurm_config node_id values must be unique")
+        job_ids = [job.job_id for job in self.jobs]
+        if len(job_ids) != len(set(job_ids)):
+            raise ValueError("slurm_config job_id values must be unique")
+        reservation_names = [reservation.name for reservation in self.reservations]
+        if len(reservation_names) != len(set(reservation_names)):
+            raise ValueError("slurm_config reservation names must be unique")
+        reservation_nodes = set(node_ids)
+        for reservation in self.reservations:
+            unknown = set(reservation.nodes) - reservation_nodes
+            if unknown:
+                raise ValueError(
+                    f"reservation {reservation.name!r} references unknown nodes: "
+                    f"{sorted(unknown)!r}"
+                )
+        return self
+
+
 class DqInjectEvent(BaseModel):
     """A scripted data-quality tag injection window.
 
@@ -1545,6 +1640,10 @@ class ScenarioSpec(BaseModel):
     # Heterogeneous multi-cluster path.  Each entry receives an independent
     # capacity ceiling and RNG stream.  Mutually exclusive with kube_config.
     kube_clusters: list[KubeClusterSpec] = Field(default_factory=list)
+    # Opt-in deterministic internal Slurm scheduler.  This is intentionally
+    # separate from kube_clusters so legacy SLURM-labeled demand agents remain
+    # unchanged unless a scenario explicitly supplies slurm_config.
+    slurm_config: Optional[SlurmConfigSpec] = None
 
     # ── Within-step compute load profile (scripted-event / non-kube path) ────
     # Activates compute-phase vs allreduce-phase power variation for scenarios
