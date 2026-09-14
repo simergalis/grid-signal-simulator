@@ -1410,7 +1410,21 @@ class RunContext:
         emitted = self.slurm_scheduler.events()
         if self._slurm_event_cursor >= len(emitted):
             return
-        self.events.extend(emitted[self._slurm_event_cursor:])
+        internal_events = emitted[self._slurm_event_cursor:]
+        # The scheduler's RUNNING signal means that resources were admitted,
+        # not that the GPU load has already reached full TDP.  Internal Slurm
+        # is deterministic and therefore gives the grid the configured
+        # dt_lead_seconds advance window.  Translate only this runtime bridge
+        # to STARTING so GPUModule opens its physical ramp and the dispatch
+        # layer stages generation.  The scheduler itself continues to report
+        # RUNNING in Slurm metrics, and direct/external RUNNING snapshots keep
+        # their existing observed-full-draw semantics.
+        self.events.extend(
+            _dc_replace(event, event_type=WorkloadEventType.STARTING)
+            if event.event_type == WorkloadEventType.RUNNING
+            else event
+            for event in internal_events
+        )
         self.events.sort(key=lambda event: event.timestamp)
         self._slurm_event_cursor = len(emitted)
 
