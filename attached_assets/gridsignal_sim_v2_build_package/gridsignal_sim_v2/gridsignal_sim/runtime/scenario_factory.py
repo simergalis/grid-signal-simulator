@@ -819,18 +819,19 @@ def build_run_context_from_spec(
         TurbineModule(
             TurbineConfig(
                 asset_id=t.get("asset_id") or f"turbine-{i}",
-                r_asset_mw_per_s=float(t.get("r_asset_mw_per_s", 0.2)),
+                r_asset_mw_per_s=float(t.get("r_asset_mw_per_s", 0.5)),
                 rated_mw=float(t.get("rated_mw", 10.0)),
                 hot_standby=bool(t.get("hot_standby", False)),
+                initial_state=t.get("initial_state", "offline"),
                 # Phase E §7.1.3.6 / closeout Item 1 — physical constraints.
-                # p_min_stable_frac=0.40: frame-class MSL floor (PW-1 / §15, CHOSEN).
+                # p_min_stable_frac=0.35: GE simple-cycle MSL floor.
                 # t_min_run_s=1800: 30 min minimum run time (R5, CHOSEN).
                 # min_run_enabled=True: R5 guard active for all factory-built scenarios.
                 # t_min_down_s=900: 15 min cooling window (R6, CHOSEN).
                 # min_down_enabled=True: R6 guard active for all factory-built scenarios.
                 # D-03 pattern: the enable flags distinguish "no constraint" from
                 # "constraint with the CHOSEN duration" — no 0.0-sentinel needed.
-                p_min_stable_frac=float(t.get("p_min_stable_frac", 0.40)),
+                p_min_stable_frac=float(t.get("p_min_stable_frac", 0.35)),
                 t_min_run_s=float(t.get("t_min_run_s", 1800.0)),
                 min_run_enabled=bool(t.get("min_run_enabled", True)),
                 t_min_down_s=float(t.get("t_min_down_s", 900.0)),
@@ -857,12 +858,29 @@ def build_run_context_from_spec(
         for i, t in enumerate(spec_data.get("turbine_units", []))
     ]
 
+    # Explicit spinning units model synchronized machines held at their minimum
+    # stable load from t=0.  They are on-bus immediately and are not staged by
+    # the startup commitment path.
+    _spinning_turbines = [
+        t for t in turbines if t.config.initial_state == "spinning"
+    ]
+    for _turbine in _spinning_turbines:
+        if _turbine.config.hot_standby:
+            raise ValueError(
+                f"turbine {_turbine.asset_id!r} cannot be spinning and hot standby"
+            )
+        _turbine.state = TurbineState.SYNCHRONISED
+        _turbine._current_output_mw = (
+            _turbine.config.p_min_stable_frac * _turbine.config.rated_mw
+        )
+        _turbine._run_start_s = 0.0
+
     # A fleet with one designated non-standby lead and standby followers models
     # an already-operating bus anchor: place only that lead on-bus at run start.
     # Multi-active fleets remain OFFLINE so the shared pending-start register can
     # enforce the sequential-start contract on their first and later ticks.
     _active_turbines = [t for t in turbines if not t.config.hot_standby]
-    if len(_active_turbines) == 1:
+    if len(_active_turbines) == 1 and not _spinning_turbines:
         _lead_turbine = _active_turbines[0]
         _lead_turbine.state = TurbineState.SYNCHRONISED
         _lead_turbine._current_output_mw = 0.0

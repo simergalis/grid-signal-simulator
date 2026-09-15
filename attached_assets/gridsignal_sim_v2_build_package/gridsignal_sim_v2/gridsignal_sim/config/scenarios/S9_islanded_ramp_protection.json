@@ -29,11 +29,11 @@
 
   "_turbines_comment": "5 × 15 MW open-cycle gas turbines; hot-standby. One SYNCHRONISED at t=0.",
   "turbine_units": [
-    {"asset_id": "GT-01", "rated_mw": 15.0, "r_asset_mw_per_s": 0.5, "gt_mode": "open_cycle", "hot_standby": false, "breaker_closed": true,  "start_time_s": {"hot": 120, "warm": 300, "cold": 600}},
-    {"asset_id": "GT-02", "rated_mw": 15.0, "r_asset_mw_per_s": 0.5, "gt_mode": "open_cycle", "hot_standby": true,  "breaker_closed": false, "start_time_s": {"hot": 120, "warm": 300, "cold": 600}},
-    {"asset_id": "GT-03", "rated_mw": 15.0, "r_asset_mw_per_s": 0.5, "gt_mode": "open_cycle", "hot_standby": true,  "breaker_closed": false, "start_time_s": {"hot": 120, "warm": 300, "cold": 600}},
-    {"asset_id": "GT-04", "rated_mw": 15.0, "r_asset_mw_per_s": 0.5, "gt_mode": "open_cycle", "hot_standby": true,  "breaker_closed": false, "start_time_s": {"hot": 120, "warm": 300, "cold": 600}},
-    {"asset_id": "GT-05", "rated_mw": 15.0, "r_asset_mw_per_s": 0.5, "gt_mode": "open_cycle", "hot_standby": true,  "breaker_closed": false, "start_time_s": {"hot": 120, "warm": 300, "cold": 600}}
+    {"asset_id": "GT-01", "rated_mw": 15.0, "r_asset_mw_per_s": 0.5, "p_min_stable_frac": 0.35, "gt_mode": "open_cycle", "hot_standby": false, "breaker_closed": true,  "start_time_s": {"hot": 300, "warm": 360, "cold": 600}},
+    {"asset_id": "GT-02", "rated_mw": 15.0, "r_asset_mw_per_s": 0.5, "p_min_stable_frac": 0.35, "gt_mode": "open_cycle", "hot_standby": true,  "breaker_closed": false, "start_time_s": {"hot": 300, "warm": 360, "cold": 600}},
+    {"asset_id": "GT-03", "rated_mw": 15.0, "r_asset_mw_per_s": 0.5, "p_min_stable_frac": 0.35, "gt_mode": "open_cycle", "hot_standby": true,  "breaker_closed": false, "start_time_s": {"hot": 300, "warm": 360, "cold": 600}},
+    {"asset_id": "GT-04", "rated_mw": 15.0, "r_asset_mw_per_s": 0.5, "p_min_stable_frac": 0.35, "gt_mode": "open_cycle", "hot_standby": true,  "breaker_closed": false, "start_time_s": {"hot": 300, "warm": 360, "cold": 600}},
+    {"asset_id": "GT-05", "rated_mw": 15.0, "r_asset_mw_per_s": 0.5, "p_min_stable_frac": 0.35, "gt_mode": "open_cycle", "hot_standby": true,  "breaker_closed": false, "start_time_s": {"hot": 300, "warm": 360, "cold": 600}}
   ],
 
   "_bess_comment": "18 MW / 8 MWh BESS; grid-forming for anchor reserve.",

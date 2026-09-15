@@ -752,6 +752,9 @@ class TurbineConfig:
     # Its start time is a separate quantity and must never be folded into a ramp
     # rate.  False = default (synchronized online).
     hot_standby: bool = False
+    # initial_state: "spinning" means synchronized at minimum stable load at
+    # t=0; "offline" enters the normal commitment/startup path.
+    initial_state: str = "offline"
     # initial_thermal_state: thermal classification at t=0 of the run.
     # Determines which start-duration path (hot/warm/cold) is used on the FIRST
     # command_start() call.  Subsequent starts use the elapsed-time classifier.
@@ -766,9 +769,8 @@ class TurbineConfig:
     #   Dispatch commands below p_min_stable_frac × rated_mw are clamped up
     #   to this floor while the turbine is running.  Prevents operation in the
     #   lean-extinction regime that causes combustion instability.
-    #   0.0 = constraint disabled (default — backward-compatible with scenarios
-    #   that do not model combustion stability limits).  Set to 0.40 in
-    #   demo-20mw (PW-1 / §15: 2.8 MW floor on 7 MW units, CHOSEN).
+    #   0.0 = constraint disabled.  The GE simple-cycle scenario default is
+    #   0.35, representing the 35% minimum stable load.
     # Phase E closeout Item 2 / §7.1.3.6: read p_min_stable_frac from catalogue
     #   so the field carries the CHOSEN production default (0.40) without a
     #   code literal that Guard D1 would flag as a drift.  The catalogue key
@@ -811,15 +813,13 @@ class TurbineConfig:
     gt_mode: str = "frame"
     # ── Phase 2: start durations — from config, no literals in state machine ─
     # cold_start_s: time for a COLD-start unit to reach SYNCHRONISED.
-    #   TC-80 implies 900 s.  CHOSEN — no measured OEM basis.
+    #   GE/simple-cycle simulation assumption: 600 s (10 min).
     cold_start_s: float = _sp.value("cold_start_s")
     # warm_start_s: time for a WARM-start unit to reach SYNCHRONISED.
-    #   CHOSEN — engineering placeholder; OEM data required.
+    #   GE/simple-cycle simulation assumption: 360 s (6 min).
     warm_start_s: float = _sp.value("warm_start_s")
     # hot_start_s: time for a HOT-start unit to reach SYNCHRONISED.
-    #   CHOSEN — 300 s (5 min); OEM data required.
-    #   Phase D (D-08): raised from 60 s to 300 s — a frame machine cannot
-    #   synchronise in a minute; 60 s was an unrealistic bypass.
+    #   GE simple-cycle rating: 300 s (5 min) to full power.
     hot_start_s: float = _sp.value("hot_start_s")
     # Thermal classification thresholds (time offline since last synchronisation).
     # hot_threshold_s: elapsed ≤ this → HOT start.

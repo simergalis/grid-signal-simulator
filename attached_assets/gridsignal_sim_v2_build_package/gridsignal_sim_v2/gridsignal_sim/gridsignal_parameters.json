@@ -556,7 +556,7 @@
     },
     {
       "key": "p_min_stable_frac",
-      "value": 0.4,
+      "value": 0.35,
       "unit": "fraction",
       "label": "Minimum stable load fraction — all turbine units (universal CHOSEN default)",
       "provenance": "CHOSEN",
@@ -855,7 +855,7 @@
     },
     {
       "key": "r_asset_mw_per_s",
-      "value": 0.2,
+      "value": 0.5,
       "unit": "MW/s",
       "label": "Turbine ramp rate",
       "provenance": "CHOSEN",
@@ -869,7 +869,7 @@
     },
     {
       "key": "cold_start_s",
-      "value": 900,
+      "value": 600,
       "unit": "s",
       "label": "Cold-start time to synchronised",
       "provenance": "CHOSEN",
@@ -883,7 +883,7 @@
     },
     {
       "key": "warm_start_s",
-      "value": 600,
+      "value": 360,
       "unit": "s",
       "label": "Warm-start time to synchronised",
       "provenance": "CHOSEN",

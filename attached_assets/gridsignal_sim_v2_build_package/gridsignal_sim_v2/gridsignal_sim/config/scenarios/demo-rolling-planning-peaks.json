@@ -82,13 +82,13 @@
     {
       "asset_id": "turbine-0",
       "rated_mw": 10.0,
-      "r_asset_mw_per_s": 0.2,
+      "r_asset_mw_per_s": 0.5,
       "hot_standby": false
     },
     {
       "asset_id": "turbine-1",
       "rated_mw": 10.0,
-      "r_asset_mw_per_s": 0.2,
+      "r_asset_mw_per_s": 0.5,
       "hot_standby": true
     }
   ],

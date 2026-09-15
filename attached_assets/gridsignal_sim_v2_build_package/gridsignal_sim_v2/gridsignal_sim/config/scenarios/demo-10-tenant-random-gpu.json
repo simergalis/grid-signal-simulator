@@ -18,10 +18,10 @@
     {
       "asset_id": "gt-1",
       "rated_mw": 15.0,
-      "r_asset_mw_per_s": 0.2,
+      "r_asset_mw_per_s": 0.5,
       "run_hours_h": null,
       "hot_standby": false,
-      "p_min_stable_frac": 0.4,
+      "p_min_stable_frac": 0.35,
       "t_min_run_s": 1800.0,
       "min_run_enabled": true,
       "t_min_down_s": 900.0,

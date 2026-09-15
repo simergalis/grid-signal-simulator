@@ -872,7 +872,7 @@ class TurbineUnitSpec(BaseModel):
     """One turbine unit within a scenario's fleet."""
     asset_id: str
     rated_mw: float = Field(default=10.0, gt=0)
-    r_asset_mw_per_s: float = Field(default=0.2, gt=0)
+    r_asset_mw_per_s: float = Field(default=0.5, gt=0)
     # Optional operating-hours counter for narrative / re-rating context.
     # None = not tracked (most scenarios).  When set, the fleet modal shows
     # the value in the RUN h column and names the unit in the degraded footnote.
@@ -881,10 +881,13 @@ class TurbineUnitSpec(BaseModel):
     # Hot-standby units are excluded from dispatch staging and contribute zero
     # to contingency ramp capability (§7.4 / TC-83).  Default False.
     hot_standby: bool = False
+    # initial_state: "spinning" means synchronized at minimum stable load at
+    # t=0; "offline" uses the normal commitment/startup path.
+    initial_state: Literal["offline", "spinning"] = "offline"
     # Phase E §7.1.3.6 / closeout Item 1 — physical constraints (all CHOSEN).
     # p_min_stable_frac: minimum stable load floor as fraction of rated_mw.
-    # 0.40 = frame-class representative (PW-1 / §15 / PROTO-R4).
-    p_min_stable_frac: float = Field(default=0.40, ge=0.0, le=1.0)
+    # 0.35 = GE simple-cycle minimum stable load within emissions limits.
+    p_min_stable_frac: float = Field(default=0.35, ge=0.0, le=1.0)
     # t_min_run_s: duration used by the R5 guard when min_run_enabled=True.
     # 1800 s = 30 min — frame-class representative minimum stable operation
     # period before a controlled shutdown (CHOSEN, §7.1.3.6).
@@ -901,7 +904,7 @@ class TurbineUnitSpec(BaseModel):
     # True = command_start() enforces t_min_down_s; False = constraint disabled.
     min_down_enabled: bool = Field(default=True)
     # Start-duration overrides — default None means "use the locked parameter value"
-    # from gridsignal_parameters.json (cold=900 s, warm=600 s, hot=300 s).
+    # from gridsignal_parameters.json (cold=600 s, warm=360 s, hot=300 s).
     # Set per-unit when a scenario needs a non-standard sync time (e.g. a short
     # cold_start_s for a diagnostic run, or an aeroderivative unit).
     # Cross-parameter invariant: hot_start_s < warm_start_s < cold_start_s.
@@ -949,8 +952,8 @@ class TurbineUnitSpec(BaseModel):
         invariant.
         """
         # Catalogue defaults: locked in gridsignal_parameters.json.
-        _DEFAULT_COLD_S = 900.0
-        _DEFAULT_WARM_S = 600.0
+        _DEFAULT_COLD_S = 600.0
+        _DEFAULT_WARM_S = 360.0
         _DEFAULT_HOT_S = 300.0
 
         cold = self.cold_start_s if self.cold_start_s is not None else _DEFAULT_COLD_S
