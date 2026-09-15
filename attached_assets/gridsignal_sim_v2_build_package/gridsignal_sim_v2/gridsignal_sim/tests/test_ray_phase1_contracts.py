@@ -5,13 +5,21 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from api.schemas import RayClusterSpec, RayResourceRequestSpec, WorkloadEventSpec
+from api.schemas import (
+    InfrastructureAllocationSpec,
+    RayClusterSpec,
+    RayMeasuredUsageSpec,
+    RayResourceRequestSpec,
+    RayWorkloadSpec as WireRayWorkloadSpec,
+    WorkloadEventSpec,
+)
 from core.models import WorkloadClass, WorkloadEventType, WorkloadSignal
 from core.ray_models import (
     InfrastructureAllocation,
     InfrastructureBackend,
     RayClusterSpec as CoreRayClusterSpec,
     RayContractError,
+    RayMeasuredUsage,
     RayResourceRequest,
     RayWorkloadKind,
     RayWorkloadSpec,
@@ -58,6 +66,52 @@ def test_resource_vectors_add_and_scale_without_losing_custom_resources():
 
 def test_nested_ray_contract_binds_one_cluster_to_one_matching_allocation():
     validate_ray_bindings([_allocation()], [_cluster()])
+
+
+def test_refined_defaults_mark_kuberay_elastic_and_slurm_fixed():
+    kube_cluster = _cluster()
+    slurm_cluster = CoreRayClusterSpec(
+        ray_cluster_id="ray-slurm-1",
+        infrastructure_allocation_id="alloc-slurm-1",
+        backend=InfrastructureBackend.SLURM,
+        worker_resources=RayResourceRequest(cpu=8, gpu=1),
+    )
+
+    assert kube_cluster.elastic is True
+    assert kube_cluster.fixed_allocation is False
+    assert slurm_cluster.elastic is False
+    assert slurm_cluster.fixed_allocation is True
+
+
+def test_refined_contract_rejects_partial_admission_identity():
+    with pytest.raises(RayContractError, match="admission_domain_id"):
+        InfrastructureAllocation(
+            allocation_id="alloc-invalid",
+            backend=InfrastructureBackend.KUBERNETES,
+            resource_capacity=RayResourceRequest(gpu=1),
+            admission_domain_id="domain-1",
+        )
+
+
+def test_refined_contract_keeps_logical_request_separate_from_measured_usage():
+    usage = RayMeasuredUsage(
+        cpu_cores=14.0,
+        memory_gib=96.0,
+        gpu_utilization=0.72,
+        gpu_power_kw=8.4,
+    )
+    workload = RayWorkloadSpec(
+        workload_id="task-measured",
+        ray_cluster_id="ray-k8s-1",
+        kind=RayWorkloadKind.TASK,
+        resource_request=RayResourceRequest(cpu=1, gpu=1, memory_gib=8),
+        assigned_gpu_ids=("gpu-7",),
+        measured_usage=usage,
+    )
+
+    assert workload.logical_requested_resources.cpu == 1
+    assert workload.measured_usage is usage
+    assert workload.assigned_gpu_ids == ("gpu-7",)
 
 
 def test_nested_ray_contract_rejects_duplicate_allocation_claims():
@@ -152,6 +206,11 @@ def test_wire_schema_accepts_nested_ray_identity_and_resource_contracts():
         infrastructure_allocation_id="alloc-k8s-1",
         ray_cluster_id="ray-k8s-1",
         ray_workload_id="task-1",
+        admission_domain_id="kueue-domain",
+        admission_queue_id="gpu-queue",
+        capacity_budget_id="budget-1",
+        admission_provider="kueue",
+        power_enforcement_policy="gpu_power_cap",
     )
     cluster = RayClusterSpec(
         ray_cluster_id="ray-k8s-1",
@@ -162,7 +221,43 @@ def test_wire_schema_accepts_nested_ray_identity_and_resource_contracts():
     )
 
     assert event.ray_workload_id == "task-1"
+    assert event.admission_provider == "kueue"
     assert cluster.worker_resources.gpu == 1
+
+
+def test_wire_schema_exposes_refined_resource_and_cluster_policies():
+    allocation = InfrastructureAllocationSpec(
+        allocation_id="alloc-k8s-1",
+        backend="kubernetes",
+        resource_capacity=RayResourceRequestSpec(cpu=64, gpu=8),
+        admission_domain_id="kueue-domain",
+        admission_queue_id="gpu-queue",
+        capacity_budget_id="budget-1",
+    )
+    cluster = RayClusterSpec(
+        ray_cluster_id="ray-k8s-1",
+        infrastructure_allocation_id=allocation.allocation_id,
+        backend="kubernetes",
+        worker_resources=RayResourceRequestSpec(cpu=8, gpu=1),
+        admission_provider="kueue",
+        power_enforcement_policy="gpu_power_cap",
+    )
+    workload = WireRayWorkloadSpec(
+        workload_id="task-1",
+        ray_cluster_id=cluster.ray_cluster_id,
+        kind="task",
+        resource_request=RayResourceRequestSpec(cpu=1, gpu=1),
+        assigned_gpu_ids=["gpu-1"],
+        measured_usage=RayMeasuredUsageSpec(
+            cpu_cores=0.8,
+            gpu_utilization=0.75,
+            gpu_power_kw=8.0,
+        ),
+    )
+
+    assert allocation.admission_queue_id == "gpu-queue"
+    assert cluster.elastic is None  # backend-derived default is core behavior
+    assert workload.measured_usage.gpu_utilization == 0.75
 
 
 def test_wire_schema_rejects_partial_nested_ray_identity():
