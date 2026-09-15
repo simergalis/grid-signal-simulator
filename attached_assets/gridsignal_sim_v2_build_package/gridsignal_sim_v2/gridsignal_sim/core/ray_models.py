@@ -24,6 +24,24 @@ class InfrastructureBackend(str, Enum):
     SLURM = "slurm"
 
 
+class KubernetesAdmissionProvider(str, Enum):
+    """Batch admission layer above Kubernetes Pod placement."""
+
+    KUEUE = "kueue"
+    VOLCANO = "volcano"
+    YUNIKORN = "yunikorn"
+    LEGACY = "legacy"
+
+
+class PowerEnforcementPolicy(str, Enum):
+    """Simulated physical enforcement mode, separate from admission."""
+
+    GPU_POWER_CAP = "gpu_power_cap"
+    CPU_POWER_LIMIT = "cpu_power_limit"
+    NODE_POWER_STATE = "node_power_state"
+    CAPACITY_ONLY = "capacity_only"
+
+
 class RayWorkloadKind(str, Enum):
     JOB = "job"
     TASK = "task"
@@ -50,7 +68,12 @@ def _validate_resource_value(name: str, value: float) -> float:
 
 @dataclass(frozen=True)
 class RayResourceRequest:
-    """A Ray resource vector used for placement and capacity validation."""
+    """Logical Ray resource vector used for placement and capacity validation.
+
+    Ray CPU and memory values are scheduler bookkeeping, not hard runtime
+    enforcement.  Physical usage is represented separately by
+    :class:`RayMeasuredUsage`.
+    """
 
     cpu: float = 0.0
     gpu: float = 0.0
@@ -131,6 +154,29 @@ class RayResourceRequest:
 
 
 @dataclass(frozen=True)
+class RayMeasuredUsage:
+    """Observed or simulated physical usage, separate from Ray requests."""
+
+    cpu_cores: float = 0.0
+    memory_gib: float = 0.0
+    gpu_utilization: float = 0.0
+    gpu_power_kw: float = 0.0
+    cpu_power_kw: float = 0.0
+
+    def __post_init__(self) -> None:
+        for name in ("cpu_cores", "memory_gib", "gpu_power_kw", "cpu_power_kw"):
+            object.__setattr__(
+                self, name, _validate_resource_value(name, getattr(self, name))
+            )
+        utilization = float(self.gpu_utilization)
+        if not math.isfinite(utilization) or not 0.0 <= utilization <= 1.0:
+            raise RayContractError(
+                "gpu_utilization must be a finite number between 0 and 1"
+            )
+        object.__setattr__(self, "gpu_utilization", utilization)
+
+
+@dataclass(frozen=True)
 class InfrastructureAllocation:
     """Capacity allocated by Kubernetes or Slurm for one Ray cluster."""
 
@@ -138,10 +184,27 @@ class InfrastructureAllocation:
     backend: InfrastructureBackend
     resource_capacity: RayResourceRequest
     tenant_id: str | None = None
+    admission_domain_id: str | None = None
+    admission_queue_id: str | None = None
+    capacity_budget_id: str | None = None
 
     def __post_init__(self) -> None:
         if not self.allocation_id:
             raise RayContractError("allocation_id must not be empty")
+        try:
+            object.__setattr__(self, "backend", InfrastructureBackend(self.backend))
+        except ValueError as exc:
+            raise RayContractError("unsupported infrastructure backend") from exc
+        if (self.admission_domain_id is None) != (
+            self.admission_queue_id is None
+        ):
+            raise RayContractError(
+                "admission_domain_id and admission_queue_id must be provided together"
+            )
+        if self.capacity_budget_id is not None and self.admission_queue_id is None:
+            raise RayContractError(
+                "capacity_budget_id requires an admission_queue_id"
+            )
 
 
 @dataclass(frozen=True)
@@ -158,6 +221,12 @@ class RayClusterSpec:
         default_factory=lambda: RayResourceRequest(cpu=1.0)
     )
     tenant_id: str | None = None
+    admission_provider: KubernetesAdmissionProvider | None = None
+    # None derives the Rev 2 default: KubeRay is elastic, Slurm is fixed.
+    elastic: bool | None = None
+    power_enforcement_policy: PowerEnforcementPolicy = (
+        PowerEnforcementPolicy.CAPACITY_ONLY
+    )
 
     def __post_init__(self) -> None:
         if not self.ray_cluster_id:
@@ -172,11 +241,55 @@ class RayClusterSpec:
             raise RayContractError(
                 "max_workers must be at least min_workers and at least one"
             )
+        try:
+            object.__setattr__(self, "backend", InfrastructureBackend(self.backend))
+        except ValueError as exc:
+            raise RayContractError("unsupported infrastructure backend") from exc
+        if self.admission_provider is not None:
+            try:
+                object.__setattr__(
+                    self,
+                    "admission_provider",
+                    KubernetesAdmissionProvider(self.admission_provider),
+                )
+            except ValueError as exc:
+                raise RayContractError(
+                    "unsupported Kubernetes admission provider"
+                ) from exc
+            if self.backend is not InfrastructureBackend.KUBERNETES:
+                raise RayContractError(
+                    "admission_provider is only valid for Kubernetes Ray clusters"
+                )
+        elif self.backend is InfrastructureBackend.KUBERNETES:
+            object.__setattr__(
+                self, "admission_provider", KubernetesAdmissionProvider.LEGACY
+            )
+        if self.elastic is None:
+            object.__setattr__(
+                self,
+                "elastic",
+                self.backend is InfrastructureBackend.KUBERNETES,
+            )
+        try:
+            object.__setattr__(
+                self,
+                "power_enforcement_policy",
+                PowerEnforcementPolicy(self.power_enforcement_policy),
+            )
+        except ValueError as exc:
+            raise RayContractError(
+                "unsupported power enforcement policy"
+            ) from exc
 
     @property
     def maximum_resources(self) -> RayResourceRequest:
         """Head plus worst-case worker resources for this cluster."""
         return self.head_resources + self.worker_resources.scaled(self.max_workers)
+
+    @property
+    def fixed_allocation(self) -> bool:
+        """Whether this cluster has a fixed infrastructure footprint by default."""
+        return not bool(self.elastic)
 
 
 @dataclass(frozen=True)
@@ -191,6 +304,8 @@ class RayWorkloadSpec:
     placement_group_id: str | None = None
     dependencies: tuple[str, ...] = ()
     replicas: int = 1
+    assigned_gpu_ids: tuple[str, ...] = ()
+    measured_usage: RayMeasuredUsage | None = None
 
     def __post_init__(self) -> None:
         if not self.workload_id:
@@ -201,10 +316,23 @@ class RayWorkloadSpec:
             raise RayContractError("replicas must be at least one")
         if len(set(self.dependencies)) != len(self.dependencies):
             raise RayContractError("workload dependencies must be unique")
+        if len(set(self.assigned_gpu_ids)) != len(self.assigned_gpu_ids):
+            raise RayContractError("assigned GPU IDs must be unique")
+        if any(not gpu_id for gpu_id in self.assigned_gpu_ids):
+            raise RayContractError("assigned GPU IDs must not be empty")
+        try:
+            object.__setattr__(self, "kind", RayWorkloadKind(self.kind))
+        except ValueError as exc:
+            raise RayContractError("unsupported Ray workload kind") from exc
 
     @property
     def aggregate_resources(self) -> RayResourceRequest:
         return self.resource_request.scaled(self.replicas)
+
+    @property
+    def logical_requested_resources(self) -> RayResourceRequest:
+        """Explicit alias separating logical requests from measured usage."""
+        return self.resource_request
 
 
 @dataclass(frozen=True)
@@ -223,6 +351,12 @@ class RayPlacementGroupSpec:
             raise RayContractError("ray_cluster_id must not be empty")
         if not self.bundles:
             raise RayContractError("placement groups require at least one bundle")
+        try:
+            object.__setattr__(
+                self, "strategy", RayPlacementStrategy(self.strategy)
+            )
+        except ValueError as exc:
+            raise RayContractError("unsupported Ray placement strategy") from exc
 
     @property
     def aggregate_resources(self) -> RayResourceRequest:

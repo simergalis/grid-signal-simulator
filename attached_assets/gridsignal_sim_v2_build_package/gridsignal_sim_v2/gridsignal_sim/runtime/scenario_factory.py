@@ -1495,6 +1495,11 @@ def build_run_context_from_spec(
             infrastructure_allocation_id=evt.get("infrastructure_allocation_id"),
             ray_cluster_id=evt.get("ray_cluster_id"),
             ray_workload_id=evt.get("ray_workload_id"),
+            admission_domain_id=evt.get("admission_domain_id"),
+            admission_queue_id=evt.get("admission_queue_id"),
+            capacity_budget_id=evt.get("capacity_budget_id"),
+            admission_provider=evt.get("admission_provider"),
+            power_enforcement_policy=evt.get("power_enforcement_policy"),
         )
 
     # Scheduler-authored job cohorts at one timestamp are applied atomically per

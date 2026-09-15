@@ -223,6 +223,20 @@ class WorkloadEventSpec(BaseModel):
     infrastructure_allocation_id: Optional[str] = Field(default=None, min_length=1)
     ray_cluster_id: Optional[str] = Field(default=None, min_length=1)
     ray_workload_id: Optional[str] = Field(default=None, min_length=1)
+    admission_domain_id: Optional[str] = Field(default=None, min_length=1)
+    admission_queue_id: Optional[str] = Field(default=None, min_length=1)
+    capacity_budget_id: Optional[str] = Field(default=None, min_length=1)
+    admission_provider: Optional[
+        Literal["kueue", "volcano", "yunikorn", "legacy"]
+    ] = None
+    power_enforcement_policy: Optional[
+        Literal[
+            "gpu_power_cap",
+            "cpu_power_limit",
+            "node_power_state",
+            "capacity_only",
+        ]
+    ] = None
     request_rate: Optional[float] = Field(default=None, ge=0.0)
     # §7.1.1 SOLAR_STEP: magnitude of the renewable drop that triggers staging.
     # Zero for all other event types.
@@ -243,6 +257,14 @@ class WorkloadEventSpec(BaseModel):
                 "ray_workload_id requires infrastructure_allocation_id and "
                 "ray_cluster_id"
             )
+        if (self.admission_domain_id is None) != (
+            self.admission_queue_id is None
+        ):
+            raise ValueError(
+                "admission_domain_id and admission_queue_id must be provided together"
+            )
+        if self.capacity_budget_id is not None and self.admission_queue_id is None:
+            raise ValueError("capacity_budget_id requires admission_queue_id")
         return self
 
 
@@ -264,6 +286,18 @@ class RayResourceRequestSpec(BaseModel):
         return self
 
 
+class RayMeasuredUsageSpec(BaseModel):
+    """Observed/simulated physical usage, separate from logical Ray requests."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    cpu_cores: float = Field(default=0.0, ge=0.0)
+    memory_gib: float = Field(default=0.0, ge=0.0)
+    gpu_utilization: float = Field(default=0.0, ge=0.0, le=1.0)
+    gpu_power_kw: float = Field(default=0.0, ge=0.0)
+    cpu_power_kw: float = Field(default=0.0, ge=0.0)
+
+
 class InfrastructureAllocationSpec(BaseModel):
     """Capacity assigned by Kubernetes or Slurm to one Ray cluster."""
 
@@ -273,6 +307,21 @@ class InfrastructureAllocationSpec(BaseModel):
     backend: Literal["kubernetes", "slurm"]
     resource_capacity: RayResourceRequestSpec
     tenant_id: Optional[str] = Field(default=None, min_length=1)
+    admission_domain_id: Optional[str] = Field(default=None, min_length=1)
+    admission_queue_id: Optional[str] = Field(default=None, min_length=1)
+    capacity_budget_id: Optional[str] = Field(default=None, min_length=1)
+
+    @model_validator(mode="after")
+    def _validate_admission_identity(self) -> "InfrastructureAllocationSpec":
+        if (self.admission_domain_id is None) != (
+            self.admission_queue_id is None
+        ):
+            raise ValueError(
+                "admission_domain_id and admission_queue_id must be provided together"
+            )
+        if self.capacity_budget_id is not None and self.admission_queue_id is None:
+            raise ValueError("capacity_budget_id requires admission_queue_id")
+        return self
 
 
 class RayClusterSpec(BaseModel):
@@ -290,11 +339,26 @@ class RayClusterSpec(BaseModel):
         default_factory=lambda: RayResourceRequestSpec(cpu=1.0)
     )
     tenant_id: Optional[str] = Field(default=None, min_length=1)
+    admission_provider: Optional[
+        Literal["kueue", "volcano", "yunikorn", "legacy"]
+    ] = None
+    # None derives the Rev 2 default: KubeRay elastic, Slurm fixed.
+    elastic: Optional[bool] = None
+    power_enforcement_policy: Literal[
+        "gpu_power_cap",
+        "cpu_power_limit",
+        "node_power_state",
+        "capacity_only",
+    ] = "capacity_only"
 
     @model_validator(mode="after")
     def _validate_worker_bounds(self) -> "RayClusterSpec":
         if self.max_workers < self.min_workers:
             raise ValueError("max_workers must be greater than or equal to min_workers")
+        if self.backend == "slurm" and self.admission_provider is not None:
+            raise ValueError(
+                "admission_provider is only valid for Kubernetes Ray clusters"
+            )
         return self
 
 
@@ -319,11 +383,17 @@ class RayWorkloadSpec(BaseModel):
     placement_group_id: Optional[str] = Field(default=None, min_length=1)
     dependencies: list[str] = Field(default_factory=list)
     replicas: int = Field(default=1, ge=1)
+    assigned_gpu_ids: list[str] = Field(default_factory=list)
+    measured_usage: Optional[RayMeasuredUsageSpec] = None
 
     @model_validator(mode="after")
     def _validate_dependencies(self) -> "RayWorkloadSpec":
         if len(self.dependencies) != len(set(self.dependencies)):
             raise ValueError("workload dependencies must be unique")
+        if len(self.assigned_gpu_ids) != len(set(self.assigned_gpu_ids)):
+            raise ValueError("assigned GPU IDs must be unique")
+        if any(not gpu_id for gpu_id in self.assigned_gpu_ids):
+            raise ValueError("assigned GPU IDs must not be empty")
         return self
 
 
@@ -380,6 +450,11 @@ class WorkloadSignalResponse(BaseModel):
     infrastructure_allocation_id: Optional[str] = None
     ray_cluster_id: Optional[str] = None
     ray_workload_id: Optional[str] = None
+    admission_domain_id: Optional[str] = None
+    admission_queue_id: Optional[str] = None
+    capacity_budget_id: Optional[str] = None
+    admission_provider: Optional[str] = None
+    power_enforcement_policy: Optional[str] = None
 
 
 class BessUnitSpec(BaseModel):

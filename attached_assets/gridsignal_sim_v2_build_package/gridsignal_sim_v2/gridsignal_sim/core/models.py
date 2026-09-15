@@ -28,8 +28,11 @@ from .power_balance import BalanceResult as PhysicalBalanceResult
 from .ray_models import (
     InfrastructureAllocation,
     InfrastructureBackend,
+    KubernetesAdmissionProvider,
+    PowerEnforcementPolicy,
     RayClusterSpec,
     RayContractError,
+    RayMeasuredUsage,
     RayPlacementGroupSpec,
     RayPlacementStrategy,
     RayResourceRequest,
@@ -177,6 +180,13 @@ class WorkloadSignal:
     infrastructure_allocation_id: Optional[str] = None
     ray_cluster_id: Optional[str] = None
     ray_workload_id: Optional[str] = None
+    # Rev 2 admission identity and enforcement metadata.  Optional values
+    # preserve legacy WorkloadSignal payloads.
+    admission_domain_id: Optional[str] = None
+    admission_queue_id: Optional[str] = None
+    capacity_budget_id: Optional[str] = None
+    admission_provider: Optional[str] = None
+    power_enforcement_policy: Optional[str] = None
 
     def __post_init__(self) -> None:
         has_allocation = self.infrastructure_allocation_id is not None
