@@ -306,6 +306,9 @@ class RayWorkloadSpec:
     replicas: int = 1
     assigned_gpu_ids: tuple[str, ...] = ()
     measured_usage: RayMeasuredUsage | None = None
+    duration_s: float | None = 1.0
+    max_retries: int = 0
+    phase_durations: tuple[float, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.workload_id:
@@ -314,6 +317,24 @@ class RayWorkloadSpec:
             raise RayContractError("ray_cluster_id must not be empty")
         if self.replicas < 1:
             raise RayContractError("replicas must be at least one")
+        if self.duration_s is not None:
+            duration = float(self.duration_s)
+            if not math.isfinite(duration) or duration < 0.0:
+                raise RayContractError(
+                    "duration_s must be finite and non-negative or None"
+                )
+            object.__setattr__(self, "duration_s", duration)
+        if self.max_retries < 0:
+            raise RayContractError("max_retries must be non-negative")
+        normalized_phases = tuple(float(duration) for duration in self.phase_durations)
+        if any(
+            not math.isfinite(duration) or duration <= 0.0
+            for duration in normalized_phases
+        ):
+            raise RayContractError(
+                "phase_durations must contain finite positive durations"
+            )
+        object.__setattr__(self, "phase_durations", normalized_phases)
         if len(set(self.dependencies)) != len(self.dependencies):
             raise RayContractError("workload dependencies must be unique")
         if len(set(self.assigned_gpu_ids)) != len(self.assigned_gpu_ids):
@@ -343,6 +364,7 @@ class RayPlacementGroupSpec:
     ray_cluster_id: str
     bundles: tuple[RayResourceRequest, ...]
     strategy: RayPlacementStrategy = RayPlacementStrategy.PACK
+    locality: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.placement_group_id:
@@ -357,6 +379,12 @@ class RayPlacementGroupSpec:
             )
         except ValueError as exc:
             raise RayContractError("unsupported Ray placement strategy") from exc
+        normalized_locality = tuple(str(slot) for slot in self.locality)
+        if len(set(normalized_locality)) != len(normalized_locality):
+            raise RayContractError("placement group locality must be unique")
+        if any(not slot for slot in normalized_locality):
+            raise RayContractError("placement group locality labels must not be empty")
+        object.__setattr__(self, "locality", normalized_locality)
 
     @property
     def aggregate_resources(self) -> RayResourceRequest:
