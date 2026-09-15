@@ -8,3 +8,9 @@ All seeded turbine scenarios use a 35% minimum stable load, a 0.5 MW/s ramp rate
 **Why:** The simulator's earlier frame-class defaults and scenario-specific startup overrides conflicted with the GE guidance, and the uneven multi-scheduler burst test needs synchronized generation at t=0 plus battery bridging while standby units start.
 
 **How to apply:** Keep the shared parameter catalog and seeded scenario JSON aligned. Use explicit spinning units for t=0 generation; use hot-standby units for forecast/startup tests rather than treating standby as synchronized capacity.
+
+Scenario authors can declare `initial_spinning_count`, `base_load_mw`, and optional islanded `n_plus_one_required`; the loader reports advisory capacity/floor/islanding violations, while omitted count retains an effective one-unit compatibility default.
+
+**Why:** A hard-coded lead turbine hid whether the first burst, minimum stable output, or islanding policy was actually covered. Advisory reporting preserves intentionally battery-bridged test scenarios without silently changing their runtime topology.
+
+**How to apply:** Set the count explicitly when the first burst arrives inside the hot-start window; the runtime synchronizes exactly that many non-standby units at 35% minimum stable load and rejects contradictory explicit spinning markers.

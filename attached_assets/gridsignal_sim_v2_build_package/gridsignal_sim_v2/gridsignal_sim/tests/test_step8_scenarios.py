@@ -1237,3 +1237,61 @@ def test_rolling_planning_peaks_seed_preserves_forecast_horizons():
     ]
     assert [event["timestamp"] for event in peak_events] == [900.0, 3600.0, 10800.0]
     assert spec["end_sim_time"] == 14400.0
+
+
+class TestInitialSpinningCount:
+    def test_first_burst_capacity_warning_and_exact_factory_count(self):
+        spec = _minimal_spec(
+            initial_spinning_count=2,
+            base_load_mw=5.0,
+            turbine_units=[
+                TurbineUnitSpec(asset_id="gt-01", rated_mw=25.0),
+                TurbineUnitSpec(asset_id="gt-02", rated_mw=25.0),
+            ],
+            workload_events=[
+                WorkloadEventSpec(
+                    event_id="burst-start",
+                    job_id="burst",
+                    event_type="starting",
+                    timestamp=30.0,
+                    node_count=4283,
+                )
+            ],
+        )
+
+        assert spec.collect_initial_spinning_warnings() == [
+            "base_load_mw=5.00 MW is below the 17.50 MW minimum stable output "
+            "of the spinning fleet"
+        ]
+
+        state = build_run_context_from_spec(
+            "initial-spinning-count",
+            spec.model_dump(),
+        ).sim_state
+        spinning = [
+            turbine for turbine in state.turbines
+            if turbine.state.value == "synchronised"
+        ]
+        assert len(spinning) == 2
+        assert [turbine._current_output_mw for turbine in spinning] == [8.75, 8.75]
+
+    def test_one_spinning_unit_is_flagged_for_the_uneven_first_burst(self):
+        spec = _minimal_spec(
+            initial_spinning_count=1,
+            turbine_units=[
+                TurbineUnitSpec(asset_id="gt-01", rated_mw=25.0),
+                TurbineUnitSpec(asset_id="gt-02", rated_mw=25.0),
+            ],
+            workload_events=[
+                WorkloadEventSpec(
+                    event_id="burst-start",
+                    job_id="burst",
+                    event_type="starting",
+                    timestamp=30.0,
+                    node_count=4283,
+                )
+            ],
+        )
+
+        warnings = spec.collect_initial_spinning_warnings()
+        assert any("provide at most 25.00 MW" in warning for warning in warnings)

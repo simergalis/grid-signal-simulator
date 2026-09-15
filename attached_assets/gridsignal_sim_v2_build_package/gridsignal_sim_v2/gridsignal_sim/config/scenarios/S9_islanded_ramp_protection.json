@@ -5,6 +5,9 @@
   "scenario_name": "Regression Test — Islanded Ramp Protection (60 Hz)",
 
   "island_mode": true,
+  "initial_spinning_count": 1,
+  "base_load_mw": null,
+  "n_plus_one_required": false,
   "frequency_nominal_hz": 60.0,
   "power_factor": 0.85,
   "calibrated": true,

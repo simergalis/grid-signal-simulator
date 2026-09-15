@@ -8,6 +8,9 @@
   "workload_events": [],
   "hardware_profile_id": "enterprise_8gpu_air",
   "dt_lead_seconds": 0.0,
+  "initial_spinning_count": 0,
+  "base_load_mw": null,
+  "n_plus_one_required": false,
   "bess_units": [
     {
       "asset_id": "bess-0",

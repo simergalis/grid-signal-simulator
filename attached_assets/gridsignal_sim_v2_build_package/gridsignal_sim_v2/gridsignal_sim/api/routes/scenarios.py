@@ -1447,6 +1447,15 @@ def _seed_json_scenarios(store: ScenarioStore) -> None:
             _spec = ScenarioSpec.model_validate_json(_raw)
             if display_name := _DISPLAY_NAME_OVERRIDES.get(store_id):
                 _spec = _spec.model_copy(update={"name": display_name})
+            _warnings = _spec.collect_initial_spinning_warnings()
+            if _warnings:
+                import logging as _logging
+                for _warning in _warnings:
+                    _logging.getLogger(__name__).warning(
+                        "Scenario %s turbine starting-count violation: %s",
+                        store_id,
+                        _warning,
+                    )
             store._seed(store_id, _spec)
         except Exception as exc:
             import logging as _logging
@@ -1498,11 +1507,13 @@ async def create_scenario(
     """
     store = _scenario_store(request)
     warnings = body.collect_c_rate_warnings()
+    initial_spinning_warnings = body.collect_initial_spinning_warnings()
     rec = store.create(body)
     return CreateScenarioResponse(
         scenario_id=rec.scenario_id,
         name=rec.name,
         c_rate_warnings=warnings,
+        initial_spinning_warnings=initial_spinning_warnings,
     )
 
 
@@ -1550,6 +1561,7 @@ async def get_scenario(
         created_at=rec.created_at.isoformat(),
         spec=spec,
         c_rate_warnings=spec.collect_c_rate_warnings(),
+        initial_spinning_warnings=spec.collect_initial_spinning_warnings(),
     )
 
 
@@ -1600,6 +1612,7 @@ async def update_scenario(
         scenario_id=rec.scenario_id,
         name=rec.name,
         c_rate_warnings=body.collect_c_rate_warnings(),
+        initial_spinning_warnings=body.collect_initial_spinning_warnings(),
     )
 
 

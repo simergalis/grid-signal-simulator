@@ -37,6 +37,17 @@ _INTERNAL_SCENARIO_PATH_REFERENCES = (
     "tests/test_13_2_balance_decomp.py",
 )
 
+# The scenario wire format intentionally keeps this small hardware catalogue
+# local to validation.  These are the same rated powers used by the runtime
+# hardware library and let the loader estimate the first scripted burst
+# without importing runtime/ back into api/.
+_SCENARIO_HARDWARE_RATED_KW = {
+    "hopper_8gpu_air": 10.2,
+    "enterprise_8gpu_air": 10.2,
+    "h100-sxm5-8way-nvl4": 10.2,
+    "nextgen_rack_liquid": 120.0,
+}
+
 
 def sanitize_scenario_payload(value: Any) -> Any:
     """Remove the internal test paths that must never become scenario data.
@@ -1608,6 +1619,36 @@ class ScenarioSpec(BaseModel):
         ),
     )
 
+    # Turbine starting topology.  None preserves the historical effective
+    # default of one synchronized unit, but lets the loader distinguish an
+    # omitted value and report when that default is unsafe for the first burst.
+    initial_spinning_count: Optional[int] = Field(
+        default=None,
+        ge=0,
+        description=(
+            "Number of turbine units synchronized at t=0. None uses the "
+            "legacy effective default of one and is checked against the first "
+            "burst, base load, islanding, and optional N+1 requirement."
+        ),
+    )
+    base_load_mw: Optional[float] = Field(
+        default=None,
+        ge=0.0,
+        description=(
+            "Steady site load present before the first scripted burst. "
+            "When supplied, the loader checks both the spinning fleet's "
+            "minimum-load floor and its maximum output against base plus burst."
+        ),
+    )
+    n_plus_one_required: bool = Field(
+        default=False,
+        description=(
+            "Require at least two spinning units for an islanded N+1 trip "
+            "test. A grid-forming BESS can cover a one-unit topology when "
+            "this is false."
+        ),
+    )
+
     bess_units: list[BessUnitSpec] = Field(min_length=0, default_factory=list)
     turbine_units: list[TurbineUnitSpec] = Field(min_length=0, default_factory=list)
     # Addendum G-1 block-addressable fleet.  When populated it supersedes the
@@ -2348,6 +2389,117 @@ class ScenarioSpec(BaseModel):
         """Return all non-None C-rate warnings across the BESS fleet."""
         return [w for u in self.bess_units if (w := u.c_rate_warning()) is not None]
 
+    def collect_initial_spinning_warnings(self) -> list[str]:
+        """Return advisory violations for the t=0 synchronized turbine count.
+
+        This deliberately returns warnings instead of rejecting the scenario:
+        authors may be modeling a battery-bridged start or an intentionally
+        under-reserved test.  Seed loading and scenario CRUD expose the
+        messages so the exception is visible rather than silently becoming
+        the old hard-coded one-unit topology.
+        """
+        turbines = list(self.turbine_units)
+        if not turbines:
+            return []
+        active = [unit for unit in turbines if not unit.hot_standby]
+        count = self.initial_spinning_count if self.initial_spinning_count is not None else 1
+        warnings: list[str] = []
+
+        if count > len(active):
+            warnings.append(
+                f"initial_spinning_count={count} exceeds the {len(active)} "
+                "non-hot-standby turbine unit(s)"
+            )
+
+        explicit_spinning = [
+            unit for unit in turbines if unit.initial_state == "spinning"
+        ]
+        if explicit_spinning and len(explicit_spinning) != count:
+            warnings.append(
+                f"{len(explicit_spinning)} turbine unit(s) are marked "
+                f"initial_state='spinning' but initial_spinning_count={count}"
+            )
+
+        if count == 0:
+            has_grid_forming_bess = any(unit.grid_forming for unit in self.bess_units)
+            if self.island_mode and not has_grid_forming_bess:
+                warnings.append(
+                    "islanded scenario has no spinning turbine and no "
+                    "grid-forming BESS to hold voltage and frequency"
+                )
+            if self.n_plus_one_required:
+                warnings.append(
+                    "n_plus_one_required=True needs at least two spinning turbines"
+                )
+            return warnings
+
+        selected = (explicit_spinning or active)[:count]
+        if len(selected) < count:
+            return warnings
+
+        min_mw = sum(unit.p_min_stable_frac * unit.rated_mw for unit in selected)
+        max_mw = sum(unit.rated_mw for unit in selected)
+        if self.base_load_mw is not None and self.base_load_mw < min_mw - 1e-6:
+            warnings.append(
+                f"base_load_mw={self.base_load_mw:.2f} MW is below the "
+                f"{min_mw:.2f} MW minimum stable output of the spinning fleet"
+            )
+
+        if self.n_plus_one_required and self.island_mode and count < 2:
+            warnings.append(
+                "islanded N+1 requirement needs at least two spinning turbines"
+            )
+
+        first_burst = min(
+            (
+                event
+                for event in self.workload_events
+                if event.event_type == "starting" and event.node_count > 0
+            ),
+            key=lambda event: event.timestamp,
+            default=None,
+        )
+        if first_burst is None:
+            return warnings
+
+        rated_kw = _SCENARIO_HARDWARE_RATED_KW.get(
+            first_burst.hardware_profile_id,
+            _SCENARIO_HARDWARE_RATED_KW.get(self.hardware_profile_id),
+        )
+        if rated_kw is None:
+            warnings.append(
+                f"cannot estimate first burst for hardware profile "
+                f"{first_burst.hardware_profile_id!r}"
+            )
+            return warnings
+
+        first_burst_mw = first_burst.node_count * rated_kw * self.pue_base / 1000.0
+        # A starting event normally gives the GPU load 30–60 s to reach full
+        # power.  Use 45 s as the neutral estimate and reserve the full
+        # five-minute hot-start window plus that uncertainty for pre-staging.
+        hot_start_s = min(
+            (unit.hot_start_s if unit.hot_start_s is not None else 300.0)
+            for unit in turbines
+        ) if turbines else 300.0
+        full_load_delay_s = 45.0
+        needs_spinning_cover = first_burst.timestamp < hot_start_s + 60.0
+        if needs_spinning_cover:
+            required_mw = first_burst_mw + (self.base_load_mw or 0.0)
+            if required_mw > max_mw + 1e-6:
+                warnings.append(
+                    f"first burst needs about {required_mw:.2f} MW by "
+                    f"t={first_burst.timestamp + full_load_delay_s:.0f} s, "
+                    f"but {count} spinning turbine(s) provide at most "
+                    f"{max_mw:.2f} MW before a hot start can finish"
+                )
+            if self.base_load_mw is None:
+                warnings.append(
+                    "base_load_mw is unset; first-burst coverage was checked "
+                    f"against the {first_burst_mw:.2f} MW burst alone"
+                )
+
+        return warnings
+
 
 # ---------------------------------------------------------------------------
 # Generation architecture — pre-run generators (materialized before t=0)
@@ -2497,6 +2649,7 @@ class ScenarioDetailResponse(BaseModel):
     created_at: str
     spec: ScenarioSpec
     c_rate_warnings: list[str]
+    initial_spinning_warnings: list[str] = Field(default_factory=list)
 
 
 class CreateScenarioResponse(BaseModel):
@@ -2504,6 +2657,7 @@ class CreateScenarioResponse(BaseModel):
     scenario_id: str
     name: str
     c_rate_warnings: list[str]
+    initial_spinning_warnings: list[str] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------

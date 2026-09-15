@@ -858,12 +858,38 @@ def build_run_context_from_spec(
         for i, t in enumerate(spec_data.get("turbine_units", []))
     ]
 
+    # The scenario owns the starting topology.  None preserves the historical
+    # effective default of one synchronized unit, while an explicit count lets
+    # a scenario carry enough online capacity for its first burst.
+    _initial_spinning_count_raw = spec_data.get("initial_spinning_count")
+    _initial_spinning_count = (
+        1 if _initial_spinning_count_raw is None
+        else int(_initial_spinning_count_raw)
+    )
+    _active_turbines = [t for t in turbines if not t.config.hot_standby]
+    _explicit_spinning_turbines = [
+        t for t in turbines if t.config.initial_state == "spinning"
+    ]
+    if _explicit_spinning_turbines:
+        if len(_explicit_spinning_turbines) != _initial_spinning_count:
+            raise ValueError(
+                "initial_spinning_count must match the number of turbine units "
+                "marked initial_state='spinning' "
+                f"(count={_initial_spinning_count}, "
+                f"marked={len(_explicit_spinning_turbines)})"
+            )
+        _spinning_turbines = _explicit_spinning_turbines
+    else:
+        if _initial_spinning_count > len(_active_turbines):
+            raise ValueError(
+                f"initial_spinning_count={_initial_spinning_count} exceeds "
+                f"the {len(_active_turbines)} non-hot-standby turbine unit(s)"
+            )
+        _spinning_turbines = _active_turbines[:_initial_spinning_count]
+
     # Explicit spinning units model synchronized machines held at their minimum
     # stable load from t=0.  They are on-bus immediately and are not staged by
     # the startup commitment path.
-    _spinning_turbines = [
-        t for t in turbines if t.config.initial_state == "spinning"
-    ]
     for _turbine in _spinning_turbines:
         if _turbine.config.hot_standby:
             raise ValueError(
@@ -874,17 +900,6 @@ def build_run_context_from_spec(
             _turbine.config.p_min_stable_frac * _turbine.config.rated_mw
         )
         _turbine._run_start_s = 0.0
-
-    # A fleet with one designated non-standby lead and standby followers models
-    # an already-operating bus anchor: place only that lead on-bus at run start.
-    # Multi-active fleets remain OFFLINE so the shared pending-start register can
-    # enforce the sequential-start contract on their first and later ticks.
-    _active_turbines = [t for t in turbines if not t.config.hot_standby]
-    if len(_active_turbines) == 1 and not _spinning_turbines:
-        _lead_turbine = _active_turbines[0]
-        _lead_turbine.state = TurbineState.SYNCHRONISED
-        _lead_turbine._current_output_mw = 0.0
-        _lead_turbine._run_start_s = 0.0
 
     # anchor_reserve_pct wires the scenario-level reserve percentage into the
     # grid-forming unit's BessConfig.  0.0 = use BessConfig default (1.0 MW).

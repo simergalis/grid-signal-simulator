@@ -953,6 +953,12 @@ export interface ScenarioSpec {
   workload_events: WorkloadEventSpec[]
   hardware_profile_id: string
   dt_lead_seconds: number             // [0, 300] s
+  /** Number of turbine units synchronized at t=0; null uses the checked default. */
+  initial_spinning_count?: number | null
+  /** Optional steady load used by turbine starting-count validation. */
+  base_load_mw?: number | null
+  /** Require two spinning units for an islanded N+1 trip test. */
+  n_plus_one_required?: boolean
   bess_units: BessUnitSpec[]
   turbine_units: TurbineUnitSpec[]
   solar_rated_mw: number
@@ -1058,12 +1064,14 @@ export interface ScenarioDetailResponse {
   created_at: string
   spec: ScenarioSpec
   c_rate_warnings: string[]
+  initial_spinning_warnings: string[]
 }
 
 export interface CreateScenarioResponse {
   scenario_id: string
   name: string
   c_rate_warnings: string[]
+  initial_spinning_warnings: string[]
 }
 
 /** A point in the chart history ring-buffer. */
