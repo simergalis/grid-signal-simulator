@@ -62,3 +62,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Ray Phase 7 external observability](ray-phase7-external-observability.md) — external snapshots use dedupe/quarantine and monotonic ordering; reports stay read-only.
 - [Ray Phase 8 scenario coverage](ray-phase8-scenario-coverage.md) — deterministic end-to-end cases cover KubeRay burst, power/telemetry, stale feeds, and fixed Slurm.
 - [GE turbine scenario assumptions](ge-turbine-scenario-assumptions.md) — 35% MSL, 30 MW/min ramp, 300/360/600 s startup tiers, and explicit synchronized spinning units.
+- [Scenario seed round-trip buffer](seed-round-trip-buffer.md) — large explicit Slurm topology can exceed the test subprocess JSON buffer before UI assertions run.
