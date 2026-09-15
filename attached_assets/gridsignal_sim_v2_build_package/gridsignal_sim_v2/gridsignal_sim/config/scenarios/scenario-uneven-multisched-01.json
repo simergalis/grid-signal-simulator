@@ -1,6 +1,6 @@
 {
   "name": "Uneven Multi-Scheduler Turbine Demo",
-  "description": "Two-hour Kubernetes, Slurm, and Ray demonstration with five staggered 10-minute GPU bursts spaced to give the gas turbines time to start. The workload also includes uneven scheduler-generated demand and a 45s Job Signal (Δt_lead) lead-time window. Full generation stack: 4 gas turbines (hot/warm/cold standby), grid-forming BESS, and advisory diesel backup. Hot/warm/cold startup durations are 5/10/20 minutes respectively.",
+  "description": "Two-hour Kubernetes, Slurm, and Ray demonstration with five staggered 10-minute GPU bursts spaced to give the gas turbines time to start. The workload also includes uneven scheduler-generated demand and a 45s Job Signal (Δt_lead) lead-time window. Full generation stack: 4 gas turbines (2 hot, 1 warm, and 1 cold standby), grid-forming BESS, and advisory diesel backup. Hot/warm/cold startup durations are 5/10/20 minutes respectively.",
 
   "hardware_profile_id": "enterprise_8gpu_air",
   "dt_lead_seconds": 45.0,
@@ -84,9 +84,9 @@
 
   "turbine_units": [
     { "asset_id": "gt-hot-01", "rated_mw": 25.0, "r_asset_mw_per_s": 0.2, "hot_standby": true, "thermal_state": "hot", "hot_start_s": 300.0, "warm_start_s": 600.0, "cold_start_s": 1200.0 },
+    { "asset_id": "gt-hot-02", "rated_mw": 25.0, "r_asset_mw_per_s": 0.2, "hot_standby": true, "thermal_state": "hot", "hot_start_s": 300.0, "warm_start_s": 600.0, "cold_start_s": 1200.0 },
     { "asset_id": "gt-warm-01", "rated_mw": 25.0, "r_asset_mw_per_s": 0.2, "hot_standby": true, "thermal_state": "warm", "hot_start_s": 300.0, "warm_start_s": 600.0, "cold_start_s": 1200.0 },
-    { "asset_id": "gt-cold-01", "rated_mw": 25.0, "r_asset_mw_per_s": 0.2, "hot_standby": true, "thermal_state": "cold", "hot_start_s": 300.0, "warm_start_s": 600.0, "cold_start_s": 1200.0 },
-    { "asset_id": "gt-cold-02", "rated_mw": 25.0, "r_asset_mw_per_s": 0.2, "hot_standby": true, "thermal_state": "cold", "hot_start_s": 300.0, "warm_start_s": 600.0, "cold_start_s": 1200.0 }
+    { "asset_id": "gt-cold-01", "rated_mw": 25.0, "r_asset_mw_per_s": 0.2, "hot_standby": true, "thermal_state": "cold", "hot_start_s": 300.0, "warm_start_s": 600.0, "cold_start_s": 1200.0 }
   ],
 
   "bess_units": [
