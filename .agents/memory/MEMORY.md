@@ -56,3 +56,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Ray Phase 1 contracts](ray-phase1-contracts.md) — nested Ray identity and resource ownership are defined before lifecycle or scheduling behavior.
 - [Infrastructure admission boundary](infrastructure-admission-boundary.md) — admission grants complete infrastructure allocations; Pod placement and Ray lifecycle remain separate downstream phases.
 - [Ray cluster readiness boundary](ray-cluster-readiness-boundary.md) — lifecycle consumes admitted allocations and exposes ready logical capacity; task scheduling and autoscaling remain later phases.
+- [Ray Phase 4 execution](ray-phase4-execution.md) — READY-only logical scheduling; placement-group reservations are not double-counted and spillback preserves requested identity.
