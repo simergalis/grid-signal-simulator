@@ -25,6 +25,19 @@ from typing import Literal, Optional
 # only imports stdlib modules and has no core/ dependencies.
 from core import site_parameters as _sp
 from .power_balance import BalanceResult as PhysicalBalanceResult
+from .ray_models import (
+    InfrastructureAllocation,
+    InfrastructureBackend,
+    RayClusterSpec,
+    RayContractError,
+    RayPlacementGroupSpec,
+    RayPlacementStrategy,
+    RayResourceRequest,
+    RayWorkloadKind,
+    RayWorkloadSpec,
+    validate_active_ray_workload_capacity,
+    validate_ray_bindings,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -158,6 +171,26 @@ class WorkloadSignal:
     gpu_utilization: Optional[float] = None
     gpu_memory_mb: Optional[int] = None
     gpu_power_multiplier: Optional[float] = None
+    # Phase 1 nested-scheduler identity.  Both parent IDs are optional so
+    # legacy scripted and externally ingested signals remain wire-compatible.
+    # When either is present, the other must also be present.
+    infrastructure_allocation_id: Optional[str] = None
+    ray_cluster_id: Optional[str] = None
+    ray_workload_id: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        has_allocation = self.infrastructure_allocation_id is not None
+        has_cluster = self.ray_cluster_id is not None
+        if has_allocation != has_cluster:
+            raise ValueError(
+                "infrastructure_allocation_id and ray_cluster_id must be "
+                "provided together"
+            )
+        if self.ray_workload_id is not None and not has_cluster:
+            raise ValueError(
+                "ray_workload_id requires infrastructure_allocation_id and "
+                "ray_cluster_id"
+            )
 
 
 # ---------------------------------------------------------------------------

@@ -1492,6 +1492,9 @@ def build_run_context_from_spec(
             gpus_per_unit=int(evt.get("gpus_per_unit", 1)),
             electrical_group_id=evt.get("electrical_group_id"),
             model_id=evt.get("model_id"),
+            infrastructure_allocation_id=evt.get("infrastructure_allocation_id"),
+            ray_cluster_id=evt.get("ray_cluster_id"),
+            ray_workload_id=evt.get("ray_workload_id"),
         )
 
     # Scheduler-authored job cohorts at one timestamp are applied atomically per

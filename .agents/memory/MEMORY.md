@@ -53,3 +53,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [DynamoLLM power calibration](dynamollm-power-calibration.md) — H100 chassis stays a 10.2 kW envelope; inference-only model factors use Table III lower-envelope Wh values.
 - [Phase A scheduler demo](phase-a-demo-scenario.md) — real queueing needs bounded capacity, overloaded arrival-duration product, and finite backoff retries; startup delay alone is not proof.
 - [Simulator workflow ownership](simulator-workflow-ownership.md) — the FastAPI simulator is served by the GridSignal web workflow; the similarly named API-server workflow is a separate Node service.
+- [Ray Phase 1 contracts](ray-phase1-contracts.md) — nested Ray identity and resource ownership are defined before lifecycle or scheduling behavior.

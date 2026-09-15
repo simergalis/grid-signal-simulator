@@ -218,11 +218,124 @@ class WorkloadEventSpec(BaseModel):
     scheduler_type: Optional[Literal["SLURM", "K8S", "RAY"]] = None
     capacity_unit: Optional[str] = None
     gpus_per_unit: int = Field(default=1, ge=1)
+    # Phase 1 nested Ray identity.  These fields are metadata only until the
+    # Ray lifecycle engine is introduced in a later phase.
+    infrastructure_allocation_id: Optional[str] = Field(default=None, min_length=1)
+    ray_cluster_id: Optional[str] = Field(default=None, min_length=1)
+    ray_workload_id: Optional[str] = Field(default=None, min_length=1)
     request_rate: Optional[float] = Field(default=None, ge=0.0)
     # §7.1.1 SOLAR_STEP: magnitude of the renewable drop that triggers staging.
     # Zero for all other event types.
     renewable_shortfall_mw: float = Field(default=0.0, ge=0.0)
     electrical_group_id: Optional[str] = None
+
+    @model_validator(mode="after")
+    def _validate_nested_ray_identity(self) -> "WorkloadEventSpec":
+        if (self.infrastructure_allocation_id is None) != (
+            self.ray_cluster_id is None
+        ):
+            raise ValueError(
+                "infrastructure_allocation_id and ray_cluster_id must be "
+                "provided together"
+            )
+        if self.ray_workload_id is not None and self.ray_cluster_id is None:
+            raise ValueError(
+                "ray_workload_id requires infrastructure_allocation_id and "
+                "ray_cluster_id"
+            )
+        return self
+
+
+class RayResourceRequestSpec(BaseModel):
+    """Phase 1 wire-format resource vector for Ray contracts."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    cpu: float = Field(default=0.0, ge=0.0)
+    gpu: float = Field(default=0.0, ge=0.0)
+    memory_gib: float = Field(default=0.0, ge=0.0)
+    object_store_memory_gib: float = Field(default=0.0, ge=0.0)
+    custom_resources: dict[str, float] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _validate_custom_resources(self) -> "RayResourceRequestSpec":
+        if any(not name for name in self.custom_resources):
+            raise ValueError("custom resource names must not be empty")
+        return self
+
+
+class InfrastructureAllocationSpec(BaseModel):
+    """Capacity assigned by Kubernetes or Slurm to one Ray cluster."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    allocation_id: str = Field(min_length=1)
+    backend: Literal["kubernetes", "slurm"]
+    resource_capacity: RayResourceRequestSpec
+    tenant_id: Optional[str] = Field(default=None, min_length=1)
+
+
+class RayClusterSpec(BaseModel):
+    """Phase 1 declaration of a Ray cluster inside one allocation."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    ray_cluster_id: str = Field(min_length=1)
+    infrastructure_allocation_id: str = Field(min_length=1)
+    backend: Literal["kubernetes", "slurm"]
+    worker_resources: RayResourceRequestSpec
+    min_workers: int = Field(default=0, ge=0)
+    max_workers: int = Field(default=1, ge=1)
+    head_resources: RayResourceRequestSpec = Field(
+        default_factory=lambda: RayResourceRequestSpec(cpu=1.0)
+    )
+    tenant_id: Optional[str] = Field(default=None, min_length=1)
+
+    @model_validator(mode="after")
+    def _validate_worker_bounds(self) -> "RayClusterSpec":
+        if self.max_workers < self.min_workers:
+            raise ValueError("max_workers must be greater than or equal to min_workers")
+        return self
+
+
+class RayWorkloadSpec(BaseModel):
+    """Phase 1 declaration of application work inside a Ray cluster."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    workload_id: str = Field(min_length=1)
+    ray_cluster_id: str = Field(min_length=1)
+    kind: Literal[
+        "job",
+        "task",
+        "actor",
+        "training",
+        "inference",
+        "data_processing",
+        "hyperparameter_trial",
+    ]
+    resource_request: RayResourceRequestSpec
+    parent_workload_id: Optional[str] = Field(default=None, min_length=1)
+    placement_group_id: Optional[str] = Field(default=None, min_length=1)
+    dependencies: list[str] = Field(default_factory=list)
+    replicas: int = Field(default=1, ge=1)
+
+    @model_validator(mode="after")
+    def _validate_dependencies(self) -> "RayWorkloadSpec":
+        if len(self.dependencies) != len(set(self.dependencies)):
+            raise ValueError("workload dependencies must be unique")
+        return self
+
+
+class RayPlacementGroupSpec(BaseModel):
+    """Phase 1 declaration of a Ray placement-group bundle set."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    placement_group_id: str = Field(min_length=1)
+    ray_cluster_id: str = Field(min_length=1)
+    bundles: list[RayResourceRequestSpec] = Field(min_length=1)
+    strategy: Literal["pack", "spread", "strict_pack", "strict_spread"] = "pack"
 
 
 class SlurmJobPayload(BaseModel):
@@ -264,6 +377,9 @@ class WorkloadSignalResponse(BaseModel):
     scheduler_type: Optional[str] = None
     capacity_unit: Optional[str] = None
     gpus_per_unit: int = 1
+    infrastructure_allocation_id: Optional[str] = None
+    ray_cluster_id: Optional[str] = None
+    ray_workload_id: Optional[str] = None
 
 
 class BessUnitSpec(BaseModel):
