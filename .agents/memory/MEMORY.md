@@ -60,3 +60,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Ray Phase 5 autoscaling](ray-phase5-autoscaling.md) — KubeRay demand feeds Kubernetes admission with delayed scaling, power rejection, and fixed Slurm boundaries.
 - [Ray Phase 6 power enforcement](ray-phase6-power-enforcement.md) — measured usage is enforced separately from logical placement, admission, and autoscaling.
 - [Ray Phase 7 external observability](ray-phase7-external-observability.md) — external snapshots use dedupe/quarantine and monotonic ordering; reports stay read-only.
+- [Ray Phase 8 scenario coverage](ray-phase8-scenario-coverage.md) — deterministic end-to-end cases cover KubeRay burst, power/telemetry, stale feeds, and fixed Slurm.
