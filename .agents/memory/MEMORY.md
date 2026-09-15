@@ -61,3 +61,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Ray Phase 6 power enforcement](ray-phase6-power-enforcement.md) — measured usage is enforced separately from logical placement, admission, and autoscaling.
 - [Ray Phase 7 external observability](ray-phase7-external-observability.md) — external snapshots use dedupe/quarantine and monotonic ordering; reports stay read-only.
 - [Ray Phase 8 scenario coverage](ray-phase8-scenario-coverage.md) — deterministic end-to-end cases cover KubeRay burst, power/telemetry, stale feeds, and fixed Slurm.
+- [GE turbine scenario assumptions](ge-turbine-scenario-assumptions.md) — 35% MSL, 30 MW/min ramp, 300/360/600 s startup tiers, and explicit synchronized spinning units.
