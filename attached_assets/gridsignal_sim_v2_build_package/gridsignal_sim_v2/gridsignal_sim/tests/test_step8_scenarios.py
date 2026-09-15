@@ -1295,3 +1295,20 @@ class TestInitialSpinningCount:
 
         warnings = spec.collect_initial_spinning_warnings()
         assert any("provide at most 25.00 MW" in warning for warning in warnings)
+
+
+def test_uneven_multischeduler_scenario_declares_all_scheduler_paths():
+    with TestClient(create_app()) as client:
+        response = client.get("/scenarios/scenario-uneven-multisched-01")
+
+    assert response.status_code == 200
+    spec = response.json()["spec"]
+    assert {
+        cluster["scheduler_type"] for cluster in spec["kube_clusters"]
+    } == {"K8S", "SLURM", "RAY"}
+    assert len(spec["slurm_config"]["nodes"]) == 8
+    assert len(spec["slurm_config"]["jobs"]) == 3
+    assert {
+        event["scheduler_type"]
+        for event in spec["workload_events"]
+    } == {"K8S", "SLURM", "RAY"}
