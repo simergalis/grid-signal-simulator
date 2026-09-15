@@ -287,6 +287,12 @@ class RayClusterSpec:
         return self.head_resources + self.worker_resources.scaled(self.max_workers)
 
     @property
+    def minimum_resources(self) -> RayResourceRequest:
+        """Head plus the initial worker footprint before KubeRay scaling."""
+        worker_count = self.max_workers if self.fixed_allocation else self.min_workers
+        return self.head_resources + self.worker_resources.scaled(worker_count)
+
+    @property
     def fixed_allocation(self) -> bool:
         """Whether this cluster has a fixed infrastructure footprint by default."""
         return not bool(self.elastic)
