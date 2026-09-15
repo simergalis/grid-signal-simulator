@@ -72,17 +72,102 @@
     }
   ],
 
+  "slurm_config": {
+    "cluster_name": "um-slurm-cluster",
+    "select_type": "cons_tres",
+    "priority_type": "multifactor",
+    "preempt_mode": "off",
+    "nodes": [
+      { "node_id": "um-slurm-01", "partition": "gpu", "gpus": 8, "gpu_model": "h100", "cpus": 96, "memory_mb": 100000, "features": ["h100", "nvlink"] },
+      { "node_id": "um-slurm-02", "partition": "gpu", "gpus": 8, "gpu_model": "h100", "cpus": 96, "memory_mb": 100000, "features": ["h100", "nvlink"] },
+      { "node_id": "um-slurm-03", "partition": "gpu", "gpus": 8, "gpu_model": "h100", "cpus": 96, "memory_mb": 100000, "features": ["h100", "nvlink"] },
+      { "node_id": "um-slurm-04", "partition": "gpu", "gpus": 8, "gpu_model": "h100", "cpus": 96, "memory_mb": 100000, "features": ["h100", "nvlink"] },
+      { "node_id": "um-slurm-05", "partition": "gpu", "gpus": 8, "gpu_model": "h100", "cpus": 96, "memory_mb": 100000, "features": ["h100", "nvlink"] },
+      { "node_id": "um-slurm-06", "partition": "gpu", "gpus": 8, "gpu_model": "h100", "cpus": 96, "memory_mb": 100000, "features": ["h100", "nvlink"] },
+      { "node_id": "um-slurm-07", "partition": "gpu", "gpus": 8, "gpu_model": "h100", "cpus": 96, "memory_mb": 100000, "features": ["h100", "nvlink"] },
+      { "node_id": "um-slurm-08", "partition": "gpu", "gpus": 8, "gpu_model": "h100", "cpus": 96, "memory_mb": 100000, "features": ["h100", "nvlink"] }
+    ],
+    "partitions": [
+      { "name": "gpu", "nodes": ["um-slurm-01", "um-slurm-02", "um-slurm-03", "um-slurm-04", "um-slurm-05", "um-slurm-06", "um-slurm-07", "um-slurm-08"], "default": true }
+    ],
+    "qos": [
+      { "name": "normal", "priority_factor": 1.0 }
+    ],
+    "jobs": [
+      {
+        "job_id": "um-slurm-training-01",
+        "job_name": "slurm-training-01",
+        "user": "slurm-demo",
+        "account": "research",
+        "arrival_time": 30.0,
+        "duration": 240.0,
+        "node_count": 2,
+        "gpus_per_node": 8,
+        "cpus_per_node": 96,
+        "memory_mb_per_node": 100000,
+        "gpu_model": "h100",
+        "partition": "gpu",
+        "priority": 100.0,
+        "qos": "normal",
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "tenant_id": "SLURM-H100",
+        "workload_class": "training",
+        "command": "python train.py"
+      },
+      {
+        "job_id": "um-slurm-training-02",
+        "job_name": "slurm-training-02",
+        "user": "slurm-demo",
+        "account": "research",
+        "arrival_time": 310.0,
+        "duration": 300.0,
+        "node_count": 4,
+        "gpus_per_node": 8,
+        "cpus_per_node": 96,
+        "memory_mb_per_node": 100000,
+        "gpu_model": "h100",
+        "partition": "gpu",
+        "priority": 110.0,
+        "qos": "normal",
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "tenant_id": "SLURM-H100",
+        "workload_class": "training",
+        "command": "python train.py --resume"
+      },
+      {
+        "job_id": "um-slurm-inference-03",
+        "job_name": "slurm-inference-03",
+        "user": "slurm-demo",
+        "account": "research",
+        "arrival_time": 920.0,
+        "duration": 600.0,
+        "node_count": 2,
+        "gpus_per_node": 8,
+        "cpus_per_node": 96,
+        "memory_mb_per_node": 100000,
+        "gpu_model": "h100",
+        "partition": "gpu",
+        "priority": 90.0,
+        "qos": "normal",
+        "hardware_profile_id": "enterprise_8gpu_air",
+        "tenant_id": "SLURM-H100",
+        "workload_class": "inference",
+        "command": "python serve.py"
+      }
+    ]
+  },
+
   "workload_events": [
-    { "event_id": "evt-signal-burst-01-start", "job_id": "signal-burst-01", "event_type": "starting", "timestamp": 30.0, "node_count": 4283, "hardware_profile_id": "enterprise_8gpu_air" },
-    { "event_id": "evt-signal-burst-01-end", "job_id": "signal-burst-01", "event_type": "job_end", "timestamp": 270.0, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air" },
-    { "event_id": "evt-signal-burst-02-start", "job_id": "signal-burst-02", "event_type": "starting", "timestamp": 310.0, "node_count": 8566, "hardware_profile_id": "enterprise_8gpu_air" },
-    { "event_id": "evt-signal-burst-02-end", "job_id": "signal-burst-02", "event_type": "job_end", "timestamp": 610.0, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air" },
-    { "event_id": "evt-signal-burst-03-start", "job_id": "signal-burst-03", "event_type": "starting", "timestamp": 920.0, "node_count": 3426, "hardware_profile_id": "enterprise_8gpu_air" },
-    { "event_id": "evt-signal-burst-03-end", "job_id": "signal-burst-03", "event_type": "job_end", "timestamp": 1520.0, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air" },
-    { "event_id": "evt-signal-burst-04-start", "job_id": "signal-burst-04", "event_type": "starting", "timestamp": 1850.0, "node_count": 7995, "hardware_profile_id": "enterprise_8gpu_air" },
-    { "event_id": "evt-signal-burst-04-end", "job_id": "signal-burst-04", "event_type": "job_end", "timestamp": 2450.0, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air" },
-    { "event_id": "evt-signal-burst-05-start", "job_id": "signal-burst-05", "event_type": "starting", "timestamp": 2700.0, "node_count": 5711, "hardware_profile_id": "enterprise_8gpu_air" },
-    { "event_id": "evt-signal-burst-05-end", "job_id": "signal-burst-05", "event_type": "job_end", "timestamp": 3300.0, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air" }
+    { "event_id": "evt-signal-burst-01-start", "job_id": "signal-burst-01", "event_type": "starting", "timestamp": 30.0, "node_count": 4283, "hardware_profile_id": "enterprise_8gpu_air", "scheduler_type": "K8S", "cluster_id": "um-k8s-h100", "tenant_id": "K8S-H100" },
+    { "event_id": "evt-signal-burst-01-end", "job_id": "signal-burst-01", "event_type": "job_end", "timestamp": 270.0, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air", "scheduler_type": "K8S", "cluster_id": "um-k8s-h100", "tenant_id": "K8S-H100" },
+    { "event_id": "evt-signal-burst-02-start", "job_id": "signal-burst-02", "event_type": "starting", "timestamp": 310.0, "node_count": 8566, "hardware_profile_id": "enterprise_8gpu_air", "scheduler_type": "SLURM", "cluster_id": "um-slurm-cluster", "tenant_id": "SLURM-H100" },
+    { "event_id": "evt-signal-burst-02-end", "job_id": "signal-burst-02", "event_type": "job_end", "timestamp": 610.0, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air", "scheduler_type": "SLURM", "cluster_id": "um-slurm-cluster", "tenant_id": "SLURM-H100" },
+    { "event_id": "evt-signal-burst-03-start", "job_id": "signal-burst-03", "event_type": "starting", "timestamp": 920.0, "node_count": 3426, "hardware_profile_id": "enterprise_8gpu_air", "scheduler_type": "RAY", "cluster_id": "um-ray-gb200", "tenant_id": "RAY-GB200", "ray_cluster_id": "um-ray-gb200", "infrastructure_allocation_id": "um-ray-allocation-03", "ray_workload_id": "signal-burst-03" },
+    { "event_id": "evt-signal-burst-03-end", "job_id": "signal-burst-03", "event_type": "job_end", "timestamp": 1520.0, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air", "scheduler_type": "RAY", "cluster_id": "um-ray-gb200", "tenant_id": "RAY-GB200", "ray_cluster_id": "um-ray-gb200", "infrastructure_allocation_id": "um-ray-allocation-03", "ray_workload_id": "signal-burst-03" },
+    { "event_id": "evt-signal-burst-04-start", "job_id": "signal-burst-04", "event_type": "starting", "timestamp": 1850.0, "node_count": 7995, "hardware_profile_id": "enterprise_8gpu_air", "scheduler_type": "K8S", "cluster_id": "um-k8s-h100", "tenant_id": "K8S-H100" },
+    { "event_id": "evt-signal-burst-04-end", "job_id": "signal-burst-04", "event_type": "job_end", "timestamp": 2450.0, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air", "scheduler_type": "K8S", "cluster_id": "um-k8s-h100", "tenant_id": "K8S-H100" },
+    { "event_id": "evt-signal-burst-05-start", "job_id": "signal-burst-05", "event_type": "starting", "timestamp": 2700.0, "node_count": 5711, "hardware_profile_id": "enterprise_8gpu_air", "scheduler_type": "RAY", "cluster_id": "um-ray-gb200", "tenant_id": "RAY-GB200", "ray_cluster_id": "um-ray-gb200", "infrastructure_allocation_id": "um-ray-allocation-05", "ray_workload_id": "signal-burst-05" },
+    { "event_id": "evt-signal-burst-05-end", "job_id": "signal-burst-05", "event_type": "job_end", "timestamp": 3300.0, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air", "scheduler_type": "RAY", "cluster_id": "um-ray-gb200", "tenant_id": "RAY-GB200", "ray_cluster_id": "um-ray-gb200", "infrastructure_allocation_id": "um-ray-allocation-05", "ray_workload_id": "signal-burst-05" }
   ],
 
   "turbine_units": [
