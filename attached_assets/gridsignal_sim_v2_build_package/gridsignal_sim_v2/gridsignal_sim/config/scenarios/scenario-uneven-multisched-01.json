@@ -1,6 +1,6 @@
 {
   "name": "Uneven Multi-Scheduler Turbine Demo",
-  "description": "Kubernetes, Slurm, and Ray jobs admitted on staggered, uneven intervals to create demand peaks, layered with scripted GPU bursts that guarantee a 45s Job Signal (Δt_lead) lead-time window. Full generation stack: 3 gas turbines (hot/warm/cold standby), fuel cell array, and grid-forming BESS. Turbine commitment triggers at 80% fuel-cell utilization; hot/warm/cold startup durations are 5/10/20 minutes respectively, so any committed unit produces a Turbine Online countdown of 5+ minutes.",
+  "description": "Kubernetes, Slurm, and Ray jobs admitted on staggered, uneven intervals to create demand peaks, layered with scripted GPU bursts that guarantee a 45s Job Signal (Δt_lead) lead-time window. Full generation stack: 4 gas turbines (hot/warm/cold standby), grid-forming BESS, and advisory diesel backup. Hot/warm/cold startup durations are 5/10/20 minutes respectively, so any committed unit produces a Turbine Online countdown of 5+ minutes.",
 
   "hardware_profile_id": "enterprise_8gpu_air",
   "dt_lead_seconds": 45.0,
@@ -85,15 +85,24 @@
   "turbine_units": [
     { "asset_id": "gt-hot-01", "rated_mw": 25.0, "r_asset_mw_per_s": 0.2, "hot_standby": true, "thermal_state": "hot", "hot_start_s": 300.0, "warm_start_s": 600.0, "cold_start_s": 1200.0 },
     { "asset_id": "gt-warm-01", "rated_mw": 25.0, "r_asset_mw_per_s": 0.2, "hot_standby": true, "thermal_state": "warm", "hot_start_s": 300.0, "warm_start_s": 600.0, "cold_start_s": 1200.0 },
-    { "asset_id": "gt-cold-01", "rated_mw": 25.0, "r_asset_mw_per_s": 0.2, "hot_standby": true, "thermal_state": "cold", "hot_start_s": 300.0, "warm_start_s": 600.0, "cold_start_s": 1200.0 }
+    { "asset_id": "gt-cold-01", "rated_mw": 25.0, "r_asset_mw_per_s": 0.2, "hot_standby": true, "thermal_state": "cold", "hot_start_s": 300.0, "warm_start_s": 600.0, "cold_start_s": 1200.0 },
+    { "asset_id": "gt-cold-02", "rated_mw": 25.0, "r_asset_mw_per_s": 0.2, "hot_standby": true, "thermal_state": "cold", "hot_start_s": 300.0, "warm_start_s": 600.0, "cold_start_s": 1200.0 }
   ],
 
   "bess_units": [
     { "asset_id": "bess-0", "rated_mw": 30.0, "usable_mwh": 60.0, "initial_soc_fraction": 0.95, "grid_forming": true, "p_anchor_reserve_mw": 1.0, "authority_tier": "autonomous" }
   ],
 
-  "fuel_cell_enabled": true,
-  "fuel_cell_rated_mw": 6.0,
-  "fuel_cell_stack_count": 4,
-  "fuel_cell_turbine_commit_fraction": 0.8
+  "diesel_power_block": {
+    "enabled": true,
+    "target_capacity_mw": 20.0,
+    "unit_rating_mw": 20.0,
+    "p_start": 1.0,
+    "target_reliability": 1.0,
+    "f_block": 1.0,
+    "delta_t_start_s": 3600.0,
+    "residual_ramp_s": 60.0,
+    "start_stagger_interval_s": 1.0,
+    "authority_tier": "advisory_only"
+  }
 }

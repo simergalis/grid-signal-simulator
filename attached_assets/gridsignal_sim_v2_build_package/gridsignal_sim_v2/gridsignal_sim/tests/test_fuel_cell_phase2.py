@@ -57,7 +57,6 @@ def test_existing_fuel_cell_scenarios_default_to_one_running_full_target_array()
         "demo-grid-fc-bess-shaped-load.json",
         "scenario-turbine-01.json",
         "scenario-kube-peak-overage.json",
-        "scenario-uneven-multisched-01.json",
     ]
 
     for filename in scenario_paths:
