@@ -1,13 +1,13 @@
 {
   "name": "Uneven Multi-Scheduler Turbine Demo",
-  "description": "Kubernetes, Slurm, and Ray jobs admitted on staggered, uneven intervals to create demand peaks, layered with scripted GPU bursts that guarantee a 45s Job Signal (Δt_lead) lead-time window. Full generation stack: 4 gas turbines (hot/warm/cold standby), grid-forming BESS, and advisory diesel backup. Hot/warm/cold startup durations are 5/10/20 minutes respectively, so any committed unit produces a Turbine Online countdown of 5+ minutes.",
+  "description": "Two-hour Kubernetes, Slurm, and Ray demonstration with five staggered 10-minute GPU bursts spaced to give the gas turbines time to start. The workload also includes uneven scheduler-generated demand and a 45s Job Signal (Δt_lead) lead-time window. Full generation stack: 4 gas turbines (hot/warm/cold standby), grid-forming BESS, and advisory diesel backup. Hot/warm/cold startup durations are 5/10/20 minutes respectively.",
 
   "hardware_profile_id": "enterprise_8gpu_air",
   "dt_lead_seconds": 45.0,
   "island_mode": true,
   "frequency_nominal_hz": 60.0,
   "power_factor": 0.85,
-  "end_sim_time": 3600.0,
+  "end_sim_time": 7200.0,
 
   "kube_clusters": [
     {
@@ -70,16 +70,16 @@
   ],
 
   "workload_events": [
-    { "event_id": "evt-signal-burst-01-start", "job_id": "signal-burst-01", "event_type": "starting", "timestamp": 30.0, "node_count": 4283, "hardware_profile_id": "enterprise_8gpu_air" },
-    { "event_id": "evt-signal-burst-01-end", "job_id": "signal-burst-01", "event_type": "job_end", "timestamp": 630.0, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air" },
-    { "event_id": "evt-signal-burst-02-start", "job_id": "signal-burst-02", "event_type": "starting", "timestamp": 310.0, "node_count": 8566, "hardware_profile_id": "enterprise_8gpu_air" },
-    { "event_id": "evt-signal-burst-02-end", "job_id": "signal-burst-02", "event_type": "job_end", "timestamp": 910.0, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air" },
-    { "event_id": "evt-signal-burst-03-start", "job_id": "signal-burst-03", "event_type": "starting", "timestamp": 920.0, "node_count": 3426, "hardware_profile_id": "enterprise_8gpu_air" },
-    { "event_id": "evt-signal-burst-03-end", "job_id": "signal-burst-03", "event_type": "job_end", "timestamp": 1520.0, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air" },
-    { "event_id": "evt-signal-burst-04-start", "job_id": "signal-burst-04", "event_type": "starting", "timestamp": 1850.0, "node_count": 7995, "hardware_profile_id": "enterprise_8gpu_air" },
-    { "event_id": "evt-signal-burst-04-end", "job_id": "signal-burst-04", "event_type": "job_end", "timestamp": 2450.0, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air" },
-    { "event_id": "evt-signal-burst-05-start", "job_id": "signal-burst-05", "event_type": "starting", "timestamp": 2700.0, "node_count": 5711, "hardware_profile_id": "enterprise_8gpu_air" },
-    { "event_id": "evt-signal-burst-05-end", "job_id": "signal-burst-05", "event_type": "job_end", "timestamp": 3300.0, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air" }
+    { "event_id": "evt-signal-burst-01-start", "job_id": "signal-burst-01", "event_type": "starting", "timestamp": 1500.0, "node_count": 4283, "hardware_profile_id": "enterprise_8gpu_air" },
+    { "event_id": "evt-signal-burst-01-end", "job_id": "signal-burst-01", "event_type": "job_end", "timestamp": 2100.0, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air" },
+    { "event_id": "evt-signal-burst-02-start", "job_id": "signal-burst-02", "event_type": "starting", "timestamp": 2700.0, "node_count": 8566, "hardware_profile_id": "enterprise_8gpu_air" },
+    { "event_id": "evt-signal-burst-02-end", "job_id": "signal-burst-02", "event_type": "job_end", "timestamp": 3300.0, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air" },
+    { "event_id": "evt-signal-burst-03-start", "job_id": "signal-burst-03", "event_type": "starting", "timestamp": 3900.0, "node_count": 3426, "hardware_profile_id": "enterprise_8gpu_air" },
+    { "event_id": "evt-signal-burst-03-end", "job_id": "signal-burst-03", "event_type": "job_end", "timestamp": 4500.0, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air" },
+    { "event_id": "evt-signal-burst-04-start", "job_id": "signal-burst-04", "event_type": "starting", "timestamp": 5100.0, "node_count": 7995, "hardware_profile_id": "enterprise_8gpu_air" },
+    { "event_id": "evt-signal-burst-04-end", "job_id": "signal-burst-04", "event_type": "job_end", "timestamp": 5700.0, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air" },
+    { "event_id": "evt-signal-burst-05-start", "job_id": "signal-burst-05", "event_type": "starting", "timestamp": 6300.0, "node_count": 5711, "hardware_profile_id": "enterprise_8gpu_air" },
+    { "event_id": "evt-signal-burst-05-end", "job_id": "signal-burst-05", "event_type": "job_end", "timestamp": 6900.0, "node_count": 0, "hardware_profile_id": "enterprise_8gpu_air" }
   ],
 
   "turbine_units": [
