@@ -26,6 +26,7 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Simulation tick timestamps](simulation-tick-timestamps.md) — exported ticks are interval-end timestamps; a step reset is visible beginning on the following tick.
 - [Standalone analytical proposals](standalone-capacity-proposals.md) — Capacity Outlook uses the normal advisory gate without requiring a physics RunContext.
 - [Reserve alert dispositions](reserve-alert-dispositions.md) — insufficient-reserve alerts create Generation turbine-ramp proposals; Approve/Reject are advisory-only and Modify remains deferred.
+- [Gen-trip duration display](gen-trip-duration-display.md) — show contingency ride-through and close timing in rounded hours/minutes rather than raw seconds.
 - [AI remediation guardrails](ai-remediation-guardrails.md) — recommendations stay allowlisted and advisory; approval revalidates the latest tick before typed simulator commands execute.
 - [Rolling shortfall alerts](rolling-shortfall-alerts.md) — 15-minute–4-hour planning projection is advisory and simulator-backed, distinct from current balance/reserve alerts.
 - [Rolling planning forecast timeline](rolling-planning-forecast-timeline.md) — project future scripted peaks from scheduled starts/ends, not the current live forecast or a second simulation.
