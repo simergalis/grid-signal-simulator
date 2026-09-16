@@ -424,3 +424,17 @@ mtime_ms = 1789059694819
 storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:560e4bb4-a12b-40d1-a7c1-4cae34d4602a/325c0e09-7d2e-43e7-ab0f-83891b62c25d/4f093f91-29e7-46eb-a376-65f504d65df0"
 storage_version_token = "1789059700411818"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "EWj0Fa8k-w6-iPAfL25Z6"
+uri = "file://docs/01-turbine-scenario-kubernetes-slurm-ray-audit.md"
+type = "text"
+title = "Scenario 01 Turbine Audit"
+description = "Read-only Markdown audit of the 01 Turbine Scenario with Kubernetes, Slurm, and Ray, including exact source paths and line references."
+logical_id = "d7aab447-8746-4f99-95a3-9571971c2817"
+content_hash = "sha256:a9918a1ccbec946b7e602a26b227fc6a6c6b83891a4fd00c7b223c504db9861a"
+size = 15380
+mtime_ms = 1789573159332
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:560e4bb4-a12b-40d1-a7c1-4cae34d4602a/d7aab447-8746-4f99-95a3-9571971c2817/23806941-a614-4a14-bb0f-1b96e911d2d2"
+storage_version_token = "1789573169442284"
+content_type = "text/markdown"
