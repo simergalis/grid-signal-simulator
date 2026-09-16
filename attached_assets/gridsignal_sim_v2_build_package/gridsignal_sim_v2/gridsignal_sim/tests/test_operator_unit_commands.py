@@ -428,6 +428,7 @@ def test_tc_203_5c2_start_hot_standby_returns_bad_state_code():
 
     _HOT_STANDBY_SPEC = {
         **_SPEC,
+        "initial_spinning_count": 0,
         "turbine_units": [
             {"asset_id": "gt-0", "rated_mw": 10.0, "r_asset_mw_per_s": 0.5,
              "hot_standby": True},    # ← managed by arbitrator only
@@ -455,6 +456,7 @@ def test_tc_203_5c3_trip_hot_standby_releases_and_queues_sync():
 
     spec = {
         **_SPEC,
+        "initial_spinning_count": 0,
         "turbine_units": [
             {"asset_id": "gt-0", "rated_mw": 10.0, "r_asset_mw_per_s": 0.5,
              "hot_standby": True, "hot_start_s": 0.0},

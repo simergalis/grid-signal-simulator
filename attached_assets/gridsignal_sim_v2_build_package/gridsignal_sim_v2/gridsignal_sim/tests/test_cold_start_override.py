@@ -2,9 +2,9 @@
 tests/test_cold_start_override.py — TC-251: cold_start_s scenario override.
 
 TC-251-1  Turbine with cold_start_s=60 in spec reaches SYNCHRONISED within 60 s,
-          well before the 900 s global default would have elapsed.
+          well before the catalogue default would have elapsed.
 
-TC-251-2  Turbine whose spec omits cold_start_s retains the 900 s catalogue
+TC-251-2  Turbine whose spec omits cold_start_s retains the 600 s catalogue
           default (backward-compatibility check).
 
 Strategy
@@ -37,6 +37,12 @@ sys.path.insert(0, ".")
 
 from core.models import TurbineState
 from core.asset_modules import TurbineModule
+from core import site_parameters as _site_parameters
+
+
+# DR-2026-09-16-COLD-START-600: the authoritative default is the catalogue's
+# 600 s value; provenance remains PROPOSED_HERE until a GE source is cited.
+CATALOGUE_DEFAULT_COLD_START_S = float(_site_parameters.value("cold_start_s"))
 
 
 # ── shared minimal spec template ─────────────────────────────────────────────
@@ -45,7 +51,7 @@ def _make_spec(cold_start_s=None) -> dict:
     """Return a minimal scenario spec with one turbine.
 
     When cold_start_s is None the key is omitted from the turbine unit dict,
-    so the factory falls back to the catalogue default (900 s).
+    so the factory falls back to the catalogue default.
     """
     turbine_unit: dict = {
         "asset_id": "gt-test",
@@ -138,11 +144,11 @@ class TestTC251ColdStartOverride:
     """TC-251-1: factory passes cold_start_s from scenario JSON to TurbineConfig."""
 
     def test_turbine_synchronises_within_scenario_cold_start_duration(self):
-        """Turbine with cold_start_s=60 reaches SYNCHRONISED before 900 s elapses.
+        """Turbine with cold_start_s=60 reaches SYNCHRONISED before the catalogue default.
 
         The scenario factory is the path under test: it must propagate the per-unit
         cold_start_s value from the scenario JSON to TurbineConfig rather than letting
-        the dataclass default (the catalogue value, 900 s) shadow it.
+        the dataclass default (the catalogue value) shadow it.
 
         Test flow:
           1. Build RunContext from spec with cold_start_s=60 (factory-wiring path).
@@ -151,7 +157,7 @@ class TestTC251ColdStartOverride:
           4. command_start → advance loop → assert SYNCHRONISED within 60 s.
         """
         OVERRIDE_S = 60.0
-        GLOBAL_DEFAULT_S = 900.0
+        GLOBAL_DEFAULT_S = CATALOGUE_DEFAULT_COLD_START_S
 
         spec = _make_spec(cold_start_s=OVERRIDE_S)
         config = _config_from_spec(spec)
@@ -184,12 +190,12 @@ class TestTC251ColdStartOverride:
         )
 
 
-# ── TC-251-2: omitting cold_start_s keeps the 900 s catalogue default ────────
+# ── TC-251-2: omitting cold_start_s keeps the 600 s catalogue default ────────
 
 class TestTC251DefaultPreserved:
-    """TC-251-2: omitting cold_start_s from a scenario turbine unit yields 900 s default."""
+    """TC-251-2: omitted cold_start_s uses the catalogue default."""
 
-    def test_default_cold_start_is_900_seconds_when_not_overridden(self):
+    def test_default_cold_start_is_catalogue_value_when_not_overridden(self):
         """Turbine spec without cold_start_s keeps the catalogue default of 900 s.
 
         This is a backward-compatibility guard: existing scenarios that never set
@@ -198,16 +204,16 @@ class TestTC251DefaultPreserved:
 
         Test flow:
           1. Build RunContext from spec with cold_start_s absent (omitted key).
-          2. Confirm TurbineConfig.cold_start_s == 900.
+          2. Confirm TurbineConfig.cold_start_s equals the catalogue value.
           3. Create a fresh TurbineModule in OFFLINE state with that config.
-          4. command_start → advance loop → assert SYNCHRONISED near 900 s.
+          4. command_start → advance loop → assert SYNCHRONISED near the catalogue value.
         """
-        EXPECTED_DEFAULT_S = 900.0
+        EXPECTED_DEFAULT_S = CATALOGUE_DEFAULT_COLD_START_S
 
         spec = _make_spec(cold_start_s=None)   # key absent from turbine unit
         config = _config_from_spec(spec)
 
-        # Step 1: confirm the catalogue default is preserved.
+        # Step 1: confirm the DR-2026-09-16-COLD-START-600 catalogue default is preserved.
         assert config.cold_start_s == EXPECTED_DEFAULT_S, (
             f"TC-251-2 FAIL: TurbineConfig.cold_start_s is {config.cold_start_s} s "
             f"but the catalogue default is {EXPECTED_DEFAULT_S} s. "
@@ -220,7 +226,7 @@ class TestTC251DefaultPreserved:
 
         sync_time = _ticks_to_sync(turbine, dt=30.0)
 
-        # Synchronised at or after 900 s (within one-tick tolerance of 30 s).
+        # Synchronised at or after the catalogue value (within one-tick tolerance).
         assert sync_time >= EXPECTED_DEFAULT_S - 30.0, (
             f"TC-251-2 FAIL: turbine without override reached SYNCHRONISED at "
             f"t={sync_time} s, earlier than the expected {EXPECTED_DEFAULT_S} s default. "
