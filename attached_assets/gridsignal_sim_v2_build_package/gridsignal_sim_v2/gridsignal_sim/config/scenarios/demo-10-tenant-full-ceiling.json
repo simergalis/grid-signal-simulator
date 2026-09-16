@@ -1,5 +1,5 @@
 {
-  "name": "10-Tenant Full-Ceiling GPU Load \u2014 3 h (tight headroom)",
+  "name": "14 10-Tenant Full-Ceiling GPU Load \u2014 3 h (tight headroom)",
   "description": "Stress scenario: all 10 colo tenants (A\u2013E catalogued, F\u2013J custom) run GPU jobs at 50\u2013100 % of their contracted power ceiling, up from 85 % in the baseline. Fleet reduced to three 10 MW gas turbines (30 MW rated, 20 MW N-1 firm) and BESS cut to 6 MW / 8 MWh \u2014 a third of the baseline buffer. Combined, the tighter generation margin and smaller battery make every burst event visible on the reserve-gap indicator and force the dispatch engine to pre-stage generators earlier. Use this to stress-test headroom management, BESS SoC depletion risk, and generator commitment sequencing across a full 3-hour run. (seed=42, deterministic replay.)",
   "workload_events": [],
   "hardware_profile_id": "enterprise_8gpu_air",

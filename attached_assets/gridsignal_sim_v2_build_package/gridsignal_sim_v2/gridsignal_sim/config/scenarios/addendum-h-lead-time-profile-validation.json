@@ -1,5 +1,5 @@
 {
-  "name": "Addendum H — lead-time profile validation",
+  "name": "36 Addendum H — lead-time profile validation",
   "description": "Validation-only scenario for two unvalidated hardware-profile ramp overrides. Not a production hardware characterization.",
   "workload_events": [
     {

@@ -1,5 +1,5 @@
 {
-  "name": "Rolling Planning — Three Forecast Peaks",
+  "name": "22 Rolling Planning — Three Forecast Peaks",
   "description": "A four-hour planning scenario with three deterministic GPU demand peaks scheduled at 15 minutes, 1 hour, and 3 hours. Use it to exercise the rolling planning forecast view and compare the operator urgency tiers as the forecast horizon changes.",
   "workload_events": [
     {

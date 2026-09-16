@@ -1,5 +1,5 @@
 {
-  "name": "Lead-time collection — H100 SXM5 8-way NVL4 — inference",
+  "name": "33 Lead-time collection — H100 SXM5 8-way NVL4 — inference",
   "description": "Measurement-only lead-time fixture for the supported H100 SXM5 8-GPU NVLink profile and inference workload.",
   "workload_events": [
     {

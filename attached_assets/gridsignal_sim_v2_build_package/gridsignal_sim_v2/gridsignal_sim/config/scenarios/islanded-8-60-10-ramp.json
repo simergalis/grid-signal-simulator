@@ -1,5 +1,5 @@
 {
-  "name": "Islanded 8-60-10 MW ramp - sequential commitment and release",
+  "name": "19 Islanded 8-60-10 MW ramp - sequential commitment and release",
   "description": "Islanded 5x15 MW fleet, 15 MW solar, 18 MW/8 MWh grid-forming BESS. GPU draw 8 MW to 60 MW over 15 min, 5 min hold, 60 to 30 MW over 10 min, 30 to 10 MW over 10 min, then 50 min at 10 MW. The long final hold is deliberate: t_min_run_s (1800 s) must elapse on the last-committed unit for the release sequence to fall inside the run. At 45 min the run ends 480 s before any decommitment can occur and the entire down-ramp exercises nothing.",
   "bess_units": [
     {

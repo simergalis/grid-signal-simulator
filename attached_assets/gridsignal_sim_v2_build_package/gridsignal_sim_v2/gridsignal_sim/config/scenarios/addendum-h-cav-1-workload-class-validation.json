@@ -1,5 +1,5 @@
 {
-  "name": "Addendum H-CAV-1 — workload-class ramp validation",
+  "name": "37 Addendum H-CAV-1 — workload-class ramp validation",
   "description": "Validation-only scenario for workload-signature-specific ramp timings. Not a production workload characterization.",
   "workload_events": [
     {

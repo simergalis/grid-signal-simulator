@@ -1,5 +1,5 @@
 {
-  "name": "BESS · Fuel Cell · Grid — Peak Stress 80%→120%→60% (60 min)",
+  "name": "20 BESS · Fuel Cell · Grid — Peak Stress 80%→120%→60% (60 min)",
   "description": "60-minute grid-tied scenario with no gas turbines and no solar. Power is supplied entirely by grid import (50 MW firm), a 4-stack fuel cell array (5 MW/stack = 20 MW fleet), and an 18 MW / 8 MWh BESS starting at 85% SoC. Load advances through three phases: 80% GPU utilisation as a warm-up (t=0–15 min, ~30 MW facility draw); a 5-minute 120% overload burst (t=15–20 min, ~45 MW — BESS discharges to absorb the transient spike while the fuel cell runs at ceiling); then recovery to a sustained 60% level for the remainder of the run (t=20–60 min, ~23 MW). Use this scenario to exercise grid-import metering, fuel cell dispatch sequencing, and BESS SoC depletion and recovery in a clean zero-combustion-turbine, zero-solar configuration.",
   "workload_events": [
     {

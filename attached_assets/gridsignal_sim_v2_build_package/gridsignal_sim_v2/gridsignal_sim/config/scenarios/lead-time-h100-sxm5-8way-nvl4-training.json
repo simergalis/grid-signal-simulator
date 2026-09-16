@@ -1,5 +1,5 @@
 {
-  "name": "Lead-time collection — H100 SXM5 8-way NVL4 — training",
+  "name": "32 Lead-time collection — H100 SXM5 8-way NVL4 — training",
   "description": "Measurement-only lead-time fixture for the supported H100 SXM5 8-GPU NVLink profile and training workload.",
   "workload_events": [
     {

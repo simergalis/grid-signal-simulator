@@ -1,5 +1,5 @@
 {
-  "name": "Grid · Fuel Cell · BESS — Shaped Load 5%→40%→120%→40%→20% (90 min)",
+  "name": "16 Grid · Fuel Cell · BESS — Shaped Load 5%→40%→120%→40%→20% (90 min)",
   "description": "90-minute shaped load profile supplied by grid import, fuel cell array, and BESS (grid-tied to PG&E at 50 MW firm; 20 MW / 4-stack fuel cell module array; 6 MW / 8 MWh BESS starting at 85% SoC). No gas turbines, no solar. Load advances through five phases: t=0:00 warm-up floor at ~5% (2 MW); t=10:00 step to 40% (16.1 MW facility); t=30:00 overload burst to 120% (48.3 MW — BESS discharges to cover transient spikes; grid absorbs base load); t=50:00 recovery back to 40%; t=60:00 step down to 20% (8.1 MW) and hold to end of run. Use to exercise grid-import metering, fuel cell dispatch, and BESS SoC depletion and recovery in a clean zero-combustion-turbine configuration. (Deterministic — workload-event driven.)",
   "workload_events": [
     {

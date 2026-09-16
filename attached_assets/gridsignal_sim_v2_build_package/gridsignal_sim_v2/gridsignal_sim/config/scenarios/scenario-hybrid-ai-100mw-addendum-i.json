@@ -1,5 +1,5 @@
 {
-  "name": "100MW Hybrid AI Data Center — Addendum I Combined Load",
+  "name": "38 100MW Hybrid AI Data Center — Addendum I Combined Load",
   "description": "Islanded 100 MW hybrid AI data-center microgrid trace. A 100 MW aggregate fuel-cell array supplies the fixed campus baseline while a 15 MW / 6 MWh BESS provides fast-slew bridging. The diesel power block is configured as twenty 3.25 MW primary units with 2 s staggered starts for 65 MW of blackout reserve. The 83 MW nominal campus IT load is represented by a 41.5 MW-equivalent inference job plus a 41.5 MW-equivalent training baseline; an explicit +33 MW training job starts at t=90 s and ends at t=210 s.",
   "site_name": "Hybrid AI Data Center Microgrid",
   "site_latitude": 37.3382,

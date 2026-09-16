@@ -1,5 +1,5 @@
 {
-  "name": "10-Tenant Random GPU Load — 3 h",
+  "name": "13 10-Tenant Random GPU Load — 3 h",
   "description": "Stochastic GPU workload spread across 10 colo tenants (A–E catalogued, F–J custom at 0.20 MW contract each) over a 3-hour simulation. Each tenant runs 4–6 burst jobs with randomised start time, GPU count (≤ 85 % of contracted ceiling), and duration (seed=42). Exercises reserve-margin and cooling headroom across the full run window.",
   "workload_events": [],
   "hardware_profile_id": "enterprise_8gpu_air",

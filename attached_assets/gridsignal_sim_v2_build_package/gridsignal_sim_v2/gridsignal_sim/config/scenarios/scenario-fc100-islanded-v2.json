@@ -1,5 +1,5 @@
 {
-  "name": "FC100 Islanded Readiness Reference",
+  "name": "28 FC100 Islanded Readiness Reference",
   "description": "Addendum G-1 reference: islanded block fuel-cell array, deterministic 20 MW to 80 MW settled total-site demand step, grid-forming BESS bridge, and advisory-only diesel final reserve. GPU compute rises from approximately 16.67 MW to 66.67 MW while the cooling plant rises from approximately 3.33 MW to 13.33 MW after its thermal delay.",
   "site_name": "FC100 Islanded Reference Plant",
   "workload_events": [

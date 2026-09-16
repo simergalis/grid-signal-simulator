@@ -1,5 +1,5 @@
 {
-  "name": "Lead-time collection — GB200 NVL72 liquid — inference",
+  "name": "35 Lead-time collection — GB200 NVL72 liquid — inference",
   "description": "Measurement-only lead-time fixture for the supported GB200 NVL72-class liquid profile and inference workload.",
   "workload_events": [
     {

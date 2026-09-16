@@ -1,5 +1,5 @@
 {
-  "name": "FC100 Islanded Zero-Hot-Standby Reference",
+  "name": "29 FC100 Islanded Zero-Hot-Standby Reference",
   "description": "Addendum G-1 zero-hot-standby control: identical to the FC100 reference except no fuel-cell blocks begin in hot standby, proving the physical BESS ceiling and residual unserved load. GPU compute and cooling together settle at the deterministic 20-to-80 MW total-site demand levels.",
   "site_name": "FC100 Islanded Reference Plant",
   "workload_events": [

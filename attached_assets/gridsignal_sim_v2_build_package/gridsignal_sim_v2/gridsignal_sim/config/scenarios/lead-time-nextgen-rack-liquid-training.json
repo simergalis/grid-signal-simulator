@@ -1,5 +1,5 @@
 {
-  "name": "Lead-time collection — GB200 NVL72 liquid — training",
+  "name": "34 Lead-time collection — GB200 NVL72 liquid — training",
   "description": "Measurement-only lead-time fixture for the supported GB200 NVL72-class liquid profile and training workload.",
   "workload_events": [
     {

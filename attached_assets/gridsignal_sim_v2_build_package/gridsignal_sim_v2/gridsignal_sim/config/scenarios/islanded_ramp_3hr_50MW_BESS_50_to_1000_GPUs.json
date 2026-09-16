@@ -1,5 +1,5 @@
 {
-  "name": "islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs",
+  "name": "12 islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs",
   "description": "Three-hour islanded-grid workload ramp from 50 to 1,000 GPU nodes and back, with a 50 MW-class gas turbine fleet and 18 MW / 14 MWh battery. The site operates in island mode throughout \u2014 no utility tie \u2014 so the gas turbines and battery alone must balance generation against a workload that rises and falls across seven structured phases: a 50-node floor, ramp to 1,000 over 30 minutes, step down to 500, recover to 1,000, collapse to 50, recover a second time, then a final wind-down to 50 by minute 173. Five 15 MW turbines cover the peak (75 MW rated, N-1 firm at 60 MW); the battery carries transient gaps and smooths step changes. Use this scenario to stress-test islanded frequency response, generator commitment sequencing, and BESS SoC management across a full operational cycle.",
   "workload_events": [
     {
