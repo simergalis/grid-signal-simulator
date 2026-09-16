@@ -50,6 +50,7 @@ from core._plane_guard import _EVALUATE_TICK_PERMITTED
 from core.site_parameters import get as _sp_catalogue_get
 from core.site_parameters import value as _sp_catalogue_value
 from core.slurm_scheduler import SlurmJobSpec, SlurmSchedulerEngine
+from runtime.turbine_commitment import ForecastDrivenTurbineController
 
 # GS-IMPL-PSP-002 Phase 4 — Economic Dispatch Loop + §4.3 escalation wiring.
 # runtime/ → core/ is the allowed import direction; these never cross into api/.
@@ -1406,11 +1407,23 @@ class RunContext:
     slurm_job_specs: tuple[SlurmJobSpec, ...] = field(default_factory=tuple)
     _next_slurm_job_idx: int = 0
     _slurm_event_cursor: int = 0
+    # Addendum H Phase 2a: measured demand history is the only source for the
+    # rolling background forecast.  It is intentionally populated after a
+    # completed physics tick, so the controller cannot look ahead.
+    _measured_site_demand_history: list[tuple[float, float]] = field(default_factory=list)
+    turbine_commitment_controller: Optional[ForecastDrivenTurbineController] = None
 
     def is_complete(self) -> bool:
         return self.cancelled or self.sim_time >= self.end_sim_time
 
-    def enqueue_unit_command(self, unit_id: str, action: str) -> None:
+    def enqueue_unit_command(
+        self,
+        unit_id: str,
+        action: str,
+        *,
+        source: str = "operator",
+        metadata: Optional[dict[str, Any]] = None,
+    ) -> None:
         """Queue an operator unit command for the next tick.
 
         Called by POST /runs/{run_id}/units/{unit_id}/command.
@@ -1419,7 +1432,80 @@ class RunContext:
           trip  → MW drop visible in the next WebSocket broadcast.
           start → STARTING state visible on next tick; SYNCHRONISED after ramp.
         """
-        self._operator_commands.append({"unit_id": unit_id, "action": action})
+        command = {"unit_id": unit_id, "action": action}
+        if source != "operator" or metadata:
+            command.update({
+                "source": source,
+                "metadata": metadata or {},
+            })
+        self._operator_commands.append(command)
+
+    def drain_operator_commands(self) -> None:
+        """Apply queued commands through the production turbine command path."""
+        while self._operator_commands:
+            command = self._operator_commands.pop(0)
+            unit_id = command.get("unit_id", "")
+            action = command.get("action", "")
+            metadata = dict(command.get("metadata") or {})
+            metadata.update({
+                "unit_id": unit_id,
+                "action": action,
+                "sim_time_s": self.sim_time,
+            })
+            handled = False
+            accepted = False
+            for turbine in self.sim_state.turbines:
+                if turbine.config.asset_id != unit_id:
+                    continue
+                handled = True
+                if (
+                    action == "trip"
+                    and turbine.config.hot_standby
+                    and turbine.state == _TurbineState.OFFLINE
+                ):
+                    # The supported clear-then-start path for a commissioned
+                    # standby unit.  Do not call the controller directly.
+                    turbine.config.hot_standby = False
+                    turbine.command_start(self.sim_time)
+                    accepted = turbine.state == _TurbineState.STARTING
+                    logger.info(
+                        "operator command: TRIP standby turbine %r → synchronization "
+                        "at sim_time=%.1f (run=%s)",
+                        unit_id, self.sim_time, self.run_id,
+                    )
+                elif action == "trip":
+                    if turbine.is_on_bus:
+                        turbine._last_sync_stop_s = self.sim_time
+                    turbine._stop_time_s = self.sim_time
+                    turbine._run_start_s = float("nan")
+                    turbine.state = _TurbineState.OFFLINE
+                    turbine._current_output_mw = 0.0
+                    accepted = True
+                    logger.info(
+                        "operator command: TRIP turbine %r at sim_time=%.1f (run=%s)",
+                        unit_id, self.sim_time, self.run_id,
+                    )
+                elif action == "start":
+                    was_offline = turbine.state == _TurbineState.OFFLINE
+                    turbine.command_start(self.sim_time)
+                    accepted = was_offline and turbine.state == _TurbineState.STARTING
+                    logger.info(
+                        "operator command: START turbine %r at sim_time=%.1f (run=%s)",
+                        unit_id, self.sim_time, self.run_id,
+                    )
+                elif action == "stop" and turbine.state == _TurbineState.SYNCHRONISED:
+                    blocked_reason = turbine.command_stop(self.sim_time)
+                    metadata["reason"] = blocked_reason or metadata.get("reason", "")
+                    accepted = blocked_reason is None
+                break
+            if (
+                command.get("source") == "forecast_commitment"
+                and self.turbine_commitment_controller is not None
+            ):
+                self.turbine_commitment_controller.command_result(
+                    metadata,
+                    accepted=bool(handled and accepted),
+                )
 
     def _apply_due_events(self) -> None:
         while (
@@ -1635,6 +1721,24 @@ class RunContext:
             })
         return tuple(points)
 
+    def _event_power_mw(self, event: WorkloadSignal) -> float:
+        """Return the existing workload power estimate used by planning."""
+        libraries = [
+            module.hardware_library
+            for module in self.sim_state.gpu_modules
+            if getattr(module, "hardware_library", None)
+        ]
+        profile = next(
+            (
+                library.get(event.hardware_profile_id)
+                for library in libraries
+                if library.get(event.hardware_profile_id) is not None
+            ),
+            None,
+        )
+        rated_kw = profile.rated_kw if profile is not None else 12.0
+        return event.node_count * rated_kw * self.sim_state.site.pue_base / 1000.0
+
     def step(self) -> TickResult:
         """Advance exactly one tick and return the result. Synchronous
         and deterministic -- see core/simulation_core.py.
@@ -1655,6 +1759,14 @@ class RunContext:
         """
         self._advance_internal_slurm()
         self._apply_due_events()
+        if self.turbine_commitment_controller is not None:
+            self.turbine_commitment_controller.evaluate(
+                ctx=self,
+                power_for_event=self._event_power_mw,
+            )
+        # Forecast commands are produced immediately before physics and use the
+        # same drain as HTTP operator commands.
+        self.drain_operator_commands()
         clock = SimClock(
             sim_time=self.sim_time,
             dt_seconds=TICK_INTERVAL_SIM_SECONDS,
@@ -1668,6 +1780,11 @@ class RunContext:
         finally:
             _EVALUATE_TICK_PERMITTED.reset(_token)
         self.sim_time += TICK_INTERVAL_SIM_SECONDS
+        self._measured_site_demand_history.append(
+            (result.sim_time_seconds, max(0.0, result.p_demand_mw))
+        )
+        if self.turbine_commitment_controller is not None:
+            self.turbine_commitment_controller.record_tick(self, result)
         result = _dc_replace(
             result,
             planning_forecast_mw=self._planning_forecast(result.forecast_mw),
@@ -1765,6 +1882,10 @@ class CompletedRun:
     turbine_minutes_below_low_load_threshold: float = 0.0
     turbine_fuel_telemetry: list[dict] = field(default_factory=list)
     turbine_fuel_parameter_provenance: Optional[dict] = None
+    # Addendum H Phase 2a: sealed controller audit trail for the run summary.
+    turbine_commitment_logs: list[dict] = field(default_factory=list)
+    turbine_commitment_constraints_valid: bool = True
+    turbine_commitment_constraint_violations: list[str] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -2415,57 +2536,9 @@ class RunManager:
                 # paused loop unblocks within one cycle and exits normally.
                 await ctx._pause_event.wait()
                 # ── A-1: operator unit commands ───────────────────────────
-                # Drain commands queued by POST /runs/{id}/units/{id}/command.
-                # Applied BEFORE evaluate_tick() so the physics engine sees
-                # the state change in this tick:
-                #   trip  → fleet output drops in the same-tick broadcast.
-                #   start → unit enters STARTING; ramps to SYNCHRONISED naturally.
-                # No await points in this loop — asyncio cannot interleave
-                # another coroutine mid-drain, so no mutex is needed.
-                while ctx._operator_commands:
-                    _cmd        = ctx._operator_commands.pop(0)
-                    _cmd_uid    = _cmd.get("unit_id", "")
-                    _cmd_action = _cmd.get("action", "")
-                    for _turb in ctx.sim_state.turbines:
-                        if _turb.config.asset_id == _cmd_uid:
-                            if _cmd_action == "trip" and _turb.config.hot_standby and _turb.state == _TurbineState.OFFLINE:
-                                # Operator TRIP on standby means release the
-                                # commissioned unit into the normal sync path.
-                                # Clear the dispatch-only flag before calling
-                                # command_start(), whose hot-standby guard
-                                # otherwise intentionally returns.
-                                _turb.config.hot_standby = False
-                                _turb.command_start(ctx.sim_time)
-                                logger.info(
-                                    "operator command: TRIP standby turbine %r "
-                                    "→ synchronization at sim_time=%.1f (run=%s)",
-                                    _cmd_uid, ctx.sim_time, ctx.run_id,
-                                )
-                            elif _cmd_action == "trip":
-                                # Operator trip: emergency OFFLINE transition for any on-bus unit.
-                                # Bypasses the Phase C/E controlled-stop sequence — breaker opens
-                                # immediately.  Record timestamps for thermal classification.
-                                # Phase C Item 4 (run_manager): is_on_bus — trip is valid for both
-                                # SYNCHRONISED and UNLOADING units (both are breaker-closed).
-                                if _turb.is_on_bus:
-                                    _turb._last_sync_stop_s = ctx.sim_time
-                                _turb._stop_time_s      = ctx.sim_time
-                                _turb._run_start_s      = float('nan')
-                                _turb.state = _TurbineState.OFFLINE
-                                _turb._current_output_mw = 0.0
-                                logger.info(
-                                    "operator command: TRIP turbine %r "
-                                    "at sim_time=%.1f (run=%s)",
-                                    _cmd_uid, ctx.sim_time, ctx.run_id,
-                                )
-                            elif _cmd_action == "start":
-                                _turb.command_start(ctx.sim_time)
-                                logger.info(
-                                    "operator command: START turbine %r "
-                                    "at sim_time=%.1f (run=%s)",
-                                    _cmd_uid, ctx.sim_time, ctx.run_id,
-                                )
-                            break
+                # Both HTTP operator commands and forecast-controller commands
+                # use the same production drain.
+                ctx.drain_operator_commands()
 
                 # ── A0: three-tier solar pre-step injection ───────────────
                 # Inject the Mistral bank-aggregated MW into every SolarModule
@@ -3373,6 +3446,23 @@ class RunManager:
                     import json as _json_va
                     _vd = _json_va.loads(verdict_json)
                     _vd["total_edl_dispatch_cost_usd"] = _total_edl_dispatch_cost_usd
+                    _vd["turbine_commitment_logs"] = (
+                        [
+                            record.as_dict()
+                            for record in (
+                                ctx.turbine_commitment_controller.log
+                                if ctx.turbine_commitment_controller is not None
+                                else []
+                            )
+                        ]
+                    )
+                    if ctx.turbine_commitment_controller is not None:
+                        _vd["turbine_commitment_constraints_valid"] = (
+                            ctx.turbine_commitment_controller.constraints_valid
+                        )
+                        _vd["turbine_commitment_constraint_violations"] = list(
+                            ctx.turbine_commitment_controller.constraint_violation_reasons
+                        )
                     verdict_json = _json_va.dumps(_vd)
 
                 # Store for the results/playback screen.
@@ -3427,6 +3517,28 @@ class RunManager:
                     ),
                     turbine_fuel_parameter_provenance=_fuel_summary.get(
                         "turbine_fuel_parameter_provenance"
+                    ),
+                    turbine_commitment_logs=(
+                        [
+                            record.as_dict()
+                            for record in (
+                                ctx.turbine_commitment_controller.log
+                                if ctx.turbine_commitment_controller is not None
+                                else []
+                            )
+                        ]
+                    ),
+                    turbine_commitment_constraints_valid=(
+                        ctx.turbine_commitment_controller.constraints_valid
+                        if ctx.turbine_commitment_controller is not None
+                        else True
+                    ),
+                    turbine_commitment_constraint_violations=(
+                        list(
+                            ctx.turbine_commitment_controller.constraint_violation_reasons
+                        )
+                        if ctx.turbine_commitment_controller is not None
+                        else []
                     ),
                 )
 

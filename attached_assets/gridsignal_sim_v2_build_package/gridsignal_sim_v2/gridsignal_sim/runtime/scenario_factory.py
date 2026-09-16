@@ -74,6 +74,7 @@ import core.site_parameters as _sp  # GS-DES-CFG-001 §Phase-6
 from pydantic import TypeAdapter
 
 from runtime.run_manager import InMemoryTimeseriesSink, RunContext
+from runtime.turbine_commitment import ForecastDrivenTurbineController
 from runtime.pms_test_double import OperatorResponseProfile as _OperatorResponseProfile
 from runtime.verdict import AssertionSpec as _AssertionSpec
 
@@ -1893,6 +1894,23 @@ def build_run_context_from_spec(
         enabled=True,
         max_proposal_mw=float(spec_data.get("advisory_max_mw", 20.0)),
     )
+    _commitment_mode = str(spec_data.get("turbine_commitment_mode", "disabled"))
+    _turbine_commitment_controller = (
+        ForecastDrivenTurbineController(
+            mode=_commitment_mode,
+            forecast_lead_seconds=float(
+                spec_data.get("turbine_forecast_lead_seconds", 600.0)
+            ),
+            floor_synchronized=int(
+                spec_data.get("turbine_commitment_floor", 1)
+            ),
+            sensitivity_mw=float(
+                spec_data.get("turbine_commitment_sensitivity_mw", 2.0)
+            ),
+        )
+        if _commitment_mode != "disabled"
+        else None
+    )
     return RunContext(
         run_id=run_id,
         sim_state=sim_state,
@@ -1917,6 +1935,7 @@ def build_run_context_from_spec(
         slurm_job_specs=_slurm_job_specs,
         _rated_cooling_mw=_spec_rated_cooling_mw,
         _design_peak_load_mw=_spec_design_peak_load_mw,
+        turbine_commitment_controller=_turbine_commitment_controller,
         # AB2: for §21.2 cost model in energy-summary endpoint.
         turbine_rated_mw=_spec_total_turbine_mw,
         # DIAG-1 / DIAG-2: per-scenario cost price overrides.

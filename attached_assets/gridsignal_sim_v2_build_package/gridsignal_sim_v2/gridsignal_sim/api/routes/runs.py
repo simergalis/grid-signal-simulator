@@ -140,6 +140,13 @@ async def _load_completed_from_db(run_id: str) -> "CompletedRun | None":
             # Task #428: restore run-level EDL total persisted in verdict_json.
             # None when the key is absent (pre-#428 rows) or was null (headless).
             total_edl_dispatch_cost_usd=_v.get("total_edl_dispatch_cost_usd"),
+            turbine_commitment_logs=list(_v.get("turbine_commitment_logs", [])),
+            turbine_commitment_constraints_valid=bool(
+                _v.get("turbine_commitment_constraints_valid", True)
+            ),
+            turbine_commitment_constraint_violations=list(
+                _v.get("turbine_commitment_constraint_violations", [])
+            ),
         )
     except Exception:
         _log.warning("run %s: DB fallback verdict parse failed", run_id, exc_info=True)
@@ -741,6 +748,11 @@ async def get_run_result(
         ],
         balance_gate=_balance_gate_resp,
         total_edl_dispatch_cost_usd=completed.total_edl_dispatch_cost_usd,
+        turbine_commitment_logs=completed.turbine_commitment_logs,
+        turbine_commitment_constraints_valid=completed.turbine_commitment_constraints_valid,
+        turbine_commitment_constraint_violations=(
+            completed.turbine_commitment_constraint_violations
+        ),
     )
 
 

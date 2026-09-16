@@ -1166,6 +1166,9 @@ export interface RunResult {
   // null on headless runs where EDL is not wired; non-null on spec-path runs.
   // Use to compare scenario economics without aggregating the timeseries.
   total_edl_dispatch_cost_usd: number | null
+  turbine_commitment_logs: TurbineCommitmentLog[]
+  turbine_commitment_constraints_valid: boolean
+  turbine_commitment_constraint_violations: string[]
   // Task #453: run-level energy accounting (MWh and USD).
   // null on headless/direct-path runs or durability fallback rows from DB.
   total_energy_demand_mwh:      number | null
@@ -1174,6 +1177,18 @@ export interface RunResult {
   total_energy_bess_charge_mwh: number | null
   total_energy_grid_import_mwh: number | null
   total_energy_cost_usd:        number | null
+}
+
+export interface TurbineCommitmentLog {
+  sim_time_s: number
+  unit_id: string
+  action: string
+  thermal_tier: string
+  reason: string
+  forecast_mw: number
+  synchronized_capacity_mw: number
+  bess_soc_fraction: number
+  accepted: boolean
 }
 
 export interface TimeseriesRow {

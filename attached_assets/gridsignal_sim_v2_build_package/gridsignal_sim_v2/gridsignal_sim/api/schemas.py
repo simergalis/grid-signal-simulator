@@ -1678,6 +1678,30 @@ class ScenarioSpec(BaseModel):
             "SOLAR_STEP events always use dt_lead=0 regardless of this value (§7.1.1)."
         ),
     )
+    # Addendum H Phase 2a.  These are policy inputs, not turbine physics
+    # constants.  "disabled" preserves legacy commitment behavior.
+    turbine_commitment_mode: Literal["disabled", "baseline", "informed"] = Field(
+        default="disabled",
+        description=(
+            "Forecast-driven turbine commitment mode. baseline keeps at least "
+            "three synchronized units without using forecast; informed uses "
+            "announced workload forecast. disabled preserves legacy behavior."
+        ),
+    )
+    turbine_forecast_lead_seconds: float = Field(
+        default=600.0,
+        description="PROPOSED_HERE: advance notice for announced workload events.",
+    )
+    turbine_commitment_floor: int = Field(
+        default=1,
+        ge=1,
+        description="PROPOSED_HERE: minimum synchronized turbines in informed mode.",
+    )
+    turbine_commitment_sensitivity_mw: float = Field(
+        default=2.0,
+        ge=0.0,
+        description="PROPOSED_HERE: informed-mode stop hysteresis in MW.",
+    )
 
     # Turbine starting topology.  None preserves the historical effective
     # default of one synchronized unit, but lets the loader distinguish an
@@ -2390,6 +2414,17 @@ class ScenarioSpec(BaseModel):
         return self
 
     @model_validator(mode="after")
+    def _validate_turbine_commitment_policy(self) -> "ScenarioSpec":
+        """Keep the Phase 2a policy surface explicit and bounded."""
+        allowed_leads = {0.0, 150.0, 300.0, 600.0, 1200.0}
+        if self.turbine_forecast_lead_seconds not in allowed_leads:
+            raise ValueError(
+                "turbine_forecast_lead_seconds must be one of "
+                "0, 150, 300, 600, or 1,200 seconds"
+            )
+        return self
+
+    @model_validator(mode="after")
     def _check_tenant_ceilings(self) -> "ScenarioSpec":
         """Reject any tenant event whose GPU TDP exceeds 150 % of the contracted ceiling.
 
@@ -2878,6 +2913,9 @@ class RunResultResponse(BaseModel):
     # Allows operators to compare scenario economics from a single number
     # without aggregating the per-tick timeseries themselves.
     total_edl_dispatch_cost_usd: Optional[float] = None
+    turbine_commitment_logs: list[dict[str, Any]] = Field(default_factory=list)
+    turbine_commitment_constraints_valid: bool = True
+    turbine_commitment_constraint_violations: list[str] = Field(default_factory=list)
 
 
 
