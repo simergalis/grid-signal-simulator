@@ -50,7 +50,10 @@ from core._plane_guard import _EVALUATE_TICK_PERMITTED
 from core.site_parameters import get as _sp_catalogue_get
 from core.site_parameters import value as _sp_catalogue_value
 from core.slurm_scheduler import SlurmJobSpec, SlurmSchedulerEngine
-from runtime.turbine_commitment import ForecastDrivenTurbineController
+from runtime.turbine_commitment import (
+    ForecastDrivenTurbineController,
+    summarize_unserved_ticks,
+)
 
 # GS-IMPL-PSP-002 Phase 4 — Economic Dispatch Loop + §4.3 escalation wiring.
 # runtime/ → core/ is the allowed import direction; these never cross into api/.
@@ -1410,7 +1413,9 @@ class RunContext:
     # Addendum H Phase 2a: measured demand history is the only source for the
     # rolling background forecast.  It is intentionally populated after a
     # completed physics tick, so the controller cannot look ahead.
-    _measured_site_demand_history: list[tuple[float, float]] = field(default_factory=list)
+    _measured_site_demand_history: list[tuple[float, float, float, float]] = field(
+        default_factory=list
+    )
     turbine_commitment_controller: Optional[ForecastDrivenTurbineController] = None
 
     def is_complete(self) -> bool:
@@ -1812,7 +1817,12 @@ class RunContext:
             _EVALUATE_TICK_PERMITTED.reset(_token)
         self.sim_time += TICK_INTERVAL_SIM_SECONDS
         self._measured_site_demand_history.append(
-            (result.sim_time_seconds, max(0.0, result.p_demand_mw))
+            (
+                result.sim_time_seconds,
+                max(0.0, result.p_demand_mw),
+                max(0.0, result.p_compute_demand_mw),
+                max(0.0, result.p_cooling_demand_mw),
+            )
         )
         if self.turbine_commitment_controller is not None:
             self.turbine_commitment_controller.record_tick(self, result)
@@ -1919,6 +1929,13 @@ class CompletedRun:
     turbine_commitment_constraint_violations: list[str] = field(default_factory=list)
     turbine_commitment_start_counts: dict[str, int] = field(default_factory=dict)
     turbine_commitment_start_count_reconciled: bool = True
+    turbine_commitment_unserved_energy_mwh: float = 0.0
+    turbine_commitment_peak_unserved_mw: float = 0.0
+    turbine_commitment_unserved_intervals: list[dict] = field(default_factory=list)
+    turbine_commitment_preload_actions: list[dict] = field(default_factory=list)
+    turbine_commitment_preload_fuel_mmbtu: float = 0.0
+    turbine_commitment_forecast_miss_count: int = 0
+    turbine_commitment_forecast_miss_peak_mw: float = 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -3508,6 +3525,17 @@ class RunManager:
                     (_commitment_controller.constraints_valid if _commitment_controller else True)
                     and _start_count_reconciled
                 )
+                _unserved_summary = summarize_unserved_ticks(tick_dicts)
+                _preload_actions = (
+                    list(_commitment_controller.preload_actions)
+                    if _commitment_controller is not None
+                    else []
+                )
+                _preload_fuel_mmbtu = (
+                    float(_commitment_controller.preload_fuel_mmbtu)
+                    if _commitment_controller is not None
+                    else 0.0
+                )
 
                 # Amend verdict_json with total_edl_dispatch_cost_usd so that
                 # the value survives a server restart.  persist_completed_hook
@@ -3535,6 +3563,23 @@ class RunManager:
                     _vd["turbine_commitment_start_counts"] = _commitment_start_counts
                     _vd["turbine_commitment_start_count_reconciled"] = (
                         _start_count_reconciled
+                    )
+                    _vd["turbine_commitment_unserved_energy_mwh"] = _unserved_summary[
+                        "unserved_energy_mwh"
+                    ]
+                    _vd["turbine_commitment_peak_unserved_mw"] = _unserved_summary[
+                        "peak_unserved_mw"
+                    ]
+                    _vd["turbine_commitment_unserved_intervals"] = _unserved_summary[
+                        "unserved_intervals"
+                    ]
+                    _vd["turbine_commitment_preload_actions"] = _preload_actions
+                    _vd["turbine_commitment_preload_fuel_mmbtu"] = _preload_fuel_mmbtu
+                    _vd["turbine_commitment_forecast_miss_count"] = int(
+                        getattr(_commitment_controller, "forecast_miss_count", 0)
+                    )
+                    _vd["turbine_commitment_forecast_miss_peak_mw"] = float(
+                        getattr(_commitment_controller, "forecast_miss_peak_mw", 0.0)
                     )
                     verdict_json = _json_va.dumps(_vd)
 
@@ -3604,6 +3649,23 @@ class RunManager:
                     turbine_commitment_constraint_violations=_commitment_violations,
                     turbine_commitment_start_counts=_commitment_start_counts,
                     turbine_commitment_start_count_reconciled=_start_count_reconciled,
+                    turbine_commitment_unserved_energy_mwh=float(
+                        _unserved_summary["unserved_energy_mwh"]
+                    ),
+                    turbine_commitment_peak_unserved_mw=float(
+                        _unserved_summary["peak_unserved_mw"]
+                    ),
+                    turbine_commitment_unserved_intervals=list(
+                        _unserved_summary["unserved_intervals"]
+                    ),
+                    turbine_commitment_preload_actions=_preload_actions,
+                    turbine_commitment_preload_fuel_mmbtu=_preload_fuel_mmbtu,
+                    turbine_commitment_forecast_miss_count=int(
+                        getattr(_commitment_controller, "forecast_miss_count", 0)
+                    ),
+                    turbine_commitment_forecast_miss_peak_mw=float(
+                        getattr(_commitment_controller, "forecast_miss_peak_mw", 0.0)
+                    ),
                 )
 
                 # Tenant overage billing summary — emitted once per run when

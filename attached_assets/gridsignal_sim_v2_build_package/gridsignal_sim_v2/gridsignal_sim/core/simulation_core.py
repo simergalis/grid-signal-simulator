@@ -29,7 +29,7 @@ from .asset_modules import (
     TurbineState,
 )
 from .fuel_cell_module import BlockFuelCellFleet, FuelCellModule
-from .loading import apply_loading, ramp_capability
+from .loading import apply_loading, apply_loading_targets, ramp_capability
 from .contingency import BessSnapshot, FuelCellSnapshot, PlantState, TurbineSnapshot, evaluate_contingency
 from .kube_demand import KubeDemandAgent, KubeGridState
 from .lead_time_observations import LeadTimeObservationRecorder
@@ -1613,6 +1613,14 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     _thermal_dispatch_target_mw = (
         _turbine_must_run_mw + _economic_allocations["turbine-fleet"]
     )
+    _preload_targets_mw = dict(getattr(state, "_preload_targets_mw", {}) or {})
+    if _preload_targets_mw:
+        _thermal_dispatch_target_mw = max(
+            _thermal_dispatch_target_mw,
+            _uncontrolled_on_bus_mw
+            + _msl_held_mw
+            + sum(_preload_targets_mw.values()),
+        )
 
     for _ut in _unloading_units:
         _ut_msl_mw = _ut.config.p_min_stable_frac * _ut.config.rated_mw
@@ -1623,9 +1631,14 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         - _uncontrolled_on_bus_mw
         - _msl_held_mw,
     )
-    _sub_msl_surplus_mw: float = apply_loading(
-        _truly_sync_units, _p_sync_fleet_mw, dt_seconds
-    )
+    if _preload_targets_mw:
+        _sub_msl_surplus_mw = apply_loading_targets(
+            _truly_sync_units, _preload_targets_mw, dt_seconds
+        )
+    else:
+        _sub_msl_surplus_mw = apply_loading(
+            _truly_sync_units, _p_sync_fleet_mw, dt_seconds
+        )
 
     # Addendum H Phase 1: account for the completed interval after loading has
     # written the interval-end output, but before the unloading breaker gate

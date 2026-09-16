@@ -2918,6 +2918,17 @@ class RunResultResponse(BaseModel):
     turbine_commitment_constraint_violations: list[str] = Field(default_factory=list)
     turbine_commitment_start_counts: dict[str, int] = Field(default_factory=dict)
     turbine_commitment_start_count_reconciled: bool = True
+    turbine_commitment_unserved_energy_mwh: float = 0.0
+    turbine_commitment_peak_unserved_mw: float = 0.0
+    turbine_commitment_unserved_intervals: list[dict[str, Any]] = Field(
+        default_factory=list
+    )
+    turbine_commitment_preload_actions: list[dict[str, Any]] = Field(
+        default_factory=list
+    )
+    turbine_commitment_preload_fuel_mmbtu: float = 0.0
+    turbine_commitment_forecast_miss_count: int = 0
+    turbine_commitment_forecast_miss_peak_mw: float = 0.0
 
 
 

@@ -158,6 +158,38 @@ def apply_loading(
     return sub_msl_surplus_mw
 
 
+def apply_loading_targets(
+    synchronised: "list[TurbineModule]",
+    targets_mw: "dict[str, float]",
+    dt_seconds: float,
+) -> float:
+    """Advance units toward explicit per-unit targets.
+
+    This is the same loading/setpoint mechanism as ``apply_loading`` with a
+    controller-provided target overlay.  It does not add a turbine state or
+    bypass the per-unit ramp and output clamp.
+    """
+    sub_msl_surplus_mw = 0.0
+    for turbine in synchronised:
+        minimum = max(
+            0.0,
+            float(turbine.config.p_min_stable_frac)
+            * float(turbine.config.rated_mw),
+        )
+        target = max(
+            minimum,
+            min(
+                float(turbine.config.rated_mw),
+                float(targets_mw.get(turbine.config.asset_id, minimum)),
+            ),
+        )
+        delta = target - turbine.output_mw()
+        max_step = turbine.config.r_asset_mw_per_s * dt_seconds
+        step = max(-max_step, min(max_step, delta))
+        turbine.set_output(turbine.output_mw() + step)
+    return sub_msl_surplus_mw
+
+
 # ---------------------------------------------------------------------------
 # Ramp capability over horizon H
 # ---------------------------------------------------------------------------

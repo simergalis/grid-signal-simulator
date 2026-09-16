@@ -24,6 +24,90 @@ DEFAULT_STOP_LOOKAHEAD_SECONDS = 1200.0
 DEFAULT_FLOOR_SYNCHRONIZED = 1
 DEFAULT_SENSITIVITY_MW = 2.0
 DEFAULT_BESS_ALLOWANCE_SOC_THRESHOLD = 0.50
+DEFAULT_PRELOAD_MARGIN_SECONDS = 30.0
+
+
+def summarize_unserved_ticks(
+    ticks: list[Any],
+    *,
+    dt_seconds: float = 5.0,
+) -> dict[str, Any]:
+    """Return explicit unserved-energy, peak-power, and interval metrics.
+
+    The simulator reports ``p_unserved_mw`` at interval end.  Energy is therefore
+    the sum of each interval's positive power multiplied by the configured
+    interval duration; it is never inferred from the run verdict.
+    """
+    dt_hours = max(0.0, float(dt_seconds)) / 3600.0
+    energy_mwh = 0.0
+    peak_mw = 0.0
+    intervals: list[dict[str, float]] = []
+    open_interval: Optional[dict[str, float]] = None
+    for tick in ticks:
+        value = (
+            tick.get("p_unserved_mw", 0.0)
+            if isinstance(tick, dict)
+            else getattr(tick, "p_unserved_mw", 0.0)
+        )
+        sim_time = (
+            tick.get("sim_time_seconds", 0.0)
+            if isinstance(tick, dict)
+            else getattr(tick, "sim_time_seconds", 0.0)
+        )
+        unserved_mw = max(0.0, float(value or 0.0))
+        end_s = float(sim_time)
+        start_s = end_s - max(0.0, float(dt_seconds))
+        energy_mwh += unserved_mw * dt_hours
+        peak_mw = max(peak_mw, unserved_mw)
+        if unserved_mw > 1e-9:
+            if open_interval is None:
+                open_interval = {
+                    "start_sim_time_s": start_s,
+                    "end_sim_time_s": end_s,
+                    "peak_unserved_mw": unserved_mw,
+                }
+            else:
+                open_interval["end_sim_time_s"] = end_s
+                open_interval["peak_unserved_mw"] = max(
+                    open_interval["peak_unserved_mw"], unserved_mw
+                )
+        elif open_interval is not None:
+            intervals.append(open_interval)
+            open_interval = None
+    if open_interval is not None:
+        intervals.append(open_interval)
+    return {
+        "unserved_energy_mwh": round(energy_mwh, 9),
+        "peak_unserved_mw": round(peak_mw, 9),
+        "unserved_interval_count": len(intervals),
+        "unserved_intervals": intervals,
+    }
+
+
+def unserved_comparison_verdict(
+    baseline: dict[str, Any],
+    informed: dict[str, Any],
+) -> dict[str, Any]:
+    """Compare informed mode against baseline without hiding either metric."""
+    energy_ok = float(informed.get("unserved_energy_mwh", 0.0)) <= (
+        float(baseline.get("unserved_energy_mwh", 0.0)) + 1e-9
+    )
+    peak_ok = float(informed.get("peak_unserved_mw", 0.0)) <= (
+        float(baseline.get("peak_unserved_mw", 0.0)) + 1e-9
+    )
+    return {
+        "verdict": "PASS" if energy_ok and peak_ok else "FAIL",
+        "unserved_energy_no_worse": energy_ok,
+        "peak_unserved_no_worse": peak_ok,
+        "baseline_unserved_energy_mwh": float(
+            baseline.get("unserved_energy_mwh", 0.0)
+        ),
+        "informed_unserved_energy_mwh": float(
+            informed.get("unserved_energy_mwh", 0.0)
+        ),
+        "baseline_peak_unserved_mw": float(baseline.get("peak_unserved_mw", 0.0)),
+        "informed_peak_unserved_mw": float(informed.get("peak_unserved_mw", 0.0)),
+    }
 
 
 @dataclass(frozen=True)
@@ -95,6 +179,7 @@ class ForecastDrivenTurbineController:
     stop_lookahead_seconds: float = DEFAULT_STOP_LOOKAHEAD_SECONDS
     floor_synchronized: int = DEFAULT_FLOOR_SYNCHRONIZED
     sensitivity_mw: float = DEFAULT_SENSITIVITY_MW
+    preload_margin_seconds: float = DEFAULT_PRELOAD_MARGIN_SECONDS
     bess_allowance_soc_threshold_fraction: float = (
         DEFAULT_BESS_ALLOWANCE_SOC_THRESHOLD
     )
@@ -104,6 +189,19 @@ class ForecastDrivenTurbineController:
     _pending_request_keys: set[tuple[str, str]] = field(default_factory=set, repr=False)
     _cascade_release_ticks: set[int] = field(default_factory=set, repr=False)
     _observed_start_counts: dict[str, int] = field(default_factory=dict, repr=False)
+    _last_refusal_signature: dict[tuple[str, str], tuple[str, str]] = field(
+        default_factory=dict, repr=False
+    )
+    preload_actions: list[dict[str, Any]] = field(default_factory=list)
+    preload_fuel_mmbtu: float = 0.0
+    unserved_energy_mwh: float = 0.0
+    peak_unserved_mw: float = 0.0
+    unserved_intervals: list[dict[str, float]] = field(default_factory=list)
+    _open_unserved_interval: Optional[dict[str, float]] = field(
+        default=None, repr=False
+    )
+    forecast_miss_count: int = 0
+    forecast_miss_peak_mw: float = 0.0
 
     def __post_init__(self) -> None:
         if self.mode not in {"disabled", "baseline", "informed"}:
@@ -114,6 +212,7 @@ class ForecastDrivenTurbineController:
             )
         self.floor_synchronized = max(1, int(self.floor_synchronized))
         self.sensitivity_mw = max(0.0, float(self.sensitivity_mw))
+        self.preload_margin_seconds = max(0.0, float(self.preload_margin_seconds))
 
     @property
     def enabled(self) -> bool:
@@ -210,7 +309,9 @@ class ForecastDrivenTurbineController:
         """
         samples: list[float] = []
         window_start = sim_time_s - self.background_window_seconds
-        for timestamp, value in measured_history:
+        for sample in measured_history:
+            timestamp = float(sample[0])
+            value = float(sample[1])
             if not window_start <= timestamp < sim_time_s:
                 continue
             job_state = self._job_state_at(
@@ -219,7 +320,13 @@ class ForecastDrivenTurbineController:
                 power_for_event=power_for_event,
             )
             scripted = sum(power for power, _, _ in job_state.values())
-            scripted *= 1.0 + max(0.0, cooling_fraction)
+            if len(sample) >= 4:
+                # RunContext stores the actual lagged cooling producer beside
+                # measured demand.  Older callers still use the multiplier
+                # fallback so the controller remains backwards-compatible.
+                scripted += max(0.0, float(sample[3]))
+            else:
+                scripted *= 1.0 + max(0.0, cooling_fraction)
             samples.append(max(0.0, float(value) - scripted))
         return samples
 
@@ -384,6 +491,11 @@ class ForecastDrivenTurbineController:
     ) -> CommitmentForecast | None:
         if not self.enabled:
             return None
+        # The preload request is a per-tick setpoint overlay, not a second
+        # turbine state machine.  Clear the previous request before evaluating
+        # the current forecast so it cannot persist after a burst ends.
+        setattr(ctx.sim_state, "_preload_targets_mw", {})
+        setattr(ctx.sim_state, "_preload_active_units", set())
         cooling_fraction = float(getattr(ctx.sim_state.site, "alpha_max", 0.0))
         forecast = self.forecast(
             sim_time_s=ctx.sim_time,
@@ -412,6 +524,8 @@ class ForecastDrivenTurbineController:
                         soc,
                     )
             return forecast
+
+        self._evaluate_preload(ctx, forecast, power_for_event)
 
         start_horizon = self.hot_start_lookahead_seconds + self.ramp_to_load_seconds
         start_peak = forecast.peak_over(start_horizon)
@@ -454,7 +568,7 @@ class ForecastDrivenTurbineController:
             for turbine in remaining
         )
 
-        if stop_peak > remaining_capacity + bess_allowance + self.sensitivity_mw:
+        if stop_peak + self.sensitivity_mw > remaining_capacity + bess_allowance:
             self._refused(
                 ctx=ctx,
                 turbine=candidate,
@@ -502,6 +616,107 @@ class ForecastDrivenTurbineController:
                 soc,
             )
         return forecast
+
+    def _evaluate_preload(
+        self,
+        ctx: Any,
+        forecast: CommitmentForecast,
+        power_for_event: Callable[[Any], float],
+    ) -> None:
+        """Pre-load synchronized turbines ahead of a known burst.
+
+        Targets are consumed by the existing loading layer, which applies each
+        turbine's configured ramp limit.  The BESS arbitrator then gets first
+        refusal on the resulting surplus and charges within its own limits.
+        """
+        turbines = [
+            turbine
+            for turbine in ctx.sim_state.turbines
+            if turbine.state == TurbineState.SYNCHRONISED
+            and not turbine.config.hot_standby
+        ]
+        if not turbines:
+            return
+        future_starts = [
+            event
+            for event in ctx.events
+            if self._event_type(event) in {"starting", "running"}
+            and ctx.sim_time < float(event.timestamp) <= ctx.sim_time + self.forecast_lead_seconds
+        ]
+        if not future_starts:
+            return
+        event = min(future_starts, key=lambda item: (item.timestamp, item.event_id))
+        onset_s = float(event.timestamp)
+        onset_values = [
+            mw for timestamp, mw in forecast.profile if abs(timestamp - onset_s) < 1e-6
+        ]
+        if onset_values:
+            onset_demand_mw = max(onset_values)
+        else:
+            onset_demand_mw = forecast.peak_over(max(0.0, onset_s - ctx.sim_time))
+        bess_allowance, _ = self._bess_allowance(ctx.sim_state.bess_units)
+        current_output_mw = sum(max(0.0, turbine.output_mw()) for turbine in turbines)
+        target_total_mw = min(
+            sum(max(0.0, float(turbine.config.rated_mw)) for turbine in turbines),
+            max(0.0, onset_demand_mw - bess_allowance),
+        )
+        delta_mw = max(0.0, target_total_mw - current_output_mw)
+        ramp_rate_mw_s = sum(
+            max(0.0, float(turbine.config.r_asset_mw_per_s))
+            for turbine in turbines
+        )
+        if delta_mw <= 1e-9 or ramp_rate_mw_s <= 1e-9:
+            return
+        ramp_seconds = delta_mw / ramp_rate_mw_s
+        time_to_onset_s = onset_s - ctx.sim_time
+        if time_to_onset_s > ramp_seconds + self.preload_margin_seconds:
+            return
+
+        # Do not create unabsorbable islanded surplus.  The existing BESS
+        # charge path is the only allowed sink for this temporary generation.
+        dt_hours = max(0.0, float(getattr(ctx, "dt_seconds", 5.0))) / 3600.0
+        charge_capacity_mw = sum(
+            min(
+                max(0.0, float(unit.config.rated_mw)),
+                max(0.0, float(unit.config.usable_mwh) - float(unit.soc_mwh))
+                / max(dt_hours, 1e-9),
+            )
+            for unit in ctx.sim_state.bess_units
+            if not getattr(unit, "tripped", False)
+        )
+        current_demand_mw = max(0.0, float(forecast.forecast_mw))
+        if max(0.0, target_total_mw - current_demand_mw) > charge_capacity_mw + 1e-9:
+            return
+
+        remaining = target_total_mw
+        targets: dict[str, float] = {}
+        for turbine in turbines:
+            minimum = max(
+                0.0,
+                float(turbine.config.p_min_stable_frac)
+                * float(turbine.config.rated_mw),
+            )
+            target = min(
+                max(minimum, remaining),
+                max(0.0, float(turbine.config.rated_mw)),
+            )
+            targets[turbine.config.asset_id] = target
+            remaining = max(0.0, remaining - target)
+        if not targets:
+            return
+        setattr(ctx.sim_state, "_preload_targets_mw", targets)
+        setattr(ctx.sim_state, "_preload_active_units", set(targets))
+        action = {
+            "sim_time_s": float(ctx.sim_time),
+            "unit_ids": sorted(targets),
+            "target_mw": round(sum(targets.values()), 6),
+            "reason": "forecast burst preload within ramp window",
+            "forecast_mw": round(float(onset_demand_mw), 6),
+            "burst_sim_time_s": onset_s,
+            "ramp_seconds": round(ramp_seconds, 6),
+            "margin_seconds": self.preload_margin_seconds,
+        }
+        self.preload_actions.append(action)
 
     def _metadata(
         self,
@@ -602,6 +817,17 @@ class ForecastDrivenTurbineController:
         )
         self._pending_request_keys.discard(key)
         action = str(metadata.get("action", ""))
+        refusal_key = (str(metadata.get("unit_id", "")), action)
+        refusal_signature = (
+            str(refusal_reason or metadata.get("refusal_reason") or ""),
+            str(metadata.get("source", "forecast_commitment")),
+        )
+        if not accepted:
+            if self._last_refusal_signature.get(refusal_key) == refusal_signature:
+                return
+            self._last_refusal_signature[refusal_key] = refusal_signature
+        else:
+            self._last_refusal_signature.pop(refusal_key, None)
         self.log.append(
             CommitmentLogRecord(
                 sim_time_s=float(metadata.get("sim_time_s", 0.0)),
@@ -642,6 +868,42 @@ class ForecastDrivenTurbineController:
 
     def record_tick(self, ctx: Any, result: Any) -> None:
         """Record hard constraints, cascade releases, and start reconciliation."""
+        dt_seconds = max(0.0, float(getattr(ctx, "dt_seconds", 5.0)))
+        unserved_mw = max(0.0, float(getattr(result, "p_unserved_mw", 0.0) or 0.0))
+        self.unserved_energy_mwh += unserved_mw * dt_seconds / 3600.0
+        self.peak_unserved_mw = max(self.peak_unserved_mw, unserved_mw)
+        end_s = float(getattr(result, "sim_time_seconds", 0.0))
+        if unserved_mw > 1e-9:
+            if self._open_unserved_interval is None:
+                self._open_unserved_interval = {
+                    "start_sim_time_s": end_s - dt_seconds,
+                    "end_sim_time_s": end_s,
+                    "peak_unserved_mw": unserved_mw,
+                }
+            else:
+                self._open_unserved_interval["end_sim_time_s"] = end_s
+                self._open_unserved_interval["peak_unserved_mw"] = max(
+                    self._open_unserved_interval["peak_unserved_mw"], unserved_mw
+                )
+        elif self._open_unserved_interval is not None:
+            self.unserved_intervals.append(self._open_unserved_interval)
+            self._open_unserved_interval = None
+        if self.forecast_history:
+            forecast = self.forecast_history[-1]
+            actual_demand = float(getattr(result, "p_demand_mw", 0.0) or 0.0)
+            miss = max(0.0, actual_demand - forecast.peak_forecast_mw)
+            if miss > self.sensitivity_mw:
+                self.forecast_miss_count += 1
+                self.forecast_miss_peak_mw = max(self.forecast_miss_peak_mw, miss)
+        active_preload_units = set(
+            getattr(ctx.sim_state, "_preload_active_units", set())
+        )
+        if active_preload_units:
+            for turbine in ctx.sim_state.turbines:
+                if turbine.config.asset_id in active_preload_units:
+                    self.preload_fuel_mmbtu += max(
+                        0.0, float(getattr(turbine, "_last_interval_fuel_mmbtu", 0.0))
+                    )
         for unit in ctx.sim_state.bess_units:
             if getattr(unit.config, "grid_forming", False):
                 allowed = max(
@@ -689,77 +951,6 @@ class ForecastDrivenTurbineController:
                 )
             )
 
-        # Detect starts that entered through an existing production path rather
-        # than through the forecast controller's command queue.
-        for turbine in ctx.sim_state.turbines:
-            current = int(getattr(turbine, "_start_count", 0))
-            logged = sum(
-                1
-                for record in self.log
-                if record.unit_id == turbine.config.asset_id
-                and record.action in {"start", "release"}
-                and record.accepted
-                and record.changed_state
-            )
-            previous = self._observed_start_counts.get(turbine.config.asset_id, 0)
-            if current > logged and current > previous:
-                for _ in range(current - max(logged, previous)):
-                    self.log.append(
-                        CommitmentLogRecord(
-                            sim_time_s=float(result.sim_time_seconds),
-                            unit_id=turbine.config.asset_id,
-                            action="start",
-                            thermal_tier=getattr(
-                                getattr(
-                                    turbine,
-                                    "_thermal_state",
-                                    getattr(
-                                        turbine.config,
-                                        "initial_thermal_state",
-                                        "unknown",
-                                    ),
-                                ),
-                                "value",
-                                str(
-                                    getattr(
-                                        turbine,
-                                        "_thermal_state",
-                                        getattr(
-                                            turbine.config,
-                                            "initial_thermal_state",
-                                            "unknown",
-                                        ),
-                                    )
-                                ),
-                            ),
-                            reason="production start not initiated by forecast controller",
-                            forecast_mw=float(
-                                self.forecast_history[-1].forecast_mw
-                                if self.forecast_history
-                                else 0.0
-                            ),
-                            peak_forecast_mw=float(
-                                self.forecast_history[-1].peak_forecast_mw
-                                if self.forecast_history
-                                else 0.0
-                            ),
-                            synchronized_capacity_mw=self._synchronized_capacity(
-                                ctx.sim_state.turbines
-                            ),
-                            bess_soc_fraction=min(
-                                (
-                                    float(getattr(unit, "soc_fraction", 0.0))
-                                    for unit in ctx.sim_state.bess_units
-                                ),
-                                default=0.0,
-                            ),
-                            accepted=True,
-                            changed_state=True,
-                            source="production",
-                        )
-                    )
-            self._observed_start_counts[turbine.config.asset_id] = current
-
         expected = {
             turbine.config.asset_id: int(getattr(turbine, "_start_count", 0))
             for turbine in ctx.sim_state.turbines
@@ -777,10 +968,13 @@ class ForecastDrivenTurbineController:
         }
         for unit_id, count in expected.items():
             if actual.get(unit_id, 0) != count:
-                self.constraint_violation_reasons.append(
+                reason = (
                     f"start_count_reconciliation:{unit_id}:"
-                    f"asset={count}:log={actual.get(unit_id, 0)}"
+                    f"asset={count}:log={actual.get(unit_id, 0)}:"
+                    "untracked_path=production_command_or_cascade"
                 )
+                if reason not in self.constraint_violation_reasons:
+                    self.constraint_violation_reasons.append(reason)
 
     @property
     def start_counts(self) -> dict[str, int]:
@@ -799,3 +993,7 @@ class ForecastDrivenTurbineController:
     @property
     def constraints_valid(self) -> bool:
         return not self.constraint_violation_reasons
+
+    @property
+    def hard_violation_reasons(self) -> list[str]:
+        return self.constraint_violation_reasons

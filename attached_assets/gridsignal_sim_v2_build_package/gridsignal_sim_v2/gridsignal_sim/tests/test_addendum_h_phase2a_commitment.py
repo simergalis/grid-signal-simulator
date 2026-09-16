@@ -1,8 +1,8 @@
 """Addendum H Phase 2a controller tests.
 
 The repository already uses TC-98 in the stop-sequencing suite and TC-100 in
-the BESS acceptance suite. This addendum therefore uses the free TC-109..115
-range; the range was checked across the complete tests tree before naming.
+the BESS acceptance suite. This addendum uses the free TC-109..120 range; the
+range was checked across the complete tests tree before naming.
 """
 
 from __future__ import annotations
@@ -53,7 +53,7 @@ def _spec(*, mode: str, spinning: int, hot: int, events=None, end: float = 60.0)
         name=f"phase2a-{mode}",
         frequency_nominal_hz=60.0,
         power_factor=0.85,
-        island_mode=False,
+        island_mode=True,
         end_sim_time=end,
         initial_spinning_count=spinning,
         turbine_units=turbines,
@@ -282,21 +282,24 @@ def test_tc115_two_hour_headless_smoke_uses_correct_five_second_integration(
     fixture["end_sim_time"] = 7200.0
     fixture.pop("kube_clusters", None)
     fixture.pop("slurm_config", None)
-    fixture["initial_spinning_count"] = 3
-    for index, turbine in enumerate(fixture["turbine_units"]):
-        turbine.update({
-            "gt_mode": "aero",
-            "min_run_enabled": False,
-            "min_down_enabled": False,
-            "hot_standby": index == 3,
-            "initial_state": "offline" if index == 3 else "spinning",
-        })
     fixture_path = tmp_path / "phase2a-uneven-multisched.json"
     fixture_path.write_text(json.dumps(fixture))
 
     comparison = {}
     for mode in ("baseline", "informed"):
         spec = copy.deepcopy(json.loads(fixture_path.read_text()))
+        initial_spinning = 3 if mode == "baseline" else 2
+        spec["initial_spinning_count"] = initial_spinning
+        for index, turbine in enumerate(spec["turbine_units"]):
+            turbine.update({
+                "gt_mode": "aero",
+                "min_run_enabled": True,
+                "min_down_enabled": True,
+                "hot_standby": index >= initial_spinning,
+                "initial_state": (
+                    "offline" if index >= initial_spinning else "spinning"
+                ),
+            })
         spec["turbine_commitment_mode"] = mode
         ctx = build_run_context_from_spec(f"tc115-{mode}", spec, playback_speed=0.0)
         ticks = [ctx.step() for _ in range(1440)]
@@ -326,3 +329,150 @@ def test_tc115_two_hour_headless_smoke_uses_correct_five_second_integration(
     assert "commitment_logs" in comparison["informed"]
     print(json.dumps(comparison, sort_keys=True))
     assert capsys.readouterr().out
+
+
+def test_tc116_untracked_production_start_is_a_hard_gap_without_synthetic_log() -> None:
+    from core.asset_modules import TurbineState
+    from runtime.scenario_factory import build_run_context_from_spec
+
+    ctx = build_run_context_from_spec(
+        "tc116-untracked-start",
+        _spec(mode="baseline", spinning=1, hot=1).model_dump(),
+    )
+    turbine = ctx.sim_state.turbines[1]
+    turbine.config.hot_standby = False
+    assert turbine.state == TurbineState.OFFLINE
+    turbine.command_start(0.0)
+
+    ctx.turbine_commitment_controller.record_tick(
+        ctx,
+        SimpleNamespace(
+            sim_time_seconds=5.0,
+            tick_index=0,
+            p_unserved_mw=0.0,
+            p_demand_mw=0.0,
+            contingency_release_alert=False,
+        ),
+    )
+
+    controller = ctx.turbine_commitment_controller
+    assert not controller.log
+    assert not controller.constraints_valid
+    assert any(
+        "turbine-1" in reason and "untracked_path=" in reason
+        for reason in controller.constraint_violation_reasons
+    )
+
+
+def test_tc117_identical_refusal_logs_are_deduplicated() -> None:
+    from runtime.scenario_factory import build_run_context_from_spec
+
+    ctx = build_run_context_from_spec(
+        "tc117-refusal-dedup",
+        _spec(mode="informed", spinning=3, hot=0).model_dump(),
+    )
+    controller = ctx.turbine_commitment_controller
+    forecast = controller.forecast(
+        sim_time_s=0.0,
+        events=[],
+        measured_history=[],
+        power_for_event=ctx._event_power_mw,
+    )
+    controller._refused(
+        ctx=ctx,
+        turbine=ctx.sim_state.turbines[2],
+        action="stop",
+        reason="stop refused: unit is needed within 1,200s",
+        forecast=forecast,
+        synchronized_capacity=30.0,
+        soc=0.5,
+    )
+    controller._refused(
+        ctx=ctx,
+        turbine=ctx.sim_state.turbines[2],
+        action="stop",
+        reason="stop refused: unit is needed within 1,200s",
+        forecast=forecast,
+        synchronized_capacity=30.0,
+        soc=0.5,
+    )
+    refusals = [record for record in controller.log if not record.accepted]
+    assert len(refusals) == 1
+
+
+def test_tc118_stop_requires_two_mw_margin() -> None:
+    from runtime.scenario_factory import build_run_context_from_spec
+    from runtime.turbine_commitment import CommitmentForecast
+
+    ctx = build_run_context_from_spec(
+        "tc118-stop-margin",
+        _spec(mode="informed", spinning=3, hot=0).model_dump(),
+    )
+    controller = ctx.turbine_commitment_controller
+    controller.forecast = lambda **_: CommitmentForecast(
+        sim_time_s=1000.0,
+        background_mean_mw=19.0,
+        background_std_mw=0.0,
+        forecast_mw=19.0,
+        peak_forecast_mw=19.0,
+        minimum_forecast_mw=19.0,
+        profile=((1000.0, 19.0),),
+    )
+    ctx.sim_time = 1000.0
+    controller.evaluate(ctx=ctx, power_for_event=ctx._event_power_mw)
+    assert controller.log[-1].accepted is False
+    assert "needed within" in (controller.log[-1].refusal_reason or "")
+
+
+def test_tc119_informed_preload_uses_existing_ramp_and_bess_charge_path() -> None:
+    from core.asset_modules import TurbineState
+    from runtime.scenario_factory import build_run_context_from_spec
+
+    spec = _spec(
+        mode="informed",
+        spinning=2,
+        hot=0,
+        events=[_event(30.0, node_count=5000)],
+        end=120.0,
+    ).model_dump()
+    spec["bess_units"] = [{
+        "asset_id": "bess-0",
+        "rated_mw": 30.0,
+        "usable_mwh": 120.0,
+        "initial_soc_fraction": 0.50,
+    }]
+    ctx = build_run_context_from_spec("tc119-preload", spec)
+    first = ctx.step()
+    controller = ctx.turbine_commitment_controller
+    assert controller.preload_actions
+    assert set(ctx.sim_state._preload_active_units) == {
+        "turbine-0",
+        "turbine-1",
+    }
+    assert all(
+        turbine.state == TurbineState.SYNCHRONISED
+        for turbine in ctx.sim_state.turbines
+    )
+    assert first.bess_output_mw <= 0.0
+
+
+def test_tc120_unserved_comparison_preserves_energy_and_peak_verdicts() -> None:
+    from runtime.turbine_commitment import (
+        summarize_unserved_ticks,
+        unserved_comparison_verdict,
+    )
+
+    baseline = summarize_unserved_ticks([
+        SimpleNamespace(sim_time_seconds=5.0, p_unserved_mw=2.0),
+        SimpleNamespace(sim_time_seconds=10.0, p_unserved_mw=0.0),
+    ])
+    informed = summarize_unserved_ticks([
+        SimpleNamespace(sim_time_seconds=5.0, p_unserved_mw=1.0),
+        SimpleNamespace(sim_time_seconds=10.0, p_unserved_mw=1.0),
+    ])
+    verdict = unserved_comparison_verdict(baseline, informed)
+    assert verdict["verdict"] == "PASS"
+    assert verdict["unserved_energy_no_worse"] is True
+    assert verdict["peak_unserved_no_worse"] is True
+    assert baseline["peak_unserved_mw"] == 2.0
+    assert abs(informed["unserved_energy_mwh"] - 10.0 / 3600.0) < 1e-9

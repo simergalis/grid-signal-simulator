@@ -153,6 +153,27 @@ async def _load_completed_from_db(run_id: str) -> "CompletedRun | None":
             turbine_commitment_start_count_reconciled=bool(
                 _v.get("turbine_commitment_start_count_reconciled", True)
             ),
+            turbine_commitment_unserved_energy_mwh=float(
+                _v.get("turbine_commitment_unserved_energy_mwh", 0.0)
+            ),
+            turbine_commitment_peak_unserved_mw=float(
+                _v.get("turbine_commitment_peak_unserved_mw", 0.0)
+            ),
+            turbine_commitment_unserved_intervals=list(
+                _v.get("turbine_commitment_unserved_intervals", [])
+            ),
+            turbine_commitment_preload_actions=list(
+                _v.get("turbine_commitment_preload_actions", [])
+            ),
+            turbine_commitment_preload_fuel_mmbtu=float(
+                _v.get("turbine_commitment_preload_fuel_mmbtu", 0.0)
+            ),
+            turbine_commitment_forecast_miss_count=int(
+                _v.get("turbine_commitment_forecast_miss_count", 0)
+            ),
+            turbine_commitment_forecast_miss_peak_mw=float(
+                _v.get("turbine_commitment_forecast_miss_peak_mw", 0.0)
+            ),
         )
     except Exception:
         _log.warning("run %s: DB fallback verdict parse failed", run_id, exc_info=True)
@@ -762,6 +783,17 @@ async def get_run_result(
         turbine_commitment_start_counts=completed.turbine_commitment_start_counts,
         turbine_commitment_start_count_reconciled=(
             completed.turbine_commitment_start_count_reconciled
+        ),
+        turbine_commitment_unserved_energy_mwh=(
+            completed.turbine_commitment_unserved_energy_mwh
+        ),
+        turbine_commitment_peak_unserved_mw=completed.turbine_commitment_peak_unserved_mw,
+        turbine_commitment_unserved_intervals=completed.turbine_commitment_unserved_intervals,
+        turbine_commitment_preload_actions=completed.turbine_commitment_preload_actions,
+        turbine_commitment_preload_fuel_mmbtu=completed.turbine_commitment_preload_fuel_mmbtu,
+        turbine_commitment_forecast_miss_count=completed.turbine_commitment_forecast_miss_count,
+        turbine_commitment_forecast_miss_peak_mw=(
+            completed.turbine_commitment_forecast_miss_peak_mw
         ),
     )
 
