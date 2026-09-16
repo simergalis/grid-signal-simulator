@@ -1,5 +1,5 @@
 {
-  "name": "Uneven Multi-Scheduler Turbine Demo",
+  "name": "01 Turbine Scenario with Kubernetes Slurm Ray",
   "description": "Two-hour Kubernetes, Slurm, and Ray demonstration with 45 MW and 90 MW bursts starting at t=30 s and t=310 s, followed by bursts at t=920 s, t=1850 s, and t=2700 s. Burst durations are 240 s, 300 s, and 600 s for the final three bursts, so workloads do not overlap. Two gas turbines are spinning at 35% minimum stable load from t=0; two more start from hot standby at Burst-02 and the grid-forming BESS bridges their startup gap. GE assumptions: 300-second hot start, 360-second warm start, 600-second cold start, and 30 MW/min ramp.",
 
   "hardware_profile_id": "enterprise_8gpu_air",
