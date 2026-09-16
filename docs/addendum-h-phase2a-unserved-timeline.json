@@ -1,0 +1,7174 @@
+{
+  "baseline": {
+    "events": [
+      {
+        "id": "um-k8s-h100-scripted-t300",
+        "job_id": "scripted-admission-um-k8s-h100",
+        "nodes": 4283,
+        "timestamp": 30,
+        "type": "starting"
+      },
+      {
+        "id": "um-k8s-h100-scripted-t2700",
+        "job_id": "scripted-admission-um-k8s-h100",
+        "nodes": 0,
+        "timestamp": 270,
+        "type": "job_end"
+      },
+      {
+        "id": "um-slurm-cluster-scripted-t3100",
+        "job_id": "scripted-admission-um-slurm-cluster",
+        "nodes": 8566,
+        "timestamp": 310,
+        "type": "starting"
+      },
+      {
+        "id": "um-slurm-cluster-scripted-t6100",
+        "job_id": "scripted-admission-um-slurm-cluster",
+        "nodes": 0,
+        "timestamp": 610,
+        "type": "job_end"
+      },
+      {
+        "id": "um-ray-gb200-scripted-t9200",
+        "job_id": "scripted-admission-um-ray-gb200",
+        "nodes": 3426,
+        "timestamp": 920,
+        "type": "starting"
+      },
+      {
+        "id": "um-ray-gb200-scripted-t15200",
+        "job_id": "scripted-admission-um-ray-gb200",
+        "nodes": 0,
+        "timestamp": 1520,
+        "type": "job_end"
+      },
+      {
+        "id": "um-k8s-h100-scripted-t18500",
+        "job_id": "scripted-admission-um-k8s-h100",
+        "nodes": 7995,
+        "timestamp": 1850,
+        "type": "scale"
+      },
+      {
+        "id": "um-k8s-h100-scripted-t24500",
+        "job_id": "scripted-admission-um-k8s-h100",
+        "nodes": 0,
+        "timestamp": 2450,
+        "type": "job_end"
+      },
+      {
+        "id": "um-ray-gb200-scripted-t27000",
+        "job_id": "scripted-admission-um-ray-gb200",
+        "nodes": 5711,
+        "timestamp": 2700,
+        "type": "scale"
+      },
+      {
+        "id": "um-ray-gb200-scripted-t33000",
+        "job_id": "scripted-admission-um-ray-gb200",
+        "nodes": 0,
+        "timestamp": 3300,
+        "type": "job_end"
+      }
+    ],
+    "rows": [
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.932215302,
+        "compute_demand_mw": 62.096133,
+        "cooling_demand_mw": 8.999192,
+        "sim_time_s": 335,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 71.095325,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 11.25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          }
+        ],
+        "unserved_mw": 13.345325
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.931514283,
+        "compute_demand_mw": 80.095012,
+        "cooling_demand_mw": 8.999247,
+        "sim_time_s": 340,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 89.094259,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 13.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 11.25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 10.094259,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          }
+        ],
+        "unserved_mw": 25
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.930813264,
+        "compute_demand_mw": 86.66127,
+        "cooling_demand_mw": 8.999289,
+        "sim_time_s": 345,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 95.66056,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 16.25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 13.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 12.594259,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          }
+        ],
+        "unserved_mw": 24.0663
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.930112246,
+        "compute_demand_mw": 88.327833,
+        "cooling_demand_mw": 8.999323,
+        "sim_time_s": 350,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 97.327156,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 18.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 16.25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 15.094259,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          }
+        ],
+        "unserved_mw": 18.232897
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.929411227,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 8.999348,
+        "sim_time_s": 355,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 98.993744,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 21.25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 18.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 17.594259,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          }
+        ],
+        "unserved_mw": 12.399485
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.928710208,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 8.999369,
+        "sim_time_s": 360,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 98.993765,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 23.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 21.25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 19.993765,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 5
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.92800919,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 8.999384,
+        "sim_time_s": 365,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 98.99378,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 23.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 19.99378,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 1.25
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.920297984,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 13.652873,
+        "sim_time_s": 420,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 103.647269,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 24.547613,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 0.099656
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.919596966,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 16.849885,
+        "sim_time_s": 425,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 106.844281,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 2.844281
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.918895947,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 20.428919,
+        "sim_time_s": 430,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 110.423315,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 6.423315
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.918194928,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 22.464343,
+        "sim_time_s": 435,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 112.458739,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 8.458739
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.91749391,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 23.59519,
+        "sim_time_s": 440,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 113.589586,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 9.589586
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.916792891,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 24.562434,
+        "sim_time_s": 445,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 114.55683,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 10.55683
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.916091872,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 25.10125,
+        "sim_time_s": 450,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 115.095646,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 11.095646
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.915390854,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 25.52088,
+        "sim_time_s": 455,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 115.515276,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 11.515276
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.914689835,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 25.847688,
+        "sim_time_s": 460,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 115.842084,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 11.842084
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.913988816,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 26.102207,
+        "sim_time_s": 465,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 116.096603,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 12.096603
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.913287798,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.300987,
+        "sim_time_s": 470,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.295383,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.295383
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.912586779,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.45536,
+        "sim_time_s": 475,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.449756,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.449756
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.91188576,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.575586,
+        "sim_time_s": 480,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.569982,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.569982
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.911184742,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.669218,
+        "sim_time_s": 485,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.663614,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.663614
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.910483723,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.742139,
+        "sim_time_s": 490,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.736535,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.736535
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.909782704,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.79893,
+        "sim_time_s": 495,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.793326,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.793326
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.909081686,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.843158,
+        "sim_time_s": 500,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.837554,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.837554
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.908380667,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.877604,
+        "sim_time_s": 505,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.872,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.872
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.907679648,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.90443,
+        "sim_time_s": 510,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.898826,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.898826
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.90697863,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.925322,
+        "sim_time_s": 515,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.919718,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.919718
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.906277611,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.941593,
+        "sim_time_s": 520,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.935989,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.935989
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.905576592,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.954264,
+        "sim_time_s": 525,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.94866,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.94866
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.904875574,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.964133,
+        "sim_time_s": 530,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.958529,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.958529
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.904174555,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.971819,
+        "sim_time_s": 535,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.966215,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.966215
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.903473536,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.977805,
+        "sim_time_s": 540,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.972201,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.972201
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.902772518,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.982466,
+        "sim_time_s": 545,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.976862,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.976862
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.902071499,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.986097,
+        "sim_time_s": 550,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.980493,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.980493
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.90137048,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.988924,
+        "sim_time_s": 555,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.98332,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.98332
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.900669462,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.991126,
+        "sim_time_s": 560,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.985522,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.985522
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.899968443,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.992841,
+        "sim_time_s": 565,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.987237,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.987237
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.899267424,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.994177,
+        "sim_time_s": 570,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.988573,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.988573
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.898566406,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.995217,
+        "sim_time_s": 575,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.989613,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.989613
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.897865387,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.996027,
+        "sim_time_s": 580,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.990423,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.990423
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.897164368,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.996658,
+        "sim_time_s": 585,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.991054,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.991054
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.89646335,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.997149,
+        "sim_time_s": 590,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.991545,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.991545
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.895762331,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.997532,
+        "sim_time_s": 595,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.991928,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.991928
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.895061312,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.99783,
+        "sim_time_s": 600,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.992226,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.992226
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.894360294,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.998062,
+        "sim_time_s": 605,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.992458,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.992458
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.893659275,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.998243,
+        "sim_time_s": 610,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.992639,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.992639
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.948028663,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1855,
+        "synchronized_capacity_mw": 100,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 11.25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 11.25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          }
+        ],
+        "unserved_mw": 14.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.947327645,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1860,
+        "synchronized_capacity_mw": 100,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 13.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 12.49547,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          }
+        ],
+        "unserved_mw": 11.25
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.946626626,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1865,
+        "synchronized_capacity_mw": 100,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 16.25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 12.49547,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          }
+        ],
+        "unserved_mw": 8.75
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.945925607,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1870,
+        "synchronized_capacity_mw": 100,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 18.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 12.49547,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          }
+        ],
+        "unserved_mw": 6.25
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.945224589,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1875,
+        "synchronized_capacity_mw": 100,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 21.25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 12.49547,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          }
+        ],
+        "unserved_mw": 3.75
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.94452357,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1880,
+        "synchronized_capacity_mw": 100,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 23.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 12.49547,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          }
+        ],
+        "unserved_mw": 1.25
+      }
+    ]
+  },
+  "informed": {
+    "events": [
+      {
+        "id": "um-k8s-h100-scripted-t300",
+        "job_id": "scripted-admission-um-k8s-h100",
+        "nodes": 4283,
+        "timestamp": 30,
+        "type": "starting"
+      },
+      {
+        "id": "um-k8s-h100-scripted-t2700",
+        "job_id": "scripted-admission-um-k8s-h100",
+        "nodes": 0,
+        "timestamp": 270,
+        "type": "job_end"
+      },
+      {
+        "id": "um-slurm-cluster-scripted-t3100",
+        "job_id": "scripted-admission-um-slurm-cluster",
+        "nodes": 8566,
+        "timestamp": 310,
+        "type": "starting"
+      },
+      {
+        "id": "um-slurm-cluster-scripted-t6100",
+        "job_id": "scripted-admission-um-slurm-cluster",
+        "nodes": 0,
+        "timestamp": 610,
+        "type": "job_end"
+      },
+      {
+        "id": "um-ray-gb200-scripted-t9200",
+        "job_id": "scripted-admission-um-ray-gb200",
+        "nodes": 3426,
+        "timestamp": 920,
+        "type": "starting"
+      },
+      {
+        "id": "um-ray-gb200-scripted-t15200",
+        "job_id": "scripted-admission-um-ray-gb200",
+        "nodes": 0,
+        "timestamp": 1520,
+        "type": "job_end"
+      },
+      {
+        "id": "um-k8s-h100-scripted-t18500",
+        "job_id": "scripted-admission-um-k8s-h100",
+        "nodes": 7995,
+        "timestamp": 1850,
+        "type": "scale"
+      },
+      {
+        "id": "um-k8s-h100-scripted-t24500",
+        "job_id": "scripted-admission-um-k8s-h100",
+        "nodes": 0,
+        "timestamp": 2450,
+        "type": "job_end"
+      },
+      {
+        "id": "um-ray-gb200-scripted-t27000",
+        "job_id": "scripted-admission-um-ray-gb200",
+        "nodes": 5711,
+        "timestamp": 2700,
+        "type": "scale"
+      },
+      {
+        "id": "um-ray-gb200-scripted-t33000",
+        "job_id": "scripted-admission-um-ray-gb200",
+        "nodes": 0,
+        "timestamp": 3300,
+        "type": "job_end"
+      }
+    ],
+    "rows": [
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.933164789,
+        "compute_demand_mw": 62.096133,
+        "cooling_demand_mw": 8.999192,
+        "sim_time_s": 335,
+        "synchronized_capacity_mw": 100,
+        "total_site_demand_mw": 71.095325,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 11.25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "unloading"
+          }
+        ],
+        "unserved_mw": 4.595325
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.932463771,
+        "compute_demand_mw": 80.095012,
+        "cooling_demand_mw": 8.999247,
+        "sim_time_s": 340,
+        "synchronized_capacity_mw": 100,
+        "total_site_demand_mw": 89.094259,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 13.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 11.25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "unloading"
+          }
+        ],
+        "unserved_mw": 17.594259
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.931762752,
+        "compute_demand_mw": 86.66127,
+        "cooling_demand_mw": 8.999289,
+        "sim_time_s": 345,
+        "synchronized_capacity_mw": 100,
+        "total_site_demand_mw": 95.66056,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 16.25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 13.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "unloading"
+          }
+        ],
+        "unserved_mw": 19.16056
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.931061733,
+        "compute_demand_mw": 88.327833,
+        "cooling_demand_mw": 8.999323,
+        "sim_time_s": 350,
+        "synchronized_capacity_mw": 100,
+        "total_site_demand_mw": 97.327156,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 18.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 16.25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 9.577156,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "unloading"
+          }
+        ],
+        "unserved_mw": 15
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.930360715,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 8.999348,
+        "sim_time_s": 355,
+        "synchronized_capacity_mw": 100,
+        "total_site_demand_mw": 98.993744,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 21.25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 18.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 11.243744,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "unloading"
+          }
+        ],
+        "unserved_mw": 10
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.929659696,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 8.999369,
+        "sim_time_s": 360,
+        "synchronized_capacity_mw": 100,
+        "total_site_demand_mw": 98.993765,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 23.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 21.25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 11.243765,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "unloading"
+          }
+        ],
+        "unserved_mw": 5
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.928958677,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 8.999384,
+        "sim_time_s": 365,
+        "synchronized_capacity_mw": 100,
+        "total_site_demand_mw": 98.99378,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 23.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 11.24378,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "unloading"
+          }
+        ],
+        "unserved_mw": 1.25
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.926855621,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 8.999413,
+        "sim_time_s": 380,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 98.993809,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 11.243809,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 8.75
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.926154603,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 8.999419,
+        "sim_time_s": 385,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 98.993815,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 13.743809,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 6.250006
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.925453584,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 8.999424,
+        "sim_time_s": 390,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 98.99382,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 16.243809,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.75001
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.924752565,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 8.999427,
+        "sim_time_s": 395,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 98.993823,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 18.743809,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 1.250014
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.921247472,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 13.652873,
+        "sim_time_s": 420,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 103.647269,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 24.547613,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 0.099656
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.920546453,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 16.849885,
+        "sim_time_s": 425,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 106.844281,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 2.844281
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.919845435,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 20.428919,
+        "sim_time_s": 430,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 110.423315,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 6.423315
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.919144416,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 22.464343,
+        "sim_time_s": 435,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 112.458739,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 8.458739
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.918443397,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 23.59519,
+        "sim_time_s": 440,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 113.589586,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 9.589586
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.917742379,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 24.562434,
+        "sim_time_s": 445,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 114.55683,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 10.55683
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.91704136,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 25.10125,
+        "sim_time_s": 450,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 115.095646,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 11.095646
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.916340341,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 25.52088,
+        "sim_time_s": 455,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 115.515276,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 11.515276
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.915639323,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 25.847688,
+        "sim_time_s": 460,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 115.842084,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 11.842084
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.914938304,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 26.102207,
+        "sim_time_s": 465,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 116.096603,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 12.096603
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.914237285,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.300987,
+        "sim_time_s": 470,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.295383,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.295383
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.913536267,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.45536,
+        "sim_time_s": 475,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.449756,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.449756
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.912835248,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.575586,
+        "sim_time_s": 480,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.569982,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.569982
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.912134229,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.669218,
+        "sim_time_s": 485,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.663614,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.663614
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.911433211,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.742139,
+        "sim_time_s": 490,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.736535,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.736535
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.910732192,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.79893,
+        "sim_time_s": 495,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.793326,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.793326
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.910031173,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.843158,
+        "sim_time_s": 500,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.837554,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.837554
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.909330155,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.877604,
+        "sim_time_s": 505,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.872,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.872
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.908629136,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.90443,
+        "sim_time_s": 510,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.898826,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.898826
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.907928117,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.925322,
+        "sim_time_s": 515,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.919718,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.919718
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.907227099,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.941593,
+        "sim_time_s": 520,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.935989,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.935989
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.90652608,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.954264,
+        "sim_time_s": 525,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.94866,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.94866
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.905825061,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.964133,
+        "sim_time_s": 530,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.958529,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.958529
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.905124043,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.971819,
+        "sim_time_s": 535,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.966215,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.966215
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.904423024,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.977805,
+        "sim_time_s": 540,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.972201,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.972201
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.903722005,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.982466,
+        "sim_time_s": 545,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.976862,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.976862
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.903020987,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.986097,
+        "sim_time_s": 550,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.980493,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.980493
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.902319968,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.988924,
+        "sim_time_s": 555,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.98332,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.98332
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.901618949,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.991126,
+        "sim_time_s": 560,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.985522,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.985522
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.900917931,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.992841,
+        "sim_time_s": 565,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.987237,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.987237
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.900216912,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.994177,
+        "sim_time_s": 570,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.988573,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.988573
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.899515893,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.995217,
+        "sim_time_s": 575,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.989613,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.989613
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.898814875,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.996027,
+        "sim_time_s": 580,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.990423,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.990423
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.898113856,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.996658,
+        "sim_time_s": 585,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.991054,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.991054
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.897412837,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.997149,
+        "sim_time_s": 590,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.991545,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.991545
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.896711819,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.997532,
+        "sim_time_s": 595,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.991928,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.991928
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.8960108,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.99783,
+        "sim_time_s": 600,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.992226,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.992226
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.895309781,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.998062,
+        "sim_time_s": 605,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.992458,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.992458
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.894608763,
+        "compute_demand_mw": 89.994396,
+        "cooling_demand_mw": 17.998243,
+        "sim_time_s": 610,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 107.992639,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 3.992639
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 0.993556,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.926236836,
+        "compute_demand_mw": 35.993556,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 990,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 35.993556,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          }
+        ],
+        "unserved_mw": 8.75
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.924368679,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1855,
+        "synchronized_capacity_mw": 100,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 11.25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 11.25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          }
+        ],
+        "unserved_mw": 14.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.92366766,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1860,
+        "synchronized_capacity_mw": 100,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 13.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 12.49547,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "unloading"
+          }
+        ],
+        "unserved_mw": 11.25
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.922966642,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1865,
+        "synchronized_capacity_mw": 100,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 16.25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 12.49547,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "unloading"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "unloading"
+          }
+        ],
+        "unserved_mw": 8.75
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.922265623,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1870,
+        "synchronized_capacity_mw": 100,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 18.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 12.49547,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "unloading"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "unloading"
+          }
+        ],
+        "unserved_mw": 6.25
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.921564604,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1875,
+        "synchronized_capacity_mw": 100,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 21.25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 12.49547,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "unloading"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "unloading"
+          }
+        ],
+        "unserved_mw": 3.75
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.920863586,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1880,
+        "synchronized_capacity_mw": 100,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 23.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 12.49547,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "unloading"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "unloading"
+          }
+        ],
+        "unserved_mw": 1.25
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.915255436,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1920,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 12.49547,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "unloading"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 8.75
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.914554418,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1925,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 14.99547,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 15
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.913853399,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1930,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 17.49547,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 12.5
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.91315238,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1935,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 19.99547,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 10
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.912451362,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1940,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 22.49547,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 7.5
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.911750343,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1945,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 24.99547,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 5
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.911049324,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1950,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.910348306,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1955,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.909647287,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1960,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.908946268,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1965,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.90824525,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1970,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.907544231,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1975,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.906843212,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1980,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.906142194,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1985,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.905441175,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1990,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.904740156,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 1995,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.904039138,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2000,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.903338119,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2005,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.9026371,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2010,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.901936082,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2015,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.901235063,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2020,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.900534044,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2025,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.899833026,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2030,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.899132007,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2035,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.898430988,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2040,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.89772997,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2045,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.897028951,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2050,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.896327932,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2055,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.895626914,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2060,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.894925895,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2065,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.894224876,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2070,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.893523858,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2075,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.892822839,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2080,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.89212182,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2085,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.891420802,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2090,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.890719783,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2095,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.890018764,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2100,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "offline"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.889317746,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2105,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.888616727,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2110,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.887915708,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2115,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.88721469,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2120,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.886513671,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2125,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.885812652,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2130,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.885111634,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2135,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.884410615,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2140,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.883709596,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2145,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.883008578,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2150,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.882307559,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2155,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.88160654,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2160,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.880905522,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2165,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.880204503,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2170,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.879503484,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2175,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.878802466,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2180,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.878101447,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2185,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.877400428,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2190,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.87669941,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2195,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.875998391,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2200,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.875297372,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2205,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.874596354,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2210,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.873895335,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2215,
+        "synchronized_capacity_mw": 50,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.873194316,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2220,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "synchronised"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.872493298,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2225,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 22.5,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 2.5,
+            "rated_mw": 25,
+            "state": "synchronised"
+          }
+        ],
+        "unserved_mw": 4.99547
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.871792279,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2230,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 21.24547,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 5,
+            "rated_mw": 25,
+            "state": "synchronised"
+          }
+        ],
+        "unserved_mw": 3.75
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.87109126,
+        "compute_demand_mw": 83.99547,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2235,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 83.99547,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 21.24547,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 7.5,
+            "rated_mw": 25,
+            "state": "synchronised"
+          }
+        ],
+        "unserved_mw": 1.25
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 24.999766,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.865737007,
+        "compute_demand_mw": 59.999766,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2770,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 59.999766,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 8.75
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.865035989,
+        "compute_demand_mw": 59.999766,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 2775,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 59.999766,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 11.25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 2.249766
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 24.999766,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.823071566,
+        "compute_demand_mw": 59.999766,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 3075,
+        "synchronized_capacity_mw": 100,
+        "total_site_demand_mw": 59.999766,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 10.999766,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 2.5,
+            "rated_mw": 25,
+            "state": "unloading"
+          }
+        ],
+        "unserved_mw": 4.000234
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 24.999766,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.822467246,
+        "compute_demand_mw": 59.999766,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 3080,
+        "synchronized_capacity_mw": 100,
+        "total_site_demand_mw": 59.999766,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 5,
+            "rated_mw": 25,
+            "state": "unloading"
+          }
+        ],
+        "unserved_mw": 3.75
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 24.999766,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.821862925,
+        "compute_demand_mw": 59.999766,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 3085,
+        "synchronized_capacity_mw": 100,
+        "total_site_demand_mw": 59.999766,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 7.5,
+            "rated_mw": 25,
+            "state": "unloading"
+          }
+        ],
+        "unserved_mw": 1.25
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 24.999766,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.814006755,
+        "compute_demand_mw": 59.999766,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 3150,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 59.999766,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 8.75
+      },
+      {
+        "bess_anchor_reserve_mw": 1,
+        "bess_available_bridging_mw": 0,
+        "bess_output_mw": 29,
+        "bess_power_limit_mw": 30,
+        "bess_soc_fraction": 0.813305736,
+        "compute_demand_mw": 59.999766,
+        "cooling_demand_mw": 0,
+        "sim_time_s": 3155,
+        "synchronized_capacity_mw": 75,
+        "total_site_demand_mw": 59.999766,
+        "turbines": [
+          {
+            "id": "gt-spin-01",
+            "output_mw": 11.25,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-spin-02",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-01",
+            "output_mw": 8.75,
+            "rated_mw": 25,
+            "state": "synchronised"
+          },
+          {
+            "id": "gt-hot-02",
+            "output_mw": 0,
+            "rated_mw": 25,
+            "state": "starting"
+          }
+        ],
+        "unserved_mw": 2.249766
+      }
+    ]
+  }
+}

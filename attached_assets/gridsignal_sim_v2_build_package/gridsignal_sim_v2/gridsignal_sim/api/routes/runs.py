@@ -147,6 +147,12 @@ async def _load_completed_from_db(run_id: str) -> "CompletedRun | None":
             turbine_commitment_constraint_violations=list(
                 _v.get("turbine_commitment_constraint_violations", [])
             ),
+            turbine_commitment_start_counts=dict(
+                _v.get("turbine_commitment_start_counts", {})
+            ),
+            turbine_commitment_start_count_reconciled=bool(
+                _v.get("turbine_commitment_start_count_reconciled", True)
+            ),
         )
     except Exception:
         _log.warning("run %s: DB fallback verdict parse failed", run_id, exc_info=True)
@@ -752,6 +758,10 @@ async def get_run_result(
         turbine_commitment_constraints_valid=completed.turbine_commitment_constraints_valid,
         turbine_commitment_constraint_violations=(
             completed.turbine_commitment_constraint_violations
+        ),
+        turbine_commitment_start_counts=completed.turbine_commitment_start_counts,
+        turbine_commitment_start_count_reconciled=(
+            completed.turbine_commitment_start_count_reconciled
         ),
     )
 

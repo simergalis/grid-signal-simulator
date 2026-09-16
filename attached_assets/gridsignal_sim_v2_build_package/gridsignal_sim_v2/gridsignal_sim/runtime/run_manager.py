@@ -1450,14 +1450,22 @@ class RunContext:
             metadata.update({
                 "unit_id": unit_id,
                 "action": action,
+                "requested_action": action,
                 "sim_time_s": self.sim_time,
             })
+            metadata.setdefault("source", command.get("source", "operator"))
             handled = False
             accepted = False
+            refusal_reason: Optional[str] = None
+            changed_state = False
+            logged_action = action
             for turbine in self.sim_state.turbines:
                 if turbine.config.asset_id != unit_id:
                     continue
                 handled = True
+                before_state = turbine.state
+                before_hot_standby = bool(turbine.config.hot_standby)
+                before_start_count = int(getattr(turbine, "_start_count", 0))
                 if (
                     action == "trip"
                     and turbine.config.hot_standby
@@ -1468,6 +1476,7 @@ class RunContext:
                     turbine.config.hot_standby = False
                     turbine.command_start(self.sim_time)
                     accepted = turbine.state == _TurbineState.STARTING
+                    logged_action = "release"
                     logger.info(
                         "operator command: TRIP standby turbine %r → synchronization "
                         "at sim_time=%.1f (run=%s)",
@@ -1489,6 +1498,11 @@ class RunContext:
                     was_offline = turbine.state == _TurbineState.OFFLINE
                     turbine.command_start(self.sim_time)
                     accepted = was_offline and turbine.state == _TurbineState.STARTING
+                    if not accepted:
+                        refusal_reason = (
+                            "start refused: unit is not offline or minimum down time "
+                            "has not elapsed"
+                        )
                     logger.info(
                         "operator command: START turbine %r at sim_time=%.1f (run=%s)",
                         unit_id, self.sim_time, self.run_id,
@@ -1497,14 +1511,31 @@ class RunContext:
                     blocked_reason = turbine.command_stop(self.sim_time)
                     metadata["reason"] = blocked_reason or metadata.get("reason", "")
                     accepted = blocked_reason is None
+                    refusal_reason = blocked_reason
+                elif action == "stop":
+                    refusal_reason = (
+                        f"stop refused: unit state is {turbine.state.value}"
+                    )
+                changed_state = (
+                    turbine.state != before_state
+                    or bool(turbine.config.hot_standby) != before_hot_standby
+                    or int(getattr(turbine, "_start_count", 0)) != before_start_count
+                )
                 break
-            if (
-                command.get("source") == "forecast_commitment"
-                and self.turbine_commitment_controller is not None
-            ):
-                self.turbine_commitment_controller.command_result(
-                    metadata,
+            if handled and not accepted and refusal_reason is None:
+                refusal_reason = (
+                    f"{action} refused: command did not change the turbine state"
+                )
+            if self.turbine_commitment_controller is not None:
+                metadata["action"] = logged_action
+                metadata["reason"] = metadata.get("reason", "")
+                if not handled:
+                    refusal_reason = f"command refused: unknown turbine {unit_id!r}"
+                self.turbine_commitment_controller.record_command_result(
+                    metadata=metadata,
                     accepted=bool(handled and accepted),
+                    changed_state=changed_state,
+                    refusal_reason=refusal_reason,
                 )
 
     def _apply_due_events(self) -> None:
@@ -1886,6 +1917,8 @@ class CompletedRun:
     turbine_commitment_logs: list[dict] = field(default_factory=list)
     turbine_commitment_constraints_valid: bool = True
     turbine_commitment_constraint_violations: list[str] = field(default_factory=list)
+    turbine_commitment_start_counts: dict[str, int] = field(default_factory=dict)
+    turbine_commitment_start_count_reconciled: bool = True
 
 
 # ---------------------------------------------------------------------------
@@ -3437,6 +3470,45 @@ class RunManager:
                         ctx.run_id,
                     )
 
+                _fuel_summary = tick_dicts[-1] if tick_dicts else {}
+                _commitment_controller = ctx.turbine_commitment_controller
+                _commitment_start_counts = (
+                    {
+                        turbine.config.asset_id: int(getattr(turbine, "_start_count", 0))
+                        for turbine in ctx.sim_state.turbines
+                    }
+                    if _commitment_controller is not None
+                    else {}
+                )
+                _logged_start_counts = (
+                    {
+                        unit_id: int(count)
+                        for unit_id, count in _commitment_controller.start_counts.items()
+                    }
+                    if _commitment_controller is not None
+                    else {}
+                )
+                _start_count_reconciled = (
+                    _commitment_controller is None
+                    or all(
+                        _logged_start_counts.get(unit_id, 0) == count
+                        for unit_id, count in _commitment_start_counts.items()
+                    )
+                )
+                if _commitment_controller is not None and not _start_count_reconciled:
+                    _commitment_controller.constraint_violation_reasons.append(
+                        "start_count_reconciliation:sealed_run_summary_mismatch"
+                    )
+                _commitment_violations = (
+                    list(_commitment_controller.constraint_violation_reasons)
+                    if _commitment_controller is not None
+                    else []
+                )
+                _commitment_constraints_valid = (
+                    (_commitment_controller.constraints_valid if _commitment_controller else True)
+                    and _start_count_reconciled
+                )
+
                 # Amend verdict_json with total_edl_dispatch_cost_usd so that
                 # the value survives a server restart.  persist_completed_hook
                 # writes verdict_json to the DB; _load_completed_from_db() reads
@@ -3456,18 +3528,18 @@ class RunManager:
                             )
                         ]
                     )
-                    if ctx.turbine_commitment_controller is not None:
-                        _vd["turbine_commitment_constraints_valid"] = (
-                            ctx.turbine_commitment_controller.constraints_valid
-                        )
-                        _vd["turbine_commitment_constraint_violations"] = list(
-                            ctx.turbine_commitment_controller.constraint_violation_reasons
-                        )
+                    _vd["turbine_commitment_constraints_valid"] = (
+                        _commitment_constraints_valid
+                    )
+                    _vd["turbine_commitment_constraint_violations"] = _commitment_violations
+                    _vd["turbine_commitment_start_counts"] = _commitment_start_counts
+                    _vd["turbine_commitment_start_count_reconciled"] = (
+                        _start_count_reconciled
+                    )
                     verdict_json = _json_va.dumps(_vd)
 
                 # Store for the results/playback screen.
                 _completed_at = datetime.now(timezone.utc)
-                _fuel_summary = tick_dicts[-1] if tick_dicts else {}
                 self._completed[ctx.run_id] = CompletedRun(
                     run_id=ctx.run_id,
                     scenario_id=ctx.scenario_id,
@@ -3528,18 +3600,10 @@ class RunManager:
                             )
                         ]
                     ),
-                    turbine_commitment_constraints_valid=(
-                        ctx.turbine_commitment_controller.constraints_valid
-                        if ctx.turbine_commitment_controller is not None
-                        else True
-                    ),
-                    turbine_commitment_constraint_violations=(
-                        list(
-                            ctx.turbine_commitment_controller.constraint_violation_reasons
-                        )
-                        if ctx.turbine_commitment_controller is not None
-                        else []
-                    ),
+                    turbine_commitment_constraints_valid=_commitment_constraints_valid,
+                    turbine_commitment_constraint_violations=_commitment_violations,
+                    turbine_commitment_start_counts=_commitment_start_counts,
+                    turbine_commitment_start_count_reconciled=_start_count_reconciled,
                 )
 
                 # Tenant overage billing summary — emitted once per run when

@@ -1,8 +1,8 @@
 """Forecast-driven turbine commitment for Addendum H Phase 2a.
 
-This module deliberately owns policy only.  Turbine state changes still pass
-through RunContext's production operator-command drain so the controller cannot
-create a second turbine state machine.
+This module owns policy only. Turbine state changes still pass through
+RunContext's production operator-command drain so the controller cannot create
+a second turbine state machine.
 """
 
 from __future__ import annotations
@@ -15,7 +15,6 @@ from typing import Any, Callable, Optional
 from core.asset_modules import TurbineState
 
 
-# PROPOSED_HERE: policy defaults are configuration, not physics constants.
 ALLOWED_FORECAST_LEAD_SECONDS = (0.0, 150.0, 300.0, 600.0, 1200.0)
 DEFAULT_FORECAST_LEAD_SECONDS = 600.0
 DEFAULT_BACKGROUND_WINDOW_SECONDS = 900.0
@@ -24,7 +23,7 @@ DEFAULT_RAMP_TO_LOAD_SECONDS = 60.0
 DEFAULT_STOP_LOOKAHEAD_SECONDS = 1200.0
 DEFAULT_FLOOR_SYNCHRONIZED = 1
 DEFAULT_SENSITIVITY_MW = 2.0
-DEFAULT_ANCHOR_RESERVE_SOC_FRACTION = 0.50
+DEFAULT_BESS_ALLOWANCE_SOC_THRESHOLD = 0.50
 
 
 @dataclass(frozen=True)
@@ -34,8 +33,20 @@ class CommitmentForecast:
     background_std_mw: float
     forecast_mw: float
     peak_forecast_mw: float
+    minimum_forecast_mw: float
+    profile: tuple[tuple[float, float], ...] = ()
     announced_event_ids: tuple[str, ...] = ()
     announced_workload_mw: float = 0.0
+
+    def peak_over(self, horizon_seconds: float) -> float:
+        end = self.sim_time_s + max(0.0, horizon_seconds)
+        values = [mw for timestamp, mw in self.profile if timestamp <= end + 1e-9]
+        return max(values, default=self.forecast_mw)
+
+    def minimum_over(self, horizon_seconds: float) -> float:
+        end = self.sim_time_s + max(0.0, horizon_seconds)
+        values = [mw for timestamp, mw in self.profile if timestamp <= end + 1e-9]
+        return min(values, default=self.forecast_mw)
 
 
 @dataclass(frozen=True)
@@ -46,9 +57,13 @@ class CommitmentLogRecord:
     thermal_tier: str
     reason: str
     forecast_mw: float
+    peak_forecast_mw: float
     synchronized_capacity_mw: float
     bess_soc_fraction: float
     accepted: bool = True
+    changed_state: bool = False
+    source: str = "forecast_commitment"
+    refusal_reason: Optional[str] = None
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -58,9 +73,13 @@ class CommitmentLogRecord:
             "thermal_tier": self.thermal_tier,
             "reason": self.reason,
             "forecast_mw": round(self.forecast_mw, 4),
+            "peak_forecast_mw": round(self.peak_forecast_mw, 4),
             "synchronized_capacity_mw": round(self.synchronized_capacity_mw, 4),
             "bess_soc_fraction": round(self.bess_soc_fraction, 6),
             "accepted": self.accepted,
+            "changed_state": self.changed_state,
+            "source": self.source,
+            "refusal_reason": self.refusal_reason,
         }
 
 
@@ -76,12 +95,15 @@ class ForecastDrivenTurbineController:
     stop_lookahead_seconds: float = DEFAULT_STOP_LOOKAHEAD_SECONDS
     floor_synchronized: int = DEFAULT_FLOOR_SYNCHRONIZED
     sensitivity_mw: float = DEFAULT_SENSITIVITY_MW
-    anchor_reserve_soc_fraction: float = DEFAULT_ANCHOR_RESERVE_SOC_FRACTION
+    bess_allowance_soc_threshold_fraction: float = (
+        DEFAULT_BESS_ALLOWANCE_SOC_THRESHOLD
+    )
     log: list[CommitmentLogRecord] = field(default_factory=list)
     forecast_history: list[CommitmentForecast] = field(default_factory=list)
     constraint_violation_reasons: list[str] = field(default_factory=list)
     _pending_request_keys: set[tuple[str, str]] = field(default_factory=set, repr=False)
     _cascade_release_ticks: set[int] = field(default_factory=set, repr=False)
+    _observed_start_counts: dict[str, int] = field(default_factory=dict, repr=False)
 
     def __post_init__(self) -> None:
         if self.mode not in {"disabled", "baseline", "informed"}:
@@ -97,15 +119,109 @@ class ForecastDrivenTurbineController:
     def enabled(self) -> bool:
         return self.mode != "disabled"
 
+    @staticmethod
+    def _event_type(event: Any) -> str:
+        return getattr(event.event_type, "value", str(event.event_type))
+
+    @staticmethod
+    def _is_load_event(event: Any) -> bool:
+        return ForecastDrivenTurbineController._event_type(event) in {
+            "starting",
+            "running",
+            "scale",
+        }
+
     def _event_power_mw(
         self,
         event: Any,
         power_for_event: Callable[[Any], float],
     ) -> float:
-        event_type = getattr(event.event_type, "value", str(event.event_type))
-        if event_type not in {"starting", "running", "scale"}:
+        if not self._is_load_event(event):
             return 0.0
         return max(0.0, float(power_for_event(event)))
+
+    def _job_state_at(
+        self,
+        *,
+        timestamp: float,
+        events: list[Any],
+        power_for_event: Callable[[Any], float],
+    ) -> dict[str, tuple[float, str, float]]:
+        """Return one target-power entry per active job at ``timestamp``.
+
+        Processing events into a job map, rather than summing event powers,
+        prevents overlapping STARTING/SCALE records for one job from being
+        double-counted. Matching JOB_END records remove the job for all later
+        profile samples.
+        """
+        state: dict[str, tuple[float, str, float]] = {}
+        for event in sorted(events, key=lambda item: (item.timestamp, item.event_id)):
+            if event.timestamp > timestamp:
+                break
+            event_type = self._event_type(event)
+            if event_type in {"starting", "running", "scale"}:
+                state[event.job_id] = (
+                    self._event_power_mw(event, power_for_event),
+                    str(event.event_id),
+                    float(event.timestamp),
+                )
+            elif event_type in {
+                "job_end",
+                "cancelled",
+                "job_failed",
+                "job_timeout",
+                "job_preempted",
+            }:
+                state.pop(event.job_id, None)
+        return state
+
+    def _announced_start_times(
+        self,
+        *,
+        sim_time_s: float,
+        events: list[Any],
+    ) -> dict[str, float]:
+        cutoff = sim_time_s + self.forecast_lead_seconds
+        starts: dict[str, float] = {}
+        for event in sorted(events, key=lambda item: (item.timestamp, item.event_id)):
+            if self._event_type(event) not in {"starting", "running"}:
+                continue
+            if event.timestamp <= cutoff:
+                starts[event.job_id] = min(
+                    starts.get(event.job_id, float("inf")),
+                    float(event.timestamp),
+                )
+        return starts
+
+    def _background_samples(
+        self,
+        *,
+        sim_time_s: float,
+        events: list[Any],
+        measured_history: list[tuple[float, float]],
+        power_for_event: Callable[[Any], float],
+        cooling_fraction: float,
+    ) -> list[float]:
+        """Remove known scripted/running load from measured site demand.
+
+        The remainder is the measured background. It is only derived from
+        timestamps already in history, so this subtraction does not introduce
+        future information into the controller.
+        """
+        samples: list[float] = []
+        window_start = sim_time_s - self.background_window_seconds
+        for timestamp, value in measured_history:
+            if not window_start <= timestamp < sim_time_s:
+                continue
+            job_state = self._job_state_at(
+                timestamp=timestamp,
+                events=events,
+                power_for_event=power_for_event,
+            )
+            scripted = sum(power for power, _, _ in job_state.values())
+            scripted *= 1.0 + max(0.0, cooling_fraction)
+            samples.append(max(0.0, float(value) - scripted))
+        return samples
 
     def forecast(
         self,
@@ -114,55 +230,107 @@ class ForecastDrivenTurbineController:
         events: list[Any],
         measured_history: list[tuple[float, float]],
         power_for_event: Callable[[Any], float],
+        cooling_fraction: float = 0.0,
+        horizon_seconds: Optional[float] = None,
+        step_seconds: float = 5.0,
     ) -> CommitmentForecast:
-        """Build a no-look-ahead forecast from measured history and announced events."""
-        window_start = sim_time_s - self.background_window_seconds
-        samples = [
-            value for timestamp, value in measured_history
-            if window_start <= timestamp < sim_time_s
-        ]
+        """Build a no-look-ahead, time-profiled site-demand forecast."""
+        samples = self._background_samples(
+            sim_time_s=sim_time_s,
+            events=events,
+            measured_history=measured_history,
+            power_for_event=power_for_event,
+            cooling_fraction=cooling_fraction,
+        )
         mean = statistics.fmean(samples) if samples else 0.0
         std = statistics.pstdev(samples) if len(samples) > 1 else 0.0
-        background = mean + std
-
-        announced = [
-            event for event in events
-            if event.timestamp >= sim_time_s
-            and event.timestamp - self.forecast_lead_seconds <= sim_time_s
-        ]
-        workload_mw = sum(self._event_power_mw(event, power_for_event) for event in announced)
-        forecast_mw = background + workload_mw
-        # The controller is deliberately bounded to its configured lead horizon.
-        peak = forecast_mw
-        self.forecast_history.append(
-            CommitmentForecast(
-                sim_time_s=sim_time_s,
-                background_mean_mw=mean,
-                background_std_mw=std,
-                forecast_mw=forecast_mw,
-                peak_forecast_mw=peak,
-                announced_event_ids=tuple(event.event_id for event in announced),
-                announced_workload_mw=workload_mw,
-            )
+        background = max(0.0, mean + std)
+        horizon = (
+            self.stop_lookahead_seconds
+            if horizon_seconds is None
+            else max(0.0, float(horizon_seconds))
         )
-        return self.forecast_history[-1]
+        announced_starts = self._announced_start_times(
+            sim_time_s=sim_time_s,
+            events=events,
+        )
+        profile: list[tuple[float, float]] = []
+        point_count = max(1, int(math.ceil(horizon / max(step_seconds, 0.1))))
+        for index in range(point_count + 1):
+            timestamp = min(sim_time_s + index * step_seconds, sim_time_s + horizon)
+            job_state = self._job_state_at(
+                timestamp=timestamp,
+                events=events,
+                power_for_event=power_for_event,
+            )
+            announced_power = sum(
+                power
+                for job_id, (power, _, _) in job_state.items()
+                if job_id in announced_starts
+            )
+            total = background + announced_power * (1.0 + max(0.0, cooling_fraction))
+            profile.append((timestamp, total))
+
+        current = profile[0][1] if profile else background
+        peak = max((value for _, value in profile), default=current)
+        minimum = min((value for _, value in profile), default=current)
+        announced_ids = tuple(
+            event.event_id
+            for event in sorted(events, key=lambda item: (item.timestamp, item.event_id))
+            if self._event_type(event) in {"starting", "running"}
+            and event.job_id in announced_starts
+            and event.timestamp == announced_starts[event.job_id]
+        )
+        announced_workload = max(
+            (
+                sum(
+                    power
+                    for job_id, (power, _, _) in self._job_state_at(
+                        timestamp=timestamp,
+                        events=events,
+                        power_for_event=power_for_event,
+                    ).items()
+                    if job_id in announced_starts
+                )
+                for timestamp, _ in profile
+            ),
+            default=0.0,
+        )
+        result = CommitmentForecast(
+            sim_time_s=sim_time_s,
+            background_mean_mw=mean,
+            background_std_mw=std,
+            forecast_mw=current,
+            peak_forecast_mw=peak,
+            minimum_forecast_mw=minimum,
+            profile=tuple(profile),
+            announced_event_ids=announced_ids,
+            announced_workload_mw=announced_workload,
+        )
+        self.forecast_history.append(result)
+        return result
 
     @staticmethod
     def _synchronized_capacity(turbines: list[Any]) -> float:
         return sum(
             max(0.0, float(turbine.config.rated_mw))
             for turbine in turbines
-            if turbine.state == TurbineState.SYNCHRONISED
+            if turbine.is_on_bus
         )
 
-    def _bess_headroom(self, bess_units: list[Any]) -> tuple[float, float]:
-        """Return power above anchor reserve and the most conservative SoC."""
+    def _bess_allowance(self, bess_units: list[Any]) -> tuple[float, float]:
+        """Return bridgeable BESS MW and the conservative SoC reading.
+
+        The SoC threshold controls whether the allowance is counted. It is
+        intentionally separate from the BESS's 1 MW grid-forming anchor
+        reserve, which is a power-limit constraint.
+        """
         if not bess_units:
             return 0.0, 0.0
         soc = min(float(getattr(unit, "soc_fraction", 0.0)) for unit in bess_units)
-        if soc < self.anchor_reserve_soc_fraction:
+        if soc < self.bess_allowance_soc_threshold_fraction:
             return 0.0, soc
-        headroom = sum(
+        allowance = sum(
             max(
                 0.0,
                 float(unit.config.rated_mw)
@@ -175,7 +343,7 @@ class ForecastDrivenTurbineController:
             for unit in bess_units
             if not getattr(unit, "tripped", False)
         )
-        return headroom, soc
+        return allowance, soc
 
     def _candidate_start(self, turbines: list[Any]) -> Optional[Any]:
         standby = [
@@ -193,11 +361,20 @@ class ForecastDrivenTurbineController:
         return offline[0] if offline else None
 
     def _candidate_stop(self, turbines: list[Any]) -> Optional[Any]:
-        running = [
+        synchronized = [
             turbine for turbine in turbines
             if turbine.state == TurbineState.SYNCHRONISED
         ]
-        return running[-1] if running else None
+        return max(
+            synchronized,
+            key=lambda turbine: (
+                -float(getattr(turbine, "_run_start_s", float("-inf")))
+                if math.isnan(float(getattr(turbine, "_run_start_s", float("nan"))))
+                else float(getattr(turbine, "_run_start_s")),
+                turbine.config.asset_id,
+            ),
+            default=None,
+        )
 
     def evaluate(
         self,
@@ -207,22 +384,22 @@ class ForecastDrivenTurbineController:
     ) -> CommitmentForecast | None:
         if not self.enabled:
             return None
+        cooling_fraction = float(getattr(ctx.sim_state.site, "alpha_max", 0.0))
         forecast = self.forecast(
             sim_time_s=ctx.sim_time,
             events=ctx.events,
             measured_history=ctx._measured_site_demand_history,
             power_for_event=power_for_event,
+            cooling_fraction=cooling_fraction,
+            horizon_seconds=self.stop_lookahead_seconds,
         )
         turbines = ctx.sim_state.turbines
-        synchronized = [
-            turbine for turbine in turbines
-            if turbine.state == TurbineState.SYNCHRONISED
-        ]
+        synchronized = [turbine for turbine in turbines if turbine.is_on_bus]
         synchronized_capacity = self._synchronized_capacity(turbines)
-        bess_headroom, soc = self._bess_headroom(ctx.sim_state.bess_units)
+        bess_allowance, soc = self._bess_allowance(ctx.sim_state.bess_units)
 
         if self.mode == "baseline":
-            if len(synchronized) < 3:
+            if len([t for t in synchronized if t.state == TurbineState.SYNCHRONISED]) < 3:
                 candidate = self._candidate_start(turbines)
                 if candidate is not None:
                     self._queue(
@@ -236,8 +413,9 @@ class ForecastDrivenTurbineController:
                     )
             return forecast
 
-        start_threshold = synchronized_capacity + bess_headroom
-        if forecast.peak_forecast_mw > start_threshold:
+        start_horizon = self.hot_start_lookahead_seconds + self.ramp_to_load_seconds
+        start_peak = forecast.peak_over(start_horizon)
+        if start_peak > synchronized_capacity + bess_allowance:
             candidate = self._candidate_start(turbines)
             if candidate is not None:
                 self._queue(
@@ -245,33 +423,110 @@ class ForecastDrivenTurbineController:
                     candidate,
                     "trip" if candidate.config.hot_standby else "start",
                     (
-                        "forecast exceeds synchronized capacity plus BESS headroom "
-                        f"over {self.hot_start_lookahead_seconds + self.ramp_to_load_seconds:.0f}s"
+                        "forecast peak exceeds synchronized capacity plus BESS "
+                        f"allowance over {start_horizon:.0f}s"
                     ),
                     forecast,
                     synchronized_capacity,
                     soc,
                 )
+            return forecast
+
+        if len([t for t in synchronized if t.state == TurbineState.SYNCHRONISED]) <= self.floor_synchronized:
+            return forecast
+        candidate = self._candidate_stop(turbines)
+        if candidate is None:
+            return forecast
+
+        stop_peak = forecast.peak_over(self.stop_lookahead_seconds)
+        stop_minimum = forecast.minimum_over(self.stop_lookahead_seconds)
+        remaining = [
+            turbine for turbine in synchronized
+            if turbine is not candidate
+        ]
+        remaining_capacity = sum(
+            max(0.0, float(turbine.config.rated_mw))
+            for turbine in remaining
+        )
+        remaining_msl = sum(
+            max(0.0, float(turbine.config.p_min_stable_frac))
+            * max(0.0, float(turbine.config.rated_mw))
+            for turbine in remaining
+        )
+
+        if stop_peak > remaining_capacity + bess_allowance + self.sensitivity_mw:
+            self._refused(
+                ctx=ctx,
+                turbine=candidate,
+                action="stop",
+                reason="stop refused: unit is needed within 1,200s",
+                forecast=forecast,
+                synchronized_capacity=synchronized_capacity,
+                soc=soc,
+            )
+        elif remaining_msl > stop_minimum + self.sensitivity_mw:
+            self._refused(
+                ctx=ctx,
+                turbine=candidate,
+                action="stop",
+                reason="stop refused: remaining units would over-generate",
+                forecast=forecast,
+                synchronized_capacity=synchronized_capacity,
+                soc=soc,
+            )
         elif (
-            len(synchronized) > self.floor_synchronized
-            and forecast.peak_forecast_mw
-            < synchronized_capacity - self.sensitivity_mw
+            candidate.config.min_run_enabled
+            and not math.isnan(float(getattr(candidate, "_run_start_s", float("nan"))))
+            and ctx.sim_time - candidate._run_start_s < candidate.config.t_min_run_s
         ):
-            candidate = self._candidate_stop(turbines)
-            if candidate is not None:
-                self._queue(
-                    ctx,
-                    candidate,
-                    "stop",
-                    (
-                        "forecast remains below synchronized capacity by more than "
-                        f"{self.sensitivity_mw:.1f} MW over {self.stop_lookahead_seconds:.0f}s"
-                    ),
-                    forecast,
-                    synchronized_capacity,
-                    soc,
-                )
+            self._refused(
+                ctx=ctx,
+                turbine=candidate,
+                action="stop",
+                reason="stop refused: minimum run time has not elapsed",
+                forecast=forecast,
+                synchronized_capacity=synchronized_capacity,
+                soc=soc,
+            )
+        else:
+            self._queue(
+                ctx,
+                candidate,
+                "stop",
+                (
+                    "forecast peak and minimum support controlled stop over "
+                    f"{self.stop_lookahead_seconds:.0f}s"
+                ),
+                forecast,
+                synchronized_capacity,
+                soc,
+            )
         return forecast
+
+    def _metadata(
+        self,
+        *,
+        turbine: Any,
+        action: str,
+        reason: str,
+        forecast: CommitmentForecast,
+        synchronized_capacity: float,
+        soc: float,
+    ) -> dict[str, Any]:
+        thermal_state = getattr(
+            turbine,
+            "_thermal_state",
+            getattr(getattr(turbine, "config", None), "initial_thermal_state", "unknown"),
+        )
+        return {
+            "thermal_tier": getattr(thermal_state, "value", str(thermal_state)),
+            "reason": reason,
+            "forecast_mw": forecast.forecast_mw,
+            "peak_forecast_mw": forecast.peak_forecast_mw,
+            "synchronized_capacity_mw": synchronized_capacity,
+            "bess_soc_fraction": soc,
+            "action": action,
+        }
 
     def _queue(
         self,
@@ -287,59 +542,121 @@ class ForecastDrivenTurbineController:
         if key in self._pending_request_keys:
             return
         self._pending_request_keys.add(key)
+        metadata = self._metadata(
+            turbine=turbine,
+            action=action,
+            reason=reason,
+            forecast=forecast,
+            synchronized_capacity=synchronized_capacity,
+            soc=soc,
+        )
         ctx.enqueue_unit_command(
             turbine.config.asset_id,
             action,
             source="forecast_commitment",
-            metadata={
-                "controller": self,
-                "thermal_tier": getattr(getattr(turbine, "thermal_state", None), "value", "unknown"),
-                "reason": reason,
-                "forecast_mw": forecast.peak_forecast_mw,
-                "synchronized_capacity_mw": synchronized_capacity,
-                "bess_soc_fraction": soc,
-            },
+            metadata={"controller": self, **metadata},
         )
 
-    def command_result(self, metadata: dict[str, Any], *, accepted: bool) -> None:
-        key = (metadata.get("unit_id", ""), metadata.get("action", ""))
+    def _refused(
+        self,
+        *,
+        ctx: Any,
+        turbine: Any,
+        action: str,
+        reason: str,
+        forecast: CommitmentForecast,
+        synchronized_capacity: float,
+        soc: float,
+    ) -> None:
+        self.command_result(
+            {
+                "unit_id": turbine.config.asset_id,
+                "action": action,
+                "sim_time_s": ctx.sim_time,
+                "source": "forecast_commitment",
+                **self._metadata(
+                    turbine=turbine,
+                    action=action,
+                    reason=reason,
+                    forecast=forecast,
+                    synchronized_capacity=synchronized_capacity,
+                    soc=soc,
+                ),
+            },
+            accepted=False,
+            changed_state=False,
+            refusal_reason=reason,
+        )
+
+    def command_result(
+        self,
+        metadata: dict[str, Any],
+        *,
+        accepted: bool,
+        changed_state: bool = False,
+        refusal_reason: Optional[str] = None,
+    ) -> None:
+        key = (
+            metadata.get("unit_id", ""),
+            metadata.get("requested_action", metadata.get("action", "")),
+        )
         self._pending_request_keys.discard(key)
+        action = str(metadata.get("action", ""))
         self.log.append(
             CommitmentLogRecord(
                 sim_time_s=float(metadata.get("sim_time_s", 0.0)),
                 unit_id=str(metadata.get("unit_id", "")),
-                action=str(metadata.get("action", "")),
+                action=action,
                 thermal_tier=str(metadata.get("thermal_tier", "unknown")),
                 reason=str(metadata.get("reason", "")),
                 forecast_mw=float(metadata.get("forecast_mw", 0.0)),
+                peak_forecast_mw=float(
+                    metadata.get("peak_forecast_mw", metadata.get("forecast_mw", 0.0))
+                ),
                 synchronized_capacity_mw=float(
                     metadata.get("synchronized_capacity_mw", 0.0)
                 ),
                 bess_soc_fraction=float(metadata.get("bess_soc_fraction", 0.0)),
                 accepted=accepted,
+                changed_state=changed_state,
+                source=str(metadata.get("source", "forecast_commitment")),
+                refusal_reason=refusal_reason or metadata.get("refusal_reason"),
             )
         )
 
+    def record_command_result(
+        self,
+        *,
+        metadata: dict[str, Any],
+        accepted: bool,
+        changed_state: bool,
+        refusal_reason: Optional[str],
+    ) -> None:
+        """Record controller, operator, cascade, and other command outcomes."""
+        self.command_result(
+            metadata,
+            accepted=accepted,
+            changed_state=changed_state,
+            refusal_reason=refusal_reason,
+        )
+
     def record_tick(self, ctx: Any, result: Any) -> None:
-        """Record cascade misses and invalidate savings on hard violations."""
-        unserved = float(getattr(result, "p_unserved_mw", 0.0) or 0.0)
-        if unserved > 1e-6:
-            self.constraint_violation_reasons.append(
-                f"unserved_energy:{result.sim_time_seconds:.1f}s:{unserved:.4f}MW"
-            )
-        anchor_soc = [
-            float(getattr(unit, "soc_fraction", 0.0))
-            for unit in ctx.sim_state.bess_units
-            if getattr(unit.config, "grid_forming", False)
-        ]
-        if anchor_soc and min(anchor_soc) < self.anchor_reserve_soc_fraction - 1e-9:
-            self.constraint_violation_reasons.append(
-                f"bess_anchor_reserve:{result.sim_time_seconds:.1f}s:"
-                f"{min(anchor_soc):.6f}"
-            )
+        """Record hard constraints, cascade releases, and start reconciliation."""
+        for unit in ctx.sim_state.bess_units:
+            if getattr(unit.config, "grid_forming", False):
+                allowed = max(
+                    0.0,
+                    float(unit.config.rated_mw) - float(unit.config.p_anchor_reserve_mw),
+                )
+                actual = max(0.0, float(getattr(unit, "_current_output_mw", 0.0)))
+                if actual > allowed + 1e-6:
+                    self.constraint_violation_reasons.append(
+                        f"bess_anchor_reserve_power:{result.sim_time_seconds:.1f}s:"
+                        f"{actual:.6f}>{allowed:.6f}MW"
+                    )
+
         if (
-            self.mode == "informed"
-            and getattr(result, "contingency_release_alert", False)
+            getattr(result, "contingency_release_alert", False)
             and result.tick_index not in self._cascade_release_ticks
         ):
             self._cascade_release_ticks.add(result.tick_index)
@@ -349,10 +666,13 @@ class ForecastDrivenTurbineController:
                 CommitmentLogRecord(
                     sim_time_s=float(result.sim_time_seconds),
                     unit_id=str(release_id or "unknown"),
-                    action="cascade_release",
+                    action="release",
                     thermal_tier="automatic",
-                    reason="forecast miss: automatic contingency cascade release",
-                    forecast_mw=float(forecast.peak_forecast_mw if forecast else 0.0),
+                    reason="automatic contingency cascade release",
+                    forecast_mw=float(forecast.forecast_mw if forecast else 0.0),
+                    peak_forecast_mw=float(
+                        forecast.peak_forecast_mw if forecast else 0.0
+                    ),
                     synchronized_capacity_mw=self._synchronized_capacity(
                         ctx.sim_state.turbines
                     ),
@@ -363,8 +683,118 @@ class ForecastDrivenTurbineController:
                         ),
                         default=0.0,
                     ),
+                    accepted=True,
+                    changed_state=True,
+                    source="automatic_contingency",
                 )
             )
+
+        # Detect starts that entered through an existing production path rather
+        # than through the forecast controller's command queue.
+        for turbine in ctx.sim_state.turbines:
+            current = int(getattr(turbine, "_start_count", 0))
+            logged = sum(
+                1
+                for record in self.log
+                if record.unit_id == turbine.config.asset_id
+                and record.action in {"start", "release"}
+                and record.accepted
+                and record.changed_state
+            )
+            previous = self._observed_start_counts.get(turbine.config.asset_id, 0)
+            if current > logged and current > previous:
+                for _ in range(current - max(logged, previous)):
+                    self.log.append(
+                        CommitmentLogRecord(
+                            sim_time_s=float(result.sim_time_seconds),
+                            unit_id=turbine.config.asset_id,
+                            action="start",
+                            thermal_tier=getattr(
+                                getattr(
+                                    turbine,
+                                    "_thermal_state",
+                                    getattr(
+                                        turbine.config,
+                                        "initial_thermal_state",
+                                        "unknown",
+                                    ),
+                                ),
+                                "value",
+                                str(
+                                    getattr(
+                                        turbine,
+                                        "_thermal_state",
+                                        getattr(
+                                            turbine.config,
+                                            "initial_thermal_state",
+                                            "unknown",
+                                        ),
+                                    )
+                                ),
+                            ),
+                            reason="production start not initiated by forecast controller",
+                            forecast_mw=float(
+                                self.forecast_history[-1].forecast_mw
+                                if self.forecast_history
+                                else 0.0
+                            ),
+                            peak_forecast_mw=float(
+                                self.forecast_history[-1].peak_forecast_mw
+                                if self.forecast_history
+                                else 0.0
+                            ),
+                            synchronized_capacity_mw=self._synchronized_capacity(
+                                ctx.sim_state.turbines
+                            ),
+                            bess_soc_fraction=min(
+                                (
+                                    float(getattr(unit, "soc_fraction", 0.0))
+                                    for unit in ctx.sim_state.bess_units
+                                ),
+                                default=0.0,
+                            ),
+                            accepted=True,
+                            changed_state=True,
+                            source="production",
+                        )
+                    )
+            self._observed_start_counts[turbine.config.asset_id] = current
+
+        expected = {
+            turbine.config.asset_id: int(getattr(turbine, "_start_count", 0))
+            for turbine in ctx.sim_state.turbines
+        }
+        actual = {
+            unit_id: sum(
+                1
+                for record in self.log
+                if record.unit_id == unit_id
+                and record.action in {"start", "release"}
+                and record.accepted
+                and record.changed_state
+            )
+            for unit_id in expected
+        }
+        for unit_id, count in expected.items():
+            if actual.get(unit_id, 0) != count:
+                self.constraint_violation_reasons.append(
+                    f"start_count_reconciliation:{unit_id}:"
+                    f"asset={count}:log={actual.get(unit_id, 0)}"
+                )
+
+    @property
+    def start_counts(self) -> dict[str, int]:
+        return {
+            unit_id: sum(
+                1
+                for record in self.log
+                if record.unit_id == unit_id
+                and record.action in {"start", "release"}
+                and record.accepted
+                and record.changed_state
+            )
+            for unit_id in sorted({record.unit_id for record in self.log})
+        }
 
     @property
     def constraints_valid(self) -> bool:

@@ -2916,6 +2916,8 @@ class RunResultResponse(BaseModel):
     turbine_commitment_logs: list[dict[str, Any]] = Field(default_factory=list)
     turbine_commitment_constraints_valid: bool = True
     turbine_commitment_constraint_violations: list[str] = Field(default_factory=list)
+    turbine_commitment_start_counts: dict[str, int] = Field(default_factory=dict)
+    turbine_commitment_start_count_reconciled: bool = True
 
 
 

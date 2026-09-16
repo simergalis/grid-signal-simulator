@@ -1169,6 +1169,8 @@ export interface RunResult {
   turbine_commitment_logs: TurbineCommitmentLog[]
   turbine_commitment_constraints_valid: boolean
   turbine_commitment_constraint_violations: string[]
+  turbine_commitment_start_counts: Record<string, number>
+  turbine_commitment_start_count_reconciled: boolean
   // Task #453: run-level energy accounting (MWh and USD).
   // null on headless/direct-path runs or durability fallback rows from DB.
   total_energy_demand_mwh:      number | null
@@ -1186,9 +1188,13 @@ export interface TurbineCommitmentLog {
   thermal_tier: string
   reason: string
   forecast_mw: number
+  peak_forecast_mw: number
   synchronized_capacity_mw: number
   bess_soc_fraction: number
   accepted: boolean
+  changed_state: boolean
+  source: string
+  refusal_reason: string | null
 }
 
 export interface TimeseriesRow {
