@@ -494,3 +494,331 @@ def test_tc_203_5d_start_from_offline_returns_ok_code():
     assert code == manager.UNIT_CMD_OK, f"unexpected code {code!r}: {detail!r}"
     assert len(ctx._operator_commands) == 1, "accepted command must be placed in queue"
     assert ctx._operator_commands[0] == {"unit_id": "gt-0", "action": "start"}
+
+
+# ── TC-203-5c4..5c11: Addendum H hot-standby release path ──────────────────
+
+def _aero_release_spec(*, hot_standby: bool = True) -> dict:
+    """Build the shared Addendum H aeroderivative turbine fixture.
+
+    The hot-standby cases explicitly seed the unit's thermal label as HOT.
+    The factory represents hot standby as OFFLINE plus the hot_standby flag;
+    ``initial_spinning_count=0`` is therefore the valid topology for those
+    cases.  The normal-unit cases use one explicitly spinning unit.
+    """
+    unit = {
+        "asset_id": "gt-aero",
+        "rated_mw": 25.0,
+        "r_asset_mw_per_s": 0.5,
+        "gt_mode": "aero",
+        "hot_standby": hot_standby,
+        "thermal_state": "hot",
+        "hot_start_s": 300.0,
+        "p_min_stable_frac": 0.35,
+        "t_min_run_s": 1800.0,
+        "min_run_enabled": True,
+        "t_min_down_s": 900.0,
+        "min_down_enabled": True,
+    }
+    if not hot_standby:
+        unit["initial_state"] = "spinning"
+
+    spec = {
+        **_SPEC,
+        "name": "tc-203-addendum-h-aero",
+        "run_duration_s": 20000.0,
+        "initial_spinning_count": 0 if hot_standby else 1,
+        "turbine_units": [unit],
+    }
+    return spec
+
+
+def _aero_ctx(run_id: str, *, hot_standby: bool = True):
+    from runtime.scenario_factory import build_run_context_from_spec
+    return build_run_context_from_spec(
+        run_id,
+        _aero_release_spec(hot_standby=hot_standby),
+        playback_speed=0,
+    )
+
+
+def _aero_turbine(ctx):
+    return ctx.sim_state.turbines[0]
+
+
+def _release_via_operator(ctx) -> None:
+    manager = _make_manager_with_ctx(ctx)
+    code, detail = manager.validate_and_enqueue_unit_command(
+        ctx.run_id, "gt-aero", "trip"
+    )
+    assert code == manager.UNIT_CMD_OK, f"release command rejected: {detail!r}"
+    _drain_operator_commands(ctx)
+
+
+def _trip_via_operator(ctx) -> None:
+    manager = _make_manager_with_ctx(ctx)
+    code, detail = manager.validate_and_enqueue_unit_command(
+        ctx.run_id, "gt-aero", "trip"
+    )
+    assert code == manager.UNIT_CMD_OK, f"trip command rejected: {detail!r}"
+    _drain_operator_commands(ctx)
+
+
+def _run_until_synchronised(ctx, *, max_ticks: int = 80):
+    from core.asset_modules import TurbineState
+
+    turbine = _aero_turbine(ctx)
+    ticks = []
+    for _ in range(max_ticks):
+        tick = ctx.step()
+        ticks.append(tick)
+        if turbine.state == TurbineState.SYNCHRONISED:
+            return ticks
+    pytest.fail("aeroderivative turbine did not synchronise within test horizon")
+
+
+def test_tc_203_5c4_operator_start_hot_standby_rejected_without_mutation():
+    """A direct operator START cannot release a dispatch-managed standby unit."""
+    ctx = _aero_ctx("tc-203-5c4")
+    manager = _make_manager_with_ctx(ctx)
+    turbine = _aero_turbine(ctx)
+    before = turbine.fuel_telemetry()
+
+    code, detail = manager.validate_and_enqueue_unit_command(
+        ctx.run_id, turbine.config.asset_id, "start"
+    )
+
+    assert code == manager.UNIT_CMD_BAD_STATE
+    assert "hot-standby" in detail.lower() or "hot_standby" in detail.lower()
+    assert turbine.state.value == "offline"
+    assert turbine.config.hot_standby is True
+    assert turbine.fuel_telemetry() == before
+    assert not ctx._operator_commands
+
+
+def test_tc_203_5c5_supported_release_starts_one_hot_turbine_and_charges_once():
+    """Supported standby release clears the flag and uses one 300-second HOT start."""
+    from core.asset_modules import TurbineState
+
+    ctx = _aero_ctx("tc-203-5c5")
+    turbine = _aero_turbine(ctx)
+    assert turbine.config.fuel is not None
+    hot_start_fuel = turbine.config.fuel.start_fuel_mmbtu_hot
+
+    _release_via_operator(ctx)
+
+    assert turbine.config.hot_standby is False
+    assert turbine.state == TurbineState.STARTING
+    assert turbine._time_to_online_s == pytest.approx(300.0)
+    assert turbine._start_count == 1
+    assert turbine._fuel_start_mmbtu == pytest.approx(hot_start_fuel)
+
+    ticks = _run_until_synchronised(ctx)
+    sync_tick = ticks[-1].sim_time_seconds
+    assert sync_tick >= 300.0
+    assert sync_tick <= 305.0
+    assert turbine._start_count == 1
+    assert turbine._fuel_start_mmbtu == pytest.approx(hot_start_fuel)
+
+
+def test_tc_203_5c6_shortfall_cascade_releases_one_hot_standby():
+    """Sustained N-1 shortfall automatically releases one HOT standby unit."""
+    from core.asset_modules import TurbineState
+
+    from runtime.scenario_factory import build_run_context_from_spec
+
+    spec = _aero_release_spec(hot_standby=True)
+    spec["initial_spinning_count"] = 1
+    spec["cascade_commit_fraction"] = None
+    spec["bess_units"] = [
+        {
+            "asset_id": "bess-0",
+            "rated_mw": 0.1,
+            "usable_mwh": 0.1,
+            "initial_soc_fraction": 0.9,
+            "grid_forming": True,
+            "p_anchor_reserve_mw": 0.0,
+        }
+    ]
+    lead = {
+        **spec["turbine_units"][0],
+        "asset_id": "gt-lead",
+        "hot_standby": False,
+        "initial_state": "spinning",
+    }
+    standby = {
+        **spec["turbine_units"][0],
+        "asset_id": "gt-aero",
+        "hot_standby": True,
+    }
+    spec["turbine_units"] = [lead, standby]
+    ctx = build_run_context_from_spec("tc-203-5c6", spec, playback_speed=0)
+    lead_turbine, standby = ctx.sim_state.turbines
+    lead_turbine._current_output_mw = lead_turbine.config.rated_mw
+
+    release_tick = None
+    for _ in range(8):
+        tick = ctx.step()
+        if getattr(tick, "contingency_release_alert", False):
+            release_tick = tick
+            break
+
+    assert release_tick is not None, "automatic contingency release did not fire"
+    from core.models import ContingencyState
+
+    assert release_tick.contingency_coverage.state == ContingencyState.COVERED_WITH_SHED
+    assert release_tick.contingency_release_alert is True
+    assert standby.config.hot_standby is False
+    assert standby.state == TurbineState.STARTING
+    assert standby._time_to_online_s == pytest.approx(300.0)
+    assert standby._start_count == 1
+    assert standby._fuel_start_mmbtu == pytest.approx(
+        standby.config.fuel.start_fuel_mmbtu_hot
+    )
+
+
+def test_tc_203_5c7_hot_standby_fuel_stops_after_supported_release():
+    """Standby fuel accrues only while flagged standby, then stops after release."""
+    ctx = _aero_ctx("tc-203-5c7")
+    turbine = _aero_turbine(ctx)
+    assert turbine.config.fuel is not None
+    standby_rate = turbine.config.fuel.hot_standby_fuel_mmbtu_per_h
+
+    ctx.step()
+    before_release = turbine.fuel_telemetry()
+    assert before_release["hot_standby_fuel_mmbtu"] == pytest.approx(
+        standby_rate * 5.0 / 3600.0
+    )
+    assert before_release["load_fuel_mmbtu"] == pytest.approx(0.0)
+    assert before_release["start_fuel_mmbtu"] == pytest.approx(0.0)
+
+    _release_via_operator(ctx)
+    released = turbine.fuel_telemetry()
+    ctx.step()
+    after_release = turbine.fuel_telemetry()
+    assert after_release["hot_standby_fuel_mmbtu"] == pytest.approx(
+        released["hot_standby_fuel_mmbtu"]
+    )
+    assert after_release["fuel_mmbtu_this_tick"] == pytest.approx(0.0)
+
+
+def test_tc_203_5c8_minimum_run_blocks_stop_then_allows_it():
+    """R5 refuses a controlled stop before 1,800 seconds and accepts it after."""
+    from core.asset_modules import TurbineState
+
+    ctx = _aero_ctx("tc-203-5c8", hot_standby=False)
+    turbine = _aero_turbine(ctx)
+    assert turbine.state == TurbineState.SYNCHRONISED
+    assert turbine._run_start_s == pytest.approx(0.0)
+
+    blocked = turbine.command_stop(1799.0)
+    assert blocked is not None
+    assert blocked.startswith("r5_min_run_not_elapsed")
+    assert turbine.state == TurbineState.SYNCHRONISED
+
+    accepted = turbine.command_stop(1800.0)
+    assert accepted is None
+    assert turbine.state == TurbineState.UNLOADING
+
+
+def test_tc_203_5c9_minimum_down_and_hot_warm_tiers():
+    """R6 blocks early restart, then selects HOT and later WARM tiers."""
+    from core.asset_modules import ThermalState, TurbineState
+
+    hot_threshold_s = 3600.0
+    warm_threshold_s = 14400.0
+    ctx = _aero_ctx("tc-203-5c9", hot_standby=False)
+    turbine = _aero_turbine(ctx)
+    manager = _make_manager_with_ctx(ctx)
+
+    code, detail = manager.validate_and_enqueue_unit_command(
+        ctx.run_id, "gt-aero", "trip"
+    )
+    assert code == manager.UNIT_CMD_OK, detail
+    _drain_operator_commands(ctx)
+    assert turbine.state == TurbineState.OFFLINE
+    assert turbine._stop_time_s == pytest.approx(0.0)
+
+    ctx.sim_time = 899.0
+    code, detail = manager.validate_and_enqueue_unit_command(
+        ctx.run_id, "gt-aero", "start"
+    )
+    assert code == manager.UNIT_CMD_BAD_STATE
+    assert "minimum down-time" in detail.lower()
+
+    ctx.sim_time = 900.0
+    code, detail = manager.validate_and_enqueue_unit_command(
+        ctx.run_id, "gt-aero", "start"
+    )
+    assert code == manager.UNIT_CMD_OK, detail
+    _drain_operator_commands(ctx)
+    assert turbine.state == TurbineState.STARTING
+    assert turbine._thermal_state == ThermalState.HOT
+    assert turbine._time_to_online_s == pytest.approx(300.0)
+    assert turbine._start_count == 1
+
+    ctx2 = _aero_ctx("tc-203-5c9-warm", hot_standby=False)
+    turbine2 = _aero_turbine(ctx2)
+    manager2 = _make_manager_with_ctx(ctx2)
+    _trip_via_operator(ctx2)
+    ctx2.sim_time = hot_threshold_s + 1.0
+    code, detail = manager2.validate_and_enqueue_unit_command(
+        ctx2.run_id, "gt-aero", "start"
+    )
+    assert code == manager2.UNIT_CMD_OK, detail
+    _drain_operator_commands(ctx2)
+    assert turbine2.state == TurbineState.STARTING
+    assert turbine2._thermal_state == ThermalState.WARM
+    assert turbine2._time_to_online_s == pytest.approx(360.0)
+    assert turbine2._start_count == 1
+    assert turbine2.config.hot_threshold_s == hot_threshold_s
+    assert turbine2.config.warm_threshold_s == warm_threshold_s
+
+
+def test_tc_203_5c10_on_bus_trip_is_immediate_and_starts_down_clock():
+    """An on-bus trip bypasses unloading and records the 900-second down clock."""
+    from core.asset_modules import TurbineState
+
+    ctx = _aero_ctx("tc-203-5c10", hot_standby=False)
+    turbine = _aero_turbine(ctx)
+    turbine._current_output_mw = 12.0
+
+    _trip_via_operator(ctx)
+
+    assert turbine.state == TurbineState.OFFLINE
+    assert turbine._current_output_mw == pytest.approx(0.0)
+    assert turbine._stop_time_s == pytest.approx(0.0)
+    assert turbine._last_sync_stop_s == pytest.approx(0.0)
+    assert turbine.config.t_min_down_s == pytest.approx(900.0)
+
+
+def test_tc_203_5c11_released_unit_stays_normal_after_stop_and_can_restart():
+    """A released unit remains normal after stopping and can later be started."""
+    from core.asset_modules import TurbineState
+
+    ctx = _aero_ctx("tc-203-5c11")
+    turbine = _aero_turbine(ctx)
+    _release_via_operator(ctx)
+    _run_until_synchronised(ctx)
+
+    # Give the released unit enough run time for a controlled stop/trip test.
+    ctx.sim_time = 2100.0
+    turbine._run_start_s = 300.0
+    turbine.state = TurbineState.SYNCHRONISED
+    turbine._current_output_mw = 12.0
+    _trip_via_operator(ctx)
+
+    assert turbine.config.hot_standby is False
+    assert turbine.state == TurbineState.OFFLINE
+    assert turbine._current_output_mw == pytest.approx(0.0)
+
+    ctx.sim_time += 900.0
+    manager = _make_manager_with_ctx(ctx)
+    code, detail = manager.validate_and_enqueue_unit_command(
+        ctx.run_id, "gt-aero", "start"
+    )
+    assert code == manager.UNIT_CMD_OK, detail
+    _drain_operator_commands(ctx)
+    assert turbine.config.hot_standby is False
+    assert turbine.state == TurbineState.STARTING
+    assert turbine._start_count == 2
