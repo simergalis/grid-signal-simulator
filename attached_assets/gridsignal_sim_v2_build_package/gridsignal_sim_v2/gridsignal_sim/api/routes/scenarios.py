@@ -1533,7 +1533,7 @@ async def list_scenarios(request: Request) -> list[ScenarioSummary]:
             description=json.loads(rec.spec_json).get("description", ""),
             created_at=rec.created_at.isoformat(),
         )
-        for rec in store.list_all()
+        for rec in sorted(store.list_all(), key=lambda rec: rec.name.casefold())
     ]
 
 
