@@ -368,6 +368,33 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         ]
         if _km is not None else []
     )
+    _turbine_fuel_list = [
+        {
+            "asset_id": row["asset_id"],
+            "fuel_modelled": row["fuel_modelled"],
+            "fuel_status": row["fuel_status"],
+            "fuel_type": row["fuel_type"],
+            "fuel_units": row["fuel_units"],
+            "fuel_mmbtu_this_tick": _round_optional(row["fuel_mmbtu_this_tick"], 6),
+            "load_fuel_mmbtu": _round_optional(row["load_fuel_mmbtu"], 6),
+            "no_load_fuel_mmbtu": _round_optional(row["no_load_fuel_mmbtu"], 6),
+            "hot_standby_fuel_mmbtu": _round_optional(row["hot_standby_fuel_mmbtu"], 6),
+            "start_fuel_mmbtu": _round_optional(row["start_fuel_mmbtu"], 6),
+            "total_fuel_mmbtu": _round_optional(row["total_fuel_mmbtu"], 6),
+            "start_count": row["start_count"],
+            "synchronized_headroom_mwh": round(
+                row["synchronized_headroom_mwh"], 6
+            ),
+            "minutes_below_low_load_threshold": round(
+                row["minutes_below_low_load_threshold"], 4
+            ),
+            "low_load_threshold_pct": _round_optional(
+                row["low_load_threshold_pct"], 2
+            ),
+            "fuel_parameter_provenance": row["fuel_parameter_provenance"],
+        }
+        for row in tick.turbine_fuel_telemetry
+    ]
 
     return {
         "run_id": tick.run_id,
@@ -616,6 +643,26 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
                     else u.get("breaker_closed", True))
             ),
             4,
+        ),
+        # Addendum H Phase 1: gas conservation telemetry.  Fuel totals are
+        # null/not_modelled when the scenario did not configure fuel inputs.
+        "turbine_fuel_telemetry": _turbine_fuel_list,
+        "turbine_fuel_modelled": tick.turbine_fuel_modelled,
+        "turbine_fuel_status": tick.turbine_fuel_status,
+        "turbine_fuel_type": tick.turbine_fuel_type,
+        "turbine_fuel_units": tick.turbine_fuel_units,
+        "turbine_total_fuel_mmbtu": _round_optional(
+            tick.turbine_total_fuel_mmbtu, 6
+        ),
+        "turbine_start_count": tick.turbine_start_count,
+        "turbine_synchronized_headroom_mwh": round(
+            tick.turbine_synchronized_headroom_mwh, 6
+        ),
+        "turbine_minutes_below_low_load_threshold": round(
+            tick.turbine_minutes_below_low_load_threshold, 4
+        ),
+        "turbine_fuel_parameter_provenance": (
+            tick.turbine_fuel_parameter_provenance
         ),
         # Kubernetes demand agent metrics — null when kube_config is not active.
         # non-null only on runs with kube_config set in the ScenarioSpec.
@@ -1707,6 +1754,17 @@ class CompletedRun:
     # None = operator did not override; cost engine uses _COST_CFG_DEFAULTS.
     grid_import_price_per_mwh:          Optional[float] = None
     bess_charge_price_override_per_mwh: Optional[float] = None
+    # Addendum H Phase 1: sealed run-level turbine gas accounting summary.
+    # The per-unit list mirrors the final TickResult snapshot.
+    turbine_fuel_status: str = "not_modelled"
+    turbine_fuel_type: Optional[str] = None
+    turbine_fuel_units: Optional[str] = None
+    turbine_total_fuel_mmbtu: Optional[float] = None
+    turbine_start_count: int = 0
+    turbine_synchronized_headroom_mwh: float = 0.0
+    turbine_minutes_below_low_load_threshold: float = 0.0
+    turbine_fuel_telemetry: list[dict] = field(default_factory=list)
+    turbine_fuel_parameter_provenance: Optional[dict] = None
 
 
 # ---------------------------------------------------------------------------
@@ -3319,6 +3377,7 @@ class RunManager:
 
                 # Store for the results/playback screen.
                 _completed_at = datetime.now(timezone.utc)
+                _fuel_summary = tick_dicts[-1] if tick_dicts else {}
                 self._completed[ctx.run_id] = CompletedRun(
                     run_id=ctx.run_id,
                     scenario_id=ctx.scenario_id,
@@ -3342,6 +3401,33 @@ class RunManager:
                     # settings without re-reading the scenario spec.
                     grid_import_price_per_mwh=ctx.grid_import_price_per_mwh,
                     bess_charge_price_override_per_mwh=ctx.bess_charge_price_override_per_mwh,
+                    turbine_fuel_status=_fuel_summary.get(
+                        "turbine_fuel_status", "not_modelled"
+                    ),
+                    turbine_fuel_type=_fuel_summary.get("turbine_fuel_type"),
+                    turbine_fuel_units=_fuel_summary.get("turbine_fuel_units"),
+                    turbine_total_fuel_mmbtu=_fuel_summary.get(
+                        "turbine_total_fuel_mmbtu"
+                    ),
+                    turbine_start_count=int(
+                        _fuel_summary.get("turbine_start_count", 0)
+                    ),
+                    turbine_synchronized_headroom_mwh=float(
+                        _fuel_summary.get(
+                            "turbine_synchronized_headroom_mwh", 0.0
+                        )
+                    ),
+                    turbine_minutes_below_low_load_threshold=float(
+                        _fuel_summary.get(
+                            "turbine_minutes_below_low_load_threshold", 0.0
+                        )
+                    ),
+                    turbine_fuel_telemetry=list(
+                        _fuel_summary.get("turbine_fuel_telemetry", [])
+                    ),
+                    turbine_fuel_parameter_provenance=_fuel_summary.get(
+                        "turbine_fuel_parameter_provenance"
+                    ),
                 )
 
                 # Tenant overage billing summary — emitted once per run when

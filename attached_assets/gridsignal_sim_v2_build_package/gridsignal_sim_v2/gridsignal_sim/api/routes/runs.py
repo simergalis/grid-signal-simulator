@@ -1084,6 +1084,26 @@ async def get_energy_summary(
         "grid_import_mwh":      round(grid_import_mwh,      4),
         "generation_mwh":       round(generation_mwh,       4),
         "storage_charge_mwh":   round(storage_charge_mwh,   4),
+        # Addendum H Phase 1: sealed turbine gas accounting.  A frame-only
+        # run reports not_modelled and null fuel totals rather than zero fuel.
+        "turbine_fuel_status": completed.turbine_fuel_status,
+        "turbine_fuel_type": completed.turbine_fuel_type,
+        "turbine_fuel_units": completed.turbine_fuel_units,
+        "turbine_total_fuel_mmbtu": (
+            round(completed.turbine_total_fuel_mmbtu, 6)
+            if completed.turbine_total_fuel_mmbtu is not None else None
+        ),
+        "turbine_start_count": completed.turbine_start_count,
+        "turbine_synchronized_headroom_mwh": round(
+            completed.turbine_synchronized_headroom_mwh, 6
+        ),
+        "turbine_minutes_below_low_load_threshold": round(
+            completed.turbine_minutes_below_low_load_threshold, 4
+        ),
+        "turbine_fuel_telemetry": completed.turbine_fuel_telemetry,
+        "turbine_fuel_parameter_provenance": (
+            completed.turbine_fuel_parameter_provenance
+        ),
         # §21.2 cost breakdown — CostModelEngine (Python, tested) is now the
         # authoritative implementation; ScenarioPlannerPage._computeCost is the
         # frontend rendering layer and should call this endpoint instead of

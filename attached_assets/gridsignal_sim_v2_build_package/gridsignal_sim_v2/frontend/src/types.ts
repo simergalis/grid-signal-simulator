@@ -314,6 +314,17 @@ export interface TickPayload {
   // Stamped from RunContext.turbine_unit_specs; empty array for contexts
   // without a spec (e.g. direct job-id path).  Drives the fleet modal.
   turbine_units: TurbineUnitSpec[]
+  // Addendum H Phase 1: null fuel totals mean fuel was not modelled.
+  turbine_fuel_telemetry: TurbineFuelTelemetry[]
+  turbine_fuel_modelled: boolean
+  turbine_fuel_status: 'modelled' | 'not_modelled'
+  turbine_fuel_type: 'natural_gas' | null
+  turbine_fuel_units: 'MMBtu' | null
+  turbine_total_fuel_mmbtu: number | null
+  turbine_start_count: number
+  turbine_synchronized_headroom_mwh: number
+  turbine_minutes_below_low_load_threshold: number
+  turbine_fuel_parameter_provenance: Record<string, Record<string, string>> | null
 
   // Phase C D-05: per-unit on-bus aggregates (renamed from units_synchronised_count /
   // synchronised_output_mw).
@@ -852,6 +863,25 @@ export interface TurbineUnitSpec {
   cold_start_s?: number
   /** PSP-002 §2.1: dispatch authority tier (default autonomous). */
   authority_tier?: AuthorityTier
+}
+
+export interface TurbineFuelTelemetry {
+  asset_id: string
+  fuel_modelled: boolean
+  fuel_status: 'modelled' | 'not_modelled'
+  fuel_type: 'natural_gas' | null
+  fuel_units: 'MMBtu' | null
+  fuel_mmbtu_this_tick: number | null
+  load_fuel_mmbtu: number | null
+  no_load_fuel_mmbtu: number | null
+  hot_standby_fuel_mmbtu: number | null
+  start_fuel_mmbtu: number | null
+  total_fuel_mmbtu: number | null
+  start_count: number
+  synchronized_headroom_mwh: number
+  minutes_below_low_load_threshold: number
+  low_load_threshold_pct: number | null
+  fuel_parameter_provenance: Record<string, string> | null
 }
 
 /** Block-addressable fuel-cell fleet configuration (Addendum G-1). */

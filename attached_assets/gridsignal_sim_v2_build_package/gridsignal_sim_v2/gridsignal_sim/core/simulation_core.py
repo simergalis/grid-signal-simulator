@@ -1627,6 +1627,17 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         _truly_sync_units, _p_sync_fleet_mw, dt_seconds
     )
 
+    # Addendum H Phase 1: account for the completed interval after loading has
+    # written the interval-end output, but before the unloading breaker gate
+    # can erase that output.  The module uses interval-entry state to avoid
+    # crediting a full synchronized interval to a unit that just finished
+    # starting.
+    for _turbine in state.turbines:
+        _turbine.record_fuel_interval(
+            dt_seconds,
+            _entry_states[_turbine.config.asset_id],
+        )
+
     # Phase E Item 5 — levelled-off predicate and breaker open.
     # `levelled_off` = |output − msl| < levelled_off_tol_mw — a derived predicate,
     # NOT a TurbineState (spec §E.5 prohibition: a state needs an owner, and a second
@@ -3218,6 +3229,30 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     _p_cooling_served_mw   = p_cooling_demand_mw - _p_unserved_mw * _cooling_demand_frac
     _p_cooling_unserved_mw = _p_unserved_mw * _cooling_demand_frac
 
+    # Addendum H Phase 1: snapshot cumulative turbine accounting after this
+    # interval.  Fuel totals remain null when no unit has a fuel model, while
+    # start/headroom telemetry remains meaningful for frame-only runs.
+    _turbine_fuel_rows = tuple(
+        _turbine.fuel_telemetry() for _turbine in state.turbines
+    )
+    _modelled_fuel_rows = tuple(
+        _row for _row in _turbine_fuel_rows if _row["fuel_modelled"]
+    )
+    _turbine_fuel_types = {
+        _row["fuel_type"] for _row in _modelled_fuel_rows
+    }
+    _turbine_fuel_units = {
+        _row["fuel_units"] for _row in _modelled_fuel_rows
+    }
+    _turbine_fuel_provenance = {
+        _row["asset_id"]: _row["fuel_parameter_provenance"]
+        for _row in _modelled_fuel_rows
+    }
+    _turbine_total_fuel_mmbtu = (
+        sum(float(_row["total_fuel_mmbtu"]) for _row in _modelled_fuel_rows)
+        if _modelled_fuel_rows else None
+    )
+
     state.tick_index += 1
     return TickResult(
         run_id=state.run_id,
@@ -3434,6 +3469,32 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         wall_stamp_utc=clock.wall_stamp_utc,
         p_renewable_mw=p_renewable_mw,
         p_renewable_curtailed_mw=_p_renewable_curtailed_mw,
+        turbine_fuel_telemetry=_turbine_fuel_rows,
+        turbine_fuel_modelled=bool(_modelled_fuel_rows),
+        turbine_fuel_status=(
+            "modelled" if _modelled_fuel_rows else "not_modelled"
+        ),
+        turbine_fuel_type=(
+            next(iter(_turbine_fuel_types))
+            if len(_turbine_fuel_types) == 1 else None
+        ),
+        turbine_fuel_units=(
+            next(iter(_turbine_fuel_units))
+            if len(_turbine_fuel_units) == 1 else None
+        ),
+        turbine_total_fuel_mmbtu=_turbine_total_fuel_mmbtu,
+        turbine_start_count=sum(
+            int(_row["start_count"]) for _row in _turbine_fuel_rows
+        ),
+        turbine_synchronized_headroom_mwh=sum(
+            float(_row["synchronized_headroom_mwh"])
+            for _row in _turbine_fuel_rows
+        ),
+        turbine_minutes_below_low_load_threshold=sum(
+            float(_row["minutes_below_low_load_threshold"])
+            for _row in _turbine_fuel_rows
+        ),
+        turbine_fuel_parameter_provenance=_turbine_fuel_provenance or None,
         # §7.4 SLD tile sub-fields.  p_expected_mw and banks_reporting are None
         # on the run path: the run engine has no independent expectation model,
         # and routing p_renewable_mw here creates a tautology that makes the

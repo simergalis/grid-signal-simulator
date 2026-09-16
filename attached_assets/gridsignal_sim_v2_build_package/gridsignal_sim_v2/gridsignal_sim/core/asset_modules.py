@@ -942,6 +942,16 @@ class TurbineModule(AssetModule):
     # Updated each sub-step in the swing-equation loop; persist across outer ticks.
     _gov_valve_mw: float = 0.0
     _gov_power_mw: float = 0.0
+    # Addendum H Phase 1 gas accounting.  These counters are local to a
+    # materialized turbine/run and are never used by dispatch or alerts.
+    _fuel_load_mmbtu: float = 0.0
+    _fuel_no_load_mmbtu: float = 0.0
+    _fuel_hot_standby_mmbtu: float = 0.0
+    _fuel_start_mmbtu: float = 0.0
+    _start_count: int = 0
+    _synchronized_headroom_mwh: float = 0.0
+    _minutes_below_low_load: float = 0.0
+    _last_interval_fuel_mmbtu: float = 0.0
     # Phase B Item 2: per-interval write counter for set_output().
     # Reset to 0 by begin_interval() at the start of each evaluation interval.
     # Incremented by set_output(); if it reaches 2 a RuntimeError is raised,
@@ -1015,6 +1025,7 @@ class TurbineModule(AssetModule):
         do not go through evaluate_tick() do not need to call this.
         """
         self._output_writes = 0
+        self._last_interval_fuel_mmbtu = 0.0
 
     def set_output(self, new_output_mw: float) -> None:
         """Set per-unit output MW.  Called by the loading layer for SYNCHRONISED units.
@@ -1095,6 +1106,13 @@ class TurbineModule(AssetModule):
 
         self._start_phase = "purge"
         self.state = TurbineState.STARTING
+        self._start_count += 1
+        if self.config.fuel is not None:
+            self._fuel_start_mmbtu += {
+                ThermalState.HOT: self.config.fuel.start_fuel_mmbtu_hot,
+                ThermalState.WARM: self.config.fuel.start_fuel_mmbtu_warm,
+                ThermalState.COLD: self.config.fuel.start_fuel_mmbtu_cold,
+            }[self._thermal_state]
 
     def unit_availability(self) -> "UnitAvailability":
         """Build a UnitAvailability boundary object from current state.
@@ -1198,6 +1216,111 @@ class TurbineModule(AssetModule):
 
     def output_mw(self) -> float:
         return self._current_output_mw
+
+    @property
+    def fuel_modelled(self) -> bool:
+        """Whether this unit has an active natural-gas accounting model."""
+        return self.config.fuel is not None
+
+    def record_fuel_interval(
+        self,
+        dt_seconds: float,
+        entry_state: TurbineState,
+    ) -> None:
+        """Accumulate one completed simulation interval of fuel telemetry.
+
+        TickResult timestamps describe interval end.  Accounting therefore
+        uses the post-loading output while requiring the unit to have been
+        on-bus at interval entry.  A unit that synchronizes during ``advance``
+        starts accumulating synchronized fuel on the following tick, avoiding
+        a full-interval credit for a partial startup.
+        """
+        if dt_seconds <= 0.0:
+            return
+        fuel = self.config.fuel
+        if fuel is None:
+            return
+
+        interval_hours = dt_seconds / 3600.0
+        interval_fuel = 0.0
+        if (
+            self.is_on_bus
+            and entry_state in (TurbineState.SYNCHRONISED, TurbineState.UNLOADING)
+        ):
+            output_mw = max(0.0, self.output_mw())
+            if output_mw > 0.0:
+                load_fraction = output_mw / self.config.rated_mw
+                load_rate_mmbtu_per_h = (
+                    output_mw
+                    * fuel.heat_rate_btu_per_kwh(load_fraction)
+                    / 1000.0
+                )
+                load_fuel = load_rate_mmbtu_per_h * interval_hours
+                self._fuel_load_mmbtu += load_fuel
+                interval_fuel += load_fuel
+            no_load_fuel = (
+                fuel.synchronized_no_load_fuel_mmbtu_per_h * interval_hours
+            )
+            self._fuel_no_load_mmbtu += no_load_fuel
+            interval_fuel += no_load_fuel
+
+            if (
+                self.state == TurbineState.SYNCHRONISED
+                and entry_state == TurbineState.SYNCHRONISED
+            ):
+                self._synchronized_headroom_mwh += max(
+                    0.0, self.config.rated_mw - output_mw
+                ) * interval_hours
+                if (
+                    output_mw / self.config.rated_mw
+                    < fuel.low_load_threshold_pct / 100.0
+                ):
+                    self._minutes_below_low_load += dt_seconds / 60.0
+        elif self.config.hot_standby and entry_state == TurbineState.OFFLINE:
+            standby_fuel = fuel.hot_standby_fuel_mmbtu_per_h * interval_hours
+            self._fuel_hot_standby_mmbtu += standby_fuel
+            interval_fuel += standby_fuel
+
+        self._last_interval_fuel_mmbtu = interval_fuel
+
+    def fuel_telemetry(self) -> dict:
+        """Return stable per-unit telemetry for TickResult serialization."""
+        fuel = self.config.fuel
+        telemetry = {
+            "asset_id": self.config.asset_id,
+            "fuel_modelled": fuel is not None,
+            "fuel_status": "modelled" if fuel is not None else "not_modelled",
+            "fuel_type": fuel.fuel_type if fuel is not None else None,
+            "fuel_units": fuel.fuel_units if fuel is not None else None,
+            "fuel_mmbtu_this_tick": (
+                self._last_interval_fuel_mmbtu if fuel is not None else None
+            ),
+            "load_fuel_mmbtu": self._fuel_load_mmbtu if fuel is not None else None,
+            "no_load_fuel_mmbtu": (
+                self._fuel_no_load_mmbtu if fuel is not None else None
+            ),
+            "hot_standby_fuel_mmbtu": (
+                self._fuel_hot_standby_mmbtu if fuel is not None else None
+            ),
+            "start_fuel_mmbtu": self._fuel_start_mmbtu if fuel is not None else None,
+            "total_fuel_mmbtu": (
+                self._fuel_load_mmbtu
+                + self._fuel_no_load_mmbtu
+                + self._fuel_hot_standby_mmbtu
+                + self._fuel_start_mmbtu
+                if fuel is not None else None
+            ),
+            "start_count": self._start_count,
+            "synchronized_headroom_mwh": self._synchronized_headroom_mwh,
+            "minutes_below_low_load_threshold": self._minutes_below_low_load,
+            "low_load_threshold_pct": (
+                fuel.low_load_threshold_pct if fuel is not None else None
+            ),
+            "fuel_parameter_provenance": (
+                dict(fuel.provenance) if fuel is not None else None
+            ),
+        }
+        return telemetry
 
 
 # ---------------------------------------------------------------------------

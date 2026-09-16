@@ -48,6 +48,8 @@ from core.models import (
     SolarConfig,
     ThermalState,
     TransitionMode,
+    AERODERIVATIVE_FUEL_PARAMETERS,
+    TurbineFuelParameters,
     TurbineConfig,
     TurbineState,
     WorkloadClass,
@@ -815,6 +817,64 @@ def build_run_context_from_spec(
     ]
     cooling = CoolingModule(asset_id="cooling-0", site=site)
 
+    def _fuel_parameters_for_turbine(raw: dict) -> TurbineFuelParameters | None:
+        """Materialize optional Phase 1 fuel accounting without changing dispatch."""
+        gt_mode = str(raw.get("gt_mode", "frame"))
+        fuel_raw = raw.get("fuel")
+        if fuel_raw is None:
+            return (
+                AERODERIVATIVE_FUEL_PARAMETERS
+                if gt_mode == "aero" else None
+            )
+        return TurbineFuelParameters(
+            fuel_type=str(fuel_raw.get("fuel_type", "natural_gas")),
+            fuel_units=str(fuel_raw.get("fuel_units", "MMBtu")),
+            part_load_heat_rate_btu_per_kwh=tuple(
+                (float(point[0]), float(point[1]))
+                for point in fuel_raw.get(
+                    "part_load_heat_rate_btu_per_kwh",
+                    AERODERIVATIVE_FUEL_PARAMETERS.part_load_heat_rate_btu_per_kwh,
+                )
+            ),
+            synchronized_no_load_fuel_mmbtu_per_h=float(
+                fuel_raw.get(
+                    "synchronized_no_load_fuel_mmbtu_per_h",
+                    AERODERIVATIVE_FUEL_PARAMETERS.synchronized_no_load_fuel_mmbtu_per_h,
+                )
+            ),
+            hot_standby_fuel_mmbtu_per_h=float(
+                fuel_raw.get(
+                    "hot_standby_fuel_mmbtu_per_h",
+                    AERODERIVATIVE_FUEL_PARAMETERS.hot_standby_fuel_mmbtu_per_h,
+                )
+            ),
+            start_fuel_mmbtu_hot=float(
+                fuel_raw.get(
+                    "start_fuel_mmbtu_hot",
+                    AERODERIVATIVE_FUEL_PARAMETERS.start_fuel_mmbtu_hot,
+                )
+            ),
+            start_fuel_mmbtu_warm=float(
+                fuel_raw.get(
+                    "start_fuel_mmbtu_warm",
+                    AERODERIVATIVE_FUEL_PARAMETERS.start_fuel_mmbtu_warm,
+                )
+            ),
+            start_fuel_mmbtu_cold=float(
+                fuel_raw.get(
+                    "start_fuel_mmbtu_cold",
+                    AERODERIVATIVE_FUEL_PARAMETERS.start_fuel_mmbtu_cold,
+                )
+            ),
+            low_load_threshold_pct=float(
+                fuel_raw.get(
+                    "low_load_threshold_pct",
+                    AERODERIVATIVE_FUEL_PARAMETERS.low_load_threshold_pct,
+                )
+            ),
+            provenance=dict(fuel_raw.get("provenance", {})),
+        )
+
     turbines = [
         TurbineModule(
             TurbineConfig(
@@ -836,6 +896,8 @@ def build_run_context_from_spec(
                 min_run_enabled=bool(t.get("min_run_enabled", True)),
                 t_min_down_s=float(t.get("t_min_down_s", 900.0)),
                 min_down_enabled=bool(t.get("min_down_enabled", True)),
+                gt_mode=str(t.get("gt_mode", "frame")),
+                fuel=_fuel_parameters_for_turbine(t),
                 # Start-duration overrides — fall back to locked parameter values
                 # when not present in the scenario JSON (None sentinel from schema).
                 **({} if t.get("cold_start_s") is None else {"cold_start_s": float(t["cold_start_s"])}),
@@ -1878,6 +1940,26 @@ def build_run_context_from_spec(
                 # Phase 0 §0.1: prime-mover class — "frame" or "aero".
                 # Drives the derived identity line in the fleet modal.
                 "gt_mode": str(t.get("gt_mode", "frame")),
+                # Addendum H Phase 1: static fuel-model identity and
+                # provenance.  Dynamic cumulative values are stamped from the
+                # TurbineModule on each TickResult.
+                "fuel_modelled": _fuel_parameters_for_turbine(t) is not None,
+                "fuel_type": (
+                    _fuel_parameters_for_turbine(t).fuel_type
+                    if _fuel_parameters_for_turbine(t) is not None else None
+                ),
+                "fuel_units": (
+                    _fuel_parameters_for_turbine(t).fuel_units
+                    if _fuel_parameters_for_turbine(t) is not None else None
+                ),
+                "fuel_low_load_threshold_pct": (
+                    _fuel_parameters_for_turbine(t).low_load_threshold_pct
+                    if _fuel_parameters_for_turbine(t) is not None else None
+                ),
+                "fuel_parameter_provenance": (
+                    dict(_fuel_parameters_for_turbine(t).provenance)
+                    if _fuel_parameters_for_turbine(t) is not None else None
+                ),
                 # Phase 0 §0.2: hot_standby — commissioned but not synchronised to
                 # the AC bus.  A hot-standby unit contributes zero output and is
                 # excluded from contingency ramp (TC-83).

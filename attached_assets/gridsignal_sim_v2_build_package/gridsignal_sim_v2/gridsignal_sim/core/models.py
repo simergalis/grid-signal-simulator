@@ -811,6 +811,10 @@ class TurbineConfig:
     #   "frame" = large heavy-duty frame (slow ramp, high inertia).
     #   "aero"  = aeroderivative unit (fast ramp, lower inertia).
     gt_mode: str = "frame"
+    # Optional Addendum H Phase 1 gas accounting.  Frame units without this
+    # block intentionally remain "not modelled"; they must not be reported as
+    # zero-fuel units.
+    fuel: Optional["TurbineFuelParameters"] = None
     # ── Phase 2: start durations — from config, no literals in state machine ─
     # cold_start_s: time for a COLD-start unit to reach SYNCHRONISED.
     #   GE/simple-cycle simulation assumption: 600 s (10 min).
@@ -860,6 +864,99 @@ class TurbineConfig:
     # max_instantaneous_load_step_mw: governor output rate limit per sub-step.
     #   PROVISIONAL-UNMEASURED per unit; default matches SiteConfig fleet value.
     max_instantaneous_load_step_mw: float = _sp.value("max_instantaneous_load_step_mw")  # PROVISIONAL-UNMEASURED
+
+
+@dataclass(frozen=True)
+class TurbineFuelParameters:
+    """Optional natural-gas accounting inputs for one gas turbine.
+
+    These values are deliberately separate from dispatch physics.  Phase 1
+    reports fuel and commitment telemetry; it does not alter the dispatch
+    decision or any alert logic.
+
+    ``part_load_heat_rate_btu_per_kwh`` is a sorted sequence of
+    ``(load_fraction, Btu/kWh)`` points.  Values between points are linearly
+    interpolated and values below/above the supplied range use the nearest
+    endpoint.
+    """
+
+    fuel_type: str = "natural_gas"
+    fuel_units: str = "MMBtu"
+    part_load_heat_rate_btu_per_kwh: tuple[tuple[float, float], ...] = (
+        (0.25, 11_000.0),
+        (0.50, 9_800.0),
+        (0.75, 9_000.0),
+        (1.00, 8_500.0),
+    )
+    synchronized_no_load_fuel_mmbtu_per_h: float = 1.20
+    hot_standby_fuel_mmbtu_per_h: float = 0.25
+    start_fuel_mmbtu_hot: float = 8.0
+    start_fuel_mmbtu_warm: float = 12.0
+    start_fuel_mmbtu_cold: float = 20.0
+    low_load_threshold_pct: float = 50.0
+    # Every numeric parameter is paired with a provenance label.  The
+    # aeroderivative defaults below are explicitly authored assumptions, not
+    # vendor claims.
+    provenance: dict[str, str] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        points = self.part_load_heat_rate_btu_per_kwh
+        if len(points) < 2:
+            raise ValueError("part_load_heat_rate_btu_per_kwh needs at least two points")
+        if any(
+            load_fraction <= 0.0
+            or load_fraction > 1.0
+            or heat_rate <= 0.0
+            for load_fraction, heat_rate in points
+        ):
+            raise ValueError("fuel curve points must have 0 < load_fraction <= 1 and positive heat rate")
+        if any(points[i][0] >= points[i + 1][0] for i in range(len(points) - 1)):
+            raise ValueError("fuel curve load fractions must be strictly increasing")
+        if not 0.0 < self.low_load_threshold_pct <= 100.0:
+            raise ValueError("low_load_threshold_pct must be in (0, 100]")
+        numeric_names = (
+            "part_load_heat_rate_btu_per_kwh",
+            "synchronized_no_load_fuel_mmbtu_per_h",
+            "hot_standby_fuel_mmbtu_per_h",
+            "start_fuel_mmbtu_hot",
+            "start_fuel_mmbtu_warm",
+            "start_fuel_mmbtu_cold",
+            "low_load_threshold_pct",
+        )
+        # Missing labels are not silently omitted from telemetry.  They are
+        # marked as authored proposals until an OEM/site source is supplied.
+        provenance = {
+            name: self.provenance.get(name, "Authored — PROPOSED_HERE")
+            for name in numeric_names
+        }
+        object.__setattr__(self, "provenance", provenance)
+
+    def heat_rate_btu_per_kwh(self, load_fraction: float) -> float:
+        """Return linearly interpolated heat rate at a normalized load."""
+        points = self.part_load_heat_rate_btu_per_kwh
+        x = min(1.0, max(points[0][0], load_fraction))
+        for (x0, y0), (x1, y1) in zip(points, points[1:]):
+            if x <= x1:
+                fraction = (x - x0) / (x1 - x0)
+                return y0 + fraction * (y1 - y0)
+        return points[-1][1]
+
+
+# Addendum H Phase 1 defaults for aeroderivative units.  These are not
+# vendor-published values in this repository.  Each numeric field therefore
+# carries the required "Authored — PROPOSED_HERE" provenance label rather than
+# an invented OEM attribution.  The 50% low-load threshold is configurable.
+AERODERIVATIVE_FUEL_PARAMETERS = TurbineFuelParameters(
+    provenance={
+        "part_load_heat_rate_btu_per_kwh": "Authored — PROPOSED_HERE",
+        "synchronized_no_load_fuel_mmbtu_per_h": "Authored — PROPOSED_HERE",
+        "hot_standby_fuel_mmbtu_per_h": "Authored — PROPOSED_HERE",
+        "start_fuel_mmbtu_hot": "Authored — PROPOSED_HERE",
+        "start_fuel_mmbtu_warm": "Authored — PROPOSED_HERE",
+        "start_fuel_mmbtu_cold": "Authored — PROPOSED_HERE",
+        "low_load_threshold_pct": "Authored — PROPOSED_HERE",
+    }
+)
 
 
 @dataclass
@@ -1476,6 +1573,18 @@ class TickResult:
     # Phase 0 adds breaker_closed, gt_mode, no_load_mw, msl_mw (§0.1/0.2/0.6).
     # Old dicts without these keys are backward-compatible via .get() with defaults.
     turbine_units: tuple = field(default_factory=tuple)
+    # Addendum H Phase 1: per-unit cumulative fuel/start/reserve telemetry.
+    # Numeric fuel fields are null for units without an active fuel model.
+    turbine_fuel_telemetry: tuple = field(default_factory=tuple)
+    turbine_fuel_modelled: bool = False
+    turbine_fuel_status: str = "not_modelled"
+    turbine_fuel_type: Optional[str] = None
+    turbine_fuel_units: Optional[str] = None
+    turbine_total_fuel_mmbtu: Optional[float] = None
+    turbine_start_count: int = 0
+    turbine_synchronized_headroom_mwh: float = 0.0
+    turbine_minutes_below_low_load_threshold: float = 0.0
+    turbine_fuel_parameter_provenance: Optional[dict[str, dict[str, str]]] = None
     # Kubernetes demand agent metrics — non-None when kube_config is active.
     # None on every tick when the standard scripted workload path is used,
     # so existing tests and displays that don't reference this field are unaffected.

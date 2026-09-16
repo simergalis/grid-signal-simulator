@@ -879,6 +879,59 @@ def generate_diesel_fleet(
     return fleet
 
 
+class TurbineFuelSpec(BaseModel):
+    """Optional Addendum H Phase 1 natural-gas accounting inputs.
+
+    The defaults are authored proposals for an aeroderivative unit, not
+    vendor claims.  Every numeric parameter is exposed with a provenance
+    label so a scenario can replace these assumptions with site/OEM data.
+    """
+
+    fuel_type: Literal["natural_gas"] = "natural_gas"
+    fuel_units: Literal["MMBtu"] = "MMBtu"
+    part_load_heat_rate_btu_per_kwh: list[tuple[float, float]] = Field(
+        default=[(0.25, 11000.0), (0.50, 9800.0), (0.75, 9000.0), (1.0, 8500.0)],
+        description="(load fraction, Btu/kWh) points; interpolated linearly.",
+    )
+    synchronized_no_load_fuel_mmbtu_per_h: float = Field(default=1.20, ge=0.0)
+    hot_standby_fuel_mmbtu_per_h: float = Field(default=0.25, ge=0.0)
+    start_fuel_mmbtu_hot: float = Field(default=8.0, ge=0.0)
+    start_fuel_mmbtu_warm: float = Field(default=12.0, ge=0.0)
+    start_fuel_mmbtu_cold: float = Field(default=20.0, ge=0.0)
+    # 50% is the Phase 1 authored threshold and remains configurable.
+    low_load_threshold_pct: float = Field(default=50.0, gt=0.0, le=100.0)
+    provenance: Dict[str, str] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _validate_curve_and_provenance(self) -> "TurbineFuelSpec":
+        points = self.part_load_heat_rate_btu_per_kwh
+        if len(points) < 2:
+            raise ValueError("part_load_heat_rate_btu_per_kwh needs at least two points")
+        if any(
+            load_fraction <= 0.0
+            or load_fraction > 1.0
+            or heat_rate <= 0.0
+            for load_fraction, heat_rate in points
+        ):
+            raise ValueError("fuel curve points must have 0 < load_fraction <= 1 and positive heat rate")
+        if any(points[i][0] >= points[i + 1][0] for i in range(len(points) - 1)):
+            raise ValueError("fuel curve load fractions must be strictly increasing")
+        names = (
+            "part_load_heat_rate_btu_per_kwh",
+            "synchronized_no_load_fuel_mmbtu_per_h",
+            "hot_standby_fuel_mmbtu_per_h",
+            "start_fuel_mmbtu_hot",
+            "start_fuel_mmbtu_warm",
+            "start_fuel_mmbtu_cold",
+            "low_load_threshold_pct",
+        )
+        self.provenance = {
+            name: self.provenance.get(name, "Authored — PROPOSED_HERE")
+            for name in names
+        }
+        return self
+
+
 class TurbineUnitSpec(BaseModel):
     """One turbine unit within a scenario's fleet."""
     asset_id: str
@@ -892,6 +945,9 @@ class TurbineUnitSpec(BaseModel):
     # Hot-standby units are excluded from dispatch staging and contribute zero
     # to contingency ramp capability (§7.4 / TC-83).  Default False.
     hot_standby: bool = False
+    # gt_mode: per-unit prime-mover class.  Aeroderivative units receive the
+    # authored Addendum H Phase 1 fuel defaults when fuel is omitted.
+    gt_mode: Literal["frame", "aero"] = "frame"
     # initial_state: "spinning" means synchronized at minimum stable load at
     # t=0; "offline" uses the normal commitment/startup path.
     initial_state: Literal["offline", "spinning"] = "offline"
@@ -928,6 +984,10 @@ class TurbineUnitSpec(BaseModel):
     # Controls which start-duration path applies on the first command_start().
     # "hot" | "warm" | "cold" (default "cold" — conservative, always safe).
     thermal_state: Optional[str] = Field(default="cold", pattern=r"^(hot|warm|cold)$")
+    # Addendum H Phase 1: absent means fuel is not modelled for this unit.
+    # Aeroderivative units receive the authored default set in scenario_factory
+    # when this block is omitted.
+    fuel: Optional[TurbineFuelSpec] = None
     # Phase 2B (DR-2026-08-08-FREQ): per-unit turbine physics overrides.
     # When None, TurbineConfig defaults (from catalogue) are used.
     # Use these for heterogeneous fleets where individual units differ from
