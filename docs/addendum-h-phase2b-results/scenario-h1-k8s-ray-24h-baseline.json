@@ -1,7 +1,6 @@
 {
-  "acceptance_verdict": "PASS",
   "background_power_reactive": true,
-  "background_probe_wall_clock_seconds": 213.954547,
+  "background_probe_wall_clock_seconds": 136.765703,
   "background_trace_signal_count": 2043,
   "bess_soc_final": 0.999999998,
   "bess_soc_max": 0.999999999,
@@ -489,7 +488,6 @@
     }
   ],
   "commitment_log_record_count": 48,
-  "commitment_log_total_records": 48,
   "compute_description": "scheduler-shaped GPU workload demand",
   "constraints_valid": true,
   "core_proposals": {
@@ -498,19 +496,35 @@
   },
   "demand_replay_tick_count": 17280,
   "dispatch_curtailment_fuel_by_component_mmbtu": {
-    "hot_standby_fuel_mmbtu": 0.0,
-    "load_fuel_mmbtu": 0.0,
-    "no_load_fuel_mmbtu": 0.0,
+    "hot_standby_fuel_mmbtu": 3.865277778,
+    "load_fuel_mmbtu": 3347.181453153,
+    "no_load_fuel_mmbtu": 43.573333333,
     "start_fuel_mmbtu": 0.0
   },
-  "dispatch_curtailment_fuel_mmbtu": 0.0,
+  "dispatch_curtailment_fuel_mmbtu": 3394.620064264,
   "dispatch_curtailment_mwh": 187.690139189,
   "energy_balance": {
     "closure_required": true,
     "closure_status": true,
+    "d4_balance_defect_mw_distribution": {
+      "count": 17280,
+      "max": 32.205278552,
+      "mean": 7.820422466,
+      "median": 8.849992513,
+      "min": 0.0,
+      "p95": 15.057297037
+    },
+    "dispatch_curtailment_mw_distribution": {
+      "count": 12118,
+      "max": 32.205278552,
+      "mean": 11.151749481,
+      "median": 11.302674842,
+      "min": 0.017628862,
+      "p95": 20.042958252
+    },
     "dispatch_curtailment_mwh": 187.690139189,
     "max_abs_d4_balance_defect_mw": 32.205278552,
-    "max_abs_physical_ledger_defect_mw": 0.0001,
+    "max_abs_physical_ledger_defect_mw": 0.0,
     "served_demand_mwh": 367.781736493,
     "unserved_demand_mwh": 0.894372986
   },
@@ -518,48 +532,76 @@
     "count": 0,
     "peak_mw": 0.0
   },
+  "forecast_quality": {
+    "absolute_error_mw": {
+      "count": 0,
+      "max": 0.0,
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0.0,
+      "p95": 0.0
+    },
+    "forecast_tick_count": 0,
+    "matched_error_tick_count": 0,
+    "miss_count": 0,
+    "miss_peak_mw": 0.0,
+    "signed_error_mw": {
+      "count": 0,
+      "max": 0.0,
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0.0,
+      "p95": 0.0
+    }
+  },
   "fuel_by_component_mmbtu": {
-    "hot_standby_fuel_mmbtu": 0.0,
-    "load_fuel_mmbtu": 0.0,
-    "no_load_fuel_mmbtu": 0.0,
-    "start_fuel_mmbtu": 0.0
+    "hot_standby_fuel_mmbtu": 4.142013889,
+    "load_fuel_mmbtu": 5847.168216351,
+    "no_load_fuel_mmbtu": 72.43,
+    "start_fuel_mmbtu": 116.0
   },
   "fuel_by_unit_mmbtu": {
     "gt-hot-01": {
-      "hot_standby_fuel_mmbtu": 0.0,
-      "load_fuel_mmbtu": 0.0,
-      "no_load_fuel_mmbtu": 0.0,
-      "start_fuel_mmbtu": 0.0,
-      "total_fuel_mmbtu": 0.0
+      "hot_standby_fuel_mmbtu": 2.011111111,
+      "load_fuel_mmbtu": 746.146987605,
+      "no_load_fuel_mmbtu": 9.528333333,
+      "start_fuel_mmbtu": 48.0,
+      "total_fuel_mmbtu": 805.686432049
     },
     "gt-hot-02": {
-      "hot_standby_fuel_mmbtu": 0.0,
-      "load_fuel_mmbtu": 0.0,
-      "no_load_fuel_mmbtu": 0.0,
-      "start_fuel_mmbtu": 0.0,
-      "total_fuel_mmbtu": 0.0
+      "hot_standby_fuel_mmbtu": 2.130902778,
+      "load_fuel_mmbtu": 405.740763889,
+      "no_load_fuel_mmbtu": 5.301666667,
+      "start_fuel_mmbtu": 68.0,
+      "total_fuel_mmbtu": 481.173333333
     },
     "gt-spin-01": {
       "hot_standby_fuel_mmbtu": 0.0,
-      "load_fuel_mmbtu": 0.0,
-      "no_load_fuel_mmbtu": 0.0,
+      "load_fuel_mmbtu": 2380.375928843,
+      "no_load_fuel_mmbtu": 28.8,
       "start_fuel_mmbtu": 0.0,
-      "total_fuel_mmbtu": 0.0
+      "total_fuel_mmbtu": 2409.175928843
     },
     "gt-spin-02": {
       "hot_standby_fuel_mmbtu": 0.0,
-      "load_fuel_mmbtu": 0.0,
-      "no_load_fuel_mmbtu": 0.0,
+      "load_fuel_mmbtu": 2314.904536015,
+      "no_load_fuel_mmbtu": 28.8,
       "start_fuel_mmbtu": 0.0,
-      "total_fuel_mmbtu": 0.0
+      "total_fuel_mmbtu": 2343.704536015
     }
   },
+  "fuel_guard": {
+    "active_modelled_units": [
+      "gt-spin-01",
+      "gt-spin-02"
+    ],
+    "active_unit_count": 2,
+    "guard_status": "PASS"
+  },
   "hard_violations": [],
-  "identical_compute_trace": true,
   "interval_seconds": 5.0,
   "kube_power_reactive_ticks": 0,
   "kube_requeued_admissions": 0,
-  "max_compute_trace_diff_mw": 0.0,
   "mode": "baseline",
   "peak_unserved_mw": 35.021533247,
   "preload_actions": [],
@@ -655,6 +697,8 @@
       "unit_id": "gt-hot-02"
     }
   ],
+  "stop_floor_refusal_count": 0,
+  "stop_floor_refusals": [],
   "stops": [
     {
       "action": "stop",
@@ -833,7 +877,7 @@
   "tick_artifact": "scenario-h1-k8s-ray-24h-baseline_ticks.jsonl.gz",
   "tick_count": 17280,
   "trace_source": "baseline live background trace replay",
-  "turbine_fuel_mmbtu": 0.0,
+  "turbine_fuel_mmbtu": 6039.74023024,
   "unit_minutes_below_50_percent": {
     "gt-spin-01": 1440.0,
     "gt-spin-02": 1440.0
@@ -985,5 +1029,5 @@
     }
   ],
   "unserved_mwh": 0.894372986,
-  "wall_clock_seconds": 49.211611
+  "wall_clock_seconds": 56.820303
 }

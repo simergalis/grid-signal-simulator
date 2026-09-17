@@ -257,6 +257,29 @@ def _compact_commitment_log(controller: Any) -> list[dict[str, Any]]:
     )
 
 
+def _compact_stop_floor_refusals(
+    refusals: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Keep summary JSON bounded while retaining numeric refusal evidence."""
+    if len(refusals) <= 60:
+        return refusals
+    return (
+        refusals[:30]
+        + [
+            {
+                "truncated": True,
+                "omitted_record_count": len(refusals) - 60,
+                "total_refusal_count": len(refusals),
+                "reason": (
+                    "summary is capped; representative numeric records and "
+                    "counts remain complete"
+                ),
+            }
+        ]
+        + refusals[-29:]
+    )
+
+
 def _cluster_unserved(
     ticks: list[Any],
     *,
@@ -304,6 +327,9 @@ def _run_summary(
     )
     preload_actions = (
         list(controller.preload_actions) if controller is not None else []
+    )
+    stop_floor_refusals = list(
+        getattr(controller, "stop_floor_refusals", [])
     )
     metrics = _extended_metrics(ticks, controller, logs, preload_actions)
     final = ticks[-1]
@@ -452,8 +478,9 @@ def _run_summary(
         "preload_actions": preload_actions,
         "fuel_guard": fuel_guard,
         "forecast_quality": _forecast_quality(controller, ticks),
-        "stop_floor_refusals": list(
-            getattr(controller, "stop_floor_refusals", [])
+        "stop_floor_refusal_count": len(stop_floor_refusals),
+        "stop_floor_refusals": _compact_stop_floor_refusals(
+            stop_floor_refusals
         ),
         "constraints_valid": bool(
             getattr(controller, "constraints_valid", True)
@@ -596,7 +623,7 @@ def run_scenario(scenario_id: str, output_dir: Path) -> dict[str, Any]:
             replay_spec,
             run_id=f"{scenario_id}-{mode}",
             mode=mode,
-            replay_events=[],
+            replay_events=replay_events,
             demand_replay=demand_replay,
         )
         tick_sets[mode] = ticks
@@ -740,6 +767,7 @@ def run_scenario(scenario_id: str, output_dir: Path) -> dict[str, Any]:
                     "replay_strategy",
                      "fuel_guard",
                      "forecast_quality",
+                      "stop_floor_refusal_count",
                      "stop_floor_refusals",
                 )
             }

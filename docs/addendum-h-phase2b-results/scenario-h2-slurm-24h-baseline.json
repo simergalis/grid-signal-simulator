@@ -1,7 +1,16 @@
 {
+  "acceptance_gates": {
+    "constraints_valid": true,
+    "identical_compute_trace": true,
+    "informed_peak_unserved_no_worse": true,
+    "informed_unserved_energy_no_worse": true,
+    "no_hard_violations": true,
+    "physical_ledger_closure": true,
+    "start_count_reconciled": true
+  },
   "acceptance_verdict": "PASS",
   "background_power_reactive": true,
-  "background_probe_wall_clock_seconds": 38.653787,
+  "background_probe_wall_clock_seconds": 31.604902,
   "background_trace_signal_count": 676,
   "bess_soc_final": 0.999999999,
   "bess_soc_max": 0.999999999,
@@ -249,7 +258,6 @@
     }
   ],
   "commitment_log_record_count": 24,
-  "commitment_log_total_records": 24,
   "compute_description": "scheduler-shaped GPU workload demand",
   "constraints_valid": true,
   "core_proposals": {
@@ -258,19 +266,35 @@
   },
   "demand_replay_tick_count": 17280,
   "dispatch_curtailment_fuel_by_component_mmbtu": {
-    "hot_standby_fuel_mmbtu": 0.0,
-    "load_fuel_mmbtu": 0.0,
-    "no_load_fuel_mmbtu": 0.0,
+    "hot_standby_fuel_mmbtu": 4.362152778,
+    "load_fuel_mmbtu": 4363.370555553,
+    "no_load_fuel_mmbtu": 56.843333333,
     "start_fuel_mmbtu": 0.0
   },
-  "dispatch_curtailment_fuel_mmbtu": 0.0,
+  "dispatch_curtailment_fuel_mmbtu": 4424.576041664,
   "dispatch_curtailment_mwh": 324.144769567,
   "energy_balance": {
     "closure_required": true,
     "closure_status": true,
+    "d4_balance_defect_mw_distribution": {
+      "count": 17280,
+      "max": 24.35892,
+      "mean": 13.506032065,
+      "median": 14.477666264,
+      "min": 0.0,
+      "p95": 21.720370389
+    },
+    "dispatch_curtailment_mw_distribution": {
+      "count": 16182,
+      "max": 24.35892,
+      "mean": 14.422459158,
+      "median": 14.688594402,
+      "min": 0.329824035,
+      "p95": 21.947985502
+    },
     "dispatch_curtailment_mwh": 324.144769567,
     "max_abs_d4_balance_defect_mw": 24.35892,
-    "max_abs_physical_ledger_defect_mw": 0.0001,
+    "max_abs_physical_ledger_defect_mw": 0.0,
     "served_demand_mwh": 134.537707107,
     "unserved_demand_mwh": 9.422667343
   },
@@ -278,44 +302,83 @@
     "count": 0,
     "peak_mw": 0.0
   },
+  "forecast_quality": {
+    "absolute_error_mw": {
+      "count": 0,
+      "max": 0.0,
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0.0,
+      "p95": 0.0
+    },
+    "forecast_tick_count": 0,
+    "matched_error_tick_count": 0,
+    "miss_count": 0,
+    "miss_peak_mw": 0.0,
+    "signed_error_mw": {
+      "count": 0,
+      "max": 0.0,
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0.0,
+      "p95": 0.0
+    }
+  },
   "fuel_by_component_mmbtu": {
-    "hot_standby_fuel_mmbtu": 0.0,
-    "load_fuel_mmbtu": 0.0,
-    "no_load_fuel_mmbtu": 0.0,
-    "start_fuel_mmbtu": 0.0
+    "hot_standby_fuel_mmbtu": 4.547222222,
+    "load_fuel_mmbtu": 4823.379791667,
+    "no_load_fuel_mmbtu": 61.33,
+    "start_fuel_mmbtu": 64.0
   },
   "fuel_by_unit_mmbtu": {
     "gt-hot-01": {
-      "hot_standby_fuel_mmbtu": 0.0,
-      "load_fuel_mmbtu": 0.0,
-      "no_load_fuel_mmbtu": 0.0,
-      "start_fuel_mmbtu": 0.0,
-      "total_fuel_mmbtu": 0.0
+      "hot_standby_fuel_mmbtu": 2.024305556,
+      "load_fuel_mmbtu": 190.120555556,
+      "no_load_fuel_mmbtu": 2.486666667,
+      "start_fuel_mmbtu": 44.0,
+      "total_fuel_mmbtu": 238.631527778
     },
     "gt-hot-02": {
-      "hot_standby_fuel_mmbtu": 0.0,
-      "load_fuel_mmbtu": 0.0,
-      "no_load_fuel_mmbtu": 0.0,
-      "start_fuel_mmbtu": 0.0,
-      "total_fuel_mmbtu": 0.0
+      "hot_standby_fuel_mmbtu": 2.522916667,
+      "load_fuel_mmbtu": 95.060277778,
+      "no_load_fuel_mmbtu": 1.243333333,
+      "start_fuel_mmbtu": 20.0,
+      "total_fuel_mmbtu": 118.826527778
     },
     "gt-spin-01": {
       "hot_standby_fuel_mmbtu": 0.0,
-      "load_fuel_mmbtu": 0.0,
-      "no_load_fuel_mmbtu": 0.0,
+      "load_fuel_mmbtu": 2269.183125,
+      "no_load_fuel_mmbtu": 28.8,
       "start_fuel_mmbtu": 0.0,
-      "total_fuel_mmbtu": 0.0
+      "total_fuel_mmbtu": 2297.983125
     },
     "gt-spin-02": {
       "hot_standby_fuel_mmbtu": 0.0,
-      "load_fuel_mmbtu": 0.0,
-      "no_load_fuel_mmbtu": 0.0,
+      "load_fuel_mmbtu": 2269.015833334,
+      "no_load_fuel_mmbtu": 28.8,
       "start_fuel_mmbtu": 0.0,
-      "total_fuel_mmbtu": 0.0
+      "total_fuel_mmbtu": 2297.815833334
     }
+  },
+  "fuel_guard": {
+    "active_modelled_units": [
+      "gt-spin-01",
+      "gt-spin-02"
+    ],
+    "active_unit_count": 2,
+    "guard_status": "PASS"
   },
   "hard_violations": [],
   "identical_compute_trace": true,
+  "informed_vs_baseline": {
+    "baseline_peak_unserved_mw": 44.86838787,
+    "baseline_unserved_energy_mwh": 9.422667343,
+    "informed_peak_unserved_mw": 44.86838787,
+    "informed_unserved_energy_mwh": 9.422667343,
+    "peak_unserved_no_worse": true,
+    "unserved_energy_no_worse": true,
+    "verdict": "PASS"
+  },
   "interval_seconds": 5.0,
   "kube_power_reactive_ticks": 0,
   "kube_requeued_admissions": 0,
@@ -373,6 +436,7 @@
       "unit_id": "gt-hot-01"
     }
   ],
+  "stop_floor_refusals": [],
   "stops": [
     {
       "action": "stop",
@@ -466,7 +530,7 @@
   "tick_artifact": "scenario-h2-slurm-24h-baseline_ticks.jsonl.gz",
   "tick_count": 17280,
   "trace_source": "baseline live background trace replay",
-  "turbine_fuel_mmbtu": 0.0,
+  "turbine_fuel_mmbtu": 4953.257013889,
   "unit_minutes_below_50_percent": {
     "gt-spin-01": 1440.0,
     "gt-spin-02": 1440.0
@@ -553,5 +617,5 @@
     }
   ],
   "unserved_mwh": 9.422667343,
-  "wall_clock_seconds": 42.140539
+  "wall_clock_seconds": 22.532222
 }

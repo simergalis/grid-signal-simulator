@@ -70,13 +70,20 @@ Final two-hour smoke values:
 | Mode | Total turbine fuel (MMBtu) | Load | No-load | Hot standby | Start |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Baseline | 574.613363426 | 551.938155092 | 6.520000000 | 0.155208333 | 16.000000000 |
-| Informed | 478.758420879 | 457.769740323 | 4.988333333 | 0.000347222 | 16.000000000 |
+| Informed | 528.841861699 | 506.974847810 | 5.866666667 | 0.000347222 | 16.000000000 |
 
-The informed-minus-baseline total is **-95.854942547 MMBtu**. Component
-differences are load **-94.168414769**, no-load **-1.531666667**, hot standby
-**-0.154861111**, and start **0.000000000 MMBtu**. The informed preload tag is
-**0.910955657 MMBtu**; it is reported separately and is not added a second time
-to cumulative turbine fuel.
+The informed run now retains the same core N-1 reserve floor as the baseline.
+Its expected total is **528.841862000 MMBtu**, a **7.97% reduction** from the
+baseline. The earlier **478.758420879 MMBtu** informed result and its
+**16.7%** reduction are superseded: that informed controller run could carry
+less reserve than the measured-core baseline because the controller stop rule
+did not yet enforce the core reserve floor. The unserved-energy comparison is
+unchanged at **2.252165190 MWh** baseline versus **0.075899258 MWh** informed.
+The informed-minus-baseline total is **-45.771501727 MMBtu**. Component
+differences are load **-44.963307282**, no-load **-0.653333333**, hot standby
+**-0.154861111**, and start **0.000000000 MMBtu**. The confirming smoke reports
+an informed preload tag of **0.938773000 MMBtu**; preload remains a separate
+tag and is not added a second time to cumulative turbine fuel.
 
 ## Compact preload audit
 
