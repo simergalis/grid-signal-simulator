@@ -1,7 +1,7 @@
 """Addendum H Phase 2a controller tests.
 
 The repository already uses TC-98 in the stop-sequencing suite and TC-100 in
-the BESS acceptance suite. This addendum uses the checked-free TC-109..130 range.
+the BESS acceptance suite. This addendum uses the checked-free TC-109..136 range.
 """
 
 from __future__ import annotations
@@ -10,6 +10,8 @@ import copy
 import json
 from pathlib import Path
 from types import SimpleNamespace
+
+import pytest
 
 from core.models import WorkloadClass, WorkloadEventType, WorkloadSignal
 from runtime.turbine_commitment import ForecastDrivenTurbineController
@@ -817,3 +819,133 @@ def test_tc132_core_start_is_vetoed_during_minimum_down_window() -> None:
     assert "minimum down time" in (
         ctx.turbine_commitment_controller.log[-1].refusal_reason or ""
     )
+
+
+def test_tc133_lead_aware_stop_refusal_protects_restart_window() -> None:
+    """A stop is refused when a future burst arrives before restart completes."""
+    from runtime.scenario_factory import build_run_context_from_spec
+    from runtime.turbine_commitment import CommitmentForecast
+
+    ctx = build_run_context_from_spec(
+        "tc133-lead-aware-stop",
+        _spec(
+            mode="informed",
+            spinning=3,
+            hot=0,
+            events=[_event(500.0, node_count=1, event_type=WorkloadEventType.SCALE)],
+        ).model_dump(),
+    )
+    for turbine in ctx.sim_state.turbines:
+        turbine.config.min_down_enabled = True
+    controller = ctx.turbine_commitment_controller
+    controller.forecast = lambda **_: CommitmentForecast(
+        sim_time_s=0.0,
+        background_mean_mw=1.0,
+        background_std_mw=0.0,
+        forecast_mw=1.0,
+        peak_forecast_mw=20.0,
+        minimum_forecast_mw=1.0,
+        profile=((0.0, 1.0), (500.0, 20.0)),
+    )
+
+    controller.evaluate(ctx=ctx, power_for_event=ctx._event_power_mw)
+
+    assert controller.log
+    assert controller.log[-1].accepted is False
+    assert controller.log[-1].action == "stop"
+    assert controller.log[-1].refusal_reason == (
+        "stop refused: forecast burst at 500s arrives before unit restart window "
+        "(1620s)"
+    )
+
+
+def test_tc134_scale_event_is_an_announced_burst_for_forecast_control() -> None:
+    """A scale-up alone must enter the informed controller's burst set."""
+    controller = ForecastDrivenTurbineController(
+        mode="informed",
+        forecast_lead_seconds=600.0,
+    )
+    scale = _event(
+        300.0,
+        node_count=40,
+        job_id="job-scale-only",
+        event_type=WorkloadEventType.SCALE,
+    )
+
+    forecast = controller.forecast(
+        sim_time_s=0.0,
+        events=[scale],
+        measured_history=[],
+        power_for_event=lambda event: float(event.node_count),
+        cooling_fraction=0.0,
+    )
+
+    assert forecast.announced_event_ids == (scale.event_id,)
+    assert forecast.announced_workload_mw > 0.0
+
+
+def test_tc135_preload_logs_changed_targets_and_suppresses_repeats() -> None:
+    """Repeated identical preload intents are compacted with an audit count."""
+    from runtime.scenario_factory import build_run_context_from_spec
+
+    spec = _spec(
+        mode="informed",
+        spinning=2,
+        hot=0,
+        events=[_event(30.0, node_count=5000)],
+        end=120.0,
+    ).model_dump()
+    spec["bess_units"] = [{
+        "asset_id": "bess-0",
+        "rated_mw": 30.0,
+        "usable_mwh": 120.0,
+        "initial_soc_fraction": 0.50,
+    }]
+    ctx = build_run_context_from_spec("tc135-preload-dedup", spec)
+    for _ in range(6):
+        ctx.step()
+
+    controller = ctx.turbine_commitment_controller
+    assert len(controller.preload_actions) == 2
+    assert controller.preload_actions[0]["suppressed_repeat_count"] == 2
+    assert controller.preload_actions[1]["suppressed_repeat_count"] == 0
+    assert controller.suppressed_preload_repeat_count == 2
+
+
+def test_tc136_smoke_fuel_attribution_uses_end_of_run_values(tmp_path: Path) -> None:
+    """Both smoke modes must reconcile fuel components without tick over-counting."""
+    from scripts.run_phase2a_smoke import run_smoke
+
+    source = (
+        Path(__file__).parents[1]
+        / "config/scenarios/scenario-uneven-multisched-01.json"
+    )
+    report = run_smoke(source, tmp_path / "phase2a-fuel")
+    components = {
+        "load_fuel_mmbtu",
+        "no_load_fuel_mmbtu",
+        "hot_standby_fuel_mmbtu",
+        "start_fuel_mmbtu",
+    }
+    for mode in ("baseline", "informed"):
+        summary = report["runs"][mode]["summary"]
+        metrics = report["runs"][mode]["extended_metrics"]
+        unit_totals = []
+        for unit in metrics["fuel_by_unit_mmbtu"].values():
+            component_total = sum(float(unit[name]) for name in components)
+            assert component_total == pytest.approx(
+                float(unit["total_fuel_mmbtu"]), abs=1e-6
+            )
+            unit_totals.append(float(unit["total_fuel_mmbtu"]))
+        assert sum(unit_totals) == pytest.approx(
+            float(summary["turbine_fuel_mmbtu"]), abs=1e-6
+        )
+        assert metrics["turbine_fuel_mmbtu"] == pytest.approx(
+            float(summary["turbine_fuel_mmbtu"]), abs=1e-6
+        )
+        start_fuel = float(metrics["fuel_by_component_mmbtu"]["start_fuel_mmbtu"])
+        assert start_fuel == pytest.approx(
+            int(summary["turbine_start_count"])
+            * float(metrics["start_fuel_mmbtu_per_start"]),
+            abs=1e-6,
+        )

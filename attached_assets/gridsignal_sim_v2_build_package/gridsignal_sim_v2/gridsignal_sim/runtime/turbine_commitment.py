@@ -203,6 +203,11 @@ class ForecastDrivenTurbineController:
     _suppressed_refusal_counts: dict[tuple[str, str], int] = field(
         default_factory=dict, repr=False
     )
+    _last_preload_signature: Optional[tuple[Any, ...]] = field(
+        default=None, repr=False
+    )
+    _suppressed_preload_repeats: int = field(default=0, repr=False)
+    _suppressed_preload_repeat_total: int = field(default=0, repr=False)
     preload_actions: list[dict[str, Any]] = field(default_factory=list)
     preload_fuel_mmbtu: float = 0.0
     unserved_energy_mwh: float = 0.0
@@ -731,6 +736,8 @@ class ForecastDrivenTurbineController:
             and ctx.sim_time < float(event.timestamp) <= ctx.sim_time + self.forecast_lead_seconds
         ]
         if not future_starts:
+            self._last_preload_signature = None
+            self._suppressed_preload_repeats = 0
             return
         event = min(future_starts, key=lambda item: (item.timestamp, item.event_id))
         onset_s = float(event.timestamp)
@@ -753,10 +760,14 @@ class ForecastDrivenTurbineController:
             for turbine in turbines
         )
         if delta_mw <= 1e-9 or ramp_rate_mw_s <= 1e-9:
+            self._last_preload_signature = None
+            self._suppressed_preload_repeats = 0
             return
         ramp_seconds = delta_mw / ramp_rate_mw_s
         time_to_onset_s = onset_s - ctx.sim_time
         if time_to_onset_s > ramp_seconds + self.preload_margin_seconds:
+            self._last_preload_signature = None
+            self._suppressed_preload_repeats = 0
             return
 
         # Do not create unabsorbable islanded surplus.  The existing BESS
@@ -781,6 +792,12 @@ class ForecastDrivenTurbineController:
             target_total_mw,
             current_demand_mw + charge_capacity_mw,
         )
+        bess_charge_limited = (
+            target_total_mw + 1e-9 < min(
+                sum(max(0.0, float(turbine.config.rated_mw)) for turbine in turbines),
+                max(0.0, onset_demand_mw - bess_allowance),
+            )
+        )
 
         remaining = target_total_mw
         targets: dict[str, float] = {}
@@ -797,10 +814,29 @@ class ForecastDrivenTurbineController:
             targets[turbine.config.asset_id] = target
             remaining = max(0.0, remaining - target)
         if not targets:
+            self._last_preload_signature = None
+            self._suppressed_preload_repeats = 0
             return
         setattr(ctx.sim_state, "_preload_targets_mw", targets)
         setattr(ctx.sim_state, "_preload_active_units", set(targets))
         setattr(ctx.sim_state, "_preload_normal_output_mw", current_output_mw)
+        signature = (
+            round(onset_s, 6),
+            tuple(
+                (unit_id, round(target, 6))
+                for unit_id, target in sorted(targets.items())
+            ),
+        )
+        if signature == self._last_preload_signature:
+            self._suppressed_preload_repeats += 1
+            self._suppressed_preload_repeat_total += 1
+            if self.preload_actions:
+                self.preload_actions[-1]["suppressed_repeat_count"] = (
+                    self._suppressed_preload_repeats
+                )
+            return
+        self._last_preload_signature = signature
+        self._suppressed_preload_repeats = 0
         action = {
             "sim_time_s": float(ctx.sim_time),
             "unit_ids": sorted(targets),
@@ -812,6 +848,8 @@ class ForecastDrivenTurbineController:
             "burst_sim_time_s": onset_s,
             "ramp_seconds": round(ramp_seconds, 6),
             "margin_seconds": self.preload_margin_seconds,
+            "bess_charge_limited": bess_charge_limited,
+            "suppressed_repeat_count": 0,
         }
         self.preload_actions.append(action)
 
@@ -1142,6 +1180,10 @@ class ForecastDrivenTurbineController:
     @property
     def suppressed_repeat_count(self) -> int:
         return self.suppressed_refusal_count
+
+    @property
+    def suppressed_preload_repeat_count(self) -> int:
+        return self._suppressed_preload_repeat_total
 
     def record_command_result(
         self,

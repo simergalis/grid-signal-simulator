@@ -123,20 +123,56 @@ def _extended_metrics(
     dispatch_fuel_by_component = Counter()
     dispatch_fuel_by_unit = defaultdict(float)
     below_threshold_minutes: dict[str, float] = {}
+    fuel_components = (
+        "load_fuel_mmbtu",
+        "no_load_fuel_mmbtu",
+        "hot_standby_fuel_mmbtu",
+        "start_fuel_mmbtu",
+    )
+
+    # Turbine fuel component fields are cumulative run counters.  The final
+    # telemetry row is therefore the authoritative run total; summing rows
+    # over-counts the same fuel once per tick.
+    final_rows = {
+        str(row.get("asset_id", "unknown")): row
+        for row in (ticks[-1].turbine_fuel_telemetry if ticks else ())
+    }
+    for unit_id, row in final_rows.items():
+        for component in fuel_components:
+            value = float(row.get(component, 0.0) or 0.0)
+            fuel_by_component[component] += value
+            fuel_by_unit[unit_id][component] = value
+        fuel_by_unit[unit_id]["total_fuel_mmbtu"] = float(
+            row.get("total_fuel_mmbtu", 0.0) or 0.0
+        )
+    total_start_count = sum(
+        int(row.get("start_count", 0) or 0) for row in final_rows.values()
+    )
+    total_start_fuel = float(fuel_by_component["start_fuel_mmbtu"])
+
+    # Curtailment attribution is interval-based.  Use positive increments of
+    # each cumulative component only on ticks with explicit dispatch
+    # curtailment, rather than adding cumulative snapshots.
+    previous_by_unit: dict[str, dict[str, float]] = defaultdict(dict)
     for tick in ticks:
         dispatch_active = float(tick.p_dispatch_curtailed_mw or 0.0) > 1e-9
         for row in tick.turbine_fuel_telemetry:
             unit_id = str(row.get("asset_id", "unknown"))
-            for component in (
-                "load_fuel_mmbtu",
-                "no_load_fuel_mmbtu",
-                "hot_standby_fuel_mmbtu",
-                "start_fuel_mmbtu",
-            ):
-                value = float(row.get(component, 0.0) or 0.0)
-                fuel_by_component[component] += value
-                fuel_by_unit[unit_id][component] += value
-                if dispatch_active:
+            current_values = {
+                component: float(row.get(component, 0.0) or 0.0)
+                for component in fuel_components
+            }
+            prior_values = previous_by_unit[unit_id]
+            increments = {
+                component: max(
+                    0.0,
+                    current_values[component] - prior_values.get(component, 0.0),
+                )
+                for component in fuel_components
+            }
+            previous_by_unit[unit_id] = current_values
+            if dispatch_active:
+                for component, value in increments.items():
                     dispatch_fuel_by_component[component] += value
                     dispatch_fuel_by_unit[unit_id] += value
             # This field is cumulative per unit, so the final row is the
@@ -204,9 +240,14 @@ def _extended_metrics(
         },
     }
 
-    preload_reach: list[dict[str, Any]] = []
+    # A burst can cause several target updates while its ramp window is open,
+    # but the acceptance report must contain one outcome per burst.  The last
+    # changed target is the final controller intent at that burst.
+    actions_by_burst: dict[float, dict[str, Any]] = {}
     for action in preload_actions:
-        burst_time = float(action.get("burst_sim_time_s", 0.0))
+        actions_by_burst[float(action.get("burst_sim_time_s", 0.0))] = action
+    preload_reach: list[dict[str, Any]] = []
+    for burst_time, action in sorted(actions_by_burst.items()):
         onset_tick = next(
             (tick for tick in ticks if tick.sim_time_seconds >= burst_time),
             None,
@@ -215,40 +256,67 @@ def _extended_metrics(
             float(onset_tick.turbine_output_mw) if onset_tick is not None else None
         )
         target = float(action.get("target_mw", 0.0))
+        reached = (
+            actual_output is not None
+            and actual_output + 1e-6 >= target
+        )
+        if reached:
+            outcome_reason = None
+        elif actual_output is None:
+            outcome_reason = "unit not yet synchronized"
+        elif action.get("bess_charge_limited"):
+            outcome_reason = "BESS charge limit"
+        elif actual_output + 1e-6 < target:
+            outcome_reason = "ramp-limited"
+        else:
+            outcome_reason = "other"
         preload_reach.append(
             {
                 "burst_sim_time_s": burst_time,
                 "action_sim_time_s": action.get("sim_time_s"),
                 "target_mw": target,
                 "actual_turbine_output_mw_at_onset": actual_output,
-                "reached": (
-                    actual_output is not None
-                    and actual_output + 1e-6 >= target
+                "reached": reached,
+                "reason": outcome_reason,
+                "suppressed_repeat_count": int(
+                    action.get("suppressed_repeat_count", 0)
                 ),
             }
         )
 
     return {
+        "turbine_fuel_mmbtu": round(
+            sum(float(row.get("total_fuel_mmbtu", 0.0) or 0.0)
+                for row in final_rows.values()),
+            9,
+        ),
         "fuel_by_component_mmbtu": {
-            component: round(value, 6)
+            component: round(value, 9)
             for component, value in sorted(fuel_by_component.items())
         },
         "fuel_by_unit_mmbtu": {
             unit_id: {
-                component: round(value, 6)
+                component: round(value, 9)
                 for component, value in sorted(components.items())
             }
             for unit_id, components in sorted(fuel_by_unit.items())
         },
         "dispatch_curtailment_fuel_by_component_mmbtu": {
-            component: round(value, 6)
+            component: round(value, 9)
             for component, value in sorted(dispatch_fuel_by_component.items())
         },
         "dispatch_curtailment_fuel_by_unit_mmbtu": {
-            unit_id: round(value, 6)
+            unit_id: round(value, 9)
             for unit_id, value in sorted(dispatch_fuel_by_unit.items())
         },
+        "start_fuel_mmbtu_per_start": round(
+            total_start_fuel / total_start_count if total_start_count else 0.0,
+            9,
+        ),
         "preload_fuel_mmbtu": round(float(controller.preload_fuel_mmbtu), 6),
+        "suppressed_preload_repeat_count": int(
+            controller.suppressed_preload_repeat_count
+        ),
         "unit_minutes_below_50_percent": {
             unit_id: round(value, 6)
             for unit_id, value in sorted(below_threshold_minutes.items())
