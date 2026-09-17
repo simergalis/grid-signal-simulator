@@ -252,6 +252,10 @@ class SimulationState:
     # balance_residual_mw is non-zero.  Reset to frequency_nominal_hz each tick
     # in grid-connected mode (the grid is the infinite-bus frequency reference).
     _frequency_hz: float = field(default=0.0, init=False)  # set in __post_init__
+    # Elapsed time for the current explicit islanded surplus-dump response.
+    # This is deliberately separate from turbine commitment/unloading state:
+    # dump-load response is a protection/control delay, not a commitment rule.
+    _dispatch_curtailment_elapsed_s: float = field(default=0.0, init=False)
 
     # Phase 11.3/11.5 — running forecast MAE accumulators.
     # Used by Phase 11.5 Forecast Quality panel to report empirical accuracy.
@@ -2901,12 +2905,40 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # Once synchronized turbines have reached their minimum stable load and the
     # BESS has accepted all energy it physically can, the remaining positive
     # residual is an explicit dispatch-curtailment sink.  Keep generation and
-    # turbine fuel physical; account for the sink in the ledger and frequency
-    # forcing instead of reporting a fictional surplus.
-    _p_dispatch_curtailed_mw = (
+    # turbine fuel physical, but do not subtract that sink before the
+    # electromechanical response: the rotor must see the surplus on this tick.
+    #
+    # Turbine rundown is already time-based above (machine ramp rate and the
+    # existing commitment/unloading policy).  The explicit dump action has its
+    # own configurable response delay on SiteConfig; this ledger value is the
+    # surplus scheduled for that action, not a fictional change to measured
+    # generation.  Keeping it as an explicit balance term preserves a closed
+    # physical ledger while frequency_forcing_mw receives the pre-curtailment
+    # residual.
+    _surplus_before_dump_mw = (
         max(0.0, _p_gen_mw - p_demand_mw) if _islanded else 0.0
     )
-    _balance_residual_mw = _p_gen_mw - p_demand_mw - _p_dispatch_curtailed_mw
+    if _surplus_before_dump_mw <= 1e-12:
+        state._dispatch_curtailment_elapsed_s = 0.0
+        _p_dispatch_curtailed_mw = 0.0
+    else:
+        _dump_delay_s = max(
+            0.0,
+            float(getattr(state.site, "dispatch_curtailment_response_delay_s", 0.0)),
+        )
+        state._dispatch_curtailment_elapsed_s = min(
+            _dump_delay_s,
+            state._dispatch_curtailment_elapsed_s + max(0.0, dt_seconds),
+        )
+        _dump_response_fraction = (
+            1.0
+            if _dump_delay_s <= 0.0
+            else state._dispatch_curtailment_elapsed_s / _dump_delay_s
+        )
+        _p_dispatch_curtailed_mw = (
+            _surplus_before_dump_mw * min(1.0, _dump_response_fraction)
+        )
+    _balance_residual_mw = _p_gen_mw - p_demand_mw
 
     # ── Phase 13.2: balance decomposition — three independent channels ────────
     #
@@ -3360,12 +3392,10 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         max(_cumulative_shed_mw, _islanded_supply_shortfall_mw),
     )
     _p_served_mw = p_demand_mw - _p_unserved_mw
-    # Positive physical residual is already represented by the explicit
-    # dispatch-curtailment sink above.  Keep p_imbalance as the residual after
-    # served load and that sink, so surplus is not reported twice.
-    _p_imbalance_mw = (
-        _p_generation_mw - _p_served_mw - _p_dispatch_curtailed_mw
-    )
+    # p_imbalance is the measured generation-versus-served-load channel.  An
+    # explicit curtailment sink closes the physical ledger, but it must not
+    # erase the surplus from the frequency/imbalance signal on the same tick.
+    _p_imbalance_mw = _p_generation_mw - _p_served_mw
 
     # D4 — power balance identity (Phase 0 + DR-BAL-5, DR-2026-08-09-BALANCE).
     #

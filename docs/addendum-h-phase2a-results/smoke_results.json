@@ -430,7 +430,7 @@
           "curtailment_mwh": 0.0,
           "dispatch_curtailment_mwh": 8.443844,
           "served_demand_mwh": 41.427274,
-          "surplus_mwh": 0.0,
+          "surplus_mwh": 8.443844,
           "turbine_generation_mwh": 54.411286,
           "unserved_demand_mwh": 2.252165
         },
@@ -486,7 +486,7 @@
             "start_sim_time_s": 1850.0
           }
         ],
-        "wall_clock_duration_seconds": 2.816883
+        "wall_clock_duration_seconds": 2.132176
       },
       "tick_artifact": "baseline_ticks.jsonl.gz"
     },
@@ -1313,7 +1313,7 @@
           "curtailment_mwh": 0.0,
           "dispatch_curtailment_mwh": 0.755511,
           "served_demand_mwh": 43.60354,
-          "surplus_mwh": 0.0,
+          "surplus_mwh": 0.755511,
           "turbine_generation_mwh": 46.296071,
           "unserved_demand_mwh": 0.075899
         },
@@ -1374,7 +1374,7 @@
             "start_sim_time_s": 1850.0
           }
         ],
-        "wall_clock_duration_seconds": 16.241623
+        "wall_clock_duration_seconds": 13.481867
       },
       "tick_artifact": "informed_ticks.jsonl.gz"
     }

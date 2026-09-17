@@ -1702,6 +1702,15 @@ class ScenarioSpec(BaseModel):
         ge=0.0,
         description="PROPOSED_HERE: informed-mode stop hysteresis in MW.",
     )
+    dispatch_curtailment_response_delay_s: float = Field(
+        default=0.5,
+        ge=0.0,
+        le=3600.0,
+        description=(
+            "PROPOSED_HERE: response delay for the explicit islanded surplus "
+            "dump after turbines reach minimum stable load."
+        ),
+    )
 
     # Turbine starting topology.  None preserves the historical effective
     # default of one synchronized unit, but lets the loader distinguish an

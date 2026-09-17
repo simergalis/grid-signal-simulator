@@ -4,14 +4,17 @@ Date: 2026-09-17
 
 This is a read-only comparison of the prior full-suite totals
 (`2,068 collected / 1,977 passed / 65 failed / 3 skipped / 23 xfailed`)
-with the committed cleanup run (`2,079 / 1,977 / 75 / 4 / 23`).
+with the committed cleanup run and the IMPL-H56/H57 repair. The final clean
+rerun totals are `2,079 collected / 1,988 passed / 65 failed / 3 skipped /
+23 xfailed`.
 
-The apparent pass-count contradiction resolves as follows:
+The apparent pass-count contradiction in the pre-repair comparison resolves as
+follows:
 
 - Eleven new test nodes were added, TC-126 through TC-136, and all eleven
   passed.
-- Ten previously passing nodes became failures.
-- One previously passing node became skipped.
+- Ten previously passing nodes became failures before this repair.
+- One previously passing node became skipped before this repair.
 - The remaining historical outcomes did not change.
 
 The four added nodes before TC-130 are:
@@ -26,7 +29,7 @@ The four added nodes before TC-130 are:
 TC-130 through TC-136 also passed. The current per-test manifest is
 `docs/addendum-h-phase2a-full-suite-outcomes.md`.
 
-## Outcome changes
+## Pre-repair outcome changes
 
 The first failure line below is copied from the current outcome record. The
 historical outcome for each row was `passed`.
@@ -51,6 +54,38 @@ One additional historical outcome changed from pass to skip:
 | `tests/test_13_3_frequency.py::TestI2SwingEquationAccuracy::test_I2_single_tick_matches_formula` | passed | skipped | `No frequency forcing — I2 not exercisable` |
 
 The other current skipped nodes were already skipped in the comparison run.
+
+After the repair, the ten pre-repair failures listed above are reduced to the
+same 65-failure unrelated baseline, and the skipped I2 node passes.
+
+## IMPL-H56/H57 rerun
+
+The seven Addendum H physics regressions are repaired without weakening or
+skipping their assertions:
+
+| Test group | Result |
+| --- | --- |
+| I1 islanded surplus visibility | passed |
+| I2 swing-equation single-tick and explicit-formula checks | passed |
+| TC-SURP-4 partial BESS absorption | passed |
+| TC-SURP-5 BESS absorption reduces forcing | passed |
+| B1b load-model error stays out of delivery error | passed |
+| B5 frequency follows forcing | passed |
+
+The diesel balance-residual check also passes after the corrected residual
+ordering. The three HTTP-backed checks were rerun with the simulator workflow
+available: cascade commit **passed**, fuel-cell dispatch **passed**, and GPU
+load profile remained a connection-refusal failure in the full-suite batch.
+The GPU test was then rerun alone after the simulator restart and passed
+(`1 passed in 301.23s`). The batch-only connection refusal is unrelated to the
+Addendum H physics path.
+
+The repair is limited to the positive islanded residual path in
+`core/simulation_core.py`: frequency and measured imbalance read the
+pre-curtailment residual, while the explicit sink remains in the physical
+ledger. `dispatch_curtailment_response_delay_s` is configurable and marked
+`PROPOSED_HERE`; the unchanged 5-second smoke fixture completes past the
+default 0.5-second response delay.
 
 ## Dispatch-curtailment fuel definition
 

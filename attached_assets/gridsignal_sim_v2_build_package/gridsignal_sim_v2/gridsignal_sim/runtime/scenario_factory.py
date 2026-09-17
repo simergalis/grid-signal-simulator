@@ -663,6 +663,9 @@ def build_run_context_from_spec(
             if spec_data.get("grid_import_limit_mw") is not None
             else None
         ),
+        dispatch_curtailment_response_delay_s=float(
+            spec_data.get("dispatch_curtailment_response_delay_s", 0.5)
+        ),
         bess_normal_dispatch_depth_fraction=float(
             spec_data.get("bess_normal_dispatch_depth_fraction", 0.0)
         ),

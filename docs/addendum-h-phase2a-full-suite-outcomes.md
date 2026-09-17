@@ -6,14 +6,20 @@ Collected: **2079**
 
 | Outcome | Count |
 | --- | ---: |
-| failed | 75 |
-| passed | 1977 |
-| skipped | 4 |
+| failed | 65 |
+| passed | 1988 |
+| skipped | 3 |
 | xfailed | 23 |
 
 The historical comparison supplied for this cleanup was 2,068 collected / 1,977 passed / 65 failed / 3 skipped / 23 xfailed. Current pass and xfail counts are unchanged; the collection contains 11 additional tests, 10 additional failures, and one additional skip. No unrelated failures were modified.
 
 The first harness pass had a selector parsing issue for parameterized node IDs containing spaces in `test_energy_cost_blackbox.py` and `test_no_hardcoded_location.py`. Those two files were rerun by path and the records below reflect the corrected JUnit results.
+
+The historical comparison supplied for this cleanup was 2,068 collected / 1,977 passed, 65 failed, 3 skipped, and 23 xfailed. The current collection contains 11 additional tests; the IMPL-H56/H57 repair and related verification reruns move ten historical failures and one historical skip to passed. The remaining unrelated failure set is unchanged.
+
+The first comparison sentence above is the pre-repair record retained for
+provenance. The final clean rerun supersedes it with **1,988 passed, 65
+failed, 3 skipped, and 23 xfailed**.
 
 ## Per-test list
 
@@ -41,9 +47,9 @@ The first harness pass had a selector parsing issue for parameterized node IDs c
 | tests/test_13_2_balance_decomp.py::TestI4SwingEquationExplicitInput::test_I4a_healthy_islanded_delivery_error_near_zero | passed | 0.005 |  |
 | tests/test_13_2_balance_decomp.py::TestI4SwingEquationExplicitInput::test_I4b_depleted_bess_islanded_delivery_error_amplifies_drop | skipped | 0.004 | BESS not commanded this tick; turbine covered all load |
 | tests/test_13_2_balance_decomp.py::TestI4SwingEquationExplicitInput::test_I4c_grid_connected_delivery_fault_frequency_invariant | skipped | 0.003 | BESS not commanded this tick; no delivery fault |
-| tests/test_13_3_frequency.py::TestI1FrequencyDeviationVisible::test_I1_islanded_surplus_raises_frequency | failed | 0.002 | AssertionError: I1: frequency_forcing_mw must be ≈ 1.0 MW with 1 MW solar surplus; got 0.000000 MW assert 0.0 > 0.9  +  where 0.0 = TickResult(run_id='test', tick_index=1, sim_time_seconds=0.1, p_compute_demand_mw=0, p_cooling_demand_mw=0.0, p_demand...atisfied=True, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id=None, slurm_metrics=None).frequency_forcing_mw |
-| tests/test_13_3_frequency.py::TestI2SwingEquationAccuracy::test_I2_explicit_formula_fixture | failed | 0.002 | AssertionError: I2 precondition: frequency_forcing_mw should be ~1 MW; got 0.000000 assert 0.0 == 1.0 ± 0.1      comparison failed   Obtained: 0.0   Expected: 1.0 ± 0.1 |
-| tests/test_13_3_frequency.py::TestI2SwingEquationAccuracy::test_I2_single_tick_matches_formula | skipped | 0.001 | No frequency forcing — I2 not exercisable |
+| tests/test_13_3_frequency.py::TestI1FrequencyDeviationVisible::test_I1_islanded_surplus_raises_frequency | passed | 0.002 |  |
+| tests/test_13_3_frequency.py::TestI2SwingEquationAccuracy::test_I2_explicit_formula_fixture | passed | 0.002 |  |
+| tests/test_13_3_frequency.py::TestI2SwingEquationAccuracy::test_I2_single_tick_matches_formula | passed | 0.001 |  |
 | tests/test_13_3_frequency.py::TestI3DroopRestoringForce::test_I3_droop_creates_restoring_force_when_f_above_nominal | passed | 0.002 |  |
 | tests/test_13_3_frequency.py::TestI3DroopRestoringForce::test_I3_droop_direction_vs_no_droop | passed | 0.003 |  |
 | tests/test_13_3_frequency.py::TestI4DeliveryFaultMovesFrequency::test_I4_delivery_fault_causes_frequency_deviation | failed | 0.001 | AssertionError: I4: asset_delivery_error_mw must be non-zero (fleet under-delivers); got 0.000000000 assert 0.0 != 0.0 ± 1.0e-06  +  where 0.0 = TickResult(run_id='test', tick_index=1, sim_time_seconds=5.1, p_compute_demand_mw=0.05253, p_cooling_demand_mw=0.0, p_...sfied=False, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id='gt-1', slurm_metrics=None).asset_delivery_error_mw  +  and   0.0 ± 1.0e-06 = <function approx at 0x7f64ad845300>(0.0, abs=1e-06)  +    where <function approx at 0x7f64ad845300> = pytest.approx |
@@ -369,8 +375,8 @@ The first harness pass had a selector parsing issue for parameterized node IDs c
 | tests/test_bess_surplus_absorption.py::TestSurplusAbsorption::test_TC_SURP_1_surplus_bess_absorbs | passed | 0.002 |  |
 | tests/test_bess_surplus_absorption.py::TestSurplusAbsorption::test_TC_SURP_2_full_bess_cannot_absorb | passed | 0.001 |  |
 | tests/test_bess_surplus_absorption.py::TestSurplusAbsorption::test_TC_SURP_3_soc_rises_after_absorption | passed | 0.001 |  |
-| tests/test_bess_surplus_absorption.py::TestSurplusAbsorption::test_TC_SURP_4_partial_absorption_when_rated_mw_limits | failed | 0.002 | AssertionError: TC-SURP-4: un-absorbed surplus must appear in frequency_forcing_mw; got 0.0000 assert 0.0 > 0.0  +  where 0.0 = TickResult(run_id='test-surplus', tick_index=1, sim_time_seconds=6.0, p_compute_demand_mw=0, p_cooling_demand_mw=0.0, ...atisfied=True, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id=None, slurm_metrics=None).frequency_forcing_mw |
-| tests/test_bess_surplus_absorption.py::TestSurplusAbsorption::test_TC_SURP_5_absorption_reduces_frequency_forcing | failed | 0.002 | AssertionError: TC-SURP-5: BESS absorption must reduce frequency_forcing_mw; absorb=0.0000, full=0.0000 assert 0.0 < 0.0  +  where 0.0 = TickResult(run_id='test-surplus', tick_index=1, sim_time_seconds=6.0, p_compute_demand_mw=0, p_cooling_demand_mw=0.0, ...atisfied=True, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id=None, slurm_metrics=None).frequency_forcing_mw  +  and   0.0 = TickResult(run_id='test-surplus', tick_index=1, sim_time_seconds=6.0, p_compute_demand_mw=0, p_cooling_demand_mw=0.0, ...atisfied=True, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id=None, slurm_metrics=None).frequency_forcing_mw |
+| tests/test_bess_surplus_absorption.py::TestSurplusAbsorption::test_TC_SURP_4_partial_absorption_when_rated_mw_limits | passed | 0.002 |  |
+| tests/test_bess_surplus_absorption.py::TestSurplusAbsorption::test_TC_SURP_5_absorption_reduces_frequency_forcing | passed | 0.002 |  |
 | tests/test_bess_surplus_absorption.py::TestSurplusAbsorption::test_TC_SURP_6_taper_reset_bess_re_engages_on_shortfall | passed | 0.000 |  |
 | tests/test_bess_surplus_absorption.py::TestSurplusAbsorption::test_TC_SURP_7_shortfall_path_unaffected | passed | 0.003 |  |
 | tests/test_bess_surplus_absorption.py::TestSurplusAbsorption::test_TC_SURP_8_tick_fields_correct_sign_after_absorption | passed | 0.001 |  |
@@ -391,7 +397,7 @@ The first harness pass had a selector parsing issue for parameterized node IDs c
 | tests/test_capacity_outlook.py::test_submitting_shortfall_creates_existing_pending_reservation_proposal | passed | 0.001 |  |
 | tests/test_capacity_outlook.py::test_submitting_shortfall_creates_standalone_pending_proposal | passed | 0.001 |  |
 | tests/test_capacity_outlook.py::test_weekday_percentile_uses_the_correct_weekday_distribution | passed | 0.002 |  |
-| tests/test_cascade_commit.py::test_cascade_commit_sequence | failed | 0.239 | httpx.ConnectError: [Errno 111] Connection refused |
+| tests/test_cascade_commit.py::test_cascade_commit_sequence | passed | 0.239 |  |
 | tests/test_checkpoint_classifier.py::TestCheckpointSchedulerClassifierAgreement::test_TC01_checkpoint_allreduce_onset_fires_classifier | passed | 0.655 |  |
 | tests/test_checkpoint_classifier.py::TestCheckpointSchedulerClassifierAgreement::test_TC01b_checkpoint_states_populated_on_first_checkpoint_tick | passed | 0.283 |  |
 | tests/test_classifier.py::test_d1_explicit_hold_survives_45s_timeout | passed | 0.001 |  |
@@ -479,7 +485,7 @@ The first harness pass had a selector parsing issue for parameterized node IDs c
 | tests/test_diesel_phase2.py::test_synchronised_count_never_exceeds_active_target_during_multi_failure | passed | 0.000 |  |
 | tests/test_diesel_phase2.py::test_unloading_reversal_preserves_run_start_episode_and_alert_state | passed | 0.000 |  |
 | tests/test_diesel_phase3.py::test_live_diesel_is_less_aggressive_than_disabled_before_curtailment | failed | 0.021 | assert () |
-| tests/test_diesel_phase3.py::test_live_diesel_output_increases_generation_and_balance_residual | failed | 0.004 | assert 0.0 == 3.0 ± 3.0e-06      comparison failed   Obtained: 0.0   Expected: 3.0 ± 3.0e-06 |
+| tests/test_diesel_phase3.py::test_live_diesel_output_increases_generation_and_balance_residual | passed | 0.004 |  |
 | tests/test_diesel_phase3.py::test_live_diesel_output_reduces_remaining_gap_before_curtailment | passed | 0.007 |  |
 | tests/test_diesel_phase4_telemetry.py::test_disabled_diesel_telemetry_is_idle_and_zero | passed | 0.008 |  |
 | tests/test_diesel_phase4_telemetry.py::test_enabled_diesel_telemetry_comes_from_single_tick_snapshot | passed | 0.002 |  |
@@ -638,11 +644,11 @@ The first harness pass had a selector parsing issue for parameterized node IDs c
 | tests/test_forecast_path.py::TestCoolingThermalLag::test_C3_compute_inlet_temp_autocorrelation | passed | 1.239 |  |
 | tests/test_forecast_path.py::TestCoolingThermalLag::test_C4_short_oscillation_does_not_pulse_cooling | passed | 0.006 |  |
 | tests/test_forecast_path.py::TestDispatchTruthfulness::test_B1a_islanded_delivery_fault_visible_in_delivery_channel | failed | 0.002 | AssertionError: B1a: delivery fault must appear in asset_delivery_error_mw; got 0.000000000  (turbine_out=0.000000, gt_setpoint=0.000000) assert 0.0 != 0.0 ± 1.0e-06  +  where 0.0 = TickResult(run_id='test', tick_index=1, sim_time_seconds=5.1, p_compute_demand_mw=0.10506, p_cooling_demand_mw=0.0, p_...sfied=False, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id='gt-1', slurm_metrics=None).asset_delivery_error_mw  +  and   0.0 ± 1.0e-06 = <function approx at 0x7f61bc2c11c0>(0.0, abs=1e-06)  +    where <function approx at 0x7f61bc2c11c0> = pytest.approx |
-| tests/test_forecast_path.py::TestDispatchTruthfulness::test_B1b_islanded_load_model_error_not_visible_in_delivery_channel | failed | 0.001 | AssertionError: B1b: 1 MW solar surplus should appear in frequency_forcing_mw; got 0.000000000 assert 0.0 > 0.5  +  where 0.0 = TickResult(run_id='test-b1b', tick_index=1, sim_time_seconds=5.0, p_compute_demand_mw=0, p_cooling_demand_mw=0.0, p_de...atisfied=True, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id=None, slurm_metrics=None).frequency_forcing_mw |
+| tests/test_forecast_path.py::TestDispatchTruthfulness::test_B1b_islanded_load_model_error_not_visible_in_delivery_channel | passed | 0.001 |  |
 | tests/test_forecast_path.py::TestDispatchTruthfulness::test_B2_bess_setpoint_captured_before_soc_clipping | passed | 0.001 |  |
 | tests/test_forecast_path.py::TestDispatchTruthfulness::test_B3_grid_connected_frequency_at_nominal | passed | 0.001 |  |
 | tests/test_forecast_path.py::TestDispatchTruthfulness::test_B4_zero_load_zero_setpoint | passed | 0.001 |  |
-| tests/test_forecast_path.py::TestDispatchTruthfulness::test_B5_frequency_tracks_frequency_forcing_mw | failed | 0.001 | AssertionError: B5 precondition: frequency_forcing_mw must be ≈ 1.0 MW with 1 MW solar surplus; got 0.000000 assert 0.0 > 0.9  +  where 0.0 = TickResult(run_id='test-b5', tick_index=1, sim_time_seconds=0.1, p_compute_demand_mw=0, p_cooling_demand_mw=0.0, p_dem...atisfied=True, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id=None, slurm_metrics=None).frequency_forcing_mw |
+| tests/test_forecast_path.py::TestDispatchTruthfulness::test_B5_frequency_tracks_frequency_forcing_mw | passed | 0.001 |  |
 | tests/test_forecast_path.py::TestDispatchTruthfulness::test_B5b_gt_setpoint_mw_equals_dispatch_required | passed | 0.001 |  |
 | tests/test_forecast_path.py::TestDispatchTruthfulness::test_bess_setpoint_tracking | passed | 0.010 |  |
 | tests/test_forecast_path.py::TestDispatchTruthfulness::test_forecast_invariant_to_measured_noise | passed | 0.001 |  |
@@ -695,7 +701,7 @@ The first harness pass had a selector parsing issue for parameterized node IDs c
 | tests/test_fuel_cell_apparent_rating.py::test_default_mva_equality_is_explicitly_assumed_and_fixed_mva_bounds_q | passed | 0.000 |  |
 | tests/test_fuel_cell_apparent_rating.py::test_fixed_inverter_mva_derates_real_block_capacity_and_commitment | passed | 0.002 |  |
 | tests/test_fuel_cell_apparent_rating.py::test_readiness_uses_pf_limited_effective_real_rating | passed | 0.000 |  |
-| tests/test_fuel_cell_dispatch.py::test_fuel_cell_dispatch | failed | 0.045 | httpx.ConnectError: [Errno 111] Connection refused |
+| tests/test_fuel_cell_dispatch.py::test_fuel_cell_dispatch | passed | 0.045 |  |
 | tests/test_fuel_cell_module.py::test_baseload_target_defaults_to_full_nameplate | passed | 0.000 |  |
 | tests/test_fuel_cell_module.py::test_below_minimum_stable_setpoint_starts_controlled_cooling | passed | 0.000 |  |
 | tests/test_fuel_cell_module.py::test_cold_start_is_non_interruptible_and_ends_in_hot_standby | passed | 0.000 |  |

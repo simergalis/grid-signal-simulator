@@ -490,6 +490,11 @@ class SiteConfig:
     # unlimited grid-balancing behavior.  The ceiling applies only to imports;
     # grid export remains unconstrained.
     grid_import_limit_mw: Optional[float] = None
+    # Explicit islanded surplus dump response delay.  The dispatch-curtailment
+    # ledger remains authoritative on the tick where surplus is measured, while
+    # the control action is treated as a delayed response after turbine rundown.
+    # PROPOSED_HERE: validate against site protection and dump-load settings.
+    dispatch_curtailment_response_delay_s: float = 0.5
     # Normal-operation BESS depth of discharge, measured as a fraction of the
     # unit's configured initial SoC.  Once this depth has been used, normal
     # economic dispatch preserves the remaining charge for an emergency where

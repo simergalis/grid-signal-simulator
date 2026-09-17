@@ -19,13 +19,41 @@ This work preserves the Phase 2a contract:
   reconciled start counts.
 - Alert firing, acknowledgment, and disposition logic were not changed.
 
-## Change sequence after `3d9b088`
+## Change sequence after `1c333d3`
 
 | Commit | Change |
 | --- | --- |
+| `72aa49a` | Added the Phase 2a commitment and balance-wiring changes that exposed the positive-residual ordering regression. |
+| `2dd85ca` | Expanded the Phase 2a commitment coverage and updated the related mockup components. |
+| `3d9b088` | Added the deterministic Phase 2a smoke comparison and its commitment assertions. |
 | `623aed2` | Prevented informed turbine rundown when a future scale burst arrives inside the restart window. |
 | `4fe5c51` | Documented the rule that future `SCALE` events are forecast burst starts, including job-level deduplication. |
 | `14ffc37` | Completed the cleanup: corrected cumulative fuel attribution, compacted repeated preload records, added one outcome per burst, and added TC-133 through TC-136 coverage. |
+| `deabfeb` | Recorded the Phase 2a cleanup verification artifacts. |
+| `e65b67c` | Added the suite-delta comparison and historical outcome record. |
+
+## IMPL-H56/H57 physics-ordering repair
+
+The repair restores the intended ordering without changing commitment policy,
+the acceptance rule, the baseline fixture, or alert/disposition behavior:
+
+- Islanded `frequency_forcing_mw` and `p_imbalance_mw` now use measured
+  generation minus served load before the explicit dispatch-curtailment sink.
+  Positive surplus therefore reaches the swing equation on the same tick it
+  occurs.
+- Turbine rundown remains governed by the existing physical ramp and
+  commitment/unloading paths. The explicit dump sink is applied only to the
+  residual after BESS absorption and turbine rundown.
+- The dump response has a configurable
+  `dispatch_curtailment_response_delay_s` input, marked `PROPOSED_HERE`, and
+  ramps the explicit sink to full response over that delay. The default
+  0.5-second delay is below the unchanged 5-second smoke interval.
+- `p_dispatch_curtailed_mw` remains an explicit term in the physical balance
+  ledger, and the separate unaccounted-surplus channel remains zero.
+
+The implementation is in `core/simulation_core.py` (balance ordering and
+response timer), with the configuration surfaced through `core/models.py`,
+`api/schemas.py`, and `runtime/scenario_factory.py`.
 
 ## Fuel attribution correction
 
@@ -74,20 +102,20 @@ identical repeats. It produced four burst outcomes:
 Focused Addendum H coverage is **28 passed** with one existing physical-range
 warning from the TC-131 fixture.
 
-The batched full suite collected **2,079 tests** and completed with:
+The clean full suite collected **2,079 tests** and completed with:
 
 | Outcome | Count |
 | --- | ---: |
-| Passed | 1,977 |
-| Failed | 75 |
-| Skipped | 4 |
+| Passed | 1,988 |
+| Failed | 65 |
+| Skipped | 3 |
 | Xfailed | 23 |
 
 The historical comparison was 2,068 collected, 1,977 passed, 65 failed,
-3 skipped, and 23 xfailed. The current collection adds 11 tests; pass and
-xfailed totals are unchanged. The ten-test failure increase and one additional
-skip are unrelated existing-suite results and were not changed as part of this
-cleanup. The complete per-test current outcome list is in
+3 skipped, and 23 xfailed. The current collection adds 11 tests. Ten historical
+failures and one historical skip are repaired by the final rerun; the remaining
+65 failures are unrelated existing-suite results and were not changed as part
+of this cleanup. The complete per-test current outcome list is in
 `docs/addendum-h-phase2a-full-suite-outcomes.md`.
 
 The final smoke acceptance is **PASS**:
@@ -98,6 +126,11 @@ The final smoke acceptance is **PASS**:
 - informed peak unserved power: **14.565234489 MW**
 - BESS-anchor violations: **none**
 - start-count reconciliation: **valid in both modes**
+
+The dedicated HTTP GPU profile rerun also passed (`1 passed in 301.23s`) after
+the simulator workflow restart. The clean full-suite batch remains recorded at
+2,079 collected / 1,988 passed / 65 failed / 3 skipped / 23 xfailed because
+its GPU node encountered the unrelated batch-time connection refusal.
 
 The four compact smoke artifacts are in
 `docs/addendum-h-phase2a-results/`.
