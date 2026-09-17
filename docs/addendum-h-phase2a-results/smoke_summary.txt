@@ -1,0 +1,28 @@
+Addendum H Phase 2a smoke summary
+=================================
+Acceptance verdict: PASS
+Energy no worse: True
+Peak power no worse: True
+No BESS anchor violations: True
+Per-tick evidence is stored as baseline_ticks.jsonl.gz and informed_ticks.jsonl.gz.
+Wall-clock duration is recorded per mode in smoke_results.json.
+
+mode      unserved MWh   peak unserved MW   fuel MMBtu   starts   refusals   preloads   hard violations
+baseline       2.252165         37.096603   574.613363        2          0          0                0
+  energy balance: {"bess_charge_mwh": 20.088723, "bess_discharge_mwh": 15.548555, "closure_status": true, "curtailment_mwh": 0.0, "dispatch_curtailment_mwh": 8.443844, "served_demand_mwh": 41.427274, "surplus_mwh": 0.0, "turbine_generation_mwh": 54.411286, "unserved_demand_mwh": 2.252165}
+  synchronized-count statistics: {"max": 4, "mean": 2.715972, "min": 1, "ticks_at_or_above_initial": 1126, "ticks_below_floor": 0}
+  suppressed refusal repeats: 0
+  wall-clock seconds: 2.816883
+  start explanation: [{"sim_time_s": 345.0, "unit_id": "gt-hot-01", "action": "release", "source": "automatic_contingency", "path": "automatic/cascade", "reason": "automatic contingency cascade release"}, {"sim_time_s": 1880.0, "unit_id": "gt-hot-02", "action": "release", "source": "automatic_contingency", "path": "automatic/cascade", "reason": "automatic contingency cascade release"}]
+informed       0.075899         14.565234   478.758421        2          9         13                0
+  energy balance: {"bess_charge_mwh": 16.661323, "bess_discharge_mwh": 14.724303, "closure_status": true, "curtailment_mwh": 0.0, "dispatch_curtailment_mwh": 0.755511, "served_demand_mwh": 43.60354, "surplus_mwh": 0.0, "turbine_generation_mwh": 46.296071, "unserved_demand_mwh": 0.075899}
+  synchronized-count statistics: {"max": 4, "mean": 2.077778, "min": 1, "ticks_at_or_above_initial": 672, "ticks_below_floor": 0}
+  suppressed refusal repeats: 114
+  wall-clock seconds: 16.241623
+  start explanation: [{"sim_time_s": 0.0, "unit_id": "gt-hot-01", "action": "release", "source": "forecast_commitment", "path": "forecast controller", "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s"}, {"sim_time_s": 5.0, "unit_id": "gt-hot-02", "action": "release", "source": "forecast_commitment", "path": "forecast controller", "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s"}]
+
+Prior baseline (reference only; minimum run/down disabled):
+[{"sim_time_s": 355.0, "unit_id": "gt-hot-02", "action": "release", "source": "automatic_contingency", "path": "automatic/cascade", "reason": "automatic contingency cascade release"}]
+
+Informed minus baseline fuel MMBtu: -95.854943
+Informed preload fuel MMBtu: 0.910956
