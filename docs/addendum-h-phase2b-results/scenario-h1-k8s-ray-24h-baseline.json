@@ -1,6 +1,16 @@
 {
+  "acceptance_gates": {
+    "constraints_valid": true,
+    "identical_compute_trace": true,
+    "informed_peak_unserved_no_worse": true,
+    "informed_unserved_energy_no_worse": true,
+    "no_hard_violations": true,
+    "physical_ledger_closure": true,
+    "start_count_reconciled": true
+  },
+  "acceptance_verdict": "PASS",
   "background_power_reactive": true,
-  "background_probe_wall_clock_seconds": 136.765703,
+  "background_probe_wall_clock_seconds": 87.503943,
   "background_trace_signal_count": 2043,
   "bess_soc_final": 0.999999998,
   "bess_soc_max": 0.999999999,
@@ -512,7 +522,9 @@
       "mean": 7.820422466,
       "median": 8.849992513,
       "min": 0.0,
-      "p95": 15.057297037
+      "p90": 14.329573777,
+      "p95": 15.057297037,
+      "p99": 29.184617645
     },
     "dispatch_curtailment_mw_distribution": {
       "count": 12118,
@@ -520,7 +532,9 @@
       "mean": 11.151749481,
       "median": 11.302674842,
       "min": 0.017628862,
-      "p95": 20.042958252
+      "p90": 14.70859119,
+      "p95": 20.042958252,
+      "p99": 29.81893543
     },
     "dispatch_curtailment_mwh": 187.690139189,
     "max_abs_d4_balance_defect_mw": 32.205278552,
@@ -539,7 +553,9 @@
       "mean": 0.0,
       "median": 0.0,
       "min": 0.0,
-      "p95": 0.0
+      "p90": 0.0,
+      "p95": 0.0,
+      "p99": 0.0
     },
     "forecast_tick_count": 0,
     "matched_error_tick_count": 0,
@@ -551,7 +567,9 @@
       "mean": 0.0,
       "median": 0.0,
       "min": 0.0,
-      "p95": 0.0
+      "p90": 0.0,
+      "p95": 0.0,
+      "p99": 0.0
     }
   },
   "fuel_by_component_mmbtu": {
@@ -599,9 +617,20 @@
     "guard_status": "PASS"
   },
   "hard_violations": [],
+  "identical_compute_trace": true,
+  "informed_vs_baseline": {
+    "baseline_peak_unserved_mw": 35.021533247,
+    "baseline_unserved_energy_mwh": 0.894372986,
+    "informed_peak_unserved_mw": 35.021533247,
+    "informed_unserved_energy_mwh": 0.894372986,
+    "peak_unserved_no_worse": true,
+    "unserved_energy_no_worse": true,
+    "verdict": "PASS"
+  },
   "interval_seconds": 5.0,
   "kube_power_reactive_ticks": 0,
   "kube_requeued_admissions": 0,
+  "max_compute_trace_diff_mw": 0.0,
   "mode": "baseline",
   "peak_unserved_mw": 35.021533247,
   "preload_actions": [],
@@ -1029,5 +1058,5 @@
     }
   ],
   "unserved_mwh": 0.894372986,
-  "wall_clock_seconds": 56.820303
+  "wall_clock_seconds": 25.687256
 }

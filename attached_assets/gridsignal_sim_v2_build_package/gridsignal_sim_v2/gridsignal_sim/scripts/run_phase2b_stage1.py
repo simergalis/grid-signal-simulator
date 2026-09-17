@@ -117,17 +117,23 @@ def _distribution(values: list[float]) -> dict[str, float | int]:
             "min": 0.0,
             "mean": 0.0,
             "median": 0.0,
+            "p90": 0.0,
             "p95": 0.0,
+            "p99": 0.0,
             "max": 0.0,
         }
     ordered = sorted(clean)
+    p90_index = min(len(ordered) - 1, max(0, int(0.90 * len(ordered)) - 1))
     p95_index = min(len(ordered) - 1, max(0, int(0.95 * len(ordered)) - 1))
+    p99_index = min(len(ordered) - 1, max(0, int(0.99 * len(ordered)) - 1))
     return {
         "count": len(clean),
         "min": round(min(clean), 9),
         "mean": round(statistics.fmean(clean), 9),
         "median": round(statistics.median(clean), 9),
+        "p90": round(ordered[p90_index], 9),
         "p95": round(ordered[p95_index], 9),
+        "p99": round(ordered[p99_index], 9),
         "max": round(max(clean), 9),
     }
 

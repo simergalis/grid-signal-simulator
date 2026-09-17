@@ -10,7 +10,7 @@
   },
   "acceptance_verdict": "PASS",
   "background_power_reactive": true,
-  "background_probe_wall_clock_seconds": 31.604902,
+  "background_probe_wall_clock_seconds": 31.191417,
   "background_trace_signal_count": 676,
   "bess_soc_final": 0.999999999,
   "bess_soc_max": 0.999999999,
@@ -282,7 +282,9 @@
       "mean": 13.506032065,
       "median": 14.477666264,
       "min": 0.0,
-      "p95": 21.720370389
+      "p90": 15.691528355,
+      "p95": 21.720370389,
+      "p99": 24.271385906
     },
     "dispatch_curtailment_mw_distribution": {
       "count": 16182,
@@ -290,7 +292,9 @@
       "mean": 14.422459158,
       "median": 14.688594402,
       "min": 0.329824035,
-      "p95": 21.947985502
+      "p90": 17.161369738,
+      "p95": 21.947985502,
+      "p99": 24.294091127
     },
     "dispatch_curtailment_mwh": 324.144769567,
     "max_abs_d4_balance_defect_mw": 24.35892,
@@ -309,7 +313,9 @@
       "mean": 0.0,
       "median": 0.0,
       "min": 0.0,
-      "p95": 0.0
+      "p90": 0.0,
+      "p95": 0.0,
+      "p99": 0.0
     },
     "forecast_tick_count": 0,
     "matched_error_tick_count": 0,
@@ -321,7 +327,9 @@
       "mean": 0.0,
       "median": 0.0,
       "min": 0.0,
-      "p95": 0.0
+      "p90": 0.0,
+      "p95": 0.0,
+      "p99": 0.0
     }
   },
   "fuel_by_component_mmbtu": {
@@ -436,6 +444,7 @@
       "unit_id": "gt-hot-01"
     }
   ],
+  "stop_floor_refusal_count": 0,
   "stop_floor_refusals": [],
   "stops": [
     {
@@ -617,5 +626,5 @@
     }
   ],
   "unserved_mwh": 9.422667343,
-  "wall_clock_seconds": 22.532222
+  "wall_clock_seconds": 23.558063
 }
