@@ -605,3 +605,106 @@ def test_tc125_informed_core_proposal_is_logged_by_controller() -> None:
     assert record.action == "proposal_commit"
     assert record.source == "core_commitment_proposal"
     assert record.controller_approved is True
+
+
+def test_tc126_low_forecast_allows_stop_when_remaining_msl_exceeds_demand() -> None:
+    """A remaining MSL surplus is a stop reason, not a controller veto."""
+    from runtime.scenario_factory import build_run_context_from_spec
+    from runtime.turbine_commitment import CommitmentForecast
+
+    ctx = build_run_context_from_spec(
+        "tc126-msl-stop", _spec(mode="informed", spinning=3, hot=0).model_dump()
+    )
+    controller = ctx.turbine_commitment_controller
+    controller._latest_forecast = CommitmentForecast(
+        sim_time_s=1000.0,
+        background_mean_mw=1.0,
+        background_std_mw=0.0,
+        forecast_mw=1.0,
+        peak_forecast_mw=1.0,
+        minimum_forecast_mw=1.0,
+        profile=((1000.0, 1.0),),
+    )
+    decision = SimpleNamespace(
+        action="decommit",
+        target_unit_id="turbine-2",
+        reason="measured low load",
+        floor_violated=False,
+    )
+    assert controller.adjudicate_core_proposal(
+        state=ctx.sim_state,
+        decision=decision,
+        sim_time_s=1000.0,
+        synchronized_capacity_mw=30.0,
+        bess_soc_fraction=0.5,
+    ) is True
+    assert controller.log[-1].accepted is True
+
+
+def test_tc127_informed_decommit_veto_repeats_are_counted_not_relogged() -> None:
+    """Repeated identical informed vetoes remain compact and auditable."""
+    from runtime.scenario_factory import build_run_context_from_spec
+    from runtime.turbine_commitment import CommitmentForecast
+
+    ctx = build_run_context_from_spec(
+        "tc127-veto-dedup", _spec(mode="informed", spinning=3, hot=0).model_dump()
+    )
+    controller = ctx.turbine_commitment_controller
+    controller._latest_forecast = CommitmentForecast(
+        sim_time_s=0.0,
+        background_mean_mw=30.0,
+        background_std_mw=0.0,
+        forecast_mw=30.0,
+        peak_forecast_mw=30.0,
+        minimum_forecast_mw=30.0,
+        profile=((0.0, 30.0),),
+    )
+    decision = SimpleNamespace(
+        action="decommit",
+        target_unit_id="turbine-2",
+        reason="core measured decommit",
+        floor_violated=False,
+    )
+    for now in (0.0, 5.0, 10.0):
+        assert controller.adjudicate_core_proposal(
+            state=ctx.sim_state,
+            decision=decision,
+            sim_time_s=now,
+            synchronized_capacity_mw=30.0,
+            bess_soc_fraction=0.5,
+        ) is False
+    assert len(controller.log) == 1
+    assert controller.suppressed_repeat_count == 2
+    assert controller.log[0].suppressed_repeat_count == 2
+
+
+def test_tc128_dispatch_curtailment_closes_islanded_physical_balance() -> None:
+    """Explicit residual curtailment is separate from inverter solar curtailment."""
+    from core.power_balance import BalanceTerms, evaluate
+
+    result = evaluate(
+        BalanceTerms(
+            p_generation_mw=10.0,
+            p_demand_mw=7.0,
+            p_served_mw=7.0,
+            p_curtailment_mw=3.0,
+            island_mode="islanded",
+        ),
+        tolerance_mw=1e-9,
+    )
+    assert result.passed
+    assert result.term_breakdown["curtailment_mw"] == 3.0
+
+
+def test_tc129_direct_tick_wire_contains_on_bus_count_and_dispatch_curtailment() -> None:
+    from runtime.run_manager import _tick_result_to_dict
+    from runtime.scenario_factory import build_run_context_from_spec
+
+    ctx = build_run_context_from_spec(
+        "tc129-direct-wire",
+        _spec(mode="baseline", spinning=2, hot=0).model_dump(),
+    )
+    payload = _tick_result_to_dict(ctx.step())
+    assert payload["units_on_bus_count"] == 2
+    assert payload["on_bus_output_mw"] > 0.0
+    assert "p_dispatch_curtailed_mw" in payload
