@@ -6,6 +6,8 @@ TC numbering continues from Addendum H Phase 2a at TC-137.
 from __future__ import annotations
 
 import json
+import pytest
+from types import SimpleNamespace
 from pathlib import Path
 
 from api.schemas import ScenarioSpec
@@ -113,3 +115,175 @@ def test_tc141_24h_start_stop_reconciliation() -> None:
         for run in scenario["runs"].values():
             assert run["start_count_reconciled"] is True
             assert run["constraints_valid"] is True
+
+
+def test_tc142_phase2b_expansion_attaches_aeroderivative_fuel_to_all_four_units() -> None:
+    """IMPL-H58: expansion changes only copied Phase 2b fleet metadata."""
+    base = json.loads(
+        (SCENARIOS / "scenario-uneven-multisched-01.json").read_text()
+    )
+    assert all("gt_mode" not in turbine for turbine in base["turbine_units"])
+    for scenario_id in (
+        "scenario-h1-k8s-ray-24h",
+        "scenario-h1-k8s-ray-7d",
+        "scenario-h2-slurm-24h",
+        "scenario-h2-slurm-7d",
+    ):
+        expanded = _expanded(scenario_id)
+        assert [turbine["gt_mode"] for turbine in expanded["turbine_units"]] == [
+            "aero",
+            "aero",
+            "aero",
+            "aero",
+        ]
+
+
+def test_tc143_short_phase2b_run_has_nonzero_turbine_fuel() -> None:
+    """IMPL-H58: a synchronized short run cannot silently report zero fuel."""
+    from runtime.scenario_factory import build_run_context_from_spec
+    from scripts.run_phase2b_stage1 import _phase2b_fuel_guard
+
+    spec = _expanded("scenario-h1-k8s-ray-24h")
+    spec["end_sim_time"] = 60.0
+    spec["workload_events"] = []
+    spec.pop("kube_clusters", None)
+    spec.pop("slurm_config", None)
+    spec["turbine_commitment_mode"] = "baseline"
+    ctx = build_run_context_from_spec("tc143-phase2b-fuel", spec)
+    ticks = [ctx.step() for _ in range(12)]
+
+    guard = _phase2b_fuel_guard("tc143", ctx, ticks)
+    assert guard["guard_status"] == "PASS"
+    total_fuel = sum(
+        float(row.get("total_fuel_mmbtu", 0.0) or 0.0)
+        for row in ticks[-1].turbine_fuel_telemetry
+        if row.get("fuel_modelled")
+    )
+    assert total_fuel > 0.0
+
+
+def test_tc144_zero_phase2b_fuel_fails_loudly() -> None:
+    from scripts.run_phase2b_stage1 import _phase2b_fuel_guard
+
+    turbine = SimpleNamespace(
+        is_on_bus=True,
+        fuel_modelled=True,
+        config=SimpleNamespace(asset_id="turbine-0"),
+    )
+    ctx = SimpleNamespace(sim_state=SimpleNamespace(turbines=[turbine]))
+    ticks = [
+        SimpleNamespace(
+            turbine_fuel_telemetry=[
+                {
+                    "asset_id": "turbine-0",
+                    "fuel_modelled": True,
+                    "total_fuel_mmbtu": 0.0,
+                }
+            ]
+        )
+    ]
+    with pytest.raises(AssertionError, match="zero fuel telemetry"):
+        _phase2b_fuel_guard("tc144", ctx, ticks)
+
+
+def test_tc145_phase2b_acceptance_comparison_fails_when_informed_is_worse() -> None:
+    """IMPL-H59: informed unserved energy and peak must be no worse."""
+    from scripts.run_phase2b_stage1 import _phase2b_acceptance_verdict
+
+    common = {
+        "energy_balance": {"closure_status": True},
+        "hard_violations": [],
+        "start_count_reconciled": True,
+        "constraints_valid": True,
+    }
+    baseline = {"unserved_mwh": 1.0, "peak_unserved_mw": 2.0}
+    informed = {"unserved_mwh": 1.1, "peak_unserved_mw": 2.0}
+    result = _phase2b_acceptance_verdict(
+        summary=common,
+        baseline=baseline,
+        informed=informed,
+        trace_equal=True,
+    )
+    assert result["acceptance_verdict"] == "FAIL"
+    assert result["informed_vs_baseline"]["unserved_energy_no_worse"] is False
+
+
+def test_tc146_phase2b_acceptance_comparison_passes_when_informed_is_equal() -> None:
+    from scripts.run_phase2b_stage1 import _phase2b_acceptance_verdict
+
+    common = {
+        "energy_balance": {"closure_status": True},
+        "hard_violations": [],
+        "start_count_reconciled": True,
+        "constraints_valid": True,
+    }
+    equal = {"unserved_mwh": 1.0, "peak_unserved_mw": 2.0}
+    result = _phase2b_acceptance_verdict(
+        summary=common,
+        baseline=equal,
+        informed=equal,
+        trace_equal=True,
+    )
+    assert result["acceptance_verdict"] == "PASS"
+
+
+def _stop_floor_context() -> object:
+    from runtime.scenario_factory import build_run_context_from_spec
+
+    spec = json.loads(
+        (SCENARIOS / "scenario-uneven-multisched-01.json").read_text()
+    )
+    spec["end_sim_time"] = 60.0
+    spec["workload_events"] = []
+    spec.pop("kube_clusters", None)
+    spec.pop("slurm_config", None)
+    spec["turbine_commitment_mode"] = "informed"
+    return build_run_context_from_spec("tc146-stop-floor", spec)
+
+
+def test_tc147_stop_refuses_when_post_stop_core_n_minus_one_floor_breaches() -> None:
+    """IMPL-H60: stop refusal uses core demand + largest-unit reserve floor."""
+    from runtime.turbine_commitment import CommitmentForecast
+
+    ctx = _stop_floor_context()
+    controller = ctx.turbine_commitment_controller
+    controller.forecast = lambda **_: CommitmentForecast(
+        sim_time_s=0.0,
+        background_mean_mw=10.0,
+        background_std_mw=0.0,
+        forecast_mw=10.0,
+        peak_forecast_mw=10.0,
+        minimum_forecast_mw=10.0,
+        profile=((0.0, 10.0), (600.0, 10.0)),
+    )
+    controller.evaluate(ctx=ctx, power_for_event=ctx._event_power_mw)
+
+    assert controller.log
+    assert controller.log[-1].accepted is False
+    assert "post-stop N-1 reserve floor" in (controller.log[-1].refusal_reason or "")
+    details = controller.stop_floor_refusals[-1]
+    assert details["post_stop_floor_mw"] == 35.0
+    assert details["remaining_turbine_capacity_mw"] == 25.0
+    assert details["bess_included_in_floor"] is False
+
+
+def test_tc148_stop_remains_allowed_when_post_stop_core_floor_is_satisfied() -> None:
+    from runtime.turbine_commitment import CommitmentForecast
+
+    ctx = _stop_floor_context()
+    for turbine in ctx.sim_state.turbines:
+        turbine.config.min_run_enabled = False
+    controller = ctx.turbine_commitment_controller
+    controller.forecast = lambda **_: CommitmentForecast(
+        sim_time_s=0.0,
+        background_mean_mw=0.0,
+        background_std_mw=0.0,
+        forecast_mw=0.0,
+        peak_forecast_mw=0.0,
+        minimum_forecast_mw=0.0,
+        profile=((0.0, 0.0), (600.0, 0.0)),
+    )
+    controller.evaluate(ctx=ctx, power_for_event=ctx._event_power_mw)
+
+    assert not controller.stop_floor_refusals
+    assert not [record for record in controller.log if not record.accepted]

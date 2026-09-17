@@ -89,6 +89,17 @@ def _phase2b_fuel_guard(
             f"{scenario_id}: synchronized turbine(s) missing final fuel "
             f"telemetry: {sorted(missing_rows)}"
         )
+    zero_fuel = [
+        turbine.config.asset_id
+        for turbine in active_units
+        if float(final_rows[turbine.config.asset_id].get("total_fuel_mmbtu", 0.0) or 0.0)
+        <= 1e-12
+    ]
+    if zero_fuel:
+        raise AssertionError(
+            f"{scenario_id}: synchronized turbine(s) finished with zero "
+            f"fuel telemetry: {sorted(zero_fuel)}"
+        )
     return {
         "guard_status": "PASS",
         "active_modelled_units": sorted(
@@ -512,6 +523,46 @@ def _assert_replay_equal(
     return max_diff <= 1e-9, max_diff
 
 
+def _phase2b_acceptance_verdict(
+    *,
+    summary: dict[str, Any],
+    baseline: dict[str, Any],
+    informed: dict[str, Any],
+    trace_equal: bool,
+) -> dict[str, Any]:
+    """Apply the stage-1 gates, including the Phase 2a comparison gate."""
+    comparison = unserved_comparison_verdict(
+        {
+            "unserved_energy_mwh": baseline["unserved_mwh"],
+            "peak_unserved_mw": baseline["peak_unserved_mw"],
+        },
+        {
+            "unserved_energy_mwh": informed["unserved_mwh"],
+            "peak_unserved_mw": informed["peak_unserved_mw"],
+        },
+    )
+    gates = {
+        "identical_compute_trace": trace_equal,
+        "physical_ledger_closure": bool(
+            summary["energy_balance"]["closure_status"]
+        ),
+        "no_hard_violations": not summary["hard_violations"],
+        "start_count_reconciled": summary["start_count_reconciled"],
+        "constraints_valid": summary["constraints_valid"],
+        "informed_unserved_energy_no_worse": comparison[
+            "unserved_energy_no_worse"
+        ],
+        "informed_peak_unserved_no_worse": comparison[
+            "peak_unserved_no_worse"
+        ],
+    }
+    return {
+        "informed_vs_baseline": comparison,
+        "acceptance_gates": gates,
+        "acceptance_verdict": "PASS" if all(gates.values()) else "FAIL",
+    }
+
+
 def run_scenario(scenario_id: str, output_dir: Path) -> dict[str, Any]:
     compact = _load_compact_spec(scenario_id)
     expanded = expand_phase2b_reference_spec(compact)
@@ -604,40 +655,18 @@ def run_scenario(scenario_id: str, output_dir: Path) -> dict[str, Any]:
     trace_equal, max_diff = _assert_replay_equal(
         tick_sets["baseline"], tick_sets["informed"]
     )
-    comparison = unserved_comparison_verdict(
-        {
-            "unserved_energy_mwh": runs["baseline"]["unserved_mwh"],
-            "peak_unserved_mw": runs["baseline"]["peak_unserved_mw"],
-        },
-        {
-            "unserved_energy_mwh": runs["informed"]["unserved_mwh"],
-            "peak_unserved_mw": runs["informed"]["peak_unserved_mw"],
-        },
-    )
+    comparison = None
     for summary in runs.values():
         summary["identical_compute_trace"] = trace_equal
         summary["max_compute_trace_diff_mw"] = max_diff
-        summary["informed_vs_baseline"] = comparison
-        summary["acceptance_gates"] = {
-            "identical_compute_trace": trace_equal,
-            "physical_ledger_closure": bool(
-                summary["energy_balance"]["closure_status"]
-            ),
-            "no_hard_violations": not summary["hard_violations"],
-            "start_count_reconciled": summary["start_count_reconciled"],
-            "constraints_valid": summary["constraints_valid"],
-            "informed_unserved_energy_no_worse": comparison[
-                "unserved_energy_no_worse"
-            ],
-            "informed_peak_unserved_no_worse": comparison[
-                "peak_unserved_no_worse"
-            ],
-        }
-        summary["acceptance_verdict"] = (
-            "PASS"
-            if all(summary["acceptance_gates"].values())
-            else "FAIL"
+        acceptance = _phase2b_acceptance_verdict(
+            summary=summary,
+            baseline=runs["baseline"],
+            informed=runs["informed"],
+            trace_equal=trace_equal,
         )
+        summary.update(acceptance)
+        comparison = acceptance["informed_vs_baseline"]
         (output_dir / f"{summary['scenario_id']}-{summary['mode']}.json").write_text(
             json.dumps(summary, indent=2, sort_keys=True) + "\n"
         )

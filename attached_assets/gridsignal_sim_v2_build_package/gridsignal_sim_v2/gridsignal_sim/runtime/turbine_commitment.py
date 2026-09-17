@@ -555,7 +555,24 @@ class ForecastDrivenTurbineController:
             and not getattr(other.config, "hot_standby", False)
         ]
         remaining_capacity_mw = sum(remaining_rated)
-        for timestamp, predicted_at_onset in forecast.profile:
+        profile_points = [
+            (timestamp, predicted_at_onset)
+            for timestamp, predicted_at_onset in forecast.profile
+            if (
+                timestamp >= sim_time_s - 1e-9
+                and timestamp <= sim_time_s + self.stop_lookahead_seconds + 1e-9
+            )
+        ]
+        # A stale proposal can be adjudicated after the profile's only sample
+        # has passed.  Reuse the forecast peak so repeated identical vetoes keep
+        # one stable refusal signature for log compaction.
+        fallback_forecast_time: Optional[float] = None
+        if not profile_points and forecast.profile:
+            fallback_forecast_time = float(forecast.sim_time_s)
+            profile_points = [
+                (sim_time_s, float(forecast.peak_forecast_mw))
+            ]
+        for timestamp, predicted_at_onset in profile_points:
             if (
                 timestamp < sim_time_s - 1e-9
                 or timestamp > sim_time_s + self.stop_lookahead_seconds + 1e-9
@@ -568,9 +585,14 @@ class ForecastDrivenTurbineController:
             )
             deficit_mw = max(0.0, floor_mw - remaining_capacity_mw)
             if deficit_mw > self.sensitivity_mw:
+                refusal_forecast_time = (
+                    fallback_forecast_time
+                    if fallback_forecast_time is not None
+                    else float(timestamp)
+                )
                 diagnostics = {
                     "sim_time_s": round(sim_time_s, 3),
-                    "forecast_time_s": round(float(timestamp), 3),
+                    "forecast_time_s": round(refusal_forecast_time, 3),
                     "demand_mw": round(demand_mw, 6),
                     "post_stop_floor_mw": round(floor_mw, 6),
                     "remaining_turbine_capacity_mw": round(
@@ -601,7 +623,7 @@ class ForecastDrivenTurbineController:
                     "stop refused: post-stop N-1 reserve floor "
                     f"{floor_mw:.3f} MW exceeds remaining turbine capacity "
                     f"{remaining_capacity_mw:.3f} MW by {deficit_mw:.3f} MW "
-                    f"at forecast {timestamp:.0f}s within "
+                    f"at forecast {refusal_forecast_time:.0f}s within "
                     f"{self.stop_lookahead_seconds:.0f}s; unit is needed "
                     "within the stop look-ahead"
                 )
