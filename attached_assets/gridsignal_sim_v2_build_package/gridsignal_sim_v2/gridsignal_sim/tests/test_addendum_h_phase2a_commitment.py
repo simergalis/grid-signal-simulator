@@ -116,7 +116,7 @@ def test_tc109_forecast_is_profiled_announced_and_deduplicated() -> None:
     assert after.profile[-1][1] == 4.0
 
 
-def test_tc110_baseline_uses_production_hot_standby_release_path() -> None:
+def test_tc110_baseline_does_not_apply_a_minimum_synchronized_floor() -> None:
     from core.asset_modules import TurbineState
     from runtime.scenario_factory import build_run_context_from_spec
 
@@ -128,13 +128,10 @@ def test_tc110_baseline_uses_production_hot_standby_release_path() -> None:
 
     ctx.step()
 
-    assert ctx.sim_state.turbines[2].state == TurbineState.STARTING
-    assert ctx.sim_state.turbines[2].config.hot_standby is False
-    record = ctx.turbine_commitment_controller.log[0]
-    assert record.action == "release"
-    assert record.accepted is True
-    assert record.changed_state is True
-    assert record.source == "forecast_commitment"
+    assert ctx.sim_state.turbines[2].state == TurbineState.OFFLINE
+    assert ctx.sim_state.turbines[2].config.hot_standby is True
+    assert ctx.turbine_commitment_controller.forecast_history == []
+    assert not ctx.turbine_commitment_controller.preload_actions
 
 
 def test_tc111_informed_mode_starts_for_announced_workload() -> None:
@@ -441,6 +438,12 @@ def test_tc119_informed_preload_uses_existing_ramp_and_bess_charge_path() -> Non
         "usable_mwh": 120.0,
         "initial_soc_fraction": 0.50,
     }]
+    spec["bess_units"] = [{
+        "asset_id": "bess-0",
+        "rated_mw": 30.0,
+        "usable_mwh": 120.0,
+        "initial_soc_fraction": 0.50,
+    }]
     ctx = build_run_context_from_spec("tc119-preload", spec)
     first = ctx.step()
     controller = ctx.turbine_commitment_controller
@@ -476,3 +479,128 @@ def test_tc120_unserved_comparison_preserves_energy_and_peak_verdicts() -> None:
     assert verdict["peak_unserved_no_worse"] is True
     assert baseline["peak_unserved_mw"] == 2.0
     assert abs(informed["unserved_energy_mwh"] - 10.0 / 3600.0) < 1e-9
+
+
+def test_tc121_transition_records_carry_state_pair_and_authority() -> None:
+    from runtime.scenario_factory import build_run_context_from_spec
+
+    ctx = build_run_context_from_spec(
+        "tc121-transition-audit",
+        _spec(
+            mode="informed",
+            spinning=1,
+            hot=1,
+            events=[_event(0.0, node_count=2000)],
+            end=360.0,
+        ).model_dump(),
+    )
+    for _ in range(72):
+        ctx.step()
+
+    transitions = [
+        record for record in ctx.turbine_commitment_controller.log
+        if record.changed_state
+    ]
+    assert transitions
+    assert all(
+        record.source
+        and record.reason
+        and record.from_state
+        and record.to_state
+        and record.controller_approved is True
+        for record in transitions
+    )
+
+
+def test_tc122_baseline_has_no_forecast_controller_or_forecast_misses() -> None:
+    from runtime.scenario_factory import build_run_context_from_spec
+
+    ctx = build_run_context_from_spec(
+        "tc122-baseline-forecast-isolation",
+        _spec(
+            mode="baseline",
+            spinning=2,
+            hot=2,
+            events=[_event(0.0, node_count=2000)],
+        ).model_dump(),
+    )
+    ticks = [ctx.step() for _ in range(12)]
+    controller = ctx.turbine_commitment_controller
+    assert ticks
+    assert controller.forecast_history == []
+    assert controller.preload_actions == []
+    assert controller.forecast_miss_count == 0
+
+
+def test_tc123_bess_wire_aggregates_use_materialized_units() -> None:
+    from runtime.run_manager import _tick_result_to_dict
+    from runtime.scenario_factory import build_run_context_from_spec
+
+    spec = _spec(mode="baseline", spinning=1, hot=0).model_dump()
+    spec["bess_units"] = [{
+        "asset_id": "bess-0",
+        "rated_mw": 30.0,
+        "usable_mwh": 120.0,
+        "initial_soc_fraction": 0.5,
+    }]
+    ctx = build_run_context_from_spec("tc123-bess-wire", spec)
+    payload = _tick_result_to_dict(ctx.step())
+    assert payload["bess_rated_mw"] == 30.0
+    assert payload["bess_usable_mwh"] == 120.0
+    assert payload["bess_unit_count"] == 1
+
+
+def test_tc124_preload_reports_only_incremental_target_and_fuel() -> None:
+    from runtime.scenario_factory import build_run_context_from_spec
+
+    spec = _spec(
+        mode="informed",
+        spinning=2,
+        hot=0,
+        events=[_event(30.0, node_count=5000)],
+        end=120.0,
+    ).model_dump()
+    spec["bess_units"] = [{
+        "asset_id": "bess-0",
+        "rated_mw": 30.0,
+        "usable_mwh": 120.0,
+        "initial_soc_fraction": 0.50,
+    }]
+    ctx = build_run_context_from_spec("tc124-incremental-preload", spec)
+    for _ in range(24):
+        ctx.step()
+    controller = ctx.turbine_commitment_controller
+    assert controller.preload_actions
+    assert all(
+        action["incremental_target_mw"] > 0.0
+        and action["target_mw"] >= action["normal_output_mw"]
+        for action in controller.preload_actions
+    )
+    assert controller.preload_fuel_mmbtu >= 0.0
+
+
+def test_tc125_informed_core_proposal_is_logged_by_controller() -> None:
+    from runtime.scenario_factory import build_run_context_from_spec
+
+    ctx = build_run_context_from_spec(
+        "tc125-core-proposal",
+        _spec(mode="informed", spinning=1, hot=1).model_dump(),
+    )
+    controller = ctx.turbine_commitment_controller
+    decision = SimpleNamespace(
+        action="commit",
+        target_unit_id="turbine-1",
+        reason="measured reserve shortfall",
+        floor_violated=True,
+    )
+    assert controller.adjudicate_core_proposal(
+        state=ctx.sim_state,
+        decision=decision,
+        sim_time_s=0.0,
+        synchronized_capacity_mw=10.0,
+        bess_soc_fraction=0.5,
+    ) is True
+    record = controller.log[-1]
+    assert record.action == "proposal_commit"
+    assert record.source == "core_commitment_proposal"
+    assert record.controller_approved is True

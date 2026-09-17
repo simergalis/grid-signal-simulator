@@ -5,6 +5,7 @@ description: Key decisions and traps across GS simulator implementation sessions
 
 - [Spec-2 surplus and inertia](spec2-surplus-inertia.md) — §INV-CURT, §INV-INERTIA, S9 rerun, ScenarioSpec thresholds, F-4 dispatch gap.
 - [Phase 2A-7 frequency dynamics](phase2a7-freq-dynamics.md) — UFLS/81U opt-in, governor decoupling, sub-step swing equation, protection_provisional, export gate.
+- [Addendum H Phase 2a authority](addendum-h-phase2a-authority.md) — baseline is measured-core-only; informed forecast control adjudicates core proposals and both modes share topology.
 - [Phase 0/1 balance + droop wiring](phase0-phase1-balance-droop.md) — D4 routing-identity finding, attribute name diffs, catalogue keys, site_parameters import needed, gate surface, test delta.
 - [Cost-based local dispatch](fuel-cell-dispatch-wiring.md) — rank discretionary BESS, turbine, then fuel cell by catalogue cost; turbine minimum output remains must-run.
 - [Solar sim capacity mismatch](solar-sim-capacity-mismatch.md) — SolarSim total rated MW ≠ scenario solar_rated_mw; A0 override and C backstop must normalize by ratio or dispatch starves.

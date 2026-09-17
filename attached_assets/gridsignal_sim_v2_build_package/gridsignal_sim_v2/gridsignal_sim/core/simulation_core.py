@@ -620,6 +620,44 @@ def _promote_reserve_standby_labels(
     return tuple(changes)
 
 
+def _record_turbine_transition(
+    state: SimulationState,
+    turbine: TurbineModule,
+    *,
+    sim_time: float,
+    action: str,
+    source: str,
+    reason: str,
+    from_state: TurbineState,
+    to_state: TurbineState,
+    controller_approved: Optional[bool] = None,
+) -> None:
+    """Send every physical turbine state change to the runtime audit sink."""
+    sink = getattr(state, "_commitment_transition_sink", None)
+    if sink is None:
+        return
+    sink.record_transition(
+        turbine=turbine,
+        sim_time_s=sim_time,
+        action=action,
+        source=source,
+        reason=reason,
+        from_state=from_state,
+        to_state=to_state,
+        controller_approved=controller_approved,
+        forecast=getattr(state, "_commitment_forecast", None),
+        synchronized_capacity_mw=sum(
+            max(0.0, float(item.config.rated_mw))
+            for item in state.turbines
+            if item.is_on_bus
+        ),
+        bess_soc_fraction=min(
+            (float(getattr(unit, "soc_fraction", 0.0)) for unit in state.bess_units),
+            default=0.0,
+        ),
+    )
+
+
 def _release_hot_standby_for_contingency(
     state: SimulationState,
     coverage: ContingencyCoverage,
@@ -662,6 +700,7 @@ def _release_hot_standby_for_contingency(
         return None
 
     turbine = hot_standby_units[0]
+    before_state = turbine.state
     turbine.config.hot_standby = False
     turbine.command_start(sim_time)
     if turbine.state != TurbineState.STARTING:
@@ -672,6 +711,21 @@ def _release_hot_standby_for_contingency(
 
     state._pending_start.record_start(turbine.config.asset_id, sim_time)
     state._contingency_release_armed = False
+    _record_turbine_transition(
+        state,
+        turbine,
+        sim_time=sim_time,
+        action="release",
+        source="automatic_contingency",
+        reason="automatic contingency cascade release",
+        from_state=before_state,
+        to_state=turbine.state,
+        controller_approved=(
+            True
+            if getattr(state, "_commitment_mode", "baseline") == "informed"
+            else None
+        ),
+    )
     return ContingencyReleaseAlert(
         turbine_id=turbine.config.asset_id,
         coverage_state=coverage.state.value,
@@ -1425,6 +1479,27 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # SYNCHRONISED units are no-ops in advance() — loading layer drives them.
     for turbine in state.turbines:
         turbine.advance(sim_time, dt_seconds)
+        before_state = _entry_states[turbine.config.asset_id]
+        if turbine.state != before_state:
+            _record_turbine_transition(
+                state,
+                turbine,
+                sim_time=sim_time,
+                action=(
+                    "synchronise"
+                    if turbine.state == TurbineState.SYNCHRONISED
+                    else "state_transition"
+                ),
+                source="turbine_physics",
+                reason="startup timer completed",
+                from_state=before_state,
+                to_state=turbine.state,
+                controller_approved=(
+                    True
+                    if getattr(state, "_commitment_mode", "baseline") == "informed"
+                    else None
+                ),
+            )
 
     # Fuel-cell output remains a rate-limited asset measurement.  Fixed-baseload
     # arrays retain their configured target.  Explicit load-following arrays
@@ -1679,12 +1754,28 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             if _dwell_elapsed >= _ut.config.unload_tail_s:
                 # Breaker opens: output steps discontinuously from MSL to 0.
                 _ut._levelled_off_sustained = False  # reset before state change
+                _before_state = _ut.state
                 _ut.state                  = TurbineState.OFFLINE
                 _ut._current_output_mw     = 0.0
                 _ut._stop_time_s           = sim_time
                 _ut._last_sync_stop_s      = sim_time
                 _ut._levelled_off_since_s  = math.nan
                 state._last_breaker_open_s = sim_time
+                _record_turbine_transition(
+                    state,
+                    _ut,
+                    sim_time=sim_time,
+                    action="stop_complete",
+                    source="turbine_physics",
+                    reason="controlled rundown completed and breaker opened",
+                    from_state=_before_state,
+                    to_state=_ut.state,
+                    controller_approved=(
+                        True
+                        if getattr(state, "_commitment_mode", "baseline") == "informed"
+                        else None
+                    ),
+                )
                 _log.info(
                     "Stop sequencing: breaker open for %r at sim_time=%.1f "
                     "(msl_mw=%.3f, dwell=%.1f s)",
@@ -1962,10 +2053,27 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                 ]
                 if _hs_units and state._pending_start.is_empty:
                     _next_hs = _hs_units[0]
+                    _before_state = _next_hs.state
                     _next_hs.config.hot_standby = False  # TurbineConfig is non-frozen
                     _next_hs.command_start(sim_time)      # now accepted — guard cleared
                     if _next_hs.state == TurbineState.STARTING:
                         state._pending_start.record_start(_next_hs.config.asset_id, sim_time)
+                        _record_turbine_transition(
+                            state,
+                            _next_hs,
+                            sim_time=sim_time,
+                            action="release",
+                            source="automatic_cascade",
+                            reason="cascade threshold released hot standby",
+                            from_state=_before_state,
+                            to_state=_next_hs.state,
+                            controller_approved=(
+                                True
+                                if getattr(state, "_commitment_mode", "baseline")
+                                == "informed"
+                                else None
+                            ),
+                        )
                         _cascade_promotions = _promote_reserve_standby_labels(
                             state.turbines
                         )
@@ -2013,6 +2121,31 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     ):
         for _cht in state.turbines:
             if _cht.config.asset_id == _commit_decision.target_unit_id:
+                _approved = True
+                if (
+                    getattr(state, "_commitment_mode", "baseline") == "informed"
+                    and getattr(state, "_commitment_transition_sink", None) is not None
+                ):
+                    _approved = state._commitment_transition_sink.adjudicate_core_proposal(
+                        state=state,
+                        decision=_commit_decision,
+                        sim_time_s=sim_time,
+                        synchronized_capacity_mw=sum(
+                            max(0.0, float(item.config.rated_mw))
+                            for item in state.turbines
+                            if item.is_on_bus
+                        ),
+                        bess_soc_fraction=min(
+                            (
+                                float(getattr(unit, "soc_fraction", 0.0))
+                                for unit in state.bess_units
+                            ),
+                            default=0.0,
+                        ),
+                    )
+                if not _approved:
+                    break
+                _before_state = _cht.state
                 _cht.command_start(sim_time)
                 # Only record the pending start when command_start() actually
                 # transitioned the unit to STARTING.  command_start() can
@@ -2023,6 +2156,22 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                 # blocked for the rest of the run.
                 if _cht.state == TurbineState.STARTING:
                     state._pending_start.record_start(_cht.config.asset_id, sim_time)
+                    _record_turbine_transition(
+                        state,
+                        _cht,
+                        sim_time=sim_time,
+                        action="start",
+                        source="core_commitment",
+                        reason=_commit_decision.reason,
+                        from_state=_before_state,
+                        to_state=_cht.state,
+                        controller_approved=(
+                            True
+                            if getattr(state, "_commitment_mode", "baseline")
+                            == "informed"
+                            else None
+                        ),
+                    )
                     _log.info(
                         "Commitment engine: start %r at sim_time=%.1f (%s)",
                         _cht.config.asset_id,
@@ -2057,6 +2206,31 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         if _n_unloading == 0 and _settle_ok:
             for _cht in state.turbines:
                 if _cht.config.asset_id == _commit_decision.target_unit_id:
+                    _approved = True
+                    if (
+                        getattr(state, "_commitment_mode", "baseline") == "informed"
+                        and getattr(state, "_commitment_transition_sink", None) is not None
+                    ):
+                        _approved = state._commitment_transition_sink.adjudicate_core_proposal(
+                            state=state,
+                            decision=_commit_decision,
+                            sim_time_s=sim_time,
+                            synchronized_capacity_mw=sum(
+                                max(0.0, float(item.config.rated_mw))
+                                for item in state.turbines
+                                if item.is_on_bus
+                            ),
+                            bess_soc_fraction=min(
+                                (
+                                    float(getattr(unit, "soc_fraction", 0.0))
+                                    for unit in state.bess_units
+                                ),
+                                default=0.0,
+                            ),
+                        )
+                    if not _approved:
+                        break
+                    _before_state = _cht.state
                     try:
                         # Phase E closeout Item 3: command_stop() now returns
                         # Optional[str] — None = accepted, str = block reason.
@@ -2064,6 +2238,22 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                     except (RuntimeError, AttributeError):
                         _stop_block = None  # state changed between snapshot and call
                     if _stop_block is None:
+                        _record_turbine_transition(
+                            state,
+                            _cht,
+                            sim_time=sim_time,
+                            action="stop",
+                            source="core_commitment",
+                            reason=_commit_decision.reason,
+                            from_state=_before_state,
+                            to_state=_cht.state,
+                            controller_approved=(
+                                True
+                                if getattr(state, "_commitment_mode", "baseline")
+                                == "informed"
+                                else None
+                            ),
+                        )
                         _log.info(
                             "Commitment engine: stop %r at sim_time=%.1f (%s)",
                             _cht.config.asset_id, sim_time, _commit_decision.reason,
@@ -3458,6 +3648,13 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             else None
         ),
         bess_soc_fraction=(state.bess_units[0].soc_fraction if state.bess_units else 1.0),
+        bess_rated_mw=sum(
+            float(unit.config.rated_mw) for unit in state.bess_units
+        ),
+        bess_usable_mwh=sum(
+            float(unit.config.usable_mwh) for unit in state.bess_units
+        ),
+        bess_unit_count=len(state.bess_units),
         confidence=confidence,
         insufficient_reserve_alert=alert_fired,
         contingency_release_alert=contingency_release_alert is not None,

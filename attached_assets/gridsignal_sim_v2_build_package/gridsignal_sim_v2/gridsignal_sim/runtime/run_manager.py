@@ -1464,11 +1464,14 @@ class RunContext:
             refusal_reason: Optional[str] = None
             changed_state = False
             logged_action = action
+            before_state_name: Optional[str] = None
+            after_state_name: Optional[str] = None
             for turbine in self.sim_state.turbines:
                 if turbine.config.asset_id != unit_id:
                     continue
                 handled = True
                 before_state = turbine.state
+                before_state_name = before_state.value
                 before_hot_standby = bool(turbine.config.hot_standby)
                 before_start_count = int(getattr(turbine, "_start_count", 0))
                 if (
@@ -1526,6 +1529,7 @@ class RunContext:
                     or bool(turbine.config.hot_standby) != before_hot_standby
                     or int(getattr(turbine, "_start_count", 0)) != before_start_count
                 )
+                after_state_name = turbine.state.value
                 break
             if handled and not accepted and refusal_reason is None:
                 refusal_reason = (
@@ -1534,6 +1538,12 @@ class RunContext:
             if self.turbine_commitment_controller is not None:
                 metadata["action"] = logged_action
                 metadata["reason"] = metadata.get("reason", "")
+                metadata["from_state"] = before_state_name
+                metadata["to_state"] = after_state_name
+                metadata["controller_approved"] = metadata.get(
+                    "controller_approved",
+                    True if metadata.get("source") == "forecast_commitment" else None,
+                )
                 if not handled:
                     refusal_reason = f"command refused: unknown turbine {unit_id!r}"
                 self.turbine_commitment_controller.record_command_result(

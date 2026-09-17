@@ -13,6 +13,7 @@ import argparse
 import copy
 import json
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -36,7 +37,8 @@ TICK_COUNT = 1440
 
 def _mode_spec(base: dict[str, Any], mode: str) -> dict[str, Any]:
     spec = copy.deepcopy(base)
-    spinning = 3 if mode == "baseline" else 2
+    # DR-2026-09-17-BASELINE: both modes use the same physical topology.
+    spinning = 2
     spec["end_sim_time"] = TICK_COUNT * TICK_SECONDS
     spec["initial_spinning_count"] = spinning
     spec.pop("kube_clusters", None)
@@ -86,9 +88,9 @@ def _start_explanation(logs: list[dict[str, Any]]) -> list[dict[str, Any]]:
             and record.get("action") in {"start", "release"}
         ):
             source = str(record.get("source", "unknown"))
-            if source == "forecast_commitment":
+            if source in {"forecast_commitment", "core_commitment"}:
                 path = "forecast controller"
-            elif source == "automatic_contingency":
+            elif source in {"automatic_contingency", "automatic_cascade"}:
                 path = "automatic/cascade"
             elif source == "operator":
                 path = "operator"
@@ -112,10 +114,12 @@ def run_smoke(source: Path, output_dir: Path) -> dict[str, Any]:
     runs: dict[str, dict[str, Any]] = {}
     for mode in ("baseline", "informed"):
         spec = _mode_spec(base, mode)
+        wall_start = time.perf_counter()
         ctx = build_run_context_from_spec(
             f"phase2a-smoke-{mode}", spec, playback_speed=0.0
         )
         ticks = [ctx.step() for _ in range(TICK_COUNT)]
+        wall_elapsed = time.perf_counter() - wall_start
         controller = ctx.turbine_commitment_controller
         tick_dicts = [_tick_result_to_dict(tick) for tick in ticks]
         summary = summarize_unserved_ticks(ticks, dt_seconds=TICK_SECONDS)
@@ -128,10 +132,66 @@ def run_smoke(source: Path, output_dir: Path) -> dict[str, Any]:
             for turbine in ctx.sim_state.turbines
         }
         logged_starts = dict(controller.start_counts)
+        dt_hours = TICK_SECONDS / 3600.0
+        energy_balance = {
+            "turbine_generation_mwh": round(
+                sum(max(0.0, float(tick.turbine_output_mw)) for tick in ticks)
+                * dt_hours,
+                6,
+            ),
+            "bess_discharge_mwh": round(
+                sum(max(0.0, float(tick.bess_output_mw)) for tick in ticks)
+                * dt_hours,
+                6,
+            ),
+            "bess_charge_mwh": round(
+                sum(max(0.0, -float(tick.bess_output_mw)) for tick in ticks)
+                * dt_hours,
+                6,
+            ),
+            "served_demand_mwh": round(
+                sum(max(0.0, float(tick.p_served_mw or 0.0)) for tick in ticks)
+                * dt_hours,
+                6,
+            ),
+            "unserved_demand_mwh": round(
+                sum(max(0.0, float(tick.p_unserved_mw or 0.0)) for tick in ticks)
+                * dt_hours,
+                6,
+            ),
+            "surplus_mwh": round(
+                sum(
+                    max(
+                        0.0,
+                        float(tick.p_generation_mw)
+                        - float(tick.p_demand_mw),
+                    )
+                    for tick in ticks
+                )
+                * dt_hours,
+                6,
+            ),
+            "curtailment_mwh": round(
+                sum(max(0.0, float(tick.p_renewable_curtailed_mw or 0.0)) for tick in ticks)
+                * dt_hours,
+                6,
+            ),
+        }
+        energy_balance["closure_status"] = all(
+            abs(
+                float(tick.p_generation_mw)
+                - float(tick.p_served_mw or 0.0)
+                - max(0.0, float(tick.p_generation_mw) - float(tick.p_demand_mw))
+            )
+            <= 1e-3
+            or abs(float(tick.p_imbalance_mw or 0.0)) <= 1e-3
+            for tick in ticks
+        )
         summary.update(
             {
                 "mode": mode,
                 "duration_seconds": TICK_COUNT * TICK_SECONDS,
+                "wall_clock_duration_seconds": round(wall_elapsed, 6),
                 "tick_seconds": TICK_SECONDS,
                 "tick_count": len(ticks),
                 "initial_spinning_count": spec["initial_spinning_count"],
@@ -169,6 +229,7 @@ def run_smoke(source: Path, output_dir: Path) -> dict[str, Any]:
                 "constraints_valid": controller.constraints_valid,
                 "hard_violation_reasons": violations,
                 "bess_anchor_violations": anchor_violations,
+                "energy_balance": energy_balance,
             }
         )
         logs = [record.as_dict() for record in controller.log]
@@ -219,8 +280,12 @@ def run_smoke(source: Path, output_dir: Path) -> dict[str, Any]:
         ),
     }
     report = {
-        "report": "DR-2026-09-16-ACCEPTANCE",
-        "preload_report": "DR-2026-09-16-PRELOAD",
+        "report": "DR-2026-09-17-ACCEPTANCE",
+        "preload_report": "DR-2026-09-17-PRELOAD",
+        "baseline_policy": (
+            "Measured core commitment only; no forecast input, forecast-controller "
+            "commit/decommit/preload actions, or minimum synchronized floor."
+        ),
         "fixture_source": str(source),
         "fixture_note": (
             "Headless deterministic comparison: kube_clusters and slurm_config "
@@ -255,6 +320,7 @@ def run_smoke(source: Path, output_dir: Path) -> dict[str, Any]:
         f"Energy no worse: {comparison['unserved_energy_no_worse']}",
         f"Peak power no worse: {comparison['peak_unserved_no_worse']}",
         f"No BESS anchor violations: {comparison['no_bess_anchor_violations']}",
+        "Wall-clock duration is recorded per mode in smoke_results.json.",
         "",
         "mode      unserved MWh   peak unserved MW   fuel MMBtu   starts   refusals   preloads   hard violations",
     ]
@@ -268,6 +334,12 @@ def run_smoke(source: Path, output_dir: Path) -> dict[str, Any]:
             f" {item['refusal_log_count']:>10}"
             f" {item['preload_action_count']:>10}"
             f" {len(item['hard_violation_reasons']):>16}"
+        )
+        summary_lines.append(
+            "  energy balance: " + json.dumps(item["energy_balance"], sort_keys=True)
+        )
+        summary_lines.append(
+            f"  wall-clock seconds: {item['wall_clock_duration_seconds']:.6f}"
         )
         summary_lines.append(f"  start explanation: {json.dumps(runs[mode]['start_explanation'])}")
     summary_lines.extend(

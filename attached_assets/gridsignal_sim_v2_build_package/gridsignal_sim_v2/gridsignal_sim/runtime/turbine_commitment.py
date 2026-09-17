@@ -148,6 +148,9 @@ class CommitmentLogRecord:
     changed_state: bool = False
     source: str = "forecast_commitment"
     refusal_reason: Optional[str] = None
+    from_state: Optional[str] = None
+    to_state: Optional[str] = None
+    controller_approved: Optional[bool] = None
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -164,6 +167,9 @@ class CommitmentLogRecord:
             "changed_state": self.changed_state,
             "source": self.source,
             "refusal_reason": self.refusal_reason,
+            "from_state": self.from_state,
+            "to_state": self.to_state,
+            "controller_approved": self.controller_approved,
         }
 
 
@@ -202,6 +208,7 @@ class ForecastDrivenTurbineController:
     )
     forecast_miss_count: int = 0
     forecast_miss_peak_mw: float = 0.0
+    _latest_forecast: Optional[CommitmentForecast] = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
         if self.mode not in {"disabled", "baseline", "informed"}:
@@ -496,6 +503,12 @@ class ForecastDrivenTurbineController:
         # the current forecast so it cannot persist after a burst ends.
         setattr(ctx.sim_state, "_preload_targets_mw", {})
         setattr(ctx.sim_state, "_preload_active_units", set())
+        setattr(ctx.sim_state, "_commitment_forecast", None)
+        # DR-2026-09-17-BASELINE: baseline is the measured core commitment
+        # engine only.  It must not consume forecast input or create forecast
+        # controller actions.
+        if self.mode == "baseline":
+            return None
         cooling_fraction = float(getattr(ctx.sim_state.site, "alpha_max", 0.0))
         forecast = self.forecast(
             sim_time_s=ctx.sim_time,
@@ -505,28 +518,18 @@ class ForecastDrivenTurbineController:
             cooling_fraction=cooling_fraction,
             horizon_seconds=self.stop_lookahead_seconds,
         )
+        self._latest_forecast = forecast
+        setattr(ctx.sim_state, "_commitment_forecast", forecast)
         turbines = ctx.sim_state.turbines
         synchronized = [turbine for turbine in turbines if turbine.is_on_bus]
         synchronized_capacity = self._synchronized_capacity(turbines)
         bess_allowance, soc = self._bess_allowance(ctx.sim_state.bess_units)
 
-        if self.mode == "baseline":
-            if len([t for t in synchronized if t.state == TurbineState.SYNCHRONISED]) < 3:
-                candidate = self._candidate_start(turbines)
-                if candidate is not None:
-                    self._queue(
-                        ctx,
-                        candidate,
-                        "trip" if candidate.config.hot_standby else "start",
-                        "baseline minimum synchronized floor",
-                        forecast,
-                        synchronized_capacity,
-                        soc,
-                    )
-            return forecast
-
+        # In informed mode the forecast controller is the single commitment
+        # authority, but core still owns the measured proposal.  Preload is the
+        # only proactive action generated here; commit/decommit proposals are
+        # adjudicated after the core has measured the current tick.
         self._evaluate_preload(ctx, forecast, power_for_event)
-
         start_horizon = self.hot_start_lookahead_seconds + self.ramp_to_load_seconds
         start_peak = forecast.peak_over(start_horizon)
         if start_peak > synchronized_capacity + bess_allowance:
@@ -567,7 +570,6 @@ class ForecastDrivenTurbineController:
             * max(0.0, float(turbine.config.rated_mw))
             for turbine in remaining
         )
-
         if stop_peak + self.sensitivity_mw > remaining_capacity + bess_allowance:
             self._refused(
                 ctx=ctx,
@@ -706,10 +708,13 @@ class ForecastDrivenTurbineController:
             return
         setattr(ctx.sim_state, "_preload_targets_mw", targets)
         setattr(ctx.sim_state, "_preload_active_units", set(targets))
+        setattr(ctx.sim_state, "_preload_normal_output_mw", current_output_mw)
         action = {
             "sim_time_s": float(ctx.sim_time),
             "unit_ids": sorted(targets),
             "target_mw": round(sum(targets.values()), 6),
+            "normal_output_mw": round(current_output_mw, 6),
+            "incremental_target_mw": round(delta_mw, 6),
             "reason": "forecast burst preload within ramp window",
             "forecast_mw": round(float(onset_demand_mw), 6),
             "burst_sim_time_s": onset_s,
@@ -803,6 +808,148 @@ class ForecastDrivenTurbineController:
             refusal_reason=reason,
         )
 
+    def record_transition(
+        self,
+        *,
+        turbine: Any,
+        sim_time_s: float,
+        action: str,
+        source: str,
+        reason: str,
+        from_state: Any,
+        to_state: Any,
+        controller_approved: Optional[bool],
+        forecast: Optional[CommitmentForecast] = None,
+        synchronized_capacity_mw: Optional[float] = None,
+        bess_soc_fraction: Optional[float] = None,
+    ) -> None:
+        """Record one authoritative turbine state transition.
+
+        This is intentionally separate from command-result logging: a command
+        can be accepted without changing state, while every actual transition
+        must carry the before/after state pair.
+        """
+        forecast = forecast or self._latest_forecast
+        self.log.append(
+            CommitmentLogRecord(
+                sim_time_s=float(sim_time_s),
+                unit_id=str(turbine.config.asset_id),
+                action=str(action),
+                thermal_tier=str(
+                    getattr(
+                        getattr(turbine, "_thermal_state", None),
+                        "value",
+                        getattr(turbine.config, "initial_thermal_state", "unknown"),
+                    )
+                ),
+                reason=str(reason),
+                forecast_mw=float(forecast.forecast_mw if forecast else 0.0),
+                peak_forecast_mw=float(
+                    forecast.peak_forecast_mw if forecast else 0.0
+                ),
+                synchronized_capacity_mw=float(synchronized_capacity_mw or 0.0),
+                bess_soc_fraction=float(bess_soc_fraction or 0.0),
+                accepted=True,
+                changed_state=True,
+                source=str(source),
+                from_state=getattr(from_state, "value", str(from_state)),
+                to_state=getattr(to_state, "value", str(to_state)),
+                controller_approved=controller_approved,
+            )
+        )
+
+    def adjudicate_core_proposal(
+        self,
+        *,
+        state: Any,
+        decision: Any,
+        sim_time_s: float,
+        synchronized_capacity_mw: float,
+        bess_soc_fraction: float,
+    ) -> bool:
+        """Accept or veto a measured core commitment proposal in informed mode."""
+        unit_id = str(decision.target_unit_id or "")
+        turbine = next(
+            (item for item in state.turbines if item.config.asset_id == unit_id),
+            None,
+        )
+        if turbine is None:
+            return False
+        forecast = getattr(state, "_commitment_forecast", None)
+        allowance, _ = self._bess_allowance(state.bess_units)
+        accepted = True
+        refusal_reason: Optional[str] = None
+        if decision.action == "commit":
+            horizon = self.hot_start_lookahead_seconds + self.ramp_to_load_seconds
+            if forecast is not None and not decision.floor_violated:
+                if forecast.peak_over(horizon) <= (
+                    synchronized_capacity_mw + allowance + self.sensitivity_mw
+                ):
+                    accepted = False
+                    refusal_reason = (
+                        "forecast controller veto: measured commit is not needed "
+                        f"within {horizon:.0f}s"
+                    )
+        elif decision.action == "decommit":
+            remaining = [
+                item for item in state.turbines
+                if item is not turbine and item.is_on_bus
+            ]
+            remaining_capacity = sum(
+                max(0.0, float(item.config.rated_mw)) for item in remaining
+            )
+            remaining_msl = sum(
+                max(0.0, float(item.config.p_min_stable_frac))
+                * max(0.0, float(item.config.rated_mw))
+                for item in remaining
+            )
+            if forecast is not None:
+                if forecast.peak_over(self.stop_lookahead_seconds) + self.sensitivity_mw > (
+                    remaining_capacity + allowance
+                ):
+                    accepted = False
+                    refusal_reason = "forecast controller veto: unit is needed within 1,200s"
+                elif remaining_msl > (
+                    forecast.minimum_over(self.stop_lookahead_seconds)
+                    + self.sensitivity_mw
+                ):
+                    accepted = False
+                    refusal_reason = (
+                        "forecast controller veto: remaining units would over-generate"
+                    )
+            if (
+                accepted
+                and turbine.config.min_run_enabled
+                and not math.isnan(float(getattr(turbine, "_run_start_s", float("nan"))))
+                and sim_time_s - turbine._run_start_s < turbine.config.t_min_run_s
+            ):
+                accepted = False
+                refusal_reason = (
+                    "forecast controller veto: minimum run time has not elapsed"
+                )
+
+        self.log.append(
+            CommitmentLogRecord(
+                sim_time_s=float(sim_time_s),
+                unit_id=unit_id,
+                action=f"proposal_{decision.action}",
+                thermal_tier="controller",
+                reason=str(decision.reason),
+                forecast_mw=float(forecast.forecast_mw if forecast else 0.0),
+                peak_forecast_mw=float(
+                    forecast.peak_forecast_mw if forecast else 0.0
+                ),
+                synchronized_capacity_mw=float(synchronized_capacity_mw),
+                bess_soc_fraction=float(bess_soc_fraction),
+                accepted=accepted,
+                changed_state=False,
+                source="core_commitment_proposal",
+                refusal_reason=refusal_reason,
+                controller_approved=accepted,
+            )
+        )
+        return accepted
+
     def command_result(
         self,
         metadata: dict[str, Any],
@@ -847,6 +994,9 @@ class ForecastDrivenTurbineController:
                 changed_state=changed_state,
                 source=str(metadata.get("source", "forecast_commitment")),
                 refusal_reason=refusal_reason or metadata.get("refusal_reason"),
+                from_state=metadata.get("from_state"),
+                to_state=metadata.get("to_state"),
+                controller_approved=metadata.get("controller_approved"),
             )
         )
 
@@ -888,7 +1038,7 @@ class ForecastDrivenTurbineController:
         elif self._open_unserved_interval is not None:
             self.unserved_intervals.append(self._open_unserved_interval)
             self._open_unserved_interval = None
-        if self.forecast_history:
+        if self.mode == "informed" and self.forecast_history:
             forecast = self.forecast_history[-1]
             actual_demand = float(getattr(result, "p_demand_mw", 0.0) or 0.0)
             miss = max(0.0, actual_demand - forecast.peak_forecast_mw)
@@ -899,11 +1049,23 @@ class ForecastDrivenTurbineController:
             getattr(ctx.sim_state, "_preload_active_units", set())
         )
         if active_preload_units:
+            normal_output_mw = float(
+                getattr(ctx.sim_state, "_preload_normal_output_mw", 0.0)
+            )
+            actual_output_mw = sum(
+                max(0.0, float(turbine.output_mw()))
+                for turbine in ctx.sim_state.turbines
+                if turbine.config.asset_id in active_preload_units
+            )
+            incremental_fraction = (
+                max(0.0, actual_output_mw - normal_output_mw)
+                / max(actual_output_mw, 1e-9)
+            )
             for turbine in ctx.sim_state.turbines:
                 if turbine.config.asset_id in active_preload_units:
                     self.preload_fuel_mmbtu += max(
                         0.0, float(getattr(turbine, "_last_interval_fuel_mmbtu", 0.0))
-                    )
+                    ) * incremental_fraction
         for unit in ctx.sim_state.bess_units:
             if getattr(unit.config, "grid_forming", False):
                 allowed = max(
@@ -923,33 +1085,9 @@ class ForecastDrivenTurbineController:
         ):
             self._cascade_release_ticks.add(result.tick_index)
             release_id = getattr(result, "contingency_release_turbine_id", None)
-            forecast = self.forecast_history[-1] if self.forecast_history else None
-            self.log.append(
-                CommitmentLogRecord(
-                    sim_time_s=float(result.sim_time_seconds),
-                    unit_id=str(release_id or "unknown"),
-                    action="release",
-                    thermal_tier="automatic",
-                    reason="automatic contingency cascade release",
-                    forecast_mw=float(forecast.forecast_mw if forecast else 0.0),
-                    peak_forecast_mw=float(
-                        forecast.peak_forecast_mw if forecast else 0.0
-                    ),
-                    synchronized_capacity_mw=self._synchronized_capacity(
-                        ctx.sim_state.turbines
-                    ),
-                    bess_soc_fraction=min(
-                        (
-                            float(getattr(unit, "soc_fraction", 0.0))
-                            for unit in ctx.sim_state.bess_units
-                        ),
-                        default=0.0,
-                    ),
-                    accepted=True,
-                    changed_state=True,
-                    source="automatic_contingency",
-                )
-            )
+            # The actual state transition is recorded by the core transition
+            # hook.  Keep the alert bookkeeping here without creating a second
+            # synthetic transition record.
 
         expected = {
             turbine.config.asset_id: int(getattr(turbine, "_start_count", 0))

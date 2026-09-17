@@ -1911,6 +1911,11 @@ def build_run_context_from_spec(
         if _commitment_mode != "disabled"
         else None
     )
+    # Runtime audit sink used by the core transition hooks.  Keeping the sink
+    # on SimulationState avoids importing runtime policy into core physics.
+    if _turbine_commitment_controller is not None:
+        sim_state._commitment_mode = _commitment_mode
+        sim_state._commitment_transition_sink = _turbine_commitment_controller
     return RunContext(
         run_id=run_id,
         sim_state=sim_state,
