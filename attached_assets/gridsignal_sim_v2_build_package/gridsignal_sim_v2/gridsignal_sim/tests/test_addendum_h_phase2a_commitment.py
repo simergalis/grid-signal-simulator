@@ -652,13 +652,14 @@ def test_tc127_informed_decommit_veto_repeats_are_counted_not_relogged() -> None
     controller = ctx.turbine_commitment_controller
     controller._latest_forecast = CommitmentForecast(
         sim_time_s=0.0,
-        background_mean_mw=30.0,
+        background_mean_mw=100.0,
         background_std_mw=0.0,
-        forecast_mw=30.0,
-        peak_forecast_mw=30.0,
-        minimum_forecast_mw=30.0,
-        profile=((0.0, 30.0),),
+        forecast_mw=100.0,
+        peak_forecast_mw=100.0,
+        minimum_forecast_mw=100.0,
+        profile=((0.0, 100.0),),
     )
+    ctx.sim_state._commitment_forecast = controller._latest_forecast
     decision = SimpleNamespace(
         action="decommit",
         target_unit_id="turbine-2",

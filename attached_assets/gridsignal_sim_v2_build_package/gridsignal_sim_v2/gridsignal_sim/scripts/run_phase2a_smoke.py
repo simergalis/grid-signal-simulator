@@ -15,6 +15,7 @@ import json
 import sys
 import time
 import gzip
+from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -108,6 +109,161 @@ def _start_explanation(logs: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 }
             )
     return explanation
+
+
+def _extended_metrics(
+    ticks: list[Any],
+    controller: Any,
+    logs: list[dict[str, Any]],
+    preload_actions: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Build compact, auditable attribution metrics from the completed run."""
+    fuel_by_component = Counter()
+    fuel_by_unit = defaultdict(Counter)
+    dispatch_fuel_by_component = Counter()
+    dispatch_fuel_by_unit = defaultdict(float)
+    below_threshold_minutes: dict[str, float] = {}
+    for tick in ticks:
+        dispatch_active = float(tick.p_dispatch_curtailed_mw or 0.0) > 1e-9
+        for row in tick.turbine_fuel_telemetry:
+            unit_id = str(row.get("asset_id", "unknown"))
+            for component in (
+                "load_fuel_mmbtu",
+                "no_load_fuel_mmbtu",
+                "hot_standby_fuel_mmbtu",
+                "start_fuel_mmbtu",
+            ):
+                value = float(row.get(component, 0.0) or 0.0)
+                fuel_by_component[component] += value
+                fuel_by_unit[unit_id][component] += value
+                if dispatch_active:
+                    dispatch_fuel_by_component[component] += value
+                    dispatch_fuel_by_unit[unit_id] += value
+            # This field is cumulative per unit, so the final row is the
+            # authoritative unit-minute total rather than a value to sum per tick.
+            below_threshold_minutes[unit_id] = float(
+                row.get("minutes_below_low_load_threshold", 0.0) or 0.0
+            )
+
+    sync_counts = [
+        sum(1 for unit in tick.turbine_units
+            if str(unit.get("state", "")).lower()
+            in {"synchronised", "synchronized", "unloading"})
+        for tick in ticks
+    ]
+    sync_distribution = {
+        str(count): sync_counts.count(count)
+        for count in sorted(set(sync_counts))
+    }
+
+    start_actions = [
+        {
+            "unit_id": record.get("unit_id"),
+            "sim_time_s": record.get("sim_time_s"),
+            "action": record.get("action"),
+            "source": record.get("source"),
+            "reason": record.get("reason"),
+        }
+        for record in logs
+        if record.get("accepted")
+        and record.get("changed_state")
+        and record.get("action") in {"start", "release"}
+    ]
+    stop_actions = [
+        {
+            "unit_id": record.get("unit_id"),
+            "sim_time_s": record.get("sim_time_s"),
+            "action": record.get("action"),
+            "source": record.get("source"),
+            "reason": record.get("reason"),
+        }
+        for record in logs
+        if record.get("accepted")
+        and record.get("changed_state")
+        and record.get("action") in {"stop", "stop_complete"}
+    ]
+    proposal_records = [
+        record for record in logs
+        if str(record.get("action", "")).startswith("proposal_")
+    ]
+    proposal_summary = {
+        "approved": sum(bool(record.get("accepted")) for record in proposal_records),
+        "vetoed": sum(not bool(record.get("accepted")) for record in proposal_records),
+        "by_action": {
+            action: {
+                "approved": sum(
+                    record.get("action") == action and bool(record.get("accepted"))
+                    for record in proposal_records
+                ),
+                "vetoed": sum(
+                    record.get("action") == action and not bool(record.get("accepted"))
+                    for record in proposal_records
+                ),
+            }
+            for action in sorted({record.get("action") for record in proposal_records})
+        },
+    }
+
+    preload_reach: list[dict[str, Any]] = []
+    for action in preload_actions:
+        burst_time = float(action.get("burst_sim_time_s", 0.0))
+        onset_tick = next(
+            (tick for tick in ticks if tick.sim_time_seconds >= burst_time),
+            None,
+        )
+        actual_output = (
+            float(onset_tick.turbine_output_mw) if onset_tick is not None else None
+        )
+        target = float(action.get("target_mw", 0.0))
+        preload_reach.append(
+            {
+                "burst_sim_time_s": burst_time,
+                "action_sim_time_s": action.get("sim_time_s"),
+                "target_mw": target,
+                "actual_turbine_output_mw_at_onset": actual_output,
+                "reached": (
+                    actual_output is not None
+                    and actual_output + 1e-6 >= target
+                ),
+            }
+        )
+
+    return {
+        "fuel_by_component_mmbtu": {
+            component: round(value, 6)
+            for component, value in sorted(fuel_by_component.items())
+        },
+        "fuel_by_unit_mmbtu": {
+            unit_id: {
+                component: round(value, 6)
+                for component, value in sorted(components.items())
+            }
+            for unit_id, components in sorted(fuel_by_unit.items())
+        },
+        "dispatch_curtailment_fuel_by_component_mmbtu": {
+            component: round(value, 6)
+            for component, value in sorted(dispatch_fuel_by_component.items())
+        },
+        "dispatch_curtailment_fuel_by_unit_mmbtu": {
+            unit_id: round(value, 6)
+            for unit_id, value in sorted(dispatch_fuel_by_unit.items())
+        },
+        "preload_fuel_mmbtu": round(float(controller.preload_fuel_mmbtu), 6),
+        "unit_minutes_below_50_percent": {
+            unit_id: round(value, 6)
+            for unit_id, value in sorted(below_threshold_minutes.items())
+        },
+        "start_transitions": start_actions,
+        "stop_transitions": stop_actions,
+        "synchronized_count_distribution_ticks": sync_distribution,
+        "unserved_intervals": list(controller.unserved_intervals),
+        "forecast_misses": {
+            "count": int(controller.forecast_miss_count),
+            "peak_mw": round(float(controller.forecast_miss_peak_mw), 6),
+        },
+        "core_proposals": proposal_summary,
+        "preload_targets_at_burst_onset": preload_reach,
+    }
 
 
 def run_smoke(source: Path, output_dir: Path) -> dict[str, Any]:
@@ -266,8 +422,12 @@ def run_smoke(source: Path, output_dir: Path) -> dict[str, Any]:
             }
         )
         logs = [record.as_dict() for record in controller.log]
+        extended_metrics = _extended_metrics(
+            ticks, controller, logs, list(controller.preload_actions)
+        )
         runs[mode] = {
             "summary": summary,
+            "extended_metrics": extended_metrics,
             "start_explanation": _start_explanation(logs),
             "commitment_logs": logs,
             "preload_actions": list(controller.preload_actions),
