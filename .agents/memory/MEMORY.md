@@ -67,3 +67,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Scenario seed round-trip buffer](seed-round-trip-buffer.md) — large explicit Slurm topology can exceed the test subprocess JSON buffer before UI assertions run.
 - [Full-matrix GPU timeout](full-matrix-gpu-timeout.md) — the GPU load-profile node passes but can take just over 300 seconds; split runs need a longer harness timeout.
 - [Phase 2a test harness](phase2a-test-harness.md) — run simulator tests from the gridsignal package directory; outer-root collection pulls in audit tests with incompatible imports.
+- [Forecast scale-event protection](forecast-scale-event-protection.md) — future SCALE events are burst starts for informed preload and restart-window commitment checks, even without a STARTING event.
