@@ -198,10 +198,9 @@ class ForecastDrivenTurbineController:
     _pending_request_keys: set[tuple[str, str]] = field(default_factory=set, repr=False)
     _cascade_release_ticks: set[int] = field(default_factory=set, repr=False)
     _observed_start_counts: dict[str, int] = field(default_factory=dict, repr=False)
-    _last_refusal_signature: dict[tuple[str, str], tuple[str, str]] = field(
-        default_factory=dict, repr=False
-    )
-    _suppressed_refusal_counts: dict[tuple[str, str], int] = field(
+    _suppressed_refusal_counts: dict[
+        tuple[tuple[str, str], tuple[str, str]], int
+    ] = field(
         default_factory=dict, repr=False
     )
     _last_preload_signature: Optional[tuple[Any, ...]] = field(
@@ -1157,33 +1156,47 @@ class ForecastDrivenTurbineController:
         action = str(metadata.get("action", ""))
         refusal_key = (str(metadata.get("unit_id", "")), action)
         refusal_signature = (
-            str(refusal_reason or metadata.get("refusal_reason") or ""),
+            self._stable_refusal_reason(
+                str(refusal_reason or metadata.get("refusal_reason") or "")
+            ),
             str(metadata.get("source", "forecast_commitment")),
         )
         if not accepted:
-            if self._last_refusal_signature.get(refusal_key) == refusal_signature:
-                suppressed = self._suppressed_refusal_counts.get(refusal_key, 0) + 1
-                self._suppressed_refusal_counts[refusal_key] = suppressed
-                for index in range(len(self.log) - 1, -1, -1):
-                    previous = self.log[index]
-                    if (
-                        not previous.accepted
-                        and previous.unit_id == str(metadata.get("unit_id", ""))
-                        and previous.action == action
-                    ):
-                        self.log[index] = CommitmentLogRecord(
-                            **{
-                                **previous.__dict__,
-                                "suppressed_repeat_count": suppressed,
-                            }
-                        )
-                        break
+            count_key = (refusal_key, refusal_signature)
+            previous_count = self._suppressed_refusal_counts.get(count_key, 0)
+            previous_index: Optional[int] = None
+            for index in range(len(self.log) - 1, -1, -1):
+                previous = self.log[index]
+                if (
+                    not previous.accepted
+                    and previous.unit_id == refusal_key[0]
+                    and previous.action == action
+                    and (
+                        self._stable_refusal_reason(
+                            previous.refusal_reason or previous.reason
+                        ),
+                        previous.source,
+                    )
+                    == refusal_signature
+                ):
+                    previous_index = index
+                    break
+            if previous_index is not None:
+                suppressed = previous_count + 1
+                self._suppressed_refusal_counts[count_key] = suppressed
+                previous = self.log[previous_index]
+                self.log[previous_index] = CommitmentLogRecord(
+                    **{
+                        **previous.__dict__,
+                        "suppressed_repeat_count": suppressed,
+                    }
+                )
                 return
-            self._last_refusal_signature[refusal_key] = refusal_signature
-            self._suppressed_refusal_counts[refusal_key] = 0
+            self._suppressed_refusal_counts[count_key] = 0
         else:
-            self._last_refusal_signature.pop(refusal_key, None)
-            self._suppressed_refusal_counts.pop(refusal_key, None)
+            for count_key in list(self._suppressed_refusal_counts):
+                if count_key[0] == refusal_key:
+                    del self._suppressed_refusal_counts[count_key]
         self.log.append(
             CommitmentLogRecord(
                 sim_time_s=float(metadata.get("sim_time_s", 0.0)),
@@ -1207,14 +1220,34 @@ class ForecastDrivenTurbineController:
                 to_state=metadata.get("to_state"),
                 controller_approved=metadata.get("controller_approved"),
                 suppressed_repeat_count=self._suppressed_refusal_counts.get(
-                    refusal_key, 0
+                    (refusal_key, refusal_signature), 0
                 ),
             )
         )
 
+    @staticmethod
+    def _stable_refusal_reason(reason: str) -> str:
+        """Strip changing measurements from recurring refusal classes."""
+        reserve_floor_marker = "stop refused: post-stop N-1 reserve floor "
+        if reason.startswith(reserve_floor_marker) and reason.endswith(
+            "; unit is needed within the stop look-ahead"
+        ):
+            return reserve_floor_marker.rstrip()
+        if (
+            reason.startswith("stop refused: forecast burst at ")
+            and " arrives before unit restart window (" in reason
+            and reason.endswith(")")
+        ):
+            return "stop refused: forecast burst arrives before unit restart window"
+        return reason
+
     @property
     def suppressed_refusal_count(self) -> int:
-        return sum(self._suppressed_refusal_counts.values())
+        return sum(
+            record.suppressed_repeat_count
+            for record in self.log
+            if not record.accepted
+        )
 
     @property
     def suppressed_repeat_count(self) -> int:

@@ -287,3 +287,54 @@ def test_tc148_stop_remains_allowed_when_post_stop_core_floor_is_satisfied() -> 
 
     assert not controller.stop_floor_refusals
     assert not [record for record in controller.log if not record.accepted]
+
+
+def test_tc149_reserve_floor_refusal_dedup_keeps_numeric_payload() -> None:
+    """IMPL-H65: stable reserve-floor refusals compact without losing evidence."""
+    from runtime.turbine_commitment import ForecastDrivenTurbineController
+
+    controller = ForecastDrivenTurbineController(mode="informed")
+    base = {
+        "unit_id": "gt-hot-01",
+        "action": "stop",
+        "requested_action": "stop",
+        "source": "forecast_commitment",
+        "reason": "",
+    }
+    refusal_one = (
+        "stop refused: post-stop N-1 reserve floor 35.000 MW exceeds "
+        "remaining turbine capacity 25.000 MW by 10.000 MW at forecast "
+        "600s within 1200s; unit is needed within the stop look-ahead"
+    )
+    refusal_two = (
+        "stop refused: post-stop N-1 reserve floor 36.000 MW exceeds "
+        "remaining turbine capacity 25.000 MW by 11.000 MW at forecast "
+        "605s within 1200s; unit is needed within the stop look-ahead"
+    )
+    controller.command_result(
+        {**base, "sim_time_s": 0.0, "reason": refusal_one},
+        accepted=False,
+        refusal_reason=refusal_one,
+    )
+    controller.command_result(
+        {**base, "sim_time_s": 5.0, "reason": refusal_one},
+        accepted=False,
+        refusal_reason=refusal_one,
+    )
+    controller.command_result(
+        {**base, "sim_time_s": 10.0, "reason": refusal_two},
+        accepted=False,
+        refusal_reason=refusal_two,
+    )
+    different_reason = "stop refused: forecast burst arrives before restart window"
+    controller.command_result(
+        {**base, "sim_time_s": 15.0, "reason": different_reason},
+        accepted=False,
+        refusal_reason=different_reason,
+    )
+
+    assert len(controller.log) == 2
+    assert controller.log[0].refusal_reason == refusal_one
+    assert controller.log[0].suppressed_repeat_count == 2
+    assert controller.log[1].refusal_reason == different_reason
+    assert controller.suppressed_refusal_count == 2
