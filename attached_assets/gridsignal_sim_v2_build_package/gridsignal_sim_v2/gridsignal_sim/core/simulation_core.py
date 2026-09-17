@@ -2898,7 +2898,15 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         + p_renewable_mw
         + diesel_output_mw
     )
-    _balance_residual_mw = _p_gen_mw - p_demand_mw
+    # Once synchronized turbines have reached their minimum stable load and the
+    # BESS has accepted all energy it physically can, the remaining positive
+    # residual is an explicit dispatch-curtailment sink.  Keep generation and
+    # turbine fuel physical; account for the sink in the ledger and frequency
+    # forcing instead of reporting a fictional surplus.
+    _p_dispatch_curtailed_mw = (
+        max(0.0, _p_gen_mw - p_demand_mw) if _islanded else 0.0
+    )
+    _balance_residual_mw = _p_gen_mw - p_demand_mw - _p_dispatch_curtailed_mw
 
     # ── Phase 13.2: balance decomposition — three independent channels ────────
     #
@@ -3352,7 +3360,12 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         max(_cumulative_shed_mw, _islanded_supply_shortfall_mw),
     )
     _p_served_mw = p_demand_mw - _p_unserved_mw
-    _p_imbalance_mw = _p_generation_mw - _p_served_mw
+    # Positive physical residual is already represented by the explicit
+    # dispatch-curtailment sink above.  Keep p_imbalance as the residual after
+    # served load and that sink, so surplus is not reported twice.
+    _p_imbalance_mw = (
+        _p_generation_mw - _p_served_mw - _p_dispatch_curtailed_mw
+    )
 
     # D4 — power balance identity (Phase 0 + DR-BAL-5, DR-2026-08-09-BALANCE).
     #
@@ -3403,6 +3416,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             p_bess_mw=bess_output_mw,
             p_fuel_cell_mw=fuel_cell_output_mw,
             p_renewable_mw=p_renewable_mw,
+            p_curtailment_mw=_p_dispatch_curtailed_mw,
         ),
         tolerance_mw=_sp.value("balance_defect_tolerance_mw"),
     )
@@ -3679,6 +3693,28 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         wall_stamp_utc=clock.wall_stamp_utc,
         p_renewable_mw=p_renewable_mw,
         p_renewable_curtailed_mw=_p_renewable_curtailed_mw,
+        p_dispatch_curtailed_mw=_p_dispatch_curtailed_mw,
+        # Direct/headless callers do not pass through RunManager's enrichment
+        # layer.  Include the authoritative dynamic turbine state here as well,
+        # so the wire serializer cannot report an empty fleet for ctx.step().
+        turbine_units=tuple(
+            {
+                "asset_id": turbine.config.asset_id,
+                "rated_mw": float(turbine.config.rated_mw),
+                "hot_standby": bool(turbine.config.hot_standby),
+                "state": turbine.state.value,
+                "breaker_closed": bool(turbine.is_on_bus),
+                "output_mw": round(
+                    turbine.output_mw() if turbine.is_on_bus else 0.0, 4
+                ),
+                "msl_mw": round(
+                    float(turbine.config.p_min_stable_frac)
+                    * float(turbine.config.rated_mw),
+                    4,
+                ),
+            }
+            for turbine in state.turbines
+        ),
         turbine_fuel_telemetry=_turbine_fuel_rows,
         turbine_fuel_modelled=bool(_modelled_fuel_rows),
         turbine_fuel_status=(

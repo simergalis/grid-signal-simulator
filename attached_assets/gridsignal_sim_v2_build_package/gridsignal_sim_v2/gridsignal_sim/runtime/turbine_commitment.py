@@ -151,6 +151,7 @@ class CommitmentLogRecord:
     from_state: Optional[str] = None
     to_state: Optional[str] = None
     controller_approved: Optional[bool] = None
+    suppressed_repeat_count: int = 0
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -170,6 +171,7 @@ class CommitmentLogRecord:
             "from_state": self.from_state,
             "to_state": self.to_state,
             "controller_approved": self.controller_approved,
+            "suppressed_repeat_count": self.suppressed_repeat_count,
         }
 
 
@@ -196,6 +198,9 @@ class ForecastDrivenTurbineController:
     _cascade_release_ticks: set[int] = field(default_factory=set, repr=False)
     _observed_start_counts: dict[str, int] = field(default_factory=dict, repr=False)
     _last_refusal_signature: dict[tuple[str, str], tuple[str, str]] = field(
+        default_factory=dict, repr=False
+    )
+    _suppressed_refusal_counts: dict[tuple[str, str], int] = field(
         default_factory=dict, repr=False
     )
     preload_actions: list[dict[str, Any]] = field(default_factory=list)
@@ -580,16 +585,6 @@ class ForecastDrivenTurbineController:
                 synchronized_capacity=synchronized_capacity,
                 soc=soc,
             )
-        elif remaining_msl > stop_minimum + self.sensitivity_mw:
-            self._refused(
-                ctx=ctx,
-                turbine=candidate,
-                action="stop",
-                reason="stop refused: remaining units would over-generate",
-                forecast=forecast,
-                synchronized_capacity=synchronized_capacity,
-                soc=soc,
-            )
         elif (
             candidate.config.min_run_enabled
             and not math.isnan(float(getattr(candidate, "_run_start_s", float("nan"))))
@@ -909,14 +904,6 @@ class ForecastDrivenTurbineController:
                 ):
                     accepted = False
                     refusal_reason = "forecast controller veto: unit is needed within 1,200s"
-                elif remaining_msl > (
-                    forecast.minimum_over(self.stop_lookahead_seconds)
-                    + self.sensitivity_mw
-                ):
-                    accepted = False
-                    refusal_reason = (
-                        "forecast controller veto: remaining units would over-generate"
-                    )
             if (
                 accepted
                 and turbine.config.min_run_enabled
@@ -928,25 +915,26 @@ class ForecastDrivenTurbineController:
                     "forecast controller veto: minimum run time has not elapsed"
                 )
 
-        self.log.append(
-            CommitmentLogRecord(
-                sim_time_s=float(sim_time_s),
-                unit_id=unit_id,
-                action=f"proposal_{decision.action}",
-                thermal_tier="controller",
-                reason=str(decision.reason),
-                forecast_mw=float(forecast.forecast_mw if forecast else 0.0),
-                peak_forecast_mw=float(
+        self.command_result(
+            {
+                "unit_id": unit_id,
+                "action": f"proposal_{decision.action}",
+                "sim_time_s": sim_time_s,
+                "thermal_tier": "controller",
+                "reason": str(decision.reason),
+                "forecast_mw": float(forecast.forecast_mw if forecast else 0.0),
+                "peak_forecast_mw": float(
                     forecast.peak_forecast_mw if forecast else 0.0
                 ),
-                synchronized_capacity_mw=float(synchronized_capacity_mw),
-                bess_soc_fraction=float(bess_soc_fraction),
-                accepted=accepted,
-                changed_state=False,
-                source="core_commitment_proposal",
-                refusal_reason=refusal_reason,
-                controller_approved=accepted,
-            )
+                "synchronized_capacity_mw": synchronized_capacity_mw,
+                "bess_soc_fraction": bess_soc_fraction,
+                "source": "core_commitment_proposal",
+                "refusal_reason": refusal_reason,
+                "controller_approved": accepted,
+            },
+            accepted=accepted,
+            changed_state=False,
+            refusal_reason=refusal_reason,
         )
         return accepted
 
@@ -971,10 +959,28 @@ class ForecastDrivenTurbineController:
         )
         if not accepted:
             if self._last_refusal_signature.get(refusal_key) == refusal_signature:
+                suppressed = self._suppressed_refusal_counts.get(refusal_key, 0) + 1
+                self._suppressed_refusal_counts[refusal_key] = suppressed
+                for index in range(len(self.log) - 1, -1, -1):
+                    previous = self.log[index]
+                    if (
+                        not previous.accepted
+                        and previous.unit_id == str(metadata.get("unit_id", ""))
+                        and previous.action == action
+                    ):
+                        self.log[index] = CommitmentLogRecord(
+                            **{
+                                **previous.__dict__,
+                                "suppressed_repeat_count": suppressed,
+                            }
+                        )
+                        break
                 return
             self._last_refusal_signature[refusal_key] = refusal_signature
+            self._suppressed_refusal_counts[refusal_key] = 0
         else:
             self._last_refusal_signature.pop(refusal_key, None)
+            self._suppressed_refusal_counts.pop(refusal_key, None)
         self.log.append(
             CommitmentLogRecord(
                 sim_time_s=float(metadata.get("sim_time_s", 0.0)),
@@ -997,8 +1003,19 @@ class ForecastDrivenTurbineController:
                 from_state=metadata.get("from_state"),
                 to_state=metadata.get("to_state"),
                 controller_approved=metadata.get("controller_approved"),
+                suppressed_repeat_count=self._suppressed_refusal_counts.get(
+                    refusal_key, 0
+                ),
             )
         )
+
+    @property
+    def suppressed_refusal_count(self) -> int:
+        return sum(self._suppressed_refusal_counts.values())
+
+    @property
+    def suppressed_repeat_count(self) -> int:
+        return self.suppressed_refusal_count
 
     def record_command_result(
         self,

@@ -1,8 +1,7 @@
 """Addendum H Phase 2a controller tests.
 
 The repository already uses TC-98 in the stop-sequencing suite and TC-100 in
-the BESS acceptance suite. This addendum uses the free TC-109..120 range; the
-range was checked across the complete tests tree before naming.
+the BESS acceptance suite. This addendum uses the checked-free TC-109..130 range.
 """
 
 from __future__ import annotations
@@ -395,6 +394,8 @@ def test_tc117_identical_refusal_logs_are_deduplicated() -> None:
     )
     refusals = [record for record in controller.log if not record.accepted]
     assert len(refusals) == 1
+    assert controller.suppressed_refusal_count == 1
+    assert controller.log[0].suppressed_repeat_count == 1
 
 
 def test_tc118_stop_requires_two_mw_margin() -> None:

@@ -1491,6 +1491,11 @@ class TickResult:
     # p_renewable_mw is the POST-curtailment figure; this field carries the delta
     # so callers can reconstruct the pre-curtailment output when needed.
     p_renewable_curtailed_mw: float = 0.0
+    # Explicit dispatch curtailment after BESS absorption and turbine backdown.
+    # This is distinct from inverter/solar curtailment: the turbine and fuel
+    # telemetry remain at their physical MSL output while this residual energy is
+    # accounted for by an explicit sink.
+    p_dispatch_curtailed_mw: float = 0.0
     # bess_bridging_seconds: how long the BESS fleet can sustain net_demand_mw
     #   from current state of charge, using the same proportional-allocation +
     #   min() logic as stage_for_predicted_step (D13).  Using the SAME function

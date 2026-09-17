@@ -290,6 +290,8 @@ export interface TickPayload {
   // Proportional between of_warning_hz (0%) and of_trip_hz (100%), islanded only.
   // 0 in grid-connected mode, when thresholds are unset, or when f ≤ of_warning_hz.
   p_renewable_curtailed_mw: number
+  /** Explicit dispatch curtailment after BESS acceptance and turbine backdown. */
+  p_dispatch_curtailed_mw: number
   bess_bridging_seconds: number  // AssetReservePanel; 86400 = "full reserve"
   // Turbine ramp credit / peak shortfall — staging breakdown for AssetReservePanel.
   // Both are 0.0 when no STARTING ramp is in-flight (dt_lead_next_s === 0).

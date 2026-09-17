@@ -14,6 +14,7 @@ import copy
 import json
 import sys
 import time
+import gzip
 from pathlib import Path
 from typing import Any
 
@@ -118,7 +119,13 @@ def run_smoke(source: Path, output_dir: Path) -> dict[str, Any]:
         ctx = build_run_context_from_spec(
             f"phase2a-smoke-{mode}", spec, playback_speed=0.0
         )
-        ticks = [ctx.step() for _ in range(TICK_COUNT)]
+        ticks = []
+        synchronized_counts = []
+        for _ in range(TICK_COUNT):
+            ticks.append(ctx.step())
+            synchronized_counts.append(
+                sum(1 for turbine in ctx.sim_state.turbines if turbine.is_on_bus)
+            )
         wall_elapsed = time.perf_counter() - wall_start
         controller = ctx.turbine_commitment_controller
         tick_dicts = [_tick_result_to_dict(tick) for tick in ticks]
@@ -163,8 +170,7 @@ def run_smoke(source: Path, output_dir: Path) -> dict[str, Any]:
                 sum(
                     max(
                         0.0,
-                        float(tick.p_generation_mw)
-                        - float(tick.p_demand_mw),
+                        float(tick.p_imbalance_mw or 0.0),
                     )
                     for tick in ticks
                 )
@@ -176,17 +182,42 @@ def run_smoke(source: Path, output_dir: Path) -> dict[str, Any]:
                 * dt_hours,
                 6,
             ),
+            "dispatch_curtailment_mwh": round(
+                sum(
+                    max(0.0, float(tick.p_dispatch_curtailed_mw or 0.0))
+                    for tick in ticks
+                )
+                * dt_hours,
+                6,
+            ),
         }
         energy_balance["closure_status"] = all(
             abs(
                 float(tick.p_generation_mw)
                 - float(tick.p_served_mw or 0.0)
-                - max(0.0, float(tick.p_generation_mw) - float(tick.p_demand_mw))
+                - float(tick.p_dispatch_curtailed_mw or 0.0)
             )
             <= 1e-3
             or abs(float(tick.p_imbalance_mw or 0.0)) <= 1e-3
             for tick in ticks
         )
+        # Capture the authoritative per-tick state before the next run starts.
+        # Tick payloads are not needed for the report, but the statistics are.
+        synchronized_summary = {
+            "min": min(synchronized_counts, default=0),
+            "max": max(synchronized_counts, default=0),
+            "mean": round(
+                sum(synchronized_counts) / len(synchronized_counts), 6
+                if synchronized_counts else 0.0,
+            ),
+            "ticks_at_or_above_initial": sum(
+                count >= spec["initial_spinning_count"]
+                for count in synchronized_counts
+            ),
+            "ticks_below_floor": sum(
+                count < 1 for count in synchronized_counts
+            ),
+        }
         summary.update(
             {
                 "mode": mode,
@@ -230,6 +261,8 @@ def run_smoke(source: Path, output_dir: Path) -> dict[str, Any]:
                 "hard_violation_reasons": violations,
                 "bess_anchor_violations": anchor_violations,
                 "energy_balance": energy_balance,
+                "synchronized_count_statistics": synchronized_summary,
+                "suppressed_refusal_repeat_count": controller.suppressed_refusal_count,
             }
         )
         logs = [record.as_dict() for record in controller.log]
@@ -298,8 +331,32 @@ def run_smoke(source: Path, output_dir: Path) -> dict[str, Any]:
     }
 
     output_dir.mkdir(parents=True, exist_ok=True)
+    # Keep the JSON report reviewable and below the acceptance size limit.  Full
+    # per-tick evidence is retained in compact gzip JSONL artifacts; the report
+    # contains the mode summaries, controller logs, and the artifact names.
+    persisted_report = copy.deepcopy(report)
+    for mode in ("baseline", "informed"):
+        tick_path = output_dir / f"{mode}_ticks.jsonl.gz"
+        with gzip.open(tick_path, "wt", encoding="utf-8") as handle:
+            for tick in runs[mode]["ticks"]:
+                handle.write(json.dumps({
+                    "tick_index": tick["tick_index"],
+                    "sim_time_seconds": tick["sim_time_seconds"],
+                    "p_demand_mw": tick["p_demand_mw"],
+                    "p_generation_mw": tick["p_generation_mw"],
+                    "p_served_mw": tick["p_served_mw"],
+                    "p_unserved_mw": tick["p_unserved_mw"],
+                    "p_imbalance_mw": tick["p_imbalance_mw"],
+                    "p_dispatch_curtailed_mw": tick["p_dispatch_curtailed_mw"],
+                    "turbine_output_mw": tick["turbine_output_mw"],
+                    "bess_output_mw": tick["bess_output_mw"],
+                    "units_on_bus_count": tick["units_on_bus_count"],
+                }, separators=(",", ":")) + "\n")
+        persisted_report["runs"][mode].pop("ticks", None)
+        persisted_report["runs"][mode]["tick_artifact"] = tick_path.name
+    persisted_report["prior_baseline_reference"].pop("commitment_logs", None)
     (output_dir / "smoke_results.json").write_text(
-        json.dumps(report, indent=2, sort_keys=True) + "\n"
+        json.dumps(persisted_report, indent=2, sort_keys=True) + "\n"
     )
     for mode in ("baseline", "informed"):
         (output_dir / f"{mode}_commitment.log").write_text(
@@ -309,10 +366,9 @@ def run_smoke(source: Path, output_dir: Path) -> dict[str, Any]:
             )
             + "\n"
         )
-    (output_dir / "prior_baseline_commitment.log").write_text(
-        "\n".join(json.dumps(record, sort_keys=True) for record in prior_logs)
-        + "\n"
-    )
+    stale_prior_log = output_dir / "prior_baseline_commitment.log"
+    if stale_prior_log.exists():
+        stale_prior_log.unlink()
     summary_lines = [
         "Addendum H Phase 2a smoke summary",
         "=================================",
@@ -320,6 +376,7 @@ def run_smoke(source: Path, output_dir: Path) -> dict[str, Any]:
         f"Energy no worse: {comparison['unserved_energy_no_worse']}",
         f"Peak power no worse: {comparison['peak_unserved_no_worse']}",
         f"No BESS anchor violations: {comparison['no_bess_anchor_violations']}",
+        "Per-tick evidence is stored as baseline_ticks.jsonl.gz and informed_ticks.jsonl.gz.",
         "Wall-clock duration is recorded per mode in smoke_results.json.",
         "",
         "mode      unserved MWh   peak unserved MW   fuel MMBtu   starts   refusals   preloads   hard violations",
@@ -337,6 +394,13 @@ def run_smoke(source: Path, output_dir: Path) -> dict[str, Any]:
         )
         summary_lines.append(
             "  energy balance: " + json.dumps(item["energy_balance"], sort_keys=True)
+        )
+        summary_lines.append(
+            "  synchronized-count statistics: "
+            + json.dumps(item["synchronized_count_statistics"], sort_keys=True)
+        )
+        summary_lines.append(
+            f"  suppressed refusal repeats: {item['suppressed_refusal_repeat_count']}"
         )
         summary_lines.append(
             f"  wall-clock seconds: {item['wall_clock_duration_seconds']:.6f}"

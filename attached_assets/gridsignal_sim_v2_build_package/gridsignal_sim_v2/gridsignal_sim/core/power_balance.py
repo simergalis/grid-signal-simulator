@@ -40,6 +40,7 @@ class BalanceTerms:
     p_unserved_mw: float = 0.0      # load shed by UFLS or curtailment
     grid_exchange_mw: float = 0.0   # zero when islanded
     p_losses_mw: float = 0.0        # zero unless the model represents losses
+    p_curtailment_mw: float = 0.0   # dispatchable surplus sent to an explicit sink
     island_mode: str = ISLANDED
     # The simulation already computes served/unserved load before the invariant
     # runs.  Keeping it optional preserves the older BalanceTerms API used by
@@ -102,9 +103,11 @@ class BalanceResult:
             "served_load_mw": self.served_mw,
             "unserved_load_mw": t.p_unserved_mw,
             "losses_mw": t.p_losses_mw,
+            "curtailment_mw": t.p_curtailment_mw,
             "supply_mw": t.p_generation_mw + self.import_mw,
             "accounted_load_mw": (
                 self.served_mw + t.p_unserved_mw + t.p_losses_mw
+                + t.p_curtailment_mw
             ),
             "source_sum_mw": (
                 t.p_turbine_mw
@@ -154,7 +157,13 @@ def balance_defect_mw(terms: BalanceTerms) -> float:
     )
     if not GRID_EXCHANGE_POSITIVE_IS_IMPORT:
         imp = -imp
-    return terms.p_generation_mw + imp - served_load_mw(terms) - terms.p_losses_mw
+    return (
+        terms.p_generation_mw
+        + imp
+        - served_load_mw(terms)
+        - terms.p_losses_mw
+        - terms.p_curtailment_mw
+    )
 
 
 def evaluate(terms: BalanceTerms, tolerance_mw: float | None = None) -> BalanceResult:

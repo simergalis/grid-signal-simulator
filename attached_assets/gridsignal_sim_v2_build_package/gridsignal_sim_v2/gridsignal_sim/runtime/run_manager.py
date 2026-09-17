@@ -572,6 +572,10 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # 0.0 in grid-connected mode, when thresholds are unset, or when f ≤ of_warning.
         # p_renewable_mw is post-curtailment; this field carries the delta.
         "p_renewable_curtailed_mw": round(tick.p_renewable_curtailed_mw, 4),
+        # Explicit non-renewable dispatch curtailment after turbine backdown and
+        # BESS charge acceptance.  This is an energy sink, not solar inverter
+        # curtailment, and is required for the physical balance ledger.
+        "p_dispatch_curtailed_mw": round(tick.p_dispatch_curtailed_mw, 4),
         # bess_bridging_seconds: AssetReservePanel "bridging capability in seconds".
         #   math.inf (net_demand_mw == 0 → no load) is capped at 86 400 s (24 h)
         #   for JSON safety; the UI renders this as "full reserve".
@@ -629,10 +633,16 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         # Legacy fallback: when state field is absent (Phase 0 test fixtures), uses
         # breaker_closed (default True) so old dicts without state are treated as on-bus.
         "units_on_bus_count": sum(
-            1 for u in tick.turbine_units
-            if (u.get("state") in {"synchronised", "unloading"}
+            1
+            for u in tick.turbine_units
+            if (
+                (
+                    str(u.get("state", "")).lower()
+                    in {"synchronised", "synchronized", "unloading"}
+                )
                 if u.get("state") is not None
-                else u.get("breaker_closed", True))
+                else bool(u.get("breaker_closed", True))
+            )
         ),
         # on_bus_output_mw: algebraic fleet production from the on-bus set A (D-05 rename).
         #   Formula: P_fleet = Σ_{i ∈ A} p_i  where A = {state ∈ {synchronised, unloading}}
@@ -642,9 +652,14 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
             sum(
                 u.get("output_mw", 0.0)
                 for u in tick.turbine_units
-                if (u.get("state") in {"synchronised", "unloading"}
+                if (
+                    (
+                        str(u.get("state", "")).lower()
+                        in {"synchronised", "synchronized", "unloading"}
+                    )
                     if u.get("state") is not None
-                    else u.get("breaker_closed", True))
+                    else bool(u.get("breaker_closed", True))
+                )
             ),
             4,
         ),
