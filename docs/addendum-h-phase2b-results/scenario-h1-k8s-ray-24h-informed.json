@@ -1,0 +1,2456 @@
+{
+  "acceptance_verdict": "PASS",
+  "background_power_reactive": true,
+  "background_probe_wall_clock_seconds": 213.954547,
+  "background_trace_signal_count": 2043,
+  "bess_soc_final": 0.999999998,
+  "bess_soc_max": 0.999999999,
+  "bess_soc_min": 0.774234758,
+  "commitment_log": [
+    {
+      "accepted": true,
+      "action": "stop",
+      "changed_state": true,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 1800.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "changed_state": true,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 1860.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": false,
+      "action": "proposal_commit",
+      "changed_state": false,
+      "reason": "reserve floor violated: 25.0 MW < 28.2 MW",
+      "refusal_reason": "forecast controller veto: minimum down time has not elapsed",
+      "sim_time_s": 1860.0,
+      "source": "core_commitment_proposal",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "release",
+      "changed_state": true,
+      "reason": "automatic contingency cascade release",
+      "refusal_reason": null,
+      "sim_time_s": 1870.0,
+      "source": "automatic_contingency",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "changed_state": true,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 2170.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "changed_state": true,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 3970.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "proposal_commit",
+      "changed_state": false,
+      "reason": "reserve floor violated: 25.0 MW < 29.6 MW",
+      "refusal_reason": null,
+      "sim_time_s": 3995.0,
+      "source": "core_commitment_proposal",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "changed_state": true,
+      "reason": "reserve floor violated: 25.0 MW < 29.6 MW",
+      "refusal_reason": null,
+      "sim_time_s": 3995.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "changed_state": true,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 4030.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "changed_state": true,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 4295.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "changed_state": true,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 6095.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "proposal_commit",
+      "changed_state": false,
+      "reason": "reserve floor violated: 25.0 MW < 29.8 MW",
+      "refusal_reason": null,
+      "sim_time_s": 6120.0,
+      "source": "core_commitment_proposal",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "changed_state": true,
+      "reason": "reserve floor violated: 25.0 MW < 29.8 MW",
+      "refusal_reason": null,
+      "sim_time_s": 6120.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "changed_state": true,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 6155.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "changed_state": true,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 6420.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "changed_state": true,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 8220.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "proposal_commit",
+      "changed_state": false,
+      "reason": "reserve floor violated: 25.0 MW < 30.9 MW",
+      "refusal_reason": null,
+      "sim_time_s": 8245.0,
+      "source": "core_commitment_proposal",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "changed_state": true,
+      "reason": "reserve floor violated: 25.0 MW < 30.9 MW",
+      "refusal_reason": null,
+      "sim_time_s": 8245.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "changed_state": true,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 8280.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "changed_state": true,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 8545.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "changed_state": true,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 10345.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "proposal_commit",
+      "changed_state": false,
+      "reason": "reserve floor violated: 25.0 MW < 29.0 MW",
+      "refusal_reason": null,
+      "sim_time_s": 10370.0,
+      "source": "core_commitment_proposal",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "changed_state": true,
+      "reason": "reserve floor violated: 25.0 MW < 29.0 MW",
+      "refusal_reason": null,
+      "sim_time_s": 10370.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "changed_state": true,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 10405.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "changed_state": true,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 10670.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "changed_state": true,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 12470.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "proposal_commit",
+      "changed_state": false,
+      "reason": "reserve floor violated: 25.0 MW < 32.9 MW",
+      "refusal_reason": null,
+      "sim_time_s": 12495.0,
+      "source": "core_commitment_proposal",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "changed_state": true,
+      "reason": "reserve floor violated: 25.0 MW < 32.9 MW",
+      "refusal_reason": null,
+      "sim_time_s": 12495.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "changed_state": true,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 12530.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "changed_state": true,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 12795.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "changed_state": true,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 14595.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "proposal_commit",
+      "changed_state": false,
+      "reason": "reserve floor violated: 25.0 MW < 29.6 MW",
+      "refusal_reason": null,
+      "sim_time_s": 14620.0,
+      "source": "core_commitment_proposal",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "changed_state": true,
+      "reason": "reserve floor violated: 25.0 MW < 29.6 MW",
+      "refusal_reason": null,
+      "sim_time_s": 14620.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "changed_state": true,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 14655.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "changed_state": true,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 14920.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "changed_state": true,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 16720.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "proposal_commit",
+      "changed_state": false,
+      "reason": "reserve floor violated: 25.0 MW < 28.2 MW",
+      "refusal_reason": null,
+      "sim_time_s": 16745.0,
+      "source": "core_commitment_proposal",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "changed_state": true,
+      "reason": "reserve floor violated: 25.0 MW < 28.2 MW",
+      "refusal_reason": null,
+      "sim_time_s": 16745.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "changed_state": true,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 16780.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "changed_state": true,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 17045.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "changed_state": true,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 18845.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "proposal_commit",
+      "changed_state": false,
+      "reason": "reserve floor violated: 25.0 MW < 36.3 MW",
+      "refusal_reason": null,
+      "sim_time_s": 18870.0,
+      "source": "core_commitment_proposal",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "changed_state": true,
+      "reason": "reserve floor violated: 25.0 MW < 36.3 MW",
+      "refusal_reason": null,
+      "sim_time_s": 18870.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "changed_state": true,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 18905.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "changed_state": true,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 19170.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "changed_state": true,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 20970.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "proposal_commit",
+      "changed_state": false,
+      "reason": "reserve floor violated: 25.0 MW < 37.0 MW",
+      "refusal_reason": null,
+      "sim_time_s": 20995.0,
+      "source": "core_commitment_proposal",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "changed_state": true,
+      "reason": "reserve floor violated: 25.0 MW < 37.0 MW",
+      "refusal_reason": null,
+      "sim_time_s": 20995.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "changed_state": true,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 21030.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "changed_state": true,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 21295.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "changed_state": true,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 23095.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "proposal_commit",
+      "changed_state": false,
+      "reason": "reserve floor violated: 25.0 MW < 28.2 MW",
+      "refusal_reason": null,
+      "sim_time_s": 23120.0,
+      "source": "core_commitment_proposal",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "changed_state": true,
+      "reason": "reserve floor violated: 25.0 MW < 28.2 MW",
+      "refusal_reason": null,
+      "sim_time_s": 23120.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "changed_state": true,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 23155.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "changed_state": true,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 23420.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "changed_state": true,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 25220.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "proposal_commit",
+      "changed_state": false,
+      "reason": "reserve floor violated: 25.0 MW < 29.0 MW",
+      "refusal_reason": null,
+      "sim_time_s": 25245.0,
+      "source": "core_commitment_proposal",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "changed_state": true,
+      "reason": "reserve floor violated: 25.0 MW < 29.0 MW",
+      "refusal_reason": null,
+      "sim_time_s": 25245.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "changed_state": true,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 25280.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "changed_state": true,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 25545.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "omitted_record_count": 112,
+      "reason": "summary is capped; tick evidence and counts remain complete",
+      "truncated": true
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "changed_state": true,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 64700.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "proposal_commit",
+      "changed_state": false,
+      "reason": "reserve floor violated: 25.0 MW < 31.0 MW",
+      "refusal_reason": null,
+      "sim_time_s": 64725.0,
+      "source": "core_commitment_proposal",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "changed_state": true,
+      "reason": "reserve floor violated: 25.0 MW < 31.0 MW",
+      "refusal_reason": null,
+      "sim_time_s": 64725.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "changed_state": true,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 64760.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "changed_state": true,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 65025.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": false,
+      "action": "proposal_commit",
+      "changed_state": false,
+      "reason": "reserve floor violated: 50.0 MW < 73.6 MW",
+      "refusal_reason": "forecast controller veto: minimum down time has not elapsed",
+      "sim_time_s": 65025.0,
+      "source": "core_commitment_proposal",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "proposal_commit",
+      "changed_state": false,
+      "reason": "reserve floor violated: 50.0 MW < 63.9 MW",
+      "refusal_reason": null,
+      "sim_time_s": 65745.0,
+      "source": "core_commitment_proposal",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "changed_state": true,
+      "reason": "reserve floor violated: 50.0 MW < 63.9 MW",
+      "refusal_reason": null,
+      "sim_time_s": 65745.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "changed_state": true,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 66045.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "proposal_commit",
+      "changed_state": false,
+      "reason": "reserve floor violated: 75.0 MW < 119.2 MW",
+      "refusal_reason": null,
+      "sim_time_s": 66675.0,
+      "source": "core_commitment_proposal",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "changed_state": true,
+      "reason": "reserve floor violated: 75.0 MW < 119.2 MW",
+      "refusal_reason": null,
+      "sim_time_s": 66675.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "changed_state": true,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 67035.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "accepted": false,
+      "action": "proposal_decommit",
+      "changed_state": false,
+      "reason": "U=0.037 \u2264 0.5, U_without=0.049 \u2264 0.7; BESS charge-saturated; 1.35 MW turbine surplus remains after BESS absorbed 30.00 MW",
+      "refusal_reason": "forecast controller veto: minimum run time has not elapsed",
+      "sim_time_s": 68675.0,
+      "source": "core_commitment_proposal",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "changed_state": true,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 68835.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "changed_state": true,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 68840.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "changed_state": true,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 68845.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "changed_state": true,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 68895.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "accepted": false,
+      "action": "proposal_commit",
+      "changed_state": false,
+      "reason": "reserve floor violated: 25.0 MW < 29.1 MW",
+      "refusal_reason": "forecast controller veto: minimum down time has not elapsed",
+      "sim_time_s": 68895.0,
+      "source": "core_commitment_proposal",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "changed_state": true,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 68900.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": false,
+      "action": "proposal_commit",
+      "changed_state": false,
+      "reason": "reserve floor violated: 25.0 MW < 29.5 MW",
+      "refusal_reason": "forecast controller veto: minimum down time has not elapsed",
+      "sim_time_s": 68900.0,
+      "source": "core_commitment_proposal",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "changed_state": true,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 68905.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "proposal_commit",
+      "changed_state": false,
+      "reason": "reserve floor violated: 25.0 MW < 27.8 MW",
+      "refusal_reason": null,
+      "sim_time_s": 69800.0,
+      "source": "core_commitment_proposal",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "changed_state": true,
+      "reason": "reserve floor violated: 25.0 MW < 27.8 MW",
+      "refusal_reason": null,
+      "sim_time_s": 69800.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "changed_state": true,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 70100.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "changed_state": true,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 71900.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "proposal_commit",
+      "changed_state": false,
+      "reason": "reserve floor violated: 25.0 MW < 36.7 MW",
+      "refusal_reason": null,
+      "sim_time_s": 71925.0,
+      "source": "core_commitment_proposal",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "changed_state": true,
+      "reason": "reserve floor violated: 25.0 MW < 36.7 MW",
+      "refusal_reason": null,
+      "sim_time_s": 71925.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "changed_state": true,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 71960.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "changed_state": true,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 72225.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "changed_state": true,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 74025.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "proposal_commit",
+      "changed_state": false,
+      "reason": "reserve floor violated: 25.0 MW < 31.2 MW",
+      "refusal_reason": null,
+      "sim_time_s": 74050.0,
+      "source": "core_commitment_proposal",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "changed_state": true,
+      "reason": "reserve floor violated: 25.0 MW < 31.2 MW",
+      "refusal_reason": null,
+      "sim_time_s": 74050.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "changed_state": true,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 74085.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "changed_state": true,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 74350.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "changed_state": true,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 76150.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "proposal_commit",
+      "changed_state": false,
+      "reason": "reserve floor violated: 25.0 MW < 27.8 MW",
+      "refusal_reason": null,
+      "sim_time_s": 76175.0,
+      "source": "core_commitment_proposal",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "changed_state": true,
+      "reason": "reserve floor violated: 25.0 MW < 27.8 MW",
+      "refusal_reason": null,
+      "sim_time_s": 76175.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "changed_state": true,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 76210.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "changed_state": true,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 76475.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "changed_state": true,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 78275.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "proposal_commit",
+      "changed_state": false,
+      "reason": "reserve floor violated: 25.0 MW < 28.1 MW",
+      "refusal_reason": null,
+      "sim_time_s": 78300.0,
+      "source": "core_commitment_proposal",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "changed_state": true,
+      "reason": "reserve floor violated: 25.0 MW < 28.1 MW",
+      "refusal_reason": null,
+      "sim_time_s": 78300.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "changed_state": true,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 78335.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "changed_state": true,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 78600.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "changed_state": true,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 80400.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "proposal_commit",
+      "changed_state": false,
+      "reason": "reserve floor violated: 25.0 MW < 34.5 MW",
+      "refusal_reason": null,
+      "sim_time_s": 80425.0,
+      "source": "core_commitment_proposal",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "changed_state": true,
+      "reason": "reserve floor violated: 25.0 MW < 34.5 MW",
+      "refusal_reason": null,
+      "sim_time_s": 80425.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "changed_state": true,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 80460.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "changed_state": true,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 80725.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "changed_state": true,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 82525.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "proposal_commit",
+      "changed_state": false,
+      "reason": "reserve floor violated: 25.0 MW < 27.5 MW",
+      "refusal_reason": null,
+      "sim_time_s": 82550.0,
+      "source": "core_commitment_proposal",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "changed_state": true,
+      "reason": "reserve floor violated: 25.0 MW < 27.5 MW",
+      "refusal_reason": null,
+      "sim_time_s": 82550.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "changed_state": true,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 82585.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "changed_state": true,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 82850.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "changed_state": true,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 84650.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "proposal_commit",
+      "changed_state": false,
+      "reason": "reserve floor violated: 25.0 MW < 30.6 MW",
+      "refusal_reason": null,
+      "sim_time_s": 84675.0,
+      "source": "core_commitment_proposal",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "changed_state": true,
+      "reason": "reserve floor violated: 25.0 MW < 30.6 MW",
+      "refusal_reason": null,
+      "sim_time_s": 84675.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "changed_state": true,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 84710.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "changed_state": true,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 84975.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    }
+  ],
+  "commitment_log_record_count": 286,
+  "commitment_log_total_records": 286,
+  "compute_description": "scheduler-shaped GPU workload demand",
+  "constraints_valid": true,
+  "core_proposals": {
+    "approved": 0,
+    "vetoed": 0
+  },
+  "demand_replay_tick_count": 17280,
+  "dispatch_curtailment_fuel_by_component_mmbtu": {
+    "hot_standby_fuel_mmbtu": 0.0,
+    "load_fuel_mmbtu": 0.0,
+    "no_load_fuel_mmbtu": 0.0,
+    "start_fuel_mmbtu": 0.0
+  },
+  "dispatch_curtailment_fuel_mmbtu": 0.0,
+  "dispatch_curtailment_mwh": 117.797546645,
+  "energy_balance": {
+    "closure_required": true,
+    "closure_status": true,
+    "dispatch_curtailment_mwh": 117.797546645,
+    "max_abs_d4_balance_defect_mw": 19.99547,
+    "max_abs_physical_ledger_defect_mw": 0.0001,
+    "served_demand_mwh": 367.50494862,
+    "unserved_demand_mwh": 1.171160859
+  },
+  "forecast_misses": {
+    "count": 3403,
+    "peak_mw": 51.281582
+  },
+  "fuel_by_component_mmbtu": {
+    "hot_standby_fuel_mmbtu": 0.0,
+    "load_fuel_mmbtu": 0.0,
+    "no_load_fuel_mmbtu": 0.0,
+    "start_fuel_mmbtu": 0.0
+  },
+  "fuel_by_unit_mmbtu": {
+    "gt-hot-01": {
+      "hot_standby_fuel_mmbtu": 0.0,
+      "load_fuel_mmbtu": 0.0,
+      "no_load_fuel_mmbtu": 0.0,
+      "start_fuel_mmbtu": 0.0,
+      "total_fuel_mmbtu": 0.0
+    },
+    "gt-hot-02": {
+      "hot_standby_fuel_mmbtu": 0.0,
+      "load_fuel_mmbtu": 0.0,
+      "no_load_fuel_mmbtu": 0.0,
+      "start_fuel_mmbtu": 0.0,
+      "total_fuel_mmbtu": 0.0
+    },
+    "gt-spin-01": {
+      "hot_standby_fuel_mmbtu": 0.0,
+      "load_fuel_mmbtu": 0.0,
+      "no_load_fuel_mmbtu": 0.0,
+      "start_fuel_mmbtu": 0.0,
+      "total_fuel_mmbtu": 0.0
+    },
+    "gt-spin-02": {
+      "hot_standby_fuel_mmbtu": 0.0,
+      "load_fuel_mmbtu": 0.0,
+      "no_load_fuel_mmbtu": 0.0,
+      "start_fuel_mmbtu": 0.0,
+      "total_fuel_mmbtu": 0.0
+    }
+  },
+  "hard_violations": [],
+  "identical_compute_trace": true,
+  "interval_seconds": 5.0,
+  "kube_power_reactive_ticks": 0,
+  "kube_requeued_admissions": 0,
+  "max_compute_trace_diff_mw": 0.0,
+  "mode": "informed",
+  "peak_unserved_mw": 35.021533247,
+  "preload_actions": [],
+  "preload_fuel_mmbtu": 0.0,
+  "preload_outcomes": [],
+  "replay_strategy": "captured live workload-signal/demand trace; replayed per-tick compute and lagged cooling demand",
+  "scenario_id": "scenario-h1-k8s-ray-24h",
+  "start_count": 43,
+  "start_count_reconciled": true,
+  "starts": [
+    {
+      "action": "release",
+      "reason": "automatic contingency cascade release",
+      "sim_time_s": 1870.0,
+      "source": "automatic_contingency",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 29.6 MW",
+      "sim_time_s": 3995.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 29.8 MW",
+      "sim_time_s": 6120.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 30.9 MW",
+      "sim_time_s": 8245.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 29.0 MW",
+      "sim_time_s": 10370.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 32.9 MW",
+      "sim_time_s": 12495.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 29.6 MW",
+      "sim_time_s": 14620.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 28.2 MW",
+      "sim_time_s": 16745.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 36.3 MW",
+      "sim_time_s": 18870.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 37.0 MW",
+      "sim_time_s": 20995.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 28.2 MW",
+      "sim_time_s": 23120.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 29.0 MW",
+      "sim_time_s": 25245.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 35.7 MW",
+      "sim_time_s": 27370.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 50.0 MW < 76.8 MW",
+      "sim_time_s": 28870.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "release",
+      "reason": "automatic contingency cascade release",
+      "sim_time_s": 30680.0,
+      "source": "automatic_contingency",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 37.5 MW",
+      "sim_time_s": 33745.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 35.1 MW",
+      "sim_time_s": 35870.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 50.0 MW < 68.0 MW",
+      "sim_time_s": 36945.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 75.0 MW < 117.4 MW",
+      "sim_time_s": 37875.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 31.0 MW",
+      "sim_time_s": 41000.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 28.5 MW",
+      "sim_time_s": 43125.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 50.0 MW < 66.9 MW",
+      "sim_time_s": 44145.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 75.0 MW < 119.4 MW",
+      "sim_time_s": 45075.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 34.9 MW",
+      "sim_time_s": 48200.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 31.3 MW",
+      "sim_time_s": 50325.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 50.0 MW < 66.7 MW",
+      "sim_time_s": 51345.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 75.0 MW < 123.0 MW",
+      "sim_time_s": 52275.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 31.1 MW",
+      "sim_time_s": 55400.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 29.4 MW",
+      "sim_time_s": 57525.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 50.0 MW < 65.6 MW",
+      "sim_time_s": 58545.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 75.0 MW < 112.8 MW",
+      "sim_time_s": 59475.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 28.7 MW",
+      "sim_time_s": 62600.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 31.0 MW",
+      "sim_time_s": 64725.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 50.0 MW < 63.9 MW",
+      "sim_time_s": 65745.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 75.0 MW < 119.2 MW",
+      "sim_time_s": 66675.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 27.8 MW",
+      "sim_time_s": 69800.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 36.7 MW",
+      "sim_time_s": 71925.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 31.2 MW",
+      "sim_time_s": 74050.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 27.8 MW",
+      "sim_time_s": 76175.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 28.1 MW",
+      "sim_time_s": 78300.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 34.5 MW",
+      "sim_time_s": 80425.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 27.5 MW",
+      "sim_time_s": 82550.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 30.6 MW",
+      "sim_time_s": 84675.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    }
+  ],
+  "stops": [
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 1800.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 1860.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 3970.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 4030.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 6095.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 6155.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 8220.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 8280.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 10345.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 10405.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 12470.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 12530.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 14595.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 14655.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 16720.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 16780.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 18845.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 18905.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 20970.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 21030.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 23095.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 23155.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 25220.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 25280.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 27345.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 27405.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 32780.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 32785.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 32790.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 32840.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 32845.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 32850.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 35845.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 35905.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 40035.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 40040.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 40045.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 40095.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 40100.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 40105.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 43100.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 43160.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 47235.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 47240.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 47245.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 47295.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 47300.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 47305.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 50300.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 50360.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 54435.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 54440.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 54445.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 54495.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 54500.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 54505.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 57500.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 57560.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 61635.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 61640.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 61645.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 61695.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 61700.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 61705.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 64700.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 64760.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 68835.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 68840.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 68845.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 68895.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 68900.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 68905.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 71900.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 71960.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 74025.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 74085.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 76150.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 76210.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 78275.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 78335.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 80400.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 80460.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 82525.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 82585.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 84650.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 84710.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    }
+  ],
+  "synchronized_count_distribution_ticks": {
+    "1": 2768,
+    "2": 10922,
+    "3": 1358,
+    "4": 2232
+  },
+  "tick_artifact": "scenario-h1-k8s-ray-24h-informed_ticks.jsonl.gz",
+  "tick_count": 17280,
+  "trace_source": "baseline live background trace replay",
+  "turbine_fuel_mmbtu": 0.0,
+  "unit_minutes_below_50_percent": {
+    "gt-hot-01": 1440.0,
+    "gt-spin-01": 1440.0
+  },
+  "unserved_by_cluster": [
+    {
+      "cluster": 1,
+      "end_s": 32100.0,
+      "had_unserved": true,
+      "start_s": 28800.0,
+      "unserved_mwh": 0.131572339
+    },
+    {
+      "cluster": 2,
+      "end_s": 39300.0,
+      "had_unserved": true,
+      "start_s": 36000.0,
+      "unserved_mwh": 0.226836393
+    },
+    {
+      "cluster": 3,
+      "end_s": 46500.0,
+      "had_unserved": true,
+      "start_s": 43200.0,
+      "unserved_mwh": 0.195067485
+    },
+    {
+      "cluster": 4,
+      "end_s": 53700.0,
+      "had_unserved": true,
+      "start_s": 50400.0,
+      "unserved_mwh": 0.193662021
+    },
+    {
+      "cluster": 5,
+      "end_s": 60900.0,
+      "had_unserved": true,
+      "start_s": 57600.0,
+      "unserved_mwh": 0.186649399
+    },
+    {
+      "cluster": 6,
+      "end_s": 68100.0,
+      "had_unserved": true,
+      "start_s": 64800.0,
+      "unserved_mwh": 0.202096919
+    }
+  ],
+  "unserved_intervals": [
+    {
+      "end_sim_time_s": 14930.0,
+      "peak_unserved_mw": 0.5396615684189197,
+      "start_sim_time_s": 14925.0
+    },
+    {
+      "end_sim_time_s": 18910.0,
+      "peak_unserved_mw": 2.6011470187249977,
+      "start_sim_time_s": 18905.0
+    },
+    {
+      "end_sim_time_s": 19180.0,
+      "peak_unserved_mw": 1.9719023841956709,
+      "start_sim_time_s": 19175.0
+    },
+    {
+      "end_sim_time_s": 21035.0,
+      "peak_unserved_mw": 3.341392323698429,
+      "start_sim_time_s": 21030.0
+    },
+    {
+      "end_sim_time_s": 27410.0,
+      "peak_unserved_mw": 2.364316363656627,
+      "start_sim_time_s": 27405.0
+    },
+    {
+      "end_sim_time_s": 28865.0,
+      "peak_unserved_mw": 0.8040054789154141,
+      "start_sim_time_s": 28860.0
+    },
+    {
+      "end_sim_time_s": 30680.0,
+      "peak_unserved_mw": 26.618853625395175,
+      "start_sim_time_s": 30650.0
+    },
+    {
+      "end_sim_time_s": 31000.0,
+      "peak_unserved_mw": 0.0014763720534602953,
+      "start_sim_time_s": 30995.0
+    },
+    {
+      "end_sim_time_s": 31515.0,
+      "peak_unserved_mw": 5.514271219813324,
+      "start_sim_time_s": 31500.0
+    },
+    {
+      "end_sim_time_s": 32855.0,
+      "peak_unserved_mw": 3.50518942104814,
+      "start_sim_time_s": 32850.0
+    },
+    {
+      "end_sim_time_s": 34055.0,
+      "peak_unserved_mw": 0.7274251926680488,
+      "start_sim_time_s": 34050.0
+    },
+    {
+      "end_sim_time_s": 35910.0,
+      "peak_unserved_mw": 2.3663498808785537,
+      "start_sim_time_s": 35905.0
+    },
+    {
+      "end_sim_time_s": 36170.0,
+      "peak_unserved_mw": 13.783568781899795,
+      "start_sim_time_s": 36030.0
+    },
+    {
+      "end_sim_time_s": 36190.0,
+      "peak_unserved_mw": 0.0034863380950156397,
+      "start_sim_time_s": 36175.0
+    },
+    {
+      "end_sim_time_s": 37265.0,
+      "peak_unserved_mw": 6.25,
+      "start_sim_time_s": 37250.0
+    },
+    {
+      "end_sim_time_s": 37880.0,
+      "peak_unserved_mw": 29.417818249240682,
+      "start_sim_time_s": 37850.0
+    },
+    {
+      "end_sim_time_s": 38255.0,
+      "peak_unserved_mw": 1.9529208953445476,
+      "start_sim_time_s": 38240.0
+    },
+    {
+      "end_sim_time_s": 38715.0,
+      "peak_unserved_mw": 5.25701274369851,
+      "start_sim_time_s": 38700.0
+    },
+    {
+      "end_sim_time_s": 40110.0,
+      "peak_unserved_mw": 4.916451976672377,
+      "start_sim_time_s": 40105.0
+    },
+    {
+      "end_sim_time_s": 43250.0,
+      "peak_unserved_mw": 8.19056991892991,
+      "start_sim_time_s": 43230.0
+    },
+    {
+      "end_sim_time_s": 44465.0,
+      "peak_unserved_mw": 6.25,
+      "start_sim_time_s": 44450.0
+    },
+    {
+      "end_sim_time_s": 45080.0,
+      "peak_unserved_mw": 32.46833679356759,
+      "start_sim_time_s": 45050.0
+    },
+    {
+      "end_sim_time_s": 45455.0,
+      "peak_unserved_mw": 0.5423003956669561,
+      "start_sim_time_s": 45440.0
+    },
+    {
+      "end_sim_time_s": 45915.0,
+      "peak_unserved_mw": 6.887755602473391,
+      "start_sim_time_s": 45900.0
+    },
+    {
+      "end_sim_time_s": 50450.0,
+      "peak_unserved_mw": 7.760534435360988,
+      "start_sim_time_s": 50430.0
+    },
+    {
+      "end_sim_time_s": 51665.0,
+      "peak_unserved_mw": 6.25,
+      "start_sim_time_s": 51650.0
+    },
+    {
+      "end_sim_time_s": 52280.0,
+      "peak_unserved_mw": 35.021533246572275,
+      "start_sim_time_s": 52250.0
+    },
+    {
+      "end_sim_time_s": 52655.0,
+      "peak_unserved_mw": 2.804922000000005,
+      "start_sim_time_s": 52640.0
+    },
+    {
+      "end_sim_time_s": 57650.0,
+      "peak_unserved_mw": 9.465526405239707,
+      "start_sim_time_s": 57630.0
+    },
+    {
+      "end_sim_time_s": 57845.0,
+      "peak_unserved_mw": 5.15865327344045e-06,
+      "start_sim_time_s": 57830.0
+    },
+    {
+      "end_sim_time_s": 58865.0,
+      "peak_unserved_mw": 6.25,
+      "start_sim_time_s": 58850.0
+    },
+    {
+      "end_sim_time_s": 59480.0,
+      "peak_unserved_mw": 27.5,
+      "start_sim_time_s": 59450.0
+    },
+    {
+      "end_sim_time_s": 59855.0,
+      "peak_unserved_mw": 0.741633537511504,
+      "start_sim_time_s": 59840.0
+    },
+    {
+      "end_sim_time_s": 60315.0,
+      "peak_unserved_mw": 5.328277620981893,
+      "start_sim_time_s": 60300.0
+    },
+    {
+      "end_sim_time_s": 64850.0,
+      "peak_unserved_mw": 8.694858399998708,
+      "start_sim_time_s": 64830.0
+    },
+    {
+      "end_sim_time_s": 66065.0,
+      "peak_unserved_mw": 6.25,
+      "start_sim_time_s": 66050.0
+    },
+    {
+      "end_sim_time_s": 66680.0,
+      "peak_unserved_mw": 33.2463089774655,
+      "start_sim_time_s": 66650.0
+    },
+    {
+      "end_sim_time_s": 67055.0,
+      "peak_unserved_mw": 3.1841012001148385,
+      "start_sim_time_s": 67040.0
+    },
+    {
+      "end_sim_time_s": 67515.0,
+      "peak_unserved_mw": 5.294020684052754,
+      "start_sim_time_s": 67500.0
+    },
+    {
+      "end_sim_time_s": 71965.0,
+      "peak_unserved_mw": 3.065102866424283,
+      "start_sim_time_s": 71960.0
+    }
+  ],
+  "unserved_mwh": 1.171160859,
+  "wall_clock_seconds": 161.531512
+}

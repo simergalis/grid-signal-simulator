@@ -1617,6 +1617,12 @@ class ScenarioSpec(BaseModel):
     """
     name: str = Field(min_length=1)
     description: str = ""
+    # Addendum H Phase 2b compact catalogue records.  Runtime expansion uses
+    # the unchanged Phase 2a base scenario; these fields are not physics or
+    # commitment-policy inputs.
+    phase2b_reference_base_scenario: Optional[str] = None
+    phase2b_reference_family: Optional[Literal["h1", "h2"]] = None
+    phase2b_reference_days: Optional[int] = Field(default=None, ge=1, le=7)
 
     @model_validator(mode="before")
     @classmethod

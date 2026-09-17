@@ -70,3 +70,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Phase 2a test harness](phase2a-test-harness.md) — run simulator tests from the gridsignal package directory; outer-root collection pulls in audit tests with incompatible imports.
 - [Forecast scale-event protection](forecast-scale-event-protection.md) — future SCALE events are burst starts for informed preload and restart-window commitment checks, even without a STARTING event.
 - [Fuel attribution and preload audit](fuel-attribution-and-preload-audit.md) — cumulative turbine counters use final rows; dispatch attribution uses positive interval increments; preload logs are signature-compacted.
+- [Phase 2b Stage 2b-1](phase2b-stage2b1.md) — compact records expand from the base; power-reactive demand is captured once and replayed per tick for mode comparison.

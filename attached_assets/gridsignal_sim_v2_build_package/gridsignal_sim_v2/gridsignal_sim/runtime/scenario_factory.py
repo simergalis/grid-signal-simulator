@@ -77,6 +77,7 @@ from runtime.run_manager import InMemoryTimeseriesSink, RunContext
 from runtime.turbine_commitment import ForecastDrivenTurbineController
 from runtime.pms_test_double import OperatorResponseProfile as _OperatorResponseProfile
 from runtime.verdict import AssertionSpec as _AssertionSpec
+from runtime.phase2b_reference import expand_phase2b_reference_spec
 
 # W1 — advisory, telemetry, and procurement wiring.
 # Imported here (runtime/) not in run_manager (would create circular import
@@ -629,6 +630,7 @@ def build_run_context_from_spec(
     Step 9 will swap ScenarioRecord.spec_json reads from in-memory to
     SQLAlchemy while calling this function identically.
     """
+    spec_data = expand_phase2b_reference_spec(spec_data)
     validate_fuel_cell_source_consistency(spec_data)
 
     # ── Site configuration ────────────────────────────────────────────────

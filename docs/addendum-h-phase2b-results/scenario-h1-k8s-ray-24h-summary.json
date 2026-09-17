@@ -1,0 +1,100 @@
+{
+  "acceptance_verdict": "PASS",
+  "background_power_reactive": true,
+  "background_probe_wall_clock_seconds": 213.954547,
+  "background_trace_signal_count": 2043,
+  "days": 1,
+  "fuel_attribution": {
+    "avoided_curtailment_fuel_mmbtu": 0.0,
+    "baseline_mmbtu": 0.0,
+    "component_delta_mmbtu": {
+      "hot_standby_fuel_mmbtu": 0.0,
+      "load_fuel_mmbtu": 0.0,
+      "no_load_fuel_mmbtu": 0.0,
+      "start_fuel_mmbtu": 0.0
+    },
+    "informed_minus_baseline_mmbtu": 0.0,
+    "informed_mmbtu": 0.0,
+    "percent_change_vs_baseline": 0.0,
+    "share_of_fuel_difference_attributable_to_avoided_curtailment": 0.0
+  },
+  "identical_compute_trace": true,
+  "max_compute_trace_diff_mw": 0.0,
+  "runs": {
+    "baseline": {
+      "acceptance_verdict": "PASS",
+      "background_power_reactive": true,
+      "background_trace_signal_count": 2043,
+      "compute_description": "scheduler-shaped GPU workload demand",
+      "constraints_valid": true,
+      "core_proposals": {
+        "approved": 0,
+        "vetoed": 0
+      },
+      "dispatch_curtailment_mwh": 187.690139189,
+      "energy_balance": {
+        "closure_required": true,
+        "closure_status": true,
+        "dispatch_curtailment_mwh": 187.690139189,
+        "max_abs_d4_balance_defect_mw": 32.205278552,
+        "max_abs_physical_ledger_defect_mw": 0.0001,
+        "served_demand_mwh": 367.781736493,
+        "unserved_demand_mwh": 0.894372986
+      },
+      "forecast_misses": {
+        "count": 0,
+        "peak_mw": 0.0
+      },
+      "hard_violations": [],
+      "identical_compute_trace": true,
+      "max_compute_trace_diff_mw": 0.0,
+      "mode": "baseline",
+      "peak_unserved_mw": 35.021533247,
+      "replay_strategy": "captured live workload-signal/demand trace; replayed per-tick compute and lagged cooling demand",
+      "scenario_id": "scenario-h1-k8s-ray-24h",
+      "start_count_reconciled": true,
+      "tick_artifact": "scenario-h1-k8s-ray-24h-baseline_ticks.jsonl.gz",
+      "tick_count": 17280,
+      "turbine_fuel_mmbtu": 0.0,
+      "unserved_mwh": 0.894372986
+    },
+    "informed": {
+      "acceptance_verdict": "PASS",
+      "background_power_reactive": true,
+      "background_trace_signal_count": 2043,
+      "compute_description": "scheduler-shaped GPU workload demand",
+      "constraints_valid": true,
+      "core_proposals": {
+        "approved": 0,
+        "vetoed": 0
+      },
+      "dispatch_curtailment_mwh": 117.797546645,
+      "energy_balance": {
+        "closure_required": true,
+        "closure_status": true,
+        "dispatch_curtailment_mwh": 117.797546645,
+        "max_abs_d4_balance_defect_mw": 19.99547,
+        "max_abs_physical_ledger_defect_mw": 0.0001,
+        "served_demand_mwh": 367.50494862,
+        "unserved_demand_mwh": 1.171160859
+      },
+      "forecast_misses": {
+        "count": 3403,
+        "peak_mw": 51.281582
+      },
+      "hard_violations": [],
+      "identical_compute_trace": true,
+      "max_compute_trace_diff_mw": 0.0,
+      "mode": "informed",
+      "peak_unserved_mw": 35.021533247,
+      "replay_strategy": "captured live workload-signal/demand trace; replayed per-tick compute and lagged cooling demand",
+      "scenario_id": "scenario-h1-k8s-ray-24h",
+      "start_count_reconciled": true,
+      "tick_artifact": "scenario-h1-k8s-ray-24h-informed_ticks.jsonl.gz",
+      "tick_count": 17280,
+      "turbine_fuel_mmbtu": 0.0,
+      "unserved_mwh": 1.171160859
+    }
+  },
+  "scenario_id": "scenario-h1-k8s-ray-24h"
+}

@@ -222,6 +222,20 @@ class SimulationState:
     # ScenarioSpec.tenant_events at run start via scenario_factory.py.
     # Empty list = no extra tenant load (default; fully backward-compat).
     tenant_events: list = field(default_factory=list)  # list[TenantBurstEvent]
+    # Read-only audit trace used by the Addendum H Phase 2b runner to capture
+    # scheduler-shaped workload signals before replaying identical demand in
+    # baseline and informed runs.  It does not affect dispatch or alerts.
+    workload_signal_trace: list[WorkloadSignal] = field(
+        default_factory=list, init=False
+    )
+    capture_workload_signal_trace: bool = field(default=False, init=False)
+    # Optional per-tick demand replay supplied by the Phase 2b evidence runner.
+    # Each pair is (compute MW, cooling MW) captured from the live probe.  This
+    # keeps controller-mode comparisons causal without allowing power-reactive
+    # background agents to generate a different demand trace in each mode.
+    demand_replay_trace: list[tuple[float, float]] | None = field(
+        default=None, init=False
+    )
 
     # Contracted power ceilings (MW) per tenant ID — populated by scenario_factory
     # alongside tenant_events.  Empty dict when no tenant events are configured.
@@ -380,6 +394,8 @@ class SimulationState:
         differs, which correctly makes the renewable gap (and therefore the BESS
         bridging requirement) larger.  Early-return so the GPU plane is untouched.
         """
+        if self.capture_workload_signal_trace:
+            self.workload_signal_trace.append(signal)
         if signal.event_type == WorkloadEventType.SOLAR_STEP:
             (
                 self._pending_alert,
@@ -1186,11 +1202,19 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             _per_job_draws = dict(_per_job_draws)
             _per_job_draws["__floor__"] = 0.0
 
-    state.cooling.record_job_compute(sim_time, _per_job_draws)
+    _demand_replay = state.demand_replay_trace
+    if _demand_replay is not None and state.tick_index < len(_demand_replay):
+        # The live probe already measured the scheduler-shaped demand and the
+        # lagged cooling term.  Replaying both values avoids invoking any
+        # background scheduler path in the comparison runs while preserving
+        # the exact physical demand presented to both commitment modes.
+        p_compute_demand_mw, p_cooling_demand_mw = _demand_replay[state.tick_index]
+    else:
+        state.cooling.record_job_compute(sim_time, _per_job_draws)
 
-    # 2. Cooling term (lagged)
-    state.cooling.advance(sim_time, dt_seconds)
-    p_cooling_demand_mw = state.cooling.output_mw()
+        # 2. Cooling term (lagged)
+        state.cooling.advance(sim_time, dt_seconds)
+        p_cooling_demand_mw = state.cooling.output_mw()
 
     p_demand_mw = p_compute_demand_mw + p_cooling_demand_mw
 

@@ -1,0 +1,7 @@
+{
+  "name": "Addendum H-1 Kubernetes + Ray reference — 24h",
+  "description": "Compact Addendum H-1 reference record; expanded from the unchanged Phase 2a base at run start.",
+  "phase2b_reference_base_scenario": "scenario-uneven-multisched-01.json",
+  "phase2b_reference_family": "h1",
+  "phase2b_reference_days": 1
+}

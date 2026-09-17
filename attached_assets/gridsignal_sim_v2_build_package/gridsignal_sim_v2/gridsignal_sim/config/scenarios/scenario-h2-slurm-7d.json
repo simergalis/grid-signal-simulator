@@ -1,0 +1,7 @@
+{
+  "name": "Addendum H-2 Slurm fixed-allocation reference — 7d",
+  "description": "Compact Addendum H-2 reference record; expanded from the unchanged Phase 2a base at run start.",
+  "phase2b_reference_base_scenario": "scenario-uneven-multisched-01.json",
+  "phase2b_reference_family": "h2",
+  "phase2b_reference_days": 7
+}

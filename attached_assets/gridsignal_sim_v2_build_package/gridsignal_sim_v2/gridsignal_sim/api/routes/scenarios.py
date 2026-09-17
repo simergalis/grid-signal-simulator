@@ -1401,6 +1401,10 @@ def _seed_json_scenarios(store: ScenarioStore) -> None:
         # hot, warm, and cold standby; no PCC import or procurement path.
         ("scenario-turbine-01", "scenario-turbine-01.json"),
         ("scenario-uneven-multisched-01", "scenario-uneven-multisched-01.json"),
+        ("scenario-h1-k8s-ray-24h", "scenario-h1-k8s-ray-24h.json"),
+        ("scenario-h1-k8s-ray-7d", "scenario-h1-k8s-ray-7d.json"),
+        ("scenario-h2-slurm-24h", "scenario-h2-slurm-24h.json"),
+        ("scenario-h2-slurm-7d", "scenario-h2-slurm-7d.json"),
         # 100 MW islanded fuel-cell-primary data center with 25 MW / 25 MWh
         # BESS and an 11 x 10 MW N+1 diesel backup plant.
         ("scenario-100mw-fuel-cell-bess-diesel",

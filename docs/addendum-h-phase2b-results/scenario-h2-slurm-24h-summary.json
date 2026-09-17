@@ -1,0 +1,100 @@
+{
+  "acceptance_verdict": "PASS",
+  "background_power_reactive": true,
+  "background_probe_wall_clock_seconds": 38.653787,
+  "background_trace_signal_count": 676,
+  "days": 1,
+  "fuel_attribution": {
+    "avoided_curtailment_fuel_mmbtu": 0.0,
+    "baseline_mmbtu": 0.0,
+    "component_delta_mmbtu": {
+      "hot_standby_fuel_mmbtu": 0.0,
+      "load_fuel_mmbtu": 0.0,
+      "no_load_fuel_mmbtu": 0.0,
+      "start_fuel_mmbtu": 0.0
+    },
+    "informed_minus_baseline_mmbtu": 0.0,
+    "informed_mmbtu": 0.0,
+    "percent_change_vs_baseline": 0.0,
+    "share_of_fuel_difference_attributable_to_avoided_curtailment": 0.0
+  },
+  "identical_compute_trace": true,
+  "max_compute_trace_diff_mw": 0.0,
+  "runs": {
+    "baseline": {
+      "acceptance_verdict": "PASS",
+      "background_power_reactive": true,
+      "background_trace_signal_count": 676,
+      "compute_description": "scheduler-shaped GPU workload demand",
+      "constraints_valid": true,
+      "core_proposals": {
+        "approved": 0,
+        "vetoed": 0
+      },
+      "dispatch_curtailment_mwh": 324.144769567,
+      "energy_balance": {
+        "closure_required": true,
+        "closure_status": true,
+        "dispatch_curtailment_mwh": 324.144769567,
+        "max_abs_d4_balance_defect_mw": 24.35892,
+        "max_abs_physical_ledger_defect_mw": 0.0001,
+        "served_demand_mwh": 134.537707107,
+        "unserved_demand_mwh": 9.422667343
+      },
+      "forecast_misses": {
+        "count": 0,
+        "peak_mw": 0.0
+      },
+      "hard_violations": [],
+      "identical_compute_trace": true,
+      "max_compute_trace_diff_mw": 0.0,
+      "mode": "baseline",
+      "peak_unserved_mw": 44.86838787,
+      "replay_strategy": "captured live workload-signal/demand trace; replayed per-tick compute and lagged cooling demand",
+      "scenario_id": "scenario-h2-slurm-24h",
+      "start_count_reconciled": true,
+      "tick_artifact": "scenario-h2-slurm-24h-baseline_ticks.jsonl.gz",
+      "tick_count": 17280,
+      "turbine_fuel_mmbtu": 0.0,
+      "unserved_mwh": 9.422667343
+    },
+    "informed": {
+      "acceptance_verdict": "PASS",
+      "background_power_reactive": true,
+      "background_trace_signal_count": 676,
+      "compute_description": "scheduler-shaped GPU workload demand",
+      "constraints_valid": true,
+      "core_proposals": {
+        "approved": 0,
+        "vetoed": 0
+      },
+      "dispatch_curtailment_mwh": 287.208895864,
+      "energy_balance": {
+        "closure_required": true,
+        "closure_status": true,
+        "dispatch_curtailment_mwh": 287.208895864,
+        "max_abs_d4_balance_defect_mw": 24.35892,
+        "max_abs_physical_ledger_defect_mw": 0.0001,
+        "served_demand_mwh": 134.535263785,
+        "unserved_demand_mwh": 9.425110665
+      },
+      "forecast_misses": {
+        "count": 1764,
+        "peak_mw": 91.982733
+      },
+      "hard_violations": [],
+      "identical_compute_trace": true,
+      "max_compute_trace_diff_mw": 0.0,
+      "mode": "informed",
+      "peak_unserved_mw": 44.86838787,
+      "replay_strategy": "captured live workload-signal/demand trace; replayed per-tick compute and lagged cooling demand",
+      "scenario_id": "scenario-h2-slurm-24h",
+      "start_count_reconciled": true,
+      "tick_artifact": "scenario-h2-slurm-24h-informed_ticks.jsonl.gz",
+      "tick_count": 17280,
+      "turbine_fuel_mmbtu": 0.0,
+      "unserved_mwh": 9.425110665
+    }
+  },
+  "scenario_id": "scenario-h2-slurm-24h"
+}
