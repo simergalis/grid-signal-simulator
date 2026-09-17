@@ -221,6 +221,23 @@ class CommitmentDecision:
     floor_violated: bool = False   # total_rated < floor_mw this interval
 
 
+def n_minus_one_reserve_floor_mw(
+    p_demand_mw: float,
+    rated_on_bus_mw: list[float],
+) -> float:
+    """Return the core N-1 reserve floor for a committed fleet.
+
+    BESS is deliberately not an input here.  The core commitment engine uses
+    turbine-side residual demand plus the largest committed turbine as the
+    reserve floor; BESS allowance is handled by its own arbitration and bridge
+    policies.
+    """
+    return max(0.0, float(p_demand_mw)) + max(
+        (max(0.0, float(rated)) for rated in rated_on_bus_mw),
+        default=0.0,
+    )
+
+
 # ── evaluate_commitment ───────────────────────────────────────────────────────
 
 def evaluate_commitment(
@@ -275,7 +292,7 @@ def evaluate_commitment(
     on_bus_rated = [u.rated_mw for u in on_bus if not u.hot_standby]
     total_rated_mw = sum(on_bus_rated)
     largest_mw = max(on_bus_rated, default=0.0)
-    floor_mw = p_demand_mw + largest_mw
+    floor_mw = n_minus_one_reserve_floor_mw(p_demand_mw, on_bus_rated)
     floor_violated = total_rated_mw < floor_mw
 
     # U = 0 when no units are on bus (avoids ZeroDivisionError; force commit below).

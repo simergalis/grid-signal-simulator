@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Optional
 
 from core.asset_modules import TurbineState
+from core.commitment import n_minus_one_reserve_floor_mw
 
 
 ALLOWED_FORECAST_LEAD_SECONDS = (0.0, 150.0, 300.0, 600.0, 1200.0)
@@ -209,6 +210,7 @@ class ForecastDrivenTurbineController:
     _suppressed_preload_repeats: int = field(default=0, repr=False)
     _suppressed_preload_repeat_total: int = field(default=0, repr=False)
     preload_actions: list[dict[str, Any]] = field(default_factory=list)
+    stop_floor_refusals: list[dict[str, Any]] = field(default_factory=list)
     preload_fuel_mmbtu: float = 0.0
     unserved_energy_mwh: float = 0.0
     peak_unserved_mw: float = 0.0
@@ -508,16 +510,18 @@ class ForecastDrivenTurbineController:
         turbine: Any,
         sim_time_s: float,
         forecast: Optional[CommitmentForecast],
-        remaining_msl_mw: float,
-        bess_allowance_mw: float,
+        remaining_msl_mw: float = 0.0,
+        bess_allowance_mw: float = 0.0,
     ) -> Optional[str]:
         """Keep a unit committed when it cannot be restarted before a burst.
 
         The normal stop gate is a power-capacity check.  This additional gate
         covers the interval immediately after a stop: a unit is unavailable
         while it unloads, cools through minimum-down time, and starts again.
-        During that window, remaining MSL plus BESS power is the conservative
-        physical bridge.  Unloading units are intentionally not credited.
+        During that window, the same core N-1 reserve floor is evaluated on
+        the post-stop synchronized fleet at each forecast point.  BESS is not
+        added to that floor because the core commitment policy keeps BESS
+        arbitration separate from turbine reserve.
         """
         if forecast is None:
             return None
@@ -542,24 +546,64 @@ class ForecastDrivenTurbineController:
             sim_time_s=sim_time_s,
             events=list(getattr(state, "events", [])),
         )
-        for burst_time in sorted(set(announced_starts.values())):
-            if burst_time <= sim_time_s + 1e-9 or burst_time > protection_end + 1e-9:
-                continue
-            predicted_at_onset = next(
-                (
-                    float(power)
-                    for timestamp, power in forecast.profile
-                    if timestamp >= burst_time - 1e-9
-                ),
-                forecast.peak_over(max(0.0, burst_time - sim_time_s)),
-            )
-            if predicted_at_onset > (
-                remaining_msl_mw + bess_allowance_mw + self.sensitivity_mw
+        simulation_state = getattr(state, "sim_state", state)
+        remaining_rated = [
+            max(0.0, float(other.config.rated_mw))
+            for other in getattr(simulation_state, "turbines", [])
+            if other is not turbine
+            and other.state == TurbineState.SYNCHRONISED
+            and not getattr(other.config, "hot_standby", False)
+        ]
+        remaining_capacity_mw = sum(remaining_rated)
+        for timestamp, predicted_at_onset in forecast.profile:
+            if (
+                timestamp < sim_time_s - 1e-9
+                or timestamp > sim_time_s + self.stop_lookahead_seconds + 1e-9
             ):
+                continue
+            demand_mw = max(0.0, float(predicted_at_onset))
+            floor_mw = n_minus_one_reserve_floor_mw(
+                demand_mw,
+                remaining_rated,
+            )
+            deficit_mw = max(0.0, floor_mw - remaining_capacity_mw)
+            if deficit_mw > self.sensitivity_mw:
+                diagnostics = {
+                    "sim_time_s": round(sim_time_s, 3),
+                    "forecast_time_s": round(float(timestamp), 3),
+                    "demand_mw": round(demand_mw, 6),
+                    "post_stop_floor_mw": round(floor_mw, 6),
+                    "remaining_turbine_capacity_mw": round(
+                        remaining_capacity_mw, 6
+                    ),
+                    "reserve_deficit_mw": round(deficit_mw, 6),
+                    "restart_window_end_s": round(protection_end, 3),
+                    "stop_lookahead_end_s": round(
+                        sim_time_s + self.stop_lookahead_seconds, 3
+                    ),
+                    "bess_included_in_floor": False,
+                }
+                self.stop_floor_refusals.append(diagnostics)
+                announced_burst = any(
+                    abs(float(burst_time) - float(timestamp)) <= 1e-9
+                    and sim_time_s < float(burst_time) <= protection_end + 1e-9
+                    for burst_time in announced_starts.values()
+                )
+                if announced_burst:
+                    # Preserve the existing restart-window wording while the
+                    # numerical diagnostics above make the refusal auditable.
+                    return (
+                        "stop refused: forecast burst at "
+                        f"{timestamp:.0f}s arrives before unit restart window "
+                        f"({protection_end:.0f}s)"
+                    )
                 return (
-                    "stop refused: forecast burst at "
-                    f"{burst_time:.0f}s arrives before unit restart window "
-                    f"({protection_end:.0f}s)"
+                    "stop refused: post-stop N-1 reserve floor "
+                    f"{floor_mw:.3f} MW exceeds remaining turbine capacity "
+                    f"{remaining_capacity_mw:.3f} MW by {deficit_mw:.3f} MW "
+                    f"at forecast {timestamp:.0f}s within "
+                    f"{self.stop_lookahead_seconds:.0f}s; unit is needed "
+                    "within the stop look-ahead"
                 )
         return None
 
@@ -637,28 +681,11 @@ class ForecastDrivenTurbineController:
         if candidate is None:
             return forecast
 
-        stop_peak = forecast.peak_over(self.stop_lookahead_seconds)
-        stop_minimum = forecast.minimum_over(self.stop_lookahead_seconds)
-        remaining = [
-            turbine for turbine in synchronized
-            if turbine is not candidate
-        ]
-        remaining_capacity = sum(
-            max(0.0, float(turbine.config.rated_mw))
-            for turbine in remaining
-        )
-        remaining_msl = sum(
-            max(0.0, float(turbine.config.p_min_stable_frac))
-            * max(0.0, float(turbine.config.rated_mw))
-            for turbine in remaining
-        )
         future_burst_reason = self._future_burst_refusal(
             state=ctx,
             turbine=candidate,
             sim_time_s=ctx.sim_time,
             forecast=forecast,
-            remaining_msl_mw=remaining_msl,
-            bess_allowance_mw=bess_allowance,
         )
         if future_burst_reason is not None:
             self._refused(
@@ -666,16 +693,6 @@ class ForecastDrivenTurbineController:
                 turbine=candidate,
                 action="stop",
                 reason=future_burst_reason,
-                forecast=forecast,
-                synchronized_capacity=synchronized_capacity,
-                soc=soc,
-            )
-        elif stop_peak + self.sensitivity_mw > remaining_capacity + bess_allowance:
-            self._refused(
-                ctx=ctx,
-                turbine=candidate,
-                action="stop",
-                reason="stop refused: unit is needed within 1,200s",
                 forecast=forecast,
                 synchronized_capacity=synchronized_capacity,
                 soc=soc,

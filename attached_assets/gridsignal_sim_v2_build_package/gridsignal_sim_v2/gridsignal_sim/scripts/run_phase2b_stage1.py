@@ -18,6 +18,7 @@ import copy
 import dataclasses
 import gzip
 import json
+import statistics
 import sys
 import time
 from collections import Counter
@@ -35,6 +36,7 @@ from runtime.phase2b_reference import (
 )
 from runtime.run_manager import _tick_result_to_dict
 from runtime.scenario_factory import build_run_context_from_spec
+from runtime.turbine_commitment import unserved_comparison_verdict
 from scripts.run_phase2a_smoke import _extended_metrics
 
 
@@ -49,6 +51,92 @@ OUTPUT_ROOT = PACKAGE_ROOT.parents[3] / "docs" / "addendum-h-phase2b-results"
 def _load_compact_spec(scenario_id: str) -> dict[str, Any]:
     path = PACKAGE_ROOT / "config" / "scenarios" / REFERENCE_IDS[scenario_id]
     return json.loads(path.read_text())
+
+
+def _phase2b_fuel_guard(
+    scenario_id: str,
+    ctx: Any,
+    ticks: list[Any],
+) -> dict[str, Any]:
+    """Fail loudly instead of reporting an unmodelled turbine as zero fuel."""
+    active_units = [
+        turbine for turbine in ctx.sim_state.turbines if turbine.is_on_bus
+    ]
+    missing_model = [
+        turbine.config.asset_id
+        for turbine in active_units
+        if not turbine.fuel_modelled
+    ]
+    if missing_model:
+        raise AssertionError(
+            f"{scenario_id}: synchronized turbine(s) missing fuel model: "
+            f"{sorted(missing_model)}"
+        )
+    final_rows = {
+        str(row.get("asset_id")): row
+        for row in (ticks[-1].turbine_fuel_telemetry if ticks else ())
+    }
+    missing_rows = [
+        turbine.config.asset_id
+        for turbine in active_units
+        if (
+            turbine.config.asset_id not in final_rows
+            or not bool(final_rows[turbine.config.asset_id].get("fuel_modelled"))
+        )
+    ]
+    if missing_rows:
+        raise AssertionError(
+            f"{scenario_id}: synchronized turbine(s) missing final fuel "
+            f"telemetry: {sorted(missing_rows)}"
+        )
+    return {
+        "guard_status": "PASS",
+        "active_modelled_units": sorted(
+            turbine.config.asset_id for turbine in active_units
+        ),
+        "active_unit_count": len(active_units),
+    }
+
+
+def _distribution(values: list[float]) -> dict[str, float | int]:
+    clean = [float(value) for value in values if value == value]
+    if not clean:
+        return {
+            "count": 0,
+            "min": 0.0,
+            "mean": 0.0,
+            "median": 0.0,
+            "p95": 0.0,
+            "max": 0.0,
+        }
+    ordered = sorted(clean)
+    p95_index = min(len(ordered) - 1, max(0, int(0.95 * len(ordered)) - 1))
+    return {
+        "count": len(clean),
+        "min": round(min(clean), 9),
+        "mean": round(statistics.fmean(clean), 9),
+        "median": round(statistics.median(clean), 9),
+        "p95": round(ordered[p95_index], 9),
+        "max": round(max(clean), 9),
+    }
+
+
+def _forecast_quality(controller: Any, ticks: list[Any]) -> dict[str, Any]:
+    history = list(getattr(controller, "forecast_history", []))
+    errors = [
+        float(tick.p_demand_mw or 0.0) - float(forecast.forecast_mw)
+        for tick, forecast in zip(ticks, history)
+    ]
+    return {
+        "forecast_tick_count": len(history),
+        "matched_error_tick_count": len(errors),
+        "signed_error_mw": _distribution(errors),
+        "absolute_error_mw": _distribution([abs(value) for value in errors]),
+        "miss_count": int(getattr(controller, "forecast_miss_count", 0)),
+        "miss_peak_mw": round(
+            float(getattr(controller, "forecast_miss_peak_mw", 0.0)), 9
+        ),
+    }
 
 
 def _signal_dict(signal: Any) -> dict[str, Any]:
@@ -197,6 +285,7 @@ def _run_summary(
     trace_source: str,
 ) -> dict[str, Any]:
     controller = ctx.turbine_commitment_controller
+    fuel_guard = _phase2b_fuel_guard(scenario_id, ctx, ticks)
     logs = (
         [record.as_dict() for record in controller.log]
         if controller is not None
@@ -228,6 +317,14 @@ def _run_summary(
         ),
         default=0.0,
     )
+    curtailment_values = [
+        max(0.0, float(tick.p_dispatch_curtailed_mw or 0.0))
+        for tick in ticks
+    ]
+    d4_values = [
+        abs(float(getattr(tick, "d4_balance_defect_mw", 0.0) or 0.0))
+        for tick in ticks
+    ]
     hard_violations = set(
         str(reason)
         for reason in (
@@ -272,6 +369,7 @@ def _run_summary(
         ),
         "max_abs_d4_balance_defect_mw": round(max_d4_defect, 9),
         "max_abs_physical_ledger_defect_mw": round(max_ledger_defect, 9),
+        "d4_balance_defect_mw_distribution": _distribution(d4_values),
         "served_demand_mwh": round(
             sum(float(tick.p_served_mw or 0.0) for tick in ticks)
             * TICK_SECONDS
@@ -285,6 +383,9 @@ def _run_summary(
             9,
         ),
         "dispatch_curtailment_mwh": round(dispatch_curtailment_mwh, 9),
+        "dispatch_curtailment_mw_distribution": _distribution(
+            [value for value in curtailment_values if value > 1e-9]
+        ),
     }
     proposal_summary = metrics.get("proposal_summary", {"approved": 0, "vetoed": 0})
     return {
@@ -338,6 +439,11 @@ def _run_summary(
         "commitment_log_record_count": len(logs),
         "preload_outcomes": metrics.get("preload_reach", []),
         "preload_actions": preload_actions,
+        "fuel_guard": fuel_guard,
+        "forecast_quality": _forecast_quality(controller, ticks),
+        "stop_floor_refusals": list(
+            getattr(controller, "stop_floor_refusals", [])
+        ),
         "constraints_valid": bool(
             getattr(controller, "constraints_valid", True)
         ),
@@ -498,18 +604,38 @@ def run_scenario(scenario_id: str, output_dir: Path) -> dict[str, Any]:
     trace_equal, max_diff = _assert_replay_equal(
         tick_sets["baseline"], tick_sets["informed"]
     )
+    comparison = unserved_comparison_verdict(
+        {
+            "unserved_energy_mwh": runs["baseline"]["unserved_mwh"],
+            "peak_unserved_mw": runs["baseline"]["peak_unserved_mw"],
+        },
+        {
+            "unserved_energy_mwh": runs["informed"]["unserved_mwh"],
+            "peak_unserved_mw": runs["informed"]["peak_unserved_mw"],
+        },
+    )
     for summary in runs.values():
         summary["identical_compute_trace"] = trace_equal
         summary["max_compute_trace_diff_mw"] = max_diff
+        summary["informed_vs_baseline"] = comparison
+        summary["acceptance_gates"] = {
+            "identical_compute_trace": trace_equal,
+            "physical_ledger_closure": bool(
+                summary["energy_balance"]["closure_status"]
+            ),
+            "no_hard_violations": not summary["hard_violations"],
+            "start_count_reconciled": summary["start_count_reconciled"],
+            "constraints_valid": summary["constraints_valid"],
+            "informed_unserved_energy_no_worse": comparison[
+                "unserved_energy_no_worse"
+            ],
+            "informed_peak_unserved_no_worse": comparison[
+                "peak_unserved_no_worse"
+            ],
+        }
         summary["acceptance_verdict"] = (
             "PASS"
-            if (
-                trace_equal
-                and summary["energy_balance"]["closure_status"]
-                and not summary["hard_violations"]
-                and summary["start_count_reconciled"]
-                and summary["constraints_valid"]
-            )
+            if all(summary["acceptance_gates"].values())
             else "FAIL"
         )
         (output_dir / f"{summary['scenario_id']}-{summary['mode']}.json").write_text(
@@ -531,6 +657,7 @@ def run_scenario(scenario_id: str, output_dir: Path) -> dict[str, Any]:
         "background_probe_wall_clock_seconds": round(probe_wall, 6),
         "identical_compute_trace": trace_equal,
         "max_compute_trace_diff_mw": max_diff,
+        "informed_vs_baseline": comparison,
         "acceptance_verdict": (
             "PASS"
             if all(run["acceptance_verdict"] == "PASS" for run in runs.values())
@@ -567,6 +694,8 @@ def run_scenario(scenario_id: str, output_dir: Path) -> dict[str, Any]:
                     "identical_compute_trace",
                     "max_compute_trace_diff_mw",
                     "acceptance_verdict",
+                     "acceptance_gates",
+                     "informed_vs_baseline",
                     "energy_balance",
                     "start_count_reconciled",
                     "constraints_valid",
@@ -580,6 +709,9 @@ def run_scenario(scenario_id: str, output_dir: Path) -> dict[str, Any]:
                     "background_power_reactive",
                     "background_trace_signal_count",
                     "replay_strategy",
+                     "fuel_guard",
+                     "forecast_quality",
+                     "stop_floor_refusals",
                 )
             }
             for mode, run in runs.items()
