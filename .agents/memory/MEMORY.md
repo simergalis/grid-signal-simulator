@@ -68,3 +68,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Full-matrix GPU timeout](full-matrix-gpu-timeout.md) — the GPU load-profile node passes but can take just over 300 seconds; split runs need a longer harness timeout.
 - [Phase 2a test harness](phase2a-test-harness.md) — run simulator tests from the gridsignal package directory; outer-root collection pulls in audit tests with incompatible imports.
 - [Forecast scale-event protection](forecast-scale-event-protection.md) — future SCALE events are burst starts for informed preload and restart-window commitment checks, even without a STARTING event.
+- [Fuel attribution and preload audit](fuel-attribution-and-preload-audit.md) — cumulative turbine counters use final rows; dispatch attribution uses positive interval increments; preload logs are signature-compacted.
