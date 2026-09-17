@@ -2133,7 +2133,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                         synchronized_capacity_mw=sum(
                             max(0.0, float(item.config.rated_mw))
                             for item in state.turbines
-                            if item.is_on_bus
+                            if item.contributes_to_reserve
                         ),
                         bess_soc_fraction=min(
                             (
@@ -2218,7 +2218,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                             synchronized_capacity_mw=sum(
                                 max(0.0, float(item.config.rated_mw))
                                 for item in state.turbines
-                                if item.is_on_bus
+                                if item.contributes_to_reserve
                             ),
                             bess_soc_fraction=min(
                                 (

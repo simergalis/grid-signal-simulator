@@ -709,3 +709,111 @@ def test_tc129_direct_tick_wire_contains_on_bus_count_and_dispatch_curtailment()
     assert payload["units_on_bus_count"] == 2
     assert payload["on_bus_output_mw"] > 0.0
     assert "p_dispatch_curtailed_mw" in payload
+
+
+def test_tc130_unloading_unit_does_not_count_as_commitment_reserve() -> None:
+    """A unit already rundown cannot justify stopping another synchronized unit."""
+    from core.asset_modules import TurbineState
+    from runtime.scenario_factory import build_run_context_from_spec
+    from runtime.turbine_commitment import CommitmentForecast
+
+    ctx = build_run_context_from_spec(
+        "tc130-unloading-reserve", _spec(mode="informed", spinning=4, hot=0).model_dump()
+    )
+    controller = ctx.turbine_commitment_controller
+    unloading = ctx.sim_state.turbines[0]
+    unloading.state = TurbineState.UNLOADING
+    ctx.sim_state._commitment_forecast = CommitmentForecast(
+        sim_time_s=1000.0,
+        background_mean_mw=55.0,
+        background_std_mw=0.0,
+        forecast_mw=55.0,
+        peak_forecast_mw=55.0,
+        minimum_forecast_mw=55.0,
+        profile=((1000.0, 55.0),),
+    )
+    decision = SimpleNamespace(
+        action="decommit",
+        target_unit_id=ctx.sim_state.turbines[1].config.asset_id,
+        reason="core measured decommit",
+        floor_violated=False,
+    )
+
+    assert controller.adjudicate_core_proposal(
+        state=ctx.sim_state,
+        decision=decision,
+        sim_time_s=1000.0,
+        synchronized_capacity_mw=30.0,
+        bess_soc_fraction=0.5,
+    ) is False
+    assert "needed within" in (controller.log[-1].refusal_reason or "")
+
+
+def test_tc131_preload_is_bounded_by_bess_charge_power() -> None:
+    """Late preload uses the largest target the island can physically absorb."""
+    from runtime.scenario_factory import build_run_context_from_spec
+
+    spec = _spec(
+        mode="informed",
+        spinning=2,
+        hot=0,
+        events=[_event(100.0, node_count=5000)],
+        end=120.0,
+    ).model_dump()
+    spec["bess_units"] = [{
+        "asset_id": "bess-0",
+        "rated_mw": 5.0,
+        "usable_mwh": 120.0,
+        "initial_soc_fraction": 0.50,
+    }]
+    ctx = build_run_context_from_spec("tc131-preload-cap", spec)
+    ctx.sim_time = 90.0
+    controller = ctx.turbine_commitment_controller
+    forecast = controller.forecast(
+        sim_time_s=90.0,
+        events=ctx.events,
+        measured_history=[],
+        power_for_event=ctx._event_power_mw,
+        horizon_seconds=controller.stop_lookahead_seconds,
+    )
+
+    controller._evaluate_preload(ctx, forecast, ctx._event_power_mw)
+
+    assert controller.preload_actions
+    action = controller.preload_actions[-1]
+    assert action["target_mw"] <= action["forecast_mw"] + 5.0 + 1e-6
+
+
+def test_tc132_core_start_is_vetoed_during_minimum_down_window() -> None:
+    """Informed adjudication must not approve a start the physics will drop."""
+    import math
+
+    from core.asset_modules import TurbineState
+    from runtime.scenario_factory import build_run_context_from_spec
+
+    ctx = build_run_context_from_spec(
+        "tc132-min-down-start", _spec(mode="informed", spinning=1, hot=1).model_dump()
+    )
+    turbine = ctx.sim_state.turbines[0]
+    turbine.state = TurbineState.OFFLINE
+    turbine.config.min_down_enabled = True
+    turbine._stop_time_s = 100.0
+    turbine._last_sync_stop_s = 100.0
+    assert not math.isnan(turbine._stop_time_s)
+    decision = SimpleNamespace(
+        action="commit",
+        target_unit_id=turbine.config.asset_id,
+        reason="measured reserve shortfall",
+        floor_violated=True,
+    )
+
+    assert ctx.turbine_commitment_controller.adjudicate_core_proposal(
+        state=ctx.sim_state,
+        decision=decision,
+        sim_time_s=200.0,
+        synchronized_capacity_mw=0.0,
+        bess_soc_fraction=0.5,
+    ) is False
+    assert "minimum down time" in (
+        ctx.turbine_commitment_controller.log[-1].refusal_reason or ""
+    )

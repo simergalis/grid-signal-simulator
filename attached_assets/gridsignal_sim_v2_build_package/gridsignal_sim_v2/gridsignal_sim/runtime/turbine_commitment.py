@@ -295,7 +295,7 @@ class ForecastDrivenTurbineController:
         cutoff = sim_time_s + self.forecast_lead_seconds
         starts: dict[str, float] = {}
         for event in sorted(events, key=lambda item: (item.timestamp, item.event_id)):
-            if self._event_type(event) not in {"starting", "running"}:
+            if self._event_type(event) not in {"starting", "running", "scale"}:
                 continue
             if event.timestamp <= cutoff:
                 starts[event.job_id] = min(
@@ -396,7 +396,7 @@ class ForecastDrivenTurbineController:
         announced_ids = tuple(
             event.event_id
             for event in sorted(events, key=lambda item: (item.timestamp, item.event_id))
-            if self._event_type(event) in {"starting", "running"}
+            if self._event_type(event) in {"starting", "running", "scale"}
             and event.job_id in announced_starts
             and event.timestamp == announced_starts[event.job_id]
         )
@@ -434,7 +434,8 @@ class ForecastDrivenTurbineController:
         return sum(
             max(0.0, float(turbine.config.rated_mw))
             for turbine in turbines
-            if turbine.is_on_bus
+            if turbine.state == TurbineState.SYNCHRONISED
+            and not getattr(turbine.config, "hot_standby", False)
         )
 
     def _bess_allowance(self, bess_units: list[Any]) -> tuple[float, float]:
@@ -495,6 +496,68 @@ class ForecastDrivenTurbineController:
             default=None,
         )
 
+    def _future_burst_refusal(
+        self,
+        *,
+        state: Any,
+        turbine: Any,
+        sim_time_s: float,
+        forecast: Optional[CommitmentForecast],
+        remaining_msl_mw: float,
+        bess_allowance_mw: float,
+    ) -> Optional[str]:
+        """Keep a unit committed when it cannot be restarted before a burst.
+
+        The normal stop gate is a power-capacity check.  This additional gate
+        covers the interval immediately after a stop: a unit is unavailable
+        while it unloads, cools through minimum-down time, and starts again.
+        During that window, remaining MSL plus BESS power is the conservative
+        physical bridge.  Unloading units are intentionally not credited.
+        """
+        if forecast is None:
+            return None
+        config = turbine.config
+        restart_delay = (
+            max(0.0, float(getattr(config, "unload_tail_s", 0.0)))
+            + (
+                max(0.0, float(getattr(config, "t_min_down_s", 0.0)))
+                if getattr(config, "min_down_enabled", False)
+                else 0.0
+            )
+            + max(
+                0.0,
+                float(getattr(config, "hot_start_s", 0.0)),
+                float(getattr(config, "warm_start_s", 0.0)),
+                float(getattr(config, "cold_start_s", 0.0)),
+            )
+            + self.ramp_to_load_seconds
+        )
+        protection_end = sim_time_s + restart_delay
+        announced_starts = self._announced_start_times(
+            sim_time_s=sim_time_s,
+            events=list(getattr(state, "events", [])),
+        )
+        for burst_time in sorted(set(announced_starts.values())):
+            if burst_time <= sim_time_s + 1e-9 or burst_time > protection_end + 1e-9:
+                continue
+            predicted_at_onset = next(
+                (
+                    float(power)
+                    for timestamp, power in forecast.profile
+                    if timestamp >= burst_time - 1e-9
+                ),
+                forecast.peak_over(max(0.0, burst_time - sim_time_s)),
+            )
+            if predicted_at_onset > (
+                remaining_msl_mw + bess_allowance_mw + self.sensitivity_mw
+            ):
+                return (
+                    "stop refused: forecast burst at "
+                    f"{burst_time:.0f}s arrives before unit restart window "
+                    f"({protection_end:.0f}s)"
+                )
+        return None
+
     def evaluate(
         self,
         *,
@@ -526,7 +589,16 @@ class ForecastDrivenTurbineController:
         self._latest_forecast = forecast
         setattr(ctx.sim_state, "_commitment_forecast", forecast)
         turbines = ctx.sim_state.turbines
-        synchronized = [turbine for turbine in turbines if turbine.is_on_bus]
+        # Commitment reserve is the capacity that can respond upward.  An
+        # UNLOADING unit remains electrically on the bus for physical balance,
+        # but it cannot provide upward reserve and must not justify another
+        # stop in the same rundown sequence.
+        synchronized = [
+            turbine
+            for turbine in turbines
+            if turbine.state == TurbineState.SYNCHRONISED
+            and not getattr(turbine.config, "hot_standby", False)
+        ]
         synchronized_capacity = self._synchronized_capacity(turbines)
         bess_allowance, soc = self._bess_allowance(ctx.sim_state.bess_units)
 
@@ -575,7 +647,25 @@ class ForecastDrivenTurbineController:
             * max(0.0, float(turbine.config.rated_mw))
             for turbine in remaining
         )
-        if stop_peak + self.sensitivity_mw > remaining_capacity + bess_allowance:
+        future_burst_reason = self._future_burst_refusal(
+            state=ctx,
+            turbine=candidate,
+            sim_time_s=ctx.sim_time,
+            forecast=forecast,
+            remaining_msl_mw=remaining_msl,
+            bess_allowance_mw=bess_allowance,
+        )
+        if future_burst_reason is not None:
+            self._refused(
+                ctx=ctx,
+                turbine=candidate,
+                action="stop",
+                reason=future_burst_reason,
+                forecast=forecast,
+                synchronized_capacity=synchronized_capacity,
+                soc=soc,
+            )
+        elif stop_peak + self.sensitivity_mw > remaining_capacity + bess_allowance:
             self._refused(
                 ctx=ctx,
                 turbine=candidate,
@@ -637,7 +727,7 @@ class ForecastDrivenTurbineController:
         future_starts = [
             event
             for event in ctx.events
-            if self._event_type(event) in {"starting", "running"}
+            if self._event_type(event) in {"starting", "running", "scale"}
             and ctx.sim_time < float(event.timestamp) <= ctx.sim_time + self.forecast_lead_seconds
         ]
         if not future_starts:
@@ -682,8 +772,15 @@ class ForecastDrivenTurbineController:
             if not getattr(unit, "tripped", False)
         )
         current_demand_mw = max(0.0, float(forecast.forecast_mw))
-        if max(0.0, target_total_mw - current_demand_mw) > charge_capacity_mw + 1e-9:
-            return
+        # Preloading is a temporary increase above current demand.  Do not
+        # reject a useful partial preload merely because the full burst target
+        # would exceed the BESS charge ceiling.  Cap the target at the largest
+        # physically absorbable level; the burst forecast still determines the
+        # uncapped target and the normal loading layer handles the remainder.
+        target_total_mw = min(
+            target_total_mw,
+            current_demand_mw + charge_capacity_mw,
+        )
 
         remaining = target_total_mw
         targets: dict[str, float] = {}
@@ -875,8 +972,22 @@ class ForecastDrivenTurbineController:
         accepted = True
         refusal_reason: Optional[str] = None
         if decision.action == "commit":
+            if turbine.state != TurbineState.OFFLINE:
+                accepted = False
+                refusal_reason = (
+                    "forecast controller veto: unit is not offline and cannot start"
+                )
+            elif (
+                turbine.config.min_down_enabled
+                and not math.isnan(float(getattr(turbine, "_stop_time_s", float("nan"))))
+                and sim_time_s - turbine._stop_time_s < turbine.config.t_min_down_s
+            ):
+                accepted = False
+                refusal_reason = (
+                    "forecast controller veto: minimum down time has not elapsed"
+                )
             horizon = self.hot_start_lookahead_seconds + self.ramp_to_load_seconds
-            if forecast is not None and not decision.floor_violated:
+            if accepted and forecast is not None and not decision.floor_violated:
                 if forecast.peak_over(horizon) <= (
                     synchronized_capacity_mw + allowance + self.sensitivity_mw
                 ):
@@ -888,7 +999,11 @@ class ForecastDrivenTurbineController:
         elif decision.action == "decommit":
             remaining = [
                 item for item in state.turbines
-                if item is not turbine and item.is_on_bus
+                if (
+                    item is not turbine
+                    and item.state == TurbineState.SYNCHRONISED
+                    and not getattr(item.config, "hot_standby", False)
+                )
             ]
             remaining_capacity = sum(
                 max(0.0, float(item.config.rated_mw)) for item in remaining
@@ -899,7 +1014,18 @@ class ForecastDrivenTurbineController:
                 for item in remaining
             )
             if forecast is not None:
-                if forecast.peak_over(self.stop_lookahead_seconds) + self.sensitivity_mw > (
+                future_burst_reason = self._future_burst_refusal(
+                    state=state,
+                    turbine=turbine,
+                    sim_time_s=sim_time_s,
+                    forecast=forecast,
+                    remaining_msl_mw=remaining_msl,
+                    bess_allowance_mw=allowance,
+                )
+                if future_burst_reason is not None:
+                    accepted = False
+                    refusal_reason = future_burst_reason
+                elif forecast.peak_over(self.stop_lookahead_seconds) + self.sensitivity_mw > (
                     remaining_capacity + allowance
                 ):
                     accepted = False
