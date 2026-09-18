@@ -577,11 +577,11 @@ def _stream_run(
             controller = ctx.turbine_commitment_controller
             history = getattr(controller, "forecast_history", [])
             if len(history) > forecast_history_seen:
-                forecast_errors.extend(
-                    float(tick.p_demand_mw or 0.0)
-                    - float(item.forecast_mw)
-                    for item in history[forecast_history_seen:]
-                )
+                for history_index in range(forecast_history_seen, len(history)):
+                    forecast_errors.append(
+                        float(tick.p_demand_mw or 0.0)
+                        - float(history[history_index].forecast_mw)
+                    )
                 forecast_history_seen = len(history)
     if open_interval is not None:
         unserved_intervals.append(open_interval)
