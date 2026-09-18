@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import math
 import statistics
+from bisect import bisect_left
 from dataclasses import dataclass, field
 from typing import Any, Callable, Optional
 
@@ -220,6 +221,25 @@ class ForecastDrivenTurbineController:
     forecast_miss_count: int = 0
     forecast_miss_peak_mw: float = 0.0
     _latest_forecast: Optional[CommitmentForecast] = field(default=None, repr=False)
+    _forecast_event_key: Optional[tuple[int, int]] = field(default=None, repr=False)
+    _forecast_events: list[Any] = field(default_factory=list, repr=False)
+    _timeline_state: dict[str, tuple[float, str, float]] = field(
+        default_factory=dict, repr=False
+    )
+    _timeline_cache: dict[float, dict[str, tuple[float, str, float]]] = field(
+        default_factory=dict, repr=False
+    )
+    _timeline_max_timestamp: float = field(default=float("-inf"), repr=False)
+    _timeline_next_event_index: int = field(default=0, repr=False)
+    _announced_event_index: int = field(default=0, repr=False)
+    _announced_start_times_cache: dict[str, float] = field(
+        default_factory=dict, repr=False
+    )
+    _announced_start_event_ids: list[str] = field(default_factory=list, repr=False)
+    _measured_history_key: Optional[tuple[int, int]] = field(
+        default=None, repr=False
+    )
+    _measured_timestamps: list[float] = field(default_factory=list, repr=False)
 
     def __post_init__(self) -> None:
         if self.mode not in {"disabled", "baseline", "informed"}:
@@ -271,8 +291,70 @@ class ForecastDrivenTurbineController:
         double-counted. Matching JOB_END records remove the job for all later
         profile samples.
         """
+        event_key = (id(events), len(events))
+        if event_key != self._forecast_event_key:
+            self._forecast_event_key = event_key
+            self._forecast_events = sorted(
+                events, key=lambda item: (item.timestamp, item.event_id)
+            )
+            self._timeline_state = {}
+            self._timeline_cache = {}
+            self._timeline_max_timestamp = float("-inf")
+            self._timeline_next_event_index = 0
+            self._announced_event_index = 0
+            self._announced_start_times_cache = {}
+            self._announced_start_event_ids = []
+
+        query_timestamp = round(float(timestamp), 6)
+        cached = self._timeline_cache.get(query_timestamp)
+        if cached is not None:
+            return cached
+
+        if query_timestamp >= self._timeline_max_timestamp:
+            state = self._timeline_state
+            while (
+                self._timeline_next_event_index < len(self._forecast_events)
+                and self._forecast_events[
+                    self._timeline_next_event_index
+                ].timestamp
+                <= query_timestamp
+            ):
+                event = self._forecast_events[self._timeline_next_event_index]
+                event_type = self._event_type(event)
+                if event_type in {"starting", "running", "scale"}:
+                    state[event.job_id] = (
+                        self._event_power_mw(event, power_for_event),
+                        str(event.event_id),
+                        float(event.timestamp),
+                    )
+                elif event_type in {
+                    "job_end",
+                    "cancelled",
+                    "job_failed",
+                    "job_timeout",
+                    "job_preempted",
+                }:
+                    state.pop(event.job_id, None)
+                self._timeline_next_event_index += 1
+            self._timeline_max_timestamp = query_timestamp
+            snapshot = dict(state)
+            self._timeline_cache[query_timestamp] = snapshot
+            cache_floor = query_timestamp - (
+                self.background_window_seconds
+                + self.stop_lookahead_seconds
+                + self.forecast_lead_seconds
+                + 30.0
+            )
+            for old_timestamp in tuple(self._timeline_cache):
+                if old_timestamp < cache_floor:
+                    del self._timeline_cache[old_timestamp]
+            return snapshot
+
+        # Forecast queries normally stay inside the retained background/profile
+        # window.  Keep this exact fallback for callers that ask for an older
+        # timestamp after the bounded cache has evicted it.
         state: dict[str, tuple[float, str, float]] = {}
-        for event in sorted(events, key=lambda item: (item.timestamp, item.event_id)):
+        for event in self._forecast_events:
             if event.timestamp > timestamp:
                 break
             event_type = self._event_type(event)
@@ -300,14 +382,41 @@ class ForecastDrivenTurbineController:
     ) -> dict[str, float]:
         cutoff = sim_time_s + self.forecast_lead_seconds
         starts: dict[str, float] = {}
-        for event in sorted(events, key=lambda item: (item.timestamp, item.event_id)):
+        self._job_state_at(
+            timestamp=sim_time_s,
+            events=events,
+            power_for_event=lambda event: 0.0,
+        )
+        for event in self._forecast_events[self._announced_event_index :]:
+            if event.timestamp > cutoff:
+                break
             if self._event_type(event) not in {"starting", "running", "scale"}:
                 continue
+            if event.job_id not in self._announced_start_times_cache:
+                self._announced_start_times_cache[event.job_id] = float(
+                    event.timestamp
+                )
+                self._announced_start_event_ids.append(str(event.event_id))
+            elif (
+                self._announced_start_times_cache[event.job_id]
+                == float(event.timestamp)
+            ):
+                self._announced_start_event_ids.append(str(event.event_id))
             if event.timestamp <= cutoff:
                 starts[event.job_id] = min(
                     starts.get(event.job_id, float("inf")),
                     float(event.timestamp),
                 )
+            self._announced_event_index += 1
+        # Non-load events still advance the cursor so they are not revisited
+        # on every tick.
+        while (
+            self._announced_event_index < len(self._forecast_events)
+            and self._forecast_events[self._announced_event_index].timestamp
+            <= cutoff
+        ):
+            self._announced_event_index += 1
+        starts.update(self._announced_start_times_cache)
         return starts
 
     def _background_samples(
@@ -327,7 +436,23 @@ class ForecastDrivenTurbineController:
         """
         samples: list[float] = []
         window_start = sim_time_s - self.background_window_seconds
-        for sample in measured_history:
+        history_key = (id(measured_history), len(measured_history))
+        if self._measured_history_key is None or (
+            self._measured_history_key[0] != history_key[0]
+            or history_key[1] < self._measured_history_key[1]
+        ):
+            self._measured_timestamps = [
+                float(sample[0]) for sample in measured_history
+            ]
+        elif history_key[1] > self._measured_history_key[1]:
+            self._measured_timestamps.extend(
+                float(sample[0])
+                for sample in measured_history[self._measured_history_key[1] :]
+            )
+        self._measured_history_key = history_key
+        start_index = bisect_left(self._measured_timestamps, window_start)
+        end_index = bisect_left(self._measured_timestamps, sim_time_s)
+        for sample in measured_history[start_index:end_index]:
             timestamp = float(sample[0])
             value = float(sample[1])
             if not window_start <= timestamp < sim_time_s:
