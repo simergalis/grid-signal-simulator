@@ -48,6 +48,10 @@ REFERENCE_IDS = (
     "scenario-h1-k8s-ray-7d",
     "scenario-h2-slurm-7d",
 )
+REFERENCE_FILES = {
+    "scenario-h1-k8s-ray-7d": "scenario-h1-k8s-ray-7d.json",
+    "scenario-h2-slurm-7d": "scenario-h2-slurm-7d.json",
+}
 OUTPUT_ROOT = PACKAGE_ROOT.parents[3] / "docs" / "addendum-h-phase2b-results"
 STAGE1_ROOT = OUTPUT_ROOT
 
@@ -70,6 +74,11 @@ def _run_path(output_dir: Path, scenario_id: str, mode: str) -> Path:
 
 def _tick_path(output_dir: Path, scenario_id: str, mode: str) -> Path:
     return output_dir / f"{scenario_id}-{mode}_ticks.jsonl.gz"
+
+
+def _load_stage2_compact_spec(scenario_id: str) -> dict[str, Any]:
+    path = PACKAGE_ROOT / "config" / "scenarios" / REFERENCE_FILES[scenario_id]
+    return json.loads(path.read_text())
 
 
 def _write_json_bounded(path: Path, payload: dict[str, Any]) -> None:
@@ -142,7 +151,7 @@ def _write_probe(
 
 
 def run_probe(scenario_id: str, output_dir: Path) -> None:
-    compact = _load_compact_spec(scenario_id)
+    compact = _load_stage2_compact_spec(scenario_id)
     expanded = expand_phase2b_reference_spec(compact)
     if int(compact["phase2b_reference_days"]) != SEVEN_DAYS:
         raise AssertionError(f"{scenario_id}: expected a seven-day compact spec")
@@ -315,7 +324,7 @@ def _daily_breakdown(
 def run_mode(scenario_id: str, mode: str, output_dir: Path) -> None:
     if mode not in {"baseline", "informed"}:
         raise ValueError(f"unsupported mode: {mode}")
-    compact = _load_compact_spec(scenario_id)
+    compact = _load_stage2_compact_spec(scenario_id)
     expanded = expand_phase2b_reference_spec(compact)
     probe = _load_probe(output_dir, scenario_id)
     replay_spec = copy.deepcopy(expanded)
@@ -471,7 +480,7 @@ def _daily_totals(rows: list[dict[str, Any]], *, label: str) -> dict[str, Any]:
 
 
 def finalize_scenario(scenario_id: str, output_dir: Path) -> dict[str, Any]:
-    compact = _load_compact_spec(scenario_id)
+    compact = _load_stage2_compact_spec(scenario_id)
     family = str(compact["phase2b_reference_family"])
     run_paths = {
         mode: _run_path(output_dir, scenario_id, mode)
