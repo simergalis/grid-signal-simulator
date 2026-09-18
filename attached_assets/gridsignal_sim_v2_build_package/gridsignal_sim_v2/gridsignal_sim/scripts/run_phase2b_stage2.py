@@ -84,6 +84,32 @@ def _load_stage2_compact_spec(scenario_id: str) -> dict[str, Any]:
     return json.loads(path.read_text())
 
 
+def _distribution(values: list[float]) -> dict[str, float | int]:
+    clean = [float(value) for value in values if value == value]
+    if not clean:
+        return {
+            "count": 0,
+            "min": 0.0,
+            "mean": 0.0,
+            "median": 0.0,
+            "p90": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "max": 0.0,
+        }
+    ordered = sorted(clean)
+    return {
+        "count": len(clean),
+        "min": round(ordered[0], 9),
+        "mean": round(sum(clean) / len(clean), 9),
+        "median": round(statistics.median(ordered), 9),
+        "p90": round(ordered[min(len(ordered) - 1, max(0, int(0.90 * len(ordered)) - 1))], 9),
+        "p95": round(ordered[min(len(ordered) - 1, max(0, int(0.95 * len(ordered)) - 1))], 9),
+        "p99": round(ordered[min(len(ordered) - 1, max(0, int(0.99 * len(ordered)) - 1))], 9),
+        "max": round(ordered[-1], 9),
+    }
+
+
 def _write_json_bounded(path: Path, payload: dict[str, Any]) -> None:
     encoded = json.dumps(payload, indent=2, sort_keys=True) + "\n"
     if len(encoded.encode("utf-8")) >= MAX_JSON_BYTES:
