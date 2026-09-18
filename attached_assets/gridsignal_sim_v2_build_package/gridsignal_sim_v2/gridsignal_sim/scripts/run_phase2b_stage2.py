@@ -29,6 +29,9 @@ if str(PACKAGE_ROOT) not in sys.path:
 
 from core.asset_modules import TurbineState
 from runtime.phase2b_reference import expand_phase2b_reference_spec
+from runtime.phase2b_reference import _cluster_offsets
+from runtime.run_manager import _tick_result_to_dict
+from runtime.scenario_factory import build_run_context_from_spec
 from scripts.run_phase2b_stage1 import (
     TICK_SECONDS,
     _assert_replay_equal,
@@ -96,16 +99,10 @@ def _write_probe(
     scenario_id: str,
     *,
     probe_ctx: Any,
-    probe_ticks: list[Any],
+    demand_replay: list[tuple[float, float]],
+    background_power_reactive: bool,
     probe_wall: float,
 ) -> None:
-    demand_replay = [
-        (
-            float(tick.p_compute_demand_mw),
-            float(tick.p_cooling_demand_mw),
-        )
-        for tick in probe_ticks
-    ]
     replay_events = [
         _signal_dict(signal)
         for signal in probe_ctx.sim_state.workload_signal_trace
@@ -119,14 +116,7 @@ def _write_probe(
         "days": SEVEN_DAYS,
         "probe_wall_clock_seconds": round(probe_wall, 6),
         "background_trace_signal_count": len(replay_events),
-        "background_power_reactive": any(
-            tick.kube_metrics is not None
-            and (
-                tick.kube_metrics.power_cap_active
-                or tick.kube_metrics.requeued_this_tick > 0
-            )
-            for tick in probe_ticks
-        ),
+        "background_power_reactive": background_power_reactive,
         "demand_replay": demand_replay,
         "replay_events": replay_events,
     }
@@ -155,21 +145,44 @@ def run_probe(scenario_id: str, output_dir: Path) -> None:
     expanded = expand_phase2b_reference_spec(compact)
     if int(compact["phase2b_reference_days"]) != SEVEN_DAYS:
         raise AssertionError(f"{scenario_id}: expected a seven-day compact spec")
-    probe_ctx, probe_ticks, probe_wall = _run_context(
+    probe_ctx = _stream_context(
         expanded,
         run_id=f"{scenario_id}-background-probe",
         mode="baseline",
+        replay_events=None,
+        demand_replay=None,
         capture_trace=True,
     )
+    demand_replay: list[tuple[float, float]] = []
+    background_power_reactive = False
+    tick_count = int(round(float(probe_ctx.end_sim_time) / TICK_SECONDS))
+    started = time.perf_counter()
+    for _ in range(tick_count):
+        tick = probe_ctx.step()
+        demand_replay.append(
+            (
+                float(tick.p_compute_demand_mw),
+                float(tick.p_cooling_demand_mw),
+            )
+        )
+        background_power_reactive = background_power_reactive or (
+            tick.kube_metrics is not None
+            and (
+                tick.kube_metrics.power_cap_active
+                or tick.kube_metrics.requeued_this_tick > 0
+            )
+        )
+    probe_wall = time.perf_counter() - started
     _write_probe(
         output_dir,
         scenario_id,
         probe_ctx=probe_ctx,
-        probe_ticks=probe_ticks,
+        demand_replay=demand_replay,
+        background_power_reactive=background_power_reactive,
         probe_wall=probe_wall,
     )
     print(
-        f"{scenario_id}: probe complete; ticks={len(probe_ticks)}; "
+        f"{scenario_id}: probe complete; ticks={len(demand_replay)}; "
         f"signals={len(probe_ctx.sim_state.workload_signal_trace)}"
     )
 
@@ -200,21 +213,14 @@ def _assert_all_aero_fuel_model(ctx: Any, scenario_id: str) -> None:
         raise AssertionError(f"{scenario_id}: turbine fuel contract failed: {errors}")
 
 
-def _assert_run_fuel_nonzero(ctx: Any, ticks: list[Any], scenario_id: str) -> None:
+def _assert_run_fuel_nonzero(
+    ctx: Any,
+    *,
+    synchronized_seen: bool,
+    final_rows: dict[str, dict[str, Any]],
+    scenario_id: str,
+) -> None:
     _assert_all_aero_fuel_model(ctx, scenario_id)
-    synchronized_seen = any(
-        any(
-            bool(unit.get("breaker_closed"))
-            and str(unit.get("state", "")).lower()
-            in {"synchronised", "synchronized", "unloading"}
-            for unit in tick.turbine_units
-        )
-        for tick in ticks
-    )
-    final_rows = {
-        str(row.get("asset_id")): row
-        for row in (ticks[-1].turbine_fuel_telemetry if ticks else ())
-    }
     total_fuel = sum(
         float(row.get("total_fuel_mmbtu", 0.0) or 0.0)
         for row in final_rows.values()
@@ -223,6 +229,509 @@ def _assert_run_fuel_nonzero(ctx: Any, ticks: list[Any], scenario_id: str) -> No
         raise AssertionError(
             f"{scenario_id}: synchronized turbines reported zero total fuel"
         )
+
+
+def _stream_context(
+    spec: dict[str, Any],
+    *,
+    run_id: str,
+    mode: str,
+    replay_events: list[dict[str, Any]] | None,
+    demand_replay: list[tuple[float, float]] | None,
+    capture_trace: bool,
+) -> Any:
+    run_spec = copy.deepcopy(spec)
+    run_spec["turbine_commitment_mode"] = mode
+    if replay_events is not None:
+        run_spec.pop("kube_clusters", None)
+        run_spec.pop("slurm_config", None)
+        run_spec["workload_events"] = replay_events
+    ctx = build_run_context_from_spec(run_id, run_spec, playback_speed=0.0)
+    ctx.sim_state.demand_replay_trace = demand_replay
+    ctx.sim_state.capture_workload_signal_trace = capture_trace
+    return ctx
+
+
+def _stream_daily_rows(
+    daily: dict[int, dict[str, Any]],
+    *,
+    starts: list[dict[str, Any]],
+    stops: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    components = (
+        "load_fuel_mmbtu",
+        "no_load_fuel_mmbtu",
+        "hot_standby_fuel_mmbtu",
+        "start_fuel_mmbtu",
+    )
+    previous = {component: 0.0 for component in components}
+    rows = []
+    for day in range(1, SEVEN_DAYS + 1):
+        state = daily[day]
+        fuel_by_component = {
+            component: max(
+                0.0,
+                float(state["fuel_cumulative"][component]) - previous[component],
+            )
+            for component in components
+        }
+        previous = dict(state["fuel_cumulative"])
+        start_count, starts_by_unit_source = _event_counts(starts, day=day)
+        stop_count, stops_by_unit_source = _event_counts(stops, day=day)
+        rows.append(
+            {
+                "day": day,
+                "kind": "weekday" if day <= 5 else "weekend",
+                "fuel_by_component_mmbtu": {
+                    component: round(value, 9)
+                    for component, value in fuel_by_component.items()
+                },
+                "fuel_mmbtu": round(sum(fuel_by_component.values()), 9),
+                "unserved_mwh": round(state["unserved_mwh"], 9),
+                "curtailed_mwh": round(state["curtailed_mwh"], 9),
+                "start_count": start_count,
+                "stop_count": stop_count,
+                "starts_by_unit_source": starts_by_unit_source,
+                "stops_by_unit_source": stops_by_unit_source,
+                "bess_soc_end": round(state["bess_soc_end"], 9),
+            }
+        )
+    return rows
+
+
+def _stream_run(
+    *,
+    scenario_id: str,
+    mode: str,
+    spec: dict[str, Any],
+    replay_events: list[dict[str, Any]] | None,
+    demand_replay: list[tuple[float, float]] | None,
+    tick_path: Path,
+) -> tuple[Any, dict[str, Any], float]:
+    ctx = _stream_context(
+        spec,
+        run_id=f"{scenario_id}-{mode}",
+        mode=mode,
+        replay_events=replay_events,
+        demand_replay=demand_replay,
+        capture_trace=False,
+    )
+    tick_count = int(round(float(ctx.end_sim_time) / TICK_SECONDS))
+    daily = {
+        day: {
+            "fuel_cumulative": {
+                component: 0.0
+                for component in (
+                    "load_fuel_mmbtu",
+                    "no_load_fuel_mmbtu",
+                    "hot_standby_fuel_mmbtu",
+                    "start_fuel_mmbtu",
+                )
+            },
+            "unserved_mwh": 0.0,
+            "curtailed_mwh": 0.0,
+            "bess_soc_end": 0.0,
+        }
+        for day in range(1, SEVEN_DAYS + 1)
+    }
+    components = tuple(daily[1]["fuel_cumulative"])
+    final_rows: dict[str, dict[str, Any]] = {}
+    previous_by_unit: dict[str, dict[str, float]] = {}
+    exposure_by_component = Counter()
+    exposure_by_unit = Counter()
+    attributable_by_unit = Counter()
+    sync_counts = Counter()
+    low_load_minutes = Counter()
+    cluster_energy = {
+        number: 0.0 for number, _ in _cluster_offsets(SEVEN_DAYS)
+    }
+    unserved_intervals: list[dict[str, float]] = []
+    open_interval: dict[str, float] | None = None
+    energy_unserved = 0.0
+    energy_served = 0.0
+    curtailment_mwh = 0.0
+    peak_unserved = 0.0
+    max_d4 = 0.0
+    max_ledger = 0.0
+    closure_status = True
+    bess_soc_min = float("inf")
+    bess_soc_max = 0.0
+    final_tick: Any = None
+    synchronized_seen = False
+    forecast_errors: list[float] = []
+    forecast_history_seen = 0
+    turbine_by_id = {
+        str(turbine.config.asset_id): turbine for turbine in ctx.sim_state.turbines
+    }
+    tick_path.parent.mkdir(parents=True, exist_ok=True)
+    started = time.perf_counter()
+    with gzip.open(tick_path, "wt", encoding="utf-8") as handle:
+        for _ in range(tick_count):
+            tick = ctx.step()
+            final_tick = tick
+            row = _tick_result_to_dict(tick)
+            keep = {
+                key: row.get(key)
+                for key in (
+                    "tick_index",
+                    "sim_time_seconds",
+                    "p_compute_mw",
+                    "p_cooling_mw",
+                    "p_total_mw",
+                    "p_generation_mw",
+                    "p_served_mw",
+                    "p_unserved_mw",
+                    "p_imbalance_mw",
+                    "p_dispatch_curtailed_mw",
+                    "turbine_output_mw",
+                    "bess_output_mw",
+                    "bess_soc_fraction",
+                    "turbine_fuel_telemetry",
+                    "turbine_units",
+                    "kube_metrics",
+                    "commitment_block",
+                )
+            }
+            handle.write(json.dumps(keep, separators=(",", ":")) + "\n")
+            day = _day_number(tick.sim_time_seconds)
+            state = daily[day]
+            unserved = max(0.0, float(tick.p_unserved_mw or 0.0))
+            curtailed = max(0.0, float(tick.p_dispatch_curtailed_mw or 0.0))
+            energy_unserved += unserved * TICK_SECONDS / 3600.0
+            energy_served += max(0.0, float(tick.p_served_mw or 0.0)) * TICK_SECONDS / 3600.0
+            curtailment_mwh += curtailed * TICK_SECONDS / 3600.0
+            peak_unserved = max(peak_unserved, unserved)
+            state["unserved_mwh"] += unserved * TICK_SECONDS / 3600.0
+            state["curtailed_mwh"] += curtailed * TICK_SECONDS / 3600.0
+            state["bess_soc_end"] = float(tick.bess_soc_fraction)
+            bess_soc_min = min(bess_soc_min, float(tick.bess_soc_fraction))
+            bess_soc_max = max(bess_soc_max, float(tick.bess_soc_fraction))
+            current_values_by_unit: dict[str, dict[str, float]] = {}
+            for telemetry in tick.turbine_fuel_telemetry:
+                unit_id = str(telemetry.get("asset_id", "unknown"))
+                current_values = {
+                    component: float(telemetry.get(component, 0.0) or 0.0)
+                    for component in components
+                }
+                current_values_by_unit[unit_id] = current_values
+                final_rows[unit_id] = dict(telemetry)
+                for component in components:
+                    state["fuel_cumulative"][component] += 0.0
+                prior = previous_by_unit.get(unit_id, {})
+                increments = {
+                    component: max(
+                        0.0,
+                        current_values[component] - prior.get(component, 0.0),
+                    )
+                    for component in components
+                }
+                previous_by_unit[unit_id] = current_values
+                if curtailed > 1e-9:
+                    for component, value in increments.items():
+                        exposure_by_component[component] += value
+                        exposure_by_unit[unit_id] += value
+            for component in components:
+                state["fuel_cumulative"][component] = sum(
+                    values[component] for values in current_values_by_unit.values()
+                )
+            for unit in tick.turbine_units:
+                state_name = str(unit.get("state", "")).lower()
+                on_bus = state_name in {"synchronised", "synchronized", "unloading"}
+                if on_bus:
+                    sync_counts[sum(
+                        1
+                        for candidate in tick.turbine_units
+                        if str(candidate.get("state", "")).lower()
+                        in {"synchronised", "synchronized", "unloading"}
+                    )] += 1
+                    synchronized_seen = True
+                rated = float(unit.get("rated_mw", 0.0) or 0.0)
+                output = float(unit.get("output_mw", 0.0) or 0.0)
+                if on_bus and 0.0 < output < 0.5 * rated:
+                    low_load_minutes[str(unit.get("asset_id"))] += TICK_SECONDS / 60.0
+            if not tick.turbine_units:
+                sync_counts[0] += 1
+            if curtailed > 1e-9:
+                on_bus = [
+                    unit
+                    for unit in tick.turbine_units
+                    if bool(unit.get("breaker_closed"))
+                    and str(unit.get("state", "")).lower()
+                    in {"synchronised", "synchronized", "unloading"}
+                ]
+                basis = {
+                    str(unit.get("asset_id")): max(
+                        0.0, float(unit.get("output_mw", 0.0) or 0.0)
+                    )
+                    for unit in on_bus
+                }
+                basis_total = sum(basis.values())
+                if basis_total <= 1e-9:
+                    basis = {
+                        str(unit.get("asset_id")): max(
+                            0.0, float(unit.get("rated_mw", 0.0) or 0.0)
+                        )
+                        for unit in on_bus
+                    }
+                    basis_total = sum(basis.values())
+                if basis_total > 1e-9:
+                    for unit in on_bus:
+                        unit_id = str(unit.get("asset_id"))
+                        turbine = turbine_by_id.get(unit_id)
+                        rated = float(unit.get("rated_mw", 0.0) or 0.0)
+                        output = max(0.0, float(unit.get("output_mw", 0.0) or 0.0))
+                        fuel = getattr(getattr(turbine, "config", None), "fuel", None)
+                        if turbine is None or fuel is None or rated <= 0.0:
+                            continue
+                        allocated_mwh = (
+                            curtailed * TICK_SECONDS / 3600.0
+                            * basis.get(unit_id, 0.0)
+                            / basis_total
+                        )
+                        attributable_by_unit[unit_id] += (
+                            allocated_mwh
+                            * fuel.heat_rate_btu_per_kwh(output / rated)
+                            / 1000.0
+                        )
+            if open_interval is not None and unserved <= 1e-9:
+                unserved_intervals.append(open_interval)
+                open_interval = None
+            elif unserved > 1e-9:
+                if open_interval is None:
+                    open_interval = {
+                        "start_sim_time_s": float(tick.sim_time_seconds) - TICK_SECONDS,
+                        "end_sim_time_s": float(tick.sim_time_seconds),
+                        "peak_unserved_mw": unserved,
+                    }
+                else:
+                    open_interval["end_sim_time_s"] = float(tick.sim_time_seconds)
+                    open_interval["peak_unserved_mw"] = max(
+                        open_interval["peak_unserved_mw"], unserved
+                    )
+            interval_start = float(tick.sim_time_seconds) - TICK_SECONDS
+            for cluster_number, cluster_start in _cluster_offsets(SEVEN_DAYS):
+                if cluster_start <= interval_start < cluster_start + 3300.0:
+                    cluster_energy[cluster_number] += unserved * TICK_SECONDS / 3600.0
+                    break
+            ledger_defect = abs(
+                float(tick.p_generation_mw)
+                - float(tick.p_served_mw or 0.0)
+                - float(tick.p_dispatch_curtailed_mw or 0.0)
+            )
+            max_ledger = max(max_ledger, ledger_defect)
+            max_d4 = max(
+                max_d4,
+                abs(float(getattr(tick, "d4_balance_defect_mw", 0.0) or 0.0)),
+            )
+            closure_status = closure_status and (
+                ledger_defect <= 1e-3
+                or abs(float(tick.p_imbalance_mw or 0.0)) <= 1e-3
+            )
+            controller = ctx.turbine_commitment_controller
+            history = list(getattr(controller, "forecast_history", []))
+            if len(history) > forecast_history_seen:
+                forecast_errors.extend(
+                    float(tick.p_demand_mw or 0.0)
+                    - float(item.forecast_mw)
+                    for item in history[forecast_history_seen:]
+                )
+                forecast_history_seen = len(history)
+    if open_interval is not None:
+        unserved_intervals.append(open_interval)
+    wall = time.perf_counter() - started
+    controller = ctx.turbine_commitment_controller
+    logs = [record.as_dict() for record in controller.log]
+    starts = [
+        {
+            "unit_id": record.get("unit_id"),
+            "sim_time_s": record.get("sim_time_s"),
+            "action": record.get("action"),
+            "source": record.get("source"),
+            "reason": record.get("reason"),
+        }
+        for record in logs
+        if record.get("accepted")
+        and record.get("changed_state")
+        and record.get("action") in {"start", "release"}
+    ]
+    stops = [
+        {
+            "unit_id": record.get("unit_id"),
+            "sim_time_s": record.get("sim_time_s"),
+            "action": record.get("action"),
+            "source": record.get("source"),
+            "reason": record.get("reason"),
+        }
+        for record in logs
+        if record.get("accepted")
+        and record.get("changed_state")
+        and record.get("action") in {"stop", "stop_complete"}
+    ]
+    proposal_records = [
+        record for record in logs
+        if str(record.get("action", "")).startswith("proposal_")
+    ]
+    proposal_summary = {
+        "approved": sum(bool(record.get("accepted")) for record in proposal_records),
+        "vetoed": sum(not bool(record.get("accepted")) for record in proposal_records),
+        "by_action": {
+            action: {
+                "approved": sum(
+                    record.get("action") == action and bool(record.get("accepted"))
+                    for record in proposal_records
+                ),
+                "vetoed": sum(
+                    record.get("action") == action and not bool(record.get("accepted"))
+                    for record in proposal_records
+                ),
+            }
+            for action in sorted({record.get("action") for record in proposal_records})
+        },
+    }
+    _assert_run_fuel_nonzero(
+        ctx,
+        synchronized_seen=synchronized_seen,
+        final_rows=final_rows,
+        scenario_id=f"{scenario_id}-{mode}",
+    )
+    fuel_by_component = {
+        component: sum(
+            float(row.get(component, 0.0) or 0.0)
+            for row in final_rows.values()
+        )
+        for component in components
+    }
+    fuel_by_unit = {}
+    for unit_id, row in final_rows.items():
+        fuel_by_unit[unit_id] = {
+            component: float(row.get(component, 0.0) or 0.0)
+            for component in components
+        }
+        fuel_by_unit[unit_id]["total_fuel_mmbtu"] = float(
+            row.get("total_fuel_mmbtu", 0.0) or 0.0
+        )
+    actual_starts = {
+        turbine.config.asset_id: int(getattr(turbine, "_start_count", 0))
+        for turbine in ctx.sim_state.turbines
+    }
+    logged_starts = dict(getattr(controller, "start_counts", {}))
+    forecast_misses = {
+        "count": int(getattr(controller, "forecast_miss_count", 0)),
+        "peak_mw": round(float(getattr(controller, "forecast_miss_peak_mw", 0.0)), 9),
+    }
+    forecast_quality = {
+        "forecast_tick_count": forecast_history_seen,
+        "matched_error_tick_count": len(forecast_errors),
+        "signed_error_mw": _distribution(forecast_errors),
+        "absolute_error_mw": _distribution([abs(value) for value in forecast_errors]),
+        "miss_count": forecast_misses["count"],
+        "miss_peak_mw": forecast_misses["peak_mw"],
+    }
+    daily_rows = _stream_daily_rows(
+        daily,
+        starts=starts,
+        stops=stops,
+    )
+    summary = {
+        "scenario_id": scenario_id,
+        "mode": mode,
+        "compute_description": "scheduler-shaped GPU workload demand",
+        "trace_source": "baseline live background trace replay",
+        "wall_clock_seconds": round(wall, 6),
+        "tick_count": tick_count,
+        "interval_seconds": TICK_SECONDS,
+        "turbine_fuel_mmbtu": round(sum(fuel_by_component.values()), 9),
+        "fuel_by_component_mmbtu": {
+            key: round(value, 9) for key, value in fuel_by_component.items()
+        },
+        "fuel_by_unit_mmbtu": {
+            key: {name: round(value, 9) for name, value in values.items()}
+            for key, values in fuel_by_unit.items()
+        },
+        "preload_fuel_mmbtu": round(float(controller.preload_fuel_mmbtu), 9),
+        "dispatch_curtailment_mwh": round(curtailment_mwh, 9),
+        "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+            key: round(value, 9) for key, value in exposure_by_component.items()
+        },
+        "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+            key: round(value, 9) for key, value in exposure_by_unit.items()
+        },
+        "dispatch_curtailment_interval_exposure_fuel_mmbtu": round(
+            sum(exposure_by_component.values()), 9
+        ),
+        "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+            key: round(value, 9) for key, value in attributable_by_unit.items()
+        },
+        "dispatch_curtailment_attributable_fuel_mmbtu": round(
+            sum(attributable_by_unit.values()), 9
+        ),
+        "dispatch_curtailment_fuel_mmbtu": round(
+            sum(exposure_by_component.values()), 9
+        ),
+        "starts": starts,
+        "stops": stops,
+        "start_count": sum(actual_starts.values()),
+        "start_count_reconciled": actual_starts == {
+            unit_id: logged_starts.get(unit_id, 0)
+            for unit_id in actual_starts
+        },
+        "synchronized_count_distribution_ticks": dict(
+            sorted((str(key), value) for key, value in sync_counts.items())
+        ),
+        "unit_minutes_below_50_percent": {
+            key: round(value, 6) for key, value in sorted(low_load_minutes.items())
+        },
+        "energy_balance": {
+            "closure_required": True,
+            "closure_status": closure_status,
+            "max_abs_d4_balance_defect_mw": round(max_d4, 9),
+            "max_abs_physical_ledger_defect_mw": round(max_ledger, 9),
+            "served_demand_mwh": round(energy_served, 9),
+            "unserved_demand_mwh": round(energy_unserved, 9),
+            "dispatch_curtailment_mwh": round(curtailment_mwh, 9),
+        },
+        "bess_soc_min": round(bess_soc_min, 9),
+        "bess_soc_max": round(bess_soc_max, 9),
+        "bess_soc_final": round(float(final_tick.bess_soc_fraction), 9),
+        "unserved_mwh": round(energy_unserved, 9),
+        "peak_unserved_mw": round(peak_unserved, 9),
+        "unserved_intervals": unserved_intervals,
+        "unserved_by_cluster": [
+            {
+                "cluster": cluster,
+                "unserved_mwh": round(energy, 9),
+                "had_unserved": energy > 1e-9,
+            }
+            for cluster, energy in sorted(cluster_energy.items())
+        ],
+        "hard_violations": sorted(
+            str(reason)
+            for reason in getattr(controller, "constraint_violation_reasons", [])
+        ),
+        "forecast_misses": forecast_misses,
+        "forecast_quality": forecast_quality,
+        "core_proposals": proposal_summary,
+        "commitment_log": (
+            logs[:60]
+            + ([{"truncated": True, "omitted_record_count": len(logs) - 120}] if len(logs) > 120 else [])
+            + (logs[-59:] if len(logs) > 120 else [])
+        ),
+        "commitment_log_record_count": len(logs),
+        "preload_actions": list(controller.preload_actions),
+        "preload_outcomes": [],
+        "stop_floor_refusal_count": len(getattr(controller, "stop_floor_refusals", [])),
+        "stop_floor_refusals": list(getattr(controller, "stop_floor_refusals", [])),
+        "constraints_valid": bool(getattr(controller, "constraints_valid", True)),
+        "fuel_guard": {
+            "guard_status": "PASS",
+            "active_modelled_units": sorted(final_rows),
+            "active_unit_count": len(final_rows),
+        },
+        "daily_breakdown": daily_rows,
+        "kube_power_reactive_ticks": 0,
+        "kube_requeued_admissions": 0,
+    }
+    return ctx, summary, wall
 
 
 def _day_number(sim_time_seconds: float) -> int:
@@ -329,24 +838,14 @@ def run_mode(scenario_id: str, mode: str, output_dir: Path) -> None:
     probe = _load_probe(output_dir, scenario_id)
     replay_spec = copy.deepcopy(expanded)
     replay_spec["workload_events"] = []
-    ctx, ticks, wall = _run_context(
-        replay_spec,
-        run_id=f"{scenario_id}-{mode}",
-        mode=mode,
-        replay_events=probe["replay_events"],
-        demand_replay=[
-            tuple(values) for values in probe["demand_replay"]
-        ],
-    )
-    _assert_run_fuel_nonzero(ctx, ticks, f"{scenario_id}-{mode}")
-    summary = _run_summary(
+    tick_path = _tick_path(output_dir, scenario_id, mode)
+    ctx, summary, wall = _stream_run(
         scenario_id=scenario_id,
         mode=mode,
-        ctx=ctx,
-        ticks=ticks,
-        wall_seconds=wall,
-        days=SEVEN_DAYS,
-        trace_source="baseline live background trace replay",
+        spec=replay_spec,
+        replay_events=probe["replay_events"],
+        demand_replay=[tuple(values) for values in probe["demand_replay"]],
+        tick_path=tick_path,
     )
     summary.update(
         {
@@ -364,13 +863,6 @@ def run_mode(scenario_id: str, mode: str, output_dir: Path) -> None:
             "background_power_reactive": probe["background_power_reactive"],
         }
     )
-    summary["daily_breakdown"] = _daily_breakdown(
-        ticks,
-        starts=summary["starts"],
-        stops=summary["stops"],
-    )
-    tick_path = _tick_path(output_dir, scenario_id, mode)
-    _write_tick_artifact(tick_path, ticks)
     summary["tick_artifact"] = tick_path.name
     _write_json_bounded(_run_path(output_dir, scenario_id, mode), summary)
     (output_dir / f"{scenario_id}-{mode}.txt").write_text(
