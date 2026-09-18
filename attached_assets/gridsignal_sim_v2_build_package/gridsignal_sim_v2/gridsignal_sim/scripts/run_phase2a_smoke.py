@@ -116,12 +116,14 @@ def _extended_metrics(
     controller: Any,
     logs: list[dict[str, Any]],
     preload_actions: list[dict[str, Any]],
+    turbines: list[Any] | None = None,
 ) -> dict[str, Any]:
     """Build compact, auditable attribution metrics from the completed run."""
     fuel_by_component = Counter()
     fuel_by_unit = defaultdict(Counter)
-    dispatch_fuel_by_component = Counter()
-    dispatch_fuel_by_unit = defaultdict(float)
+    dispatch_exposure_fuel_by_component = Counter()
+    dispatch_exposure_fuel_by_unit = defaultdict(float)
+    dispatch_attributable_fuel_by_unit = defaultdict(float)
     below_threshold_minutes: dict[str, float] = {}
     fuel_components = (
         "load_fuel_mmbtu",
@@ -173,12 +175,70 @@ def _extended_metrics(
             previous_by_unit[unit_id] = current_values
             if dispatch_active:
                 for component, value in increments.items():
-                    dispatch_fuel_by_component[component] += value
-                    dispatch_fuel_by_unit[unit_id] += value
+                    dispatch_exposure_fuel_by_component[component] += value
+                    dispatch_exposure_fuel_by_unit[unit_id] += value
             # This field is cumulative per unit, so the final row is the
             # authoritative unit-minute total rather than a value to sum per tick.
             below_threshold_minutes[unit_id] = float(
                 row.get("minutes_below_low_load_threshold", 0.0) or 0.0
+            )
+
+    # Distinct from interval exposure: allocate each curtailed MWh across
+    # on-bus turbines by their delivered output, then price that allocation at
+    # the unit's operating-point heat rate.  This estimates the fuel associated
+    # with the curtailed generation itself; it intentionally excludes no-load,
+    # standby, and start fuel.
+    turbine_by_id = {
+        str(turbine.config.asset_id): turbine
+        for turbine in (turbines or ())
+    }
+    dt_hours = TICK_SECONDS / 3600.0
+    for tick in ticks:
+        curtailed_mw = max(0.0, float(tick.p_dispatch_curtailed_mw or 0.0))
+        if curtailed_mw <= 1e-9:
+            continue
+        on_bus = [
+            unit for unit in tick.turbine_units
+            if bool(unit.get("breaker_closed"))
+            and str(unit.get("state", "")).lower()
+            in {"synchronised", "synchronized", "unloading"}
+        ]
+        if not on_bus:
+            continue
+        output_basis = {
+            str(unit.get("asset_id", "unknown")): max(
+                0.0, float(unit.get("output_mw", 0.0) or 0.0)
+            )
+            for unit in on_bus
+        }
+        output_total_mw = sum(output_basis.values())
+        if output_total_mw <= 1e-9:
+            output_basis = {
+                str(unit.get("asset_id", "unknown")): max(
+                    0.0, float(unit.get("rated_mw", 0.0) or 0.0)
+                )
+                for unit in on_bus
+            }
+            output_total_mw = sum(output_basis.values())
+        if output_total_mw <= 1e-9:
+            continue
+        curtailed_mwh = curtailed_mw * dt_hours
+        for unit in on_bus:
+            unit_id = str(unit.get("asset_id", "unknown"))
+            turbine = turbine_by_id.get(unit_id)
+            fuel = getattr(getattr(turbine, "config", None), "fuel", None)
+            rated_mw = max(0.0, float(unit.get("rated_mw", 0.0) or 0.0))
+            output_mw = max(0.0, float(unit.get("output_mw", 0.0) or 0.0))
+            if turbine is None or fuel is None or rated_mw <= 0.0:
+                continue
+            heat_rate = fuel.heat_rate_btu_per_kwh(output_mw / rated_mw)
+            allocated_mwh = (
+                curtailed_mwh
+                * output_basis.get(unit_id, 0.0)
+                / output_total_mw
+            )
+            dispatch_attributable_fuel_by_unit[unit_id] += (
+                allocated_mwh * heat_rate / 1000.0
             )
 
     sync_counts = [
@@ -301,13 +361,36 @@ def _extended_metrics(
             }
             for unit_id, components in sorted(fuel_by_unit.items())
         },
+        "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+            component: round(value, 9)
+            for component, value in sorted(
+                dispatch_exposure_fuel_by_component.items()
+            )
+        },
+        "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+            unit_id: round(value, 9)
+            for unit_id, value in sorted(dispatch_exposure_fuel_by_unit.items())
+        },
+        "dispatch_curtailment_interval_exposure_fuel_mmbtu": round(
+            sum(dispatch_exposure_fuel_by_component.values()), 9
+        ),
+        "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+            unit_id: round(value, 9)
+            for unit_id, value in sorted(dispatch_attributable_fuel_by_unit.items())
+        },
+        "dispatch_curtailment_attributable_fuel_mmbtu": round(
+            sum(dispatch_attributable_fuel_by_unit.values()), 9
+        ),
+        # Backward-compatible name for consumers of the Phase 2a artifact.
         "dispatch_curtailment_fuel_by_component_mmbtu": {
             component: round(value, 9)
-            for component, value in sorted(dispatch_fuel_by_component.items())
+            for component, value in sorted(
+                dispatch_exposure_fuel_by_component.items()
+            )
         },
         "dispatch_curtailment_fuel_by_unit_mmbtu": {
             unit_id: round(value, 9)
-            for unit_id, value in sorted(dispatch_fuel_by_unit.items())
+            for unit_id, value in sorted(dispatch_exposure_fuel_by_unit.items())
         },
         "start_fuel_mmbtu_per_start": round(
             total_start_fuel / total_start_count if total_start_count else 0.0,
@@ -491,7 +574,11 @@ def run_smoke(source: Path, output_dir: Path) -> dict[str, Any]:
         )
         logs = [record.as_dict() for record in controller.log]
         extended_metrics = _extended_metrics(
-            ticks, controller, logs, list(controller.preload_actions)
+            ticks,
+            controller,
+            logs,
+            list(controller.preload_actions),
+            ctx.sim_state.turbines,
         )
         runs[mode] = {
             "summary": summary,

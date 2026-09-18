@@ -337,7 +337,13 @@ def _run_summary(
     stop_floor_refusals = list(
         getattr(controller, "stop_floor_refusals", [])
     )
-    metrics = _extended_metrics(ticks, controller, logs, preload_actions)
+    metrics = _extended_metrics(
+        ticks,
+        controller,
+        logs,
+        preload_actions,
+        ctx.sim_state.turbines,
+    )
     final = ticks[-1]
     dispatch_curtailment_mwh = sum(
         max(0.0, float(tick.p_dispatch_curtailed_mw or 0.0))
@@ -450,6 +456,15 @@ def _run_summary(
             sum(metrics["dispatch_curtailment_fuel_by_component_mmbtu"].values()),
             9,
         ),
+        "dispatch_curtailment_interval_exposure_fuel_mmbtu": metrics[
+            "dispatch_curtailment_interval_exposure_fuel_mmbtu"
+        ],
+        "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": metrics[
+            "dispatch_curtailment_attributable_fuel_by_unit_mmbtu"
+        ],
+        "dispatch_curtailment_attributable_fuel_mmbtu": metrics[
+            "dispatch_curtailment_attributable_fuel_mmbtu"
+        ],
         "fuel_by_unit_mmbtu": metrics["fuel_by_unit_mmbtu"],
         "starts": metrics["start_transitions"],
         "stops": metrics["stop_transitions"],

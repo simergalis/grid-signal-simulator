@@ -6,6 +6,7 @@ TC numbering continues from Addendum H Phase 2a at TC-137.
 from __future__ import annotations
 
 import json
+import copy
 import pytest
 from types import SimpleNamespace
 from pathlib import Path
@@ -338,3 +339,98 @@ def test_tc149_reserve_floor_refusal_dedup_keeps_numeric_payload() -> None:
     assert controller.log[0].suppressed_repeat_count == 2
     assert controller.log[1].refusal_reason == different_reason
     assert controller.suppressed_refusal_count == 2
+
+
+def test_tc150_replay_unserved_energy_uses_each_run_supply() -> None:
+    """A supply-starved informed fixture must diverge from the baseline run."""
+    from runtime.scenario_factory import build_run_context_from_spec
+    from runtime.turbine_commitment import summarize_unserved_ticks
+
+    base = _expanded("scenario-h1-k8s-ray-24h")
+    replay = [(45.0, 15.0)] * 12
+    results = {}
+    for mode, spinning_count in (("baseline", 2), ("informed", 0)):
+        spec = copy.deepcopy(base)
+        spec.update(
+            {
+                "end_sim_time": 60.0,
+                "workload_events": [],
+                "initial_spinning_count": spinning_count,
+                "island_mode": True,
+                "turbine_commitment_mode": mode,
+            }
+        )
+        spec.pop("kube_clusters", None)
+        spec.pop("slurm_config", None)
+        for index, turbine in enumerate(spec["turbine_units"]):
+            turbine.update(
+                {
+                    "initial_state": (
+                        "spinning" if index < spinning_count else "offline"
+                    ),
+                    "hot_standby": False,
+                    "min_run_enabled": False,
+                    "min_down_enabled": False,
+                }
+            )
+        ctx = build_run_context_from_spec(f"tc150-{mode}", spec, playback_speed=0.0)
+        ctx.sim_state.demand_replay_trace = replay
+        ticks = [ctx.step() for _ in replay]
+        results[mode] = summarize_unserved_ticks(ticks)
+
+    assert results["baseline"]["unserved_energy_mwh"] == pytest.approx(
+        0.041666667
+    )
+    assert results["informed"]["unserved_energy_mwh"] == pytest.approx(
+        0.516666667
+    )
+    assert (
+        results["informed"]["unserved_energy_mwh"]
+        > results["baseline"]["unserved_energy_mwh"]
+    )
+
+
+def test_tc151_attributable_curtailment_fuel_stays_within_curve_range() -> None:
+    """Attributable fuel per curtailed MWh must use the fuel curve range."""
+    from core.models import AERODERIVATIVE_FUEL_PARAMETERS
+    from scripts.run_phase2a_smoke import _extended_metrics
+
+    turbine = SimpleNamespace(
+        config=SimpleNamespace(
+            asset_id="gt-01",
+            rated_mw=25.0,
+            fuel=AERODERIVATIVE_FUEL_PARAMETERS,
+        )
+    )
+    tick = SimpleNamespace(
+        p_dispatch_curtailed_mw=10.0,
+        turbine_units=[
+            {
+                "asset_id": "gt-01",
+                "breaker_closed": True,
+                "state": "synchronised",
+                "output_mw": 12.5,
+                "rated_mw": 25.0,
+            }
+        ],
+        turbine_fuel_telemetry=[],
+        sim_time_seconds=5.0,
+    )
+    controller = SimpleNamespace(
+        preload_fuel_mmbtu=0.0,
+        suppressed_preload_repeat_count=0,
+        unserved_intervals=[],
+        forecast_miss_count=0,
+        forecast_miss_peak_mw=0.0,
+    )
+    metrics = _extended_metrics([tick], controller, [], [], [turbine])
+    curtailed_mwh = 10.0 * 5.0 / 3600.0
+    fuel_per_mwh = (
+        metrics["dispatch_curtailment_attributable_fuel_mmbtu"]
+        / curtailed_mwh
+    )
+    curve_rates = [
+        rate / 1000.0
+        for _, rate in AERODERIVATIVE_FUEL_PARAMETERS.part_load_heat_rate_btu_per_kwh
+    ]
+    assert min(curve_rates) <= fuel_per_mwh <= max(curve_rates)
