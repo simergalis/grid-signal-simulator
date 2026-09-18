@@ -433,7 +433,7 @@ def _stream_run(
                 "bess_soc_fraction": tick.bess_soc_fraction,
                 "turbine_fuel_telemetry": tick.turbine_fuel_telemetry,
                 "turbine_units": tick.turbine_units,
-                "commitment_block": tick.commitment_block,
+                "commitment_blocked_by": tick.commitment_blocked_by,
             }
             handle.write(json.dumps(keep, separators=(",", ":")) + "\n")
             day = _day_number(tick.sim_time_seconds)
