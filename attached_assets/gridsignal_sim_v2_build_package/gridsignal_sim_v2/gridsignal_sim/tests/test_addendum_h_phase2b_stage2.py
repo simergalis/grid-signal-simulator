@@ -82,3 +82,35 @@ def test_tc154_forecast_history_retains_only_a_bounded_recent_window() -> None:
 
     assert len(controller.forecast_history) == 2
     assert controller.forecast_history[-1].sim_time_s == pytest.approx(15.0)
+
+
+def test_tc155_copied_event_views_reuse_the_forecast_timeline() -> None:
+    from runtime.turbine_commitment import ForecastDrivenTurbineController
+
+    controller = ForecastDrivenTurbineController(mode="informed")
+    events = [
+        SimpleNamespace(
+            event_type="starting",
+            timestamp=5.0,
+            event_id="event-1",
+            job_id="job-1",
+        )
+    ]
+    power_for_event = lambda _event: 4.0
+
+    controller._job_state_at(
+        timestamp=5.0,
+        events=events,
+        power_for_event=power_for_event,
+    )
+    cached_events = controller._forecast_events
+
+    copied_events = list(events)
+    state = controller._job_state_at(
+        timestamp=10.0,
+        events=copied_events,
+        power_for_event=power_for_event,
+    )
+
+    assert controller._forecast_events is cached_events
+    assert state["job-1"][0] == pytest.approx(4.0)

@@ -221,7 +221,9 @@ class ForecastDrivenTurbineController:
     forecast_miss_count: int = 0
     forecast_miss_peak_mw: float = 0.0
     _latest_forecast: Optional[CommitmentForecast] = field(default=None, repr=False)
-    _forecast_event_key: Optional[tuple[int, int]] = field(default=None, repr=False)
+    _forecast_event_key: Optional[tuple[int, int, int]] = field(
+        default=None, repr=False
+    )
     _forecast_events: list[Any] = field(default_factory=list, repr=False)
     _timeline_state: dict[str, tuple[float, str, float]] = field(
         default_factory=dict, repr=False
@@ -291,7 +293,14 @@ class ForecastDrivenTurbineController:
         double-counted. Matching JOB_END records remove the job for all later
         profile samples.
         """
-        event_key = (id(events), len(events))
+        # Callers may pass a fresh list view of the same event objects (the
+        # future-burst guard does this once per turbine).  Keying on list
+        # identity would repeatedly sort and replay the full timeline.
+        event_key = (
+            len(events),
+            id(events[0]) if events else 0,
+            id(events[-1]) if events else 0,
+        )
         if event_key != self._forecast_event_key:
             self._forecast_event_key = event_key
             self._forecast_events = sorted(
