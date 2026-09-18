@@ -312,6 +312,7 @@ class ForecastDrivenTurbineController:
 
         if query_timestamp >= self._timeline_max_timestamp:
             state = self._timeline_state
+            state_copied = False
             while (
                 self._timeline_next_event_index < len(self._forecast_events)
                 and self._forecast_events[
@@ -322,6 +323,10 @@ class ForecastDrivenTurbineController:
                 event = self._forecast_events[self._timeline_next_event_index]
                 event_type = self._event_type(event)
                 if event_type in {"starting", "running", "scale"}:
+                    if not state_copied:
+                        state = dict(state)
+                        self._timeline_state = state
+                        state_copied = True
                     state[event.job_id] = (
                         self._event_power_mw(event, power_for_event),
                         str(event.event_id),
@@ -334,10 +339,14 @@ class ForecastDrivenTurbineController:
                     "job_timeout",
                     "job_preempted",
                 }:
+                    if not state_copied:
+                        state = dict(state)
+                        self._timeline_state = state
+                        state_copied = True
                     state.pop(event.job_id, None)
                 self._timeline_next_event_index += 1
             self._timeline_max_timestamp = query_timestamp
-            snapshot = dict(state)
+            snapshot = state
             self._timeline_cache[query_timestamp] = snapshot
             cache_floor = query_timestamp - (
                 self.background_window_seconds
