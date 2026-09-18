@@ -30,7 +30,6 @@ if str(PACKAGE_ROOT) not in sys.path:
 from core.asset_modules import TurbineState
 from runtime.phase2b_reference import expand_phase2b_reference_spec
 from runtime.phase2b_reference import _cluster_offsets
-from runtime.run_manager import _tick_result_to_dict
 from runtime.scenario_factory import build_run_context_from_spec
 from scripts.run_phase2b_stage1 import (
     TICK_SECONDS,
@@ -418,28 +417,23 @@ def _stream_run(
         for _ in range(tick_count):
             tick = ctx.step()
             final_tick = tick
-            row = _tick_result_to_dict(tick)
             keep = {
-                key: row.get(key)
-                for key in (
-                    "tick_index",
-                    "sim_time_seconds",
-                    "p_compute_mw",
-                    "p_cooling_mw",
-                    "p_total_mw",
-                    "p_generation_mw",
-                    "p_served_mw",
-                    "p_unserved_mw",
-                    "p_imbalance_mw",
-                    "p_dispatch_curtailed_mw",
-                    "turbine_output_mw",
-                    "bess_output_mw",
-                    "bess_soc_fraction",
-                    "turbine_fuel_telemetry",
-                    "turbine_units",
-                    "kube_metrics",
-                    "commitment_block",
-                )
+                "tick_index": tick.tick_index,
+                "sim_time_seconds": tick.sim_time_seconds,
+                "p_compute_mw": tick.p_compute_demand_mw,
+                "p_cooling_mw": tick.p_cooling_demand_mw,
+                "p_total_mw": tick.p_demand_mw,
+                "p_generation_mw": tick.p_generation_mw,
+                "p_served_mw": tick.p_served_mw,
+                "p_unserved_mw": tick.p_unserved_mw,
+                "p_imbalance_mw": tick.p_imbalance_mw,
+                "p_dispatch_curtailed_mw": tick.p_dispatch_curtailed_mw,
+                "turbine_output_mw": tick.turbine_output_mw,
+                "bess_output_mw": tick.bess_output_mw,
+                "bess_soc_fraction": tick.bess_soc_fraction,
+                "turbine_fuel_telemetry": tick.turbine_fuel_telemetry,
+                "turbine_units": tick.turbine_units,
+                "commitment_block": tick.commitment_block,
             }
             handle.write(json.dumps(keep, separators=(",", ":")) + "\n")
             day = _day_number(tick.sim_time_seconds)
