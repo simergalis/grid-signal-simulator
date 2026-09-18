@@ -120,6 +120,29 @@ def _write_json_bounded(path: Path, payload: dict[str, Any]) -> None:
     path.write_text(encoded)
 
 
+def _cap_summary_records(summary: dict[str, Any]) -> dict[str, Any]:
+    capped = copy.deepcopy(summary)
+    for key, limit in (
+        ("commitment_log", 24),
+        ("stop_floor_refusals", 24),
+        ("starts", 40),
+        ("stops", 40),
+        ("preload_actions", 40),
+        ("unserved_intervals", 40),
+    ):
+        records = capped.get(key)
+        if not isinstance(records, list) or len(records) <= limit:
+            continue
+        head = max(1, limit // 2)
+        tail = limit - head
+        capped[key] = (
+            records[:head]
+            + [{"truncated": True, "omitted_record_count": len(records) - limit}]
+            + records[-tail:]
+        )
+    return capped
+
+
 def _write_probe(
     output_dir: Path,
     scenario_id: str,
@@ -888,6 +911,7 @@ def run_mode(scenario_id: str, mode: str, output_dir: Path) -> None:
         }
     )
     summary["tick_artifact"] = tick_path.name
+    summary = _cap_summary_records(summary)
     _write_json_bounded(_run_path(output_dir, scenario_id, mode), summary)
     (output_dir / f"{scenario_id}-{mode}.txt").write_text(
         "\n".join(
