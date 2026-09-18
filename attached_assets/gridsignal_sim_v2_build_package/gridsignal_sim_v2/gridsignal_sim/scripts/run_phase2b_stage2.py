@@ -408,6 +408,7 @@ def _stream_run(
     synchronized_seen = False
     forecast_errors: list[float] = []
     forecast_history_seen = 0
+    last_forecast_identity: int | None = None
     turbine_by_id = {
         str(turbine.config.asset_id): turbine for turbine in ctx.sim_state.turbines
     }
@@ -569,14 +570,18 @@ def _stream_run(
                 or abs(float(tick.p_imbalance_mw or 0.0)) <= 1e-3
             )
             controller = ctx.turbine_commitment_controller
-            history = getattr(controller, "forecast_history", [])
-            if len(history) > forecast_history_seen:
-                for history_index in range(forecast_history_seen, len(history)):
-                    forecast_errors.append(
-                        float(tick.p_demand_mw or 0.0)
-                        - float(history[history_index].forecast_mw)
-                    )
-                forecast_history_seen = len(history)
+            latest_forecast = getattr(controller, "_latest_forecast", None)
+            latest_identity = id(latest_forecast) if latest_forecast is not None else None
+            if (
+                latest_forecast is not None
+                and latest_identity != last_forecast_identity
+            ):
+                forecast_errors.append(
+                    float(tick.p_demand_mw or 0.0)
+                    - float(latest_forecast.forecast_mw)
+                )
+                forecast_history_seen += 1
+                last_forecast_identity = latest_identity
     if open_interval is not None:
         unserved_intervals.append(open_interval)
     wall = time.perf_counter() - started

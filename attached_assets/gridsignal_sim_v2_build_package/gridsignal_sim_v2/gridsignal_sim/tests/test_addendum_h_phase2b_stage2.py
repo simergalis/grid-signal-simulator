@@ -64,3 +64,21 @@ def test_tc153_daily_breakdown_uses_end_of_day_fuel_snapshots() -> None:
     assert daily[1]["fuel_mmbtu"] == pytest.approx(2.0)
     assert daily[1]["bess_soc_end"] == pytest.approx(0.70)
     assert daily[1]["start_count"] == 1
+
+
+def test_tc154_forecast_history_retains_only_a_bounded_recent_window() -> None:
+    from runtime.turbine_commitment import ForecastDrivenTurbineController
+
+    controller = ForecastDrivenTurbineController(mode="informed")
+    measured_history: list[tuple[float, float]] = []
+    for sim_time in (0.0, 5.0, 10.0, 15.0):
+        measured_history.append((sim_time, 10.0))
+        controller.forecast(
+            sim_time_s=sim_time,
+            events=[],
+            measured_history=measured_history,
+            power_for_event=lambda _event: 0.0,
+        )
+
+    assert len(controller.forecast_history) == 2
+    assert controller.forecast_history[-1].sim_time_s == pytest.approx(15.0)

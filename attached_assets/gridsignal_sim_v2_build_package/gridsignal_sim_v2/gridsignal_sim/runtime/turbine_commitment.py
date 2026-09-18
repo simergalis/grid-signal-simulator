@@ -558,6 +558,11 @@ class ForecastDrivenTurbineController:
             announced_workload_mw=announced_workload,
         )
         self.forecast_history.append(result)
+        # The controller consumes only the latest forecast.  Retain one prior
+        # result for diagnostics without retaining an unbounded collection of
+        # full horizon profiles during multi-day replays.
+        if len(self.forecast_history) > 2:
+            del self.forecast_history[:-2]
         return result
 
     @staticmethod
