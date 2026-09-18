@@ -434,23 +434,21 @@ def _stream_run(
                 state["fuel_cumulative"][component] = sum(
                     values[component] for values in current_values_by_unit.values()
                 )
+            tick_sync_count = sum(
+                1
+                for unit in tick.turbine_units
+                if str(unit.get("state", "")).lower()
+                in {"synchronised", "synchronized", "unloading"}
+            )
+            sync_counts[tick_sync_count] += 1
+            synchronized_seen = synchronized_seen or tick_sync_count > 0
             for unit in tick.turbine_units:
                 state_name = str(unit.get("state", "")).lower()
                 on_bus = state_name in {"synchronised", "synchronized", "unloading"}
-                if on_bus:
-                    sync_counts[sum(
-                        1
-                        for candidate in tick.turbine_units
-                        if str(candidate.get("state", "")).lower()
-                        in {"synchronised", "synchronized", "unloading"}
-                    )] += 1
-                    synchronized_seen = True
                 rated = float(unit.get("rated_mw", 0.0) or 0.0)
                 output = float(unit.get("output_mw", 0.0) or 0.0)
                 if on_bus and 0.0 < output < 0.5 * rated:
                     low_load_minutes[str(unit.get("asset_id"))] += TICK_SECONDS / 60.0
-            if not tick.turbine_units:
-                sync_counts[0] += 1
             if curtailed > 1e-9:
                 on_bus = [
                     unit
@@ -528,7 +526,7 @@ def _stream_run(
                 or abs(float(tick.p_imbalance_mw or 0.0)) <= 1e-3
             )
             controller = ctx.turbine_commitment_controller
-            history = list(getattr(controller, "forecast_history", []))
+            history = getattr(controller, "forecast_history", [])
             if len(history) > forecast_history_seen:
                 forecast_errors.extend(
                     float(tick.p_demand_mw or 0.0)
