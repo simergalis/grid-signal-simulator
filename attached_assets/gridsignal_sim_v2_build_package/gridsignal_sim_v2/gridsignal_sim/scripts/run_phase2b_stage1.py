@@ -722,9 +722,13 @@ def run_scenario(scenario_id: str, output_dir: Path) -> dict[str, Any]:
     base_fuel = float(runs["baseline"]["turbine_fuel_mmbtu"])
     informed_fuel = float(runs["informed"]["turbine_fuel_mmbtu"])
     fuel_delta = informed_fuel - base_fuel
-    avoided_curtailment_fuel = (
-        runs["baseline"]["dispatch_curtailment_fuel_mmbtu"]
-        - runs["informed"]["dispatch_curtailment_fuel_mmbtu"]
+    interval_exposure_fuel_delta = (
+        runs["baseline"]["dispatch_curtailment_interval_exposure_fuel_mmbtu"]
+        - runs["informed"]["dispatch_curtailment_interval_exposure_fuel_mmbtu"]
+    )
+    attributable_fuel_delta = (
+        runs["baseline"]["dispatch_curtailment_attributable_fuel_mmbtu"]
+        - runs["informed"]["dispatch_curtailment_attributable_fuel_mmbtu"]
     )
     aggregate = {
         "scenario_id": scenario_id,
@@ -747,9 +751,14 @@ def run_scenario(scenario_id: str, output_dir: Path) -> dict[str, Any]:
             "percent_change_vs_baseline": (
                 100.0 * fuel_delta / base_fuel if base_fuel else 0.0
             ),
-            "avoided_curtailment_fuel_mmbtu": avoided_curtailment_fuel,
+            "avoided_curtailment_interval_exposure_fuel_mmbtu": (
+                interval_exposure_fuel_delta
+            ),
+            "avoided_curtailment_attributable_fuel_mmbtu": attributable_fuel_delta,
+            # Keep the old key as an explicit alias for attributable fuel.
+            "avoided_curtailment_fuel_mmbtu": attributable_fuel_delta,
             "share_of_fuel_difference_attributable_to_avoided_curtailment": (
-                avoided_curtailment_fuel / (base_fuel - informed_fuel)
+                attributable_fuel_delta / (base_fuel - informed_fuel)
                 if base_fuel != informed_fuel
                 else 0.0
             ),
@@ -780,6 +789,8 @@ def run_scenario(scenario_id: str, output_dir: Path) -> dict[str, Any]:
                     "peak_unserved_mw",
                     "turbine_fuel_mmbtu",
                     "dispatch_curtailment_mwh",
+                    "dispatch_curtailment_interval_exposure_fuel_mmbtu",
+                    "dispatch_curtailment_attributable_fuel_mmbtu",
                     "hard_violations",
                     "core_proposals",
                     "forecast_misses",

@@ -5,7 +5,9 @@
   "background_trace_signal_count": 676,
   "days": 1,
   "fuel_attribution": {
-    "avoided_curtailment_fuel_mmbtu": 120.13548611099941,
+    "avoided_curtailment_attributable_fuel_mmbtu": 259.537427847,
+    "avoided_curtailment_fuel_mmbtu": 259.537427847,
+    "avoided_curtailment_interval_exposure_fuel_mmbtu": 120.135486,
     "baseline_mmbtu": 4953.257013889,
     "component_delta_mmbtu": {
       "hot_standby_fuel_mmbtu": -1.6197916660000002,
@@ -16,7 +18,7 @@
     "informed_minus_baseline_mmbtu": -134.8164583329999,
     "informed_mmbtu": 4818.440555556,
     "percent_change_vs_baseline": -2.721773934907329,
-    "share_of_fuel_difference_attributable_to_avoided_curtailment": 0.8911040061166854
+    "share_of_fuel_difference_attributable_to_avoided_curtailment": 1.925116792535349
   },
   "identical_compute_trace": true,
   "informed_vs_baseline": {
@@ -49,6 +51,8 @@
         "approved": 0,
         "vetoed": 0
       },
+      "dispatch_curtailment_attributable_fuel_mmbtu": 3409.807921161,
+      "dispatch_curtailment_interval_exposure_fuel_mmbtu": 4424.576042999,
       "dispatch_curtailment_mwh": 324.144769567,
       "energy_balance": {
         "closure_required": true,
@@ -160,6 +164,8 @@
         "approved": 0,
         "vetoed": 0
       },
+      "dispatch_curtailment_attributable_fuel_mmbtu": 3150.270493314,
+      "dispatch_curtailment_interval_exposure_fuel_mmbtu": 4304.440556999,
       "dispatch_curtailment_mwh": 299.465950765,
       "energy_balance": {
         "closure_required": true,

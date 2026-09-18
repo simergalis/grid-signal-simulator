@@ -1055,13 +1055,39 @@
     "vetoed": 0
   },
   "demand_replay_tick_count": 17280,
+  "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+    "gt-hot-01": 461.695763326,
+    "gt-hot-02": 168.287001981,
+    "gt-spin-01": 1581.78020284,
+    "gt-spin-02": 938.507525167
+  },
+  "dispatch_curtailment_attributable_fuel_mmbtu": 3150.270493314,
   "dispatch_curtailment_fuel_by_component_mmbtu": {
-    "hot_standby_fuel_mmbtu": 2.745833333,
-    "load_fuel_mmbtu": 4104.201388887,
-    "no_load_fuel_mmbtu": 53.493333333,
+    "hot_standby_fuel_mmbtu": 2.745833,
+    "load_fuel_mmbtu": 4104.201390999,
+    "no_load_fuel_mmbtu": 53.493333,
     "start_fuel_mmbtu": 144.0
   },
-  "dispatch_curtailment_fuel_mmbtu": 4304.440555553,
+  "dispatch_curtailment_fuel_by_unit_mmbtu": {
+    "gt-hot-01": 652.521044,
+    "gt-hot-02": 248.600834,
+    "gt-spin-01": 2093.02639,
+    "gt-spin-02": 1310.292289
+  },
+  "dispatch_curtailment_fuel_mmbtu": 4304.440556999,
+  "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+    "hot_standby_fuel_mmbtu": 2.745833,
+    "load_fuel_mmbtu": 4104.201390999,
+    "no_load_fuel_mmbtu": 53.493333,
+    "start_fuel_mmbtu": 144.0
+  },
+  "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+    "gt-hot-01": 652.521044,
+    "gt-hot-02": 248.600834,
+    "gt-spin-01": 2093.02639,
+    "gt-spin-02": 1310.292289
+  },
+  "dispatch_curtailment_interval_exposure_fuel_mmbtu": 4304.440556999,
   "dispatch_curtailment_mwh": 299.465950765,
   "energy_balance": {
     "closure_required": true,

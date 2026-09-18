@@ -8,10 +8,10 @@ All four final run JSONs and both aggregate summary JSONs are below 100 KB; per-
 
 | Scenario | Verdict | Baseline fuel (MMBtu) | Informed fuel (MMBtu) | Difference (MMBtu) | Change | Avoided-curtailment share |
 |---|---:|---:|---:|---:|---:|---:|
-| scenario-h1-k8s-ray-24h | **PASS** | 6039.740230 | 5771.387452 | -268.352778 | -4.4431% | 1.7640 |
-| scenario-h2-slurm-24h | **PASS** | 4953.257014 | 4818.440556 | -134.816458 | -2.7218% | 0.8911 |
+| scenario-h1-k8s-ray-24h | **PASS** | 6039.740230 | 5771.387452 | -268.352778 | -4.4431% | 0.9871 |
+| scenario-h2-slurm-24h | **PASS** | 4953.257014 | 4818.440556 | -134.816458 | -2.7218% | 1.9251 |
 
-The avoided-curtailment share is an attribution ratio, not a claim that every avoided MMBtu is independent of the other component changes. A ratio above 1 means other component deltas offset part of the avoided-curtailment reduction.
+The avoided-curtailment share uses attributable curtailment fuel: curtailed MWh are allocated pro rata across on-bus turbines at each unit's operating-point heat rate. The interval-exposure metric is reported separately and includes all fuel telemetry on ticks where dispatch curtailment is active. The share is an attribution ratio, not a claim that every avoided MMBtu is independent of the other component changes. A ratio above 1 means other component deltas offset part of the avoided-curtailment reduction.
 
 ## scenario-h1-k8s-ray-24h
 
@@ -36,7 +36,7 @@ The avoided-curtailment share is an attribution ratio, not a claim that every av
 | total | 6039.740230240 |
 | pre-load tag | 0.000000000 |
 
-- Curtailment: **187.690139189 MWh**; interval exposure **12118 ticks** (16.8306 h); attributable curtailment fuel **3394.620064264 MMBtu**.
+- Curtailment: **187.690139189 MWh**; interval exposure **12118 ticks** (16.8306 h); interval-exposure fuel **3394.620050 MMBtu**; attributable curtailment fuel **1974.088292 MMBtu**.
 - Controller stops refused by core reserve-floor condition: **0 compact refusal records**; raw numerical reserve-floor diagnostic evaluations: **0**.
 - Controller stop followed by same-unit core `reserve floor violated` restart strictly inside the 900-second minimum-down window: **0**.
 
@@ -81,7 +81,7 @@ The avoided-curtailment share is an attribution ratio, not a claim that every av
 | total | 5771.387452462 |
 | pre-load tag | 0.000000000 |
 
-- Curtailment: **162.509583594 MWh**; interval exposure **10865 ticks** (15.0903 h); attributable curtailment fuel **2921.246800376 MMBtu**.
+- Curtailment: **162.509583594 MWh**; interval exposure **10865 ticks** (15.0903 h); interval-exposure fuel **2921.246792 MMBtu**; attributable curtailment fuel **1709.188855 MMBtu**.
 - Controller stops refused by core reserve-floor condition: **1 compact refusal records**; raw numerical reserve-floor diagnostic evaluations: **17167**.
 - Controller stop followed by same-unit core `reserve floor violated` restart strictly inside the 900-second minimum-down window: **0**.
 
@@ -116,7 +116,8 @@ The avoided-curtailment share is an attribution ratio, not a claim that every av
 | total | -268.352777778 |
 
 - Percent change versus baseline: **-4.4431%**.
-- Avoided-curtailment fuel: **473.373263888 MMBtu**; share of total fuel difference: **1.7640**.
+- Avoided-curtailment interval-exposure fuel: **473.373258 MMBtu**.
+- Avoided-curtailment attributable fuel: **264.899437 MMBtu**; share of total fuel difference: **0.9871**.
 
 ## scenario-h2-slurm-24h
 
@@ -141,7 +142,7 @@ The avoided-curtailment share is an attribution ratio, not a claim that every av
 | total | 4953.257013889 |
 | pre-load tag | 0.000000000 |
 
-- Curtailment: **324.144769567 MWh**; interval exposure **16182 ticks** (22.4750 h); attributable curtailment fuel **4424.576041664 MMBtu**.
+- Curtailment: **324.144769567 MWh**; interval exposure **16182 ticks** (22.4750 h); interval-exposure fuel **4424.576043 MMBtu**; attributable curtailment fuel **3409.807921 MMBtu**.
 - Controller stops refused by core reserve-floor condition: **0 compact refusal records**; raw numerical reserve-floor diagnostic evaluations: **0**.
 - Controller stop followed by same-unit core `reserve floor violated` restart strictly inside the 900-second minimum-down window: **0**.
 
@@ -186,7 +187,7 @@ The avoided-curtailment share is an attribution ratio, not a claim that every av
 | total | 4818.440555556 |
 | pre-load tag | 0.000000000 |
 
-- Curtailment: **299.465950765 MWh**; interval exposure **16149 ticks** (22.4292 h); attributable curtailment fuel **4304.440555553 MMBtu**.
+- Curtailment: **299.465950765 MWh**; interval exposure **16149 ticks** (22.4292 h); interval-exposure fuel **4304.440557 MMBtu**; attributable curtailment fuel **3150.270493 MMBtu**.
 - Controller stops refused by core reserve-floor condition: **2 compact refusal records**; raw numerical reserve-floor diagnostic evaluations: **15493**.
 - Controller stop followed by same-unit core `reserve floor violated` restart strictly inside the 900-second minimum-down window: **0**.
 
@@ -225,7 +226,9 @@ The avoided-curtailment share is an attribution ratio, not a claim that every av
 | total | -134.816458333 |
 
 - Percent change versus baseline: **-2.7218%**.
-- Avoided-curtailment fuel: **120.135486111 MMBtu**; share of total fuel difference: **0.8911**.
+- H-2 informed cycling is documented, not changed: start fuel rises from **64.000000** to **192.000000 MMBtu**; `gt-spin-02` has **8** starts and **9** stops, versus **6** baseline starts. This is the known H-2 informed-cycling character.
+- Avoided-curtailment interval-exposure fuel: **120.135486 MMBtu**.
+- Avoided-curtailment attributable fuel: **259.537428 MMBtu**; share of total fuel difference: **1.9251**.
 
 ## Diagnostic 1 — curtailment plausibility
 
@@ -239,6 +242,7 @@ Site demand is `p_total_mw` from the compressed tick evidence. Fleet minimum sta
 | scenario-h2-slurm-24h / informed | 0.0438 / 3.4617 / 9.2634 / 117.0987 | 8.7500 / 17.5000 / 26.2500 / 26.2500 | 16144 | 22.4222 h | 299.4660 MWh |
 
 - Plain reading: the H-1 187.690139 MWh baseline and 162.509584 MWh informed curtailment are consistent with long periods where synchronized units carry 17.5–35 MW of minimum stable output while site demand is low and the BESS charge headroom is zero or insufficient. H-2 shows the same mechanism, with 324.144770 / 299.465951 MWh and more low-demand exposure. The table supports the curtailment magnitude; it does not by itself establish that every interval is optimally committed.
+- Scenario character note: the low-demand portions of these reference traces can produce minimum-load over-generation while turbines remain synchronized. That is an authored scenario characteristic, not a new commitment-policy change or a curtailment-ordering change.
 
 ## Diagnostic 2 — D4 balance defect
 
@@ -270,8 +274,19 @@ Baseline has no controller forecast history, so its forecast-error fields are ze
 
 Recommendation: do not change the forecast rule in stage 2b-1. A future change could add a bounded burst/event side-channel or a calibrated upper-quantile forecast, but that would require a new acceptance baseline, forecast-quality tests, and revalidation of starts, fuel, and unserved energy. The operational cost would be more conservative turbine commitment and potentially more starts/no-load fuel; the engineering cost is a separate design and test pass.
 
+## Diagnostic 4 — replay-run unserved-energy independence
+
+The replay path was tested with the same 60-second demand trace but materially worse informed supply: baseline starts with two synchronized turbines, while the informed fixture starts with zero synchronized turbines and no hot standby. The independent per-run result is:
+
+| Fixture | Unserved energy | Peak unserved | Result |
+|---|---:|---:|---|
+| baseline supply | 0.041666667 MWh | 11.000000000 MW | reference |
+| supply-starved informed | 0.516666667 MWh | 31.000000000 MW | **different** |
+
+`test_tc150_replay_unserved_energy_uses_each_run_supply` passes. This demonstrates that unserved energy is calculated from each replay run's local supply and demand, not inherited from the probe. The H-1/H-2 production replay values remain identical between baseline and informed because those two runs use the same physical topology and the same replayed demand trace, not because the replay path shares an unserved-energy result.
+
 ## Closure decision
 
-H-65 is committed and the confirming Phase 2a smoke is PASS: baseline 574.613363426 MMBtu / 2.252165190 MWh unserved, informed 528.841861699 MMBtu / 0.075899258 MWh unserved, with 4 informed refusal records and 774 suppressed repeats. Both H-1 and H-2 24-hour stage-1 aggregates are PASS, and all requested diagnostics are recorded above.
+H-65 is committed and the confirming Phase 2a smoke is PASS: baseline 574.613363426 MMBtu / 2.252165190 MWh unserved, informed 528.841861699 MMBtu / 0.075899258 MWh unserved, with 4 informed refusal records and 774 suppressed repeats. Both H-1 and H-2 24-hour stage-1 aggregates are PASS, the replay independence test is PASS, and all requested diagnostics are recorded above.
 
 Stage 2b-1 can close. The 7-day runs may start as the next separately controlled step; they were not started here.
