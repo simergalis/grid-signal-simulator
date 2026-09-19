@@ -98,7 +98,7 @@ from api.routes import ingest as ingest_routes
 from api.auth_utils import COOKIE_NAME, decode_access_token
 from api.db import create_auth_tables, _SessionLocal
 from runtime.persistence import AuthUser, LeadTimeObservation
-from mcp_server.server import app as study_mcp_app
+from mcp_server.server import app as study_mcp_app, mcp_endpoint
 
 # §10.2: built frontend lives two levels above this file (api/ → gridsignal_sim/ → gridsignal_sim_v2/)
 #   __file__ = .../gridsignal_sim_v2/gridsignal_sim/api/app.py
@@ -436,8 +436,15 @@ def create_app() -> FastAPI:
     # requires a separately configured read or run bearer token.
     application.mount("/mcp", study_mcp_app)
     @application.api_route("/mcp", methods=["GET", "POST"], include_in_schema=False)
-    async def _mcp_without_trailing_slash() -> RedirectResponse:
-        return RedirectResponse("/mcp/", status_code=307)
+    async def _mcp_without_trailing_slash(request: Request) -> Response:
+        """Serve MCP directly without relying on a POST redirect.
+
+        Some MCP clients do not preserve the request body and authorization
+        header when following a 307 from ``/mcp`` to ``/mcp/``.  Delegate to
+        the same handler used by the mounted sub-application so both paths
+        have identical transport and authorization behavior.
+        """
+        return await mcp_endpoint(request)
 
     # ── §10.2 static frontend (Step 16) ─────────────────────────────────
     # Catch-all GET route: serve real static assets by file path, then fall
