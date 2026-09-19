@@ -659,6 +659,14 @@ def build_run_context_from_spec(
         frequency_nominal_hz=float(_freq_raw),
         power_factor=float(_pf_raw),
         pue_base=spec_data.get("pue_base", 1.03),
+        generation_baseload_mw=(
+            float(spec_data["generation_baseload_mw"])
+            if spec_data.get("generation_baseload_mw") is not None
+            else None
+        ),
+        generation_peak_following=bool(
+            spec_data.get("generation_peak_following", True)
+        ),
         island_mode=island,
         grid_import_limit_mw=(
             float(spec_data["grid_import_limit_mw"])
@@ -925,6 +933,17 @@ def build_run_context_from_spec(
         )
         for i, t in enumerate(spec_data.get("turbine_units", []))
     ]
+    _generation_baseload_mw = site.generation_baseload_mw
+    if (
+        _generation_baseload_mw is not None
+        and _generation_baseload_mw
+        > sum(max(0.0, float(t.config.rated_mw)) for t in turbines) + 1e-9
+    ):
+        raise ValueError(
+            "generation_baseload_mw exceeds the installed turbine fleet rating: "
+            f"target={_generation_baseload_mw:.3f} MW, "
+            f"installed={sum(max(0.0, float(t.config.rated_mw)) for t in turbines):.3f} MW"
+        )
 
     # The scenario owns the starting topology.  None preserves the historical
     # effective default of one synchronized unit, while an explicit count lets

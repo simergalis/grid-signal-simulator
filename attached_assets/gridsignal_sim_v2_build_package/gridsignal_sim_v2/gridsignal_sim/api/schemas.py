@@ -1708,6 +1708,25 @@ class ScenarioSpec(BaseModel):
         ge=0.0,
         description="PROPOSED_HERE: informed-mode stop hysteresis in MW.",
     )
+    # Conventional comparison policy.  This is intentionally separate from
+    # turbine commitment mode: a baseline run can hold a generation basepoint
+    # while an informed run remains unconstrained by that policy.
+    generation_baseload_mw: Optional[float] = Field(
+        default=None,
+        ge=0.0,
+        description=(
+            "Optional conventional turbine-generation basepoint in MW. "
+            "Baseline runs hold this output when feasible, follow demand above "
+            "it, and return toward it after a peak."
+        ),
+    )
+    generation_peak_following: bool = Field(
+        default=True,
+        description=(
+            "When generation_baseload_mw is set, allow baseline generation to "
+            "rise above the basepoint for demand peaks."
+        ),
+    )
     dispatch_curtailment_response_delay_s: float = Field(
         default=0.5,
         ge=0.0,

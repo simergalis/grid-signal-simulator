@@ -1484,6 +1484,27 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             0.0,
             min(p_dispatch_required_mw + _droop_correction_mw, _sync_ceiling_mw),
         )
+
+    # Conventional comparison policy: baseline runs keep enough turbine
+    # commitment available to sustain the configured generation basepoint. The
+    # target is a floor, not a cap: demand above it still flows through the
+    # existing peak-following dispatch. Informed mode is intentionally not
+    # constrained by this policy so the two policies remain comparable.
+    _generation_baseload_mw = getattr(state.site, "generation_baseload_mw", None)
+    _generation_baseload_active = (
+        getattr(state, "_commitment_mode", "baseline") == "baseline"
+        and _generation_baseload_mw is not None
+        and float(_generation_baseload_mw) > 0.0
+    )
+    _generation_baseload_target_mw = (
+        max(0.0, float(_generation_baseload_mw))
+        if _generation_baseload_active
+        else 0.0
+    )
+    _generation_peak_following = bool(
+        getattr(state.site, "generation_peak_following", True)
+    )
+
     # 4. Turbine advance + Phase 1b loading layer + BESS shortfall coverage
     #
     # Phase B Item 1 — interval-entry state snapshot:
@@ -1716,6 +1737,24 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     _thermal_dispatch_target_mw = (
         _turbine_must_run_mw + _economic_allocations["turbine-fleet"]
     )
+    if _generation_baseload_active:
+        # The conventional policy is a generation floor.  Peak-following keeps
+        # the turbine fleet itself above the floor when demand requires it.
+        # This is intentionally different from the normal merit order: the
+        # BESS remains transient/residual support rather than silently
+        # replacing conventional turbine generation during a peak.
+        _conventional_following_target_mw = max(
+            0.0,
+            _p_dispatch_droop_mw - fuel_cell_output_mw,
+        )
+        if _generation_peak_following:
+            _thermal_dispatch_target_mw = max(
+                _thermal_dispatch_target_mw,
+                _generation_baseload_target_mw,
+                _conventional_following_target_mw,
+            )
+        else:
+            _thermal_dispatch_target_mw = _generation_baseload_target_mw
     _preload_targets_mw = dict(getattr(state, "_preload_targets_mw", {}) or {})
     if _preload_targets_mw:
         _thermal_dispatch_target_mw = max(
@@ -2062,12 +2101,37 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # OFFLINE standby units still flow through force_commit_trigger → evaluate_commitment.
     _cascade_trigger = False
     _cascade_frac = getattr(state.site, "cascade_commit_fraction", None)
-    if _cascade_frac is not None:
+    _turbine_total_rated_mw = sum(
+        max(0.0, float(t.config.rated_mw)) for t in state.turbines
+    )
+    _largest_turbine_rated_mw = max(
+        (max(0.0, float(t.config.rated_mw)) for t in state.turbines),
+        default=0.0,
+    )
+    _baseload_commitment_capacity_mw = min(
+        _turbine_total_rated_mw,
+        _generation_baseload_target_mw + _largest_turbine_rated_mw,
+    )
+    _baseload_on_bus_capacity_mw = sum(
+        max(0.0, float(t.config.rated_mw))
+        for t in state.turbines
+        if t.is_on_bus and not t.config.hot_standby
+    )
+    _baseload_commitment_needed = (
+        _generation_baseload_active
+        and _baseload_on_bus_capacity_mw + 1e-9
+        < _baseload_commitment_capacity_mw
+    )
+    if _cascade_frac is not None or _baseload_commitment_needed:
         _active_on_bus = [t for t in state.turbines if t.is_on_bus and not t.config.hot_standby]
         if _active_on_bus:
             _lead_turbine = _active_on_bus[-1]  # last committed active unit
-            _threshold_mw = _cascade_frac * _lead_turbine.config.rated_mw
-            if _lead_turbine.output_mw() >= _threshold_mw:
+            _threshold_mw = (
+                _cascade_frac * _lead_turbine.config.rated_mw
+                if _cascade_frac is not None
+                else 0.0
+            )
+            if _baseload_commitment_needed or _lead_turbine.output_mw() >= _threshold_mw:
                 # ── Hot-standby path ────────────────────────────────────────────
                 # Hot-standby turbines sit in OFFLINE state (not SYNCHRONISED) —
                 # the hot_standby flag is what suppresses is_on_bus and blocks
@@ -2091,8 +2155,16 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                             _next_hs,
                             sim_time=sim_time,
                             action="release",
-                            source="automatic_cascade",
-                            reason="cascade threshold released hot standby",
+                            source=(
+                                "generation_baseload_policy"
+                                if _baseload_commitment_needed
+                                else "automatic_cascade"
+                            ),
+                            reason=(
+                                "generation baseload requires additional committed capacity"
+                                if _baseload_commitment_needed
+                                else "cascade threshold released hot standby"
+                            ),
                             from_state=_before_state,
                             to_state=_next_hs.state,
                             controller_approved=(
@@ -2139,8 +2211,8 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         cfg                  = state._commit_cfg,
         dt_s                 = dt_seconds,
         sim_time             = sim_time,
-        force_commit_trigger = _cascade_trigger,
-        decommit_enabled     = _bess_rundown_enabled,
+        force_commit_trigger = _cascade_trigger or _baseload_commitment_needed,
+        decommit_enabled     = _bess_rundown_enabled and not _generation_baseload_active,
         decommit_reason_context = _bess_rundown_reason,
     )
     if (
@@ -3029,7 +3101,13 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # The gating criterion: _committed_rated_mw_cs > 0 ↔ at least one
     # SYNCHRONISED turbine has headroom and can act on the setpoint.
     _turb_setpoint_for_error_mw = (
-        _p_dispatch_droop_mw if _committed_rated_mw_cs > 0.0 else 0.0
+        (
+            _thermal_dispatch_target_mw
+            if _generation_baseload_active
+            else _p_dispatch_droop_mw
+        )
+        if _committed_rated_mw_cs > 0.0
+        else 0.0
     )
     _asset_delivery_error_mw = (           # reporting only — NOT a D4 term
         (turbine_output_mw - _turb_setpoint_for_error_mw)

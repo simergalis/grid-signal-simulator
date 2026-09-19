@@ -423,6 +423,12 @@ class SiteConfig:
     # to 0.85; this makes SiteConfig consistent.  Operator-visible via ParameterModal.
     power_factor: float = 0.85        # CHOSEN — typical gas turbine; see comment above
     pue_base: float = _sp.value("pue_base")
+    # Optional conventional-generation policy.  When enabled by a baseline
+    # scenario, the turbine fleet targets this output whenever physically
+    # feasible and follows demand above it.  This is deliberately a site policy
+    # input, not a turbine or BESS rating.
+    generation_baseload_mw: Optional[float] = None
+    generation_peak_following: bool = True
     # IT-side overhead: power conversion, distribution, UPS losses, lighting.
     # Excludes cooling (§4.1).  PROPOSED_HERE; range [1.01, 1.10].
     # Source: gridsignal_parameters.json PARAM-06.
@@ -1694,10 +1700,9 @@ class TickResult:
     #   power-saturated.  That difference IS the balance residual from the
     #   BESS side.
     # gt_setpoint_mw: effective turbine dispatch setpoint this tick.
-    #   Phase 13.3: equals the droop-adjusted demand (_p_dispatch_droop_mw),
-    #   not the raw p_dispatch_required_mw.  The droop correction is zero at
-    #   nominal frequency (within deadband ±0.02 Hz), so this field equals
-    #   p_dispatch_required_mw in steady state.
+    #   Normally this is the droop-adjusted demand. A configured conventional
+    #   generation-baseload policy reports its thermal fleet target instead,
+    #   including the generation floor when site demand is lower.
     #   Differs from turbine_output_mw while turbines are still ramping.
     # balance_residual_mw: (turbine_output + bess_output + p_renewable) − p_total.
     #   DEPRECATED (Phase 13.2): read grid_exchange_mw + frequency_forcing_mw +
