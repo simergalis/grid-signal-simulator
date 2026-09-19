@@ -12,8 +12,10 @@ from study_harness.errors import (
     FuelComponentReconciliationError,
     StartFuelReconciliationError,
 )
+from study_harness.executor import StudyRunExecutor
 from study_harness.manifest import RunManifestCache, make_run_identity
 from study_harness.metrics import collect_metrics
+from runtime.turbine_commitment import ForecastDrivenTurbineController
 
 
 def _row(
@@ -293,3 +295,103 @@ def test_artifact_writer_verifies_existing_bounded_outputs(tmp_path: Path) -> No
     )
     assert all(Path(path).is_file() for path in result.paths.values())
     assert all(size > 0 for size in result.sizes_bytes.values())
+
+
+class _UnboundedForecastHistory(list):
+    """Test-only history that keeps an unbounded logical length.
+
+    The controller reads only ``forecast_history[-1]``. Keep the two live
+    snapshots physically, but retain the logical append count so this test
+    does not spend quadratic time retaining millions of profile tuples.
+    """
+
+    def __init__(self, values=()):
+        super().__init__(values)
+        self.logical_length = list.__len__(self)
+
+    def append(self, value):
+        super().append(value)
+        self.logical_length += 1
+
+    def __len__(self):
+        return self.logical_length
+
+    def __delitem__(self, key):
+        if isinstance(key, slice):
+            list.__delitem__(self, key)
+            return
+        super().__delitem__(key)
+        self.logical_length -= 1
+
+
+def test_h1_informed_is_deterministic_with_bounded_forecast_history(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The two-snapshot diagnostic bound must not change H-1 physics."""
+    scenario_id = "scenario-h1-k8s-ray-24h"
+    bounded_executor = StudyRunExecutor(output_dir=tmp_path / "bounded")
+    spec = bounded_executor._expanded_spec(scenario_id, None, None)
+    replay_events, demand_replay = bounded_executor._probe(
+        spec,
+        run_id="h1-forecast-bound-determinism-probe",
+    )
+    bounded = bounded_executor._run_mode(
+        scenario_id=scenario_id,
+        mode="informed",
+        spec=spec,
+        replay_events=replay_events,
+        demand_replay=demand_replay,
+        seed=None,
+    )
+
+    original_init = ForecastDrivenTurbineController.__init__
+    unbounded_controllers = []
+
+    def preserve_forecast_history(self, *args, **kwargs):
+        original_init(self, *args, **kwargs)
+        self.forecast_history = _UnboundedForecastHistory(self.forecast_history)
+        unbounded_controllers.append(self)
+
+    monkeypatch.setattr(
+        ForecastDrivenTurbineController,
+        "__init__",
+        preserve_forecast_history,
+    )
+    unbounded = StudyRunExecutor(
+        output_dir=tmp_path / "unbounded",
+    )._run_mode(
+        scenario_id=scenario_id,
+        mode="informed",
+        spec=spec,
+        replay_events=replay_events,
+        demand_replay=demand_replay,
+        seed=None,
+    )
+
+    metric_keys = (
+        "fuel_by_component_mmbtu",
+        "turbine_fuel_mmbtu",
+        "dispatch_curtailment_mwh",
+        "dispatch_curtailment_interval_exposure_fuel_mmbtu",
+        "dispatch_curtailment_attributable_fuel_mmbtu",
+        "unserved_mwh",
+        "peak_unserved_mw",
+        "served_mwh",
+        "energy_balance",
+        "bess_soc_min",
+        "bess_soc_max",
+        "bess_soc_final",
+        "commitment",
+        "forecast",
+        "compute_trace_sha256",
+        "compute_trace_count",
+        "daily_breakdown",
+    )
+    for key in metric_keys:
+        assert bounded[key] == unbounded[key], (
+            f"bounded forecast history changed metric {key}: "
+            f"{bounded[key]!r} != {unbounded[key]!r}"
+        )
+    assert unbounded_controllers
+    assert len(unbounded_controllers[0].forecast_history) > 2

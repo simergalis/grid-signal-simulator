@@ -219,6 +219,15 @@ def _run_test() -> None:
             if len(phase_samples[3]) >= 10:
                 break
 
+            # The completed-run latest-tick response is the final tick and does
+            # not include a status field.  At max speed the run can finish
+            # between polls with fewer than ten distinct phase-3 samples, so
+            # stop at the scenario's final simulated interval instead of
+            # polling the same final tick until TOTAL_TIMEOUT.
+            if sim_t >= 3600.0:
+                print("[INFO]   reached the scenario end at sim_t=3600.0s")
+                break
+
             # Also stop if the run is done
             status = tick.get("status") or tick.get("run_status", "")
             if status in ("completed", "cancelled", "failed"):
