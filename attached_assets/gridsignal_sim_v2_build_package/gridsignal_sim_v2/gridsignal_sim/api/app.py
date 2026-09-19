@@ -74,7 +74,7 @@ if not _gs_log_ns.handlers:
     _gs_log_ns.propagate = False
 
 from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from runtime.run_manager import RunManager, WebSocketHub
@@ -98,6 +98,7 @@ from api.routes import ingest as ingest_routes
 from api.auth_utils import COOKIE_NAME, decode_access_token
 from api.db import create_auth_tables, _SessionLocal
 from runtime.persistence import AuthUser, LeadTimeObservation
+from mcp_server.server import app as study_mcp_app
 
 # §10.2: built frontend lives two levels above this file (api/ → gridsignal_sim/ → gridsignal_sim_v2/)
 #   __file__ = .../gridsignal_sim_v2/gridsignal_sim/api/app.py
@@ -430,6 +431,13 @@ def create_app() -> FastAPI:
     application.include_router(capacity_outlook_routes.router)
     application.include_router(reference_forecast_routes.router)
     application.include_router(ingest_routes.router)
+    # S3 study-harness MCP is an isolated ASGI mount, outside /api/* and
+    # outside the customer-facing REST router surface.  Its own middleware
+    # requires a separately configured read or run bearer token.
+    application.mount("/mcp", study_mcp_app)
+    @application.api_route("/mcp", methods=["GET", "POST"], include_in_schema=False)
+    async def _mcp_without_trailing_slash() -> RedirectResponse:
+        return RedirectResponse("/mcp/", status_code=307)
 
     # ── §10.2 static frontend (Step 16) ─────────────────────────────────
     # Catch-all GET route: serve real static assets by file path, then fall

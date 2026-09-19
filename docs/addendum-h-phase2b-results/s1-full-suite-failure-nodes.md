@@ -39,3 +39,37 @@ and matched the complete metric set; its evidence is in
 The induced-miss test still reports exactly one deliberate forecast miss. The
 seven-day replay has zero H-1 informed misses and 39 H-2 informed misses.
 The S1 changes therefore did not make forecast-miss accounting vacuous.
+
+## S3 MCP regression comparison
+
+After adding the isolated S3 MCP boundary, the same full-suite command was run
+twice without test selection changes, skips, or xfails:
+
+```text
+cd attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2
+PYTHONPATH=gridsignal_sim pytest -q --disable-warnings
+```
+
+Run 1 completed with `82 failed, 2,015 passed, 3 skipped, 23 xfailed, 54
+warnings, 3 subtests passed` in `573.87s`.
+
+Run 2 completed with `82 failed, 2,015 passed, 3 skipped, 23 xfailed, 54
+warnings, 3 subtests passed` in `575.88s`.
+
+The two sorted S3 failure lists are recorded in:
+
+- `s3-run1-failure-nodes.txt`
+- `s3-run2-failure-nodes.txt`
+
+The S3 failure-node set difference is empty:
+
+```text
+s3 run 1 - s3 run 2: none
+s3 run 2 - s3 run 1: none
+symmetric difference: 0 nodes
+s3 run 1 - prior 82-node baseline: none
+prior 82-node baseline - s3 run 1: none
+```
+
+The two additional passing tests are the focused MCP HTTP regression tests;
+the pre-existing 82 failure nodes are unchanged.

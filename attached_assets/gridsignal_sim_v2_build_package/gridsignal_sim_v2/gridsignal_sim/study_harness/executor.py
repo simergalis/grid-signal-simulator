@@ -218,6 +218,8 @@ class StudyRunExecutor:
         demand_replay: list[tuple[float, float]],
         seed: int | str | None,
         allow_guard_failure: bool = False,
+        reuse_cache: bool = True,
+        progress_callback: Any | None = None,
     ) -> dict[str, Any]:
         run_spec = copy.deepcopy(spec)
         run_spec["turbine_commitment_mode"] = mode
@@ -255,6 +257,11 @@ class StudyRunExecutor:
                 tick = ctx.step()
                 collector.add(tick)
                 tick_rows.append(_compact_tick(tick))
+                if progress_callback is not None and (
+                    len(tick_rows) == tick_count
+                    or len(tick_rows) % 100 == 0
+                ):
+                    progress_callback(len(tick_rows) * self.tick_seconds)
             raw_metadata = _controller_metadata(ctx)
             raw_metadata.update(
                 {
@@ -350,10 +357,50 @@ class StudyRunExecutor:
             record["artifacts"] = artifacts.as_dict()
             return record
 
-        record, cache_hit = self.cache.get_or_execute(identity, execute)
+        if reuse_cache:
+            record, cache_hit = self.cache.get_or_execute(identity, execute)
+        else:
+            record = self.cache.put(identity, execute())
+            cache_hit = False
         record = dict(record)
         record["cache_hit"] = cache_hit
         return record
+
+    def run_mode(
+        self,
+        *,
+        scenario_id: str,
+        mode: str,
+        parameter_overrides: Mapping[str, Any] | None = None,
+        seed: int | str | None = None,
+        duration_seconds: float | None = None,
+        allow_guard_failures: bool = False,
+        reuse_cache: bool = True,
+        progress_callback: Any | None = None,
+    ) -> dict[str, Any]:
+        """Execute one mode through the same S1 probe/replay path as run_pair."""
+        if mode not in {"baseline", "informed"}:
+            raise ValueError("mode must be baseline or informed")
+        spec = self._expanded_spec(
+            scenario_id,
+            parameter_overrides,
+            duration_seconds,
+        )
+        replay_events, demand_replay = self._probe(
+            spec,
+            run_id=f"{scenario_id}-study-s1-probe",
+        )
+        return self._run_mode(
+            scenario_id=scenario_id,
+            mode=mode,
+            spec=spec,
+            replay_events=replay_events,
+            demand_replay=demand_replay,
+            seed=seed,
+            allow_guard_failure=allow_guard_failures,
+            reuse_cache=reuse_cache,
+            progress_callback=progress_callback,
+        )
 
     def run_pair(
         self,

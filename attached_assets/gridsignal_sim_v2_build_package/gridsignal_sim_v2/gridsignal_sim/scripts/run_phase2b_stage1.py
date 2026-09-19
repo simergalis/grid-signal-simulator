@@ -43,7 +43,9 @@ from scripts.run_phase2a_smoke import _extended_metrics
 TICK_SECONDS = 5.0
 REFERENCE_IDS = {
     "scenario-h1-k8s-ray-24h": "scenario-h1-k8s-ray-24h.json",
+    "scenario-h1-k8s-ray-7d": "scenario-h1-k8s-ray-7d.json",
     "scenario-h2-slurm-24h": "scenario-h2-slurm-24h.json",
+    "scenario-h2-slurm-7d": "scenario-h2-slurm-7d.json",
 }
 OUTPUT_ROOT = PACKAGE_ROOT.parents[3] / "docs" / "addendum-h-phase2b-results"
 
