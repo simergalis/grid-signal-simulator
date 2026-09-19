@@ -1,0 +1,34 @@
+Addendum H Phase 2b-2 full-suite comparison
+============================================
+
+Command:
+  cd attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2
+  PYTHONPATH=gridsignal_sim pytest -q
+
+Current run:
+  2,000 passed
+  85 failed
+  3 skipped
+  23 xfailed
+  2,111 total outcomes
+
+Historical comparison supplied with the Phase 2b-2 task:
+  1,988 passed
+  65 failed
+  3 skipped
+  23 xfailed
+  2,079 total outcomes
+
+Delta:
+  +12 passed
+  +20 failed
+  +32 total outcomes
+
+Phase 2b-specific focused coverage:
+  47 passed across the Stage 2, Stage 1, and Phase 2a commitment tests.
+  No full-suite failures matched the Phase 2b-2 Stage 2 or Stage 1 test modules.
+
+The broader failures were outside the Phase 2b-2 change surface and included
+existing GPU lead-time, fuel-cell, grid-import, fabric, scheduler, API-static,
+and scenario-contract tests. The complete pytest output was captured during
+verification; this file records the bounded comparison required by the report.

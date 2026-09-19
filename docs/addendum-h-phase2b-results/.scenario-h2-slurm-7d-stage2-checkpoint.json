@@ -1,0 +1,11 @@
+{
+  "background_trace_signal_count": 4656,
+  "baseline_complete": true,
+  "baseline_wall_clock_seconds": 392.795056,
+  "demand_replay_tick_count": 120960,
+  "informed_complete": true,
+  "informed_wall_clock_seconds": 1357.666834,
+  "probe": ".scenario-h2-slurm-7d-stage2-probe.json.gz",
+  "probe_complete": true,
+  "scenario_id": "scenario-h2-slurm-7d"
+}

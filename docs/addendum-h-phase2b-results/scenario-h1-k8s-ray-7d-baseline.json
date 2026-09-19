@@ -1,0 +1,1785 @@
+{
+  "acceptance_gates": {
+    "constraints_valid": true,
+    "identical_compute_trace": true,
+    "informed_peak_unserved_no_worse": true,
+    "informed_unserved_energy_no_worse": true,
+    "no_hard_violations": true,
+    "physical_ledger_closure": true,
+    "start_count_reconciled": true
+  },
+  "acceptance_verdict": "PASS",
+  "background_power_reactive": true,
+  "background_probe_wall_clock_seconds": 673.121364,
+  "background_trace_signal_count": 13823,
+  "bess_soc_final": 0.999999998,
+  "bess_soc_max": 0.999999999,
+  "bess_soc_min": 0.819307899,
+  "commitment_log": [
+    {
+      "accepted": true,
+      "action": "release",
+      "bess_soc_fraction": 0.984486,
+      "changed_state": true,
+      "controller_approved": null,
+      "forecast_mw": 0.0,
+      "from_state": "offline",
+      "peak_forecast_mw": 0.0,
+      "reason": "automatic contingency cascade release",
+      "refusal_reason": null,
+      "sim_time_s": 28955.0,
+      "source": "automatic_contingency",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 50.0,
+      "thermal_tier": "hot",
+      "to_state": "starting",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "bess_soc_fraction": 0.971417,
+      "changed_state": true,
+      "controller_approved": null,
+      "forecast_mw": 0.0,
+      "from_state": "starting",
+      "peak_forecast_mw": 0.0,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 29255.0,
+      "source": "turbine_physics",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 75.0,
+      "thermal_tier": "hot",
+      "to_state": "synchronised",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "release",
+      "bess_soc_fraction": 0.963364,
+      "changed_state": true,
+      "controller_approved": null,
+      "forecast_mw": 0.0,
+      "from_state": "offline",
+      "peak_forecast_mw": 0.0,
+      "reason": "automatic contingency cascade release",
+      "refusal_reason": null,
+      "sim_time_s": 30680.0,
+      "source": "automatic_contingency",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 75.0,
+      "thermal_tier": "hot",
+      "to_state": "starting",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "bess_soc_fraction": 0.922004,
+      "changed_state": true,
+      "controller_approved": null,
+      "forecast_mw": 0.0,
+      "from_state": "starting",
+      "peak_forecast_mw": 0.0,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 30980.0,
+      "source": "turbine_physics",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 100.0,
+      "thermal_tier": "hot",
+      "to_state": "synchronised",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": null,
+      "forecast_mw": 0.0,
+      "from_state": "synchronised",
+      "peak_forecast_mw": 0.0,
+      "reason": "U=0.117 \u2264 0.5, U_without=0.157 \u2264 0.7; BESS full; 23.26 MW turbine surplus remains after BESS absorbed 0.00 MW",
+      "refusal_reason": null,
+      "sim_time_s": 34070.0,
+      "source": "core_commitment",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 100.0,
+      "thermal_tier": "hot",
+      "to_state": "unloading",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": null,
+      "forecast_mw": 0.0,
+      "from_state": "unloading",
+      "peak_forecast_mw": 0.0,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 34135.0,
+      "source": "turbine_physics",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 75.0,
+      "thermal_tier": "hot",
+      "to_state": "offline",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": null,
+      "forecast_mw": 0.0,
+      "from_state": "synchronised",
+      "peak_forecast_mw": 0.0,
+      "reason": "U=0.150 \u2264 0.5, U_without=0.225 \u2264 0.7; BESS full; 15.02 MW turbine surplus remains after BESS absorbed 0.00 MW",
+      "refusal_reason": null,
+      "sim_time_s": 34195.0,
+      "source": "core_commitment",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 75.0,
+      "thermal_tier": "hot",
+      "to_state": "unloading",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": null,
+      "forecast_mw": 0.0,
+      "from_state": "unloading",
+      "peak_forecast_mw": 0.0,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 34260.0,
+      "source": "turbine_physics",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 50.0,
+      "thermal_tier": "hot",
+      "to_state": "offline",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "bess_soc_fraction": 0.995794,
+      "changed_state": true,
+      "controller_approved": null,
+      "forecast_mw": 0.0,
+      "from_state": "offline",
+      "peak_forecast_mw": 0.0,
+      "reason": "reserve floor violated: 50.0 MW < 79.0 MW",
+      "refusal_reason": null,
+      "sim_time_s": 36055.0,
+      "source": "core_commitment",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 50.0,
+      "thermal_tier": "hot",
+      "to_state": "starting",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "bess_soc_fraction": 0.97042,
+      "changed_state": true,
+      "controller_approved": null,
+      "forecast_mw": 0.0,
+      "from_state": "starting",
+      "peak_forecast_mw": 0.0,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 36355.0,
+      "source": "turbine_physics",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 75.0,
+      "thermal_tier": "hot",
+      "to_state": "synchronised",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "bess_soc_fraction": 0.973438,
+      "changed_state": true,
+      "controller_approved": null,
+      "forecast_mw": 0.0,
+      "from_state": "offline",
+      "peak_forecast_mw": 0.0,
+      "reason": "reserve floor violated: 75.0 MW < 117.4 MW",
+      "refusal_reason": null,
+      "sim_time_s": 37875.0,
+      "source": "core_commitment",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 75.0,
+      "thermal_tier": "warm",
+      "to_state": "starting",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "bess_soc_fraction": 0.923666,
+      "changed_state": true,
+      "controller_approved": null,
+      "forecast_mw": 0.0,
+      "from_state": "starting",
+      "peak_forecast_mw": 0.0,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 38235.0,
+      "source": "turbine_physics",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 100.0,
+      "thermal_tier": "warm",
+      "to_state": "synchronised",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "omitted_record_count": 96,
+      "truncated": true
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": null,
+      "forecast_mw": 0.0,
+      "from_state": "synchronised",
+      "peak_forecast_mw": 0.0,
+      "reason": "U=0.050 \u2264 0.5, U_without=0.067 \u2264 0.7; BESS full; 29.98 MW turbine surplus remains after BESS absorbed 0.00 MW",
+      "refusal_reason": null,
+      "sim_time_s": 566580.0,
+      "source": "core_commitment",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 100.0,
+      "thermal_tier": "warm",
+      "to_state": "unloading",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": null,
+      "forecast_mw": 0.0,
+      "from_state": "unloading",
+      "peak_forecast_mw": 0.0,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 566645.0,
+      "source": "turbine_physics",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 75.0,
+      "thermal_tier": "warm",
+      "to_state": "offline",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": null,
+      "forecast_mw": 0.0,
+      "from_state": "synchronised",
+      "peak_forecast_mw": 0.0,
+      "reason": "U=0.115 \u2264 0.5, U_without=0.173 \u2264 0.7; BESS full; 17.59 MW turbine surplus remains after BESS absorbed 0.00 MW",
+      "refusal_reason": null,
+      "sim_time_s": 566705.0,
+      "source": "core_commitment",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 75.0,
+      "thermal_tier": "warm",
+      "to_state": "unloading",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": null,
+      "forecast_mw": 0.0,
+      "from_state": "unloading",
+      "peak_forecast_mw": 0.0,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 566770.0,
+      "source": "turbine_physics",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 50.0,
+      "thermal_tier": "warm",
+      "to_state": "offline",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "bess_soc_fraction": 0.995794,
+      "changed_state": true,
+      "controller_approved": null,
+      "forecast_mw": 0.0,
+      "from_state": "offline",
+      "peak_forecast_mw": 0.0,
+      "reason": "reserve floor violated: 50.0 MW < 79.1 MW",
+      "refusal_reason": null,
+      "sim_time_s": 576055.0,
+      "source": "core_commitment",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 50.0,
+      "thermal_tier": "warm",
+      "to_state": "starting",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "bess_soc_fraction": 0.974024,
+      "changed_state": true,
+      "controller_approved": null,
+      "forecast_mw": 0.0,
+      "from_state": "starting",
+      "peak_forecast_mw": 0.0,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 576415.0,
+      "source": "turbine_physics",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 75.0,
+      "thermal_tier": "warm",
+      "to_state": "synchronised",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "bess_soc_fraction": 0.976643,
+      "changed_state": true,
+      "controller_approved": null,
+      "forecast_mw": 0.0,
+      "from_state": "offline",
+      "peak_forecast_mw": 0.0,
+      "reason": "reserve floor violated: 75.0 MW < 114.7 MW",
+      "refusal_reason": null,
+      "sim_time_s": 577875.0,
+      "source": "core_commitment",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 75.0,
+      "thermal_tier": "warm",
+      "to_state": "starting",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "bess_soc_fraction": 0.926871,
+      "changed_state": true,
+      "controller_approved": null,
+      "forecast_mw": 0.0,
+      "from_state": "starting",
+      "peak_forecast_mw": 0.0,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 578235.0,
+      "source": "turbine_physics",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 100.0,
+      "thermal_tier": "warm",
+      "to_state": "synchronised",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": null,
+      "forecast_mw": 0.0,
+      "from_state": "synchronised",
+      "peak_forecast_mw": 0.0,
+      "reason": "U=0.134 \u2264 0.5, U_without=0.179 \u2264 0.7; BESS full; 21.57 MW turbine surplus remains after BESS absorbed 0.00 MW",
+      "refusal_reason": null,
+      "sim_time_s": 581015.0,
+      "source": "core_commitment",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 100.0,
+      "thermal_tier": "warm",
+      "to_state": "unloading",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": null,
+      "forecast_mw": 0.0,
+      "from_state": "unloading",
+      "peak_forecast_mw": 0.0,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 581080.0,
+      "source": "turbine_physics",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 75.0,
+      "thermal_tier": "warm",
+      "to_state": "offline",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": null,
+      "forecast_mw": 0.0,
+      "from_state": "synchronised",
+      "peak_forecast_mw": 0.0,
+      "reason": "U=0.143 \u2264 0.5, U_without=0.215 \u2264 0.7; BESS full; 15.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+      "refusal_reason": null,
+      "sim_time_s": 581140.0,
+      "source": "core_commitment",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 75.0,
+      "thermal_tier": "warm",
+      "to_state": "unloading",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": null,
+      "forecast_mw": 0.0,
+      "from_state": "unloading",
+      "peak_forecast_mw": 0.0,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 581205.0,
+      "source": "turbine_physics",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 50.0,
+      "thermal_tier": "warm",
+      "to_state": "offline",
+      "unit_id": "gt-hot-01"
+    }
+  ],
+  "commitment_log_record_count": 288,
+  "compute_description": "scheduler-shaped GPU workload demand",
+  "constraints_valid": true,
+  "core_proposals": {
+    "approved": 0,
+    "by_action": {},
+    "vetoed": 0
+  },
+  "daily_breakdown": [
+    {
+      "bess_soc_end": 0.999999998,
+      "curtailed_mwh": 187.690139189,
+      "day": 1,
+      "fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 4.142013889,
+        "load_fuel_mmbtu": 5847.168216351,
+        "no_load_fuel_mmbtu": 72.43,
+        "start_fuel_mmbtu": 116.0
+      },
+      "fuel_mmbtu": 6039.74023024,
+      "kind": "weekday",
+      "start_count": 12,
+      "starts_by_unit_source": {
+        "gt-hot-01|automatic_contingency": 1,
+        "gt-hot-01|core_commitment": 5,
+        "gt-hot-02|automatic_contingency": 1,
+        "gt-hot-02|core_commitment": 5
+      },
+      "stop_count": 24,
+      "stops_by_unit_source": {
+        "gt-hot-01|core_commitment": 6,
+        "gt-hot-01|turbine_physics": 6,
+        "gt-hot-02|core_commitment": 6,
+        "gt-hot-02|turbine_physics": 6
+      },
+      "unserved_mwh": 0.894372986
+    },
+    {
+      "bess_soc_end": 0.999999999,
+      "curtailed_mwh": 191.062999109,
+      "day": 2,
+      "fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 0.0,
+        "load_fuel_mmbtu": 5814.750474407,
+        "no_load_fuel_mmbtu": 72.086666667,
+        "start_fuel_mmbtu": 140.0
+      },
+      "fuel_mmbtu": 6026.837141074,
+      "kind": "weekday",
+      "start_count": 12,
+      "starts_by_unit_source": {
+        "gt-hot-01|core_commitment": 6,
+        "gt-hot-02|core_commitment": 6
+      },
+      "stop_count": 24,
+      "stops_by_unit_source": {
+        "gt-hot-01|core_commitment": 6,
+        "gt-hot-01|turbine_physics": 6,
+        "gt-hot-02|core_commitment": 6,
+        "gt-hot-02|turbine_physics": 6
+      },
+      "unserved_mwh": 0.849896164
+    },
+    {
+      "bess_soc_end": 0.99999999,
+      "curtailed_mwh": 180.62702759,
+      "day": 3,
+      "fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 0.0,
+        "load_fuel_mmbtu": 5836.881884047,
+        "no_load_fuel_mmbtu": 72.251666667,
+        "start_fuel_mmbtu": 140.0
+      },
+      "fuel_mmbtu": 6049.133550714,
+      "kind": "weekday",
+      "start_count": 12,
+      "starts_by_unit_source": {
+        "gt-hot-01|core_commitment": 6,
+        "gt-hot-02|core_commitment": 6
+      },
+      "stop_count": 24,
+      "stops_by_unit_source": {
+        "gt-hot-01|core_commitment": 6,
+        "gt-hot-01|turbine_physics": 6,
+        "gt-hot-02|core_commitment": 6,
+        "gt-hot-02|turbine_physics": 6
+      },
+      "unserved_mwh": 0.909843907
+    },
+    {
+      "bess_soc_end": 0.999999999,
+      "curtailed_mwh": 185.885969685,
+      "day": 4,
+      "fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 0.0,
+        "load_fuel_mmbtu": 5787.377755591,
+        "no_load_fuel_mmbtu": 71.533333333,
+        "start_fuel_mmbtu": 140.0
+      },
+      "fuel_mmbtu": 5998.911088924,
+      "kind": "weekday",
+      "start_count": 12,
+      "starts_by_unit_source": {
+        "gt-hot-01|core_commitment": 6,
+        "gt-hot-02|core_commitment": 6
+      },
+      "stop_count": 24,
+      "stops_by_unit_source": {
+        "gt-hot-01|core_commitment": 6,
+        "gt-hot-01|turbine_physics": 6,
+        "gt-hot-02|core_commitment": 6,
+        "gt-hot-02|turbine_physics": 6
+      },
+      "unserved_mwh": 0.903969531
+    },
+    {
+      "bess_soc_end": 0.999999999,
+      "curtailed_mwh": 177.224667776,
+      "day": 5,
+      "fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 0.0,
+        "load_fuel_mmbtu": 5839.423276141,
+        "no_load_fuel_mmbtu": 72.215,
+        "start_fuel_mmbtu": 140.0
+      },
+      "fuel_mmbtu": 6051.638276141,
+      "kind": "weekday",
+      "start_count": 12,
+      "starts_by_unit_source": {
+        "gt-hot-01|core_commitment": 6,
+        "gt-hot-02|core_commitment": 6
+      },
+      "stop_count": 24,
+      "stops_by_unit_source": {
+        "gt-hot-01|core_commitment": 6,
+        "gt-hot-01|turbine_physics": 6,
+        "gt-hot-02|core_commitment": 6,
+        "gt-hot-02|turbine_physics": 6
+      },
+      "unserved_mwh": 0.859342704
+    },
+    {
+      "bess_soc_end": 0.999999993,
+      "curtailed_mwh": 213.722460531,
+      "day": 6,
+      "fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 0.0,
+        "load_fuel_mmbtu": 5135.559272349,
+        "no_load_fuel_mmbtu": 64.838333333,
+        "start_fuel_mmbtu": 88.0
+      },
+      "fuel_mmbtu": 5288.397605682,
+      "kind": "weekend",
+      "start_count": 6,
+      "starts_by_unit_source": {
+        "gt-hot-01|core_commitment": 3,
+        "gt-hot-02|core_commitment": 3
+      },
+      "stop_count": 12,
+      "stops_by_unit_source": {
+        "gt-hot-01|core_commitment": 3,
+        "gt-hot-01|turbine_physics": 3,
+        "gt-hot-02|core_commitment": 3,
+        "gt-hot-02|turbine_physics": 3
+      },
+      "unserved_mwh": 0.46411797
+    },
+    {
+      "bess_soc_end": 0.999999998,
+      "curtailed_mwh": 197.783470227,
+      "day": 7,
+      "fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 0.0,
+        "load_fuel_mmbtu": 5126.677380902,
+        "no_load_fuel_mmbtu": 64.806666667,
+        "start_fuel_mmbtu": 88.0
+      },
+      "fuel_mmbtu": 5279.484047568,
+      "kind": "weekend",
+      "start_count": 6,
+      "starts_by_unit_source": {
+        "gt-hot-01|core_commitment": 3,
+        "gt-hot-02|core_commitment": 3
+      },
+      "stop_count": 12,
+      "stops_by_unit_source": {
+        "gt-hot-01|core_commitment": 3,
+        "gt-hot-01|turbine_physics": 3,
+        "gt-hot-02|core_commitment": 3,
+        "gt-hot-02|turbine_physics": 3
+      },
+      "unserved_mwh": 0.466970895
+    }
+  ],
+  "demand_replay_tick_count": 120960,
+  "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+    "gt-hot-01": 429.404815405,
+    "gt-hot-02": 172.18909152,
+    "gt-spin-01": 6715.1724371,
+    "gt-spin-02": 6714.347041314
+  },
+  "dispatch_curtailment_attributable_fuel_mmbtu": 14031.113385339,
+  "dispatch_curtailment_fuel_mmbtu": 25064.666045576,
+  "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+    "hot_standby_fuel_mmbtu": 3.865277778,
+    "load_fuel_mmbtu": 24738.662434465,
+    "no_load_fuel_mmbtu": 322.138333333,
+    "start_fuel_mmbtu": 0.0
+  },
+  "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+    "gt-hot-01": 914.254182865,
+    "gt-hot-02": 556.078402778,
+    "gt-spin-01": 11799.086111115,
+    "gt-spin-02": 11795.247348856
+  },
+  "dispatch_curtailment_interval_exposure_fuel_mmbtu": 25064.666045576,
+  "dispatch_curtailment_mwh": 1333.996734107,
+  "energy_balance": {
+    "closure_required": true,
+    "closure_status": true,
+    "dispatch_curtailment_mwh": 1333.996734107,
+    "max_abs_d4_balance_defect_mw": 32.66396,
+    "max_abs_physical_ledger_defect_mw": 0.0,
+    "served_demand_mwh": 2425.27970104,
+    "unserved_demand_mwh": 5.348514157
+  },
+  "forecast_misses": {
+    "count": 0,
+    "peak_mw": 0.0
+  },
+  "forecast_quality": {
+    "absolute_error_mw": {
+      "count": 0,
+      "max": 0.0,
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0.0,
+      "p90": 0.0,
+      "p95": 0.0,
+      "p99": 0.0
+    },
+    "forecast_tick_count": 0,
+    "matched_error_tick_count": 0,
+    "miss_count": 0,
+    "miss_peak_mw": 0.0,
+    "signed_error_mw": {
+      "count": 0,
+      "max": 0.0,
+      "mean": 0.0,
+      "median": 0.0,
+      "min": 0.0,
+      "p90": 0.0,
+      "p95": 0.0,
+      "p99": 0.0
+    }
+  },
+  "fuel_by_component_mmbtu": {
+    "hot_standby_fuel_mmbtu": 4.142013889,
+    "load_fuel_mmbtu": 39387.838259788,
+    "no_load_fuel_mmbtu": 490.161666666,
+    "start_fuel_mmbtu": 852.0
+  },
+  "fuel_by_unit_mmbtu": {
+    "gt-hot-01": {
+      "hot_standby_fuel_mmbtu": 2.011111111,
+      "load_fuel_mmbtu": 4425.109969551,
+      "no_load_fuel_mmbtu": 56.685,
+      "start_fuel_mmbtu": 376.0,
+      "total_fuel_mmbtu": 4859.806080662
+    },
+    "gt-hot-02": {
+      "hot_standby_fuel_mmbtu": 2.130902778,
+      "load_fuel_mmbtu": 2316.825138889,
+      "no_load_fuel_mmbtu": 30.276666667,
+      "start_fuel_mmbtu": 476.0,
+      "total_fuel_mmbtu": 2825.232708334
+    },
+    "gt-spin-01": {
+      "hot_standby_fuel_mmbtu": 0.0,
+      "load_fuel_mmbtu": 16542.095370307,
+      "no_load_fuel_mmbtu": 201.6,
+      "start_fuel_mmbtu": 0.0,
+      "total_fuel_mmbtu": 16743.695370307
+    },
+    "gt-spin-02": {
+      "hot_standby_fuel_mmbtu": 0.0,
+      "load_fuel_mmbtu": 16103.807781041,
+      "no_load_fuel_mmbtu": 201.6,
+      "start_fuel_mmbtu": 0.0,
+      "total_fuel_mmbtu": 16305.407781041
+    }
+  },
+  "fuel_guard": {
+    "active_modelled_units": [
+      "gt-hot-01",
+      "gt-hot-02",
+      "gt-spin-01",
+      "gt-spin-02"
+    ],
+    "active_unit_count": 4,
+    "guard_status": "PASS"
+  },
+  "hard_violations": [],
+  "identical_compute_trace": true,
+  "informed_vs_baseline": {
+    "baseline_peak_unserved_mw": 35.021533247,
+    "baseline_unserved_energy_mwh": 5.348514157,
+    "informed_peak_unserved_mw": 22.501068246,
+    "informed_unserved_energy_mwh": 0.911887467,
+    "peak_unserved_no_worse": true,
+    "unserved_energy_no_worse": true,
+    "verdict": "PASS"
+  },
+  "interval_seconds": 5.0,
+  "kube_power_reactive_ticks": 0,
+  "kube_requeued_admissions": 0,
+  "max_compute_trace_diff_mw": 0.0,
+  "mode": "baseline",
+  "peak_unserved_mw": 35.021533247,
+  "preload_actions": [],
+  "preload_fuel_mmbtu": 0.0,
+  "preload_outcomes": [],
+  "replay_strategy": "captured live workload-signal/demand trace; replayed per-tick compute and lagged cooling demand",
+  "scenario_id": "scenario-h1-k8s-ray-7d",
+  "start_count": 72,
+  "start_count_reconciled": true,
+  "starts": [
+    {
+      "action": "release",
+      "reason": "automatic contingency cascade release",
+      "sim_time_s": 28955.0,
+      "source": "automatic_contingency",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "release",
+      "reason": "automatic contingency cascade release",
+      "sim_time_s": 30680.0,
+      "source": "automatic_contingency",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 50.0 MW < 79.0 MW",
+      "sim_time_s": 36055.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 75.0 MW < 117.4 MW",
+      "sim_time_s": 37875.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 50.0 MW < 73.4 MW",
+      "sim_time_s": 43255.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 75.0 MW < 119.4 MW",
+      "sim_time_s": 45075.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 50.0 MW < 72.8 MW",
+      "sim_time_s": 50455.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 75.0 MW < 123.0 MW",
+      "sim_time_s": 52275.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 50.0 MW < 74.7 MW",
+      "sim_time_s": 57655.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 75.0 MW < 112.8 MW",
+      "sim_time_s": 59475.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 50.0 MW < 73.9 MW",
+      "sim_time_s": 64855.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 75.0 MW < 119.2 MW",
+      "sim_time_s": 66675.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 50.0 MW < 80.7 MW",
+      "sim_time_s": 115255.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 75.0 MW < 117.7 MW",
+      "sim_time_s": 117075.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 50.0 MW < 81.8 MW",
+      "sim_time_s": 122455.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 75.0 MW < 115.8 MW",
+      "sim_time_s": 124275.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 50.0 MW < 81.6 MW",
+      "sim_time_s": 129655.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 75.0 MW < 118.9 MW",
+      "sim_time_s": 131475.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 50.0 MW < 79.0 MW",
+      "sim_time_s": 136855.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 75.0 MW < 111.3 MW",
+      "sim_time_s": 138675.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "omitted_record_count": 32,
+      "truncated": true
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 50.0 MW < 73.5 MW",
+      "sim_time_s": 388855.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 75.0 MW < 120.0 MW",
+      "sim_time_s": 390675.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 50.0 MW < 81.5 MW",
+      "sim_time_s": 396055.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 75.0 MW < 75.3 MW",
+      "sim_time_s": 397475.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 50.0 MW < 82.6 MW",
+      "sim_time_s": 403255.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 75.0 MW < 114.0 MW",
+      "sim_time_s": 405075.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 50.0 MW < 77.5 MW",
+      "sim_time_s": 410455.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 75.0 MW < 115.2 MW",
+      "sim_time_s": 412275.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 50.0 MW < 76.2 MW",
+      "sim_time_s": 460855.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 75.0 MW < 120.8 MW",
+      "sim_time_s": 462675.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 50.0 MW < 72.9 MW",
+      "sim_time_s": 475255.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 75.0 MW < 115.4 MW",
+      "sim_time_s": 477075.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 50.0 MW < 78.1 MW",
+      "sim_time_s": 489655.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 75.0 MW < 120.9 MW",
+      "sim_time_s": 491475.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 50.0 MW < 82.0 MW",
+      "sim_time_s": 547255.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 75.0 MW < 120.0 MW",
+      "sim_time_s": 549075.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 50.0 MW < 75.2 MW",
+      "sim_time_s": 561655.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 75.0 MW < 120.9 MW",
+      "sim_time_s": 563475.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 50.0 MW < 79.1 MW",
+      "sim_time_s": 576055.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 75.0 MW < 114.7 MW",
+      "sim_time_s": 577875.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    }
+  ],
+  "stop_floor_refusal_count": 0,
+  "stop_floor_refusals": [],
+  "stops": [
+    {
+      "action": "stop",
+      "reason": "U=0.117 \u2264 0.5, U_without=0.157 \u2264 0.7; BESS full; 23.26 MW turbine surplus remains after BESS absorbed 0.00 MW",
+      "sim_time_s": 34070.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 34135.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop",
+      "reason": "U=0.150 \u2264 0.5, U_without=0.225 \u2264 0.7; BESS full; 15.02 MW turbine surplus remains after BESS absorbed 0.00 MW",
+      "sim_time_s": 34195.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 34260.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "U=0.054 \u2264 0.5, U_without=0.072 \u2264 0.7; BESS full; 29.59 MW turbine surplus remains after BESS absorbed 0.00 MW",
+      "sim_time_s": 40980.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 41045.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop",
+      "reason": "U=0.065 \u2264 0.5, U_without=0.098 \u2264 0.7; BESS full; 21.36 MW turbine surplus remains after BESS absorbed 0.00 MW",
+      "sim_time_s": 41105.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 41170.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "U=0.094 \u2264 0.5, U_without=0.125 \u2264 0.7; BESS full; 25.60 MW turbine surplus remains after BESS absorbed 0.00 MW",
+      "sim_time_s": 48155.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 48220.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop",
+      "reason": "U=0.105 \u2264 0.5, U_without=0.157 \u2264 0.7; BESS full; 18.38 MW turbine surplus remains after BESS absorbed 0.00 MW",
+      "sim_time_s": 48280.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 48345.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "U=0.052 \u2264 0.5, U_without=0.069 \u2264 0.7; BESS full; 29.82 MW turbine surplus remains after BESS absorbed 0.00 MW",
+      "sim_time_s": 55335.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 55400.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop",
+      "reason": "U=0.115 \u2264 0.5, U_without=0.172 \u2264 0.7; BESS full; 17.64 MW turbine surplus remains after BESS absorbed 0.00 MW",
+      "sim_time_s": 55460.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 55525.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "U=0.028 \u2264 0.5, U_without=0.037 \u2264 0.7; BESS full; 32.21 MW turbine surplus remains after BESS absorbed 0.00 MW",
+      "sim_time_s": 62295.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 62360.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop",
+      "reason": "U=0.067 \u2264 0.5, U_without=0.101 \u2264 0.7; BESS full; 21.21 MW turbine surplus remains after BESS absorbed 0.00 MW",
+      "sim_time_s": 62420.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 62485.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "omitted_record_count": 104,
+      "truncated": true
+    },
+    {
+      "action": "stop",
+      "reason": "U=0.023 \u2264 0.5, U_without=0.031 \u2264 0.7; BESS charge-saturated; 2.66 MW turbine surplus remains after BESS absorbed 30.00 MW",
+      "sim_time_s": 479780.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 479845.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop",
+      "reason": "U=0.066 \u2264 0.5, U_without=0.099 \u2264 0.7; BESS full; 21.28 MW turbine surplus remains after BESS absorbed 0.00 MW",
+      "sim_time_s": 480235.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 480300.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "U=0.045 \u2264 0.5, U_without=0.060 \u2264 0.7; BESS full; 30.47 MW turbine surplus remains after BESS absorbed 0.00 MW",
+      "sim_time_s": 494655.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 494720.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop",
+      "reason": "U=0.105 \u2264 0.5, U_without=0.158 \u2264 0.7; BESS full; 18.35 MW turbine surplus remains after BESS absorbed 0.00 MW",
+      "sim_time_s": 494780.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 494845.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "U=0.024 \u2264 0.5, U_without=0.032 \u2264 0.7; BESS charge-saturated; 2.61 MW turbine surplus remains after BESS absorbed 30.00 MW",
+      "sim_time_s": 551715.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 551780.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop",
+      "reason": "U=0.034 \u2264 0.5, U_without=0.050 \u2264 0.7; BESS full; 23.73 MW turbine surplus remains after BESS absorbed 0.00 MW",
+      "sim_time_s": 552105.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 552170.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "U=0.050 \u2264 0.5, U_without=0.067 \u2264 0.7; BESS full; 29.98 MW turbine surplus remains after BESS absorbed 0.00 MW",
+      "sim_time_s": 566580.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 566645.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop",
+      "reason": "U=0.115 \u2264 0.5, U_without=0.173 \u2264 0.7; BESS full; 17.59 MW turbine surplus remains after BESS absorbed 0.00 MW",
+      "sim_time_s": 566705.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 566770.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "U=0.134 \u2264 0.5, U_without=0.179 \u2264 0.7; BESS full; 21.57 MW turbine surplus remains after BESS absorbed 0.00 MW",
+      "sim_time_s": 581015.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 581080.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop",
+      "reason": "U=0.143 \u2264 0.5, U_without=0.215 \u2264 0.7; BESS full; 15.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+      "sim_time_s": 581140.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 581205.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    }
+  ],
+  "synchronized_count_distribution_ticks": {
+    "2": 86949,
+    "3": 15845,
+    "4": 18166
+  },
+  "tick_artifact": "scenario-h1-k8s-ray-7d-baseline_ticks.jsonl.gz",
+  "tick_count": 120960,
+  "trace_source": "baseline live background trace replay",
+  "turbine_fuel_mmbtu": 40734.141940344,
+  "unit_minutes_below_50_percent": {
+    "gt-hot-01": 2758.166667,
+    "gt-hot-02": 1510.833333,
+    "gt-spin-01": 9384.583333,
+    "gt-spin-02": 9712.0
+  },
+  "unserved_by_cluster": [
+    {
+      "cluster": 1,
+      "had_unserved": true,
+      "unserved_mwh": 0.131572339
+    },
+    {
+      "cluster": 2,
+      "had_unserved": true,
+      "unserved_mwh": 0.153401354
+    },
+    {
+      "cluster": 3,
+      "had_unserved": true,
+      "unserved_mwh": 0.154772651
+    },
+    {
+      "cluster": 4,
+      "had_unserved": true,
+      "unserved_mwh": 0.155756224
+    },
+    {
+      "cluster": 5,
+      "had_unserved": true,
+      "unserved_mwh": 0.139869935
+    },
+    {
+      "cluster": 6,
+      "had_unserved": true,
+      "unserved_mwh": 0.159000484
+    },
+    {
+      "cluster": 7,
+      "had_unserved": true,
+      "unserved_mwh": 0.13630352
+    },
+    {
+      "cluster": 8,
+      "had_unserved": true,
+      "unserved_mwh": 0.174251445
+    },
+    {
+      "cluster": 9,
+      "had_unserved": true,
+      "unserved_mwh": 0.159143718
+    },
+    {
+      "cluster": 10,
+      "had_unserved": true,
+      "unserved_mwh": 0.130902137
+    },
+    {
+      "cluster": 11,
+      "had_unserved": true,
+      "unserved_mwh": 0.123609022
+    },
+    {
+      "cluster": 12,
+      "had_unserved": true,
+      "unserved_mwh": 0.125686321
+    },
+    {
+      "cluster": 13,
+      "had_unserved": true,
+      "unserved_mwh": 0.167438955
+    },
+    {
+      "cluster": 14,
+      "had_unserved": true,
+      "unserved_mwh": 0.128231718
+    },
+    {
+      "cluster": 15,
+      "had_unserved": true,
+      "unserved_mwh": 0.176149381
+    },
+    {
+      "cluster": 16,
+      "had_unserved": true,
+      "unserved_mwh": 0.145896513
+    },
+    {
+      "cluster": 17,
+      "had_unserved": true,
+      "unserved_mwh": 0.138011163
+    },
+    {
+      "cluster": 18,
+      "had_unserved": true,
+      "unserved_mwh": 0.154116177
+    },
+    {
+      "cluster": 19,
+      "had_unserved": true,
+      "unserved_mwh": 0.144598363
+    },
+    {
+      "cluster": 20,
+      "had_unserved": true,
+      "unserved_mwh": 0.153150665
+    },
+    {
+      "cluster": 21,
+      "had_unserved": true,
+      "unserved_mwh": 0.119161013
+    },
+    {
+      "cluster": 22,
+      "had_unserved": true,
+      "unserved_mwh": 0.183559695
+    },
+    {
+      "cluster": 23,
+      "had_unserved": true,
+      "unserved_mwh": 0.137577789
+    },
+    {
+      "cluster": 24,
+      "had_unserved": true,
+      "unserved_mwh": 0.165922006
+    },
+    {
+      "cluster": 25,
+      "had_unserved": true,
+      "unserved_mwh": 0.159807168
+    },
+    {
+      "cluster": 26,
+      "had_unserved": true,
+      "unserved_mwh": 0.141480561
+    },
+    {
+      "cluster": 27,
+      "had_unserved": true,
+      "unserved_mwh": 0.14200988
+    },
+    {
+      "cluster": 28,
+      "had_unserved": true,
+      "unserved_mwh": 0.105993113
+    },
+    {
+      "cluster": 29,
+      "had_unserved": true,
+      "unserved_mwh": 0.163319005
+    },
+    {
+      "cluster": 30,
+      "had_unserved": true,
+      "unserved_mwh": 0.146732977
+    },
+    {
+      "cluster": 31,
+      "had_unserved": true,
+      "unserved_mwh": 0.156428033
+    },
+    {
+      "cluster": 32,
+      "had_unserved": true,
+      "unserved_mwh": 0.139232956
+    },
+    {
+      "cluster": 33,
+      "had_unserved": true,
+      "unserved_mwh": 0.16845698
+    },
+    {
+      "cluster": 34,
+      "had_unserved": true,
+      "unserved_mwh": 0.169384045
+    },
+    {
+      "cluster": 35,
+      "had_unserved": true,
+      "unserved_mwh": 0.159213896
+    },
+    {
+      "cluster": 36,
+      "had_unserved": true,
+      "unserved_mwh": 0.138372955
+    }
+  ],
+  "unserved_intervals": [
+    {
+      "end_sim_time_s": 28865.0,
+      "peak_unserved_mw": 0.8040054789154141,
+      "start_sim_time_s": 28860.0
+    },
+    {
+      "end_sim_time_s": 30680.0,
+      "peak_unserved_mw": 26.618853625395175,
+      "start_sim_time_s": 30650.0
+    },
+    {
+      "end_sim_time_s": 31000.0,
+      "peak_unserved_mw": 0.0014763720534602953,
+      "start_sim_time_s": 30995.0
+    },
+    {
+      "end_sim_time_s": 31515.0,
+      "peak_unserved_mw": 5.514271219813324,
+      "start_sim_time_s": 31500.0
+    },
+    {
+      "end_sim_time_s": 36045.0,
+      "peak_unserved_mw": 5.033568781899795,
+      "start_sim_time_s": 36030.0
+    },
+    {
+      "end_sim_time_s": 37880.0,
+      "peak_unserved_mw": 29.417818249240682,
+      "start_sim_time_s": 37850.0
+    },
+    {
+      "end_sim_time_s": 38255.0,
+      "peak_unserved_mw": 1.9529208953445476,
+      "start_sim_time_s": 38240.0
+    },
+    {
+      "end_sim_time_s": 38715.0,
+      "peak_unserved_mw": 5.25701274369851,
+      "start_sim_time_s": 38700.0
+    },
+    {
+      "end_sim_time_s": 45080.0,
+      "peak_unserved_mw": 32.46833679356759,
+      "start_sim_time_s": 45050.0
+    },
+    {
+      "end_sim_time_s": 45455.0,
+      "peak_unserved_mw": 0.5423003956669561,
+      "start_sim_time_s": 45440.0
+    },
+    {
+      "end_sim_time_s": 45915.0,
+      "peak_unserved_mw": 6.887755602473391,
+      "start_sim_time_s": 45900.0
+    },
+    {
+      "end_sim_time_s": 52280.0,
+      "peak_unserved_mw": 35.021533246572275,
+      "start_sim_time_s": 52250.0
+    },
+    {
+      "end_sim_time_s": 52655.0,
+      "peak_unserved_mw": 2.804922000000005,
+      "start_sim_time_s": 52640.0
+    },
+    {
+      "end_sim_time_s": 57635.0,
+      "peak_unserved_mw": 0.7155264052397072,
+      "start_sim_time_s": 57630.0
+    },
+    {
+      "end_sim_time_s": 59480.0,
+      "peak_unserved_mw": 27.5,
+      "start_sim_time_s": 59450.0
+    },
+    {
+      "end_sim_time_s": 59855.0,
+      "peak_unserved_mw": 0.741633537511504,
+      "start_sim_time_s": 59840.0
+    },
+    {
+      "end_sim_time_s": 60315.0,
+      "peak_unserved_mw": 5.328277620981893,
+      "start_sim_time_s": 60300.0
+    },
+    {
+      "end_sim_time_s": 66680.0,
+      "peak_unserved_mw": 33.2463089774655,
+      "start_sim_time_s": 66650.0
+    },
+    {
+      "end_sim_time_s": 67055.0,
+      "peak_unserved_mw": 3.1841012001148385,
+      "start_sim_time_s": 67040.0
+    },
+    {
+      "end_sim_time_s": 67515.0,
+      "peak_unserved_mw": 5.294020684052754,
+      "start_sim_time_s": 67500.0
+    },
+    {
+      "omitted_record_count": 80,
+      "truncated": true
+    },
+    {
+      "end_sim_time_s": 462680.0,
+      "peak_unserved_mw": 33.00923943727369,
+      "start_sim_time_s": 462650.0
+    },
+    {
+      "end_sim_time_s": 463515.0,
+      "peak_unserved_mw": 6.5629988523920275,
+      "start_sim_time_s": 463500.0
+    },
+    {
+      "end_sim_time_s": 477080.0,
+      "peak_unserved_mw": 27.634819469979476,
+      "start_sim_time_s": 477050.0
+    },
+    {
+      "end_sim_time_s": 477455.0,
+      "peak_unserved_mw": 1.3985728912757622e-06,
+      "start_sim_time_s": 477440.0
+    },
+    {
+      "end_sim_time_s": 477915.0,
+      "peak_unserved_mw": 5.867485388356229,
+      "start_sim_time_s": 477900.0
+    },
+    {
+      "end_sim_time_s": 489640.0,
+      "peak_unserved_mw": 2.8802045824537004,
+      "start_sim_time_s": 489630.0
+    },
+    {
+      "end_sim_time_s": 491480.0,
+      "peak_unserved_mw": 33.09142483744135,
+      "start_sim_time_s": 491450.0
+    },
+    {
+      "end_sim_time_s": 491855.0,
+      "peak_unserved_mw": 2.1388415996853354,
+      "start_sim_time_s": 491840.0
+    },
+    {
+      "end_sim_time_s": 492315.0,
+      "peak_unserved_mw": 6.774404877312833,
+      "start_sim_time_s": 492300.0
+    },
+    {
+      "end_sim_time_s": 547250.0,
+      "peak_unserved_mw": 7.961677804975885,
+      "start_sim_time_s": 547230.0
+    },
+    {
+      "end_sim_time_s": 549080.0,
+      "peak_unserved_mw": 32.19872995668776,
+      "start_sim_time_s": 549050.0
+    },
+    {
+      "end_sim_time_s": 549915.0,
+      "peak_unserved_mw": 5.2216743385535125,
+      "start_sim_time_s": 549900.0
+    },
+    {
+      "end_sim_time_s": 561635.0,
+      "peak_unserved_mw": 0.9912989835814159,
+      "start_sim_time_s": 561630.0
+    },
+    {
+      "end_sim_time_s": 563480.0,
+      "peak_unserved_mw": 33.16050906213124,
+      "start_sim_time_s": 563450.0
+    },
+    {
+      "end_sim_time_s": 563855.0,
+      "peak_unserved_mw": 2.120894000000007,
+      "start_sim_time_s": 563840.0
+    },
+    {
+      "end_sim_time_s": 564315.0,
+      "peak_unserved_mw": 5.348699745569348,
+      "start_sim_time_s": 564300.0
+    },
+    {
+      "end_sim_time_s": 576045.0,
+      "peak_unserved_mw": 5.400882927079039,
+      "start_sim_time_s": 576030.0
+    },
+    {
+      "end_sim_time_s": 577880.0,
+      "peak_unserved_mw": 27.5,
+      "start_sim_time_s": 577850.0
+    },
+    {
+      "end_sim_time_s": 578255.0,
+      "peak_unserved_mw": 1.1236435042860649e-05,
+      "start_sim_time_s": 578240.0
+    },
+    {
+      "end_sim_time_s": 578705.0,
+      "peak_unserved_mw": 1.098409094024774,
+      "start_sim_time_s": 578700.0
+    }
+  ],
+  "unserved_mwh": 5.348514157,
+  "wall_clock_seconds": 674.955778
+}

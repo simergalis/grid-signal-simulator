@@ -1,0 +1,6 @@
+Addendum H Phase 2b-2
+====================
+Runs: H-1 and H-2 seven-day reference scenarios, baseline and informed.
+Demand approach: one baseline live background trace, replayed exactly in both modes.
+scenario-h1-k8s-ray-7d: PASS; trace_diff=0 MW; fuel_delta=-1196.030830 MMBtu; attributable_curtailment_share=0.718032
+scenario-h2-slurm-7d: FAIL; trace_diff=0 MW; fuel_delta=-508.165499 MMBtu; attributable_curtailment_share=1.355234

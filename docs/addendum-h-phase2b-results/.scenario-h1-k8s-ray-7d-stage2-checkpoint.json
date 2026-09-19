@@ -1,0 +1,11 @@
+{
+  "background_trace_signal_count": 13823,
+  "baseline_complete": true,
+  "baseline_wall_clock_seconds": 674.955778,
+  "demand_replay_tick_count": 120960,
+  "informed_complete": true,
+  "informed_wall_clock_seconds": 2892.507409,
+  "probe": ".scenario-h1-k8s-ray-7d-stage2-probe.json.gz",
+  "probe_complete": true,
+  "scenario_id": "scenario-h1-k8s-ray-7d"
+}

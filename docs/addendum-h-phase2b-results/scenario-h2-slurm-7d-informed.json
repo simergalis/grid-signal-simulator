@@ -1,0 +1,2791 @@
+{
+  "acceptance_gates": {
+    "constraints_valid": true,
+    "identical_compute_trace": true,
+    "informed_peak_unserved_no_worse": true,
+    "informed_unserved_energy_no_worse": true,
+    "no_hard_violations": true,
+    "physical_ledger_closure": true,
+    "start_count_reconciled": true
+  },
+  "acceptance_verdict": "PASS",
+  "background_power_reactive": true,
+  "background_probe_wall_clock_seconds": 285.245344,
+  "background_trace_signal_count": 4656,
+  "bess_soc_final": 0.999999996,
+  "bess_soc_max": 0.999999999,
+  "bess_soc_min": 0.950386947,
+  "commitment_log": [
+    {
+      "accepted": false,
+      "action": "stop",
+      "bess_soc_fraction": 0.95,
+      "changed_state": false,
+      "controller_approved": null,
+      "forecast_mw": 0.0,
+      "from_state": null,
+      "peak_forecast_mw": 9.6571,
+      "reason": "stop refused: post-stop N-1 reserve floor 28.366 MW exceeds remaining turbine capacity 25.000 MW by 3.366 MW at forecast 10s within 1200s; unit is needed within the stop look-ahead",
+      "refusal_reason": "stop refused: post-stop N-1 reserve floor 28.366 MW exceeds remaining turbine capacity 25.000 MW by 3.366 MW at forecast 10s within 1200s; unit is needed within the stop look-ahead",
+      "sim_time_s": 0.0,
+      "source": "forecast_commitment",
+      "suppressed_repeat_count": 96292,
+      "synchronized_capacity_mw": 50.0,
+      "thermal_tier": "hot",
+      "to_state": null,
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": true,
+      "forecast_mw": 1.9648,
+      "from_state": "synchronised",
+      "peak_forecast_mw": 1.9648,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 25340.0,
+      "source": "forecast_commitment",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 50.0,
+      "thermal_tier": "hot",
+      "to_state": "unloading",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": true,
+      "forecast_mw": 1.9648,
+      "from_state": "unloading",
+      "peak_forecast_mw": 2.9733,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 25400.0,
+      "source": "turbine_physics",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 25.0,
+      "thermal_tier": "hot",
+      "to_state": "offline",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": false,
+      "action": "proposal_commit",
+      "bess_soc_fraction": 1.0,
+      "changed_state": false,
+      "controller_approved": false,
+      "forecast_mw": 1.9648,
+      "from_state": null,
+      "peak_forecast_mw": 2.9733,
+      "reason": "reserve floor violated: 25.0 MW < 27.0 MW",
+      "refusal_reason": "forecast controller veto: minimum down time has not elapsed",
+      "sim_time_s": 25400.0,
+      "source": "core_commitment_proposal",
+      "suppressed_repeat_count": 2,
+      "synchronized_capacity_mw": 25.0,
+      "thermal_tier": "controller",
+      "to_state": null,
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "release",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": true,
+      "forecast_mw": 1.9648,
+      "from_state": "offline",
+      "peak_forecast_mw": 2.9733,
+      "reason": "automatic contingency cascade release",
+      "refusal_reason": null,
+      "sim_time_s": 25410.0,
+      "source": "automatic_contingency",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 25.0,
+      "thermal_tier": "hot",
+      "to_state": "starting",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": true,
+      "forecast_mw": 1.9288,
+      "from_state": "starting",
+      "peak_forecast_mw": 2.9374,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 25710.0,
+      "source": "turbine_physics",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 50.0,
+      "thermal_tier": "hot",
+      "to_state": "synchronised",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": false,
+      "action": "stop",
+      "bess_soc_fraction": 1.0,
+      "changed_state": false,
+      "controller_approved": null,
+      "forecast_mw": 1.9288,
+      "from_state": null,
+      "peak_forecast_mw": 2.9374,
+      "reason": "stop refused: post-stop N-1 reserve floor 27.937 MW exceeds remaining turbine capacity 25.000 MW by 2.937 MW at forecast 26550s within 1200s; unit is needed within the stop look-ahead",
+      "refusal_reason": "stop refused: post-stop N-1 reserve floor 27.937 MW exceeds remaining turbine capacity 25.000 MW by 2.937 MW at forecast 26550s within 1200s; unit is needed within the stop look-ahead",
+      "sim_time_s": 25715.0,
+      "source": "forecast_commitment",
+      "suppressed_repeat_count": 3451,
+      "synchronized_capacity_mw": 50.0,
+      "thermal_tier": "hot",
+      "to_state": null,
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "release",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": true,
+      "forecast_mw": 6.0366,
+      "from_state": "offline",
+      "peak_forecast_mw": 117.3456,
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "refusal_reason": null,
+      "sim_time_s": 28750.0,
+      "source": "forecast_commitment",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 50.0,
+      "thermal_tier": "hot",
+      "to_state": "starting",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": true,
+      "forecast_mw": 6.0366,
+      "from_state": "offline",
+      "peak_forecast_mw": 117.3456,
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "refusal_reason": null,
+      "sim_time_s": 28755.0,
+      "source": "forecast_commitment",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 50.0,
+      "thermal_tier": "hot",
+      "to_state": "starting",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": true,
+      "forecast_mw": 9.3271,
+      "from_state": "starting",
+      "peak_forecast_mw": 117.3456,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 29045.0,
+      "source": "turbine_physics",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 75.0,
+      "thermal_tier": "hot",
+      "to_state": "synchronised",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": true,
+      "forecast_mw": 9.3271,
+      "from_state": "starting",
+      "peak_forecast_mw": 117.3456,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 29050.0,
+      "source": "turbine_physics",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 100.0,
+      "thermal_tier": "hot",
+      "to_state": "synchronised",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "accepted": false,
+      "action": "stop",
+      "bess_soc_fraction": 1.0,
+      "changed_state": false,
+      "controller_approved": null,
+      "forecast_mw": 9.3271,
+      "from_state": null,
+      "peak_forecast_mw": 117.3456,
+      "reason": "stop refused: forecast burst at 29110s arrives before unit restart window (30675s)",
+      "refusal_reason": "stop refused: forecast burst at 29110s arrives before unit restart window (30675s)",
+      "sim_time_s": 29055.0,
+      "source": "forecast_commitment",
+      "suppressed_repeat_count": 90,
+      "synchronized_capacity_mw": 100.0,
+      "thermal_tier": "hot",
+      "to_state": null,
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "omitted_record_count": 96,
+      "truncated": true
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": true,
+      "forecast_mw": 4.6214,
+      "from_state": "synchronised",
+      "peak_forecast_mw": 10.5846,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 563710.0,
+      "source": "forecast_commitment",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 100.0,
+      "thermal_tier": "warm",
+      "to_state": "unloading",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": true,
+      "forecast_mw": 8.4918,
+      "from_state": "synchronised",
+      "peak_forecast_mw": 10.5846,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 563715.0,
+      "source": "forecast_commitment",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 75.0,
+      "thermal_tier": "warm",
+      "to_state": "unloading",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": true,
+      "forecast_mw": 8.4918,
+      "from_state": "unloading",
+      "peak_forecast_mw": 10.5846,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 563770.0,
+      "source": "turbine_physics",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 75.0,
+      "thermal_tier": "warm",
+      "to_state": "offline",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": true,
+      "forecast_mw": 8.4918,
+      "from_state": "unloading",
+      "peak_forecast_mw": 10.5846,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 563775.0,
+      "source": "turbine_physics",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 50.0,
+      "thermal_tier": "warm",
+      "to_state": "offline",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": true,
+      "forecast_mw": 7.4423,
+      "from_state": "offline",
+      "peak_forecast_mw": 112.4224,
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "refusal_reason": null,
+      "sim_time_s": 575950.0,
+      "source": "forecast_commitment",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 50.0,
+      "thermal_tier": "warm",
+      "to_state": "starting",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "start",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": true,
+      "forecast_mw": 7.4423,
+      "from_state": "offline",
+      "peak_forecast_mw": 112.4224,
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "refusal_reason": null,
+      "sim_time_s": 575955.0,
+      "source": "forecast_commitment",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 50.0,
+      "thermal_tier": "warm",
+      "to_state": "starting",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": true,
+      "forecast_mw": 4.624,
+      "from_state": "starting",
+      "peak_forecast_mw": 112.6677,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 576305.0,
+      "source": "turbine_physics",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 75.0,
+      "thermal_tier": "warm",
+      "to_state": "synchronised",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "synchronise",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": true,
+      "forecast_mw": 112.6677,
+      "from_state": "starting",
+      "peak_forecast_mw": 112.6677,
+      "reason": "startup timer completed",
+      "refusal_reason": null,
+      "sim_time_s": 576310.0,
+      "source": "turbine_physics",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 100.0,
+      "thermal_tier": "warm",
+      "to_state": "synchronised",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": true,
+      "forecast_mw": 2.1885,
+      "from_state": "synchronised",
+      "peak_forecast_mw": 4.1426,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 578110.0,
+      "source": "forecast_commitment",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 100.0,
+      "thermal_tier": "warm",
+      "to_state": "unloading",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": true,
+      "forecast_mw": 2.1885,
+      "from_state": "synchronised",
+      "peak_forecast_mw": 4.1426,
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "refusal_reason": null,
+      "sim_time_s": 578115.0,
+      "source": "forecast_commitment",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 75.0,
+      "thermal_tier": "warm",
+      "to_state": "unloading",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": true,
+      "forecast_mw": 2.1885,
+      "from_state": "unloading",
+      "peak_forecast_mw": 4.1426,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 578170.0,
+      "source": "turbine_physics",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 75.0,
+      "thermal_tier": "warm",
+      "to_state": "offline",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "accepted": true,
+      "action": "stop_complete",
+      "bess_soc_fraction": 1.0,
+      "changed_state": true,
+      "controller_approved": true,
+      "forecast_mw": 2.1885,
+      "from_state": "unloading",
+      "peak_forecast_mw": 4.1426,
+      "reason": "controlled rundown completed and breaker opened",
+      "refusal_reason": null,
+      "sim_time_s": 578175.0,
+      "source": "turbine_physics",
+      "suppressed_repeat_count": 0,
+      "synchronized_capacity_mw": 50.0,
+      "thermal_tier": "warm",
+      "to_state": "offline",
+      "unit_id": "gt-hot-01"
+    }
+  ],
+  "commitment_log_record_count": 307,
+  "compute_description": "scheduler-shaped GPU workload demand",
+  "constraints_valid": true,
+  "core_proposals": {
+    "approved": 2,
+    "by_action": {
+      "proposal_commit": {
+        "approved": 1,
+        "vetoed": 1
+      },
+      "proposal_decommit": {
+        "approved": 1,
+        "vetoed": 1
+      }
+    },
+    "vetoed": 2
+  },
+  "daily_breakdown": [
+    {
+      "bess_soc_end": 0.999999987,
+      "curtailed_mwh": 343.106291593,
+      "day": 1,
+      "fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 3.761458333,
+        "load_fuel_mmbtu": 5107.722017303,
+        "no_load_fuel_mmbtu": 64.866666667,
+        "start_fuel_mmbtu": 152.0
+      },
+      "fuel_mmbtu": 5328.350142303,
+      "kind": "weekday",
+      "start_count": 14,
+      "starts_by_unit_source": {
+        "gt-hot-01|automatic_contingency": 1,
+        "gt-hot-01|forecast_commitment": 3,
+        "gt-hot-02|forecast_commitment": 6,
+        "gt-spin-02|core_commitment": 1,
+        "gt-spin-02|forecast_commitment": 3
+      },
+      "stop_count": 28,
+      "stops_by_unit_source": {
+        "gt-hot-01|forecast_commitment": 4,
+        "gt-hot-01|turbine_physics": 4,
+        "gt-hot-02|core_commitment": 1,
+        "gt-hot-02|forecast_commitment": 5,
+        "gt-hot-02|turbine_physics": 6,
+        "gt-spin-02|forecast_commitment": 4,
+        "gt-spin-02|turbine_physics": 4
+      },
+      "unserved_mwh": 0.893328423
+    },
+    {
+      "bess_soc_end": 0.999999999,
+      "curtailed_mwh": 347.030469399,
+      "day": 2,
+      "fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 0.0,
+        "load_fuel_mmbtu": 5112.406403507,
+        "no_load_fuel_mmbtu": 65.06,
+        "start_fuel_mmbtu": 160.0
+      },
+      "fuel_mmbtu": 5337.466403507,
+      "kind": "weekday",
+      "start_count": 12,
+      "starts_by_unit_source": {
+        "gt-hot-01|forecast_commitment": 6,
+        "gt-hot-02|forecast_commitment": 6
+      },
+      "stop_count": 24,
+      "stops_by_unit_source": {
+        "gt-hot-01|forecast_commitment": 6,
+        "gt-hot-01|turbine_physics": 6,
+        "gt-hot-02|forecast_commitment": 6,
+        "gt-hot-02|turbine_physics": 6
+      },
+      "unserved_mwh": 1.788293706
+    },
+    {
+      "bess_soc_end": 0.999999999,
+      "curtailed_mwh": 351.357901281,
+      "day": 3,
+      "fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 0.0,
+        "load_fuel_mmbtu": 5116.413561382,
+        "no_load_fuel_mmbtu": 65.06,
+        "start_fuel_mmbtu": 160.0
+      },
+      "fuel_mmbtu": 5341.473561382,
+      "kind": "weekday",
+      "start_count": 12,
+      "starts_by_unit_source": {
+        "gt-hot-01|forecast_commitment": 6,
+        "gt-hot-02|forecast_commitment": 6
+      },
+      "stop_count": 24,
+      "stops_by_unit_source": {
+        "gt-hot-01|forecast_commitment": 6,
+        "gt-hot-01|turbine_physics": 6,
+        "gt-hot-02|forecast_commitment": 6,
+        "gt-hot-02|turbine_physics": 6
+      },
+      "unserved_mwh": 1.996766211
+    },
+    {
+      "bess_soc_end": 0.999999984,
+      "curtailed_mwh": 345.412063525,
+      "day": 4,
+      "fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 0.0,
+        "load_fuel_mmbtu": 5112.205615276,
+        "no_load_fuel_mmbtu": 65.06,
+        "start_fuel_mmbtu": 160.0
+      },
+      "fuel_mmbtu": 5337.265615275,
+      "kind": "weekday",
+      "start_count": 12,
+      "starts_by_unit_source": {
+        "gt-hot-01|forecast_commitment": 6,
+        "gt-hot-02|forecast_commitment": 6
+      },
+      "stop_count": 24,
+      "stops_by_unit_source": {
+        "gt-hot-01|forecast_commitment": 6,
+        "gt-hot-01|turbine_physics": 6,
+        "gt-hot-02|forecast_commitment": 6,
+        "gt-hot-02|turbine_physics": 6
+      },
+      "unserved_mwh": 1.76442734
+    },
+    {
+      "bess_soc_end": 0.999999999,
+      "curtailed_mwh": 351.701983908,
+      "day": 5,
+      "fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 0.0,
+        "load_fuel_mmbtu": 5123.033620403,
+        "no_load_fuel_mmbtu": 65.06,
+        "start_fuel_mmbtu": 160.0
+      },
+      "fuel_mmbtu": 5348.093620403,
+      "kind": "weekday",
+      "start_count": 12,
+      "starts_by_unit_source": {
+        "gt-hot-01|forecast_commitment": 6,
+        "gt-hot-02|forecast_commitment": 6
+      },
+      "stop_count": 24,
+      "stops_by_unit_source": {
+        "gt-hot-01|forecast_commitment": 6,
+        "gt-hot-01|turbine_physics": 6,
+        "gt-hot-02|forecast_commitment": 6,
+        "gt-hot-02|turbine_physics": 6
+      },
+      "unserved_mwh": 1.831441362
+    },
+    {
+      "bess_soc_end": 0.999999987,
+      "curtailed_mwh": 340.810704372,
+      "day": 6,
+      "fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 0.0,
+        "load_fuel_mmbtu": 4762.707195459,
+        "no_load_fuel_mmbtu": 61.33,
+        "start_fuel_mmbtu": 88.0
+      },
+      "fuel_mmbtu": 4912.037195459,
+      "kind": "weekend",
+      "start_count": 6,
+      "starts_by_unit_source": {
+        "gt-hot-01|forecast_commitment": 3,
+        "gt-hot-02|forecast_commitment": 3
+      },
+      "stop_count": 12,
+      "stops_by_unit_source": {
+        "gt-hot-01|forecast_commitment": 3,
+        "gt-hot-01|turbine_physics": 3,
+        "gt-hot-02|forecast_commitment": 3,
+        "gt-hot-02|turbine_physics": 3
+      },
+      "unserved_mwh": 1.406205461
+    },
+    {
+      "bess_soc_end": 0.999999996,
+      "curtailed_mwh": 337.489861252,
+      "day": 7,
+      "fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 0.0,
+        "load_fuel_mmbtu": 4761.12865494,
+        "no_load_fuel_mmbtu": 61.33,
+        "start_fuel_mmbtu": 88.0
+      },
+      "fuel_mmbtu": 4910.45865494,
+      "kind": "weekend",
+      "start_count": 6,
+      "starts_by_unit_source": {
+        "gt-hot-01|forecast_commitment": 3,
+        "gt-hot-02|forecast_commitment": 3
+      },
+      "stop_count": 12,
+      "stops_by_unit_source": {
+        "gt-hot-01|forecast_commitment": 3,
+        "gt-hot-01|turbine_physics": 3,
+        "gt-hot-02|forecast_commitment": 3,
+        "gt-hot-02|turbine_physics": 3
+      },
+      "unserved_mwh": 1.299325281
+    }
+  ],
+  "demand_replay_tick_count": 120960,
+  "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+    "gt-hot-01": 1452.264003974,
+    "gt-hot-02": 1076.39547892,
+    "gt-spin-01": 11639.820216382,
+    "gt-spin-02": 11253.68548606
+  },
+  "dispatch_curtailment_attributable_fuel_mmbtu": 25422.165185335,
+  "dispatch_curtailment_fuel_mmbtu": 34398.09826983,
+  "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+    "hot_standby_fuel_mmbtu": 3.642013889,
+    "load_fuel_mmbtu": 32996.687922608,
+    "no_load_fuel_mmbtu": 429.768333333,
+    "start_fuel_mmbtu": 968.0
+  },
+  "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+    "gt-hot-01": 2344.648188602,
+    "gt-hot-02": 1896.475069445,
+    "gt-spin-01": 15302.673421662,
+    "gt-spin-02": 14854.301590192
+  },
+  "dispatch_curtailment_interval_exposure_fuel_mmbtu": 34398.09826983,
+  "dispatch_curtailment_mwh": 2416.909275329,
+  "energy_balance": {
+    "closure_required": true,
+    "closure_status": true,
+    "dispatch_curtailment_mwh": 2416.909275329,
+    "max_abs_d4_balance_defect_mw": 34.458798859,
+    "max_abs_physical_ledger_defect_mw": 0.0,
+    "served_demand_mwh": 937.102609001,
+    "unserved_demand_mwh": 10.979787784
+  },
+  "forecast_misses": {
+    "count": 39,
+    "peak_mw": 13.130749227
+  },
+  "forecast_quality": {
+    "absolute_error_mw": {
+      "count": 120960,
+      "max": 105.785463819,
+      "mean": 1.122119107,
+      "median": 0.296340884,
+      "min": 0.0,
+      "p90": 2.165046988,
+      "p95": 7.192453453,
+      "p99": 18.198664266
+    },
+    "forecast_tick_count": 120960,
+    "matched_error_tick_count": 120960,
+    "miss_count": 39,
+    "miss_peak_mw": 13.130749227,
+    "signed_error_mw": {
+      "count": 120960,
+      "max": 18.324915627,
+      "mean": -1.011394014,
+      "median": -0.245790823,
+      "min": -105.785463819,
+      "p90": 0.190470186,
+      "p95": 0.327817944,
+      "p99": 0.683550617
+    }
+  },
+  "fuel_by_component_mmbtu": {
+    "hot_standby_fuel_mmbtu": 3.761458333,
+    "load_fuel_mmbtu": 35095.617068271,
+    "no_load_fuel_mmbtu": 447.766666666,
+    "start_fuel_mmbtu": 968.0
+  },
+  "fuel_by_unit_mmbtu": {
+    "gt-hot-01": {
+      "hot_standby_fuel_mmbtu": 1.764930556,
+      "load_fuel_mmbtu": 2253.559574725,
+      "no_load_fuel_mmbtu": 28.513333333,
+      "start_fuel_mmbtu": 448.0,
+      "total_fuel_mmbtu": 2731.837838614
+    },
+    "gt-hot-02": {
+      "hot_standby_fuel_mmbtu": 1.996527778,
+      "load_fuel_mmbtu": 1711.793396223,
+      "no_load_fuel_mmbtu": 22.321666667,
+      "start_fuel_mmbtu": 476.0,
+      "total_fuel_mmbtu": 2212.111590668
+    },
+    "gt-spin-01": {
+      "hot_standby_fuel_mmbtu": 0.0,
+      "load_fuel_mmbtu": 15826.890754499,
+      "no_load_fuel_mmbtu": 201.6,
+      "start_fuel_mmbtu": 0.0,
+      "total_fuel_mmbtu": 16028.490754499
+    },
+    "gt-spin-02": {
+      "hot_standby_fuel_mmbtu": 0.0,
+      "load_fuel_mmbtu": 15303.373342823,
+      "no_load_fuel_mmbtu": 195.331666667,
+      "start_fuel_mmbtu": 44.0,
+      "total_fuel_mmbtu": 15542.70500949
+    }
+  },
+  "fuel_guard": {
+    "active_modelled_units": [
+      "gt-hot-01",
+      "gt-hot-02",
+      "gt-spin-01",
+      "gt-spin-02"
+    ],
+    "active_unit_count": 4,
+    "guard_status": "PASS"
+  },
+  "hard_violations": [],
+  "identical_compute_trace": true,
+  "informed_vs_baseline": {
+    "baseline_peak_unserved_mw": 46.933980704,
+    "baseline_unserved_energy_mwh": 24.95900175,
+    "informed_peak_unserved_mw": 45.771170525,
+    "informed_unserved_energy_mwh": 10.979787784,
+    "peak_unserved_no_worse": true,
+    "unserved_energy_no_worse": true,
+    "verdict": "PASS"
+  },
+  "interval_seconds": 5.0,
+  "kube_power_reactive_ticks": 0,
+  "kube_requeued_admissions": 0,
+  "max_compute_trace_diff_mw": 0.0,
+  "mode": "informed",
+  "peak_unserved_mw": 45.771170525,
+  "preload_actions": [
+    {
+      "bess_charge_limited": true,
+      "burst_sim_time_s": 29110.0,
+      "forecast_mw": 117.345565,
+      "incremental_target_mw": 57.5,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 17.5,
+      "ramp_seconds": 38.333333,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 29050.0,
+      "suppressed_repeat_count": 0,
+      "target_mw": 26.827661,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-hot-02",
+        "gt-spin-01"
+      ]
+    },
+    {
+      "bess_charge_limited": true,
+      "burst_sim_time_s": 29110.0,
+      "forecast_mw": 117.345565,
+      "incremental_target_mw": 67.767904,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 20.577661,
+      "ramp_seconds": 33.883952,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 29055.0,
+      "suppressed_repeat_count": 2,
+      "target_mw": 35.577661,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-hot-02",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": true,
+      "burst_sim_time_s": 29110.0,
+      "forecast_mw": 117.345565,
+      "incremental_target_mw": 54.017904,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 34.327661,
+      "ramp_seconds": 27.008952,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 29070.0,
+      "suppressed_repeat_count": 0,
+      "target_mw": 35.552447,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-hot-02",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": true,
+      "burst_sim_time_s": 29110.0,
+      "forecast_mw": 117.345678,
+      "incremental_target_mw": 52.793231,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 35.552447,
+      "ramp_seconds": 26.396615,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 29075.0,
+      "suppressed_repeat_count": 6,
+      "target_mw": 35.552559,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-hot-02",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": true,
+      "burst_sim_time_s": 36310.0,
+      "forecast_mw": 110.756431,
+      "incremental_target_mw": 32.5,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 17.5,
+      "ramp_seconds": 32.5,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 36250.0,
+      "suppressed_repeat_count": 11,
+      "target_mw": 17.5,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-spin-01"
+      ]
+    },
+    {
+      "bess_charge_limited": false,
+      "burst_sim_time_s": 36560.0,
+      "forecast_mw": 113.921158,
+      "incremental_target_mw": 21.480992,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 63.440166,
+      "ramp_seconds": 10.740496,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 36520.0,
+      "suppressed_repeat_count": 6,
+      "target_mw": 84.921158,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-hot-02",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": true,
+      "burst_sim_time_s": 43510.0,
+      "forecast_mw": 111.821492,
+      "incremental_target_mw": 32.5,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 17.5,
+      "ramp_seconds": 32.5,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 43450.0,
+      "suppressed_repeat_count": 11,
+      "target_mw": 17.5,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-spin-01"
+      ]
+    },
+    {
+      "bess_charge_limited": false,
+      "burst_sim_time_s": 43525.0,
+      "forecast_mw": 114.242178,
+      "incremental_target_mw": 57.5,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 17.5,
+      "ramp_seconds": 38.333333,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 43510.0,
+      "suppressed_repeat_count": 0,
+      "target_mw": 75.0,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": false,
+      "burst_sim_time_s": 43525.0,
+      "forecast_mw": 114.242178,
+      "incremental_target_mw": 60.242178,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 25.0,
+      "ramp_seconds": 30.121089,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 43515.0,
+      "suppressed_repeat_count": 1,
+      "target_mw": 85.242178,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-hot-02",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": false,
+      "burst_sim_time_s": 43670.0,
+      "forecast_mw": 111.821596,
+      "incremental_target_mw": 16.236711,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 66.584885,
+      "ramp_seconds": 8.118355,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 43635.0,
+      "suppressed_repeat_count": 6,
+      "target_mw": 83.75,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-hot-02",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": false,
+      "burst_sim_time_s": 43685.0,
+      "forecast_mw": 114.620394,
+      "incremental_target_mw": 1.870394,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 83.75,
+      "ramp_seconds": 0.935197,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 43670.0,
+      "suppressed_repeat_count": 0,
+      "target_mw": 85.620394,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-hot-02",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": false,
+      "burst_sim_time_s": 43685.0,
+      "forecast_mw": 114.652738,
+      "incremental_target_mw": 0.032344,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 85.620394,
+      "ramp_seconds": 0.016172,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 43675.0,
+      "suppressed_repeat_count": 0,
+      "target_mw": 85.652738,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-hot-02",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": true,
+      "burst_sim_time_s": 50710.0,
+      "forecast_mw": 109.934784,
+      "incremental_target_mw": 32.5,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 17.5,
+      "ramp_seconds": 32.5,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 50650.0,
+      "suppressed_repeat_count": 5,
+      "target_mw": 17.5,
+      "unit_ids": [
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": true,
+      "burst_sim_time_s": 50710.0,
+      "forecast_mw": 109.936463,
+      "incremental_target_mw": 57.5,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 17.5,
+      "ramp_seconds": 38.333333,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 50680.0,
+      "suppressed_repeat_count": 5,
+      "target_mw": 26.25,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": false,
+      "burst_sim_time_s": 50735.0,
+      "forecast_mw": 110.516394,
+      "incremental_target_mw": 48.75,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 26.25,
+      "ramp_seconds": 32.5,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 50710.0,
+      "suppressed_repeat_count": 4,
+      "target_mw": 75.0,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": false,
+      "burst_sim_time_s": 50880.0,
+      "forecast_mw": 109.936463,
+      "incremental_target_mw": 17.489228,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 63.447235,
+      "ramp_seconds": 8.744614,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 50845.0,
+      "suppressed_repeat_count": 5,
+      "target_mw": 83.75,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-hot-02",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": false,
+      "burst_sim_time_s": 50890.0,
+      "forecast_mw": 110.919824,
+      "incremental_target_mw": 4.419824,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 77.5,
+      "ramp_seconds": 2.209912,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 50880.0,
+      "suppressed_repeat_count": 0,
+      "target_mw": 83.75,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-hot-02",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": false,
+      "burst_sim_time_s": 50965.0,
+      "forecast_mw": 112.482365,
+      "incremental_target_mw": 19.64618,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 63.836185,
+      "ramp_seconds": 9.82309,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 50930.0,
+      "suppressed_repeat_count": 6,
+      "target_mw": 83.75,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-hot-02",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": false,
+      "burst_sim_time_s": 50990.0,
+      "forecast_mw": 111.322502,
+      "incremental_target_mw": 3.572502,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 78.75,
+      "ramp_seconds": 1.786251,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 50970.0,
+      "suppressed_repeat_count": 0,
+      "target_mw": 83.75,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-hot-02",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": false,
+      "burst_sim_time_s": 50990.0,
+      "forecast_mw": 111.322502,
+      "incremental_target_mw": 3.572502,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 78.75,
+      "ramp_seconds": 1.786251,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 50980.0,
+      "suppressed_repeat_count": 0,
+      "target_mw": 83.75,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-hot-02",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "omitted_record_count": 106,
+      "truncated": true
+    },
+    {
+      "bess_charge_limited": true,
+      "burst_sim_time_s": 410710.0,
+      "forecast_mw": 116.336892,
+      "incremental_target_mw": 32.5,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 17.5,
+      "ramp_seconds": 32.5,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 410650.0,
+      "suppressed_repeat_count": 11,
+      "target_mw": 17.5,
+      "unit_ids": [
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": false,
+      "burst_sim_time_s": 410850.0,
+      "forecast_mw": 115.063673,
+      "incremental_target_mw": 17.032299,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 69.031375,
+      "ramp_seconds": 8.516149,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 410815.0,
+      "suppressed_repeat_count": 5,
+      "target_mw": 86.063673,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-hot-02",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": false,
+      "burst_sim_time_s": 410980.0,
+      "forecast_mw": 118.748878,
+      "incremental_target_mw": 21.77221,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 67.976668,
+      "ramp_seconds": 10.886105,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 410940.0,
+      "suppressed_repeat_count": 6,
+      "target_mw": 89.748878,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-hot-02",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": true,
+      "burst_sim_time_s": 461110.0,
+      "forecast_mw": 113.452193,
+      "incremental_target_mw": 32.5,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 17.5,
+      "ramp_seconds": 32.5,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 461050.0,
+      "suppressed_repeat_count": 11,
+      "target_mw": 17.5,
+      "unit_ids": [
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": false,
+      "burst_sim_time_s": 461165.0,
+      "forecast_mw": 111.045896,
+      "incremental_target_mw": 32.5,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 17.5,
+      "ramp_seconds": 32.5,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 461110.0,
+      "suppressed_repeat_count": 6,
+      "target_mw": 50.0,
+      "unit_ids": [
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": false,
+      "burst_sim_time_s": 461385.0,
+      "forecast_mw": 110.095199,
+      "incremental_target_mw": 25.0,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 50.0,
+      "ramp_seconds": 16.666667,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 461350.0,
+      "suppressed_repeat_count": 0,
+      "target_mw": 75.0,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": false,
+      "burst_sim_time_s": 461385.0,
+      "forecast_mw": 110.095199,
+      "incremental_target_mw": 28.595199,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 52.5,
+      "ramp_seconds": 14.297599,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 461355.0,
+      "suppressed_repeat_count": 5,
+      "target_mw": 83.75,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-hot-02",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": true,
+      "burst_sim_time_s": 475510.0,
+      "forecast_mw": 110.017031,
+      "incremental_target_mw": 32.5,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 17.5,
+      "ramp_seconds": 32.5,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 475450.0,
+      "suppressed_repeat_count": 11,
+      "target_mw": 17.5,
+      "unit_ids": [
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": false,
+      "burst_sim_time_s": 475690.0,
+      "forecast_mw": 110.496229,
+      "incremental_target_mw": 18.556812,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 62.939417,
+      "ramp_seconds": 9.278406,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 475655.0,
+      "suppressed_repeat_count": 5,
+      "target_mw": 83.75,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-hot-02",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": false,
+      "burst_sim_time_s": 475710.0,
+      "forecast_mw": 113.673243,
+      "incremental_target_mw": 7.173243,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 77.5,
+      "ramp_seconds": 3.586622,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 475690.0,
+      "suppressed_repeat_count": 1,
+      "target_mw": 84.673243,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-hot-02",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": false,
+      "burst_sim_time_s": 475710.0,
+      "forecast_mw": 113.673243,
+      "incremental_target_mw": 5.923243,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 78.75,
+      "ramp_seconds": 2.961622,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 475705.0,
+      "suppressed_repeat_count": 0,
+      "target_mw": 84.673243,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-hot-02",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": false,
+      "burst_sim_time_s": 475760.0,
+      "forecast_mw": 111.30309,
+      "incremental_target_mw": 11.428085,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 70.875004,
+      "ramp_seconds": 5.714043,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 475730.0,
+      "suppressed_repeat_count": 3,
+      "target_mw": 83.75,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-hot-02",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": false,
+      "burst_sim_time_s": 475760.0,
+      "forecast_mw": 111.30309,
+      "incremental_target_mw": 2.57045,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 79.73264,
+      "ramp_seconds": 1.285225,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 475755.0,
+      "suppressed_repeat_count": 0,
+      "target_mw": 83.75,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-hot-02",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": true,
+      "burst_sim_time_s": 489910.0,
+      "forecast_mw": 110.1293,
+      "incremental_target_mw": 32.5,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 17.5,
+      "ramp_seconds": 32.5,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 489850.0,
+      "suppressed_repeat_count": 11,
+      "target_mw": 17.5,
+      "unit_ids": [
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": true,
+      "burst_sim_time_s": 547510.0,
+      "forecast_mw": 110.10206,
+      "incremental_target_mw": 32.5,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 17.5,
+      "ramp_seconds": 32.5,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 547450.0,
+      "suppressed_repeat_count": 11,
+      "target_mw": 17.5,
+      "unit_ids": [
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": true,
+      "burst_sim_time_s": 561910.0,
+      "forecast_mw": 110.118775,
+      "incremental_target_mw": 32.5,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 17.5,
+      "ramp_seconds": 32.5,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 561850.0,
+      "suppressed_repeat_count": 11,
+      "target_mw": 17.5,
+      "unit_ids": [
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": false,
+      "burst_sim_time_s": 562170.0,
+      "forecast_mw": 112.334093,
+      "incremental_target_mw": 20.398204,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 62.935889,
+      "ramp_seconds": 10.199102,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 562130.0,
+      "suppressed_repeat_count": 6,
+      "target_mw": 83.75,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-hot-02",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": true,
+      "burst_sim_time_s": 576310.0,
+      "forecast_mw": 112.667717,
+      "incremental_target_mw": 32.5,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 17.5,
+      "ramp_seconds": 32.5,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 576305.0,
+      "suppressed_repeat_count": 0,
+      "target_mw": 17.5,
+      "unit_ids": [
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": false,
+      "burst_sim_time_s": 576315.0,
+      "forecast_mw": 110.751422,
+      "incremental_target_mw": 57.5,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 17.5,
+      "ramp_seconds": 38.333333,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 576310.0,
+      "suppressed_repeat_count": 0,
+      "target_mw": 75.0,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    },
+    {
+      "bess_charge_limited": false,
+      "burst_sim_time_s": 576475.0,
+      "forecast_mw": 110.31017,
+      "incremental_target_mw": 17.939807,
+      "margin_seconds": 30.0,
+      "normal_output_mw": 63.370364,
+      "ramp_seconds": 8.969903,
+      "reason": "forecast burst preload within ramp window",
+      "sim_time_s": 576440.0,
+      "suppressed_repeat_count": 5,
+      "target_mw": 83.75,
+      "unit_ids": [
+        "gt-hot-01",
+        "gt-hot-02",
+        "gt-spin-01",
+        "gt-spin-02"
+      ]
+    }
+  ],
+  "preload_fuel_mmbtu": 20.325413622,
+  "preload_outcomes": [],
+  "replay_strategy": "captured live workload-signal/demand trace; replayed per-tick compute and lagged cooling demand",
+  "scenario_id": "scenario-h2-slurm-7d",
+  "start_count": 74,
+  "start_count_reconciled": true,
+  "starts": [
+    {
+      "action": "release",
+      "reason": "automatic contingency cascade release",
+      "sim_time_s": 25410.0,
+      "source": "automatic_contingency",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "release",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 28750.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 28755.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 35950.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 35955.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 43150.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 43155.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "reserve floor violated: 25.0 MW < 26.9 MW",
+      "sim_time_s": 49445.0,
+      "source": "core_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 50380.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 50385.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 57550.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 57555.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 64750.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 64755.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 115150.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 115155.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 122350.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 122355.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 129550.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 129555.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "omitted_record_count": 34,
+      "truncated": true
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 388750.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 388755.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 395950.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 395955.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 403150.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 403155.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 410350.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 410355.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 460750.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 460755.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 475150.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 475155.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 489550.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 489555.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 547150.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 547155.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 561550.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 561555.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 575950.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "start",
+      "reason": "forecast peak exceeds synchronized capacity plus BESS allowance over 360s",
+      "sim_time_s": 575955.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    }
+  ],
+  "stop_floor_refusal_count": 106744,
+  "stop_floor_refusals": [
+    {
+      "bess_included_in_floor": false,
+      "demand_mw": 3.366122,
+      "forecast_time_s": 10.0,
+      "post_stop_floor_mw": 28.366122,
+      "remaining_turbine_capacity_mw": 25.0,
+      "reserve_deficit_mw": 3.366122,
+      "restart_window_end_s": 1620.0,
+      "sim_time_s": 0.0,
+      "stop_lookahead_end_s": 1200.0
+    },
+    {
+      "bess_included_in_floor": false,
+      "demand_mw": 3.366122,
+      "forecast_time_s": 10.0,
+      "post_stop_floor_mw": 28.366122,
+      "remaining_turbine_capacity_mw": 25.0,
+      "reserve_deficit_mw": 3.366122,
+      "restart_window_end_s": 1625.0,
+      "sim_time_s": 5.0,
+      "stop_lookahead_end_s": 1205.0
+    },
+    {
+      "bess_included_in_floor": false,
+      "demand_mw": 3.409897,
+      "forecast_time_s": 10.0,
+      "post_stop_floor_mw": 28.409897,
+      "remaining_turbine_capacity_mw": 25.0,
+      "reserve_deficit_mw": 3.409897,
+      "restart_window_end_s": 1630.0,
+      "sim_time_s": 10.0,
+      "stop_lookahead_end_s": 1210.0
+    },
+    {
+      "bess_included_in_floor": false,
+      "demand_mw": 3.409897,
+      "forecast_time_s": 15.0,
+      "post_stop_floor_mw": 28.409897,
+      "remaining_turbine_capacity_mw": 25.0,
+      "reserve_deficit_mw": 3.409897,
+      "restart_window_end_s": 1635.0,
+      "sim_time_s": 15.0,
+      "stop_lookahead_end_s": 1215.0
+    },
+    {
+      "bess_included_in_floor": false,
+      "demand_mw": 3.40135,
+      "forecast_time_s": 20.0,
+      "post_stop_floor_mw": 28.40135,
+      "remaining_turbine_capacity_mw": 25.0,
+      "reserve_deficit_mw": 3.40135,
+      "restart_window_end_s": 1640.0,
+      "sim_time_s": 20.0,
+      "stop_lookahead_end_s": 1220.0
+    },
+    {
+      "bess_included_in_floor": false,
+      "demand_mw": 3.396021,
+      "forecast_time_s": 25.0,
+      "post_stop_floor_mw": 28.396021,
+      "remaining_turbine_capacity_mw": 25.0,
+      "reserve_deficit_mw": 3.396021,
+      "restart_window_end_s": 1645.0,
+      "sim_time_s": 25.0,
+      "stop_lookahead_end_s": 1225.0
+    },
+    {
+      "bess_included_in_floor": false,
+      "demand_mw": 3.392387,
+      "forecast_time_s": 30.0,
+      "post_stop_floor_mw": 28.392387,
+      "remaining_turbine_capacity_mw": 25.0,
+      "reserve_deficit_mw": 3.392387,
+      "restart_window_end_s": 1650.0,
+      "sim_time_s": 30.0,
+      "stop_lookahead_end_s": 1230.0
+    },
+    {
+      "bess_included_in_floor": false,
+      "demand_mw": 3.389732,
+      "forecast_time_s": 35.0,
+      "post_stop_floor_mw": 28.389732,
+      "remaining_turbine_capacity_mw": 25.0,
+      "reserve_deficit_mw": 3.389732,
+      "restart_window_end_s": 1655.0,
+      "sim_time_s": 35.0,
+      "stop_lookahead_end_s": 1235.0
+    },
+    {
+      "bess_included_in_floor": false,
+      "demand_mw": 3.387694,
+      "forecast_time_s": 40.0,
+      "post_stop_floor_mw": 28.387694,
+      "remaining_turbine_capacity_mw": 25.0,
+      "reserve_deficit_mw": 3.387694,
+      "restart_window_end_s": 1660.0,
+      "sim_time_s": 40.0,
+      "stop_lookahead_end_s": 1240.0
+    },
+    {
+      "bess_included_in_floor": false,
+      "demand_mw": 3.386071,
+      "forecast_time_s": 45.0,
+      "post_stop_floor_mw": 28.386071,
+      "remaining_turbine_capacity_mw": 25.0,
+      "reserve_deficit_mw": 3.386071,
+      "restart_window_end_s": 1665.0,
+      "sim_time_s": 45.0,
+      "stop_lookahead_end_s": 1245.0
+    },
+    {
+      "bess_included_in_floor": false,
+      "demand_mw": 3.384743,
+      "forecast_time_s": 50.0,
+      "post_stop_floor_mw": 28.384743,
+      "remaining_turbine_capacity_mw": 25.0,
+      "reserve_deficit_mw": 3.384743,
+      "restart_window_end_s": 1670.0,
+      "sim_time_s": 50.0,
+      "stop_lookahead_end_s": 1250.0
+    },
+    {
+      "bess_included_in_floor": false,
+      "demand_mw": 3.383632,
+      "forecast_time_s": 55.0,
+      "post_stop_floor_mw": 28.383632,
+      "remaining_turbine_capacity_mw": 25.0,
+      "reserve_deficit_mw": 3.383632,
+      "restart_window_end_s": 1675.0,
+      "sim_time_s": 55.0,
+      "stop_lookahead_end_s": 1255.0
+    },
+    {
+      "omitted_record_count": 106720,
+      "truncated": true
+    },
+    {
+      "bess_included_in_floor": false,
+      "demand_mw": 3.27601,
+      "forecast_time_s": 604740.0,
+      "post_stop_floor_mw": 28.27601,
+      "remaining_turbine_capacity_mw": 25.0,
+      "reserve_deficit_mw": 3.27601,
+      "restart_window_end_s": 606360.0,
+      "sim_time_s": 604740.0,
+      "stop_lookahead_end_s": 605940.0
+    },
+    {
+      "bess_included_in_floor": false,
+      "demand_mw": 3.27601,
+      "forecast_time_s": 604745.0,
+      "post_stop_floor_mw": 28.27601,
+      "remaining_turbine_capacity_mw": 25.0,
+      "reserve_deficit_mw": 3.27601,
+      "restart_window_end_s": 606365.0,
+      "sim_time_s": 604745.0,
+      "stop_lookahead_end_s": 605945.0
+    },
+    {
+      "bess_included_in_floor": false,
+      "demand_mw": 3.27601,
+      "forecast_time_s": 604750.0,
+      "post_stop_floor_mw": 28.27601,
+      "remaining_turbine_capacity_mw": 25.0,
+      "reserve_deficit_mw": 3.27601,
+      "restart_window_end_s": 606370.0,
+      "sim_time_s": 604750.0,
+      "stop_lookahead_end_s": 605950.0
+    },
+    {
+      "bess_included_in_floor": false,
+      "demand_mw": 3.27601,
+      "forecast_time_s": 604755.0,
+      "post_stop_floor_mw": 28.27601,
+      "remaining_turbine_capacity_mw": 25.0,
+      "reserve_deficit_mw": 3.27601,
+      "restart_window_end_s": 606375.0,
+      "sim_time_s": 604755.0,
+      "stop_lookahead_end_s": 605955.0
+    },
+    {
+      "bess_included_in_floor": false,
+      "demand_mw": 2.01529,
+      "forecast_time_s": 604760.0,
+      "post_stop_floor_mw": 27.01529,
+      "remaining_turbine_capacity_mw": 25.0,
+      "reserve_deficit_mw": 2.01529,
+      "restart_window_end_s": 606380.0,
+      "sim_time_s": 604760.0,
+      "stop_lookahead_end_s": 605960.0
+    },
+    {
+      "bess_included_in_floor": false,
+      "demand_mw": 2.044674,
+      "forecast_time_s": 604765.0,
+      "post_stop_floor_mw": 27.044674,
+      "remaining_turbine_capacity_mw": 25.0,
+      "reserve_deficit_mw": 2.044674,
+      "restart_window_end_s": 606385.0,
+      "sim_time_s": 604765.0,
+      "stop_lookahead_end_s": 605965.0
+    },
+    {
+      "bess_included_in_floor": false,
+      "demand_mw": 2.044674,
+      "forecast_time_s": 604770.0,
+      "post_stop_floor_mw": 27.044674,
+      "remaining_turbine_capacity_mw": 25.0,
+      "reserve_deficit_mw": 2.044674,
+      "restart_window_end_s": 606390.0,
+      "sim_time_s": 604770.0,
+      "stop_lookahead_end_s": 605970.0
+    },
+    {
+      "bess_included_in_floor": false,
+      "demand_mw": 2.044674,
+      "forecast_time_s": 604775.0,
+      "post_stop_floor_mw": 27.044674,
+      "remaining_turbine_capacity_mw": 25.0,
+      "reserve_deficit_mw": 2.044674,
+      "restart_window_end_s": 606395.0,
+      "sim_time_s": 604775.0,
+      "stop_lookahead_end_s": 605975.0
+    },
+    {
+      "bess_included_in_floor": false,
+      "demand_mw": 2.044674,
+      "forecast_time_s": 604780.0,
+      "post_stop_floor_mw": 27.044674,
+      "remaining_turbine_capacity_mw": 25.0,
+      "reserve_deficit_mw": 2.044674,
+      "restart_window_end_s": 606400.0,
+      "sim_time_s": 604780.0,
+      "stop_lookahead_end_s": 605980.0
+    },
+    {
+      "bess_included_in_floor": false,
+      "demand_mw": 2.044674,
+      "forecast_time_s": 604785.0,
+      "post_stop_floor_mw": 27.044674,
+      "remaining_turbine_capacity_mw": 25.0,
+      "reserve_deficit_mw": 2.044674,
+      "restart_window_end_s": 606405.0,
+      "sim_time_s": 604785.0,
+      "stop_lookahead_end_s": 605985.0
+    },
+    {
+      "bess_included_in_floor": false,
+      "demand_mw": 2.044674,
+      "forecast_time_s": 604790.0,
+      "post_stop_floor_mw": 27.044674,
+      "remaining_turbine_capacity_mw": 25.0,
+      "reserve_deficit_mw": 2.044674,
+      "restart_window_end_s": 606410.0,
+      "sim_time_s": 604790.0,
+      "stop_lookahead_end_s": 605990.0
+    },
+    {
+      "bess_included_in_floor": false,
+      "demand_mw": 2.044674,
+      "forecast_time_s": 604795.0,
+      "post_stop_floor_mw": 27.044674,
+      "remaining_turbine_capacity_mw": 25.0,
+      "reserve_deficit_mw": 2.044674,
+      "restart_window_end_s": 606415.0,
+      "sim_time_s": 604795.0,
+      "stop_lookahead_end_s": 605995.0
+    }
+  ],
+  "stops": [
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 25340.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 25400.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop",
+      "reason": "U=0.025 \u2264 0.5, U_without=0.034 \u2264 0.7; BESS full; 32.48 MW turbine surplus remains after BESS absorbed 0.00 MW",
+      "sim_time_s": 30845.0,
+      "source": "core_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 30850.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 30910.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 30910.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 38110.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 38115.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 38170.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 38175.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 45310.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 45315.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 45370.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 45375.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-spin-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 49420.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 49480.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 52540.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 52545.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 52600.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 52605.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "omitted_record_count": 108,
+      "truncated": true
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 477310.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 477315.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 477370.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 477375.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 491710.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 491715.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 491770.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 491775.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 549550.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 549555.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 549610.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 549615.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 563710.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 563715.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 563770.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 563775.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 578110.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop",
+      "reason": "forecast peak and minimum support controlled stop over 1200s",
+      "sim_time_s": 578115.0,
+      "source": "forecast_commitment",
+      "unit_id": "gt-hot-01"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 578170.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-02"
+    },
+    {
+      "action": "stop_complete",
+      "reason": "controlled rundown completed and breaker opened",
+      "sim_time_s": 578175.0,
+      "source": "turbine_physics",
+      "unit_id": "gt-hot-01"
+    }
+  ],
+  "synchronized_count_distribution_ticks": {
+    "1": 127,
+    "2": 107358,
+    "3": 83,
+    "4": 13392
+  },
+  "tick_artifact": "scenario-h2-slurm-7d-informed_ticks.jsonl.gz",
+  "tick_count": 120960,
+  "trace_source": "baseline live background trace replay",
+  "turbine_fuel_mmbtu": 36515.14519327,
+  "unit_minutes_below_50_percent": {
+    "gt-hot-01": 1374.583333,
+    "gt-hot-02": 1109.833333,
+    "gt-spin-01": 9888.333333,
+    "gt-spin-02": 9579.0
+  },
+  "unserved_by_cluster": [
+    {
+      "cluster": 1,
+      "had_unserved": true,
+      "unserved_mwh": 0.107163778
+    },
+    {
+      "cluster": 2,
+      "had_unserved": true,
+      "unserved_mwh": 0.194217394
+    },
+    {
+      "cluster": 3,
+      "had_unserved": true,
+      "unserved_mwh": 0.183904263
+    },
+    {
+      "cluster": 4,
+      "had_unserved": true,
+      "unserved_mwh": 0.102911723
+    },
+    {
+      "cluster": 5,
+      "had_unserved": true,
+      "unserved_mwh": 0.169233429
+    },
+    {
+      "cluster": 6,
+      "had_unserved": true,
+      "unserved_mwh": 0.135897835
+    },
+    {
+      "cluster": 7,
+      "had_unserved": true,
+      "unserved_mwh": 1.021287377
+    },
+    {
+      "cluster": 8,
+      "had_unserved": true,
+      "unserved_mwh": 0.165168327
+    },
+    {
+      "cluster": 9,
+      "had_unserved": true,
+      "unserved_mwh": 0.155317466
+    },
+    {
+      "cluster": 10,
+      "had_unserved": true,
+      "unserved_mwh": 0.142272516
+    },
+    {
+      "cluster": 11,
+      "had_unserved": true,
+      "unserved_mwh": 0.13990649
+    },
+    {
+      "cluster": 12,
+      "had_unserved": true,
+      "unserved_mwh": 0.164341529
+    },
+    {
+      "cluster": 13,
+      "had_unserved": true,
+      "unserved_mwh": 1.259200947
+    },
+    {
+      "cluster": 14,
+      "had_unserved": true,
+      "unserved_mwh": 0.147286862
+    },
+    {
+      "cluster": 15,
+      "had_unserved": true,
+      "unserved_mwh": 0.168727637
+    },
+    {
+      "cluster": 16,
+      "had_unserved": true,
+      "unserved_mwh": 0.135897835
+    },
+    {
+      "cluster": 17,
+      "had_unserved": true,
+      "unserved_mwh": 0.135897835
+    },
+    {
+      "cluster": 18,
+      "had_unserved": true,
+      "unserved_mwh": 0.149755096
+    },
+    {
+      "cluster": 19,
+      "had_unserved": true,
+      "unserved_mwh": 1.048890336
+    },
+    {
+      "cluster": 20,
+      "had_unserved": true,
+      "unserved_mwh": 0.168402977
+    },
+    {
+      "cluster": 21,
+      "had_unserved": true,
+      "unserved_mwh": 0.135897835
+    },
+    {
+      "cluster": 22,
+      "had_unserved": true,
+      "unserved_mwh": 0.135897835
+    },
+    {
+      "cluster": 23,
+      "had_unserved": true,
+      "unserved_mwh": 0.139143021
+    },
+    {
+      "cluster": 24,
+      "had_unserved": true,
+      "unserved_mwh": 0.136195337
+    },
+    {
+      "cluster": 25,
+      "had_unserved": true,
+      "unserved_mwh": 1.050158406
+    },
+    {
+      "cluster": 26,
+      "had_unserved": true,
+      "unserved_mwh": 0.138057374
+    },
+    {
+      "cluster": 27,
+      "had_unserved": true,
+      "unserved_mwh": 0.157770368
+    },
+    {
+      "cluster": 28,
+      "had_unserved": true,
+      "unserved_mwh": 0.169990194
+    },
+    {
+      "cluster": 29,
+      "had_unserved": true,
+      "unserved_mwh": 0.14269716
+    },
+    {
+      "cluster": 30,
+      "had_unserved": true,
+      "unserved_mwh": 0.17276786
+    },
+    {
+      "cluster": 31,
+      "had_unserved": true,
+      "unserved_mwh": 1.134409791
+    },
+    {
+      "cluster": 32,
+      "had_unserved": true,
+      "unserved_mwh": 0.135897835
+    },
+    {
+      "cluster": 33,
+      "had_unserved": true,
+      "unserved_mwh": 0.135897835
+    },
+    {
+      "cluster": 34,
+      "had_unserved": true,
+      "unserved_mwh": 1.025411486
+    },
+    {
+      "cluster": 35,
+      "had_unserved": true,
+      "unserved_mwh": 0.135897835
+    },
+    {
+      "cluster": 36,
+      "had_unserved": true,
+      "unserved_mwh": 0.138015961
+    }
+  ],
+  "unserved_intervals": [
+    {
+      "end_sim_time_s": 29165.0,
+      "peak_unserved_mw": 19.287968405751712,
+      "start_sim_time_s": 29130.0
+    },
+    {
+      "end_sim_time_s": 29235.0,
+      "peak_unserved_mw": 1.8802011558611156,
+      "start_sim_time_s": 29215.0
+    },
+    {
+      "end_sim_time_s": 36350.0,
+      "peak_unserved_mw": 38.394865912415625,
+      "start_sim_time_s": 36310.0
+    },
+    {
+      "end_sim_time_s": 43555.0,
+      "peak_unserved_mw": 39.4036584956214,
+      "start_sim_time_s": 43510.0
+    },
+    {
+      "end_sim_time_s": 50730.0,
+      "peak_unserved_mw": 29.140845418775996,
+      "start_sim_time_s": 50710.0
+    },
+    {
+      "end_sim_time_s": 50760.0,
+      "peak_unserved_mw": 1.25,
+      "start_sim_time_s": 50750.0
+    },
+    {
+      "end_sim_time_s": 57940.0,
+      "peak_unserved_mw": 42.36838786968556,
+      "start_sim_time_s": 57910.0
+    },
+    {
+      "end_sim_time_s": 65140.0,
+      "peak_unserved_mw": 37.890845418775996,
+      "start_sim_time_s": 65110.0
+    },
+    {
+      "end_sim_time_s": 115770.0,
+      "peak_unserved_mw": 40.390845418775996,
+      "start_sim_time_s": 115510.0
+    },
+    {
+      "end_sim_time_s": 122735.0,
+      "peak_unserved_mw": 43.522061418776005,
+      "start_sim_time_s": 122710.0
+    },
+    {
+      "end_sim_time_s": 129940.0,
+      "peak_unserved_mw": 40.85353741876759,
+      "start_sim_time_s": 129910.0
+    },
+    {
+      "end_sim_time_s": 137140.0,
+      "peak_unserved_mw": 38.97506461877599,
+      "start_sim_time_s": 137110.0
+    },
+    {
+      "end_sim_time_s": 144340.0,
+      "peak_unserved_mw": 38.60233508544266,
+      "start_sim_time_s": 144310.0
+    },
+    {
+      "end_sim_time_s": 151535.0,
+      "peak_unserved_mw": 43.42270699932709,
+      "start_sim_time_s": 151510.0
+    },
+    {
+      "end_sim_time_s": 202170.0,
+      "peak_unserved_mw": 45.771170525458764,
+      "start_sim_time_s": 201910.0
+    },
+    {
+      "end_sim_time_s": 209140.0,
+      "peak_unserved_mw": 39.268182018776,
+      "start_sim_time_s": 209110.0
+    },
+    {
+      "end_sim_time_s": 216335.0,
+      "peak_unserved_mw": 44.262538875177384,
+      "start_sim_time_s": 216310.0
+    },
+    {
+      "end_sim_time_s": 223540.0,
+      "peak_unserved_mw": 37.890845418775996,
+      "start_sim_time_s": 223510.0
+    },
+    {
+      "end_sim_time_s": 230740.0,
+      "peak_unserved_mw": 37.890845418775996,
+      "start_sim_time_s": 230710.0
+    },
+    {
+      "end_sim_time_s": 237940.0,
+      "peak_unserved_mw": 40.286213418776,
+      "start_sim_time_s": 237910.0
+    },
+    {
+      "end_sim_time_s": 288570.0,
+      "peak_unserved_mw": 41.75362744667805,
+      "start_sim_time_s": 288310.0
+    },
+    {
+      "end_sim_time_s": 295535.0,
+      "peak_unserved_mw": 43.831813947659896,
+      "start_sim_time_s": 295510.0
+    },
+    {
+      "end_sim_time_s": 302740.0,
+      "peak_unserved_mw": 37.890845418775996,
+      "start_sim_time_s": 302710.0
+    },
+    {
+      "end_sim_time_s": 309940.0,
+      "peak_unserved_mw": 37.890845418775996,
+      "start_sim_time_s": 309910.0
+    },
+    {
+      "end_sim_time_s": 317140.0,
+      "peak_unserved_mw": 38.4749790141304,
+      "start_sim_time_s": 317110.0
+    },
+    {
+      "end_sim_time_s": 324340.0,
+      "peak_unserved_mw": 37.890845418775996,
+      "start_sim_time_s": 324310.0
+    },
+    {
+      "end_sim_time_s": 374970.0,
+      "peak_unserved_mw": 41.2135775879256,
+      "start_sim_time_s": 374710.0
+    },
+    {
+      "end_sim_time_s": 381940.0,
+      "peak_unserved_mw": 38.279560434306745,
+      "start_sim_time_s": 381910.0
+    },
+    {
+      "end_sim_time_s": 389135.0,
+      "peak_unserved_mw": 42.15865084560903,
+      "start_sim_time_s": 389110.0
+    },
+    {
+      "end_sim_time_s": 396340.0,
+      "peak_unserved_mw": 43.70696650601866,
+      "start_sim_time_s": 396310.0
+    },
+    {
+      "end_sim_time_s": 403535.0,
+      "peak_unserved_mw": 40.28621328312987,
+      "start_sim_time_s": 403510.0
+    },
+    {
+      "end_sim_time_s": 410740.0,
+      "peak_unserved_mw": 43.52204637528328,
+      "start_sim_time_s": 410710.0
+    },
+    {
+      "end_sim_time_s": 461365.0,
+      "peak_unserved_mw": 43.78132406611461,
+      "start_sim_time_s": 461110.0
+    },
+    {
+      "end_sim_time_s": 475540.0,
+      "peak_unserved_mw": 37.890845418775996,
+      "start_sim_time_s": 475510.0
+    },
+    {
+      "end_sim_time_s": 489940.0,
+      "peak_unserved_mw": 37.890845418775996,
+      "start_sim_time_s": 489910.0
+    },
+    {
+      "end_sim_time_s": 547770.0,
+      "peak_unserved_mw": 40.76123789780206,
+      "start_sim_time_s": 547510.0
+    },
+    {
+      "end_sim_time_s": 561940.0,
+      "peak_unserved_mw": 37.890845418775996,
+      "start_sim_time_s": 561910.0
+    },
+    {
+      "end_sim_time_s": 576340.0,
+      "peak_unserved_mw": 38.27589031589589,
+      "start_sim_time_s": 576310.0
+    }
+  ],
+  "unserved_mwh": 10.979787784,
+  "wall_clock_seconds": 1357.666834
+}
