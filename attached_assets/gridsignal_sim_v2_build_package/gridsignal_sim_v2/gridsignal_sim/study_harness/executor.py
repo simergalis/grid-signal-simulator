@@ -21,7 +21,11 @@ from scripts.run_phase2b_stage1 import (
 )
 
 from .artifacts import ArtifactWriter
-from .errors import error_payload
+from .errors import (
+    HarnessGuardError,
+    StartFuelReconciliationError,
+    error_payload,
+)
 from .manifest import RunManifestCache, make_run_identity
 from .metrics import MetricsCollector, collect_metrics
 
@@ -213,6 +217,7 @@ class StudyRunExecutor:
         replay_events: list[dict[str, Any]],
         demand_replay: list[tuple[float, float]],
         seed: int | str | None,
+        allow_guard_failure: bool = False,
     ) -> dict[str, Any]:
         run_spec = copy.deepcopy(spec)
         run_spec["turbine_commitment_mode"] = mode
@@ -259,10 +264,46 @@ class StudyRunExecutor:
                     "harness_commit": self.harness_commit,
                 }
             )
-            metrics = collector.finalize(
-                run_record=raw_metadata,
-                commitment_log=raw_metadata["commitment_log"],
-            )
+            guard_failure: dict[str, Any] | None = None
+            try:
+                metrics = collector.finalize(
+                    run_record=raw_metadata,
+                    commitment_log=raw_metadata["commitment_log"],
+                )
+            except HarnessGuardError as error:
+                if not allow_guard_failure:
+                    raise
+                if not isinstance(error, StartFuelReconciliationError):
+                    raise
+                # Preserve the hard guard and the original recorded list, but
+                # use measured tick telemetry only to finish diagnostic
+                # accounting.  This allows a failed run to publish its total
+                # without converting missing controller events into a pass.
+                guard_failure = error_payload(error)
+                diagnostic_record = dict(raw_metadata)
+                diagnostic_record["starts"] = [
+                    {
+                        "action": "start",
+                        "accepted": True,
+                        "changed_state": True,
+                        "sim_time_s": event["sim_time_s"],
+                        "unit_id": event["unit_id"],
+                        "tier_fuel_mmbtu": event["tier_fuel_mmbtu"],
+                    }
+                    for event in collector.measured_start_events
+                ]
+                metrics = collector.finalize(
+                    run_record=diagnostic_record,
+                    commitment_log=raw_metadata["commitment_log"],
+                )
+                reconciliation = metrics["start_fuel_reconciliation"]
+                reconciliation["passed"] = False
+                reconciliation["recorded_event_count"] = (
+                    error.recorded_event_count
+                )
+                reconciliation["measured_event_count"] = (
+                    error.measured_event_count
+                )
             metadata = dict(raw_metadata)
             metadata["commitment_log_record_count"] = len(
                 raw_metadata["commitment_log"]
@@ -283,10 +324,23 @@ class StudyRunExecutor:
             record = {
                 **metadata,
                 **metrics,
+                # Telemetry is the complete event evidence.  Keep the
+                # controller's original starts list untouched so a recording
+                # defect remains visible, while emitting the measured event
+                # sequence for downstream metrics and audit work.
+                "measured_start_event_count": len(
+                    collector.measured_start_events
+                ),
+                "measured_start_events": collector.measured_start_events,
                 "identity": identity.payload(),
                 "identity_digest": identity.digest,
                 "replay_strategy": "baseline demand trace replay",
             }
+            if guard_failure is not None:
+                record["status"] = "FAIL"
+                record["guard_failures"] = [guard_failure]
+            else:
+                record["status"] = "PASS"
             artifacts = self.writer.write(
                 identity=identity,
                 record=record,
@@ -308,6 +362,7 @@ class StudyRunExecutor:
         parameter_overrides: Mapping[str, Any] | None = None,
         seed: int | str | None = None,
         duration_seconds: float | None = None,
+        allow_guard_failures: bool = False,
     ) -> dict[str, Any]:
         spec = self._expanded_spec(
             scenario_id,
@@ -325,6 +380,7 @@ class StudyRunExecutor:
             replay_events=replay_events,
             demand_replay=demand_replay,
             seed=seed,
+            allow_guard_failure=allow_guard_failures,
         )
         informed = self._run_mode(
             scenario_id=scenario_id,
@@ -333,6 +389,7 @@ class StudyRunExecutor:
             replay_events=replay_events,
             demand_replay=demand_replay,
             seed=seed,
+            allow_guard_failure=allow_guard_failures,
         )
         from .acceptance import compare_metrics
 

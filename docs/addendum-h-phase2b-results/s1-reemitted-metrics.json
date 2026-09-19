@@ -1,0 +1,94 @@
+{
+  "report_date_utc": "2026-09-19",
+  "report_date_local": "2026-09-18",
+  "source": "four committed seven-day tick streams",
+  "metric_definition": {
+    "interval_exposure": "all component increments on ticks with dispatch curtailment",
+    "attributable": "curtailed MWh allocated by on-bus output and priced at operating-point load-fuel heat rate"
+  },
+  "runs": [
+    {
+      "scenario_id": "scenario-h1-k8s-ray-7d",
+      "mode": "baseline",
+      "status": "PASS",
+      "tick_count": 120960,
+      "turbine_fuel_mmbtu": 40734.141940344,
+      "dispatch_curtailment_mwh": 1333.996734107,
+      "dispatch_curtailment_interval_exposure_fuel_mmbtu": 25064.666045576,
+      "dispatch_curtailment_attributable_fuel_mmbtu": 14031.113385149,
+      "unserved_mwh": 5.348514157,
+      "forecast_miss_count": 0,
+      "source_list_omissions": {
+        "commitment_log": 96,
+        "starts": 32,
+        "stops": 104,
+        "unserved_intervals": 80
+      }
+    },
+    {
+      "scenario_id": "scenario-h1-k8s-ray-7d",
+      "mode": "informed",
+      "status": "PASS",
+      "tick_count": 120960,
+      "turbine_fuel_mmbtu": 39538.111109868,
+      "dispatch_curtailment_mwh": 1253.227657917,
+      "dispatch_curtailment_interval_exposure_fuel_mmbtu": 23168.697405534,
+      "dispatch_curtailment_attributable_fuel_mmbtu": 13172.325157871,
+      "unserved_mwh": 0.911887467,
+      "forecast_miss_count": 0,
+      "explicit_suppressed_commitment_repeats": 98025,
+      "source_list_omissions": {
+        "commitment_log": 96,
+        "preload_actions": 2100,
+        "starts": 32,
+        "stop_floor_refusals": 114847,
+        "stops": 104,
+        "unserved_intervals": 26
+      }
+    },
+    {
+      "scenario_id": "scenario-h2-slurm-7d",
+      "mode": "baseline",
+      "status": "FAIL",
+      "guard_failure": {
+        "type": "StartFuelReconciliationError",
+        "recorded_event_count": 30,
+        "measured_event_count": 71,
+        "reported_start_fuel_mmbtu": 940.0,
+        "measured_start_fuel_mmbtu": 940.0
+      },
+      "tick_count": 120960,
+      "turbine_fuel_mmbtu": 37023.310692264,
+      "dispatch_curtailment_mwh": 2482.333533657,
+      "dispatch_curtailment_interval_exposure_fuel_mmbtu": 34309.131713505,
+      "dispatch_curtailment_attributable_fuel_mmbtu": 26110.84811977,
+      "unserved_mwh": 24.95900175,
+      "forecast_miss_count": 0,
+      "source_list_omissions": {
+        "commitment_log": 96,
+        "stops": 102
+      },
+      "source_list_defect": "starts has 30 entries and no truncation marker although telemetry measures 71 events"
+    },
+    {
+      "scenario_id": "scenario-h2-slurm-7d",
+      "mode": "informed",
+      "status": "PASS",
+      "tick_count": 120960,
+      "turbine_fuel_mmbtu": 36515.14519327,
+      "dispatch_curtailment_mwh": 2416.909275329,
+      "dispatch_curtailment_interval_exposure_fuel_mmbtu": 34398.09826983,
+      "dispatch_curtailment_attributable_fuel_mmbtu": 25422.165180245,
+      "unserved_mwh": 10.979787784,
+      "forecast_miss_count": 39,
+      "explicit_suppressed_commitment_repeats": 99835,
+      "source_list_omissions": {
+        "commitment_log": 96,
+        "preload_actions": 106,
+        "starts": 34,
+        "stop_floor_refusals": 106720,
+        "stops": 108
+      }
+    }
+  ]
+}

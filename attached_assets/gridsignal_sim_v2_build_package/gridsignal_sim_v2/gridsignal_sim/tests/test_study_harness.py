@@ -20,14 +20,15 @@ def _row(
     *,
     total: float,
     start_fuel: float = 0.0,
+    no_load_fuel: float = 0.0,
     start_count: int = 0,
     fuel_this_tick: float = 0.0,
 ) -> dict:
     return {
         "asset_id": "gt-01",
         "fuel_modelled": True,
-        "load_fuel_mmbtu": total - start_fuel,
-        "no_load_fuel_mmbtu": 0.0,
+        "load_fuel_mmbtu": total - start_fuel - no_load_fuel,
+        "no_load_fuel_mmbtu": no_load_fuel,
         "hot_standby_fuel_mmbtu": 0.0,
         "start_fuel_mmbtu": start_fuel,
         "total_fuel_mmbtu": total,
@@ -134,13 +135,17 @@ def test_curtailment_is_range_checked_and_attributed_separately() -> None:
         [
             _tick(
                 5.0,
-                _row(total=0.1, fuel_this_tick=0.1),
+                _row(total=0.2, no_load_fuel=0.1, fuel_this_tick=0.2),
                 curtailed=2.0,
             )
         ],
-        run_record=_record(total=0.1),
+        run_record=_record(total=0.2),
     )
     assert metrics["dispatch_curtailment_mwh"] > 0.0
+    assert metrics["dispatch_curtailment_interval_exposure_fuel_mmbtu"] == 0.2
+    assert metrics["dispatch_curtailment_attributable_fuel_mmbtu"] == pytest.approx(
+        0.02
+    )
     assert (
         metrics["dispatch_curtailment_interval_exposure_fuel_mmbtu"]
         != metrics["dispatch_curtailment_attributable_fuel_mmbtu"]
@@ -172,6 +177,37 @@ def test_induced_forecast_miss_is_reported() -> None:
     )
     assert metrics["forecast"]["miss_count"] == 1
     assert metrics["forecast"]["miss_peak_mw"] == 9.0
+
+
+def test_commitment_distinct_key_keeps_same_action_at_different_times() -> None:
+    metrics = collect_metrics(
+        [_tick(5.0, _row(total=1.0))],
+        run_record={
+            **_record(total=1.0),
+            "commitment_log": [
+                {
+                    "unit_id": "gt-01",
+                    "action": "stop",
+                    "source": "core_commitment",
+                    "sim_time_s": 5.0,
+                    "reason": "same",
+                    "accepted": True,
+                    "changed_state": True,
+                },
+                {
+                    "unit_id": "gt-01",
+                    "action": "stop",
+                    "source": "core_commitment",
+                    "sim_time_s": 10.0,
+                    "reason": "same",
+                    "accepted": True,
+                    "changed_state": True,
+                },
+            ],
+        },
+    )
+    assert metrics["commitment"]["distinct_event_count"] == 2
+    assert metrics["commitment"]["suppressed_repeat_count"] == 0
 
 
 def test_acceptance_has_fixed_enumeration_and_fails_worse_informed() -> None:

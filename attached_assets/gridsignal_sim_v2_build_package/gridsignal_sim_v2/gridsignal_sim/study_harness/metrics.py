@@ -92,16 +92,20 @@ def _signature(record: Mapping[str, Any]) -> tuple[Any, ...]:
         record.get("unit_id"),
         record.get("action"),
         record.get("source"),
+        record.get("sim_time_s"),
         record.get("reason"),
         record.get("refusal_reason"),
         record.get("accepted"),
         record.get("changed_state"),
+        record.get("from_state"),
+        record.get("to_state"),
+        record.get("thermal_tier"),
     )
 
 
 def _deduplicate_records(
     records: Iterable[Mapping[str, Any]],
-) -> tuple[int, int]:
+) -> tuple[int, int, bool, int]:
     """Return distinct events and suppressed repeats.
 
     Existing controller records may already carry a suppressed-repeat count.
@@ -109,9 +113,13 @@ def _deduplicate_records(
     """
     distinct = 0
     suppressed = 0
+    complete = True
+    omitted = 0
     previous: tuple[Any, ...] | None = None
     for record in records:
         if record.get("truncated"):
+            complete = False
+            omitted += int(record.get("omitted_record_count", 0) or 0)
             continue
         explicit = int(record.get("suppressed_repeat_count", 0) or 0)
         signature = _signature(record)
@@ -121,7 +129,7 @@ def _deduplicate_records(
             distinct += 1
             suppressed += explicit
             previous = signature
-    return distinct, suppressed
+    return distinct, suppressed, complete, omitted
 
 
 def _reported_start_events(run_record: Mapping[str, Any]) -> int:
@@ -146,15 +154,17 @@ def _reported_start_tier_sum(run_record: Mapping[str, Any]) -> float | None:
 def _heat_rate(
     *,
     unit_id: str,
-    row: Mapping[str, Any],
+    load_fuel_this_tick: float,
     output_mw: float,
     tick_seconds: float,
 ) -> float:
-    fuel_this_tick = _number(row.get("fuel_mmbtu_this_tick"))
-    if output_mw <= 1e-9 or fuel_this_tick <= 1e-12:
+    if output_mw <= 1e-9 or load_fuel_this_tick <= 1e-12:
         return 0.0
     energy_mwh = output_mw * tick_seconds / 3600.0
-    return fuel_this_tick / energy_mwh * 1000.0
+    # Operating-point heat rate is the load-fuel curve.  No-load, standby,
+    # and start fuel are separate accounting components and must not be
+    # folded into the rate used to price curtailed energy.
+    return load_fuel_this_tick / energy_mwh * 1000.0
 
 
 @dataclass
@@ -204,6 +214,7 @@ class MetricsCollector:
         self.compute_trace_count += 1
         rows = _telemetry(tick)
         current = {str(row.get("asset_id")): row for row in rows}
+        increments_by_unit: dict[str, dict[str, float]] = {}
         self.last_telemetry.update(current)
 
         for row in rows:
@@ -220,6 +231,7 @@ class MetricsCollector:
                 )
                 for component in FUEL_COMPONENTS
             }
+            increments_by_unit[unit_id] = increments
             self.previous_cumulative[unit_id] = current_components
             current_start_count = int(_number(row.get("start_count")))
             current_start_fuel = _number(row.get("start_fuel_mmbtu"))
@@ -241,11 +253,10 @@ class MetricsCollector:
             self.previous_start_count[unit_id] = current_start_count
             self.previous_start_fuel[unit_id] = current_start_fuel
 
-            if _number(row.get("fuel_mmbtu_this_tick")) > 0.0:
-                if _number(_get(tick, "p_dispatch_curtailed_mw")) > 1e-9:
-                    for component, value in increments.items():
-                        self.exposure_by_component[component] += value
-                    self.exposure_by_unit[unit_id] += sum(increments.values())
+            if _number(_get(tick, "p_dispatch_curtailed_mw")) > 1e-9:
+                for component, value in increments.items():
+                    self.exposure_by_component[component] += value
+                self.exposure_by_unit[unit_id] += sum(increments.values())
 
         synchronized_ids: set[str] = set()
         for unit in _units(tick):
@@ -351,7 +362,9 @@ class MetricsCollector:
                     raise FuelModelAbsentError([unit_id])
                 heat_rate = _heat_rate(
                     unit_id=unit_id,
-                    row=row,
+                    load_fuel_this_tick=increments_by_unit.get(
+                        unit_id, {}
+                    ).get("load_fuel_mmbtu", 0.0),
                     output_mw=output,
                     tick_seconds=self.tick_seconds,
                 )
@@ -448,11 +461,19 @@ class MetricsCollector:
             )
 
         log = list(commitment_log or record.get("commitment_log", ()) or ())
-        distinct_count, suppressed_count = _deduplicate_records(log)
+        (
+            distinct_count,
+            suppressed_count,
+            commitment_log_complete,
+            commitment_log_omitted,
+        ) = _deduplicate_records(log)
         refusal_records = record.get("stop_floor_refusals", ()) or ()
-        refusal_distinct, refusal_suppressed = _deduplicate_records(
-            refusal_records
-        )
+        (
+            refusal_distinct,
+            refusal_suppressed,
+            refusal_log_complete,
+            refusal_log_omitted,
+        ) = _deduplicate_records(refusal_records)
         if record.get("stop_floor_refusal_count") is not None:
             refusal_total = int(record["stop_floor_refusal_count"])
         else:
@@ -520,11 +541,21 @@ class MetricsCollector:
                 _number(_get(self.last_tick, "bess_soc_fraction")), 9
             ),
             "commitment": {
-                "distinct_event_count": distinct_count,
+                "distinct_event_count": (
+                    distinct_count if commitment_log_complete else None
+                ),
+                "visible_distinct_event_count": distinct_count,
                 "suppressed_repeat_count": suppressed_count,
+                "log_complete": commitment_log_complete,
+                "omitted_record_count": commitment_log_omitted,
                 "reserve_floor_refusal_count": refusal_total,
-                "reserve_floor_distinct_event_count": refusal_distinct,
+                "reserve_floor_distinct_event_count": (
+                    refusal_distinct if refusal_log_complete else None
+                ),
+                "reserve_floor_visible_distinct_event_count": refusal_distinct,
                 "reserve_floor_suppressed_repeat_count": refusal_suppressed,
+                "reserve_floor_log_complete": refusal_log_complete,
+                "reserve_floor_omitted_record_count": refusal_log_omitted,
                 "same_unit_restart_within_min_down_window_count": restart_count,
             },
             "forecast": {

@@ -73,5 +73,6 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Phase 2b Stage 2b-1](phase2b-stage2b1.md) — compact records expand from the base; power-reactive demand is captured once and replayed per tick for mode comparison.
 - [Forecast quality artifacts](forecast-quality-artifacts.md) — calculate forecast percentiles while controller history exists; compressed tick artifacts do not retain the forecast series.
 - [Curtailment fuel attribution](curtailment-fuel-attribution.md) — report interval-exposure fuel separately from pro-rata operating-point attributable fuel; use the latter for avoided-curtailment share.
+- [S1 record completeness](s1-record-completeness.md) — bounded lists need explicit truncation markers; unmarked short lists are recording defects, not complete evidence.
 - [Phase 2b baseline reconciliation](phase2b-baseline-reconciliation.md) — long-horizon Slurm baseline can expose production/cascade starts outside the controller log; preserve the hard finding.
 - [S1 study harness](s1-study-harness.md) — replay metrics stay engine-importing and bounded; hot-standby release charging is explicit, and H-2 baseline start-event mismatch must remain a typed failure.
