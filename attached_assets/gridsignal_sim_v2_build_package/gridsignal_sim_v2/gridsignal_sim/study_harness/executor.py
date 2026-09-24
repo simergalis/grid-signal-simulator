@@ -10,11 +10,15 @@ import subprocess
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from runtime.phase2b_reference import expand_phase2b_reference_spec
+from runtime.phase2b_reference import (
+    apply_study_fuel_model,
+    expand_phase2b_reference_spec,
+)
 from runtime.run_manager import _tick_result_to_dict
 from runtime.scenario_factory import build_run_context_from_spec
 
 from scripts.run_phase2b_stage1 import (
+    REFERENCE_IDS,
     TICK_SECONDS,
     _load_compact_spec,
     _signal_dict,
@@ -24,10 +28,17 @@ from .artifacts import ArtifactWriter
 from .errors import (
     HarnessGuardError,
     StartFuelReconciliationError,
+    UnsupportedScenarioError,
     error_payload,
 )
 from .manifest import RunManifestCache, make_run_identity
 from .metrics import MetricsCollector, collect_metrics
+
+
+# PROPOSED_HERE: The base scenario ID and study-class labels are harness metadata.
+BASE_DEMO_SCENARIO_ID = "scenario-uneven-multisched-01"
+STUDY_CLASS_ADDENDUM_H = "addendum_h"
+STUDY_CLASS_BASE_DEMO = "base_demo"
 
 
 def _git_commit() -> str:
@@ -167,13 +178,41 @@ class StudyRunExecutor:
         self.writer = ArtifactWriter(self.output_dir / "artifacts")
         self.cache = RunManifestCache(self.output_dir / "cache")
 
+    @staticmethod
+    def _study_class_for_scenario(scenario_id: str) -> str:
+        if scenario_id in REFERENCE_IDS:
+            return STUDY_CLASS_ADDENDUM_H
+        if scenario_id == BASE_DEMO_SCENARIO_ID:
+            return STUDY_CLASS_BASE_DEMO
+        raise UnsupportedScenarioError(
+            scenario_id=scenario_id,
+            supported_ids=[*REFERENCE_IDS, BASE_DEMO_SCENARIO_ID],
+        )
+
     def _expanded_spec(
         self,
         scenario_id: str,
         parameter_overrides: Mapping[str, Any] | None,
         duration_seconds: float | None,
     ) -> dict[str, Any]:
-        spec = expand_phase2b_reference_spec(_load_compact_spec(scenario_id))
+        study_class = self._study_class_for_scenario(scenario_id)
+        if study_class == STUDY_CLASS_ADDENDUM_H:
+            # Keep the existing compact H catalogue loading and expansion path.
+            spec = expand_phase2b_reference_spec(
+                _load_compact_spec(scenario_id)
+            )
+        else:
+            base_path = (
+                Path(__file__).resolve().parents[1]
+                / "config"
+                / "scenarios"
+                / f"{BASE_DEMO_SCENARIO_ID}.json"
+            )
+            on_disk_spec = json.loads(base_path.read_text())
+            spec = copy.deepcopy(on_disk_spec)
+            spec["turbine_units"] = apply_study_fuel_model(
+                spec.get("turbine_units", [])
+            )
         if duration_seconds is not None:
             spec["end_sim_time"] = float(duration_seconds)
         if parameter_overrides:
@@ -221,6 +260,7 @@ class StudyRunExecutor:
         reuse_cache: bool = True,
         progress_callback: Any | None = None,
     ) -> dict[str, Any]:
+        study_class = self._study_class_for_scenario(scenario_id)
         run_spec = copy.deepcopy(spec)
         run_spec["turbine_commitment_mode"] = mode
         run_spec.pop("kube_clusters", None)
@@ -232,6 +272,7 @@ class StudyRunExecutor:
         # is intentionally excluded from identity and from bounded metadata;
         # the trace itself is represented by compute_trace_sha256.
         identity_parameters.pop("workload_events", None)
+        identity_parameters["study_class"] = study_class
         identity = make_run_identity(
             scenario_id=scenario_id,
             mode=mode,
@@ -266,6 +307,7 @@ class StudyRunExecutor:
             raw_metadata.update(
                 {
                     "scenario_id": scenario_id,
+                    "study_class": study_class,
                     "mode": mode,
                     "engine_commit": self.engine_commit,
                     "harness_commit": self.harness_commit,
@@ -443,6 +485,7 @@ class StudyRunExecutor:
         comparison = compare_metrics(baseline, informed)
         return {
             "scenario_id": scenario_id,
+            "study_class": self._study_class_for_scenario(scenario_id),
             "runs": {"baseline": baseline, "informed": informed},
             "comparison": comparison,
         }

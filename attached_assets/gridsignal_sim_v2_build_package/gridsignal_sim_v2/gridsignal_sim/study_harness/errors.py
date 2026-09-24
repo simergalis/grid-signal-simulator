@@ -9,6 +9,23 @@ class HarnessGuardError(AssertionError):
     """Base class for a guard that must stop a study run."""
 
 
+class UnsupportedScenarioError(ValueError):
+    """Raised when the study harness is asked to load an unknown scenario."""
+
+    def __init__(
+        self,
+        *,
+        scenario_id: str,
+        supported_ids: list[str],
+    ) -> None:
+        self.scenario_id = scenario_id
+        self.supported_ids = tuple(sorted(supported_ids))
+        super().__init__(
+            f"unsupported scenario ID {scenario_id!r}; "
+            f"supported IDs: {', '.join(self.supported_ids)}"
+        )
+
+
 class FuelComponentReconciliationError(HarnessGuardError):
     def __init__(
         self,

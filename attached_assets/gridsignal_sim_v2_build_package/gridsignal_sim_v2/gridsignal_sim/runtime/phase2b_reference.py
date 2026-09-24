@@ -38,6 +38,17 @@ def _cluster_offsets(days: int) -> list[tuple[int, float]]:
     return offsets
 
 
+def apply_study_fuel_model(
+    turbine_units: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Return a copied turbine fleet with the existing study fuel overlay."""
+    # IMPL-H58: keep the Phase 2b aeroderivative overlay in the study layer.
+    return [
+        {**copy.deepcopy(turbine), "gt_mode": "aero"}
+        for turbine in turbine_units
+    ]
+
+
 def _copy_workload_event(
     event: dict[str, Any],
     *,
@@ -97,13 +108,11 @@ def expand_phase2b_reference_spec(spec_data: dict[str, Any]) -> dict[str, Any]:
     # Pydantic model's defaulted empty arrays or policy defaults when callers
     # pass model_dump() rather than the original compact JSON.
     expanded["name"] = str(spec_data.get("name", expanded["name"]))
-    # IMPL-H58: Phase 2b's copied turbine fleet uses the authored
-    # aeroderivative fuel model.  Keep this override in the expansion layer so
-    # the unchanged Phase 2a base scenario remains unchanged on disk.
-    expanded["turbine_units"] = [
-        {**copy.deepcopy(turbine), "gt_mode": "aero"}
-        for turbine in base.get("turbine_units", [])
-    ]
+    # Keep this override in the expansion layer so the unchanged Phase 2a base
+    # scenario remains unchanged on disk.
+    expanded["turbine_units"] = apply_study_fuel_model(
+        base.get("turbine_units", [])
+    )
 
     expanded["end_sim_time"] = days * _DAY_SECONDS
     expanded["description"] = (

@@ -434,3 +434,130 @@ def test_tc151_attributable_curtailment_fuel_stays_within_curve_range() -> None:
         for _, rate in AERODERIVATIVE_FUEL_PARAMETERS.part_load_heat_rate_btu_per_kwh
     ]
     assert min(curve_rates) <= fuel_per_mwh <= max(curve_rates)
+
+
+# PROPOSED_HERE: These locally captured hashes anchor pre-Phase-1 H expansions;
+# they are regression evidence, not vendor-sourced constants.
+H_EXPANSION_SHA256_BASELINE = {
+    "scenario-h1-k8s-ray-24h": (
+        "f2465233ab677c0c9305b139fcc6ccd8b675aeea4df6ccdf46ff38a5ffe9681a"
+    ),
+    "scenario-h1-k8s-ray-7d": (
+        "a552b3916c7e8637265918e8624c6dee82483e91213066d917c59797562d56db"
+    ),
+    "scenario-h2-slurm-24h": (
+        "fc26c77f0ac3ea2f6fd6c519874ced0418792e73dcf22d3d9e7dd81e32a786ca"
+    ),
+    "scenario-h2-slurm-7d": (
+        "a2a2c1d565e77129e615c008f1c30e382f1975d44224983454f51668fd2e3187"
+    ),
+}
+
+
+def test_tc156_phase1_h_expansions_match_prechange_hashes(
+    tmp_path: Path,
+) -> None:
+    """Phase 1 refactoring must leave every H expansion byte-identical."""
+    import hashlib
+
+    from study_harness.executor import (
+        STUDY_CLASS_ADDENDUM_H,
+        StudyRunExecutor,
+    )
+
+    executor = StudyRunExecutor(output_dir=tmp_path / "h-expansions")
+    for scenario_id, expected_hash in H_EXPANSION_SHA256_BASELINE.items():
+        expanded = executor._expanded_spec(scenario_id, None, None)
+        canonical = json.dumps(
+            expanded,
+            sort_keys=True,
+            separators=(",", ":"),
+            ensure_ascii=False,
+        ).encode("utf-8")
+        assert hashlib.sha256(canonical).hexdigest() == expected_hash
+        assert (
+            executor._study_class_for_scenario(scenario_id)
+            == STUDY_CLASS_ADDENDUM_H
+        )
+
+
+def test_tc157_base_demo_loader_only_adds_study_fuel_overlay(
+    tmp_path: Path,
+) -> None:
+    from study_harness.executor import (
+        BASE_DEMO_SCENARIO_ID,
+        STUDY_CLASS_BASE_DEMO,
+        StudyRunExecutor,
+    )
+
+    base_path = SCENARIOS / f"{BASE_DEMO_SCENARIO_ID}.json"
+    on_disk = json.loads(base_path.read_text())
+    expected = copy.deepcopy(on_disk)
+    # PROPOSED_HERE: Assert the harness-only overlay already used by Phase 2b.
+    for turbine in expected.get("turbine_units", []):
+        turbine["gt_mode"] = "aero"
+
+    executor = StudyRunExecutor(output_dir=tmp_path / "base-loader")
+    loaded = executor._expanded_spec(BASE_DEMO_SCENARIO_ID, None, None)
+    assert loaded == expected
+    assert executor._study_class_for_scenario(BASE_DEMO_SCENARIO_ID) == (
+        STUDY_CLASS_BASE_DEMO
+    )
+    assert all("gt_mode" not in turbine for turbine in on_disk["turbine_units"])
+
+
+def test_tc158_unsupported_scenario_has_typed_error_and_supported_ids(
+    tmp_path: Path,
+) -> None:
+    from study_harness import UnsupportedScenarioError
+    from study_harness.executor import (
+        BASE_DEMO_SCENARIO_ID,
+        StudyRunExecutor,
+    )
+    from scripts.run_phase2b_stage1 import REFERENCE_IDS
+
+    executor = StudyRunExecutor(output_dir=tmp_path / "unsupported")
+    unsupported_id = "scenario-not-supported-by-study-harness"
+    with pytest.raises(UnsupportedScenarioError) as raised:
+        executor._expanded_spec(unsupported_id, None, None)
+
+    message = str(raised.value)
+    assert unsupported_id in message
+    for scenario_id in sorted([*REFERENCE_IDS, BASE_DEMO_SCENARIO_ID]):
+        assert scenario_id in message
+    assert raised.value.scenario_id == unsupported_id
+
+
+def test_tc159_base_demo_baseline_run_reconciles_full_day(
+    tmp_path: Path,
+) -> None:
+    from study_harness.executor import (
+        BASE_DEMO_SCENARIO_ID,
+        STUDY_CLASS_BASE_DEMO,
+        StudyRunExecutor,
+    )
+
+    executor = StudyRunExecutor(output_dir=tmp_path / "base-baseline")
+    record = executor.run_mode(
+        scenario_id=BASE_DEMO_SCENARIO_ID,
+        mode="baseline",
+        reuse_cache=False,
+    )
+
+    assert record["status"] == "PASS"
+    assert record["study_class"] == STUDY_CLASS_BASE_DEMO
+    assert (
+        record["identity"]["parameter_set"]["study_class"]
+        == STUDY_CLASS_BASE_DEMO
+    )
+    assert record["fuel_reconciled"] is True
+    assert record["start_fuel_reconciliation"]["passed"] is True
+    assert record["energy_balance"]["closure_status"] is True
+    assert record["turbine_fuel_mmbtu"] > 0.0
+    assert len(record["daily_breakdown"]) == 1
+    assert record["tick_count"] == 1440
+    assert record["compute_trace_count"] == 1440
+    assert (
+        record["measured_start_event_count"]
+        == record["start_fuel_reconciliation"]["measured_event_count"]
+    )

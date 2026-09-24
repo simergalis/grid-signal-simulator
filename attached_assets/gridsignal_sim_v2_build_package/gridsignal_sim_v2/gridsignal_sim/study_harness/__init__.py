@@ -15,6 +15,7 @@ from .errors import (
     FuelModelAbsentError,
     HarnessGuardError,
     StartFuelReconciliationError,
+    UnsupportedScenarioError,
 )
 from .manifest import RunIdentity, RunManifestCache, make_run_identity
 from .metrics import MetricsCollector, collect_metrics
@@ -34,4 +35,5 @@ __all__ = [
     "collect_metrics",
     "compare_metrics",
     "make_run_identity",
+    "UnsupportedScenarioError",
 ]
