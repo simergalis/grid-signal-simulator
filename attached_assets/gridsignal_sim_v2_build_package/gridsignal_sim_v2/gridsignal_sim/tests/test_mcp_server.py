@@ -427,10 +427,7 @@ def test_tc163_base_demo_comparison_includes_claim_note(
             )
         assert result["study_class"] == "base_demo"
         assert result["verdict"] == "PASS"
-        assert result["claim_note"] == (
-            "This is the legacy demo, not an Addendum H scenario; "
-            "the Addendum H acceptance gate still applies as a diagnostic."
-        )
+        assert result["claim_note"] == "demonstration scenario; not an Addendum H study result"
     finally:
         isolated._pool.shutdown(wait=True)
 

@@ -791,10 +791,7 @@ class StudyService:
             "numeric_inputs": numeric_inputs,
         }
         if baseline_study_class == STUDY_CLASS_BASE_DEMO:
-            payload["claim_note"] = (
-                "This is the legacy demo, not an Addendum H scenario; "
-                "the Addendum H acceptance gate still applies as a diagnostic."
-            )
+            payload["claim_note"] = "demonstration scenario; not an Addendum H study result"
         return payload
 
     def commitment(
