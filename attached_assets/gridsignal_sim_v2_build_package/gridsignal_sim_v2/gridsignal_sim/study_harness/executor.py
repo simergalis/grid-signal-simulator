@@ -31,7 +31,7 @@ from .errors import (
     UnsupportedScenarioError,
     error_payload,
 )
-from .manifest import RunManifestCache, make_run_identity
+from .manifest import RunIdentity, RunManifestCache, make_run_identity
 from .metrics import MetricsCollector, collect_metrics
 
 
@@ -39,6 +39,46 @@ from .metrics import MetricsCollector, collect_metrics
 BASE_DEMO_SCENARIO_ID = "scenario-uneven-multisched-01"
 STUDY_CLASS_ADDENDUM_H = "addendum_h"
 STUDY_CLASS_BASE_DEMO = "base_demo"
+
+
+def study_class_for_scenario(scenario_id: str) -> str:
+    if scenario_id in REFERENCE_IDS:
+        return STUDY_CLASS_ADDENDUM_H
+    if scenario_id == BASE_DEMO_SCENARIO_ID:
+        return STUDY_CLASS_BASE_DEMO
+    raise UnsupportedScenarioError(
+        scenario_id=scenario_id,
+        supported_ids=[*REFERENCE_IDS, BASE_DEMO_SCENARIO_ID],
+    )
+
+
+def make_study_run_identity(
+    *,
+    scenario_id: str,
+    mode: str,
+    spec: Mapping[str, Any],
+    seed: int | str | None,
+    tick_seconds: float,
+    engine_commit: str,
+    harness_commit: str,
+) -> RunIdentity:
+    identity_parameters = copy.deepcopy(dict(spec))
+    identity_parameters["turbine_commitment_mode"] = mode
+    identity_parameters.pop("kube_clusters", None)
+    identity_parameters.pop("slurm_config", None)
+    # The replay trace is an execution input; its content is separately hashed.
+    identity_parameters.pop("workload_events", None)
+    identity_parameters["study_class"] = study_class_for_scenario(scenario_id)
+    return make_run_identity(
+        scenario_id=scenario_id,
+        mode=mode,
+        parameter_set=identity_parameters,
+        seed=seed,
+        duration_seconds=float(spec["end_sim_time"]),
+        tick_seconds=tick_seconds,
+        engine_commit=engine_commit,
+        harness_commit=harness_commit,
+    )
 
 
 def _git_commit() -> str:
@@ -180,14 +220,7 @@ class StudyRunExecutor:
 
     @staticmethod
     def _study_class_for_scenario(scenario_id: str) -> str:
-        if scenario_id in REFERENCE_IDS:
-            return STUDY_CLASS_ADDENDUM_H
-        if scenario_id == BASE_DEMO_SCENARIO_ID:
-            return STUDY_CLASS_BASE_DEMO
-        raise UnsupportedScenarioError(
-            scenario_id=scenario_id,
-            supported_ids=[*REFERENCE_IDS, BASE_DEMO_SCENARIO_ID],
-        )
+        return study_class_for_scenario(scenario_id)
 
     def _expanded_spec(
         self,
@@ -267,18 +300,11 @@ class StudyRunExecutor:
         run_spec.pop("slurm_config", None)
         run_spec["workload_events"] = replay_events
         duration_seconds = float(run_spec["end_sim_time"])
-        identity_parameters = copy.deepcopy(run_spec)
-        # The replay trace is an execution input, not a study parameter.  It
-        # is intentionally excluded from identity and from bounded metadata;
-        # the trace itself is represented by compute_trace_sha256.
-        identity_parameters.pop("workload_events", None)
-        identity_parameters["study_class"] = study_class
-        identity = make_run_identity(
+        identity = make_study_run_identity(
             scenario_id=scenario_id,
             mode=mode,
-            parameter_set=identity_parameters,
+            spec=run_spec,
             seed=seed,
-            duration_seconds=duration_seconds,
             tick_seconds=self.tick_seconds,
             engine_commit=self.engine_commit,
             harness_commit=self.harness_commit,

@@ -26,6 +26,31 @@ class UnsupportedScenarioError(ValueError):
         )
 
 
+# PROPOSED_HERE: This mismatch code is the study harness/MCP boundary contract.
+class StudyClassMismatchError(ValueError):
+    """Raised when a comparison mixes records from different study classes."""
+
+    code = "STUDY_CLASS_MISMATCH"
+
+    def __init__(
+        self,
+        *,
+        baseline_study_class: str,
+        informed_study_class: str,
+        baseline_run_id: str,
+        informed_run_id: str,
+    ) -> None:
+        self.baseline_study_class = baseline_study_class
+        self.informed_study_class = informed_study_class
+        self.baseline_run_id = baseline_run_id
+        self.informed_run_id = informed_run_id
+        super().__init__(
+            "study class mismatch: "
+            f"baseline {baseline_study_class!r} ({baseline_run_id}) versus "
+            f"informed {informed_study_class!r} ({informed_run_id})"
+        )
+
+
 class FuelComponentReconciliationError(HarnessGuardError):
     def __init__(
         self,

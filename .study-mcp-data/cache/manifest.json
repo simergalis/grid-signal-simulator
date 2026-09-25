@@ -1,0 +1,211 @@
+{
+  "runs": {
+    "2371244b01b6bb564b5b3a3c434899374d89bfdc7afe79479fa5f8ed0fe8e7ea": {
+      "identity": {
+        "duration_seconds": 7200.0,
+        "engine_commit": "1c93333c45132779a6815b5e12bf641cc920d846",
+        "harness_commit": "1c93333c45132779a6815b5e12bf641cc920d846",
+        "mode": "baseline",
+        "parameter_set": {
+          "base_load_mw": null,
+          "bess_units": [
+            {
+              "asset_id": "bess-0",
+              "authority_tier": "autonomous",
+              "grid_forming": true,
+              "initial_soc_fraction": 0.95,
+              "p_anchor_reserve_mw": 1.0,
+              "rated_mw": 30.0,
+              "usable_mwh": 60.0
+            }
+          ],
+          "description": "Two-hour Kubernetes, Slurm, and Ray demonstration with 45 MW and 90 MW bursts starting at t=30 s and t=310 s, followed by bursts at t=920 s, t=1850 s, and t=2700 s. Burst durations are 240 s, 300 s, and 600 s for the final three bursts, so workloads do not overlap. Two gas turbines are spinning at 35% minimum stable load from t=0; two more start from hot standby at Burst-02 and the grid-forming BESS bridges their startup gap. GE assumptions: 300-second hot start, 360-second warm start, 600-second cold start, and 30 MW/min ramp.",
+          "diesel_power_block": {
+            "authority_tier": "advisory_only",
+            "delta_t_start_s": 3600.0,
+            "enabled": true,
+            "f_block": 1.0,
+            "p_start": 1.0,
+            "residual_ramp_s": 60.0,
+            "start_stagger_interval_s": 1.0,
+            "target_capacity_mw": 20.0,
+            "target_reliability": 1.0,
+            "unit_rating_mw": 20.0
+          },
+          "dt_lead_seconds": 45.0,
+          "end_sim_time": 7200.0,
+          "frequency_nominal_hz": 60.0,
+          "hardware_profile_id": "enterprise_8gpu_air",
+          "initial_spinning_count": 2,
+          "island_mode": true,
+          "n_plus_one_required": false,
+          "name": "01 Turbine Scenario with Kubernetes Slurm Ray",
+          "power_factor": 0.85,
+          "study_class": "base_demo",
+          "turbine_commitment_mode": "baseline",
+          "turbine_units": [
+            {
+              "asset_id": "gt-spin-01",
+              "cold_start_s": 600.0,
+              "gt_mode": "aero",
+              "hot_standby": false,
+              "hot_start_s": 300.0,
+              "initial_state": "spinning",
+              "p_min_stable_frac": 0.35,
+              "r_asset_mw_per_s": 0.5,
+              "rated_mw": 25.0,
+              "thermal_state": "hot",
+              "warm_start_s": 360.0
+            },
+            {
+              "asset_id": "gt-spin-02",
+              "cold_start_s": 600.0,
+              "gt_mode": "aero",
+              "hot_standby": false,
+              "hot_start_s": 300.0,
+              "initial_state": "spinning",
+              "p_min_stable_frac": 0.35,
+              "r_asset_mw_per_s": 0.5,
+              "rated_mw": 25.0,
+              "thermal_state": "hot",
+              "warm_start_s": 360.0
+            },
+            {
+              "asset_id": "gt-hot-01",
+              "cold_start_s": 600.0,
+              "gt_mode": "aero",
+              "hot_standby": true,
+              "hot_start_s": 300.0,
+              "p_min_stable_frac": 0.35,
+              "r_asset_mw_per_s": 0.5,
+              "rated_mw": 25.0,
+              "thermal_state": "hot",
+              "warm_start_s": 360.0
+            },
+            {
+              "asset_id": "gt-hot-02",
+              "cold_start_s": 600.0,
+              "gt_mode": "aero",
+              "hot_standby": true,
+              "hot_start_s": 300.0,
+              "p_min_stable_frac": 0.35,
+              "r_asset_mw_per_s": 0.5,
+              "rated_mw": 25.0,
+              "thermal_state": "hot",
+              "warm_start_s": 360.0
+            }
+          ]
+        },
+        "scenario_id": "scenario-uneven-multisched-01",
+        "seed": null,
+        "tick_seconds": 5.0
+      },
+      "record_path": "records/2371244b01b6bb564b5b3a3c434899374d89bfdc7afe79479fa5f8ed0fe8e7ea.json",
+      "record_size_bytes": 14184
+    },
+    "8b6a71123e6c7ea24452f96e63da5bade985a26e05a6b013f4cd03f0feec9097": {
+      "identity": {
+        "duration_seconds": 7200.0,
+        "engine_commit": "1c93333c45132779a6815b5e12bf641cc920d846",
+        "harness_commit": "1c93333c45132779a6815b5e12bf641cc920d846",
+        "mode": "informed",
+        "parameter_set": {
+          "base_load_mw": null,
+          "bess_units": [
+            {
+              "asset_id": "bess-0",
+              "authority_tier": "autonomous",
+              "grid_forming": true,
+              "initial_soc_fraction": 0.95,
+              "p_anchor_reserve_mw": 1.0,
+              "rated_mw": 30.0,
+              "usable_mwh": 60.0
+            }
+          ],
+          "description": "Two-hour Kubernetes, Slurm, and Ray demonstration with 45 MW and 90 MW bursts starting at t=30 s and t=310 s, followed by bursts at t=920 s, t=1850 s, and t=2700 s. Burst durations are 240 s, 300 s, and 600 s for the final three bursts, so workloads do not overlap. Two gas turbines are spinning at 35% minimum stable load from t=0; two more start from hot standby at Burst-02 and the grid-forming BESS bridges their startup gap. GE assumptions: 300-second hot start, 360-second warm start, 600-second cold start, and 30 MW/min ramp.",
+          "diesel_power_block": {
+            "authority_tier": "advisory_only",
+            "delta_t_start_s": 3600.0,
+            "enabled": true,
+            "f_block": 1.0,
+            "p_start": 1.0,
+            "residual_ramp_s": 60.0,
+            "start_stagger_interval_s": 1.0,
+            "target_capacity_mw": 20.0,
+            "target_reliability": 1.0,
+            "unit_rating_mw": 20.0
+          },
+          "dt_lead_seconds": 45.0,
+          "end_sim_time": 7200.0,
+          "frequency_nominal_hz": 60.0,
+          "hardware_profile_id": "enterprise_8gpu_air",
+          "initial_spinning_count": 2,
+          "island_mode": true,
+          "n_plus_one_required": false,
+          "name": "01 Turbine Scenario with Kubernetes Slurm Ray",
+          "power_factor": 0.85,
+          "study_class": "base_demo",
+          "turbine_commitment_mode": "informed",
+          "turbine_units": [
+            {
+              "asset_id": "gt-spin-01",
+              "cold_start_s": 600.0,
+              "gt_mode": "aero",
+              "hot_standby": false,
+              "hot_start_s": 300.0,
+              "initial_state": "spinning",
+              "p_min_stable_frac": 0.35,
+              "r_asset_mw_per_s": 0.5,
+              "rated_mw": 25.0,
+              "thermal_state": "hot",
+              "warm_start_s": 360.0
+            },
+            {
+              "asset_id": "gt-spin-02",
+              "cold_start_s": 600.0,
+              "gt_mode": "aero",
+              "hot_standby": false,
+              "hot_start_s": 300.0,
+              "initial_state": "spinning",
+              "p_min_stable_frac": 0.35,
+              "r_asset_mw_per_s": 0.5,
+              "rated_mw": 25.0,
+              "thermal_state": "hot",
+              "warm_start_s": 360.0
+            },
+            {
+              "asset_id": "gt-hot-01",
+              "cold_start_s": 600.0,
+              "gt_mode": "aero",
+              "hot_standby": true,
+              "hot_start_s": 300.0,
+              "p_min_stable_frac": 0.35,
+              "r_asset_mw_per_s": 0.5,
+              "rated_mw": 25.0,
+              "thermal_state": "hot",
+              "warm_start_s": 360.0
+            },
+            {
+              "asset_id": "gt-hot-02",
+              "cold_start_s": 600.0,
+              "gt_mode": "aero",
+              "hot_standby": true,
+              "hot_start_s": 300.0,
+              "p_min_stable_frac": 0.35,
+              "r_asset_mw_per_s": 0.5,
+              "rated_mw": 25.0,
+              "thermal_state": "hot",
+              "warm_start_s": 360.0
+            }
+          ]
+        },
+        "scenario_id": "scenario-uneven-multisched-01",
+        "seed": null,
+        "tick_seconds": 5.0
+      },
+      "record_path": "records/8b6a71123e6c7ea24452f96e63da5bade985a26e05a6b013f4cd03f0feec9097.json",
+      "record_size_bytes": 36876
+    }
+  },
+  "version": 1
+}

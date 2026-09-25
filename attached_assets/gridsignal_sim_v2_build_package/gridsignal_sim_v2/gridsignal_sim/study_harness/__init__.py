@@ -14,6 +14,7 @@ from .errors import (
     FuelComponentReconciliationError,
     FuelModelAbsentError,
     HarnessGuardError,
+    StudyClassMismatchError,
     StartFuelReconciliationError,
     UnsupportedScenarioError,
 )
@@ -27,6 +28,7 @@ __all__ = [
     "FuelComponentReconciliationError",
     "FuelModelAbsentError",
     "HarnessGuardError",
+    "StudyClassMismatchError",
     "MetricsCollector",
     "RunIdentity",
     "RunManifestCache",
