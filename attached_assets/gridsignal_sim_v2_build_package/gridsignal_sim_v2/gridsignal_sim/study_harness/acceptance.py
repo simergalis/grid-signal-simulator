@@ -5,7 +5,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any
 
-from .errors import BuildParityMismatchError
+from .errors import BuildParityMismatchError, ProvenanceUnknownError
 
 
 class AcceptanceCondition(str, Enum):
@@ -22,7 +22,8 @@ class AcceptanceCondition(str, Enum):
 
 
 def _commit(metrics: dict[str, Any], key: str) -> str:
-    return str(metrics.get(key, ""))
+    value = metrics.get(key)
+    return "" if value is None else str(value).strip()
 
 
 def compare_metrics(
@@ -33,6 +34,21 @@ def compare_metrics(
     informed_engine = _commit(informed, "engine_commit")
     baseline_harness = _commit(baseline, "harness_commit")
     informed_harness = _commit(informed, "harness_commit")
+    commits = (
+        baseline_engine,
+        informed_engine,
+        baseline_harness,
+        informed_harness,
+    )
+    if any(not value or value.lower() == "unknown" for value in commits):
+        raise ProvenanceUnknownError(
+            baseline_run_id=str(baseline.get("run_id") or ""),
+            informed_run_id=str(informed.get("run_id") or ""),
+            baseline_engine_commit=baseline_engine,
+            informed_engine_commit=informed_engine,
+            baseline_harness_commit=baseline_harness,
+            informed_harness_commit=informed_harness,
+        )
     if baseline_engine != informed_engine or baseline_harness != informed_harness:
         raise BuildParityMismatchError(
             baseline_engine_commit=baseline_engine,

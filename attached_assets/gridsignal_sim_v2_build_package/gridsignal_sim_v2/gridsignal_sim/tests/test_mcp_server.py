@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import subprocess
 import time
 from pathlib import Path
 
@@ -40,6 +41,7 @@ def _call(client: TestClient, name: str, arguments: dict, token: str) -> dict:
 def test_mcp_tools_are_reachable_over_streamable_http(
     monkeypatch,
 ) -> None:
+    """TC-SSH08-09: committed H rows with unknown provenance refuse comparison."""
     monkeypatch.setenv("GRIDSIGNAL_MCP_READ_TOKEN", READ_TOKEN)
     monkeypatch.setenv("GRIDSIGNAL_MCP_RUN_TOKEN", RUN_TOKEN)
     with TestClient(app) as client:
@@ -119,7 +121,17 @@ def test_mcp_tools_are_reachable_over_streamable_http(
             },
             READ_TOKEN,
         )
-        assert comparison["verdict"] == "PASS"
+        assert comparison["error"]["type"] == "PROVENANCE_UNKNOWN"
+        assert comparison["error"]["baseline_run_id"] == (
+            "scenario-h1-k8s-ray-24h-baseline"
+        )
+        assert comparison["error"]["informed_run_id"] == (
+            "scenario-h1-k8s-ray-24h-informed"
+        )
+        assert comparison["error"]["baseline_engine_commit"] == "unknown"
+        assert comparison["error"]["informed_engine_commit"] == "unknown"
+        assert comparison["error"]["baseline_harness_commit"] == "unknown"
+        assert comparison["error"]["informed_harness_commit"] == "unknown"
 
         denied = _call(
             client,
@@ -164,6 +176,7 @@ def test_mcp_cache_hit_and_build_parity_error(
     monkeypatch,
     tmp_path: Path,
 ) -> None:
+    """TC-SSH08-06: distinct known commits still return BUILD_PARITY_MISMATCH."""
     monkeypatch.setenv("GRIDSIGNAL_MCP_READ_TOKEN", READ_TOKEN)
     monkeypatch.setenv("GRIDSIGNAL_MCP_RUN_TOKEN", RUN_TOKEN)
     identity = service._identity(
@@ -206,8 +219,21 @@ def test_mcp_cache_hit_and_build_parity_error(
 
         baseline = copy.deepcopy(cached_record)
         informed = copy.deepcopy(cached_record)
-        baseline["engine_commit"] = "engine-a"
-        informed["engine_commit"] = "engine-b"
+        repo_root = Path(__file__).resolve().parents[5]
+        current_commit = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"],
+            text=True,
+            cwd=repo_root,
+        ).strip()
+        previous_commit = subprocess.check_output(
+            ["git", "rev-parse", "HEAD^"],
+            text=True,
+            cwd=repo_root,
+        ).strip()
+        baseline["engine_commit"] = current_commit
+        informed["engine_commit"] = previous_commit
+        baseline["harness_commit"] = current_commit
+        informed["harness_commit"] = current_commit
         baseline_id = "mcp-test-baseline-parity"
         informed_id = "mcp-test-informed-parity"
         service._runs[baseline_id] = RunState(
@@ -236,8 +262,10 @@ def test_mcp_cache_hit_and_build_parity_error(
             READ_TOKEN,
         )
         assert parity["error"]["type"] == "BUILD_PARITY_MISMATCH"
-        assert parity["error"]["baseline_engine_commit"] == "engine-a"
-        assert parity["error"]["informed_engine_commit"] == "engine-b"
+        assert parity["error"]["baseline_engine_commit"] == current_commit
+        assert parity["error"]["informed_engine_commit"] == previous_commit
+        assert parity["error"]["baseline_harness_commit"] == current_commit
+        assert parity["error"]["informed_harness_commit"] == current_commit
 
 
 def _isolated_service(monkeypatch, tmp_path: Path) -> StudyService:
@@ -282,7 +310,7 @@ def test_tc160_list_scenarios_marks_all_five_study_classes(
         assert base["study_class"] == "base_demo"
 
         # Committed H records predate the field; responses derive the class
-        # from the harness mapping without rewriting their stored artifacts.
+        # without backfilling provenance into stored artifacts.
         legacy_id = "scenario-h1-k8s-ray-24h-baseline"
         status = _call(
             client,
@@ -298,6 +326,10 @@ def test_tc160_list_scenarios_marks_all_five_study_classes(
         )
         assert status["study_class"] == "addendum_h"
         assert metrics["study_class"] == "addendum_h"
+        assert status["engine_commit"] == "unknown"
+        assert status["harness_commit"] == "unknown"
+        assert metrics["engine_commit"] == "unknown"
+        assert metrics["harness_commit"] == "unknown"
 
 
 def test_tc161_start_run_accepts_the_base_demo_scenario(
@@ -487,5 +519,196 @@ def test_tc164_shared_identity_and_cache_match_for_every_study_scenario(
                     assert cached["run_id"] == started["run_id"]
                     assert cached["cache_hit"] is True
                     assert cached["estimated_wall_clock_seconds"] == 0.0
+    finally:
+        isolated._pool.shutdown(wait=True)
+
+
+def _comparison_record(engine_commit: str, harness_commit: str) -> dict:
+    return {
+        "study_class": "base_demo",
+        "engine_commit": engine_commit,
+        "harness_commit": harness_commit,
+        "energy_balance": {"closure_status": True},
+        "constraints_valid": True,
+        "hard_violations": [],
+        "fuel_by_component_mmbtu": {},
+        "turbine_fuel_mmbtu": 0.0,
+        "fuel_reconciled": True,
+        "start_count_reconciled": True,
+        "compute_trace_sha256": "same-compute-trace",
+        "unserved_mwh": 0.0,
+        "peak_unserved_mw": 0.0,
+    }
+
+
+def test_tc_ssh08_05_identical_real_commits_still_compare(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    """TC-SSH08-05: known identical commits continue through compare_runs."""
+    monkeypatch.setenv("GRIDSIGNAL_MCP_READ_TOKEN", READ_TOKEN)
+    isolated = _isolated_service(monkeypatch, tmp_path)
+    repo_root = Path(__file__).resolve().parents[5]
+    commit = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"],
+        text=True,
+        cwd=repo_root,
+    ).strip()
+    baseline_id = "tc-ssh08-05-baseline"
+    informed_id = "tc-ssh08-05-informed"
+    isolated._runs[baseline_id] = RunState(
+        baseline_id,
+        server_module.BASE_SCENARIO,
+        "baseline",
+        "baseline-seed",
+        status="COMPLETED",
+        record=_comparison_record(commit, commit),
+    )
+    isolated._runs[informed_id] = RunState(
+        informed_id,
+        server_module.BASE_SCENARIO,
+        "informed",
+        "informed-seed",
+        status="COMPLETED",
+        record=_comparison_record(commit, commit),
+    )
+
+    try:
+        with TestClient(app) as client:
+            comparison = _call(
+                client,
+                "compare_runs",
+                {
+                    "baseline_run_id": baseline_id,
+                    "informed_run_id": informed_id,
+                },
+                READ_TOKEN,
+            )
+        assert comparison["verdict"] == "PASS"
+        assert comparison["study_class"] == "base_demo"
+        conditions = {
+            item["name"]: item
+            for item in comparison["conditions"]["items"]
+        }
+        assert conditions["build_parity"]["passed"] is True
+        assert conditions["build_parity"]["inputs"]["baseline_engine_commit"] == (
+            commit
+        )
+        assert conditions["build_parity"]["inputs"]["baseline_harness_commit"] == (
+            commit
+        )
+    finally:
+        isolated._pool.shutdown(wait=True)
+
+
+@pytest.mark.parametrize(
+    ("side", "field"),
+    [
+        pytest.param("baseline", "engine_commit", id="baseline-engine"),
+        pytest.param("informed", "engine_commit", id="informed-engine"),
+        pytest.param("baseline", "harness_commit", id="baseline-harness"),
+        pytest.param("informed", "harness_commit", id="informed-harness"),
+    ],
+)
+def test_tc_ssh08_07_compare_runs_returns_typed_unknown_provenance(
+    monkeypatch,
+    tmp_path: Path,
+    side: str,
+    field: str,
+) -> None:
+    """TC-SSH08-07: unknown provenance returns IDs and all four commit values."""
+    monkeypatch.setenv("GRIDSIGNAL_MCP_READ_TOKEN", READ_TOKEN)
+    isolated = _isolated_service(monkeypatch, tmp_path)
+    baseline = _comparison_record("a" * 40, "b" * 40)
+    informed = _comparison_record("a" * 40, "b" * 40)
+    target = baseline if side == "baseline" else informed
+    target[field] = "unknown"
+    baseline_id = "tc-ssh08-07-baseline"
+    informed_id = "tc-ssh08-07-informed"
+    isolated._runs[baseline_id] = RunState(
+        baseline_id,
+        server_module.BASE_SCENARIO,
+        "baseline",
+        "baseline-seed",
+        status="COMPLETED",
+        record=baseline,
+    )
+    isolated._runs[informed_id] = RunState(
+        informed_id,
+        server_module.BASE_SCENARIO,
+        "informed",
+        "informed-seed",
+        status="COMPLETED",
+        record=informed,
+    )
+
+    try:
+        with TestClient(app) as client:
+            response = _call(
+                client,
+                "compare_runs",
+                {
+                    "baseline_run_id": baseline_id,
+                    "informed_run_id": informed_id,
+                },
+                READ_TOKEN,
+            )
+        assert response["error"]["type"] == "PROVENANCE_UNKNOWN"
+        assert response["error"]["baseline_run_id"] == baseline_id
+        assert response["error"]["informed_run_id"] == informed_id
+        assert response["error"]["baseline_engine_commit"] == baseline.get(
+            "engine_commit", ""
+        )
+        assert response["error"]["informed_engine_commit"] == informed.get(
+            "engine_commit", ""
+        )
+        assert response["error"]["baseline_harness_commit"] == baseline.get(
+            "harness_commit", ""
+        )
+        assert response["error"]["informed_harness_commit"] == informed.get(
+            "harness_commit", ""
+        )
+    finally:
+        isolated._pool.shutdown(wait=True)
+
+
+def test_tc_ssh08_08_run_status_and_metrics_include_both_commits(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    """TC-SSH08-08: run status and metric responses expose provenance."""
+    monkeypatch.setenv("GRIDSIGNAL_MCP_READ_TOKEN", READ_TOKEN)
+    isolated = _isolated_service(monkeypatch, tmp_path)
+    run_id = "tc-ssh08-08-run"
+    engine_commit = "a" * 40
+    harness_commit = "b" * 40
+    isolated._runs[run_id] = RunState(
+        run_id,
+        server_module.BASE_SCENARIO,
+        "baseline",
+        "test-seed",
+        status="COMPLETED",
+        record=_comparison_record(engine_commit, harness_commit),
+    )
+
+    try:
+        with TestClient(app) as client:
+            status = _call(
+                client,
+                "get_run_status",
+                {"run_id": run_id},
+                READ_TOKEN,
+            )
+            metrics = _call(
+                client,
+                "get_run_metrics",
+                {"run_id": run_id, "section": "fuel"},
+                READ_TOKEN,
+            )
+        assert status["study_class"] == "base_demo"
+        assert status["engine_commit"] == engine_commit
+        assert status["harness_commit"] == harness_commit
+        assert metrics["engine_commit"] == engine_commit
+        assert metrics["harness_commit"] == harness_commit
     finally:
         isolated._pool.shutdown(wait=True)

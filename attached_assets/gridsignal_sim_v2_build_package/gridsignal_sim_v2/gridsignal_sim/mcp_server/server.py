@@ -30,6 +30,7 @@ from study_harness.errors import (
     BuildParityMismatchError,
     FuelModelAbsentError,
     HarnessGuardError,
+    ProvenanceUnknownError,
     StudyClassMismatchError,
     error_payload,
 )
@@ -389,6 +390,16 @@ class StudyService:
             if state.record and state.record.get("study_class")
             else study_class_for_scenario(state.scenario_id)
         )
+        payload["engine_commit"] = (
+            state.record.get("engine_commit", "unknown")
+            if state.record is not None
+            else self.executor.engine_commit
+        )
+        payload["harness_commit"] = (
+            state.record.get("harness_commit", "unknown")
+            if state.record is not None
+            else self.executor.harness_commit
+        )
         return payload
 
     def _identity(
@@ -716,6 +727,8 @@ class StudyService:
             )
         baseline_for_compare = dict(baseline)
         informed_for_compare = dict(informed)
+        baseline_for_compare["run_id"] = baseline_run_id
+        informed_for_compare["run_id"] = informed_run_id
         baseline_for_compare.setdefault(
             "fuel_reconciled",
             self._reconciliation(baseline)["fuel_reconciled"],
@@ -924,6 +937,19 @@ def _typed_error_payload(error: Exception) -> dict[str, Any]:
                 "informed_study_class": error.informed_study_class,
                 "baseline_run_id": error.baseline_run_id,
                 "informed_run_id": error.informed_run_id,
+            }
+        }
+    if isinstance(error, ProvenanceUnknownError):
+        return {
+            "error": {
+                "type": error.code,
+                "message": str(error),
+                "baseline_run_id": error.baseline_run_id,
+                "informed_run_id": error.informed_run_id,
+                "baseline_engine_commit": error.baseline_engine_commit,
+                "informed_engine_commit": error.informed_engine_commit,
+                "baseline_harness_commit": error.baseline_harness_commit,
+                "informed_harness_commit": error.informed_harness_commit,
             }
         }
     if isinstance(error, BuildParityMismatchError):

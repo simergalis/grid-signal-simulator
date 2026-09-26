@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -10,8 +11,10 @@ from study_harness.artifacts import ArtifactWriter
 from study_harness.errors import (
     BuildParityMismatchError,
     FuelComponentReconciliationError,
+    ProvenanceUnknownError,
     StartFuelReconciliationError,
 )
+import study_harness.executor as executor_module
 from study_harness.executor import StudyRunExecutor
 from study_harness.manifest import RunManifestCache, make_run_identity
 from study_harness.metrics import collect_metrics
@@ -395,3 +398,205 @@ def test_h1_informed_is_deterministic_with_bounded_forecast_history(
         )
     assert unbounded_controllers
     assert len(unbounded_controllers[0].forecast_history) > 2
+
+
+def test_tc_ssh08_01_commit_resolution_order_and_separate_fields(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """TC-SSH08-01: engine env override, then build info, then Git, then unknown."""
+    build_info_path = tmp_path / "build_info.json"
+    build_info_path.write_text(
+        json.dumps(
+            {
+                "engine_commit": "engine-from-build",
+                "harness_commit": "harness-from-build",
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(executor_module, "BUILD_INFO_PATH", build_info_path)
+    monkeypatch.setenv("GRIDSTUDY_ENGINE_COMMIT", "engine-from-env")
+
+    def unexpected_git_call(*args, **kwargs):
+        raise AssertionError("a higher-priority commit source was available")
+
+    monkeypatch.setattr(executor_module.subprocess, "check_output", unexpected_git_call)
+    assert executor_module._git_commit() == "engine-from-env"
+    assert executor_module._harness_commit() == "harness-from-build"
+
+    monkeypatch.delenv("GRIDSTUDY_ENGINE_COMMIT")
+    assert executor_module._git_commit() == "engine-from-build"
+
+    build_info_path.unlink()
+
+    def clean_git_output(command, **kwargs):
+        if command[1:] == ["rev-parse", "HEAD"]:
+            return "git-commit\n"
+        if command[1:] == ["status", "--porcelain", "--untracked-files=all"]:
+            return ""
+        raise AssertionError(command)
+
+    monkeypatch.setattr(executor_module.subprocess, "check_output", clean_git_output)
+    assert executor_module._git_commit() == "git-commit"
+    assert executor_module._harness_commit() == "git-commit"
+
+    def unavailable_git(command, **kwargs):
+        raise subprocess.CalledProcessError(128, command)
+
+    monkeypatch.setattr(executor_module.subprocess, "check_output", unavailable_git)
+    assert executor_module._git_commit() == "unknown"
+    assert executor_module._harness_commit() == "unknown"
+
+
+def test_tc_ssh08_02_build_info_capture_marks_dirty_worktree(
+    tmp_path: Path,
+) -> None:
+    """TC-SSH08-02: the production build writer records HEAD and the dirty suffix."""
+    import runpy
+
+    repo_root = tmp_path / "repo"
+    repo_root.mkdir()
+    subprocess.run(
+        ["git", "init", str(repo_root)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    def git(*args: str) -> str:
+        result = subprocess.run(
+            ["git", "-C", str(repo_root), *args],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return result.stdout.strip()
+
+    git("config", "user.name", "GridSignal Test")
+    git("config", "user.email", "gridsignal-test@example.invalid")
+    source_file = repo_root / "tracked.txt"
+    source_file.write_text("initial\n", encoding="utf-8")
+    git("add", "tracked.txt")
+    git("commit", "-m", "initial")
+    head = git("rev-parse", "HEAD")
+
+    writer_path = Path(__file__).resolve().parents[5] / "scripts" / (
+        "write_gridstudy_build_info.py"
+    )
+    write_build_info = runpy.run_path(str(writer_path))["write_build_info"]
+    output_path = tmp_path / "backend" / "build_info.json"
+
+    clean_info, clean_dirty = write_build_info(repo_root, output_path)
+    assert clean_dirty is False
+    assert clean_info == {
+        "engine_commit": head,
+        "harness_commit": head,
+    }
+    assert json.loads(output_path.read_text(encoding="utf-8")) == clean_info
+
+    source_file.write_text("modified\n", encoding="utf-8")
+    dirty_info, dirty = write_build_info(repo_root, output_path)
+    assert dirty is True
+    assert dirty_info == {
+        "engine_commit": f"{head}-dirty",
+        "harness_commit": f"{head}-dirty",
+    }
+    assert json.loads(output_path.read_text(encoding="utf-8")) == dirty_info
+
+
+@pytest.mark.parametrize(
+    ("side", "field", "invalid_value", "remove"),
+    [
+        pytest.param(
+            side,
+            field,
+            value,
+            remove,
+            id=f"{side}-{field}-{label}",
+        )
+        for side in ("baseline", "informed")
+        for field in ("engine_commit", "harness_commit")
+        for value, remove, label in (
+            ("unknown", False, "unknown"),
+            ("", False, "empty"),
+            (None, False, "null"),
+            (None, True, "missing"),
+        )
+    ],
+)
+def test_tc_ssh08_03_acceptance_rejects_incomplete_provenance(
+    side: str,
+    field: str,
+    invalid_value: str | None,
+    remove: bool,
+) -> None:
+    """TC-SSH08-03: every absent/empty/unknown commit fails closed."""
+    baseline = {
+        "run_id": "baseline-ssh08-03",
+        "engine_commit": "engine-sha",
+        "harness_commit": "harness-sha",
+    }
+    informed = {
+        "run_id": "informed-ssh08-03",
+        "engine_commit": "engine-sha",
+        "harness_commit": "harness-sha",
+    }
+    target = baseline if side == "baseline" else informed
+    if remove:
+        target.pop(field)
+    else:
+        target[field] = invalid_value
+
+    with pytest.raises(ProvenanceUnknownError) as raised:
+        compare_metrics(baseline, informed)
+
+    error = raised.value
+    assert error.code == "PROVENANCE_UNKNOWN"
+    assert error.baseline_run_id == "baseline-ssh08-03"
+    assert error.informed_run_id == "informed-ssh08-03"
+    assert error.baseline_engine_commit == str(
+        baseline.get("engine_commit") or ""
+    ).strip()
+    assert error.informed_engine_commit == str(
+        informed.get("engine_commit") or ""
+    ).strip()
+    assert error.baseline_harness_commit == str(
+        baseline.get("harness_commit") or ""
+    ).strip()
+    assert error.informed_harness_commit == str(
+        informed.get("harness_commit") or ""
+    ).strip()
+
+
+def test_tc_ssh08_04_executor_run_pair_refuses_unknown_provenance(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """TC-SSH08-04: executor run_pair uses the same fail-closed gate."""
+    executor = StudyRunExecutor(
+        output_dir=tmp_path,
+        engine_commit="unknown",
+        harness_commit="harness-sha",
+    )
+    monkeypatch.setattr(executor, "_expanded_spec", lambda *args, **kwargs: {})
+    monkeypatch.setattr(executor, "_probe", lambda *args, **kwargs: ([], []))
+
+    def fake_run_mode(*, scenario_id: str, mode: str, **kwargs) -> dict:
+        return {
+            "run_id": f"{scenario_id}-{mode}",
+            "engine_commit": "unknown",
+            "harness_commit": "harness-sha",
+        }
+
+    monkeypatch.setattr(executor, "_run_mode", fake_run_mode)
+    with pytest.raises(ProvenanceUnknownError) as raised:
+        executor.run_pair(scenario_id="scenario-uneven-multisched-01")
+
+    assert raised.value.code == "PROVENANCE_UNKNOWN"
+    assert raised.value.baseline_run_id.endswith("-baseline")
+    assert raised.value.informed_run_id.endswith("-informed")
+    assert raised.value.baseline_engine_commit == "unknown"
+    assert raised.value.informed_engine_commit == "unknown"
+    assert raised.value.baseline_harness_commit == "harness-sha"
+    assert raised.value.informed_harness_commit == "harness-sha"

@@ -147,6 +147,42 @@ class BuildParityMismatchError(ValueError):
         )
 
 
+PROVENANCE_UNKNOWN = "PROVENANCE_UNKNOWN"  # PROPOSED_HERE
+
+
+class ProvenanceUnknownError(ValueError):
+    """Raised when either run lacks engine or harness build provenance."""
+
+    code = PROVENANCE_UNKNOWN
+
+    def __init__(
+        self,
+        *,
+        baseline_run_id: str,
+        informed_run_id: str,
+        baseline_engine_commit: str,
+        informed_engine_commit: str,
+        baseline_harness_commit: str,
+        informed_harness_commit: str,
+    ) -> None:
+        self.baseline_run_id = baseline_run_id
+        self.informed_run_id = informed_run_id
+        self.baseline_engine_commit = baseline_engine_commit
+        self.informed_engine_commit = informed_engine_commit
+        self.baseline_harness_commit = baseline_harness_commit
+        self.informed_harness_commit = informed_harness_commit
+        super().__init__(
+            "comparison refused because engine or harness provenance is "
+            "unknown: "
+            f"baseline {baseline_run_id} "
+            f"(engine={baseline_engine_commit!r}, "
+            f"harness={baseline_harness_commit!r}) versus "
+            f"informed {informed_run_id} "
+            f"(engine={informed_engine_commit!r}, "
+            f"harness={informed_harness_commit!r})"
+        )
+
+
 class ArtifactSizeError(ValueError):
     pass
 

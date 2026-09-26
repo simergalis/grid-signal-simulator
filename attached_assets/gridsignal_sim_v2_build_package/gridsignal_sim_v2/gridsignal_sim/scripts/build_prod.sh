@@ -15,6 +15,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # gridsignal_sim_v2/gridsignal_sim/scripts/ → gridsignal_sim_v2/
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 FRONTEND_DIR="$PROJECT_ROOT/frontend"
+BACKEND_DIR="$PROJECT_ROOT/gridsignal_sim"
+WORKSPACE_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel)"
+
+echo "=== [build_prod] Capturing commit provenance ==="
+python3 "$WORKSPACE_ROOT/scripts/write_gridstudy_build_info.py" \
+  --repo-root "$WORKSPACE_ROOT" \
+  --output "$BACKEND_DIR/build_info.json"
 
 echo "=== [build_prod] Building React dashboard ==="
 echo "    Frontend dir : $FRONTEND_DIR"

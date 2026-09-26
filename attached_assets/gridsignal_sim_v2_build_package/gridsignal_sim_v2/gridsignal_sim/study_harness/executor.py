@@ -39,6 +39,7 @@ from .metrics import MetricsCollector, collect_metrics
 BASE_DEMO_SCENARIO_ID = "scenario-uneven-multisched-01"
 STUDY_CLASS_ADDENDUM_H = "addendum_h"
 STUDY_CLASS_BASE_DEMO = "base_demo"
+BUILD_INFO_PATH = Path(__file__).resolve().parents[1] / "build_info.json"  # PROPOSED_HERE
 
 
 def study_class_for_scenario(scenario_id: str) -> str:
@@ -81,18 +82,51 @@ def make_study_run_identity(
     )
 
 
-def _git_commit() -> str:
-    configured = os.environ.get("GRIDSTUDY_ENGINE_COMMIT")
-    if configured:
-        return configured
+def _build_info_commit(field: str) -> str | None:
     try:
-        return subprocess.check_output(
+        build_info = json.loads(BUILD_INFO_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(build_info, dict):
+        return None
+    value = build_info.get(field)
+    if value is None:
+        return None
+    commit = str(value).strip()
+    return commit or None
+
+
+def _live_git_commit() -> str:
+    repo_root = Path(__file__).resolve().parents[5]
+    try:
+        commit = subprocess.check_output(
             ["git", "rev-parse", "HEAD"],
             text=True,
-            cwd=Path(__file__).resolve().parents[5],
+            cwd=repo_root,
         ).strip()
+        if not commit:
+            return "unknown"
+        dirty = subprocess.check_output(
+            ["git", "status", "--porcelain", "--untracked-files=all"],
+            text=True,
+            cwd=repo_root,
+        ).strip()
+        return f"{commit}-dirty" if dirty else commit
     except (OSError, subprocess.CalledProcessError):
         return "unknown"
+
+
+def _git_commit() -> str:
+    configured = os.environ.get("GRIDSTUDY_ENGINE_COMMIT")
+    if configured is not None and configured.strip():
+        return configured.strip()
+    build_info_commit = _build_info_commit("engine_commit")
+    return build_info_commit if build_info_commit is not None else _live_git_commit()
+
+
+def _harness_commit() -> str:
+    build_info_commit = _build_info_commit("harness_commit")
+    return build_info_commit if build_info_commit is not None else _live_git_commit()
 
 
 def _deep_merge(target: dict[str, Any], updates: Mapping[str, Any]) -> None:
@@ -212,8 +246,12 @@ class StudyRunExecutor:
         tick_seconds: float = TICK_SECONDS,
     ) -> None:
         self.output_dir = Path(output_dir)
-        self.engine_commit = engine_commit or _git_commit()
-        self.harness_commit = harness_commit or _git_commit()
+        self.engine_commit = (
+            engine_commit if engine_commit is not None else _git_commit()
+        )
+        self.harness_commit = (
+            harness_commit if harness_commit is not None else _harness_commit()
+        )
         self.tick_seconds = float(tick_seconds)
         self.writer = ArtifactWriter(self.output_dir / "artifacts")
         self.cache = RunManifestCache(self.output_dir / "cache")
@@ -332,6 +370,7 @@ class StudyRunExecutor:
             raw_metadata = _controller_metadata(ctx)
             raw_metadata.update(
                 {
+                    "run_id": f"{scenario_id}-{mode}-{identity.digest[:16]}",
                     "scenario_id": scenario_id,
                     "study_class": study_class,
                     "mode": mode,
