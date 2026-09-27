@@ -404,13 +404,13 @@ def test_tc_ssh08_01_commit_resolution_order_and_separate_fields(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
-    """TC-SSH08-01: engine env override, then build info, then Git, then unknown."""
+    """TC-SSH08-01: env, live Git, build info, then unknown."""
     build_info_path = tmp_path / "build_info.json"
     build_info_path.write_text(
         json.dumps(
             {
-                "engine_commit": "engine-from-build",
-                "harness_commit": "harness-from-build",
+                "engine_commit": "engine-from-stale-build",
+                "harness_commit": "harness-from-stale-build",
             }
         ),
         encoding="utf-8",
@@ -419,34 +419,45 @@ def test_tc_ssh08_01_commit_resolution_order_and_separate_fields(
     monkeypatch.setenv("GRIDSTUDY_ENGINE_COMMIT", "engine-from-env")
 
     def unexpected_git_call(*args, **kwargs):
-        raise AssertionError("a higher-priority commit source was available")
+        raise AssertionError("the non-empty engine environment override must win")
 
     monkeypatch.setattr(executor_module.subprocess, "check_output", unexpected_git_call)
     assert executor_module._git_commit() == "engine-from-env"
-    assert executor_module._harness_commit() == "harness-from-build"
-
-    monkeypatch.delenv("GRIDSTUDY_ENGINE_COMMIT")
-    assert executor_module._git_commit() == "engine-from-build"
-
-    build_info_path.unlink()
 
     def clean_git_output(command, **kwargs):
         if command[1:] == ["rev-parse", "HEAD"]:
-            return "git-commit\n"
+            return "live-git-commit\n"
         if command[1:] == ["status", "--porcelain", "--untracked-files=all"]:
             return ""
         raise AssertionError(command)
 
     monkeypatch.setattr(executor_module.subprocess, "check_output", clean_git_output)
-    assert executor_module._git_commit() == "git-commit"
-    assert executor_module._harness_commit() == "git-commit"
+    assert executor_module._harness_commit() == "live-git-commit"
+    monkeypatch.delenv("GRIDSTUDY_ENGINE_COMMIT")
+    assert executor_module._git_commit() == "live-git-commit"
+    assert executor_module._harness_commit() == "live-git-commit"
 
     def unavailable_git(command, **kwargs):
         raise subprocess.CalledProcessError(128, command)
 
     monkeypatch.setattr(executor_module.subprocess, "check_output", unavailable_git)
+    assert executor_module._git_commit() == "engine-from-stale-build"
+    assert executor_module._harness_commit() == "harness-from-stale-build"
+
+    build_info_path.unlink()
     assert executor_module._git_commit() == "unknown"
     assert executor_module._harness_commit() == "unknown"
+
+    def dirty_git_output(command, **kwargs):
+        if command[1:] == ["rev-parse", "HEAD"]:
+            return "live-git-commit\n"
+        if command[1:] == ["status", "--porcelain", "--untracked-files=all"]:
+            return " M tracked.py\n"
+        raise AssertionError(command)
+
+    monkeypatch.setattr(executor_module.subprocess, "check_output", dirty_git_output)
+    assert executor_module._git_commit() == "live-git-commit-dirty"
+    assert executor_module._harness_commit() == "live-git-commit-dirty"
 
 
 def test_tc_ssh08_02_build_info_capture_marks_dirty_worktree(

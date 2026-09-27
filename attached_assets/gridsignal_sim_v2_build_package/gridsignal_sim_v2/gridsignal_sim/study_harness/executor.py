@@ -96,7 +96,7 @@ def _build_info_commit(field: str) -> str | None:
     return commit or None
 
 
-def _live_git_commit() -> str:
+def _live_git_commit() -> str | None:
     repo_root = Path(__file__).resolve().parents[5]
     try:
         commit = subprocess.check_output(
@@ -104,8 +104,11 @@ def _live_git_commit() -> str:
             text=True,
             cwd=repo_root,
         ).strip()
-        if not commit:
-            return "unknown"
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    if not commit:
+        return "unknown"
+    try:
         dirty = subprocess.check_output(
             ["git", "status", "--porcelain", "--untracked-files=all"],
             text=True,
@@ -120,13 +123,19 @@ def _git_commit() -> str:
     configured = os.environ.get("GRIDSTUDY_ENGINE_COMMIT")
     if configured is not None and configured.strip():
         return configured.strip()
+    live_git_commit = _live_git_commit()
+    if live_git_commit is not None:
+        return live_git_commit
     build_info_commit = _build_info_commit("engine_commit")
-    return build_info_commit if build_info_commit is not None else _live_git_commit()
+    return build_info_commit if build_info_commit is not None else "unknown"
 
 
 def _harness_commit() -> str:
+    live_git_commit = _live_git_commit()
+    if live_git_commit is not None:
+        return live_git_commit
     build_info_commit = _build_info_commit("harness_commit")
-    return build_info_commit if build_info_commit is not None else _live_git_commit()
+    return build_info_commit if build_info_commit is not None else "unknown"
 
 
 def _deep_merge(target: dict[str, Any], updates: Mapping[str, Any]) -> None:
