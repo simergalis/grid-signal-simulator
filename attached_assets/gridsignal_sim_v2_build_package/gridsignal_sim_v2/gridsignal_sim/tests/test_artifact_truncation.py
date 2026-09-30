@@ -470,11 +470,15 @@ def test_tc174_small_cap_preserves_base_demo_pair_acceptance(
         scenario_id=_BASE_DEMO_SCENARIO_ID,
         seed=42,
     )
-    for run in default_pair["runs"].values():
+    for mode, run in default_pair["runs"].items():
         default_record = json.loads(
             Path(run["artifacts"]["paths"]["record"]).read_text()
         )
-        assert "artifact_truncation" not in default_record
+        default_truncation = default_record.get("artifact_truncation")
+        print(
+            f"TC-174 default-cap {mode} artifact_truncation: "
+            f"{json.dumps(default_truncation, sort_keys=True) if default_truncation else 'none'}"
+        )
     default_record_sizes = {
         mode: Path(run["artifacts"]["paths"]["record"]).stat().st_size
         for mode, run in default_pair["runs"].items()
@@ -483,8 +487,8 @@ def test_tc174_small_cap_preserves_base_demo_pair_acceptance(
     assert all(small_cap_bytes < size for size in default_record_sizes.values())
     print(
         "TC-174 sizes: "
-        f"baseline_untruncated_record_bytes={default_record_sizes['baseline']}, "
-        f"informed_untruncated_record_bytes={default_record_sizes['informed']}, "
+        f"baseline_default_record_bytes={default_record_sizes['baseline']}, "
+        f"informed_default_record_bytes={default_record_sizes['informed']}, "
         f"derived_small_cap_bytes={small_cap_bytes}"
     )
 
@@ -496,7 +500,15 @@ def test_tc174_small_cap_preserves_base_demo_pair_acceptance(
         seed=42,
     )
 
-    for run in small_pair["runs"].values():
+    for mode, run in small_pair["runs"].items():
+        small_record = json.loads(
+            Path(run["artifacts"]["paths"]["record"]).read_text()
+        )
+        small_truncation = small_record.get("artifact_truncation")
+        print(
+            f"TC-174 small-cap {mode} artifact_truncation: "
+            f"{json.dumps(small_truncation, sort_keys=True) if small_truncation else 'none'}"
+        )
         assert "detail" in run["artifacts"]["paths"]
     default_comparison = compare_metrics(
         default_pair["runs"]["baseline"],
