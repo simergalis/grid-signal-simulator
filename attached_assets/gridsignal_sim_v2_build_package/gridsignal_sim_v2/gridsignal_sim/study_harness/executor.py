@@ -220,29 +220,6 @@ def _controller_metadata(ctx: Any) -> dict[str, Any]:
     }
 
 
-def _bounded_records(
-    records: list[dict[str, Any]],
-    *,
-    limit: int,
-    reason: str,
-) -> list[dict[str, Any]]:
-    if len(records) <= limit:
-        return records
-    head = max(1, limit // 2)
-    tail = max(1, limit - head - 1)
-    return (
-        records[:head]
-        + [
-            {
-                "truncated": True,
-                "omitted_record_count": len(records) - head - tail,
-                "reason": reason,
-            }
-        ]
-        + records[-tail:]
-    )
-
-
 class StudyRunExecutor:
     """Execute one scenario pair while importing the existing engine."""
 
@@ -431,18 +408,8 @@ class StudyRunExecutor:
             metadata["commitment_log_record_count"] = len(
                 raw_metadata["commitment_log"]
             )
-            metadata["commitment_log"] = _bounded_records(
-                raw_metadata["commitment_log"],
-                limit=120,
-                reason="S1 artifact log is bounded; metrics used the full log",
-            )
             metadata["stop_floor_refusal_count"] = len(
                 raw_metadata["stop_floor_refusals"]
-            )
-            metadata["stop_floor_refusals"] = _bounded_records(
-                raw_metadata["stop_floor_refusals"],
-                limit=60,
-                reason="S1 artifact refusal log is bounded; count is exact",
             )
             record = {
                 **metadata,
@@ -575,10 +542,20 @@ def validate_committed_artifact(
     *,
     record_path: Path,
     tick_path: Path,
+    detail_path: Path | None = None,
     minimum_down_seconds_by_unit: Mapping[str, float] | None = None,
 ) -> dict[str, Any]:
     """Run S1 guards over a stored run without re-simulating it."""
     record = json.loads(Path(record_path).read_text())
+    if detail_path is not None:
+        with gzip.open(Path(detail_path), "rt", encoding="utf-8") as handle:
+            details = json.load(handle)
+        if not isinstance(details, Mapping):
+            raise ValueError("detail sidecar must contain a JSON object")
+        record_details = details.get("record", {})
+        if not isinstance(record_details, Mapping):
+            raise ValueError("detail sidecar record section must be an object")
+        record.update(record_details)
     try:
         metrics = collect_metrics(
             _read_tick_rows(Path(tick_path)),
