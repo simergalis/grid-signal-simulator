@@ -51,6 +51,8 @@ EPOCH_S_MIN = 946_684_800      # 2000-01-01 UTC
 EPOCH_S_MAX = 2_000_000_000    # 2033-05-18 UTC
 MEM_PER_CPU_FLAG = 1 << 63     # slurmdbd MEM_PER_CPU bit (hypothesis H4)
 TRES_PAIR_RE = re.compile(r"^\d+=\d+$")
+TIMELIMIT_INFINITE = 4294967295  # Slurm INFINITE sentinel (uint32 max)
+NODELIST_ENTRY_RE = re.compile(r"'([^']+)'")
 SAMPLE_N = 5
 NUMERIC_SAMPLE_CAP = 200_000   # cap stored values per column for quantiles
 
@@ -149,6 +151,16 @@ def profile(path: Path, limit: int | None) -> dict[str, Any]:
         id_job_dupes = 0
         gpu_jobs = 0
         tl_pairs: list[tuple[int, int]] = []  # (runtime_s, timelimit) for COMPLETED
+        tl_infinite = 0
+        mem_checked = mem_match = 0
+        mem_mismatch_samples: list[str] = []
+        nl_checked = nl_match = 0
+        nl_mismatch_samples: list[str] = []
+        multi_node = gpu_multi_node = 0
+        gpu_per_node: Counter[str] = Counter()
+        gpu_model_mix: Counter[str] = Counter()
+        t_min = t_max = None
+        state_flag_rows: Counter[str] = Counter()
         for row in reader:
             rows += 1
             for c in header:
@@ -168,17 +180,57 @@ def profile(path: Path, limit: int | None) -> dict[str, Any]:
                     and t.get("time_start") and t.get("time_end")
                     and len(tl_pairs) < NUMERIC_SAMPLE_CAP):
                 tl_pairs.append((t["time_end"] - t["time_start"], tl_i))
+            if tl_i == TIMELIMIT_INFINITE:
+                tl_infinite += 1
+            if st_i is not None and st_i > 0xFF:
+                state_flag_rows[str(st_i)] += 1
+            for c in ("time_submit", "time_end"):
+                v = t.get(c)
+                if v:
+                    t_min = v if t_min is None else min(t_min, v)
+                    t_max = v if t_max is None else max(t_max, v)
             # H2: tres_req format id=count,id=count
             tr = (row.get("tres_req") or "").strip()
+            tr_map: dict[int, int] = {}
             if tr:
                 parts = tr.split(",")
                 if all(TRES_PAIR_RE.match(p.strip()) for p in parts):
-                    ids = {int(p.split("=")[0]) for p in parts}
-                    tres_ids.update(ids)
-                    if ids & {1001, 1002}:
+                    tr_map = {int(a): int(b) for a, b in (p.strip().split("=") for p in parts)}
+                    tres_ids.update(tr_map.keys())
+                    if tr_map.keys() & {1001, 1002}:
                         gpu_jobs += 1
                 else:
                     tres_req_bad += 1
+            nodes_i = _as_int(row.get("nodes_alloc", "")) or 0
+            cpus_i = _as_int(row.get("cpus_req", "")) or 0
+            if nodes_i > 1:
+                multi_node += 1
+            n_gpu = tr_map.get(1001, 0) + tr_map.get(1002, 0)
+            if n_gpu:
+                gpu_model_mix["+".join(str(k) for k in sorted(tr_map.keys() & {1001, 1002}))] += 1
+                if nodes_i > 1:
+                    gpu_multi_node += 1
+                if nodes_i:
+                    q, r = divmod(n_gpu, nodes_i)
+                    gpu_per_node[str(q) if r == 0 else f"{n_gpu}/{nodes_i}"] += 1
+            # H4 decisive: decoded mem_req vs tres_req mem (id 2)
+            m_raw = _as_int(row.get("mem_req", ""))
+            if m_raw is not None and 2 in tr_map:
+                decoded = (m_raw - MEM_PER_CPU_FLAG) * cpus_i if m_raw >= MEM_PER_CPU_FLAG else m_raw
+                mem_checked += 1
+                if decoded == tr_map[2]:
+                    mem_match += 1
+                elif len(mem_mismatch_samples) < SAMPLE_N:
+                    mem_mismatch_samples.append(f"mem_req={m_raw} cpus={cpus_i} nodes={nodes_i} tres_mem={tr_map[2]}")
+            # H9 decisive: nodelist entry count vs nodes_alloc
+            nl = row.get("nodelist", "")
+            entries = NODELIST_ENTRY_RE.findall(nl)
+            if entries:
+                nl_checked += 1
+                if len(entries) == nodes_i:
+                    nl_match += 1
+                elif len(nl_mismatch_samples) < SAMPLE_N:
+                    nl_mismatch_samples.append(f"nodes_alloc={nodes_i} entries={len(entries)}")
             ta = (row.get("tres_alloc") or "").strip()
             if ta and all(TRES_PAIR_RE.match(p.strip()) for p in ta.split(",")):
                 tres_alloc_ids.update(int(p.split("=")[0]) for p in ta.split(","))
@@ -242,9 +294,9 @@ def profile(path: Path, limit: int | None) -> dict[str, Any]:
     hyp["H3_timelimit_minutes"] = _verdict(h3, h3_ev)
     # H4: mem_req is MB with MEM_PER_CPU high-bit flag.
     hyp["H4_mem_req_mb_with_per_cpu_flag"] = _verdict(
-        None,
-        f"rows with bit 63 set={mem_flagged}; quantiles={cols.get('mem_req', {}).get('quantiles')}. "
-        "If flagged rows > 0, mem per job = (mem_req - 2^63) * cpus_req.",
+        None if not mem_checked else mem_match / mem_checked > 0.99,
+        f"rows with bit 63 set={mem_flagged}; decoded mem_req equals tres_req mem (id 2) "
+        f"in {mem_match}/{mem_checked} rows; mismatch samples={mem_mismatch_samples}",
     )
     # H5: state is numeric slurmdbd enum.
     st = cols.get("state", {})
@@ -265,13 +317,23 @@ def profile(path: Path, limit: int | None) -> dict[str, Any]:
         f"duplicate id_job rows={id_job_dupes} (array jobs may legitimately repeat; see id_array_*)",
     )
     hyp["H9_nodes_alloc_vs_nodelist"] = _verdict(
-        None,
-        f"nodes_alloc quantiles={cols.get('nodes_alloc', {}).get('quantiles')}; "
-        f"nodelist samples={cols.get('nodelist', {}).get('samples')}",
+        None if not nl_checked else nl_match / nl_checked > 0.99,
+        f"nodelist entry count equals nodes_alloc in {nl_match}/{nl_checked} rows; "
+        f"mismatch samples={nl_mismatch_samples}",
     )
+    derived = {
+        "time_span_utc": [t_min, t_max],
+        "timelimit_infinite_rows": tl_infinite,
+        "state_values_with_flag_bits": dict(state_flag_rows),
+        "multi_node_rows": multi_node,
+        "gpu_rows": gpu_jobs,
+        "gpu_multi_node_rows": gpu_multi_node,
+        "gpu_per_node_distribution": dict(gpu_per_node.most_common(15)),
+        "gpu_tres_id_mix": dict(gpu_model_mix),
+    }
     return {
         "file": str(path), "rows_profiled": rows, "limit": limit,
-        "header": header, "hypotheses": hyp, "columns": cols,
+        "header": header, "hypotheses": hyp, "derived": derived, "columns": cols,
     }
 
 
@@ -295,6 +357,8 @@ def render_markdown(report: dict[str, Any]) -> str:
         for h, v in rep["hypotheses"].items():
             ev = str(v["evidence"]).replace("|", "\\|")
             lines.append(f"| {h} | **{v['status']}** | {ev} |")
+        if rep.get("derived"):
+            lines += ["", "### Derived (converter-relevant)", "", "```", json.dumps(rep["derived"], indent=2), "```"]
         lines += ["", "| Column | blank | numeric | non-numeric | distinct | samples |",
                   "|---|---|---|---|---|---|"]
         for c, s in rep["columns"].items():

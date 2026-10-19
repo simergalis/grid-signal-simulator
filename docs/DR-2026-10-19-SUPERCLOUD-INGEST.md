@@ -1,6 +1,6 @@
 # DR-2026-10-19-SUPERCLOUD-INGEST — MIT SuperCloud Slurm log as replay input
 
-**Status:** PROPOSED. Gate 1 (schema profile on real data) not yet run.
+**Status:** PROPOSED. Gate 1 complete 2026-10-19 (see §8). Awaiting Gate 2 approval.
 **Author:** Claude, for Lloyd Spencer
 **Date:** 2026-10-19
 
@@ -174,3 +174,65 @@ These are numbered TC-SC-xx to avoid colliding with the main TC sequence; renumb
 | CAV-SC-4 | Is a Slurm-native replay (through `core/slurm_scheduler`) needed in addition to the K8s replay? |
 | CAV-SC-5 | Licence review (CC BY-NC-ND) before any external or commercial use of derived results. |
 | CAV-SC-6 | Power linkage. Per-job GPU `power_draw_W` exists in `gpu/` time series and could calibrate hardware power profiles. This is a separate DR; it touches patent-sensitive profile methodology. |
+
+## 8. Gate 1 results (2026-10-19)
+
+### Run details
+
+- **Input:** `slurm-log.csv` from `s3://…/datacenter-challenge/202201/`, 103,165,427 bytes, matching the S3 object size.
+- **Supporting files:** `tres-mapping.txt` and `labelled_jobids.csv` from the same prefix.
+- **Report:** `reports/supercloud-profile/profile.md`, aggregates only.
+- **Command:** `tools/supercloud/profile_slurm_log.py`.
+
+### Snapshot facts
+
+| Fact | Value | Note |
+|---|---|---|
+| Rows | 395,914 | **Not 460,497.** The README's figure covers the full dataset; this snapshot is a subset. |
+| GPU rows (TRES 1001/1002) | 98,176 | README says 98,177. |
+| GPU mix | 98,170 volta (1002), 6 tesla (1001) | |
+| Time span | 2021-01-01T21:15Z → 2021-10-01T15:12Z | About 9 months. |
+| Partitions | `normal`, `test`, `gaia`, `xeon-p8`, `db` | |
+| Job types | `OTHER`, `LLSUB:BATCH`, `LLSUB:INTERACTIVE`, `LLMAPREDUCE:MAP` | |
+
+### Labelled jobs
+
+- **`labelled-slurm-log.csv` does not exist in this snapshot.** The labelled file is `labelled_jobids.csv` (`id_job,model`, 3,430 rows).
+- **All 3,430 join to `slurm-log.csv`**, and all of them are GPU jobs.
+- States: 3,414 COMPLETED, 10 TIMEOUT, 6 CANCELLED.
+- By family: U-Net 1,431, VGG 560, Inception 484, ResNet 463, BERT/DistilBERT 361, and GNNs 131 (SchNet 39, DimeNet 33, NNConv 32, PNA 27).
+
+### Hypothesis outcomes
+
+| ID | Result | Resolution |
+|---|---|---|
+| H0 | PASS | Header is exactly the 29 notebook columns. |
+| H1 | PASS | `time_*` are epoch seconds. No `time_start = 0` rows: the snapshot holds terminal jobs only. |
+| H2 | PASS | `tres_req`/`tres_alloc` = `id=count,…`, 0 malformed. `tres_alloc` also carries id 3 (energy) on 47,724 rows. |
+| H3 | PASS | `timelimit` is minutes: 100% of COMPLETED runtimes fit as minutes, 79% as seconds. **Sentinels:** `4294967295` = INFINITE on 173,875 rows (44%); `525600` = 1 year. |
+| H4 | **PASS, refined** | Bit 63 set (346,766 rows): `mem_req` − 2^63 = **MB per CPU**, × `cpus_req`. Flag clear: `mem_req` = **MB per node**, × `nodes_alloc`. Decoded total equals TRES mem (id 2) in 395,715/395,863 rows. The 148 residuals are all flag-clear multi-node rows where per-node × `nodes_alloc` reconciles. The converter rule must apply both cases. |
+| H5 | PASS | Numeric slurmdbd enum. COMPLETED 309,037; CANCELLED 53,980; FAILED 21,349; TIMEOUT 7,089; OUT_OF_MEMORY 4,414; NODE_FAIL 44. One row has value `1024` (0x400, JOB_REQUEUE flag, base state 0); quarantine it. |
+| H6 | N/A | `gres_used` is empty in every row. GPU identity comes from TRES only. |
+| H7 | PASS | 0 timestamp-ordering violations. |
+| H8 | PASS | `id_job` is unique, 0 duplicates. Array jobs are distinguished by `id_array_job` / `id_array_task`; `4294967294` = not an array task. |
+| H9 | PASS | `nodelist` is a Python-list string, e.g. `['r9189566-n911952']`. Entry count equals `nodes_alloc` in 395,914/395,914 rows. |
+
+### Converter-relevant shape
+
+- **Multi-node rows:** 6,561 (1.7%) overall; 2,365 of the 98,176 GPU rows (2.4%). The largest job is 891 nodes.
+- **GPUs per node (GPU rows):** 1 GPU/node 79,875; 2 GPUs/node 18,162. 44 rows evenly divide to 4/node and 95 rows don't divide evenly, e.g. 1 GPU across 2 nodes. Those 139 rows need a rule (CAV-SC-7).
+
+### Mapping changes required at Gate 2 (amends §5)
+
+1. **`memory_mib`:** use the two-case H4 rule. Slurm "MB" is MiB, so no unit conversion.
+2. **Never-started exclusion:** dead in this snapshot, but keep it as a guard.
+3. **Quarantine** the `state = 1024` row (requeue flag).
+4. **`timelimit`:** not used by the K8s replay. If it's carried as metadata, map `4294967295` to null.
+5. **`node_id`:** strip the list syntax from `nodelist`.
+6. **Multi-node GPU jobs (2.4%):** small enough that quarantining them in the first replay is low-cost. This is the recommended answer to CAV-SC-2.
+
+### New open item
+
+| ID | Item |
+|---|---|
+| CAV-SC-7 | 139 GPU rows whose GPU count is not 1 or 2 per node (44 at 4/node, 95 fractional). Check whether `tres_req` GPU counts are per job or per node on these rows before deciding; quarantine pending that check. |
