@@ -56,3 +56,9 @@ __pycache__/
 *.pyo
 system_stats.csv
 gridsignal_logger.py
+
+# SuperCloud raw data (licence: CC BY-NC-ND) - see docs/DR-2026-10-19-SUPERCLOUD-INGEST.md
+**/slurm-log.csv
+**/labelled-slurm-log.csv
+**/scheduler-log.csv
+**/labelled_jobids.csv
