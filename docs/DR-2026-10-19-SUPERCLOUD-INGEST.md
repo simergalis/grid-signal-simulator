@@ -520,3 +520,44 @@ Unchanged runs of `demo-islanded-ramp` diverge: 751 and 1,280 ticks live; 770 an
 | IMPL-ISL-5 | H3 trace on S10 (`turbine-3` repeated dropped starts). |
 
 **Status.** No fixes made. The fix direction is for the Phase D report and a separate DR (DR-2026-10-2x-ISLAND-COLLAPSE).
+
+### Phase D (2026-10-20) — S10, H3, final verdicts
+
+The live results (commit `dd2350c`, git clean) match the independent snapshot runs value for value:
+
+| S10 run | Ticks | Outcome | Min SoC | GT MW | Frequency (Hz) |
+|---|---|---|---|---|---|
+| Unchanged (×2, physically identical) | 2,369 | `no_grid_forming_source` | 0.0 | 5.25–44.78 | 58.87–592.24 |
+| Depth fraction 0.03 | 17,280 (full 24 h) | no collapse | 0.320 | 5.25–61.80 | **−750.57–2,841.81** |
+| 0.03 + S9 protection | 1 | `island_collapse_of` at 62.0 Hz | 1.0 | 5.25 | 62.0 |
+
+**H3 — CONFIRMED (contributing).**
+- All 234 dropped starts are `turbine-3`, and all are min-down rejections (elapsed time < 900 s).
+- The candidate list `_offline_turbines_by_thermal_priority` (`core/simulation_core.py`) filters on state only. `UnitAvailability` carries no min-down eligibility, and `core/commitment.py` takes `offline[0]` (verified in source).
+- In 50 of those ticks `turbine-4` was eligible but was not chosen. That caused two avoidable 125 s start delays, with the BESS at its 17 MW cap throughout.
+- The contribution to the collapse has not been isolated (no counterfactual run).
+
+**H5 — CONFIRMED (primary) for S10 too.** `soc_floor_mwh` = 0.0 MWh; same mechanism as the template.
+
+**Correction to §11.** `bess_normal_dispatch_depth_fraction = 0.03` is a **3% normal-dispatch depth** (it retains 14 × (1 − 0.03) = 13.58 MWh, about 97% SoC), not a 3% floor. The experiment prevents collapse mainly by removing the BESS from routine economic dispatch. The emergency-release path can still discharge below that level (S10 min SoC 0.32). It demonstrates the mechanism; it is not an operating policy.
+
+**IMPL-ISL-6 (new) — S10 initial state is infeasible under protection.**
+- At tick 1, demand is 0.007 MW. The initial spinning GT is held at 5.25 MW must-run, and the BESS at 100% SoC cannot absorb the surplus (full-charge guard).
+- The result is +5.24 MW of surplus forcing: 71.1 Hz unprotected, or an OF trip at tick 1 with S9 thresholds.
+- S10's high-frequency excursions between gang jobs come from the same mechanism.
+- This is a scenario/initialisation adequacy issue inherited from the template, not grounds to weaken any guard.
+
+### Final register
+
+| ID | Defect | Fix direction (Phase D; any new constant `PROPOSED_HERE`) |
+|---|---|---|
+| IMPL-ISL-1 | Non-determinism | Persist explicit seeds; no process-dependent seed derivation; separate physical replay identity from wall-clock/advisory metadata. |
+| IMPL-ISL-2 | Zero grid-forming energy floor (H5, **primary**) | A justified grid-forming reserve policy applied ahead of economic dispatch, with explicit emergency-release semantics. |
+| IMPL-ISL-3 | Unbounded frequency with null protection (H4) | Make unprotected islanded operation explicit, and stop invalid frequency output being presented as credible operation. |
+| IMPL-ISL-4 | Template protected trip at 665 s | A validated demand/startup/reserve/site-adequacy review of the template. |
+| IMPL-ISL-5 | Ineligible restart target (H3) | Apply the asset's start guards when forming and selecting candidates; choose another eligible unit. |
+| IMPL-ISL-6 | S10 protected initial-state infeasibility | Reconcile initial must-run generation, initial demand and absorption headroom under validated protection criteria. |
+
+**H1** (cost order BESS 38 < GT 55, both `PROPOSED_HERE`) is contributing. **H2** is moot.
+
+**Next:** a fix DR (DR-2026-10-2x-ISLAND-COLLAPSE) for Lloyd's sign-off. No implementation until then.
