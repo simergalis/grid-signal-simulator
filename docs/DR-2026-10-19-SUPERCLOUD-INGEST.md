@@ -480,3 +480,43 @@ Headless runs on **live Replit code** (instant playback, no changes):
 |---|---|
 | IMPL-SC-2 | **Live defect.** `demo-islanded-ramp` collapses on live code; turbines don't pick up load; frequency is unphysical. Next step: a diagnostic-only audit of turbine dispatch/commitment (`start … silently dropped … state=OFFLINE`) and the frequency integrator. |
 | IMPL-SC-3 | Update the `test_step8` name assertions to the numbered display names. |
+
+## 11. GS-DIAG-ISL-001 — islanded-collapse diagnostic, Phases A–C (2026-10-20)
+
+**Method.**
+- Diagnostic-only prompt (project doc `claude/GS-DIAG-ISL-001_Islanded-Collapse-Diagnostic-Prompt.md`), run by the Replit agent on live code at commit `dd2350c`. No changes; `git status` clean.
+- Each phase was checked against source and against independent runs in the scratch snapshot copy.
+- Live and snapshot agree on every conclusion below.
+
+| ID | Hypothesis | Verdict | Evidence |
+|---|---|---|---|
+| H1 | Cost-ranked dispatch serves the BESS before incremental turbine output, holding committed GTs at p_min | **CONFIRMED** | `_cost_ranked_dispatch_allocations` greedy by marginal cost. `bess_marginal_cost_mwh` = 38 and `turbine_variable_per_mwh` = 55, both `PROPOSED_HERE`. Live tick 900: 5 GTs at 5.25 MW with 9.75 MW headroom each while the BESS discharges. Plateau 2,175–6,380 s (842 ticks). |
+| H2 | Setpoints not applied or overwritten | INCONCLUSIVE, moot | Setpoint = output = 5.25 MW at the plateau. The plateau is fully explained by the dispatch request (H1). |
+| H3 | Commitment re-targets a unit inside min-down | **Plausible, S10 only** | Not present in the template (no decommit). S10 snapshot: `turbine-3` start dropped 234 × between 5,345 and 10,050 s; `t_min_down_s` = 900; last stop 9,155 s. Needs a Phase D trace. |
+| H4 | Frequency integrator diverges | **Split.** Missing bounds: CONFIRMED. Numerical instability: NOT SUPPORTED | Null protection resolves to no UF/OF/UFLS/81U trip and no generic frequency saturation, so frequency reaches −127 Hz (template) and −751 to 2,842 Hz (S10 with reserve). The Euler step is damped (multiplier 0.99984); the excursions are forced by a sustained deficit (2 GTs on bus, BESS at its 17 MW cap during commitment lag). With S9's protection copied in memory, the template trips `island_collapse_uf` at tick 133 (665 s). |
+| **H5** | No energy reserve for the only grid-forming BESS | **CONFIRMED — root cause of `no_grid_forming_source`** | `soc_floor_mwh` = max(diesel floor, depth reserve) = max(0, 0): no diesel, and `bess_normal_dispatch_depth_fraction` defaults to 0.0 (`scenario_factory`). With 0.03 in memory: the template runs the full 10,800 s, no collapse, min SoC 0.60 (live) / 0.59 (snapshot); S10 runs the full 86,400 s, min SoC 0.32, GT up to 61.8 MW. |
+
+### Repeatability (IMPL-ISL-1)
+
+Unchanged runs of `demo-islanded-ramp` diverge: 751 and 1,280 ticks live; 770 and 763 snapshot. Sources:
+
+1. **Main source.** `kube_config.rng_seed: null` in the template. `scenario_factory` uses `.get("rng_seed", 42)`, which returns the stored `None` instead of the default, so `random.Random(None)` / `SeedSequence(None)` seed from OS entropy (`core/kube_demand.py:335–351`).
+2. The default fabric engine is seeded with `hash(run_id)`. Python salts string hashes per process, so this is not reproducible across processes.
+3. `wall_stamp_utc` = `time.time()`.
+4. Advisory-agent cadence uses wall time (`advisory/agents/base.py`).
+
+**Pinned runs are identical** on all physical fields: seed 42 gives 1,263/1,263 ticks (snapshot); seed 1729 plus a pinned clock gives 771/771 (live, excluding `advisory_telemetry`).
+
+**S10 is deterministic** (no `kube_config`): 2,369/2,369 ticks.
+
+### Open items
+
+| ID | Item |
+|---|---|
+| IMPL-ISL-1 | Run-to-run non-determinism from null kube seed, `hash(run_id)` fabric seed, wall clock and advisory cadence. A diagnostic and A/B-validity risk (cf. GS-TP-AB-001). |
+| IMPL-ISL-2 | Islanded sites with no diesel and `bess_normal_dispatch_depth_fraction` unset have a zero energy floor on their only grid-forming source (H5). |
+| IMPL-ISL-3 | No physical frequency bounds when protection thresholds are null; impossible values reach `TickResult` and the UI. |
+| IMPL-ISL-4 | With S9-class protection, the template under-frequency trips at 665 s: a sustained deficit during commitment lag while the BESS is at its power cap. This is an adequacy finding about the template site, not a model defect. |
+| IMPL-ISL-5 | H3 trace on S10 (`turbine-3` repeated dropped starts). |
+
+**Status.** No fixes made. The fix direction is for the Phase D report and a separate DR (DR-2026-10-2x-ISLAND-COLLAPSE).
