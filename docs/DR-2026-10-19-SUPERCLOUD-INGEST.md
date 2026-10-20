@@ -365,3 +365,71 @@ Measured on W35 (GPU pods, both scheduled):
 ### Next gate (4)
 
 Approve IMPL-SC-1 → implement `completion_mode` with tests → rerun W35 → **STOP** and report the wait comparison.
+
+## 10. Scenario S10 — real GPU day, H100-equivalent shape (2026-10-20)
+
+**Approved by Lloyd 2026-10-20:**
+
+- A new scenario. S9 (`S9_islanded_ramp_protection`) is unchanged.
+- The H100-equivalent route.
+- Automatic day selection.
+- Generator committed, scenario not committed.
+- Sample values stripped from the public report.
+
+### Method
+
+`tools/supercloud/make_scenario.py`, with 5 tests in `test_make_scenario.py`.
+
+- **Workload.** Every real GPU job (partitions `normal,gaia,test`) overlapping the chosen UTC day becomes one `starting`/`job_end` pair at its **real** start and end times. This is not the replay, so IMPL-SC-1 does not apply.
+  - Multi-node gang jobs are kept as single events. This is a load timeline, not a scheduling replay.
+  - Job IDs are sequential (`s10-job-NNNNN`); no dataset IDs are carried.
+- **Scaling.** Each job's V100 count × (peak MW / 10.2 kW / peak concurrent GPUs) gives `hopper_8gpu_air` chassis.
+  - `--peak-mw` defaults to **50 MW, `PROPOSED_HERE`**. This matches the 50 MW design-manual site and sets magnitude only.
+  - The real timing is preserved. V100 power physics are not modelled.
+- **Power side.** Copied from `demo-islanded-ramp`: 5 × 15 MW GT and an 18 MW / 14 MWh grid-forming BESS.
+- **Synthetic load sources neutralised:** `kube_config`, `load_config`, `cluster_gen_config`, `workload_floor_fraction` (template 0.5), `gpu_load_profile`, solar (template 15 MW) and assertions.
+- **Other settings:** `end_sim_time` = 86,400 s; `design_peak_load_mw` = scaled peak.
+
+### Day selection: 2021-08-11 (UTC)
+
+Days were scored by the maximum 15-minute rise in concurrent GPUs, from February 2021 onward.
+
+The top three days (08-10, 08-11, 09-16) all follow a **maintenance drain**. 180 GPU jobs were cancelled together at 03:00 UTC on 08-10, and 179 at 04:00 on 09-16. Each drain is followed by a **whole-cluster scaling campaign**: completed gang jobs of 64 → 128 → 182 → 196 → 212 nodes (up to 424 GPUs = the entire GPU partition), each running 5–60 minutes.
+
+**08-11 is a benchmark-campaign day, not typical production.**
+
+| | |
+|---|---|
+| GPU jobs | 154 (4 at 424 GPUs, 2 at 392, 7 at 256) |
+| Events | 239 |
+| Jobs running at 00:00 | 1 |
+| Jobs running past 24:00 | 69 |
+| Scaling | 11.56 chassis per GPU; peak 50.0 MW after rounding |
+
+The steepest *ordinary production* day is **2021-09-17** (15-minute rise of 125 GPUs, range 121–376). It is available with `--date 2021-09-17`.
+
+### Validation
+
+**Schema.** `ScenarioSpec` accepts S10.
+
+**Environment limit.** The GitHub snapshot (last push 2026-09-16) is missing three modules present on Replit: `runtime/fuel_cell_defaults.py`, `runtime/reference_forecast.py` and `core/infrastructure_admission.py`. The snapshot cannot import `api.schemas` without them.
+
+Validation therefore ran in a scratch copy: the snapshot plus the first two modules, read from Replit. That copy is never committed. Replit's 133 KB `schemas.py` exceeds the read limit, so schema drift against live code could not be checked. **The authoritative check is `POST /scenarios` on the live app.**
+
+**Headless run (scratch copy).**
+
+- S10 runs, and load follows the trace: 0 → 31 → 0 → 47.6 MW steps.
+- The island collapses after 2,369 ticks (`island_collapse_no_grid_forming_source`).
+- **The unmodified template `demo-islanded-ramp` collapses the same way** (1,333 ticks): turbine output plateaus well below committed capacity and the BESS carries the gap until it is empty.
+- Also seen in both runs:
+  - Frequency readings of 71–592 Hz on load drops.
+  - Repeated `start 'turbine-3' silently dropped … state=OFFLINE`.
+
+**Conclusion.** The collapse is **not attributable to S10**. It reproduces on the baseline template in this snapshot. Whether it also occurs on live Replit code is unknown (IMPL-SC-2). No simulator code was changed (diagnostic before fix).
+
+### Open items
+
+| ID | Item |
+|---|---|
+| IMPL-SC-2 | In the GitHub snapshot (plus two Replit modules), `demo-islanded-ramp` collapses headless: turbines don't follow load, the BESS drains, frequency readings are unphysical. **Check first:** run the template on live Replit; if it is clean there, the snapshot is stale and GitHub needs a sync. Then run S10 live. |
+| CAV-SC-9 | The GitHub repo `grid-signal-simulator` is **public**. The earlier commit `d4b8895` contains a profile report with up to 5 anonymised sample values per column (job IDs, node names). The current report has none (profiler default changed), but **branch history still holds them**. Removing them requires rewriting the branch history (force-push). That is Lloyd's decision. |

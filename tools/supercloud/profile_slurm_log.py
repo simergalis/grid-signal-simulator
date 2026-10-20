@@ -54,6 +54,11 @@ TRES_PAIR_RE = re.compile(r"^\d+=\d+$")
 TIMELIMIT_INFINITE = 4294967295  # Slurm INFINITE sentinel (uint32 max)
 NODELIST_ENTRY_RE = re.compile(r"'([^']+)'")
 SAMPLE_N = 5
+# Public-report hygiene (DR D4): by default no per-column sample values are
+# emitted, and identifier columns get no quantiles (min/max would be single
+# real row values).  --include-samples restores them for local diagnosis only.
+INCLUDE_SAMPLES = False
+IDENTIFIER_COLUMNS = {"id_job", "id_array_job", "id_user", "kill_requid", "nodelist"}
 NUMERIC_SAMPLE_CAP = 200_000   # cap stored values per column for quantiles
 
 # slurmdbd job_state base enum (low byte), hypothesis H5.
@@ -100,7 +105,7 @@ class ColumnStats:
         if raw.strip() == "" or raw.strip().lower() in {"nan", "none", "null"}:
             self.blank += 1
             return
-        if len(self.samples) < SAMPLE_N and raw not in self.samples:
+        if INCLUDE_SAMPLES and len(self.samples) < SAMPLE_N and raw not in self.samples:
             self.samples.append(raw)
         if not self.distinct_overflow:
             self.distinct[raw] += 1
@@ -220,7 +225,7 @@ def profile(path: Path, limit: int | None) -> dict[str, Any]:
                 mem_checked += 1
                 if decoded == tr_map[2]:
                     mem_match += 1
-                elif len(mem_mismatch_samples) < SAMPLE_N:
+                elif INCLUDE_SAMPLES and len(mem_mismatch_samples) < SAMPLE_N:
                     mem_mismatch_samples.append(f"mem_req={m_raw} cpus={cpus_i} nodes={nodes_i} tres_mem={tr_map[2]}")
             # H9 decisive: nodelist entry count vs nodes_alloc
             nl = row.get("nodelist", "")
@@ -229,7 +234,7 @@ def profile(path: Path, limit: int | None) -> dict[str, Any]:
                 nl_checked += 1
                 if len(entries) == nodes_i:
                     nl_match += 1
-                elif len(nl_mismatch_samples) < SAMPLE_N:
+                elif INCLUDE_SAMPLES and len(nl_mismatch_samples) < SAMPLE_N:
                     nl_mismatch_samples.append(f"nodes_alloc={nodes_i} entries={len(entries)}")
             ta = (row.get("tres_alloc") or "").strip()
             if ta and all(TRES_PAIR_RE.match(p.strip()) for p in ta.split(",")):
@@ -248,6 +253,10 @@ def profile(path: Path, limit: int | None) -> dict[str, Any]:
                 break
 
     cols = {c: stats[c].summary() for c in header}
+    if not INCLUDE_SAMPLES:
+        for c in IDENTIFIER_COLUMNS & set(cols):
+            cols[c].pop("quantiles", None)
+            cols[c].pop("value_counts", None)
     missing = [c for c in EXPECTED_COLUMNS if c not in header]
     extra = [c for c in header if c not in EXPECTED_COLUMNS]
 
@@ -379,7 +388,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--tres-mapping", type=Path)
     ap.add_argument("--out-dir", type=Path, default=Path("reports/supercloud-profile"))
     ap.add_argument("--limit", type=int, default=None, help="profile only the first N rows")
+    ap.add_argument("--include-samples", action="store_true",
+                    help="emit per-column sample values (LOCAL DIAGNOSIS ONLY; never commit)")
     args = ap.parse_args(argv)
+    global INCLUDE_SAMPLES
+    INCLUDE_SAMPLES = args.include_samples
 
     report: dict[str, Any] = {"slurm_log": profile(args.slurm_log, args.limit)}
     if args.labelled:
