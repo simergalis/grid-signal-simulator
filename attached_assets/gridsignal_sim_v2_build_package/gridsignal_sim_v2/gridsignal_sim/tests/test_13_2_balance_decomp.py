@@ -294,20 +294,7 @@ class TestD4SumIdentity:
         self._verify_d4(tick, "islanded with load")
 
     def test_D4_depleted_bess_reports_the_real_supply_gap(self):
-        """DR-2026-08-09-BALANCE Phase 0. Islanded, BESS depleted, 10 nodes: no
-        generation against ~0.105 MW of demand, so the balance defect is the gap.
-
-        Before Phase 0 this asserted abs(defect) < 1e-3, which held only because the
-        field was `_d4_sum - _balance_residual_mw` -- zero by algebra, a routing
-        identity dressed as a diagnostic.
-
-        D4 = local_gen + import − (demand − cumulative_shed_mw) − losses.
-        With no generation, no import (islanded), and no UFLS shed yet:
-          D4 = 0 + 0 − demand = −demand.
-        The defect resolves to zero in Phase 4, when frequency collapse triggers UFLS
-        and cumulative_shed_mw → demand, collapsing the served-load term to zero.
-        Until then a non-zero defect is the expected, correct result.
-        """
+        """Depleted island supply is explicit unserved demand, not a ledger defect."""
         state = _make_state(
             bess_soc=0.0,
             bess_mwh=0.01,
@@ -319,14 +306,11 @@ class TestD4SumIdentity:
         for i in range(5):
             tick = _run_tick(state, sim_time=float(i) * 5.0, dt=5.0)
         assert tick.p_generation_mw == pytest.approx(0.0)
-        # D4 = local_gen − demand (no import, no UFLS shed) = −demand.
-        # The served/unserved pair is load-side accounting: unserved is explicit
-        # UFLS shed only, while the uncovered supply remains p_imbalance_mw.
-        assert tick.p_unserved_mw == pytest.approx(0.0)
-        assert tick.p_served_mw == pytest.approx(tick.p_demand_mw)
-        assert tick.p_imbalance_mw == pytest.approx(-tick.p_demand_mw, rel=1e-9)
-        assert tick.d4_balance_defect_mw == pytest.approx(-tick.p_demand_mw, rel=1e-9)
-        assert tick.d4_balance_defect_mw < -0.05      # a real gap, not rounding
+        # c0737fc / 52f93da: islanded physical deficit is counted as unserved.
+        assert tick.p_unserved_mw == pytest.approx(tick.p_demand_mw)
+        assert tick.p_served_mw == pytest.approx(0.0)
+        assert tick.p_imbalance_mw == pytest.approx(0.0)
+        assert tick.d4_balance_defect_mw == pytest.approx(0.0)
 
     def test_D4_all_ticks_across_ramp(self):
         """D4 holds at every tick during a full ramp window (grid-connected)."""

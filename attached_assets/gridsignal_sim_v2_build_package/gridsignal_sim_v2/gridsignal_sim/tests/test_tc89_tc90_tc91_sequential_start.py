@@ -73,6 +73,8 @@ def test_tc89_first_tick_starts_at_most_one_unit():
     assert rec is not None, "demo-20mw scenario not found in seeded store"
 
     spec = ScenarioSpec.model_validate_json(rec.spec_json)
+    # 13d96c8: None now synchronises one unit; explicitly request this test's OFFLINE precondition.
+    spec.initial_spinning_count = 0
     ctx = build_run_context_from_spec("tc89-run", spec.model_dump())
 
     # Pre-condition: every non-standby turbine starts OFFLINE.

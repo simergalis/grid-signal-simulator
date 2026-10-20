@@ -163,9 +163,11 @@ def test_tc_r4_emergency_release_authorizes_both_layers() -> None:
     state = _live_state(depth_fraction=0.0, soc_mwh=10.0)
     captured, result = _run_live_tick(state)
 
-    assert captured["bess_dispatch_ceilings_mw"] == pytest.approx([10.0])
+    # 3598a08: ceilings and delivered power are AC-side, not stored-energy MW.
+    expected_ac_mw = 10.0 * state.bess_units[0].config.discharge_efficiency
+    assert captured["bess_dispatch_ceilings_mw"] == pytest.approx([expected_ac_mw])
     assert captured["bess_soc_floors_mwh"] == pytest.approx([0.0])
-    assert result.bess_output_mw == pytest.approx(10.0)
+    assert result.bess_output_mw == pytest.approx(expected_ac_mw)
 
 
 def test_tc_r5_routine_dispatch_keeps_reconciled_floor() -> None:
@@ -174,7 +176,9 @@ def test_tc_r5_routine_dispatch_keeps_reconciled_floor() -> None:
     state = _live_state(depth_fraction=0.0, soc_mwh=20.0)
     captured, result = _run_live_tick(state)
 
-    assert captured["bess_dispatch_ceilings_mw"] == pytest.approx([10.0])
+    # 3598a08: ceilings and delivered power are AC-side, not stored-energy MW.
+    expected_ac_mw = 10.0 * state.bess_units[0].config.discharge_efficiency
+    assert captured["bess_dispatch_ceilings_mw"] == pytest.approx([expected_ac_mw])
     assert captured["bess_soc_floors_mwh"] == pytest.approx([10.0])
-    assert result.bess_output_mw == pytest.approx(10.0)
+    assert result.bess_output_mw == pytest.approx(expected_ac_mw)
     assert state.bess_units[0].soc_mwh == pytest.approx(10.0)

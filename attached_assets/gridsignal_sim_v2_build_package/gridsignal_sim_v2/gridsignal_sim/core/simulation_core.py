@@ -3177,11 +3177,35 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
 
     if _islanded:
         _f0 = state.site.frequency_nominal_hz
+        # DR-2026-10-20-ISLAND-COLLAPSE D1 / Addendum G2 §G2.6.2:
+        # synchronous machines form the grid too. Reuse the swing equation's
+        # _on_bus_turbines population above; diesel exposes the same breaker
+        # semantics through is_on_bus. One predicate also handles FC trips.
+        def _has_live_grid_forming_source() -> bool:
+            return (
+                any(unit.is_on_bus for unit in _on_bus_turbines)
+                or any(unit.is_on_bus for unit in state.diesel_units)
+                or any(
+                    unit.config.grid_forming
+                    and not unit.tripped
+                    and unit.soc_mwh > 1e-9
+                    for unit in state.bess_units
+                )
+                or (
+                    isinstance(state.fuel_cell_module, BlockFuelCellFleet)
+                    and any(
+                        array.config.grid_forming and array.output_mw() > 1e-9
+                        for array in state.fuel_cell_module.arrays
+                    )
+                )
+            )
+
         # Grid-forming viability is opt-in, like the optional fuel-system
         # constraints: legacy scenarios which declare no grid-forming source
         # retain their unconstrained pre-Stage-3 behaviour.
         _grid_forming_viability_opted_in = (
-            any(unit.config.grid_forming for unit in state.bess_units)
+            _has_live_grid_forming_source()
+            or any(unit.config.grid_forming for unit in state.bess_units)
             or (
                 isinstance(state.fuel_cell_module, BlockFuelCellFleet)
                 and any(array.config.grid_forming
@@ -3192,18 +3216,9 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         # grid-forming FC hardware counts only while actually delivering real
         # power. A BESS grid-forming inverter may establish voltage at zero net
         # MW exchange, but not after its usable energy is exhausted.
-        _bess_forming_live = any(
-            unit.config.grid_forming and not unit.tripped and unit.soc_mwh > 1e-9
-            for unit in state.bess_units
-        )
-        _fc_forming_live = (
-            isinstance(state.fuel_cell_module, BlockFuelCellFleet)
-            and any(array.config.grid_forming and array.output_mw() > 1e-9
-                    for array in state.fuel_cell_module.arrays)
-        )
         if (
             _grid_forming_viability_opted_in
-            and not (_bess_forming_live or _fc_forming_live)
+            and not _has_live_grid_forming_source()
         ):
             _island_collapsed_this_tick = True
             _fp_collapse_reason = "island_collapse_no_grid_forming_source"
@@ -3289,16 +3304,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                 # A frequency/ROCOF trip can remove the final live grid-former.
                 if (
                     _grid_forming_viability_opted_in
-                    and not any(
-                        a.config.grid_forming and a.output_mw() > 1e-9
-                        for a in state.fuel_cell_module.arrays
-                    )
-                    and not any(
-                        unit.config.grid_forming
-                        and not unit.tripped
-                        and unit.soc_mwh > 1e-9
-                        for unit in state.bess_units
-                    )
+                    and not _has_live_grid_forming_source()
                 ):
                     _island_collapsed_this_tick = True
                     _fp_collapse_reason = "island_collapse_no_grid_forming_source"

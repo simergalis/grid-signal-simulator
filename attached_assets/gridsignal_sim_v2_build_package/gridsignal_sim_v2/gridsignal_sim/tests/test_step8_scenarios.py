@@ -399,10 +399,10 @@ class TestScenarioCRUD:
             resp = client.get("/scenarios")
             assert resp.status_code == 200
             names = {s["name"] for s in resp.json()}
-            assert "demo-alert" in names
-            assert "demo-fleet" in names
-            assert "demo-tc33-compute" in names
-            assert "demo-tc33-renewable" in names
+            assert "46 demo-alert" in names
+            assert "50 demo-fleet" in names
+            assert "51 demo-tc33-compute" in names
+            assert "52 demo-tc33-renewable" in names
 
             # Create new
             client.post("/scenarios", json=_minimal_spec(name="new-one").model_dump())
