@@ -1,6 +1,6 @@
 # DR-2026-10-19-SUPERCLOUD-INGEST — MIT SuperCloud Slurm log as replay input
 
-**Status:** PROPOSED. Gate 1 complete 2026-10-19 (see §8). Awaiting Gate 2 approval.
+**Status:** Gate 1 complete 2026-10-19 (§8). Gate 2 approved by Lloyd 2026-10-20. Gate 3 complete 2026-10-20 (§9); **stopped** on IMPL-SC-1 before any results are interpreted.
 **Author:** Claude, for Lloyd Spencer
 **Date:** 2026-10-19
 
@@ -82,7 +82,7 @@ slurmdbd `job_table` conventions and are tested as H1–H9 by
 | `runtime/slurm_ingest.py` | Translates **live slurmrestd snapshots** into `WorkloadSignal` | **Does not fit.** Expects string TRES `gres/gpu:h100=N`; only H100 is mapped and the GPU count must be divisible by 8. Every SuperCloud GPU job (V100/tesla, numeric IDs) would raise `unmapped_hardware`. It is a live-event translator, not a batch replay loader. |
 | `runtime/kube_trace_replay.py` | Offline replay of an **Alibaba-style node CSV + pod CSV** through `KubeSchedulerEngine`. Compares simulated waits against the trace's `scheduled_time`. | **Fits as the K8s target.** Column aliases are already tolerant. |
 | `runtime/periodic_trace_import.py` | Aggregate per-interval site counts, including `ray_node_count` | Aggregate only; not a job-level target. |
-| Ray execution path | Phase 4 of `docs/ray-integration-plan-revised.md`; not implemented | **No target exists yet.** |
+| Ray execution path | `core/ray_execution_scheduler.py` (Phase 4, 845 lines) plus Phases 5–7 modules in `core/ray_*.py` | **Exists.** Corrected 2026-10-20: the original entry relied on `docs/ray-integration-plan-revised.md`, which is stale. A job-level Ray target is available. |
 
 ## 4. Decisions
 
@@ -100,8 +100,9 @@ slurmdbd `job_table` conventions and are tested as H1–H9 by
 
 **D3 — Ray is deferred.**
 
-- No converter is built until the Phase 4 Ray execution scheduler defines a job-level input contract.
-- The SuperCloud labelled DNN jobs are the intended source when it does.
+- ~~No converter is built until the Phase 4 Ray execution scheduler defines a job-level input contract.~~ Corrected 2026-10-20: `core/ray_execution_scheduler.py` exists, so a target is available (§3).
+- Ray stays deferred, now as a **sequencing** decision: K8s replay first (Gate 2, CAV-SC-4).
+- The SuperCloud labelled DNN jobs are the intended source. Note from §9 that 31% of them are multi-node, so a Ray converter needs a placement-group mapping rather than quarantine.
 
 **D4 — Data handling.**
 
@@ -236,3 +237,131 @@ These are numbered TC-SC-xx to avoid colliding with the main TC sequence; renumb
 | ID | Item |
 |---|---|
 | CAV-SC-7 | 139 GPU rows whose GPU count is not 1 or 2 per node (44 at 4/node, 95 fractional). Check whether `tres_req` GPU counts are per job or per node on these rows before deciding; quarantine pending that check. |
+
+
+## 9. Gate 2 decisions and Gate 3 results (2026-10-20)
+
+### Gate 2 decisions (approved by Lloyd)
+
+| Item | Decision |
+|---|---|
+| Mapping | §5 as amended by §8 is approved. Fixtures must cover both memory encodings, INFINITE time limit, `state = 1024` and `nodelist` stripping. |
+| CAV-SC-2 | Quarantine multi-node jobs for the first replay. |
+| CAV-SC-3 | `priority` → replay priority; `partition` selects the node pool only. |
+| CAV-SC-4 | Slurm-native replay deferred until K8s replay results show whether it's needed. |
+
+### Pre-build check: priority vs partition (CAV-SC-3 closed)
+
+Priorities fall into two bands, about 10,0xx–11,xxx and about 110,xxx–120,000.
+
+- **The +100,000 band is not partition-driven.** `normal` has jobs in both bands.
+- **It is an interactive-job boost.** All 7,101 `LLSUB:INTERACTIVE` jobs are in the high band.
+- **Real waits differ accordingly:** median 1 s in the high band vs 122 s in the low band.
+
+Using `priority` as-is therefore preserves the cluster's real ordering, including the interactive boost.
+
+### Implementation choices
+
+Each was made against the data, and each is tested.
+
+**`creation_time` = `time_eligible`, not `time_submit`.**
+A job held on a dependency or begin-time is not waiting for resources. Using `time_submit` would make the simulator look faster for the wrong reason.
+
+**Node inventory is derived, not hard-coded** (`derive_nodes`).
+- Capacity is the peak *concurrent* allocation per node, over **single-node jobs only**.
+- An earlier even-split of multi-node jobs inflated peaks to 50–65 cores on 40- and 48-core classes. 1,471 of 6,561 multi-node jobs don't divide evenly, so it was rejected.
+- Each node takes its majority partition as its class. Its capacity is lifted to the class mode where its own peak is lower.
+- Nodes seen only in multi-node jobs (424) take the class capacity.
+- The inventory is derived from the whole partition-scoped trace, not the replay window: hardware is not windowed. A 1-day window had produced 78 nodes instead of 231.
+
+Derived classes (cores / MiB / GPUs):
+
+| Class | Cores | MiB | GPUs |
+|---|---|---|---|
+| `normal` (GPU nodes) | 40 | 383,300 | 2 |
+| `xeon-p8` | 48 | 192,000 | 0 |
+| `db` | 32 | 120,000 | 0 |
+| `test` | 28 | 105,000 | 2 |
+
+The `test` partition also has one node with 4 GPUs. Overall: 1,135 nodes, 231 with GPUs, 464 GPUs.
+
+This remains a **lower bound** on hardware. It is not a TX-GAIA spec.
+
+**Tesla jobs (6 rows) are quarantined as `gpu_type_tesla_ambiguous`.**
+The nodes they ran on also ran V100 jobs, so their GPU type can't be resolved.
+
+**CAV-SC-7 is resolved.**
+- All 44 four-GPU jobs ran on the single 4-GPU node in `test`. They are legitimate.
+- The fixed 2-GPU limit was replaced by `gpu_count_exceeds_inventory`, checked after the inventory is derived. It fired on 0 rows.
+
+### Full-trace conversion (all partitions)
+
+| | Count |
+|---|---|
+| Source rows | 395,914 |
+| Pods | 389,347 (95,805 GPU) |
+| Quarantined | 6,567: `multi_node` 6,560, `gpu_type_tesla_ambiguous` 6, `state_flag_bits` 1 |
+| Rows rejected when loaded by `load_kube_trace()` | 0 (TC-SC-01 holds on real data) |
+
+### Cost of CAV-SC-2 for labelled jobs
+
+**1,062 of the 3,430 labelled DNN jobs (31%) are multi-node.** Quarantine is cheap for GPU jobs overall (2.4%), but not for the labelled set. Any study that leans on the labelled jobs needs gang admission or a placement-group mapping first.
+
+### Data observation
+
+GPU jobs are nearly absent before 2021-W06; the first is in early February 2021. Before then, the `normal` partition shows CPU-only TRES. The cause (GPU TRES tracking start vs. GPU usage start) is not determinable from this file. **Use windows from February 2021 onward for GPU studies.**
+
+### Tests
+
+`tools/supercloud/test_convert_to_kube_trace.py` has 11 tests, all passing:
+
+- TC-SC-01…05, plus encoding unit tests, inventory derivation and window semantics.
+- Fixtures are synthetic only.
+- The existing `tests/test_kube_trace_replay.py` passes unchanged (7/7). The engine was not modified.
+
+### First replay: 2021-W35 (2021-08-30 → 2021-09-06), partitions `normal,gaia,test`
+
+| | |
+|---|---|
+| Pods | 6,595 (6,359 scored in-window; 236 warm-start) |
+| Nodes | 231 |
+| Quarantined | 20 (multi-node) |
+| Runtime | 10.1 s |
+| Engine | Unmodified, via `tools/supercloud/run_replay.py` |
+| Aggregate report | `reports/supercloud-replay/2021-W35/` |
+
+### IMPL-SC-1 — `deletion_time` semantics bias Slurm replays (BLOCKING)
+
+`replay_kube_trace` passes `completion_time = deletion_time`. `KubeSchedulerEngine` then ends each pod at that **absolute** time, whenever it actually started. This is correct for the Alibaba trace, where deletion is an external event. For Slurm jobs:
+
+    simulated runtime − actual runtime = actual wait − simulated wait
+
+Measured on W35 (GPU pods, both scheduled):
+
+| Metric | Value |
+|---|---|
+| Actual GPU-hours | 52,507 |
+| Inflated by early start | **+20,221 GPU-hours (38%)**, across 3,160 pods |
+| Truncated by late start | −940 GPU-hours, across 478 pods |
+| Expired (never placed before their real end time) | 780 pods (12%) |
+
+**Effect:** occupancy, and therefore contention, is materially overstated. The simulated-vs-actual wait comparison is **not interpretable until this is resolved**. Per the stop-and-report gate, no wait-time conclusions are drawn here.
+
+### Proposed fix (requires approval: it touches the replay engine)
+
+- Add an opt-in `completion_mode` to `replay_kube_trace`:
+  - `"deletion_time"`: current behaviour, the default. The Alibaba path is unchanged.
+  - `"runtime"`: `completion_time = None` and `duration_s = deletion − scheduled`. The pod then runs for its real runtime from its simulated start.
+- Expiry does not apply in `runtime` mode: Slurm never-started jobs are absent from this snapshot.
+- Needs new tests for both modes. The existing 7 tests must pass unchanged.
+- Converter output is unaffected. The runtime is already derivable from `scheduled_time` and `deletion_time`.
+
+### New open item
+
+| ID | Item |
+|---|---|
+| CAV-SC-8 | Real W35 waits have a long tail: p90 8.7 h, p99 37.7 h. That tail may reflect site policy absent from the trace, such as per-user limits or fair-share. **Unverified.** Assess only after IMPL-SC-1 is fixed, because the current simulated waits are not comparable. |
+
+### Next gate (4)
+
+Approve IMPL-SC-1 → implement `completion_mode` with tests → rerun W35 → **STOP** and report the wait comparison.

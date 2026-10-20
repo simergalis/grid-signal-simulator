@@ -1,0 +1,365 @@
+{
+  "schema_version": "supercloud-replay-summary-v1",
+  "origin": "2021-08-11T20:51:57+00:00",
+  "input": {
+    "node_rows": 231,
+    "pod_rows": 6595,
+    "quarantined_rows": 0
+  },
+  "replay": {
+    "node_count": 231,
+    "pod_count": 6595,
+    "backoff_duration_s": 10.0,
+    "max_backoff_retries": 1,
+    "gpu_milli_policy": "ceil_to_integer_gpu",
+    "timestamp_unit": "seconds",
+    "timestamp_auto_policy": "absolute Unix millisecond timestamps are detected by epoch magnitude; relative numeric timestamps are treated as seconds"
+  },
+  "placement": {
+    "actual_scheduled": 6595,
+    "simulated_scheduled": 5815,
+    "both_scheduled": 5815,
+    "actual_scheduled_simulated_unschedulable": 780,
+    "actual_unscheduled_simulated_scheduled": 0,
+    "both_unscheduled": 0,
+    "actual_node_comparison": "available",
+    "node_ids_compared": 6595,
+    "node_id_mismatches": 5797
+  },
+  "limitations": {
+    "integer_gpu_counts": {
+      "affected_pods": 0,
+      "description": "gpu_milli requests are conservatively rounded up to integer GPUs"
+    },
+    "gang_admission": {
+      "affected_pods": 4169,
+      "description": "multi-pod workloads are scheduled independently"
+    },
+    "quota_borrowing": {
+      "affected_pods": null,
+      "status": "not_observable_from_trace",
+      "description": "the CSVs do not declare tenant quota or borrowing policy"
+    },
+    "preemption": {
+      "affected_pods": null,
+      "status": "not_observable_from_trace",
+      "description": "Phase A does not preempt lower-priority running pods"
+    }
+  },
+  "scheduler_event_count": 423649,
+  "scored": {
+    "all": {
+      "pods": 6359,
+      "simulated_scheduled": 5579,
+      "simulated_unschedulable": 1714,
+      "simulated_expired": 780,
+      "queue_wait_s": {
+        "actual": {
+          "n": 6359,
+          "mean": 12967.691,
+          "p50": 7.0,
+          "p90": 31287.4,
+          "p99": 135552.98,
+          "max": 890950.0
+        },
+        "simulated": {
+          "n": 5579,
+          "mean": 1285.882,
+          "p50": 0.0,
+          "p90": 1350.4,
+          "p99": 28410.34,
+          "max": 75820.0
+        },
+        "delta_sim_minus_actual": {
+          "n": 5579,
+          "mean": -12131.306,
+          "p50": -2.0,
+          "p90": 0.0,
+          "p99": 11386.58,
+          "max": 75816.0
+        }
+      },
+      "completion_time_bias": {
+        "pods_started_earlier_than_actual": 3161,
+        "pods_started_later_than_actual": 478,
+        "gpu_hours_actual": 52507.45,
+        "gpu_hours_inflated_by_early_start": 20221.31,
+        "gpu_hours_truncated_by_late_start": 939.92
+      }
+    },
+    "cpu": {
+      "pods": 9,
+      "simulated_scheduled": 9,
+      "simulated_unschedulable": 0,
+      "simulated_expired": 0,
+      "queue_wait_s": {
+        "actual": {
+          "n": 9,
+          "mean": 0.444,
+          "p50": 0.0,
+          "p90": 0.8,
+          "p99": 3.68,
+          "max": 4.0
+        },
+        "simulated": {
+          "n": 9,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p90": 0.0,
+          "p99": 0.0,
+          "max": 0.0
+        },
+        "delta_sim_minus_actual": {
+          "n": 9,
+          "mean": -0.444,
+          "p50": 0.0,
+          "p90": 0.0,
+          "p99": 0.0,
+          "max": 0.0
+        }
+      },
+      "completion_time_bias": {
+        "pods_started_earlier_than_actual": 1,
+        "pods_started_later_than_actual": 0,
+        "gpu_hours_actual": 0.0,
+        "gpu_hours_inflated_by_early_start": 0.0,
+        "gpu_hours_truncated_by_late_start": 0.0
+      }
+    },
+    "gpu": {
+      "pods": 6350,
+      "simulated_scheduled": 5570,
+      "simulated_unschedulable": 1714,
+      "simulated_expired": 780,
+      "queue_wait_s": {
+        "actual": {
+          "n": 6350,
+          "mean": 12986.069,
+          "p50": 7.0,
+          "p90": 31367.6,
+          "p99": 135604.19,
+          "max": 890950.0
+        },
+        "simulated": {
+          "n": 5570,
+          "mean": 1287.96,
+          "p50": 0.0,
+          "p90": 1356.1,
+          "p99": 28464.07,
+          "max": 75820.0
+        },
+        "delta_sim_minus_actual": {
+          "n": 5570,
+          "mean": -12150.907,
+          "p50": -2.0,
+          "p90": 0.0,
+          "p99": 11390.09,
+          "max": 75816.0
+        }
+      },
+      "completion_time_bias": {
+        "pods_started_earlier_than_actual": 3160,
+        "pods_started_later_than_actual": 478,
+        "gpu_hours_actual": 52507.45,
+        "gpu_hours_inflated_by_early_start": 20221.31,
+        "gpu_hours_truncated_by_late_start": 939.92
+      }
+    },
+    "job_type:LLMAPREDUCE:MAP": {
+      "pods": 405,
+      "simulated_scheduled": 293,
+      "simulated_unschedulable": 136,
+      "simulated_expired": 112,
+      "queue_wait_s": {
+        "actual": {
+          "n": 405,
+          "mean": 66760.914,
+          "p50": 2158.0,
+          "p90": 154967.8,
+          "p99": 790296.0,
+          "max": 890950.0
+        },
+        "simulated": {
+          "n": 293,
+          "mean": 181.259,
+          "p50": 0.0,
+          "p90": 0.0,
+          "p99": 5419.64,
+          "max": 6749.0
+        },
+        "delta_sim_minus_actual": {
+          "n": 293,
+          "mean": -88563.311,
+          "p50": -318.0,
+          "p90": 0.0,
+          "p99": 2234.6,
+          "max": 6443.0
+        }
+      },
+      "completion_time_bias": {
+        "pods_started_earlier_than_actual": 172,
+        "pods_started_later_than_actual": 19,
+        "gpu_hours_actual": 4287.47,
+        "gpu_hours_inflated_by_early_start": 7217.06,
+        "gpu_hours_truncated_by_late_start": 8.99
+      }
+    },
+    "job_type:LLSUB:BATCH": {
+      "pods": 477,
+      "simulated_scheduled": 397,
+      "simulated_unschedulable": 165,
+      "simulated_expired": 80,
+      "queue_wait_s": {
+        "actual": {
+          "n": 477,
+          "mean": 3536.897,
+          "p50": 1.0,
+          "p90": 2644.4,
+          "p99": 190588.48,
+          "max": 190787.0
+        },
+        "simulated": {
+          "n": 397,
+          "mean": 3515.441,
+          "p50": 0.0,
+          "p90": 10382.8,
+          "p99": 71877.84,
+          "max": 72115.0
+        },
+        "delta_sim_minus_actual": {
+          "n": 397,
+          "mean": -474.577,
+          "p50": 0.0,
+          "p90": 4332.2,
+          "p99": 71867.84,
+          "max": 72106.0
+        }
+      },
+      "completion_time_bias": {
+        "pods_started_earlier_than_actual": 186,
+        "pods_started_later_than_actual": 76,
+        "gpu_hours_actual": 13741.97,
+        "gpu_hours_inflated_by_early_start": 419.41,
+        "gpu_hours_truncated_by_late_start": 370.0
+      }
+    },
+    "job_type:LLSUB:INTERACTIVE": {
+      "pods": 203,
+      "simulated_scheduled": 200,
+      "simulated_unschedulable": 41,
+      "simulated_expired": 3,
+      "queue_wait_s": {
+        "actual": {
+          "n": 203,
+          "mean": 0.7,
+          "p50": 0.0,
+          "p90": 0.0,
+          "p99": 19.92,
+          "max": 53.0
+        },
+        "simulated": {
+          "n": 200,
+          "mean": 185.455,
+          "p50": 0.0,
+          "p90": 201.0,
+          "p99": 2452.61,
+          "max": 20418.0
+        },
+        "delta_sim_minus_actual": {
+          "n": 200,
+          "mean": 184.855,
+          "p50": 0.0,
+          "p90": 192.0,
+          "p99": 2452.61,
+          "max": 20398.0
+        }
+      },
+      "completion_time_bias": {
+        "pods_started_earlier_than_actual": 1,
+        "pods_started_later_than_actual": 38,
+        "gpu_hours_actual": 1558.42,
+        "gpu_hours_inflated_by_early_start": 0.01,
+        "gpu_hours_truncated_by_late_start": 11.61
+      }
+    },
+    "job_type:OTHER": {
+      "pods": 5274,
+      "simulated_scheduled": 4689,
+      "simulated_unschedulable": 1372,
+      "simulated_expired": 585,
+      "queue_wait_s": {
+        "actual": {
+          "n": 5274,
+          "mean": 10188.876,
+          "p50": 10.0,
+          "p90": 34253.2,
+          "p99": 98942.67,
+          "max": 174068.0
+        },
+        "simulated": {
+          "n": 4689,
+          "mean": 1213.075,
+          "p50": 0.0,
+          "p90": 1449.8,
+          "p99": 28067.44,
+          "max": 75820.0
+        },
+        "delta_sim_minus_actual": {
+          "n": 4689,
+          "mean": -8867.578,
+          "p50": -4.0,
+          "p90": 0.0,
+          "p99": 7707.92,
+          "max": 75816.0
+        }
+      },
+      "completion_time_bias": {
+        "pods_started_earlier_than_actual": 2802,
+        "pods_started_later_than_actual": 345,
+        "gpu_hours_actual": 32919.58,
+        "gpu_hours_inflated_by_early_start": 12584.83,
+        "gpu_hours_truncated_by_late_start": 549.31
+      }
+    },
+    "labelled_dnn": {
+      "pods": 1,
+      "simulated_scheduled": 1,
+      "simulated_unschedulable": 0,
+      "simulated_expired": 0,
+      "queue_wait_s": {
+        "actual": {
+          "n": 1,
+          "mean": 4.0,
+          "p50": 4.0,
+          "p90": 4.0,
+          "p99": 4.0,
+          "max": 4.0
+        },
+        "simulated": {
+          "n": 1,
+          "mean": 0.0,
+          "p50": 0.0,
+          "p90": 0.0,
+          "p99": 0.0,
+          "max": 0.0
+        },
+        "delta_sim_minus_actual": {
+          "n": 1,
+          "mean": -4.0,
+          "p50": -4.0,
+          "p90": -4.0,
+          "p99": -4.0,
+          "max": -4.0
+        }
+      },
+      "completion_time_bias": {
+        "pods_started_earlier_than_actual": 1,
+        "pods_started_later_than_actual": 0,
+        "gpu_hours_actual": 8.66,
+        "gpu_hours_inflated_by_early_start": 0.0,
+        "gpu_hours_truncated_by_late_start": 0.0
+      }
+    }
+  },
+  "wall_clock_s": 10.1
+}

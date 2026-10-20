@@ -1,0 +1,61 @@
+{
+  "schema_version": "supercloud-kube-convert-v1",
+  "source": "slurm-log.csv",
+  "filters": {
+    "partitions": [
+      "gaia",
+      "normal",
+      "test"
+    ],
+    "start_epoch": 1630281600,
+    "end_epoch": 1630886400
+  },
+  "source_rows": 395914,
+  "out_of_scope": {
+    "before_window": 221478,
+    "partition": 146204,
+    "after_window": 21617
+  },
+  "in_scope_rows": 6615,
+  "pods_emitted": 6595,
+  "pods_in_window": 6359,
+  "gpu_pods_emitted": 6586,
+  "labelled_pods_emitted": 1,
+  "quarantined": 20,
+  "quarantine_by_reason": {
+    "multi_node": 20
+  },
+  "gpu_quarantine_by_reason": {
+    "multi_node": 19
+  },
+  "labelled_quarantine_by_reason": {},
+  "nodes": {
+    "count": 231,
+    "gpu_nodes": 231,
+    "gpu_count_distribution": {
+      "2": 230,
+      "4": 1
+    },
+    "cpu_cores_distribution": {
+      "40": 224,
+      "28": 7
+    },
+    "total_gpus": 464,
+    "capacity_basis": "peak concurrent single-node allocation, lifted to partition-class mode (lower bound)",
+    "class_capacity_cpu_mem_gpu": {
+      "normal": [
+        40,
+        383300,
+        2
+      ],
+      "test": [
+        28,
+        105000,
+        2
+      ]
+    },
+    "nodes_observed_directly": 228,
+    "nodes_lifted_to_class": 88,
+    "nodes_class_only": 3
+  }
+}
