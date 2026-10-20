@@ -954,6 +954,9 @@ def build_run_context_from_spec(
         else int(_initial_spinning_count_raw)
     )
     _active_turbines = [t for t in turbines if not t.config.hot_standby]
+    # IMPL-ISL-8: retain 13d96c8's default except when no eligible turbine exists.
+    if _initial_spinning_count_raw is None and not _active_turbines:
+        _initial_spinning_count = 0
     _explicit_spinning_turbines = [
         t for t in turbines if t.config.initial_state == "spinning"
     ]
