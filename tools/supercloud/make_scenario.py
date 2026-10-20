@@ -128,6 +128,7 @@ def build_scenario(
     peak_mw: float,
     rated_kw: float,
     profile_id: str = DEFAULT_PROFILE,
+    name: str = SCENARIO_NAME,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Return (scenario spec dict, aggregate build report)."""
     if not jobs:
@@ -157,7 +158,7 @@ def build_scenario(
 
     spec = copy.deepcopy(template)
     spec.update({
-        "name": SCENARIO_NAME,
+        "name": name,
         "description": (
             f"Real GPU job timeline from the MIT SuperCloud TX-GAIA cluster for "
             f"{day.isoformat()} (UTC), replayed at its true start and end times. "
@@ -230,6 +231,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     ap.add_argument("--profile", default=DEFAULT_PROFILE)
     ap.add_argument("--partitions", default=",".join(DEFAULT_PARTITIONS))
     ap.add_argument("--sim-root", type=Path, default=sim_default)
+    ap.add_argument("--name", default=SCENARIO_NAME, help="scenario display name")
     ap.add_argument("--out", type=Path, required=True, help="write OUTSIDE public repositories")
     args = ap.parse_args(argv)
 
@@ -240,6 +242,7 @@ def main(argv: Optional[list[str]] = None) -> int:
     spec, report = build_scenario(
         jobs, template, day=day, peak_mw=args.peak_mw,
         rated_kw=_rated_kw(args.profile, args.sim_root), profile_id=args.profile,
+        name=args.name,
     )
     report["skipped"] = dict(skipped)
     report["template"] = args.template.name

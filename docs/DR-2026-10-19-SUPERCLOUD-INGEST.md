@@ -433,3 +433,50 @@ Validation therefore ran in a scratch copy: the snapshot plus the first two modu
 |---|---|
 | IMPL-SC-2 | In the GitHub snapshot (plus two Replit modules), `demo-islanded-ramp` collapses headless: turbines don't follow load, the BESS drains, frequency readings are unphysical. **Check first:** run the template on live Replit; if it is clean there, the snapshot is stale and GitHub needs a sync. Then run S10 live. |
 | CAV-SC-9 | The GitHub repo `grid-signal-simulator` is **public**. The earlier commit `d4b8895` contains a profile report with up to 5 anonymised sample values per column (job IDs, node names). The current report has none (profiler default changed), but **branch history still holds them**. Removing them requires rewriting the branch history (force-push). That is Lloyd's decision. |
+
+
+### Integration into the live Replit app (2026-10-20)
+
+Lloyd asked for the scenario to be integrated through the Replit connector, with ID and name **`S10_mit_supercloud_2021-08-11`**. It was regenerated with `make_scenario.py --name` and registered in the **dev workspace only**. Not published, not in GitHub.
+
+**Transport.**
+- Two attempts to have the Replit agent transcribe a gzip+base64 asset (7,116 characters, sent in hash-checked chunks) failed the SHA-256 gate: chunk 1 hashed `914e74…` vs `4cacee…`. The agent deleted the file and stopped as instructed.
+- **LLM transcription of opaque blobs is unreliable.** Use a user upload for data assets.
+- Lloyd then uploaded the plain JSON (SHA-256 `8126ee38…f7ad`).
+
+**Verification.**
+
+| Check | Result |
+|---|---|
+| Upload and byte-for-byte copy in `config/scenarios/S10_mit_supercloud_2021-08-11.json` | Both hash `8126ee38…f7ad` |
+| Events 0, 100, 238 | Match local reference |
+| `api/routes/scenarios.py` diff (read directly) | Exactly two added lines: the comment and the `_JSON_ENTRIES` entry |
+| `GET /scenarios` | Lists S10: 239 events, `end_sim_time` 86,400 |
+| `Failed to seed` warning | None |
+
+**Seed warning.** S10 produces a turbine starting-count warning: `base_load_mw` is unset, so first-burst coverage was checked against the 0.24 MW burst alone. It is benign; it reflects the template's `initial_spinning_count = 1` and the near-idle start of the day.
+
+**Pre-existing test failure, not caused by S10.** `tests/test_step8_scenarios.py::TestScenarioCRUD::test_list_includes_seeded_and_created` (line 402) asserts `"demo-alert" in names`, but live display names are now numbered (`"46 demo-alert"`). Each catalogue entry is seeded independently, so adding one cannot remove a name. Result: 73 pass, 1 fail. Logged as IMPL-SC-3; the test was not changed.
+
+### IMPL-SC-2 resolved as a live defect (not snapshot staleness)
+
+Headless runs on **live Replit code** (instant playback, no changes):
+
+| | demo-islanded-ramp | S10 |
+|---|---|---|
+| Ticks | 1,276 (6,380 s) | 2,369 (11,845 s) |
+| Collapse | `no_grid_forming_source` | `no_grid_forming_source` |
+| Max compute MW | 66.05 | 47.61 |
+| Min BESS SoC | 0.0 | 0.0 |
+| Max turbine MW | 45.0 | 44.78 |
+| Frequency range (Hz) | −122.9 to 60.0 | 58.87 to 592.2 |
+
+- **S10's collapse tick is identical live and in the snapshot**, so the snapshot faithfully represents live behaviour for S10.
+- The template differs slightly (1,276 vs 1,333 ticks), which reflects code drift, but the failure mode is the same.
+- **The baseline demo scenario does not complete on live code.** In both runs, turbine output plateaus below committed capacity, the BESS drains to 0, and frequency reaches physically impossible values (negative, and nearly 10× nominal).
+- This is a simulator defect, independent of S10. It needs a diagnostic-only pass before any fix. No simulator code was changed here.
+
+| ID | Item |
+|---|---|
+| IMPL-SC-2 | **Live defect.** `demo-islanded-ramp` collapses on live code; turbines don't pick up load; frequency is unphysical. Next step: a diagnostic-only audit of turbine dispatch/commitment (`start … silently dropped … state=OFFLINE`) and the frequency integrator. |
+| IMPL-SC-3 | Update the `test_step8` name assertions to the numbered display names. |
