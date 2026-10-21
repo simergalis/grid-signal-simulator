@@ -452,3 +452,17 @@ mtime_ms = 1792599370725
 storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:560e4bb4-a12b-40d1-a7c1-4cae34d4602a/e0501b45-fa60-4feb-b788-9df02abad681/369c1fb9-909e-47d1-8337-418b55c1e8e7"
 storage_version_token = "1792599384638875"
 content_type = "text/markdown"
+
+[[outputs]]
+id = "W7npnzHp3E_EKZmSc8y3B"
+uri = "file://tools/dr_isl/PHASE_2D_REPORT.md"
+type = "text"
+title = "Phase 2d design STOP report"
+description = "Source trace, existing cost table, and literal in-memory evidence of the 30% minimum versus unloading-ramp conflict. No application changes or scenario runs."
+logical_id = "80247f7c-d17b-40e4-9a45-44324dc68246"
+content_hash = "sha256:a86f4dbf28a3514beb54060e3d24c2420c12ce929930f40f298cd2a85bb988cf"
+size = 10398
+mtime_ms = 1792600267043
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:560e4bb4-a12b-40d1-a7c1-4cae34d4602a/80247f7c-d17b-40e4-9a45-44324dc68246/8a864d82-ad27-40da-9768-88105e442ddf"
+storage_version_token = "1792600280250826"
+content_type = "text/markdown"
