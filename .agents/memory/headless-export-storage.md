@@ -8,3 +8,9 @@ Check the actual scratch filesystem capacity before running verbose headless exp
 **Why:** Exhausting `/tmp` stopped the baseline writer, concurrent study-artifact writes, and the full-suite JUnit writer. A large available workspace filesystem does not imply space is available at the prescribed scratch path.
 
 **How to apply:** Check `df` for the actual output directory. If the user prescribes `/tmp` and exports cannot fit, request authorization for disk-backed scratch instead of silently moving files. After exhaustion, preserve failure evidence and the partial export's size/hash before removing only generated incomplete output. Never treat a partial JSONL or empty JUnit file as completed validation.
+
+For the DR-ISL programme, the user subsequently required streaming physical hashes and metric accumulators in memory, not full per-tick exports for long runs. Persist only summaries, hashes and requested windows; cap each scratch file at 200 MB and STOP if the requirement cannot fit.
+
+**Why:** The user chose bounded streaming after the scratch-exhaustion stop, rather than authorizing large disk-backed exports.
+
+**How to apply:** Do not invoke the persisted baseline runner's full-export mode for long programme checks. Preserve its seeder, pinning and hash contract through an output-only streaming adapter, without changing simulation inputs.

@@ -14,3 +14,9 @@ The user also authorized a dispatch-aware coordinator gap signal: distinguish a 
 **Why:** A measured-primary residual includes the diesel's own minimum and can keep backup generation running indefinitely after primary capacity recovers.
 
 **How to apply:** Keep the coordinator as the lifecycle owner and keep START/debounce/minimum-run/restore/cooldown settings unchanged. Do not substitute nameplate capacity for attainable primary delivery.
+
+The approved gap amendment must also preserve actual diesel START timing; retaining the same Boolean predicate and timers alone does not establish this.
+
+**Why:** The user explicitly required STOP-and-report if the gap change alters a scenario's start ticks.
+
+**How to apply:** Compare accepted starts across affected scenarios before accepting the signal amendment. A base-demo-only match is insufficient; stop on a counterexample without implementing a repair.

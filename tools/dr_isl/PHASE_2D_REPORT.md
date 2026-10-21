@@ -1,3 +1,242 @@
+# DR-2026-10-20-ISLAND-COLLAPSE — Phase 2d resumed R0–R2 STOP report
+**STATUS: STOPPED at 2d.R2. NOT FINISHED.**
+The current implementation changes accepted diesel START timing in scenario-fc100-islanded-v2: before = no starts over 264 ticks; after = diesel-000 starts at tick 1, decision time 0.0 s, tick time 5.0 s. Therefore the user's explicit START-timing STOP gate applies. No repair was attempted; R3, the remaining 2d.5 runs and 2d.6 suite were not started in this resumption.
+Package alias P = `attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/`. Scratch alias T = `/tmp/DR-ISL-phase2d/`.
+Implementation remains automatic checkpoint ebf2ea987b89b9f55c6c19ddc24cad3970c7de9b (not validated). The only subsequent test-file commit is the authorized content-preserving tracking commit below. No application/config/scenario/test content or baseline-runner content was edited in this resumption. No workflow restart, publish, deployment, push or Phase 3.
+## 2d.R0 — storage
+Initial measured df -h:
+
+```
+Filesystem      Size Used Avail Use% Mounted on
+tmpfs           4.0G 2.0G  2.1G  50% /tmp
+/dev/vdd        256G 2.6G  252G   2% /home/runner/workspace
+```
+Initial requested du top-20 (literal sizes/paths from the first storage inspection):
+
+```
+24K /tmp/kube_debug_run-097f4e19c6a4.csv
+24K /tmp/kube_debug_run-2a4fb8a0167f.csv
+24K /tmp/kube_debug_run-4d5e3bedda73.csv
+24K /tmp/kube_debug_run-613c1ed74628.csv
+24K /tmp/kube_debug_run-65cad257b58a.csv
+24K /tmp/kube_debug_run-876d175b61ae.csv
+24K /tmp/kube_debug_run-b4f8d0e336e5.csv
+24K /tmp/kube_debug_run-d18715d15f9b.csv
+24K /tmp/kube_debug_scenario-equinix-sj-1.csv
+24K /tmp/kube_debug_scenario-turbine-01.csv
+24K /tmp/kube_debug_sj1-three-deficit-peaks.csv
+48K /tmp/kube_debug_scenario-uneven-multisched-01.csv
+68K /tmp/kube_debug_demo-islanded-ramp.csv
+148K /tmp/logs
+1.2M /tmp/DR-ISL-phase1e
+1.3M /tmp/shell-exec-output
+2.8M /tmp/node-compile-cache
+72M /tmp/cmt001_diag.log
+332M /tmp/DR-ISL-phase2d
+1.6G /tmp/DR-ISL-phase2c
+```
+Deleted only existing programme full-tick export files under /tmp/DR-ISL-phase*: .ticks.jsonl, .ticks.jsonl.gz, .physical.jsonl.gz, .all-ticks.csv. No external scratch, scenario source or application file was deleted. Every matched *_REPORT.md retained the same SHA-256 at cleanup.
+- Removed file-content bytes: **1549429552** across **42** files.
+- Actual /tmp allocation freed: **1,549,516,800 bytes** (2,121,764,864 used before; 572,248,064 immediately after). File bytes and allocation differ due to filesystem blocks.
+- Preserved report files at cleanup: **12**; report_hashes_unchanged = **true**. Updating this report is intentional; the previous ENOSPC report is preserved verbatim at T/PHASE_2D_STOP3_REPORT.md and in the historical appendix below.
+- Complete removal manifest, before/after df -B1 and report hashes: T/R0-cleanup.json:1 onward.
+Storage at report generation:
+
+```
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           4.0G  547M  3.5G  14% /tmp
+/dev/vdd        256G  2.6G  252G   2% /home/runner/workspace
+```
+
+```
+24K	/tmp/kube_debug_run-097f4e19c6a4.csv
+24K	/tmp/kube_debug_run-2a4fb8a0167f.csv
+24K	/tmp/kube_debug_run-4d5e3bedda73.csv
+24K	/tmp/kube_debug_run-613c1ed74628.csv
+24K	/tmp/kube_debug_run-65cad257b58a.csv
+24K	/tmp/kube_debug_run-876d175b61ae.csv
+24K	/tmp/kube_debug_run-b4f8d0e336e5.csv
+24K	/tmp/kube_debug_run-d18715d15f9b.csv
+24K	/tmp/kube_debug_scenario-equinix-sj-1.csv
+24K	/tmp/kube_debug_scenario-turbine-01.csv
+24K	/tmp/kube_debug_sj1-three-deficit-peaks.csv
+48K	/tmp/kube_debug_scenario-uneven-multisched-01.csv
+68K	/tmp/kube_debug_demo-islanded-ramp.csv
+148K	/tmp/logs
+1.2M	/tmp/DR-ISL-phase1e
+1.4M	/tmp/shell-exec-output
+2.8M	/tmp/node-compile-cache
+73M	/tmp/cmt001_diag.log
+193M	/tmp/DR-ISL-phase2c
+276M	/tmp/DR-ISL-phase2d
+```
+Files > 200,000,000 bytes under programme scratch: **[]**. T/R0-final-storage.json records this inventory.
+New run scripts set RLIMIT_FSIZE = 200,000,000 bytes. They stream physical hashes; no new full physical/compact tick exports were written. Only summaries, event lists, hashes and the specific base start windows were saved. The harness artifact writer and cache persistence were output-only intercepted in scratch; engine inputs and step code were unchanged.
+## 2d.R1 — programme tracking
+Tracking-only commit: **3c0d0186973cc1a9c0ed0a747be130b69014a962**
+Message: "DR-ISL: track programme files under ignored attached_assets/ (no content change)".
+Only tests/test_dr_isl_diesel_dispatch.py was force-added. It already existed; its 5,108 bytes were not edited. Before/on-disk/committed SHA-256 all equal **a0c678792c08fc7ebc228bcd12ce3d6bb0cf7508fa19aa1a21ac7bf301ef090e**. .gitignore was not changed.
+Inventory includes every explicitly named file plus every added path from git log 55b2184..ebf2ea9. Literal git ls-files --error-unmatch exit status before/after:
+| File | Bytes before | Before exit | After exit |
+|---|---:|---:|---:|
+| .agents/memory/diesel-dispatch-scope.md | 1482 | 0 | 0 |
+| .agents/memory/headless-export-storage.md | 1028 | 0 | 0 |
+| attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/build_warnings.py | 1669 | 0 | 0 |
+| attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_diesel_dispatch.py | 5108 | 1 | 0 |
+| attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_phase2b.py | 2226 | 0 | 0 |
+| attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_phase2c.py | 3550 | 0 | 0 |
+| attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_isl_factory_regression.py | 2482 | 0 | 0 |
+| attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_isl_grid_forming_viability.py | 4441 | 0 | 0 |
+| tools/dr_isl/H_IDENTITY_MAP_D9c.md | 1865 | 0 | 0 |
+| tools/dr_isl/PHASE_1C_REPORT.md | 83958 | 0 | 0 |
+| tools/dr_isl/PHASE_1D_REPORT.md | 1709886 | 0 | 0 |
+| tools/dr_isl/PHASE_1E_REPORT.md | 346799 | 0 | 0 |
+| tools/dr_isl/PHASE_2B_REPORT.md | 213516 | 0 | 0 |
+| tools/dr_isl/PHASE_2C_FAILING_TESTS.txt | 1448 | 0 | 0 |
+| tools/dr_isl/PHASE_2C_REPORT.md | 236069 | 0 | 0 |
+| tools/dr_isl/PHASE_2C_STOP1_REPORT.md | 7231 | 0 | 0 |
+| tools/dr_isl/PHASE_2D_REPORT.md | 53568 | 0 | 0 |
+| tools/dr_isl/baseline_runner.py | 8128 | 0 | 0 |
+Exit 0 = tracked; exit 1 = untracked. Full commands/stdout/stderr are retained in T/R1-tracking-before.json; post-tracking statuses in T/R1-tracking-after.json.
+### Six unversioned runtime/catalogue support inputs — REPORT ONLY
+The Phase 1d /tmp checkout no longer exists and its saved report does not enumerate a six-file copy manifest. Therefore a historical claim about exactly which copies it made cannot be independently verified. The six current runtime/catalogue inputs below are verified on disk, are present in the retained Phase 2d scratch-copy manifest, and are consumed by tracked code. They were NOT added or changed.
+| File under P | Bytes | ls-files exit | Tracked consumer under P | Use |
+|---|---:|---:|---|---|
+| runtime/reference_forecast.py | 736 | 1 | api/routes/reference_forecast.py:12 | Python import |
+| runtime/fuel_cell_defaults.py | 181 | 1 | api/schemas.py:25 | Python import |
+| core/infrastructure_admission.py | 30829 | 1 | core/ray_cluster_engine.py:16 | Python import |
+| config/scenarios/S10_mit_supercloud_2021-08-11.json | 151176 | 1 | api/routes/scenarios.py:1436 | catalogue data load, not a Python import |
+| config/scenarios/scenario-100mw-fuel-cell-bess-diesel.json | 23262 | 1 | api/routes/scenarios.py:1411 | catalogue data load, not a Python import |
+| config/scenarios/scenario-kubernetes-scheduler-demo.json | 2442 | 1 | api/routes/scenarios.py:1396 | catalogue data load, not a Python import |
+Full status/size/hash evidence: T/R1-unversioned-support.json. JSON assets are loaded by the catalogue, not imported as Python modules. No assertion is made that these are all ignored files in the repository; ignored tests/monitor scripts also exist.
+## 2d.R2 — literal signal change and approval
+Before (01ce053, P/core/simulation_core.py:1956–1967):
+
+```python
+_gap_before_diesel_mw = max(
+    0.0,
+    p_dispatch_required_mw
+    - turbine_output_mw
+    - bess_output_mw
+    - fuel_cell_output_mw,
+)
+_diesel_snapshot = state.diesel_fleet_coordinator.step(
+    gap_mw=_gap_before_diesel_mw if diesel_enabled else 0.0,
+    sim_time=sim_time,
+    dt_seconds=dt_seconds,
+)
+```
+After (ebf2ea9/current P/core/simulation_core.py:1790–1801):
+
+```python
+state.diesel_fleet_coordinator.advance_units(
+    sim_time, dt_seconds, dispatch_controlled=True,
+)
+_diesel_control_gap_mw = max(
+    0.0, p_dispatch_required_mw - fuel_cell_output_mw
+    - _turbine_must_run_mw - _turbine_incremental_available_mw
+    - _bess_available_mw,
+)
+state.diesel_fleet_coordinator.step(
+    gap_mw=_diesel_control_gap_mw, sim_time=sim_time,
+    dt_seconds=dt_seconds, advance_units=False, consume_fuel=False,
+)
+```
+The old value is a measured-primary residual after arbitration; the new value is a feasible-primary-capacity residual before the shared allocation. It is supplied when the coordinator is idle as well as when diesel is already operating (P/core/simulation_core.py:1785–1801).
+Approval was supplied by the user in this conversation under Lloyd's Phase 2d authorization. Literal question/answer:
+
+```
+Question: "May I amend the coordinator’s gap signal for unified dispatch?"
+Answer: "Authorize a dispatch-aware gap signal (recommended)"
+```
+Unloading question/answer:
+
+```
+Question: "How should the 30% minimum apply during unloading?"
+Answer: "Allow the existing unloading ramp below 30% (recommended)"
+```
+This did not authorize changed diesel START timing. The resumed prompt explicitly requires STOP if that timing changes.
+The episode-creation predicate remains `gap_mw > 0.0 and self._positive_gap_s >= self.debounce_s and math.isnan(self._cooldown_until_s)`: before P/core/diesel_fleet.py:208–214; after :211–217. The positive-gap accumulator remains before :203–206 / after :206–209; actual start dispatch is before :219–227 / after :222–231. The gap INPUT changed, so preserving the Boolean predicate and timers is not sufficient to preserve starts.
+### Base-demo START ticks — unchanged
+Before: retained Phase 2c actual-harness diesel-diagnosis/{baseline,informed}.events.json; new runs use the actual current _expanded_spec/_probe/_run_mode path, seed 42, no overrides/reuse_cache false. Fabric 1729, wall clock 1792454400.0, Python/NumPy 1729. Historical identity metadata remains pinned to 869d55b exactly as in Phase 2c; this is not a claim that the source is that commit.
+| Arm | Before accepted start ticks | After accepted start ticks | Decision seconds | Tick seconds |
+|---|---|---|---|---|
+| baseline | [66, 371] | [66, 371] | [325.0, 1850.0] | [330.0, 1855.0] |
+| informed | [68, 371] | [68, 371] | [335.0, 1850.0] | [340.0, 1855.0] |
+Each new base arm completed 1,440 ticks; balance-failure set = []. This was a START-gate diagnosis, not completion of 2d.5's twice-each acceptance. Summaries/physical hashes/inputs for ticks 63–71 are in T/R2-baseline.json and T/R2-informed.json; T/R2-gate.log prints the start values.
+### Counterexample — STOP
+scenario-fc100-islanded-v2, same pinned seeder path and RunManager, streaming sink:
+| Version | Ticks | Accepted diesel starts | Balance failures | Physical SHA-256 |
+|---|---:|---|---|---|
+| Before, bb59f6e scratch source | 264 | [] | [] | d8146d3e37d9d7e1b306bbf2dc7dea7b2675be9c2bdabca0a209a028772c73d3 |
+| After, current source | 264 | tick 1, diesel-000, decision 0.0 s, tick time 5.0 s | [] | 13b57633b67326d84dbfc61087caab28eeb7bfe8b2f9b761b75af6fd863dd8da |
+The complete tracked package diff 01ce053..bb59f6e is empty (0 bytes); the scratch pre-change application is therefore the Phase 2c implementation. Its streaming physical hash also matches the independently retained pre-change baseline summary. Required unversioned support inputs were supplied in scratch, not added to Git.
+Literal complete streamed results:
+
+```json
+{
+  "scenario": "scenario-fc100-islanded-v2",
+  "stage": "before",
+  "ticks": 264,
+  "physical_sha256": "d8146d3e37d9d7e1b306bbf2dc7dea7b2675be9c2bdabca0a209a028772c73d3",
+  "balance_failures": [],
+  "starts": []
+}
+```
+
+```json
+{
+  "scenario": "scenario-fc100-islanded-v2",
+  "stage": "after",
+  "ticks": 264,
+  "physical_sha256": "13b57633b67326d84dbfc61087caab28eeb7bfe8b2f9b761b75af6fd863dd8da",
+  "balance_failures": [],
+  "starts": [
+    {
+      "unit": "diesel-000",
+      "decision_sim_time": 0.0,
+      "from": "offline",
+      "to": "starting",
+      "tick": 1,
+      "sim_time": 5.0
+    }
+  ]
+}
+```
+Evidence: T/R2-before-scenario-fc100-islanded-v2.json and T/R2-after-scenario-fc100-islanded-v2.json; runner adapter T/resume_stream_start.py. These runs collected no full tick files and used the persisted baseline runner's unchanged pin_spec/plain/encoded/hash exclusions, ScenarioSpec model_validate_json/model_dump, factory and RunManager path.
+**R2 verdict: FAIL — actual START timing is not preserved. STOP applies even though the base-demo START ticks match. No START-trigger/timing fix was attempted.**
+## 2d.R3 and remaining 2d.5–2d.7
+- R3 failure-signature comparison/test updates: NOT STARTED after this gate. No existing test assertion was changed.
+- Remaining H/no-diesel comparisons, base-demo twice-each acceptance, app-vs-harness and five-diesel full metric comparisons: NOT CONTINUED. Earlier partial evidence is preserved in the historical appendix, not relabeled complete.
+- Full suite: NOT RUN in this resumption. Earlier attempt was incomplete/0-byte JUnit. No final counts or added/removed/remaining set difference is available; no PHASE_2D_FAILING_TESTS.txt was fabricated.
+- Implementation checkpoint ebf2ea9 remains NOT VALIDATED. Tracking commit 3c0d0186973cc1a9c0ed0a747be130b69014a962 adds only the previously existing test. A separate documentation-only commit will record this report and two project-memory scope notes; its hash is given in the final response.
+- Project-memory notes clarify the user's 200 MB streaming rule and actual START-neutrality constraint; they are documentation, not a new runtime behavior or fix.
+- No publish/deploy/push/Phase 3. No new run was started after the counterexample was returned.
+## Retained evidence / source content checks
+Current baseline runner SHA-256: 12320f7c74c42406cc6eca862b9621621f733c2d9ad94e3ecb0c80652af6593a
+Runtime/config/scenario source diff ebf2ea9..tracking HEAD:
+
+```json
+{
+  "command": [
+    "git",
+    "diff",
+    "--stat",
+    "ebf2ea9..HEAD",
+    "--",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/api",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config"
+  ],
+  "exit": 0,
+  "stdout": "",
+  "stderr": ""
+}
+```
+New ignored test was tracked unchanged (1–120); no further test-code delta. Report line range and the two memory-note ranges are listed in the final response. Source/historical full implementation diff is retained below.
+## Historical ENOSPC STOP report — verbatim, superseded status
+The following is the preserved prior report. Its bb59f6e/uncommitted statements describe that earlier instant and are NOT current Git status. Current checkpoint/tracking state and current R2 STOP are above.
 # DR-2026-10-20-ISLAND-COLLAPSE — Phase 2d STOP report
 **STOPPED, NOT FINISHED: scratch filesystem exhausted (ENOSPC).**
 Implementation commit: NONE. Current HEAD: `bb59f6eeccf6456c0bf838d4ee6331c0fc0524dd`.
