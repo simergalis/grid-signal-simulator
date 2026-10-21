@@ -3485,21 +3485,27 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     _compute_inlet_temp_c = _T_AMBIENT_BASE_C + _cooling_fraction * _T_RISE_MAX_C
 
     # ── Phase 6: Load-side served/shed producers ───────────────────────────────
-    # The served/unserved split includes explicit UFLS/curtailment shedding and,
-    # for an islanded site, any remaining physical supply deficit. A power
+    # The served/unserved split includes explicit UFLS/curtailment shedding and
+    # any remaining physical supply deficit, including a capped grid import. A power
     # ceiling is not merely telemetry: demand above deliverable generation is
     # electrically unserved.
     # Per-subsystem shed is proportional to demand fraction because stage
     # definitions specify a block fraction of total demand only.
     _cumulative_shed_mw = state._cumulative_shed_mw  # monotonic run total
-    _islanded_supply_shortfall_mw = (
-        max(0.0, p_demand_mw - _p_gen_mw) if _islanded else 0.0
-    )
+    # DR D7 (IMPL-ISL-11), 78555831 / c0737fc: permitted import is already
+    # included in _p_generation_mw; use one physical shortfall rule in both modes.
+    _supply_shortfall_mw = max(0.0, p_demand_mw - _p_generation_mw)
     _p_unserved_mw = min(
         p_demand_mw,
-        max(_cumulative_shed_mw, _islanded_supply_shortfall_mw),
+        max(_cumulative_shed_mw, _supply_shortfall_mw),
     )
     _p_served_mw = p_demand_mw - _p_unserved_mw
+    # DR IMPL-ISL-10, 72aa49a / b74830d: the pre-trip surplus sink cannot
+    # exceed achieved surplus after supply and served-load reconciliation.
+    _p_dispatch_curtailed_mw = min(
+        _p_dispatch_curtailed_mw,
+        max(0.0, _p_generation_mw - _p_served_mw),
+    )
     # p_imbalance is the measured generation-versus-served-load channel.  An
     # explicit curtailment sink closes the physical ledger, but it must not
     # erase the surplus from the frequency/imbalance signal on the same tick.
@@ -3522,8 +3528,8 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # _grid_exchange_mw is negative on import (balance_residual < 0 when local gen
     # < demand), so we pass −_grid_exchange_mw here to match the convention.
     #
-    # p_unserved_mw contains deliberate UFLS shed or an islanded physical
-    # generation deficit, whichever is larger.  In both cases it reduces served
+    # p_unserved_mw contains deliberate UFLS shed or a physical supply
+    # deficit after permitted import, whichever is larger. Both reduce served
     # load for D4: an anchor-reserved MW above the BESS bridge ceiling cannot be
     # reported as electrically served.
     # p_losses_mw defaults to 0.0 — the model does not represent losses.

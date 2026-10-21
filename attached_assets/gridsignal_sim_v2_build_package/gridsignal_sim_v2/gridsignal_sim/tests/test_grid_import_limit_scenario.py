@@ -317,10 +317,19 @@ def test_sj1_three_overpeak_bursts_respect_supply_limits_and_recover() -> None:
             if start_s <= tick.sim_time_seconds < end_s
         ]
         assert peak_ticks
-        assert all(
-            tick.p_unserved_mw == pytest.approx(0.0, abs=1e-6)
-            for tick in peak_ticks
-        )
+        if start_s < 1800.0:
+            # DR D7 / 78555831: capped-grid physical shortfall is unserved.
+            assert all(
+                tick.p_unserved_mw == pytest.approx(
+                    max(0.0, tick.p_demand_mw - tick.p_generation_mw), abs=1e-6
+                )
+                for tick in peak_ticks
+            )
+        else:
+            assert all(
+                tick.p_unserved_mw == pytest.approx(0.0, abs=1e-6)
+                for tick in peak_ticks
+            )
         assert min(tick.grid_exchange_mw for tick in peak_ticks) >= -5.0 - 1e-6
 
         recovery_ticks = [
@@ -718,17 +727,10 @@ def test_grid_import_is_physically_capped_and_d4_remains_balanced() -> None:
     assert tick.p_demand_mw > 10.0
     assert tick.grid_exchange_mw == pytest.approx(-10.0, abs=1e-9)
     assert tick.frequency_forcing_mw < 0.0
-    # Shortfall is reported through p_imbalance_mw. p_unserved_mw remains
-    # explicit shed only and is zero until protection actually sheds load.
-    assert tick.d4_balance_defect_mw == pytest.approx(
-        tick.frequency_forcing_mw,
-        abs=1e-9,
-    )
-    assert tick.p_unserved_mw == pytest.approx(0.0, abs=1e-9)
-    assert tick.p_imbalance_mw == pytest.approx(
-        tick.frequency_forcing_mw,
-        abs=1e-9,
-    )
+    # DR D7 / 78555831: capped-grid shortfall reduces served load for D4.
+    assert tick.d4_balance_defect_mw == pytest.approx(0.0, abs=1e-9)
+    assert tick.p_unserved_mw == pytest.approx(tick.p_demand_mw - 10.0, abs=1e-9)
+    assert tick.p_imbalance_mw == pytest.approx(0.0, abs=1e-9)
     assert tick.p_generation_mw == pytest.approx(10.0, abs=1e-9)
 
 
