@@ -492,13 +492,16 @@ def test_tc157_base_demo_loader_only_adds_study_fuel_overlay(
 
     base_path = SCENARIOS / f"{BASE_DEMO_SCENARIO_ID}.json"
     on_disk = json.loads(base_path.read_text())
-    expected = copy.deepcopy(on_disk)
+    # D8 supersedes DR-2026-09-24-BASE-STUDY Phase 1.2 raw loading.
+    from api.schemas import ScenarioSpec
+    expected = ScenarioSpec.model_validate_json(base_path.read_bytes()).model_dump(mode="json")
     # PROPOSED_HERE: Assert the harness-only overlay already used by Phase 2b.
     for turbine in expected.get("turbine_units", []):
         turbine["gt_mode"] = "aero"
 
     executor = StudyRunExecutor(output_dir=tmp_path / "base-loader")
     loaded = executor._expanded_spec(BASE_DEMO_SCENARIO_ID, None, None)
+    assert loaded.pop("study_input_provenance")["canonicalised"] is True
     assert loaded == expected
     assert executor._study_class_for_scenario(BASE_DEMO_SCENARIO_ID) == (
         STUDY_CLASS_BASE_DEMO

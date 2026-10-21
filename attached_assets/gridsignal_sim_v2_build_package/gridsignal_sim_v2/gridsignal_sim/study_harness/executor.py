@@ -10,6 +10,7 @@ import subprocess
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
+from api.schemas import ScenarioSpec
 from runtime.phase2b_reference import (
     apply_study_fuel_model,
     expand_phase2b_reference_spec,
@@ -265,15 +266,33 @@ class StudyRunExecutor:
                 / "scenarios"
                 / f"{BASE_DEMO_SCENARIO_ID}.json"
             )
-            on_disk_spec = json.loads(base_path.read_text())
-            spec = copy.deepcopy(on_disk_spec)
+            # DR D8 supersedes DR-2026-09-24-BASE-STUDY Phase 1.2 raw loading.
+            # H references deliberately retain their separate expansion above.
+            spec = ScenarioSpec.model_validate_json(
+                base_path.read_bytes()
+            ).model_dump(mode="json")
             spec["turbine_units"] = apply_study_fuel_model(
                 spec.get("turbine_units", [])
             )
+            # PROPOSED_HERE: provenance labels describe overrides, not control parameters.
+            spec["study_input_provenance"] = {
+                "canonicalised": True,
+                "validation": "ScenarioSpec.model_validate_json -> model_dump(mode=json)",
+                "source": f"config/scenarios/{BASE_DEMO_SCENARIO_ID}.json",
+                "post_validation_overrides": [
+                    {"field": "turbine_units", "operation": "apply_study_fuel_model"},
+                ],
+            }
         if duration_seconds is not None:
             spec["end_sim_time"] = float(duration_seconds)
         if parameter_overrides:
             _deep_merge(spec, parameter_overrides)
+        if study_class == STUDY_CLASS_BASE_DEMO:
+            overrides = spec["study_input_provenance"]["post_validation_overrides"]
+            if duration_seconds is not None:
+                overrides.append({"field": "end_sim_time", "value": float(duration_seconds)})
+            if parameter_overrides:
+                overrides.append({"operation": "parameter_overrides", "value": copy.deepcopy(parameter_overrides)})
         return spec
 
     def _probe(
@@ -354,6 +373,16 @@ class StudyRunExecutor:
                 ):
                     progress_callback(len(tick_rows) * self.tick_seconds)
             raw_metadata = _controller_metadata(ctx)
+            raw_metadata["build_warnings"] = ctx.metadata.get("build_warnings", [])
+            if "study_input_provenance" in spec:
+                provenance = copy.deepcopy(spec["study_input_provenance"])
+                provenance["post_validation_overrides"].extend([
+                    {"field": "turbine_commitment_mode", "value": mode},
+                    {"operation": "baseline_demand_replay", "tick_count": len(demand_replay)},
+                    {"operation": "baseline_workload_replay", "event_count": len(replay_events),
+                     "removed_fields": ["kube_clusters", "slurm_config"]},
+                ])
+                raw_metadata["study_input_provenance"] = provenance
             raw_metadata.update(
                 {
                     "run_id": f"{scenario_id}-{mode}-{identity.digest[:16]}",

@@ -1943,9 +1943,13 @@ def build_run_context_from_spec(
     if _turbine_commitment_controller is not None:
         sim_state._commitment_mode = _commitment_mode
         sim_state._commitment_transition_sink = _turbine_commitment_controller
+    # DR-2026-10-20-ISLAND-COLLAPSE D9b: warn once at build, never alter the floor.
+    from runtime.build_warnings import reserve_capacity_warnings
+    _build_warnings = reserve_capacity_warnings(sim_state)
     return RunContext(
         run_id=run_id,
         sim_state=sim_state,
+        metadata={"build_warnings": _build_warnings},
         events=events,
         dt_lead_seconds=float(spec_data.get("dt_lead_seconds", 30.0)),
         end_sim_time=float(spec_data.get("end_sim_time", 300.0)),

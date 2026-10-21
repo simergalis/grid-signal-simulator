@@ -20,7 +20,7 @@ logical_id = "08bd6ad2-7b62-4fb5-9793-85eb142a2348"
 [[outputs]]
 id = "BGHUDbgkt769Ce1kLxjPO"
 uri = "file://attached_assets/welcome_email_template.html"
-type = "text"
+type = "html"
 title = "Welcome Email Template"
 description = "Standalone HTML email template for new GridSignal operator accounts."
 logical_id = "5c734b0a-d4eb-4f20-bea0-f440ffaacc7d"
@@ -325,7 +325,7 @@ logical_id = "114e19dd-ffba-4c72-9155-9051edfbea02"
 [[outputs]]
 id = "OVpf2lhfYx8Lspd6n9IJK"
 uri = "file://mockup-pms-ui.html"
-type = "text"
+type = "html"
 title = "Power Management UI Mockups"
 description = "Interactive HTML mockup — SWITCHGEAR/PMS modal (3 tabs) + Scenario Builder additions"
 logical_id = "98862f2b-48ee-4c20-9ecb-4731aae67995"
@@ -437,4 +437,18 @@ size = 15380
 mtime_ms = 1789573159332
 storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:560e4bb4-a12b-40d1-a7c1-4cae34d4602a/d7aab447-8746-4f99-95a3-9571971c2817/23806941-a614-4a14-bb0f-1b96e911d2d2"
 storage_version_token = "1789573169442284"
+content_type = "text/markdown"
+
+[[outputs]]
+id = "GAPIbdjTWAwHfx8AHooNe"
+uri = "file://tools/dr_isl/PHASE_2C_REPORT.md"
+type = "text"
+title = "Phase 2c STOP report"
+description = "Complete evidence, H identity and tick comparisons, baseline metrics, staged source diff, and the added TC156 failure. Phase 2c is blocked; implementation remains uncommitted."
+logical_id = "e0501b45-fa60-4feb-b788-9df02abad681"
+content_hash = "sha256:2affa7fec2dda7a91d2c236d4bdc83ffb71444f71a017922ff07806a54afe899"
+size = 66390
+mtime_ms = 1792597910401
+storage_uri = "gcs://replit-rams-assets-picard/rams/assets/repl:560e4bb4-a12b-40d1-a7c1-4cae34d4602a/e0501b45-fa60-4feb-b788-9df02abad681/ee6d3d0e-d217-4494-b218-19fd0a3b5d8f"
+storage_version_token = "1792597965398241"
 content_type = "text/markdown"

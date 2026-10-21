@@ -684,7 +684,10 @@ async def start_run(
         )
 
     await manager.start_run(ctx)
-    return StartRunResponse(run_id=run_id, soc_floor_pct=_soc_floor, soc_ceil_pct=_soc_ceil)
+    return StartRunResponse(
+        run_id=run_id, soc_floor_pct=_soc_floor, soc_ceil_pct=_soc_ceil,
+        build_warnings=ctx.metadata.get("build_warnings", []),
+    )
 
 
 @router.get(

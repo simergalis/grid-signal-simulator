@@ -1272,6 +1272,7 @@ class RunContext:
     dt_lead_seconds: float
     end_sim_time: float                    # scenario duration, e.g. 4h = 14400s
     playback_speed: float = 1.0            # 1.0 = real-time-equivalent, up to "max"
+    metadata: dict[str, Any] = field(default_factory=dict, kw_only=True)  # DR D9b; preserve positional callers.
     sink: TimeseriesSink = field(default_factory=InMemoryTimeseriesSink)
     sim_time: float = 0.0
     _next_event_idx: int = 0
