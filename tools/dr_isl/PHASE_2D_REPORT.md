@@ -1,3 +1,237 @@
+# DR-2026-10-20-ISLAND-COLLAPSE — Phase 2d second resumption: G1 STOP / G2 PASS
+
+**CURRENT STATUS: STOPPED at 2d.G1. NOT FINISHED.**
+This section supersedes the historical status sections below. Base was
+153783a2ad02680db7bb8920874e16c8c4f3058c. No Phase 3, publication, deployment,
+push, workflow restart, or subsequent scenario/test run was performed after
+the G1 mismatch was returned.
+
+Package alias P = `attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/`.
+Scratch alias T = `/tmp/DR-ISL-phase2d/`.
+
+## Second resumption — 2d.G2 completed before the G1 comparison
+
+Tracking-only commit: **c9c4f2e694dc267da456e4f1c971ff660b196a74**.
+Message: `DR-ISL IMPL-ISL-16: track six support files under ignored attached_assets/ (no content change)`.
+Exactly the six authorized files were force-added; .gitignore was not changed.
+Each was untracked before this commit. The first hash column was printed before
+staging; after, committed-blob and clean-checkout hashes were checked separately.
+
+| File relative to P | SHA-256 before | SHA-256 after / committed / clean checkout |
+|---|---|---|
+| runtime/reference_forecast.py | 2fa438a2380a84e954a20a29574aa3b269be2133654f890fef2ca74ef4518e8d | 2fa438a2380a84e954a20a29574aa3b269be2133654f890fef2ca74ef4518e8d |
+| runtime/fuel_cell_defaults.py | 208107e53c3a3e985001ffb4126c61035955ac1a049327fb8b0693e71854f07f | 208107e53c3a3e985001ffb4126c61035955ac1a049327fb8b0693e71854f07f |
+| core/infrastructure_admission.py | d86ee3c2697f4d21f6f042685f27d00bb2b4ea65c2058129e9cc05f88225d825 | d86ee3c2697f4d21f6f042685f27d00bb2b4ea65c2058129e9cc05f88225d825 |
+| config/scenarios/S10_mit_supercloud_2021-08-11.json | 8126ee38ef2206f55d28ea9f4da029df836fbf7c4daf7d65e266d821f323f7ad | 8126ee38ef2206f55d28ea9f4da029df836fbf7c4daf7d65e266d821f323f7ad |
+| config/scenarios/scenario-100mw-fuel-cell-bess-diesel.json | 2573809039859f38bce0d83ca227ca8dd9d34a7e88ceb795cbcbf3eca864d388 | 2573809039859f38bce0d83ca227ca8dd9d34a7e88ceb795cbcbf3eca864d388 |
+| config/scenarios/scenario-kubernetes-scheduler-demo.json | d08196037183229e46e90882372df4b587821ebba698acb1d217d462c6e3d36f | d08196037183229e46e90882372df4b587821ebba698acb1d217d462c6e3d36f |
+
+Worktree: T/g2-checkout, detached at c9c4f2e. No files were copied into it.
+`import api.main` returned `ModuleNotFoundError: No module named 'api.main'`.
+The actual entry is `api.app:app` (P/scripts/start_prod.sh:115).
+The actual-entry import returned **G2_APP_ENTRY_IMPORT=PASS FastAPI**.
+Seeder-path build returned:
+`G2_BUILD_SJ1=PASS {"end_sim_time":3600.0,"diesel_units":0,"turbines":0}`.
+No missing dependency/file was reported by the actual-entry import or SJ-1 build.
+Import was checked without entering the app lifespan; no API request was made.
+
+Committed file line ranges: runtime/reference_forecast.py:1–23;
+runtime/fuel_cell_defaults.py:1–4; core/infrastructure_admission.py:1–765;
+S10 JSON:1; scenario-100mw-fuel-cell-bess-diesel.json:1–727;
+scenario-kubernetes-scheduler-demo.json:1–84.
+
+## Second resumption — 2d.G1 candidate and failed equality gate
+
+The availability gap/call was removed at P/core/simulation_core.py:1783–1792.
+The existing physical residual after turbine loading and BESS arbitration,
+including emergency release, is computed once at :2044–2053 and passed to the
+coordinator at :2056–2059. No second dispatch or reserve calculation was added.
+This is a candidate working-tree change, NOT a validated implementation.
+No scenario content, dispatch cost, floor formula, commitment, frequency,
+protection, baseline runner, or test was edited.
+
+Literal candidate diff against c9c4f2e:
+```diff
+@@ -1783,22 +1783,9 @@
+     _diesel_dispatch_floor_mw = 0.0
+     _diesel_dispatch_headroom_mw = 0.0
+     if state.diesel_units:
+-        # Approved D10 signal amendment: primary-only achievable shortfall,
+-        # using this allocation's ramp/policy/AC-energy bounds, not the primary
+-        # MW displaced by a live diesel minimum. This is a capacity diagnostic,
+-        # not a second dispatch. START condition and every timer stay unchanged.
+         state.diesel_fleet_coordinator.advance_units(
+             sim_time, dt_seconds, dispatch_controlled=True,
+         )
+-        _diesel_control_gap_mw = max(
+-            0.0, p_dispatch_required_mw - fuel_cell_output_mw
+-            - _turbine_must_run_mw - _turbine_incremental_available_mw
+-            - _bess_available_mw,
+-        )
+-        state.diesel_fleet_coordinator.step(
+-            gap_mw=_diesel_control_gap_mw, sim_time=sim_time,
+-            dt_seconds=dt_seconds, advance_units=False, consume_fuel=False,
+-        )
+         _diesel_dispatch_floor_mw = sum(t.dispatch_floor_mw for t in state.diesel_units)
+         _diesel_dispatch_headroom_mw = sum(
+             t.dispatch_ceiling_mw - t.dispatch_floor_mw for t in state.diesel_units
+@@ -2054,9 +2041,9 @@
+         bess_dispatch_ceilings_mw=_bess_dispatch_ceilings_mw,
+         bess_soc_floors_mwh=_bess_soc_floors_mwh,
+     )
+-    # Coordinate diesel from the measured residual after primary source
+-    # arbitration. Diesel must not reduce the BESS planner's input and then
+-    # leave the same MW in the turbine dispatch demand.
++    # DR D10-gap: this allocation's achieved pre-diesel residual includes the
++    # emergency BESS release and supersedes the availability-based gap. Compute
++    # it once, after non-diesel delivery, for coordination and deficit reporting.
+     _gap_before_diesel_mw = max(
+         0.0,
+         p_dispatch_required_mw
+@@ -2066,6 +2053,10 @@
+     )
+     diesel_enabled = bool(state.diesel_units)
+     if diesel_enabled:
++        state.diesel_fleet_coordinator.step(
++            gap_mw=_gap_before_diesel_mw, sim_time=sim_time,
++            dt_seconds=dt_seconds, advance_units=False, consume_fuel=False,
++        )
+         state.diesel_fleet_coordinator.record_dispatch_fuel(dt_seconds)
+         _diesel_snapshot = state.diesel_fleet_coordinator.snapshot()
+     else:
+```
+
+### Completed comparison and first mismatch
+
+Scenario: **scenario-uneven-multisched-01**, canonical seeder-path RunManager,
+not a study-harness arm. Both versions ran at instant playback, once each.
+Before: scratch worktree T/01ce053 at 01ce053, with only the six G2 support
+files restored from c9c4f2e to make the historical checkout runnable.
+After: main working tree at c9c4f2e plus the candidate diff above.
+T/gap_gate.py uses ScenarioSpec.model_validate_json → model_dump(mode="json"),
+the persisted runner's pin_spec, fixed wall clock 1792454400.0, fabric/Python/
+NumPy 1729, per-diesel 1729+i, configured corruption pinning, RunManager and
+a streaming sink. tools/dr_isl/baseline_runner.py is unchanged.
+This is a diagnostic comparison, not the twice-each acceptance matrix.
+
+| Result | Before 01ce053 | After candidate |
+|---|---|---|
+| Ticks completed | 1440 | 1440 |
+| Captured coordinator gap ticks | 1440 | 1440 |
+| Balance failures | 0 | 0 |
+| Physical SHA-256 | 4a3232ee26b604f48b9e48346680993b12bd04c338134a6be0ae6520a94268f4 | b4d926e5324e26beaefac726e0edd6543752f447cc1057039249283b67c9ad49 |
+
+**Maximum absolute gap difference = 11.5 MW.**
+**First differing tick = 66; decision sim_time = 325.0 s.**
+Before gap = **9.301943799295508 MW**; after gap = **6.801943799295508 MW**.
+At this tick both captured state transitions are diesel-000 **offline → starting**.
+The complete captured allocation terms at that first difference follow.
+`absent` means the local did not exist in that version, not numerical zero.
+
+| Captured local | Before | After |
+|---|---|---|
+| _effective_admitted | 4502 | 4502 |
+| _effective_total | 4502 | 4502 |
+| p_compute_demand_mw | 47.64044579999999 | 47.64044579999999 |
+| p_cooling_demand_mw | 10.661497999295522 | 10.661497999295522 |
+| p_demand_mw | 58.30194379929551 | 58.30194379929551 |
+| p_renewable_mw | 0 | 0 |
+| _p_renewable_curtailed_mw | 0.0 | 0.0 |
+| p_dispatch_required_mw | 58.30194379929551 | 58.30194379929551 |
+| _droop_max_f_err_hz | null | null |
+| _p_dispatch_droop_mw | 58.30194379929551 | 58.30194379929551 |
+| _droop_correction_mw | 0.0 | 0.0 |
+| fuel_cell_output_mw | 0.0 | 0.0 |
+| _turbine_must_run_mw | 17.5 | 17.5 |
+| _turbine_incremental_available_mw | 32.5 | 5.0 |
+| _diesel_loading_bounds | absent | {"gt-spin-01":[8.75,11.25],"gt-spin-02":[8.75,11.25]} |
+| _bess_physical_ceilings_mw | [29.0] | [29.0] |
+| _bess_normal_dispatch_ceilings_mw | [29.0] | [29.0] |
+| _bess_reconciled_reserve_mwh | [1.4583333333333333] | [1.4583333333333333] |
+| _bess_power_ceiling_mw | 29.0 | 29.0 |
+| _bess_energy_ceiling_mw | 38142.25771686377 | 38142.25771686377 |
+| _physical_ceiling_mw | 29.0 | 29.0 |
+| _bess_available_mw | 29.0 | 29.0 |
+| _diesel_dispatch_floor_mw | absent | 0.0 |
+| _diesel_dispatch_headroom_mw | absent | 0.0 |
+| _allocation_demand_mw | absent | 58.30194379929551 |
+| _economic_demand_mw | 40.80194379929551 | 40.80194379929551 |
+| _economic_allocations | {"bess-fleet":29.0,"turbine-fleet":11.801943799295508,"fuel-cell-fleet":0.0} | {"bess-fleet":29.0,"turbine-fleet":5.0,"fuel-cell-fleet":0.0,"diesel-fleet":0.0} |
+| _diesel_dispatch_target_mw | absent | 0.0 |
+| _diesel_extra_mw | absent | 0.0 |
+| _planned_bess_setpoint_mw | 29.0 | 29.0 |
+| _thermal_dispatch_target_mw | 29.301943799295508 | 22.5 |
+| _p_sync_fleet_mw | 29.301943799295508 | 22.5 |
+| _reserve_bess_ceilings_mw | [0.0] | [0.0] |
+| _physical_bess_shortfall_mw | 38.30194379929551 | 35.80194379929551 |
+| _emergency_release_authorized | false | false |
+| _emergency_bess_target_mw | 0.0 | 0.0 |
+| _bess_dispatch_ceilings_mw | [29.0] | [29.0] |
+| _effective_bess_setpoint_mw | 29.0 | 29.0 |
+| _bess_soc_floors_mwh | [1.4583333333333333] | [1.4583333333333333] |
+| turbine_output_mw | 20.0 | 22.5 |
+| bess_output_mw | 29.0 | 29.0 |
+| _bess_setpoint_mw | 29.0 | 29.0 |
+
+The residual identities at this tick are:
+`58.30194379929551 − 20.0 − 29.0 − 0.0 = 9.301943799295508`
+versus
+`58.30194379929551 − 22.5 − 29.0 − 0.0 = 6.801943799295508`.
+Thus non-diesel delivery is NOT unchanged by the existing D10 implementation,
+even while diesel's allocation, minimum and headroom at this tick are all 0.0.
+Current P/core/simulation_core.py:1696–1728 installs turbine output/ramp bounds
+whenever the diesel fleet is configured, :1808–1814 allocates against them and
+:1869–1872 passes those bounds to apply_loading. Before 01ce053, loading is at
+:1781–1783 without output_bounds. These are existing D10 changes, not additional
+changes made in this resumption. No turbine-loading repair was attempted.
+
+### START-list instrumentation limitation
+
+The diagnostic's START detector compared enum `.value` against uppercase
+`"STARTING"`; actual captured values are lowercase `"starting"`. Consequently
+the empty `starts` arrays and `start_ticks_identical=true` fields in
+T/G1_gate.json are INVALID as complete START evidence. They must not be used
+to claim that neither version started diesel or that all START ticks match.
+The captured first-difference states directly prove a start on tick 66 in both
+versions. Complete START lists are NOT certified by this run. No rerun was
+started after the independent, valid gap-equality STOP result.
+Before the completed pair, an initial scratch instrument used the nonexistent
+SimClock.tick_index and stopped before appending a tick; it was corrected to
+SimulationState.tick_index+1. Those failed instrumentation attempts are not
+scenario results. The gap and physical-hash measurements in the completed pair
+do not use the faulty START-string detector.
+
+## Second resumption — STOP consequences / uncompleted work
+
+- G1 all-scenario residual equality FAILED on the first scenario compared.
+  No G1 acceptance result is claimed for H1/H2, SJ-1, islanded-ramp, S10,
+  turbine-01, hybrid, fc-bess-diesel, fc100-v2, zero-hot-v2 or Slurm GPU-peaks.
+- R3 tests and before/after failure-signature classifications were not run.
+- 2d.5 remaining H/no-diesel checks, base-demo A/B acceptance, app-versus-harness
+  comparisons and five-diesel metric comparisons were not run.
+- 2d.6 full suite was not started. Counts, added/removed/remaining and a new
+  failing-ID list are NOT available; PHASE_2D_FAILING_TESTS.txt was not invented.
+- ebf2ea987b89b9f55c6c19ddc24cad3970c7de9b remains an unvalidated automatic
+  implementation checkpoint.
+- G2 alone is committed as c9c4f2e694dc267da456e4f1c971ff660b196a74.
+  The G1 production diff remains UNCOMMITTED and UNVALIDATED. No commit with
+  the requested “START timing preserved” message was made because that claim
+  has not passed its gate.
+- A report-only commit records this report and the superseded gap-approval
+  scope note; its hash and final git status are printed in the final response.
+
+Storage: initial /tmp 2.8M used / 4.0G; after diagnostic pair 253M / 4.0G,
+7% used, 3.8G available. Two scratch worktrees are approximately 125M each.
+find T -type f -size +200000000c returned no paths. Child gap rows were consumed
+in memory; physical ticks went directly into SHA-256 and counters, not files.
+Saved scratch files: T/gap_gate.py, T/G1_gate.json, T/G2_tracking.json,
+and the complete T/PHASE_2D_REPORT.md copy. No full tick export was written.
+No numerical runtime constant was added.
+
+---
+
+# Historical report preserved below — prior resumption, superseded status
+
 # DR-2026-10-20-ISLAND-COLLAPSE — Phase 2d resumed R0–R2 STOP report
 **STATUS: STOPPED at 2d.R2. NOT FINISHED.**
 The current implementation changes accepted diesel START timing in scenario-fc100-islanded-v2: before = no starts over 264 ticks; after = diesel-000 starts at tick 1, decision time 0.0 s, tick time 5.0 s. Therefore the user's explicit START-timing STOP gate applies. No repair was attempted; R3, the remaining 2d.5 runs and 2d.6 suite were not started in this resumption.
