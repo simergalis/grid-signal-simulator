@@ -1783,21 +1783,8 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     _diesel_dispatch_floor_mw = 0.0
     _diesel_dispatch_headroom_mw = 0.0
     if state.diesel_units:
-        # Approved D10 signal amendment: primary-only achievable shortfall,
-        # using this allocation's ramp/policy/AC-energy bounds, not the primary
-        # MW displaced by a live diesel minimum. This is a capacity diagnostic,
-        # not a second dispatch. START condition and every timer stay unchanged.
         state.diesel_fleet_coordinator.advance_units(
             sim_time, dt_seconds, dispatch_controlled=True,
-        )
-        _diesel_control_gap_mw = max(
-            0.0, p_dispatch_required_mw - fuel_cell_output_mw
-            - _turbine_must_run_mw - _turbine_incremental_available_mw
-            - _bess_available_mw,
-        )
-        state.diesel_fleet_coordinator.step(
-            gap_mw=_diesel_control_gap_mw, sim_time=sim_time,
-            dt_seconds=dt_seconds, advance_units=False, consume_fuel=False,
         )
         _diesel_dispatch_floor_mw = sum(t.dispatch_floor_mw for t in state.diesel_units)
         _diesel_dispatch_headroom_mw = sum(
@@ -2054,9 +2041,9 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         bess_dispatch_ceilings_mw=_bess_dispatch_ceilings_mw,
         bess_soc_floors_mwh=_bess_soc_floors_mwh,
     )
-    # Coordinate diesel from the measured residual after primary source
-    # arbitration. Diesel must not reduce the BESS planner's input and then
-    # leave the same MW in the turbine dispatch demand.
+    # DR D10-gap: this allocation's achieved pre-diesel residual includes the
+    # emergency BESS release and supersedes the availability-based gap. Compute
+    # it once, after non-diesel delivery, for coordination and deficit reporting.
     _gap_before_diesel_mw = max(
         0.0,
         p_dispatch_required_mw
@@ -2066,6 +2053,10 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     )
     diesel_enabled = bool(state.diesel_units)
     if diesel_enabled:
+        state.diesel_fleet_coordinator.step(
+            gap_mw=_gap_before_diesel_mw, sim_time=sim_time,
+            dt_seconds=dt_seconds, advance_units=False, consume_fuel=False,
+        )
         state.diesel_fleet_coordinator.record_dispatch_fuel(dt_seconds)
         _diesel_snapshot = state.diesel_fleet_coordinator.snapshot()
     else:
