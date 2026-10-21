@@ -438,18 +438,19 @@ def test_tc151_attributable_curtailment_fuel_stays_within_curve_range() -> None:
 
 # PROPOSED_HERE: These locally captured hashes anchor pre-Phase-1 H expansions;
 # they are regression evidence, not vendor-sourced constants.
+# DR-2026-10-20-ISLAND-COLLAPSE D9c: timing-only refresh; tools/dr_isl/H_IDENTITY_MAP_D9c.md.
 H_EXPANSION_SHA256_BASELINE = {
     "scenario-h1-k8s-ray-24h": (
-        "f2465233ab677c0c9305b139fcc6ccd8b675aeea4df6ccdf46ff38a5ffe9681a"
+        "327835d3b1305e731c4397a19a772a877458ec4954b3406474f38f4e1ba0b050"
     ),
     "scenario-h1-k8s-ray-7d": (
-        "a552b3916c7e8637265918e8624c6dee82483e91213066d917c59797562d56db"
+        "d8472fe04f6d2fe7be231e103b76bc70bb6798feabdc8ca7d3846200dc074c2a"
     ),
     "scenario-h2-slurm-24h": (
-        "fc26c77f0ac3ea2f6fd6c519874ced0418792e73dcf22d3d9e7dd81e32a786ca"
+        "b20b073ccb60e1167601175ac3da8a25615398f1847fadeadc59b269d2a55bcb"
     ),
     "scenario-h2-slurm-7d": (
-        "a2a2c1d565e77129e615c008f1c30e382f1975d44224983454f51668fd2e3187"
+        "46100ac7301ee7f375c5e4b510ce76242a306a09d69f4a81802f31a9982088bb"
     ),
 }
 
