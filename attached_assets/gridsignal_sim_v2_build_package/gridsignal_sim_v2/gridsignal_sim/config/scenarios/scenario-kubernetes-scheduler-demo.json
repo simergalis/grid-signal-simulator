@@ -1,0 +1,84 @@
+{
+  "name": "24 Kubernetes Scheduler - Resource Queue Demo",
+  "description": "A deterministic K8S-only scheduler demonstration. Jobs arrive frequently with varied sizes and durations against a deliberately bounded H100 node pool, so activeQ, backoffQ, unschedulablePods, resource release, and non-zero queue wait are visible in the live run stream. Every generated pod requests CPU, memory, and one H100 GPU; no scripted workload events are used.",
+  "workload_events": [],
+  "hardware_profile_id": "enterprise_8gpu_air",
+  "dt_lead_seconds": 0.0,
+  "bess_units": [
+    {
+      "asset_id": "bess-0",
+      "rated_mw": 12.0,
+      "usable_mwh": 24.0,
+      "initial_soc_fraction": 0.95,
+      "grid_forming": true
+    }
+  ],
+  "turbine_units": [
+    {
+      "asset_id": "turbine-0",
+      "rated_mw": 15.0,
+      "r_asset_mw_per_s": 0.5,
+      "hot_standby": false
+    },
+    {
+      "asset_id": "turbine-1",
+      "rated_mw": 15.0,
+      "r_asset_mw_per_s": 0.5,
+      "hot_standby": true,
+      "thermal_state": "hot"
+    }
+  ],
+  "solar_rated_mw": 5.0,
+  "irradiance_steps": [[0.0, 1.0]],
+  "island_mode": true,
+  "frequency_nominal_hz": 60.0,
+  "power_factor": 0.85,
+  "pue_base": 1.03,
+  "end_sim_time": 1200.0,
+  "dt_thermal_seconds": 90.0,
+  "alpha_max": 0.2,
+  "tau_seconds": 20.0,
+  "kube_clusters": [
+    {
+      "cluster_id": "k8s-phase-a-demo",
+      "tenant_id": "K8S-PHASE-A-DEMO",
+      "scheduler_type": "K8S",
+      "capacity_unit": "node",
+      "workload_share": 1.0,
+      "hardware_profile_id": "enterprise_8gpu_air",
+      "max_nodes": 48,
+      "min_nodes": 4,
+      "mean_interarrival_s": 7.0,
+      "mean_job_nodes": 10,
+      "job_node_std": 5.0,
+      "min_job_nodes": 2,
+      "max_job_nodes": 20,
+      "mean_job_duration_s": 240.0,
+      "min_job_duration_s": 45.0,
+      "reorder_window_s": 2.0,
+      "ntp_jitter_s": 0.5,
+      "headroom_threshold_mw": 1.0,
+      "rng_seed": 2718,
+      "node_cpu_milli": 96000,
+      "node_memory_mib": 1500000,
+      "node_gpu_count": 8,
+      "node_gpu_type": "h100",
+      "pod_cpu_milli": 12000,
+      "pod_memory_mib": 120000,
+      "pod_gpu_count": 1,
+      "pod_gpu_types": ["h100"],
+      "pod_priority": 100,
+      "backoff_duration_s": 5.0,
+      "max_backoff_retries": 1,
+      "container_start_delay_s": 1.0
+    }
+  ],
+  "gpu_load_profile": [],
+  "calibrated": false,
+  "assertions": [
+    {
+      "check": "max_p_total_mw",
+      "threshold_mw": 35.0
+    }
+  ]
+}
