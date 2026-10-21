@@ -1,15 +1,67 @@
-# DR-2026-10-20-ISLAND-COLLAPSE — Phase 2d DESIGN STOP
+# DR-2026-10-20-ISLAND-COLLAPSE — Phase 2d resumed DESIGN STOP
 
-Status: **STOP at 2d.0, before application changes.**
+Status: **STOP at 2d.0, before application changes: protected coordinator-gap decision pending. Original unloading STOP resolved by user approval.**
 
 Base inspected: `01ce05304b77192c44066e97f1783c98d6647d14`.
+
+Resumption HEAD: `f0cb1f196b4ce02e2fc9ec975bc8fd90596cfb3a` (the previous report-only commit; application code unchanged).
 
 Package prefix P:
 `attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/`.
 
 Scratch prefix T: `/tmp/DR-ISL-phase2d/`.
 
-## STOP condition and decision required
+## Current STOP — coordinator signal versus the single dispatch
+
+The user selected: **"Allow the existing unloading ramp below 30% (recommended)"**. That resolves the original minimum-versus-unloading-ramp conflict documented below. The 30% floor applies to SYNCHRONISED operation; UNLOADING retains its existing trajectory below that floor.
+
+The remaining design decision is whether the protected coordinator input must remain its literal measured-primary residual, or may be changed to distinguish a primary capacity shortfall from primary output deliberately displaced by the live diesel minimum.
+
+Current source path:
+
+1. `P/core/simulation_core.py:1956–1961` computes `max(0, p_dispatch_required_mw - turbine_output_mw - bess_output_mw - fuel_cell_output_mw)`.
+2. `:1964–1968` passes that value as the coordinator's `gap_mw`.
+3. `P/core/diesel_fleet.py:203–214` uses positive `gap_mw` for debounce and episode activation.
+4. `:219–228` uses the same signal to reset restoration, resume unloading units and start due primary units.
+5. Only the zero-gap branch enters unloading and advances restoration (`:229–240`).
+
+Illustrative D10 dispatch budget, printed by `T/coordinator_gap_probe.py`:
+
+```text
+demand_mw = 10.0
+primary_available_mw = 10.0
+diesel_rated_mw = 20.0
+synchronised_diesel_minimum_mw = 6.0
+primary_dispatched_mw = 4.0
+existing_pre_diesel_residual_mw = 6.0
+shortfall_without_diesel_using_primary_availability_mw = 0.0
+```
+
+This is an illustrative feasible budget, NOT an implemented D10 allocation, an actual scenario tick, or proof of the behavior of a completed D10 patch. The 10 MW budget is a diagnostic fixture, not a new runtime constant. It shows that the existing measured-primary residual need not represent insufficient primary capacity once a diesel minimum displaces primary dispatch.
+
+The unpatched real coordinator was then called with each signal for three steps. The unit's minimum run was already satisfied; no method was monkeypatched. Literal results:
+
+| Supplied gap MW | sim_time s | Unit state after step | restore_elapsed_s |
+|---:|---:|---|---:|
+| 6.0 | 1000.0 | synchronised | 0.0 |
+| 6.0 | 1005.0 | synchronised | 0.0 |
+| 6.0 | 1010.0 | synchronised | 0.0 |
+| 0.0 | 1000.0 | unloading | 5.0 |
+| 0.0 | 1005.0 | unloading | 10.0 |
+| 0.0 | 1010.0 | unloading | 15.0 |
+
+Printed configuration in both cases: debounce 1.0 s, restore hold 300.0 s, unit minimum run 900.0 s, unit cooldown 300.0 s. The fixture uses existing fixed-block module advancement; it is a coordinator branch probe, not a diesel load-following implementation.
+
+Evidence: `T/coordinator_gap_probe.log` and `.json`. An initial fixture-construction error (passing the coordinator's init=False episode field as a constructor argument) is retained in `T/coordinator_gap_probe.attempt1.log`; the corrected fixture sets that existing field after construction. No application fix was made to run the probe.
+
+**Two distinct designs, neither silently selected:**
+
+- **Literal protected signal:** retain the current measured-primary gap. D10 can then leave restoration blocked by primary output displaced by the mandatory diesel minimum, as long as that positive gap persists. This preserves the current signal, but accepts that consequence; it is not asserted to violate an explicit scenario metric gate.
+- **Recommended signal amendment:** the same shared allocation exposes a primary-only achievable shortfall for coordinator decisions, distinguishing displaced output from an actual need for diesel. This must account for the existing primary ramp, SoC and policy constraints, not just nameplate capacity, and must not introduce a second balancing implementation. The coordinator continues owning state; its start condition, debounce and configured minimum run, restoration duration and cooldown values remain unchanged. Nevertheless, changing the supplied signal is a semantic change to the protected START decision and needs explicit approval.
+
+To avoid implementing the latter without permission, or silently accepting the former's behavior, implementation is paused at the design gate. No corrected coordinator signal or new formula is implemented or claimed validated.
+
+## Historical STOP 1 — unloading minimum, now resolved
 
 The approved instruction contains both:
 
@@ -30,11 +82,11 @@ The existing unloading ramp reaches zero while the unit remains UNLOADING and on
 
 For a 20 MW unit, the requested minimum is 6 MW. The real existing ramp falls below 6 MW before its configured duration ends. Clamping it to 6 MW changes that ramp; opening the breaker at the threshold shortens it. Keeping the ramp unchanged violates the literal D10 minimum while the unit is UNLOADING.
 
-This is a conflict between the requested D10 operating envelope and the protected shutdown/cooldown trajectory, not a failed full-scenario result. Hard constraint 4 requires a design report rather than choosing a new shutdown interpretation.
+Before the user's clarification, this was a conflict between the requested D10 operating envelope and the protected shutdown/cooldown trajectory, not a failed full-scenario result. It is no longer the reason for the current pause.
 
-**Recommended clarification, NOT approved or implemented:** apply the 30% continuous-operation proxy only to SYNCHRONISED units. Treat UNLOADING as the existing ramp-constrained on-bus tail, allowed below 30%, counted in fleet power and fuel until its normal breaker opening. It would enter the same site balance as other physically constrained output, not a second diesel balancing path.
+**Clarification now approved by the user, not yet implemented:** apply the 30% continuous-operation proxy only to SYNCHRONISED units. Treat UNLOADING as the existing ramp-constrained on-bus tail, allowed below 30%, counted in fleet power and fuel until its normal breaker opening. It would enter the same site balance as other physically constrained output, not a second diesel balancing path.
 
-Alternative: keep the 30% lower bound throughout UNLOADING, but explicitly amend the shutdown trajectory/ramp requirement. No alternative ramp or timing constant is chosen here.
+The former alternative of retaining the 30% lower bound throughout UNLOADING was not selected. No alternative ramp or timing constant is chosen.
 
 ## 2d.0 — current design, literal source evidence
 
@@ -116,7 +168,7 @@ STOP_RESULT 20.0 None unloading
 STOP_RESULT 6.0 None unloading
 ```
 
-Every row below has `state="unloading"`, `is_on_bus=true`, and `D10_minimum_mw=6.0`:
+Every row below has `state="unloading"`, `is_on_bus=true`, and the former literal all-on-bus `D10_minimum_mw=6.0`. These are historical conflict rows: under the now-approved exception, below-30% output is allowed for UNLOADING and is no longer a violation.
 
 | Unload-start MW | Elapsed unloading s | Actual output MW | Below D10 minimum |
 |---:|---:|---:|---|
@@ -145,13 +197,13 @@ These source observations do not authorize implementing the separable fixes afte
 
 | Item | Literal status |
 |---|---|
-| 2d.1 D10 | NOT STARTED: operating-envelope conflict above. |
+| 2d.1 D10 | NOT STARTED: coordinator-signal decision pending. Original unloading-envelope conflict resolved by approval. |
 | 2d.2 IMPL-ISL-14 | NOT IMPLEMENTED. |
 | 2d.3 IMPL-ISL-15 | NOT IMPLEMENTED. |
 | 2d.4 tests | No tests created or updated; TC-ISL-19–22 were not assigned. |
 | 2d.5 scenario runs | NOT STARTED. No H arms, regression scenarios, app-path or base-demo reruns. |
 | 2d.6 full suite | NOT RUN. No new Phase 2d pass/fail counts or failing-ID list exist. The Phase 2c list remains unchanged; it is not presented as a Phase 2d result. |
-| 2d.7 implementation commit | NONE. Only this STOP report and its Library metadata may be committed. |
+| 2d.7 implementation commit | NONE. Only this STOP report, Library metadata and the durable approved unloading-scope note are changed. |
 
 Before creating this report, the following command returned exit 0:
 
