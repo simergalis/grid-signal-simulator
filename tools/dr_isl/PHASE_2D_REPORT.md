@@ -1,4 +1,220 @@
-# DR-2026-10-20-ISLAND-COLLAPSE — Phase 2d second resumption: G1 STOP / G2 PASS
+# DR-2026-10-20-ISLAND-COLLAPSE — THIRD RESUMPTION: T3 STOP
+
+**CURRENT STATUS: STOPPED at the first T3 verification pair. NOT FINISHED.**
+Base: fb185a6e8fbf8ba62752ebc65dc4b58bc9136241.
+P = attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/.
+T = /tmp/DR-ISL-phase2d/.
+This section supersedes earlier status sections, which remain below.
+No further scenario run, test, suite, workflow restart, publication, deployment,
+push or Phase 3 was started after the T3 result was returned.
+
+## Third resumption — T0 corrected START detector and completed measurements
+
+Scratch tool: T/gap_gate.py. Detection now uses DieselState enum members:
+`before_enums[unit.asset_id] != DieselState.STARTING and unit.state == DieselState.STARTING`.
+No string literal determines whether a START was accepted. Enum values are used
+only when printing states. Accepted transitions are captured around the real
+DieselFleetCoordinator.step invocation.
+
+| Path | 01ce053 accepted START ticks (decision seconds) | fb185a6 accepted START ticks (decision seconds) | Ticks / balance failures, each |
+|---|---|---|---|
+| Base demo, harness conventional, seed 42 | 66 (325.0), 371 (1850.0) | 66 (325.0) | 1440 / 0 |
+| Base demo, harness informed, seed 42 | 68 (335.0), 371 (1850.0) | 68 (335.0) | 1440 / 0 |
+| scenario-fc100-islanded-v2, RunManager | none | none | 264 / 0 |
+
+All starts above are diesel-000. Each T0 version/path ran once.
+FC100-v2 before/after physical SHA-256:
+d8146d3e37d9d7e1b306bbf2dc7dea7b2675be9c2bdabca0a209a028772c73d3,
+identical. Its maximum turbine/BESS/FC/gap differences are all 0.0 MW.
+The pre-conform conventional off-bus maxima were GT 17.5, BESS 30.0, FC 0.0,
+gap 2.5 MW; informed: GT 5.0, BESS 13.124560130547284, FC 0.0, gap 5.0 MW.
+
+Harness paths use the actual StudyRunExecutor._expanded_spec, _probe and
+_run_mode, with seed 42, reuse_cache=False and no parameter overrides.
+The probe is not included in reported START lists. Writer/cache persistence is
+output-only intercepted; no full physical or compact tick export is written.
+Python/NumPy/fabric 1729, wall clock 1792454400.0, configured kube/generator/
+corruption pinning and per-diesel 1729+i use the persisted baseline helper.
+The same helper file is unchanged. Historical 01ce053 scratch execution uses
+only the six authorized support files restored from the tracking commit.
+
+## Third resumption — T1 pre-edit hunk audit
+
+Literal full diff is preserved in tools/dr_isl/PHASE_2D_T1_DIFF.md and
+T/T1_allocator_before_conform.diff. It compares exactly 01ce053..fb185a6 on the
+five requested files. The table identifies EVERY zero-context hunk by its
+fb185a6 line(s); source line numbers in this section refer to fb185a6, not the
+subsequent candidate. "Yes/zero" means the statement or call executes with an
+off-bus fleet but its diesel numerical contribution is zero.
+
+| File under P/core; fb185a6 hunk line(s) | Executes with NO diesel on bus? / effect |
+|---|---|
+| asset_modules.py:1360 | Yes, instance-field initialization; no primary allocation effect. |
+| asset_modules.py:1448 | Signature/interface definition; advance is called for off-bus units. |
+| asset_modules.py:1468 | At STARTING-to-SYNCHRONISED completion; not a steady off-bus output. |
+| asset_modules.py:1475 | No: inside SYNCHRONISED branch. |
+| asset_modules.py:1502–1506 | No: inside SYNCHRONISED branch. |
+| asset_modules.py:1525–1553 | Properties are queried off bus and return 0; apply target writes SYNCHRONISED only. |
+| asset_modules.py:1575–1577 | No: resume from UNLOADING, which is on bus. |
+| diesel_fleet.py:115 | Docstring only. |
+| diesel_fleet.py:120 | Yes: aggregate filter executes, yielding 0 with no on-bus units. |
+| diesel_fleet.py:187–188 | Signature/default flags; no direct primary output. |
+| diesel_fleet.py:200–203 | Yes: lifecycle/fuel advancement dispatch; fuel filter skips off-bus units. |
+| diesel_fleet.py:233 | Condition evaluates; unloading request requires SYNCHRONISED. |
+| diesel_fleet.py:235–239 | Condition evaluates; restore-time increment requires UNLOADING. |
+| diesel_fleet.py:241–242 | Yes: resets restore timer in the other branch; no primary allocation. |
+| diesel_fleet.py:247–250 | Unloading completion guard; not reached without an UNLOADING unit. |
+| diesel_fleet.py:375–383 | Methods called for configured fleets; advancement can complete startup; fuel skips off-bus units. |
+| diesel_fleet.py:390 | Yes: fuel filter, skips off-bus units. |
+| loading.py:36–37 | Optional-bound interface; no independent dispatch path. |
+| loading.py:69–74 | YES at tick 66: replaces MSL/rated envelopes with supplied ramp bounds. |
+| loading.py:107 | Yes; sequential limit uses ceiling_i, equal to rated when bounds=None. |
+| loading.py:122 | Yes; headroom uses ceiling_i, equal to rated when bounds=None. |
+| loading.py:146–153 | Yes: pure ramp helper, same prior clamp arithmetic. |
+| loading.py:158–159 | Optional-bound interface. |
+| loading.py:170–172 | YES at tick 66: forwards the changed bounds into the same allocator. |
+| loading.py:174 | Yes: applies the same ramp arithmetic through the helper. |
+| loading.py:203 | Yes when explicit targets are used; same prior clamp arithmetic. |
+| power_source_priority.py:42 | Enum definition at import; no numerical allocation. |
+| simulation_core.py:32–35 | Imports/interface only. |
+| simulation_core.py:786 | Optional diesel availability argument, default 0. |
+| simulation_core.py:830–845 | No when diesel availability is 0: diesel ranking source is not appended. |
+| simulation_core.py:852 | Yes: zero diesel allocation entry initialized. |
+| simulation_core.py:1696–1733 | YES: gated by configured fleet, not on-bus fleet; changes GT envelopes before first START. |
+| simulation_core.py:1783–1799 | Yes: advances configured units and queries zero floor/headroom while off bus. |
+| simulation_core.py:1802 | YES: configured-fleet branch changes allocation demand envelope even when off bus. |
+| simulation_core.py:1805 | Comment only. |
+| simulation_core.py:1807 | Yes/zero: subtracts diesel floor. |
+| simulation_core.py:1813 | Yes/zero: supplies diesel headroom to the single ranker. |
+| simulation_core.py:1815–1823 | Yes/zero: diesel target and per-unit application, no off-bus output write. |
+| simulation_core.py:1836 | Yes/zero: subtracts diesel target from conventional following target. |
+| simulation_core.py:1870–1871 | YES: passes bounds to turbine loading even while diesel is off bus. |
+| simulation_core.py:1975 | Comment only. |
+| simulation_core.py:1977 | Yes/zero: subtracts diesel target from BESS shortfall. |
+| simulation_core.py:1998 | YES: configured-fleet test suppresses previous diesel delivery even while off bus. |
+| simulation_core.py:2038 | Yes/zero: subtracts diesel target from BESS arbitration demand. |
+| simulation_core.py:2044–2046 | Residual documentation only. |
+| simulation_core.py:2055–2065 | Yes: actual residual controls lifecycle, fuel and snapshot; START predicate unchanged. |
+
+Tick-66 values, conventional T0 (before any diesel is on bus):
+GT must-run 17.5 MW in both; unbounded incremental capacity 32.5 MW becomes
+5.0 MW with bounds {"gt-spin-01":[8.75,11.25],"gt-spin-02":[8.75,11.25]}.
+BESS allocation 29.0 MW in both. Turbine economic allocation:
+11.801943799295508 versus 5.0 MW; thermal target 29.301943799295508 versus
+22.5 MW; achieved GT 20.0 versus 22.5 MW. Residual 9.301943799295508 versus
+6.801943799295508 MW. Diesel floor/headroom/target are 0.0 MW.
+The causative chain is simulation_core.py:1696–1733 → :1813 → :1870–1871,
+loading.py:69–74/:107/:122. Applying this envelope while diesel is OFF BUS is
+NOT required to load-follow an on-bus diesel, rank it last, back it down first
+or enforce its SYNCHRONISED minimum. T2 was therefore attempted.
+
+## Third resumption — T2 candidate, not accepted by T3
+
+Only P/core/simulation_core.py changed, compared with fb185a6:
+- :1696–1704 advances diesel lifecycle once before reading on-bus status and
+  installs diesel-specific primary bounds only when a unit is on bus.
+- :1789–1796 removes the later duplicate location of that same advance call.
+- :1800–1803 uses the canonical primary request envelope while diesel is off bus.
+- :2002 uses previous-diesel emergency-support accounting while diesel is off bus.
+The original single ranker and single loading application remain. D10-gap stays
+the actual post-primary, post-emergency-BESS residual. No START predicate,
+timer, minimum-load value, dispatch cost, reserve formula, frequency/protection,
+scenario JSON or test was changed. No numerical runtime constant was added.
+The full candidate diff is in tools/dr_isl/PHASE_2D_T2_DIFF.md.
+
+## Third resumption — T3 FAILED, first verification pair only
+
+Pair: base demo, harness conventional, seed 42, no overrides, reuse_cache=False.
+Before = 01ce053. After = fb185a6 plus the T2 candidate. Once each.
+Both completed 1440 ticks with 0 physical-balance failures.
+The tick-66/pre-diesel discrepancy is absent after T2: the first overall gap
+difference now occurs at tick 126 while diesel IS on bus.
+
+| Metric | Before | After |
+|---|---|---|
+| Physical SHA-256 | 314adcaf836d34add6dc5f3dc5637586664e80b0045c943da4bec0c0214dd21e | 90f4b8a55acceb521f972d9596c5137f104dbc34e158ac3bc58cadf73e5164f1 |
+| Accepted diesel START ticks | 66, 371 | 66 |
+| START decision seconds | 325.0, 1850.0 | 325.0 |
+| Off-bus maximum absolute GT-output difference | — | 17.5 MW |
+| Off-bus maximum absolute BESS-output difference | — | 30.0 MW |
+| Off-bus maximum absolute FC-output difference | — | 0.0 MW |
+| Off-bus maximum absolute residual difference | — | 0.0 MW |
+
+Off-bus maxima above use aligned ticks where NEITHER version has diesel on bus,
+checked before and after the coordinator invocation. This subset already fails
+the requested zero-output-difference criterion; no broader equality is claimed.
+
+First overall residual difference: tick 126, decision time 625.0 s.
+| Term | Before | After |
+|---|---|---|
+| Diesel state | synchronised | synchronised |
+| Demand MW | 22.23416977389537 | 22.23416977389537 |
+| GT MW | 45.0 | 45.0 |
+| BESS MW | -22.76583022610463 | -28.76583022610463 |
+| FC MW | 0.0 | 0.0 |
+| Diesel dispatch target MW | no D10 target variable | 6.0 |
+| Pre-diesel residual MW | 0.0 | 6.0 |
+
+The candidate residual equals its 6.0 MW diesel target here:
+22.23416977389537 - 45.0 - (-28.76583022610463) = 6.0.
+That positive gap takes the branch resetting restore time and requesting due
+starts in P/core/diesel_fleet.py:222–230, instead of the zero-gap unloading
+branch :232–234. These are printed terms and source ordering, not a claim that
+every later lifecycle difference has been independently traced.
+
+First aligned BOTH-OFF-BUS output difference: tick 1111, decision time 5550.0 s.
+| Term | Before | After |
+|---|---|---|
+| Diesel state, before/after coordination | offline / offline | offline / offline |
+| Demand MW | 4.757366853202085 | 4.757366853202085 |
+| Turbine MW | 35.0 | 35.0 |
+| BESS MW | -30.0 | -0.0 |
+| FC / residual MW | 0.0 / 0.0 | 0.0 / 0.0 |
+| BESS setpoint MW | -30.242633146797914 | -30.242633146797914 |
+| BESS physical/normal ceiling MW | 29.0 / 29.0 | 29.0 / 29.0 |
+| BESS energy ceiling MW | 39977.176733389046 | 41368.37047956742 |
+| GT must-run MW | 35.0 | 35.0 |
+| GT incremental available MW | 65.0 | 48.75 |
+| Synchronised loading fleet target MW | 35.0 | 26.25 |
+| Diesel floor/headroom/target MW | no D10 variables | 0.0 / 0.0 / 0.0 |
+| Diesel-specific output bounds | absent | null |
+
+Matching current primary dispatch code with diesel terms zero does not establish
+identical complete histories: the measured post-on-bus BESS energy and turbine
+populations differ at tick 1111. No additional change to reconcile those
+histories, the residual, lifecycle, commitment or BESS physics was attempted.
+
+## Third resumption — STOP consequences, storage and commits
+
+T3 conventional failed. T3 informed, hybrid, fc-bess-diesel, fc100-v2,
+zero-hot-v2, Slurm GPU-peaks were NOT run after T2. T0 FC100-v2 equality above
+is a PRE-T2 measurement and is not relabelled a T3 acceptance result.
+No-diesel hash checks, H1/H2 two-repetition acceptance checks, R3 signatures,
+remaining 2d.5 metrics/app comparison and 2d.6 full suite were NOT run.
+No new PHASE_2D_FAILING_TESTS.txt exists; suite counts and failure-set deltas
+remain unavailable.
+
+ebf2ea987b89b9f55c6c19ddc24cad3970c7de9b and
+fb185a6e8fbf8ba62752ebc65dc4b58bc9136241 are automatic UNVALIDATED checkpoints.
+T2 remains an uncommitted, unvalidated candidate because the gate failed before
+2d.7. No successful-conformance implementation commit is claimed.
+The report-only commit contains this report, its T1/T2 literal diff appendices
+and the acceptance-scope memory note. Its hash and final git status are printed
+in the final response.
+
+All scratch scripts set RLIMIT_FSIZE=200000000; physical hashes are streamed.
+T0/T3 store summaries and only first-difference windows, not full tick exports.
+Evidence: T/T0-scenario-uneven-multisched-01-baseline.json,
+T/T0-scenario-uneven-multisched-01-informed.json,
+T/T0-scenario-fc100-islanded-v2-app.json,
+T/T3-scenario-uneven-multisched-01-baseline.json, T/gap_gate.py,
+T/T1_allocator_before_conform.diff and T/PHASE_2D_REPORT.md.
+The six support-file tracking changes remain content-identical and committed
+as c9c4f2e694dc267da456e4f1c971ff660b196a74. No .gitignore edit.
+
+---
+
+# Historical report — SECOND RESUMPTION: G1 STOP / G2 PASS
 
 **CURRENT STATUS: STOPPED at 2d.G1. NOT FINISHED.**
 This section supersedes the historical status sections below. Base was

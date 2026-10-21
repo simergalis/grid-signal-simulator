@@ -20,3 +20,9 @@ The approved gap amendment must also preserve actual diesel START timing; retain
 **Why:** The user explicitly required STOP-and-report if the gap change alters a scenario's start ticks.
 
 **How to apply:** Compare accepted starts across affected scenarios before accepting the signal amendment. A base-demo-only match is insufficient; stop on a counterexample without implementing a repair.
+
+Conformance must also preserve the pre-D10 non-diesel allocation whenever no diesel unit is on bus, using the same allocator with zero diesel contributions.
+
+**Why:** The user explicitly made off-bus turbine/BESS/FC/gap equality and unchanged accepted START lists acceptance gates, not merely unchanged dispatch policy code.
+
+**How to apply:** Gate whole trajectories as requested, including off-bus ticks after prior diesel operation. Do not weaken the gate to identical instantaneous formulas or to ticks before the first diesel start.
