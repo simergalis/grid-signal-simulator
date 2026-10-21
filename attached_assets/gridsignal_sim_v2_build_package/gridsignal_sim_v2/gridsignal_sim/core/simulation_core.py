@@ -29,7 +29,10 @@ from .asset_modules import (
     TurbineState,
 )
 from .fuel_cell_module import BlockFuelCellFleet, FuelCellModule
-from .loading import apply_loading, apply_loading_targets, ramp_capability
+from .loading import (
+    apply_loading, apply_loading_targets, compute_loading_setpoints,
+    ramp_capability, ramp_limited_output,
+)
 from .contingency import BessSnapshot, FuelCellSnapshot, PlantState, TurbineSnapshot, evaluate_contingency
 from .kube_demand import KubeDemandAgent, KubeGridState
 from .lead_time_observations import LeadTimeObservationRecorder
@@ -780,6 +783,7 @@ def _cost_ranked_dispatch_allocations(
     bess_available_mw: float,
     turbine_available_mw: float,
     fuel_cell_available_mw: float,
+    diesel_available_mw: float = 0.0,
 ) -> dict[str, float]:
     """Allocate discretionary demand using the shared marginal-cost ranking.
 
@@ -823,12 +827,29 @@ def _cost_ranked_dispatch_allocations(
             cost_basis_note="catalogue: fuel_cell_ppa_rate_mwh",
         ),
     ]
+    if diesel_available_mw > 0.0:
+        sources.append(_PowerSource(
+            source_id="diesel-fleet",
+            source_type=_PowerSourceType.DIESEL,
+            dispatchable=True,
+            counts_toward_reserve=True,
+            # PROPOSED_HERE, D10 fallback: no catalogue diesel price exists.
+            # Rank-only infinity (not a fuel price): diesel is last on rise /
+            # first on back-down because diesel fuel/MWh exceeds gas and FC.
+            # Source: approved DR-2026-10-20-ISLAND-COLLAPSE D10.
+            marginal_cost_mwh=math.inf,
+            response_latency_class=_ResponseLatencyClass.RAMP_LIMITED,
+            authority_tier=_AuthorityTier.AUTONOMOUS,
+            available_mw=diesel_available_mw,
+            cost_basis_note="D10: ranking-only last; no catalogue diesel price",
+        ))
     ranked = _PowerRanker().rank(sources).ranked_sources
     remaining_mw = max(0.0, demand_mw)
     allocations = {
         "bess-fleet": 0.0,
         "turbine-fleet": 0.0,
         "fuel-cell-fleet": 0.0,
+        "diesel-fleet": 0.0,
     }
     for source in ranked:
         if remaining_mw <= 1e-9:
@@ -1672,6 +1693,44 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         )
         for t in _truly_sync_units
     )
+    _diesel_loading_bounds = None
+    if state.diesel_units:
+        # D10: one ramp calculation/one sequential loading allocator. Preserve
+        # the existing controller/baseload policy as a physical floor, rather
+        # than allocating diesel against turbine MW already held by that policy.
+        _diesel_loading_bounds = {}
+        _policy_targets = dict(getattr(state, "_preload_targets_mw", {}) or {})
+        _explicit_policy_targets = bool(_policy_targets)
+        if not _policy_targets and _generation_baseload_active:
+            _base_setpoints, _ = compute_loading_setpoints(
+                _truly_sync_units,
+                max(0.0, _generation_baseload_target_mw - _uncontrolled_on_bus_mw - _msl_held_mw),
+            )
+            _policy_targets = {
+                t.config.asset_id: sp for t, sp in zip(_truly_sync_units, _base_setpoints)
+            }
+        for _t in _truly_sync_units:
+            _minimum = _t.config.p_min_stable_frac * _t.config.rated_mw
+            _lo = ramp_limited_output(_t, _minimum, dt_seconds)
+            _hi = ramp_limited_output(_t, _t.config.rated_mw, dt_seconds)
+            if _explicit_policy_targets or _t.config.asset_id in _policy_targets:
+                # apply_loading_targets holds omitted units at minimum too.
+                _target = max(_minimum, min(_t.config.rated_mw, _policy_targets.get(_t.config.asset_id, _minimum)))
+                _lo = ramp_limited_output(_t, _target, dt_seconds)
+                if _explicit_policy_targets or not _generation_peak_following:
+                    _hi = _lo
+            _diesel_loading_bounds[_t.config.asset_id] = (_lo, max(_lo, _hi))
+        _msl_held_mw = sum(
+            ramp_limited_output(t, t.config.p_min_stable_frac * t.config.rated_mw, dt_seconds)
+            for t in _unloading_units
+        )
+        _turbine_must_run_mw = (
+            _uncontrolled_on_bus_mw + _msl_held_mw
+            + sum(bounds[0] for bounds in _diesel_loading_bounds.values())
+        )
+        _turbine_incremental_available_mw = sum(
+            hi - lo for lo, hi in _diesel_loading_bounds.values()
+        )
     # Economic BESS availability must account for both the instantaneous power
     # ceiling and energy that can actually be delivered during this tick.  If
     # only the power ceiling is ranked, an empty/near-empty BESS reserves cheap
@@ -1721,18 +1780,60 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             min(_physical_ceiling_mw, _normal_energy_ceiling_mw)
         )
     _bess_available_mw = sum(_bess_normal_dispatch_ceilings_mw)
+    _diesel_dispatch_floor_mw = 0.0
+    _diesel_dispatch_headroom_mw = 0.0
+    if state.diesel_units:
+        # Approved D10 signal amendment: primary-only achievable shortfall,
+        # using this allocation's ramp/policy/AC-energy bounds, not the primary
+        # MW displaced by a live diesel minimum. This is a capacity diagnostic,
+        # not a second dispatch. START condition and every timer stay unchanged.
+        state.diesel_fleet_coordinator.advance_units(
+            sim_time, dt_seconds, dispatch_controlled=True,
+        )
+        _diesel_control_gap_mw = max(
+            0.0, p_dispatch_required_mw - fuel_cell_output_mw
+            - _turbine_must_run_mw - _turbine_incremental_available_mw
+            - _bess_available_mw,
+        )
+        state.diesel_fleet_coordinator.step(
+            gap_mw=_diesel_control_gap_mw, sim_time=sim_time,
+            dt_seconds=dt_seconds, advance_units=False, consume_fuel=False,
+        )
+        _diesel_dispatch_floor_mw = sum(t.dispatch_floor_mw for t in state.diesel_units)
+        _diesel_dispatch_headroom_mw = sum(
+            t.dispatch_ceiling_mw - t.dispatch_floor_mw for t in state.diesel_units
+        )
+    # D10: diesel must not be hidden behind the old primary-only dispatch
+    # intent ceiling. Keep the droop/frequency calculation unchanged; the one
+    # allocator's resource envelopes bound the full physical dispatch request.
+    _allocation_demand_mw = (
+        max(0.0, p_dispatch_required_mw + _droop_correction_mw)
+        if state.diesel_units else _p_dispatch_droop_mw
+    )
     _economic_demand_mw = max(
         0.0,
-        _p_dispatch_droop_mw
+        _allocation_demand_mw
         - fuel_cell_output_mw
         - _turbine_must_run_mw,
+        # diesel's synchronized minimum / immutable unloading tail is must-run.
     )
+    _economic_demand_mw = max(0.0, _economic_demand_mw - _diesel_dispatch_floor_mw)
     _economic_allocations = _cost_ranked_dispatch_allocations(
         _economic_demand_mw,
         bess_available_mw=_bess_available_mw,
         turbine_available_mw=_turbine_incremental_available_mw,
         fuel_cell_available_mw=0.0,
+        diesel_available_mw=_diesel_dispatch_headroom_mw,
     )
+    _diesel_dispatch_target_mw = _diesel_dispatch_floor_mw + _economic_allocations["diesel-fleet"]
+    _diesel_extra_mw = _economic_allocations["diesel-fleet"]
+    for _diesel in state.diesel_units:
+        _extra = min(
+            _diesel_extra_mw,
+            _diesel.dispatch_ceiling_mw - _diesel.dispatch_floor_mw,
+        )
+        _diesel.apply_dispatch_target(_diesel.dispatch_floor_mw + _extra)
+        _diesel_extra_mw -= _extra
     _planned_bess_setpoint_mw = _economic_allocations["bess-fleet"]
     _thermal_dispatch_target_mw = (
         _turbine_must_run_mw + _economic_allocations["turbine-fleet"]
@@ -1745,7 +1846,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         # replacing conventional turbine generation during a peak.
         _conventional_following_target_mw = max(
             0.0,
-            _p_dispatch_droop_mw - fuel_cell_output_mw,
+            _p_dispatch_droop_mw - fuel_cell_output_mw - _diesel_dispatch_target_mw,
         )
         if _generation_peak_following:
             _thermal_dispatch_target_mw = max(
@@ -1779,7 +1880,8 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         )
     else:
         _sub_msl_surplus_mw = apply_loading(
-            _truly_sync_units, _p_sync_fleet_mw, dt_seconds
+            _truly_sync_units, _p_sync_fleet_mw, dt_seconds,
+            output_bounds=_diesel_loading_bounds,
         )
 
     # Addendum H Phase 1: account for the completed interval after loading has
@@ -1883,7 +1985,9 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         p_dispatch_required_mw
         - _post_loading_turbine_output_mw
         - fuel_cell_output_mw,
+        # D10: the single plan has already credited current diesel delivery.
     )
+    _physical_bess_shortfall_mw = max(0.0, _physical_bess_shortfall_mw - _diesel_dispatch_target_mw)
     _emergency_release_authorized = False
     if _normal_bess_energy_exhausted:
         _grid_emergency_support_mw = (
@@ -1904,7 +2008,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             # Diesel coordination runs after BESS arbitration.  Use measured
             # delivery from the preceding interval when deciding whether the
             # retained reserve must be released.
-            - state._prev_diesel_output_mw
+            - (0.0 if state.diesel_units else state._prev_diesel_output_mw)
             - _grid_emergency_support_mw,
         )
         _emergency_release_authorized = _emergency_gap_mw > 0.0
@@ -1944,7 +2048,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         # against an actual shortfall; negative values preserve its existing
         # surplus-absorption path so fixed FC overproduction charges the BESS.
         # tick() removes measured turbine output exactly once.
-        p_dispatch_required_mw - fuel_cell_output_mw,
+        p_dispatch_required_mw - fuel_cell_output_mw - _diesel_dispatch_target_mw,
         dt_seconds,
         bess_dispatch_target_mw=_effective_bess_setpoint_mw,
         bess_dispatch_ceilings_mw=_bess_dispatch_ceilings_mw,
@@ -1961,11 +2065,13 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         - fuel_cell_output_mw,
     )
     diesel_enabled = bool(state.diesel_units)
-    _diesel_snapshot = state.diesel_fleet_coordinator.step(
-        gap_mw=_gap_before_diesel_mw if diesel_enabled else 0.0,
-        sim_time=sim_time,
-        dt_seconds=dt_seconds,
-    )
+    if diesel_enabled:
+        state.diesel_fleet_coordinator.record_dispatch_fuel(dt_seconds)
+        _diesel_snapshot = state.diesel_fleet_coordinator.snapshot()
+    else:
+        _diesel_snapshot = state.diesel_fleet_coordinator.step(
+            gap_mw=0.0, sim_time=sim_time, dt_seconds=dt_seconds,
+        )
     diesel_output_mw = float(_diesel_snapshot.output_mw)
     state._prev_diesel_output_mw = diesel_output_mw if diesel_enabled else 0.0
 

@@ -33,6 +33,8 @@ if TYPE_CHECKING:
 def compute_loading_setpoints(
     synchronised: "list[TurbineModule]",
     p_fleet: float,
+    *,
+    output_bounds: dict[str, tuple[float, float]] | None = None,
 ) -> tuple[list[float], float]:
     """Compute per-unit setpoints for units in A.  Pure — no side effects.
 
@@ -64,6 +66,12 @@ def compute_loading_setpoints(
         return [0.0] * len(synchronised), 0.0
 
     msl_i = [t.config.p_min_stable_frac * t.config.rated_mw for t in synchronised]
+    ceiling_i = [t.config.rated_mw for t in synchronised]
+    if output_bounds is not None:
+        # D10: the same sequential allocator can use this interval's physical
+        # ramp/policy envelope; no second turbine/diesel loading algorithm.
+        msl_i = [output_bounds[t.config.asset_id][0] for t in synchronised]
+        ceiling_i = [output_bounds[t.config.asset_id][1] for t in synchronised]
     sum_msl = sum(msl_i)
 
     # ── Sub-MSL: feasible band lower bound ───────────────────────────────────
@@ -96,7 +104,7 @@ def compute_loading_setpoints(
     for i, t in enumerate(synchronised):
         if _residual_s < 1e-9:
             break
-        _headroom_i   = t.config.rated_mw - msl_i[i]
+        _headroom_i   = ceiling_i[i] - msl_i[i]
         _fill_i       = min(_residual_s, _headroom_i)
         setpoints[i] += _fill_i
         _residual_s  -= _fill_i
@@ -111,7 +119,7 @@ def compute_loading_setpoints(
         unclamped: list[int] = []
         for i, t in enumerate(synchronised):
             lo = msl_i[i]
-            hi = t.config.rated_mw
+            hi = ceiling_i[i]
             if setpoints[i] < lo - 1e-9:
                 residual += lo - setpoints[i]   # positive: we under-allocated
                 setpoints[i] = lo
@@ -135,10 +143,20 @@ def compute_loading_setpoints(
 # Apply loading to SYNCHRONISED units (has side effects on output_mw)
 # ---------------------------------------------------------------------------
 
+def ramp_limited_output(turbine: "TurbineModule", target_mw: float, dt_seconds: float) -> float:
+    """Pure prediction of the existing loading step, also used to apply it."""
+    delta = target_mw - turbine.output_mw()
+    max_step = turbine.config.r_asset_mw_per_s * dt_seconds
+    step = max(-max_step, min(max_step, delta))
+    return turbine.output_mw() + step
+
+
 def apply_loading(
     synchronised: "list[TurbineModule]",
     p_fleet: float,
     dt_seconds: float,
+    *,
+    output_bounds: dict[str, tuple[float, float]] | None = None,
 ) -> float:
     """Compute setpoints and advance SYNCHRONISED unit outputs toward them.
 
@@ -149,12 +167,11 @@ def apply_loading(
     No stored state — calling twice with the same inputs is idempotent for the
     setpoint computation, though output_mw will advance twice.
     """
-    setpoints, sub_msl_surplus_mw = compute_loading_setpoints(synchronised, p_fleet)
+    setpoints, sub_msl_surplus_mw = compute_loading_setpoints(
+        synchronised, p_fleet, output_bounds=output_bounds,
+    )
     for t, sp in zip(synchronised, setpoints):
-        delta = sp - t.output_mw()
-        max_step = t.config.r_asset_mw_per_s * dt_seconds
-        step = max(-max_step, min(max_step, delta))
-        t.set_output(t.output_mw() + step)
+        t.set_output(ramp_limited_output(t, sp, dt_seconds))
     return sub_msl_surplus_mw
 
 
@@ -183,10 +200,7 @@ def apply_loading_targets(
                 float(targets_mw.get(turbine.config.asset_id, minimum)),
             ),
         )
-        delta = target - turbine.output_mw()
-        max_step = turbine.config.r_asset_mw_per_s * dt_seconds
-        step = max(-max_step, min(max_step, delta))
-        turbine.set_output(turbine.output_mw() + step)
+        turbine.set_output(ramp_limited_output(turbine, target, dt_seconds))
     return sub_msl_surplus_mw
 
 

@@ -135,7 +135,11 @@ def test_live_diesel_output_reduces_remaining_gap_before_curtailment() -> None:
 
     expected_diesel_mw = enabled.sim_state.diesel_fleet_coordinator.output_mw
     assert disabled.sim_state.diesel_fleet_coordinator.output_mw == 0.0
-    assert expected_diesel_mw == pytest.approx(3.0)
+    # D10 supersedes the fixed-block 3 MW assertion: the live unit follows
+    # the shared allocation down to its synchronized minimum.
+    assert expected_diesel_mw == pytest.approx(
+        enabled.sim_state.diesel_units[0].dispatch_floor_mw,
+    )
     assert captured["gap_mw"] < disabled_tick.p_demand_mw
     assert captured["gap_mw"] == pytest.approx(
         max(
@@ -158,13 +162,18 @@ def test_live_diesel_output_increases_generation_and_balance_residual() -> None:
     enabled_tick = _tick(enabled.sim_state, tick_index=0)
     diesel_output_mw = enabled.sim_state.diesel_fleet_coordinator.output_mw
 
-    assert diesel_output_mw == pytest.approx(3.0)
-    assert enabled_tick.p_generation_mw - disabled_tick.p_generation_mw == pytest.approx(
-        diesel_output_mw
+    # D10: diesel is allocated with primary sources, no longer an additive
+    # fixed block that must increase generation/imbalance by exactly 3 MW.
+    assert diesel_output_mw == pytest.approx(
+        enabled.sim_state.diesel_units[0].dispatch_floor_mw,
     )
-    assert enabled_tick.p_imbalance_mw - disabled_tick.p_imbalance_mw == pytest.approx(
-        diesel_output_mw
+    assert enabled_tick.p_generation_mw == pytest.approx(
+        enabled_tick.turbine_output_mw + enabled_tick.bess_output_mw
+        + enabled_tick.fuel_cell_output_mw + enabled_tick.p_renewable_mw
+        + diesel_output_mw,
     )
+    assert enabled_tick.physical_balance.passed
+    assert disabled_tick.physical_balance.passed
 
 
 def test_live_diesel_is_less_aggressive_than_disabled_before_curtailment() -> None:

@@ -68,6 +68,7 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [GE turbine scenario assumptions](ge-turbine-scenario-assumptions.md) — 35% MSL, 30 MW/min ramp, 300/360/600 s startup tiers, and explicit synchronized spinning units.
 - [Scenario seed round-trip buffer](seed-round-trip-buffer.md) — large explicit Slurm topology can exceed the test subprocess JSON buffer before UI assertions run.
 - [Full-matrix GPU timeout](full-matrix-gpu-timeout.md) — the GPU load-profile node passes but can take just over 300 seconds; split runs need a longer harness timeout.
+- [Headless export storage](headless-export-storage.md) — check the actual scratch filesystem; /tmp is separate and verbose tick exports can exhaust it and invalidate concurrent checks.
 - [Phase 2a test harness](phase2a-test-harness.md) — run simulator tests from the gridsignal package directory; outer-root collection pulls in audit tests with incompatible imports.
 - [Forecast scale-event protection](forecast-scale-event-protection.md) — future SCALE events are burst starts for informed preload and restart-window commitment checks, even without a STARTING event.
 - [Fuel attribution and preload audit](fuel-attribution-and-preload-audit.md) — cumulative turbine counters use final rows; dispatch attribution uses positive interval increments; preload logs are signature-compacted.

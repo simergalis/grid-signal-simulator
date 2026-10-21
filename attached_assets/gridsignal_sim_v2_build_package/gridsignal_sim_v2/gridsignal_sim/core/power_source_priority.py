@@ -39,6 +39,7 @@ class PowerSourceType(str, Enum):
     BESS         = "bess"
     TURBINE      = "turbine"
     FUEL_CELL    = "fuel_cell"
+    DIESEL       = "diesel"
 
 
 class AuthorityTier(str, Enum):
