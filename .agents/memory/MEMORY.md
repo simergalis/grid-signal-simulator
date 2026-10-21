@@ -51,7 +51,7 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Intrinsic block fuel-cell ramp](block-fuel-cell-intrinsic-ramp.md) — producing blocks always obey a proposed MW/s machine limit before optional fuel constraints.
 - [Lead-time collection scope](lead-time-collection-scope.md) — collect only catalogue-backed hardware and training/inference workload classes; checkpointing and missing profiles stay explicitly skipped.
 - [Per-profile lead ramp overrides](per-profile-lead-ramp.md) — non-null HardwareProfile ramp timing overrides apply per job; None preserves module-level behavior.
-- [Ignored simulator source tracking](ignored-simulator-source.md) — new source under attached_assets is ignored and must be explicitly tracked.
+- [Simulator source tracking](ignored-simulator-source.md) — ignored source needs explicit tracking; automatic checkpoints can commit staged changes after a report-only commit.
 - [Alibaba trace replay](kube-trace-replay-runtime.md) — relative Alibaba timestamps are milliseconds; deduplicate scheduler wakeups or replay time grows superlinearly.
 - [DynamoLLM power calibration](dynamollm-power-calibration.md) — H100 chassis stays a 10.2 kW envelope; inference-only model factors use Table III lower-envelope Wh values.
 - [Phase A scheduler demo](phase-a-demo-scenario.md) — real queueing needs bounded capacity, overloaded arrival-duration product, and finite backoff retries; startup delay alone is not proof.
