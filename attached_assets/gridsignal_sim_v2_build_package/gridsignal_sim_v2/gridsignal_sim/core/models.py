@@ -745,6 +745,11 @@ class UnitAvailability:
     time_to_online_s: Optional[float]    # 0.0 = SYNCHRONISED; None = OUT_OF_SERVICE
     out_of_service_reason: Optional[str] # None unless OUT_OF_SERVICE
     hot_standby: bool = False            # True → excluded from ramp credit and dispatch
+    # DR D2 / IMPL-ISL-5: verdict evaluated by TurbineModule.start_eligibility.
+    # PROPOSED_HERE: True preserves explicitly supplied PMS/test snapshots;
+    # live turbine snapshots always supply their time-resolved verdict.
+    start_eligible: bool = True
+    start_ineligibility_reason: Optional[str] = None
 
     @property
     def is_starting(self) -> bool:

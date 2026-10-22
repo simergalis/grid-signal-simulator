@@ -77,6 +77,6 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Curtailment fuel attribution](curtailment-fuel-attribution.md) — report interval-exposure fuel separately from pro-rata operating-point attributable fuel; use the latter for avoided-curtailment share.
 - [S1 record completeness](s1-record-completeness.md) — bounded lists need explicit truncation markers; unmarked short lists are recording defects, not complete evidence.
 - [Phase 2b baseline reconciliation](phase2b-baseline-reconciliation.md) — long-horizon Slurm baseline can expose production/cascade starts outside the controller log; preserve the hard finding.
-- [S1 study harness](s1-study-harness.md) — replay metrics stay engine-importing and bounded; hot-standby release charging is explicit, and H-2 baseline start-event mismatch must remain a typed failure.
+- [S1 study harness](s1-study-harness.md) — bounded replay evidence, typed H-2 start-fuel failures, and a separate approval gate for certified-record changes.
 - [Forecast-history determinism](forecast-history-determinism.md) — H-1 informed physics matched with two retained snapshots and an unbounded logical history; the bound is diagnostic-only for this case.
 - [MCP identity and legacy artifacts](mcp-identity-and-legacy-artifacts.md) — boundary run identities must mirror executor replay normalization; legacy records need trace and guard hydration from stored artifacts.

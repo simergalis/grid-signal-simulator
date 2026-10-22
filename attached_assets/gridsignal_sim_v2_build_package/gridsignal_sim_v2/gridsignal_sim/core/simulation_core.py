@@ -291,6 +291,7 @@ class SimulationState:
     _commit_cfg:    CommitmentConfig    = field(init=False)
     _pending_start: PendingStartRegister = field(init=False)
     _commit_cond:   SustainedCondition  = field(init=False)
+    _start_ineligible_episode_logged: bool = field(default=False, init=False)
     _decommit_cond: SustainedCondition  = field(init=False)
     # Contingency-triggered standby release is deliberately separate from
     # evaluate_commitment().  The condition is armed again only after one
@@ -598,7 +599,7 @@ _STANDBY_THERMAL_PRIORITY = {
 }
 
 
-def _offline_turbines_by_thermal_priority(
+def _offline_turbine_roster(
     turbines: list[TurbineModule],
 ) -> list[TurbineModule]:
     """Return offline turbines in hot → warm → cold, then roster order."""
@@ -617,6 +618,49 @@ def _offline_turbines_by_thermal_priority(
     )
 
 
+def _offline_turbines_by_thermal_priority(
+    turbines: list[TurbineModule], sim_time: float, *, include_blocked: bool = False,
+) -> list[TurbineModule]:
+    """DR D2 / IMPL-ISL-5: one start predicate, unchanged thermal/roster order.
+
+    The commitment boundary includes blocked non-reserved units so it can
+    report why an episode has no candidate. Reserve labels use the raw roster.
+    """
+    candidates = []
+    for turbine in _offline_turbine_roster(turbines):
+        eligible, reason = turbine.start_eligibility(sim_time)
+        if eligible or (include_blocked and reason != "hot_standby"):
+            candidates.append(turbine)
+    return candidates
+
+
+def _releasable_hot_standby_turbines(
+    turbines: list[TurbineModule], sim_time: float,
+) -> list[TurbineModule]:
+    """Evaluate unchanged interlocks under the existing explicit release authority."""
+    candidates = []
+    for turbine in _offline_turbine_roster(turbines):
+        if turbine.config.hot_standby:
+            turbine.config.hot_standby = False
+            try:
+                eligible, _ = turbine.start_eligibility(sim_time)
+            finally:
+                turbine.config.hot_standby = True
+            if eligible:
+                candidates.append(turbine)
+    return candidates
+
+
+def _log_start_ineligibility_episode(
+    state: SimulationState, decision: CommitmentDecision, sim_time: float,
+) -> None:
+    """DR D2: one commitment-log reason per contiguous blocked episode."""
+    blocked = decision.blocked_by.startswith("no eligible turbine:")
+    if blocked and not state._start_ineligible_episode_logged:
+        _log.info("Commitment engine: %s at sim_time=%.1f", decision.blocked_by, sim_time)
+    state._start_ineligible_episode_logged = blocked
+
+
 def _promote_reserve_standby_labels(
     turbines: list[TurbineModule],
 ) -> tuple[str, ...]:
@@ -627,7 +671,7 @@ def _promote_reserve_standby_labels(
     """
     remaining = [
         turbine
-        for turbine in _offline_turbines_by_thermal_priority(turbines)
+        for turbine in _offline_turbine_roster(turbines)
         if turbine.config.hot_standby
     ]
     desired = [ThermalState.HOT, ThermalState.WARM]
@@ -714,11 +758,7 @@ def _release_hot_standby_for_contingency(
     ):
         return None
 
-    hot_standby_units = [
-        turbine
-        for turbine in _offline_turbines_by_thermal_priority(state.turbines)
-        if turbine.config.hot_standby
-    ]
+    hot_standby_units = _releasable_hot_standby_turbines(state.turbines, sim_time)
     if not hot_standby_units:
         return None
 
@@ -2178,12 +2218,13 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # reserve; using them here would make the commitment decision disagree with
     # the operator-facing reserve summary during the controlled rundown.
     _avail_on_bus = [
-        t.unit_availability() for t in state.turbines if t.contributes_to_reserve
+        t.unit_availability(sim_time) for t in state.turbines if t.contributes_to_reserve
     ]
     _avail_offline = [
-        t.unit_availability()
-        for t in _offline_turbines_by_thermal_priority(state.turbines)
-        if not t.config.hot_standby
+        t.unit_availability(sim_time)
+        for t in _offline_turbines_by_thermal_priority(
+            state.turbines, sim_time, include_blocked=True,
+        )
     ]
 
     # ── Cascade commit trigger (site.cascade_commit_fraction) ─────────────
@@ -2239,11 +2280,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                 # command_start().  Fix: clear the flag, THEN call command_start()
                 # (the guard is gone so it transitions OFFLINE → STARTING normally,
                 # using initial_thermal_state="hot" → hot_start_s duration).
-                _hs_units = [
-                    t
-                    for t in _offline_turbines_by_thermal_priority(state.turbines)
-                    if t.config.hot_standby
-                ]
+                _hs_units = _releasable_hot_standby_turbines(state.turbines, sim_time)
                 if _hs_units and state._pending_start.is_empty:
                     _next_hs = _hs_units[0]
                     _before_state = _next_hs.state
@@ -2316,6 +2353,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         decommit_enabled     = _bess_rundown_enabled and not _generation_baseload_active,
         decommit_reason_context = _bess_rundown_reason,
     )
+    _log_start_ineligibility_episode(state, _commit_decision, sim_time)
     if (
         _commit_decision.action == "commit"
         and _commit_decision.target_unit_id is not None
@@ -2535,7 +2573,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # UNLOADING units are pinned at MSL with no upward headroom — counting their
     # nameplate overstates reserve precisely when the fleet is shrinking.
     # Distinct from on_bus_output_mw which INCLUDES UNLOADING (they do produce).
-    _avail_reserve        = [t.unit_availability() for t in state.turbines if t.contributes_to_reserve]
+    _avail_reserve        = [t.unit_availability(sim_time) for t in state.turbines if t.contributes_to_reserve]
     _committed_rated_mw_cs = sum(u.rated_mw for u in _avail_reserve)
     _fleet_utilisation_cs = (
         _commitment_demand_mw / _committed_rated_mw_cs

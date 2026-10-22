@@ -17,3 +17,14 @@ Normalizing that mismatch would hide an evidence defect.
 surface mismatches as `StartFuelReconciliationError`.  Keep run records
 bounded; preserve exact counts and replay assertions separately from
 representative logs.
+
+## Certified-record approval boundary
+
+Permission to implement an engine fix does not authorize changing certified
+Addendum H study records.
+
+**Why:** The user reserves certified-record decisions for separate review.
+
+**How to apply:** If a reference baseline rejects a turbine start, report where
+and the resulting before/after metric deltas, then stop before committing the
+implementation until the reviewer decides. Do not silently recertify the record.
