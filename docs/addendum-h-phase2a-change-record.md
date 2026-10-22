@@ -37,19 +37,31 @@ This work preserves the Phase 2a contract:
 The repair restores the intended ordering without changing commitment policy,
 the acceptance rule, the baseline fixture, or alert/disposition behavior:
 
-- Islanded `frequency_forcing_mw` and `p_imbalance_mw` now use measured
-  generation minus served load before the explicit dispatch-curtailment sink.
-  Positive surplus therefore reaches the swing equation on the same tick it
-  occurs.
+- The original repair used the measured pre-dump residual for islanded swing
+  forcing. **DR D11 / IMPL-ISL-19 supersedes its sustained-surplus forcing:**
+  the rotor sees surplus only until the finite dump response absorbs it.
+  `p_imbalance_mw`, D7 served/unserved accounting and the ledger sink are
+  unchanged; deficit forcing is not netted against recorded unserved load.
 - Turbine rundown remains governed by the existing physical ramp and
   commitment/unloading paths. The explicit dump sink is applied only to the
   residual after BESS absorption and turbine rundown.
 - The dump response has a configurable
   `dispatch_curtailment_response_delay_s` input, marked `PROPOSED_HERE`, and
-  ramps the explicit sink to full response over that delay. The default
-  0.5-second delay is below the unchanged 5-second smoke interval.
+  ramps to full response over that delay. D11 advances the existing episode
+  timer per frequency substep, carries it across ticks and preserves its
+  reset condition. Delay zero gives full response immediately. The unchanged
+  0.5-second default is below the unchanged 5-second smoke interval.
 - `p_dispatch_curtailed_mw` remains an explicit term in the physical balance
-  ledger, and the separate unaccounted-surplus channel remains zero.
+  ledger at its existing outer-tick scheduled value, not a substep average.
+  The separate unaccounted-surplus channel remains zero.
+- **DR D11-t** supersedes D11's last-integrated-substep public telemetry:
+  islanded `frequency_forcing_mw` is the existing post-trip reconciled public
+  residual (including the existing FC-trip and UFLS reconciliation) minus the
+  reconciled ledger `p_dispatch_curtailed_mw` after IMPL-ISL-10. The integrator
+  still uses its per-substep achieved dump response; its last integrated
+  forcing is internal only. Grid-tied telemetry is unchanged. This
+  retains b74830d's same-tick rotor transient without integrating already
+  absorbed surplus indefinitely; it adds no frequency clamp or protection.
 
 The implementation is in `core/simulation_core.py` (balance ordering and
 response timer), with the configuration surfaced through `core/models.py`,
