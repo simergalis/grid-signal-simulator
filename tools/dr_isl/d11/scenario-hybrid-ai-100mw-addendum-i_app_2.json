@@ -1,0 +1,130 @@
+{
+  "scenario": "scenario-hybrid-ai-100mw-addendum-i",
+  "arm": "app",
+  "repetition": 2,
+  "ticks": 120,
+  "first_difference": null,
+  "frequency": [
+    {
+      "ticks": 120,
+      "minimum": -218.79606450000827,
+      "maximum": 285.92631259085584,
+      "invalid": 78,
+      "invalid_categories": {
+        "curtailment_positive": 24,
+        "deficit_forcing": 10,
+        "carried_frequency": 44,
+        "other": 0
+      },
+      "first_invalid": {
+        "frequency_hz": -20.29765039999966,
+        "frequency_valid": false,
+        "frequency_forcing_mw": -18.893564800000007,
+        "p_dispatch_curtailed_mw": 0.0,
+        "tick_index": 1,
+        "sim_time": 5.0
+      },
+      "fraction": 0.65
+    },
+    {
+      "ticks": 120,
+      "minimum": -218.79606450000827,
+      "maximum": 60.97955266880781,
+      "invalid": 54,
+      "invalid_categories": {
+        "curtailment_positive": 0,
+        "deficit_forcing": 10,
+        "carried_frequency": 44,
+        "other": 0
+      },
+      "first_invalid": {
+        "frequency_hz": -20.29765039999966,
+        "frequency_valid": false,
+        "frequency_forcing_mw": -18.893564800000007,
+        "p_dispatch_curtailed_mw": 0.0,
+        "tick_index": 1,
+        "sim_time": 5.0
+      },
+      "fraction": 0.45
+    }
+  ],
+  "summaries": {
+    "base": {
+      "kind": "summary",
+      "instrumentation": {
+        "original_sha256": "f3e867309cd1e6aa97ca9ded2b28572763283341a6ac844d0f222d03a135ff47",
+        "candidate_sha256": "6075a47086f9d1fce0453daaf95b0911ef2c3d69c0c37151b77757aca67256c0",
+        "application_files_changed": false,
+        "mode": "base"
+      },
+      "physical_sha256": "74f55fca1651deabc7364360b1d0f52941b8564df6e6001be377bc3a3458cfc1",
+      "ticks": 120,
+      "metrics": {},
+      "record": {},
+      "end_sim_time": 600.0,
+      "build_warnings": [
+        {
+          "code": "islanded_frequency_protection_unconfigured",
+          "message": "islanded run without frequency protection configured"
+        }
+      ],
+      "final_floor_basis": {
+        "bess-hybrid-edge": {
+          "bess_id": "bess-hybrid-edge",
+          "floor_mwh": 5.52,
+          "depth_reserve_mwh": 5.52,
+          "diesel_floor_mwh": 0.5833333333333334,
+          "d2r_term_mwh": 0.0,
+          "winning_term": "depth_reserve",
+          "basis": "no restartable synchronous unit",
+          "unit_id": null,
+          "eligibility_wait_s": null,
+          "start_duration_s": null,
+          "thermal_state": null,
+          "eligibility_reason": null
+        }
+      },
+      "floor_history_count": 0
+    },
+    "candidate": {
+      "kind": "summary",
+      "instrumentation": {
+        "original_sha256": "f3e867309cd1e6aa97ca9ded2b28572763283341a6ac844d0f222d03a135ff47",
+        "candidate_sha256": "6075a47086f9d1fce0453daaf95b0911ef2c3d69c0c37151b77757aca67256c0",
+        "application_files_changed": false,
+        "mode": "candidate"
+      },
+      "physical_sha256": "74f55fca1651deabc7364360b1d0f52941b8564df6e6001be377bc3a3458cfc1",
+      "ticks": 120,
+      "metrics": {},
+      "record": {},
+      "end_sim_time": 600.0,
+      "build_warnings": [
+        {
+          "code": "islanded_frequency_protection_unconfigured",
+          "message": "islanded run without frequency protection configured"
+        }
+      ],
+      "final_floor_basis": {
+        "bess-hybrid-edge": {
+          "bess_id": "bess-hybrid-edge",
+          "floor_mwh": 5.52,
+          "depth_reserve_mwh": 5.52,
+          "diesel_floor_mwh": 0.5833333333333334,
+          "d2r_term_mwh": 0.0,
+          "winning_term": "depth_reserve",
+          "basis": "no restartable synchronous unit",
+          "unit_id": null,
+          "eligibility_wait_s": null,
+          "start_duration_s": null,
+          "thermal_state": null,
+          "eligibility_reason": null
+        }
+      },
+      "floor_history_count": 0
+    }
+  },
+  "nonfrequency_hash_identical": true,
+  "nonfrequency_metric_differences": {},
+  "passed": true
+}

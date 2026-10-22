@@ -1,0 +1,162 @@
+{
+  "scenario": "scenario-fc100-islanded-zero-hot-v2",
+  "arm": "app",
+  "repetition": 2,
+  "ticks": 264,
+  "first_difference": null,
+  "frequency": [
+    {
+      "ticks": 264,
+      "minimum": -82.80435199997717,
+      "maximum": 60.0,
+      "invalid": 214,
+      "invalid_categories": {
+        "curtailment_positive": 0,
+        "deficit_forcing": 207,
+        "carried_frequency": 7,
+        "other": 0
+      },
+      "first_invalid": {
+        "frequency_hz": 39.39674952027191,
+        "frequency_valid": false,
+        "frequency_forcing_mw": -20.944261432913947,
+        "p_dispatch_curtailed_mw": 0.0,
+        "tick_index": 46,
+        "sim_time": 230.0
+      },
+      "fraction": 0.8106060606060606
+    },
+    {
+      "ticks": 264,
+      "minimum": -82.80435199997717,
+      "maximum": 60.0,
+      "invalid": 214,
+      "invalid_categories": {
+        "curtailment_positive": 0,
+        "deficit_forcing": 207,
+        "carried_frequency": 7,
+        "other": 0
+      },
+      "first_invalid": {
+        "frequency_hz": 39.39674952027191,
+        "frequency_valid": false,
+        "frequency_forcing_mw": -20.944261432913944,
+        "p_dispatch_curtailed_mw": 0.0,
+        "tick_index": 46,
+        "sim_time": 230.0
+      },
+      "fraction": 0.8106060606060606
+    }
+  ],
+  "summaries": {
+    "base": {
+      "kind": "summary",
+      "instrumentation": {
+        "original_sha256": "f3e867309cd1e6aa97ca9ded2b28572763283341a6ac844d0f222d03a135ff47",
+        "candidate_sha256": "6075a47086f9d1fce0453daaf95b0911ef2c3d69c0c37151b77757aca67256c0",
+        "application_files_changed": false,
+        "mode": "base"
+      },
+      "physical_sha256": "aefdc289bec7a9da3c99398716f8549a0eef0bfdf765bd72a1264a95fe44a507",
+      "ticks": 264,
+      "metrics": {},
+      "record": {},
+      "end_sim_time": 1320.0,
+      "build_warnings": [
+        {
+          "code": "bess_reserve_floor_above_usable",
+          "bess_id": "bess-fc100",
+          "floor_mwh": 152.5,
+          "usable_mwh": 40.0,
+          "winning_term": "diesel_floor",
+          "diesel_units": [
+            {
+              "asset_id": "diesel-000",
+              "delta_t_start_s": 3600.0,
+              "residual_ramp_s": 60.0,
+              "start_offset_s": 0.0
+            }
+          ],
+          "diesel_worst_case_sync_s": 3660.0
+        },
+        {
+          "code": "islanded_frequency_protection_unconfigured",
+          "message": "islanded run without frequency protection configured"
+        }
+      ],
+      "final_floor_basis": {
+        "bess-fc100": {
+          "bess_id": "bess-fc100",
+          "floor_mwh": 152.5,
+          "depth_reserve_mwh": 0.0,
+          "diesel_floor_mwh": 152.5,
+          "d2r_term_mwh": 0.0,
+          "winning_term": "diesel_floor",
+          "basis": "no restartable synchronous unit",
+          "unit_id": null,
+          "eligibility_wait_s": null,
+          "start_duration_s": null,
+          "thermal_state": null,
+          "eligibility_reason": null
+        }
+      },
+      "floor_history_count": 0
+    },
+    "candidate": {
+      "kind": "summary",
+      "instrumentation": {
+        "original_sha256": "f3e867309cd1e6aa97ca9ded2b28572763283341a6ac844d0f222d03a135ff47",
+        "candidate_sha256": "6075a47086f9d1fce0453daaf95b0911ef2c3d69c0c37151b77757aca67256c0",
+        "application_files_changed": false,
+        "mode": "candidate"
+      },
+      "physical_sha256": "aefdc289bec7a9da3c99398716f8549a0eef0bfdf765bd72a1264a95fe44a507",
+      "ticks": 264,
+      "metrics": {},
+      "record": {},
+      "end_sim_time": 1320.0,
+      "build_warnings": [
+        {
+          "code": "bess_reserve_floor_above_usable",
+          "bess_id": "bess-fc100",
+          "floor_mwh": 152.5,
+          "usable_mwh": 40.0,
+          "winning_term": "diesel_floor",
+          "diesel_units": [
+            {
+              "asset_id": "diesel-000",
+              "delta_t_start_s": 3600.0,
+              "residual_ramp_s": 60.0,
+              "start_offset_s": 0.0
+            }
+          ],
+          "diesel_worst_case_sync_s": 3660.0
+        },
+        {
+          "code": "islanded_frequency_protection_unconfigured",
+          "message": "islanded run without frequency protection configured"
+        }
+      ],
+      "final_floor_basis": {
+        "bess-fc100": {
+          "bess_id": "bess-fc100",
+          "floor_mwh": 152.5,
+          "depth_reserve_mwh": 0.0,
+          "diesel_floor_mwh": 152.5,
+          "d2r_term_mwh": 0.0,
+          "winning_term": "diesel_floor",
+          "basis": "no restartable synchronous unit",
+          "unit_id": null,
+          "eligibility_wait_s": null,
+          "start_duration_s": null,
+          "thermal_state": null,
+          "eligibility_reason": null
+        }
+      },
+      "floor_history_count": 0
+    }
+  },
+  "nonfrequency_hash_identical": true,
+  "nonfrequency_metric_differences": {},
+  "passed": true
+}

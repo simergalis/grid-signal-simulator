@@ -1,0 +1,1402 @@
+[
+  {
+    "scenario": "scenario-uneven-multisched-01",
+    "arm": "baseline",
+    "repetition": 1,
+    "ticks": 1440,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 1440,
+        "minimum": -5.000866893367675,
+        "maximum": 176.430848113831,
+        "invalid": 700,
+        "invalid_categories": {
+          "curtailment_positive": 637,
+          "deficit_forcing": 27,
+          "carried_frequency": 36,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 40.909530078118486,
+          "frequency_valid": false,
+          "frequency_forcing_mw": -22.30936246553462,
+          "p_dispatch_curtailed_mw": 0.0,
+          "tick_index": 67,
+          "sim_time": 335.0
+        },
+        "fraction": 0.4861111111111111
+      },
+      {
+        "ticks": 1440,
+        "minimum": -5.000866893367675,
+        "maximum": 60.04391555797632,
+        "invalid": 53,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 27,
+          "carried_frequency": 26,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 40.909530078118486,
+          "frequency_valid": false,
+          "frequency_forcing_mw": -22.30936246553462,
+          "p_dispatch_curtailed_mw": 0.0,
+          "tick_index": 67,
+          "sim_time": 335.0
+        },
+        "fraction": 0.03680555555555556
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-uneven-multisched-01",
+    "arm": "baseline",
+    "repetition": 2,
+    "ticks": 1440,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 1440,
+        "minimum": -5.000866893367675,
+        "maximum": 176.430848113831,
+        "invalid": 700,
+        "invalid_categories": {
+          "curtailment_positive": 637,
+          "deficit_forcing": 27,
+          "carried_frequency": 36,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 40.909530078118486,
+          "frequency_valid": false,
+          "frequency_forcing_mw": -22.30936246553462,
+          "p_dispatch_curtailed_mw": 0.0,
+          "tick_index": 67,
+          "sim_time": 335.0
+        },
+        "fraction": 0.4861111111111111
+      },
+      {
+        "ticks": 1440,
+        "minimum": -5.000866893367675,
+        "maximum": 60.04391555797632,
+        "invalid": 53,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 27,
+          "carried_frequency": 26,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 40.909530078118486,
+          "frequency_valid": false,
+          "frequency_forcing_mw": -22.30936246553462,
+          "p_dispatch_curtailed_mw": 0.0,
+          "tick_index": 67,
+          "sim_time": 335.0
+        },
+        "fraction": 0.03680555555555556
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-uneven-multisched-01",
+    "arm": "informed",
+    "repetition": 1,
+    "ticks": 1440,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 1440,
+        "minimum": 59.534837314959205,
+        "maximum": 169.8277840657461,
+        "invalid": 614,
+        "invalid_categories": {
+          "curtailment_positive": 446,
+          "deficit_forcing": 0,
+          "carried_frequency": 168,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 66.19487030675623,
+          "frequency_valid": false,
+          "frequency_forcing_mw": 23.53627916410341,
+          "p_dispatch_curtailed_mw": 23.53627916410341,
+          "tick_index": 123,
+          "sim_time": 615.0
+        },
+        "fraction": 0.4263888888888889
+      },
+      {
+        "ticks": 1440,
+        "minimum": 55.495062375543036,
+        "maximum": 60.29869344972031,
+        "invalid": 0,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 0,
+          "carried_frequency": 0,
+          "other": 0
+        },
+        "first_invalid": null,
+        "fraction": 0.0
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-uneven-multisched-01",
+    "arm": "informed",
+    "repetition": 2,
+    "ticks": 1440,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 1440,
+        "minimum": 59.534837314959205,
+        "maximum": 169.8277840657461,
+        "invalid": 614,
+        "invalid_categories": {
+          "curtailment_positive": 446,
+          "deficit_forcing": 0,
+          "carried_frequency": 168,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 66.19487030675623,
+          "frequency_valid": false,
+          "frequency_forcing_mw": 23.53627916410341,
+          "p_dispatch_curtailed_mw": 23.53627916410341,
+          "tick_index": 123,
+          "sim_time": 615.0
+        },
+        "fraction": 0.4263888888888889
+      },
+      {
+        "ticks": 1440,
+        "minimum": 55.495062375543036,
+        "maximum": 60.29869344972031,
+        "invalid": 0,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 0,
+          "carried_frequency": 0,
+          "other": 0
+        },
+        "first_invalid": null,
+        "fraction": 0.0
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-h1-k8s-ray-24h",
+    "arm": "baseline",
+    "repetition": 1,
+    "ticks": 17280,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 17280,
+        "minimum": 17.23372983198947,
+        "maximum": 224.93353102420852,
+        "invalid": 13598,
+        "invalid_categories": {
+          "curtailment_positive": 11753,
+          "deficit_forcing": 57,
+          "carried_frequency": 1788,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 70.13551986008387,
+          "frequency_valid": false,
+          "frequency_forcing_mw": 8.965449895398807,
+          "p_dispatch_curtailed_mw": 8.965449895398807,
+          "tick_index": 213,
+          "sim_time": 1065.0
+        },
+        "fraction": 0.7869212962962963
+      },
+      {
+        "ticks": 17280,
+        "minimum": 17.09771681495931,
+        "maximum": 60.271876826116234,
+        "invalid": 811,
+        "invalid_categories": {
+          "curtailment_positive": 26,
+          "deficit_forcing": 52,
+          "carried_frequency": 733,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 48.71516888456215,
+          "frequency_valid": false,
+          "frequency_forcing_mw": -26.618853625395175,
+          "p_dispatch_curtailed_mw": 0.0,
+          "tick_index": 6131,
+          "sim_time": 30655.0
+        },
+        "fraction": 0.04693287037037037
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-h1-k8s-ray-24h",
+    "arm": "baseline",
+    "repetition": 2,
+    "ticks": 17280,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 17280,
+        "minimum": 17.23372983198947,
+        "maximum": 224.93353102420852,
+        "invalid": 13598,
+        "invalid_categories": {
+          "curtailment_positive": 11753,
+          "deficit_forcing": 57,
+          "carried_frequency": 1788,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 70.13551986008387,
+          "frequency_valid": false,
+          "frequency_forcing_mw": 8.965449895398807,
+          "p_dispatch_curtailed_mw": 8.965449895398807,
+          "tick_index": 213,
+          "sim_time": 1065.0
+        },
+        "fraction": 0.7869212962962963
+      },
+      {
+        "ticks": 17280,
+        "minimum": 17.09771681495931,
+        "maximum": 60.271876826116234,
+        "invalid": 811,
+        "invalid_categories": {
+          "curtailment_positive": 26,
+          "deficit_forcing": 52,
+          "carried_frequency": 733,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 48.71516888456215,
+          "frequency_valid": false,
+          "frequency_forcing_mw": -26.618853625395175,
+          "p_dispatch_curtailed_mw": 0.0,
+          "tick_index": 6131,
+          "sim_time": 30655.0
+        },
+        "fraction": 0.04693287037037037
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-h1-k8s-ray-24h",
+    "arm": "informed",
+    "repetition": 1,
+    "ticks": 17280,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 17280,
+        "minimum": 48.666827290428756,
+        "maximum": 224.93353102420852,
+        "invalid": 13712,
+        "invalid_categories": {
+          "curtailment_positive": 11518,
+          "deficit_forcing": 13,
+          "carried_frequency": 2181,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 70.13551986008387,
+          "frequency_valid": false,
+          "frequency_forcing_mw": 8.965449895398807,
+          "p_dispatch_curtailed_mw": 8.965449895398807,
+          "tick_index": 213,
+          "sim_time": 1065.0
+        },
+        "fraction": 0.7935185185185185
+      },
+      {
+        "ticks": 17280,
+        "minimum": 48.59156754833297,
+        "maximum": 60.458333516015756,
+        "invalid": 76,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 4,
+          "carried_frequency": 72,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 53.41987503698744,
+          "frequency_valid": false,
+          "frequency_forcing_mw": -20.746308977465503,
+          "p_dispatch_curtailed_mw": 0.0,
+          "tick_index": 13331,
+          "sim_time": 66655.0
+        },
+        "fraction": 0.004398148148148148
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-h1-k8s-ray-24h",
+    "arm": "informed",
+    "repetition": 2,
+    "ticks": 17280,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 17280,
+        "minimum": 48.666827290428756,
+        "maximum": 224.93353102420852,
+        "invalid": 13712,
+        "invalid_categories": {
+          "curtailment_positive": 11518,
+          "deficit_forcing": 13,
+          "carried_frequency": 2181,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 70.13551986008387,
+          "frequency_valid": false,
+          "frequency_forcing_mw": 8.965449895398807,
+          "p_dispatch_curtailed_mw": 8.965449895398807,
+          "tick_index": 213,
+          "sim_time": 1065.0
+        },
+        "fraction": 0.7935185185185185
+      },
+      {
+        "ticks": 17280,
+        "minimum": 48.59156754833297,
+        "maximum": 60.458333516015756,
+        "invalid": 76,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 4,
+          "carried_frequency": 72,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 53.41987503698744,
+          "frequency_valid": false,
+          "frequency_forcing_mw": -20.746308977465503,
+          "p_dispatch_curtailed_mw": 0.0,
+          "tick_index": 13331,
+          "sim_time": 66655.0
+        },
+        "fraction": 0.004398148148148148
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-h2-slurm-24h",
+    "arm": "baseline",
+    "repetition": 1,
+    "ticks": 17280,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 17280,
+        "minimum": -225.278937529193,
+        "maximum": 245.96773016794788,
+        "invalid": 16802,
+        "invalid_categories": {
+          "curtailment_positive": 16348,
+          "deficit_forcing": 160,
+          "carried_frequency": 294,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 70.407865020299,
+          "frequency_valid": false,
+          "frequency_forcing_mw": 12.757387673050793,
+          "p_dispatch_curtailed_mw": 12.757387673050793,
+          "tick_index": 174,
+          "sim_time": 870.0
+        },
+        "fraction": 0.9723379629629629
+      },
+      {
+        "ticks": 17280,
+        "minimum": -239.88626623828412,
+        "maximum": 60.22370565114776,
+        "invalid": 549,
+        "invalid_categories": {
+          "curtailment_positive": 54,
+          "deficit_forcing": 166,
+          "carried_frequency": 329,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 46.45430996392438,
+          "frequency_valid": false,
+          "frequency_forcing_mw": -17.2063244228968,
+          "p_dispatch_curtailed_mw": 0.0,
+          "tick_index": 5827,
+          "sim_time": 29135.0
+        },
+        "fraction": 0.03177083333333333
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-h2-slurm-24h",
+    "arm": "baseline",
+    "repetition": 2,
+    "ticks": 17280,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 17280,
+        "minimum": -225.278937529193,
+        "maximum": 245.96773016794788,
+        "invalid": 16802,
+        "invalid_categories": {
+          "curtailment_positive": 16348,
+          "deficit_forcing": 160,
+          "carried_frequency": 294,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 70.407865020299,
+          "frequency_valid": false,
+          "frequency_forcing_mw": 12.757387673050793,
+          "p_dispatch_curtailed_mw": 12.757387673050793,
+          "tick_index": 174,
+          "sim_time": 870.0
+        },
+        "fraction": 0.9723379629629629
+      },
+      {
+        "ticks": 17280,
+        "minimum": -239.88626623828412,
+        "maximum": 60.22370565114776,
+        "invalid": 549,
+        "invalid_categories": {
+          "curtailment_positive": 54,
+          "deficit_forcing": 166,
+          "carried_frequency": 329,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 46.45430996392438,
+          "frequency_valid": false,
+          "frequency_forcing_mw": -17.2063244228968,
+          "p_dispatch_curtailed_mw": 0.0,
+          "tick_index": 5827,
+          "sim_time": 29135.0
+        },
+        "fraction": 0.03177083333333333
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-h2-slurm-24h",
+    "arm": "informed",
+    "repetition": 2,
+    "ticks": 17280,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 17280,
+        "minimum": 60.0,
+        "maximum": 250.44034654726377,
+        "invalid": 16955,
+        "invalid_categories": {
+          "curtailment_positive": 16557,
+          "deficit_forcing": 43,
+          "carried_frequency": 355,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 70.407865020299,
+          "frequency_valid": false,
+          "frequency_forcing_mw": 12.757387673050793,
+          "p_dispatch_curtailed_mw": 12.757387673050793,
+          "tick_index": 174,
+          "sim_time": 870.0
+        },
+        "fraction": 0.9811921296296297
+      },
+      {
+        "ticks": 17280,
+        "minimum": 11.925776125116506,
+        "maximum": 60.14917658611521,
+        "invalid": 412,
+        "invalid_categories": {
+          "curtailment_positive": 51,
+          "deficit_forcing": 42,
+          "carried_frequency": 319,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 52.89421841614202,
+          "frequency_valid": false,
+          "frequency_forcing_mw": -17.71643954660952,
+          "p_dispatch_curtailed_mw": 0.0,
+          "tick_index": 5828,
+          "sim_time": 29140.0
+        },
+        "fraction": 0.023842592592592592
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-h2-slurm-24h",
+    "arm": "informed",
+    "repetition": 1,
+    "ticks": 17280,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 17280,
+        "minimum": 60.0,
+        "maximum": 250.44034654726377,
+        "invalid": 16955,
+        "invalid_categories": {
+          "curtailment_positive": 16557,
+          "deficit_forcing": 43,
+          "carried_frequency": 355,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 70.407865020299,
+          "frequency_valid": false,
+          "frequency_forcing_mw": 12.757387673050793,
+          "p_dispatch_curtailed_mw": 12.757387673050793,
+          "tick_index": 174,
+          "sim_time": 870.0
+        },
+        "fraction": 0.9811921296296297
+      },
+      {
+        "ticks": 17280,
+        "minimum": 11.925776125116506,
+        "maximum": 60.14917658611521,
+        "invalid": 412,
+        "invalid_categories": {
+          "curtailment_positive": 51,
+          "deficit_forcing": 42,
+          "carried_frequency": 319,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 52.89421841614202,
+          "frequency_valid": false,
+          "frequency_forcing_mw": -17.71643954660952,
+          "p_dispatch_curtailed_mw": 0.0,
+          "tick_index": 5828,
+          "sim_time": 29140.0
+        },
+        "fraction": 0.023842592592592592
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "S10_mit_supercloud_2021-08-11",
+    "arm": "app",
+    "repetition": 1,
+    "ticks": 17280,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 17280,
+        "minimum": -729.1075118080669,
+        "maximum": 998.9330534505464,
+        "invalid": 7264,
+        "invalid_categories": {
+          "curtailment_positive": 5615,
+          "deficit_forcing": 478,
+          "carried_frequency": 1171,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 71.14198664583199,
+          "frequency_valid": false,
+          "frequency_forcing_mw": 5.2432878333333335,
+          "p_dispatch_curtailed_mw": 5.2432878333333335,
+          "tick_index": 1,
+          "sim_time": 5.0
+        },
+        "fraction": 0.4203703703703704
+      },
+      {
+        "ticks": 17280,
+        "minimum": -749.6905479257669,
+        "maximum": 60.54595734564584,
+        "invalid": 594,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 476,
+          "carried_frequency": 118,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 51.13217924234165,
+          "frequency_valid": false,
+          "frequency_forcing_mw": -5.496637964444439,
+          "p_dispatch_curtailed_mw": 0.0,
+          "tick_index": 1921,
+          "sim_time": 9605.0
+        },
+        "fraction": 0.034375
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "S10_mit_supercloud_2021-08-11",
+    "arm": "app",
+    "repetition": 2,
+    "ticks": 17280,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 17280,
+        "minimum": -729.1075118080669,
+        "maximum": 998.9330534505464,
+        "invalid": 7264,
+        "invalid_categories": {
+          "curtailment_positive": 5615,
+          "deficit_forcing": 478,
+          "carried_frequency": 1171,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 71.14198664583199,
+          "frequency_valid": false,
+          "frequency_forcing_mw": 5.2432878333333335,
+          "p_dispatch_curtailed_mw": 5.2432878333333335,
+          "tick_index": 1,
+          "sim_time": 5.0
+        },
+        "fraction": 0.4203703703703704
+      },
+      {
+        "ticks": 17280,
+        "minimum": -749.6905479257669,
+        "maximum": 60.54595734564584,
+        "invalid": 594,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 476,
+          "carried_frequency": 118,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 51.13217924234165,
+          "frequency_valid": false,
+          "frequency_forcing_mw": -5.496637964444439,
+          "p_dispatch_curtailed_mw": 0.0,
+          "tick_index": 1921,
+          "sim_time": 9605.0
+        },
+        "fraction": 0.034375
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-equinix-sj-1",
+    "arm": "app",
+    "repetition": 1,
+    "ticks": 720,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 720,
+        "minimum": 60.0,
+        "maximum": 60.0,
+        "invalid": 0,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 0,
+          "carried_frequency": 0,
+          "other": 0
+        },
+        "first_invalid": null,
+        "fraction": 0.0
+      },
+      {
+        "ticks": 720,
+        "minimum": 60.0,
+        "maximum": 60.0,
+        "invalid": 0,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 0,
+          "carried_frequency": 0,
+          "other": 0
+        },
+        "first_invalid": null,
+        "fraction": 0.0
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-equinix-sj-1",
+    "arm": "app",
+    "repetition": 2,
+    "ticks": 720,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 720,
+        "minimum": 60.0,
+        "maximum": 60.0,
+        "invalid": 0,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 0,
+          "carried_frequency": 0,
+          "other": 0
+        },
+        "first_invalid": null,
+        "fraction": 0.0
+      },
+      {
+        "ticks": 720,
+        "minimum": 60.0,
+        "maximum": 60.0,
+        "invalid": 0,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 0,
+          "carried_frequency": 0,
+          "other": 0
+        },
+        "first_invalid": null,
+        "fraction": 0.0
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-turbine-01",
+    "arm": "app",
+    "repetition": 1,
+    "ticks": 720,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 720,
+        "minimum": 60.0,
+        "maximum": 305.12517226604007,
+        "invalid": 443,
+        "invalid_categories": {
+          "curtailment_positive": 443,
+          "deficit_forcing": 0,
+          "carried_frequency": 0,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 73.5537530660913,
+          "frequency_valid": false,
+          "frequency_forcing_mw": 7.243206457206277,
+          "p_dispatch_curtailed_mw": 7.243206457206277,
+          "tick_index": 278,
+          "sim_time": 1390.0
+        },
+        "fraction": 0.6152777777777778
+      },
+      {
+        "ticks": 720,
+        "minimum": 60.0,
+        "maximum": 60.58640692110985,
+        "invalid": 0,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 0,
+          "carried_frequency": 0,
+          "other": 0
+        },
+        "first_invalid": null,
+        "fraction": 0.0
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-turbine-01",
+    "arm": "app",
+    "repetition": 2,
+    "ticks": 720,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 720,
+        "minimum": 60.0,
+        "maximum": 305.12517226604007,
+        "invalid": 443,
+        "invalid_categories": {
+          "curtailment_positive": 443,
+          "deficit_forcing": 0,
+          "carried_frequency": 0,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 73.5537530660913,
+          "frequency_valid": false,
+          "frequency_forcing_mw": 7.243206457206277,
+          "p_dispatch_curtailed_mw": 7.243206457206277,
+          "tick_index": 278,
+          "sim_time": 1390.0
+        },
+        "fraction": 0.6152777777777778
+      },
+      {
+        "ticks": 720,
+        "minimum": 60.0,
+        "maximum": 60.58640692110985,
+        "invalid": 0,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 0,
+          "carried_frequency": 0,
+          "other": 0
+        },
+        "first_invalid": null,
+        "fraction": 0.0
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-hybrid-ai-100mw-addendum-i",
+    "arm": "app",
+    "repetition": 2,
+    "ticks": 120,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 120,
+        "minimum": -218.79606450000827,
+        "maximum": 285.92631259085584,
+        "invalid": 78,
+        "invalid_categories": {
+          "curtailment_positive": 24,
+          "deficit_forcing": 10,
+          "carried_frequency": 44,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": -20.29765039999966,
+          "frequency_valid": false,
+          "frequency_forcing_mw": -18.893564800000007,
+          "p_dispatch_curtailed_mw": 0.0,
+          "tick_index": 1,
+          "sim_time": 5.0
+        },
+        "fraction": 0.65
+      },
+      {
+        "ticks": 120,
+        "minimum": -218.79606450000827,
+        "maximum": 60.97955266880781,
+        "invalid": 54,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 10,
+          "carried_frequency": 44,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": -20.29765039999966,
+          "frequency_valid": false,
+          "frequency_forcing_mw": -18.893564800000007,
+          "p_dispatch_curtailed_mw": 0.0,
+          "tick_index": 1,
+          "sim_time": 5.0
+        },
+        "fraction": 0.45
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-hybrid-ai-100mw-addendum-i",
+    "arm": "app",
+    "repetition": 1,
+    "ticks": 120,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 120,
+        "minimum": -218.79606450000827,
+        "maximum": 285.92631259085584,
+        "invalid": 78,
+        "invalid_categories": {
+          "curtailment_positive": 24,
+          "deficit_forcing": 10,
+          "carried_frequency": 44,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": -20.29765039999966,
+          "frequency_valid": false,
+          "frequency_forcing_mw": -18.893564800000007,
+          "p_dispatch_curtailed_mw": 0.0,
+          "tick_index": 1,
+          "sim_time": 5.0
+        },
+        "fraction": 0.65
+      },
+      {
+        "ticks": 120,
+        "minimum": -218.79606450000827,
+        "maximum": 60.97955266880781,
+        "invalid": 54,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 10,
+          "carried_frequency": 44,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": -20.29765039999966,
+          "frequency_valid": false,
+          "frequency_forcing_mw": -18.893564800000007,
+          "p_dispatch_curtailed_mw": 0.0,
+          "tick_index": 1,
+          "sim_time": 5.0
+        },
+        "fraction": 0.45
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-100mw-fuel-cell-bess-diesel",
+    "arm": "app",
+    "repetition": 2,
+    "ticks": 252,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 252,
+        "minimum": 60.0,
+        "maximum": 60.0,
+        "invalid": 0,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 0,
+          "carried_frequency": 0,
+          "other": 0
+        },
+        "first_invalid": null,
+        "fraction": 0.0
+      },
+      {
+        "ticks": 252,
+        "minimum": 60.0,
+        "maximum": 60.0,
+        "invalid": 0,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 0,
+          "carried_frequency": 0,
+          "other": 0
+        },
+        "first_invalid": null,
+        "fraction": 0.0
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-100mw-fuel-cell-bess-diesel",
+    "arm": "app",
+    "repetition": 1,
+    "ticks": 252,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 252,
+        "minimum": 60.0,
+        "maximum": 60.0,
+        "invalid": 0,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 0,
+          "carried_frequency": 0,
+          "other": 0
+        },
+        "first_invalid": null,
+        "fraction": 0.0
+      },
+      {
+        "ticks": 252,
+        "minimum": 60.0,
+        "maximum": 60.0,
+        "invalid": 0,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 0,
+          "carried_frequency": 0,
+          "other": 0
+        },
+        "first_invalid": null,
+        "fraction": 0.0
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-fc100-islanded-v2",
+    "arm": "app",
+    "repetition": 2,
+    "ticks": 264,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 264,
+        "minimum": 60.0,
+        "maximum": 60.0,
+        "invalid": 0,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 0,
+          "carried_frequency": 0,
+          "other": 0
+        },
+        "first_invalid": null,
+        "fraction": 0.0
+      },
+      {
+        "ticks": 264,
+        "minimum": 60.0,
+        "maximum": 60.0,
+        "invalid": 0,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 0,
+          "carried_frequency": 0,
+          "other": 0
+        },
+        "first_invalid": null,
+        "fraction": 0.0
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-fc100-islanded-v2",
+    "arm": "app",
+    "repetition": 1,
+    "ticks": 264,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 264,
+        "minimum": 60.0,
+        "maximum": 60.0,
+        "invalid": 0,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 0,
+          "carried_frequency": 0,
+          "other": 0
+        },
+        "first_invalid": null,
+        "fraction": 0.0
+      },
+      {
+        "ticks": 264,
+        "minimum": 60.0,
+        "maximum": 60.0,
+        "invalid": 0,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 0,
+          "carried_frequency": 0,
+          "other": 0
+        },
+        "first_invalid": null,
+        "fraction": 0.0
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-fc100-islanded-zero-hot-v2",
+    "arm": "app",
+    "repetition": 2,
+    "ticks": 264,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 264,
+        "minimum": -82.80435199997717,
+        "maximum": 60.0,
+        "invalid": 214,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 207,
+          "carried_frequency": 7,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 39.39674952027191,
+          "frequency_valid": false,
+          "frequency_forcing_mw": -20.944261432913947,
+          "p_dispatch_curtailed_mw": 0.0,
+          "tick_index": 46,
+          "sim_time": 230.0
+        },
+        "fraction": 0.8106060606060606
+      },
+      {
+        "ticks": 264,
+        "minimum": -82.80435199997717,
+        "maximum": 60.0,
+        "invalid": 214,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 207,
+          "carried_frequency": 7,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 39.39674952027191,
+          "frequency_valid": false,
+          "frequency_forcing_mw": -20.944261432913944,
+          "p_dispatch_curtailed_mw": 0.0,
+          "tick_index": 46,
+          "sim_time": 230.0
+        },
+        "fraction": 0.8106060606060606
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-fc100-islanded-zero-hot-v2",
+    "arm": "app",
+    "repetition": 1,
+    "ticks": 264,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 264,
+        "minimum": -82.80435199997717,
+        "maximum": 60.0,
+        "invalid": 214,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 207,
+          "carried_frequency": 7,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 39.39674952027191,
+          "frequency_valid": false,
+          "frequency_forcing_mw": -20.944261432913947,
+          "p_dispatch_curtailed_mw": 0.0,
+          "tick_index": 46,
+          "sim_time": 230.0
+        },
+        "fraction": 0.8106060606060606
+      },
+      {
+        "ticks": 264,
+        "minimum": -82.80435199997717,
+        "maximum": 60.0,
+        "invalid": 214,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 207,
+          "carried_frequency": 7,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 39.39674952027191,
+          "frequency_valid": false,
+          "frequency_forcing_mw": -20.944261432913944,
+          "p_dispatch_curtailed_mw": 0.0,
+          "tick_index": 46,
+          "sim_time": 230.0
+        },
+        "fraction": 0.8106060606060606
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "demo-islanded-ramp",
+    "arm": "app",
+    "repetition": 2,
+    "ticks": 2160,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 2160,
+        "minimum": -127.48961154607643,
+        "maximum": 60.0,
+        "invalid": 103,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 90,
+          "carried_frequency": 13,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 53.373055059038585,
+          "frequency_valid": false,
+          "frequency_forcing_mw": -1.5300785665427696,
+          "p_dispatch_curtailed_mw": 0.0,
+          "tick_index": 136,
+          "sim_time": 680.0
+        },
+        "fraction": 0.047685185185185185
+      },
+      {
+        "ticks": 2160,
+        "minimum": -127.48961154607643,
+        "maximum": 60.0,
+        "invalid": 103,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 90,
+          "carried_frequency": 13,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 53.373055059038585,
+          "frequency_valid": false,
+          "frequency_forcing_mw": -1.5300785665427696,
+          "p_dispatch_curtailed_mw": 0.0,
+          "tick_index": 136,
+          "sim_time": 680.0
+        },
+        "fraction": 0.047685185185185185
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "demo-islanded-ramp",
+    "arm": "app",
+    "repetition": 1,
+    "ticks": 2160,
+    "first_difference": null,
+    "frequency": [
+      {
+        "ticks": 2160,
+        "minimum": -127.48961154607643,
+        "maximum": 60.0,
+        "invalid": 103,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 90,
+          "carried_frequency": 13,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 53.373055059038585,
+          "frequency_valid": false,
+          "frequency_forcing_mw": -1.5300785665427696,
+          "p_dispatch_curtailed_mw": 0.0,
+          "tick_index": 136,
+          "sim_time": 680.0
+        },
+        "fraction": 0.047685185185185185
+      },
+      {
+        "ticks": 2160,
+        "minimum": -127.48961154607643,
+        "maximum": 60.0,
+        "invalid": 103,
+        "invalid_categories": {
+          "curtailment_positive": 0,
+          "deficit_forcing": 90,
+          "carried_frequency": 13,
+          "other": 0
+        },
+        "first_invalid": {
+          "frequency_hz": 53.373055059038585,
+          "frequency_valid": false,
+          "frequency_forcing_mw": -1.5300785665427696,
+          "p_dispatch_curtailed_mw": 0.0,
+          "tick_index": 136,
+          "sim_time": 680.0
+        },
+        "fraction": 0.047685185185185185
+      }
+    ],
+    "nonfrequency_hash_identical": true,
+    "nonfrequency_metric_differences": {},
+    "passed": true
+  }
+]

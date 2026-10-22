@@ -1,0 +1,12 @@
+{
+  "gate": "D11.5",
+  "status": "STOP condition observed; requested full suite still completing",
+  "nodeid": "tests/test_addendum_g_stage3_option_c.py::test_stage3_nonforming_fc_trip_reconciles_accounting_with_live_bess",
+  "failure": {
+    "outcome": "failed",
+    "stage": "call",
+    "duration": 0.001554553000460146,
+    "failure": "def test_stage3_nonforming_fc_trip_reconciles_accounting_with_live_bess():\n        result = _factory_tick(\n            grid_forming=False,\n            min_stable_frac=.5,\n            ieee_1547_category=1,\n            with_grid_forming_bess=True,\n        )\n        assert result.island_collapsed is False\n        assert result.fuel_cell_ride_through_trips[0][\"reason\"] == \"rocof\"\n        assert result.fuel_cell_output_mw == 0.0\n        assert result.fuel_cell_achieved_output_mw == 0.0\n        assert result.fuel_cell_reactive_output_mvar == 0.0\n        assert result.fuel_cell_apparent_power_mva == 0.0\n        assert result.p_generation_mw == pytest.approx(result.bess_output_mw)\n>       assert result.frequency_forcing_mw == pytest.approx(\n            result.p_generation_mw - result.p_demand_mw\n        )\nE       assert 0.49 == 0.0 \u00b1 1.0e-12\nE         \nE         comparison failed\nE         Obtained: 0.49\nE         Expected: 0.0 \u00b1 1.0e-12\n\ntests/test_addendum_g_stage3_option_c.py:391: AssertionError"
+  },
+  "reason": "New post-trip forcing assertion failure; not a sustained-surplus assertion. No authorization to update it. No fix attempted."
+}

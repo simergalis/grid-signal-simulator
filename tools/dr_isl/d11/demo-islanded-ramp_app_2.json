@@ -1,0 +1,130 @@
+{
+  "scenario": "demo-islanded-ramp",
+  "arm": "app",
+  "repetition": 2,
+  "ticks": 2160,
+  "first_difference": null,
+  "frequency": [
+    {
+      "ticks": 2160,
+      "minimum": -127.48961154607643,
+      "maximum": 60.0,
+      "invalid": 103,
+      "invalid_categories": {
+        "curtailment_positive": 0,
+        "deficit_forcing": 90,
+        "carried_frequency": 13,
+        "other": 0
+      },
+      "first_invalid": {
+        "frequency_hz": 53.373055059038585,
+        "frequency_valid": false,
+        "frequency_forcing_mw": -1.5300785665427696,
+        "p_dispatch_curtailed_mw": 0.0,
+        "tick_index": 136,
+        "sim_time": 680.0
+      },
+      "fraction": 0.047685185185185185
+    },
+    {
+      "ticks": 2160,
+      "minimum": -127.48961154607643,
+      "maximum": 60.0,
+      "invalid": 103,
+      "invalid_categories": {
+        "curtailment_positive": 0,
+        "deficit_forcing": 90,
+        "carried_frequency": 13,
+        "other": 0
+      },
+      "first_invalid": {
+        "frequency_hz": 53.373055059038585,
+        "frequency_valid": false,
+        "frequency_forcing_mw": -1.5300785665427696,
+        "p_dispatch_curtailed_mw": 0.0,
+        "tick_index": 136,
+        "sim_time": 680.0
+      },
+      "fraction": 0.047685185185185185
+    }
+  ],
+  "summaries": {
+    "base": {
+      "kind": "summary",
+      "instrumentation": {
+        "original_sha256": "f3e867309cd1e6aa97ca9ded2b28572763283341a6ac844d0f222d03a135ff47",
+        "candidate_sha256": "6075a47086f9d1fce0453daaf95b0911ef2c3d69c0c37151b77757aca67256c0",
+        "application_files_changed": false,
+        "mode": "base"
+      },
+      "physical_sha256": "88b04757bff6b8a1d88fc2de6a0396f1da203c724f3021cc4f1db1bd97d16ceb",
+      "ticks": 2160,
+      "metrics": {},
+      "record": {},
+      "end_sim_time": 10800.0,
+      "build_warnings": [
+        {
+          "code": "islanded_frequency_protection_unconfigured",
+          "message": "islanded run without frequency protection configured"
+        }
+      ],
+      "final_floor_basis": {
+        "bess-0": {
+          "bess_id": "bess-0",
+          "floor_mwh": 7.5,
+          "depth_reserve_mwh": 0.0,
+          "diesel_floor_mwh": 0.0,
+          "d2r_term_mwh": 7.5,
+          "winning_term": "d2r_bridge",
+          "basis": "offline_restart",
+          "unit_id": "turbine-4",
+          "eligibility_wait_s": 0.0,
+          "start_duration_s": 600.0,
+          "thermal_state": "cold",
+          "eligibility_reason": "eligible"
+        }
+      },
+      "floor_history_count": 313
+    },
+    "candidate": {
+      "kind": "summary",
+      "instrumentation": {
+        "original_sha256": "f3e867309cd1e6aa97ca9ded2b28572763283341a6ac844d0f222d03a135ff47",
+        "candidate_sha256": "6075a47086f9d1fce0453daaf95b0911ef2c3d69c0c37151b77757aca67256c0",
+        "application_files_changed": false,
+        "mode": "candidate"
+      },
+      "physical_sha256": "88b04757bff6b8a1d88fc2de6a0396f1da203c724f3021cc4f1db1bd97d16ceb",
+      "ticks": 2160,
+      "metrics": {},
+      "record": {},
+      "end_sim_time": 10800.0,
+      "build_warnings": [
+        {
+          "code": "islanded_frequency_protection_unconfigured",
+          "message": "islanded run without frequency protection configured"
+        }
+      ],
+      "final_floor_basis": {
+        "bess-0": {
+          "bess_id": "bess-0",
+          "floor_mwh": 7.5,
+          "depth_reserve_mwh": 0.0,
+          "diesel_floor_mwh": 0.0,
+          "d2r_term_mwh": 7.5,
+          "winning_term": "d2r_bridge",
+          "basis": "offline_restart",
+          "unit_id": "turbine-4",
+          "eligibility_wait_s": 0.0,
+          "start_duration_s": 600.0,
+          "thermal_state": "cold",
+          "eligibility_reason": "eligible"
+        }
+      },
+      "floor_history_count": 313
+    }
+  },
+  "nonfrequency_hash_identical": true,
+  "nonfrequency_metric_differences": {},
+  "passed": true
+}

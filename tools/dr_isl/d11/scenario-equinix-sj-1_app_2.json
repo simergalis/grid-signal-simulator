@@ -1,0 +1,106 @@
+{
+  "scenario": "scenario-equinix-sj-1",
+  "arm": "app",
+  "repetition": 2,
+  "ticks": 720,
+  "first_difference": null,
+  "frequency": [
+    {
+      "ticks": 720,
+      "minimum": 60.0,
+      "maximum": 60.0,
+      "invalid": 0,
+      "invalid_categories": {
+        "curtailment_positive": 0,
+        "deficit_forcing": 0,
+        "carried_frequency": 0,
+        "other": 0
+      },
+      "first_invalid": null,
+      "fraction": 0.0
+    },
+    {
+      "ticks": 720,
+      "minimum": 60.0,
+      "maximum": 60.0,
+      "invalid": 0,
+      "invalid_categories": {
+        "curtailment_positive": 0,
+        "deficit_forcing": 0,
+        "carried_frequency": 0,
+        "other": 0
+      },
+      "first_invalid": null,
+      "fraction": 0.0
+    }
+  ],
+  "summaries": {
+    "base": {
+      "kind": "summary",
+      "instrumentation": {
+        "original_sha256": "f3e867309cd1e6aa97ca9ded2b28572763283341a6ac844d0f222d03a135ff47",
+        "candidate_sha256": "6075a47086f9d1fce0453daaf95b0911ef2c3d69c0c37151b77757aca67256c0",
+        "application_files_changed": false,
+        "mode": "base"
+      },
+      "physical_sha256": "65f41459bbb89a002473166453aa3792efc7460d210813e4700b7ea27734bd65",
+      "ticks": 720,
+      "metrics": {},
+      "record": {},
+      "end_sim_time": 3600.0,
+      "build_warnings": [],
+      "final_floor_basis": {
+        "bess-0": {
+          "bess_id": "bess-0",
+          "floor_mwh": 55.199999999999996,
+          "depth_reserve_mwh": 55.199999999999996,
+          "diesel_floor_mwh": 0.0,
+          "d2r_term_mwh": 0.0,
+          "winning_term": "depth_reserve",
+          "basis": "D2-r not applicable",
+          "unit_id": null,
+          "eligibility_wait_s": null,
+          "start_duration_s": null,
+          "thermal_state": null,
+          "eligibility_reason": null
+        }
+      },
+      "floor_history_count": 0
+    },
+    "candidate": {
+      "kind": "summary",
+      "instrumentation": {
+        "original_sha256": "f3e867309cd1e6aa97ca9ded2b28572763283341a6ac844d0f222d03a135ff47",
+        "candidate_sha256": "6075a47086f9d1fce0453daaf95b0911ef2c3d69c0c37151b77757aca67256c0",
+        "application_files_changed": false,
+        "mode": "candidate"
+      },
+      "physical_sha256": "65f41459bbb89a002473166453aa3792efc7460d210813e4700b7ea27734bd65",
+      "ticks": 720,
+      "metrics": {},
+      "record": {},
+      "end_sim_time": 3600.0,
+      "build_warnings": [],
+      "final_floor_basis": {
+        "bess-0": {
+          "bess_id": "bess-0",
+          "floor_mwh": 55.199999999999996,
+          "depth_reserve_mwh": 55.199999999999996,
+          "diesel_floor_mwh": 0.0,
+          "d2r_term_mwh": 0.0,
+          "winning_term": "depth_reserve",
+          "basis": "D2-r not applicable",
+          "unit_id": null,
+          "eligibility_wait_s": null,
+          "start_duration_s": null,
+          "thermal_state": null,
+          "eligibility_reason": null
+        }
+      },
+      "floor_history_count": 0
+    }
+  },
+  "nonfrequency_hash_identical": true,
+  "nonfrequency_metric_differences": {},
+  "passed": true
+}

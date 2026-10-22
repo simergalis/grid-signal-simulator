@@ -1,0 +1,7 @@
+{
+  "state": "STOPPED",
+  "gate": "D11.5",
+  "candidate_stash": "29a087dc197579b81d674856a95a65778fbab914",
+  "application_base": "5225a05",
+  "main_package_diff_empty": true
+}

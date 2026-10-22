@@ -1,0 +1,89 @@
+FFF..F.....FF.......................FF...F........                       [100%]
+=================================== FAILURES ===================================
+__ TestI1FrequencyDeviationVisible.test_I1_islanded_surplus_raises_frequency ___
+tests/test_13_3_frequency.py:160: in test_I1_islanded_surplus_raises_frequency
+    assert tick.frequency_forcing_mw > 0.9, (
+E   AssertionError: I1: frequency_forcing_mw must be ≈ 1.0 MW with 1 MW solar surplus; got 0.800000 MW
+E   assert 0.8 > 0.9
+E    +  where 0.8 = TickResult(run_id='test', tick_index=1, sim_time_seconds=0.1, p_compute_demand_mw=0, p_cooling_demand_mw=0.0, p_demand...atisfied=True, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id=None, slurm_metrics=None).frequency_forcing_mw
+------------------------------ Captured log call -------------------------------
+WARNING  core.simulation_core:candidate_simulation_core.py:3791 physical balance invariant does not close: +0.8 MW (generation=1.0000, served=0.0000, unserved=0.0000, grid_import=0.0000, losses=0.0000, islanded=True)
+_______ TestI2SwingEquationAccuracy.test_I2_single_tick_matches_formula ________
+tests/test_13_3_frequency.py:212: in test_I2_single_tick_matches_formula
+    assert rel_err < 0.10, (
+E   AssertionError: I2: frequency excursion 0.047281 Hz differs from swing-equation prediction 0.042500 Hz by 11.2% (must be < 10%)
+E   assert 0.11249999999994088 < 0.1
+------------------------------ Captured log call -------------------------------
+WARNING  core.simulation_core:candidate_simulation_core.py:3791 physical balance invariant does not close: +0.8 MW (generation=1.0000, served=0.0000, unserved=0.0000, grid_import=0.0000, losses=0.0000, islanded=True)
+_________ TestI2SwingEquationAccuracy.test_I2_explicit_formula_fixture _________
+tests/test_13_3_frequency.py:239: in test_I2_explicit_formula_fixture
+    assert tick.frequency_forcing_mw == pytest.approx(1.0, abs=0.1), (
+E   AssertionError: I2 precondition: frequency_forcing_mw should be ~1 MW; got 0.000000
+E   assert 0.0 == 1.0 ± 0.1
+E     
+E     comparison failed
+E     Obtained: 0.0
+E     Expected: 1.0 ± 0.1
+_ TestI4DeliveryFaultMovesFrequency.test_I4_delivery_fault_causes_frequency_deviation _
+tests/test_13_3_frequency.py:434: in test_I4_delivery_fault_causes_frequency_deviation
+    assert tick.asset_delivery_error_mw != pytest.approx(0.0, abs=1e-6), (
+E   AssertionError: I4: asset_delivery_error_mw must be non-zero (fleet under-delivers); got 0.000000000
+E   assert 0.0 != 0.0 ± 1.0e-06
+E    +  where 0.0 = TickResult(run_id='test', tick_index=1, sim_time_seconds=5.1, p_compute_demand_mw=0.05253, p_cooling_demand_mw=0.0, p_...sfied=False, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id='gt-1', slurm_metrics=None).asset_delivery_error_mw
+E    +  and   0.0 ± 1.0e-06 = <function approx at 0x7fee23605ee0>(0.0, abs=1e-06)
+E    +    where <function approx at 0x7fee23605ee0> = pytest.approx
+_ TestSurplusAbsorption.test_TC_SURP_4_partial_absorption_when_rated_mw_limits _
+tests/test_bess_surplus_absorption.py:272: in test_TC_SURP_4_partial_absorption_when_rated_mw_limits
+    assert tick.frequency_forcing_mw > 0.0, (
+E   AssertionError: TC-SURP-4: un-absorbed surplus must appear in frequency_forcing_mw; got 0.0000
+E   assert 0.0 > 0.0
+E    +  where 0.0 = TickResult(run_id='test-surplus', tick_index=1, sim_time_seconds=6.0, p_compute_demand_mw=0, p_cooling_demand_mw=0.0, ...atisfied=True, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id=None, slurm_metrics=None).frequency_forcing_mw
+__ TestSurplusAbsorption.test_TC_SURP_5_absorption_reduces_frequency_forcing ___
+tests/test_bess_surplus_absorption.py:289: in test_TC_SURP_5_absorption_reduces_frequency_forcing
+    assert tick_absorb.frequency_forcing_mw < tick_full.frequency_forcing_mw, (
+E   AssertionError: TC-SURP-5: BESS absorption must reduce frequency_forcing_mw; absorb=0.0000, full=0.0000
+E   assert 0.0 < 0.0
+E    +  where 0.0 = TickResult(run_id='test-surplus', tick_index=1, sim_time_seconds=6.0, p_compute_demand_mw=0, p_cooling_demand_mw=0.0, ...atisfied=True, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id=None, slurm_metrics=None).frequency_forcing_mw
+E    +  and   0.0 = TickResult(run_id='test-surplus', tick_index=1, sim_time_seconds=6.0, p_compute_demand_mw=0, p_cooling_demand_mw=0.0, ...atisfied=True, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id=None, slurm_metrics=None).frequency_forcing_mw
+_ TestDispatchTruthfulness.test_B1a_islanded_delivery_fault_visible_in_delivery_channel _
+tests/test_forecast_path.py:590: in test_B1a_islanded_delivery_fault_visible_in_delivery_channel
+    assert tick.asset_delivery_error_mw != pytest.approx(0.0, abs=1e-6), (
+E   AssertionError: B1a: delivery fault must appear in asset_delivery_error_mw; got 0.000000000  (turbine_out=0.000000, gt_setpoint=0.000000)
+E   assert 0.0 != 0.0 ± 1.0e-06
+E    +  where 0.0 = TickResult(run_id='test', tick_index=1, sim_time_seconds=5.1, p_compute_demand_mw=0.10506, p_cooling_demand_mw=0.0, p_...sfied=False, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id='gt-1', slurm_metrics=None).asset_delivery_error_mw
+E    +  and   0.0 ± 1.0e-06 = <function approx at 0x7fee23605ee0>(0.0, abs=1e-06)
+E    +    where <function approx at 0x7fee23605ee0> = pytest.approx
+_ TestDispatchTruthfulness.test_B1b_islanded_load_model_error_not_visible_in_delivery_channel _
+tests/test_forecast_path.py:691: in test_B1b_islanded_load_model_error_not_visible_in_delivery_channel
+    assert tick.frequency_forcing_mw > 0.5, (
+E   AssertionError: B1b: 1 MW solar surplus should appear in frequency_forcing_mw; got 0.000000000
+E   assert 0.0 > 0.5
+E    +  where 0.0 = TickResult(run_id='test-b1b', tick_index=1, sim_time_seconds=5.0, p_compute_demand_mw=0, p_cooling_demand_mw=0.0, p_de...atisfied=True, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id=None, slurm_metrics=None).frequency_forcing_mw
+____ TestDispatchTruthfulness.test_B5_frequency_tracks_frequency_forcing_mw ____
+tests/test_forecast_path.py:830: in test_B5_frequency_tracks_frequency_forcing_mw
+    assert tick.frequency_forcing_mw > 0.9, (
+E   AssertionError: B5 precondition: frequency_forcing_mw must be ≈ 1.0 MW with 1 MW solar surplus; got 0.800000
+E   assert 0.8 > 0.9
+E    +  where 0.8 = TickResult(run_id='test-b5', tick_index=1, sim_time_seconds=0.1, p_compute_demand_mw=0, p_cooling_demand_mw=0.0, p_dem...atisfied=True, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id=None, slurm_metrics=None).frequency_forcing_mw
+------------------------------ Captured log call -------------------------------
+WARNING  core.simulation_core:candidate_simulation_core.py:3791 physical balance invariant does not close: +0.8 MW (generation=1.0000, served=0.0000, unserved=0.0000, grid_import=0.0000, losses=0.0000, islanded=True)
+=============================== warnings summary ===============================
+tests/test_13_3_frequency.py::TestI4DeliveryFaultMovesFrequency::test_I4_delivery_fault_causes_frequency_deviation
+tests/test_13_3_frequency.py::TestI5GridConnectedFrequencyHeld::test_I5_grid_connected_nominal_frequency
+tests/test_forecast_path.py::TestDispatchTruthfulness::test_B1a_islanded_delivery_fault_visible_in_delivery_channel
+tests/test_forecast_path.py::TestDispatchTruthfulness::test_B2_bess_setpoint_captured_before_soc_clipping
+tests/test_forecast_path.py::TestDispatchTruthfulness::test_B3_grid_connected_frequency_at_nominal
+  <string>:11: UserWarning: BessConfig 'bess-1': C-rate 500.00 C is outside the 0.25–4.0 C physical range (PROTO-9 — chosen, no measured basis). rated_mw=5.0, usable_mwh=0.01
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_13_3_frequency.py::TestI1FrequencyDeviationVisible::test_I1_islanded_surplus_raises_frequency
+FAILED tests/test_13_3_frequency.py::TestI2SwingEquationAccuracy::test_I2_single_tick_matches_formula
+FAILED tests/test_13_3_frequency.py::TestI2SwingEquationAccuracy::test_I2_explicit_formula_fixture
+FAILED tests/test_13_3_frequency.py::TestI4DeliveryFaultMovesFrequency::test_I4_delivery_fault_causes_frequency_deviation
+FAILED tests/test_bess_surplus_absorption.py::TestSurplusAbsorption::test_TC_SURP_4_partial_absorption_when_rated_mw_limits
+FAILED tests/test_bess_surplus_absorption.py::TestSurplusAbsorption::test_TC_SURP_5_absorption_reduces_frequency_forcing
+FAILED tests/test_forecast_path.py::TestDispatchTruthfulness::test_B1a_islanded_delivery_fault_visible_in_delivery_channel
+FAILED tests/test_forecast_path.py::TestDispatchTruthfulness::test_B1b_islanded_load_model_error_not_visible_in_delivery_channel
+FAILED tests/test_forecast_path.py::TestDispatchTruthfulness::test_B5_frequency_tracks_frequency_forcing_mw
+9 failed, 41 passed, 5 warnings in 4.04s

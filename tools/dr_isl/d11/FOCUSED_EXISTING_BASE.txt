@@ -1,0 +1,31 @@
+.....F..............................F.............                       [100%]
+=================================== FAILURES ===================================
+_ TestI4DeliveryFaultMovesFrequency.test_I4_delivery_fault_causes_frequency_deviation _
+tests/test_13_3_frequency.py:434: in test_I4_delivery_fault_causes_frequency_deviation
+    assert tick.asset_delivery_error_mw != pytest.approx(0.0, abs=1e-6), (
+E   AssertionError: I4: asset_delivery_error_mw must be non-zero (fleet under-delivers); got 0.000000000
+E   assert 0.0 != 0.0 ± 1.0e-06
+E    +  where 0.0 = TickResult(run_id='test', tick_index=1, sim_time_seconds=5.1, p_compute_demand_mw=0.05253, p_cooling_demand_mw=0.0, p_...sfied=False, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id='gt-1', slurm_metrics=None).asset_delivery_error_mw
+E    +  and   0.0 ± 1.0e-06 = <function approx at 0x7f233876ea20>(0.0, abs=1e-06)
+E    +    where <function approx at 0x7f233876ea20> = pytest.approx
+_ TestDispatchTruthfulness.test_B1a_islanded_delivery_fault_visible_in_delivery_channel _
+tests/test_forecast_path.py:590: in test_B1a_islanded_delivery_fault_visible_in_delivery_channel
+    assert tick.asset_delivery_error_mw != pytest.approx(0.0, abs=1e-6), (
+E   AssertionError: B1a: delivery fault must appear in asset_delivery_error_mw; got 0.000000000  (turbine_out=0.000000, gt_setpoint=0.000000)
+E   assert 0.0 != 0.0 ± 1.0e-06
+E    +  where 0.0 = TickResult(run_id='test', tick_index=1, sim_time_seconds=5.1, p_compute_demand_mw=0.10506, p_cooling_demand_mw=0.0, p_...sfied=False, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id='gt-1', slurm_metrics=None).asset_delivery_error_mw
+E    +  and   0.0 ± 1.0e-06 = <function approx at 0x7f233876ea20>(0.0, abs=1e-06)
+E    +    where <function approx at 0x7f233876ea20> = pytest.approx
+=============================== warnings summary ===============================
+tests/test_13_3_frequency.py::TestI4DeliveryFaultMovesFrequency::test_I4_delivery_fault_causes_frequency_deviation
+tests/test_13_3_frequency.py::TestI5GridConnectedFrequencyHeld::test_I5_grid_connected_nominal_frequency
+tests/test_forecast_path.py::TestDispatchTruthfulness::test_B1a_islanded_delivery_fault_visible_in_delivery_channel
+tests/test_forecast_path.py::TestDispatchTruthfulness::test_B2_bess_setpoint_captured_before_soc_clipping
+tests/test_forecast_path.py::TestDispatchTruthfulness::test_B3_grid_connected_frequency_at_nominal
+  <string>:11: UserWarning: BessConfig 'bess-1': C-rate 500.00 C is outside the 0.25–4.0 C physical range (PROTO-9 — chosen, no measured basis). rated_mw=5.0, usable_mwh=0.01
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_13_3_frequency.py::TestI4DeliveryFaultMovesFrequency::test_I4_delivery_fault_causes_frequency_deviation
+FAILED tests/test_forecast_path.py::TestDispatchTruthfulness::test_B1a_islanded_delivery_fault_visible_in_delivery_channel
+2 failed, 48 passed, 5 warnings in 3.45s

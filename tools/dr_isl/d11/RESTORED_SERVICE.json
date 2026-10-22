@@ -1,0 +1,7 @@
+{
+  "workflow": "artifacts/gridsignal: web",
+  "restarted": true,
+  "application_base": "5225a05",
+  "GET /": 200,
+  "startup_completed": true
+}

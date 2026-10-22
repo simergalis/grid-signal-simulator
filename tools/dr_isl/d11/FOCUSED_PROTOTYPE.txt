@@ -1,0 +1,13 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.11, pytest-9.1.1, pluggy-1.6.0 -- /home/runner/workspace/.pythonlibs/bin/python3
+rootdir: /home/runner/workspace
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, anyio-4.14.2
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 3 items
+
+tools/dr_isl/d11/test_dump_response.py::test_tc_isl_23_finite_surplus_response_and_unchanged_ledger PASSED [ 33%]
+tools/dr_isl/d11/test_dump_response.py::test_tc_isl_24_deficit_matches_original_swing_trajectory PASSED [ 66%]
+tools/dr_isl/d11/test_dump_response.py::test_tc_isl_25_zero_delay_from_first_substep PASSED [100%]
+
+============================== 3 passed in 0.22s ===============================

@@ -1,5 +1,11 @@
 # D11.0 — STOP: evidence hygiene scope requires clarification
 
+## Gate resolved by the user
+
+The user selected: “Keep the S10 scenario and non-CSV evidence tracked; exclude channel CSVs.”
+Under that explicit boundary, D11.0 PASSES. The 15 paths listed below are retained intentionally.
+The original STOP finding below is preserved as the audit history.
+
 ## Literal commit findings
 
 - Original IMPL-ISL-19 report-only commit: `1209c8dd0e418f978a8d001f74687f8dc7ce1a83`.

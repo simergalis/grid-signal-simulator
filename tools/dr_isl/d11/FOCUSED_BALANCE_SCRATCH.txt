@@ -1,0 +1,13 @@
+....................ss...........................................        [100%]
+=============================== warnings summary ===============================
+tests/test_13_2_balance_decomp.py::TestD1GridExchangeIslanded::test_D1_depleted_bess_islanded
+tests/test_13_2_balance_decomp.py::TestD2FrequencyForcingGridConnected::test_D2_depleted_bess_grid_connected
+tests/test_13_2_balance_decomp.py::TestD3ModelErrorSteadyState::test_D3_depleted_bess_is_detectable_fault
+tests/test_13_2_balance_decomp.py::TestD4SumIdentity::test_D4_depleted_bess_reports_the_real_supply_gap
+tests/test_13_2_balance_decomp.py::TestD5ModelErrorNotResidual::test_D5_depleted_bess_independent_formula_matches
+tests/test_13_2_balance_decomp.py::TestI4SwingEquationExplicitInput::test_I4b_depleted_bess_islanded_delivery_error_amplifies_drop
+tests/test_13_2_balance_decomp.py::TestI4SwingEquationExplicitInput::test_I4c_grid_connected_delivery_fault_frequency_invariant
+  <string>:11: UserWarning: BessConfig 'bess-1': C-rate 500.00 C is outside the 0.25–4.0 C physical range (PROTO-9 — chosen, no measured basis). rated_mw=5.0, usable_mwh=0.01
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+63 passed, 2 skipped, 7 warnings in 0.87s

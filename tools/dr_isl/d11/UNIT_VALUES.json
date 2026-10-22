@@ -1,0 +1,41 @@
+{
+  "TC-ISL-23": {
+    "substeps": 500,
+    "positive_forcing_substeps": 49,
+    "negative_forcing_substeps": 0,
+    "zero_forcing_substeps": 451,
+    "dt_sub_s": 0.01,
+    "first_forcing_mw": 0.98,
+    "last_forcing_mw": 0.0,
+    "frequency_hz": 60.1561875,
+    "frequency_valid": true,
+    "ledger_curtailment_mw": 1.0,
+    "physical_balance_passed": true
+  },
+  "TC-ISL-24": {
+    "substeps": 500,
+    "positive_forcing_substeps": 0,
+    "negative_forcing_substeps": 500,
+    "zero_forcing_substeps": 0,
+    "dt_sub_s": 0.01,
+    "first_forcing_mw": -10.501,
+    "last_forcing_mw": -10.501,
+    "frequency_hz": -274.71937500000143,
+    "frequency_valid": false,
+    "ledger_curtailment_mw": 0.0,
+    "physical_balance_passed": true
+  },
+  "TC-ISL-25": {
+    "substeps": 500,
+    "positive_forcing_substeps": 0,
+    "negative_forcing_substeps": 0,
+    "zero_forcing_substeps": 500,
+    "dt_sub_s": 0.01,
+    "first_forcing_mw": 0.0,
+    "last_forcing_mw": 0.0,
+    "frequency_hz": 60.0,
+    "frequency_valid": true,
+    "ledger_curtailment_mw": 1.0,
+    "physical_balance_passed": true
+  }
+}
