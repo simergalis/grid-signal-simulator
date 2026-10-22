@@ -31,3 +31,19 @@ committing until the reviewer decides. Do not silently recertify the record.
 The user explicitly distinguishes certified H1-24h (must remain metric- and
 tick-identical) from H2-24h informed (not certified and permitted to change
 under turbine start-eligibility correction, with before/after deltas reported).
+
+For the approved start-eligibility comparison, pre-rejection differences may
+affect only commitment decision telemetry (action, target, blocked-by, reason),
+and only when the baseline proposed an ineligible unit and actually vetoed it.
+Every such tick must be enumerated with both values and the veto evidence.
+Physical fields must still match; canonical full hashes retain their contract.
+
+**Why:** The baseline exposes a core proposal in tick telemetry even when the
+informed controller vetoes it before any start command. Moving eligibility
+earlier can therefore change decision telemetry before the first rejected
+command without changing physical state. The reviewer approved this limited
+acceptance amendment on 2026-10-22, not a general waiver for prefix differences.
+
+**How to apply:** Keep the full hash and the decision-excluded prefix comparison
+separate, prove each allowed exception against the native baseline veto, and
+preserve the certified H1 physical/metric identity requirement.

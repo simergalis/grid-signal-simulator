@@ -20,3 +20,15 @@ An unsuccessful staging command does not prove that the index is unchanged.
 **Why:** A scoped add of an already tracked simulator file staged its edit but also returned an ignored-parent warning and a nonzero status.
 
 **How to apply:** Inspect `git diff --cached` and short status before retrying. Do not broaden a force-add merely because the first command reported failure.
+
+A stash made after an automatic checkpoint is a delta against that checkpoint,
+not necessarily a patch containing the entire candidate implementation.
+
+**Why:** After application files had been restored to a pre-candidate base,
+applying the later stash restored only follow-on edits and produced conflicts,
+rather than restoring all candidate files.
+
+**How to apply:** Inspect the stash parent and full tree before recovery. When
+restoring a complete candidate is authorized, verify the listed candidate paths
+against the full stash tree; do not assume a successful delta application proves
+the complete candidate is present.
