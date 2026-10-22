@@ -619,20 +619,25 @@ class ForecastDrivenTurbineController:
         )
         return allowance, soc
 
-    def _candidate_start(self, turbines: list[Any]) -> Optional[Any]:
-        standby = [
-            turbine for turbine in turbines
-            if turbine.state == TurbineState.OFFLINE
-            and getattr(turbine.config, "hot_standby", False)
-        ]
-        if standby:
-            return standby[0]
-        offline = [
-            turbine for turbine in turbines
-            if turbine.state == TurbineState.OFFLINE
-            and not getattr(turbine.config, "hot_standby", False)
-        ]
-        return offline[0] if offline else None
+    def _candidate_start(self, turbines: list[Any], sim_time_s: float) -> Optional[Any]:
+        # DR D2 / IMPL-ISL-5: preserve standby-first/roster priority, but use
+        # the same interlock as the core and command path. A reserved candidate
+        # is evaluated under this controller's existing explicit release authority.
+        ordered = (
+            [t for t in turbines if getattr(t.config, "hot_standby", False)]
+            + [t for t in turbines if not getattr(t.config, "hot_standby", False)]
+        )
+        for turbine in ordered:
+            reserved = bool(turbine.config.hot_standby)
+            if reserved:
+                turbine.config.hot_standby = False
+            try:
+                eligible, _ = turbine.start_eligibility(sim_time_s)
+            finally:
+                turbine.config.hot_standby = reserved
+            if eligible:
+                return turbine
+        return None
 
     def _candidate_stop(self, turbines: list[Any]) -> Optional[Any]:
         synchronized = [
@@ -828,7 +833,7 @@ class ForecastDrivenTurbineController:
         start_horizon = self.hot_start_lookahead_seconds + self.ramp_to_load_seconds
         start_peak = forecast.peak_over(start_horizon)
         if start_peak > synchronized_capacity + bess_allowance:
-            candidate = self._candidate_start(turbines)
+            candidate = self._candidate_start(turbines, float(ctx.sim_time))
             if candidate is not None:
                 self._queue(
                     ctx,
@@ -1196,19 +1201,12 @@ class ForecastDrivenTurbineController:
         accepted = True
         refusal_reason: Optional[str] = None
         if decision.action == "commit":
-            if turbine.state != TurbineState.OFFLINE:
+            # DR D2: one eligibility function owns every turbine start guard.
+            eligible, eligibility_reason = turbine.start_eligibility(sim_time_s)
+            if not eligible:
                 accepted = False
                 refusal_reason = (
-                    "forecast controller veto: unit is not offline and cannot start"
-                )
-            elif (
-                turbine.config.min_down_enabled
-                and not math.isnan(float(getattr(turbine, "_stop_time_s", float("nan"))))
-                and sim_time_s - turbine._stop_time_s < turbine.config.t_min_down_s
-            ):
-                accepted = False
-                refusal_reason = (
-                    "forecast controller veto: minimum down time has not elapsed"
+                    f"forecast controller veto: start ineligible ({eligibility_reason})"
                 )
             horizon = self.hot_start_lookahead_seconds + self.ramp_to_load_seconds
             if accepted and forecast is not None and not decision.floor_violated:

@@ -326,9 +326,22 @@ def evaluate_commitment(
                 ),
                 floor_mw=floor_mw, floor_violated=floor_violated,
             )
+        # DR D2 / IMPL-ISL-5: consume the one asset predicate's snapshot,
+        # preserving caller priority, rather than retrying offline[0].
+        eligible = next((unit for unit in offline if unit.start_eligible), None)
+        if eligible is None:
+            return CommitmentDecision(
+                action="hold",
+                target_unit_id=None,
+                reason=f"commit condition met (U={utilisation:.3f}, floor_violated={floor_violated})",
+                blocked_by="no eligible turbine: " + "; ".join(
+                    f"{unit.unit_id}={unit.start_ineligibility_reason}" for unit in offline
+                ),
+                floor_mw=floor_mw, floor_violated=floor_violated,
+            )
         return CommitmentDecision(
             action="commit",
-            target_unit_id=offline[0].unit_id,
+            target_unit_id=eligible.unit_id,
             reason=(
                 f"floor_violated={floor_violated}, U={utilisation:.3f}"
                 f" ≥ {cfg.commit_utilisation}" if not floor_violated else
