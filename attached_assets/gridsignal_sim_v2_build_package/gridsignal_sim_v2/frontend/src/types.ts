@@ -236,6 +236,9 @@ export interface TickPayload {
   // Islanded: integrated each tick via frequency_forcing_mw (governor droop provides restoring force).
   // Grid-connected: held at site frequency_nominal_hz (grid is the reference; forcing term is 0).
   frequency_hz: number
+  // DR D3: every new tick carries these; optional only for pre-D3 saved payloads.
+  frequency_valid?: boolean
+  protection_configured?: boolean
   // Phase 11.5: site nominal frequency — constant for the duration of a run.
   // 60.0 Hz = WECC/SDG&E (US West Coast); 50.0 Hz = EU/APAC/NZ.
   // Stamped by run_manager._drive() from SiteConfig.frequency_nominal_hz.
