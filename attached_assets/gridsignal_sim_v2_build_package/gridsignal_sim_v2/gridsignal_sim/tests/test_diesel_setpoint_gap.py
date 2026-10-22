@@ -131,7 +131,8 @@ def test_hybrid_covered_demand_does_not_release_bess_reserve() -> None:
 
     result_480, soc_480_mwh, prev_diesel_480_mw = rows[-1]
     assert result_480.sim_time_seconds == pytest.approx(480.0)
-    assert result_480.fuel_cell_output_mw + result_480.diesel_output_mw > (
+    # DR D10: load-following diesel may cover demand exactly, without fixed-block surplus.
+    assert result_480.fuel_cell_output_mw + result_480.diesel_output_mw >= (
         result_480.net_demand_mw
     )
     assert result_480.bess_output_mw == pytest.approx(0.0, abs=1e-9)
