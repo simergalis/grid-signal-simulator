@@ -1,4 +1,213 @@
-# DR-2026-10-20-ISLAND-COLLAPSE — THIRD RESUMPTION: T3 STOP
+# DR-2026-10-20-ISLAND-COLLAPSE — FOURTH RESUMPTION: A1/A2 PASS; A3 STOP
+
+CURRENT STATUS: STOPPED at the literal A3 source-diff criterion. NOT FINISHED.
+Measurement base: ebeeb186c53352eb109fdd572fa2370e00031394, containing the T2
+candidate. No application code, configuration, scenario, test or model parameter
+was changed during this resumption. No publication, deployment, push or Phase 3.
+The revised acceptance supersedes the third-resumption T3 STOP criterion.
+
+P = attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/.
+T = /tmp/DR-ISL-phase2d/. Source line numbers below are at ebeeb18.
+Literal A1/A2 results, sample tick sets and A3 AST comparisons are preserved in
+tools/dr_isl/PHASE_2D_FOURTH_EVIDENCE.json.
+The full A3 two-file diff is tools/dr_isl/PHASE_2D_A3_DIFF.md.
+
+## Fourth resumption — reconstructed diagnostic and reference checkout
+
+The earlier /tmp/DR-ISL-phase2d directory did not survive. The unchanged persisted
+tools/dr_isl/baseline_runner.py supplied pin_spec, plain, encoded, the four hash
+exclusions, SEED=1729 and WALL_CLOCK=1792454400.0. It was not edited.
+Scratch scripts: T/fourth_a1.py and T/fourth_a2.py.
+Reference scratch worktree: T/fourth-old at 01ce053. The six previously authorized
+support files were restored into that scratch checkout from c9c4f2e only.
+No source file was copied into or changed in the main application's package.
+
+Base-demo arms use StudyRunExecutor._expanded_spec and its real _probe, then
+exactly the context/replay construction at P/study_harness/executor.py:336–375:
+mode baseline/informed, kube_clusters/slurm_config removed, recorded workload
+events installed, demand_replay_trace installed, same run id convention,
+seed 42, no parameter overrides, no cached execution or artifact serialization.
+The other scenarios use ScenarioSpec validation/model_dump, pin_spec, factory,
+corruption schedule when configured and RunManager. Slurm GPU-peaks is seeded
+by P/api/routes/scenarios.py:1103–1348,1481–1484, not a standalone JSON;
+its actual _build_persistent_slurm_gpu_peak_scenario() is used in both versions.
+
+Pinning: Python/NumPy/fabric 1729, wall 1792454400.0, per-diesel 1729+i,
+kube and configured generator/corruption pinning via the persisted helper.
+Physical-field comparison excludes exactly advisory_telemetry, fabric_modal,
+wall_stamp_utc, insufficient_reserve_proposal_id, as the existing hash contract.
+All other TickResult dataclass fields, recursively including nested fields, are
+compared exactly after normalization; no numeric tolerance is used for A1.
+
+Only summaries and selected sample/window evidence are written to disk.
+A1 tick objects transit bounded pipes (queue depth 2), not full tick exports.
+All scratch Python processes use RLIMIT_FSIZE=200000000.
+The first Slurm A1 attempt exceeded the foreground shell's 300 s limit and
+returned no result; its processes ended. The background bounded-stream retry
+completed. This timeout is not relabelled a physical-identity failure.
+Scratch-only field/stride corrections were made before valid A2 results:
+TickResult's curtailment field is p_dispatch_curtailed_mw, and stride=1 must
+select all eligible ticks. Zero-sample attempts are not counted as passes.
+
+## Fourth resumption — A1 PASS, all seven cases
+
+First on-bus means SYNCHRONISED or UNLOADING before/after the physics step.
+A1 compares through the tick immediately BEFORE that first tick in either
+version. Prefix execution ends after obtaining the first on-bus tick; no
+first-on-bus tick is included in the required equality claim.
+
+| Scenario/path | 01ce053 first on-bus tick / decision seconds | ebeeb18 first on-bus tick / decision seconds | Required ticks compared | First differing field | Result |
+|---|---|---|---:|---|---|
+| base demo, conventional | 68 / 335.0 | 68 / 335.0 | 67 | null | PASS, exact |
+| base demo, informed | 70 / 345.0 | 70 / 345.0 | 69 | null | PASS, exact |
+| hybrid | 3 / 10.0 | 3 / 10.0 | 2 | null | PASS, exact |
+| fc-bess-diesel | never during completed run | never during completed run | 252 | null | PASS, exact |
+| fc100-v2 | never during completed run | never during completed run | 264 | null | PASS, exact |
+| fc100-zero-hot-v2 | never during completed run | never during completed run | 264 | null | PASS, exact |
+| Slurm GPU-peaks | 761 / 3800.0 | 761 / 3800.0 | 760 | null | PASS, exact |
+
+For the three never-on-bus cases, the compared tick counts are the complete
+RunManager-produced runs, not a claim that the engine reached a longer
+configured horizon. All captured A1 ticks have 0 physical-balance failures.
+For other cases A1 is a prefix, not a full-run balance acceptance test.
+Hashes over the complete never-on-bus runs (old = HEAD):
+- fc-bess-diesel: 29e518216802048738f35f06677b48332cc00da4c073e2809b1dd9c92d07aa6a
+- fc100-v2: 98ede81f8d3f4b3c7608fcb8ca0b33a50c254b620312ca2639b7c49d0cb06e6b
+- fc100-zero-hot-v2: 786dfb56ee4bf7be3dca3af227cd4915b6ce8a54107b06a0bdb5da13f2f2f00b
+These new paired A1 hashes are not substituted for the persisted Phase 2c/A4
+reference hashes. A4 has not been performed.
+
+## Fourth resumption — A2 PASS, all seven cases; float-exact
+
+At the old RunContext's evaluate_tick entry, AFTER due events/controller commands
+have been applied, snapshot the complete SimulationState, SimClock and Python/
+NumPy RNG states using pickle. Restore that identical object graph separately
+in 01ce053 and ebeeb18; set the plane guard, restore RNG states and call one
+evaluate_tick. No field-by-field reconstruction or state stripping is used.
+State snapshots are transmitted in pipes and discarded, never exported to disk.
+The old full-trajectory allocation output is also checked against the restored
+old allocation output, guarding the fidelity of capture/restore itself.
+
+Samples are spread over the original horizon with stride ceil(total_ticks/198),
+plus base-demo ticks 66 and 1111. Require diesel off bus both before and after
+the donor's tick, excluding startup-completion transition ticks. Maximum 200
+samples per case. Both special base-demo ticks are present in BOTH arm results.
+
+The measured pre-diesel residual is intercepted directly at the coordinator
+step argument, not recomputed from a second balancing formula.
+Compare turbine_output_mw, bess_output_mw, fuel_cell_output_mw,
+p_dispatch_curtailed_mw and the pre-diesel residual.
+
+| Scenario/path | Restored states | Max GT MW | Max BESS MW | Max FC MW | Max curtailment MW | Max residual MW | Result |
+|---|---:|---:|---:|---:|---:|---:|---|
+| base demo, conventional | 131 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | PASS, float-exact |
+| base demo, informed | 136 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | PASS, float-exact |
+| hybrid | 2 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | PASS, float-exact |
+| fc-bess-diesel | 126 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | PASS, float-exact |
+| fc100-v2 | 132 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | PASS, float-exact |
+| fc100-zero-hot-v2 | 132 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | PASS, float-exact |
+| Slurm GPU-peaks | 127 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | PASS, float-exact |
+| TOTAL | 786 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | PASS, float-exact |
+
+Maxima cover all three pairwise comparisons: donor output, restored old output,
+restored HEAD output. No first_difference and no errors in any valid result.
+The 1e-12 MW allowance is not needed. Full sample tick lists are in the evidence
+JSON. A2 donor summaries do NOT compute full-run physical hashes or balance
+counts; their null fields must not be interpreted as zero failure counts.
+
+## Fourth resumption — A3 source audit and literal STOP condition
+
+Requested condition: the diff on the listed lifecycle functions "shows only
+the approved IMPL-ISL-14/15 changes".
+That condition is NOT literally true for the full listed method bodies.
+They also contain existing D10 delivery/capability bookkeeping and sequencing
+changes. This is a scope/acceptance mismatch, NOT a finding that a new START
+predicate was introduced and NOT a claim that D10 was globally unapproved.
+No attempt is made to remove or relabel those D10 hunks as IMPL-ISL-14/15.
+
+AST comparison (including literals/control flow, excluding line attributes):
+| Method | 01ce053 lines | HEAD lines | AST identical? |
+|---|---|---|---|
+| DieselFleetCoordinator.step | diesel_fleet.py:180–245 | :180–257 | no |
+| _begin_episode | :247–256 | :259–268 | yes |
+| _start_due_primary_units | :258–272 | :270–284 | yes |
+| _begin_unloading | :328–331 | :340–343 | yes |
+| _finish_unloading | :333–345 | :345–357 | yes |
+| _complete_cooldown_if_ready | :347–361 | :359–373 | yes |
+| DieselModule.command_start | asset_modules.py:1421–1445 | :1422–1446 | yes |
+| DieselModule.can_start | :1408–1419 | :1409–1420 | yes |
+| DieselModule.advance | :1447–1512 | :1448–1520 | no |
+| DieselModule.command_stop | :1517–1531 | :1554–1568 | yes |
+| DieselModule.resume_from_unloading | :1533–1540 | :1570–1580 | no |
+
+Every zero-context hunk in the two-file diff is classified below. Changes not
+inside listed lifecycle bodies are included so the audit hides no source hunk.
+Paths are under P/core; ranges refer to ebeeb18. Literal full diff is preserved.
+| Hunk | Classification / literal change |
+|---|---|
+| asset_modules.py:1360 | D10, new _dispatch_ceiling_mw state, not IMPL-ISL-14/15. |
+| :1448 | D10, advance(dispatch_controlled=False) keyword, not IMPL-ISL-14/15. |
+| :1468 | D10, initialize delivery ceiling on successful synchronization. Existing success/state-transition condition unchanged. |
+| :1475 | D10, retain delivered output before advancing SYNCHRONISED capability. |
+| :1502–1506 | D10, retain advanced capability, restore delivered output if dispatch-controlled; not IMPL-ISL-14/15. |
+| :1525–1553 | D10, dispatch floor/ceiling and target application; synchronized 0.30 proxy, unchanged unloading tail output. |
+| :1575–1577 | D10, expose actual unloading tail as ceiling when resuming; resume guard/state assignment/timer reset unchanged. |
+| diesel_fleet.py:115 | IMPL-ISL-14, on-bus output docstring. |
+| :120 | IMPL-ISL-14, include UNLOADING in measured fleet output. |
+| :187–188 | D10, advance_units/consume_fuel flags, not IMPL-ISL-14/15. |
+| :200–203 | D10, conditional lifecycle/fuel phase calls replacing unconditional calls. |
+| :233 | IMPL-ISL-15, attempt due synchronized stops before counting restored time. |
+| :235–239 | IMPL-ISL-15, count restoration only when UNLOADING and no synchronized stop remains refused. |
+| :241–242 | IMPL-ISL-15, reset restoration time otherwise. |
+| :247–250 | IMPL-ISL-15, require every unloading ramp to complete before finish. |
+| :375–383 | D10, advance_units/record_dispatch_fuel helpers; achieved dispatch drives fuel. |
+| :390 | IMPL-ISL-14, UNLOADING fuel counted by the on-bus filter. |
+
+Two decisive additional D10 hunks within explicitly listed functions:
+```
+# asset_modules.py:1448
+-    def advance(self, sim_time: float, dt_seconds: float) -> None:
++    def advance(self, sim_time: float, dt_seconds: float, *, dispatch_controlled: bool = False) -> None:
+
+# asset_modules.py:1502–1506
++            self._dispatch_ceiling_mw = self._current_output_mw
++            if dispatch_controlled:
++                # D10: advance machine capability, not delivered power.  A
++                # subsequent accepted stop must capture actual dispatched MW.
++                self._current_output_mw = _delivered_before_advance
+```
+START predicates in step and the AST-identical start/can-start methods are not
+changed. However, a claim that the full named methods differ ONLY for
+IMPL-ISL-14/15 would be false. STOP at A3 as written; the separately classified
+D10 output-only/sequencing hunks require clarification of that condition
+before A3 can be recorded as passed.
+
+## Fourth resumption — remaining scope NOT EXECUTED after A3 STOP
+
+- A4: no Phase 2c no-diesel reference acceptance or H 24h repeated metric/tick
+  matrix was run in this resumption.
+- A5: no complete post-on-bus, first-40-tick and later lifecycle divergence
+  report was produced. A1 prefix differences at the first on-bus tick are
+  permitted and are not treated as a new failure.
+- R3: no current-versus-01ce053 test-signature runs or stale-test updates.
+- 2d.5: no accepted complete A/B metric table, app-path parity check or five-
+  diesel-scenario before/after table. A2 donor trajectories are instrumentation
+  inputs, not a substitute for those metric/guard/repetition checks.
+- 2d.6: no full suite, no counts, no added/removed failure-set comparison and
+  no newly finalized PHASE_2D_FAILING_TESTS.txt.
+- 2d.7: no successful D10 implementation acceptance commit. ebf2ea9, fb185a6
+  and ebeeb18 remain existing, unvalidated automatic implementation checkpoints;
+  1f76f87 is the third-resumption report-only commit. This resumption changes
+  only the report/evidence and the superseded acceptance-scope memory note.
+
+No further simulations or tests were started after the A3 STOP decision.
+The existing historical reports follow, unchanged except for status headings.
+Their START-list/off-bus trajectory criteria are superseded, not current gates.
+Final report-only commit hash and git status are printed in the final response.
+
+---
+
+# Historical report — THIRD RESUMPTION: T3 STOP
 
 **CURRENT STATUS: STOPPED at the first T3 verification pair. NOT FINISHED.**
 Base: fb185a6e8fbf8ba62752ebc65dc4b58bc9136241.

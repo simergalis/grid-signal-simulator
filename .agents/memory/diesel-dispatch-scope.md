@@ -11,18 +11,18 @@ The proposed 30%-of-rated diesel minimum applies to SYNCHRONISED operation, not 
 
 The user superseded the prior authorization for a dispatch-aware availability gap. The coordinator must receive the achieved pre-diesel residual after all non-diesel allocation, including emergency BESS release, computed once in that allocation pass.
 
-**Why:** The user explicitly replaced “Authorize a dispatch-aware gap signal” with the post-dispatch residual and retained the requirement that actual diesel START timing must not change.
+**Why:** The user explicitly replaced “Authorize a dispatch-aware gap signal” with the post-dispatch residual.
 
-**How to apply:** Keep the coordinator as lifecycle owner. Do not substitute capacity or availability for achieved delivery, add a second allocation, or alter START/debounce/minimum-run/restore/cooldown settings. Compare residuals and accepted starts against the approved pre-D10 baseline; stop on a difference rather than adjusting other allocation terms.
+**How to apply:** Keep the coordinator as lifecycle owner. Do not substitute capacity or availability for achieved delivery, add a second allocation, or alter START/debounce/minimum-run/restore/cooldown settings.
 
-The approved gap amendment must also preserve actual diesel START timing; retaining the same Boolean predicate and timers alone does not establish this.
+The user withdrew the criterion requiring identical START lists. START trigger code must remain unchanged; START outcomes may differ after the first diesel on-bus tick because D10 changes subsequent site state.
 
-**Why:** The user explicitly required STOP-and-report if the gap change alters a scenario's start ticks.
+**Why:** The user explicitly revised acceptance to distinguish unchanged trigger code from changed outcomes due to diesel output and BESS SoC history.
 
-**How to apply:** Compare accepted starts across affected scenarios before accepting the signal amendment. A base-demo-only match is insufficient; stop on a counterexample without implementing a repair.
+**How to apply:** Require physical-tick identity before the first on-bus tick in either version and trace later output/SoC/decision divergence rather than rejecting a later changed START list by itself.
 
-Conformance must also preserve the pre-D10 non-diesel allocation whenever no diesel unit is on bus, using the same allocator with zero diesel contributions.
+Conformance requires same-state allocation equality while diesel is off bus, using the same allocator with zero diesel contributions.
 
-**Why:** The user explicitly made off-bus turbine/BESS/FC/gap equality and unchanged accepted START lists acceptance gates, not merely unchanged dispatch policy code.
+**Why:** The user replaced whole-trajectory off-bus equality with restoration of identical historical simulation states into both versions before comparing one allocation.
 
-**How to apply:** Gate whole trajectories as requested, including off-bus ticks after prior diesel operation. Do not weaken the gate to identical instantaneous formulas or to ticks before the first diesel start.
+**How to apply:** Compare turbine/BESS/FC output, curtailment and pre-diesel residual on the same restored state, within the user's 1e-12 MW tolerance or float-exact. Keep this distinct from the pre-on-bus whole-tick identity gate.
