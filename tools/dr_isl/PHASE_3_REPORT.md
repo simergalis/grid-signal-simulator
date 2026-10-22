@@ -1,13 +1,274 @@
 # DR-2026-10-20-ISLAND-COLLAPSE — Phase 3 (D2), final resumption
 
-## Latest resumption: TC125 diagnosis — STOP at 3.L (2026-10-22)
+## FINAL — D2-a resumption, 3.O–3.R COMPLETE (2026-10-22)
 
-See [PHASE_3_TC125_DIAGNOSIS.md](PHASE_3_TC125_DIAGNOSIS.md).
-BASE approval reaches a command that is silently dropped by the hot-standby guard.
-A separate contingency release subsequently starts the unit; it is not the approved core delivery path.
-No TC125/TC132 changes, 3.M acceptance/suite runs, or 3.N commits were made.
-Main application remains at BASE 1345380; candidate stash c52218e is retained.
-The earlier final-resumption report and suite result below are historical and unchanged.
+This section supersedes all STOP/current-state statements in the historical reports below.
+Scope: Phase 3 only. Phase 4 was not started. No publish, deployment or push.
+Entry HEAD was `f6d981195ca83c16ded7de9d127cbccf38009863`; application base was
+`134538067d4eb4c2ce14232e483e9a91fd31276b`.
+Stash `c52218ee0e35597eac442cabaa04e839ebc50273` was applied and retained.
+
+`P` means `attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim`.
+Fresh evidence directory: `/tmp/DR-ISL-phase3/finish/`.
+Previous summaries were retained in `/tmp/DR-ISL-phase3/d2a_previous/`.
+All acceptance pairs were re-run, not substituted with the retained summaries.
+
+### 3.O — restoration, D2-a test changes, focused tests
+
+Before the test updates, `git diff c52218e -- P/core P/runtime` printed nothing:
+the restored application was exactly the previous candidate.
+The nullable logger safety check is at `P/core/simulation_core.py:654–663`.
+Controller adjudication calls the shared predicate at
+`P/runtime/turbine_commitment.py:1203–1210`; the duplicate minimum-down guard is absent.
+The predicate and safety guard are at `P/core/asset_modules.py:1057–1084`.
+
+Lloyd's D2-a approval accepts the controller veto of a reserved hot-standby
+core-commit target. BASE approved that proposal, but direct delivery was
+silently dropped; the separate later contingency release is not direct core delivery.
+The diagnostic evidence remains in `tools/dr_isl/PHASE_3_TC125_DIAGNOSIS.md`.
+
+TC125 (`P/tests/test_addendum_h_phase2a_commitment.py:588–613`) now takes the
+existing spinning=1/hot=1 fixture and sets the second unit's `hot_standby=False`
+before building. Its initial state is OFFLINE and minimum-down is disabled.
+The approval assertions are retained: approved=True, action=`proposal_commit`,
+source=`core_commitment_proposal`, controller_approved=True.
+TC132 (`:824–827`) retains the False approval assertion and changes only the
+reason substring to `start ineligible (min_down)`, with the D2 comment.
+New TC-ISL-06e (`P/tests/test_dr_isl_hot_standby_veto.py:1–28`) asserts the
+reserved target returns `(False, "hot_standby")`, adjudication=False,
+refusal containing `hot_standby`, controller_approved=False.
+The collision search found no other TC-ISL-06e.
+
+Command, from P:
+```text
+pytest -q tests/test_dr_isl_start_eligibility.py tests/test_dr_isl_hot_standby_veto.py tests/test_addendum_h_phase2a_commitment.py::test_tc125_informed_core_proposal_is_logged_by_controller tests/test_addendum_h_phase2a_commitment.py::test_tc132_core_start_is_vetoed_during_minimum_down_window --junitxml=/tmp/DR-ISL-phase3/TC06_d2a.xml
+........                                                                 [100%]
+8 passed in 1.05s
+```
+These are TC-ISL-06a–e, the guard-boundary test, TC125 and TC132.
+An initial new-test collection attempt failed with `ModuleNotFoundError:
+No module named 'test_addendum_h_phase2a_commitment'`; its scratch log was
+overwritten by the successful focused run. The new test import was corrected
+to `tests.test_addendum_h_phase2a_commitment` before the passing run.
+No production change was made for that collection error.
+
+### 3.P — all acceptance gates PASS
+
+Fresh comparison command chain: `finish_compare.py` for S10 and H2 informed,
+then `/tmp/DR-ISL-phase3/finish_batch.py`, then `finish_acceptance.py`.
+Printed result:
+```json
+{"passed": true, "failure": null, "checks": 36}
+```
+Evidence: `/tmp/DR-ISL-phase3/finish/acceptance.json`.
+A second comparison, `/tmp/DR-ISL-phase3/d2a_gate.py`, checked every fresh
+candidate trace (including all starts, rejected attempts, episodes, extrema,
+balance failures and physical hash), all 27 metric fields and compact-tick
+hashes against the retained previous candidate:
+```json
+{"checks": 17, "passed": true}
+```
+Evidence: `/tmp/DR-ISL-phase3/D2A_PRIOR_CANDIDATE_COMPARISON.json`.
+Summary files have fresh modification times after the focused JUnit file.
+Streaming workers wrote no full per-tick exports; compact rows were hashed in memory.
+The maximum file found under the phase scratch directory was 33,382,373 bytes
+(an existing full-suite artifact fixture), below 200,000,000 bytes.
+
+#### B1 — physical prefixes and decision-only exceptions
+
+S10: physical prefix ticks 1–1058 identical; first BASE rejection tick 1059.
+H2 informed, repetitions 1 and 2: physical prefix ticks 1–10070 identical;
+first BASE rejected command tick 10071.
+H2 informed's only pre-rejection decision differences, in both repetitions:
+
+| tick | sim time used by decision | BASE action/target/blocked_by | candidate action/target/blocked_by |
+|---|---:|---|---|
+|5081|25400.0|commit / gt-spin-02 / empty string|hold / null / no eligible turbine: gt-spin-02=min_down|
+|5082|25405.0|commit / gt-spin-02 / empty string|hold / null / no eligible turbine: gt-spin-02=min_down|
+|5083|25410.0|commit / gt-spin-02 / empty string|hold / null / no eligible turbine: gt-spin-02=min_down|
+
+At each: BASE reason=`reserve floor violated: 25.0 MW < 27.0 MW`;
+candidate reason=`commit condition met (U=0.079, floor_violated=True)`.
+BASE target state=offline, hot_standby=False, min_down_enabled=True,
+stop_time=25400.0, min_down=900.0, elapsed=0.0/5.0/10.0 respectively,
+eligible=False, reason=min_down, adjudicated=True, accepted=False.
+No other scenario/arm/repetition had a telemetry-only exception.
+The seven app-path no-rejection scenarios below, H1 both arms twice,
+H2 baseline and base demo both arms were whole-run identical to BASE.
+
+#### B2 — S10 (fresh values identical to previous candidate)
+
+| field | BASE | D2-a |
+|---|---:|---:|
+|ticks|17280|17280|
+|rejected starts|1154 (1132 core, 22 pre-staging)|0|
+|accepted starts|32|38|
+|ineligibility episodes|0|8|
+|collapse|null (no)|null (no)|
+|minimum BESS SoC|0.0|0.0|
+|minimum Hz|-737.1409980342337|-729.1075118080669|
+|maximum Hz|998.9330534505464|998.9330534505464|
+|unserved MWh|12.5194325350618|10.600341682490331|
+|balance-failure ticks|0|0|
+
+BASE physical SHA-256: `51dfe89b51138d85930b01684c95c58d60d7dcd1ed0c36801657c9d41840ef52`.
+D2-a physical SHA-256: `4370c9ebfbfc90d2812cad93285c9749645974502508e8188c3567eb3e60d34d`.
+The complete accepted-start timelines and episode records in the historical
+B2 JSON below are unchanged; exact trace equality was independently checked
+against that candidate. These unprotected frequency extrema remain findings,
+not a claim of valid protection behavior; Phase 3 did not alter frequency.
+
+#### B3/B4 — whole-run app-path hashes, BASE = D2-a
+
+| scenario | ticks | physical SHA-256 (both versions) |
+|---|---:|---|
+|demo-islanded-ramp|2160|fe798e4292b478ef3f6e25d67e4e22123867f51e49b991ac13981ecaa8114b2a|
+|scenario-equinix-sj-1|720|328309c3a181aefdb702a0577f41acfe673a945450ce61f9ad560696cf0aaa84|
+|scenario-turbine-01|720|006006e6c9eac82460ee4a343a4d1691f2a34f231ca7fb038c7ae583ab63471a|
+|scenario-hybrid-ai-100mw-addendum-i|120|9377f009785094697116d356ef554985107ce1ee4c92f01c672f4b30b5f7577a|
+|scenario-100mw-fuel-cell-bess-diesel|252|565edaad7557ed06b545d92fe6c10105ef1a709e1aeb2e224d041e1e475e581b|
+|scenario-fc100-islanded-v2|264|d8146d3e37d9d7e1b306bbf2dc7dea7b2675be9c2bdabca0a209a028772c73d3|
+|scenario-fc100-islanded-zero-hot-v2|264|d89d3132a5f87e94de6869a1246f5d3f434e03ecab72d744f90329ac8608d8f2|
+
+All seven have zero rejected starts before and after.
+
+#### B5 — H references
+
+H1, both arms, two repetitions each: all 27 metrics and compact ticks identical
+to BASE; 17280 ticks each. Both repetitions have the following hashes:
+
+| arm | physical SHA-256 (BASE = D2-a) | compact-tick SHA-256 (BASE = D2-a) |
+|---|---|---|
+|baseline|57a1370fd9d26d4bea4d2361f3ae2086aede264badba0c314095219d9741727b|e0d9b888edb338c3796d64a26bd99ac6afb751b4c93bcf0e54b0a73165705755|
+|informed|60430dc7631204990acc39213cbcbeba8636b71a05d23c1a101c6c5faee71ef9|19c2420ea61da37cb73fd2187495dad781f1e4de10766f988347894fe671c4e2|
+
+H2 baseline: physical SHA-256 remains
+`f7c8de426e7b1b08650e0980e6ea26d38ce8bf03db2734cd21a18368f413b4a1`.
+All 27 metrics identical. The pre-existing start-reconciliation FAIL remains:
+recorded_event_count=6, measured_event_count=11, measured_start_fuel_mmbtu=124.0,
+tier_sum_mmbtu=124.0, passed=False, constraints_valid=False, five hard violations.
+Each violation concerns gt-hot-01 asset start counts 2–6 versus log=1,
+`untracked_path=production_command_or_cascade`.
+
+H2 informed, two repetitions: identical to each other and the previous candidate.
+The full metric records retained below were reverified field by field.
+
+| metric | BASE | D2-a |
+|---|---:|---:|
+|load fuel MMBtu|5107.722017303|5106.733034717|
+|no-load fuel MMBtu|64.866666667|64.855|
+|hot-standby fuel MMBtu|3.761458333|3.761458333|
+|start fuel MMBtu|152.0|152.0|
+|total turbine fuel MMBtu|5328.350142303|5327.34949305|
+|curtailment MWh|343.106291593|342.977539092|
+|attributable curtailment fuel MMBtu|3608.878484911|3607.524008603|
+|interval-exposure curtailment fuel MMBtu|4894.248370795|4892.43517635|
+|unserved MWh|0.893328423|0.859772492|
+|peak unserved MW|42.36838787|42.36838787|
+|recorded/measured starts|14 / 14|14 / 14|
+|rejected starts|6|0|
+|start-fuel reconciliation|PASS|PASS|
+|constraints_valid / hard_violations|True / []|True / []|
+|BESS SoC minimum|0.950386947|0.950386947|
+|BESS SoC final|0.999999987|0.999999987|
+|forecast misses count / peak MW|39 / 13.130749226769357|39 / 13.130749226769357|
+|stop-floor refusals|14890|14904|
+
+The replacement start is gt-hot-02 at 50350.0 s, tick 10071, versus 50385.0 s,
+tick 10078, in BASE. gt-hot-01 at 50380.0 s is retained.
+No new rejected command or guard failure appears.
+Physical hashes: BASE=`3b40147d28ee89f1ec312b7f57f1c9f77e82c99bd7e6ee4447ff5384f951dbdf`;
+D2-a=`b7383d283f09d625f531ecc216b447b868792f50069bbc662b1636d2b988bbfb`.
+Compact hashes: BASE=`6ae0ce3d7a1b300cd4402fbd640abc67addb953b453075454c39bdefad8b0711`;
+D2-a=`0def2a33daa2770e5095d8cb63b2c5e7d01ab65c85aaf4db3bd732a89623a3c7`.
+
+H2 compare_runs is FAIL before and after, solely `baseline_valid=False`.
+The other nine conditions are True in both comparisons: build_parity,
+informed_valid, baseline_energy_balance, informed_energy_balance,
+baseline_fuel_reconciled, informed_fuel_reconciled, identical_compute_trace,
+informed_unserved_energy_no_worse, informed_peak_unserved_no_worse.
+The invalid baseline was not silently recertified.
+
+#### B6 — base demo equals 2026-10-21 production record
+
+| arm | curtailment MWh | turbine fuel MMBtu | unserved MWh | peak unserved MW |
+|---|---:|---:|---:|---:|
+|baseline|8.136511735|714.363019086|0.351692658|22.309362466|
+|informed|5.278943188|665.398247704|0.020719074|7.52325057|
+
+1440 ticks each. All 27 metrics and whole-run hashes equal BASE.
+Baseline physical SHA-256: `90f4b8a55acceb521f972d9596c5137f104dbc34e158ac3bc58cadf73e5164f1`.
+Informed physical SHA-256: `ea12dabd9944d98aad3f8fc966122f2432e33fb7bd150c8dc313ca9a88dd27a6`.
+compare_runs=PASS before/after; all ten conditions listed above are True,
+including baseline_valid.
+
+### 3.Q — full suite, real package, COMPLETE
+
+Command, from P:
+```text
+PYTHONPATH=/tmp/DR-ISL-phase3/finish:$PWD pytest -q -p dr_isl_incremental --junitxml=/tmp/DR-ISL-phase3/finish/suite_d2a_native.xml
+15 failed, 2152 passed, 3 skipped, 23 xfailed, 54 warnings, 3 subtests passed in 719.19s (0:11:59)
+PYTEST_EXIT=1
+```
+Native JUnit: tests=2196, failures=15, errors=0, skipped=26;
+the native count includes 3 passing subtests, and skipped includes xfails.
+Incremental parseable JUnit: `/tmp/DR-ISL-phase3/finish/suite_incremental.xml`.
+Native JUnit: `/tmp/DR-ISL-phase3/finish/suite_d2a_native.xml`.
+Log: `/tmp/DR-ISL-phase3/finish/suite_d2a.log`.
+
+Set comparison against `tools/dr_isl/PHASE_2D_FAILING_TESTS.txt`:
+**added=[], removed=[], remaining=15**.
+`tools/dr_isl/PHASE_3_FAILING_TESTS.txt` is byte-identical to that 15-ID baseline.
+TC125 and TC132 both pass in the full suite as well as the focused run.
+The suite is not all-green: the 15 existing failures remain unmodified.
+The historical 17-failure candidate suite below is superseded, not the final result.
+
+### 3.R — local commits, changed paths and startup verification
+
+Implementation commit:
+`52ef570508fd9f3fd3b858761d7213ceddcf3b02`
+`D2 (IMPL-ISL-5): single start-eligibility function; commitment picks the first eligible unit`
+
+D2-a tests commit:
+`c9d7907d2bb3c1f52aa67ed56f746c7ee0a46bc7`
+`D2-a: tests follow single start-eligibility (hot-standby veto; shared min-down wording)`
+
+Implementation paths (new-side hunk ranges, all relative to P):
+- `core/asset_modules.py`: 1057–1068, 1081–1083, 1120–1122, 1140, 1151–1152.
+- `core/commitment.py`: 329–341, 344.
+- `core/dispatch.py`: 593–594 (start pre-staging guard only; no allocation-policy change).
+- `core/models.py`: 748–752.
+- `core/simulation_core.py`: 294, 602, 621–665, 676, 763, 2223, 2226–2229, 2285, 2358, 2578.
+- `runtime/run_manager.py`: 1522–1524, 1526.
+- `runtime/turbine_commitment.py`: 622–640, 836, 1204–1206, 1209.
+- `tests/test_dr_isl_start_eligibility.py`: 1–140 (new, force-tracked).
+D2-a test paths:
+- `tests/test_addendum_h_phase2a_commitment.py`: 588–592, 595, 824–825.
+- `tests/test_dr_isl_hot_standby_veto.py`: 1–28 (new, force-tracked).
+
+The full production diff and original TC-ISL-06a–d source are retained in the
+historical sections below; application code was verified byte-identical to the
+previous candidate before these test-only changes.
+Reproduce the exact final diff with `git diff f6d9811..c9d7907 -- P`.
+No scenario JSON or floor/diesel/frequency/protection code was edited.
+The report-only commit includes this report and `PHASE_3_FAILING_TESTS.txt`;
+its self-hash is reported separately in the delivery message.
+
+The development workflow `artifacts/gridsignal: web` was restarted once after
+validation: startup completed, Uvicorn listening on 0.0.0.0:22126, GET / = 200.
+Evidence: `/tmp/logs/artifactsgridsignal_web_20261022_134413_687_880def02.log`.
+Existing catalogue coverage warnings remain (including unset base_load_mw).
+The app-preview screenshot rendered the operator sign-in page; its unauthenticated
+browser also logged a 401. No signed-in UI journey is claimed by that check.
+The separate Node API workflow's root 404 is not the simulator startup result.
+Neither workflow restart nor these local commits published the app.
+
+Automatic checkpoint `f6d9811` at entry was report-only. Earlier unvalidated
+candidate checkpoints/restorations described below are historical; final
+implementation validation applies to the explicit commit pair above.
+The candidate stash is retained. No STOP condition occurred in this resumption.
+
+## Historical reports — superseded status statements retained for audit
 
 **STATUS: STOPPED at 3.4: added failures.**
 
