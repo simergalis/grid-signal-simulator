@@ -1,0 +1,44 @@
+{
+  "base_context_results": {
+    "isolation1": "passed",
+    "isolation2": "passed",
+    "isolation3": "passed",
+    "file": "failed",
+    "prefix": "failed"
+  },
+  "candidate_context_results": {
+    "isolation1": "passed",
+    "isolation2": "passed",
+    "isolation3": "passed",
+    "file": "passed",
+    "prefix": "passed"
+  },
+  "common_preceding_order_identical": true,
+  "base_cases": 774,
+  "candidate_cases": 786,
+  "extra_candidate_cases": [
+    "tests/test_dr_isl_phase4_reserve.py::test_tc_isl_01_above_capacity_warning_attribution_only",
+    "tests/test_dr_isl_phase4_reserve.py::test_tc_isl_01_diesel_wins_unchanged",
+    "tests/test_dr_isl_phase4_reserve.py::test_tc_isl_01_hot_standby_release_basis_and_unchanged_interlocks",
+    "tests/test_dr_isl_phase4_reserve.py::test_tc_isl_01_min_down_and_inflight_countdown",
+    "tests/test_dr_isl_phase4_reserve.py::test_tc_isl_01_no_diesel_positive_floor_and_recorded_basis",
+    "tests/test_dr_isl_phase4_reserve.py::test_tc_isl_01_no_restartable_unit_records_zero",
+    "tests/test_dr_isl_phase4_reserve.py::test_tc_isl_02_grid_tied_or_nonforming_not_applied[overrides0]",
+    "tests/test_dr_isl_phase4_reserve.py::test_tc_isl_02_grid_tied_or_nonforming_not_applied[overrides1]",
+    "tests/test_dr_isl_phase4_reserve.py::test_tc_isl_02_live_grid_forming_block_fc_not_applied",
+    "tests/test_dr_isl_phase4_reserve.py::test_tc_isl_03_conditional_release_and_unserved[None]",
+    "tests/test_dr_isl_phase4_reserve.py::test_tc_isl_03_conditional_release_and_unserved[diesel]",
+    "tests/test_dr_isl_phase4_reserve.py::test_tc_isl_03_conditional_release_and_unserved[turbine]"
+  ],
+  "classification": "pre-existing boundary-sampling/timing failure; reproduced at base in file and preceding order; no candidate regression",
+  "mechanism": "profile looked up at interval start; result stamped at interval end; latest-tick polling sometimes observes boundary tick. This is not evidence of a polluted pytest singleton.",
+  "shared_runtime_state": "WebSocketHub._latest_ticks snapshot, asynchronously written/read; HTTP poll scheduling determines observed samples",
+  "source": {
+    "profile_lookup": "core/simulation_core.py:842-859,1233-1235",
+    "end_timestamp": "core/simulation_core.py:3822",
+    "test_expectation": "tests/test_gpu_load_profile.py:82-89,146-169",
+    "shared_snapshot": "runtime/run_manager.py:231-237,263"
+  },
+  "test_and_application_changes_for_gpu": "NONE",
+  "candidate_prefix_added_failures": []
+}

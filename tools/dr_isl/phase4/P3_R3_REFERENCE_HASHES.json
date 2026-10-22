@@ -1,0 +1,8 @@
+{
+  "scenario-equinix-sj-1": "328309c3a181aefdb702a0577f41acfe673a945450ce61f9ad560696cf0aaa84",
+  "scenario-turbine-01": "006006e6c9eac82460ee4a343a4d1691f2a34f231ca7fb038c7ae583ab63471a",
+  "scenario-hybrid-ai-100mw-addendum-i": "9377f009785094697116d356ef554985107ce1ee4c92f01c672f4b30b5f7577a",
+  "scenario-100mw-fuel-cell-bess-diesel": "565edaad7557ed06b545d92fe6c10105ef1a709e1aeb2e224d041e1e475e581b",
+  "scenario-fc100-islanded-v2": "d8146d3e37d9d7e1b306bbf2dc7dea7b2675be9c2bdabca0a209a028772c73d3",
+  "scenario-fc100-islanded-zero-hot-v2": "d89d3132a5f87e94de6869a1246f5d3f434e03ecab72d744f90329ac8608d8f2"
+}

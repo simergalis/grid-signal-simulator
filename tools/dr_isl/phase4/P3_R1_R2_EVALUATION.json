@@ -1,0 +1,166 @@
+{
+  "demo-islanded-ramp": {
+    "base": {
+      "repeat_physical_hash_identical": true,
+      "ticks": 2160,
+      "complete": true,
+      "collapse": null,
+      "min_soc": 0.0,
+      "floor_min_mwh": 0.0,
+      "floor_max_mwh": 0.0,
+      "first_floor_tick": 771,
+      "first_floor_basis": {
+        "bess-0": {}
+      },
+      "first_floor_next120s_min_hz": 56.30124604916138,
+      "first_discharge_floor_next120s_min_hz": 56.30124604916138,
+      "frequency_min": -127.48961154607643,
+      "frequency_max": 60.0,
+      "unserved_mwh": 0.7984763561509628,
+      "balance_failures": 0,
+      "illegal_d2r_discharge_count": 0,
+      "first_advisory": {
+        "tick": 6,
+        "sim_time": 30.0,
+        "reason": "turbine_catchup"
+      },
+      "advisory_before_floor": true,
+      "at_60s_after_floor": {
+        "frequency_hz": 58.283385777786414,
+        "gt_plus_solar_minus_demand_mw": 0.0,
+        "bess_output_mw": 0.0
+      }
+    },
+    "candidate": {
+      "repeat_physical_hash_identical": true,
+      "ticks": 2160,
+      "complete": true,
+      "collapse": null,
+      "min_soc": 0.45166506501035325,
+      "floor_min_mwh": 0.0625,
+      "floor_max_mwh": 7.5,
+      "first_floor_tick": 312,
+      "first_floor_basis": {
+        "bess-0": {
+          "bess_id": "bess-0",
+          "floor_mwh": 7.5,
+          "depth_reserve_mwh": 0.0,
+          "diesel_floor_mwh": 0.0,
+          "d2r_term_mwh": 7.5,
+          "winning_term": "d2r_bridge",
+          "basis": "offline_restart",
+          "unit_id": "turbine-4",
+          "eligibility_wait_s": 0.0,
+          "start_duration_s": 600.0,
+          "thermal_state": "cold",
+          "eligibility_reason": "eligible"
+        }
+      },
+      "first_floor_next120s_min_hz": 59.98901877366516,
+      "first_discharge_floor_next120s_min_hz": 59.98901877366516,
+      "frequency_min": -127.48961154607643,
+      "frequency_max": 60.0,
+      "unserved_mwh": 0.785895723386723,
+      "balance_failures": 0,
+      "illegal_d2r_discharge_count": 0,
+      "first_advisory": {
+        "tick": 6,
+        "sim_time": 30.0,
+        "reason": "turbine_catchup"
+      },
+      "advisory_before_floor": true,
+      "at_60s_after_floor": {
+        "frequency_hz": 59.9963608710769,
+        "gt_plus_solar_minus_demand_mw": 0.0,
+        "bess_output_mw": 0.0
+      }
+    }
+  },
+  "S10_mit_supercloud_2021-08-11": {
+    "base": {
+      "repeat_physical_hash_identical": true,
+      "ticks": 17280,
+      "complete": true,
+      "collapse": null,
+      "min_soc": 0.0,
+      "floor_min_mwh": 0.0,
+      "floor_max_mwh": 0.0,
+      "first_floor_tick": 2372,
+      "first_floor_basis": {
+        "bess-0": {}
+      },
+      "first_floor_next120s_min_hz": 54.48350997809083,
+      "first_discharge_floor_next120s_min_hz": 54.48350997809083,
+      "frequency_min": -729.1075118080669,
+      "frequency_max": 998.9330534505464,
+      "unserved_mwh": 10.600341682490331,
+      "balance_failures": 0,
+      "illegal_d2r_discharge_count": 0,
+      "first_advisory": {
+        "tick": 118,
+        "sim_time": 590.0,
+        "reason": "turbine_catchup"
+      },
+      "advisory_before_floor": true,
+      "at_60s_after_floor": {
+        "frequency_hz": 57.26928943627905,
+        "gt_plus_solar_minus_demand_mw": 0.0,
+        "bess_output_mw": 0.0
+      }
+    },
+    "candidate": {
+      "repeat_physical_hash_identical": true,
+      "ticks": 17280,
+      "complete": true,
+      "collapse": null,
+      "min_soc": 0.0,
+      "floor_min_mwh": 0.0,
+      "floor_max_mwh": 14.9375,
+      "first_floor_tick": 1012,
+      "first_floor_basis": {
+        "bess-0": {
+          "bess_id": "bess-0",
+          "floor_mwh": 14.9375,
+          "depth_reserve_mwh": 0.0,
+          "diesel_floor_mwh": 0.0,
+          "d2r_term_mwh": 14.9375,
+          "winning_term": "d2r_bridge",
+          "basis": "offline_restart",
+          "unit_id": "turbine-4",
+          "eligibility_wait_s": 895.0,
+          "start_duration_s": 300,
+          "thermal_state": "hot",
+          "eligibility_reason": "min_down"
+        }
+      },
+      "first_floor_next120s_min_hz": 79.88266332350686,
+      "first_discharge_floor_next120s_min_hz": 62.11366885785707,
+      "frequency_min": -729.1075118080669,
+      "frequency_max": 998.9330534505464,
+      "unserved_mwh": 8.4639919161834,
+      "balance_failures": 0,
+      "illegal_d2r_discharge_count": 0,
+      "first_advisory": {
+        "tick": 118,
+        "sim_time": 590.0,
+        "reason": "turbine_catchup"
+      },
+      "advisory_before_floor": true,
+      "at_60s_after_floor": {
+        "frequency_hz": 85.67952166997779,
+        "gt_plus_solar_minus_demand_mw": 20.7100344,
+        "bess_output_mw": -18.0
+      }
+    }
+  },
+  "TC_ISL_04": {
+    "passed": true,
+    "nominal_reporting_band_hz": 0.1,
+    "band_basis": "PROPOSED_HERE audit proxy only, not a model/protection setting; exact Hz supplied",
+    "no_zero_soc_tick": "candidate SoC never0; first floor onset used as reserve-equivalent recovery anchor"
+  },
+  "TC_ISL_05": {
+    "passed": true
+  },
+  "gate_passed": true
+}

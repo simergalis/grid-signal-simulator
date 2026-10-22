@@ -1,0 +1,28 @@
+{'TC-ISL-01': {'bess_id': 'bess-reserve', 'floor_mwh': 4.166666666666667, 'depth_reserve_mwh': 0.0, 'diesel_floor_mwh': 0.0, 'd2r_term_mwh': 4.166666666666667, 'winning_term': 'd2r_bridge', 'basis': 'offline_restart', 'unit_id': 'gt-reserve', 'eligibility_wait_s': 0.0, 'start_duration_s': 600.0, 'thermal_state': 'cold', 'eligibility_reason': 'eligible'}}
+.{'TC-ISL-01 diesel floor': 10.0}
+.{'TC-ISL-01 no restartable': {'bess-reserve': {'bess_id': 'bess-reserve', 'floor_mwh': 0.0, 'depth_reserve_mwh': 0.0, 'diesel_floor_mwh': 0.0, 'd2r_term_mwh': 0.0, 'winning_term': 'diesel_floor', 'basis': 'no restartable synchronous unit', 'unit_id': None, 'eligibility_wait_s': None, 'start_duration_s': None, 'thermal_state': None, 'eligibility_reason': None}}}
+.{'TC-ISL-01 STARTING': {'bess_id': 'bess-reserve', 'floor_mwh': 0.8333333333333334, 'depth_reserve_mwh': 0.0, 'diesel_floor_mwh': 0.0, 'd2r_term_mwh': 0.8333333333333334, 'winning_term': 'd2r_bridge', 'basis': 'starting_remaining', 'unit_id': 'gt-reserve', 'eligibility_wait_s': 0.0, 'start_duration_s': 120.0, 'thermal_state': 'cold', 'eligibility_reason': 'state'}}
+.{'TC-ISL-01 warning': [{'code': 'bess_reserve_floor_above_usable', 'bess_id': 'bess-reserve', 'floor_mwh': 4.166666666666667, 'usable_mwh': 1.0, 'winning_term': 'd2r_bridge', 'diesel_units': [], 'diesel_worst_case_sync_s': 0.0}]}
+.{'TC-ISL-01 hot standby': {'bess_id': 'bess-reserve', 'floor_mwh': 4.166666666666667, 'depth_reserve_mwh': 0.0, 'diesel_floor_mwh': 0.0, 'd2r_term_mwh': 4.166666666666667, 'winning_term': 'd2r_bridge', 'basis': 'hot_standby_release', 'unit_id': 'gt-reserve', 'eligibility_wait_s': 0.0, 'start_duration_s': 600.0, 'thermal_state': 'cold', 'eligibility_reason': 'hot_standby_release'}, 'blocked_floor': 0.0}
+.{'TC-ISL-02 inapplicable': {'island_mode': False}}
+.{'TC-ISL-02 inapplicable': {'bess_units': [{'asset_id': 'bess-reserve', 'rated_mw': 10.0, 'usable_mwh': 20.0, 'initial_soc_fraction': 1.0, 'grid_forming': False}]}}
+.{'TC-ISL-02 live FC': {'bess-reserve': {'bess_id': 'bess-reserve', 'floor_mwh': 0.0, 'depth_reserve_mwh': 0.0, 'diesel_floor_mwh': 0.0, 'd2r_term_mwh': 0.0, 'winning_term': 'diesel_floor', 'basis': 'D2-r not applicable', 'unit_id': None, 'eligibility_wait_s': None, 'start_duration_s': None, 'thermal_state': None, 'eligibility_reason': None}}}
+.{'TC-ISL-03': None, 'floor_mwh': 4.166666666666667, 'end_soc_mwh': 4.166666666666667, 'bess_mw': 0.0, 'unserved_mw': 10.0, 'balance_passed': True}
+.{'TC-ISL-03': 'turbine', 'floor_mwh': 4.166666666666667, 'end_soc_mwh': 4.153613215609007, 'bess_mw': 9.0, 'unserved_mw': 0.0, 'balance_passed': True}
+.{'TC-ISL-03': 'diesel', 'floor_mwh': 4.166666666666667, 'end_soc_mwh': 4.153613215609007, 'bess_mw': 9.0, 'unserved_mw': 0.0, 'balance_passed': True}
+......{'state': <TurbineState.SYNCHRONISED: 'synchronised'>, 'hot_standby': False, 'island_collapsed': False, 'collapse_reason': None}
+.{'state': None, 'hot_standby': False, 'island_collapsed': True, 'collapse_reason': 'island_collapse_no_grid_forming_source'}
+.{'state': <TurbineState.OFFLINE: 'offline'>, 'hot_standby': False, 'island_collapsed': True, 'collapse_reason': 'island_collapse_no_grid_forming_source'}
+.{'state': <TurbineState.STARTING: 'starting'>, 'hot_standby': False, 'island_collapsed': True, 'collapse_reason': 'island_collapse_no_grid_forming_source'}
+.{'state': <TurbineState.SYNCHRONISED: 'synchronised'>, 'hot_standby': True, 'island_collapsed': True, 'collapse_reason': 'island_collapse_no_grid_forming_source'}
+.{'tripped_gt_state': <TurbineState.OFFLINE: 'offline'>, 'collapse_reason': 'island_collapse_no_grid_forming_source'}
+.{'diesel_state': <DieselState.SYNCHRONISED: 'synchronised'>, 'collapse_reason': None}
+.{'diesel_state': <DieselState.OFFLINE: 'offline'>, 'collapse_reason': 'island_collapse_no_grid_forming_source'}
+.{'diesel_state': <DieselState.STARTING: 'starting'>, 'collapse_reason': 'island_collapse_no_grid_forming_source'}
+..........................
+=============================== warnings summary ===============================
+tests/test_reserve_reconciliation.py::test_tc_r2_depth_reserve_wins_when_diesel_floor_is_smaller
+  <string>:11: UserWarning: BessConfig 'bess-reserve': C-rate 0.10 C is outside the 0.25–4.0 C physical range (PROTO-9 — chosen, no measured basis). rated_mw=10.0, usable_mwh=100.0
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+51 passed, 1 warning in 7.39s

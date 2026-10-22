@@ -1,0 +1,118 @@
+{
+  "scenario": "scenario-100mw-fuel-cell-bess-diesel",
+  "arm": "app",
+  "repetition": 1,
+  "gate": "R3",
+  "first_physical_difference": null,
+  "runs": {
+    "base": {
+      "ticks": 252,
+      "min_soc": 1.0,
+      "frequency_min": 60.0,
+      "frequency_max": 60.0,
+      "frequency_min_time": 5.0,
+      "gt_min": 0,
+      "gt_max": 0,
+      "bess_min": 0.0,
+      "bess_max": 0.0,
+      "floor_min_mwh": 0.6597222222222222,
+      "floor_max_mwh": 0.6597222222222222,
+      "unserved_mwh": 0.0,
+      "collapse": null,
+      "balance_failure_count": 0,
+      "first_balance_failure": null,
+      "first_floor": null,
+      "first_discharge_floor": null,
+      "post_floor_window": [],
+      "post_discharge_floor_window": [],
+      "first_advisory": null,
+      "below_floor_hold_ticks": 0,
+      "below_floor_discharge_ticks": 0,
+      "illegal_d2r_discharge_count": 0,
+      "first_illegal_d2r_discharge": null,
+      "basis_counts": {
+        "None|None|None": 252
+      },
+      "summary": {
+        "kind": "summary",
+        "physical_sha256": "565edaad7557ed06b545d92fe6c10105ef1a709e1aeb2e224d041e1e475e581b",
+        "ticks": 252,
+        "metrics": {},
+        "record": {},
+        "end_sim_time": 1260.0,
+        "build_warnings": [],
+        "final_floor_basis": null,
+        "floor_history_count": 0
+      },
+      "first_floor_next120s_min_hz": null,
+      "first_discharge_floor_next120s_min_hz": null,
+      "complete": true
+    },
+    "candidate": {
+      "ticks": 252,
+      "min_soc": 1.0,
+      "frequency_min": 60.0,
+      "frequency_max": 60.0,
+      "frequency_min_time": 5.0,
+      "gt_min": 0,
+      "gt_max": 0,
+      "bess_min": 0.0,
+      "bess_max": 0.0,
+      "floor_min_mwh": 0.6597222222222222,
+      "floor_max_mwh": 0.6597222222222222,
+      "unserved_mwh": 0.0,
+      "collapse": null,
+      "balance_failure_count": 0,
+      "first_balance_failure": null,
+      "first_floor": null,
+      "first_discharge_floor": null,
+      "post_floor_window": [],
+      "post_discharge_floor_window": [],
+      "first_advisory": null,
+      "below_floor_hold_ticks": 0,
+      "below_floor_discharge_ticks": 0,
+      "illegal_d2r_discharge_count": 0,
+      "first_illegal_d2r_discharge": null,
+      "basis_counts": {
+        "diesel_floor|no restartable synchronous unit|None": 252
+      },
+      "summary": {
+        "kind": "summary",
+        "physical_sha256": "565edaad7557ed06b545d92fe6c10105ef1a709e1aeb2e224d041e1e475e581b",
+        "ticks": 252,
+        "metrics": {},
+        "record": {},
+        "end_sim_time": 1260.0,
+        "build_warnings": [],
+        "final_floor_basis": {
+          "bess-100mw-bridge": {
+            "bess_id": "bess-100mw-bridge",
+            "floor_mwh": 0.6597222222222222,
+            "depth_reserve_mwh": 0.0,
+            "diesel_floor_mwh": 0.6597222222222222,
+            "d2r_term_mwh": 0.0,
+            "winning_term": "diesel_floor",
+            "basis": "no restartable synchronous unit",
+            "unit_id": null,
+            "eligibility_wait_s": null,
+            "start_duration_s": null,
+            "thermal_state": null,
+            "eligibility_reason": null
+          }
+        },
+        "floor_history_count": 0
+      },
+      "first_floor_next120s_min_hz": null,
+      "first_discharge_floor_next120s_min_hz": null,
+      "complete": true
+    }
+  },
+  "return_codes": [
+    0,
+    0
+  ],
+  "physical_identical": true,
+  "compact_identical": true,
+  "metric_differences": {},
+  "metrics_identical": true
+}

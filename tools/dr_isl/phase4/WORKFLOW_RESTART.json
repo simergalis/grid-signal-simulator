@@ -1,0 +1,9 @@
+{
+  "workflow": "artifacts/gridsignal: web",
+  "pid": 2763,
+  "state": "RUNNING",
+  "application_startup_complete": true,
+  "HTTP_root": 200,
+  "log": "/tmp/logs/artifactsgridsignal_web_20261022_185723_462_e1fbba07.log",
+  "warning": "existing catalogue starting-count estimation warnings; no startup traceback"
+}

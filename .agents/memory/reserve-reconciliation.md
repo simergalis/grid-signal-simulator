@@ -1,9 +1,9 @@
 ---
 name: Reserve threshold reconciliation
-description: The normal BESS reserve and diesel-derived SoC floor share one live threshold with a one-tick emergency release.
+description: Single-threshold reserve reconciliation, conditional emergency release, and approved bridge-time semantics.
 ---
 
-The final retained-energy threshold is the maximum of the configured normal-dispatch reserve and the diesel synchronization floor. The live path must compute that threshold once, use it for upstream normal/reserve ceilings, and pass the same per-unit values downstream. The existing balance-based emergency-release condition may authorize the retained energy for that tick by passing a zero physical floor; no separate contingency state is implied.
+Reserve extensions must preserve one reconciled retained-energy threshold across upstream allocation ceilings and the downstream physical guard. Emergency release does not mean every floor term may always be zeroed: the user-approved grid-forming bridge reserve stays hard while the BESS is the sole grid-forming source. No separate contingency state is implied.
 
 **Why:** Independent upstream and downstream reserve controls can disagree, either blocking an authorized emergency release or creating a setpoint/actual-output mismatch.
 
@@ -34,6 +34,17 @@ the hot-standby guard or triggering a release. Preserve basis labels
 `starting_remaining`, `offline_restart`, `hot_standby_release`, or
 `no restartable synchronous unit`. Warning attribution uses `d2r_bridge`;
 the above-capacity warning still describes build-time state only.
+
+For the reserve's hot-standby population, "can release" means the existing
+unit interlocks under explicit release authority, before a risk event; it does
+not require an active, confirmed contingency episode.
+
+**Why:** The user explicitly selected unit readiness before an event rather
+than every live contingency-release gate.
+
+**How to apply:** Reuse the existing release-path unit helper and shared start
+predicate. Do not trigger a release or change the event gates while querying
+reserve readiness.
 
 Distinguish a new below-floor discharge from holding or charging while stored
 energy is already below a changed reserve target.

@@ -1,0 +1,36 @@
+{
+  "base": "ae49aaab89564ccf2ef42d505e021641484d0d3a",
+  "candidate_source_sha256": {
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py": "c1b01053a82970b0f5d8ceced7a74b7ca693cb2de309317273ec01d5959cfe1f",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/dispatch.py": "4862e0f33c1989a0d5b33031d9c91ca8d0c7bc16bfa201b59ee3f4fb824f7c4f",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py": "b033d74ca44b2e204579df9b43f6307c546ac048a44dc846ed98a4b1c1ebddfb",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/build_warnings.py": "49edcb26f85e723f95107bd4ac58fc49376e15b36c368e2186f14d200209e1eb",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/scenario_factory.py": "432073c8cd4bb953dde53e236e45d1ccb7cae9ab4fdd02f18279338716c9a4a4"
+  },
+  "exclusions": [
+    "advisory_telemetry",
+    "fabric_modal",
+    "wall_stamp_utc",
+    "insufficient_reserve_proposal_id"
+  ],
+  "hash_format": "SHA256; compact sorted-key ensure_ascii JSON plus LF per tick; NaN allowed",
+  "tick_retention": "IPC only; bounded120s windows in summaries; no full per-tick disk exports",
+  "runtime_path": "RunManager with InMemoryTimeseriesSink output-only append adapter; observes cover_shortfall and soc_floor_mwh; no control changes",
+  "study_path": "native executor _expanded_spec/_probe/_run_mode; writer/cache output-only adapters; compact rows retained in memory and hashed, never exported",
+  "pins": {
+    "Python/NumPy": 1729,
+    "fabric": 1729,
+    "wall_clock": 1792454400.0,
+    "kube_when_configured": 1729,
+    "diesel": "1729+i",
+    "generator/corruption": "unchanged baseline_runner pin_spec"
+  },
+  "runner_source": "tools/dr_isl/baseline_runner.py (unchanged)",
+  "python": "3.13.11 (main, Dec  5 2025, 16:06:33) [GCC 15.2.0]",
+  "P3_R1_tooling_attempt1": "BalanceTerms.passed is a computed property, not an asdict field; corrected observer only before successful runs",
+  "harness_guard_capture": "allow_guard_failure=True captures native guard failures in the report; no guard evaluation is disabled, and parent requires record.status=PASS at R4",
+  "tool_sha256_before_R4": {
+    "stream_worker.py": "446a6b10a314c375e64567dbcb250e35bd0f807bb94db6f1bb4b776e90a58e56",
+    "P3_compare.py": "919e1503c0b3d53a9a6402b795c128ac38e59bea243b38c61beb53e00efd569e"
+  }
+}

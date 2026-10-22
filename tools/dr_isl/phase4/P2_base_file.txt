@@ -1,0 +1,39 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+____________________________ test_gpu_load_profile _____________________________
+tests/test_gpu_load_profile.py:284: in test_gpu_load_profile
+    _run_test()
+tests/test_gpu_load_profile.py:169: in _run_test
+    assert abs(frac - expected_frac) < TOLERANCE, (
+E   AssertionError: [FAIL-A] phase-3 sim_t=2400.0s: gpu_load_fraction=0.5 expected 0.1
+E   assert 0.4 < 1e-06
+E    +  where 0.4 = abs((0.5 - 0.1))
+----------------------------- Captured stdout call -----------------------------
+[START]  run_id=run-7e891146005c
+[POLL]   collecting ticks across all three phases …
+  phase-1  sim_t=   35.0s  frac=1.00 (expect 1.00)  p_compute=3.36 MW
+  phase-1  sim_t=  160.0s  frac=1.00 (expect 1.00)  p_compute=2.42 MW
+  phase-1  sim_t=  250.0s  frac=1.00 (expect 1.00)  p_compute=5.41 MW
+  phase-1  sim_t=  375.0s  frac=1.00 (expect 1.00)  p_compute=10.64 MW
+  phase-1  sim_t=  565.0s  frac=1.00 (expect 1.00)  p_compute=4.40 MW
+  phase-1  sim_t=  640.0s  frac=1.00 (expect 1.00)  p_compute=8.99 MW
+  phase-2  sim_t=  770.0s  frac=0.50 (expect 0.50)  p_compute=2.43 MW
+
+[TRANSITION 1→2]  last-before=640.0s frac=1.00 → first-after=770.0s frac=0.50
+[PASS-B1] fraction was 1.0 immediately before phase-2 boundary
+[PASS-A]  fraction correctly stepped to 0.5 at sim_t=770.0s
+
+  phase-2  sim_t=  960.0s  frac=0.50 (expect 0.50)  p_compute=3.17 MW
+  phase-2  sim_t= 1115.0s  frac=0.50 (expect 0.50)  p_compute=3.88 MW
+  phase-2  sim_t= 1240.0s  frac=0.50 (expect 0.50)  p_compute=5.69 MW
+  phase-2  sim_t= 1410.0s  frac=0.50 (expect 0.50)  p_compute=5.06 MW
+  phase-2  sim_t= 1535.0s  frac=0.50 (expect 0.50)  p_compute=4.54 MW
+  phase-2  sim_t= 1705.0s  frac=0.50 (expect 0.50)  p_compute=1.16 MW
+  phase-2  sim_t= 1950.0s  frac=0.50 (expect 0.50)  p_compute=2.40 MW
+  phase-2  sim_t= 2115.0s  frac=0.50 (expect 0.50)  p_compute=1.09 MW
+  phase-3  sim_t= 2400.0s  frac=0.50 (expect 0.10)  p_compute=1.05 MW
+
+[CLEANUP] run run-7e891146005c cancelled.
+=========================== short test summary info ============================
+FAILED tests/test_gpu_load_profile.py::test_gpu_load_profile - AssertionError...
+1 failed in 6.02s

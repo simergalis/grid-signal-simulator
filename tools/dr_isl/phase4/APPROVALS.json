@@ -1,0 +1,10 @@
+{
+  "approval": "user answer to scope form",
+  "release_readiness": "unit_interlocks before an event",
+  "tc18_scope": "allow max(depth,diesel,D2-r); keep other assertions",
+  "comments": null,
+  "head": "5c8dbf2e899a9be6e9cb31c5ef0eaa9f28e1f027",
+  "candidate_restored_from": "69350a319e71e97f136b875b00c4660624aee59a",
+  "automatic_checkpoint": "5c8dbf2: documentation/evidence only; not application validation",
+  "P1_callback": "shared pure release unit helper, receives the queried arbitrator turbine list (also valid for deepcopies)"
+}

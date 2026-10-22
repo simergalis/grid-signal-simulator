@@ -1,0 +1,86 @@
+{
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py": [
+    {
+      "start": 1069,
+      "end": 1088,
+      "added_line_count": 20
+    },
+    {
+      "start": 1106,
+      "end": 1108,
+      "added_line_count": 3
+    }
+  ],
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/dispatch.py": [
+    {
+      "start": 383,
+      "end": 391,
+      "added_line_count": 9
+    },
+    {
+      "start": 541,
+      "end": 629,
+      "added_line_count": 89
+    }
+  ],
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py": [
+    {
+      "start": 354,
+      "end": 356,
+      "added_line_count": 3
+    },
+    {
+      "start": 392,
+      "end": 400,
+      "added_line_count": 9
+    },
+    {
+      "start": 1000,
+      "end": 1000,
+      "added_line_count": 1
+    },
+    {
+      "start": 2038,
+      "end": 2047,
+      "added_line_count": 10
+    },
+    {
+      "start": 2049,
+      "end": 2056,
+      "added_line_count": 8
+    },
+    {
+      "start": 2130,
+      "end": 2130,
+      "added_line_count": 1
+    }
+  ],
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/build_warnings.py": [
+    {
+      "start": 37,
+      "end": 41,
+      "added_line_count": 5
+    }
+  ],
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/scenario_factory.py": [
+    {
+      "start": 1952,
+      "end": 1958,
+      "added_line_count": 7
+    }
+  ],
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_phase2c.py": [
+    {
+      "start": 54,
+      "end": 56,
+      "added_line_count": 3
+    }
+  ],
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_phase4_reserve.py": [
+    {
+      "start": 1,
+      "end": 235,
+      "added_line_count": 235
+    }
+  ]
+}

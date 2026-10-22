@@ -1,0 +1,8 @@
+{
+  "passed": 51,
+  "failed": 0,
+  "failures": [],
+  "tc_isl_01_to_03_cases": 12,
+  "warning": "existing synthetic BESS C-rate fixture",
+  "application_change": "C2(c) plus approved TC18 floor expectation; release event gates unchanged"
+}

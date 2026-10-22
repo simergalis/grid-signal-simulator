@@ -1,0 +1,15 @@
+{
+  "base": "ae49aaa",
+  "candidate": "working-tree Phase 4 C2(c) + approved TC18",
+  "fresh_server_per_context": true,
+  "changes_to_test_files": false,
+  "addressing": "httpx loopback port 22126 redirected to isolated 22127/22128 only",
+  "server_context": "PYTEST_CURRENT_TEST: built-in pytest startup context; skips unrelated Postgres reference-forecast import, identically at base and candidate",
+  "contexts": [
+    "isolation1",
+    "isolation2",
+    "isolation3",
+    "file",
+    "prefix"
+  ]
+}

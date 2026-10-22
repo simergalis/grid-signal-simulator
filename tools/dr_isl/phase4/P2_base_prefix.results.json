@@ -1,0 +1,4648 @@
+{
+  "cases": {
+    "tests/test_13_2_balance_decomp.py::TestD1GridExchangeIslanded::test_D1_zero_load": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.001696604000244406,
+      "failure": ""
+    },
+    "tests/test_13_2_balance_decomp.py::TestD1GridExchangeIslanded::test_D1_with_load": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0014804040001763497,
+      "failure": ""
+    },
+    "tests/test_13_2_balance_decomp.py::TestD1GridExchangeIslanded::test_D1_depleted_bess_islanded": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0012692509999396862,
+      "failure": ""
+    },
+    "tests/test_13_2_balance_decomp.py::TestD2FrequencyForcingGridConnected::test_D2_zero_load": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0007061739997880068,
+      "failure": ""
+    },
+    "tests/test_13_2_balance_decomp.py::TestD2FrequencyForcingGridConnected::test_D2_with_load": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0006351459996949416,
+      "failure": ""
+    },
+    "tests/test_13_2_balance_decomp.py::TestD2FrequencyForcingGridConnected::test_D2_depleted_bess_grid_connected": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0006427930002246285,
+      "failure": ""
+    },
+    "tests/test_13_2_balance_decomp.py::TestD3ModelErrorSteadyState::test_D3_grid_connected_settled": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0027962370004388504,
+      "failure": ""
+    },
+    "tests/test_13_2_balance_decomp.py::TestD3ModelErrorSteadyState::test_D3_islanded_settled": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.006457751999732864,
+      "failure": ""
+    },
+    "tests/test_13_2_balance_decomp.py::TestD3ModelErrorSteadyState::test_D3_depleted_bess_is_detectable_fault": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0030695039999955043,
+      "failure": ""
+    },
+    "tests/test_13_2_balance_decomp.py::TestD4SumIdentity::test_D4_grid_connected_no_load": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0007721060001131264,
+      "failure": ""
+    },
+    "tests/test_13_2_balance_decomp.py::TestD4SumIdentity::test_D4_grid_connected_with_load": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0019160500000907632,
+      "failure": ""
+    },
+    "tests/test_13_2_balance_decomp.py::TestD4SumIdentity::test_D4_islanded_no_load": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0012614040001608373,
+      "failure": ""
+    },
+    "tests/test_13_2_balance_decomp.py::TestD4SumIdentity::test_D4_islanded_with_load": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.005732657999942603,
+      "failure": ""
+    },
+    "tests/test_13_2_balance_decomp.py::TestD4SumIdentity::test_D4_depleted_bess_reports_the_real_supply_gap": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.003115921999778948,
+      "failure": ""
+    },
+    "tests/test_13_2_balance_decomp.py::TestD4SumIdentity::test_D4_all_ticks_across_ramp": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.013646753000102763,
+      "failure": ""
+    },
+    "tests/test_13_2_balance_decomp.py::TestD5ModelErrorNotResidual::test_D5_healthy_grid_connected": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0022033769996596675,
+      "failure": ""
+    },
+    "tests/test_13_2_balance_decomp.py::TestD5ModelErrorNotResidual::test_D5_healthy_islanded": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.004109598000013648,
+      "failure": ""
+    },
+    "tests/test_13_2_balance_decomp.py::TestD5ModelErrorNotResidual::test_D5_depleted_bess_independent_formula_matches": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0020069339998372016,
+      "failure": ""
+    },
+    "tests/test_13_2_balance_decomp.py::TestD5ModelErrorNotResidual::test_D5_no_reference_to_balance_residual_in_formula": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.006971074999910343,
+      "failure": ""
+    },
+    "tests/test_13_2_balance_decomp.py::TestI4SwingEquationExplicitInput::test_I4a_healthy_islanded_delivery_error_near_zero": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.005556805999731296,
+      "failure": ""
+    },
+    "tests/test_13_2_balance_decomp.py::TestI4SwingEquationExplicitInput::test_I4b_depleted_bess_islanded_delivery_error_amplifies_drop": {
+      "outcome": "skipped",
+      "stage": "call",
+      "duration": 0.00380691400005162,
+      "failure": ""
+    },
+    "tests/test_13_2_balance_decomp.py::TestI4SwingEquationExplicitInput::test_I4c_grid_connected_delivery_fault_frequency_invariant": {
+      "outcome": "skipped",
+      "stage": "call",
+      "duration": 0.0029994970000188914,
+      "failure": ""
+    },
+    "tests/test_13_3_frequency.py::TestI1FrequencyDeviationVisible::test_I1_islanded_surplus_raises_frequency": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.000838181999824883,
+      "failure": ""
+    },
+    "tests/test_13_3_frequency.py::TestI2SwingEquationAccuracy::test_I2_single_tick_matches_formula": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0014359129995682451,
+      "failure": ""
+    },
+    "tests/test_13_3_frequency.py::TestI2SwingEquationAccuracy::test_I2_explicit_formula_fixture": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0017125579997809837,
+      "failure": ""
+    },
+    "tests/test_13_3_frequency.py::TestI3DroopRestoringForce::test_I3_droop_creates_restoring_force_when_f_above_nominal": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0017172999996546423,
+      "failure": ""
+    },
+    "tests/test_13_3_frequency.py::TestI3DroopRestoringForce::test_I3_droop_direction_vs_no_droop": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.002354653000111284,
+      "failure": ""
+    },
+    "tests/test_13_3_frequency.py::TestI4DeliveryFaultMovesFrequency::test_I4_delivery_fault_causes_frequency_deviation": {
+      "outcome": "failed",
+      "stage": "call",
+      "duration": 0.0009386950000589422,
+      "failure": "tests/test_13_3_frequency.py:434: in test_I4_delivery_fault_causes_frequency_deviation\n    assert tick.asset_delivery_error_mw != pytest.approx(0.0, abs=1e-6), (\nE   AssertionError: I4: asset_delivery_error_mw must be non-zero (fleet under-delivers); got 0.000000000\nE   assert 0.0 != 0.0 \u00b1 1.0e-06\nE    +  where 0.0 = TickResult(run_id='test', tick_index=1, sim_time_seconds=5.1, p_compute_demand_mw=0.05253, p_cooling_demand_mw=0.0, p_...sfied=False, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id='gt-1', slurm_metrics=None).asset_delivery_error_mw\nE    +  and   0.0 \u00b1 1.0e-06 = <function approx at 0x7f90678ca160>(0.0, abs=1e-06)\nE    +    where <function approx at 0x7f90678ca160> = pytest.approx"
+    },
+    "tests/test_13_3_frequency.py::TestI5GridConnectedFrequencyHeld::test_I5_grid_connected_nominal_frequency": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0013572120001299481,
+      "failure": ""
+    },
+    "tests/test_13_3_frequency.py::TestI5GridConnectedFrequencyHeld::test_I5_grid_connected_multiple_ticks": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0028489989999798127,
+      "failure": ""
+    },
+    "tests/test_13_4_criteria.py::TestB1ModelErrorObservable::test_B1a_no_bias_model_error_is_zero": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00097944200024358,
+      "failure": ""
+    },
+    "tests/test_13_4_criteria.py::TestB1ModelErrorObservable::test_B1b_injected_1mw_bias_visible_in_model_error": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0007698790000176814,
+      "failure": ""
+    },
+    "tests/test_13_4_criteria.py::TestB1ModelErrorObservable::test_B1c_bias_does_not_inflate_bess_setpoint": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0009583989999555342,
+      "failure": ""
+    },
+    "tests/test_13_4_criteria.py::TestB1ModelErrorObservable::test_B1d_bias_does_not_move_frequency": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0009701149997454195,
+      "failure": ""
+    },
+    "tests/test_13_4_criteria.py::TestB1ModelErrorObservable::test_B1e_bias_separate_from_asset_delivery_error": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0005274430000099528,
+      "failure": ""
+    },
+    "tests/test_13_4_criteria.py::TestB2BessLagTracksSetpoint::test_B2a_cover_shortfall_matches_lag_formula": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00010177800004385062,
+      "failure": ""
+    },
+    "tests/test_13_4_criteria.py::TestB2BessLagTracksSetpoint::test_B2b_output_is_not_the_setpoint_as_residual": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 9.712299970487948e-05,
+      "failure": ""
+    },
+    "tests/test_13_4_criteria.py::TestB2BessLagTracksSetpoint::test_B2c_output_converges_to_setpoint_at_steady_state": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0003637970003183,
+      "failure": ""
+    },
+    "tests/test_13_4_criteria.py::TestB2BessLagTracksSetpoint::test_B2d_taper_clamp_gives_zero_when_target_is_zero": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00016830000004119938,
+      "failure": ""
+    },
+    "tests/test_13_4_criteria.py::TestB3BindingConstraint::test_B3_normal_operation_has_no_binding_constraint": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0009107689998018031,
+      "failure": ""
+    },
+    "tests/test_13_4_criteria.py::TestB3BindingConstraint::test_B3_binding_constraint_when_shortfall_exceeds_rating": {
+      "outcome": "skipped",
+      "stage": "call",
+      "duration": 0.0008200040001611342,
+      "failure": ""
+    },
+    "tests/test_13_4_criteria.py::TestB3BindingConstraint::test_B3_bess_setpoint_exceeds_rated_when_constraint_fires": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.001681942000232084,
+      "failure": ""
+    },
+    "tests/test_13_4_criteria.py::TestB4StandbyConsistency::test_B4a_surplus_tick_has_negative_setpoint": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0008467379998364777,
+      "failure": ""
+    },
+    "tests/test_13_4_criteria.py::TestB4StandbyConsistency::test_B4b_regression_setpoint_immediate_independent_of_lag_state": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0008325859998876695,
+      "failure": ""
+    },
+    "tests/test_13_4_criteria.py::TestB4StandbyConsistency::test_B4c_no_binding_constraint_on_zero_surplus_tick": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0006008999998812214,
+      "failure": ""
+    },
+    "tests/test_13_5_criteria.py::TestTC03Determinism::test_tc03a_scalar_7tau_converges_within_half_pct": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00012096899990865495,
+      "failure": ""
+    },
+    "tests/test_13_5_criteria.py::TestTC03Determinism::test_tc03b_noise_disabled_spread_below_half_pct_across_ten_seeds": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0003741059999811114,
+      "failure": ""
+    },
+    "tests/test_13_5_criteria.py::TestTC03Determinism::test_tc03c_7tau_tighter_than_5tau_at_same_tolerance": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0003409689998079557,
+      "failure": ""
+    },
+    "tests/test_13_5_criteria.py::TestR4PMinStable::test_R4_fields_present_on_turbine_config": {
+      "outcome": "failed",
+      "stage": "call",
+      "duration": 0.00048039000012067845,
+      "failure": "tests/test_13_5_criteria.py:177: in test_R4_fields_present_on_turbine_config\n    assert cfg_default.p_min_stable_frac == pytest.approx(0.40), (\nE   AssertionError: p_min_stable_frac default must be 0.40 (CHOSEN catalogue value).  Got 0.35\nE   assert 0.35 == 0.4 \u00b1 4.0e-07\nE     \nE     comparison failed\nE     Obtained: 0.35\nE     Expected: 0.4 \u00b1 4.0e-07"
+    },
+    "tests/test_13_5_criteria.py::TestR4PMinStable::test_R4_positive_target_below_floor_clamped_up": {
+      "outcome": "skipped",
+      "stage": "call",
+      "duration": 0.00017396500015820493,
+      "failure": ""
+    },
+    "tests/test_13_5_criteria.py::TestR4PMinStable::test_R4_target_above_floor_unchanged": {
+      "outcome": "skipped",
+      "stage": "call",
+      "duration": 9.503800038146437e-05,
+      "failure": ""
+    },
+    "tests/test_13_5_criteria.py::TestR4PMinStable::test_R4_exactly_at_floor_accepted": {
+      "outcome": "skipped",
+      "stage": "call",
+      "duration": 8.857599959810614e-05,
+      "failure": ""
+    },
+    "tests/test_13_5_criteria.py::TestR4PMinStable::test_R4_clamped_target_leads_to_correct_ramp": {
+      "outcome": "skipped",
+      "stage": "call",
+      "duration": 9.082599990506424e-05,
+      "failure": ""
+    },
+    "tests/test_13_5_criteria.py::TestR5MinRunTime::test_R5_t_min_run_field_default": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 8.772499995757244e-05,
+      "failure": ""
+    },
+    "tests/test_13_5_criteria.py::TestR5MinRunTime::test_R5_stop_before_min_run_holds_at_p_min_stable": {
+      "outcome": "skipped",
+      "stage": "call",
+      "duration": 8.482100020046346e-05,
+      "failure": ""
+    },
+    "tests/test_13_5_criteria.py::TestR5MinRunTime::test_R5_stop_after_min_run_is_allowed": {
+      "outcome": "skipped",
+      "stage": "call",
+      "duration": 0.00011486700032037334,
+      "failure": ""
+    },
+    "tests/test_13_5_criteria.py::TestR5MinRunTime::test_R5_run_start_time_recorded_on_first_start": {
+      "outcome": "skipped",
+      "stage": "call",
+      "duration": 8.966599989435053e-05,
+      "failure": ""
+    },
+    "tests/test_13_5_criteria.py::TestR6MinDownGtMode::test_R6_t_min_down_field_default": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00013652400002683862,
+      "failure": ""
+    },
+    "tests/test_13_5_criteria.py::TestR6MinDownGtMode::test_R6_gt_mode_field_default": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00010076900025524083,
+      "failure": ""
+    },
+    "tests/test_13_5_criteria.py::TestR6MinDownGtMode::test_R6_gt_mode_aero_accepted": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 7.949800010464969e-05,
+      "failure": ""
+    },
+    "tests/test_13_5_criteria.py::TestR6MinDownGtMode::test_R6_restart_inside_cooling_window_dropped": {
+      "outcome": "skipped",
+      "stage": "call",
+      "duration": 0.00010776599992823321,
+      "failure": ""
+    },
+    "tests/test_13_5_criteria.py::TestR6MinDownGtMode::test_R6_restart_after_cooling_window_succeeds": {
+      "outcome": "skipped",
+      "stage": "call",
+      "duration": 8.87820001480577e-05,
+      "failure": ""
+    },
+    "tests/test_13_5_criteria.py::TestR6MinDownGtMode::test_R6_checkpoint_valley_zero_stop_start_cycles": {
+      "outcome": "skipped",
+      "stage": "call",
+      "duration": 9.032899970407016e-05,
+      "failure": ""
+    },
+    "tests/test_13_5_criteria.py::TestR8DispatchableFromSingleSource::test_R8_turbine_only_no_bess": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011861399980261922,
+      "failure": ""
+    },
+    "tests/test_13_5_criteria.py::TestR8DispatchableFromSingleSource::test_R8_turbine_plus_bess_from_single_source": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00012737699989884277,
+      "failure": ""
+    },
+    "tests/test_13_5_criteria.py::TestR8DispatchableFromSingleSource::test_R8_anchor_reserve_deducted_before_dispatchable": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00021119800021551782,
+      "failure": ""
+    },
+    "tests/test_13_5_criteria.py::TestR8DispatchableFromSingleSource::test_R8_hot_standby_turbine_excluded": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00010372099995947792,
+      "failure": ""
+    },
+    "tests/test_13_5_criteria.py::TestDemo20mwIpClaim4::test_demo20mw_r5_stop_before_min_run_deferred": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00017516200023237616,
+      "failure": ""
+    },
+    "tests/test_13_5_criteria.py::TestDemo20mwIpClaim4::test_demo20mw_r5_stop_after_min_run_accepted": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001600599998710095,
+      "failure": ""
+    },
+    "tests/test_13_5_criteria.py::TestDemo20mwSpecPathR5::test_spec_path_pre_sync_sets_run_start_s": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0070527529996979865,
+      "failure": ""
+    },
+    "tests/test_13_5_criteria.py::TestDemo20mwSpecPathR5::test_spec_path_r5_blocks_stop_before_min_run": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0005439799997475347,
+      "failure": ""
+    },
+    "tests/test_13_6_step_scheduler.py::TestTC136Structural::test_gpu_modules_have_load_config": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00021500699995158357,
+      "failure": ""
+    },
+    "tests/test_13_6_step_scheduler.py::TestTC136Structural::test_gpu_modules_have_auto_step_period": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 9.165799974653055e-05,
+      "failure": ""
+    },
+    "tests/test_13_6_step_scheduler.py::TestTC136Behavioral::test_settled_power_below_peak_ceiling": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00024006500007089926,
+      "failure": ""
+    },
+    "tests/test_13_6_step_scheduler.py::TestTC136Behavioral::test_settled_power_above_floor": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00014201200019670068,
+      "failure": ""
+    },
+    "tests/test_13_6_step_scheduler.py::TestTC136Behavioral::test_settled_power_near_expected": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 8.4209999840823e-05,
+      "failure": ""
+    },
+    "tests/test_ac_ui1_coverage_bar.py::test_ac_ui1_no_gap_at_seed_soc": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0002779440001177136,
+      "failure": ""
+    },
+    "tests/test_ac_ui1_coverage_bar.py::test_ac_ui1_gap_appears_when_bess_is_drained": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00018324000029679155,
+      "failure": ""
+    },
+    "tests/test_ac_ui1_coverage_bar.py::test_ac_ui1_gap_proportional_to_deficit": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00020682700005636434,
+      "failure": ""
+    },
+    "tests/test_ac_ui1_coverage_bar.py::test_ac_ui1_segments_sum_to_unity_when_reserve_fails": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001899130002129823,
+      "failure": ""
+    },
+    "tests/test_ac_ui1_coverage_bar.py::test_ac_ui1_segments_sum_to_unity_when_reserve_passes": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00020185199991828995,
+      "failure": ""
+    },
+    "tests/test_ac_ui1_coverage_bar.py::test_ac_ui1_segments_sum_to_unity_normal_view": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00014707299988003797,
+      "failure": ""
+    },
+    "tests/test_ac_ui1_coverage_bar.py::test_ac_ui1_gap_frac_is_bounded[full]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00015100300015546964,
+      "failure": ""
+    },
+    "tests/test_ac_ui1_coverage_bar.py::test_ac_ui1_gap_frac_is_bounded[drained]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00022148900006868644,
+      "failure": ""
+    },
+    "tests/test_ac_ui1_coverage_bar.py::test_ac_ui1_gap_frac_is_bounded[poi]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00015645699977540062,
+      "failure": ""
+    },
+    "tests/test_ac_ui1_coverage_bar.py::test_ac_ui1_deficit_mw_matches_reserve_check_output": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00015078700016601942,
+      "failure": ""
+    },
+    "tests/test_ac_ui1_coverage_bar.py::test_ac_ui1_zero_solar_gives_zero_gap": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0002138660001946846,
+      "failure": ""
+    },
+    "tests/test_ac_ui1_coverage_bar.py::test_ac_ui1_gap_grows_when_turbine_goes_offline": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001787989999684214,
+      "failure": ""
+    },
+    "tests/test_ac_ui2_bank_bars.py::test_ac_ui2_all_bars_above_92pct_at_seed": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00022570200007976382,
+      "failure": ""
+    },
+    "tests/test_ac_ui2_bank_bars.py::test_ac_ui2_60pct_poa_reduction_leaves_bars_full": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00017581700012669899,
+      "failure": ""
+    },
+    "tests/test_ac_ui2_bank_bars.py::test_ac_ui2_60pct_poa_reduces_plant_total_not_bar_ratio": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00022695600000588456,
+      "failure": ""
+    },
+    "tests/test_ac_ui2_bank_bars.py::test_ac_ui2_extreme_low_irradiance_leaves_bars_full": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00014428900021812296,
+      "failure": ""
+    },
+    "tests/test_ac_ui2_bank_bars.py::test_ac_ui2_degraded_bank_shows_shortfall": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001423129997419892,
+      "failure": ""
+    },
+    "tests/test_ac_ui2_bank_bars.py::test_ac_ui2_out_bank_fills_zero": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00015435099976457423,
+      "failure": ""
+    },
+    "tests/test_ac_ui2_bank_bars.py::test_ac_ui2_no_comms_bank_fills_zero": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0002027789996645879,
+      "failure": ""
+    },
+    "tests/test_ac_ui2_bank_bars.py::test_ac_ui2_cloud_does_not_flip_bank_state[1.0]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00031345499974122504,
+      "failure": ""
+    },
+    "tests/test_ac_ui2_bank_bars.py::test_ac_ui2_cloud_does_not_flip_bank_state[0.7]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00015030299982754514,
+      "failure": ""
+    },
+    "tests/test_ac_ui2_bank_bars.py::test_ac_ui2_cloud_does_not_flip_bank_state[0.4]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001519170000392478,
+      "failure": ""
+    },
+    "tests/test_ac_ui2_bank_bars.py::test_ac_ui2_cloud_does_not_flip_bank_state[0.1]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00020031899975947454,
+      "failure": ""
+    },
+    "tests/test_ac_ui2_bank_bars.py::test_ac_ui2_night_poa_zero_no_nan_fill": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00024876299994502915,
+      "failure": ""
+    },
+    "tests/test_ac_ui2_bank_bars.py::test_ac_ui2_fill_matches_snapshot_fields": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0006028699999660603,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_fuel_cell_blocks.py::test_unit_schema_derives_capacity_and_rejects_independent_rating": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00019797100003415835,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_fuel_cell_blocks.py::test_runtime_defaults_every_non_running_block_to_hot_standby": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00012938000008944073,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_fuel_cell_blocks.py::test_unit_schema_rejects_impossible_initial_block_total": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00017153599992525415,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_fuel_cell_blocks.py::test_cold_and_warming_blocks_are_not_available_until_ready": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001946389998011,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_fuel_cell_blocks.py::test_settled_baseline_does_not_bank_commit_credit_for_a_later_peak": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00028489699980127625,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_fuel_cell_blocks.py::test_hot_standby_commit_rate_produces_exactly_thirty_blocks_in_thirty_seconds": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0032740579999881447,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_fuel_cell_blocks.py::test_hot_start_dwell_is_committed_but_not_running_or_contingency_capacity": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00024157899997589993,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_fuel_cell_blocks.py::test_dwell_completion_allocates_output_in_the_same_interval_end_snapshot": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0003126209999209095,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_fuel_cell_blocks.py::test_hybrid_running_block_count_can_exceed_modulated_output_in_block_units": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0002004359998863947,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_fuel_cell_blocks.py::test_readiness_summary_does_not_manufacture_fast_credit_at_zero_lead": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001892109999062086,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_fuel_cell_blocks.py::test_eventual_hot_closure_includes_blocks_already_in_hot_start_dwell": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00014437499976338586,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_fuel_cell_blocks.py::test_hot_start_dwell_has_no_fast_or_eligible_contingency_reserve": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00019598300013967673,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_fuel_cell_blocks.py::test_readiness_summary_counts_running_headroom_not_running_nameplate": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00015305300030377111,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_fuel_cell_blocks.py::test_dispatch_modes_have_expected_block_output[discrete_blocks-4.0]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00012432699986675289,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_fuel_cell_blocks.py::test_dispatch_modes_have_expected_block_output[modulating-3.0]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00016196199976548087,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_fuel_cell_blocks.py::test_dispatch_modes_have_expected_block_output[hybrid-3.0]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00012268399996173684,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_fuel_cell_blocks.py::test_intrinsic_output_ramp_applies_without_a_fuel_system": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001505949999227596,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_fuel_cell_blocks.py::test_default_intrinsic_output_ramp_uses_three_time_constant_settling_point": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00010852000013983343,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_fuel_cell_blocks.py::test_intrinsic_output_ramp_limits_upward_and_downward_changes": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00017249199981961283,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_fuel_cell_blocks.py::test_dwell_completion_does_not_receive_unearned_interval_ramp_credit": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001544619999549468,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_fuel_cell_blocks.py::test_multi_block_target_redistribution_is_ramp_limited_per_block": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.000386703000003763,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_fuel_cell_blocks.py::test_blocks_follow_distinct_cold_warm_and_hot_start_paths": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00016194399995583808,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_fuel_cell_blocks.py::test_low_dispatch_commands_obey_explicit_physical_floors[discrete_blocks-2.0]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0002600699999675271,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_fuel_cell_blocks.py::test_low_dispatch_commands_obey_explicit_physical_floors[modulating-2.0]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00012539399995148415,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_fuel_cell_blocks.py::test_low_dispatch_commands_obey_explicit_physical_floors[hybrid-1.0]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00017783199973564479,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_fuel_cell_blocks.py::test_legacy_module_api_remains_scalar": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 9.335899994766805e-05,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_readiness_verdict.py::test_readiness_controller_is_advisory_and_uses_full_start_horizon": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0004916210000374122,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_readiness_verdict.py::test_g1_fuel_cell_assertions_cover_telemetry_and_eligibility": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00019370000018170686,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_readiness_verdict.py::test_deficit_duration_uses_retained_timestamps_not_caller_cadence": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 9.642000031817588e-05,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_readiness_verdict.py::test_deficit_gap_cannot_be_used_to_prove_duration": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 8.797200007393258e-05,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_readiness_verdict.py::test_declining_fuel_cell_reserve_alert_is_existential_and_gap_aware": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 9.592399965185905e-05,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_readiness_verdict.py::test_cold_warming_assertion_requires_accounting_telemetry": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00015470500011360855,
+      "failure": ""
+    },
+    "tests/test_addendum_g1_readiness_verdict.py::test_declared_array_auto_enables_and_injects_nonzero_output_verdict_guard": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0006736820000696753,
+      "failure": ""
+    },
+    "tests/test_addendum_g2_fuel_physics.py::test_g2_per_block_fuel_flow_sanity[0.0-30.56]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00014698800032419967,
+      "failure": ""
+    },
+    "tests/test_addendum_g2_fuel_physics.py::test_g2_per_block_fuel_flow_sanity[0.5-34.18]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001536280001346313,
+      "failure": ""
+    },
+    "tests/test_addendum_g2_fuel_physics.py::test_g2_per_block_fuel_flow_sanity[1.0-37.48]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00017225800002051983,
+      "failure": ""
+    },
+    "tests/test_addendum_g2_fuel_physics.py::test_g2_hot_standby_parasitic_flow_has_zero_output": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00028243300039321184,
+      "failure": ""
+    },
+    "tests/test_addendum_g2_fuel_physics.py::test_g2_omitted_fuel_system_retains_ideal_g1_path": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011168399987582234,
+      "failure": ""
+    },
+    "tests/test_addendum_g2_fuel_physics.py::test_g2_fuel_system_initial_running_flow_is_not_artificially_starved": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001737669999783975,
+      "failure": ""
+    },
+    "tests/test_addendum_g2_fuel_physics.py::test_g2_fuel_system_can_only_constrain_intrinsic_ramped_output_further": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00017667600013737683,
+      "failure": ""
+    },
+    "tests/test_addendum_g2_fuel_physics.py::test_g2_138_block_prestaged_command_has_rate_invariant_500ft3_transient[0.5]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.06654406300003757,
+      "failure": ""
+    },
+    "tests/test_addendum_g2_fuel_physics.py::test_g2_138_block_prestaged_command_has_rate_invariant_500ft3_transient[1.0]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.08197398799984512,
+      "failure": ""
+    },
+    "tests/test_addendum_g2_fuel_physics.py::test_g2_138_block_prestaged_command_has_rate_invariant_500ft3_transient[2.0]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0805858429998807,
+      "failure": ""
+    },
+    "tests/test_addendum_g2_fuel_physics.py::test_g2_138_block_prestaged_command_has_rate_invariant_500ft3_transient[4.0]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.06964947300002677,
+      "failure": ""
+    },
+    "tests/test_addendum_g2_fuel_physics.py::test_g2_default_920_does_not_derate_and_767_authored_does": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.12927634999959992,
+      "failure": ""
+    },
+    "tests/test_addendum_g2_fuel_physics.py::test_g2_500ft3_rate_minima_are_common_mode_and_rate_invariant": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.25460793899992495,
+      "failure": ""
+    },
+    "tests/test_addendum_g2_fuel_physics.py::test_g2_pressure_trip_is_one_common_mode_event_and_removes_availability": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.005131379999966157,
+      "failure": ""
+    },
+    "tests/test_addendum_g2_fuel_physics.py::test_g2_utilisation_clamp_is_hard_then_recovers": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0006914589998814336,
+      "failure": ""
+    },
+    "tests/test_addendum_g2_fuel_physics.py::test_g2_supply_cap_alert_is_distinct_from_utilisation_and_pressure_records": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00019540200037226896,
+      "failure": ""
+    },
+    "tests/test_addendum_g2_fuel_physics.py::test_g2_finite_supply_eventually_depletes_manifold_and_limits_output": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.014518461000079697,
+      "failure": ""
+    },
+    "tests/test_addendum_g2_fuel_physics.py::test_g2_large_manifold_buffers_regulator_cap_by_spending_pressure_inventory": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0003334399998493609,
+      "failure": ""
+    },
+    "tests/test_addendum_g2_fuel_physics.py::test_g2_pressure_derate_does_not_create_false_reserve_headroom": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.005488712999976997,
+      "failure": ""
+    },
+    "tests/test_addendum_g2_fuel_physics.py::test_g2_thermal_binding_and_interval_commit_credit_do_not_bank": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0003782569997383689,
+      "failure": ""
+    },
+    "tests/test_addendum_g2_fuel_physics.py::test_g2_schema_provenance_and_legacy_commit_rate_alias": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00013933499985796516,
+      "failure": ""
+    },
+    "tests/test_addendum_g2_fuel_physics.py::test_g2_annual_co2_sanity_at_50mw_and_92_percent_capacity_factor": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0010583489997770812,
+      "failure": ""
+    },
+    "tests/test_addendum_g2_fuel_physics.py::test_g2_group_validation_and_default_implicit_group": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00047075200018298347,
+      "failure": ""
+    },
+    "tests/test_addendum_g2_fuel_physics.py::test_g2_fuel_configuration_provenance_defaults": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00012896800035377964,
+      "failure": ""
+    },
+    "tests/test_addendum_g2_fuel_physics.py::test_g2_readiness_proposal_reports_horizon_fuel_cost_and_qualification": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0002648859999681008,
+      "failure": ""
+    },
+    "tests/test_addendum_g2_fuel_physics.py::test_g2_readiness_proposal_without_price_reports_quantity_only": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00015105200009202235,
+      "failure": ""
+    },
+    "tests/test_addendum_g_stage3_option_c.py::test_stage3_schema_defaults_and_normative_provenance": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00029321399961190764,
+      "failure": ""
+    },
+    "tests/test_addendum_g_stage3_option_c.py::test_stage3_reactive_output_and_apparent_power_preserve_pf_one": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00031264600011127186,
+      "failure": ""
+    },
+    "tests/test_addendum_g_stage3_option_c.py::test_stage3_fleet_apparent_power_uses_aggregate_achieved_p_and_q": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00019973600001321756,
+      "failure": ""
+    },
+    "tests/test_addendum_g_stage3_option_c.py::test_stage3_short_delay_and_rocof_trip_running_block_persistently": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00017551100017954013,
+      "failure": ""
+    },
+    "tests/test_addendum_g_stage3_option_c.py::test_stage3_independent_timers_and_no_banking": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0003156749999106978,
+      "failure": ""
+    },
+    "tests/test_addendum_g_stage3_option_c.py::test_stage3_category_rocof_limits[1-0.5]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00015838099989196053,
+      "failure": ""
+    },
+    "tests/test_addendum_g_stage3_option_c.py::test_stage3_category_rocof_limits[2-2.0]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00015272000018740073,
+      "failure": ""
+    },
+    "tests/test_addendum_g_stage3_option_c.py::test_stage3_category_rocof_limits[3-3.0]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00015286399957403773,
+      "failure": ""
+    },
+    "tests/test_addendum_g_stage3_option_c.py::test_stage3_multiple_bess_grid_formers_are_valid_and_groups_stay_minimal": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0003437800000938296,
+      "failure": ""
+    },
+    "tests/test_addendum_g_stage3_option_c.py::test_stage3_island_viability_uses_live_bess_or_fuel_cell_former": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0028137290000813664,
+      "failure": ""
+    },
+    "tests/test_addendum_g_stage3_option_c.py::test_stage3_legacy_island_without_declared_former_does_not_collapse": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0005791349999526574,
+      "failure": ""
+    },
+    "tests/test_addendum_g_stage3_option_c.py::test_stage3_exhausted_grid_forming_bess_does_not_keep_island_alive": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0006213739998202072,
+      "failure": ""
+    },
+    "tests/test_addendum_g_stage3_option_c.py::test_stage3_bess_trip_hands_island_to_fc_then_last_former_trip_collapses": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0013504919998013065,
+      "failure": ""
+    },
+    "tests/test_addendum_g_stage3_option_c.py::test_stage3_last_former_ride_through_trip_causes_distinct_collapse": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0007542779999312188,
+      "failure": ""
+    },
+    "tests/test_addendum_g_stage3_option_c.py::test_stage3_nonforming_fc_trip_reconciles_accounting_with_live_bess": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0007807590000084019,
+      "failure": ""
+    },
+    "tests/test_addendum_g_stage3_option_c.py::test_stage3_schema_and_tick_payload_have_fields_without_prohibited_keys": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.005584744999850955,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase1.py::test_frame_without_fuel_parameters_is_not_modelled": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001633209999454266,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase1.py::test_aeroderivative_defaults_have_explicit_provenance": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 7.884500018917606e-05,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase1.py::test_part_load_heat_rate_is_linearly_interpolated": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00014318700004878337,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase1.py::test_factory_applies_aeroderivative_fuel_defaults_without_scenario_edit": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0004784519996974268,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase1.py::test_start_fuel_uses_the_selected_thermal_tier": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001575050000610645,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase1.py::test_constant_load_accounts_for_load_no_load_headroom_and_low_load_time": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00015043600024000625,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase1.py::test_hot_standby_fuel_is_separate_from_synchronized_fuel": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00010753099968496826,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase1.py::test_startup_interval_does_not_receive_a_full_synchronized_fuel_credit": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00012051400017298874,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase1.py::test_fuel_fields_are_present_in_the_wire_payload": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00024320900001839618,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase1.py::test_schema_accepts_optional_fuel_parameters_and_provenance": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00016094100010377588,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc109_forecast_is_profiled_announced_and_deduplicated": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0027694669997799792,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc110_baseline_does_not_apply_a_minimum_synchronized_floor": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0022253300003285403,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc111_informed_mode_starts_for_announced_workload": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0034975130001839716,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc112_stop_uses_lifo_actual_start_order_and_minimum_run_gate": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0038414450000345823,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc113_bess_anchor_is_a_power_hard_check_not_a_soc_check": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0006705800001327589,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc114_logs_external_start_and_refused_stop_with_reconciled_count": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0008946970001488808,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc115_two_hour_headless_smoke_uses_correct_five_second_integration": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 6.450918360000287,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc116_untracked_production_start_is_a_hard_gap_without_synthetic_log": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.000572925000142277,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc117_identical_refusal_logs_are_deduplicated": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0015997509999579052,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc118_stop_requires_two_mw_margin": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0004779930000040622,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc119_informed_preload_uses_existing_ramp_and_bess_charge_path": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.004365562000202772,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc120_unserved_comparison_preserves_energy_and_peak_verdicts": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00010055300026579062,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc121_transition_records_carry_state_pair_and_authority": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.13659158200016464,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc122_baseline_has_no_forecast_controller_or_forecast_misses": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.016895849999855272,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc123_bess_wire_aggregates_use_materialized_units": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.002018052000039461,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc124_preload_reports_only_incremental_target_and_fuel": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.051233811999736645,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc125_informed_core_proposal_is_logged_by_controller": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00037640599975929945,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc126_low_forecast_allows_stop_when_remaining_msl_exceeds_demand": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0005835900001329719,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc127_informed_decommit_veto_repeats_are_counted_not_relogged": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0006056450001779012,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc128_dispatch_curtailment_closes_islanded_physical_balance": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 8.868599979905412e-05,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc129_direct_tick_wire_contains_on_bus_count_and_dispatch_curtailment": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.001982562000193866,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc130_unloading_unit_does_not_count_as_commitment_reserve": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0004496080000535585,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc131_preload_is_bounded_by_bess_charge_power": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.002189094000186742,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc132_core_start_is_vetoed_during_minimum_down_window": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00048059300024760887,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc133_lead_aware_stop_refusal_protects_restart_window": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.000531275000412279,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc134_scale_event_is_an_announced_burst_for_forecast_control": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00149059799969109,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc135_preload_logs_changed_targets_and_suppresses_repeats": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.014804938999986916,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2a_commitment.py::test_tc136_smoke_fuel_attribution_uses_end_of_run_values": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 9.353448997999749,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2b_stage1.py::test_tc137_phase2b_reference_registration_and_topology": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.006147053999939089,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2b_stage1.py::test_tc138_cluster_timing_and_unique_ids": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.005908225999974093,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2b_stage1.py::test_tc139_replayed_compute_trace_is_identical_tick_by_tick": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0005422700000963232,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2b_stage1.py::test_tc140_24h_energy_balance_closes": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0005622680000669789,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2b_stage1.py::test_tc141_24h_start_stop_reconciliation": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0006800050000492774,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2b_stage1.py::test_tc142_phase2b_expansion_attaches_aeroderivative_fuel_to_all_four_units": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.006069833000310609,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2b_stage1.py::test_tc143_short_phase2b_run_has_nonzero_turbine_fuel": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.016990009999972244,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2b_stage1.py::test_tc144_zero_phase2b_fuel_fails_loudly": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00017408299981980235,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2b_stage1.py::test_tc145_phase2b_acceptance_comparison_fails_when_informed_is_worse": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 8.317199990415247e-05,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2b_stage1.py::test_tc146_phase2b_acceptance_comparison_passes_when_informed_is_equal": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 8.198900013667298e-05,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2b_stage1.py::test_tc147_stop_refuses_when_post_stop_core_n_minus_one_floor_breaches": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0007501090003643185,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2b_stage1.py::test_tc148_stop_remains_allowed_when_post_stop_core_floor_is_satisfied": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0006021550002515141,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2b_stage1.py::test_tc149_reserve_floor_refusal_dedup_keeps_numeric_payload": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00012886900003650226,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2b_stage1.py::test_tc150_replay_unserved_energy_uses_each_run_supply": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.04172516299968265,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2b_stage1.py::test_tc151_attributable_curtailment_fuel_stays_within_curve_range": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00013538900020648725,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2b_stage1.py::test_tc156_phase1_h_expansions_match_prechange_hashes": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.026650670999970316,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2b_stage1.py::test_tc157_base_demo_loader_only_adds_study_fuel_overlay": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.019603689000177837,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2b_stage1.py::test_tc158_unsupported_scenario_has_typed_error_and_supported_ids": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0224409059997015,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2b_stage1.py::test_tc159_base_demo_baseline_run_reconciles_full_day": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 10.688487892000012,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2b_stage2.py::test_tc152_seven_day_reference_offsets_have_weekday_and_weekend_shape": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00015940399998726207,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2b_stage2.py::test_tc153_daily_breakdown_uses_end_of_day_fuel_snapshots": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.014577070000086678,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2b_stage2.py::test_tc154_forecast_history_retains_only_a_bounded_recent_window": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.004301659999782714,
+      "failure": ""
+    },
+    "tests/test_addendum_h_phase2b_stage2.py::test_tc155_copied_event_views_reuse_the_forecast_timeline": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001888209999378887,
+      "failure": ""
+    },
+    "tests/test_addendum_i_phase1.py::test_tc_i1_targeted_handback_tracks_actual_shortfall": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0007250870003190357,
+      "failure": ""
+    },
+    "tests/test_addendum_i_phase1.py::test_tc_i1b_no_target_path_is_unchanged": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0005918090000704979,
+      "failure": ""
+    },
+    "tests/test_addendum_i_phase1.py::test_tc_i2_single_diesel_floor_formula": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00028234899991730344,
+      "failure": ""
+    },
+    "tests/test_addendum_i_phase1.py::test_tc_i3_staggered_diesel_floor_uses_last_unit_values": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0002023150000241003,
+      "failure": ""
+    },
+    "tests/test_addendum_i_phase1.py::test_tc_i4_discharge_is_capped_at_floor": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00012060200015184819,
+      "failure": ""
+    },
+    "tests/test_addendum_i_phase1.py::test_soc_floor_zero_preserves_existing_cover_shortfall_behavior": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00012565499991978868,
+      "failure": ""
+    },
+    "tests/test_aggregate_sources.py::TestBESSAggregate::test_BESS1_discharge_appears_in_aggregate": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.005185010000332113,
+      "failure": ""
+    },
+    "tests/test_aggregate_sources.py::TestBESSAggregate::test_BESS2_depleted_bess_contributes_zero": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0014706739998473495,
+      "failure": ""
+    },
+    "tests/test_aggregate_sources.py::TestBESSAggregate::test_BESS3_aggregate_identity_holds_over_many_ticks_islanded": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.007808429999840882,
+      "failure": ""
+    },
+    "tests/test_aggregate_sources.py::TestGRIDAggregate::test_GRID4_import_adds_to_aggregate": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0022226840001167147,
+      "failure": ""
+    },
+    "tests/test_aggregate_sources.py::TestGRIDAggregate::test_GRID5_export_does_not_inflate_aggregate": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.000546003000181372,
+      "failure": ""
+    },
+    "tests/test_aggregate_sources.py::TestGRIDAggregate::test_GRID6_islanded_exchange_exactly_zero": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0067623300001287134,
+      "failure": ""
+    },
+    "tests/test_aggregate_sources.py::TestFuelCellAggregate::test_FC7_tick_result_has_fuel_cell_output_field": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.001032730000133597,
+      "failure": ""
+    },
+    "tests/test_aggregate_sources.py::TestFuelCellAggregate::test_FC8_aggregate_closes_with_fuel_cell_term": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.008928447000016604,
+      "failure": ""
+    },
+    "tests/test_aggregate_sources.py::TestFuelCellAggregate::test_FC9_fuel_cell_dispatches_when_demand_exceeds_bess": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0034153340002376353,
+      "failure": ""
+    },
+    "tests/test_aggregate_sources.py::TestFuelCellAggregate::test_FC10_turbine_is_preferred_before_fuel_cell": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0038661879998471704,
+      "failure": ""
+    },
+    "tests/test_aggregate_sources.py::TestFuelCellAggregate::test_FC11_all_three_sources_follow_cost_order_at_capacity": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0095162560000972,
+      "failure": ""
+    },
+    "tests/test_aggregate_sources.py::TestFuelCellAggregate::test_FC12_energy_limited_bess_does_not_skip_turbine": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.008893387999705737,
+      "failure": ""
+    },
+    "tests/test_aggregate_sources.py::TestAllSourcesAggregate::test_ALL10_combined_identity_grid_connected_bess_active": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.006169709000005241,
+      "failure": ""
+    },
+    "tests/test_aggregate_sources.py::TestSwitchgearThreeSource::test_SW11_bess_covers_load_before_fuel_cell_without_turbine": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.003829161000339809,
+      "failure": ""
+    },
+    "tests/test_aggregate_sources.py::TestSwitchgearThreeSource::test_SW12_fuel_cell_fills_gap_when_bess_alone_insufficient": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0030540900002051785,
+      "failure": ""
+    },
+    "tests/test_aggregate_sources.py::TestSwitchgearThreeSource::test_SW13_identity_holds_across_15_ticks_turbine_free": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.004604955000104383,
+      "failure": ""
+    },
+    "tests/test_aggregate_sources.py::TestFuelCellBeforeCurtailment::test_FC14_no_curtailment_when_fc_covers_gap": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0026290989999324665,
+      "failure": ""
+    },
+    "tests/test_api.py::test_post_run_returns_201_and_run_id": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.46661837800002104,
+      "failure": ""
+    },
+    "tests/test_api.py::test_post_run_rejects_disabled_declared_fuel_cell_module_array": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.17657151699995666,
+      "failure": ""
+    },
+    "tests/test_api.py::test_get_runs_lists_active_run": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.17657704100020055,
+      "failure": ""
+    },
+    "tests/test_api.py::test_get_run_status_active": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.17873215999998138,
+      "failure": ""
+    },
+    "tests/test_api.py::test_get_run_status_not_found": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.1711004070002673,
+      "failure": ""
+    },
+    "tests/test_api.py::test_delete_run_cancels_and_removes": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.27253505699991365,
+      "failure": ""
+    },
+    "tests/test_api.py::test_delete_run_not_found": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.16177893000030963,
+      "failure": ""
+    },
+    "tests/test_api.py::test_post_run_invalid_body_returns_422": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.16172308199975305,
+      "failure": ""
+    },
+    "tests/test_api.py::test_websocket_subscriber_receives_tick_payload": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.16324529400026222,
+      "failure": ""
+    },
+    "tests/test_api.py::test_session_transport_returns_200_when_no_run_active": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.16705460200000743,
+      "failure": ""
+    },
+    "tests/test_api.py::test_observe_tick_returns_400_on_missing_field": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.22492643799978396,
+      "failure": ""
+    },
+    "tests/test_api.py::test_observe_tick_returns_400_on_non_integer_value": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.18061949100001584,
+      "failure": ""
+    },
+    "tests/test_api.py::test_observe_tick_returns_400_on_future_timestamp": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.17248931900030584,
+      "failure": ""
+    },
+    "tests/test_api.py::test_observe_tick_returns_400_on_stale_timestamp": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.1659245139999257,
+      "failure": ""
+    },
+    "tests/test_api.py::test_observe_tick_e2e_broadcast_to_histogram": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.42480496000007406,
+      "failure": ""
+    },
+    "tests/test_api.py::test_scenario_end_sim_time_override_honoured": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.24663307599985274,
+      "failure": ""
+    },
+    "tests/test_api.py::test_scenario_n_ticks_uses_overridden_duration": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.18057471200017972,
+      "failure": ""
+    },
+    "tests/test_api.py::test_post_scenarios_rejects_cold_faster_than_hot": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.15318329599995195,
+      "failure": ""
+    },
+    "tests/test_api.py::test_post_scenarios_rejects_warm_faster_than_hot": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.16572011600010228,
+      "failure": ""
+    },
+    "tests/test_api.py::test_post_scenarios_rejects_cold_equal_to_warm": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.22460082499992495,
+      "failure": ""
+    },
+    "tests/test_api.py::test_post_scenarios_accepts_valid_start_duration_ordering": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.1527329440000358,
+      "failure": ""
+    },
+    "tests/test_api.py::test_post_scenarios_rejects_hot_start_larger_than_defaults": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.14541947599991545,
+      "failure": ""
+    },
+    "tests/test_api.py::test_post_scenarios_rejects_cold_start_below_default_warm": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.1584964300000138,
+      "failure": ""
+    },
+    "tests/test_api.py::test_post_scenarios_accepts_valid_cold_only_override": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.16179880299978322,
+      "failure": ""
+    },
+    "tests/test_api.py::test_post_scenarios_accepts_no_start_duration_overrides": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.23484532300017236,
+      "failure": ""
+    },
+    "tests/test_artifact_truncation.py::test_tc165_under_cap_keeps_legacy_record_encoding_and_writes_no_sidecar": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0011155140000482788,
+      "failure": ""
+    },
+    "tests/test_artifact_truncation.py::test_tc166_synthetic_oversize_truncates_declared_detail_lists_exactly": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.027080976999968698,
+      "failure": ""
+    },
+    "tests/test_artifact_truncation.py::test_tc167_write_does_not_mutate_caller_record_or_summary": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.027557233000152337,
+      "failure": ""
+    },
+    "tests/test_artifact_truncation.py::test_tc168_repeated_oversize_writes_are_byte_identical": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.055725709999933315,
+      "failure": ""
+    },
+    "tests/test_artifact_truncation.py::test_tc169_non_detail_metrics_over_cap_leave_no_artifacts[record-metrics-over-cap]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0005586110000876943,
+      "failure": ""
+    },
+    "tests/test_artifact_truncation.py::test_tc169_non_detail_metrics_over_cap_leave_no_artifacts[summary-metrics-over-cap]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0006674569999631785,
+      "failure": ""
+    },
+    "tests/test_artifact_truncation.py::test_tc170_detail_sidecar_restores_original_record_and_summary_lists": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.03485149599964643,
+      "failure": ""
+    },
+    "tests/test_artifact_truncation.py::test_tc171_cap_boundary_uses_strictly_less_than_cap": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0015136319998418912,
+      "failure": ""
+    },
+    "tests/test_artifact_truncation.py::test_tc172_missing_detail_sidecar_raises_artifact_path_error": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.019312129999889294,
+      "failure": ""
+    },
+    "tests/test_artifact_truncation.py::test_tc173_executor_run_validates_from_truncated_record_and_sidecar": {
+      "outcome": "failed",
+      "stage": "call",
+      "duration": 21.019473157000448,
+      "failure": "tests/test_artifact_truncation.py:452: in test_tc173_executor_run_validates_from_truncated_record_and_sidecar\n    assert record[key] == value\nE   AssertionError: assert {'load_fuel_m..._mmbtu': 16.0} == {'load_fuel_m..._mmbtu': 16.0}\nE     \nE     Omitting 2 identical items, use -vv to show\nE     Differing items:\nE     {'hot_standby_fuel_mmbtu': 0.039236111} != {'hot_standby_fuel_mmbtu': 0.039237}\nE     {'load_fuel_mmbtu': 690.133782974} != {'load_fuel_mmbtu': 690.133783}\nE     Use -v to get more diff"
+    },
+    "tests/test_artifact_truncation.py::test_tc174_small_cap_preserves_base_demo_pair_acceptance": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 31.682368654999664,
+      "failure": ""
+    },
+    "tests/test_artifact_truncation.py::test_tc175_large_artifact_and_manifest_size_measurement": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 5.064171488999818,
+      "failure": ""
+    },
+    "tests/test_at9_solar_single_source.py::TestAT9SingleSource::test_live_aggregate_matches_snapshot_plant_every_tick": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.020076579000033234,
+      "failure": ""
+    },
+    "tests/test_at9_solar_single_source.py::TestAT9SingleSource::test_verdict_output_row_and_bar_are_same_value": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0004629459999705432,
+      "failure": ""
+    },
+    "tests/test_at9_solar_single_source.py::TestAT10HalfFleetDisabled::test_10_banks_disabled_fraction_0748": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00029877599990868475,
+      "failure": ""
+    },
+    "tests/test_at9_solar_single_source.py::TestAT11DerivedFields::test_generators_covering_and_share": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00044928800025445526,
+      "failure": ""
+    },
+    "tests/test_at9_solar_single_source.py::TestAT12SurplusState::test_surplus_condition_is_strict_greater_than": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00013054200007900363,
+      "failure": ""
+    },
+    "tests/test_at9_solar_single_source.py::TestAT13FullFleetAtRated::test_full_fleet_fraction_1_equals_nameplate": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0002910570001404267,
+      "failure": ""
+    },
+    "tests/test_auth.py::test_login_wrong_code_returns_401": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.8199413879997337,
+      "failure": ""
+    },
+    "tests/test_auth.py::test_protected_api_without_cookie_returns_401": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.16473771800019676,
+      "failure": ""
+    },
+    "tests/test_auth.py::test_admin_endpoint_without_credentials_returns_403": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.1753601680002248,
+      "failure": ""
+    },
+    "tests/test_auth.py::test_admin_endpoint_with_operator_session_returns_403": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.42361946400023953,
+      "failure": ""
+    },
+    "tests/test_auth.py::test_deactivated_user_returns_401": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.6899490179998793,
+      "failure": ""
+    },
+    "tests/test_auth.py::test_login_set_cookie_has_secure_flag_when_env_set": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.6523674919999394,
+      "failure": ""
+    },
+    "tests/test_auth.py::test_login_set_cookie_no_secure_flag_by_default": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.49575999800026693,
+      "failure": ""
+    },
+    "tests/test_auth.py::test_login_rate_limit_returns_429": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.27202533999980005,
+      "failure": ""
+    },
+    "tests/test_auth.py::test_login_ip_rate_limit_fires_across_distinct_emails": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.2806675289998566,
+      "failure": ""
+    },
+    "tests/test_auth.py::test_login_forged_forwarded_for_cannot_bypass_ip_rate_limit": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.28584046700007093,
+      "failure": ""
+    },
+    "tests/test_auth.py::test_change_password_first_time_set_succeeds": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.8477688849998231,
+      "failure": ""
+    },
+    "tests/test_auth.py::test_change_password_correct_current_password_succeeds": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.8619842889997926,
+      "failure": ""
+    },
+    "tests/test_auth.py::test_change_password_wrong_current_password_returns_401": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.5542556529999274,
+      "failure": ""
+    },
+    "tests/test_auth.py::test_otp_request_and_login_full_flow": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.6534483959999307,
+      "failure": ""
+    },
+    "tests/test_auth.py::test_otp_resend_cooldown_returns_429": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.16499179700031164,
+      "failure": ""
+    },
+    "tests/test_auth.py::test_otp_expired_returns_try_new_code_hint": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.05013645000008182,
+      "failure": ""
+    },
+    "tests/test_auth.py::test_otp_persists_across_sessions": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.05243367999992188,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN001QueueReach::test_at_least_one_job_queued_or_active": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00018010400026469142,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN001QueueReach::test_scheduler_types_are_slurm_k8s_ray": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00013292399989950354,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN001QueueReach::test_three_kube_agents_created": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00013955099984741537,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN002MWDraw::test_committed_compute_mw_nonzero_at_some_tick": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00016605200016783783,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN002MWDraw::test_compute_mw_matches_hardware_profile": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001587349997862475,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN003Architecture::test_generator_override_uses_same_spec_dict_injection_path": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.09758405100001255,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN003Architecture::test_kube_config_from_generator_produces_valid_kube_config_dict": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00013452000030156341,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN003Architecture::test_no_new_reorder_buffer_append_outside_kube_demand": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.015950319999774365,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN003Architecture::test_schema_accepts_generator_config_override": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00017795399980968796,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN003Architecture::test_schema_accepts_none_generator_config_override": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011324700017212308,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN004Determinism::test_kube_active_jobs_bit_identical": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00020204200018270058,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN004Determinism::test_kube_queued_jobs_bit_identical": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.000188651999906142,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN004Determinism::test_row_count_identical": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 9.641199994803173e-05,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN005StopClean::test_no_active_jobs_in_last_ticks_after_end": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.2609740759999113,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN005StopClean::test_run_terminates_cleanly": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0705239639996762,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN006ConfigConstraint::test_higher_contracts_raise_headroom_threshold": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00012548800032163854,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN006ConfigConstraint::test_higher_rate_shorter_interarrival": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011011400010829675,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN006ConfigConstraint::test_larger_max_jobs_increases_max_nodes": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00012634499989871983,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN006ConfigConstraint::test_longer_duration_range_maps_to_longer_mean_duration": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00017428999990443117,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN006ConfigConstraint::test_rate_maps_to_interarrival": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00010301000020263018,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN006ConfigConstraint::test_small_jobs_only_reduces_mean_nodes": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00020526900016193395,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN007CapacityGate::test_generator_job_deferred_by_cap_gate": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.001283049999983632,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN007CapacityGate::test_generator_job_stays_in_queue_not_dropped": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0012081519998901058,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN007CapacityGate::test_running_jobs_not_evicted": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0012202170000819024,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN008MultiSchedulerMix::test_each_agent_has_distinct_interarrival": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00020526100024653715,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN008MultiSchedulerMix::test_tenant_a_has_slurm": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0003741010000339884,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN008MultiSchedulerMix::test_tenant_b_has_k8s": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 9.060899992618943e-05,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN008MultiSchedulerMix::test_tenant_c_has_ray": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 9.430899990547914e-05,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN008MultiSchedulerMix::test_tenant_ids_are_a_b_c": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 8.583499993619625e-05,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN008MultiSchedulerMix::test_three_agents_one_per_scheduler": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 9.107999994739657e-05,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN009UIStateReflectsBackend::test_active_or_queued_nonzero_within_run": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001453909999327152,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN009UIStateReflectsBackend::test_kube_fields_present_in_tick_results": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 9.124400003202027e-05,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN010Regression::test_advisory_boundary_no_southbound_write": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.002765818000170839,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN010Regression::test_generator_config_override_none_is_noop": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00017917300010594772,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN010Regression::test_native_kube_scenario_still_works": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.09308505300032266,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestBBGEN010Regression::test_non_kube_scenario_has_no_kube_agents": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0797618550000152,
+      "failure": ""
+    },
+    "tests/test_bb_gen_generator_wiring.py::TestSuiteAdmissionEntryPoint::test_single_active_jobs_append_site": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.012758695999764313,
+      "failure": ""
+    },
+    "tests/test_bess_bridge_escalation.py::test_floor_uses_fifteen_percent_and_twice_anchor": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.002998911999839038,
+      "failure": ""
+    },
+    "tests/test_bess_bridge_escalation.py::test_exact_floor_equality_does_not_escalate": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.002609316999951261,
+      "failure": ""
+    },
+    "tests/test_bess_bridge_escalation.py::test_turbine_catchup_fires_on_sixth_five_second_tick": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.23028833900025347,
+      "failure": ""
+    },
+    "tests/test_bess_bridge_escalation.py::test_converging_turbine_does_not_fire_rate_trigger": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.2204472270000224,
+      "failure": ""
+    },
+    "tests/test_bess_bridge_escalation.py::test_sj1_no_turbine_guard_never_starts_rate_timer": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.07529062899993733,
+      "failure": ""
+    },
+    "tests/test_bess_bridge_escalation.py::test_material_discharge_break_resets_confirmation_window": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.2421035130000746,
+      "failure": ""
+    },
+    "tests/test_bess_bridge_escalation.py::test_payload_contains_operator_evidence": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.002926208000189945,
+      "failure": ""
+    },
+    "tests/test_bess_bridge_escalation.py::test_completed_timeseries_endpoint_keeps_escalation_evidence": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.003107846000148129,
+      "failure": ""
+    },
+    "tests/test_bess_rte_acceptance.py::test_tc100_discharge_energy_cost": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00010153299990633968,
+      "failure": ""
+    },
+    "tests/test_bess_rte_acceptance.py::test_tc101_round_trip_closure": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00016002599977582577,
+      "failure": ""
+    },
+    "tests/test_bess_rte_acceptance.py::test_tc102_sustainable_duration": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 9.990900025513838e-05,
+      "failure": ""
+    },
+    "tests/test_bess_rte_acceptance.py::test_tc103_power_domain_invariance": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001980480001293472,
+      "failure": ""
+    },
+    "tests/test_bess_rte_acceptance.py::test_tc104_contingency_energy_is_deliverable": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00014679600008093985,
+      "failure": ""
+    },
+    "tests/test_bess_rte_acceptance.py::test_tc105_single_conversion_rule": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.5464558730000135,
+      "failure": ""
+    },
+    "tests/test_bess_rte_acceptance.py::test_tc106_corruption_precedes_efficiency_conversion": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.002151765000235173,
+      "failure": ""
+    },
+    "tests/test_bess_rte_acceptance.py::test_tc107_efficiency_resolves_through_parameter_loader": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0003346119997331698,
+      "failure": ""
+    },
+    "tests/test_bess_rte_acceptance.py::test_tc108_unity_efficiency_restores_prechange_behaviour[unity-round-trip-efficiency]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00019958699976996286,
+      "failure": ""
+    },
+    "tests/test_bess_surplus_absorption.py::TestSurplusAbsorption::test_TC_SURP_1_surplus_bess_absorbs": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0009755669998412486,
+      "failure": ""
+    },
+    "tests/test_bess_surplus_absorption.py::TestSurplusAbsorption::test_TC_SURP_2_full_bess_cannot_absorb": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0013524930000130553,
+      "failure": ""
+    },
+    "tests/test_bess_surplus_absorption.py::TestSurplusAbsorption::test_TC_SURP_3_soc_rises_after_absorption": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0008830520000628894,
+      "failure": ""
+    },
+    "tests/test_bess_surplus_absorption.py::TestSurplusAbsorption::test_TC_SURP_4_partial_absorption_when_rated_mw_limits": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.000728803000129119,
+      "failure": ""
+    },
+    "tests/test_bess_surplus_absorption.py::TestSurplusAbsorption::test_TC_SURP_5_absorption_reduces_frequency_forcing": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0013261789999887696,
+      "failure": ""
+    },
+    "tests/test_bess_surplus_absorption.py::TestSurplusAbsorption::test_TC_SURP_6_taper_reset_bess_re_engages_on_shortfall": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00020624399985536002,
+      "failure": ""
+    },
+    "tests/test_bess_surplus_absorption.py::TestSurplusAbsorption::test_TC_SURP_7_shortfall_path_unaffected": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0008361069999409665,
+      "failure": ""
+    },
+    "tests/test_bess_surplus_absorption.py::TestSurplusAbsorption::test_TC_SURP_8_tick_fields_correct_sign_after_absorption": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0007518060001530102,
+      "failure": ""
+    },
+    "tests/test_bess_surplus_absorption.py::TestSurplusAbsorption::test_TC_SURP_9_energy_headroom_limits_absorption": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0011948609999308246,
+      "failure": ""
+    },
+    "tests/test_bess_surplus_absorption.py::TestSurplusAbsorption::test_TC_SURP_10_first_order_lag_ramps_absorption": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001291110002057394,
+      "failure": ""
+    },
+    "tests/test_bess_surplus_absorption.py::TestBessFirstTurbineRundown::test_rundown_waits_while_bess_can_absorb_all_surplus": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0019174619997102127,
+      "failure": ""
+    },
+    "tests/test_bess_surplus_absorption.py::TestBessFirstTurbineRundown::test_charge_saturated_bess_starts_controlled_rundown": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0016394979998040071,
+      "failure": ""
+    },
+    "tests/test_bess_surplus_absorption.py::TestBessFirstTurbineRundown::test_inverter_response_lag_does_not_mimic_charge_saturation": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0016497390001859458,
+      "failure": ""
+    },
+    "tests/test_bess_surplus_absorption.py::TestBessFirstTurbineRundown::test_full_bess_starts_rundown_and_exposes_reason_in_tick_payload": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0017162549997919996,
+      "failure": ""
+    },
+    "tests/test_bess_surplus_absorption.py::TestBessFirstTurbineRundown::test_minimum_run_deferral_keeps_bess_full_rundown_evidence": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0015536149999206827,
+      "failure": ""
+    },
+    "tests/test_bess_surplus_absorption.py::TestBessFirstTurbineRundown::test_next_rundown_waits_for_active_unload_sequence": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0032619240000713035,
+      "failure": ""
+    },
+    "tests/test_bess_surplus_absorption.py::TestBessFirstTurbineRundown::test_active_unload_uses_same_reserve_fleet_for_decision_and_telemetry": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0034093819999725383,
+      "failure": ""
+    },
+    "tests/test_bootstrap.py::test_bootstrap_no_key_is_forbidden": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.2582138039997517,
+      "failure": ""
+    },
+    "tests/test_bootstrap.py::test_bootstrap_wrong_key_is_forbidden": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.16851776999965296,
+      "failure": ""
+    },
+    "tests/test_bootstrap.py::test_bootstrap_when_admin_exists_returns_ok": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.15034020099983536,
+      "failure": ""
+    },
+    "tests/test_bootstrap.py::test_bootstrap_multiple_admins_returns_ok": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.14611961700029497,
+      "failure": ""
+    },
+    "tests/test_bootstrap.py::test_bootstrap_creates_recovery_when_no_admin": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.16097867799999221,
+      "failure": ""
+    },
+    "tests/test_bootstrap.py::test_bootstrap_deactivated_admin_triggers_recovery": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.22719802599976902,
+      "failure": ""
+    },
+    "tests/test_bootstrap.py::test_bootstrap_one_time_code_is_usable_for_login": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.22228284799984976,
+      "failure": ""
+    },
+    "tests/test_capacity_outlook.py::test_weekday_percentile_uses_the_correct_weekday_distribution": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0002573490000941092,
+      "failure": ""
+    },
+    "tests/test_capacity_outlook.py::test_projection_tiles_each_future_date_by_weekday[7]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00023675700003877864,
+      "failure": ""
+    },
+    "tests/test_capacity_outlook.py::test_projection_tiles_each_future_date_by_weekday[30]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00026844800004255376,
+      "failure": ""
+    },
+    "tests/test_capacity_outlook.py::test_shortfall_is_only_flagged_above_firm_capacity": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00027270300006421166,
+      "failure": ""
+    },
+    "tests/test_capacity_outlook.py::test_same_import_and_settings_are_identical": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00039653599969824427,
+      "failure": ""
+    },
+    "tests/test_capacity_outlook.py::test_seeded_firm_capacity_matches_equinix_archetype_without_touching_turbine": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 9.852400035015307e-05,
+      "failure": ""
+    },
+    "tests/test_capacity_outlook.py::test_projecting_a_saved_import_uses_the_persisted_import_lookup": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0005392330003815005,
+      "failure": ""
+    },
+    "tests/test_capacity_outlook.py::test_submitting_shortfall_creates_existing_pending_reservation_proposal": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0005398280000008526,
+      "failure": ""
+    },
+    "tests/test_capacity_outlook.py::test_submitting_shortfall_creates_standalone_pending_proposal": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0007467330001418304,
+      "failure": ""
+    },
+    "tests/test_cascade_commit.py::test_cascade_commit_sequence": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 8.12312900500001,
+      "failure": ""
+    },
+    "tests/test_checkpoint_classifier.py::TestCheckpointSchedulerClassifierAgreement::test_TC01_checkpoint_allreduce_onset_fires_classifier": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.3677639200000158,
+      "failure": ""
+    },
+    "tests/test_checkpoint_classifier.py::TestCheckpointSchedulerClassifierAgreement::test_TC01b_checkpoint_states_populated_on_first_checkpoint_tick": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.30109747100004824,
+      "failure": ""
+    },
+    "tests/test_classifier.py::test_tc05_explicit_checkpoint_event": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00037926400000287686,
+      "failure": ""
+    },
+    "tests/test_classifier.py::test_tc06_heuristic_positive_match": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0004847810000683239,
+      "failure": ""
+    },
+    "tests/test_classifier.py::test_tc07_heuristic_negative_match_job_end": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00047464199997193646,
+      "failure": ""
+    },
+    "tests/test_classifier.py::test_tc08_ambiguous_uncertain": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00043662400003086077,
+      "failure": ""
+    },
+    "tests/test_classifier.py::test_tc09_boundary_thresholds_inclusive": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0005698899999515561,
+      "failure": ""
+    },
+    "tests/test_classifier.py::test_effective_pue_identity": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00018020900006376905,
+      "failure": ""
+    },
+    "tests/test_classifier.py::test_d1_explicit_hold_survives_45s_timeout": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0007551159997092327,
+      "failure": ""
+    },
+    "tests/test_classifier.py::test_d2_late_checkpoint_end_after_job_end_discarded": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.000612986000305682,
+      "failure": ""
+    },
+    "tests/test_classifier.py::test_d4_explicit_hold_releases_after_max": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0020453290003388247,
+      "failure": ""
+    },
+    "tests/test_classifier.py::test_d6_unknown_tag_uses_default_widening": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00020374699988678913,
+      "failure": ""
+    },
+    "tests/test_cold_start_override.py::TestTC251ColdStartOverride::test_turbine_synchronises_within_scenario_cold_start_duration": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0005020049998165632,
+      "failure": ""
+    },
+    "tests/test_cold_start_override.py::TestTC251DefaultPreserved::test_default_cold_start_is_catalogue_value_when_not_overridden": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00040411800000583753,
+      "failure": ""
+    },
+    "tests/test_concurrency.py::test_concurrent_runs_are_isolated": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.3290420329999506,
+      "failure": ""
+    },
+    "tests/test_concurrency.py::test_slow_subscriber_does_not_block_other_runs": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.021182368000154383,
+      "failure": ""
+    },
+    "tests/test_concurrency.py::test_determinism_under_concurrent_load": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.5344129759996576,
+      "failure": ""
+    },
+    "tests/test_concurrency.py::test_cancel_run_cleans_up_without_affecting_siblings": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.007212080000044807,
+      "failure": ""
+    },
+    "tests/test_contingency.py::test_tc77_deficit_is_current_output_not_nameplate": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00015822899968043203,
+      "failure": ""
+    },
+    "tests/test_contingency.py::test_tc77_deterministic": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001315149997935805,
+      "failure": ""
+    },
+    "tests/test_contingency.py::test_tc78_power_passes_energy_fails": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011754699971788796,
+      "failure": ""
+    },
+    "tests/test_contingency.py::test_tc78_results_are_separate_fields": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011142999983349,
+      "failure": ""
+    },
+    "tests/test_contingency.py::test_tc79_anchor_reduces_bridging_available": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00012570700027936255,
+      "failure": ""
+    },
+    "tests/test_contingency.py::test_tc79_grid_tie_does_not_deduct_anchor": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00010534399962125462,
+      "failure": ""
+    },
+    "tests/test_contingency.py::test_tc80_shed_required_when_not_closable": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00014039899997442262,
+      "failure": ""
+    },
+    "tests/test_contingency.py::test_tc80_covered_with_shed_when_curtailable": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00018562500008556526,
+      "failure": ""
+    },
+    "tests/test_contingency.py::test_tc80_cannot_carry_when_shed_exceeds_curtailable": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011177199985468178,
+      "failure": ""
+    },
+    "tests/test_contingency.py::test_tc81_solar_excluded_from_coverage": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011332299982313998,
+      "failure": ""
+    },
+    "tests/test_contingency.py::test_tc82_dispatchable_excludes_solar": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00010210799973719986,
+      "failure": ""
+    },
+    "tests/test_contingency.py::test_tc82_dispatchable_deducts_anchor_reserve": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00010238899994874373,
+      "failure": ""
+    },
+    "tests/test_contingency.py::test_tc82_dispatchable_uses_rated_not_current_output": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00032792499996503466,
+      "failure": ""
+    },
+    "tests/test_contingency.py::test_legacy_aggregate_fuel_cell_snapshot_retains_rated_capacity_credit": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001393520001329307,
+      "failure": ""
+    },
+    "tests/test_contingency.py::test_tc83_hot_standby_excluded_from_r_surviving": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00012287099980312632,
+      "failure": ""
+    },
+    "tests/test_contingency.py::test_tc83_hot_standby_not_online": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00018579900006443495,
+      "failure": ""
+    },
+    "tests/test_contingency.py::test_tc83_hot_standby_not_in_dispatchable": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00010346799990657018,
+      "failure": ""
+    },
+    "tests/test_contingency.py::test_tc85_re_rated_ramp_used_for_closability": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.000105543000245234,
+      "failure": ""
+    },
+    "tests/test_contingency.py::test_tc85_higher_ramp_closes_faster": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011681300020427443,
+      "failure": ""
+    },
+    "tests/test_contingency_hot_standby_release.py::test_phase3b_unit_trip_degrades_coverage_and_releases_one_hot_standby": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.005904239000301459,
+      "failure": ""
+    },
+    "tests/test_contingency_hot_standby_release.py::test_fully_loaded_block_fuel_cell_has_zero_contingency_credit_after_trip": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.007223264999993262,
+      "failure": ""
+    },
+    "tests/test_contingency_hot_standby_release.py::test_phase3b_elevated_demand_without_trip_does_not_release_hot_standby": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.004128925000259187,
+      "failure": ""
+    },
+    "tests/test_contingency_hot_standby_release.py::test_phase3b_persistent_contingency_releases_only_one_hot_standby": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.011113624000245181,
+      "failure": ""
+    },
+    "tests/test_contingency_hot_standby_release.py::test_phase3b_config_keeps_ordinary_commitment_and_phase3a_paths_separate": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00016595199986113585,
+      "failure": ""
+    },
+    "tests/test_cooling_ambient_timezone.py::test_ca1_afternoon_ambient_scale_exceeds_predawn": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0007662469997740118,
+      "failure": ""
+    },
+    "tests/test_cooling_ambient_timezone.py::test_ca2_runcontext_ambient_avg_c_higher_for_afternoon": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0005222790000516397,
+      "failure": ""
+    },
+    "tests/test_cooling_ambient_timezone.py::test_ca3_runcontext_alpha_scale_higher_for_afternoon": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0006710339998790005,
+      "failure": ""
+    },
+    "tests/test_cooling_ambient_timezone.py::test_ca4_broken_offset_gives_same_scale_as_predawn": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001266419999410573,
+      "failure": ""
+    },
+    "tests/test_cooling_ambient_timezone.py::test_ca5_correct_offset_gives_higher_alpha_max": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0004553789999590663,
+      "failure": ""
+    },
+    "tests/test_cooling_ambient_timezone.py::test_ca6_correct_offset_gives_higher_site_alpha_max": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0004807559998880606,
+      "failure": ""
+    },
+    "tests/test_cooling_ambient_timezone.py::test_ca7_scenario_factory_physics_block_has_no_wall_clock_usage": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.001048090000040247,
+      "failure": ""
+    },
+    "tests/test_cooling_ambient_timezone.py::test_ca8_tick_level_cooling_mw_higher_for_correct_utc_offset": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.04782047999970018,
+      "failure": ""
+    },
+    "tests/test_cooling_lag_tc03.py::test_tc03_b_no_zero_lag_coupling": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.01026961699972162,
+      "failure": ""
+    },
+    "tests/test_cooling_lag_tc03.py::test_tc03_a_convergence_within_2pct": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.007599366000249574,
+      "failure": ""
+    },
+    "tests/test_cooling_lag_tc03.py::test_tc03_c_monotone_rise_until_convergence": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.006802252999932534,
+      "failure": ""
+    },
+    "tests/test_cooling_mw_blackbox.py::test_tc_cl_1_simple_factory_4nodes_rated_positive_and_correct": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0002136990001417871,
+      "failure": ""
+    },
+    "tests/test_cooling_mw_blackbox.py::test_tc_cl_2_simple_factory_10nodes_rated_proportional": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0002615620001051866,
+      "failure": ""
+    },
+    "tests/test_cooling_mw_blackbox.py::test_tc_cl_3_simple_factory_20nodes_rated_proportional": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0003394540003682778,
+      "failure": ""
+    },
+    "tests/test_cooling_mw_blackbox.py::test_tc_cl_4_spec_factory_with_workload_events_40nodes": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00029947400025776005,
+      "failure": ""
+    },
+    "tests/test_cooling_mw_blackbox.py::test_tc_cl_5_spec_factory_no_workload_events_rated_nonzero": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00024343499990209239,
+      "failure": ""
+    },
+    "tests/test_cooling_mw_blackbox.py::test_tc_cl_6_cooling_demand_zero_before_thermal_lag": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011964499981331755,
+      "failure": ""
+    },
+    "tests/test_cooling_mw_blackbox.py::test_tc_cl_7_cooling_demand_rises_after_thermal_lag": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00017956500005311682,
+      "failure": ""
+    },
+    "tests/test_cooling_mw_blackbox.py::test_tc_cl_8_steady_state_cooling_equals_alpha_times_compute": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0009131589999924472,
+      "failure": ""
+    },
+    "tests/test_cooling_mw_blackbox.py::test_tc_cl_9_headroom_never_negative_across_varying_loads": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0015174310001384583,
+      "failure": ""
+    },
+    "tests/test_cooling_mw_blackbox.py::test_tc_cl_10_spec_no_workload_events_rated_scales_with_turbine_mw": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0007955119999678573,
+      "failure": ""
+    },
+    "tests/test_corruption_schedule_lifecycle.py::test_tc_cl_1_for_tick_returns_clean_beyond_end": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00023167699964687927,
+      "failure": ""
+    },
+    "tests/test_corruption_schedule_lifecycle.py::test_for_tick_one_tick_overshoot_is_tolerated": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0002166609997402702,
+      "failure": ""
+    },
+    "tests/test_corruption_schedule_lifecycle.py::test_tc_cl_2_for_tick_returns_clean_for_negative_index": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001520740001978993,
+      "failure": ""
+    },
+    "tests/test_corruption_schedule_lifecycle.py::test_tc_cl_3_fresh_context_has_empty_soc_history": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001955709999492683,
+      "failure": ""
+    },
+    "tests/test_corruption_schedule_lifecycle.py::test_tc_cl_4_fresh_context_has_no_corruption_schedule": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001899280000543513,
+      "failure": ""
+    },
+    "tests/test_corruption_schedule_lifecycle.py::test_tc_cl_5_soc_history_not_shared_between_contexts": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0002611710001474421,
+      "failure": ""
+    },
+    "tests/test_corruption_schedule_lifecycle.py::test_tc_cl_6_new_context_after_corruption_run_is_clean": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0007013119998191542,
+      "failure": ""
+    },
+    "tests/test_cost_model_override_regression.py::TestZeroGridImportPriceOverride::test_grid_import_cost_is_zero_when_price_override_is_zero": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00014608599985876936,
+      "failure": ""
+    },
+    "tests/test_cost_model_override_regression.py::TestZeroGridImportPriceOverride::test_nonzero_override_is_also_honoured": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00028371300004437217,
+      "failure": ""
+    },
+    "tests/test_cost_model_override_regression.py::TestZeroGridImportPriceOverride::test_none_override_falls_back_to_120_wholesale_default": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011382299999240786,
+      "failure": ""
+    },
+    "tests/test_cost_model_override_regression.py::TestBessChargeCostTracksImportPrice::test_bess_charge_price_tracks_grid_import_price_when_no_bess_override": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001834729996517126,
+      "failure": ""
+    },
+    "tests/test_cost_model_override_regression.py::TestBessChargeCostTracksImportPrice::test_bess_charge_price_tracks_zero_import_price_override": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011521400028868811,
+      "failure": ""
+    },
+    "tests/test_cost_model_override_regression.py::TestBessChargeCostTracksImportPrice::test_explicit_bess_override_takes_precedence_over_import_price": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00015319800013458007,
+      "failure": ""
+    },
+    "tests/test_cost_model_override_regression.py::TestBessChargeCostTracksImportPrice::test_bess_override_of_zero_is_honoured_not_shadowed": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011455799995019333,
+      "failure": ""
+    },
+    "tests/test_cost_model_override_regression.py::TestProcurementPathBIsolation::test_market_signal_price_does_not_affect_grid_import_cost": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00014041700023881276,
+      "failure": ""
+    },
+    "tests/test_cost_model_override_regression.py::TestProcurementPathBIsolation::test_procurement_layer_estimated_cost_is_independent_of_billing_price": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00015068899983816664,
+      "failure": ""
+    },
+    "tests/test_diesel_phase2.py::test_single_unit_output_matches_step_then_residual_ramp": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00016396000000895583,
+      "failure": ""
+    },
+    "tests/test_diesel_phase2.py::test_failed_primary_immediately_starts_a_standby_replacement": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00029335199997149175,
+      "failure": ""
+    },
+    "tests/test_diesel_phase2.py::test_insufficient_start_fires_once_when_failures_exhaust_standby": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00036052499990546494,
+      "failure": ""
+    },
+    "tests/test_diesel_phase2.py::test_gap_shorter_than_debounce_does_not_activate_fleet": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00020196800005578552,
+      "failure": ""
+    },
+    "tests/test_diesel_phase2.py::test_unloading_reversal_preserves_run_start_episode_and_alert_state": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00023090999957275926,
+      "failure": ""
+    },
+    "tests/test_diesel_phase2.py::test_synchronised_count_never_exceeds_active_target_during_multi_failure": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00029969800016260706,
+      "failure": ""
+    },
+    "tests/test_diesel_phase2.py::test_fuel_depletes_only_from_actual_synchronised_output": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00022982400014370796,
+      "failure": ""
+    },
+    "tests/test_diesel_phase3.py::test_live_diesel_output_reduces_remaining_gap_before_curtailment": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0027811790000669134,
+      "failure": ""
+    },
+    "tests/test_diesel_phase3.py::test_live_diesel_output_increases_generation_and_balance_residual": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.002371268999922904,
+      "failure": ""
+    },
+    "tests/test_diesel_phase3.py::test_live_diesel_is_less_aggressive_than_disabled_before_curtailment": {
+      "outcome": "failed",
+      "stage": "call",
+      "duration": 0.02056831899972167,
+      "failure": "tests/test_diesel_phase3.py:189: in test_live_diesel_is_less_aggressive_than_disabled_before_curtailment\n    assert disabled_tiers\nE   assert ()"
+    },
+    "tests/test_diesel_phase4_telemetry.py::test_disabled_diesel_telemetry_is_idle_and_zero": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0014389759999176022,
+      "failure": ""
+    },
+    "tests/test_diesel_phase4_telemetry.py::test_enabled_diesel_telemetry_comes_from_single_tick_snapshot": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0015082260001690884,
+      "failure": ""
+    },
+    "tests/test_diesel_schema.py::test_binomial_survival_boundary_cases": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 9.43790000746958e-05,
+      "failure": ""
+    },
+    "tests/test_diesel_schema.py::test_solve_min_fleet_size_is_bounded_and_minimal": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 8.587000002080458e-05,
+      "failure": ""
+    },
+    "tests/test_diesel_schema.py::test_solve_min_fleet_size_fails_loudly_when_target_is_unreachable": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00023751500020807725,
+      "failure": ""
+    },
+    "tests/test_diesel_schema.py::test_generate_diesel_fleet_scales_to_any_target_capacity[10.0]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00038889400002517505,
+      "failure": ""
+    },
+    "tests/test_diesel_schema.py::test_generate_diesel_fleet_scales_to_any_target_capacity[50.0]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00023428800022884388,
+      "failure": ""
+    },
+    "tests/test_diesel_schema.py::test_generate_diesel_fleet_scales_to_any_target_capacity[100.0]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0002085339997393021,
+      "failure": ""
+    },
+    "tests/test_diesel_schema.py::test_generate_diesel_fleet_scales_to_any_target_capacity[73.25]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00022841700001663412,
+      "failure": ""
+    },
+    "tests/test_diesel_schema.py::test_generate_diesel_fleet_staggers_only_primary_units": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00015884699996604468,
+      "failure": ""
+    },
+    "tests/test_diesel_schema.py::test_scenario_validation_materializes_enabled_diesel_units": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0003061829997932364,
+      "failure": ""
+    },
+    "tests/test_diesel_schema.py::test_disabled_or_absent_diesel_block_materializes_empty_fleet": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00014916100008122157,
+      "failure": ""
+    },
+    "tests/test_diesel_schema.py::test_enabled_diesel_block_requires_target_capacity": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00036593100003301515,
+      "failure": ""
+    },
+    "tests/test_diesel_schema.py::test_enabled_diesel_block_rejects_non_positive_capacity_at_load_time": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00024456199980704696,
+      "failure": ""
+    },
+    "tests/test_diesel_setpoint_gap.py::test_hybrid_scenario_contract_and_reserve_alert_timing": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.018092523000177607,
+      "failure": ""
+    },
+    "tests/test_diesel_setpoint_gap.py::test_hybrid_covered_demand_does_not_release_bess_reserve": {
+      "outcome": "failed",
+      "stage": "call",
+      "duration": 0.07906885800002783,
+      "failure": "tests/test_diesel_setpoint_gap.py:139: in test_hybrid_covered_demand_does_not_release_bess_reserve\n    assert soc_480_mwh == pytest.approx(reconciled_floor_mwh)\nE   assert 5.117526258383993 == 5.52 \u00b1 5.5e-06\nE     \nE     comparison failed\nE     Obtained: 5.117526258383993\nE     Expected: 5.52 \u00b1 5.5e-06"
+    },
+    "tests/test_diesel_setpoint_gap.py::test_hybrid_first_tick_has_zero_diesel_credit": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0022844109998914064,
+      "failure": ""
+    },
+    "tests/test_diesel_setpoint_gap.py::test_empty_diesel_fleet_keeps_previous_output_zero": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0016712259998712398,
+      "failure": ""
+    },
+    "tests/test_dr_isl_diesel_dispatch.py::test_tc_isl_19_closing_gap_backs_diesel_down_before_curtailment": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0021211029998084996,
+      "failure": ""
+    },
+    "tests/test_dr_isl_diesel_dispatch.py::test_tc_isl_20_shared_merit_order_rising_and_falling": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0013717369997721107,
+      "failure": ""
+    },
+    "tests/test_dr_isl_diesel_dispatch.py::test_tc_isl_21_unloading_power_fuel_and_physical_balance": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0014185909999469004,
+      "failure": ""
+    },
+    "tests/test_dr_isl_diesel_dispatch.py::test_tc_isl_22_refused_stop_does_not_credit_hold_or_shorten_ramp": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0009709000000839296,
+      "failure": ""
+    },
+    "tests/test_dr_isl_hot_standby_veto.py::test_tc_isl_06e_hot_standby_core_proposal_is_vetoed": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0004907779998575279,
+      "failure": ""
+    },
+    "tests/test_dr_isl_phase2b.py::test_tc_isl_15a_capped_grid_shortfall_is_unserved": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0006949879998501274,
+      "failure": ""
+    },
+    "tests/test_dr_isl_phase2b.py::test_tc_isl_15b_uncapped_grid_is_unchanged": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0006444559999181365,
+      "failure": ""
+    },
+    "tests/test_dr_isl_phase2b.py::test_tc_isl_15c_islanded_shortfall_is_unchanged": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.000872778000029939,
+      "failure": ""
+    },
+    "tests/test_dr_isl_phase2b.py::test_tc_isl_16_fc_rocof_trip_reconciles_pretrip_surplus": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0008494670000800397,
+      "failure": ""
+    },
+    "tests/test_dr_isl_phase2c.py::test_tc_isl_17_base_demo_uses_canonical_spec_then_recorded_overrides": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.020303893000345852,
+      "failure": ""
+    },
+    "tests/test_dr_isl_phase2c.py::test_tc_isl_18_floor_warning_is_diagnostic_only[3600.0-1]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.020350997999685205,
+      "failure": ""
+    },
+    "tests/test_dr_isl_phase2c.py::test_tc_isl_18_floor_warning_is_diagnostic_only[10.0-0]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.017753409999841097,
+      "failure": ""
+    },
+    "tests/test_dr_isl_staging_start_events.py::test_tc_isl_07a_success_event_uses_event_time_sink_and_preserves_order[True]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0006057400000827329,
+      "failure": ""
+    },
+    "tests/test_dr_isl_staging_start_events.py::test_tc_isl_07a_success_event_uses_event_time_sink_and_preserves_order[False]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.000559739999971498,
+      "failure": ""
+    },
+    "tests/test_dr_isl_staging_start_events.py::test_tc_isl_07b_only_an_actual_counted_transition_emits[min_down]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0003704989999278041,
+      "failure": ""
+    },
+    "tests/test_dr_isl_staging_start_events.py::test_tc_isl_07b_only_an_actual_counted_transition_emits[pending]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0004948020000483666,
+      "failure": ""
+    },
+    "tests/test_dr_isl_staging_start_events.py::test_tc_isl_07b_only_an_actual_counted_transition_emits[refused]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00039824099985708017,
+      "failure": ""
+    },
+    "tests/test_dr_isl_staging_start_events.py::test_tc_isl_07b_only_an_actual_counted_transition_emits[no_increment]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00037271399969540653,
+      "failure": ""
+    },
+    "tests/test_dr_isl_staging_start_events.py::test_tc_isl_07c_repeated_staging_does_not_duplicate": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0004304510002839379,
+      "failure": ""
+    },
+    "tests/test_dr_isl_staging_start_events.py::test_tc_isl_07d_workload_and_renewable_share_the_hook[starting]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0004937139997309714,
+      "failure": ""
+    },
+    "tests/test_dr_isl_staging_start_events.py::test_tc_isl_07d_workload_and_renewable_share_the_hook[solar_step]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0004502100000536302,
+      "failure": ""
+    },
+    "tests/test_dr_isl_staging_start_events.py::test_tc_isl_07e_already_logged_paths_are_not_duplicated[operator]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0005667280001944164,
+      "failure": ""
+    },
+    "tests/test_dr_isl_staging_start_events.py::test_tc_isl_07e_already_logged_paths_are_not_duplicated[core_commitment]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0016930159999901662,
+      "failure": ""
+    },
+    "tests/test_dr_isl_staging_start_events.py::test_tc_isl_07e_already_logged_paths_are_not_duplicated[automatic_contingency]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0004028849998576334,
+      "failure": ""
+    },
+    "tests/test_dr_isl_staging_start_events.py::test_tc_isl_07f_restarts_reconcile_before_each_tick_observer": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0005137969997122127,
+      "failure": ""
+    },
+    "tests/test_dr_isl_staging_start_events.py::test_tc_isl_07g_no_sink_or_observer_changes_physics_or_nonpositive_staging[False-5.0]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0008704599999873608,
+      "failure": ""
+    },
+    "tests/test_dr_isl_staging_start_events.py::test_tc_isl_07g_no_sink_or_observer_changes_physics_or_nonpositive_staging[False-0.0]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0007880699999986973,
+      "failure": ""
+    },
+    "tests/test_dr_isl_staging_start_events.py::test_tc_isl_07g_no_sink_or_observer_changes_physics_or_nonpositive_staging[False--5.0]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.000791685999956826,
+      "failure": ""
+    },
+    "tests/test_dr_isl_staging_start_events.py::test_tc_isl_07g_no_sink_or_observer_changes_physics_or_nonpositive_staging[True-5.0]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0008748400000513357,
+      "failure": ""
+    },
+    "tests/test_dr_isl_staging_start_events.py::test_tc_isl_07g_no_sink_or_observer_changes_physics_or_nonpositive_staging[True-0.0]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0008579979999012721,
+      "failure": ""
+    },
+    "tests/test_dr_isl_staging_start_events.py::test_tc_isl_07g_no_sink_or_observer_changes_physics_or_nonpositive_staging[True--5.0]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0008489129995723488,
+      "failure": ""
+    },
+    "tests/test_dr_isl_start_eligibility.py::test_tc_isl_06a_single_guard_call_graph": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.03090295200036053,
+      "failure": ""
+    },
+    "tests/test_dr_isl_start_eligibility.py::test_tc_isl_06b_skip_min_down_start_alternate": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00015999900006136158,
+      "failure": ""
+    },
+    "tests/test_dr_isl_start_eligibility.py::test_tc_isl_06c_no_eligible_one_log_per_episode": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0004044209999847226,
+      "failure": ""
+    },
+    "tests/test_dr_isl_start_eligibility.py::test_tc_isl_06d_ordinary_hold_is_not_an_ineligibility_episode": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011729399966498022,
+      "failure": ""
+    },
+    "tests/test_dr_isl_start_eligibility.py::test_tc_isl_06_guard_boundaries_unchanged": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 8.605800030636601e-05,
+      "failure": ""
+    },
+    "tests/test_dynamollm_calibration.py::test_hopper_profile_preserves_chassis_envelope_and_figure8_context": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00013258999979370856,
+      "failure": ""
+    },
+    "tests/test_dynamollm_calibration.py::test_table_iii_singlepool_duration_multiplier_is_ordered_and_exact": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011634800011961488,
+      "failure": ""
+    },
+    "tests/test_dynamollm_calibration.py::test_inference_without_model_uses_70b_reference": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 8.557799992559012e-05,
+      "failure": ""
+    },
+    "tests/test_dynamollm_calibration.py::test_dynamollm_applies_only_to_explicit_inference": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 7.822099996701581e-05,
+      "failure": ""
+    },
+    "tests/test_dynamollm_calibration.py::test_gpu_current_and_target_draw_never_apply_energy_ratio_to_power": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00016264099986074143,
+      "failure": ""
+    },
+    "tests/test_dynamollm_calibration.py::test_kube_uses_model_ratio_on_duration_not_power": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0003644620001068688,
+      "failure": ""
+    },
+    "tests/test_dynamollm_calibration.py::test_kube_signal_carries_inference_model_metadata": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00038274500002444256,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestTC_C3_NonAutonomousNeverAllocated::test_confirm_tier_not_allocated_shortfall_produced": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00013952600011180039,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestTC_C3_NonAutonomousNeverAllocated::test_human_only_tier_not_allocated": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011597599996093777,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestTC_C3_NonAutonomousNeverAllocated::test_autonomous_allocated_confirm_not_when_demand_exceeds_autonomous": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00017453200007366831,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestTC_C3_NonAutonomousNeverAllocated::test_no_shortfall_when_autonomous_covers_all": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011177800024597673,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestTC_C4_CostScalesWithTickDuration::test_halving_tick_duration_halves_cost": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00013606199991045287,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestTC_C4_CostScalesWithTickDuration::test_cost_formula_correctness": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00010743299981186283,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestTC_C4_CostScalesWithTickDuration::test_zero_tick_duration_gives_zero_cost": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011433600002419553,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestTC_C4_CostScalesWithTickDuration::test_field_is_named_cost_this_tick_not_total_cost_per_hour": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00010298200004399405,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestTC_C5_SeasonCorrectPricing::test_summer_vs_winter_peak_hour_different_price": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00015554999981759465,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestTC_C5_SeasonCorrectPricing::test_summer_peak_matches_catalogue": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00010814200004460872,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestTC_C5_SeasonCorrectPricing::test_summer_part_peak_matches_catalogue": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011632599989752634,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestTC_C5_SeasonCorrectPricing::test_summer_off_peak_matches_catalogue": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011111100002381136,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestTC_C5_SeasonCorrectPricing::test_winter_peak_matches_catalogue": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00018646600028660032,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestTC_C5_SeasonCorrectPricing::test_winter_off_peak_matches_catalogue": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00010620600005495362,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestTC_C5_SeasonCorrectPricing::test_winter_super_off_peak_in_march": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011171300002388307,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestTC_C5_SeasonCorrectPricing::test_super_off_peak_only_in_march_april_may": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00012191399991934304,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestTC_C5_SeasonCorrectPricing::test_super_off_peak_not_in_january": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011188799999217736,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestTC_C5_SeasonCorrectPricing::test_cost_basis_note_reflects_season_and_hour": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00015467000002900022,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestTC_C5_SeasonCorrectPricing::test_season_not_in_step_signature": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001428559999112622,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestTC_C5_SeasonCorrectPricing::test_positional_season_raises_type_error": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001405899997735105,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestBESSCostFromCatalogue::test_bess_repriced_to_catalogue_value": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.000115309999728197,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestBESSCostFromCatalogue::test_bess_cheaper_than_grid_in_summer_peak": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00010995399998137145,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestBESSCostFromCatalogue::test_bess_cheaper_than_fuel_cell": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00013695400002688984,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestKeywordOnlyEnforcement::test_positional_call_after_t_s_raises_type_error": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00015566599995509023,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestKeywordOnlyEnforcement::test_keyword_call_works": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00010424500032968353,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestGreedyAllocationAndShortfall::test_greedy_fills_cheapest_first": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011188700000275276,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestGreedyAllocationAndShortfall::test_shortfall_not_raised_as_exception": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001556180000079621,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestGreedyAllocationAndShortfall::test_no_shortfall_when_exactly_covered": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00013968300027045188,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestGreedyAllocationAndShortfall::test_zero_demand_no_allocation_no_shortfall": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0002585110000836721,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestGreedyAllocationAndShortfall::test_solar_not_allocated": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00012907700011055567,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestPhase4GridConfirmTierTOUPricing::test_pge_price_for_period_is_importable_as_public": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00022536799997396884,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestPhase4GridConfirmTierTOUPricing::test_season_from_month_is_importable_as_public": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 8.422300015809014e-05,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestPhase4GridConfirmTierTOUPricing::test_grid_confirm_tier_priced_correctly_for_tick_context": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00015056900019772002,
+      "failure": ""
+    },
+    "tests/test_economic_dispatch_loop.py::TestPhase4GridConfirmTierTOUPricing::test_grid_confirm_tier_winter_super_off_peak": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00020823199974984163,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestDiag3DutyCycleTable::test_combined_cost_per_kwh_at_100pct_duty": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001661710002736072,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestDiag3DutyCycleTable::test_combined_cost_per_kwh_at_50pct_duty": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001374270000269462,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestDiag3DutyCycleTable::test_combined_cost_per_kwh_at_10pct_duty": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00014236000015444006,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestCapitalDutyInvariance::test_capital_portion_unchanged_when_generation_halved": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00015326699985962478,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestDutyFractionOutput::test_duty_fraction_is_computed_not_assumed": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001070129997060576,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestDutyFractionOutput::test_duty_fraction_capped_at_1_when_generation_exceeds_nameplate": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00012328499997238396,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestAccountingIdentity::test_total_cost_equals_sum_of_components": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011002599967468996,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestStorageRoundTripLoss::test_loss_cost_is_zero_when_discharge_price_is_zero": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011022500029866933,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestStorageRoundTripLoss::test_loss_cost_is_nonzero_when_discharge_price_is_nonzero": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 9.98789996629057e-05,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestSeasonBoundaries::test_season_from_month_boundary_and_core[5-winter]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 7.996500016815844e-05,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestSeasonBoundaries::test_season_from_month_boundary_and_core[6-summer]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 7.622099974469165e-05,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestSeasonBoundaries::test_season_from_month_boundary_and_core[9-summer]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 8.18130001789541e-05,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestSeasonBoundaries::test_season_from_month_boundary_and_core[10-winter]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00015172699977483717,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestSeasonBoundaries::test_season_from_month_boundary_and_core[1-winter]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00012155199965491192,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestSeasonBoundaries::test_season_from_month_boundary_and_core[7-summer]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 7.836600025257212e-05,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestSeasonBoundaries::test_season_from_month_boundary_and_core[12-winter]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 7.792099995640456e-05,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestSeasonBoundaries::test_season_boundary_drives_different_tou_rates": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00014418000000659958,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestSummerTOUBands::test_summer_peak_rate": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 9.807600008571171e-05,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestSummerTOUBands::test_summer_part_peak_rate_hour_14": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00012024099987684167,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestSummerTOUBands::test_summer_part_peak_rate_hour_22": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011900599974978832,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestSummerTOUBands::test_summer_off_peak_rate": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00014523300023938646,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestSummerTOUBands::test_summer_rates_are_strictly_ordered": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011318599990772782,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestWinterSuperOffPeakBoundary::test_super_off_peak_when_both_conditions_met[3-9]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00010142300016013905,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestWinterSuperOffPeakBoundary::test_super_off_peak_when_both_conditions_met[3-13]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 9.438600000066799e-05,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestWinterSuperOffPeakBoundary::test_super_off_peak_when_both_conditions_met[4-11]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 9.217500019076397e-05,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestWinterSuperOffPeakBoundary::test_super_off_peak_when_both_conditions_met[5-9]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00013182699967728695,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestWinterSuperOffPeakBoundary::test_super_off_peak_when_both_conditions_met[5-13]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011731499989764416,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestWinterSuperOffPeakBoundary::test_super_off_peak_not_applied_when_condition_fails[2-11-114.6-Feb off-peak \\u2014 month not in 3\\u20135]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 9.175000013783574e-05,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestWinterSuperOffPeakBoundary::test_super_off_peak_not_applied_when_condition_fails[6-11-114.82-June off-peak \\u2014 summer season, not winter]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 9.970800010705716e-05,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestWinterSuperOffPeakBoundary::test_super_off_peak_not_applied_when_condition_fails[4-14-114.6-Apr hour 14 \\u2014 outside super off-peak window, falls to off-peak]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 9.482499990554061e-05,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestWinterSuperOffPeakBoundary::test_super_off_peak_not_applied_when_condition_fails[3-17-156.32-Mar hour 17 \\u2014 peak window, super off-peak does not apply]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00016537600004085107,
+      "failure": ""
+    },
+    "tests/test_energy_cost_blackbox.py::TestWinterSuperOffPeakBoundary::test_super_off_peak_not_applied_when_condition_fails[1-10-114.6-Jan off-peak \\u2014 month not in 3\\u20135]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00015139200013436493,
+      "failure": ""
+    },
+    "tests/test_f2_bridging_basis.py::test_bridging_basis_predicted_peak_at_alert_tick": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.1468911790002494,
+      "failure": ""
+    },
+    "tests/test_f2_bridging_basis.py::test_bridging_basis_no_load_when_net_demand_zero": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0009892520001812954,
+      "failure": ""
+    },
+    "tests/test_f2_bridging_basis.py::test_bridging_basis_current_demand_when_no_pending_alert": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.006488488000286452,
+      "failure": ""
+    },
+    "tests/test_f2_bridging_basis.py::test_bridging_basis_in_tick_payload": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0009306950000791403,
+      "failure": ""
+    },
+    "tests/test_f2_bridging_basis.py::test_panel_and_alert_never_contradict_in_demo_alert": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.1322726660000626,
+      "failure": ""
+    },
+    "tests/test_f5_sim_time_interval_end.py::test_sim_time_seconds_is_interval_end_first_tick": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0009467849999964528,
+      "failure": ""
+    },
+    "tests/test_f5_sim_time_interval_end.py::test_sim_time_seconds_is_interval_end_subsequent_ticks": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.002909321000061027,
+      "failure": ""
+    },
+    "tests/test_f5_sim_time_interval_end.py::test_sim_time_seconds_matches_dt": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.002608602000236715,
+      "failure": ""
+    },
+    "tests/test_f5_sim_time_interval_end.py::test_sim_time_in_payload_is_interval_end": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.000983827999789355,
+      "failure": ""
+    },
+    "tests/test_f5_sim_time_interval_end.py::test_internal_elapsed_unaffected_by_f5": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0010922050000772288,
+      "failure": ""
+    },
+    "tests/test_fabric_model.py::test_tc77_fabric_stream_is_reproducible": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 1.8996287059999304,
+      "failure": ""
+    },
+    "tests/test_fabric_model.py::test_tc77b_tick_is_addressable_without_replay": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0006762299999536481,
+      "failure": ""
+    },
+    "tests/test_fabric_model.py::test_tc78_new_substream_does_not_perturb_existing_ones": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00031965999960448244,
+      "failure": ""
+    },
+    "tests/test_fabric_model.py::test_tc78b_undeclared_substream_is_rejected": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00019158999975843471,
+      "failure": ""
+    },
+    "tests/test_fabric_model.py::test_tc79_derived_metrics_are_mutually_consistent": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.24070259199970678,
+      "failure": ""
+    },
+    "tests/test_fabric_model.py::test_tc80_loss_is_monotonic_and_knee_shaped": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0011842009998872527,
+      "failure": ""
+    },
+    "tests/test_fabric_model.py::test_tc81_checkpoint_produces_the_discriminating_signature": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 1.1232010009998703,
+      "failure": ""
+    },
+    "tests/test_fabric_model.py::test_tc82_job_end_withholds_corroboration": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.5386709610002072,
+      "failure": ""
+    },
+    "tests/test_fabric_model.py::test_tc82b_weight_load_read_does_not_corroborate": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.8690704989999176,
+      "failure": ""
+    },
+    "tests/test_fabric_model.py::test_tc83_corroboration_cannot_override_higher_precedence": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 1.0066562899996825,
+      "failure": ""
+    },
+    "tests/test_fabric_model.py::test_tc84_control_path_breaches_nfr2_without_compute_loss": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.46878749899997274,
+      "failure": ""
+    },
+    "tests/test_fabric_model.py::test_tc84b_baseline_holds_the_budget_with_margin": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00017806999994718353,
+      "failure": ""
+    },
+    "tests/test_fabric_model.py::test_tc85_session_transport_is_measured_not_simulated": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.025242965000416007,
+      "failure": ""
+    },
+    "tests/test_fabric_model.py::test_observe_tick_rejects_future_timestamp": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00015987000006134622,
+      "failure": ""
+    },
+    "tests/test_fabric_model.py::test_observe_tick_rejects_stale_timestamp": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.000185777999831771,
+      "failure": ""
+    },
+    "tests/test_fabric_model.py::test_observe_tick_rejects_replay": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.002465202000166755,
+      "failure": ""
+    },
+    "tests/test_fabric_model.py::test_observe_tick_accepts_string_input": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0011993479997727263,
+      "failure": ""
+    },
+    "tests/test_fabric_model.py::test_tc85b_instrument_plane_cannot_read_the_simulation_clock": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0003319079996799701,
+      "failure": ""
+    },
+    "tests/test_fabric_model.py::test_tc86_ws_tick_latency_populates_after_run_starts": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.4018474569998034,
+      "failure": ""
+    },
+    "tests/test_fabric_model.py::test_scenario_assertions[regression-test-healthy-training-baseline]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.9095312620002005,
+      "failure": ""
+    },
+    "tests/test_fabric_model.py::test_scenario_assertions[regression-test-checkpoint-storage-hotspot]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.9357293279999794,
+      "failure": ""
+    },
+    "tests/test_fabric_model.py::test_scenario_assertions[regression-test-clean-job-termination]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.6423964240002533,
+      "failure": ""
+    },
+    "tests/test_fabric_model.py::test_scenario_assertions[regression-test-control-path-latency-isolation]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.2397793099999035,
+      "failure": ""
+    },
+    "tests/test_fabric_model.py::test_scenario_assertions[regression-test-gray-link-failure]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.5637617110000974,
+      "failure": ""
+    },
+    "tests/test_fabric_model.py::test_scenario_assertions[regression-test-degraded-fabric-observability]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.3812359580001612,
+      "failure": ""
+    },
+    "tests/test_fabric_model.py::test_scenario_assertions[regression-test-slow-checkpoint]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 1.4782455670001582,
+      "failure": ""
+    },
+    "tests/test_fabric_model.py::test_scenario_assertions[regression-test-transceiver-degradation]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.36446022199970685,
+      "failure": ""
+    },
+    "tests/test_fabric_scenarios_e2e.py::test_all_fabric_scenarios_in_store": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.08535576500025854,
+      "failure": ""
+    },
+    "tests/test_fabric_scenarios_e2e.py::test_fabric_scenario_names": {
+      "outcome": "failed",
+      "stage": "call",
+      "duration": 0.11961815999984537,
+      "failure": "tests/test_fabric_scenarios_e2e.py:102: in test_fabric_scenario_names\n    assert rec.name.startswith(\"Regression test \u2014\"), (\nE   AssertionError: Expected a regression-test display name, got '02 Regression test \u2014 Healthy training baseline'\nE   assert False\nE    +  where False = <built-in method startswith of str object at 0x7f90550b8d50>('Regression test \u2014')\nE    +    where <built-in method startswith of str object at 0x7f90550b8d50> = '02 Regression test \u2014 Healthy training baseline'.startswith\nE    +      where '02 Regression test \u2014 Healthy training baseline' = ScenarioRecord(scenario_id='regression-test-healthy-training-baseline', name='02 Regression test \u2014 Healthy training ba...:null}', created_at=datetime.datetime(2026, 10, 22, 18, 4, 53, 272418, tzinfo=datetime.timezone.utc), last_run_id=None).name"
+    },
+    "tests/test_fabric_scenarios_e2e.py::test_healthy_training_baseline_all_pass": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.1401674329999878,
+      "failure": ""
+    },
+    "tests/test_fabric_scenarios_e2e.py::test_checkpoint_storage_hotspot_all_pass": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 1.328289876999861,
+      "failure": ""
+    },
+    "tests/test_fabric_scenarios_e2e.py::test_gray_link_failure_all_pass": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.4909106000000065,
+      "failure": ""
+    },
+    "tests/test_fabric_scenarios_e2e.py::test_slow_checkpoint_uses_correct_profile": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.17667034099986267,
+      "failure": ""
+    },
+    "tests/test_fabric_scenarios_e2e.py::test_slow_checkpoint_all_pass": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 1.1695130359998984,
+      "failure": ""
+    },
+    "tests/test_fabric_scenarios_e2e.py::test_smoke_scenario_all_pass[regression-test-clean-job-termination]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.6931597259999762,
+      "failure": ""
+    },
+    "tests/test_fabric_scenarios_e2e.py::test_smoke_scenario_all_pass[regression-test-control-path-latency-isolation]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.45584963300007075,
+      "failure": ""
+    },
+    "tests/test_fabric_scenarios_e2e.py::test_smoke_scenario_all_pass[regression-test-degraded-fabric-observability]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.4910649499997817,
+      "failure": ""
+    },
+    "tests/test_fabric_scenarios_e2e.py::test_smoke_scenario_all_pass[regression-test-transceiver-degradation]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.5589149289999114,
+      "failure": ""
+    },
+    "tests/test_fabric_scenarios_e2e.py::test_fabric_scenario_deterministic": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 1.800209439000355,
+      "failure": ""
+    },
+    "tests/test_fabric_tick_payload.py::test_tc_p35_1_modal_view_all_keys": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.005136025999945559,
+      "failure": ""
+    },
+    "tests/test_fabric_tick_payload.py::test_tc_p35_2_fabric_in_payload_when_set": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.09106571100028304,
+      "failure": ""
+    },
+    "tests/test_fabric_tick_payload.py::test_tc_p35_3_fabric_null_when_not_wired": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.001138820000051055,
+      "failure": ""
+    },
+    "tests/test_fabric_tick_payload.py::test_tc_p35_4_control_path_keys": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.004568223000205762,
+      "failure": ""
+    },
+    "tests/test_fabric_tick_payload.py::test_tc_p35_5_discrimination_keys": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0044281239997872035,
+      "failure": ""
+    },
+    "tests/test_fabric_tick_payload.py::test_tc_p35_6_step_non_null_all_tiers[current]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.005571849000261864,
+      "failure": ""
+    },
+    "tests/test_fabric_tick_payload.py::test_tc_p35_6_step_non_null_all_tiers[degraded]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.004351884999778122,
+      "failure": ""
+    },
+    "tests/test_fabric_tick_payload.py::test_tc_p35_6_step_non_null_all_tiers[advanced]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.004993282000214094,
+      "failure": ""
+    },
+    "tests/test_fabric_tick_payload.py::test_tc_p35_7_ws_tick_contains_fabric": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 1.6172350360002383,
+      "failure": ""
+    },
+    "tests/test_fc_bess_physical_dispatch.py::test_fc_achieved_output_equal_to_demand_does_not_dispatch_bess": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0011925069998142135,
+      "failure": ""
+    },
+    "tests/test_fc_bess_physical_dispatch.py::test_fixed_fc_surplus_is_absorbed_by_bess": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0011603819998526888,
+      "failure": ""
+    },
+    "tests/test_fc_bess_physical_dispatch.py::test_grid_forming_anchor_ceiling_leaves_excess_load_unserved": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0009292240001741447,
+      "failure": ""
+    },
+    "tests/test_forecast_path.py::TestForecastPath::test_F1_section4_formula": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0008405909998145944,
+      "failure": ""
+    },
+    "tests/test_forecast_path.py::TestForecastPath::test_F2_forecast_constant_during_ramp": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0008321939999405004,
+      "failure": ""
+    },
+    "tests/test_forecast_path.py::TestForecastPath::test_F3_forecast_invariant_to_measured_draw": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0011974379999628582,
+      "failure": ""
+    },
+    "tests/test_forecast_path.py::TestForecastPath::test_F4_confidence_center_equals_forecast_mw": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.000711889000285737,
+      "failure": ""
+    },
+    "tests/test_forecast_path.py::TestForecastPath::test_F5_forecast_set_at_starting_event": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0006756840002708486,
+      "failure": ""
+    },
+    "tests/test_forecast_path.py::TestForecastPath::test_F6_demo_19mw_job_forecast_at_first_tick": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0014131350003481202,
+      "failure": ""
+    },
+    "tests/test_forecast_path.py::TestWorkloadSignalFlags::test_Q1_absent_when_no_signal_received": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0005922640002609114,
+      "failure": ""
+    },
+    "tests/test_forecast_path.py::TestWorkloadSignalFlags::test_Q2_stale_after_threshold": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0010426389999338426,
+      "failure": ""
+    },
+    "tests/test_forecast_path.py::TestWorkloadSignalFlags::test_Q3_stale_clears_on_new_signal": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0010015749999183754,
+      "failure": ""
+    },
+    "tests/test_forecast_path.py::TestWorkloadSignalFlags::test_Q4_stale_widens_band_by_20_pct": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00010143100007553585,
+      "failure": ""
+    },
+    "tests/test_forecast_path.py::TestWorkloadSignalFlags::test_Q5_absent_widens_band_by_50_pct_and_fallback_ge_measured": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.001231869000093866,
+      "failure": ""
+    },
+    "tests/test_forecast_path.py::TestDispatchTruthfulness::test_B1a_islanded_delivery_fault_visible_in_delivery_channel": {
+      "outcome": "failed",
+      "stage": "call",
+      "duration": 0.006014939999658964,
+      "failure": "tests/test_forecast_path.py:590: in test_B1a_islanded_delivery_fault_visible_in_delivery_channel\n    assert tick.asset_delivery_error_mw != pytest.approx(0.0, abs=1e-6), (\nE   AssertionError: B1a: delivery fault must appear in asset_delivery_error_mw; got 0.000000000  (turbine_out=0.000000, gt_setpoint=0.000000)\nE   assert 0.0 != 0.0 \u00b1 1.0e-06\nE    +  where 0.0 = TickResult(run_id='test', tick_index=1, sim_time_seconds=5.1, p_compute_demand_mw=0.10506, p_cooling_demand_mw=0.0, p_...sfied=False, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id='gt-1', slurm_metrics=None).asset_delivery_error_mw\nE    +  and   0.0 \u00b1 1.0e-06 = <function approx at 0x7f90678ca160>(0.0, abs=1e-06)\nE    +    where <function approx at 0x7f90678ca160> = pytest.approx"
+    },
+    "tests/test_forecast_path.py::TestDispatchTruthfulness::test_B1b_islanded_load_model_error_not_visible_in_delivery_channel": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0010837129998435557,
+      "failure": ""
+    },
+    "tests/test_forecast_path.py::TestDispatchTruthfulness::test_B2_bess_setpoint_captured_before_soc_clipping": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0008884130002115853,
+      "failure": ""
+    },
+    "tests/test_forecast_path.py::TestDispatchTruthfulness::test_B3_grid_connected_frequency_at_nominal": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0007726879998699587,
+      "failure": ""
+    },
+    "tests/test_forecast_path.py::TestDispatchTruthfulness::test_B4_zero_load_zero_setpoint": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0006124569999883533,
+      "failure": ""
+    },
+    "tests/test_forecast_path.py::TestDispatchTruthfulness::test_B5_frequency_tracks_frequency_forcing_mw": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0007237849999910395,
+      "failure": ""
+    },
+    "tests/test_forecast_path.py::TestDispatchTruthfulness::test_B5b_gt_setpoint_mw_equals_dispatch_required": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0008070799999586598,
+      "failure": ""
+    },
+    "tests/test_forecast_path.py::TestDispatchTruthfulness::test_bess_setpoint_tracking": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.013317699999788601,
+      "failure": ""
+    },
+    "tests/test_forecast_path.py::TestDispatchTruthfulness::test_forecast_invariant_to_measured_noise": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0011817330000667425,
+      "failure": ""
+    },
+    "tests/test_forecast_path.py::TestCoolingThermalLag::test_C1_no_cooling_before_dt_thermal": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0006116389999988314,
+      "failure": ""
+    },
+    "tests/test_forecast_path.py::TestCoolingThermalLag::test_C2_steady_state_convergence": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00032290599983753054,
+      "failure": ""
+    },
+    "tests/test_forecast_path.py::TestCoolingThermalLag::test_C3_compute_inlet_temp_autocorrelation": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 1.360834106999846,
+      "failure": ""
+    },
+    "tests/test_forecast_path.py::TestCoolingThermalLag::test_C4_short_oscillation_does_not_pulse_cooling": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.006068032000257517,
+      "failure": ""
+    },
+    "tests/test_forecast_path.py::TestWsBroadcastNewFields::test_new_fields_present_in_ws_dict": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0011340219998601242,
+      "failure": ""
+    },
+    "tests/test_forecast_quality_payload.py::test_confidence_widening_payload_comes_from_confidence_engine": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0003255219999118708,
+      "failure": ""
+    },
+    "tests/test_forecast_quality_payload.py::test_fuel_cell_configuration_mode_preserves_null_and_real_block_zeroes": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0008054680001805536,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_tc01_instantaneous_compute_term_single_profile": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001508189998276066,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_tc02_cooling_zero_before_thermal_delay": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00010300300027665799,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_tc03_cooling_converges_to_alpha_max_at_steady_state": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00019204199998057447,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_tc10_insufficient_reserve_worked_example": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00013844200020685093,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_tc11_sufficient_reserve_no_false_alert": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00010667700007616077,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_tc04_fuel_cell_only_reserve_credit": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00010645800011843676,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_tc05_mixed_turbine_and_fuel_cell_reserve_credit": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00021854600026927073,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_turbine_ramps_at_configured_rate": {
+      "outcome": "skipped",
+      "stage": "call",
+      "duration": 9.618900003260933e-05,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_d7_onboarding_alert_fires_once_per_unique_profile_id": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0033024169997588615,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_d8_staging_sizes_against_dispatch_required_not_p_total": {
+      "outcome": "skipped",
+      "stage": "call",
+      "duration": 0.0002442380000502453,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_d9_demo_20mw_produces_nonzero_bess_output": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00652600600005826,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_d10_demo_20mw_bess_fires_and_tapers": {
+      "outcome": "skipped",
+      "stage": "call",
+      "duration": 0.0654120439999133,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_d11_reserve_alert_fires_when_bess_power_insufficient": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.000119260000246868,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_d12_turbine_contributes_mw_during_120s_ramp": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.04963513899974714,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_step3_item1_per_job_draw_detects_small_job_checkpoint": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00026959800015902147,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_item3_concurrent_job_cooling_no_dip_and_smooth_rise": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00027565799973672256,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_item3_job_end_cooling_persists_over_thermal_lag": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001644150001993694,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_item3_cursor_pruning_does_not_corrupt_lagged_lookup": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.000151904000176728,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_item4_fleet_covers_shortfall_above_single_unit_rating": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00012573999993037432,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_item4_small_unit_capped_to_ceiling_under_equal_share": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00013706100025956403,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_item4_anchor_unit_contributes_less_bridging_than_grid_following": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 8.953499991548597e-05,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_item4_demo_scenarios_alert_behavior": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.29692121299967766,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_demo_alert_fires_at_600_nodes": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00019188600026609492,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_d14_capped_allocation_sum_invariant": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001837200002228201,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_d13_min_not_sum_fleet_endurance": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00017001399965010933,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_stage_ramp_credit_nonzero_with_residual_shortfall": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00011399499999242835,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_stage_ramp_credit_full_coverage_zero_shortfall": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00015682000002925633,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_stage_ramp_credit_excludes_hot_standby": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00010728100005508168,
+      "failure": ""
+    },
+    "tests/test_formulas.py::test_stage_ramp_credit_capped_to_delta_p": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00010961099997075507,
+      "failure": ""
+    },
+    "tests/test_frequency_mode_guard.py::TestGridConnectedFrequencyInvariant::test_MG1_grid_tie_frequency_stays_at_nominal_50_ticks": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.018467514000349183,
+      "failure": ""
+    },
+    "tests/test_frequency_mode_guard.py::TestIslandedFrequencyDeviates::test_MG2_islanded_frequency_deviates_from_nominal": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.013537190999613813,
+      "failure": ""
+    },
+    "tests/test_frequency_mode_guard.py::TestWsBroadcastFrequencyGridConnected::test_MG3_ws_dict_frequency_hz_is_nominal_in_grid_tie": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0007804659999237629,
+      "failure": ""
+    },
+    "tests/test_fuel_cell_apparent_rating.py::test_fixed_inverter_mva_derates_real_block_capacity_and_commitment": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00043232300004092394,
+      "failure": ""
+    },
+    "tests/test_fuel_cell_apparent_rating.py::test_default_mva_equality_is_explicitly_assumed_and_fixed_mva_bounds_q": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00013362500021685264,
+      "failure": ""
+    },
+    "tests/test_fuel_cell_apparent_rating.py::test_readiness_uses_pf_limited_effective_real_rating": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00030684800003655255,
+      "failure": ""
+    },
+    "tests/test_fuel_cell_dispatch.py::test_fuel_cell_dispatch": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 2.1863990580000063,
+      "failure": ""
+    },
+    "tests/test_fuel_cell_module.py::test_state_enum_has_the_five_sofc_states": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 9.456899988435907e-05,
+      "failure": ""
+    },
+    "tests/test_fuel_cell_module.py::test_cold_start_is_non_interruptible_and_ends_in_hot_standby": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00016155599996636738,
+      "failure": ""
+    },
+    "tests/test_fuel_cell_module.py::test_running_output_is_rate_limited_by_fuel_cell_specific_rate": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00012745899994115462,
+      "failure": ""
+    },
+    "tests/test_fuel_cell_module.py::test_below_minimum_stable_setpoint_starts_controlled_cooling": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00010991399994964013,
+      "failure": ""
+    },
+    "tests/test_fuel_cell_module.py::test_hot_array_cannot_transition_directly_to_cold": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 9.458800013817381e-05,
+      "failure": ""
+    },
+    "tests/test_fuel_cell_module.py::test_setpoint_change_interval_is_enforced": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0001399630000378238,
+      "failure": ""
+    },
+    "tests/test_fuel_cell_module.py::test_baseload_target_defaults_to_full_nameplate": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 9.070999976756866e-05,
+      "failure": ""
+    },
+    "tests/test_fuel_cell_module.py::test_monitoring_only_flag_is_stored_without_wiring_the_control_plane": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00012046299980283948,
+      "failure": ""
+    },
+    "tests/test_fuel_cell_phase2.py::test_existing_fuel_cell_scenarios_default_to_one_running_full_target_array": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.006537336999826948,
+      "failure": ""
+    },
+    "tests/test_fuel_cell_phase2.py::test_explicit_state_and_target_are_applied_to_the_single_aggregate_module": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0002321660003872239,
+      "failure": ""
+    },
+    "tests/test_fuel_cell_phase2.py::test_cold_and_warming_arrays_report_zero_output[cold]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0006758600002285675,
+      "failure": ""
+    },
+    "tests/test_fuel_cell_phase2.py::test_cold_and_warming_arrays_report_zero_output[warming]": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0006287749997682113,
+      "failure": ""
+    },
+    "tests/test_fuel_cell_phase2.py::test_fixed_target_survives_a_step_load_and_output_remains_rate_limited": {
+      "outcome": "failed",
+      "stage": "call",
+      "duration": 0.0002931129997705284,
+      "failure": "tests/test_fuel_cell_phase2.py:107: in test_fixed_target_survives_a_step_load_and_output_remains_rate_limited\n    ctx.sim_state.apply_workload_signal(\ncore/simulation_core.py:506: in apply_workload_signal\n    self.lead_time_observations.record_start(self.run_id, signal)\ncore/lead_time_observations.py:66: in record_start\n    signal.workload_class.value\nE   AttributeError: 'str' object has no attribute 'value'"
+    },
+    "tests/test_fuel_cell_phase2.py::test_fuel_cell_surplus_is_sent_to_the_existing_bess_charge_path": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0007087460003276647,
+      "failure": ""
+    },
+    "tests/test_fuel_cell_turbine_commitment.py::test_fc_ramp_past_80_percent_does_not_start_hot_standby_turbines": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.04016650399989885,
+      "failure": ""
+    },
+    "tests/test_fuel_cell_turbine_commitment.py::test_falling_site_demand_does_not_change_fixed_fc_output": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0011657740001282946,
+      "failure": ""
+    },
+    "tests/test_fuel_cell_turbine_commitment.py::test_demand_commit_credits_measured_fuel_cell_output": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.005263872999876185,
+      "failure": ""
+    },
+    "tests/test_fuel_cell_turbine_commitment.py::test_elevated_demand_with_only_hot_standby_turbines_does_not_start": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0026034399998025037,
+      "failure": ""
+    },
+    "tests/test_fuel_cell_turbine_commitment.py::test_low_demand_does_not_commit_turbines": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.000644940999791288,
+      "failure": ""
+    },
+    "tests/test_fuel_cell_turbine_commitment.py::test_cascade_commit_uses_promoted_hot_before_warm_in_roster": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.000803197000095679,
+      "failure": ""
+    },
+    "tests/test_fuel_cell_turbine_commitment.py::test_site_without_turbines_is_unchanged": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.0005281839999042859,
+      "failure": ""
+    },
+    "tests/test_fuel_cell_turbine_commitment.py::test_turbine_scenario_retains_deprecated_commit_fraction_for_compatibility": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.002103215000261116,
+      "failure": ""
+    },
+    "tests/test_fuel_cell_turbine_commitment.py::test_turbine_scenario_has_120_percent_gpu_peak_for_ten_minutes": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.00070621500026391,
+      "failure": ""
+    },
+    "tests/test_generation_baseload_policy.py::test_baseline_holds_80_mw_then_follows_and_returns_after_peak": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.27092439199986984,
+      "failure": ""
+    },
+    "tests/test_generation_baseload_policy.py::test_generation_baseload_policy_is_not_applied_to_informed_mode": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 0.2799477950002256,
+      "failure": ""
+    },
+    "tests/test_gpu_load_profile.py::test_gpu_load_profile": {
+      "outcome": "failed",
+      "stage": "call",
+      "duration": 2.0802435270002206,
+      "failure": "tests/test_gpu_load_profile.py:284: in test_gpu_load_profile\n    _run_test()\ntests/test_gpu_load_profile.py:169: in _run_test\n    assert abs(frac - expected_frac) < TOLERANCE, (\nE   AssertionError: [FAIL-A] phase-2 sim_t=720.0s: gpu_load_fraction=1.0 expected 0.5\nE   assert 0.5 < 1e-06\nE    +  where 0.5 = abs((1.0 - 0.5))"
+    }
+  }
+}

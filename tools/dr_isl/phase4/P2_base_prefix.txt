@@ -1,0 +1,139 @@
+....................ss.....F............s.......Fxxxx.xxx...xxx......... [  9%]
+........................................................................ [ 18%]
+........................................................................ [ 27%]
+........................................................................ [ 37%]
+......F................................................................. [ 46%]
+........................................................................ [ 55%]
+................................................................F....... [ 65%]
+........F............................................................... [ 74%]
+........................................................................ [ 83%]
+..............F.................................F......................x [ 93%]
+.x.x....................................F............F                   [100%]
+=================================== FAILURES ===================================
+_ TestI4DeliveryFaultMovesFrequency.test_I4_delivery_fault_causes_frequency_deviation _
+tests/test_13_3_frequency.py:434: in test_I4_delivery_fault_causes_frequency_deviation
+    assert tick.asset_delivery_error_mw != pytest.approx(0.0, abs=1e-6), (
+E   AssertionError: I4: asset_delivery_error_mw must be non-zero (fleet under-delivers); got 0.000000000
+E   assert 0.0 != 0.0 ± 1.0e-06
+E    +  where 0.0 = TickResult(run_id='test', tick_index=1, sim_time_seconds=5.1, p_compute_demand_mw=0.05253, p_cooling_demand_mw=0.0, p_...sfied=False, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id='gt-1', slurm_metrics=None).asset_delivery_error_mw
+E    +  and   0.0 ± 1.0e-06 = <function approx at 0x7f90678ca160>(0.0, abs=1e-06)
+E    +    where <function approx at 0x7f90678ca160> = pytest.approx
+__________ TestR4PMinStable.test_R4_fields_present_on_turbine_config ___________
+tests/test_13_5_criteria.py:177: in test_R4_fields_present_on_turbine_config
+    assert cfg_default.p_min_stable_frac == pytest.approx(0.40), (
+E   AssertionError: p_min_stable_frac default must be 0.40 (CHOSEN catalogue value).  Got 0.35
+E   assert 0.35 == 0.4 ± 4.0e-07
+E     
+E     comparison failed
+E     Obtained: 0.35
+E     Expected: 0.4 ± 4.0e-07
+_____ test_tc173_executor_run_validates_from_truncated_record_and_sidecar ______
+tests/test_artifact_truncation.py:452: in test_tc173_executor_run_validates_from_truncated_record_and_sidecar
+    assert record[key] == value
+E   AssertionError: assert {'load_fuel_m..._mmbtu': 16.0} == {'load_fuel_m..._mmbtu': 16.0}
+E     
+E     Omitting 2 identical items, use -vv to show
+E     Differing items:
+E     {'hot_standby_fuel_mmbtu': 0.039236111} != {'hot_standby_fuel_mmbtu': 0.039237}
+E     {'load_fuel_mmbtu': 690.133782974} != {'load_fuel_mmbtu': 690.133783}
+E     Use -v to get more diff
+----------------------------- Captured stdout call -----------------------------
+TC-173 sizes: untruncated_record_bytes=20721, derived_small_cap_bytes=20720, minimum_detail_truncated_record_bytes=18124
+_____ test_live_diesel_is_less_aggressive_than_disabled_before_curtailment _____
+tests/test_diesel_phase3.py:189: in test_live_diesel_is_less_aggressive_than_disabled_before_curtailment
+    assert disabled_tiers
+E   assert ()
+___________ test_hybrid_covered_demand_does_not_release_bess_reserve ___________
+tests/test_diesel_setpoint_gap.py:139: in test_hybrid_covered_demand_does_not_release_bess_reserve
+    assert soc_480_mwh == pytest.approx(reconciled_floor_mwh)
+E   assert 5.117526258383993 == 5.52 ± 5.5e-06
+E     
+E     comparison failed
+E     Obtained: 5.117526258383993
+E     Expected: 5.52 ± 5.5e-06
+__________________________ test_fabric_scenario_names __________________________
+tests/test_fabric_scenarios_e2e.py:102: in test_fabric_scenario_names
+    assert rec.name.startswith("Regression test —"), (
+E   AssertionError: Expected a regression-test display name, got '02 Regression test — Healthy training baseline'
+E   assert False
+E    +  where False = <built-in method startswith of str object at 0x7f90550b8d50>('Regression test —')
+E    +    where <built-in method startswith of str object at 0x7f90550b8d50> = '02 Regression test — Healthy training baseline'.startswith
+E    +      where '02 Regression test — Healthy training baseline' = ScenarioRecord(scenario_id='regression-test-healthy-training-baseline', name='02 Regression test — Healthy training ba...:null}', created_at=datetime.datetime(2026, 10, 22, 18, 4, 53, 272418, tzinfo=datetime.timezone.utc), last_run_id=None).name
+----------------------------- Captured stderr call -----------------------------
+WARNING:     api.routes.scenarios - Scenario demo-islanded-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING:     api.routes.scenarios - Scenario demo-operator-trip turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING:     api.routes.scenarios - Scenario islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING:     api.routes.scenarios - Scenario demo-10-tenant-overload-120pct turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 2.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario islanded-8-60-10-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING:     api.routes.scenarios - Scenario demo-rolling-planning-peaks turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 6.30 MW burst alone
+WARNING:     api.routes.scenarios - Scenario scenario-uneven-multisched-01 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 45.00 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-enterprise-8gpu-air-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-enterprise-8gpu-air-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-h100-sxm5-8way-nvl4-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-h100-sxm5-8way-nvl4-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-nextgen-rack-liquid-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-nextgen-rack-liquid-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING:     api.routes.scenarios - Scenario addendum-h-lead-time-profile-validation turbine starting-count violation: cannot estimate first burst for hardware profile 'addendum_h_test_ramp_20s'
+WARNING:     api.routes.scenarios - Scenario S10_mit_supercloud_2021-08-11 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.24 MW burst alone
+------------------------------ Captured log call -------------------------------
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-islanded-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-operator-trip turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-10-tenant-overload-120pct turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 2.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario islanded-8-60-10-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-rolling-planning-peaks turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 6.30 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario scenario-uneven-multisched-01 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 45.00 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-enterprise-8gpu-air-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-enterprise-8gpu-air-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-h100-sxm5-8way-nvl4-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-h100-sxm5-8way-nvl4-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-nextgen-rack-liquid-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-nextgen-rack-liquid-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario addendum-h-lead-time-profile-validation turbine starting-count violation: cannot estimate first burst for hardware profile 'addendum_h_test_ramp_20s'
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario S10_mit_supercloud_2021-08-11 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.24 MW burst alone
+_ TestDispatchTruthfulness.test_B1a_islanded_delivery_fault_visible_in_delivery_channel _
+tests/test_forecast_path.py:590: in test_B1a_islanded_delivery_fault_visible_in_delivery_channel
+    assert tick.asset_delivery_error_mw != pytest.approx(0.0, abs=1e-6), (
+E   AssertionError: B1a: delivery fault must appear in asset_delivery_error_mw; got 0.000000000  (turbine_out=0.000000, gt_setpoint=0.000000)
+E   assert 0.0 != 0.0 ± 1.0e-06
+E    +  where 0.0 = TickResult(run_id='test', tick_index=1, sim_time_seconds=5.1, p_compute_demand_mw=0.10506, p_cooling_demand_mw=0.0, p_...sfied=False, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id='gt-1', slurm_metrics=None).asset_delivery_error_mw
+E    +  and   0.0 ± 1.0e-06 = <function approx at 0x7f90678ca160>(0.0, abs=1e-06)
+E    +    where <function approx at 0x7f90678ca160> = pytest.approx
+____ test_fixed_target_survives_a_step_load_and_output_remains_rate_limited ____
+tests/test_fuel_cell_phase2.py:107: in test_fixed_target_survives_a_step_load_and_output_remains_rate_limited
+    ctx.sim_state.apply_workload_signal(
+core/simulation_core.py:506: in apply_workload_signal
+    self.lead_time_observations.record_start(self.run_id, signal)
+core/lead_time_observations.py:66: in record_start
+    signal.workload_class.value
+E   AttributeError: 'str' object has no attribute 'value'
+____________________________ test_gpu_load_profile _____________________________
+tests/test_gpu_load_profile.py:284: in test_gpu_load_profile
+    _run_test()
+tests/test_gpu_load_profile.py:169: in _run_test
+    assert abs(frac - expected_frac) < TOLERANCE, (
+E   AssertionError: [FAIL-A] phase-2 sim_t=720.0s: gpu_load_fraction=1.0 expected 0.5
+E   assert 0.5 < 1e-06
+E    +  where 0.5 = abs((1.0 - 0.5))
+----------------------------- Captured stdout call -----------------------------
+[START]  run_id=run-37f56fbb317f
+[POLL]   collecting ticks across all three phases …
+  phase-1  sim_t=   60.0s  frac=1.00 (expect 1.00)  p_compute=3.36 MW
+  phase-1  sim_t=  200.0s  frac=1.00 (expect 1.00)  p_compute=6.07 MW
+  phase-1  sim_t=  315.0s  frac=1.00 (expect 1.00)  p_compute=7.42 MW
+  phase-1  sim_t=  380.0s  frac=1.00 (expect 1.00)  p_compute=10.64 MW
+  phase-1  sim_t=  590.0s  frac=1.00 (expect 1.00)  p_compute=6.47 MW
+  phase-2  sim_t=  720.0s  frac=1.00 (expect 0.50)  p_compute=7.42 MW
+
+[CLEANUP] run run-37f56fbb317f cancelled.
+=========================== short test summary info ============================
+FAILED tests/test_13_3_frequency.py::TestI4DeliveryFaultMovesFrequency::test_I4_delivery_fault_causes_frequency_deviation
+FAILED tests/test_13_5_criteria.py::TestR4PMinStable::test_R4_fields_present_on_turbine_config
+FAILED tests/test_artifact_truncation.py::test_tc173_executor_run_validates_from_truncated_record_and_sidecar
+FAILED tests/test_diesel_phase3.py::test_live_diesel_is_less_aggressive_than_disabled_before_curtailment
+FAILED tests/test_diesel_setpoint_gap.py::test_hybrid_covered_demand_does_not_release_bess_reserve
+FAILED tests/test_fabric_scenarios_e2e.py::test_fabric_scenario_names - Asser...
+FAILED tests/test_forecast_path.py::TestDispatchTruthfulness::test_B1a_islanded_delivery_fault_visible_in_delivery_channel
+FAILED tests/test_fuel_cell_phase2.py::test_fixed_target_survives_a_step_load_and_output_remains_rate_limited
+FAILED tests/test_gpu_load_profile.py::test_gpu_load_profile - AssertionError...
+9 failed, 749 passed, 3 skipped, 1435 deselected, 13 xfailed, 39 warnings in 162.56s (0:02:42)

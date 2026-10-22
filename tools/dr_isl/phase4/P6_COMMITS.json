@@ -1,0 +1,29 @@
+{
+  "head_before": "5c8dbf2e899a9be6e9cb31c5ef0eaa9f28e1f027",
+  "automatic_checkpoint_note": "5c8dbf2 preceded this resumption and contains documentation only; no automatic application checkpoint was treated as a validated implementation",
+  "implementation_commit": "458fdddf8fc1dfd3672ca45c847f86690df95773",
+  "implementation_files": [
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/dispatch.py",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/build_warnings.py",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/scenario_factory.py"
+  ],
+  "test_commit": "d3d0e0aeb36a55c6c78e07cd3465f53ff7018102",
+  "test_files": [
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_phase4_reserve.py",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_phase2c.py"
+  ],
+  "tracking_commit": "0d40b39b7c708d94ff18ad87146688cc4b242211",
+  "tracking_files": [
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_task_630_100mw_fuel_cell_scenario.py",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/knowledge/behind-the-meter-market-context.md",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/knowledge/gridsignal-operator-benefits.md",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/mcp_server/__init__.py",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/mcp_server/__main__.py"
+  ],
+  "application_status_after_commits": "",
+  "main_source_equals_measured_candidate": true,
+  "no_scenario_content_change": true,
+  "no_publish_deploy_push": true
+}

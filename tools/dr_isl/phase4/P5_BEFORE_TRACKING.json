@@ -1,0 +1,32 @@
+[
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_task_630_100mw_fuel_cell_scenario.py",
+    "sha256_before": "9898e80b75e0c4734ae8143de6728ce46a7e6e65d8ef05a8de068f2b9744ca30",
+    "size_bytes": 6305,
+    "tracked_before": false
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/knowledge/behind-the-meter-market-context.md",
+    "sha256_before": "f3b52a3fdfca0f9c7c49ee3bc41e28dcb4a4c349f9e560f4f4ff2411fbf2aa63",
+    "size_bytes": 2255,
+    "tracked_before": false
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/knowledge/gridsignal-operator-benefits.md",
+    "sha256_before": "57a098dfe8bc563eb435e6a637284571cee02a0cf4d8f1763944541817fa43ac",
+    "size_bytes": 3155,
+    "tracked_before": false
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/mcp_server/__init__.py",
+    "sha256_before": "688a30c32f0fff1ba2a9bbf22054c658c15c54eb6453e145dff7b5e7f5ce5851",
+    "size_bytes": 64,
+    "tracked_before": false
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/mcp_server/__main__.py",
+    "sha256_before": "f62076518bb1c16c668be4376b6c379087b2f4dd5dc79ddd6b3aca08bf725fe9",
+    "size_bytes": 247,
+    "tracked_before": false
+  }
+]

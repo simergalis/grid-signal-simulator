@@ -1,0 +1,549 @@
+{
+  "checks": [
+    {
+      "scenario": "scenario-uneven-multisched-01",
+      "arm": "baseline",
+      "version": "base",
+      "physical_sha256": [
+        "90f4b8a55acceb521f972d9596c5137f104dbc34e158ac3bc58cadf73e5164f1",
+        "90f4b8a55acceb521f972d9596c5137f104dbc34e158ac3bc58cadf73e5164f1"
+      ],
+      "compact_sha256": [
+        "a2370e5fd24c65cbfd2e70b41f154eeee8857060a689f05a7c7d6ef93c49fd48",
+        "a2370e5fd24c65cbfd2e70b41f154eeee8857060a689f05a7c7d6ef93c49fd48"
+      ],
+      "repetitions_physical_identical": true,
+      "repetitions_compact_identical": true,
+      "repetitions_metrics_identical": true,
+      "metric_count": 27,
+      "base_candidate_identical": true,
+      "native_status": [
+        "PASS",
+        "PASS"
+      ],
+      "production_reference": {
+        "dispatch_curtailment_mwh": 8.136511735,
+        "turbine_fuel_mmbtu": 714.363019086,
+        "unserved_mwh": 0.351692658,
+        "peak_unserved_mw": 22.309362466
+      },
+      "production_actual": {
+        "dispatch_curtailment_mwh": 8.136511735,
+        "turbine_fuel_mmbtu": 714.363019086,
+        "unserved_mwh": 0.351692658,
+        "peak_unserved_mw": 22.309362466
+      },
+      "production_identical_at_9dp": true
+    },
+    {
+      "scenario": "scenario-uneven-multisched-01",
+      "arm": "baseline",
+      "version": "candidate",
+      "physical_sha256": [
+        "90f4b8a55acceb521f972d9596c5137f104dbc34e158ac3bc58cadf73e5164f1",
+        "90f4b8a55acceb521f972d9596c5137f104dbc34e158ac3bc58cadf73e5164f1"
+      ],
+      "compact_sha256": [
+        "a2370e5fd24c65cbfd2e70b41f154eeee8857060a689f05a7c7d6ef93c49fd48",
+        "a2370e5fd24c65cbfd2e70b41f154eeee8857060a689f05a7c7d6ef93c49fd48"
+      ],
+      "repetitions_physical_identical": true,
+      "repetitions_compact_identical": true,
+      "repetitions_metrics_identical": true,
+      "metric_count": 27,
+      "base_candidate_identical": true,
+      "native_status": [
+        "PASS",
+        "PASS"
+      ],
+      "production_reference": {
+        "dispatch_curtailment_mwh": 8.136511735,
+        "turbine_fuel_mmbtu": 714.363019086,
+        "unserved_mwh": 0.351692658,
+        "peak_unserved_mw": 22.309362466
+      },
+      "production_actual": {
+        "dispatch_curtailment_mwh": 8.136511735,
+        "turbine_fuel_mmbtu": 714.363019086,
+        "unserved_mwh": 0.351692658,
+        "peak_unserved_mw": 22.309362466
+      },
+      "production_identical_at_9dp": true
+    },
+    {
+      "scenario": "scenario-uneven-multisched-01",
+      "arm": "informed",
+      "version": "base",
+      "physical_sha256": [
+        "ea12dabd9944d98aad3f8fc966122f2432e33fb7bd150c8dc313ca9a88dd27a6",
+        "ea12dabd9944d98aad3f8fc966122f2432e33fb7bd150c8dc313ca9a88dd27a6"
+      ],
+      "compact_sha256": [
+        "0197b5b22abae47ed48635835a25f0bdfb6580a0df61291c82fbfc246fcacc65",
+        "0197b5b22abae47ed48635835a25f0bdfb6580a0df61291c82fbfc246fcacc65"
+      ],
+      "repetitions_physical_identical": true,
+      "repetitions_compact_identical": true,
+      "repetitions_metrics_identical": true,
+      "metric_count": 27,
+      "base_candidate_identical": true,
+      "native_status": [
+        "PASS",
+        "PASS"
+      ],
+      "production_reference": {
+        "dispatch_curtailment_mwh": 5.278943188,
+        "turbine_fuel_mmbtu": 665.398247704,
+        "unserved_mwh": 0.020719074,
+        "peak_unserved_mw": 7.52325057
+      },
+      "production_actual": {
+        "dispatch_curtailment_mwh": 5.278943188,
+        "turbine_fuel_mmbtu": 665.398247704,
+        "unserved_mwh": 0.020719074,
+        "peak_unserved_mw": 7.52325057
+      },
+      "production_identical_at_9dp": true
+    },
+    {
+      "scenario": "scenario-uneven-multisched-01",
+      "arm": "informed",
+      "version": "candidate",
+      "physical_sha256": [
+        "ea12dabd9944d98aad3f8fc966122f2432e33fb7bd150c8dc313ca9a88dd27a6",
+        "ea12dabd9944d98aad3f8fc966122f2432e33fb7bd150c8dc313ca9a88dd27a6"
+      ],
+      "compact_sha256": [
+        "0197b5b22abae47ed48635835a25f0bdfb6580a0df61291c82fbfc246fcacc65",
+        "0197b5b22abae47ed48635835a25f0bdfb6580a0df61291c82fbfc246fcacc65"
+      ],
+      "repetitions_physical_identical": true,
+      "repetitions_compact_identical": true,
+      "repetitions_metrics_identical": true,
+      "metric_count": 27,
+      "base_candidate_identical": true,
+      "native_status": [
+        "PASS",
+        "PASS"
+      ],
+      "production_reference": {
+        "dispatch_curtailment_mwh": 5.278943188,
+        "turbine_fuel_mmbtu": 665.398247704,
+        "unserved_mwh": 0.020719074,
+        "peak_unserved_mw": 7.52325057
+      },
+      "production_actual": {
+        "dispatch_curtailment_mwh": 5.278943188,
+        "turbine_fuel_mmbtu": 665.398247704,
+        "unserved_mwh": 0.020719074,
+        "peak_unserved_mw": 7.52325057
+      },
+      "production_identical_at_9dp": true
+    },
+    {
+      "scenario": "scenario-h1-k8s-ray-24h",
+      "arm": "baseline",
+      "version": "base",
+      "physical_sha256": [
+        "57a1370fd9d26d4bea4d2361f3ae2086aede264badba0c314095219d9741727b",
+        "57a1370fd9d26d4bea4d2361f3ae2086aede264badba0c314095219d9741727b"
+      ],
+      "compact_sha256": [
+        "e0d9b888edb338c3796d64a26bd99ac6afb751b4c93bcf0e54b0a73165705755",
+        "e0d9b888edb338c3796d64a26bd99ac6afb751b4c93bcf0e54b0a73165705755"
+      ],
+      "repetitions_physical_identical": true,
+      "repetitions_compact_identical": true,
+      "repetitions_metrics_identical": true,
+      "metric_count": 27,
+      "base_candidate_identical": true,
+      "native_status": [
+        "PASS",
+        "PASS"
+      ]
+    },
+    {
+      "scenario": "scenario-h1-k8s-ray-24h",
+      "arm": "baseline",
+      "version": "candidate",
+      "physical_sha256": [
+        "57a1370fd9d26d4bea4d2361f3ae2086aede264badba0c314095219d9741727b",
+        "57a1370fd9d26d4bea4d2361f3ae2086aede264badba0c314095219d9741727b"
+      ],
+      "compact_sha256": [
+        "e0d9b888edb338c3796d64a26bd99ac6afb751b4c93bcf0e54b0a73165705755",
+        "e0d9b888edb338c3796d64a26bd99ac6afb751b4c93bcf0e54b0a73165705755"
+      ],
+      "repetitions_physical_identical": true,
+      "repetitions_compact_identical": true,
+      "repetitions_metrics_identical": true,
+      "metric_count": 27,
+      "base_candidate_identical": true,
+      "native_status": [
+        "PASS",
+        "PASS"
+      ]
+    },
+    {
+      "scenario": "scenario-h1-k8s-ray-24h",
+      "arm": "informed",
+      "version": "base",
+      "physical_sha256": [
+        "60430dc7631204990acc39213cbcbeba8636b71a05d23c1a101c6c5faee71ef9",
+        "60430dc7631204990acc39213cbcbeba8636b71a05d23c1a101c6c5faee71ef9"
+      ],
+      "compact_sha256": [
+        "19c2420ea61da37cb73fd2187495dad781f1e4de10766f988347894fe671c4e2",
+        "19c2420ea61da37cb73fd2187495dad781f1e4de10766f988347894fe671c4e2"
+      ],
+      "repetitions_physical_identical": true,
+      "repetitions_compact_identical": true,
+      "repetitions_metrics_identical": true,
+      "metric_count": 27,
+      "base_candidate_identical": true,
+      "native_status": [
+        "PASS",
+        "PASS"
+      ]
+    },
+    {
+      "scenario": "scenario-h1-k8s-ray-24h",
+      "arm": "informed",
+      "version": "candidate",
+      "physical_sha256": [
+        "60430dc7631204990acc39213cbcbeba8636b71a05d23c1a101c6c5faee71ef9",
+        "60430dc7631204990acc39213cbcbeba8636b71a05d23c1a101c6c5faee71ef9"
+      ],
+      "compact_sha256": [
+        "19c2420ea61da37cb73fd2187495dad781f1e4de10766f988347894fe671c4e2",
+        "19c2420ea61da37cb73fd2187495dad781f1e4de10766f988347894fe671c4e2"
+      ],
+      "repetitions_physical_identical": true,
+      "repetitions_compact_identical": true,
+      "repetitions_metrics_identical": true,
+      "metric_count": 27,
+      "base_candidate_identical": true,
+      "native_status": [
+        "PASS",
+        "PASS"
+      ]
+    },
+    {
+      "scenario": "scenario-h2-slurm-24h",
+      "arm": "baseline",
+      "version": "base",
+      "physical_sha256": [
+        "f7c8de426e7b1b08650e0980e6ea26d38ce8bf03db2734cd21a18368f413b4a1",
+        "f7c8de426e7b1b08650e0980e6ea26d38ce8bf03db2734cd21a18368f413b4a1"
+      ],
+      "compact_sha256": [
+        "8d0d3037dcaa712ccc34a5f744654af15b8654363911e63566f78467443e8b66",
+        "8d0d3037dcaa712ccc34a5f744654af15b8654363911e63566f78467443e8b66"
+      ],
+      "repetitions_physical_identical": true,
+      "repetitions_compact_identical": true,
+      "repetitions_metrics_identical": true,
+      "metric_count": 27,
+      "base_candidate_identical": true,
+      "native_status": [
+        "PASS",
+        "PASS"
+      ]
+    },
+    {
+      "scenario": "scenario-h2-slurm-24h",
+      "arm": "baseline",
+      "version": "candidate",
+      "physical_sha256": [
+        "f7c8de426e7b1b08650e0980e6ea26d38ce8bf03db2734cd21a18368f413b4a1",
+        "f7c8de426e7b1b08650e0980e6ea26d38ce8bf03db2734cd21a18368f413b4a1"
+      ],
+      "compact_sha256": [
+        "8d0d3037dcaa712ccc34a5f744654af15b8654363911e63566f78467443e8b66",
+        "8d0d3037dcaa712ccc34a5f744654af15b8654363911e63566f78467443e8b66"
+      ],
+      "repetitions_physical_identical": true,
+      "repetitions_compact_identical": true,
+      "repetitions_metrics_identical": true,
+      "metric_count": 27,
+      "base_candidate_identical": true,
+      "native_status": [
+        "PASS",
+        "PASS"
+      ]
+    },
+    {
+      "scenario": "scenario-h2-slurm-24h",
+      "arm": "informed",
+      "version": "base",
+      "physical_sha256": [
+        "b7383d283f09d625f531ecc216b447b868792f50069bbc662b1636d2b988bbfb",
+        "b7383d283f09d625f531ecc216b447b868792f50069bbc662b1636d2b988bbfb"
+      ],
+      "compact_sha256": [
+        "0def2a33daa2770e5095d8cb63b2c5e7d01ab65c85aaf4db3bd732a89623a3c7",
+        "0def2a33daa2770e5095d8cb63b2c5e7d01ab65c85aaf4db3bd732a89623a3c7"
+      ],
+      "repetitions_physical_identical": true,
+      "repetitions_compact_identical": true,
+      "repetitions_metrics_identical": true,
+      "metric_count": 27,
+      "base_candidate_identical": true,
+      "native_status": [
+        "PASS",
+        "PASS"
+      ]
+    },
+    {
+      "scenario": "scenario-h2-slurm-24h",
+      "arm": "informed",
+      "version": "candidate",
+      "physical_sha256": [
+        "b7383d283f09d625f531ecc216b447b868792f50069bbc662b1636d2b988bbfb",
+        "b7383d283f09d625f531ecc216b447b868792f50069bbc662b1636d2b988bbfb"
+      ],
+      "compact_sha256": [
+        "0def2a33daa2770e5095d8cb63b2c5e7d01ab65c85aaf4db3bd732a89623a3c7",
+        "0def2a33daa2770e5095d8cb63b2c5e7d01ab65c85aaf4db3bd732a89623a3c7"
+      ],
+      "repetitions_physical_identical": true,
+      "repetitions_compact_identical": true,
+      "repetitions_metrics_identical": true,
+      "metric_count": 27,
+      "base_candidate_identical": true,
+      "native_status": [
+        "PASS",
+        "PASS"
+      ]
+    }
+  ],
+  "compare_runs": {
+    "scenario-uneven-multisched-01/base": {
+      "conditions": {
+        "build_parity": true,
+        "baseline_valid": true,
+        "informed_valid": true,
+        "baseline_energy_balance": true,
+        "informed_energy_balance": true,
+        "baseline_fuel_reconciled": true,
+        "informed_fuel_reconciled": true,
+        "identical_compute_trace": true,
+        "informed_unserved_energy_no_worse": true,
+        "informed_peak_unserved_no_worse": true
+      },
+      "condition_order": [
+        "build_parity",
+        "baseline_valid",
+        "informed_valid",
+        "baseline_energy_balance",
+        "informed_energy_balance",
+        "baseline_fuel_reconciled",
+        "informed_fuel_reconciled",
+        "identical_compute_trace",
+        "informed_unserved_energy_no_worse",
+        "informed_peak_unserved_no_worse"
+      ],
+      "verdict": "PASS",
+      "informed_vs_baseline": {
+        "baseline_unserved_mwh": 0.351692658,
+        "informed_unserved_mwh": 0.020719074,
+        "baseline_peak_unserved_mw": 22.309362466,
+        "informed_peak_unserved_mw": 7.52325057
+      }
+    },
+    "scenario-uneven-multisched-01/candidate": {
+      "conditions": {
+        "build_parity": true,
+        "baseline_valid": true,
+        "informed_valid": true,
+        "baseline_energy_balance": true,
+        "informed_energy_balance": true,
+        "baseline_fuel_reconciled": true,
+        "informed_fuel_reconciled": true,
+        "identical_compute_trace": true,
+        "informed_unserved_energy_no_worse": true,
+        "informed_peak_unserved_no_worse": true
+      },
+      "condition_order": [
+        "build_parity",
+        "baseline_valid",
+        "informed_valid",
+        "baseline_energy_balance",
+        "informed_energy_balance",
+        "baseline_fuel_reconciled",
+        "informed_fuel_reconciled",
+        "identical_compute_trace",
+        "informed_unserved_energy_no_worse",
+        "informed_peak_unserved_no_worse"
+      ],
+      "verdict": "PASS",
+      "informed_vs_baseline": {
+        "baseline_unserved_mwh": 0.351692658,
+        "informed_unserved_mwh": 0.020719074,
+        "baseline_peak_unserved_mw": 22.309362466,
+        "informed_peak_unserved_mw": 7.52325057
+      }
+    },
+    "scenario-h1-k8s-ray-24h/base": {
+      "conditions": {
+        "build_parity": true,
+        "baseline_valid": true,
+        "informed_valid": true,
+        "baseline_energy_balance": true,
+        "informed_energy_balance": true,
+        "baseline_fuel_reconciled": true,
+        "informed_fuel_reconciled": true,
+        "identical_compute_trace": true,
+        "informed_unserved_energy_no_worse": true,
+        "informed_peak_unserved_no_worse": true
+      },
+      "condition_order": [
+        "build_parity",
+        "baseline_valid",
+        "informed_valid",
+        "baseline_energy_balance",
+        "informed_energy_balance",
+        "baseline_fuel_reconciled",
+        "informed_fuel_reconciled",
+        "identical_compute_trace",
+        "informed_unserved_energy_no_worse",
+        "informed_peak_unserved_no_worse"
+      ],
+      "verdict": "PASS",
+      "informed_vs_baseline": {
+        "baseline_unserved_mwh": 0.894372986,
+        "informed_unserved_mwh": 0.124133405,
+        "baseline_peak_unserved_mw": 35.021533247,
+        "informed_peak_unserved_mw": 20.746308977
+      }
+    },
+    "scenario-h1-k8s-ray-24h/candidate": {
+      "conditions": {
+        "build_parity": true,
+        "baseline_valid": true,
+        "informed_valid": true,
+        "baseline_energy_balance": true,
+        "informed_energy_balance": true,
+        "baseline_fuel_reconciled": true,
+        "informed_fuel_reconciled": true,
+        "identical_compute_trace": true,
+        "informed_unserved_energy_no_worse": true,
+        "informed_peak_unserved_no_worse": true
+      },
+      "condition_order": [
+        "build_parity",
+        "baseline_valid",
+        "informed_valid",
+        "baseline_energy_balance",
+        "informed_energy_balance",
+        "baseline_fuel_reconciled",
+        "informed_fuel_reconciled",
+        "identical_compute_trace",
+        "informed_unserved_energy_no_worse",
+        "informed_peak_unserved_no_worse"
+      ],
+      "verdict": "PASS",
+      "informed_vs_baseline": {
+        "baseline_unserved_mwh": 0.894372986,
+        "informed_unserved_mwh": 0.124133405,
+        "baseline_peak_unserved_mw": 35.021533247,
+        "informed_peak_unserved_mw": 20.746308977
+      }
+    },
+    "scenario-h2-slurm-24h/base": {
+      "conditions": {
+        "build_parity": true,
+        "baseline_valid": true,
+        "informed_valid": true,
+        "baseline_energy_balance": true,
+        "informed_energy_balance": true,
+        "baseline_fuel_reconciled": true,
+        "informed_fuel_reconciled": true,
+        "identical_compute_trace": true,
+        "informed_unserved_energy_no_worse": true,
+        "informed_peak_unserved_no_worse": true
+      },
+      "condition_order": [
+        "build_parity",
+        "baseline_valid",
+        "informed_valid",
+        "baseline_energy_balance",
+        "informed_energy_balance",
+        "baseline_fuel_reconciled",
+        "informed_fuel_reconciled",
+        "identical_compute_trace",
+        "informed_unserved_energy_no_worse",
+        "informed_peak_unserved_no_worse"
+      ],
+      "verdict": "PASS",
+      "informed_vs_baseline": {
+        "baseline_unserved_mwh": 5.011418076,
+        "informed_unserved_mwh": 0.859772492,
+        "baseline_peak_unserved_mw": 44.86838787,
+        "informed_peak_unserved_mw": 42.36838787
+      }
+    },
+    "scenario-h2-slurm-24h/candidate": {
+      "conditions": {
+        "build_parity": true,
+        "baseline_valid": true,
+        "informed_valid": true,
+        "baseline_energy_balance": true,
+        "informed_energy_balance": true,
+        "baseline_fuel_reconciled": true,
+        "informed_fuel_reconciled": true,
+        "identical_compute_trace": true,
+        "informed_unserved_energy_no_worse": true,
+        "informed_peak_unserved_no_worse": true
+      },
+      "condition_order": [
+        "build_parity",
+        "baseline_valid",
+        "informed_valid",
+        "baseline_energy_balance",
+        "informed_energy_balance",
+        "baseline_fuel_reconciled",
+        "informed_fuel_reconciled",
+        "identical_compute_trace",
+        "informed_unserved_energy_no_worse",
+        "informed_peak_unserved_no_worse"
+      ],
+      "verdict": "PASS",
+      "informed_vs_baseline": {
+        "baseline_unserved_mwh": 5.011418076,
+        "informed_unserved_mwh": 0.859772492,
+        "baseline_peak_unserved_mw": 44.86838787,
+        "informed_peak_unserved_mw": 42.36838787
+      }
+    }
+  },
+  "h2_baseline_reconciliation": {
+    "base": {
+      "payload": {
+        "release_charged": true,
+        "recorded_event_count": 11,
+        "measured_event_count": 11,
+        "measured_start_fuel_mmbtu": 124.0,
+        "tier_sum_mmbtu": null,
+        "passed": true
+      },
+      "measured_start_event_count": 11,
+      "constraints_valid": true,
+      "hard_violations": []
+    },
+    "candidate": {
+      "payload": {
+        "release_charged": true,
+        "recorded_event_count": 11,
+        "measured_event_count": 11,
+        "measured_start_fuel_mmbtu": 124.0,
+        "tier_sum_mmbtu": null,
+        "passed": true
+      },
+      "measured_start_event_count": 11,
+      "constraints_valid": true,
+      "hard_violations": []
+    }
+  },
+  "passed": true
+}

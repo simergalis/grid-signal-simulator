@@ -1,0 +1,32 @@
+[
+  {
+    "scenario": "scenario-equinix-sj-1",
+    "arm": "app",
+    "repetition": 1
+  },
+  {
+    "scenario": "scenario-turbine-01",
+    "arm": "app",
+    "repetition": 1
+  },
+  {
+    "scenario": "scenario-hybrid-ai-100mw-addendum-i",
+    "arm": "app",
+    "repetition": 1
+  },
+  {
+    "scenario": "scenario-100mw-fuel-cell-bess-diesel",
+    "arm": "app",
+    "repetition": 1
+  },
+  {
+    "scenario": "scenario-fc100-islanded-v2",
+    "arm": "app",
+    "repetition": 1
+  },
+  {
+    "scenario": "scenario-fc100-islanded-zero-hot-v2",
+    "arm": "app",
+    "repetition": 1
+  }
+]

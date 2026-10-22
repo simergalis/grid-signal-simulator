@@ -1,0 +1,10 @@
+{
+  "cases": {
+    "tests/test_gpu_load_profile.py::test_gpu_load_profile": {
+      "outcome": "failed",
+      "stage": "call",
+      "duration": 5.8657748040000115,
+      "failure": "tests/test_gpu_load_profile.py:284: in test_gpu_load_profile\n    _run_test()\ntests/test_gpu_load_profile.py:169: in _run_test\n    assert abs(frac - expected_frac) < TOLERANCE, (\nE   AssertionError: [FAIL-A] phase-3 sim_t=2400.0s: gpu_load_fraction=0.5 expected 0.1\nE   assert 0.4 < 1e-06\nE    +  where 0.4 = abs((0.5 - 0.1))"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "cases": {
+    "tests/test_gpu_load_profile.py::test_gpu_load_profile": {
+      "outcome": "passed",
+      "stage": "call",
+      "duration": 8.254113633000088,
+      "failure": ""
+    }
+  }
+}

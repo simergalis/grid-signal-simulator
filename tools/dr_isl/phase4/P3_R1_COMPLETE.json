@@ -1,0 +1,24 @@
+{
+  "completed": [
+    {
+      "scenario": "demo-islanded-ramp",
+      "arm": "app",
+      "repetition": 1
+    },
+    {
+      "scenario": "demo-islanded-ramp",
+      "arm": "app",
+      "repetition": 2
+    },
+    {
+      "scenario": "S10_mit_supercloud_2021-08-11",
+      "arm": "app",
+      "repetition": 1
+    },
+    {
+      "scenario": "S10_mit_supercloud_2021-08-11",
+      "arm": "app",
+      "repetition": 2
+    }
+  ]
+}

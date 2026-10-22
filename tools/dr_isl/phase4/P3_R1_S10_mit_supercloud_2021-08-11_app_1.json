@@ -1,0 +1,5877 @@
+{
+  "scenario": "S10_mit_supercloud_2021-08-11",
+  "arm": "app",
+  "repetition": 1,
+  "gate": "R1",
+  "first_physical_difference": {
+    "tick": 1063,
+    "fields": {
+      "turbine_units": {
+        "base": [
+          {
+            "asset_id": "turbine-0",
+            "rated_mw": 15.0,
+            "r_asset_mw_per_s": 0.5,
+            "run_hours_h": null,
+            "gt_mode": "frame",
+            "fuel_modelled": false,
+            "fuel_type": null,
+            "fuel_units": null,
+            "fuel_low_load_threshold_pct": null,
+            "fuel_parameter_provenance": null,
+            "hot_standby": false,
+            "breaker_closed": true,
+            "no_load_mw": 0.0,
+            "msl_mw": 5.25,
+            "sync_relay_state": "permissive",
+            "state": "synchronised",
+            "output_mw": 5.25,
+            "time_to_online_s": null,
+            "thermal_state": "hot",
+            "start_phase": null,
+            "out_of_service_reason": null,
+            "setpoint_mw": 5.25,
+            "levelled_off": false,
+            "hot_start_s": 300.0,
+            "warm_start_s": 360.0,
+            "cold_start_s": 600.0
+          },
+          {
+            "asset_id": "turbine-1",
+            "rated_mw": 15.0,
+            "r_asset_mw_per_s": 0.5,
+            "run_hours_h": null,
+            "gt_mode": "frame",
+            "fuel_modelled": false,
+            "fuel_type": null,
+            "fuel_units": null,
+            "fuel_low_load_threshold_pct": null,
+            "fuel_parameter_provenance": null,
+            "hot_standby": false,
+            "breaker_closed": true,
+            "no_load_mw": 0.0,
+            "msl_mw": 5.25,
+            "sync_relay_state": "permissive",
+            "state": "synchronised",
+            "output_mw": 5.25,
+            "time_to_online_s": null,
+            "thermal_state": "warm",
+            "start_phase": null,
+            "out_of_service_reason": null,
+            "setpoint_mw": 5.25,
+            "levelled_off": false,
+            "hot_start_s": 300.0,
+            "warm_start_s": 360.0,
+            "cold_start_s": 600
+          },
+          {
+            "asset_id": "turbine-2",
+            "rated_mw": 15.0,
+            "r_asset_mw_per_s": 0.5,
+            "run_hours_h": null,
+            "gt_mode": "frame",
+            "fuel_modelled": false,
+            "fuel_type": null,
+            "fuel_units": null,
+            "fuel_low_load_threshold_pct": null,
+            "fuel_parameter_provenance": null,
+            "hot_standby": false,
+            "breaker_closed": true,
+            "no_load_mw": 0.0,
+            "msl_mw": 5.25,
+            "sync_relay_state": "permissive",
+            "state": "synchronised",
+            "output_mw": 5.25,
+            "time_to_online_s": null,
+            "thermal_state": "cold",
+            "start_phase": null,
+            "out_of_service_reason": null,
+            "setpoint_mw": 5.25,
+            "levelled_off": false,
+            "hot_start_s": 300,
+            "warm_start_s": 360,
+            "cold_start_s": 600.0
+          },
+          {
+            "asset_id": "turbine-3",
+            "rated_mw": 15.0,
+            "r_asset_mw_per_s": 0.5,
+            "run_hours_h": null,
+            "gt_mode": "frame",
+            "fuel_modelled": false,
+            "fuel_type": null,
+            "fuel_units": null,
+            "fuel_low_load_threshold_pct": null,
+            "fuel_parameter_provenance": null,
+            "hot_standby": false,
+            "breaker_closed": true,
+            "no_load_mw": 0.0,
+            "msl_mw": 5.25,
+            "sync_relay_state": "permissive",
+            "state": "offline",
+            "output_mw": 0.0,
+            "time_to_online_s": null,
+            "thermal_state": "cold",
+            "start_phase": null,
+            "out_of_service_reason": null,
+            "setpoint_mw": 5.25,
+            "levelled_off": false,
+            "hot_start_s": 300,
+            "warm_start_s": 360,
+            "cold_start_s": 600.0
+          },
+          {
+            "asset_id": "turbine-4",
+            "rated_mw": 15.0,
+            "r_asset_mw_per_s": 0.5,
+            "run_hours_h": null,
+            "gt_mode": "frame",
+            "fuel_modelled": false,
+            "fuel_type": null,
+            "fuel_units": null,
+            "fuel_low_load_threshold_pct": null,
+            "fuel_parameter_provenance": null,
+            "hot_standby": false,
+            "breaker_closed": true,
+            "no_load_mw": 0.0,
+            "msl_mw": 5.25,
+            "sync_relay_state": "permissive",
+            "state": "offline",
+            "output_mw": 0.0,
+            "time_to_online_s": null,
+            "thermal_state": "cold",
+            "start_phase": null,
+            "out_of_service_reason": null,
+            "setpoint_mw": 5.25,
+            "levelled_off": false,
+            "hot_start_s": 300,
+            "warm_start_s": 360,
+            "cold_start_s": 600.0
+          }
+        ],
+        "candidate": [
+          {
+            "asset_id": "turbine-0",
+            "rated_mw": 15.0,
+            "r_asset_mw_per_s": 0.5,
+            "run_hours_h": null,
+            "gt_mode": "frame",
+            "fuel_modelled": false,
+            "fuel_type": null,
+            "fuel_units": null,
+            "fuel_low_load_threshold_pct": null,
+            "fuel_parameter_provenance": null,
+            "hot_standby": false,
+            "breaker_closed": true,
+            "no_load_mw": 0.0,
+            "msl_mw": 5.25,
+            "sync_relay_state": "permissive",
+            "state": "synchronised",
+            "output_mw": 7.75,
+            "time_to_online_s": null,
+            "thermal_state": "hot",
+            "start_phase": null,
+            "out_of_service_reason": null,
+            "setpoint_mw": 7.75,
+            "levelled_off": false,
+            "hot_start_s": 300.0,
+            "warm_start_s": 360.0,
+            "cold_start_s": 600.0
+          },
+          {
+            "asset_id": "turbine-1",
+            "rated_mw": 15.0,
+            "r_asset_mw_per_s": 0.5,
+            "run_hours_h": null,
+            "gt_mode": "frame",
+            "fuel_modelled": false,
+            "fuel_type": null,
+            "fuel_units": null,
+            "fuel_low_load_threshold_pct": null,
+            "fuel_parameter_provenance": null,
+            "hot_standby": false,
+            "breaker_closed": true,
+            "no_load_mw": 0.0,
+            "msl_mw": 5.25,
+            "sync_relay_state": "permissive",
+            "state": "synchronised",
+            "output_mw": 5.25,
+            "time_to_online_s": null,
+            "thermal_state": "warm",
+            "start_phase": null,
+            "out_of_service_reason": null,
+            "setpoint_mw": 5.25,
+            "levelled_off": false,
+            "hot_start_s": 300.0,
+            "warm_start_s": 360.0,
+            "cold_start_s": 600
+          },
+          {
+            "asset_id": "turbine-2",
+            "rated_mw": 15.0,
+            "r_asset_mw_per_s": 0.5,
+            "run_hours_h": null,
+            "gt_mode": "frame",
+            "fuel_modelled": false,
+            "fuel_type": null,
+            "fuel_units": null,
+            "fuel_low_load_threshold_pct": null,
+            "fuel_parameter_provenance": null,
+            "hot_standby": false,
+            "breaker_closed": true,
+            "no_load_mw": 0.0,
+            "msl_mw": 5.25,
+            "sync_relay_state": "permissive",
+            "state": "synchronised",
+            "output_mw": 5.25,
+            "time_to_online_s": null,
+            "thermal_state": "cold",
+            "start_phase": null,
+            "out_of_service_reason": null,
+            "setpoint_mw": 5.25,
+            "levelled_off": false,
+            "hot_start_s": 300,
+            "warm_start_s": 360,
+            "cold_start_s": 600.0
+          },
+          {
+            "asset_id": "turbine-3",
+            "rated_mw": 15.0,
+            "r_asset_mw_per_s": 0.5,
+            "run_hours_h": null,
+            "gt_mode": "frame",
+            "fuel_modelled": false,
+            "fuel_type": null,
+            "fuel_units": null,
+            "fuel_low_load_threshold_pct": null,
+            "fuel_parameter_provenance": null,
+            "hot_standby": false,
+            "breaker_closed": true,
+            "no_load_mw": 0.0,
+            "msl_mw": 5.25,
+            "sync_relay_state": "permissive",
+            "state": "offline",
+            "output_mw": 0.0,
+            "time_to_online_s": null,
+            "thermal_state": "cold",
+            "start_phase": null,
+            "out_of_service_reason": null,
+            "setpoint_mw": 5.25,
+            "levelled_off": false,
+            "hot_start_s": 300,
+            "warm_start_s": 360,
+            "cold_start_s": 600.0
+          },
+          {
+            "asset_id": "turbine-4",
+            "rated_mw": 15.0,
+            "r_asset_mw_per_s": 0.5,
+            "run_hours_h": null,
+            "gt_mode": "frame",
+            "fuel_modelled": false,
+            "fuel_type": null,
+            "fuel_units": null,
+            "fuel_low_load_threshold_pct": null,
+            "fuel_parameter_provenance": null,
+            "hot_standby": false,
+            "breaker_closed": true,
+            "no_load_mw": 0.0,
+            "msl_mw": 5.25,
+            "sync_relay_state": "permissive",
+            "state": "offline",
+            "output_mw": 0.0,
+            "time_to_online_s": null,
+            "thermal_state": "cold",
+            "start_phase": null,
+            "out_of_service_reason": null,
+            "setpoint_mw": 5.25,
+            "levelled_off": false,
+            "hot_start_s": 300,
+            "warm_start_s": 360,
+            "cold_start_s": 600.0
+          }
+        ]
+      },
+      "turbine_output_mw": {
+        "base": 15.75,
+        "candidate": 18.25
+      },
+      "bess_bridging_seconds": {
+        "base": 6177.698983881237,
+        "candidate": 10597.170325528252
+      },
+      "contingency_coverage": {
+        "base": {
+          "tripped_unit_id": "turbine-0",
+          "deficit_mw": 5.25,
+          "headroom_surviving_mw": 19.5,
+          "r_surviving_mw_per_s": 1.0,
+          "bess_bridging_available_mw": 17.0,
+          "bess_usable_energy_mwh": 10.291737622196944,
+          "power_test_passes": true,
+          "energy_test_passes": true,
+          "closable": true,
+          "time_to_close_s": 5.25,
+          "shed_required_mw": 0.0,
+          "ride_through_s": 7057.191512363619,
+          "state": "COVERED",
+          "dispatchable_mw": 62.0,
+          "renewable_mw": 0,
+          "fuel_cell_available_mw": 0,
+          "fuel_cell_cold_warming_contribution_mw": 0,
+          "grid_connected": false,
+          "shed_equivalent_nodes": null
+        },
+        "candidate": {
+          "tripped_unit_id": "turbine-0",
+          "deficit_mw": 7.75,
+          "headroom_surviving_mw": 19.5,
+          "r_surviving_mw_per_s": 1.0,
+          "bess_bridging_available_mw": 17.0,
+          "bess_usable_energy_mwh": 10.295209844419166,
+          "power_test_passes": true,
+          "energy_test_passes": true,
+          "closable": true,
+          "time_to_close_s": 7.75,
+          "shed_required_mw": 0.0,
+          "ride_through_s": 4782.291024504386,
+          "state": "COVERED",
+          "dispatchable_mw": 62.0,
+          "renewable_mw": 0,
+          "fuel_cell_available_mw": 0,
+          "fuel_cell_cold_warming_contribution_mw": 0,
+          "grid_connected": false,
+          "shed_equivalent_nodes": null
+        }
+      },
+      "bess_setpoint_mw": {
+        "base": 5.997419999999998,
+        "candidate": 3.497419999999998
+      },
+      "physical_balance": {
+        "base": {
+          "defect_mw": 0.0,
+          "served_mw": 21.747419999999998,
+          "import_mw": 0.0,
+          "closes": true,
+          "tolerance_mw": 1.9913e-14,
+          "terms": {
+            "p_generation_mw": 21.747419999999998,
+            "p_demand_mw": 21.747419999999998,
+            "p_unserved_mw": 0.0,
+            "grid_exchange_mw": -0.0,
+            "p_losses_mw": 0.0,
+            "p_curtailment_mw": 0.0,
+            "island_mode": "islanded",
+            "p_served_mw": 21.747419999999998,
+            "p_turbine_mw": 15.75,
+            "p_bess_mw": 5.997419999999998,
+            "p_fuel_cell_mw": 0.0,
+            "p_renewable_mw": 0
+          }
+        },
+        "candidate": {
+          "defect_mw": 0.0,
+          "served_mw": 21.747419999999998,
+          "import_mw": 0.0,
+          "closes": true,
+          "tolerance_mw": 1.9913e-14,
+          "terms": {
+            "p_generation_mw": 21.747419999999998,
+            "p_demand_mw": 21.747419999999998,
+            "p_unserved_mw": 0.0,
+            "grid_exchange_mw": -0.0,
+            "p_losses_mw": 0.0,
+            "p_curtailment_mw": 0.0,
+            "island_mode": "islanded",
+            "p_served_mw": 21.747419999999998,
+            "p_turbine_mw": 18.25,
+            "p_bess_mw": 3.497419999999998,
+            "p_fuel_cell_mw": 0.0,
+            "p_renewable_mw": 0
+          }
+        }
+      },
+      "asset_delivery_error_mw": {
+        "base": -5.997419999999998,
+        "candidate": -3.497419999999998
+      },
+      "ramp_capability_mw": {
+        "base": 29.25,
+        "candidate": 26.75
+      },
+      "turbine_observed_ramp_mw_per_s": {
+        "base": 0.0,
+        "candidate": 0.16666666666666666
+      },
+      "bess_soc_fraction": {
+        "base": 0.7676725334264268,
+        "candidate": 0.7679315304712216
+      },
+      "bess_output_mw": {
+        "base": 5.997419999999998,
+        "candidate": 3.497419999999998
+      },
+      "turbine_estimated_time_to_close_s": {
+        "base": null,
+        "candidate": 20.98451999999999
+      }
+    }
+  },
+  "runs": {
+    "base": {
+      "ticks": 17280,
+      "min_soc": 0.0,
+      "frequency_min": -729.1075118080669,
+      "frequency_max": 998.9330534505464,
+      "frequency_min_time": 33665.0,
+      "gt_min": 5.25,
+      "gt_max": 61.8004944,
+      "bess_min": -18.0,
+      "bess_max": 17.0,
+      "floor_min_mwh": 0.0,
+      "floor_max_mwh": 0.0,
+      "unserved_mwh": 10.600341682490331,
+      "collapse": null,
+      "balance_failure_count": 0,
+      "first_balance_failure": null,
+      "first_floor": {
+        "tick": 2372,
+        "sim_time": 11860.0,
+        "frequency_hz": 59.93638066696738,
+        "gt_mw": 42.635830399999996,
+        "bess_mw": 14.344395645732686,
+        "soc": 0.0,
+        "demand_mw": 57.135830399999996,
+        "solar_mw": 0,
+        "observation": {
+          "before": {
+            "bess-0": 0.02080487405703124
+          },
+          "after": {
+            "bess-0": 0.0
+          },
+          "floors": {
+            "bess-0": 0.0
+          },
+          "bases": {
+            "bess-0": {}
+          },
+          "covers": [
+            {
+              "unit": "bess-0",
+              "requested_mw": 14.344395645732686,
+              "output_mw": 14.344395645732686,
+              "physical_floor_mwh": 0.0,
+              "before_mwh": 0.02080487405703124,
+              "after_mwh": 0.0,
+              "on_bus": [
+                "turbine-0",
+                "turbine-1",
+                "turbine-2",
+                "turbine-3",
+                "turbine-4"
+              ]
+            }
+          ],
+          "balance_passed": true,
+          "balance_defect_mw": 0.0,
+          "on_bus": [
+            "turbine-0",
+            "turbine-1",
+            "turbine-2",
+            "turbine-3",
+            "turbine-4"
+          ]
+        }
+      },
+      "first_discharge_floor": {
+        "tick": 2372,
+        "sim_time": 11860.0,
+        "frequency_hz": 59.93638066696738,
+        "gt_mw": 42.635830399999996,
+        "bess_mw": 14.344395645732686,
+        "soc": 0.0,
+        "demand_mw": 57.135830399999996,
+        "solar_mw": 0,
+        "observation": {
+          "before": {
+            "bess-0": 0.02080487405703124
+          },
+          "after": {
+            "bess-0": 0.0
+          },
+          "floors": {
+            "bess-0": 0.0
+          },
+          "bases": {
+            "bess-0": {}
+          },
+          "covers": [
+            {
+              "unit": "bess-0",
+              "requested_mw": 14.344395645732686,
+              "output_mw": 14.344395645732686,
+              "physical_floor_mwh": 0.0,
+              "before_mwh": 0.02080487405703124,
+              "after_mwh": 0.0,
+              "on_bus": [
+                "turbine-0",
+                "turbine-1",
+                "turbine-2",
+                "turbine-3",
+                "turbine-4"
+              ]
+            }
+          ],
+          "balance_passed": true,
+          "balance_defect_mw": 0.0,
+          "on_bus": [
+            "turbine-0",
+            "turbine-1",
+            "turbine-2",
+            "turbine-3",
+            "turbine-4"
+          ]
+        }
+      },
+      "post_floor_window": [
+        {
+          "tick": 2372,
+          "sim_time": 11860.0,
+          "frequency_hz": 59.93638066696738,
+          "gt_mw": 42.635830399999996,
+          "bess_mw": 14.344395645732686,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.02080487405703124
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 14.344395645732686,
+                "output_mw": 14.344395645732686,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.02080487405703124,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2373,
+          "sim_time": 11865.0,
+          "frequency_hz": 56.72587144708957,
+          "gt_mw": 49.27166079999999,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2374,
+          "sim_time": 11870.0,
+          "frequency_hz": 55.02989203365906,
+          "gt_mw": 52.385830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2375,
+          "sim_time": 11875.0,
+          "frequency_hz": 54.48350997809083,
+          "gt_mw": 54.885830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2376,
+          "sim_time": 11880.0,
+          "frequency_hz": 54.898111892911245,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2377,
+          "sim_time": 11885.0,
+          "frequency_hz": 55.281553641196396,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2378,
+          "sim_time": 11890.0,
+          "frequency_hz": 55.63617712235325,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2379,
+          "sim_time": 11895.0,
+          "frequency_hz": 55.96414822604853,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2380,
+          "sim_time": 11900.0,
+          "frequency_hz": 56.26747006054219,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2381,
+          "sim_time": 11905.0,
+          "frequency_hz": 56.54799518682305,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2382,
+          "sim_time": 11910.0,
+          "frequency_hz": 56.80743693326471,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2383,
+          "sim_time": 11915.0,
+          "frequency_hz": 57.04737985990755,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2384,
+          "sim_time": 11920.0,
+          "frequency_hz": 57.26928943627905,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2385,
+          "sim_time": 11925.0,
+          "frequency_hz": 57.47452099185921,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2386,
+          "sim_time": 11930.0,
+          "frequency_hz": 57.66432799385777,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2387,
+          "sim_time": 11935.0,
+          "frequency_hz": 57.83986970285991,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2388,
+          "sim_time": 11940.0,
+          "frequency_hz": 58.00221825309731,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2389,
+          "sim_time": 11945.0,
+          "frequency_hz": 58.152365200589145,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2390,
+          "sim_time": 11950.0,
+          "frequency_hz": 58.291227579145406,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2391,
+          "sim_time": 11955.0,
+          "frequency_hz": 58.419653501219884,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2392,
+          "sim_time": 11960.0,
+          "frequency_hz": 58.53842733782098,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2393,
+          "sim_time": 11965.0,
+          "frequency_hz": 58.648274509116845,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2394,
+          "sim_time": 11970.0,
+          "frequency_hz": 58.74986591499375,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2395,
+          "sim_time": 11975.0,
+          "frequency_hz": 58.84382203262779,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2396,
+          "sim_time": 11980.0,
+          "frequency_hz": 58.9307167060962,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        }
+      ],
+      "post_discharge_floor_window": [
+        {
+          "tick": 2372,
+          "sim_time": 11860.0,
+          "frequency_hz": 59.93638066696738,
+          "gt_mw": 42.635830399999996,
+          "bess_mw": 14.344395645732686,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.02080487405703124
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 14.344395645732686,
+                "output_mw": 14.344395645732686,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.02080487405703124,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2373,
+          "sim_time": 11865.0,
+          "frequency_hz": 56.72587144708957,
+          "gt_mw": 49.27166079999999,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2374,
+          "sim_time": 11870.0,
+          "frequency_hz": 55.02989203365906,
+          "gt_mw": 52.385830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2375,
+          "sim_time": 11875.0,
+          "frequency_hz": 54.48350997809083,
+          "gt_mw": 54.885830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2376,
+          "sim_time": 11880.0,
+          "frequency_hz": 54.898111892911245,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2377,
+          "sim_time": 11885.0,
+          "frequency_hz": 55.281553641196396,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2378,
+          "sim_time": 11890.0,
+          "frequency_hz": 55.63617712235325,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2379,
+          "sim_time": 11895.0,
+          "frequency_hz": 55.96414822604853,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2380,
+          "sim_time": 11900.0,
+          "frequency_hz": 56.26747006054219,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2381,
+          "sim_time": 11905.0,
+          "frequency_hz": 56.54799518682305,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2382,
+          "sim_time": 11910.0,
+          "frequency_hz": 56.80743693326471,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2383,
+          "sim_time": 11915.0,
+          "frequency_hz": 57.04737985990755,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2384,
+          "sim_time": 11920.0,
+          "frequency_hz": 57.26928943627905,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2385,
+          "sim_time": 11925.0,
+          "frequency_hz": 57.47452099185921,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2386,
+          "sim_time": 11930.0,
+          "frequency_hz": 57.66432799385777,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2387,
+          "sim_time": 11935.0,
+          "frequency_hz": 57.83986970285991,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2388,
+          "sim_time": 11940.0,
+          "frequency_hz": 58.00221825309731,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2389,
+          "sim_time": 11945.0,
+          "frequency_hz": 58.152365200589145,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2390,
+          "sim_time": 11950.0,
+          "frequency_hz": 58.291227579145406,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2391,
+          "sim_time": 11955.0,
+          "frequency_hz": 58.419653501219884,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2392,
+          "sim_time": 11960.0,
+          "frequency_hz": 58.53842733782098,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2393,
+          "sim_time": 11965.0,
+          "frequency_hz": 58.648274509116845,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2394,
+          "sim_time": 11970.0,
+          "frequency_hz": 58.74986591499375,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2395,
+          "sim_time": 11975.0,
+          "frequency_hz": 58.84382203262779,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        },
+        {
+          "tick": 2396,
+          "sim_time": 11980.0,
+          "frequency_hz": 58.9307167060962,
+          "gt_mw": 57.135830399999996,
+          "bess_mw": 0.0,
+          "soc": 0.0,
+          "demand_mw": 57.135830399999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 0.0
+            },
+            "after": {
+              "bess-0": 0.0
+            },
+            "floors": {
+              "bess-0": 0.0
+            },
+            "bases": {
+              "bess-0": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 0.0,
+                "after_mwh": 0.0,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2",
+                  "turbine-3",
+                  "turbine-4"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3",
+              "turbine-4"
+            ]
+          }
+        }
+      ],
+      "first_advisory": {
+        "tick": 118,
+        "sim_time": 590.0,
+        "reason": "turbine_catchup"
+      },
+      "below_floor_hold_ticks": 3203,
+      "below_floor_discharge_ticks": 14,
+      "illegal_d2r_discharge_count": 0,
+      "first_illegal_d2r_discharge": null,
+      "basis_counts": {
+        "None|None|None": 17280
+      },
+      "summary": {
+        "kind": "summary",
+        "physical_sha256": "4370c9ebfbfc90d2812cad93285c9749645974502508e8188c3567eb3e60d34d",
+        "ticks": 17280,
+        "metrics": {},
+        "record": {},
+        "end_sim_time": 86400.0,
+        "build_warnings": [],
+        "final_floor_basis": null,
+        "floor_history_count": 0
+      },
+      "first_floor_next120s_min_hz": 54.48350997809083,
+      "first_discharge_floor_next120s_min_hz": 54.48350997809083,
+      "complete": true
+    },
+    "candidate": {
+      "ticks": 17280,
+      "min_soc": 0.0,
+      "frequency_min": -729.1075118080669,
+      "frequency_max": 998.9330534505464,
+      "frequency_min_time": 33665.0,
+      "gt_min": 5.25,
+      "gt_max": 61.8004944,
+      "bess_min": -18.0,
+      "bess_max": 17.0,
+      "floor_min_mwh": 0.0,
+      "floor_max_mwh": 14.9375,
+      "unserved_mwh": 8.4639919161834,
+      "collapse": null,
+      "balance_failure_count": 0,
+      "first_balance_failure": null,
+      "first_floor": {
+        "tick": 1012,
+        "sim_time": 5060.0,
+        "frequency_hz": 96.94640227850402,
+        "gt_mw": 21.0,
+        "bess_mw": -18.0,
+        "soc": 0.691961070979376,
+        "demand_mw": 0.2899656,
+        "solar_mw": 0,
+        "observation": {
+          "before": {
+            "bess-0": 9.663514964471515
+          },
+          "after": {
+            "bess-0": 9.687454993711263
+          },
+          "floors": {
+            "bess-0": 14.9375
+          },
+          "bases": {
+            "bess-0": {
+              "bess_id": "bess-0",
+              "floor_mwh": 14.9375,
+              "depth_reserve_mwh": 0.0,
+              "diesel_floor_mwh": 0.0,
+              "d2r_term_mwh": 14.9375,
+              "winning_term": "d2r_bridge",
+              "basis": "offline_restart",
+              "unit_id": "turbine-4",
+              "eligibility_wait_s": 895.0,
+              "start_duration_s": 300,
+              "thermal_state": "hot",
+              "eligibility_reason": "min_down"
+            }
+          },
+          "covers": [],
+          "balance_passed": true,
+          "balance_defect_mw": 0.0,
+          "on_bus": [
+            "turbine-0",
+            "turbine-1",
+            "turbine-2",
+            "turbine-3"
+          ]
+        }
+      },
+      "first_discharge_floor": {
+        "tick": 1063,
+        "sim_time": 5315.0,
+        "frequency_hz": 63.452370096919104,
+        "gt_mw": 18.25,
+        "bess_mw": 3.497419999999998,
+        "soc": 0.7679315304712216,
+        "demand_mw": 21.747419999999998,
+        "solar_mw": 0,
+        "observation": {
+          "before": {
+            "bess-0": 10.756114026685779
+          },
+          "after": {
+            "bess-0": 10.751041426597103
+          },
+          "floors": {
+            "bess-0": 11.75
+          },
+          "bases": {
+            "bess-0": {
+              "bess_id": "bess-0",
+              "floor_mwh": 11.75,
+              "depth_reserve_mwh": 0.0,
+              "diesel_floor_mwh": 0.0,
+              "d2r_term_mwh": 11.75,
+              "winning_term": "d2r_bridge",
+              "basis": "offline_restart",
+              "unit_id": "turbine-4",
+              "eligibility_wait_s": 640.0,
+              "start_duration_s": 300,
+              "thermal_state": "hot",
+              "eligibility_reason": "min_down"
+            }
+          },
+          "covers": [
+            {
+              "unit": "bess-0",
+              "requested_mw": 3.497419999999998,
+              "output_mw": 3.497419999999998,
+              "physical_floor_mwh": 0.0,
+              "before_mwh": 10.756114026685779,
+              "after_mwh": 10.751041426597103,
+              "on_bus": [
+                "turbine-0",
+                "turbine-1",
+                "turbine-2"
+              ]
+            }
+          ],
+          "balance_passed": true,
+          "balance_defect_mw": 0.0,
+          "on_bus": [
+            "turbine-0",
+            "turbine-1",
+            "turbine-2"
+          ]
+        }
+      },
+      "post_floor_window": [
+        {
+          "tick": 1012,
+          "sim_time": 5060.0,
+          "frequency_hz": 96.94640227850402,
+          "gt_mw": 21.0,
+          "bess_mw": -18.0,
+          "soc": 0.691961070979376,
+          "demand_mw": 0.2899656,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 9.663514964471515
+            },
+            "after": {
+              "bess-0": 9.687454993711263
+            },
+            "floors": {
+              "bess-0": 14.9375
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 14.9375,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 14.9375,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 895.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3"
+            ]
+          }
+        },
+        {
+          "tick": 1013,
+          "sim_time": 5065.0,
+          "frequency_hz": 95.5546354068322,
+          "gt_mw": 21.0,
+          "bess_mw": -18.0,
+          "soc": 0.6936710730679294,
+          "demand_mw": 0.2899656,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 9.687454993711263
+            },
+            "after": {
+              "bess-0": 9.711395022951011
+            },
+            "floors": {
+              "bess-0": 14.875
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 14.875,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 14.875,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 890.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3"
+            ]
+          }
+        },
+        {
+          "tick": 1014,
+          "sim_time": 5070.0,
+          "frequency_hz": 94.26746932437365,
+          "gt_mw": 21.0,
+          "bess_mw": -18.0,
+          "soc": 0.6953810751564828,
+          "demand_mw": 0.2899656,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 9.711395022951011
+            },
+            "after": {
+              "bess-0": 9.73533505219076
+            },
+            "floors": {
+              "bess-0": 14.8125
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 14.8125,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 14.8125,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 885.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3"
+            ]
+          }
+        },
+        {
+          "tick": 1015,
+          "sim_time": 5075.0,
+          "frequency_hz": 93.0770425671671,
+          "gt_mw": 21.0,
+          "bess_mw": -18.0,
+          "soc": 0.6970910772450363,
+          "demand_mw": 0.2899656,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 9.73533505219076
+            },
+            "after": {
+              "bess-0": 9.759275081430507
+            },
+            "floors": {
+              "bess-0": 14.75
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 14.75,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 14.75,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 880.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3"
+            ]
+          }
+        },
+        {
+          "tick": 1016,
+          "sim_time": 5080.0,
+          "frequency_hz": 91.97608451397895,
+          "gt_mw": 21.0,
+          "bess_mw": -18.0,
+          "soc": 0.6988010793335897,
+          "demand_mw": 0.2899656,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 9.759275081430507
+            },
+            "after": {
+              "bess-0": 9.783215110670255
+            },
+            "floors": {
+              "bess-0": 14.6875
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 14.6875,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 14.6875,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 875.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3"
+            ]
+          }
+        },
+        {
+          "tick": 1017,
+          "sim_time": 5085.0,
+          "frequency_hz": 90.95787098043574,
+          "gt_mw": 21.0,
+          "bess_mw": -18.0,
+          "soc": 0.7005110814221431,
+          "demand_mw": 0.2899656,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 9.783215110670255
+            },
+            "after": {
+              "bess-0": 9.807155139910003
+            },
+            "floors": {
+              "bess-0": 14.625
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 14.625,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 14.625,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 870.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3"
+            ]
+          }
+        },
+        {
+          "tick": 1018,
+          "sim_time": 5090.0,
+          "frequency_hz": 90.0161831505605,
+          "gt_mw": 21.0,
+          "bess_mw": -18.0,
+          "soc": 0.7022210835106966,
+          "demand_mw": 0.2899656,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 9.807155139910003
+            },
+            "after": {
+              "bess-0": 9.831095169149751
+            },
+            "floors": {
+              "bess-0": 14.5625
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 14.5625,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 14.5625,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 865.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3"
+            ]
+          }
+        },
+        {
+          "tick": 1019,
+          "sim_time": 5095.0,
+          "frequency_hz": 89.14526959488454,
+          "gt_mw": 21.0,
+          "bess_mw": -18.0,
+          "soc": 0.70393108559925,
+          "demand_mw": 0.2899656,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 9.831095169149751
+            },
+            "after": {
+              "bess-0": 9.8550351983895
+            },
+            "floors": {
+              "bess-0": 14.5
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 14.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 14.5,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 860.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3"
+            ]
+          }
+        },
+        {
+          "tick": 1020,
+          "sim_time": 5100.0,
+          "frequency_hz": 88.33981114315928,
+          "gt_mw": 21.0,
+          "bess_mw": -18.0,
+          "soc": 0.7056410876878034,
+          "demand_mw": 0.2899656,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 9.8550351983895
+            },
+            "after": {
+              "bess-0": 9.878975227629248
+            },
+            "floors": {
+              "bess-0": 14.4375
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 14.4375,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 14.4375,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 855.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3"
+            ]
+          }
+        },
+        {
+          "tick": 1021,
+          "sim_time": 5105.0,
+          "frequency_hz": 87.59488839712132,
+          "gt_mw": 21.0,
+          "bess_mw": -18.0,
+          "soc": 0.7073510897763569,
+          "demand_mw": 0.2899656,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 9.878975227629248
+            },
+            "after": {
+              "bess-0": 9.902915256868996
+            },
+            "floors": {
+              "bess-0": 14.375
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 14.375,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 14.375,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 850.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3"
+            ]
+          }
+        },
+        {
+          "tick": 1022,
+          "sim_time": 5110.0,
+          "frequency_hz": 86.90595168489727,
+          "gt_mw": 21.0,
+          "bess_mw": -18.0,
+          "soc": 0.7090610918649103,
+          "demand_mw": 0.2899656,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 9.902915256868996
+            },
+            "after": {
+              "bess-0": 9.926855286108744
+            },
+            "floors": {
+              "bess-0": 14.3125
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 14.3125,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 14.3125,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 845.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3"
+            ]
+          }
+        },
+        {
+          "tick": 1023,
+          "sim_time": 5115.0,
+          "frequency_hz": 86.26879327353892,
+          "gt_mw": 21.0,
+          "bess_mw": -18.0,
+          "soc": 0.7107710939534637,
+          "demand_mw": 0.2899656,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 9.926855286108744
+            },
+            "after": {
+              "bess-0": 9.950795315348492
+            },
+            "floors": {
+              "bess-0": 14.25
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 14.25,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 14.25,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 840.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3"
+            ]
+          }
+        },
+        {
+          "tick": 1024,
+          "sim_time": 5120.0,
+          "frequency_hz": 85.67952166997779,
+          "gt_mw": 21.0,
+          "bess_mw": -18.0,
+          "soc": 0.7124810960420171,
+          "demand_mw": 0.2899656,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 9.950795315348492
+            },
+            "after": {
+              "bess-0": 9.97473534458824
+            },
+            "floors": {
+              "bess-0": 14.1875
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 14.1875,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 14.1875,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 835.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3"
+            ]
+          }
+        },
+        {
+          "tick": 1025,
+          "sim_time": 5125.0,
+          "frequency_hz": 85.13453785343597,
+          "gt_mw": 21.0,
+          "bess_mw": -18.0,
+          "soc": 0.7141910981305706,
+          "demand_mw": 0.2899656,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 9.97473534458824
+            },
+            "after": {
+              "bess-0": 9.998675373827988
+            },
+            "floors": {
+              "bess-0": 14.125
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 14.125,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 14.125,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 830.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3"
+            ]
+          }
+        },
+        {
+          "tick": 1026,
+          "sim_time": 5130.0,
+          "frequency_hz": 84.63051329413705,
+          "gt_mw": 21.0,
+          "bess_mw": -18.0,
+          "soc": 0.715901100219124,
+          "demand_mw": 0.2899656,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 9.998675373827988
+            },
+            "after": {
+              "bess-0": 10.022615403067736
+            },
+            "floors": {
+              "bess-0": 14.0625
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 14.0625,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 14.0625,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 825.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3"
+            ]
+          }
+        },
+        {
+          "tick": 1027,
+          "sim_time": 5135.0,
+          "frequency_hz": 84.16436962405774,
+          "gt_mw": 21.0,
+          "bess_mw": -18.0,
+          "soc": 0.7176111023076774,
+          "demand_mw": 0.2899656,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.022615403067736
+            },
+            "after": {
+              "bess-0": 10.046555432307484
+            },
+            "floors": {
+              "bess-0": 14.0
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 14.0,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 14.0,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 820.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3"
+            ]
+          }
+        },
+        {
+          "tick": 1028,
+          "sim_time": 5140.0,
+          "frequency_hz": 83.73325983556427,
+          "gt_mw": 21.0,
+          "bess_mw": -18.0,
+          "soc": 0.7193211043962309,
+          "demand_mw": 0.2899656,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.046555432307484
+            },
+            "after": {
+              "bess-0": 10.070495461547232
+            },
+            "floors": {
+              "bess-0": 13.9375
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 13.9375,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 13.9375,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 815.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3"
+            ]
+          }
+        },
+        {
+          "tick": 1029,
+          "sim_time": 5145.0,
+          "frequency_hz": 83.33455089309749,
+          "gt_mw": 21.0,
+          "bess_mw": -18.0,
+          "soc": 0.7210311064847843,
+          "demand_mw": 0.2899656,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.070495461547232
+            },
+            "after": {
+              "bess-0": 10.09443549078698
+            },
+            "floors": {
+              "bess-0": 13.875
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 13.875,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 13.875,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 810.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3"
+            ]
+          }
+        },
+        {
+          "tick": 1030,
+          "sim_time": 5150.0,
+          "frequency_hz": 82.96580765170972,
+          "gt_mw": 21.0,
+          "bess_mw": -18.0,
+          "soc": 0.7227411085733377,
+          "demand_mw": 0.2899656,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.09443549078698
+            },
+            "after": {
+              "bess-0": 10.118375520026728
+            },
+            "floors": {
+              "bess-0": 13.8125
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 13.8125,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 13.8125,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 805.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3"
+            ]
+          }
+        },
+        {
+          "tick": 1031,
+          "sim_time": 5155.0,
+          "frequency_hz": 82.62477798423386,
+          "gt_mw": 21.0,
+          "bess_mw": -18.0,
+          "soc": 0.7244511106618912,
+          "demand_mw": 0.2899656,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.118375520026728
+            },
+            "after": {
+              "bess-0": 10.142315549266476
+            },
+            "floors": {
+              "bess-0": 13.75
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 13.75,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 13.75,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 800.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3"
+            ]
+          }
+        },
+        {
+          "tick": 1032,
+          "sim_time": 5160.0,
+          "frequency_hz": 82.30937902624613,
+          "gt_mw": 21.0,
+          "bess_mw": -18.0,
+          "soc": 0.7261611127504446,
+          "demand_mw": 0.2899656,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.142315549266476
+            },
+            "after": {
+              "bess-0": 10.166255578506224
+            },
+            "floors": {
+              "bess-0": 13.6875
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 13.6875,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 13.6875,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 795.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3"
+            ]
+          }
+        },
+        {
+          "tick": 1033,
+          "sim_time": 5165.0,
+          "frequency_hz": 82.01768445481483,
+          "gt_mw": 21.0,
+          "bess_mw": -18.0,
+          "soc": 0.727871114838998,
+          "demand_mw": 0.2899656,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.166255578506224
+            },
+            "after": {
+              "bess-0": 10.190195607745972
+            },
+            "floors": {
+              "bess-0": 13.625
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 13.625,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 13.625,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 790.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3"
+            ]
+          }
+        },
+        {
+          "tick": 1034,
+          "sim_time": 5170.0,
+          "frequency_hz": 81.74791272333754,
+          "gt_mw": 21.0,
+          "bess_mw": -18.0,
+          "soc": 0.7295811169275515,
+          "demand_mw": 0.2899656,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.190195607745972
+            },
+            "after": {
+              "bess-0": 10.21413563698572
+            },
+            "floors": {
+              "bess-0": 13.5625
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 13.5625,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 13.5625,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 785.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3"
+            ]
+          }
+        },
+        {
+          "tick": 1035,
+          "sim_time": 5175.0,
+          "frequency_hz": 81.4984161806109,
+          "gt_mw": 21.0,
+          "bess_mw": -18.0,
+          "soc": 0.7312911190161049,
+          "demand_mw": 0.2899656,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.21413563698572
+            },
+            "after": {
+              "bess-0": 10.238075666225468
+            },
+            "floors": {
+              "bess-0": 13.5
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 13.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 13.5,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 780.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2",
+              "turbine-3"
+            ]
+          }
+        },
+        {
+          "tick": 1036,
+          "sim_time": 5180.0,
+          "frequency_hz": 79.88266332350686,
+          "gt_mw": 15.75,
+          "bess_mw": -15.4600344,
+          "soc": 0.7327598240779442,
+          "demand_mw": 0.2899656,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.238075666225468
+            },
+            "after": {
+              "bess-0": 10.258637537091218
+            },
+            "floors": {
+              "bess-0": 13.4375
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 13.4375,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 13.4375,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 775.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [],
+            "balance_passed": true,
+            "balance_defect_mw": 3.885780586188048e-16,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2"
+            ]
+          }
+        }
+      ],
+      "post_discharge_floor_window": [
+        {
+          "tick": 1063,
+          "sim_time": 5315.0,
+          "frequency_hz": 63.452370096919104,
+          "gt_mw": 18.25,
+          "bess_mw": 3.497419999999998,
+          "soc": 0.7679315304712216,
+          "demand_mw": 21.747419999999998,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.756114026685779
+            },
+            "after": {
+              "bess-0": 10.751041426597103
+            },
+            "floors": {
+              "bess-0": 11.75
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 11.75,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 11.75,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 640.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 3.497419999999998,
+                "output_mw": 3.497419999999998,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 10.756114026685779,
+                "after_mwh": 10.751041426597103,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2"
+            ]
+          }
+        },
+        {
+          "tick": 1064,
+          "sim_time": 5320.0,
+          "frequency_hz": 63.44957476824583,
+          "gt_mw": 23.216972,
+          "bess_mw": 4.75,
+          "soc": 0.7674394360861115,
+          "demand_mw": 27.966972,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.751041426597103
+            },
+            "after": {
+              "bess-0": 10.744152105205561
+            },
+            "floors": {
+              "bess-0": 11.6875
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 11.6875,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 11.6875,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 635.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 4.75,
+                "output_mw": 4.75,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 10.751041426597103,
+                "after_mwh": 10.744152105205561,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2"
+            ]
+          }
+        },
+        {
+          "tick": 1065,
+          "sim_time": 5325.0,
+          "frequency_hz": 63.44699122342917,
+          "gt_mw": 27.985956711111104,
+          "bess_mw": 2.25,
+          "soc": 0.7672063387457962,
+          "demand_mw": 30.235956711111104,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.744152105205561
+            },
+            "after": {
+              "bess-0": 10.740888742441147
+            },
+            "floors": {
+              "bess-0": 11.625
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 11.625,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 11.625,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 630.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 2.25,
+                "output_mw": 2.25,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 10.744152105205561,
+                "after_mwh": 10.740888742441147,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2"
+            ]
+          }
+        },
+        {
+          "tick": 1066,
+          "sim_time": 5330.0,
+          "frequency_hz": 63.44445784706924,
+          "gt_mw": 30.811841155555552,
+          "bess_mw": 0.0,
+          "soc": 0.7672063387457962,
+          "demand_mw": 30.811841155555552,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.740888742441147
+            },
+            "after": {
+              "bess-0": 10.740888742441147
+            },
+            "floors": {
+              "bess-0": 11.5625
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 11.5625,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 11.5625,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 625.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 11.5625,
+                "before_mwh": 10.740888742441147,
+                "after_mwh": 10.740888742441147,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2"
+            ]
+          }
+        },
+        {
+          "tick": 1067,
+          "sim_time": 5335.0,
+          "frequency_hz": 63.44197276270809,
+          "gt_mw": 31.387725599999996,
+          "bess_mw": 0.0,
+          "soc": 0.7672063387457962,
+          "demand_mw": 31.387725599999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.740888742441147
+            },
+            "after": {
+              "bess-0": 10.740888742441147
+            },
+            "floors": {
+              "bess-0": 11.5
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 11.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 11.5,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 620.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 11.5,
+                "before_mwh": 10.740888742441147,
+                "after_mwh": 10.740888742441147,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2"
+            ]
+          }
+        },
+        {
+          "tick": 1068,
+          "sim_time": 5340.0,
+          "frequency_hz": 63.43948947126897,
+          "gt_mw": 31.387725599999996,
+          "bess_mw": 0.0,
+          "soc": 0.7672063387457962,
+          "demand_mw": 31.387725599999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.740888742441147
+            },
+            "after": {
+              "bess-0": 10.740888742441147
+            },
+            "floors": {
+              "bess-0": 11.4375
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 11.4375,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 11.4375,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 615.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 11.4375,
+                "before_mwh": 10.740888742441147,
+                "after_mwh": 10.740888742441147,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2"
+            ]
+          }
+        },
+        {
+          "tick": 1069,
+          "sim_time": 5345.0,
+          "frequency_hz": 63.43700797145818,
+          "gt_mw": 31.387725599999996,
+          "bess_mw": 0.0,
+          "soc": 0.7672063387457962,
+          "demand_mw": 31.387725599999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.740888742441147
+            },
+            "after": {
+              "bess-0": 10.740888742441147
+            },
+            "floors": {
+              "bess-0": 11.375
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 11.375,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 11.375,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 610.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 11.375,
+                "before_mwh": 10.740888742441147,
+                "after_mwh": 10.740888742441147,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2"
+            ]
+          }
+        },
+        {
+          "tick": 1070,
+          "sim_time": 5350.0,
+          "frequency_hz": 63.4345282619834,
+          "gt_mw": 31.387725599999996,
+          "bess_mw": 0.0,
+          "soc": 0.7672063387457962,
+          "demand_mw": 31.387725599999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.740888742441147
+            },
+            "after": {
+              "bess-0": 10.740888742441147
+            },
+            "floors": {
+              "bess-0": 11.3125
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 11.3125,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 11.3125,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 605.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 11.3125,
+                "before_mwh": 10.740888742441147,
+                "after_mwh": 10.740888742441147,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2"
+            ]
+          }
+        },
+        {
+          "tick": 1071,
+          "sim_time": 5355.0,
+          "frequency_hz": 63.43205034155284,
+          "gt_mw": 31.387725599999996,
+          "bess_mw": 0.0,
+          "soc": 0.7672063387457962,
+          "demand_mw": 31.387725599999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.740888742441147
+            },
+            "after": {
+              "bess-0": 10.740888742441147
+            },
+            "floors": {
+              "bess-0": 11.25
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 11.25,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 11.25,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 600.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 11.25,
+                "before_mwh": 10.740888742441147,
+                "after_mwh": 10.740888742441147,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2"
+            ]
+          }
+        },
+        {
+          "tick": 1072,
+          "sim_time": 5360.0,
+          "frequency_hz": 63.429574208875515,
+          "gt_mw": 31.387725599999996,
+          "bess_mw": 0.0,
+          "soc": 0.7672063387457962,
+          "demand_mw": 31.387725599999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.740888742441147
+            },
+            "after": {
+              "bess-0": 10.740888742441147
+            },
+            "floors": {
+              "bess-0": 11.1875
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 11.1875,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 11.1875,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 595.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 11.1875,
+                "before_mwh": 10.740888742441147,
+                "after_mwh": 10.740888742441147,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2"
+            ]
+          }
+        },
+        {
+          "tick": 1073,
+          "sim_time": 5365.0,
+          "frequency_hz": 63.4270998626619,
+          "gt_mw": 31.387725599999996,
+          "bess_mw": 0.0,
+          "soc": 0.7672063387457962,
+          "demand_mw": 31.387725599999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.740888742441147
+            },
+            "after": {
+              "bess-0": 10.740888742441147
+            },
+            "floors": {
+              "bess-0": 11.125
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 11.125,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 11.125,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 590.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 11.125,
+                "before_mwh": 10.740888742441147,
+                "after_mwh": 10.740888742441147,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2"
+            ]
+          }
+        },
+        {
+          "tick": 1074,
+          "sim_time": 5370.0,
+          "frequency_hz": 63.42462730162299,
+          "gt_mw": 31.387725599999996,
+          "bess_mw": 0.0,
+          "soc": 0.7672063387457962,
+          "demand_mw": 31.387725599999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.740888742441147
+            },
+            "after": {
+              "bess-0": 10.740888742441147
+            },
+            "floors": {
+              "bess-0": 11.0625
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 11.0625,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 11.0625,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 585.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 11.0625,
+                "before_mwh": 10.740888742441147,
+                "after_mwh": 10.740888742441147,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2"
+            ]
+          }
+        },
+        {
+          "tick": 1075,
+          "sim_time": 5375.0,
+          "frequency_hz": 63.422156524470914,
+          "gt_mw": 31.387725599999996,
+          "bess_mw": 0.0,
+          "soc": 0.7672063387457962,
+          "demand_mw": 31.387725599999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.740888742441147
+            },
+            "after": {
+              "bess-0": 10.740888742441147
+            },
+            "floors": {
+              "bess-0": 11.0
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 11.0,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 11.0,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 580.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 11.0,
+                "before_mwh": 10.740888742441147,
+                "after_mwh": 10.740888742441147,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2"
+            ]
+          }
+        },
+        {
+          "tick": 1076,
+          "sim_time": 5380.0,
+          "frequency_hz": 63.41968752991842,
+          "gt_mw": 31.387725599999996,
+          "bess_mw": 0.0,
+          "soc": 0.7672063387457962,
+          "demand_mw": 31.387725599999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.740888742441147
+            },
+            "after": {
+              "bess-0": 10.740888742441147
+            },
+            "floors": {
+              "bess-0": 10.9375
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 10.9375,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 10.9375,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 575.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 10.9375,
+                "before_mwh": 10.740888742441147,
+                "after_mwh": 10.740888742441147,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2"
+            ]
+          }
+        },
+        {
+          "tick": 1077,
+          "sim_time": 5385.0,
+          "frequency_hz": 63.41638311875971,
+          "gt_mw": 31.404166395193872,
+          "bess_mw": 0.0,
+          "soc": 0.7672063387457962,
+          "demand_mw": 31.404166395193872,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.740888742441147
+            },
+            "after": {
+              "bess-0": 10.740888742441147
+            },
+            "floors": {
+              "bess-0": 10.875
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 10.875,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 10.875,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 570.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 10.875,
+                "before_mwh": 10.740888742441147,
+                "after_mwh": 10.740888742441147,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2"
+            ]
+          }
+        },
+        {
+          "tick": 1078,
+          "sim_time": 5390.0,
+          "frequency_hz": 63.405557715813536,
+          "gt_mw": 31.55302930039924,
+          "bess_mw": 0.0,
+          "soc": 0.7672063387457962,
+          "demand_mw": 31.55302930039924,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.740888742441147
+            },
+            "after": {
+              "bess-0": 10.740888742441147
+            },
+            "floors": {
+              "bess-0": 10.8125
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 10.8125,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 10.8125,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 565.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 10.8125,
+                "before_mwh": 10.740888742441147,
+                "after_mwh": 10.740888742441147,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2"
+            ]
+          }
+        },
+        {
+          "tick": 1079,
+          "sim_time": 5395.0,
+          "frequency_hz": 63.36308546450568,
+          "gt_mw": 32.20152055242135,
+          "bess_mw": 0.0,
+          "soc": 0.7672063387457962,
+          "demand_mw": 32.20152055242135,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.740888742441147
+            },
+            "after": {
+              "bess-0": 10.740888742441147
+            },
+            "floors": {
+              "bess-0": 10.75
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 10.75,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 10.75,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 560.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 10.75,
+                "before_mwh": 10.740888742441147,
+                "after_mwh": 10.740888742441147,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2"
+            ]
+          }
+        },
+        {
+          "tick": 1080,
+          "sim_time": 5400.0,
+          "frequency_hz": 63.27883066458707,
+          "gt_mw": 27.20152055242135,
+          "bess_mw": 5.931204124111176,
+          "soc": 0.7665918730097083,
+          "demand_mw": 33.132724676532526,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.740888742441147
+            },
+            "after": {
+              "bess-0": 10.732286222135917
+            },
+            "floors": {
+              "bess-0": 10.6875
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 10.6875,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 10.6875,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 555.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 5.931204124111176,
+                "output_mw": 5.931204124111176,
+                "physical_floor_mwh": 10.6875,
+                "before_mwh": 10.740888742441147,
+                "after_mwh": 10.732286222135917,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2"
+            ]
+          }
+        },
+        {
+          "tick": 1081,
+          "sim_time": 5405.0,
+          "frequency_hz": 63.15075333542973,
+          "gt_mw": 22.20152055242135,
+          "bess_mw": 12.049182707672621,
+          "soc": 0.7653435919243162,
+          "demand_mw": 34.25070326009397,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.732286222135917
+            },
+            "after": {
+              "bess-0": 10.714810286940427
+            },
+            "floors": {
+              "bess-0": 10.625
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 10.625,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 10.625,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 550.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 12.049182707672621,
+                "output_mw": 12.049182707672621,
+                "physical_floor_mwh": 10.625,
+                "before_mwh": 10.732286222135917,
+                "after_mwh": 10.714810286940427,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2"
+            ]
+          }
+        },
+        {
+          "tick": 1082,
+          "sim_time": 5410.0,
+          "frequency_hz": 62.982731475419754,
+          "gt_mw": 18.488128009393193,
+          "bess_mw": 17.0,
+          "soc": 0.7635824120197113,
+          "demand_mw": 35.48812800939319,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.714810286940427
+            },
+            "after": {
+              "bess-0": 10.690153768275959
+            },
+            "floors": {
+              "bess-0": 10.5625
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 10.5625,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 10.5625,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 545.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 17.0,
+                "output_mw": 17.0,
+                "physical_floor_mwh": 10.5625,
+                "before_mwh": 10.714810286940427,
+                "after_mwh": 10.690153768275959,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2"
+            ]
+          }
+        },
+        {
+          "tick": 1083,
+          "sim_time": 5415.0,
+          "frequency_hz": 62.80178935630263,
+          "gt_mw": 19.16772555557577,
+          "bess_mw": 17.0,
+          "soc": 0.7618212321151064,
+          "demand_mw": 36.16772555557577,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.690153768275959
+            },
+            "after": {
+              "bess-0": 10.66549724961149
+            },
+            "floors": {
+              "bess-0": 10.5
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 10.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 10.5,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 540.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 17.0,
+                "output_mw": 17.0,
+                "physical_floor_mwh": 10.5,
+                "before_mwh": 10.690153768275959,
+                "after_mwh": 10.66549724961149,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2"
+            ]
+          }
+        },
+        {
+          "tick": 1084,
+          "sim_time": 5420.0,
+          "frequency_hz": 62.621177121589405,
+          "gt_mw": 19.532266066524556,
+          "bess_mw": 17.0,
+          "soc": 0.7600600522105017,
+          "demand_mw": 36.532266066524556,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.66549724961149
+            },
+            "after": {
+              "bess-0": 10.640840730947023
+            },
+            "floors": {
+              "bess-0": 10.4375
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 10.4375,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 10.4375,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 535.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 17.0,
+                "output_mw": 17.0,
+                "physical_floor_mwh": 10.4375,
+                "before_mwh": 10.66549724961149,
+                "after_mwh": 10.640840730947023,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2"
+            ]
+          }
+        },
+        {
+          "tick": 1085,
+          "sim_time": 5425.0,
+          "frequency_hz": 62.443833885036256,
+          "gt_mw": 19.845653476746307,
+          "bess_mw": 17.0,
+          "soc": 0.7582988723058968,
+          "demand_mw": 36.84565347674631,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.640840730947023
+            },
+            "after": {
+              "bess-0": 10.616184212282555
+            },
+            "floors": {
+              "bess-0": 10.375
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 10.375,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 10.375,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 530.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 17.0,
+                "output_mw": 17.0,
+                "physical_floor_mwh": 10.375,
+                "before_mwh": 10.640840730947023,
+                "after_mwh": 10.616184212282555,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2"
+            ]
+          }
+        },
+        {
+          "tick": 1086,
+          "sim_time": 5430.0,
+          "frequency_hz": 62.27435772408533,
+          "gt_mw": 20.01412413640395,
+          "bess_mw": 17.0,
+          "soc": 0.7565376924012919,
+          "demand_mw": 37.01412413640395,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.616184212282555
+            },
+            "after": {
+              "bess-0": 10.591527693618087
+            },
+            "floors": {
+              "bess-0": 10.3125
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 10.3125,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 10.3125,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 525.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 17.0,
+                "output_mw": 17.0,
+                "physical_floor_mwh": 10.3125,
+                "before_mwh": 10.616184212282555,
+                "after_mwh": 10.591527693618087,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2"
+            ]
+          }
+        },
+        {
+          "tick": 1087,
+          "sim_time": 5435.0,
+          "frequency_hz": 62.11366885785707,
+          "gt_mw": 20.145329218069875,
+          "bess_mw": 17.0,
+          "soc": 0.7547765124966871,
+          "demand_mw": 37.145329218069875,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-0": 10.591527693618087
+            },
+            "after": {
+              "bess-0": 10.566871174953619
+            },
+            "floors": {
+              "bess-0": 10.25
+            },
+            "bases": {
+              "bess-0": {
+                "bess_id": "bess-0",
+                "floor_mwh": 10.25,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 0.0,
+                "d2r_term_mwh": 10.25,
+                "winning_term": "d2r_bridge",
+                "basis": "offline_restart",
+                "unit_id": "turbine-4",
+                "eligibility_wait_s": 520.0,
+                "start_duration_s": 300,
+                "thermal_state": "hot",
+                "eligibility_reason": "min_down"
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-0",
+                "requested_mw": 17.0,
+                "output_mw": 17.0,
+                "physical_floor_mwh": 10.25,
+                "before_mwh": 10.591527693618087,
+                "after_mwh": 10.566871174953619,
+                "on_bus": [
+                  "turbine-0",
+                  "turbine-1",
+                  "turbine-2"
+                ]
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": [
+              "turbine-0",
+              "turbine-1",
+              "turbine-2"
+            ]
+          }
+        }
+      ],
+      "first_advisory": {
+        "tick": 118,
+        "sim_time": 590.0,
+        "reason": "turbine_catchup"
+      },
+      "below_floor_hold_ticks": 3756,
+      "below_floor_discharge_ticks": 702,
+      "illegal_d2r_discharge_count": 0,
+      "first_illegal_d2r_discharge": null,
+      "basis_counts": {
+        "d2r_bridge|starting_remaining|turbine-1": 130,
+        "d2r_bridge|offline_restart|turbine-2": 1506,
+        "d2r_bridge|starting_remaining|turbine-2": 367,
+        "d2r_bridge|offline_restart|turbine-3": 2896,
+        "d2r_bridge|starting_remaining|turbine-3": 979,
+        "d2r_bridge|offline_restart|turbine-4": 3508,
+        "d2r_bridge|starting_remaining|turbine-4": 1040,
+        "diesel_floor|no restartable synchronous unit|None": 6853,
+        "d2r_bridge|offline_restart|turbine-1": 1
+      },
+      "summary": {
+        "kind": "summary",
+        "physical_sha256": "8ba0dec0459ca09b9df4ea6fa17bd72fa16038220f425b0a8dd499bfa87557ab",
+        "ticks": 17280,
+        "metrics": {},
+        "record": {},
+        "end_sim_time": 86400.0,
+        "build_warnings": [],
+        "final_floor_basis": {
+          "bess-0": {
+            "bess_id": "bess-0",
+            "floor_mwh": 10.6875,
+            "depth_reserve_mwh": 0.0,
+            "diesel_floor_mwh": 0.0,
+            "d2r_term_mwh": 10.6875,
+            "winning_term": "d2r_bridge",
+            "basis": "offline_restart",
+            "unit_id": "turbine-4",
+            "eligibility_wait_s": 555.0,
+            "start_duration_s": 300,
+            "thermal_state": "hot",
+            "eligibility_reason": "min_down"
+          }
+        },
+        "floor_history_count": 5234
+      },
+      "first_floor_next120s_min_hz": 79.88266332350686,
+      "first_discharge_floor_next120s_min_hz": 62.11366885785707,
+      "complete": true
+    }
+  },
+  "return_codes": [
+    0,
+    0
+  ],
+  "physical_identical": false,
+  "compact_identical": true,
+  "metric_differences": {},
+  "metrics_identical": true
+}

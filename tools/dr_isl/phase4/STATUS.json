@@ -1,15 +1,16 @@
 {
-  "head": "807f4d53d2dbe2693c701aa34320990688025567",
-  "application_code_at_base": true,
-  "newer_candidate_stash": "69350a319e71e97f136b875b00c4660624aee59a",
-  "operation": "P1 read-only source audit; no simulation or test in this second resumption",
-  "unresolved": [
-    "Whether C2(c) means unit eligibility under release authority, or all live contingency episode/trigger gates.",
-    "Authorization to update the existing nonzero diesel-only floor expectation in TC-ISL-18."
+  "state": "COMPLETE",
+  "completed": [
+    "P1",
+    "P2",
+    "P3_R1",
+    "P3_R2",
+    "P3_R3",
+    "P3_R4",
+    "P4",
+    "P5",
+    "P6"
   ],
-  "P2": "NOT RUN",
-  "P3": "NOT RUN",
-  "P4": "NOT RUN",
-  "P5": "NOT REACHED",
-  "P6": "NO COMMITS: P3/P4 not passed"
+  "report_commit": "recorded in git history; own hash supplied in delivery message",
+  "next_phase": "NOT STARTED"
 }

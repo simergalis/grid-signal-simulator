@@ -1,0 +1,35 @@
+{
+  "_release_hot_standby_for_contingency": {
+    "ast_identical": true,
+    "base_lines": [
+      757,
+      826
+    ],
+    "candidate_lines": [
+      769,
+      838
+    ]
+  },
+  "_releasable_hot_standby_turbines": {
+    "ast_identical": true,
+    "base_lines": [
+      664,
+      678
+    ],
+    "candidate_lines": [
+      676,
+      690
+    ]
+  },
+  "start_eligibility": {
+    "ast_identical": true,
+    "base_lines": [
+      1057,
+      1067
+    ],
+    "candidate_lines": [
+      1057,
+      1067
+    ]
+  }
+}

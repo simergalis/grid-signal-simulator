@@ -1,0 +1,16 @@
+{
+  "lookup_ast_identical": true,
+  "base_lines": [
+    829,
+    846
+  ],
+  "candidate_lines": [
+    841,
+    858
+  ],
+  "test_file_sha256_base": "08c66789ac98fee972a97302be215df4dcc9a89d434b3a243af7665d03abdb12",
+  "test_file_sha256_candidate": "08c66789ac98fee972a97302be215df4dcc9a89d434b3a243af7665d03abdb12",
+  "interval_end_timestamp_source": "core/simulation_core.py:3818-3822",
+  "snapshot_instance": "runtime/run_manager.py:186,231-237,263",
+  "endpoint": "api/routes/runs.py:937-938"
+}

@@ -1,0 +1,8 @@
+{
+  "scenario": "demo-islanded-ramp",
+  "arm": "app",
+  "repetition": 1,
+  "gate": "R1",
+  "first_physical_difference": null,
+  "tooling_error": "KeyError('passed')"
+}

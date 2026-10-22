@@ -1,0 +1,6 @@
+{
+  "route": "/",
+  "result": "GridSignal operator sign-in rendered",
+  "browser_log": "401 Unauthorized for unauthenticated request; no sign-in attempted",
+  "verification_scope": "public landing only; engine verified by focused suite, full suite and headless comparisons"
+}

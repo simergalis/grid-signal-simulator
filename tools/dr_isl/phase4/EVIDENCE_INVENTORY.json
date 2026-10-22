@@ -1,0 +1,883 @@
+{
+  "maximum_allowed_file_bytes": 50000000,
+  "inventory_excludes_itself": true,
+  "file_count": 175,
+  "largest_file_bytes": 499208,
+  "files": [
+    {
+      "file": "tools/dr_isl/phase4/APPROVALS.json",
+      "bytes": 542,
+      "sha256": "c761ef5e2f82f84a1c9023e0716f504453c26daaa736da2da2df3022a8402fdc"
+    },
+    {
+      "file": "tools/dr_isl/phase4/CANDIDATE_CHANGED_LINES.json",
+      "bytes": 1948,
+      "sha256": "7cab72285c5fee4b4bc218189435a068e8a68748a014097766e7d0da0031766b"
+    },
+    {
+      "file": "tools/dr_isl/phase4/CANDIDATE_DIFF.patch",
+      "bytes": 27960,
+      "sha256": "bbecbe44254141cb5f84a10b0677a57cadc0fe703f2efb0212b529e7543b22c9"
+    },
+    {
+      "file": "tools/dr_isl/phase4/EVIDENCE_COMPACTION.json",
+      "bytes": 12794,
+      "sha256": "aa376ba644fdceaddc5d3c9842d5d744c721caf781504c271a0adf490c8a425b"
+    },
+    {
+      "file": "tools/dr_isl/phase4/IMPORTED_EVIDENCE_MANIFEST.json",
+      "bytes": 2093,
+      "sha256": "7ee2dff5aee03043112c6eff86b971eade1ef6fa6a11b047bc6c6f3475c6d077"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P1_CURRENT_DIFF.patch",
+      "bytes": 27960,
+      "sha256": "bbecbe44254141cb5f84a10b0677a57cadc0fe703f2efb0212b529e7543b22c9"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P1_FOCUSED.txt",
+      "bytes": 4441,
+      "sha256": "0438a7dadbaaeb605c073c7580d21a0beb38e2712ac9e731353872180371e22b"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P1_FOCUSED.xml",
+      "bytes": 7197,
+      "sha256": "ecbe035b3ee4ba099499915b52ce52757404b935f857f85c799a8b535f533dfc"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P1_READ_ONLY_REPORT.md",
+      "bytes": 9305,
+      "sha256": "b44f855ad55baefadb732f7653d6afe4e796fdb8d09edfe09e83e1fa6b777e30"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P1_RELEASE_CONDITIONS.json",
+      "bytes": 9135,
+      "sha256": "fc545f118ca2ab8315a153419763a1cedd0e6b0d8d43718dad2c1565e4700bc3"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P1_RESULT.json",
+      "bytes": 239,
+      "sha256": "5d3dd3e3c7d2dfcccaed6fc336b0e6ee6641b8b23c2528f3b4629cb36e9a0466"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P1_UNCHANGED_RELEASE_GUARDS.json",
+      "bytes": 512,
+      "sha256": "9ae74c4185f549dfc3d6f7d08b3b34b25623417a38e0b54299f95a647832993f"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_CLASSIFICATION.json",
+      "bytes": 2485,
+      "sha256": "2d0bb6d20bd705b40dfb9ebd3bc010fb99a8798985cd8e3fc1d92bddc777b5c2"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_CONTEXT_SUMMARY.json",
+      "bytes": 6184,
+      "sha256": "9fd58a4d778170ac4c1bf5da66878608e33c107d838b2e5bc3cbf949f8e693b2"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_PROTOCOL.json",
+      "bytes": 503,
+      "sha256": "5e485a436948f25f4eab47e4dab50d053916f96e001acc9a5db049d261daf4a6"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_REPORT.md",
+      "bytes": 2045,
+      "sha256": "230c8edde6f2f7b8427b094e64b3dadbe30995f3ab09250862c28b1504c9c4af"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_SETUP_ATTEMPT1.txt",
+      "bytes": 7675,
+      "sha256": "f24420401bb41fa062e124e980659e1890aeb81aa1a847735225e0851c74ebc2"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_SOURCE_PROOF.json",
+      "bytes": 496,
+      "sha256": "fef1a8e1294ac76ae3a6084a298dc71292cf799ea4b08a1c7775109c30f941ca"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_base_file.incremental.xml",
+      "bytes": 514,
+      "sha256": "68397d03a2d651cdcd6f2f9436fd3090b1b244c6f6edb402d00fd334e4405fd2"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_base_file.order.json",
+      "bytes": 61,
+      "sha256": "1a9dc0ffab4de660f7dc1f8efc5d609ac25dad6415ae0ae6fef0d3dc6add879d"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_base_file.results.json",
+      "bytes": 527,
+      "sha256": "b9a9fcfa11f6b363bd890d3d6edc86b757d5140ad05f7cc5a3674502097e57dd"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_base_file.txt",
+      "bytes": 2286,
+      "sha256": "c713fa260f17b1a37e54498ae1955d6d2deea6e2e8b1250adbfb5016f9afea2c"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_base_isolation1.incremental.xml",
+      "bytes": 156,
+      "sha256": "e753bd80eca54cbe5e7e588940e2c6621c0fd7da08a2e165c463a45c1f44c7e2"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_base_isolation1.order.json",
+      "bytes": 61,
+      "sha256": "1a9dc0ffab4de660f7dc1f8efc5d609ac25dad6415ae0ae6fef0d3dc6add879d"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_base_isolation1.results.json",
+      "bytes": 196,
+      "sha256": "aa16d3d6d710a6ecf54947dcd29b328fd40b23e6abab4fa64b48da59bae1367d"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_base_isolation1.txt",
+      "bytes": 98,
+      "sha256": "4d3ac73168bea956893d6a86b431b3c222876fc83674a310e129a76719c2dd48"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_base_isolation2.incremental.xml",
+      "bytes": 156,
+      "sha256": "e753bd80eca54cbe5e7e588940e2c6621c0fd7da08a2e165c463a45c1f44c7e2"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_base_isolation2.order.json",
+      "bytes": 61,
+      "sha256": "1a9dc0ffab4de660f7dc1f8efc5d609ac25dad6415ae0ae6fef0d3dc6add879d"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_base_isolation2.results.json",
+      "bytes": 196,
+      "sha256": "9a10d3bbc7913c71e400696e36a497b104f2ce4ce732e1652a76186c5314c616"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_base_isolation2.txt",
+      "bytes": 98,
+      "sha256": "04964e0c9b1d08c3c80571e3f132c229fcd31dd094dd811a3aee16bc737d769a"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_base_isolation3.incremental.xml",
+      "bytes": 156,
+      "sha256": "e753bd80eca54cbe5e7e588940e2c6621c0fd7da08a2e165c463a45c1f44c7e2"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_base_isolation3.order.json",
+      "bytes": 61,
+      "sha256": "1a9dc0ffab4de660f7dc1f8efc5d609ac25dad6415ae0ae6fef0d3dc6add879d"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_base_isolation3.results.json",
+      "bytes": 196,
+      "sha256": "1e35addab834cae2f006cab048ce087030757e98f8b5adc0f114ac64aedc7a66"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_base_isolation3.txt",
+      "bytes": 98,
+      "sha256": "ebe60c952a7cc852e5c21cad01ef2384e9fcb46c54d51abb2ee1092e4f8e1301"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_base_prefix.incremental.xml",
+      "bytes": 102065,
+      "sha256": "f0846fa99d9b7b0bc5fe2875e654e9002f9eb269e791e8d9590f8b23cc6484c9"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_base_prefix.order.json",
+      "bytes": 77651,
+      "sha256": "0e1c71d8b42149699103d03d1535ed037e39aa20712384b065c491a5d9ae2fe6"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_base_prefix.results.json",
+      "bytes": 176394,
+      "sha256": "8c6569ab41f69e3c7a2bce1fd073e2284537e45e04611619a4144a73bb497795"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_base_prefix.txt",
+      "bytes": 14366,
+      "sha256": "bdc6c77644256cf83dc03e2d61f9aa4d16a9c69b1c0be94a76d5fb630d477611"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_candidate_file.incremental.xml",
+      "bytes": 156,
+      "sha256": "e753bd80eca54cbe5e7e588940e2c6621c0fd7da08a2e165c463a45c1f44c7e2"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_candidate_file.order.json",
+      "bytes": 61,
+      "sha256": "1a9dc0ffab4de660f7dc1f8efc5d609ac25dad6415ae0ae6fef0d3dc6add879d"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_candidate_file.results.json",
+      "bytes": 196,
+      "sha256": "4de7c1a6a8bfcd6d5caa7da541ab20572ffdad6ab9f9e8db19ddc0a47f3b0f54"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_candidate_file.txt",
+      "bytes": 98,
+      "sha256": "402b1544d0825dde0cf3ef8823ccb8b910caea7ded3de9c3b6e193ac2fd8ba97"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_candidate_isolation1.incremental.xml",
+      "bytes": 156,
+      "sha256": "e753bd80eca54cbe5e7e588940e2c6621c0fd7da08a2e165c463a45c1f44c7e2"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_candidate_isolation1.order.json",
+      "bytes": 61,
+      "sha256": "1a9dc0ffab4de660f7dc1f8efc5d609ac25dad6415ae0ae6fef0d3dc6add879d"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_candidate_isolation1.results.json",
+      "bytes": 196,
+      "sha256": "3c732bbb79ea0d23ebfa522d0afa6ad860a23c991aa810361b89bfb02b714222"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_candidate_isolation1.txt",
+      "bytes": 98,
+      "sha256": "e2cc916c5679ef868a3ee62da1c10c69c5de4e19d8d1a07b17c2ad5b517edabd"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_candidate_isolation2.incremental.xml",
+      "bytes": 156,
+      "sha256": "e753bd80eca54cbe5e7e588940e2c6621c0fd7da08a2e165c463a45c1f44c7e2"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_candidate_isolation2.order.json",
+      "bytes": 61,
+      "sha256": "1a9dc0ffab4de660f7dc1f8efc5d609ac25dad6415ae0ae6fef0d3dc6add879d"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_candidate_isolation2.results.json",
+      "bytes": 196,
+      "sha256": "1c3c44977e0768849bbda8cf96662d70bd627ac691bca047b6ae38bfec1bc27e"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_candidate_isolation2.txt",
+      "bytes": 98,
+      "sha256": "b761d1ae0b77b15c1a8b7f8ac15338d407e01b22fa89cea2cf738ea10168c77f"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_candidate_isolation3.incremental.xml",
+      "bytes": 156,
+      "sha256": "e753bd80eca54cbe5e7e588940e2c6621c0fd7da08a2e165c463a45c1f44c7e2"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_candidate_isolation3.order.json",
+      "bytes": 61,
+      "sha256": "1a9dc0ffab4de660f7dc1f8efc5d609ac25dad6415ae0ae6fef0d3dc6add879d"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_candidate_isolation3.results.json",
+      "bytes": 196,
+      "sha256": "32e8623096370d046f5e0a644b3891a160ccb00ccc7d1626b154e29bd52cd4c1"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_candidate_isolation3.txt",
+      "bytes": 98,
+      "sha256": "d2a596b9fded3af56c8d972724e2bd9f115cb0d7bdd67c1e803eff76e034b260"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_candidate_prefix.incremental.xml",
+      "bytes": 103171,
+      "sha256": "4a8bec18e9d8e5aff31f408f1299b22c3193d020ee74575cb2e8e5d3fc0fa11b"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_candidate_prefix.order.json",
+      "bytes": 78814,
+      "sha256": "d73c09be48398ab962b7cb467aab852d583d09ae9e34c2c104880b62feb2bf86"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_candidate_prefix.results.json",
+      "bytes": 178664,
+      "sha256": "f4eaeb6b5365a634aad1fa3d5152ca1d5150c50e542bb1f1b32be8c00771cc4a"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_candidate_prefix.txt",
+      "bytes": 13248,
+      "sha256": "adb3325a76886ca1deffc80d6b74f6f776efc8b43df8bfd0664bbf24f9a5d1c2"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_driver.py",
+      "bytes": 5618,
+      "sha256": "6d6eac4bd58f10a383c0496647b8f0885e8192ccf11d573ef968619e3f93434a"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P2_observer.py",
+      "bytes": 3073,
+      "sha256": "4b62c75af10614e8994ba32a1d78af68f1330d897a2cfd4efbccd36ce48cf3af"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_PROTOCOL.json",
+      "bytes": 2510,
+      "sha256": "19f13005e6f2d4a86caa4d4dcffe6ea4c80cd2f1f77a9c81f240a9fc08226330"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R1_COMPLETE.json",
+      "bytes": 426,
+      "sha256": "1cdd3f516d02fd9aec6424bd39cb81b1ab529cb2efa02977f55058e95bc3098c"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R1_PROGRESS.json",
+      "bytes": 365,
+      "sha256": "043dbebd8928e5290800ff20514fd51579a0a465c437bb702a08a50f34706000"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R1_R2_EVALUATION.json",
+      "bytes": 5057,
+      "sha256": "77e68704126ce02c18dbb67fe83b77780aa48e7212a974a6bb9be34b15ec0405"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R1_S10_mit_supercloud_2021-08-11_app_1.base.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R1_S10_mit_supercloud_2021-08-11_app_1.candidate.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R1_S10_mit_supercloud_2021-08-11_app_1.json",
+      "bytes": 168347,
+      "sha256": "1aff2fa71c56ca5185a2649d56c987d450b145d526d1abca8b2617d72aeddbaf"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R1_S10_mit_supercloud_2021-08-11_app_2.base.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R1_S10_mit_supercloud_2021-08-11_app_2.candidate.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R1_S10_mit_supercloud_2021-08-11_app_2.json",
+      "bytes": 168347,
+      "sha256": "80297b29a3b978eec50882238cae213655d06385299798a1ab11cd68552dca77"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R1_demo-islanded-ramp_app_1.base.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R1_demo-islanded-ramp_app_1.candidate.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R1_demo-islanded-ramp_app_1.json",
+      "bytes": 178985,
+      "sha256": "5e5759e789adaf2d60a7d12b0910a8b9cb39a1b4d5a7e194c7b329b338382010"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R1_demo-islanded-ramp_app_1.tooling_attempt1.json",
+      "bytes": 168,
+      "sha256": "03ac154767f5b2562e6f4ce3f28e00a046917b9b16c51386a1d9d1b8adfef43a"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R1_demo-islanded-ramp_app_2.base.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R1_demo-islanded-ramp_app_2.candidate.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R1_demo-islanded-ramp_app_2.json",
+      "bytes": 178985,
+      "sha256": "1170bedcfdd92e877f755f304850b92dcc3b7bb5658197f42f744df1afd8e7da"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R3_COMPLETE.json",
+      "bytes": 658,
+      "sha256": "8dbc204d102c1bb6a9c14ae1d2a999c3492bf6a2650eef70be884b1cf3f1975a"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R3_PROGRESS.json",
+      "bytes": 577,
+      "sha256": "6a1d5e3d94492367da94604feb1101db0845f3ad3110cc26537b6cc1f5acc1f4"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R3_REFERENCE_HASHES.json",
+      "bytes": 619,
+      "sha256": "2b06a74cb740228a94f40cfe724d9752a4a79531089bbad62e57b6a09384ed32"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R3_scenario-100mw-fuel-cell-bess-diesel_app_1.base.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R3_scenario-100mw-fuel-cell-bess-diesel_app_1.candidate.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R3_scenario-100mw-fuel-cell-bess-diesel_app_1.json",
+      "bytes": 3498,
+      "sha256": "92a574c262212cd07e376d06be00b235a0a50ab77998c2e006d29ba9937d73ca"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R3_scenario-100mw-fuel-cell-bess-diesel_reference_check.json",
+      "bytes": 290,
+      "sha256": "8022afabf3f86621d508f4cd64229615ee22c058b1b29db2253964c20f17b671"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R3_scenario-equinix-sj-1_app_1.base.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R3_scenario-equinix-sj-1_app_1.candidate.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R3_scenario-equinix-sj-1_app_1.json",
+      "bytes": 3533,
+      "sha256": "6f492e9f7494e301b67d6cdbf4046c962c34629ee359d4f8dc711bbee1bf58d5"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R3_scenario-equinix-sj-1_reference_check.json",
+      "bytes": 290,
+      "sha256": "ed9ce1a3505eabc8984eb382f83b108cb770ca3fd05445203b268b28a1433ea1"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R3_scenario-fc100-islanded-v2_app_1.base.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R3_scenario-fc100-islanded-v2_app_1.candidate.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R3_scenario-fc100-islanded-v2_app_1.json",
+      "bytes": 143582,
+      "sha256": "ed539c21336084914af6864c115b8959248394d2d6a3db0b607cc028d19cec5f"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R3_scenario-fc100-islanded-v2_reference_check.json",
+      "bytes": 290,
+      "sha256": "8a31bb554eec1783929e5e737021fb9fa27984fa3093d164646a6d379a033b80"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R3_scenario-fc100-islanded-zero-hot-v2_app_1.base.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R3_scenario-fc100-islanded-zero-hot-v2_app_1.candidate.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R3_scenario-fc100-islanded-zero-hot-v2_app_1.json",
+      "bytes": 143575,
+      "sha256": "e734c22d48896232560a6dbedeacc13cfa1386c18d1e6a2d15c883a6bd98eae6"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R3_scenario-fc100-islanded-zero-hot-v2_reference_check.json",
+      "bytes": 290,
+      "sha256": "53955cce1e05faebf358432d960a205facd8576da0dbc89436dc311d17613bef"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R3_scenario-hybrid-ai-100mw-addendum-i_app_1.base.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R3_scenario-hybrid-ai-100mw-addendum-i_app_1.candidate.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R3_scenario-hybrid-ai-100mw-addendum-i_app_1.json",
+      "bytes": 270846,
+      "sha256": "2b3764743b7dbcd21dbec26c71b2e4feddc0225bf64934aebf5a394cf29f5bd9"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R3_scenario-hybrid-ai-100mw-addendum-i_reference_check.json",
+      "bytes": 290,
+      "sha256": "70b31fbcf81dd6b7592fa12ed0af59f48a590874819e9bf81463f6cf4a7bd157"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R3_scenario-turbine-01_app_1.base.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R3_scenario-turbine-01_app_1.candidate.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R3_scenario-turbine-01_app_1.json",
+      "bytes": 3622,
+      "sha256": "88782f0e76992cfe320e55bb007131d2bec2cc03670fa399981360aea9f3b12a"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R3_scenario-turbine-01_reference_check.json",
+      "bytes": 290,
+      "sha256": "3c489331bb9c576d94660ce5abfc7f1085bc784f11429ce0044820fcb916a6bc"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_COMPLETE.json",
+      "bytes": 1300,
+      "sha256": "ad4d8b8acd59a9e79cf79506721a2e662b8bc1278f425dae6e91ad537c6620c8"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_EVALUATION.json",
+      "bytes": 18355,
+      "sha256": "afdb415e7a65e0a194ba96dc352a1d4d45ae1774d612b09bcf2bf4d2515b12ec"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_PROGRESS.json",
+      "bytes": 1159,
+      "sha256": "251c63a380b80394243491b73c032912046a78dd388f018ca11460a5bcf41958"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_evaluate.py",
+      "bytes": 4490,
+      "sha256": "d16d060d0e6d7d69c08003560bc9a1bbe54d6692c8b7c2bc6566ea11335ff43e"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-h1-k8s-ray-24h_baseline_1.base.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-h1-k8s-ray-24h_baseline_1.candidate.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-h1-k8s-ray-24h_baseline_1.json",
+      "bytes": 134685,
+      "sha256": "c7ed5b9fddaeabdae1f2111e6e988f5a72ba70462452df45e977d5da194d41f2"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-h1-k8s-ray-24h_baseline_2.base.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-h1-k8s-ray-24h_baseline_2.candidate.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-h1-k8s-ray-24h_baseline_2.json",
+      "bytes": 134685,
+      "sha256": "1294a3af7818ee62c5ec0577974faca9eaec30916a092b336868cb5a1dccd24e"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-h1-k8s-ray-24h_informed_1.base.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-h1-k8s-ray-24h_informed_1.candidate.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-h1-k8s-ray-24h_informed_1.json",
+      "bytes": 151263,
+      "sha256": "9d5de4661f5c89b7347dcced56a25cfeeb9ce60b6a3da42717666eb152a65d09"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-h1-k8s-ray-24h_informed_2.base.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-h1-k8s-ray-24h_informed_2.candidate.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-h1-k8s-ray-24h_informed_2.json",
+      "bytes": 151263,
+      "sha256": "ac3c7d5f7761e011951db437c145bdbe441534b62726e923043490ba1000e529"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-h2-slurm-24h_baseline_1.base.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-h2-slurm-24h_baseline_1.candidate.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-h2-slurm-24h_baseline_1.json",
+      "bytes": 119027,
+      "sha256": "f5e2bb402800817bb2fdd07532c2cb191baac28b9b519d39ca2db0b5cf524984"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-h2-slurm-24h_baseline_2.base.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-h2-slurm-24h_baseline_2.candidate.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-h2-slurm-24h_baseline_2.json",
+      "bytes": 119027,
+      "sha256": "aeecd77114b1a463d40189182a073f72e1558233e66daad8cfef1e061d1e8a05"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-h2-slurm-24h_informed_1.base.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-h2-slurm-24h_informed_1.candidate.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-h2-slurm-24h_informed_1.json",
+      "bytes": 164113,
+      "sha256": "dedd4a361644ca47241eca87780e6a5d08c621f2ddc56f2dcddfe952c346352f"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-h2-slurm-24h_informed_2.base.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-h2-slurm-24h_informed_2.candidate.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-h2-slurm-24h_informed_2.json",
+      "bytes": 164113,
+      "sha256": "d46e80ab8a07d22bfd850b91f040e53906c6afcc943d71cf63cc0e685d4a4df0"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-uneven-multisched-01_baseline_1.base.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-uneven-multisched-01_baseline_1.candidate.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-uneven-multisched-01_baseline_1.json",
+      "bytes": 64069,
+      "sha256": "999edc3a697df70e85d42e6eedd85f09e3d3a704bc721465abe4cd9062d45ee6"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-uneven-multisched-01_baseline_2.base.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-uneven-multisched-01_baseline_2.candidate.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-uneven-multisched-01_baseline_2.json",
+      "bytes": 64069,
+      "sha256": "78bcd01b74e96b8d77f3171174c9aeafdf7954e935563f8d147dd1f5c48523b8"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-uneven-multisched-01_informed_1.base.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-uneven-multisched-01_informed_1.candidate.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-uneven-multisched-01_informed_1.json",
+      "bytes": 74931,
+      "sha256": "ba4916de4c7db70465bca7626f3d7a5431addf4288abd08194dbb5ea640be1cf"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-uneven-multisched-01_informed_2.base.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-uneven-multisched-01_informed_2.candidate.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_R4_scenario-uneven-multisched-01_informed_2.json",
+      "bytes": 74931,
+      "sha256": "a7d0fe2f7b6ffe86c868cc24cab33a5260c779f24a017ac98b9f0df189ebed09"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_TOOLING_ATTEMPT1.txt",
+      "bytes": 682,
+      "sha256": "e0baabe621de0eb12496749cf531522c457cad19093fabc8b53d10be1413ec05"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P3_compare.py",
+      "bytes": 11629,
+      "sha256": "919e1503c0b3d53a9a6402b795c128ac38e59bea243b38c61beb53e00efd569e"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P4_EVALUATION.json",
+      "bytes": 2072,
+      "sha256": "c18c75bd9be8df95681fd38591aeab22a828ee02a28370f9d280689e51e3dcc6"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P4_FAILING_TESTS.incremental.txt",
+      "bytes": 1448,
+      "sha256": "49c7e1c00e787e78aeb6f27efb93603b206c79158712294cb324333666680cf2"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P4_FULL_SUITE.incremental.xml",
+      "bytes": 284748,
+      "sha256": "1aa2e6c5186aa7f4216fa727a7fed465a7cdaa608c54c17a07e95058a3a92d3a"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P4_FULL_SUITE.order.json",
+      "bytes": 221153,
+      "sha256": "0f3c9db33bfaaaaa7039b62f1b9361d158cc8d54d0f475154ec2641385b0da3e"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P4_FULL_SUITE.results.json",
+      "bytes": 499208,
+      "sha256": "729dbf057a13bdb997bbeda0b138125a2195ed75aa64bbbe51da0cd0ab047a2d"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P4_FULL_SUITE.txt",
+      "bytes": 53612,
+      "sha256": "609d552a2323edd03145439226a5a800babd6129fd248ee01a3ddb402ef6dff8"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P4_FULL_SUITE_FINAL.xml",
+      "bytes": 318713,
+      "sha256": "fc2186d6bd0320ae9f143dee9a079dac22fa25c4103fbca9e4111f992fab098f"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P4_observer.py",
+      "bytes": 582,
+      "sha256": "16403304cd022e4436695f264c5268f205b958b0f123dd2ea65996cbb5ec0c28"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P4_run_suite.py",
+      "bytes": 3473,
+      "sha256": "0a8fae08c312ed4d7997b664e56fe25515d5ec22c88c0daf2246b6858943a9af"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P5_BEFORE_TRACKING.json",
+      "bytes": 1411,
+      "sha256": "40320e2da5d434f854fc560ac2995ddb7a3b5ff6c468f5e4723125b0ceaeee49"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P5_TRACKING.json",
+      "bytes": 2296,
+      "sha256": "53e64afb1adc857c9467bfe9e99b5fefa9e18e39436672f2302677d97bd5c351"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P6_COMMITS.json",
+      "bytes": 2101,
+      "sha256": "b0a5a9c7578b1fe245cba8ede9e43e76f4fb065f3abe10eea47da3fb9c283029"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P6_commit.py",
+      "bytes": 3895,
+      "sha256": "b3d10c5e0ea7693c89240d2ad7ad43cff670a4843b7dc80328974e61198b5072"
+    },
+    {
+      "file": "tools/dr_isl/phase4/P6_report.py",
+      "bytes": 7688,
+      "sha256": "b983a385641bf376217698e8d86da972b511643957beb4e0ebdc7e7df883849a"
+    },
+    {
+      "file": "tools/dr_isl/phase4/PHASE_4_FAILING_TESTS.txt",
+      "bytes": 1448,
+      "sha256": "49c7e1c00e787e78aeb6f27efb93603b206c79158712294cb324333666680cf2"
+    },
+    {
+      "file": "tools/dr_isl/phase4/PHASE_4_RESUMED_BUILD_ONLY.json",
+      "bytes": 1355,
+      "sha256": "64be0d9ff5614cc9f508747496c16805b4cf750394c8f3caa6c79828926defee"
+    },
+    {
+      "file": "tools/dr_isl/phase4/PHASE_4_RESUMED_BUILD_ONLY.txt",
+      "bytes": 1027,
+      "sha256": "2158ec00af26225ecf97d44ced8cbbf331597efccac4df7fe7a9d435ee494174"
+    },
+    {
+      "file": "tools/dr_isl/phase4/PHASE_4_RESUMED_CANDIDATE.patch",
+      "bytes": 26846,
+      "sha256": "dc87881b00078ddcb7b8dd8c51adc2e46efe8747e7b4e1b05a0a68848c797877"
+    },
+    {
+      "file": "tools/dr_isl/phase4/PHASE_4_RESUMED_EVIDENCE.json",
+      "bytes": 4552,
+      "sha256": "245a706a472fc79f84b29aab71c4a312e6d2b3f1e2ca1536dea917e6779ed2d1"
+    },
+    {
+      "file": "tools/dr_isl/phase4/PHASE_4_RESUMED_FOCUSED.txt",
+      "bytes": 5859,
+      "sha256": "8f2c34f33f9a6eabc8b81b27f67c6d34373768011b4afadfa2569f074cd981c5"
+    },
+    {
+      "file": "tools/dr_isl/phase4/PHASE_4_RESUMED_FOCUSED.xml",
+      "bytes": 8457,
+      "sha256": "aacd8a6ee2c780543a88dd0e682c8ece9d30059fa6ab95224430ec90dbed4f38"
+    },
+    {
+      "file": "tools/dr_isl/phase4/PHASE_4_RESUMED_FOCUSED_FAILING_TESTS.txt",
+      "bytes": 86,
+      "sha256": "3e868994b857edb8a232f4b54bcd9ba6fdae457b29579164a9920238912e49a4"
+    },
+    {
+      "file": "tools/dr_isl/phase4/PREVIEW_CHECK.json",
+      "bytes": 276,
+      "sha256": "8647c4f599abd5921f516a3311b67bc8452da296a10f692dd3cc901345c64535"
+    },
+    {
+      "file": "tools/dr_isl/phase4/PRIOR_STOP_REPORT.md",
+      "bytes": 35554,
+      "sha256": "a20dd3c586b5c442e96a1407b1e511c0c910b441696041ddf7d6df076791a69a"
+    },
+    {
+      "file": "tools/dr_isl/phase4/REPORT_PROGRESS.md",
+      "bytes": 3543,
+      "sha256": "c9f019caa337d02daf79e2c4885054fb3cdb8f2a3080aa3d7384c3869a3c45e7"
+    },
+    {
+      "file": "tools/dr_isl/phase4/STATUS.json",
+      "bytes": 265,
+      "sha256": "a71dcebe45e9f5fd90dd83f7251526149e3781ea96d0861fa5ca3d30435f6638"
+    },
+    {
+      "file": "tools/dr_isl/phase4/WORKFLOW_RESTART.json",
+      "bytes": 314,
+      "sha256": "0087e7c13c10a45bb49e3ab6f58641f04f5a60ed487c187b810816777d3353a0"
+    },
+    {
+      "file": "tools/dr_isl/phase4/compact_evidence.py",
+      "bytes": 2375,
+      "sha256": "4ce53a50cdeb062633e291cc7f27cdd7736e73526b36386fc19d7e5e0f24ca1a"
+    },
+    {
+      "file": "tools/dr_isl/phase4/stream_worker.py",
+      "bytes": 7791,
+      "sha256": "446a6b10a314c375e64567dbcb250e35bd0f807bb94db6f1bb4b776e90a58e56"
+    }
+  ]
+}

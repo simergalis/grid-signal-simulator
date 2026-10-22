@@ -1,0 +1,4780 @@
+{
+  "scenario": "scenario-fc100-islanded-zero-hot-v2",
+  "arm": "app",
+  "repetition": 1,
+  "gate": "R3",
+  "first_physical_difference": null,
+  "runs": {
+    "base": {
+      "ticks": 264,
+      "min_soc": 0.42374204369743096,
+      "frequency_min": -82.80435199997717,
+      "frequency_max": 60.0,
+      "frequency_min_time": 1165.0,
+      "gt_min": 0,
+      "gt_max": 0,
+      "bess_min": 0.0,
+      "bess_max": 59.0,
+      "floor_min_mwh": 152.5,
+      "floor_max_mwh": 152.5,
+      "unserved_mwh": 6.045185894310674,
+      "collapse": null,
+      "balance_failure_count": 0,
+      "first_balance_failure": null,
+      "first_floor": {
+        "tick": 1,
+        "sim_time": 5.0,
+        "frequency_hz": 60.0,
+        "gt_mw": 0,
+        "bess_mw": 5.472355555555552,
+        "soc": 0.9498015746516263,
+        "demand_mw": 16.6668,
+        "solar_mw": 0,
+        "observation": {
+          "before": {
+            "bess-fc100": 38.0
+          },
+          "after": {
+            "bess-fc100": 37.99206298606505
+          },
+          "floors": {
+            "bess-fc100": 152.5
+          },
+          "bases": {
+            "bess-fc100": {}
+          },
+          "covers": [
+            {
+              "unit": "bess-fc100",
+              "requested_mw": 5.472355555555552,
+              "output_mw": 5.472355555555552,
+              "physical_floor_mwh": 0.0,
+              "before_mwh": 38.0,
+              "after_mwh": 37.99206298606505,
+              "on_bus": []
+            }
+          ],
+          "balance_passed": true,
+          "balance_defect_mw": 0.0,
+          "on_bus": []
+        }
+      },
+      "first_discharge_floor": {
+        "tick": 1,
+        "sim_time": 5.0,
+        "frequency_hz": 60.0,
+        "gt_mw": 0,
+        "bess_mw": 5.472355555555552,
+        "soc": 0.9498015746516263,
+        "demand_mw": 16.6668,
+        "solar_mw": 0,
+        "observation": {
+          "before": {
+            "bess-fc100": 38.0
+          },
+          "after": {
+            "bess-fc100": 37.99206298606505
+          },
+          "floors": {
+            "bess-fc100": 152.5
+          },
+          "bases": {
+            "bess-fc100": {}
+          },
+          "covers": [
+            {
+              "unit": "bess-fc100",
+              "requested_mw": 5.472355555555552,
+              "output_mw": 5.472355555555552,
+              "physical_floor_mwh": 0.0,
+              "before_mwh": 38.0,
+              "after_mwh": 37.99206298606505,
+              "on_bus": []
+            }
+          ],
+          "balance_passed": true,
+          "balance_defect_mw": 0.0,
+          "on_bus": []
+        }
+      },
+      "post_floor_window": [
+        {
+          "tick": 1,
+          "sim_time": 5.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 5.472355555555552,
+          "soc": 0.9498015746516263,
+          "demand_mw": 16.6668,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 38.0
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 5.472355555555552,
+                "output_mw": 5.472355555555552,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 38.0,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 2,
+          "sim_time": 10.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 0.0,
+          "soc": 0.9498015746516263,
+          "demand_mw": 16.6668,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 152.5,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 3,
+          "sim_time": 15.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 0.0,
+          "soc": 0.9498015746516263,
+          "demand_mw": 16.6668,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 152.5,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 4,
+          "sim_time": 20.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 0.0,
+          "soc": 0.9498015746516263,
+          "demand_mw": 16.6668,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 152.5,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 5,
+          "sim_time": 25.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 0.0,
+          "soc": 0.9498015746516263,
+          "demand_mw": 16.6668,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 152.5,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 6,
+          "sim_time": 30.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 0.0,
+          "soc": 0.9498015746516263,
+          "demand_mw": 16.6668,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 152.5,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 7,
+          "sim_time": 35.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 0.0,
+          "soc": 0.9498015746516263,
+          "demand_mw": 18.750149999999998,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 152.5,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 8,
+          "sim_time": 40.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 11.016915999999991,
+          "soc": 0.9494021058354809,
+          "demand_mw": 31.166915999999993,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.976084233419236
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 11.016915999999991,
+                "output_mw": 11.016915999999991,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.976084233419236,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 9,
+          "sim_time": 45.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 26.017035999999994,
+          "soc": 0.9484587388741159,
+          "demand_mw": 46.167035999999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.976084233419236
+            },
+            "after": {
+              "bess-fc100": 37.93834955496464
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 26.017035999999994,
+                "output_mw": 26.017035999999994,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.976084233419236,
+                "after_mwh": 37.93834955496464,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 10,
+          "sim_time": 50.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 41.017155999999986,
+          "soc": 0.9469714737675314,
+          "demand_mw": 61.16715599999999,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.93834955496464
+            },
+            "after": {
+              "bess-fc100": 37.87885895070126
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 41.017155999999986,
+                "output_mw": 41.017155999999986,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.93834955496464,
+                "after_mwh": 37.87885895070126,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 11,
+          "sim_time": 55.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 45.12829999999998,
+          "soc": 0.9453351402804053,
+          "demand_mw": 65.27829999999999,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.87885895070126
+            },
+            "after": {
+              "bess-fc100": 37.81340561121621
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 45.12829999999998,
+                "output_mw": 45.12829999999998,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.87885895070126,
+                "after_mwh": 37.81340561121621,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 12,
+          "sim_time": 60.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.943648445853907,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.81340561121621
+            },
+            "after": {
+              "bess-fc100": 37.74593783415628
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.81340561121621,
+                "after_mwh": 37.74593783415628,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 13,
+          "sim_time": 65.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.9419617514274087,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.74593783415628
+            },
+            "after": {
+              "bess-fc100": 37.67847005709635
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.74593783415628,
+                "after_mwh": 37.67847005709635,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 14,
+          "sim_time": 70.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.9402750570009104,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.67847005709635
+            },
+            "after": {
+              "bess-fc100": 37.611002280036416
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.67847005709635,
+                "after_mwh": 37.611002280036416,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 15,
+          "sim_time": 75.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.9385883625744121,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.611002280036416
+            },
+            "after": {
+              "bess-fc100": 37.543534502976485
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.611002280036416,
+                "after_mwh": 37.543534502976485,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 16,
+          "sim_time": 80.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.9369016681479139,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.543534502976485
+            },
+            "after": {
+              "bess-fc100": 37.47606672591655
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.543534502976485,
+                "after_mwh": 37.47606672591655,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 17,
+          "sim_time": 85.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.9352149737214155,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.47606672591655
+            },
+            "after": {
+              "bess-fc100": 37.40859894885662
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.47606672591655,
+                "after_mwh": 37.40859894885662,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 18,
+          "sim_time": 90.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.9335282792949172,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.40859894885662
+            },
+            "after": {
+              "bess-fc100": 37.34113117179669
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.40859894885662,
+                "after_mwh": 37.34113117179669,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 19,
+          "sim_time": 95.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.931841584868419,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.34113117179669
+            },
+            "after": {
+              "bess-fc100": 37.27366339473676
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.34113117179669,
+                "after_mwh": 37.27366339473676,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 20,
+          "sim_time": 100.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 47.254536621741096,
+          "soc": 0.9301281549210737,
+          "demand_mw": 67.4045366217411,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.27366339473676
+            },
+            "after": {
+              "bess-fc100": 37.20512619684295
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 47.254536621741096,
+                "output_mw": 47.254536621741096,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.27366339473676,
+                "after_mwh": 37.20512619684295,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 21,
+          "sim_time": 105.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 47.82877496014028,
+          "soc": 0.9283939033291568,
+          "demand_mw": 67.97877496014029,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.20512619684295
+            },
+            "after": {
+              "bess-fc100": 37.135756133166275
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 47.82877496014028,
+                "output_mw": 47.82877496014028,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.20512619684295,
+                "after_mwh": 37.135756133166275,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 22,
+          "sim_time": 110.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 48.2759922277552,
+          "soc": 0.9266434358241431,
+          "demand_mw": 68.4259922277552,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.135756133166275
+            },
+            "after": {
+              "bess-fc100": 37.065737432965726
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 48.2759922277552,
+                "output_mw": 48.2759922277552,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.135756133166275,
+                "after_mwh": 37.065737432965726,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 23,
+          "sim_time": 115.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 48.62428538597675,
+          "soc": 0.924880339353311,
+          "demand_mw": 68.77428538597675,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.065737432965726
+            },
+            "after": {
+              "bess-fc100": 36.99521357413244
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 48.62428538597675,
+                "output_mw": 48.62428538597675,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.065737432965726,
+                "after_mwh": 36.99521357413244,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 24,
+          "sim_time": 120.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 48.89553637033811,
+          "soc": 0.9231074074340103,
+          "demand_mw": 69.04553637033811,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 36.99521357413244
+            },
+            "after": {
+              "bess-fc100": 36.924296297360414
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 48.89553637033811,
+                "output_mw": 48.89553637033811,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 36.99521357413244,
+                "after_mwh": 36.924296297360414,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 25,
+          "sim_time": 125.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 49.10678684936762,
+          "soc": 0.9213268156597405,
+          "demand_mw": 69.25678684936763,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 36.924296297360414
+            },
+            "after": {
+              "bess-fc100": 36.85307262638962
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 49.10678684936762,
+                "output_mw": 49.10678684936762,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 36.924296297360414,
+                "after_mwh": 36.85307262638962,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        }
+      ],
+      "post_discharge_floor_window": [
+        {
+          "tick": 1,
+          "sim_time": 5.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 5.472355555555552,
+          "soc": 0.9498015746516263,
+          "demand_mw": 16.6668,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 38.0
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 5.472355555555552,
+                "output_mw": 5.472355555555552,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 38.0,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 2,
+          "sim_time": 10.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 0.0,
+          "soc": 0.9498015746516263,
+          "demand_mw": 16.6668,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 152.5,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 3,
+          "sim_time": 15.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 0.0,
+          "soc": 0.9498015746516263,
+          "demand_mw": 16.6668,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 152.5,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 4,
+          "sim_time": 20.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 0.0,
+          "soc": 0.9498015746516263,
+          "demand_mw": 16.6668,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 152.5,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 5,
+          "sim_time": 25.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 0.0,
+          "soc": 0.9498015746516263,
+          "demand_mw": 16.6668,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 152.5,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 6,
+          "sim_time": 30.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 0.0,
+          "soc": 0.9498015746516263,
+          "demand_mw": 16.6668,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 152.5,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 7,
+          "sim_time": 35.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 0.0,
+          "soc": 0.9498015746516263,
+          "demand_mw": 18.750149999999998,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 152.5,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 8,
+          "sim_time": 40.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 11.016915999999991,
+          "soc": 0.9494021058354809,
+          "demand_mw": 31.166915999999993,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.976084233419236
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 11.016915999999991,
+                "output_mw": 11.016915999999991,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.976084233419236,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 9,
+          "sim_time": 45.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 26.017035999999994,
+          "soc": 0.9484587388741159,
+          "demand_mw": 46.167035999999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.976084233419236
+            },
+            "after": {
+              "bess-fc100": 37.93834955496464
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 26.017035999999994,
+                "output_mw": 26.017035999999994,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.976084233419236,
+                "after_mwh": 37.93834955496464,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 10,
+          "sim_time": 50.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 41.017155999999986,
+          "soc": 0.9469714737675314,
+          "demand_mw": 61.16715599999999,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.93834955496464
+            },
+            "after": {
+              "bess-fc100": 37.87885895070126
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 41.017155999999986,
+                "output_mw": 41.017155999999986,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.93834955496464,
+                "after_mwh": 37.87885895070126,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 11,
+          "sim_time": 55.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 45.12829999999998,
+          "soc": 0.9453351402804053,
+          "demand_mw": 65.27829999999999,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.87885895070126
+            },
+            "after": {
+              "bess-fc100": 37.81340561121621
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 45.12829999999998,
+                "output_mw": 45.12829999999998,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.87885895070126,
+                "after_mwh": 37.81340561121621,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 12,
+          "sim_time": 60.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.943648445853907,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.81340561121621
+            },
+            "after": {
+              "bess-fc100": 37.74593783415628
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.81340561121621,
+                "after_mwh": 37.74593783415628,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 13,
+          "sim_time": 65.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.9419617514274087,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.74593783415628
+            },
+            "after": {
+              "bess-fc100": 37.67847005709635
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.74593783415628,
+                "after_mwh": 37.67847005709635,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 14,
+          "sim_time": 70.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.9402750570009104,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.67847005709635
+            },
+            "after": {
+              "bess-fc100": 37.611002280036416
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.67847005709635,
+                "after_mwh": 37.611002280036416,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 15,
+          "sim_time": 75.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.9385883625744121,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.611002280036416
+            },
+            "after": {
+              "bess-fc100": 37.543534502976485
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.611002280036416,
+                "after_mwh": 37.543534502976485,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 16,
+          "sim_time": 80.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.9369016681479139,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.543534502976485
+            },
+            "after": {
+              "bess-fc100": 37.47606672591655
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.543534502976485,
+                "after_mwh": 37.47606672591655,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 17,
+          "sim_time": 85.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.9352149737214155,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.47606672591655
+            },
+            "after": {
+              "bess-fc100": 37.40859894885662
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.47606672591655,
+                "after_mwh": 37.40859894885662,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 18,
+          "sim_time": 90.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.9335282792949172,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.40859894885662
+            },
+            "after": {
+              "bess-fc100": 37.34113117179669
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.40859894885662,
+                "after_mwh": 37.34113117179669,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 19,
+          "sim_time": 95.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.931841584868419,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.34113117179669
+            },
+            "after": {
+              "bess-fc100": 37.27366339473676
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.34113117179669,
+                "after_mwh": 37.27366339473676,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 20,
+          "sim_time": 100.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 47.254536621741096,
+          "soc": 0.9301281549210737,
+          "demand_mw": 67.4045366217411,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.27366339473676
+            },
+            "after": {
+              "bess-fc100": 37.20512619684295
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 47.254536621741096,
+                "output_mw": 47.254536621741096,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.27366339473676,
+                "after_mwh": 37.20512619684295,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 21,
+          "sim_time": 105.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 47.82877496014028,
+          "soc": 0.9283939033291568,
+          "demand_mw": 67.97877496014029,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.20512619684295
+            },
+            "after": {
+              "bess-fc100": 37.135756133166275
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 47.82877496014028,
+                "output_mw": 47.82877496014028,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.20512619684295,
+                "after_mwh": 37.135756133166275,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 22,
+          "sim_time": 110.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 48.2759922277552,
+          "soc": 0.9266434358241431,
+          "demand_mw": 68.4259922277552,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.135756133166275
+            },
+            "after": {
+              "bess-fc100": 37.065737432965726
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 48.2759922277552,
+                "output_mw": 48.2759922277552,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.135756133166275,
+                "after_mwh": 37.065737432965726,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 23,
+          "sim_time": 115.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 48.62428538597675,
+          "soc": 0.924880339353311,
+          "demand_mw": 68.77428538597675,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.065737432965726
+            },
+            "after": {
+              "bess-fc100": 36.99521357413244
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 48.62428538597675,
+                "output_mw": 48.62428538597675,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.065737432965726,
+                "after_mwh": 36.99521357413244,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 24,
+          "sim_time": 120.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 48.89553637033811,
+          "soc": 0.9231074074340103,
+          "demand_mw": 69.04553637033811,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 36.99521357413244
+            },
+            "after": {
+              "bess-fc100": 36.924296297360414
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 48.89553637033811,
+                "output_mw": 48.89553637033811,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 36.99521357413244,
+                "after_mwh": 36.924296297360414,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 25,
+          "sim_time": 125.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 49.10678684936762,
+          "soc": 0.9213268156597405,
+          "demand_mw": 69.25678684936763,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 36.924296297360414
+            },
+            "after": {
+              "bess-fc100": 36.85307262638962
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {}
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 49.10678684936762,
+                "output_mw": 49.10678684936762,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 36.924296297360414,
+                "after_mwh": 36.85307262638962,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        }
+      ],
+      "first_advisory": null,
+      "below_floor_hold_ticks": 6,
+      "below_floor_discharge_ticks": 258,
+      "illegal_d2r_discharge_count": 0,
+      "first_illegal_d2r_discharge": null,
+      "basis_counts": {
+        "None|None|None": 264
+      },
+      "summary": {
+        "kind": "summary",
+        "physical_sha256": "d89d3132a5f87e94de6869a1246f5d3f434e03ecab72d744f90329ac8608d8f2",
+        "ticks": 264,
+        "metrics": {},
+        "record": {},
+        "end_sim_time": 1320.0,
+        "build_warnings": [
+          {
+            "code": "bess_reserve_floor_above_usable",
+            "bess_id": "bess-fc100",
+            "floor_mwh": 152.5,
+            "usable_mwh": 40.0,
+            "winning_term": "diesel_floor",
+            "diesel_units": [
+              {
+                "asset_id": "diesel-000",
+                "delta_t_start_s": 3600.0,
+                "residual_ramp_s": 60.0,
+                "start_offset_s": 0.0
+              }
+            ],
+            "diesel_worst_case_sync_s": 3660.0
+          }
+        ],
+        "final_floor_basis": null,
+        "floor_history_count": 0
+      },
+      "first_floor_next120s_min_hz": 60.0,
+      "first_discharge_floor_next120s_min_hz": 60.0,
+      "complete": true
+    },
+    "candidate": {
+      "ticks": 264,
+      "min_soc": 0.42374204369743096,
+      "frequency_min": -82.80435199997717,
+      "frequency_max": 60.0,
+      "frequency_min_time": 1165.0,
+      "gt_min": 0,
+      "gt_max": 0,
+      "bess_min": 0.0,
+      "bess_max": 59.0,
+      "floor_min_mwh": 152.5,
+      "floor_max_mwh": 152.5,
+      "unserved_mwh": 6.045185894310674,
+      "collapse": null,
+      "balance_failure_count": 0,
+      "first_balance_failure": null,
+      "first_floor": {
+        "tick": 1,
+        "sim_time": 5.0,
+        "frequency_hz": 60.0,
+        "gt_mw": 0,
+        "bess_mw": 5.472355555555552,
+        "soc": 0.9498015746516263,
+        "demand_mw": 16.6668,
+        "solar_mw": 0,
+        "observation": {
+          "before": {
+            "bess-fc100": 38.0
+          },
+          "after": {
+            "bess-fc100": 37.99206298606505
+          },
+          "floors": {
+            "bess-fc100": 152.5
+          },
+          "bases": {
+            "bess-fc100": {
+              "bess_id": "bess-fc100",
+              "floor_mwh": 152.5,
+              "depth_reserve_mwh": 0.0,
+              "diesel_floor_mwh": 152.5,
+              "d2r_term_mwh": 0.0,
+              "winning_term": "diesel_floor",
+              "basis": "no restartable synchronous unit",
+              "unit_id": null,
+              "eligibility_wait_s": null,
+              "start_duration_s": null,
+              "thermal_state": null,
+              "eligibility_reason": null
+            }
+          },
+          "covers": [
+            {
+              "unit": "bess-fc100",
+              "requested_mw": 5.472355555555552,
+              "output_mw": 5.472355555555552,
+              "physical_floor_mwh": 0.0,
+              "before_mwh": 38.0,
+              "after_mwh": 37.99206298606505,
+              "on_bus": []
+            }
+          ],
+          "balance_passed": true,
+          "balance_defect_mw": 0.0,
+          "on_bus": []
+        }
+      },
+      "first_discharge_floor": {
+        "tick": 1,
+        "sim_time": 5.0,
+        "frequency_hz": 60.0,
+        "gt_mw": 0,
+        "bess_mw": 5.472355555555552,
+        "soc": 0.9498015746516263,
+        "demand_mw": 16.6668,
+        "solar_mw": 0,
+        "observation": {
+          "before": {
+            "bess-fc100": 38.0
+          },
+          "after": {
+            "bess-fc100": 37.99206298606505
+          },
+          "floors": {
+            "bess-fc100": 152.5
+          },
+          "bases": {
+            "bess-fc100": {
+              "bess_id": "bess-fc100",
+              "floor_mwh": 152.5,
+              "depth_reserve_mwh": 0.0,
+              "diesel_floor_mwh": 152.5,
+              "d2r_term_mwh": 0.0,
+              "winning_term": "diesel_floor",
+              "basis": "no restartable synchronous unit",
+              "unit_id": null,
+              "eligibility_wait_s": null,
+              "start_duration_s": null,
+              "thermal_state": null,
+              "eligibility_reason": null
+            }
+          },
+          "covers": [
+            {
+              "unit": "bess-fc100",
+              "requested_mw": 5.472355555555552,
+              "output_mw": 5.472355555555552,
+              "physical_floor_mwh": 0.0,
+              "before_mwh": 38.0,
+              "after_mwh": 37.99206298606505,
+              "on_bus": []
+            }
+          ],
+          "balance_passed": true,
+          "balance_defect_mw": 0.0,
+          "on_bus": []
+        }
+      },
+      "post_floor_window": [
+        {
+          "tick": 1,
+          "sim_time": 5.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 5.472355555555552,
+          "soc": 0.9498015746516263,
+          "demand_mw": 16.6668,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 38.0
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 5.472355555555552,
+                "output_mw": 5.472355555555552,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 38.0,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 2,
+          "sim_time": 10.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 0.0,
+          "soc": 0.9498015746516263,
+          "demand_mw": 16.6668,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 152.5,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 3,
+          "sim_time": 15.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 0.0,
+          "soc": 0.9498015746516263,
+          "demand_mw": 16.6668,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 152.5,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 4,
+          "sim_time": 20.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 0.0,
+          "soc": 0.9498015746516263,
+          "demand_mw": 16.6668,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 152.5,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 5,
+          "sim_time": 25.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 0.0,
+          "soc": 0.9498015746516263,
+          "demand_mw": 16.6668,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 152.5,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 6,
+          "sim_time": 30.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 0.0,
+          "soc": 0.9498015746516263,
+          "demand_mw": 16.6668,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 152.5,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 7,
+          "sim_time": 35.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 0.0,
+          "soc": 0.9498015746516263,
+          "demand_mw": 18.750149999999998,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 152.5,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 8,
+          "sim_time": 40.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 11.016915999999991,
+          "soc": 0.9494021058354809,
+          "demand_mw": 31.166915999999993,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.976084233419236
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 11.016915999999991,
+                "output_mw": 11.016915999999991,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.976084233419236,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 9,
+          "sim_time": 45.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 26.017035999999994,
+          "soc": 0.9484587388741159,
+          "demand_mw": 46.167035999999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.976084233419236
+            },
+            "after": {
+              "bess-fc100": 37.93834955496464
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 26.017035999999994,
+                "output_mw": 26.017035999999994,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.976084233419236,
+                "after_mwh": 37.93834955496464,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 10,
+          "sim_time": 50.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 41.017155999999986,
+          "soc": 0.9469714737675314,
+          "demand_mw": 61.16715599999999,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.93834955496464
+            },
+            "after": {
+              "bess-fc100": 37.87885895070126
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 41.017155999999986,
+                "output_mw": 41.017155999999986,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.93834955496464,
+                "after_mwh": 37.87885895070126,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 11,
+          "sim_time": 55.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 45.12829999999998,
+          "soc": 0.9453351402804053,
+          "demand_mw": 65.27829999999999,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.87885895070126
+            },
+            "after": {
+              "bess-fc100": 37.81340561121621
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 45.12829999999998,
+                "output_mw": 45.12829999999998,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.87885895070126,
+                "after_mwh": 37.81340561121621,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 12,
+          "sim_time": 60.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.943648445853907,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.81340561121621
+            },
+            "after": {
+              "bess-fc100": 37.74593783415628
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.81340561121621,
+                "after_mwh": 37.74593783415628,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 13,
+          "sim_time": 65.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.9419617514274087,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.74593783415628
+            },
+            "after": {
+              "bess-fc100": 37.67847005709635
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.74593783415628,
+                "after_mwh": 37.67847005709635,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 14,
+          "sim_time": 70.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.9402750570009104,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.67847005709635
+            },
+            "after": {
+              "bess-fc100": 37.611002280036416
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.67847005709635,
+                "after_mwh": 37.611002280036416,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 15,
+          "sim_time": 75.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.9385883625744121,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.611002280036416
+            },
+            "after": {
+              "bess-fc100": 37.543534502976485
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.611002280036416,
+                "after_mwh": 37.543534502976485,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 16,
+          "sim_time": 80.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.9369016681479139,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.543534502976485
+            },
+            "after": {
+              "bess-fc100": 37.47606672591655
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.543534502976485,
+                "after_mwh": 37.47606672591655,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 17,
+          "sim_time": 85.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.9352149737214155,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.47606672591655
+            },
+            "after": {
+              "bess-fc100": 37.40859894885662
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.47606672591655,
+                "after_mwh": 37.40859894885662,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 18,
+          "sim_time": 90.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.9335282792949172,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.40859894885662
+            },
+            "after": {
+              "bess-fc100": 37.34113117179669
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.40859894885662,
+                "after_mwh": 37.34113117179669,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 19,
+          "sim_time": 95.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.931841584868419,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.34113117179669
+            },
+            "after": {
+              "bess-fc100": 37.27366339473676
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.34113117179669,
+                "after_mwh": 37.27366339473676,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 20,
+          "sim_time": 100.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 47.254536621741096,
+          "soc": 0.9301281549210737,
+          "demand_mw": 67.4045366217411,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.27366339473676
+            },
+            "after": {
+              "bess-fc100": 37.20512619684295
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 47.254536621741096,
+                "output_mw": 47.254536621741096,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.27366339473676,
+                "after_mwh": 37.20512619684295,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 21,
+          "sim_time": 105.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 47.82877496014028,
+          "soc": 0.9283939033291568,
+          "demand_mw": 67.97877496014029,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.20512619684295
+            },
+            "after": {
+              "bess-fc100": 37.135756133166275
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 47.82877496014028,
+                "output_mw": 47.82877496014028,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.20512619684295,
+                "after_mwh": 37.135756133166275,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 22,
+          "sim_time": 110.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 48.2759922277552,
+          "soc": 0.9266434358241431,
+          "demand_mw": 68.4259922277552,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.135756133166275
+            },
+            "after": {
+              "bess-fc100": 37.065737432965726
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 48.2759922277552,
+                "output_mw": 48.2759922277552,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.135756133166275,
+                "after_mwh": 37.065737432965726,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 23,
+          "sim_time": 115.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 48.62428538597675,
+          "soc": 0.924880339353311,
+          "demand_mw": 68.77428538597675,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.065737432965726
+            },
+            "after": {
+              "bess-fc100": 36.99521357413244
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 48.62428538597675,
+                "output_mw": 48.62428538597675,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.065737432965726,
+                "after_mwh": 36.99521357413244,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 24,
+          "sim_time": 120.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 48.89553637033811,
+          "soc": 0.9231074074340103,
+          "demand_mw": 69.04553637033811,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 36.99521357413244
+            },
+            "after": {
+              "bess-fc100": 36.924296297360414
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 48.89553637033811,
+                "output_mw": 48.89553637033811,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 36.99521357413244,
+                "after_mwh": 36.924296297360414,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 25,
+          "sim_time": 125.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 49.10678684936762,
+          "soc": 0.9213268156597405,
+          "demand_mw": 69.25678684936763,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 36.924296297360414
+            },
+            "after": {
+              "bess-fc100": 36.85307262638962
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 49.10678684936762,
+                "output_mw": 49.10678684936762,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 36.924296297360414,
+                "after_mwh": 36.85307262638962,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        }
+      ],
+      "post_discharge_floor_window": [
+        {
+          "tick": 1,
+          "sim_time": 5.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 5.472355555555552,
+          "soc": 0.9498015746516263,
+          "demand_mw": 16.6668,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 38.0
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 5.472355555555552,
+                "output_mw": 5.472355555555552,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 38.0,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 2,
+          "sim_time": 10.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 0.0,
+          "soc": 0.9498015746516263,
+          "demand_mw": 16.6668,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 152.5,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 3,
+          "sim_time": 15.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 0.0,
+          "soc": 0.9498015746516263,
+          "demand_mw": 16.6668,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 152.5,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 4,
+          "sim_time": 20.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 0.0,
+          "soc": 0.9498015746516263,
+          "demand_mw": 16.6668,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 152.5,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 5,
+          "sim_time": 25.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 0.0,
+          "soc": 0.9498015746516263,
+          "demand_mw": 16.6668,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 152.5,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 6,
+          "sim_time": 30.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 0.0,
+          "soc": 0.9498015746516263,
+          "demand_mw": 16.6668,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 152.5,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 7,
+          "sim_time": 35.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 0.0,
+          "soc": 0.9498015746516263,
+          "demand_mw": 18.750149999999998,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.99206298606505
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 0.0,
+                "output_mw": 0.0,
+                "physical_floor_mwh": 152.5,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.99206298606505,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 8,
+          "sim_time": 40.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 11.016915999999991,
+          "soc": 0.9494021058354809,
+          "demand_mw": 31.166915999999993,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.99206298606505
+            },
+            "after": {
+              "bess-fc100": 37.976084233419236
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 11.016915999999991,
+                "output_mw": 11.016915999999991,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.99206298606505,
+                "after_mwh": 37.976084233419236,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 9,
+          "sim_time": 45.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 26.017035999999994,
+          "soc": 0.9484587388741159,
+          "demand_mw": 46.167035999999996,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.976084233419236
+            },
+            "after": {
+              "bess-fc100": 37.93834955496464
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 26.017035999999994,
+                "output_mw": 26.017035999999994,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.976084233419236,
+                "after_mwh": 37.93834955496464,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 10,
+          "sim_time": 50.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 41.017155999999986,
+          "soc": 0.9469714737675314,
+          "demand_mw": 61.16715599999999,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.93834955496464
+            },
+            "after": {
+              "bess-fc100": 37.87885895070126
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 41.017155999999986,
+                "output_mw": 41.017155999999986,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.93834955496464,
+                "after_mwh": 37.87885895070126,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 11,
+          "sim_time": 55.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 45.12829999999998,
+          "soc": 0.9453351402804053,
+          "demand_mw": 65.27829999999999,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.87885895070126
+            },
+            "after": {
+              "bess-fc100": 37.81340561121621
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 45.12829999999998,
+                "output_mw": 45.12829999999998,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.87885895070126,
+                "after_mwh": 37.81340561121621,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 12,
+          "sim_time": 60.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.943648445853907,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.81340561121621
+            },
+            "after": {
+              "bess-fc100": 37.74593783415628
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.81340561121621,
+                "after_mwh": 37.74593783415628,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 13,
+          "sim_time": 65.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.9419617514274087,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.74593783415628
+            },
+            "after": {
+              "bess-fc100": 37.67847005709635
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.74593783415628,
+                "after_mwh": 37.67847005709635,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 14,
+          "sim_time": 70.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.9402750570009104,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.67847005709635
+            },
+            "after": {
+              "bess-fc100": 37.611002280036416
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.67847005709635,
+                "after_mwh": 37.611002280036416,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 15,
+          "sim_time": 75.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.9385883625744121,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.611002280036416
+            },
+            "after": {
+              "bess-fc100": 37.543534502976485
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.611002280036416,
+                "after_mwh": 37.543534502976485,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 16,
+          "sim_time": 80.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.9369016681479139,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.543534502976485
+            },
+            "after": {
+              "bess-fc100": 37.47606672591655
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.543534502976485,
+                "after_mwh": 37.47606672591655,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 17,
+          "sim_time": 85.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.9352149737214155,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.47606672591655
+            },
+            "after": {
+              "bess-fc100": 37.40859894885662
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.47606672591655,
+                "after_mwh": 37.40859894885662,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 18,
+          "sim_time": 90.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.9335282792949172,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.40859894885662
+            },
+            "after": {
+              "bess-fc100": 37.34113117179669
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.40859894885662,
+                "after_mwh": 37.34113117179669,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 19,
+          "sim_time": 95.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 46.51719999999999,
+          "soc": 0.931841584868419,
+          "demand_mw": 66.6672,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.34113117179669
+            },
+            "after": {
+              "bess-fc100": 37.27366339473676
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 46.51719999999999,
+                "output_mw": 46.51719999999999,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.34113117179669,
+                "after_mwh": 37.27366339473676,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 20,
+          "sim_time": 100.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 47.254536621741096,
+          "soc": 0.9301281549210737,
+          "demand_mw": 67.4045366217411,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.27366339473676
+            },
+            "after": {
+              "bess-fc100": 37.20512619684295
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 47.254536621741096,
+                "output_mw": 47.254536621741096,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.27366339473676,
+                "after_mwh": 37.20512619684295,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 21,
+          "sim_time": 105.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 47.82877496014028,
+          "soc": 0.9283939033291568,
+          "demand_mw": 67.97877496014029,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.20512619684295
+            },
+            "after": {
+              "bess-fc100": 37.135756133166275
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 47.82877496014028,
+                "output_mw": 47.82877496014028,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.20512619684295,
+                "after_mwh": 37.135756133166275,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 22,
+          "sim_time": 110.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 48.2759922277552,
+          "soc": 0.9266434358241431,
+          "demand_mw": 68.4259922277552,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.135756133166275
+            },
+            "after": {
+              "bess-fc100": 37.065737432965726
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 48.2759922277552,
+                "output_mw": 48.2759922277552,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.135756133166275,
+                "after_mwh": 37.065737432965726,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 23,
+          "sim_time": 115.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 48.62428538597675,
+          "soc": 0.924880339353311,
+          "demand_mw": 68.77428538597675,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 37.065737432965726
+            },
+            "after": {
+              "bess-fc100": 36.99521357413244
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 48.62428538597675,
+                "output_mw": 48.62428538597675,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 37.065737432965726,
+                "after_mwh": 36.99521357413244,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 24,
+          "sim_time": 120.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 48.89553637033811,
+          "soc": 0.9231074074340103,
+          "demand_mw": 69.04553637033811,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 36.99521357413244
+            },
+            "after": {
+              "bess-fc100": 36.924296297360414
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 48.89553637033811,
+                "output_mw": 48.89553637033811,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 36.99521357413244,
+                "after_mwh": 36.924296297360414,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        },
+        {
+          "tick": 25,
+          "sim_time": 125.0,
+          "frequency_hz": 60.0,
+          "gt_mw": 0,
+          "bess_mw": 49.10678684936762,
+          "soc": 0.9213268156597405,
+          "demand_mw": 69.25678684936763,
+          "solar_mw": 0,
+          "observation": {
+            "before": {
+              "bess-fc100": 36.924296297360414
+            },
+            "after": {
+              "bess-fc100": 36.85307262638962
+            },
+            "floors": {
+              "bess-fc100": 152.5
+            },
+            "bases": {
+              "bess-fc100": {
+                "bess_id": "bess-fc100",
+                "floor_mwh": 152.5,
+                "depth_reserve_mwh": 0.0,
+                "diesel_floor_mwh": 152.5,
+                "d2r_term_mwh": 0.0,
+                "winning_term": "diesel_floor",
+                "basis": "no restartable synchronous unit",
+                "unit_id": null,
+                "eligibility_wait_s": null,
+                "start_duration_s": null,
+                "thermal_state": null,
+                "eligibility_reason": null
+              }
+            },
+            "covers": [
+              {
+                "unit": "bess-fc100",
+                "requested_mw": 49.10678684936762,
+                "output_mw": 49.10678684936762,
+                "physical_floor_mwh": 0.0,
+                "before_mwh": 36.924296297360414,
+                "after_mwh": 36.85307262638962,
+                "on_bus": []
+              }
+            ],
+            "balance_passed": true,
+            "balance_defect_mw": 0.0,
+            "on_bus": []
+          }
+        }
+      ],
+      "first_advisory": null,
+      "below_floor_hold_ticks": 6,
+      "below_floor_discharge_ticks": 258,
+      "illegal_d2r_discharge_count": 0,
+      "first_illegal_d2r_discharge": null,
+      "basis_counts": {
+        "diesel_floor|no restartable synchronous unit|None": 264
+      },
+      "summary": {
+        "kind": "summary",
+        "physical_sha256": "d89d3132a5f87e94de6869a1246f5d3f434e03ecab72d744f90329ac8608d8f2",
+        "ticks": 264,
+        "metrics": {},
+        "record": {},
+        "end_sim_time": 1320.0,
+        "build_warnings": [
+          {
+            "code": "bess_reserve_floor_above_usable",
+            "bess_id": "bess-fc100",
+            "floor_mwh": 152.5,
+            "usable_mwh": 40.0,
+            "winning_term": "diesel_floor",
+            "diesel_units": [
+              {
+                "asset_id": "diesel-000",
+                "delta_t_start_s": 3600.0,
+                "residual_ramp_s": 60.0,
+                "start_offset_s": 0.0
+              }
+            ],
+            "diesel_worst_case_sync_s": 3660.0
+          }
+        ],
+        "final_floor_basis": {
+          "bess-fc100": {
+            "bess_id": "bess-fc100",
+            "floor_mwh": 152.5,
+            "depth_reserve_mwh": 0.0,
+            "diesel_floor_mwh": 152.5,
+            "d2r_term_mwh": 0.0,
+            "winning_term": "diesel_floor",
+            "basis": "no restartable synchronous unit",
+            "unit_id": null,
+            "eligibility_wait_s": null,
+            "start_duration_s": null,
+            "thermal_state": null,
+            "eligibility_reason": null
+          }
+        },
+        "floor_history_count": 0
+      },
+      "first_floor_next120s_min_hz": 60.0,
+      "first_discharge_floor_next120s_min_hz": 60.0,
+      "complete": true
+    }
+  },
+  "return_codes": [
+    0,
+    0
+  ],
+  "physical_identical": true,
+  "compact_identical": true,
+  "metric_differences": {},
+  "metrics_identical": true
+}

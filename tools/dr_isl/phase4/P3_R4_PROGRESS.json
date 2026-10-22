@@ -1,0 +1,62 @@
+[
+  {
+    "scenario": "scenario-uneven-multisched-01",
+    "arm": "baseline",
+    "repetition": 1
+  },
+  {
+    "scenario": "scenario-uneven-multisched-01",
+    "arm": "baseline",
+    "repetition": 2
+  },
+  {
+    "scenario": "scenario-uneven-multisched-01",
+    "arm": "informed",
+    "repetition": 1
+  },
+  {
+    "scenario": "scenario-uneven-multisched-01",
+    "arm": "informed",
+    "repetition": 2
+  },
+  {
+    "scenario": "scenario-h1-k8s-ray-24h",
+    "arm": "baseline",
+    "repetition": 1
+  },
+  {
+    "scenario": "scenario-h1-k8s-ray-24h",
+    "arm": "baseline",
+    "repetition": 2
+  },
+  {
+    "scenario": "scenario-h1-k8s-ray-24h",
+    "arm": "informed",
+    "repetition": 1
+  },
+  {
+    "scenario": "scenario-h1-k8s-ray-24h",
+    "arm": "informed",
+    "repetition": 2
+  },
+  {
+    "scenario": "scenario-h2-slurm-24h",
+    "arm": "baseline",
+    "repetition": 1
+  },
+  {
+    "scenario": "scenario-h2-slurm-24h",
+    "arm": "baseline",
+    "repetition": 2
+  },
+  {
+    "scenario": "scenario-h2-slurm-24h",
+    "arm": "informed",
+    "repetition": 1
+  },
+  {
+    "scenario": "scenario-h2-slurm-24h",
+    "arm": "informed",
+    "repetition": 2
+  }
+]
