@@ -1,0 +1,146 @@
+{
+  "all_14_passed": true,
+  "reference_file": "tools/dr_isl/d11/D11_3_RESULTS.json",
+  "cases": [
+    {
+      "scenario": "scenario-uneven-multisched-01",
+      "arm": "baseline",
+      "ticks": 1440,
+      "passed": true,
+      "hash": "c72eb2a1fc1ba90c70e61cc571cbc310040346e195ffb16cbf4f20b4dc875cf5",
+      "frequency_hz_and_validity_identical_to_stash": true,
+      "public_difference_ticks": 0,
+      "maximum_public_difference_mw": 0.0
+    },
+    {
+      "scenario": "scenario-uneven-multisched-01",
+      "arm": "informed",
+      "ticks": 1440,
+      "passed": true,
+      "hash": "766b066a7c35e1d9824ae2ceddf0391f9d7e0a164f6dea47cdb5a4e7a46af76e",
+      "frequency_hz_and_validity_identical_to_stash": true,
+      "public_difference_ticks": 0,
+      "maximum_public_difference_mw": 0.0
+    },
+    {
+      "scenario": "scenario-h1-k8s-ray-24h",
+      "arm": "baseline",
+      "ticks": 17280,
+      "passed": true,
+      "hash": "c3d6a39d63e786f5abef82b30bc045b122e675bc9fcc07ffc60a93262de0b823",
+      "frequency_hz_and_validity_identical_to_stash": true,
+      "public_difference_ticks": 0,
+      "maximum_public_difference_mw": 0.0
+    },
+    {
+      "scenario": "scenario-h1-k8s-ray-24h",
+      "arm": "informed",
+      "ticks": 17280,
+      "passed": true,
+      "hash": "958efa040f72ec67186b89a70f8ee984069fa19a961332559db36e83f3be845c",
+      "frequency_hz_and_validity_identical_to_stash": true,
+      "public_difference_ticks": 0,
+      "maximum_public_difference_mw": 0.0
+    },
+    {
+      "scenario": "scenario-h2-slurm-24h",
+      "arm": "baseline",
+      "ticks": 17280,
+      "passed": true,
+      "hash": "905a7f9d83cb2492d77bead4bd687f3959f300535f98838b33c384951cb75ca3",
+      "frequency_hz_and_validity_identical_to_stash": true,
+      "public_difference_ticks": 0,
+      "maximum_public_difference_mw": 0.0
+    },
+    {
+      "scenario": "scenario-h2-slurm-24h",
+      "arm": "informed",
+      "ticks": 17280,
+      "passed": true,
+      "hash": "49363ec20bc1634542c5b13d1e56a2fba5c035697689a362c50ab7d797f2d97c",
+      "frequency_hz_and_validity_identical_to_stash": true,
+      "public_difference_ticks": 0,
+      "maximum_public_difference_mw": 0.0
+    },
+    {
+      "scenario": "S10_mit_supercloud_2021-08-11",
+      "arm": "app",
+      "ticks": 17280,
+      "passed": true,
+      "hash": "8a9415b84b564b706b7ee2e13035902f0dc3da941b74834de398feed7e3ddebe",
+      "frequency_hz_and_validity_identical_to_stash": true,
+      "public_difference_ticks": 0,
+      "maximum_public_difference_mw": 0.0
+    },
+    {
+      "scenario": "scenario-equinix-sj-1",
+      "arm": "app",
+      "ticks": 720,
+      "passed": true,
+      "hash": "65f41459bbb89a002473166453aa3792efc7460d210813e4700b7ea27734bd65",
+      "frequency_hz_and_validity_identical_to_stash": true,
+      "public_difference_ticks": 0,
+      "maximum_public_difference_mw": 0.0
+    },
+    {
+      "scenario": "scenario-turbine-01",
+      "arm": "app",
+      "ticks": 720,
+      "passed": true,
+      "hash": "4287d6a45c254914ffc67d5925ed9949c24a4dcd626a45f180929b7dd5afa7e4",
+      "frequency_hz_and_validity_identical_to_stash": true,
+      "public_difference_ticks": 0,
+      "maximum_public_difference_mw": 0.0
+    },
+    {
+      "scenario": "scenario-hybrid-ai-100mw-addendum-i",
+      "arm": "app",
+      "ticks": 120,
+      "passed": true,
+      "hash": "74f55fca1651deabc7364360b1d0f52941b8564df6e6001be377bc3a3458cfc1",
+      "frequency_hz_and_validity_identical_to_stash": true,
+      "public_difference_ticks": 0,
+      "maximum_public_difference_mw": 0.0
+    },
+    {
+      "scenario": "scenario-100mw-fuel-cell-bess-diesel",
+      "arm": "app",
+      "ticks": 252,
+      "passed": true,
+      "hash": "c6ccccd59d04a3356f651c3f963e7eb4bdfb3367af7ddf9faab63c1c7db87f65",
+      "frequency_hz_and_validity_identical_to_stash": true,
+      "public_difference_ticks": 0,
+      "maximum_public_difference_mw": 0.0
+    },
+    {
+      "scenario": "scenario-fc100-islanded-v2",
+      "arm": "app",
+      "ticks": 264,
+      "passed": true,
+      "hash": "c3738260c4f18bf43dd2d7284f501386d2756572e74be23beb81b704a154eccb",
+      "frequency_hz_and_validity_identical_to_stash": true,
+      "public_difference_ticks": 0,
+      "maximum_public_difference_mw": 0.0
+    },
+    {
+      "scenario": "scenario-fc100-islanded-zero-hot-v2",
+      "arm": "app",
+      "ticks": 264,
+      "passed": true,
+      "hash": "aefdc289bec7a9da3c99398716f8549a0eef0bfdf765bd72a1264a95fe44a507",
+      "frequency_hz_and_validity_identical_to_stash": true,
+      "public_difference_ticks": 1,
+      "maximum_public_difference_mw": 3.552713678800501e-15
+    },
+    {
+      "scenario": "demo-islanded-ramp",
+      "arm": "app",
+      "ticks": 2160,
+      "passed": true,
+      "hash": "88b04757bff6b8a1d88fc2de6a0396f1da203c724f3021cc4f1db1bd97d16ceb",
+      "frequency_hz_and_validity_identical_to_stash": true,
+      "public_difference_ticks": 0,
+      "maximum_public_difference_mw": 0.0
+    }
+  ]
+}

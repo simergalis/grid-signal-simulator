@@ -1,0 +1,114 @@
+{
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py": [
+    {
+      "start_line": 943,
+      "end_line": 953,
+      "hunk": "@@ -943,6 +943,11 @@ def _cost_ranked_dispatch_allocations("
+    },
+    {
+      "start_line": 3204,
+      "end_line": 3238,
+      "hunk": "@@ -3199,39 +3204,35 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:"
+    },
+    {
+      "start_line": 3368,
+      "end_line": 3377,
+      "hunk": "@@ -3367,9 +3368,10 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:"
+    },
+    {
+      "start_line": 3462,
+      "end_line": 3484,
+      "hunk": "@@ -3460,6 +3462,23 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:"
+    },
+    {
+      "start_line": 3498,
+      "end_line": 3509,
+      "hunk": "@@ -3479,9 +3498,12 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:"
+    },
+    {
+      "start_line": 4144,
+      "end_line": 4156,
+      "hunk": "@@ -4122,7 +4144,13 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:"
+    }
+  ],
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_13_3_frequency.py": [
+    {
+      "start_line": 145,
+      "end_line": 151,
+      "hunk": "@@ -145,7 +145,7 @@ class TestI1FrequencyDeviationVisible:"
+    },
+    {
+      "start_line": 157,
+      "end_line": 166,
+      "hunk": "@@ -157,8 +157,10 @@ class TestI1FrequencyDeviationVisible:"
+    },
+    {
+      "start_line": 180,
+      "end_line": 186,
+      "hunk": "@@ -178,7 +180,7 @@ class TestI1FrequencyDeviationVisible:"
+    },
+    {
+      "start_line": 204,
+      "end_line": 218,
+      "hunk": "@@ -202,7 +204,15 @@ class TestI2SwingEquationAccuracy:"
+    },
+    {
+      "start_line": 226,
+      "end_line": 235,
+      "hunk": "@@ -216,10 +226,10 @@ class TestI2SwingEquationAccuracy:"
+    },
+    {
+      "start_line": 243,
+      "end_line": 268,
+      "hunk": "@@ -233,18 +243,26 @@ class TestI2SwingEquationAccuracy:"
+    }
+  ],
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_bess_surplus_absorption.py": [
+    {
+      "start_line": 254,
+      "end_line": 260,
+      "hunk": "@@ -254,7 +254,7 @@ class TestSurplusAbsorption:"
+    },
+    {
+      "start_line": 268,
+      "end_line": 282,
+      "hunk": "@@ -268,14 +268,15 @@ class TestSurplusAbsorption:"
+    },
+    {
+      "start_line": 286,
+      "end_line": 297,
+      "hunk": "@@ -285,11 +286,12 @@ class TestSurplusAbsorption:"
+    }
+  ],
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_dump_response.py": [
+    {
+      "start_line": 1,
+      "end_line": 113,
+      "hunk": "@@ -0,0 +1,113 @@"
+    }
+  ],
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_forecast_path.py": [
+    {
+      "start_line": 687,
+      "end_line": 696,
+      "hunk": "@@ -687,9 +687,10 @@ class TestDispatchTruthfulness:"
+    },
+    {
+      "start_line": 827,
+      "end_line": 836,
+      "hunk": "@@ -826,9 +827,10 @@ class TestDispatchTruthfulness:"
+    },
+    {
+      "start_line": 849,
+      "end_line": 863,
+      "hunk": "@@ -847,7 +849,15 @@ class TestDispatchTruthfulness:"
+    }
+  ],
+  "docs/addendum-h-phase2a-change-record.md": [
+    {
+      "start_line": 37,
+      "end_line": 67,
+      "hunk": "@@ -37,19 +37,31 @@ This work preserves the Phase 2a contract:"
+    }
+  ]
+}

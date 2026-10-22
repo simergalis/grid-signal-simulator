@@ -1,0 +1,101 @@
+{
+  "scenario-uneven-multisched-01": {
+    "conditions": {
+      "build_parity": true,
+      "baseline_valid": true,
+      "informed_valid": true,
+      "baseline_energy_balance": true,
+      "informed_energy_balance": true,
+      "baseline_fuel_reconciled": true,
+      "informed_fuel_reconciled": true,
+      "identical_compute_trace": true,
+      "informed_unserved_energy_no_worse": true,
+      "informed_peak_unserved_no_worse": true
+    },
+    "condition_order": [
+      "build_parity",
+      "baseline_valid",
+      "informed_valid",
+      "baseline_energy_balance",
+      "informed_energy_balance",
+      "baseline_fuel_reconciled",
+      "informed_fuel_reconciled",
+      "identical_compute_trace",
+      "informed_unserved_energy_no_worse",
+      "informed_peak_unserved_no_worse"
+    ],
+    "verdict": "PASS",
+    "informed_vs_baseline": {
+      "baseline_unserved_mwh": 0.351692658,
+      "informed_unserved_mwh": 0.020719074,
+      "baseline_peak_unserved_mw": 22.309362466,
+      "informed_peak_unserved_mw": 7.52325057
+    }
+  },
+  "scenario-h1-k8s-ray-24h": {
+    "conditions": {
+      "build_parity": true,
+      "baseline_valid": true,
+      "informed_valid": true,
+      "baseline_energy_balance": true,
+      "informed_energy_balance": true,
+      "baseline_fuel_reconciled": true,
+      "informed_fuel_reconciled": true,
+      "identical_compute_trace": true,
+      "informed_unserved_energy_no_worse": true,
+      "informed_peak_unserved_no_worse": true
+    },
+    "condition_order": [
+      "build_parity",
+      "baseline_valid",
+      "informed_valid",
+      "baseline_energy_balance",
+      "informed_energy_balance",
+      "baseline_fuel_reconciled",
+      "informed_fuel_reconciled",
+      "identical_compute_trace",
+      "informed_unserved_energy_no_worse",
+      "informed_peak_unserved_no_worse"
+    ],
+    "verdict": "PASS",
+    "informed_vs_baseline": {
+      "baseline_unserved_mwh": 0.894372986,
+      "informed_unserved_mwh": 0.124133405,
+      "baseline_peak_unserved_mw": 35.021533247,
+      "informed_peak_unserved_mw": 20.746308977
+    }
+  },
+  "scenario-h2-slurm-24h": {
+    "conditions": {
+      "build_parity": true,
+      "baseline_valid": true,
+      "informed_valid": true,
+      "baseline_energy_balance": true,
+      "informed_energy_balance": true,
+      "baseline_fuel_reconciled": true,
+      "informed_fuel_reconciled": true,
+      "identical_compute_trace": true,
+      "informed_unserved_energy_no_worse": true,
+      "informed_peak_unserved_no_worse": true
+    },
+    "condition_order": [
+      "build_parity",
+      "baseline_valid",
+      "informed_valid",
+      "baseline_energy_balance",
+      "informed_energy_balance",
+      "baseline_fuel_reconciled",
+      "informed_fuel_reconciled",
+      "identical_compute_trace",
+      "informed_unserved_energy_no_worse",
+      "informed_peak_unserved_no_worse"
+    ],
+    "verdict": "PASS",
+    "informed_vs_baseline": {
+      "baseline_unserved_mwh": 5.011418076,
+      "informed_unserved_mwh": 0.859772492,
+      "baseline_peak_unserved_mw": 44.86838787,
+      "informed_peak_unserved_mw": 42.36838787
+    }
+  }
+}

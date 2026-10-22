@@ -1,0 +1,14 @@
+{
+  "implementation": {
+    "hash": "5fbf3577aee83304f41b9c3a5c1498214987367c",
+    "message": "D11 + D11-t (IMPL-ISL-19): dump-sink response integrated per substep; public forcing = post-trip residual minus reconciled sink"
+  },
+  "tests": {
+    "hash": "1ec07fb942ce95ec1e2efbd4fad8ae6aab84997b",
+    "message": "D11: TC-ISL-23/24/25 and seven finite-surplus-response test updates"
+  },
+  "documentation": {
+    "hash": "29fcf5e8af8d2eff629017a1b9a25fe9a40aed37",
+    "message": "D11 + D11-t: document finite dump transient and reconciled public forcing"
+  }
+}

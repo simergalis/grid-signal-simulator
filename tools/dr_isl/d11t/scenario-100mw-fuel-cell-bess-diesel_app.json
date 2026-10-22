@@ -1,0 +1,77 @@
+{
+  "scenario": "scenario-100mw-fuel-cell-bess-diesel",
+  "arm": "app",
+  "ticks": 252,
+  "differences": 0,
+  "max_public_difference_mw": 0.0,
+  "changed_public_ticks": [],
+  "first_failure": null,
+  "summaries": {
+    "stash": {
+      "kind": "summary",
+      "physical_sha256": "c6ccccd59d04a3356f651c3f963e7eb4bdfb3367af7ddf9faab63c1c7db87f65",
+      "ticks": 252,
+      "metrics": {},
+      "record": {},
+      "end_sim_time": 1260.0,
+      "build_warnings": [
+        {
+          "code": "islanded_frequency_protection_unconfigured",
+          "message": "islanded run without frequency protection configured"
+        }
+      ],
+      "final_floor_basis": {
+        "bess-100mw-bridge": {
+          "bess_id": "bess-100mw-bridge",
+          "floor_mwh": 0.6597222222222222,
+          "depth_reserve_mwh": 0.0,
+          "diesel_floor_mwh": 0.6597222222222222,
+          "d2r_term_mwh": 0.0,
+          "winning_term": "diesel_floor",
+          "basis": "no restartable synchronous unit",
+          "unit_id": null,
+          "eligibility_wait_s": null,
+          "start_duration_s": null,
+          "thermal_state": null,
+          "eligibility_reason": null
+        }
+      },
+      "floor_history_count": 0
+    },
+    "d11t": {
+      "kind": "summary",
+      "physical_sha256": "c6ccccd59d04a3356f651c3f963e7eb4bdfb3367af7ddf9faab63c1c7db87f65",
+      "ticks": 252,
+      "metrics": {},
+      "record": {},
+      "end_sim_time": 1260.0,
+      "build_warnings": [
+        {
+          "code": "islanded_frequency_protection_unconfigured",
+          "message": "islanded run without frequency protection configured"
+        }
+      ],
+      "final_floor_basis": {
+        "bess-100mw-bridge": {
+          "bess_id": "bess-100mw-bridge",
+          "floor_mwh": 0.6597222222222222,
+          "depth_reserve_mwh": 0.0,
+          "diesel_floor_mwh": 0.6597222222222222,
+          "d2r_term_mwh": 0.0,
+          "winning_term": "diesel_floor",
+          "basis": "no restartable synchronous unit",
+          "unit_id": null,
+          "eligibility_wait_s": null,
+          "start_duration_s": null,
+          "thermal_state": null,
+          "eligibility_reason": null
+        }
+      },
+      "floor_history_count": 0
+    }
+  },
+  "base_5225a05_nonfrequency_hash": "c6ccccd59d04a3356f651c3f963e7eb4bdfb3367af7ddf9faab63c1c7db87f65",
+  "nonfrequency_hash_identical_to_base": true,
+  "original_metric_differences": {},
+  "passed": true
+}

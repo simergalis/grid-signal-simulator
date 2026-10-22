@@ -1,0 +1,8 @@
+{
+  "head": "ca153cad78360c7bb31c869c22a78b1a0d8ea36f",
+  "stash": "29a087dc197579b81d674856a95a65778fbab914",
+  "exact_diff_equal": true,
+  "diff_sha256": "273bc0dd1cc55b276369e848de9731bdbc09d6131c45275bb452b1716a59c10a",
+  "expected_sha256": "273bc0dd1cc55b276369e848de9731bdbc09d6131c45275bb452b1716a59c10a",
+  "diff_stat": " .../gridsignal_sim/core/simulation_core.py         |  75 +++++++++-----\n .../gridsignal_sim/tests/test_13_3_frequency.py    |  40 ++++++--\n .../tests/test_bess_surplus_absorption.py          |  22 ++--\n .../tests/test_dr_isl_dump_response.py             | 113 +++++++++++++++++++++\n .../gridsignal_sim/tests/test_forecast_path.py     |  24 +++--\n docs/addendum-h-phase2a-change-record.md           |  24 +++--\n 6 files changed, 239 insertions(+), 59 deletions(-)\n"
+}

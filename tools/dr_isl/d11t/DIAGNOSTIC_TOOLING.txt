@@ -1,0 +1,432 @@
+Audit-only source used for the completed D11-t checks; not application code.
+
+
+### acceptance.py
+"""One run per native path/version; streamed equality and bounded evidence."""
+from concurrent.futures import ThreadPoolExecutor
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+
+D = Path(__file__).resolve().parent
+ROOT = D.parents[2]
+CASES = [
+    ("scenario-uneven-multisched-01", "baseline"),
+    ("scenario-uneven-multisched-01", "informed"),
+    ("scenario-h1-k8s-ray-24h", "baseline"),
+    ("scenario-h1-k8s-ray-24h", "informed"),
+    ("scenario-h2-slurm-24h", "baseline"),
+    ("scenario-h2-slurm-24h", "informed"),
+] + [(s, "app") for s in [
+    "S10_mit_supercloud_2021-08-11", "scenario-equinix-sj-1",
+    "scenario-turbine-01", "scenario-hybrid-ai-100mw-addendum-i",
+    "scenario-100mw-fuel-cell-bess-diesel", "scenario-fc100-islanded-v2",
+    "scenario-fc100-islanded-zero-hot-v2", "demo-islanded-ramp",
+]]
+
+
+def save(name, value):
+    data = json.dumps(value, indent=2, allow_nan=True) + "\n"
+    assert len(data.encode()) <= 50_000_000
+    temp = D / (name + ".tmp")
+    temp.write_text(data)
+    temp.replace(D / name)
+
+
+def pair(case):
+    scenario, arm = case
+    name = f"{scenario}_{arm}"
+    result = dict(scenario=scenario, arm=arm, ticks=0, differences=0,
+                  max_public_difference_mw=0.0, changed_public_ticks=[],
+                  first_failure=None)
+    processes = []
+    logs = []
+    try:
+        for mode in ("stash", "d11t"):
+            log = (D / f"{name}.{mode}.stderr.log").open("w")
+            logs.append(log)
+            processes.append(subprocess.Popen(
+                [sys.executable, str(D / "worker.py"), str(ROOT), scenario, arm, "5225a05"],
+                stdout=subprocess.PIPE, stderr=log, text=True,
+                env=dict(os.environ, D11T_MODE=mode, PYTHONDONTWRITEBYTECODE="1")))
+        while True:
+            messages = []
+            for process in processes:
+                line = process.stdout.readline()
+                if not line:
+                    raise RuntimeError(f"{name}: worker exit {process.poll()}")
+                messages.append(json.loads(line))
+            if all(m["kind"] == "summary" for m in messages):
+                result["summaries"] = dict(zip(("stash", "d11t"), messages))
+                break
+            if any(m["kind"] != "tick" for m in messages):
+                raise RuntimeError("unequal tick counts")
+            result["ticks"] += 1
+            left, right = messages
+            changed = {key: [left["physical"].get(key), right["physical"].get(key)]
+                       for key in left["physical"].keys() | right["physical"].keys()
+                       if left["physical"].get(key) != right["physical"].get(key)}
+            for key in ("frequency_hz", "frequency_valid"):
+                if left["frequency"][key] != right["frequency"][key]:
+                    changed[key] = [left["frequency"][key], right["frequency"][key]]
+            if changed:
+                result["first_failure"] = dict(tick=left["frequency"]["tick_index"],
+                                                fields=changed)
+                break
+            a, b = left["frequency"], right["frequency"]
+            delta = abs(a["frequency_forcing_mw"] - b["frequency_forcing_mw"])
+            if delta:
+                result["differences"] += 1
+                result["max_public_difference_mw"] = max(
+                    result["max_public_difference_mw"], delta)
+                result["changed_public_ticks"].append(dict(
+                    tick=b["tick_index"], sim_time=b["sim_time"],
+                    stash=a["frequency_forcing_mw"], d11t=b["frequency_forcing_mw"],
+                    fc_trips=b["fc_trips"], ufls=b["ufls"]))
+        if result["first_failure"] is None:
+            reference = json.loads(
+                (D.parent / "d11" / f"{scenario}_{arm}_1.json").read_text())
+            expected = reference["summaries"]["base"]["physical_sha256"]
+            result["base_5225a05_nonfrequency_hash"] = expected
+            result["nonfrequency_hash_identical_to_base"] = (
+                result["summaries"]["d11t"]["physical_sha256"] == expected)
+            before = reference["summaries"]["base"]["metrics"]
+            after = result["summaries"]["d11t"]["metrics"]
+            result["original_metric_differences"] = {
+                key: [before.get(key), after.get(key)]
+                for key in before.keys() | after.keys()
+                if key not in ("invalid_frequency_tick_count", "invalid_frequency_fraction")
+                and before.get(key) != after.get(key)}
+            result["passed"] = (result["nonfrequency_hash_identical_to_base"]
+                                and not result["original_metric_differences"])
+        else:
+            result["passed"] = False
+        save(name + ".json", result)
+        return result
+    finally:
+        for process in processes:
+            if process.poll() is None:
+                process.terminate()
+        for process in processes:
+            process.wait()
+        for log in logs:
+            log.close()
+
+
+if __name__ == "__main__":
+    progress = []
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        # Four workers maximum; results consumed in deterministic case order.
+        for result in pool.map(pair, CASES):
+            progress.append({k: v for k, v in result.items() if k != "summaries"})
+            save("PROGRESS.json", progress)
+            print(json.dumps({k: result[k] for k in (
+                "scenario", "arm", "passed", "ticks", "differences",
+                "max_public_difference_mw")}), flush=True)
+            if not result["passed"]:
+                save("STOP.json", result)
+                raise SystemExit(2)
+    sys.path.insert(0, str(ROOT / "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim"))
+    from study_harness.acceptance import compare_metrics
+    verdicts = {}
+    for scenario, _ in CASES[:6:2]:
+        records = [json.loads((D / f"{scenario}_{arm}.json").read_text())
+                   ["summaries"]["d11t"]["record"] for arm in ("baseline", "informed")]
+        verdicts[scenario] = compare_metrics(*records)
+    save("COMPARE_RUNS.json", verdicts)
+    save("STATUS.json", dict(state="T3_COMPLETE", cases=len(progress)))
+
+
+### report.py
+"""Generate the literal report from completed durable evidence, never run a sim."""
+import json
+from pathlib import Path
+import subprocess
+
+D = Path(__file__).resolve().parent
+ROOT = D.parents[2]
+P = "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim"
+
+
+def read(name):
+    return json.loads((D / name).read_text())
+
+
+def block(value):
+    return "```json\n" + json.dumps(value, indent=2, allow_nan=True) + "\n```\n"
+
+
+progress = read("PROGRESS.json")
+lines = [
+    "# DR-2026-10-20-ISLAND-COLLAPSE — D11 + D11-t",
+    "",
+    "Application base: `5225a05`; resumption HEAD: "
+    "`ca153cad78360c7bb31c869c22a78b1a0d8ea36f`.",
+    f"Package root P: `{P}`.",
+    "",
+    "Scope: finite dump-response transient in the islanded swing integrator, "
+    "with D11-t public telemetry. No scenario, dispatch, commitment, reserve, "
+    "BESS, diesel, D7, ledger-value, protection, droop, UFLS or FC-trip change.",
+    "",
+    "## T.1 — restore",
+    block(read("T1.json")),
+    "The stash was applied without dropping it. Exact byte equality was checked "
+    "before applying the D11-t amendment, including the staged new test file.",
+    "",
+    "## T.2 — one public definition, integrator unchanged",
+    block(read("T2.json")),
+    "The existing post-trip `_frequency_forcing_mw` is used unchanged. "
+    "After IMPL-ISL-10 reconciles `_p_dispatch_curtailed_mw`, the public "
+    "islanded field is `_frequency_forcing_mw - _p_dispatch_curtailed_mw`. "
+    "Grid-tied uses `_frequency_forcing_mw` without subtraction. No duplicate "
+    "supply, shed or sink computation was added. The last integrated forcing "
+    "remains internal and is not the public field.",
+    "",
+    "|Scenario / arm|Ticks|Public ticks different from stash|max absolute MW difference|",
+    "|---|---:|---:|---:|",
+]
+for r in progress:
+    lines.append(f"|{r['scenario']} / {r['arm']}|{r['ticks']}|"
+                 f"{r['differences']}|{r['max_public_difference_mw']!r}|")
+lines += [
+    "",
+    "The sole changed public tick is fc100-zero-hot-v2 tick 46 / 230 s: "
+    "`-20.944261432913944` (stash) → `-20.944261432913947` (D11-t), "
+    "absolute difference `3.552713678800501e-15 MW`. Its native trip payload "
+    "contains 62 category-3 `under_56_5` fuel-cell block trips; it is an FC-trip "
+    "tick, as expected. No rounding or tolerance was added to the implementation.",
+    "",
+    "Every differing public tick, if any, is saved in its scenario/arm JSON. "
+    "Zero differences means neither a trip/shed discrepancy nor any other "
+    "public discrepancy occurred in that native run; the focused ROCOF-trip "
+    "fixture separately exercises the amended contract.",
+    "",
+    "## T.3 — pinned native acceptance",
+    "",
+    "Once per case per version: the stashed D11 evaluate function and the "
+    "actual D11-t working-tree evaluate function. Both use the same unchanged "
+    "pinned runner/seeder or native study-harness path. No per-tick files are "
+    "written: ticks stream over bounded IPC and are compared immediately.",
+    "The native pinning is inherited from tools/dr_isl/baseline_runner.py and "
+    "tools/dr_isl/phase4/stream_worker.py. Original app and study arm settings "
+    "are unchanged. `template` is the seeded demo-islanded-ramp template, "
+    "not an additional invented scenario.",
+    "",
+    "Every non-frequency hash is compared with the 5225a05 reference retained "
+    "under tools/dr_isl/d11/, whose hashes are enumerated in D11_3_RESULTS.json. "
+    "Frequency Hz and validity are compared tick-by-tick with the stash. "
+    "All original study metrics exclude only the two frequency-validity metrics.",
+    "",
+    "|Scenario / arm|Non-frequency SHA-256 (base = D11-t)|Hz/validity equal to stash|Original metric differences|",
+    "|---|---|---|---|",
+]
+for r in progress:
+    path = D / f"{r['scenario']}_{r['arm']}.json"
+    detail = json.loads(path.read_text())
+    lines.append(
+        f"|{r['scenario']} / {r['arm']}|"
+        f"{detail['base_5225a05_nonfrequency_hash']}|"
+        f"{detail['first_failure'] is None}|"
+        f"{json.dumps(detail['original_metric_differences'])}|")
+lines += ["", "### compare_runs — literal conditions", block(read("COMPARE_RUNS.json")),
+          "", "## T.4 — focused tests", block(read("T4.json")),
+          "The Stage 3 test file is unchanged. TC-ISL-23/24/25 and the seven "
+          "previously authorized sustained-surplus updates passed unchanged "
+          "from the stash. The only focused failures are the two pre-existing "
+          "I4/B1a asset-delivery assertions; both still measure 0.0 where the "
+          "existing assertion expects a non-zero value. See FOCUSED.xml/log.",
+          "",
+          "The original stopping fixture now reports public forcing 0.0, "
+          "generation 0.0, demand 0.0, reconciled sink 0.0 and "
+          "physical_balance.passed=true, while its frequency remains "
+          "60.062475 Hz (the already-integrated ROCOF transient).",
+          block(read("STAGE3_VALUES.json")),
+          "", "## T.5 — full suite", block(read("FINAL_GATE.json")),
+          "Command: from P, PYTHONDONTWRITEBYTECODE=1 python -m pytest tests -q "
+          "-p no:cacheprovider -p suite_observer --p2-output=<d11t>/FULL_SUITE "
+          "--junitxml=<d11t>/FULL_SUITE_FINAL.xml. PYTHONPATH includes the "
+          "d11t and phase4 observer directories and P. The observer writes "
+          "JUnit and failing IDs incrementally; it does not reorder tests.",
+          "",
+          "The HTTP GPU-profile test addresses the existing dev service, "
+          "which is restarted after commits as requested; all in-process tests "
+          "import the actual candidate package. The waived GPU test is therefore "
+          "not asserted as a fresh candidate-server validation.",
+          "", "## T.6 — commits, source locations and service",
+          "The report-only commit also updates the existing project-memory "
+          "ordering note to record Lloyd's approved D11-t decision; these are "
+          "documentation-only changes, not application code.",
+          block(read("FILE_RANGES.json"))]
+commits = read("COMMITS.json") if (D / "COMMITS.json").exists() else {}
+lines += [block(commits)]
+for commit in commits.values():
+    if isinstance(commit, dict) and commit.get("hash"):
+        lines += ["```text", subprocess.check_output(
+            ["git", "show", "--format=fuller", "--stat", commit["hash"]],
+            cwd=ROOT, text=True).strip(), "```"]
+lines += ["", "### Exact implementation/test/documentation diff",
+          "```diff", (D / "FINAL_CHANGE.diff").read_text(), "```"]
+for file in ("SERVICE.json", "FINAL_STATE.json"):
+    if (D / file).exists():
+        lines += ["", f"### {file}", block(read(file))]
+lines += ["", "No publish, deploy or push. No IMPL-ISL-20, OPEN-ISL-3 or Phase 6 work.",
+          "S10 scenario and non-CSV evidence remain tracked. No *.channels.csv is tracked.",
+          "Remaining invalid/carried-frequency ticks are not fixed by this scope.",
+          ""]
+(ROOT / "tools/dr_isl/D11T_REPORT.md").write_text("\n".join(lines))
+
+
+### suite_gate.py
+"""Read completed suite evidence; compare node IDs and known failure assertions."""
+import json
+from pathlib import Path
+import re
+import xml.etree.ElementTree as ET
+
+D = Path(__file__).resolve().parent
+ROOT = D.parents[2]
+
+
+def failures(path):
+    result = {}
+    for c in ET.parse(path).iter("testcase"):
+        f = c.find("failure")
+        if f is None:
+            f = c.find("error")
+        if f is not None:
+            key = c.attrib["classname"].replace(".", "/") + ".py::" + c.attrib["name"]
+            # Test classes are included in JUnit classname, not the source path.
+            parts = c.attrib["classname"].split(".")
+            index = next((i for i, part in enumerate(parts) if part.startswith("Test")), len(parts))
+            key = "/".join(parts[:index]) + ".py"
+            if index < len(parts):
+                key += "::" + "::".join(parts[index:])
+            key += "::" + c.attrib["name"]
+            result[key] = f.text or f.get("message", "")
+    return result
+
+
+base_ids = set((ROOT / "tools/dr_isl/PHASE_5_FAILING_TESTS.txt").read_text().splitlines())
+actual_ids = set((D / "SUITE_FAILING_TESTS.incremental.txt").read_text().splitlines())
+actual = failures(D / "FULL_SUITE_FINAL.xml")
+before = failures(ROOT / "tools/dr_isl/phase5/P5_FULL_SUITE_FINAL.xml")
+assert actual_ids == set(actual)
+gpu = "tests/test_gpu_load_profile.py::test_gpu_load_profile"
+allowed_added = {gpu}
+signatures = []
+for node in sorted(base_ids & actual_ids):
+    a, b = before[node], actual[node]
+    assertion = re.search(r"(?:^|\n)(?:>?\s*)assert ([^\n]+)", a)
+    text = "assert " + assertion.group(1).strip() if assertion else None
+    same = bool(text and text in b)
+    if not text:
+        # Phase 5 records the existing lead-time observer AttributeError.
+        text = "'str' object has no attribute 'value'"
+        same = text in a and text in b
+    signatures.append(dict(nodeid=node, baseline_assertion=text,
+                           same_failure_signature=same,
+                           base_failure=a, d11t_failure=b))
+counts = json.loads((D / "SUITE_COUNTS.json").read_text())
+gate = dict(counts=counts, reference_failure_count=len(base_ids),
+            added=sorted(actual_ids - base_ids),
+            removed=sorted(base_ids - actual_ids),
+            remaining=sorted(actual_ids & base_ids),
+            gpu_passed=gpu not in actual_ids,
+            waived_gpu_only=bool((actual_ids - base_ids) == {gpu}),
+            known_signature_count=len(signatures),
+            unchanged_known_signatures=sum(s["same_failure_signature"] for s in signatures))
+gate["passed"] = (not ((actual_ids - base_ids) - allowed_added)
+                  and all(s["same_failure_signature"] for s in signatures))
+(D / "KNOWN_FAILURE_SIGNATURES.json").write_text(json.dumps(signatures, indent=2) + "\n")
+(D / "FINAL_GATE.json").write_text(json.dumps(gate, indent=2) + "\n")
+(ROOT / "tools/dr_isl/D11T_FAILING_TESTS.txt").write_text(
+    "".join(node + "\n" for node in sorted(actual_ids)))
+print(json.dumps(gate, indent=2))
+
+
+### suite_observer.py
+"""Incremental suite evidence; tests and their ordering are unchanged."""
+import json
+from pathlib import Path
+from P2_observer import *
+from P2_observer import pytest_runtest_logreport as observed_report
+from P2_observer import pytest_sessionfinish as observed_finish
+
+DEST = Path(__file__).resolve().parent
+FAILURES = set()
+
+
+def pytest_runtest_logreport(report):
+    observed_report(report)
+    if report.failed:
+        FAILURES.add(report.nodeid)
+    (DEST / "SUITE_FAILING_TESTS.incremental.txt").write_text(
+        "".join(node + "\n" for node in sorted(FAILURES)))
+
+
+def pytest_sessionfinish(session, exitstatus):
+    observed_finish(session, exitstatus)
+    reporter = session.config.pluginmanager.getplugin("terminalreporter")
+    counts = {name: len(reporter.stats.get(name, [])) for name in (
+        "passed", "failed", "skipped", "xfailed", "xpassed", "error")}
+    counts["exitstatus"] = int(exitstatus)
+    (DEST / "SUITE_COUNTS.json").write_text(json.dumps(counts, indent=2) + "\n")
+
+
+### worker.py
+"""Bounded D11-t comparison stream, using the unchanged pinned native paths."""
+from pathlib import Path
+import os
+
+D = Path(__file__).resolve().parent
+code = (D.parent / "phase4/stream_worker.py").read_text()
+install = '''
+import ast
+import subprocess
+import core.simulation_core as sc
+import runtime.run_manager as rm
+mode = os.environ["D11T_MODE"]
+if mode == "stash":
+    text = subprocess.check_output([
+        "git", "show",
+        "29a087dc197579b81d674856a95a65778fbab914:" +
+        str(PACKAGE / "core/simulation_core.py"),
+    ], cwd=ROOT, text=True)
+    tree = ast.parse(text)
+    selected = ast.Module(body=[
+        node for node in tree.body if isinstance(node, ast.FunctionDef)
+        and node.name in ("_dispatch_dump_response_mw", "evaluate_tick")
+    ], type_ignores=[])
+    exec(compile(selected, "<stashed-D11-candidate>", "exec"), sc.__dict__)
+    rm.evaluate_tick = sc.evaluate_tick
+'''
+code = code.replace("active = None", install + "\nactive = None", 1)
+old = '''    row = {k: v for k, v in row.items() if k not in pins.EXCLUDED}
+    physical.update(pins.encoded(row))
+    count += 1
+    emit(dict(kind="tick", physical=row, observation=last_observation))'''
+new = '''    frequency = {k: row[k] for k in (
+        "frequency_hz", "frequency_valid", "frequency_forcing_mw",
+        "p_dispatch_curtailed_mw", "tick_index")}
+    frequency["sim_time"] = row["sim_time_seconds"]
+    frequency["fc_trips"] = row.get("fuel_cell_ride_through_trips")
+    frequency["ufls"] = row.get("ufls_events")
+    row = {k: v for k, v in row.items() if k not in pins.EXCLUDED
+           and k not in ("frequency_hz", "frequency_valid", "frequency_forcing_mw")}
+    physical.update(pins.encoded(row))
+    count += 1
+    emit(dict(kind="tick", physical=row, frequency=frequency))'''
+assert code.count(old) == 1
+code = code.replace(old, new)
+code = code.replace(
+    '    emit(dict(kind="summary", physical_sha256=physical.hexdigest(), ticks=count,',
+    '''    if isinstance(record, dict):
+        detail = record.pop("stop_floor_refusals", None)
+        if detail is not None:
+            record["audit_stop_floor_refusals"] = dict(
+                count=len(detail), sha256=hashlib.sha256(pins.encoded(detail)).hexdigest())
+    emit(dict(kind="summary", physical_sha256=physical.hexdigest(), ticks=count,''')
+exec(compile(code, str(D / "worker.py"), "exec"))
+

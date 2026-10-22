@@ -1,0 +1,42 @@
+[
+  {
+    "grid_forming": false,
+    "frequency_forcing_mw": 0.0,
+    "p_generation_mw": 0.0,
+    "p_demand_mw": 0.0,
+    "p_dispatch_curtailed_mw": 0.0,
+    "physical_balance_passed": true,
+    "trips": [
+      {
+        "asset_id": "fc-former",
+        "block_index": 0,
+        "category": 1,
+        "region": "continuous",
+        "reason": "rocof",
+        "frequency_hz": 60.062475,
+        "rocof_hz_per_s": 6.2475
+      }
+    ],
+    "frequency_hz": 60.062475
+  },
+  {
+    "grid_forming": true,
+    "frequency_forcing_mw": 0.0,
+    "p_generation_mw": 0.0,
+    "p_demand_mw": 0.0,
+    "p_dispatch_curtailed_mw": 0.0,
+    "physical_balance_passed": true,
+    "trips": [
+      {
+        "asset_id": "fc-former",
+        "block_index": 0,
+        "category": 1,
+        "region": "continuous",
+        "reason": "rocof",
+        "frequency_hz": 60.0312375,
+        "rocof_hz_per_s": 3.12375
+      }
+    ],
+    "frequency_hz": 60.0312375
+  }
+]

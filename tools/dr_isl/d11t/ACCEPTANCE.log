@@ -1,0 +1,14 @@
+{"scenario": "scenario-uneven-multisched-01", "arm": "baseline", "passed": true, "ticks": 1440, "differences": 0, "max_public_difference_mw": 0.0}
+{"scenario": "scenario-uneven-multisched-01", "arm": "informed", "passed": true, "ticks": 1440, "differences": 0, "max_public_difference_mw": 0.0}
+{"scenario": "scenario-h1-k8s-ray-24h", "arm": "baseline", "passed": true, "ticks": 17280, "differences": 0, "max_public_difference_mw": 0.0}
+{"scenario": "scenario-h1-k8s-ray-24h", "arm": "informed", "passed": true, "ticks": 17280, "differences": 0, "max_public_difference_mw": 0.0}
+{"scenario": "scenario-h2-slurm-24h", "arm": "baseline", "passed": true, "ticks": 17280, "differences": 0, "max_public_difference_mw": 0.0}
+{"scenario": "scenario-h2-slurm-24h", "arm": "informed", "passed": true, "ticks": 17280, "differences": 0, "max_public_difference_mw": 0.0}
+{"scenario": "S10_mit_supercloud_2021-08-11", "arm": "app", "passed": true, "ticks": 17280, "differences": 0, "max_public_difference_mw": 0.0}
+{"scenario": "scenario-equinix-sj-1", "arm": "app", "passed": true, "ticks": 720, "differences": 0, "max_public_difference_mw": 0.0}
+{"scenario": "scenario-turbine-01", "arm": "app", "passed": true, "ticks": 720, "differences": 0, "max_public_difference_mw": 0.0}
+{"scenario": "scenario-hybrid-ai-100mw-addendum-i", "arm": "app", "passed": true, "ticks": 120, "differences": 0, "max_public_difference_mw": 0.0}
+{"scenario": "scenario-100mw-fuel-cell-bess-diesel", "arm": "app", "passed": true, "ticks": 252, "differences": 0, "max_public_difference_mw": 0.0}
+{"scenario": "scenario-fc100-islanded-v2", "arm": "app", "passed": true, "ticks": 264, "differences": 0, "max_public_difference_mw": 0.0}
+{"scenario": "scenario-fc100-islanded-zero-hot-v2", "arm": "app", "passed": true, "ticks": 264, "differences": 1, "max_public_difference_mw": 3.552713678800501e-15}
+{"scenario": "demo-islanded-ramp", "arm": "app", "passed": true, "ticks": 2160, "differences": 0, "max_public_difference_mw": 0.0}

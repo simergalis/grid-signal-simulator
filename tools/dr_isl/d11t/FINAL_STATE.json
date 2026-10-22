@@ -1,0 +1,10 @@
+{
+  "application_changes_since_5225a05": [
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py"
+  ],
+  "tracked_channels_csv": [],
+  "candidate_stash": "29a087dc197579b81d674856a95a65778fbab914",
+  "stash_disposition": "Retained until all four local commits succeed; dropped after report commit. Final drop/status receipt is in the completion response.",
+  "automatic_checkpoint_commits_during_resumption": [],
+  "no_publish_deploy_push": true
+}

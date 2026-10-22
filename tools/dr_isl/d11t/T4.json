@@ -1,0 +1,10 @@
+{
+  "passed": 87,
+  "failed": 2,
+  "skipped": 2,
+  "failures": [
+    "tests.test_13_3_frequency.TestI4DeliveryFaultMovesFrequency::test_I4_delivery_fault_causes_frequency_deviation",
+    "tests.test_forecast_path.TestDispatchTruthfulness::test_B1a_islanded_delivery_fault_visible_in_delivery_channel"
+  ],
+  "stage3_all_passed": true
+}

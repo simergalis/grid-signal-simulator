@@ -1,0 +1,14 @@
+{
+  "integrator_and_all_other_executable_code_identical_to_stash": true,
+  "stash_source_sha256": "c33bf3cbda908f832f1cda5e8594ee965fdf1d6a30de15ed150c27999e682861",
+  "d11t_source_sha256": "0f06c3b2fc58759a8386a4cc1d09521b5732cf0142465fbed80fbb7b7518f574",
+  "definition": "islanded: _frequency_forcing_mw - _p_dispatch_curtailed_mw; grid tied: _frequency_forcing_mw",
+  "new_constants": [],
+  "test_sources_identical_to_stash": {
+    "test_dr_isl_dump_response.py": true,
+    "test_13_3_frequency.py": true,
+    "test_bess_surplus_absorption.py": true,
+    "test_forecast_path.py": true
+  },
+  "stage3_test_file_unchanged_from_5225a05": true
+}

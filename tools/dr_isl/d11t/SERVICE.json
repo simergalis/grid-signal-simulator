@@ -1,0 +1,13 @@
+{
+  "workflow": "artifacts/gridsignal: web",
+  "state": "RUNNING",
+  "restart_completed": true,
+  "server_pid": 10258,
+  "port": 22126,
+  "application_commit": "5fbf3577aee83304f41b9c3a5c1498214987367c",
+  "get_root_status": 200,
+  "startup_complete": true,
+  "workflow_log": "/tmp/logs/artifactsgridsignal_web_20261022_232628_535_9b9249fa.log",
+  "screenshot": "GridSignal operator sign-in renders; unauthenticated API request reports 401 as expected",
+  "startup_warnings": "Existing scenario first-burst/base_load_mw warnings and unknown addendum_h_test_ramp_20s hardware-profile estimate; no startup failure."
+}

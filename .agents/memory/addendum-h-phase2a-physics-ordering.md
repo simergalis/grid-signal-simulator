@@ -3,8 +3,10 @@ name: Addendum H Phase 2a physics ordering
 description: Ordering contract for islanded surplus, frequency forcing, and explicit dispatch curtailment.
 ---
 
-Islanded `frequency_forcing_mw` and `p_imbalance_mw` must use measured generation minus served load before the explicit dispatch-curtailment sink. The sink remains an explicit physical-ledger term and ramps over the configured `PROPOSED_HERE` response delay; the default delay is below the five-second Phase 2a smoke interval.
+Lloyd's D11/D11-t decisions supersede the earlier sustained-surplus ordering: preserve rotor exposure as a finite dump-response transient, not indefinite forcing from energy already absorbed by the sink. Keep the physical ledger and control policy separate from this frequency-only change.
 
-**Why:** Subtracting the curtailment sink before frequency evaluation hides same-tick surplus from the swing equation, while removing the sink from the ledger breaks physical balance evidence.
+Public frequency forcing follows the post-trip reconciliation contract minus the reconciled ledger sink. It is not necessarily the last integrated substep's forcing: a fuel-cell trip can occur after that substep.
 
-**How to apply:** Keep commitment policy, baseline/informed authority, acceptance comparisons, and alert lifecycle logic separate from this ordering. Any future delay or dump-load change must rerun the I1/I2, TC-SURP-4/5, B1b/B5, smoke, and full-suite checks.
+**Why:** Lloyd explicitly amended the D11 telemetry requirement after it conflicted with IMPL-ISL-10's post-trip accounting assertion. Changing trip timing or physics to make public telemetry equal the last substep would violate that decision.
+
+**How to apply:** Distinguish substep integrator evidence from reconciled end-of-tick telemetry in tests and reports. Preserve same-tick transient exposure without changing the ledger sink, dispatch, protection or trip logic. Frequency-only changes require non-frequency hash and metric identity checks.

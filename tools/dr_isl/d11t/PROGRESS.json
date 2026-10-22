@@ -1,0 +1,752 @@
+[
+  {
+    "scenario": "scenario-uneven-multisched-01",
+    "arm": "baseline",
+    "ticks": 1440,
+    "differences": 0,
+    "max_public_difference_mw": 0.0,
+    "changed_public_ticks": [],
+    "first_failure": null,
+    "base_5225a05_nonfrequency_hash": "c72eb2a1fc1ba90c70e61cc571cbc310040346e195ffb16cbf4f20b4dc875cf5",
+    "nonfrequency_hash_identical_to_base": true,
+    "original_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-uneven-multisched-01",
+    "arm": "informed",
+    "ticks": 1440,
+    "differences": 0,
+    "max_public_difference_mw": 0.0,
+    "changed_public_ticks": [],
+    "first_failure": null,
+    "base_5225a05_nonfrequency_hash": "766b066a7c35e1d9824ae2ceddf0391f9d7e0a164f6dea47cdb5a4e7a46af76e",
+    "nonfrequency_hash_identical_to_base": true,
+    "original_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-h1-k8s-ray-24h",
+    "arm": "baseline",
+    "ticks": 17280,
+    "differences": 0,
+    "max_public_difference_mw": 0.0,
+    "changed_public_ticks": [],
+    "first_failure": null,
+    "base_5225a05_nonfrequency_hash": "c3d6a39d63e786f5abef82b30bc045b122e675bc9fcc07ffc60a93262de0b823",
+    "nonfrequency_hash_identical_to_base": true,
+    "original_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-h1-k8s-ray-24h",
+    "arm": "informed",
+    "ticks": 17280,
+    "differences": 0,
+    "max_public_difference_mw": 0.0,
+    "changed_public_ticks": [],
+    "first_failure": null,
+    "base_5225a05_nonfrequency_hash": "958efa040f72ec67186b89a70f8ee984069fa19a961332559db36e83f3be845c",
+    "nonfrequency_hash_identical_to_base": true,
+    "original_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-h2-slurm-24h",
+    "arm": "baseline",
+    "ticks": 17280,
+    "differences": 0,
+    "max_public_difference_mw": 0.0,
+    "changed_public_ticks": [],
+    "first_failure": null,
+    "base_5225a05_nonfrequency_hash": "905a7f9d83cb2492d77bead4bd687f3959f300535f98838b33c384951cb75ca3",
+    "nonfrequency_hash_identical_to_base": true,
+    "original_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-h2-slurm-24h",
+    "arm": "informed",
+    "ticks": 17280,
+    "differences": 0,
+    "max_public_difference_mw": 0.0,
+    "changed_public_ticks": [],
+    "first_failure": null,
+    "base_5225a05_nonfrequency_hash": "49363ec20bc1634542c5b13d1e56a2fba5c035697689a362c50ab7d797f2d97c",
+    "nonfrequency_hash_identical_to_base": true,
+    "original_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "S10_mit_supercloud_2021-08-11",
+    "arm": "app",
+    "ticks": 17280,
+    "differences": 0,
+    "max_public_difference_mw": 0.0,
+    "changed_public_ticks": [],
+    "first_failure": null,
+    "base_5225a05_nonfrequency_hash": "8a9415b84b564b706b7ee2e13035902f0dc3da941b74834de398feed7e3ddebe",
+    "nonfrequency_hash_identical_to_base": true,
+    "original_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-equinix-sj-1",
+    "arm": "app",
+    "ticks": 720,
+    "differences": 0,
+    "max_public_difference_mw": 0.0,
+    "changed_public_ticks": [],
+    "first_failure": null,
+    "base_5225a05_nonfrequency_hash": "65f41459bbb89a002473166453aa3792efc7460d210813e4700b7ea27734bd65",
+    "nonfrequency_hash_identical_to_base": true,
+    "original_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-turbine-01",
+    "arm": "app",
+    "ticks": 720,
+    "differences": 0,
+    "max_public_difference_mw": 0.0,
+    "changed_public_ticks": [],
+    "first_failure": null,
+    "base_5225a05_nonfrequency_hash": "4287d6a45c254914ffc67d5925ed9949c24a4dcd626a45f180929b7dd5afa7e4",
+    "nonfrequency_hash_identical_to_base": true,
+    "original_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-hybrid-ai-100mw-addendum-i",
+    "arm": "app",
+    "ticks": 120,
+    "differences": 0,
+    "max_public_difference_mw": 0.0,
+    "changed_public_ticks": [],
+    "first_failure": null,
+    "base_5225a05_nonfrequency_hash": "74f55fca1651deabc7364360b1d0f52941b8564df6e6001be377bc3a3458cfc1",
+    "nonfrequency_hash_identical_to_base": true,
+    "original_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-100mw-fuel-cell-bess-diesel",
+    "arm": "app",
+    "ticks": 252,
+    "differences": 0,
+    "max_public_difference_mw": 0.0,
+    "changed_public_ticks": [],
+    "first_failure": null,
+    "base_5225a05_nonfrequency_hash": "c6ccccd59d04a3356f651c3f963e7eb4bdfb3367af7ddf9faab63c1c7db87f65",
+    "nonfrequency_hash_identical_to_base": true,
+    "original_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-fc100-islanded-v2",
+    "arm": "app",
+    "ticks": 264,
+    "differences": 0,
+    "max_public_difference_mw": 0.0,
+    "changed_public_ticks": [],
+    "first_failure": null,
+    "base_5225a05_nonfrequency_hash": "c3738260c4f18bf43dd2d7284f501386d2756572e74be23beb81b704a154eccb",
+    "nonfrequency_hash_identical_to_base": true,
+    "original_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "scenario-fc100-islanded-zero-hot-v2",
+    "arm": "app",
+    "ticks": 264,
+    "differences": 1,
+    "max_public_difference_mw": 3.552713678800501e-15,
+    "changed_public_ticks": [
+      {
+        "tick": 46,
+        "sim_time": 230.0,
+        "stash": -20.944261432913944,
+        "d11t": -20.944261432913947,
+        "fc_trips": [
+          {
+            "asset_id": "fc100-array",
+            "block_index": 0,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 1,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 2,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 3,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 4,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 5,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 6,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 7,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 8,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 9,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 10,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 11,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 12,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 13,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 14,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 15,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 16,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 17,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 18,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 19,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 20,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 21,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 22,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 23,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 24,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 25,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 26,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 27,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 28,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 29,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 30,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 31,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 32,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 33,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 34,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 35,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 36,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 37,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 38,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 39,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 40,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 41,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 42,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 43,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 44,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 45,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 46,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 47,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 48,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 49,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 50,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 51,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 52,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 53,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 54,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 55,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 56,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 57,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 58,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 59,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 60,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          },
+          {
+            "asset_id": "fc100-array",
+            "block_index": 61,
+            "category": 3,
+            "region": "trip_under_56_5hz",
+            "reason": "under_56_5",
+            "frequency_hz": 56.49101498703641,
+            "rocof_hz_per_s": -0.05952996949578204
+          }
+        ],
+        "ufls": null
+      }
+    ],
+    "first_failure": null,
+    "base_5225a05_nonfrequency_hash": "aefdc289bec7a9da3c99398716f8549a0eef0bfdf765bd72a1264a95fe44a507",
+    "nonfrequency_hash_identical_to_base": true,
+    "original_metric_differences": {},
+    "passed": true
+  },
+  {
+    "scenario": "demo-islanded-ramp",
+    "arm": "app",
+    "ticks": 2160,
+    "differences": 0,
+    "max_public_difference_mw": 0.0,
+    "changed_public_ticks": [],
+    "first_failure": null,
+    "base_5225a05_nonfrequency_hash": "88b04757bff6b8a1d88fc2de6a0396f1da203c724f3021cc4f1db1bd97d16ceb",
+    "nonfrequency_hash_identical_to_base": true,
+    "original_metric_differences": {},
+    "passed": true
+  }
+]

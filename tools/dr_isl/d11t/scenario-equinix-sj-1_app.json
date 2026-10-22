@@ -1,0 +1,67 @@
+{
+  "scenario": "scenario-equinix-sj-1",
+  "arm": "app",
+  "ticks": 720,
+  "differences": 0,
+  "max_public_difference_mw": 0.0,
+  "changed_public_ticks": [],
+  "first_failure": null,
+  "summaries": {
+    "stash": {
+      "kind": "summary",
+      "physical_sha256": "65f41459bbb89a002473166453aa3792efc7460d210813e4700b7ea27734bd65",
+      "ticks": 720,
+      "metrics": {},
+      "record": {},
+      "end_sim_time": 3600.0,
+      "build_warnings": [],
+      "final_floor_basis": {
+        "bess-0": {
+          "bess_id": "bess-0",
+          "floor_mwh": 55.199999999999996,
+          "depth_reserve_mwh": 55.199999999999996,
+          "diesel_floor_mwh": 0.0,
+          "d2r_term_mwh": 0.0,
+          "winning_term": "depth_reserve",
+          "basis": "D2-r not applicable",
+          "unit_id": null,
+          "eligibility_wait_s": null,
+          "start_duration_s": null,
+          "thermal_state": null,
+          "eligibility_reason": null
+        }
+      },
+      "floor_history_count": 0
+    },
+    "d11t": {
+      "kind": "summary",
+      "physical_sha256": "65f41459bbb89a002473166453aa3792efc7460d210813e4700b7ea27734bd65",
+      "ticks": 720,
+      "metrics": {},
+      "record": {},
+      "end_sim_time": 3600.0,
+      "build_warnings": [],
+      "final_floor_basis": {
+        "bess-0": {
+          "bess_id": "bess-0",
+          "floor_mwh": 55.199999999999996,
+          "depth_reserve_mwh": 55.199999999999996,
+          "diesel_floor_mwh": 0.0,
+          "d2r_term_mwh": 0.0,
+          "winning_term": "depth_reserve",
+          "basis": "D2-r not applicable",
+          "unit_id": null,
+          "eligibility_wait_s": null,
+          "start_duration_s": null,
+          "thermal_state": null,
+          "eligibility_reason": null
+        }
+      },
+      "floor_history_count": 0
+    }
+  },
+  "base_5225a05_nonfrequency_hash": "65f41459bbb89a002473166453aa3792efc7460d210813e4700b7ea27734bd65",
+  "nonfrequency_hash_identical_to_base": true,
+  "original_metric_differences": {},
+  "passed": true
+}

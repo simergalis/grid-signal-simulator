@@ -1,0 +1,77 @@
+{
+  "scenario": "scenario-turbine-01",
+  "arm": "app",
+  "ticks": 720,
+  "differences": 0,
+  "max_public_difference_mw": 0.0,
+  "changed_public_ticks": [],
+  "first_failure": null,
+  "summaries": {
+    "stash": {
+      "kind": "summary",
+      "physical_sha256": "4287d6a45c254914ffc67d5925ed9949c24a4dcd626a45f180929b7dd5afa7e4",
+      "ticks": 720,
+      "metrics": {},
+      "record": {},
+      "end_sim_time": 3600.0,
+      "build_warnings": [
+        {
+          "code": "islanded_frequency_protection_unconfigured",
+          "message": "islanded run without frequency protection configured"
+        }
+      ],
+      "final_floor_basis": {
+        "bess-0": {
+          "bess_id": "bess-0",
+          "floor_mwh": 55.199999999999996,
+          "depth_reserve_mwh": 55.199999999999996,
+          "diesel_floor_mwh": 0.0,
+          "d2r_term_mwh": 6.25,
+          "winning_term": "depth_reserve",
+          "basis": "hot_standby_release",
+          "unit_id": "gt-hot-01",
+          "eligibility_wait_s": 0.0,
+          "start_duration_s": 300,
+          "thermal_state": "hot",
+          "eligibility_reason": "hot_standby_release"
+        }
+      },
+      "floor_history_count": 0
+    },
+    "d11t": {
+      "kind": "summary",
+      "physical_sha256": "4287d6a45c254914ffc67d5925ed9949c24a4dcd626a45f180929b7dd5afa7e4",
+      "ticks": 720,
+      "metrics": {},
+      "record": {},
+      "end_sim_time": 3600.0,
+      "build_warnings": [
+        {
+          "code": "islanded_frequency_protection_unconfigured",
+          "message": "islanded run without frequency protection configured"
+        }
+      ],
+      "final_floor_basis": {
+        "bess-0": {
+          "bess_id": "bess-0",
+          "floor_mwh": 55.199999999999996,
+          "depth_reserve_mwh": 55.199999999999996,
+          "diesel_floor_mwh": 0.0,
+          "d2r_term_mwh": 6.25,
+          "winning_term": "depth_reserve",
+          "basis": "hot_standby_release",
+          "unit_id": "gt-hot-01",
+          "eligibility_wait_s": 0.0,
+          "start_duration_s": 300,
+          "thermal_state": "hot",
+          "eligibility_reason": "hot_standby_release"
+        }
+      },
+      "floor_history_count": 0
+    }
+  },
+  "base_5225a05_nonfrequency_hash": "4287d6a45c254914ffc67d5925ed9949c24a4dcd626a45f180929b7dd5afa7e4",
+  "nonfrequency_hash_identical_to_base": true,
+  "original_metric_differences": {},
+  "passed": true
+}

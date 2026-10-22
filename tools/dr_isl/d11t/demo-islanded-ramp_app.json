@@ -1,0 +1,77 @@
+{
+  "scenario": "demo-islanded-ramp",
+  "arm": "app",
+  "ticks": 2160,
+  "differences": 0,
+  "max_public_difference_mw": 0.0,
+  "changed_public_ticks": [],
+  "first_failure": null,
+  "summaries": {
+    "stash": {
+      "kind": "summary",
+      "physical_sha256": "88b04757bff6b8a1d88fc2de6a0396f1da203c724f3021cc4f1db1bd97d16ceb",
+      "ticks": 2160,
+      "metrics": {},
+      "record": {},
+      "end_sim_time": 10800.0,
+      "build_warnings": [
+        {
+          "code": "islanded_frequency_protection_unconfigured",
+          "message": "islanded run without frequency protection configured"
+        }
+      ],
+      "final_floor_basis": {
+        "bess-0": {
+          "bess_id": "bess-0",
+          "floor_mwh": 7.5,
+          "depth_reserve_mwh": 0.0,
+          "diesel_floor_mwh": 0.0,
+          "d2r_term_mwh": 7.5,
+          "winning_term": "d2r_bridge",
+          "basis": "offline_restart",
+          "unit_id": "turbine-4",
+          "eligibility_wait_s": 0.0,
+          "start_duration_s": 600.0,
+          "thermal_state": "cold",
+          "eligibility_reason": "eligible"
+        }
+      },
+      "floor_history_count": 313
+    },
+    "d11t": {
+      "kind": "summary",
+      "physical_sha256": "88b04757bff6b8a1d88fc2de6a0396f1da203c724f3021cc4f1db1bd97d16ceb",
+      "ticks": 2160,
+      "metrics": {},
+      "record": {},
+      "end_sim_time": 10800.0,
+      "build_warnings": [
+        {
+          "code": "islanded_frequency_protection_unconfigured",
+          "message": "islanded run without frequency protection configured"
+        }
+      ],
+      "final_floor_basis": {
+        "bess-0": {
+          "bess_id": "bess-0",
+          "floor_mwh": 7.5,
+          "depth_reserve_mwh": 0.0,
+          "diesel_floor_mwh": 0.0,
+          "d2r_term_mwh": 7.5,
+          "winning_term": "d2r_bridge",
+          "basis": "offline_restart",
+          "unit_id": "turbine-4",
+          "eligibility_wait_s": 0.0,
+          "start_duration_s": 600.0,
+          "thermal_state": "cold",
+          "eligibility_reason": "eligible"
+        }
+      },
+      "floor_history_count": 313
+    }
+  },
+  "base_5225a05_nonfrequency_hash": "88b04757bff6b8a1d88fc2de6a0396f1da203c724f3021cc4f1db1bd97d16ceb",
+  "nonfrequency_hash_identical_to_base": true,
+  "original_metric_differences": {},
+  "passed": true
+}

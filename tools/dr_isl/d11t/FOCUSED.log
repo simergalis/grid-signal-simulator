@@ -1,0 +1,113 @@
+........................F..............................F................ [ 79%]
+.................ss                                                      [100%]
+=================================== FAILURES ===================================
+_ TestI4DeliveryFaultMovesFrequency.test_I4_delivery_fault_causes_frequency_deviation _
+
+self = <tests.test_13_3_frequency.TestI4DeliveryFaultMovesFrequency object at 0x7f3b054b5a90>
+
+    def test_I4_delivery_fault_causes_frequency_deviation(self):
+        """I4: fleet under-delivery (depleted BESS, turbine staging) drops frequency."""
+        state = _make_state(
+            turbine_ramp=0.2,
+            bess_soc=0.0,
+            bess_mwh=0.01,
+            island_mode=IslandMode.ISLANDED,
+        )
+        f_nom = state.site.frequency_nominal_hz  # sourced from config (50.0 EU/APAC)
+        sig = _starting_signal(nodes=200, ramp_s=1.0, timestamp=0.0)
+        state.apply_workload_signal(sig, dt_lead_seconds=0.0)
+    
+        # Single tick at sim_time=5.0, dt=0.1 s:
+        # GPU load ≈ 0.06 MW (200 nodes, near-zero ramp_progress × ~0.3 kW/node overhead);
+        # BESS depleted → bess_output ≈ 0;
+        # turbine RAMPING (pre-staged via apply_workload_signal, r_asset=0.2 MW/s):
+        #   turb_out = 0.2 × 0.1 = 0.02 MW.
+        # balance_residual = 0.02 + 0 − 0.06 ≈ −0.04 MW < 0.
+        # frequency_forcing = balance_residual < 0 → frequency drops below nominal.
+        tick = _run_tick(state, sim_time=5.0, dt=0.1)
+    
+>       assert tick.asset_delivery_error_mw != pytest.approx(0.0, abs=1e-6), (
+            f"I4: asset_delivery_error_mw must be non-zero (fleet under-delivers); "
+            f"got {tick.asset_delivery_error_mw:.9f}"
+        )
+E       AssertionError: I4: asset_delivery_error_mw must be non-zero (fleet under-delivers); got 0.000000000
+E       assert 0.0 != 0.0 ± 1.0e-06
+E        +  where 0.0 = TickResult(run_id='test', tick_index=1, sim_time_seconds=5.1, p_compute_demand_mw=0.05253, p_cooling_demand_mw=0.0, p_...sfied=False, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id='gt-1', slurm_metrics=None).asset_delivery_error_mw
+E        +  and   0.0 ± 1.0e-06 = <function approx at 0x7f3b13efea20>(0.0, abs=1e-06)
+E        +    where <function approx at 0x7f3b13efea20> = pytest.approx
+
+tests/test_13_3_frequency.py:452: AssertionError
+_ TestDispatchTruthfulness.test_B1a_islanded_delivery_fault_visible_in_delivery_channel _
+
+self = <tests.test_forecast_path.TestDispatchTruthfulness object at 0x7f3b054b6850>
+
+    def test_B1a_islanded_delivery_fault_visible_in_delivery_channel(self):
+        """B1a: A delivery fault appears in asset_delivery_error_mw.
+    
+        Scenario: slow-ramping turbine in islanded mode, BESS depleted.
+        The turbine has not been previously staged, so its output at the
+        first tick is 0 MW while the load is ~0.105 MW (10 nodes, fully
+        ramped).  The BESS is also depleted (0 output), so:
+          asset_delivery_error = (turbine_out − gt_setpoint) + (bess_out − bess_setpoint)
+                               = (0 − 0.105) + (0 − 0.085) = −0.190 MW  (under-delivery).
+    
+        Phase 13.3 note: with the updated swing equation, asset_delivery_error
+        does NOT drive frequency.  Instead, frequency rises because
+        frequency_forcing_mw > 0 (the BESS was asked to bridge 0.085 MW of
+        shortfall but could not deliver — the dispatch PLAN was unbalanced,
+        and it is the plan that drives frequency, not the delivery fault).
+        The direction of frequency change has therefore flipped relative to
+        Phase 13.2 code (formerly negative due to +delivery_error in swing eq;
+        now positive due to frequency_forcing_mw alone), but the key assertion
+        — that the delivery fault is visible in asset_delivery_error_mw and
+        frequency_hz deviates — is unchanged.
+    
+        The key assertion: the imbalance is in asset_delivery_error_mw, not
+        merely in balance_residual_mw.  Any non-zero delivery error (over OR
+        under) must surface in this channel.  balance_residual_mw is kept as
+        a corroboration check.
+        """
+        state = _make_state(
+            bess_soc=0.0,
+            bess_mwh=0.01,    # near-zero energy so SoC drains immediately
+            bess_rated_mw=5.0,
+            turbine_ramp=0.2,  # slow ramp — turbine over-shoots setpoint first tick
+            island_mode=IslandMode.ISLANDED,
+        )
+        sig = _starting_signal(nodes=10, ramp_s=1.0, timestamp=0.0)
+        state.apply_workload_signal(sig, dt_lead_seconds=0.0)
+        # Pre-advance the GPU ramp to completion so p_compute_demand ≈ 0.105 MW.
+        # _run_tick is stateless (it calls advance() for exactly one dt=0.1 s step),
+        # so ramp_progress would only reach 0.1/1.0 = 0.10 in the evaluation tick,
+        # leaving p_compute at ~2.6% of full TDP.  Calling advance() with the full
+        # ramp_seconds here simulates the elapsed time before sim_time=5.0.
+        state.gpu_modules[0].advance(0.0, state.gpu_modules[0].ramp_seconds)
+    
+        tick = _run_tick(state, sim_time=5.0, dt=0.1)
+    
+        # Delivery fault is visible in the delivery channel, not just in balance_residual.
+        # Turbine over-delivered vs its setpoint → asset_delivery_error_mw > 0.
+>       assert tick.asset_delivery_error_mw != pytest.approx(0.0, abs=1e-6), (
+            f"B1a: delivery fault must appear in asset_delivery_error_mw; "
+            f"got {tick.asset_delivery_error_mw:.9f}  "
+            f"(turbine_out={tick.turbine_output_mw:.6f}, "
+            f"gt_setpoint={tick.gt_setpoint_mw:.6f})"
+        )
+E       AssertionError: B1a: delivery fault must appear in asset_delivery_error_mw; got 0.000000000  (turbine_out=0.000000, gt_setpoint=0.000000)
+E       assert 0.0 != 0.0 ± 1.0e-06
+E        +  where 0.0 = TickResult(run_id='test', tick_index=1, sim_time_seconds=5.1, p_compute_demand_mw=0.10506, p_cooling_demand_mw=0.0, p_...sfied=False, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id='gt-1', slurm_metrics=None).asset_delivery_error_mw
+E        +  and   0.0 ± 1.0e-06 = <function approx at 0x7f3b13efea20>(0.0, abs=1e-06)
+E        +    where <function approx at 0x7f3b13efea20> = pytest.approx
+
+tests/test_forecast_path.py:590: AssertionError
+=============================== warnings summary ===============================
+tests/test_13_3_frequency.py: 2 warnings
+tests/test_forecast_path.py: 3 warnings
+tests/test_13_2_balance_decomp.py: 7 warnings
+  <string>:11: UserWarning: BessConfig 'bess-1': C-rate 500.00 C is outside the 0.25–4.0 C physical range (PROTO-9 — chosen, no measured basis). rated_mw=5.0, usable_mwh=0.01
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_13_3_frequency.py::TestI4DeliveryFaultMovesFrequency::test_I4_delivery_fault_causes_frequency_deviation
+FAILED tests/test_forecast_path.py::TestDispatchTruthfulness::test_B1a_islanded_delivery_fault_visible_in_delivery_channel
+2 failed, 87 passed, 2 skipped, 12 warnings in 3.09s

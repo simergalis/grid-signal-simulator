@@ -1,0 +1,77 @@
+{
+  "scenario": "scenario-hybrid-ai-100mw-addendum-i",
+  "arm": "app",
+  "ticks": 120,
+  "differences": 0,
+  "max_public_difference_mw": 0.0,
+  "changed_public_ticks": [],
+  "first_failure": null,
+  "summaries": {
+    "stash": {
+      "kind": "summary",
+      "physical_sha256": "74f55fca1651deabc7364360b1d0f52941b8564df6e6001be377bc3a3458cfc1",
+      "ticks": 120,
+      "metrics": {},
+      "record": {},
+      "end_sim_time": 600.0,
+      "build_warnings": [
+        {
+          "code": "islanded_frequency_protection_unconfigured",
+          "message": "islanded run without frequency protection configured"
+        }
+      ],
+      "final_floor_basis": {
+        "bess-hybrid-edge": {
+          "bess_id": "bess-hybrid-edge",
+          "floor_mwh": 5.52,
+          "depth_reserve_mwh": 5.52,
+          "diesel_floor_mwh": 0.5833333333333334,
+          "d2r_term_mwh": 0.0,
+          "winning_term": "depth_reserve",
+          "basis": "no restartable synchronous unit",
+          "unit_id": null,
+          "eligibility_wait_s": null,
+          "start_duration_s": null,
+          "thermal_state": null,
+          "eligibility_reason": null
+        }
+      },
+      "floor_history_count": 0
+    },
+    "d11t": {
+      "kind": "summary",
+      "physical_sha256": "74f55fca1651deabc7364360b1d0f52941b8564df6e6001be377bc3a3458cfc1",
+      "ticks": 120,
+      "metrics": {},
+      "record": {},
+      "end_sim_time": 600.0,
+      "build_warnings": [
+        {
+          "code": "islanded_frequency_protection_unconfigured",
+          "message": "islanded run without frequency protection configured"
+        }
+      ],
+      "final_floor_basis": {
+        "bess-hybrid-edge": {
+          "bess_id": "bess-hybrid-edge",
+          "floor_mwh": 5.52,
+          "depth_reserve_mwh": 5.52,
+          "diesel_floor_mwh": 0.5833333333333334,
+          "d2r_term_mwh": 0.0,
+          "winning_term": "depth_reserve",
+          "basis": "no restartable synchronous unit",
+          "unit_id": null,
+          "eligibility_wait_s": null,
+          "start_duration_s": null,
+          "thermal_state": null,
+          "eligibility_reason": null
+        }
+      },
+      "floor_history_count": 0
+    }
+  },
+  "base_5225a05_nonfrequency_hash": "74f55fca1651deabc7364360b1d0f52941b8564df6e6001be377bc3a3458cfc1",
+  "nonfrequency_hash_identical_to_base": true,
+  "original_metric_differences": {},
+  "passed": true
+}
