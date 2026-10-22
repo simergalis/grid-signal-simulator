@@ -145,7 +145,7 @@ class TestI1FrequencyDeviationVisible:
     """I1: A power surplus in islanded mode appears as a frequency_hz deviation.
 
     Mechanism: 1 MW solar override with no GPU load → _p_commanded = 1 MW,
-    p_total ≈ 0 → frequency_forcing_mw ≈ 1 MW > 0 → df/dt > 0 → frequency rises.
+    p_total ≈ 0 → positive finite forcing → df/dt > 0 → frequency rises (D11).
     Verified: frequency_hz > 50 Hz and frequency_forcing_mw is the direct cause.
     """
 
@@ -157,8 +157,10 @@ class TestI1FrequencyDeviationVisible:
         # No GPU job → p_total ≈ 0
         tick = _run_tick(state, sim_time=0.0, dt=0.1)
 
-        assert tick.frequency_forcing_mw > 0.9, (
-            f"I1: frequency_forcing_mw must be ≈ 1.0 MW with 1 MW solar surplus; "
+        # DR D11: the last substep has already absorbed 0.1 / 0.5 of the surplus.
+        expected_forcing = 1.0 * (1.0 - 0.1 / state.site.dispatch_curtailment_response_delay_s)
+        assert tick.frequency_forcing_mw == pytest.approx(expected_forcing), (
+            f"I1: frequency_forcing_mw must follow the finite dump response; "
             f"got {tick.frequency_forcing_mw:.6f} MW"
         )
         assert tick.frequency_hz > f_nom, (
@@ -178,7 +180,7 @@ class TestI1FrequencyDeviationVisible:
 
 class TestI2SwingEquationAccuracy:
     """I2: The frequency change must match
-        Δf = frequency_forcing_mw / (2·H·S_base) · f₀ · dt
+        Δf = Σ frequency_forcing_mw(k)·dt_sub / (2·H·S_base) · f₀
     within ±10%.  Verifies the formula is implemented as specified.
     """
 
@@ -202,7 +204,15 @@ class TestI2SwingEquationAccuracy:
         # §INV-INERTIA: S_base (MVA) = on-bus rated_mw / power_factor.
         # The fixture pre-forces gt-1 to SYNCHRONISED so it contributes to S_base.
         s_base_mva = S_base_rated / state.site.power_factor
-        df_predicted = ff / (2.0 * H * s_base_mva) * f0 * dt
+        # DR D11: integrate the finite response, not the final forcing over all dt.
+        n_sub = max(1, round(dt / state.site.dynamic_step_s))
+        dt_sub = dt / n_sub
+        delay = state.site.dispatch_curtailment_response_delay_s
+        forcing_integral = sum(
+            (1.0 - min(1.0, (k + 1) * dt_sub / delay)) * dt_sub
+            for k in range(n_sub)
+        )
+        df_predicted = forcing_integral / (2.0 * H * s_base_mva) * f0
         df_actual = tick.frequency_hz - f0
 
         if abs(ff) < 1e-9:
@@ -216,10 +226,10 @@ class TestI2SwingEquationAccuracy:
         )
 
     def test_I2_explicit_formula_fixture(self):
-        """I2 (explicit): 1 MW forcing → Δf = 1/(2×4×(10/0.85))×50×5 = 2.65625 Hz.
+        """I2 (D11): finite 1 MW dump transient gives Δf ≈ 0.13015625 Hz.
 
         S_base (MVA) = rated_mw / power_factor = 10 / 0.85 ≈ 11.765 MVA.
-        Δf = 1 / (2 × 4 × 11.765) × 50 × 5 ≈ 2.65625 Hz (was 3.125 Hz at pf=1).
+        Integrate the response over substeps; do not sustain 1 MW for all 5 s.
         """
         H = 4.0
         S_base_rated_mw = 10.0
@@ -233,18 +243,26 @@ class TestI2SwingEquationAccuracy:
             solar_mw=1.0,
         )
         f0 = state.site.frequency_nominal_hz  # sourced from config (= 50.0)
-        # No GPU job → p_total ≈ 0 → frequency_forcing ≈ 1 MW
+        # No GPU job: 1 MW surplus, fully absorbed after the finite D11 delay.
         tick = _run_tick(state, sim_time=0.0, dt=dt)
 
-        assert tick.frequency_forcing_mw == pytest.approx(1.0, abs=0.1), (
-            f"I2 precondition: frequency_forcing_mw should be ~1 MW; "
+        assert tick.frequency_forcing_mw == pytest.approx(0.0, abs=0.1), (
+            f"I2 precondition: final forcing should be zero after the D11 response; "
             f"got {tick.frequency_forcing_mw:.6f}"
         )
 
         # §INV-INERTIA: S_base (MVA) = on-bus rated_mw / power_factor.
         # The fixture pre-forces gt-1 to SYNCHRONISED so it contributes to S_base.
         s_base_mva = S_base_rated_mw / state.site.power_factor
-        df_predicted = 1.0 / (2.0 * H * s_base_mva) * f0 * dt
+        # DR D11: unchanged swing equation, with substep-resolved forcing.
+        n_sub = max(1, round(dt / state.site.dynamic_step_s))
+        dt_sub = dt / n_sub
+        delay = state.site.dispatch_curtailment_response_delay_s
+        forcing_integral = sum(
+            (1.0 - min(1.0, (k + 1) * dt_sub / delay)) * dt_sub
+            for k in range(n_sub)
+        )
+        df_predicted = forcing_integral / (2.0 * H * s_base_mva) * f0
         df_actual = tick.frequency_hz - f0
         assert abs(df_actual - df_predicted) < df_predicted * 0.11, (   # ±10% tolerance
             f"I2: Δf={df_actual:.4f} Hz; predicted={df_predicted:.4f} Hz; "

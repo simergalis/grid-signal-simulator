@@ -687,9 +687,10 @@ class TestDispatchTruthfulness:
             f"turbine_out={tick.turbine_output_mw:.6f} gt_setpoint={tick.gt_setpoint_mw:.6f}  "
             f"bess_out={tick.bess_output_mw:.6f} bess_setpoint={tick.bess_setpoint_mw:.6f}"
         )
-        # The 1 MW surplus IS visible in the forcing channel (islanded).
-        assert tick.frequency_forcing_mw > 0.5, (
-            f"B1b: 1 MW solar surplus should appear in frequency_forcing_mw; "
+        # DR D11: surplus remains in the ledger, not sustained rotor forcing.
+        assert tick.p_dispatch_curtailed_mw == pytest.approx(1.0)
+        assert tick.frequency_forcing_mw == 0.0, (
+            f"B1b: forcing should be zero after the finite dump response; "
             f"got {tick.frequency_forcing_mw:.9f}"
         )
         # Frequency rose (positive forcing drives f above nominal).
@@ -826,9 +827,10 @@ class TestDispatchTruthfulness:
         tick = _run_tick(state, sim_time=0.0, dt=0.1)
 
         # 1 MW solar surplus → _p_commanded = 0 + 0 + 1.0 = 1.0; p_total ≈ 0
-        # frequency_forcing ≈ 1.0 MW (exact only when cooling = 0)
-        assert tick.frequency_forcing_mw > 0.9, (
-            f"B5 precondition: frequency_forcing_mw must be ≈ 1.0 MW with "
+        # DR D11: final forcing includes the response accrued over 0.1 s.
+        expected_forcing = 1.0 * (1.0 - 0.1 / _site_b5.dispatch_curtailment_response_delay_s)
+        assert tick.frequency_forcing_mw == pytest.approx(expected_forcing), (
+            f"B5 precondition: frequency_forcing_mw must follow the dump response with "
             f"1 MW solar surplus; got {tick.frequency_forcing_mw:.6f}"
         )
         # _site_b5.frequency_nominal_hz = 50.0 (EU/APAC fixture, set by intent above).
@@ -847,7 +849,15 @@ class TestDispatchTruthfulness:
         _H = 4.0
         _f0 = _site_b5.frequency_nominal_hz  # sourced from config (50.0 EU/APAC)
         _dt = 0.1
-        _df_expected = tick.frequency_forcing_mw / (2.0 * _H * _s_base_mw) * _f0 * _dt
+        # DR D11: integrate substep forcing rather than multiplying its endpoint.
+        _n_sub = max(1, round(_dt / _site_b5.dynamic_step_s))
+        _dt_sub = _dt / _n_sub
+        _delay = _site_b5.dispatch_curtailment_response_delay_s
+        _forcing_integral = sum(
+            (1.0 - min(1.0, (k + 1) * _dt_sub / _delay)) * _dt_sub
+            for k in range(_n_sub)
+        )
+        _df_expected = _forcing_integral / (2.0 * _H * _s_base_mw) * _f0
         _df_actual = tick.frequency_hz - _f0
         assert abs(_df_actual - _df_expected) / max(abs(_df_expected), 1e-9) < 0.10, (
             f"B5: frequency deviation {_df_actual:.6f} Hz should be within "

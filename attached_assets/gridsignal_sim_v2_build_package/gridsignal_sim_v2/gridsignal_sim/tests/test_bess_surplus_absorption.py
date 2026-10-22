@@ -254,7 +254,7 @@ class TestSurplusAbsorption:
 
     def test_TC_SURP_4_partial_absorption_when_rated_mw_limits(self):
         """TC-SURP-4: When fleet_surplus > rated_mw, BESS absorbs at most rated_mw.
-        Some surplus remains and routes to frequency_forcing_mw (islanded)."""
+        Remaining surplus drives only the finite D11 dump-response transient."""
         # fleet_surplus ≈ 10 MW (turbine), BESS rated at 3 MW.
         state = _make_state(
             turbine_output_mw=10.0,
@@ -268,14 +268,15 @@ class TestSurplusAbsorption:
         assert absorbed == pytest.approx(3.0, abs=0.05), (
             f"TC-SURP-4: absorption limited to rated_mw=3.0 MW; got {absorbed:.4f} MW"
         )
-        # Residual surplus (10 - 3 = 7 MW) routes to frequency_forcing_mw.
-        assert tick.frequency_forcing_mw > 0.0, (
-            f"TC-SURP-4: un-absorbed surplus must appear in frequency_forcing_mw; "
+        # DR D11: the dump absorbs the residual after its finite response.
+        assert tick.p_dispatch_curtailed_mw > 0.0
+        assert tick.frequency_forcing_mw == 0.0, (
+            f"TC-SURP-4: forcing must be zero after the dump response; "
             f"got {tick.frequency_forcing_mw:.4f}"
         )
 
     def test_TC_SURP_5_absorption_reduces_frequency_forcing(self):
-        """TC-SURP-5: BESS absorption shrinks frequency_forcing_mw in island mode.
+        """TC-SURP-5: BESS absorption shrinks the D11 forcing transient in island mode.
         With a BESS that can absorb and one that cannot (full), the latter must
         produce a larger frequency deviation for the same generation surplus."""
         # Two scenarios: same turbine surplus, one BESS absorbs, one cannot.
@@ -285,11 +286,12 @@ class TestSurplusAbsorption:
         tick_absorb = _run_tick(state_absorb, dt=1.0)
         tick_full   = _run_tick(state_full,   dt=1.0)
 
-        # When BESS absorbs, balance_residual is smaller → frequency_forcing is smaller.
-        assert tick_absorb.frequency_forcing_mw < tick_full.frequency_forcing_mw, (
-            f"TC-SURP-5: BESS absorption must reduce frequency_forcing_mw; "
-            f"absorb={tick_absorb.frequency_forcing_mw:.4f}, "
-            f"full={tick_full.frequency_forcing_mw:.4f}"
+        # DR D11: both final forcings are zero; the integrated transient differs.
+        assert tick_absorb.frequency_forcing_mw == tick_full.frequency_forcing_mw == 0.0
+        assert tick_absorb.frequency_hz < tick_full.frequency_hz, (
+            f"TC-SURP-5: BESS absorption must reduce the frequency excursion; "
+            f"absorb={tick_absorb.frequency_hz:.4f}, "
+            f"full={tick_full.frequency_hz:.4f}"
         )
 
     def test_TC_SURP_6_taper_reset_bess_re_engages_on_shortfall(self):
