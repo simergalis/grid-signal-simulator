@@ -2,14 +2,16 @@
 
 Date: 2026-10-22.
 Base: `ae49aaab89564ccf2ef42d505e021641484d0d3a`.
-Status: **4.0 source diagnosis completed; implementation blocked by the
-preflight issues below. No candidate application changes.**
+Status: **STOP at gate 4.5: one added GPU-profile suite failure.
+Candidate retained in stash `85595a8189a7adc9745b5fd326196f6325b0e275`.
+Main application code restored to `ae49aaa`; implementation not committed.
+All three preflight decisions below were explicitly approved.**
 
 P = `attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/`.
 This document concerns D2-r / D1-b / IMPL-ISL-2. It is not the separate
 DR-2026-10-22-ISL-P4 start-event logging work accepted as IMPL-ISL-17.
 
-## 4.0 — Existing implementation
+## 4.0 — Existing implementation at base `ae49aaa`
 
 ### One existing reserve formula and its consumers
 
@@ -104,7 +106,7 @@ turbine ramp, lines 1153–1194. Neither warning defines the retained MWh
 reserve in `soc_floor_mwh`. They will not be changed. R2 must measure their
 actual firing times separately from the new physical binding time.
 
-## Proposed implementation after clarification
+## Candidate design after clarification (now retained in the stash)
 
 - Extend only the existing floor calculation to
   `max(depth reserve, diesel floor, D2-r term)`.
@@ -180,7 +182,13 @@ exactly unchanged and record the accurate D2-r basis only separately.
 
 ## Gate disposition
 
-STOP before 4.1. No production/test/scenario edits, no runs, no candidate
-stash required because no candidate was created. Existing stashes were
-not applied. Application code remains the requested base.
-The design note and stop report are the only new files.
+The initial preflight STOP was resolved by the user's answers:
+```text
+tracking_file = existing_main
+starting_bridge = remaining_countdown
+warning_attribution = attribution_only
+```
+Therefore track `mcp_server/__main__.py`, include STARTING turbines using
+remaining startup countdown, and update only D9b winning-term attribution.
+No change to the frozen start predicate or D9b warning trigger is permitted.
+All original acceptance and STOP/restoration requirements remain in force.

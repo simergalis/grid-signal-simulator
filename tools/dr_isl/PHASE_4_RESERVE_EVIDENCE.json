@@ -1,0 +1,306 @@
+{
+  "base": "ae49aaab89564ccf2ef42d505e021641484d0d3a",
+  "head_before_stash": "17db503763fd1b500502c7bcd6f68b9832b83a26",
+  "changed_lines": {
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py": [
+      [
+        1069,
+        1088
+      ],
+      [
+        1106,
+        1108
+      ]
+    ],
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/dispatch.py": [
+      [
+        383,
+        388
+      ],
+      [
+        538,
+        611
+      ]
+    ],
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py": [
+      [
+        354,
+        354
+      ],
+      [
+        390,
+        398
+      ],
+      [
+        998,
+        998
+      ],
+      [
+        2036,
+        2045
+      ],
+      [
+        2047,
+        2054
+      ],
+      [
+        2128,
+        2128
+      ]
+    ],
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/build_warnings.py": [
+      [
+        37,
+        41
+      ]
+    ],
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/scenario_factory.py": [
+      [
+        1952,
+        1958
+      ]
+    ],
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_phase4_reserve.py": [
+      [
+        1,
+        208
+      ]
+    ]
+  },
+  "sha256": {
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py": "c1b01053a82970b0f5d8ceced7a74b7ca693cb2de309317273ec01d5959cfe1f",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/dispatch.py": "bfabe5bb12ac4c5719062d6de5a83a259165d1357f01d674ddfd3c8c5fcaeb27",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py": "975d97d375e9a47f9cd9fe75d9ce37d082dc2d3565f50acd9bff30b5ba7fffb6",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/build_warnings.py": "b78fbab7418f5724ca2f4e4af23c02a620bd43bf6ddf9a1edc96ad91b5713edd",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/scenario_factory.py": "432073c8cd4bb953dde53e236e45d1ccb7cae9ab4fdd02f18279338716c9a4a4",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_phase4_reserve.py": "0b4598f9411f98189004327657e079e9045a83a8e975c367cc4fd97cab1a4e2e"
+  },
+  "shared_eligibility_ast_identical": true,
+  "test_functions": {
+    "test_tc_isl_01_no_diesel_positive_floor_and_recorded_basis": [
+      70,
+      82
+    ],
+    "test_tc_isl_01_diesel_wins_unchanged": [
+      85,
+      94
+    ],
+    "test_tc_isl_01_no_restartable_unit_records_zero": [
+      97,
+      104
+    ],
+    "test_tc_isl_01_min_down_and_inflight_countdown": [
+      107,
+      128
+    ],
+    "test_tc_isl_01_above_capacity_warning_attribution_only": [
+      131,
+      141
+    ],
+    "test_tc_isl_02_grid_tied_or_nonforming_not_applied": [
+      151,
+      154
+    ],
+    "test_tc_isl_02_live_grid_forming_block_fc_not_applied": [
+      157,
+      171
+    ],
+    "test_tc_isl_03_conditional_release_and_unserved": [
+      175,
+      208
+    ]
+  },
+  "suite": {
+    "wrapper_exit_code": 2,
+    "final_pytest_counts": null,
+    "last_observed_incremental_junit": {
+      "tests": 2223,
+      "failures": 16,
+      "errors": 0,
+      "skipped": 26
+    },
+    "failed": [
+      "tests/test_13_3_frequency.py::TestI4DeliveryFaultMovesFrequency::test_I4_delivery_fault_causes_frequency_deviation",
+      "tests/test_13_5_criteria.py::TestR4PMinStable::test_R4_fields_present_on_turbine_config",
+      "tests/test_artifact_truncation.py::test_tc173_executor_run_validates_from_truncated_record_and_sidecar",
+      "tests/test_diesel_phase3.py::test_live_diesel_is_less_aggressive_than_disabled_before_curtailment",
+      "tests/test_diesel_setpoint_gap.py::test_hybrid_covered_demand_does_not_release_bess_reserve",
+      "tests/test_fabric_scenarios_e2e.py::test_fabric_scenario_names",
+      "tests/test_forecast_path.py::TestDispatchTruthfulness::test_B1a_islanded_delivery_fault_visible_in_delivery_channel",
+      "tests/test_fuel_cell_phase2.py::test_fixed_target_survives_a_step_load_and_output_remains_rate_limited",
+      "tests/test_gpu_load_profile.py::test_gpu_load_profile",
+      "tests/test_gridley.py::test_gridley_logs_no_match_with_question_and_scenario_context",
+      "tests/test_gridley.py::test_gridley_retrieves_operator_knowledge_for_natural_variants",
+      "tests/test_gridley.py::test_gridley_uses_grounded_operator_benefits_fallback_without_claude",
+      "tests/test_kubernetes_scheduler_demo_scenario.py::test_catalogue_demo_constructs_phase_a_scheduler_and_has_real_queue_wait",
+      "tests/test_plane_separation.py::TestApiStaticLayer::test_api_gate_clean_api_passes",
+      "tests/test_scenario_fc100_islanded_v2.py::test_fc100_zero_hot_variant_exposes_physical_bess_ceiling_and_unserved_load",
+      "tests/test_unit_trip.py::test_tc84f_demo_20mw_contingency_state_changes_after_trip"
+    ],
+    "added": [
+      "tests/test_gpu_load_profile.py::test_gpu_load_profile"
+    ],
+    "removed": [],
+    "remaining": [
+      "tests/test_13_3_frequency.py::TestI4DeliveryFaultMovesFrequency::test_I4_delivery_fault_causes_frequency_deviation",
+      "tests/test_13_5_criteria.py::TestR4PMinStable::test_R4_fields_present_on_turbine_config",
+      "tests/test_artifact_truncation.py::test_tc173_executor_run_validates_from_truncated_record_and_sidecar",
+      "tests/test_diesel_phase3.py::test_live_diesel_is_less_aggressive_than_disabled_before_curtailment",
+      "tests/test_diesel_setpoint_gap.py::test_hybrid_covered_demand_does_not_release_bess_reserve",
+      "tests/test_fabric_scenarios_e2e.py::test_fabric_scenario_names",
+      "tests/test_forecast_path.py::TestDispatchTruthfulness::test_B1a_islanded_delivery_fault_visible_in_delivery_channel",
+      "tests/test_fuel_cell_phase2.py::test_fixed_target_survives_a_step_load_and_output_remains_rate_limited",
+      "tests/test_gridley.py::test_gridley_logs_no_match_with_question_and_scenario_context",
+      "tests/test_gridley.py::test_gridley_retrieves_operator_knowledge_for_natural_variants",
+      "tests/test_gridley.py::test_gridley_uses_grounded_operator_benefits_fallback_without_claude",
+      "tests/test_kubernetes_scheduler_demo_scenario.py::test_catalogue_demo_constructs_phase_a_scheduler_and_has_real_queue_wait",
+      "tests/test_plane_separation.py::TestApiStaticLayer::test_api_gate_clean_api_passes",
+      "tests/test_scenario_fc100_islanded_v2.py::test_fc100_zero_hot_variant_exposes_physical_bess_ceiling_and_unserved_load",
+      "tests/test_unit_trip.py::test_tc84f_demo_20mw_contingency_state_changes_after_trip"
+    ],
+    "evidence_loss": "Temporary run directory and shell-log paths were absent after wrapper exit; cause not established."
+  },
+  "status_before_stash": " M .agents/memory/reserve-reconciliation.md\n M attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py\n M attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/dispatch.py\n M attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py\n M attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/build_warnings.py\n M attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/scenario_factory.py\n M tools/dr_isl/PHASE_4_RESERVE_DESIGN.md\n?? tools/dr_isl/PHASE_4_CANDIDATE_EVIDENCE.patch\n?? tools/dr_isl/PHASE_4_FAILING_TESTS.txt\n",
+  "stash": "85595a8189a7adc9745b5fd326196f6325b0e275",
+  "restoration": {
+    "application_diff_against_base_empty": true,
+    "workflow": "artifacts/gridsignal: web",
+    "startup_complete": true,
+    "root_http_status": 200,
+    "preview": "operator sign-in page; unauthenticated 401 logged; no sign-in or new simulation"
+  },
+  "recovered_observations": {
+    "provenance": "Values already printed in tool observations; raw temporary run artifacts disappeared before durable copying. Not a recovered final pytest summary.",
+    "focused": {
+      "new_tests": 11,
+      "existing_reserve_and_addendum_g": 33,
+      "start_eligibility": 6
+    },
+    "R1": [
+      {
+        "scenario": "demo-islanded-ramp",
+        "version": "base",
+        "ticks": 2160,
+        "min_soc": 0,
+        "floor_min": 0,
+        "floor_max": 0,
+        "first_floor_tick": 771,
+        "first_floor_time": 3855,
+        "min_frequency_next_120s": 56.30124604916138,
+        "frequency_min": -127.48961154607643,
+        "frequency_max": 60,
+        "unserved_mwh": 0.7984763561509628,
+        "collapse": false,
+        "physical_sha256": "fe798e4292b478ef3f6e25d67e4e22123867f51e49b991ac13981ecaa8114b2a"
+      },
+      {
+        "scenario": "demo-islanded-ramp",
+        "version": "candidate",
+        "ticks": 2160,
+        "min_soc": 0.45166506501035325,
+        "floor_min": 0.0625,
+        "floor_max": 7.5,
+        "first_floor_tick": 312,
+        "first_floor_time": 1560,
+        "min_frequency_next_120s": 59.98901877366516,
+        "frequency_min": -127.48961154607643,
+        "frequency_max": 60,
+        "unserved_mwh": 0.785895723386723,
+        "collapse": false,
+        "physical_sha256": "f49f71f1573f1f9a22fff6d560eb5a25a380e4088ecccbe12cf6a560964f822a"
+      },
+      {
+        "scenario": "S10_mit_supercloud_2021-08-11",
+        "version": "base",
+        "ticks": 17280,
+        "min_soc": 0,
+        "floor_min": 0,
+        "floor_max": 0,
+        "first_floor_tick": 2372,
+        "first_floor_time": 11860,
+        "min_frequency_next_120s": 54.48350997809083,
+        "frequency_min": -729.1075118080669,
+        "frequency_max": 998.9330534505464,
+        "unserved_mwh": 10.600341682490331,
+        "collapse": false,
+        "physical_sha256": "4370c9ebfbfc90d2812cad93285c9749645974502508e8188c3567eb3e60d34d"
+      },
+      {
+        "scenario": "S10_mit_supercloud_2021-08-11",
+        "version": "candidate",
+        "ticks": 17280,
+        "min_soc": 0,
+        "floor_min": 0,
+        "floor_max": 14.9375,
+        "first_floor_tick": 1012,
+        "first_floor_time": 5060,
+        "min_frequency_next_120s": 79.88266332350686,
+        "frequency_min": -729.1075118080669,
+        "frequency_max": 998.9330534505464,
+        "unserved_mwh": 8.4639919161834,
+        "collapse": false,
+        "physical_sha256": "8ba0dec0459ca09b9df4ea6fa17bd72fa16038220f425b0a8dd499bfa87557ab"
+      }
+    ],
+    "R2": [
+      {
+        "scenario": "demo-islanded-ramp",
+        "advisory_tick": 6,
+        "advisory_time": 30,
+        "reason": "turbine_catchup",
+        "first_normal_floor_tick": 312,
+        "first_normal_floor_time": 1560,
+        "first_retained_guard_while_below_target_tick": 315,
+        "first_retained_guard_time": 1575,
+        "below_target": 1849,
+        "not_discharging": 1845,
+        "unauthorized_positive_discharge": 0
+      },
+      {
+        "scenario": "S10_mit_supercloud_2021-08-11",
+        "advisory_tick": 118,
+        "advisory_time": 590,
+        "reason": "turbine_catchup",
+        "first_normal_floor_tick": 1012,
+        "first_normal_floor_time": 5060,
+        "first_retained_guard_while_below_target_tick": 1012,
+        "first_retained_guard_time": 5060,
+        "below_target": 2713,
+        "not_discharging": 2022,
+        "unauthorized_positive_discharge": 0
+      }
+    ],
+    "R3": {
+      "scenario-equinix-sj-1": "328309c3a181aefdb702a0577f41acfe673a945450ce61f9ad560696cf0aaa84",
+      "scenario-turbine-01": "006006e6c9eac82460ee4a343a4d1691f2a34f231ca7fb038c7ae583ab63471a",
+      "scenario-hybrid-ai-100mw-addendum-i": "9377f009785094697116d356ef554985107ce1ee4c92f01c672f4b30b5f7577a",
+      "scenario-100mw-fuel-cell-bess-diesel": "565edaad7557ed06b545d92fe6c10105ef1a709e1aeb2e224d041e1e475e581b",
+      "scenario-fc100-islanded-v2": "d8146d3e37d9d7e1b306bbf2dc7dea7b2675be9c2bdabca0a209a028772c73d3",
+      "scenario-fc100-islanded-zero-hot-v2": "d89d3132a5f87e94de6869a1246f5d3f434e03ecab72d744f90329ac8608d8f2"
+    },
+    "R4": {
+      "all_27_metric_projection_equal": true,
+      "physical_equal": true,
+      "compact_equal": true,
+      "h1_h2_repetitions_per_arm": 2,
+      "repeatable": true,
+      "base_demo_and_h1_h2_compare_runs": "PASS",
+      "individual_H_hash_strings_retained": false,
+      "full_metric_payloads_retained": false,
+      "base_demo_production_rounded_9_decimal": {
+        "baseline": {
+          "dispatch_curtailment_mwh": 8.136511735,
+          "turbine_fuel_mmbtu": 714.363019086,
+          "unserved_mwh": 0.351692658,
+          "peak_unserved_mw": 22.309362466
+        },
+        "informed": {
+          "dispatch_curtailment_mwh": 5.278943188,
+          "turbine_fuel_mmbtu": 665.398247704,
+          "unserved_mwh": 0.020719074,
+          "peak_unserved_mw": 7.52325057
+        }
+      }
+    }
+  }
+}

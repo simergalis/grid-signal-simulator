@@ -14,3 +14,15 @@ For the DR-ISL programme, the user subsequently required streaming physical hash
 **Why:** The user chose bounded streaming after the scratch-exhaustion stop, rather than authorizing large disk-backed exports.
 
 **How to apply:** Do not invoke the persisted baseline runner's full-export mode for long programme checks. Preserve its seeder, pinning and hash contract through an output-only streaming adapter, without changing simulation inputs.
+
+Persist bounded verification summaries, exact hashes, final test counts and
+failing-ID lists incrementally under `tools/dr_isl/`, not only in `/tmp`.
+
+**Why:** Scratch directories and background-shell logs disappeared after a
+long validation run, while the workspace failing-ID list survived. A successful
+process exit or a passing observation does not ensure its evidence survives.
+
+**How to apply:** Flush each completed gate's bounded evidence to the workspace
+before starting the next gate. Retain the no-full-tick-export rule and file-size
+cap. If scratch disappears, report the missing evidence explicitly; do not
+reconstruct unobserved final counts or silently rerun past a STOP gate.
