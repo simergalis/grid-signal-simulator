@@ -1,0 +1,25 @@
+........................................................................ [ 67%]
+.................................F                                       [100%]
+=================================== FAILURES ===================================
+______________ TestApiStaticLayer.test_api_gate_clean_api_passes _______________
+tests/test_plane_separation.py:496: in test_api_gate_clean_api_passes
+    assert not all_violations, (
+E   AssertionError: api/ core-import violations found — build fails:
+E       api/routes/ingest.py:17: from core.models import ... — forbidden in api/ (top-level package 'core' is in forbidden list)
+E       api/routes/ingest.py:18: from core.slurm_scheduler import ... — forbidden in api/ (top-level package 'core' is in forbidden list)
+E   assert not ["api/routes/ingest.py:17: from core.models import ... — forbidden in api/ (top-level package 'core' is in forbidden l...ngest.py:18: from core.slurm_scheduler import ... — forbidden in api/ (top-level package 'core' is in forbidden list)"]
+=============================== warnings summary ===============================
+../../../../.pythonlibs/lib/python3.13/site-packages/fastapi/testclient.py:1
+  /home/runner/workspace/.pythonlibs/lib/python3.13/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_step8_scenarios.py::TestSolarStepTriggersStaging::test_solar_step_sets_pending_alert
+tests/test_step8_scenarios.py::TestSolarStepTriggersStaging::test_solar_step_does_not_touch_gpu_state
+tests/test_step8_scenarios.py::TestTC33Symmetry::test_compute_path_fires_alert
+tests/test_step8_scenarios.py::TestTC33Symmetry::test_renewable_path_fires_alert_with_larger_gap
+  <string>:11: UserWarning: BessConfig 'bess-0': C-rate 500.00 C is outside the 0.25–4.0 C physical range (PROTO-9 — chosen, no measured basis). rated_mw=5.0, usable_mwh=0.01
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_plane_separation.py::TestApiStaticLayer::test_api_gate_clean_api_passes
+1 failed, 105 passed, 5 warnings in 23.60s

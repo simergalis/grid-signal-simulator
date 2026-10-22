@@ -1,0 +1,12 @@
+{
+  "workflow": "artifacts/gridsignal: web",
+  "restarted": true,
+  "backend_implementation_commit": "67e02b1ab4dff1a261eaa5dc03bc68fbd190fe2f",
+  "code_and_tests_head": "f730ee578a8930d5e45e5225d003d8b500bdbb62",
+  "get_root_status": 200,
+  "frontend_build": "R5/PROD_BUILD.txt: success",
+  "ui_display_source": "existing ignored working files; diff saved, not committed as source",
+  "startup_complete": true,
+  "startup_log": "R5/DEV_STARTUP.log",
+  "screenshot": "R5/DEV_PREVIEW.jpg: signed-out page only"
+}

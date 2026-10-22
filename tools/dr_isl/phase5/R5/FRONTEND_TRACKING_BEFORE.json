@@ -1,0 +1,13 @@
+{
+  "frontend_root": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend",
+  "tracked_count": 3,
+  "untracked_nonignored_count": 0,
+  "untracked_ignored_count": 9976,
+  "edited_paths": {
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/App.tsx": false,
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/subsystem/panels/forecastQuality.ts": false,
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/types.ts": true,
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/test/forecast_quality_panel.test.tsx": false
+  },
+  "counts_include_generated_and_dependency_files": true
+}

@@ -1,0 +1,17 @@
+{
+  "base": [
+    "api/routes/ingest.py:17: from core.models import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden list)",
+    "api/routes/ingest.py:18: from core.slurm_scheduler import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden list)"
+  ],
+  "candidate_before_fix": [
+    "api/routes/ingest.py:17: from core.models import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden list)",
+    "api/routes/ingest.py:18: from core.slurm_scheduler import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden list)",
+    "api/schemas.py:2430: from core.frequency_reporting import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden list)"
+  ],
+  "after_fix": [
+    "api/routes/ingest.py:17: from core.models import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden list)",
+    "api/routes/ingest.py:18: from core.slurm_scheduler import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden list)"
+  ],
+  "after_equals_base": true,
+  "focused": "105 passed; 1 known plane-separation failure"
+}

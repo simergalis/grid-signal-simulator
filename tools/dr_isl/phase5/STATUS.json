@@ -1,16 +1,9 @@
 {
-  "state": "STOPPED",
-  "gate": "5.7 added failure",
-  "reason": "GPU profile added failure reproduced at base in preceding order (IMPL-SSH-07); no Phase 5 waiver. Existing API-static failing node also gains a new api/schemas.py core-import violation.",
-  "stash": "3b856fd30d37320f6d1f48ac04c342261068ced6",
-  "stash_ref": "stash@{0}",
-  "head_before_report": "fd87fc75b995f19556f598cdc5b0f443a4edce75",
-  "application_tracked_diff_vs_base_empty": true,
-  "candidate_file_count": 15,
-  "candidate_stash_hashes_all_verified": true,
-  "ui_restoration": "Existing ignored frontend files restored by reversing only D3 edits; pre-edit byte hashes were not captured. See UI_PATCH_REVERSAL.diff and UI_RESTORATION_NOTE.json.",
-  "implementation_commits": [],
-  "ui_commits": [],
-  "test_commits": [],
+  "state": "COMPLETE",
+  "phase": "5",
+  "resumption": "R5",
+  "gate": "PASS with explicit GPU waiver; zero other additions or new failure modes",
+  "implementation": "67e02b1ab4dff1a261eaa5dc03bc68fbd190fe2f",
+  "ui": "tracked types committed; ignored display sources retained with tracked diff",
   "phase6_started": false
 }

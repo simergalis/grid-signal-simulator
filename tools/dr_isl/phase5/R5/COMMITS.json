@@ -1,0 +1,34 @@
+[
+  {
+    "kind": "implementation",
+    "hash": "67e02b1ab4dff1a261eaa5dc03bc68fbd190fe2f",
+    "message": "D3 (IMPL-ISL-3): frequency_valid and protection_configured; no clamping",
+    "files": [
+      "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/frequency_reporting.py",
+      "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/models.py",
+      "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py",
+      "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/build_warnings.py",
+      "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/run_manager.py",
+      "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/scenario_factory.py",
+      "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/study_harness/executor.py",
+      "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/study_harness/metrics.py"
+    ]
+  },
+  {
+    "kind": "tracked UI types only",
+    "hash": "21f552f62711df34da8be4d4052ee1ff3857d6f8",
+    "message": "D3 UI types: frequency reporting flags; ignored display edits retained in evidence",
+    "files": [
+      "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/types.ts"
+    ]
+  },
+  {
+    "kind": "tests",
+    "hash": "f730ee578a8930d5e45e5225d003d8b500bdbb62",
+    "message": "D3 tests: TC-ISL-08 frequency reporting and runtime build warnings",
+    "files": [
+      "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_frequency_reporting.py",
+      "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_phase2c.py"
+    ]
+  }
+]

@@ -1,0 +1,27 @@
+{
+  "runtime/build_warnings.py": [
+    "9: def frequency_configuration_warnings(state) -> list[dict]:",
+    "15:     from core.frequency_reporting import unprotected_island_warning",
+    "19:     _log.warning(\"DR D3 build warning: %s\", warning)"
+  ],
+  "runtime/scenario_factory.py": [
+    "1947:     from runtime.build_warnings import reserve_capacity_warnings, frequency_configuration_warnings",
+    "1948:     _build_warnings = reserve_capacity_warnings(sim_state) + frequency_configuration_warnings(sim_state)",
+    "1955:             \"build_warnings\": _build_warnings,"
+  ],
+  "api/routes/runs.py": [
+    "689:         build_warnings=ctx.metadata.get(\"build_warnings\", []),"
+  ],
+  "runtime/run_manager.py": [
+    "798:         \"frequency_valid\":       tick.frequency_valid,",
+    "799:         \"protection_configured\": tick.protection_configured,"
+  ],
+  "runtime/persistence.py": [
+    "91: def _tick_to_json(tick: TickResult) -> str:",
+    "120:         payload = dataclasses.asdict(tick)"
+  ],
+  "core/simulation_core.py": [
+    "4162:         frequency_valid=frequency_is_valid(state._frequency_hz, state.site.frequency_nominal_hz),",
+    "4163:         protection_configured=protection_is_configured(state.site),"
+  ]
+}

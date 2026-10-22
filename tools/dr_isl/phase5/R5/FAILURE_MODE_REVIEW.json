@@ -1,0 +1,437 @@
+{
+  "known_failure_reviews": [
+    {
+      "nodeid": "tests/test_13_3_frequency.py::TestI4DeliveryFaultMovesFrequency::test_I4_delivery_fault_causes_frequency_deviation",
+      "base_assertions": [
+        "E   AssertionError: I4: asset_delivery_error_mw must be non-zero (fleet under-delivers); got 0.000000000",
+        "E   assert 0.0 != 0.0 \u00b1 1.0e-06",
+        "E    +  where 0.0 = TickResult(run_id='test', tick_index=1, sim_time_seconds=5.1, p_compute_demand_mw=0.05253, p_cooling_demand_mw=0.0, p_...sfied=False, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id='gt-1', slurm_metrics=None).asset_delivery_error_mw",
+        "E    +  and   0.0 \u00b1 1.0e-06 = <function approx at 0x7f37c9ad6ac0>(0.0, abs=1e-06)",
+        "E    +    where <function approx at 0x7f37c9ad6ac0> = pytest.approx"
+      ],
+      "after_assertions": [
+        "E   AssertionError: I4: asset_delivery_error_mw must be non-zero (fleet under-delivers); got 0.000000000",
+        "E   assert 0.0 != 0.0 \u00b1 1.0e-06",
+        "E    +  where 0.0 = TickResult(run_id='test', tick_index=1, sim_time_seconds=5.1, p_compute_demand_mw=0.05253, p_cooling_demand_mw=0.0, p_...sfied=False, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id='gt-1', slurm_metrics=None).asset_delivery_error_mw",
+        "E    +  and   0.0 \u00b1 1.0e-06 = <function approx at 0x7f5d31d4ea20>(0.0, abs=1e-06)",
+        "E    +    where <function approx at 0x7f5d31d4ea20> = pytest.approx"
+      ],
+      "base_signature": [
+        "E    +    where <function approx at 0xADDR> = pytest.approx",
+        "E    +  and   0.0 \u00b1 1.0e-06 = <function approx at 0xADDR>(0.0, abs=1e-06)",
+        "E    +  where 0.0 = TickResult(run_id='test', tick_index=1, sim_time_seconds=5.1, p_compute_demand_mw=0.05253, p_cooling_demand_mw=0.0, p_...sfied=False, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id='gt-1', slurm_metrics=None).asset_delivery_error_mw",
+        "E   AssertionError: I4: asset_delivery_error_mw must be non-zero (fleet under-delivers); got 0.000000000",
+        "E   assert 0.0 != 0.0 \u00b1 1.0e-06"
+      ],
+      "after_signature": [
+        "E    +    where <function approx at 0xADDR> = pytest.approx",
+        "E    +  and   0.0 \u00b1 1.0e-06 = <function approx at 0xADDR>(0.0, abs=1e-06)",
+        "E    +  where 0.0 = TickResult(run_id='test', tick_index=1, sim_time_seconds=5.1, p_compute_demand_mw=0.05253, p_cooling_demand_mw=0.0, p_...sfied=False, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id='gt-1', slurm_metrics=None).asset_delivery_error_mw",
+        "E   AssertionError: I4: asset_delivery_error_mw must be non-zero (fleet under-delivers); got 0.000000000",
+        "E   assert 0.0 != 0.0 \u00b1 1.0e-06"
+      ],
+      "same_failure_mode": true,
+      "outcome": "failed"
+    },
+    {
+      "nodeid": "tests/test_13_5_criteria.py::TestR4PMinStable::test_R4_fields_present_on_turbine_config",
+      "base_assertions": [
+        "E   AssertionError: p_min_stable_frac default must be 0.40 (CHOSEN catalogue value).  Got 0.35",
+        "E   assert 0.35 == 0.4 \u00b1 4.0e-07",
+        "E     ",
+        "E     comparison failed",
+        "E     Obtained: 0.35",
+        "E     Expected: 0.4 \u00b1 4.0e-07"
+      ],
+      "after_assertions": [
+        "E   AssertionError: p_min_stable_frac default must be 0.40 (CHOSEN catalogue value).  Got 0.35",
+        "E   assert 0.35 == 0.4 \u00b1 4.0e-07",
+        "E     ",
+        "E     comparison failed",
+        "E     Obtained: 0.35",
+        "E     Expected: 0.4 \u00b1 4.0e-07"
+      ],
+      "base_signature": [
+        "E     ",
+        "E     Expected: 0.4 \u00b1 4.0e-07",
+        "E     Obtained: 0.35",
+        "E     comparison failed",
+        "E   AssertionError: p_min_stable_frac default must be 0.40 (CHOSEN catalogue value).  Got 0.35",
+        "E   assert 0.35 == 0.4 \u00b1 4.0e-07"
+      ],
+      "after_signature": [
+        "E     ",
+        "E     Expected: 0.4 \u00b1 4.0e-07",
+        "E     Obtained: 0.35",
+        "E     comparison failed",
+        "E   AssertionError: p_min_stable_frac default must be 0.40 (CHOSEN catalogue value).  Got 0.35",
+        "E   assert 0.35 == 0.4 \u00b1 4.0e-07"
+      ],
+      "same_failure_mode": true,
+      "outcome": "failed"
+    },
+    {
+      "nodeid": "tests/test_artifact_truncation.py::test_tc173_executor_run_validates_from_truncated_record_and_sidecar",
+      "base_assertions": [
+        "E   AssertionError: assert {'load_fuel_m..._mmbtu': 16.0} == {'load_fuel_m..._mmbtu': 16.0}",
+        "E     ",
+        "E     Omitting 2 identical items, use -vv to show",
+        "E     Differing items:",
+        "E     {'hot_standby_fuel_mmbtu': 0.039236111} != {'hot_standby_fuel_mmbtu': 0.039237}",
+        "E     {'load_fuel_mmbtu': 690.133782974} != {'load_fuel_mmbtu': 690.133783}",
+        "E     Use -v to get more diff"
+      ],
+      "after_assertions": [
+        "E   AssertionError: assert {'load_fuel_m..._mmbtu': 16.0} == {'load_fuel_m..._mmbtu': 16.0}",
+        "E     ",
+        "E     Omitting 2 identical items, use -vv to show",
+        "E     Differing items:",
+        "E     {'load_fuel_mmbtu': 690.133782974} != {'load_fuel_mmbtu': 690.133783}",
+        "E     {'hot_standby_fuel_mmbtu': 0.039236111} != {'hot_standby_fuel_mmbtu': 0.039237}",
+        "E     Use -v to get more diff"
+      ],
+      "base_signature": [
+        "E     ",
+        "E     Differing items:",
+        "E     Omitting 2 identical items, use -vv to show",
+        "E     Use -v to get more diff",
+        "E     {'hot_standby_fuel_mmbtu': 0.039236111} != {'hot_standby_fuel_mmbtu': 0.039237}",
+        "E     {'load_fuel_mmbtu': 690.133782974} != {'load_fuel_mmbtu': 690.133783}",
+        "E   AssertionError: assert {'load_fuel_m..._mmbtu': 16.0} == {'load_fuel_m..._mmbtu': 16.0}"
+      ],
+      "after_signature": [
+        "E     ",
+        "E     Differing items:",
+        "E     Omitting 2 identical items, use -vv to show",
+        "E     Use -v to get more diff",
+        "E     {'hot_standby_fuel_mmbtu': 0.039236111} != {'hot_standby_fuel_mmbtu': 0.039237}",
+        "E     {'load_fuel_mmbtu': 690.133782974} != {'load_fuel_mmbtu': 690.133783}",
+        "E   AssertionError: assert {'load_fuel_m..._mmbtu': 16.0} == {'load_fuel_m..._mmbtu': 16.0}"
+      ],
+      "same_failure_mode": true,
+      "outcome": "failed"
+    },
+    {
+      "nodeid": "tests/test_diesel_phase3.py::test_live_diesel_is_less_aggressive_than_disabled_before_curtailment",
+      "base_assertions": [
+        "E   assert ()"
+      ],
+      "after_assertions": [
+        "E   assert ()"
+      ],
+      "base_signature": [
+        "E   assert ()"
+      ],
+      "after_signature": [
+        "E   assert ()"
+      ],
+      "same_failure_mode": true,
+      "outcome": "failed"
+    },
+    {
+      "nodeid": "tests/test_diesel_setpoint_gap.py::test_hybrid_covered_demand_does_not_release_bess_reserve",
+      "base_assertions": [
+        "E   assert 5.117526258383993 == 5.52 \u00b1 5.5e-06",
+        "E     ",
+        "E     comparison failed",
+        "E     Obtained: 5.117526258383993",
+        "E     Expected: 5.52 \u00b1 5.5e-06"
+      ],
+      "after_assertions": [
+        "E   assert 5.117526258383993 == 5.52 \u00b1 5.5e-06",
+        "E     ",
+        "E     comparison failed",
+        "E     Obtained: 5.117526258383993",
+        "E     Expected: 5.52 \u00b1 5.5e-06"
+      ],
+      "base_signature": [
+        "E     ",
+        "E     Expected: 5.52 \u00b1 5.5e-06",
+        "E     Obtained: 5.117526258383993",
+        "E     comparison failed",
+        "E   assert 5.117526258383993 == 5.52 \u00b1 5.5e-06"
+      ],
+      "after_signature": [
+        "E     ",
+        "E     Expected: 5.52 \u00b1 5.5e-06",
+        "E     Obtained: 5.117526258383993",
+        "E     comparison failed",
+        "E   assert 5.117526258383993 == 5.52 \u00b1 5.5e-06"
+      ],
+      "same_failure_mode": true,
+      "outcome": "failed"
+    },
+    {
+      "nodeid": "tests/test_fabric_scenarios_e2e.py::test_fabric_scenario_names",
+      "base_assertions": [
+        "E   AssertionError: Expected a regression-test display name, got '02 Regression test \u2014 Healthy training baseline'",
+        "E   assert False",
+        "E    +  where False = <built-in method startswith of str object at 0x7f37b5c6f550>('Regression test \u2014')",
+        "E    +    where <built-in method startswith of str object at 0x7f37b5c6f550> = '02 Regression test \u2014 Healthy training baseline'.startswith",
+        "E    +      where '02 Regression test \u2014 Healthy training baseline' = ScenarioRecord(scenario_id='regression-test-healthy-training-baseline', name='02 Regression test \u2014 Healthy training ba...:null}', created_at=datetime.datetime(2026, 10, 22, 19, 0, 11, 692884, tzinfo=datetime.timezone.utc), last_run_id=None).name"
+      ],
+      "after_assertions": [
+        "E   AssertionError: Expected a regression-test display name, got '02 Regression test \u2014 Healthy training baseline'",
+        "E   assert False",
+        "E    +  where False = <built-in method startswith of str object at 0x7f5d1dfd25b0>('Regression test \u2014')",
+        "E    +    where <built-in method startswith of str object at 0x7f5d1dfd25b0> = '02 Regression test \u2014 Healthy training baseline'.startswith",
+        "E    +      where '02 Regression test \u2014 Healthy training baseline' = ScenarioRecord(scenario_id='regression-test-healthy-training-baseline', name='02 Regression test \u2014 Healthy training ba...null}', created_at=datetime.datetime(2026, 10, 22, 20, 42, 16, 276763, tzinfo=datetime.timezone.utc), last_run_id=None).name"
+      ],
+      "base_signature": [
+        "E    +      where '02 Regression test \u2014 Healthy training baseline' = ScenarioRecord(<context repr>)",
+        "E    +    where <built-in method startswith of str object at 0xADDR> = '02 Regression test \u2014 Healthy training baseline'.startswith",
+        "E    +  where False = <built-in method startswith of str object at 0xADDR>('Regression test \u2014')",
+        "E   AssertionError: Expected a regression-test display name, got '02 Regression test \u2014 Healthy training baseline'",
+        "E   assert False"
+      ],
+      "after_signature": [
+        "E    +      where '02 Regression test \u2014 Healthy training baseline' = ScenarioRecord(<context repr>)",
+        "E    +    where <built-in method startswith of str object at 0xADDR> = '02 Regression test \u2014 Healthy training baseline'.startswith",
+        "E    +  where False = <built-in method startswith of str object at 0xADDR>('Regression test \u2014')",
+        "E   AssertionError: Expected a regression-test display name, got '02 Regression test \u2014 Healthy training baseline'",
+        "E   assert False"
+      ],
+      "same_failure_mode": true,
+      "outcome": "failed"
+    },
+    {
+      "nodeid": "tests/test_forecast_path.py::TestDispatchTruthfulness::test_B1a_islanded_delivery_fault_visible_in_delivery_channel",
+      "base_assertions": [
+        "E   AssertionError: B1a: delivery fault must appear in asset_delivery_error_mw; got 0.000000000  (turbine_out=0.000000, gt_setpoint=0.000000)",
+        "E   assert 0.0 != 0.0 \u00b1 1.0e-06",
+        "E    +  where 0.0 = TickResult(run_id='test', tick_index=1, sim_time_seconds=5.1, p_compute_demand_mw=0.10506, p_cooling_demand_mw=0.0, p_...sfied=False, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id='gt-1', slurm_metrics=None).asset_delivery_error_mw",
+        "E    +  and   0.0 \u00b1 1.0e-06 = <function approx at 0x7f37c9ad6ac0>(0.0, abs=1e-06)",
+        "E    +    where <function approx at 0x7f37c9ad6ac0> = pytest.approx"
+      ],
+      "after_assertions": [
+        "E   AssertionError: B1a: delivery fault must appear in asset_delivery_error_mw; got 0.000000000  (turbine_out=0.000000, gt_setpoint=0.000000)",
+        "E   assert 0.0 != 0.0 \u00b1 1.0e-06",
+        "E    +  where 0.0 = TickResult(run_id='test', tick_index=1, sim_time_seconds=5.1, p_compute_demand_mw=0.10506, p_cooling_demand_mw=0.0, p_...sfied=False, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id='gt-1', slurm_metrics=None).asset_delivery_error_mw",
+        "E    +  and   0.0 \u00b1 1.0e-06 = <function approx at 0x7f5d31d4ea20>(0.0, abs=1e-06)",
+        "E    +    where <function approx at 0x7f5d31d4ea20> = pytest.approx"
+      ],
+      "base_signature": [
+        "E    +    where <function approx at 0xADDR> = pytest.approx",
+        "E    +  and   0.0 \u00b1 1.0e-06 = <function approx at 0xADDR>(0.0, abs=1e-06)",
+        "E    +  where 0.0 = TickResult(run_id='test', tick_index=1, sim_time_seconds=5.1, p_compute_demand_mw=0.10506, p_cooling_demand_mw=0.0, p_...sfied=False, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id='gt-1', slurm_metrics=None).asset_delivery_error_mw",
+        "E   AssertionError: B1a: delivery fault must appear in asset_delivery_error_mw; got 0.000000000  (turbine_out=0.000000, gt_setpoint=0.000000)",
+        "E   assert 0.0 != 0.0 \u00b1 1.0e-06"
+      ],
+      "after_signature": [
+        "E    +    where <function approx at 0xADDR> = pytest.approx",
+        "E    +  and   0.0 \u00b1 1.0e-06 = <function approx at 0xADDR>(0.0, abs=1e-06)",
+        "E    +  where 0.0 = TickResult(run_id='test', tick_index=1, sim_time_seconds=5.1, p_compute_demand_mw=0.10506, p_cooling_demand_mw=0.0, p_...sfied=False, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id='gt-1', slurm_metrics=None).asset_delivery_error_mw",
+        "E   AssertionError: B1a: delivery fault must appear in asset_delivery_error_mw; got 0.000000000  (turbine_out=0.000000, gt_setpoint=0.000000)",
+        "E   assert 0.0 != 0.0 \u00b1 1.0e-06"
+      ],
+      "same_failure_mode": true,
+      "outcome": "failed"
+    },
+    {
+      "nodeid": "tests/test_fuel_cell_phase2.py::test_fixed_target_survives_a_step_load_and_output_remains_rate_limited",
+      "base_assertions": [
+        "E   AttributeError: 'str' object has no attribute 'value'"
+      ],
+      "after_assertions": [
+        "E   AttributeError: 'str' object has no attribute 'value'"
+      ],
+      "base_signature": [
+        "E   AttributeError: 'str' object has no attribute 'value'"
+      ],
+      "after_signature": [
+        "E   AttributeError: 'str' object has no attribute 'value'"
+      ],
+      "same_failure_mode": true,
+      "outcome": "failed"
+    },
+    {
+      "nodeid": "tests/test_gridley.py::test_gridley_logs_no_match_with_question_and_scenario_context",
+      "base_assertions": [
+        "E   AssertionError: assert '43 demo-20mw' == 'demo-20mw'",
+        "E     ",
+        "E     - demo-20mw",
+        "E     + 43 demo-20mw",
+        "E     ? +++"
+      ],
+      "after_assertions": [
+        "E   AssertionError: assert '43 demo-20mw' == 'demo-20mw'",
+        "E     ",
+        "E     - demo-20mw",
+        "E     + 43 demo-20mw",
+        "E     ? +++"
+      ],
+      "base_signature": [
+        "E     ",
+        "E     + 43 demo-20mw",
+        "E     - demo-20mw",
+        "E     ? +++",
+        "E   AssertionError: assert '43 demo-20mw' == 'demo-20mw'"
+      ],
+      "after_signature": [
+        "E     ",
+        "E     + 43 demo-20mw",
+        "E     - demo-20mw",
+        "E     ? +++",
+        "E   AssertionError: assert '43 demo-20mw' == 'demo-20mw'"
+      ],
+      "same_failure_mode": true,
+      "outcome": "failed"
+    },
+    {
+      "nodeid": "tests/test_gridley.py::test_gridley_retrieves_operator_knowledge_for_natural_variants",
+      "base_assertions": [
+        "E   AssertionError: What does GridSignal do for someone running a GPU data center?",
+        "E   assert 'behind-the-m...arket-context' == 'gridsignal-operator-benefits'",
+        "E     ",
+        "E     - gridsignal-operator-benefits",
+        "E     + behind-the-meter-market-context"
+      ],
+      "after_assertions": [
+        "E   AssertionError: What does GridSignal do for someone running a GPU data center?",
+        "E   assert 'behind-the-m...arket-context' == 'gridsignal-operator-benefits'",
+        "E     ",
+        "E     - gridsignal-operator-benefits",
+        "E     + behind-the-meter-market-context"
+      ],
+      "base_signature": [
+        "E     ",
+        "E     + behind-the-meter-market-context",
+        "E     - gridsignal-operator-benefits",
+        "E   AssertionError: What does GridSignal do for someone running a GPU data center?",
+        "E   assert 'behind-the-m...arket-context' == 'gridsignal-operator-benefits'"
+      ],
+      "after_signature": [
+        "E     ",
+        "E     + behind-the-meter-market-context",
+        "E     - gridsignal-operator-benefits",
+        "E   AssertionError: What does GridSignal do for someone running a GPU data center?",
+        "E   assert 'behind-the-m...arket-context' == 'gridsignal-operator-benefits'"
+      ],
+      "same_failure_mode": true,
+      "outcome": "failed"
+    },
+    {
+      "nodeid": "tests/test_gridley.py::test_gridley_uses_grounded_operator_benefits_fallback_without_claude",
+      "base_assertions": [
+        "E   AssertionError: assert 'does not replace or directly command' in '**Grounded GridSignal guidance**\\n\\n- The financing pressure around long-lived power assets and shorter GPU contract ...heduler queue and allocation signals to provide an earlier view of power demand while the job is still waiting to run.'"
+      ],
+      "after_assertions": [
+        "E   AssertionError: assert 'does not replace or directly command' in '**Grounded GridSignal guidance**\\n\\n- The financing pressure around long-lived power assets and shorter GPU contract ...heduler queue and allocation signals to provide an earlier view of power demand while the job is still waiting to run.'"
+      ],
+      "base_signature": [
+        "E   AssertionError: assert 'does not replace or directly command' in '**Grounded GridSignal guidance**\\n\\n- The financing pressure around long-lived power assets and shorter GPU contract ...heduler queue and allocation signals to provide an earlier view of power demand while the job is still waiting to run.'"
+      ],
+      "after_signature": [
+        "E   AssertionError: assert 'does not replace or directly command' in '**Grounded GridSignal guidance**\\n\\n- The financing pressure around long-lived power assets and shorter GPU contract ...heduler queue and allocation signals to provide an earlier view of power demand while the job is still waiting to run.'"
+      ],
+      "same_failure_mode": true,
+      "outcome": "failed"
+    },
+    {
+      "nodeid": "tests/test_kubernetes_scheduler_demo_scenario.py::test_catalogue_demo_constructs_phase_a_scheduler_and_has_real_queue_wait",
+      "base_assertions": [
+        "E   AssertionError: assert '24 Kubernete...ce Queue Demo' == 'Kubernetes S...ce Queue Demo'",
+        "E     ",
+        "E     - Kubernetes Scheduler - Resource Queue Demo",
+        "E     + 24 Kubernetes Scheduler - Resource Queue Demo",
+        "E     ? +++"
+      ],
+      "after_assertions": [
+        "E   AssertionError: assert '24 Kubernete...ce Queue Demo' == 'Kubernetes S...ce Queue Demo'",
+        "E     ",
+        "E     - Kubernetes Scheduler - Resource Queue Demo",
+        "E     + 24 Kubernetes Scheduler - Resource Queue Demo",
+        "E     ? +++"
+      ],
+      "base_signature": [
+        "E     ",
+        "E     + 24 Kubernetes Scheduler - Resource Queue Demo",
+        "E     - Kubernetes Scheduler - Resource Queue Demo",
+        "E     ? +++",
+        "E   AssertionError: assert '24 Kubernete...ce Queue Demo' == 'Kubernetes S...ce Queue Demo'"
+      ],
+      "after_signature": [
+        "E     ",
+        "E     + 24 Kubernetes Scheduler - Resource Queue Demo",
+        "E     - Kubernetes Scheduler - Resource Queue Demo",
+        "E     ? +++",
+        "E   AssertionError: assert '24 Kubernete...ce Queue Demo' == 'Kubernetes S...ce Queue Demo'"
+      ],
+      "same_failure_mode": true,
+      "outcome": "failed"
+    },
+    {
+      "nodeid": "tests/test_plane_separation.py::TestApiStaticLayer::test_api_gate_clean_api_passes",
+      "base_assertions": [
+        "E   AssertionError: api/ core-import violations found \u2014 build fails:",
+        "E       api/routes/ingest.py:17: from core.models import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden list)",
+        "E       api/routes/ingest.py:18: from core.slurm_scheduler import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden list)",
+        "E   assert not [\"api/routes/ingest.py:17: from core.models import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden l...ngest.py:18: from core.slurm_scheduler import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden list)\"]"
+      ],
+      "after_assertions": [
+        "E   AssertionError: api/ core-import violations found \u2014 build fails:",
+        "E       api/routes/ingest.py:17: from core.models import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden list)",
+        "E       api/routes/ingest.py:18: from core.slurm_scheduler import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden list)",
+        "E   assert not [\"api/routes/ingest.py:17: from core.models import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden l...ngest.py:18: from core.slurm_scheduler import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden list)\"]"
+      ],
+      "base_signature": [
+        "E       api/routes/ingest.py:17: from core.models import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden list)",
+        "E       api/routes/ingest.py:18: from core.slurm_scheduler import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden list)",
+        "E   AssertionError: api/ core-import violations found \u2014 build fails:",
+        "E   assert not [\"api/routes/ingest.py:17: from core.models import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden l...ngest.py:18: from core.slurm_scheduler import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden list)\"]"
+      ],
+      "after_signature": [
+        "E       api/routes/ingest.py:17: from core.models import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden list)",
+        "E       api/routes/ingest.py:18: from core.slurm_scheduler import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden list)",
+        "E   AssertionError: api/ core-import violations found \u2014 build fails:",
+        "E   assert not [\"api/routes/ingest.py:17: from core.models import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden l...ngest.py:18: from core.slurm_scheduler import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden list)\"]"
+      ],
+      "same_failure_mode": true,
+      "outcome": "failed"
+    },
+    {
+      "nodeid": "tests/test_scenario_fc100_islanded_v2.py::test_fc100_zero_hot_variant_exposes_physical_bess_ceiling_and_unserved_load",
+      "base_assertions": [
+        "E   assert False",
+        "E    +  where False = all(<generator object test_fc100_zero_hot_variant_exposes_physical_bess_ceiling_and_unserved_load.<locals>.<genexpr> at 0x7f37b67c72e0>)"
+      ],
+      "after_assertions": [
+        "E   assert False",
+        "E    +  where False = all(<generator object test_fc100_zero_hot_variant_exposes_physical_bess_ceiling_and_unserved_load.<locals>.<genexpr> at 0x7f5d1df89d50>)"
+      ],
+      "base_signature": [
+        "E    +  where False = all(<generator object test_fc100_zero_hot_variant_exposes_physical_bess_ceiling_and_unserved_load.<locals>.<genexpr> at 0xADDR>)",
+        "E   assert False"
+      ],
+      "after_signature": [
+        "E    +  where False = all(<generator object test_fc100_zero_hot_variant_exposes_physical_bess_ceiling_and_unserved_load.<locals>.<genexpr> at 0xADDR>)",
+        "E   assert False"
+      ],
+      "same_failure_mode": true,
+      "outcome": "failed"
+    },
+    {
+      "nodeid": "tests/test_unit_trip.py::test_tc84f_demo_20mw_contingency_state_changes_after_trip",
+      "base_assertions": [
+        "E   AssertionError: turbine-1 was never set OFFLINE after the UNIT_TRIP event at t=120 s",
+        "E   assert False"
+      ],
+      "after_assertions": [
+        "E   AssertionError: turbine-1 was never set OFFLINE after the UNIT_TRIP event at t=120 s",
+        "E   assert False"
+      ],
+      "base_signature": [
+        "E   AssertionError: turbine-1 was never set OFFLINE after the UNIT_TRIP event at t=120 s",
+        "E   assert False"
+      ],
+      "after_signature": [
+        "E   AssertionError: turbine-1 was never set OFFLINE after the UNIT_TRIP event at t=120 s",
+        "E   assert False"
+      ],
+      "same_failure_mode": true,
+      "outcome": "failed"
+    }
+  ],
+  "changed": [],
+  "normalization": "Object addresses; ScenarioRecord context repr after the asserted name; dictionary-diff display ordering. Raw diagnostics and every asserted value are retained."
+}

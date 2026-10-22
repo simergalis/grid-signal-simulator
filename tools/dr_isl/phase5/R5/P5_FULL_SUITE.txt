@@ -1,0 +1,429 @@
+....................ss.....F............s.......Fxxxx.xxx...xxx......... [  3%]
+........................................................................ [  6%]
+........................................................................ [  9%]
+........................................................................ [ 12%]
+......F................................................................. [ 16%]
+........................................................................ [ 19%]
+................................................................F....... [ 22%]
+........F............................................................... [ 25%]
+........................................................................ [ 28%]
+........................................F............................... [ 32%]
+..F......................x.x.x....................................F..... [ 35%]
+.......F................................FF..F........................... [ 38%]
+..................................................................... [ 41%]
+................F....................................................... [ 44%]
+........................................................................ [ 48%]
+.........x.xxx.......................................................... [ 51%]
+........................................................................ [ 54%]
+..............F......................................................... [ 57%]
+........................................................................ [ 60%]
+..............................xF........................................ [ 64%]
+........................................................................ [ 67%]
+........................................................................ [ 70%]
+........................................................................ [ 73%]
+........................................................................ [ 77%]
+........................................................................ [ 80%]
+........................................................................ [ 83%]
+........................................................................ [ 86%]
+........................................................................ [ 89%]
+....................................................................xxxx [ 93%]
+x....................................................................... [ 96%]
+.............................................F.......................... [ 99%]
+.........                                                                [100%]
+=================================== FAILURES ===================================
+_ TestI4DeliveryFaultMovesFrequency.test_I4_delivery_fault_causes_frequency_deviation _
+tests/test_13_3_frequency.py:434: in test_I4_delivery_fault_causes_frequency_deviation
+    assert tick.asset_delivery_error_mw != pytest.approx(0.0, abs=1e-6), (
+E   AssertionError: I4: asset_delivery_error_mw must be non-zero (fleet under-delivers); got 0.000000000
+E   assert 0.0 != 0.0 ± 1.0e-06
+E    +  where 0.0 = TickResult(run_id='test', tick_index=1, sim_time_seconds=5.1, p_compute_demand_mw=0.05253, p_cooling_demand_mw=0.0, p_...sfied=False, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id='gt-1', slurm_metrics=None).asset_delivery_error_mw
+E    +  and   0.0 ± 1.0e-06 = <function approx at 0x7f5d31d4ea20>(0.0, abs=1e-06)
+E    +    where <function approx at 0x7f5d31d4ea20> = pytest.approx
+__________ TestR4PMinStable.test_R4_fields_present_on_turbine_config ___________
+tests/test_13_5_criteria.py:177: in test_R4_fields_present_on_turbine_config
+    assert cfg_default.p_min_stable_frac == pytest.approx(0.40), (
+E   AssertionError: p_min_stable_frac default must be 0.40 (CHOSEN catalogue value).  Got 0.35
+E   assert 0.35 == 0.4 ± 4.0e-07
+E     
+E     comparison failed
+E     Obtained: 0.35
+E     Expected: 0.4 ± 4.0e-07
+_____ test_tc173_executor_run_validates_from_truncated_record_and_sidecar ______
+tests/test_artifact_truncation.py:452: in test_tc173_executor_run_validates_from_truncated_record_and_sidecar
+    assert record[key] == value
+E   AssertionError: assert {'load_fuel_m..._mmbtu': 16.0} == {'load_fuel_m..._mmbtu': 16.0}
+E     
+E     Omitting 2 identical items, use -vv to show
+E     Differing items:
+E     {'load_fuel_mmbtu': 690.133782974} != {'load_fuel_mmbtu': 690.133783}
+E     {'hot_standby_fuel_mmbtu': 0.039236111} != {'hot_standby_fuel_mmbtu': 0.039237}
+E     Use -v to get more diff
+----------------------------- Captured stdout call -----------------------------
+TC-173 sizes: untruncated_record_bytes=21065, derived_small_cap_bytes=21064, minimum_detail_truncated_record_bytes=18468
+----------------------------- Captured stderr call -----------------------------
+WARNING:     gridsignal.scenario_factory - DR D3 build warning: {'code': 'islanded_frequency_protection_unconfigured', 'message': 'islanded run without frequency protection configured'}
+WARNING:     gridsignal.scenario_factory - DR D3 build warning: {'code': 'islanded_frequency_protection_unconfigured', 'message': 'islanded run without frequency protection configured'}
+WARNING:     gridsignal.scenario_factory - DR D3 build warning: {'code': 'islanded_frequency_protection_unconfigured', 'message': 'islanded run without frequency protection configured'}
+WARNING:     gridsignal.scenario_factory - DR D3 build warning: {'code': 'islanded_frequency_protection_unconfigured', 'message': 'islanded run without frequency protection configured'}
+------------------------------ Captured log call -------------------------------
+WARNING  gridsignal.scenario_factory:build_warnings.py:19 DR D3 build warning: {'code': 'islanded_frequency_protection_unconfigured', 'message': 'islanded run without frequency protection configured'}
+WARNING  gridsignal.scenario_factory:build_warnings.py:19 DR D3 build warning: {'code': 'islanded_frequency_protection_unconfigured', 'message': 'islanded run without frequency protection configured'}
+WARNING  gridsignal.scenario_factory:build_warnings.py:19 DR D3 build warning: {'code': 'islanded_frequency_protection_unconfigured', 'message': 'islanded run without frequency protection configured'}
+WARNING  gridsignal.scenario_factory:build_warnings.py:19 DR D3 build warning: {'code': 'islanded_frequency_protection_unconfigured', 'message': 'islanded run without frequency protection configured'}
+_____ test_live_diesel_is_less_aggressive_than_disabled_before_curtailment _____
+tests/test_diesel_phase3.py:189: in test_live_diesel_is_less_aggressive_than_disabled_before_curtailment
+    assert disabled_tiers
+E   assert ()
+___________ test_hybrid_covered_demand_does_not_release_bess_reserve ___________
+tests/test_diesel_setpoint_gap.py:139: in test_hybrid_covered_demand_does_not_release_bess_reserve
+    assert soc_480_mwh == pytest.approx(reconciled_floor_mwh)
+E   assert 5.117526258383993 == 5.52 ± 5.5e-06
+E     
+E     comparison failed
+E     Obtained: 5.117526258383993
+E     Expected: 5.52 ± 5.5e-06
+----------------------------- Captured stderr call -----------------------------
+WARNING:     gridsignal.scenario_factory - DR D3 build warning: {'code': 'islanded_frequency_protection_unconfigured', 'message': 'islanded run without frequency protection configured'}
+------------------------------ Captured log call -------------------------------
+WARNING  gridsignal.scenario_factory:build_warnings.py:19 DR D3 build warning: {'code': 'islanded_frequency_protection_unconfigured', 'message': 'islanded run without frequency protection configured'}
+__________________________ test_fabric_scenario_names __________________________
+tests/test_fabric_scenarios_e2e.py:102: in test_fabric_scenario_names
+    assert rec.name.startswith("Regression test —"), (
+E   AssertionError: Expected a regression-test display name, got '02 Regression test — Healthy training baseline'
+E   assert False
+E    +  where False = <built-in method startswith of str object at 0x7f5d1dfd25b0>('Regression test —')
+E    +    where <built-in method startswith of str object at 0x7f5d1dfd25b0> = '02 Regression test — Healthy training baseline'.startswith
+E    +      where '02 Regression test — Healthy training baseline' = ScenarioRecord(scenario_id='regression-test-healthy-training-baseline', name='02 Regression test — Healthy training ba...null}', created_at=datetime.datetime(2026, 10, 22, 20, 42, 16, 276763, tzinfo=datetime.timezone.utc), last_run_id=None).name
+----------------------------- Captured stderr call -----------------------------
+WARNING:     api.routes.scenarios - Scenario demo-islanded-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING:     api.routes.scenarios - Scenario demo-operator-trip turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING:     api.routes.scenarios - Scenario islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING:     api.routes.scenarios - Scenario demo-10-tenant-overload-120pct turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 2.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario islanded-8-60-10-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING:     api.routes.scenarios - Scenario demo-rolling-planning-peaks turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 6.30 MW burst alone
+WARNING:     api.routes.scenarios - Scenario scenario-uneven-multisched-01 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 45.00 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-enterprise-8gpu-air-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-enterprise-8gpu-air-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-h100-sxm5-8way-nvl4-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-h100-sxm5-8way-nvl4-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-nextgen-rack-liquid-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-nextgen-rack-liquid-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING:     api.routes.scenarios - Scenario addendum-h-lead-time-profile-validation turbine starting-count violation: cannot estimate first burst for hardware profile 'addendum_h_test_ramp_20s'
+WARNING:     api.routes.scenarios - Scenario S10_mit_supercloud_2021-08-11 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.24 MW burst alone
+------------------------------ Captured log call -------------------------------
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-islanded-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-operator-trip turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-10-tenant-overload-120pct turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 2.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario islanded-8-60-10-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-rolling-planning-peaks turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 6.30 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario scenario-uneven-multisched-01 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 45.00 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-enterprise-8gpu-air-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-enterprise-8gpu-air-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-h100-sxm5-8way-nvl4-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-h100-sxm5-8way-nvl4-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-nextgen-rack-liquid-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-nextgen-rack-liquid-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario addendum-h-lead-time-profile-validation turbine starting-count violation: cannot estimate first burst for hardware profile 'addendum_h_test_ramp_20s'
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario S10_mit_supercloud_2021-08-11 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.24 MW burst alone
+_ TestDispatchTruthfulness.test_B1a_islanded_delivery_fault_visible_in_delivery_channel _
+tests/test_forecast_path.py:590: in test_B1a_islanded_delivery_fault_visible_in_delivery_channel
+    assert tick.asset_delivery_error_mw != pytest.approx(0.0, abs=1e-6), (
+E   AssertionError: B1a: delivery fault must appear in asset_delivery_error_mw; got 0.000000000  (turbine_out=0.000000, gt_setpoint=0.000000)
+E   assert 0.0 != 0.0 ± 1.0e-06
+E    +  where 0.0 = TickResult(run_id='test', tick_index=1, sim_time_seconds=5.1, p_compute_demand_mw=0.10506, p_cooling_demand_mw=0.0, p_...sfied=False, fleet_utilisation=0.0, commit_utilisation_threshold=0.8, pending_start_unit_id='gt-1', slurm_metrics=None).asset_delivery_error_mw
+E    +  and   0.0 ± 1.0e-06 = <function approx at 0x7f5d31d4ea20>(0.0, abs=1e-06)
+E    +    where <function approx at 0x7f5d31d4ea20> = pytest.approx
+____ test_fixed_target_survives_a_step_load_and_output_remains_rate_limited ____
+tests/test_fuel_cell_phase2.py:107: in test_fixed_target_survives_a_step_load_and_output_remains_rate_limited
+    ctx.sim_state.apply_workload_signal(
+core/simulation_core.py:520: in apply_workload_signal
+    self.lead_time_observations.record_start(self.run_id, signal)
+core/lead_time_observations.py:66: in record_start
+    signal.workload_class.value
+E   AttributeError: 'str' object has no attribute 'value'
+____________________________ test_gpu_load_profile _____________________________
+tests/test_gpu_load_profile.py:284: in test_gpu_load_profile
+    _run_test()
+tests/test_gpu_load_profile.py:169: in _run_test
+    assert abs(frac - expected_frac) < TOLERANCE, (
+E   AssertionError: [FAIL-A] phase-3 sim_t=2400.0s: gpu_load_fraction=0.5 expected 0.1
+E   assert 0.4 < 1e-06
+E    +  where 0.4 = abs((0.5 - 0.1))
+----------------------------- Captured stdout call -----------------------------
+[START]  run_id=run-9c687adf6431
+[POLL]   collecting ticks across all three phases …
+  phase-1  sim_t=   60.0s  frac=1.00 (expect 1.00)  p_compute=3.36 MW
+  phase-1  sim_t=  160.0s  frac=1.00 (expect 1.00)  p_compute=2.42 MW
+  phase-1  sim_t=  250.0s  frac=1.00 (expect 1.00)  p_compute=5.41 MW
+  phase-1  sim_t=  380.0s  frac=1.00 (expect 1.00)  p_compute=10.64 MW
+  phase-1  sim_t=  495.0s  frac=1.00 (expect 1.00)  p_compute=10.31 MW
+  phase-1  sim_t=  590.0s  frac=1.00 (expect 1.00)  p_compute=6.47 MW
+  phase-1  sim_t=  660.0s  frac=1.00 (expect 1.00)  p_compute=8.99 MW
+  phase-2  sim_t=  765.0s  frac=0.50 (expect 0.50)  p_compute=3.37 MW
+
+[TRANSITION 1→2]  last-before=660.0s frac=1.00 → first-after=765.0s frac=0.50
+[PASS-B1] fraction was 1.0 immediately before phase-2 boundary
+[PASS-A]  fraction correctly stepped to 0.5 at sim_t=765.0s
+
+  phase-2  sim_t=  910.0s  frac=0.50 (expect 0.50)  p_compute=2.81 MW
+  phase-2  sim_t= 1105.0s  frac=0.50 (expect 0.50)  p_compute=3.88 MW
+  phase-2  sim_t= 1225.0s  frac=0.50 (expect 0.50)  p_compute=4.27 MW
+  phase-2  sim_t= 1300.0s  frac=0.50 (expect 0.50)  p_compute=5.69 MW
+  phase-2  sim_t= 1400.0s  frac=0.50 (expect 0.50)  p_compute=1.33 MW
+  phase-2  sim_t= 1515.0s  frac=0.50 (expect 0.50)  p_compute=3.38 MW
+  phase-2  sim_t= 1635.0s  frac=0.50 (expect 0.50)  p_compute=3.52 MW
+  phase-2  sim_t= 1850.0s  frac=0.50 (expect 0.50)  p_compute=2.40 MW
+  phase-2  sim_t= 2065.0s  frac=0.50 (expect 0.50)  p_compute=2.10 MW
+  phase-2  sim_t= 2165.0s  frac=0.50 (expect 0.50)  p_compute=1.05 MW
+  phase-3  sim_t= 2400.0s  frac=0.50 (expect 0.10)  p_compute=1.05 MW
+
+[CLEANUP] run run-9c687adf6431 cancelled.
+________ test_gridley_retrieves_operator_knowledge_for_natural_variants ________
+tests/test_gridley.py:265: in test_gridley_retrieves_operator_knowledge_for_natural_variants
+    assert chunks[0]["source_id"] == "gridsignal-operator-benefits", question
+E   AssertionError: What does GridSignal do for someone running a GPU data center?
+E   assert 'behind-the-m...arket-context' == 'gridsignal-operator-benefits'
+E     
+E     - gridsignal-operator-benefits
+E     + behind-the-meter-market-context
+_____ test_gridley_uses_grounded_operator_benefits_fallback_without_claude _____
+tests/test_gridley.py:285: in test_gridley_uses_grounded_operator_benefits_fallback_without_claude
+    assert "does not replace or directly command" in body["reply"]
+E   AssertionError: assert 'does not replace or directly command' in '**Grounded GridSignal guidance**\n\n- The financing pressure around long-lived power assets and shorter GPU contract ...heduler queue and allocation signals to provide an earlier view of power demand while the job is still waiting to run.'
+----------------------------- Captured stderr call -----------------------------
+INFO:     api.db - Auth tables ready (backend=postgresql)
+INFO:     api.app - Email portal URL: https://560e4bb4-a12b-40d1-a7c1-4cae34d4602a-00-2sy0v7r6028gw.picard.replit.dev  (source: REPLIT_DOMAINS)
+WARNING:     api.routes.scenarios - Scenario demo-islanded-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING:     api.routes.scenarios - Scenario demo-operator-trip turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING:     api.routes.scenarios - Scenario islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING:     api.routes.scenarios - Scenario demo-10-tenant-overload-120pct turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 2.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario islanded-8-60-10-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING:     api.routes.scenarios - Scenario demo-rolling-planning-peaks turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 6.30 MW burst alone
+WARNING:     api.routes.scenarios - Scenario scenario-uneven-multisched-01 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 45.00 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-enterprise-8gpu-air-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-enterprise-8gpu-air-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-h100-sxm5-8way-nvl4-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-h100-sxm5-8way-nvl4-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-nextgen-rack-liquid-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-nextgen-rack-liquid-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING:     api.routes.scenarios - Scenario addendum-h-lead-time-profile-validation turbine starting-count violation: cannot estimate first burst for hardware profile 'addendum_h_test_ramp_20s'
+WARNING:     api.routes.scenarios - Scenario S10_mit_supercloud_2021-08-11 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.24 MW burst alone
+INFO:     api.app - Restored site_location: 'San Jose, CA' (lat=37.34, lon=-121.89, tz=America/Los_Angeles)
+------------------------------ Captured log call -------------------------------
+INFO     api.db:db.py:239 Auth tables ready (backend=postgresql)
+INFO     api.app:app.py:185 Email portal URL: https://560e4bb4-a12b-40d1-a7c1-4cae34d4602a-00-2sy0v7r6028gw.picard.replit.dev  (source: REPLIT_DOMAINS)
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-islanded-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-operator-trip turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-10-tenant-overload-120pct turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 2.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario islanded-8-60-10-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-rolling-planning-peaks turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 6.30 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario scenario-uneven-multisched-01 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 45.00 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-enterprise-8gpu-air-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-enterprise-8gpu-air-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-h100-sxm5-8way-nvl4-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-h100-sxm5-8way-nvl4-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-nextgen-rack-liquid-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-nextgen-rack-liquid-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario addendum-h-lead-time-profile-validation turbine starting-count violation: cannot estimate first burst for hardware profile 'addendum_h_test_ramp_20s'
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario S10_mit_supercloud_2021-08-11 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.24 MW burst alone
+INFO     api.app:app.py:291 Restored site_location: 'San Jose, CA' (lat=37.34, lon=-121.89, tz=America/Los_Angeles)
+________ test_gridley_logs_no_match_with_question_and_scenario_context _________
+tests/test_gridley.py:366: in test_gridley_logs_no_match_with_question_and_scenario_context
+    assert record["scenario"] == "demo-20mw"
+E   AssertionError: assert '43 demo-20mw' == 'demo-20mw'
+E     
+E     - demo-20mw
+E     + 43 demo-20mw
+E     ? +++
+----------------------------- Captured stderr call -----------------------------
+INFO:     api.db - Auth tables ready (backend=postgresql)
+INFO:     api.app - Email portal URL: https://560e4bb4-a12b-40d1-a7c1-4cae34d4602a-00-2sy0v7r6028gw.picard.replit.dev  (source: REPLIT_DOMAINS)
+WARNING:     api.routes.scenarios - Scenario demo-islanded-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING:     api.routes.scenarios - Scenario demo-operator-trip turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING:     api.routes.scenarios - Scenario islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING:     api.routes.scenarios - Scenario demo-10-tenant-overload-120pct turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 2.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario islanded-8-60-10-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING:     api.routes.scenarios - Scenario demo-rolling-planning-peaks turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 6.30 MW burst alone
+WARNING:     api.routes.scenarios - Scenario scenario-uneven-multisched-01 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 45.00 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-enterprise-8gpu-air-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-enterprise-8gpu-air-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-h100-sxm5-8way-nvl4-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-h100-sxm5-8way-nvl4-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-nextgen-rack-liquid-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-nextgen-rack-liquid-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING:     api.routes.scenarios - Scenario addendum-h-lead-time-profile-validation turbine starting-count violation: cannot estimate first burst for hardware profile 'addendum_h_test_ramp_20s'
+WARNING:     api.routes.scenarios - Scenario S10_mit_supercloud_2021-08-11 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.24 MW burst alone
+INFO:     api.app - Restored site_location: 'San Jose, CA' (lat=37.34, lon=-121.89, tz=America/Los_Angeles)
+WARNING:     api.routes.ai - ai: gridley Claude response failed; using deterministic fallback: 'reply'
+WARNING:     api.routes.ai - ai: gridley Claude response failed; using deterministic fallback: 'reply'
+------------------------------ Captured log call -------------------------------
+INFO     api.db:db.py:239 Auth tables ready (backend=postgresql)
+INFO     api.app:app.py:185 Email portal URL: https://560e4bb4-a12b-40d1-a7c1-4cae34d4602a-00-2sy0v7r6028gw.picard.replit.dev  (source: REPLIT_DOMAINS)
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-islanded-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-operator-trip turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-10-tenant-overload-120pct turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 2.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario islanded-8-60-10-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-rolling-planning-peaks turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 6.30 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario scenario-uneven-multisched-01 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 45.00 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-enterprise-8gpu-air-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-enterprise-8gpu-air-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-h100-sxm5-8way-nvl4-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-h100-sxm5-8way-nvl4-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-nextgen-rack-liquid-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-nextgen-rack-liquid-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario addendum-h-lead-time-profile-validation turbine starting-count violation: cannot estimate first burst for hardware profile 'addendum_h_test_ramp_20s'
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario S10_mit_supercloud_2021-08-11 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.24 MW burst alone
+INFO     api.app:app.py:291 Restored site_location: 'San Jose, CA' (lat=37.34, lon=-121.89, tz=America/Los_Angeles)
+WARNING  api.routes.ai:ai.py:1488 ai: gridley Claude response failed; using deterministic fallback: 'reply'
+WARNING  api.routes.ai:ai.py:1488 ai: gridley Claude response failed; using deterministic fallback: 'reply'
+___ test_catalogue_demo_constructs_phase_a_scheduler_and_has_real_queue_wait ___
+tests/test_kubernetes_scheduler_demo_scenario.py:20: in test_catalogue_demo_constructs_phase_a_scheduler_and_has_real_queue_wait
+    assert spec["name"] == "Kubernetes Scheduler - Resource Queue Demo"
+E   AssertionError: assert '24 Kubernete...ce Queue Demo' == 'Kubernetes S...ce Queue Demo'
+E     
+E     - Kubernetes Scheduler - Resource Queue Demo
+E     + 24 Kubernetes Scheduler - Resource Queue Demo
+E     ? +++
+----------------------------- Captured stderr call -----------------------------
+WARNING:     api.routes.scenarios - Scenario demo-islanded-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING:     api.routes.scenarios - Scenario demo-operator-trip turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING:     api.routes.scenarios - Scenario islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING:     api.routes.scenarios - Scenario demo-10-tenant-overload-120pct turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 2.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario islanded-8-60-10-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING:     api.routes.scenarios - Scenario demo-rolling-planning-peaks turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 6.30 MW burst alone
+WARNING:     api.routes.scenarios - Scenario scenario-uneven-multisched-01 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 45.00 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-enterprise-8gpu-air-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-enterprise-8gpu-air-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-h100-sxm5-8way-nvl4-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-h100-sxm5-8way-nvl4-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-nextgen-rack-liquid-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-nextgen-rack-liquid-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING:     api.routes.scenarios - Scenario addendum-h-lead-time-profile-validation turbine starting-count violation: cannot estimate first burst for hardware profile 'addendum_h_test_ramp_20s'
+WARNING:     api.routes.scenarios - Scenario S10_mit_supercloud_2021-08-11 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.24 MW burst alone
+------------------------------ Captured log call -------------------------------
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-islanded-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-operator-trip turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-10-tenant-overload-120pct turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 2.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario islanded-8-60-10-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-rolling-planning-peaks turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 6.30 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario scenario-uneven-multisched-01 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 45.00 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-enterprise-8gpu-air-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-enterprise-8gpu-air-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-h100-sxm5-8way-nvl4-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-h100-sxm5-8way-nvl4-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-nextgen-rack-liquid-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-nextgen-rack-liquid-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario addendum-h-lead-time-profile-validation turbine starting-count violation: cannot estimate first burst for hardware profile 'addendum_h_test_ramp_20s'
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario S10_mit_supercloud_2021-08-11 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.24 MW burst alone
+______________ TestApiStaticLayer.test_api_gate_clean_api_passes _______________
+tests/test_plane_separation.py:496: in test_api_gate_clean_api_passes
+    assert not all_violations, (
+E   AssertionError: api/ core-import violations found — build fails:
+E       api/routes/ingest.py:17: from core.models import ... — forbidden in api/ (top-level package 'core' is in forbidden list)
+E       api/routes/ingest.py:18: from core.slurm_scheduler import ... — forbidden in api/ (top-level package 'core' is in forbidden list)
+E   assert not ["api/routes/ingest.py:17: from core.models import ... — forbidden in api/ (top-level package 'core' is in forbidden l...ngest.py:18: from core.slurm_scheduler import ... — forbidden in api/ (top-level package 'core' is in forbidden list)"]
+_ test_fc100_zero_hot_variant_exposes_physical_bess_ceiling_and_unserved_load __
+tests/test_scenario_fc100_islanded_v2.py:173: in test_fc100_zero_hot_variant_exposes_physical_bess_ceiling_and_unserved_load
+    assert all(t.bess_output_mw == pytest.approx(0.0, abs=1e-9) for t in baseline)
+E   assert False
+E    +  where False = all(<generator object test_fc100_zero_hot_variant_exposes_physical_bess_ceiling_and_unserved_load.<locals>.<genexpr> at 0x7f5d1df89d50>)
+----------------------------- Captured stderr call -----------------------------
+WARNING:     api.routes.scenarios - Scenario demo-islanded-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING:     api.routes.scenarios - Scenario demo-operator-trip turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING:     api.routes.scenarios - Scenario islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING:     api.routes.scenarios - Scenario demo-10-tenant-overload-120pct turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 2.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario islanded-8-60-10-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING:     api.routes.scenarios - Scenario demo-rolling-planning-peaks turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 6.30 MW burst alone
+WARNING:     api.routes.scenarios - Scenario scenario-uneven-multisched-01 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 45.00 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-enterprise-8gpu-air-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-enterprise-8gpu-air-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-h100-sxm5-8way-nvl4-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-h100-sxm5-8way-nvl4-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-nextgen-rack-liquid-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-nextgen-rack-liquid-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING:     api.routes.scenarios - Scenario addendum-h-lead-time-profile-validation turbine starting-count violation: cannot estimate first burst for hardware profile 'addendum_h_test_ramp_20s'
+WARNING:     api.routes.scenarios - Scenario S10_mit_supercloud_2021-08-11 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.24 MW burst alone
+WARNING:     gridsignal.scenario_factory - DR D9b build warning: {'code': 'bess_reserve_floor_above_usable', 'bess_id': 'bess-fc100', 'floor_mwh': 152.5, 'usable_mwh': 40.0, 'winning_term': 'diesel_floor', 'diesel_units': [{'asset_id': 'diesel-000', 'delta_t_start_s': 3600.0, 'residual_ramp_s': 60.0, 'start_offset_s': 0.0}], 'diesel_worst_case_sync_s': 3660.0}
+WARNING:     gridsignal.scenario_factory - DR D3 build warning: {'code': 'islanded_frequency_protection_unconfigured', 'message': 'islanded run without frequency protection configured'}
+------------------------------ Captured log call -------------------------------
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-islanded-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-operator-trip turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-10-tenant-overload-120pct turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 2.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario islanded-8-60-10-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-rolling-planning-peaks turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 6.30 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario scenario-uneven-multisched-01 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 45.00 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-enterprise-8gpu-air-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-enterprise-8gpu-air-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-h100-sxm5-8way-nvl4-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-h100-sxm5-8way-nvl4-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-nextgen-rack-liquid-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-nextgen-rack-liquid-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario addendum-h-lead-time-profile-validation turbine starting-count violation: cannot estimate first burst for hardware profile 'addendum_h_test_ramp_20s'
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario S10_mit_supercloud_2021-08-11 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.24 MW burst alone
+WARNING  gridsignal.scenario_factory:build_warnings.py:60 DR D9b build warning: {'code': 'bess_reserve_floor_above_usable', 'bess_id': 'bess-fc100', 'floor_mwh': 152.5, 'usable_mwh': 40.0, 'winning_term': 'diesel_floor', 'diesel_units': [{'asset_id': 'diesel-000', 'delta_t_start_s': 3600.0, 'residual_ramp_s': 60.0, 'start_offset_s': 0.0}], 'diesel_worst_case_sync_s': 3660.0}
+WARNING  gridsignal.scenario_factory:build_warnings.py:19 DR D3 build warning: {'code': 'islanded_frequency_protection_unconfigured', 'message': 'islanded run without frequency protection configured'}
+WARNING  core.dispatch:dispatch.py:1419 CurtailmentLadder.generate_candidates: dead-man expiry sim_time=600.0, activated_at=295.0, MAX_HOLD_S=300s (TC-46).
+WARNING  core.dispatch:dispatch.py:1419 CurtailmentLadder.generate_candidates: dead-man expiry sim_time=1030.0, activated_at=725.0, MAX_HOLD_S=300s (TC-46).
+__________ test_tc84f_demo_20mw_contingency_state_changes_after_trip ___________
+tests/test_unit_trip.py:407: in test_tc84f_demo_20mw_contingency_state_changes_after_trip
+    assert turbine1_offline_seen, (
+E   AssertionError: turbine-1 was never set OFFLINE after the UNIT_TRIP event at t=120 s
+E   assert False
+----------------------------- Captured stderr call -----------------------------
+WARNING:     api.routes.scenarios - Scenario demo-islanded-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING:     api.routes.scenarios - Scenario demo-operator-trip turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING:     api.routes.scenarios - Scenario islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING:     api.routes.scenarios - Scenario demo-10-tenant-overload-120pct turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 2.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario islanded-8-60-10-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING:     api.routes.scenarios - Scenario demo-rolling-planning-peaks turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 6.30 MW burst alone
+WARNING:     api.routes.scenarios - Scenario scenario-uneven-multisched-01 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 45.00 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-enterprise-8gpu-air-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-enterprise-8gpu-air-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-h100-sxm5-8way-nvl4-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-h100-sxm5-8way-nvl4-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-nextgen-rack-liquid-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-nextgen-rack-liquid-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING:     api.routes.scenarios - Scenario addendum-h-lead-time-profile-validation turbine starting-count violation: cannot estimate first burst for hardware profile 'addendum_h_test_ramp_20s'
+WARNING:     api.routes.scenarios - Scenario S10_mit_supercloud_2021-08-11 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.24 MW burst alone
+WARNING:     gridsignal.scenario_factory - DR D3 build warning: {'code': 'islanded_frequency_protection_unconfigured', 'message': 'islanded run without frequency protection configured'}
+------------------------------ Captured log call -------------------------------
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-islanded-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-operator-trip turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-10-tenant-overload-120pct turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 2.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario islanded-8-60-10-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario demo-rolling-planning-peaks turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 6.30 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario scenario-uneven-multisched-01 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 45.00 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-enterprise-8gpu-air-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-enterprise-8gpu-air-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-h100-sxm5-8way-nvl4-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-h100-sxm5-8way-nvl4-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-nextgen-rack-liquid-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario lead-time-nextgen-rack-liquid-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario addendum-h-lead-time-profile-validation turbine starting-count violation: cannot estimate first burst for hardware profile 'addendum_h_test_ramp_20s'
+WARNING  api.routes.scenarios:scenarios.py:1461 Scenario S10_mit_supercloud_2021-08-11 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.24 MW burst alone
+WARNING  gridsignal.scenario_factory:build_warnings.py:19 DR D3 build warning: {'code': 'islanded_frequency_protection_unconfigured', 'message': 'islanded run without frequency protection configured'}
+WARNING  core.simulation_core:simulation_core.py:2266 Commitment engine: clearing stale pending-start register for 'turbine-1' at sim_time=120.0 — unit is OFFLINE, start did not take
+=========================== short test summary info ============================
+FAILED tests/test_13_3_frequency.py::TestI4DeliveryFaultMovesFrequency::test_I4_delivery_fault_causes_frequency_deviation
+FAILED tests/test_13_5_criteria.py::TestR4PMinStable::test_R4_fields_present_on_turbine_config
+FAILED tests/test_artifact_truncation.py::test_tc173_executor_run_validates_from_truncated_record_and_sidecar
+FAILED tests/test_diesel_phase3.py::test_live_diesel_is_less_aggressive_than_disabled_before_curtailment
+FAILED tests/test_diesel_setpoint_gap.py::test_hybrid_covered_demand_does_not_release_bess_reserve
+FAILED tests/test_fabric_scenarios_e2e.py::test_fabric_scenario_names - Asser...
+FAILED tests/test_forecast_path.py::TestDispatchTruthfulness::test_B1a_islanded_delivery_fault_visible_in_delivery_channel
+FAILED tests/test_fuel_cell_phase2.py::test_fixed_target_survives_a_step_load_and_output_remains_rate_limited
+FAILED tests/test_gpu_load_profile.py::test_gpu_load_profile - AssertionError...
+FAILED tests/test_gridley.py::test_gridley_retrieves_operator_knowledge_for_natural_variants
+FAILED tests/test_gridley.py::test_gridley_uses_grounded_operator_benefits_fallback_without_claude
+FAILED tests/test_gridley.py::test_gridley_logs_no_match_with_question_and_scenario_context
+FAILED tests/test_kubernetes_scheduler_demo_scenario.py::test_catalogue_demo_constructs_phase_a_scheduler_and_has_real_queue_wait
+FAILED tests/test_plane_separation.py::TestApiStaticLayer::test_api_gate_clean_api_passes
+FAILED tests/test_scenario_fc100_islanded_v2.py::test_fc100_zero_hot_variant_exposes_physical_bess_ceiling_and_unserved_load
+FAILED tests/test_unit_trip.py::test_tc84f_demo_20mw_contingency_state_changes_after_trip
+16 failed, 2196 passed, 3 skipped, 23 xfailed, 54 warnings, 3 subtests passed in 848.20s (0:14:08)

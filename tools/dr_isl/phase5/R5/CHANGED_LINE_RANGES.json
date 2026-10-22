@@ -1,0 +1,134 @@
+[
+  {
+    "commit": "67e02b1ab4dff1a261eaa5dc03bc68fbd190fe2f",
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/frequency_reporting.py",
+    "hunk": "@@ -0,0 +1,36 @@"
+  },
+  {
+    "commit": "67e02b1ab4dff1a261eaa5dc03bc68fbd190fe2f",
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/models.py",
+    "hunk": "@@ -1732,0 +1733,3 @@ class TickResult:"
+  },
+  {
+    "commit": "67e02b1ab4dff1a261eaa5dc03bc68fbd190fe2f",
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py",
+    "hunk": "@@ -15,0 +16,2 @@ from __future__ import annotations"
+  },
+  {
+    "commit": "67e02b1ab4dff1a261eaa5dc03bc68fbd190fe2f",
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py",
+    "hunk": "@@ -4157,0 +4160,4 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:"
+  },
+  {
+    "commit": "67e02b1ab4dff1a261eaa5dc03bc68fbd190fe2f",
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/build_warnings.py",
+    "hunk": "@@ -1 +1 @@"
+  },
+  {
+    "commit": "67e02b1ab4dff1a261eaa5dc03bc68fbd190fe2f",
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/build_warnings.py",
+    "hunk": "@@ -8,0 +9,14 @@ _log = logging.getLogger(\"gridsignal.scenario_factory\")"
+  },
+  {
+    "commit": "67e02b1ab4dff1a261eaa5dc03bc68fbd190fe2f",
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/run_manager.py",
+    "hunk": "@@ -797,0 +798,2 @@ def _tick_result_to_dict(tick: TickResult) -> dict:"
+  },
+  {
+    "commit": "67e02b1ab4dff1a261eaa5dc03bc68fbd190fe2f",
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/scenario_factory.py",
+    "hunk": "@@ -1947,2 +1947,2 @@ def build_run_context_from_spec("
+  },
+  {
+    "commit": "67e02b1ab4dff1a261eaa5dc03bc68fbd190fe2f",
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/study_harness/executor.py",
+    "hunk": "@@ -36 +36 @@ from .manifest import RunIdentity, RunManifestCache, make_run_identity"
+  },
+  {
+    "commit": "67e02b1ab4dff1a261eaa5dc03bc68fbd190fe2f",
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/study_harness/executor.py",
+    "hunk": "@@ -73,0 +74,2 @@ def make_study_run_identity("
+  },
+  {
+    "commit": "67e02b1ab4dff1a261eaa5dc03bc68fbd190fe2f",
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/study_harness/executor.py",
+    "hunk": "@@ -156,0 +159,2 @@ def _compact_tick(tick: Any) -> dict[str, Any]:"
+  },
+  {
+    "commit": "67e02b1ab4dff1a261eaa5dc03bc68fbd190fe2f",
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/study_harness/metrics.py",
+    "hunk": "@@ -21,0 +22,4 @@ from .errors import ("
+  },
+  {
+    "commit": "67e02b1ab4dff1a261eaa5dc03bc68fbd190fe2f",
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/study_harness/metrics.py",
+    "hunk": "@@ -177,0 +182,2 @@ class MetricsCollector:"
+  },
+  {
+    "commit": "67e02b1ab4dff1a261eaa5dc03bc68fbd190fe2f",
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/study_harness/metrics.py",
+    "hunk": "@@ -205,0 +212,3 @@ class MetricsCollector:"
+  },
+  {
+    "commit": "67e02b1ab4dff1a261eaa5dc03bc68fbd190fe2f",
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/study_harness/metrics.py",
+    "hunk": "@@ -487,0 +497,5 @@ class MetricsCollector:"
+  },
+  {
+    "commit": "21f552f62711df34da8be4d4052ee1ff3857d6f8",
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/types.ts",
+    "hunk": "@@ -238,0 +239,3 @@ export interface TickPayload {"
+  },
+  {
+    "commit": "f730ee578a8930d5e45e5225d003d8b500bdbb62",
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_frequency_reporting.py",
+    "hunk": "@@ -0,0 +1,97 @@"
+  },
+  {
+    "commit": "f730ee578a8930d5e45e5225d003d8b500bdbb62",
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_phase2c.py",
+    "hunk": "@@ -58 +58,4 @@ def test_tc_isl_18_floor_warning_is_diagnostic_only(start_s, expected_count, cap"
+  },
+  {
+    "commit": null,
+    "status": "ignored working copy only",
+    "file": "candidate-working-copy/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/App.tsx",
+    "hunk": "@@ -122,6 +122,8 @@"
+  },
+  {
+    "commit": null,
+    "status": "ignored working copy only",
+    "file": "candidate-working-copy/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/App.tsx",
+    "hunk": "@@ -230,6 +232,13 @@"
+  },
+  {
+    "commit": null,
+    "status": "ignored working copy only",
+    "file": "candidate-working-copy/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/App.tsx",
+    "hunk": "@@ -247,6 +256,7 @@"
+  },
+  {
+    "commit": null,
+    "status": "ignored working copy only",
+    "file": "candidate-working-copy/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/App.tsx",
+    "hunk": "@@ -325,6 +335,8 @@"
+  },
+  {
+    "commit": null,
+    "status": "ignored working copy only",
+    "file": "candidate-working-copy/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/subsystem/panels/forecastQuality.ts",
+    "hunk": "@@ -121,7 +121,9 @@"
+  },
+  {
+    "commit": null,
+    "status": "ignored working copy only",
+    "file": "candidate-working-copy/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/subsystem/panels/forecastQuality.ts",
+    "hunk": "@@ -145,8 +147,11 @@"
+  },
+  {
+    "commit": null,
+    "status": "ignored working copy only",
+    "file": "candidate-working-copy/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/test/forecast_quality_panel.test.tsx",
+    "hunk": "@@ -151,6 +151,22 @@"
+  }
+]

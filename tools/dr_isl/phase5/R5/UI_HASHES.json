@@ -1,0 +1,18 @@
+{
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/App.tsx": {
+    "base_working_copy_sha256": "d846c7e9e2a1fc6e61eca0624270aa10eb569ccd2605ce03b923ac95e3becea4",
+    "candidate_sha256": "edd7208ef805991c323987617921eeb28bda0aa215f5b704ff55c11b94fa2344"
+  },
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/subsystem/panels/forecastQuality.ts": {
+    "base_working_copy_sha256": "645770f115bf8f2443c76ee7ca37355ef2d259f5a03185d9557dc59519347d98",
+    "candidate_sha256": "15ae7a3f57b723f085e082b79069ca61d65ed8510c420490d5a4f5c4aae5d0da"
+  },
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/types.ts": {
+    "base_working_copy_sha256": "083366965ea2e8c970c5a0456ff06cadb7920be85cad986d9930ef3a6d8310f5",
+    "candidate_sha256": "e351d7b40dd3d1e1dc89d6c01d5effa3fbcaa347a63d6232d06a32b0621a2469"
+  },
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/test/forecast_quality_panel.test.tsx": {
+    "base_working_copy_sha256": "886872aa94fbaa06918cf107ff414489f12e67a955448496d17317381a7b2f25",
+    "candidate_sha256": "2d649db19e5b85f016b86c85e1617155d6b4976f450a0eda6f7af31a81c2208a"
+  }
+}

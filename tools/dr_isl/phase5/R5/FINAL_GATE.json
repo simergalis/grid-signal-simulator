@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "full_suite_set_gate": true,
+  "no_new_failure_modes": true,
+  "changed_modes": [],
+  "waived_gpu_signature_ok": true,
+  "waived_added": [
+    "tests/test_gpu_load_profile.py::test_gpu_load_profile"
+  ],
+  "physics_subset_passed": true,
+  "layering_matches_base": true,
+  "native_summary": "16 failed, 2196 passed, 3 skipped, 23 xfailed, 54 warnings, 3 subtests passed in 848.20s (0:14:08)"
+}

@@ -1,0 +1,11 @@
+{
+  "tracked_count": 3,
+  "untracked_nonignored_count": 0,
+  "untracked_ignored_count": 9976,
+  "counts_include_dependencies_and_builds": true,
+  "tracked_paths": [
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/public/scenario_spec_schema.json",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/components/AlertDock.tsx",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/types.ts"
+  ]
+}

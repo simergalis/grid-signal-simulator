@@ -1,0 +1,94 @@
+--- base-working-copy/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/App.tsx
++++ candidate-working-copy/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/App.tsx
+@@ -122,6 +122,8 @@
+   const [changePasswordOpen,  setChangePasswordOpen]  = useState(false)
+ 
+   const drainFrame     = useTickStore(s => s.drainFrame)
++  const unprotectedIslandRun = useTickStore(s =>
++    s.latestTick?.protection_provisional === true && s.latestTick.protection_configured === false)
+   const setRunMeta     = useTickStore(s => s.setRunMeta)
+   const reset          = useTickStore(s => s.reset)
+   const setRunPaused   = useTickStore(s => s.setRunPaused)
+@@ -230,6 +232,13 @@
+     }).catch(() => {})
+   }, [agentsEnabled])
+ 
++  // DR D3: keep the run notice visible in the opening and inner-page layouts.
++  const frequencyNotice = unprotectedIslandRun ? (
++      <div role="status" className="border-b border-border px-4 py-2 text-sm text-amber-400">
++        islanded run without frequency protection configured
++      </div>
++    ) : null
++
+   // ── Results screen (any page) ──────────────────────────────────────────────
+   if (resultsRunId !== null) {
+     return (
+@@ -247,6 +256,7 @@
+   if (currentPage === 'readiness') {
+     return (
+       <div className="flex h-screen flex-col bg-canvas text-text overflow-hidden">
++        {frequencyNotice}
+         <GridSignalHeader
+           runId={runId}
+           onHowItWorks={() => setTopoOpen(true)}
+@@ -325,6 +335,8 @@
+       />
+ 
+       <SimClockHeader onChangePassword={() => setChangePasswordOpen(true)} isPaused={isPaused} />
++
++      {frequencyNotice}
+ 
+       {/* Page navigation tabs */}
+       <div className="flex gap-px border-b border-border bg-border flex-shrink-0 overflow-x-auto">
+--- base-working-copy/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/subsystem/panels/forecastQuality.ts
++++ candidate-working-copy/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/subsystem/panels/forecastQuality.ts
+@@ -121,7 +121,9 @@
+       ? `${tick.frequency_hz.toFixed(3)} Hz (nominal not instrumented)`
+       : `${tick.frequency_hz.toFixed(3)} Hz (${freqDevHz >= 0 ? '+' : ''}${freqDevHz.toFixed(3)})`
+     // Colour: amber when deviation > 0.5 Hz, red when > 1.5 Hz (UFLS proximity).
+-    const freqColour = freqDevHz == null ? undefined :
++    const invalidFrequency = tick.frequency_valid === false
++    // PROPOSED_HERE: muted grey identifies a reporting-invalid reading, not a new alarm/trip.
++    const freqColour = invalidFrequency ? '#87939b' : freqDevHz == null ? undefined :
+       Math.abs(freqDevHz) > 1.5 ? '#d9534f' :
+       Math.abs(freqDevHz) > 0.5 ? AMBER : undefined
+ 
+@@ -145,8 +147,11 @@
+         { label: 'BESS measured',        value: `${tick.bess_output_mw.toFixed(3)} MW`,    sub: 'actual output this tick' },
+         { label: 'BESS setpoint gap',    value: bessGapStr,                               colour: bessGapColour, sub: 'setpoint − measured' },
+         // Phase 11.5: frequency deviation (islanded mode only).
+-        ...(isIslanded ? [
+-          { label: 'Frequency', value: freqStr, colour: freqColour, sub: 'islanded — swing-equation driven' },
++        ...(isIslanded || invalidFrequency ? [
++          { label: 'Frequency', value: freqStr, colour: freqColour,
++            sub: invalidFrequency
++              ? 'frequency outside validity band — not physical operation'
++              : 'islanded — swing-equation driven' },
+         ] : [
+            { label: 'Frequency',          value: 'grid-tied',
+              sub: nominalHz == null ? 'nominal not instrumented' : `locked to ${nominalHz} Hz reference` },
+--- base-working-copy/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/test/forecast_quality_panel.test.tsx
++++ candidate-working-copy/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/test/forecast_quality_panel.test.tsx
+@@ -151,6 +151,22 @@
+ // FQ-4 — Frequency deviation shown when islanded (protection_provisional=true)
+ // ---------------------------------------------------------------------------
+ 
++describe('D3 — invalid frequency reporting', () => {
++  it('keeps achieved Hz and marks invalid operation grey with the reporting label', () => {
++    const tick = makeTick({
++      protection_provisional: true,
++      frequency_hz: 90,
++      frequency_valid: false,
++      protection_configured: false,
++    })
++    const data = forecastQualityPanel.deriveData(tick, null, makeHistory())
++    const row = data.statRows?.find(r => r.label === 'Frequency')
++    expect(row?.value).toContain('90.000 Hz')
++    expect(row?.colour).toBe('#87939b')
++    expect(row?.sub).toBe('frequency outside validity band — not physical operation')
++  })
++})
++
+ describe('FQ-4 — frequency row shows deviation in islanded mode', () => {
+   it('islanded tick: frequency row value includes Hz figure', () => {
+     const tick = makeTick({

@@ -80,3 +80,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [S1 study harness](s1-study-harness.md) — bounded replay evidence, typed H-2 start-fuel failures, and a separate approval gate for certified-record changes.
 - [Forecast-history determinism](forecast-history-determinism.md) — H-1 informed physics matched with two retained snapshots and an unbounded logical history; the bound is diagnostic-only for this case.
 - [MCP identity and legacy artifacts](mcp-identity-and-legacy-artifacts.md) — boundary run identities must mirror executor replay normalization; legacy records need trace and guard hydration from stored artifacts.
+- [Known-failure gates](known-failure-gates.md) — compare assertions and violation lists, not only node IDs; baseline failures can hide new regressions.

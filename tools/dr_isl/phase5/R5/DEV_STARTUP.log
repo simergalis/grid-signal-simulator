@@ -1,0 +1,42 @@
+workflow: artifacts/gridsignal: web
+status: RUNNING
+run_id: rLV0X3pga8uVBYsxKffrM
+timestamp: 2026-10-22T20:54:49.766Z
+
+=== [start_prod] GridSignal Simulator v2 ===
+    Backend dir  : /home/runner/workspace/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim
+    Listening on : 0.0.0.0:22126
+    JWT_SECRET / SESSION_SECRET: REQUIRED (one present)
+    SENDGRID_API_KEY          : REQUIRED (email login)
+    SENDGRID_FROM_EMAIL       : REQUIRED (email login)
+    MISTRAL_API_KEY  : OPTIONAL (LP-1 Mistral path active)
+    ANTHROPIC_API_KEY: OPTIONAL (LP-1 Anthropic path active)
+
+    Reference forecast : ensuring 52-week baseline is available
+skipped existing: dataset_id=equinix-sj-2-52wk-v1
+reference_forecast_scenario rows: 1
+reference_forecast_resolved rows: 8736
+INFO:     Started server process [4968]
+INFO:     Waiting for application startup.
+INFO:     api.db - Auth tables ready (backend=postgresql)
+INFO:     api.app - Reference forecast baseline skipped existing: dataset_id=equinix-sj-2-52wk-v1 scenarios=1 rows=8736
+INFO:     api.app - Email portal URL: https://560e4bb4-a12b-40d1-a7c1-4cae34d4602a-00-2sy0v7r6028gw.picard.replit.dev  (source: REPLIT_DOMAINS)
+WARNING:     api.routes.scenarios - Scenario demo-islanded-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING:     api.routes.scenarios - Scenario demo-operator-trip turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING:     api.routes.scenarios - Scenario islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.53 MW burst alone
+WARNING:     api.routes.scenarios - Scenario demo-10-tenant-overload-120pct turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 2.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario islanded-8-60-10-ramp turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 8.40 MW burst alone
+WARNING:     api.routes.scenarios - Scenario demo-rolling-planning-peaks turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 6.30 MW burst alone
+WARNING:     api.routes.scenarios - Scenario scenario-uneven-multisched-01 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 45.00 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-enterprise-8gpu-air-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-enterprise-8gpu-air-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-h100-sxm5-8way-nvl4-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-h100-sxm5-8way-nvl4-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.01 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-nextgen-rack-liquid-training turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING:     api.routes.scenarios - Scenario lead-time-nextgen-rack-liquid-inference turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.12 MW burst alone
+WARNING:     api.routes.scenarios - Scenario addendum-h-lead-time-profile-validation turbine starting-count violation: cannot estimate first burst for hardware profile 'addendum_h_test_ramp_20s'
+WARNING:     api.routes.scenarios - Scenario S10_mit_supercloud_2021-08-11 turbine starting-count violation: base_load_mw is unset; first-burst coverage was checked against the 0.24 MW burst alone
+INFO:     api.app - Restored site_location: 'San Jose, CA' (lat=37.34, lon=-121.89, tz=America/Los_Angeles)
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:22126 (Press CTRL+C to quit)
+INFO:     127.0.0.1:45544 - "GET / HTTP/1.1" 200 OK
