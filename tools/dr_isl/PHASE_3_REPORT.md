@@ -1,5 +1,14 @@
 # DR-2026-10-20-ISLAND-COLLAPSE — Phase 3 (D2), final resumption
 
+## Latest resumption: TC125 diagnosis — STOP at 3.L (2026-10-22)
+
+See [PHASE_3_TC125_DIAGNOSIS.md](PHASE_3_TC125_DIAGNOSIS.md).
+BASE approval reaches a command that is silently dropped by the hot-standby guard.
+A separate contingency release subsequently starts the unit; it is not the approved core delivery path.
+No TC125/TC132 changes, 3.M acceptance/suite runs, or 3.N commits were made.
+Main application remains at BASE 1345380; candidate stash c52218e is retained.
+The earlier final-resumption report and suite result below are historical and unchanged.
+
 **STATUS: STOPPED at 3.4: added failures.**
 
 Application baseline: `134538067d4eb4c2ce14232e483e9a91fd31276b`; initial HEAD: `24b177194aa979fc889e892195e8d5ba37603bb6`.
