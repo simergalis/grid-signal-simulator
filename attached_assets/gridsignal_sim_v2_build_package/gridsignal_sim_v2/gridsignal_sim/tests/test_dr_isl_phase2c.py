@@ -55,7 +55,10 @@ def test_tc_isl_18_floor_warning_is_diagnostic_only(start_s, expected_count, cap
     basis = arbitrator.reserve_floor_basis[bess.config.asset_id]
     expected_floor = max(expected_floor, basis["depth_reserve_mwh"], basis["d2r_term_mwh"])
     assert arbitrator.soc_floor_mwh(bess) == pytest.approx(expected_floor)
-    warnings = ctx.metadata["build_warnings"]
+    # DR D3 adds an independent frequency warning; TC-ISL-18 still checks
+    # exactly the D9b reserve warnings, without changing its floor/dispatch assertions.
+    warnings = [w for w in ctx.metadata["build_warnings"]
+                if w["code"] == "bess_reserve_floor_above_usable"]
     assert len(warnings) == expected_count
     assert sum("DR D9b build warning:" in r.message for r in caplog.records) == expected_count
     if warnings:
