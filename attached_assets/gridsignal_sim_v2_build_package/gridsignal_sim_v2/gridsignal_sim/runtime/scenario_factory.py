@@ -1949,7 +1949,13 @@ def build_run_context_from_spec(
     return RunContext(
         run_id=run_id,
         sim_state=sim_state,
-        metadata={"build_warnings": _build_warnings},
+        # DR D2-r: live dictionaries/lists preserve the winning reserve basis
+        # in run metadata, including build-time no-restartable-unit evidence.
+        metadata={
+            "build_warnings": _build_warnings,
+            "bess_reserve_floor_basis": sim_state.arbitrator.reserve_floor_basis,
+            "bess_reserve_floor_history": sim_state.arbitrator.reserve_floor_history,
+        },
         events=events,
         dt_lead_seconds=float(spec_data.get("dt_lead_seconds", 30.0)),
         end_sim_time=float(spec_data.get("end_sim_time", 300.0)),

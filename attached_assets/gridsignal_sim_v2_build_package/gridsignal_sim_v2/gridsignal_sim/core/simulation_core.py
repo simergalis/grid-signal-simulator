@@ -351,6 +351,9 @@ class SimulationState:
         self.arbitrator.pending_start = self._pending_start
         # DR-2026-10-22-ISL-P4: the adapter resolves the audit sink at event time.
         self.arbitrator.successful_start_observer = self._observe_predicted_step_start
+        self.arbitrator.live_grid_forming_fc = self._reserve_has_live_gf_fc
+        # DR C2: observation only; use the unchanged release path's interlocks.
+        self.arbitrator.releasable_hot_standby = _releasable_hot_standby_turbines
         # Step 10: curtailment ladder and pre-staging engine.
         self.curtailment_ladder = CurtailmentLadder()
         if self.site.pre_staging_config is not None:
@@ -385,6 +388,15 @@ class SimulationState:
         if signal.job_id not in self._job_owner_index:
             self._job_owner_index[signal.job_id] = len(self._job_owner_index) % len(self.gpu_modules)
         return self.gpu_modules[self._job_owner_index[signal.job_id]]
+
+    def _reserve_has_live_gf_fc(self) -> bool:
+        """D2-r: same delivering block-FC definition as the viability check."""
+        # PROPOSED_HERE: reuse the existing viability delivery epsilon (1e-9
+        # MW), rather than introduce a different definition of a live former.
+        return isinstance(self.fuel_cell_module, BlockFuelCellFleet) and any(
+            array.config.grid_forming and array.output_mw() > 1e-9
+            for array in self.fuel_cell_module.arrays
+        )
 
     def _observe_predicted_step_start(
         self,
@@ -985,6 +997,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # TickResult so the persistence layer can record both clocks per tick.
     sim_time = clock.sim_time
     dt_seconds = clock.dt_seconds
+    state.arbitrator.reserve_sim_time_s = sim_time
 
     # 0. Kubernetes demand agent — must run BEFORE gpu.advance() so demand
     #    changes driven by the scheduler take effect in the current tick's power
@@ -2022,9 +2035,25 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     _post_loading_turbine_output_mw = sum(
         t.output_mw() for t in state.turbines if t.is_on_bus
     )
+    # DR D1-b: only the new D2-r term is hard while no synchronous machine
+    # is on bus. Preserve legacy release where D2-r is not applicable.
+    _reserve_sync_on_bus = any(t.is_on_bus for t in state.turbines) or any(
+        unit.is_on_bus for unit in state.diesel_units
+    )
+    _bess_release_floors_mwh = [
+        0.0 if _reserve_sync_on_bus else
+        state.arbitrator.reserve_floor_basis[b.config.asset_id]["d2r_term_mwh"]
+        for b in state.bess_units
+    ]
     _reserve_bess_ceilings_mw = [
-        max(0.0, physical - normal)
-        for physical, normal in zip(
+        max(0.0, min(
+            physical,
+            b.deliverable_energy_mwh(hard_floor) / (dt_seconds / 3600.0)
+            if dt_seconds > 0.0 else physical,
+        ) - normal)
+        for b, hard_floor, physical, normal in zip(
+            state.bess_units,
+            _bess_release_floors_mwh,
             _bess_physical_ceilings_mw,
             _bess_normal_dispatch_ceilings_mw,
         )
@@ -2098,7 +2127,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # authorizes that retained energy for this tick only; no other contingency
     # state is introduced here.
     _bess_soc_floors_mwh = (
-        [0.0] * len(_bess_reconciled_reserve_mwh)
+        _bess_release_floors_mwh
         if _emergency_release_authorized
         else _bess_reconciled_reserve_mwh
     )

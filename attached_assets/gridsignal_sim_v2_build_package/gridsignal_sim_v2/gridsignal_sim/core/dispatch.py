@@ -380,6 +380,15 @@ class DispatchArbitrator:
         self.successful_start_observer: Optional[
             Callable[[TurbineModule, float, TurbineState, float, float], None]
         ] = None
+        # DR D2-r: build epoch is zero; evaluate_tick supplies the live clock.
+        # PROPOSED_HERE: metadata names only, not new physical calibration.
+        self.reserve_sim_time_s = 0.0
+        self.live_grid_forming_fc: Optional[Callable[[], bool]] = None
+        self.releasable_hot_standby: Optional[
+            Callable[[list[TurbineModule], float], list[TurbineModule]]
+        ] = None
+        self.reserve_floor_basis: dict[str, dict] = {}
+        self.reserve_floor_history: list[dict] = []
 
     # ------------------------------------------------------------------
     # Fleet allocation helper (Step 3 Item 4)
@@ -529,7 +538,95 @@ class DispatchArbitrator:
             if normal_depth_fraction > 0.0
             else 0.0
         )
-        return max(depth_reserve_mwh, diesel_floor_mwh)
+        # DR-2026-10-20-ISLAND-COLLAPSE D2-r / IMPL-ISL-2. This is the
+        # single floor formula for normal dispatch, physical guard and D9b.
+        applicable = (
+            self.site.island_mode == IslandMode.ISLANDED
+            and bess.config.grid_forming
+            and not (self.live_grid_forming_fc and self.live_grid_forming_fc())
+        )
+        bridge = []
+        if applicable:
+            # DR Phase 4 C2, PROPOSED_HERE: reserve bridges until the soonest
+            # synchronous machine can be on bus. Release eligibility comes
+            # from the existing contingency path, not another guard copy.
+            releasable = {
+                id(unit) for unit in (
+                    self.releasable_hot_standby(self.turbines, self.reserve_sim_time_s)
+                    if self.releasable_hot_standby else []
+                )
+            }
+            for unit in self.turbines:
+                if unit.is_on_bus:
+                    continue
+                if unit.state == TurbineState.STARTING:
+                    # Approved clarification: bridge the remaining countdown;
+                    # do not add another full start to an in-progress start.
+                    wait, duration = 0.0, unit.unit_availability(
+                        self.reserve_sim_time_s
+                    ).time_to_online_s
+                    thermal = unit.thermal_state
+                    reason = "state"
+                    label = "starting_remaining"
+                elif id(unit) in releasable:
+                    wait = 0.0
+                    thermal, duration = unit.start_timing_at(self.reserve_sim_time_s)
+                    reason = "hot_standby_release"
+                    label = "hot_standby_release"
+                else:
+                    eligible, reason = unit.start_eligibility(self.reserve_sim_time_s)
+                    if not (eligible or reason == "min_down"):
+                        continue
+                    # The predicate owns every guard. The returned min_down
+                    # reason authorizes reading its deadline, not rechecking it.
+                    wait = (
+                        max(0.0, unit._stop_time_s + unit.config.t_min_down_s
+                            - self.reserve_sim_time_s)
+                        if reason == "min_down" else 0.0
+                    )
+                    thermal, duration = unit.start_timing_at(self.reserve_sim_time_s)
+                    label = "offline_restart"
+                bridge.append((wait + duration, unit.config.asset_id,
+                               wait, duration, thermal.value, reason, label))
+        chosen = min(bridge) if bridge else None
+        bridge_s = chosen[0] if chosen is not None else 0.0
+        d2r_term_mwh = (
+            MARGIN_MULTIPLIER * bess.config.rated_mw * bridge_s / 3600.0
+        )
+        floor_mwh = max(depth_reserve_mwh, diesel_floor_mwh, d2r_term_mwh)
+        # Preserve diesel tie precedence in the existing warning attribution.
+        winning_term = max(
+            (("diesel_floor", diesel_floor_mwh),
+             ("depth_reserve", depth_reserve_mwh),
+             ("d2r_bridge", d2r_term_mwh)),
+            key=lambda term: term[1],
+        )[0]
+        basis = {
+            "bess_id": bess.config.asset_id,
+            "floor_mwh": floor_mwh,
+            "depth_reserve_mwh": depth_reserve_mwh,
+            "diesel_floor_mwh": diesel_floor_mwh,
+            "d2r_term_mwh": d2r_term_mwh,
+            "winning_term": winning_term,
+            "basis": (
+                chosen[6] if chosen is not None
+                else "no restartable synchronous unit" if applicable
+                else "D2-r not applicable"
+            ),
+            "unit_id": chosen[1] if chosen is not None else None,
+            "eligibility_wait_s": chosen[2] if chosen is not None else None,
+            "start_duration_s": chosen[3] if chosen is not None else None,
+            "thermal_state": chosen[4] if chosen is not None else None,
+            "eligibility_reason": chosen[5] if chosen is not None else None,
+        }
+        previous = self.reserve_floor_basis.get(bess.config.asset_id)
+        self.reserve_floor_basis[bess.config.asset_id] = basis
+        if winning_term == "d2r_bridge" and basis != previous:
+            # Retain changes in a winning basis, not duplicate calls/tick data.
+            self.reserve_floor_history.append(
+                dict(basis, sim_time_s=self.reserve_sim_time_s)
+            )
+        return floor_mwh
 
     def stage_for_predicted_step(
         self, delta_p_mw: float, dt_lead_seconds: float, sim_time: float

@@ -34,7 +34,11 @@ def reserve_capacity_warnings(state) -> list[dict]:
             "bess_id": bess.config.asset_id,
             "floor_mwh": floor,
             "usable_mwh": bess.config.usable_mwh,
-            "winning_term": "diesel_floor" if diesel_term >= floor else "depth_reserve",
+            # DR C3, PROPOSED_HERE: d2r_bridge is attribution only; D9b's trigger,
+            # warning code and no-cap/no-reject behavior remain unchanged.
+            "winning_term": arbitrator.reserve_floor_basis[
+                bess.config.asset_id
+            ]["winning_term"],
             "diesel_units": timings,
             "diesel_worst_case_sync_s": arbitrator.diesel_worst_case_sync_s(),
         }

@@ -1066,6 +1066,26 @@ class TurbineModule(AssetModule):
                 return False, "min_down"
         return True, "eligible"
 
+    def start_timing_at(self, sim_time: float) -> tuple[ThermalState, float]:
+        """DR D2-r: preview the existing start timing, without starting a unit."""
+        if math.isnan(self._last_sync_stop_s):
+            thermal = self.config.initial_thermal_state
+        else:
+            elapsed_offline = sim_time - self._last_sync_stop_s
+            if elapsed_offline < self.config.hot_threshold_s:
+                thermal = ThermalState.HOT
+            elif elapsed_offline < self.config.warm_threshold_s:
+                thermal = ThermalState.WARM
+            else:
+                thermal = ThermalState.COLD
+        if thermal == ThermalState.HOT:
+            duration = self.config.hot_start_s
+        elif thermal == ThermalState.WARM:
+            duration = self.config.warm_start_s
+        else:
+            duration = self.config.cold_start_s
+        return thermal, duration
+
     def command_start(self, sim_time: float) -> None:
         """Transition OFFLINE → STARTING.  Phase 2 commitment-logic entry point.
 
@@ -1083,29 +1103,9 @@ class TurbineModule(AssetModule):
         if not self.start_eligibility(sim_time)[0]:
             return
 
-        # Determine thermal state from time offline since last synchronisation.
-        # First start (never stopped): use config.initial_thermal_state so the
-        # scenario-specified tier (hot/warm/cold) is honoured rather than always
-        # defaulting to the conservative cold path.  Subsequent restarts continue
-        # to use the elapsed-time classifier (time since last sync stop).
-        if math.isnan(self._last_sync_stop_s):
-            self._thermal_state = self.config.initial_thermal_state
-        else:
-            elapsed_offline = sim_time - self._last_sync_stop_s
-            if elapsed_offline < self.config.hot_threshold_s:
-                self._thermal_state = ThermalState.HOT
-            elif elapsed_offline < self.config.warm_threshold_s:
-                self._thermal_state = ThermalState.WARM
-            else:
-                self._thermal_state = ThermalState.COLD
-
-        # Start duration from config — no literals in state machine
-        if self._thermal_state == ThermalState.HOT:
-            self._time_to_online_s = self.config.hot_start_s
-        elif self._thermal_state == ThermalState.WARM:
-            self._time_to_online_s = self.config.warm_start_s
-        else:
-            self._time_to_online_s = self.config.cold_start_s
+        # DR D2-r: share exactly the existing thermal timing with the reserve
+        # query; neither start eligibility nor start physics is changed.
+        self._thermal_state, self._time_to_online_s = self.start_timing_at(sim_time)
 
         self._start_phase = "purge"
         self.state = TurbineState.STARTING
