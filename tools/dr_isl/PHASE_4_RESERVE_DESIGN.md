@@ -2,10 +2,11 @@
 
 Date: 2026-10-22.
 Base: `ae49aaab89564ccf2ef42d505e021641484d0d3a`.
-Status: **STOP at gate 4.5: one added GPU-profile suite failure.
-Candidate retained in stash `85595a8189a7adc9745b5fd326196f6325b0e275`.
+Status: **Resumed with C1–C3, then STOP at the focused TC-ISL-18 check.
+Candidate retained in stash `69350a319e71e97f136b875b00c4660624aee59a`.
 Main application code restored to `ae49aaa`; implementation not committed.
-All three preflight decisions below were explicitly approved.**
+The earlier candidate/report remain preserved; no acceptance runs or full suite
+were started for this resumption.**
 
 P = `attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/`.
 This document concerns D2-r / D1-b / IMPL-ISL-2. It is not the separate
@@ -117,6 +118,12 @@ actual firing times separately from the new physical binding time.
   the unit's configured deadline.
 - Reuse the existing thermal-duration selection without changing start
   behavior or its configured durations.
+- C2, PROPOSED_HERE: the bridge is the soonest of STARTING remaining
+  countdown (`starting_remaining`), OFFLINE non-hot-standby eligibility
+  wait plus current thermal start (`offline_restart`), and hot standby
+  releasable by the unchanged contingency path, with zero wait plus current
+  thermal start (`hot_standby_release`). Exclude on-bus/failed units and
+  diesel. This reserves energy until the soonest synchronous machine is on bus.
 - Record the winning bridge unit, eligibility wait and startup duration,
   or the specified `"no restartable synchronous unit"` basis, in run
   metadata. Keep upstream and downstream dispatch on one computed floor.
@@ -125,6 +132,9 @@ actual firing times separately from the new physical binding time.
   release for sites where the D2-r term does not apply.
 - Preserve D9b's existing warning code and strict floor-above-usable
   comparison. Do not cap or reject the floor.
+- C3, PROPOSED_HERE: use `d2r_bridge` as the winning-term attribution label;
+  every other warning field stays unchanged. The warning is build-time only,
+  not a guarantee that the time-varying reserve never exceeds capacity later.
 - No scenario, cost, commitment, start guard, diesel, frequency,
   protection or advisory-escalation behavior changes.
 

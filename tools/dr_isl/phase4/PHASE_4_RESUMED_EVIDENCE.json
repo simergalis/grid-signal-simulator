@@ -1,0 +1,157 @@
+{
+  "base": "ae49aaab89564ccf2ef42d505e021641484d0d3a",
+  "head_before_stash": "807f4d53d2dbe2693c701aa34320990688025567",
+  "status": "STOP at focused TC-ISL-18 failure; no acceptance or full suite",
+  "changed_lines": {
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py": [
+      [
+        1069,
+        1088
+      ],
+      [
+        1106,
+        1108
+      ]
+    ],
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/dispatch.py": [
+      [
+        383,
+        391
+      ],
+      [
+        541,
+        629
+      ]
+    ],
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py": [
+      [
+        354,
+        358
+      ],
+      [
+        394,
+        402
+      ],
+      [
+        1002,
+        1002
+      ],
+      [
+        2040,
+        2049
+      ],
+      [
+        2051,
+        2058
+      ],
+      [
+        2132,
+        2132
+      ]
+    ],
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/build_warnings.py": [
+      [
+        37,
+        41
+      ]
+    ],
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/scenario_factory.py": [
+      [
+        1952,
+        1958
+      ]
+    ],
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_phase4_reserve.py": [
+      [
+        1,
+        235
+      ]
+    ]
+  },
+  "sha256": {
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py": "c1b01053a82970b0f5d8ceced7a74b7ca693cb2de309317273ec01d5959cfe1f",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/dispatch.py": "16d45d49088bf1dd02ad46bfe7a780265eecd396204ada812b14a94b08e10f83",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py": "82f2e4ebed0e728f5df7d193dcd906cb72b7e2130f9230d47265a53959fafae8",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/build_warnings.py": "49edcb26f85e723f95107bd4ac58fc49376e15b36c368e2186f14d200209e1eb",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/scenario_factory.py": "432073c8cd4bb953dde53e236e45d1ccb7cae9ab4fdd02f18279338716c9a4a4",
+    "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_phase4_reserve.py": "ddfef1b1cb91cffc7b7a563628ee86402f402a61bad973dd9cfb6c029d839cc8"
+  },
+  "predicate_ast_identical": true,
+  "focused": {
+    "tests": 51,
+    "passed": 50,
+    "failed": [
+      "tests/test_dr_isl_phase2c.py::test_tc_isl_18_floor_warning_is_diagnostic_only[10.0-0]"
+    ],
+    "new_TC01_02_03_tests": 12,
+    "new_test_failures": 0
+  },
+  "build_only": {
+    "operation": "build only: zero ctx.step/RunManager calls",
+    "floor_mwh": 6.25,
+    "rated_mw": 30,
+    "usable_mwh": 60,
+    "basis": {
+      "bess_id": "bess-0",
+      "floor_mwh": 6.25,
+      "depth_reserve_mwh": 0,
+      "diesel_floor_mwh": 1.4583333333333333,
+      "d2r_term_mwh": 6.25,
+      "winning_term": "d2r_bridge",
+      "basis": "hot_standby_release",
+      "unit_id": "gt-hot-01",
+      "eligibility_wait_s": 0,
+      "start_duration_s": 300,
+      "thermal_state": "hot",
+      "eligibility_reason": "hot_standby_release"
+    },
+    "build_warnings": [],
+    "turbines": [
+      {
+        "id": "gt-spin-01",
+        "state": "synchronised",
+        "hot_standby": false,
+        "thermal_state": "hot",
+        "start_eligibility": [
+          false,
+          "state"
+        ]
+      },
+      {
+        "id": "gt-spin-02",
+        "state": "synchronised",
+        "hot_standby": false,
+        "thermal_state": "hot",
+        "start_eligibility": [
+          false,
+          "state"
+        ]
+      },
+      {
+        "id": "gt-hot-01",
+        "state": "offline",
+        "hot_standby": true,
+        "thermal_state": "hot",
+        "start_eligibility": [
+          false,
+          "hot_standby"
+        ]
+      },
+      {
+        "id": "gt-hot-02",
+        "state": "offline",
+        "hot_standby": true,
+        "thermal_state": "hot",
+        "start_eligibility": [
+          false,
+          "hot_standby"
+        ]
+      }
+    ]
+  },
+  "stash": "69350a319e71e97f136b875b00c4660624aee59a",
+  "base_application_restored": true,
+  "acceptance_R1_R4": "NOT RUN",
+  "full_suite": "NOT RUN",
+  "tracking": "NOT REACHED"
+}

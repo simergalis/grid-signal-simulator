@@ -26,3 +26,15 @@ process exit or a passing observation does not ensure its evidence survives.
 before starting the next gate. Retain the no-full-tick-export rule and file-size
 cap. If scratch disappears, report the missing evidence explicitly; do not
 reconstruct unobserved final counts or silently rerun past a STOP gate.
+
+For Phase 4, the user tightened durability: write every completed gate result,
+hash, metric table, suite JUnit and failing-ID list incrementally into
+`tools/dr_isl/phase4/`, before starting the next item. Each file must be at most
+50 MB. Report only values present in those files.
+
+**Why:** The user explicitly required workspace evidence after repeated scratch
+loss, replacing Phase 4's earlier 200 MB scratch-only allowance.
+
+**How to apply:** Persist bounded outputs immediately, including failed gates.
+Label imported earlier evidence as historical, not a new run. Do not substitute
+conversation recollection for a missing durable result.

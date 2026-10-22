@@ -1,0 +1,51 @@
+[
+  {
+    "file": "PHASE_4_RESUMED_FOCUSED.txt",
+    "bytes": 5859,
+    "sha256": "8f2c34f33f9a6eabc8b81b27f67c6d34373768011b4afadfa2569f074cd981c5",
+    "provenance": "Imported completed prior-resumption evidence, not a new run",
+    "source": "tools/dr_isl/PHASE_4_RESUMED_FOCUSED.txt"
+  },
+  {
+    "file": "PHASE_4_RESUMED_FOCUSED.xml",
+    "bytes": 8457,
+    "sha256": "aacd8a6ee2c780543a88dd0e682c8ece9d30059fa6ab95224430ec90dbed4f38",
+    "provenance": "Imported completed prior-resumption evidence, not a new run",
+    "source": "tools/dr_isl/PHASE_4_RESUMED_FOCUSED.xml"
+  },
+  {
+    "file": "PHASE_4_RESUMED_FOCUSED_FAILING_TESTS.txt",
+    "bytes": 86,
+    "sha256": "3e868994b857edb8a232f4b54bcd9ba6fdae457b29579164a9920238912e49a4",
+    "provenance": "Imported completed prior-resumption evidence, not a new run",
+    "source": "tools/dr_isl/PHASE_4_RESUMED_FOCUSED_FAILING_TESTS.txt"
+  },
+  {
+    "file": "PHASE_4_RESUMED_BUILD_ONLY.json",
+    "bytes": 1355,
+    "sha256": "64be0d9ff5614cc9f508747496c16805b4cf750394c8f3caa6c79828926defee",
+    "provenance": "Imported completed prior-resumption evidence, not a new run",
+    "source": "tools/dr_isl/PHASE_4_RESUMED_BUILD_ONLY.json"
+  },
+  {
+    "file": "PHASE_4_RESUMED_BUILD_ONLY.txt",
+    "bytes": 1027,
+    "sha256": "2158ec00af26225ecf97d44ced8cbbf331597efccac4df7fe7a9d435ee494174",
+    "provenance": "Imported completed prior-resumption evidence, not a new run",
+    "source": "tools/dr_isl/PHASE_4_RESUMED_BUILD_ONLY.txt"
+  },
+  {
+    "file": "PHASE_4_RESUMED_EVIDENCE.json",
+    "bytes": 4552,
+    "sha256": "245a706a472fc79f84b29aab71c4a312e6d2b3f1e2ca1536dea917e6779ed2d1",
+    "provenance": "Imported completed prior-resumption evidence, not a new run",
+    "source": "tools/dr_isl/PHASE_4_RESUMED_EVIDENCE.json"
+  },
+  {
+    "file": "PHASE_4_RESUMED_CANDIDATE.patch",
+    "bytes": 26846,
+    "sha256": "dc87881b00078ddcb7b8dd8c51adc2e46efe8747e7b4e1b05a0a68848c797877",
+    "provenance": "Imported completed prior-resumption evidence, not a new run",
+    "source": "tools/dr_isl/PHASE_4_RESUMED_CANDIDATE.patch"
+  }
+]

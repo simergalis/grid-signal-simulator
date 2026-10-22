@@ -20,6 +20,21 @@ is already in progress.
 **How to apply:** Reuse the current machine countdown when extending a
 grid-forming reserve; keep the start-eligibility conditions unchanged.
 
+The user-approved bridge population also includes OFFLINE non-hot-standby
+restart candidates (eligibility wait plus thermal startup), and hot standby
+that the existing contingency path can release (zero wait plus thermal
+startup). Diesel is excluded from this population; its separate floor remains.
+
+**Why:** The user clarified that the reserve bridges until the soonest
+synchronous machine can be on bus, including an explicitly releasable reserve,
+not only a machine eligible for an ordinary direct start.
+
+**How to apply:** Observe the existing release interlocks rather than changing
+the hot-standby guard or triggering a release. Preserve basis labels
+`starting_remaining`, `offline_restart`, `hot_standby_release`, or
+`no restartable synchronous unit`. Warning attribution uses `d2r_bridge`;
+the above-capacity warning still describes build-time state only.
+
 Distinguish a new below-floor discharge from holding or charging while stored
 energy is already below a changed reserve target.
 

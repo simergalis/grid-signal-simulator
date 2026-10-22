@@ -1,189 +1,117 @@
-# DR-2026-10-20-ISLAND-COLLAPSE — Phase 4 reserve STOP report
+# DR-2026-10-20-ISLAND-COLLAPSE — Resumed Phase 4 C1–C3: STOP
 
-Date: 2026-10-22.
-**STOP at 4.5. Phase 4 is not validated or implemented on the main branch.**
+Date: 2026-10-22. Status: **STOP during focused verification (4.3).**
 
-Base application commit: `ae49aaab89564ccf2ef42d505e021641484d0d3a`.
-Pre-implementation/report-only HEAD: `17db503763fd1b500502c7bcd6f68b9832b83a26`.
-Candidate stash: `85595a8189a7adc9745b5fd326196f6325b0e275` (`stash@{0}` at capture).
+Base application: `ae49aaab89564ccf2ef42d505e021641484d0d3a`.
+Resumption HEAD before candidate: `807f4d53d2dbe2693c701aa34320990688025567` (report only).
+Candidate stash: `69350a319e71e97f136b875b00c4660624aee59a`.
+Main application code restored to base; candidate not committed as application code.
 P = `attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/`.
 
-## Evidence retention limitation
+## Clarifications implemented in the unvalidated candidate
 
-The background full-suite wrapper exited with code **2**. Its persisted failing-ID list contains **16** IDs: **1 added, 0 removed, 15 remaining** relative to `tools/dr_isl/HOUSEKEEPING_FAILING_TESTS.txt`.
-After that exit, `/tmp/DR-ISL-phase4-reserve/` and the background-shell log paths no longer existed. All three configured workflows were reported not started. The cause of that disappearance is not established by retained evidence. I failed to persist the full temporary results before this loss.
-Final pytest pass/skip/xfail counts and the final XML cannot be verified from retained files. The last printed incremental XML observation was **2,223 test cases, 16 failures, 0 errors, 26 skipped entries**. This is an observation, not a certified final pytest summary; 26 includes entries that pytest may classify as xfail.
-R1–R4 values below are reconstructed from tool output already printed during this session. Missing H hashes, complete 27-metric payloads, requested-window files, and raw run artifacts have **not** been recreated or presented as retained evidence. No simulations or tests were rerun after the STOP.
+- C1: tracking target is existing `P/mcp_server/__main__.py`; tracking was **not reached**.
+- C2: bridge population uses STARTING remaining countdown (`starting_remaining`), OFFLINE ordinary restart wait plus thermal start (`offline_restart`), and hot standby releasable through the existing contingency interlocks (`hot_standby_release`). The existing helper is called through an observation-only provider wired in simulation setup. No release is commanded by a reserve query; failed/on-bus units and diesel do not enter this population.
+- C3: winning-term label is `d2r_bridge`. Warning code, fields, trigger floor > usable, no-cap/no-reject policy and build-time lifecycle are unchanged.
+- Existing single start-eligibility predicate AST is **identical** to base. No existing test was edited. No scenario JSON was edited.
 
-## 4.0 — Design and approved preflight decisions
+Candidate file/range references (the source now resides in the stash):
 
-Design: `tools/dr_isl/PHASE_4_RESERVE_DESIGN.md` (base-source line references are explicitly labelled there). This is D2-r/D1-b, not the separate IMPL-ISL-17 start-event work.
-- Track the existing `P/mcp_server/__main__.py`, not a new `main.py`: approved; tracking not reached.
-- STARTING turbines use their remaining startup countdown: approved and used in the candidate.
-- D9b winning-term attribution may identify D2-r: approved; warning trigger/code and no-cap/no-reject policy unchanged.
-
-## 4.1–4.2 — Candidate changes (now stashed)
-
-Line references in this section refer to the **candidate in the stash**, not the restored main-tree source. Full literal diff is in the appendix and `tools/dr_isl/PHASE_4_CANDIDATE_EVIDENCE.patch`.
-
-| Candidate file | Added/changed lines | Purpose |
-|---|---|---|
-| `P/core/asset_modules.py` | 1069–1088, 1106–1108 | Pure shared thermal/start-duration query; command_start uses the same timing. |
-| `P/core/dispatch.py` | 383–388, 538–611 | Extend the one existing floor to max(depth, diesel, D2-r); eligibility/countdown basis and metadata history. |
-| `P/core/simulation_core.py` | 354, 390–398, 998, 2036–2054, 2128 | Live GF block-FC callback, clock, and one conditional release-floor vector used upstream/downstream. |
-| `P/runtime/build_warnings.py` | 37–41 | Attribution only, from the single floor result. |
-| `P/runtime/scenario_factory.py` | 1952–1958 | Live basis/history references in RunContext metadata. |
-| `P/tests/test_dr_isl_phase4_reserve.py` | 1–208 | Eleven cases for TC-ISL-01–03. |
-
-The AST comparison of `start_eligibility` against base printed **True** (identical). There were no scenario/API/commitment/diesel/advisory/frequency/protection edits. The thermal timing body was factored, not retuned. See the full diff for scope, rather than treating changed physics trajectories as unchanged outputs.
-
-## 4.3 — Focused tests
-
-- TC-ISL-01–03 collision scan: only the new reserve test file matched those IDs.
-- New tests: **11 passed in 0.92 s**.
-- Existing reserve reconciliation, grid-forming viability, Phase 2c, and Addendum G Stage 3 focused files: **33 passed, 1 warning in 7.00 s**.
-- Existing shared start-eligibility/hot-standby-veto files: **6 passed in 1.65 s**.
-- Total final focused cases: **50 passed**. No existing tests were changed.
-
-Printed values from the new tests:
-```text
-no-diesel bridge: floor=4.166666666666667 MWh; unit=gt-reserve; wait=0; start=600 s; cold
-diesel winning floor: 10.0 MWh
-no restartable unit: 0 MWh; basis="no restartable synchronous unit"
-STARTING remaining 120 s: floor=0.8333333333333334 MWh
-grid-tied / nonforming BESS / live GF block FC: D2-r term=0
-sole-GF release fixture: stored=4.166666666666667 MWh; BESS output=0; unserved=10 MW; balance=True
-on-bus GT or diesel fixture: stored=4.153613215609007 MWh; BESS output=9 MW; unserved=0; balance=True
-```
-
-Test-authoring transparency: the initial new-test draft had 8 pass/3 fail, and the next had 9 pass/2 fail because synthetic diesel/FC fixtures were incomplete for the canonical schema/delivering-state requirements. Only those new fixtures were completed; production policy was not adjusted to satisfy them.
-
-## 4.4 R1 — Template and S10
-
-“First floor” below means first stored-energy observation at/below the current normal floor. A floor can jump upward; this is not necessarily an energy-depletion/equality crossing. Frequency windows begin at each version’s own first-floor time and therefore are not fixed-time windows shared between versions.
-
-| Scenario/version | Ticks | Collapse | Min SoC | Normal floor min/max MWh | First floor tick / seconds | Min Hz next 120 s | Run min/max Hz | Unserved MWh |
-|---|---:|---|---:|---|---|---:|---|---:|
-| demo-islanded-ramp / base | 2160 | no | 0 | 0 / 0 | 771 / 3855 | 56.30124604916138 | -127.48961154607643 / 60 | 0.7984763561509628 |
-| demo-islanded-ramp / candidate | 2160 | no | 0.45166506501035325 | 0.0625 / 7.5 | 312 / 1560 | 59.98901877366516 | -127.48961154607643 / 60 | 0.785895723386723 |
-| S10_mit_supercloud_2021-08-11 / base | 17280 | no | 0 | 0 / 0 | 2372 / 11860 | 54.48350997809083 | -729.1075118080669 / 998.9330534505464 | 10.600341682490331 |
-| S10_mit_supercloud_2021-08-11 / candidate | 17280 | no | 0 | 0 / 14.9375 | 1012 / 5060 | 79.88266332350686 | -729.1075118080669 / 998.9330534505464 | 8.4639919161834 |
-
-The S10 base 120-second-window value observed here was **54.48350997809083 Hz**, not the **55.68 Hz** quoted in the request. This discrepancy was not tuned away or investigated with more runs.
-S10’s maximum normal floor **14.9375 MWh** exceeds its **14 MWh** usable capacity. No floor was capped or rejected. D9b remains the existing **build-time** warning; the clarification authorized attribution only, not a new runtime warning lifecycle.
-Run completion is **not** frequency-safety validation: the unprotected whole-run ranges remain nonphysical. No frequency/protection correction was attempted.
-
-Candidate below-normal-target observations: template **1849**, of which **1845** were not discharging; S10 **2713**, of which **2022** were not discharging. Positive below-floor discharge outside D1-b permission: **0** in both.
-Template first-floor basis: turbine-4, eligibility wait **0 s**, cold startup **600 s**, D2-r **7.5 MWh**. At tick 312 the physical release floor was **0**, with a synchronous source on bus.
-S10 first-floor basis: turbine-4, min-down wait **895 s**, current hot startup **300 s**, D2-r **14.9375 MWh**. At tick 1012 BESS output was **−18 MW** (charging), with physical floor **14.9375 MWh**.
-
-TC-ISL-04 intended completion/load-coverage outcome: observed. Template candidate did not deplete (minimum SoC **0.45166506501035325**), so literal post-depletion recovery is **not exercised**. The after-floor diagnostic reached nominal-band/load coverage at tick **315**, **1575 s**, **15 s** after first normal-floor onset; frequency **59.991642290429624 Hz**, GT **43.969697761438795 MW**, BESS **0 MW**, unserved **0**. Diagnostic band: PROPOSED_HERE **±0.1 Hz**, test-only, not a protection change.
-TC-ISL-05 completion: **PASS**, **17280 ticks / 86400 s**, no collapse. No frequency-safety pass is implied.
-
-Observer correction transparency: initial scratch STOP_R1 outputs incorrectly treated below-target holdings as new discharges. The observer was corrected to test positive discharge, and synthetic holding / forbidden-discharge / permitted-release cases passed. The template physical hash was unchanged by that observer correction; simulator policy/parameters were not changed in response. Raw erroneous and corrected scratch outputs were among the lost temporary files.
-
-R1 physical SHA-256 values:
-```text
-demo-islanded-ramp base fe798e4292b478ef3f6e25d67e4e22123867f51e49b991ac13981ecaa8114b2a
-demo-islanded-ramp candidate f49f71f1573f1f9a22fff6d560eb5a25a380e4088ecccbe12cf6a560964f822a
-S10_mit_supercloud_2021-08-11 base 4370c9ebfbfc90d2812cad93285c9749645974502508e8188c3567eb3e60d34d
-S10_mit_supercloud_2021-08-11 candidate 8ba0dec0459ca09b9df4ea6fa17bd72fa16038220f425b0a8dd499bfa87557ab
-```
-
-## R2 — Advisory timing
-
-| Scenario | First advisory tick / s / reason | First normal-floor onset tick / s | First positive retained physical guard while at/below target tick / s |
-|---|---|---|---|
-| template | 6 / 30 / turbine_catchup | 312 / 1560 | 315 / 1575 |
-| S10 | 118 / 590 / turbine_catchup | 1012 / 5060 | 1012 / 5060 |
-
-The catch-up advisory preceded both observations. Normal-floor onset and the actual downstream guard are distinguished: D1-b can temporarily set the latter to zero. A positive guard while charging does not prove that a positive discharge command was blocked on that tick. No bridging-floor-specific first alert was recorded by the observer. Advisory code was unchanged.
-
-## R3 — Six regression scenarios
-
-All six base-reference checks and paired candidate checks passed; physical hashes were identical, with observed maximum D2-r term **0.0 MWh** in each.
-
-| Scenario | Base = candidate physical SHA-256 |
+| File | Changed ranges |
 |---|---|
-| scenario-equinix-sj-1 | `328309c3a181aefdb702a0577f41acfe673a945450ce61f9ad560696cf0aaa84` |
-| scenario-turbine-01 | `006006e6c9eac82460ee4a343a4d1691f2a34f231ca7fb038c7ae583ab63471a` |
-| scenario-hybrid-ai-100mw-addendum-i | `9377f009785094697116d356ef554985107ce1ee4c92f01c672f4b30b5f7577a` |
-| scenario-100mw-fuel-cell-bess-diesel | `565edaad7557ed06b545d92fe6c10105ef1a709e1aeb2e224d041e1e475e581b` |
-| scenario-fc100-islanded-v2 | `d8146d3e37d9d7e1b306bbf2dc7dea7b2675be9c2bdabca0a209a028772c73d3` |
-| scenario-fc100-islanded-zero-hot-v2 | `d89d3132a5f87e94de6869a1246f5d3f434e03ecab72d744f90329ac8608d8f2` |
+| `attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py` | 1069–1088, 1106–1108 |
+| `attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/dispatch.py` | 383–391, 541–629 |
+| `attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py` | 354–358, 394–402, 1002–1002, 2040–2049, 2051–2058, 2132–2132 |
+| `attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/build_warnings.py` | 37–41 |
+| `attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/scenario_factory.py` | 1952–1958 |
+| `attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_phase4_reserve.py` | 1–235 |
 
-## R4 — Protected records
+## Focused verification — literal results
 
-Observed ordered gate results: base demo both arms passed the exact paired physical/compact/27-key metric comparisons and the nine-decimal production checks. H1-24h and H2-24h, both arms, **two repetitions per arm**, passed physical/compact/27-key metric identity and repeatability. Base and candidate compare_runs were **PASS** for base demo, H1 and H2.
-H2 reconciliation is included in the unchanged metric projection; the accepted ae49aaa reference is **11/11**. The exact per-run reconciliation payload, individual H hashes and all metric objects were lost, so this report does not substitute an invented metric-by-metric dump for them.
-Base-demo D2-r maximum observed term was **24.895833333333332 MWh**, without a protected physical/metric change.
+Command: from P, `PYTHONDONTWRITEBYTECODE=1 python3 -m pytest -q -s tests/test_dr_isl_phase4_reserve.py tests/test_reserve_reconciliation.py tests/test_isl_grid_forming_viability.py tests/test_dr_isl_phase2c.py tests/test_addendum_g_stage3_option_c.py tests/test_dr_isl_start_eligibility.py tests/test_dr_isl_hot_standby_veto.py --junitxml=/home/runner/workspace/tools/dr_isl/PHASE_4_RESUMED_FOCUSED.xml`.
 
-| Arm | Curtailment MWh | Turbine fuel MMBtu | Unserved MWh | Peak unserved MW |
-|---|---:|---:|---:|---:|
-| baseline | 8.136511735 | 714.363019086 | 0.351692658 | 22.309362466 |
-| informed | 5.278943188 | 665.398247704 | 0.020719074 | 7.52325057 |
+**50 passed, 1 failed, 1 warning in 9.34 s**. JUnit: 51 test cases, 1 failure, 0 errors, 0 skipped. All **12** new reserve cases passed.
+Existing reserve/viability/Addendum G/start-eligibility focused cases passed except the TC-ISL-18 node below. The warning was the existing synthetic BESS C-rate warning (0.10 C outside 0.25–4.0 C), not a new above-capacity event.
 
-These are the production-reference values at the tested nine-decimal precision, not claimed full-precision recovered outputs. No protected-record change was observed before the scratch loss.
-
-## 4.5 — Full-suite STOP
-
-Final persisted failing IDs: `tools/dr_isl/PHASE_4_FAILING_TESTS.txt`.
-Comparison: **16 failed IDs; 1 added; 0 removed; 15 remaining**.
-Added node:
+STOP node:
 ```text
-tests/test_gpu_load_profile.py::test_gpu_load_profile
-```
-Literal captured failure:
-```text
-assert abs(frac - expected_frac) < TOLERANCE
-AssertionError: [FAIL-A] phase-2 sim_t=720.0s: gpu_load_fraction=1.0 expected 0.5
-assert 0.5 < 1e-06
- + where 0.5 = abs((1.0 - 0.5))
-tests/test_gpu_load_profile.py:169: AssertionError
-called from tests/test_gpu_load_profile.py:284
-```
-The captured test uses HTTP POST /runs and GET latest-tick. No base/candidate isolation rerun was performed after the added-failure gate. Its causal classification is **unresolved**, not proven to be a D2-r regression, stale test, or race.
-
-The suite was launched without intentional cancellation; its wrapper exited 2 after writing the failing-ID list. Final pytest counts/XML are unavailable after scratch loss. Last observed incremental XML: 2223 cases / 16 failures / 0 errors / 26 skipped entries. A final passed count is deliberately **not asserted**.
-
-Remaining pre-existing IDs:
-```text
-tests/test_13_3_frequency.py::TestI4DeliveryFaultMovesFrequency::test_I4_delivery_fault_causes_frequency_deviation
-tests/test_13_5_criteria.py::TestR4PMinStable::test_R4_fields_present_on_turbine_config
-tests/test_artifact_truncation.py::test_tc173_executor_run_validates_from_truncated_record_and_sidecar
-tests/test_diesel_phase3.py::test_live_diesel_is_less_aggressive_than_disabled_before_curtailment
-tests/test_diesel_setpoint_gap.py::test_hybrid_covered_demand_does_not_release_bess_reserve
-tests/test_fabric_scenarios_e2e.py::test_fabric_scenario_names
-tests/test_forecast_path.py::TestDispatchTruthfulness::test_B1a_islanded_delivery_fault_visible_in_delivery_channel
-tests/test_fuel_cell_phase2.py::test_fixed_target_survives_a_step_load_and_output_remains_rate_limited
-tests/test_gridley.py::test_gridley_logs_no_match_with_question_and_scenario_context
-tests/test_gridley.py::test_gridley_retrieves_operator_knowledge_for_natural_variants
-tests/test_gridley.py::test_gridley_uses_grounded_operator_benefits_fallback_without_claude
-tests/test_kubernetes_scheduler_demo_scenario.py::test_catalogue_demo_constructs_phase_a_scheduler_and_has_real_queue_wait
-tests/test_plane_separation.py::TestApiStaticLayer::test_api_gate_clean_api_passes
-tests/test_scenario_fc100_islanded_v2.py::test_fc100_zero_hot_variant_exposes_physical_bess_ceiling_and_unserved_load
-tests/test_unit_trip.py::test_tc84f_demo_20mw_contingency_state_changes_after_trip
+tests/test_dr_isl_phase2c.py::test_tc_isl_18_floor_warning_is_diagnostic_only[10.0-0]
+P/tests/test_dr_isl_phase2c.py:54
+> assert arbitrator.soc_floor_mwh(bess) == pytest.approx(expected_floor)
+E assert 6.25 == 1.4583333333333333 ± 1.5e-06
+E Obtained: 6.25
+E Expected: 1.4583333333333333 ± 1.5e-06
 ```
 
-## 4.6 — Tracking
+The test at lines 47–50 loads the base-demo JSON, sets diesel start to 10 s on an in-memory fixture copy, validates it through ScenarioSpec and builds. Line 53 expects only `2.5 * 30 * (10 + 60) / 3600`. It does not include the now-admitted C2 hot-standby term.
+This is a **nonzero diesel-only floor expectation**, not an explicit zero-floor or unconditional-release assertion. Under the stated test-update boundary it was not changed. Its D9b warning/diagnostic assertions after line 54 were not reached in the failing parameterization.
 
-**Not performed**, because 4.5 stopped the phase. No tracking commit and no no-content-change claim was made for the five files. The approved target remains existing `mcp_server/__main__.py`; no `main.py` was created. `gridsignal.db` was not added.
+## Build-only STOP diagnosis (no simulation steps)
 
-## 4.7 — Restoration, commits, scope
+One build-only measurement of the same canonical fixture was made to print the winning basis; **zero ctx.step / RunManager calls**. Full result: `tools/dr_isl/PHASE_4_RESUMED_BUILD_ONLY.json`.
 
-- Candidate retained in stash `85595a8189a7adc9745b5fd326196f6325b0e275`.
-- `git diff ae49aaab89564ccf2ef42d505e021641484d0d3a -- P/core P/runtime P/api P/tests` returned empty after the stash.
-- No Phase 4 implementation or test/tracking commit was made. Only a report/evidence/memory-documentation commit follows this report; its hash must be obtained from git / the final response to avoid embedding its own hash.
-- No automatic implementation checkpoint occurred during this candidate: pre-stash HEAD remained report-only 17db503.
-- The stopped GridSignal web workflow was restarted **after restoring base source**. Startup completed and GET / returned **200**. Preview showed the operator sign-in page; unauthenticated 401 was logged. No sign-in or new simulation was performed for that check.
-- No publish, deployment, push, Phase 5, scenario JSON edit, or application fix for the GPU failure.
+| Field | Literal value |
+|---|---|
+| BESS | bess-0 |
+| rated / usable | 30 MW / 60 MWh |
+| depth reserve | 0.0 MWh |
+| diesel floor | 1.4583333333333333 MWh |
+| D2-r / resolved floor | 6.25 MWh |
+| winning_term | d2r_bridge |
+| basis | hot_standby_release |
+| unit | gt-hot-01 |
+| wait / start / thermal state | 0 s / 300 s / hot |
+| build_warnings | [] |
 
-Durable evidence: `PHASE_4_RESERVE_EVIDENCE.json`, `PHASE_4_CANDIDATE_EVIDENCE.patch`, `PHASE_4_FAILING_TESTS.txt` in `tools/dr_isl/`. The JSON includes candidate file hashes, exact hunk ranges, the identical-predicate AST result, and explicit missing-evidence fields.
-Documentation also retains approved countdown semantics and the two validation lessons (dynamic-floor holdings are not new discharge; bounded results must be flushed durably before continuing).
+Arithmetic: `2.5 * 30 * 300 / 3600 = 6.25 MWh`. The unchanged release helper admits the OFFLINE hot-standby unit under explicit release authority, while the ordinary predicate still reports `(False, hot_standby)`. No unit is actually started by this build-only diagnostic.
+The two ordinary machines are SYNCHRONISED. gt-hot-01 and gt-hot-02 remain OFFLINE, hot_standby=True, with ordinary start_eligibility false/hot_standby. This shows the distinction between an ordinary direct start and the existing release authority; it does not change either path.
+No warning fires because 6.25 < 60. This is a **build-time** observation only, not evidence about future reserve maxima.
 
-## Appendix — Literal candidate diff against application base
+## New-test printed values
 
-This is evidence of the **unvalidated, stashed** candidate, not main-tree application changes.
+| C2 case | Observed result |
+|---|---|
+| OFFLINE restart | floor 4.166666666666667 MWh; gt-reserve; wait 0; cold start 600 s; basis offline_restart |
+| STARTING | remaining 120 s; floor 0.8333333333333334 MWh; basis starting_remaining |
+| Hot standby | floor 4.166666666666667 MWh; wait 0; start 600 s; basis hot_standby_release; flag/state unchanged |
+| Blocked hot-standby release | min-down interlock active; floor 0; no restartable synchronous unit |
+| No candidate | floor 0; no restartable synchronous unit |
+| Diesel wins | floor 10.0 MWh; diesel_floor |
+| C3 above-capacity fixture | floor 4.166666666666667 > usable 1.0; code bess_reserve_floor_above_usable; winning_term d2r_bridge; not capped |
+| Grid-tied / nonforming / delivering GF block FC | D2-r term 0 |
+| Sole GF BESS | BESS output 0; stored energy 4.166666666666667 MWh; unserved 10 MW; physical balance True |
+| On-bus GT / diesel | BESS output 9 MW; stored energy 4.153613215609007 MWh; unserved 0; balance True |
+
+## Gates not reached
+
+- R1 template / S10 and TC-ISL-04/05: **NOT RUN for this candidate**.
+- R2 advisory timing: **NOT RUN**.
+- R3 regression hashes: **NOT RUN**.
+- R4 base demo / H1 / H2 protected-record comparisons: **NOT RUN**. No current production/certified-record identity claim is made. The build-time floor difference does not by itself establish a physical metric change.
+- Full suite: **NOT RUN**. No current full-suite pass/fail/delta counts exist.
+- Tracking five files: **NOT REACHED**. No tracking commit; gridsignal.db was not added.
+- Implementation/test commits: **NOT MADE**. Only report/evidence/documentation is committed after the STOP.
+
+Prior 807f4d5 report is archived at `tools/dr_isl/PHASE_4_RESERVE_STOP1_REPORT.md`. Its R1–R4 results and its 16-ID full-suite list describe the previous candidate **without the newly clarified hot-standby population**, not this resumption. The existing `PHASE_4_FAILING_TESTS.txt` is therefore historical; do not mistake it for a new suite result.
+
+## Restoration and evidence
+
+Candidate is stashed at `69350a319e71e97f136b875b00c4660624aee59a`. Earlier stash `85595a8189a7adc9745b5fd326196f6325b0e275` was kept.
+`git diff --exit-code ae49aaa -- P/core P/runtime P/api P/tests P/config/scenarios` returned empty after restoration.
+No publish, deploy, push, Phase 5, guard-duration change, start-eligibility-condition change, advisory change, scenario-file edit, or fix to the blocked existing test.
+
+Durable bounded artifacts (all under tools/dr_isl):
+- PHASE_4_RESUMED_FOCUSED.txt and .xml: complete focused stdout and JUnit.
+- PHASE_4_RESUMED_FOCUSED_FAILING_TESTS.txt: focused failure only, not a full-suite list.
+- PHASE_4_RESUMED_BUILD_ONLY.json and .txt: exact winning-basis measurement.
+- PHASE_4_RESUMED_EVIDENCE.json: file hashes, candidate line ranges, unchanged-predicate AST result, counts and stash.
+- PHASE_4_RESUMED_CANDIDATE.patch: full unvalidated diff, reproduced below.
+
+## Required approval to continue
+
+The narrow test-scope extension is to update TC-ISL-18’s diesel-only total-floor expectation for max(depth, diesel, D2-r), while retaining its warning, no-cap and unchanged-dispatch assertions. No such update was made. All later acceptance gates, including R4’s mandatory STOP on any protected-record change, remain in force.
+
+## Literal unvalidated candidate diff
 
 ```diff
 diff --git a/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py b/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py
@@ -251,10 +179,10 @@ index 11ec12b..c463817 100644
          self._start_phase = "purge"
          self.state = TurbineState.STARTING
 diff --git a/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/dispatch.py b/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/dispatch.py
-index 83b7d3e..5392cc9 100644
+index 83b7d3e..a8984ad 100644
 --- a/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/dispatch.py
 +++ b/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/dispatch.py
-@@ -380,6 +380,12 @@ class DispatchArbitrator:
+@@ -380,6 +380,15 @@ class DispatchArbitrator:
          self.successful_start_observer: Optional[
              Callable[[TurbineModule, float, TurbineState, float, float], None]
          ] = None
@@ -262,12 +190,15 @@ index 83b7d3e..5392cc9 100644
 +        # PROPOSED_HERE: metadata names only, not new physical calibration.
 +        self.reserve_sim_time_s = 0.0
 +        self.live_grid_forming_fc: Optional[Callable[[], bool]] = None
++        self.releasable_hot_standby: Optional[
++            Callable[[float], list[TurbineModule]]
++        ] = None
 +        self.reserve_floor_basis: dict[str, dict] = {}
 +        self.reserve_floor_history: list[dict] = []
  
      # ------------------------------------------------------------------
      # Fleet allocation helper (Step 3 Item 4)
-@@ -529,7 +535,80 @@ class DispatchArbitrator:
+@@ -529,7 +538,95 @@ class DispatchArbitrator:
              if normal_depth_fraction > 0.0
              else 0.0
          )
@@ -281,20 +212,36 @@ index 83b7d3e..5392cc9 100644
 +        )
 +        bridge = []
 +        if applicable:
++            # DR Phase 4 C2, PROPOSED_HERE: reserve bridges until the soonest
++            # synchronous machine can be on bus. Release eligibility comes
++            # from the existing contingency path, not another guard copy.
++            releasable = {
++                id(unit) for unit in (
++                    self.releasable_hot_standby(self.reserve_sim_time_s)
++                    if self.releasable_hot_standby else []
++                )
++            }
 +            for unit in self.turbines:
 +                if unit.is_on_bus:
 +                    continue
-+                eligible, reason = unit.start_eligibility(self.reserve_sim_time_s)
 +                if unit.state == TurbineState.STARTING:
 +                    # Approved clarification: bridge the remaining countdown;
 +                    # do not add another full start to an in-progress start.
 +                    wait, duration = 0.0, unit.unit_availability(
 +                        self.reserve_sim_time_s
 +                    ).time_to_online_s
-+                    if reason == "hot_standby":
-+                        continue
 +                    thermal = unit.thermal_state
-+                elif eligible or reason == "min_down":
++                    reason = "state"
++                    label = "starting_remaining"
++                elif id(unit) in releasable:
++                    wait = 0.0
++                    thermal, duration = unit.start_timing_at(self.reserve_sim_time_s)
++                    reason = "hot_standby_release"
++                    label = "hot_standby_release"
++                else:
++                    eligible, reason = unit.start_eligibility(self.reserve_sim_time_s)
++                    if not (eligible or reason == "min_down"):
++                        continue
 +                    # The predicate owns every guard. The returned min_down
 +                    # reason authorizes reading its deadline, not rechecking it.
 +                    wait = (
@@ -303,10 +250,9 @@ index 83b7d3e..5392cc9 100644
 +                        if reason == "min_down" else 0.0
 +                    )
 +                    thermal, duration = unit.start_timing_at(self.reserve_sim_time_s)
-+                else:
-+                    continue
++                    label = "offline_restart"
 +                bridge.append((wait + duration, unit.config.asset_id,
-+                               wait, duration, thermal.value, reason))
++                               wait, duration, thermal.value, reason, label))
 +        chosen = min(bridge) if bridge else None
 +        bridge_s = chosen[0] if chosen is not None else 0.0
 +        d2r_term_mwh = (
@@ -317,7 +263,7 @@ index 83b7d3e..5392cc9 100644
 +        winning_term = max(
 +            (("diesel_floor", diesel_floor_mwh),
 +             ("depth_reserve", depth_reserve_mwh),
-+             ("d2r", d2r_term_mwh)),
++             ("d2r_bridge", d2r_term_mwh)),
 +            key=lambda term: term[1],
 +        )[0]
 +        basis = {
@@ -328,7 +274,7 @@ index 83b7d3e..5392cc9 100644
 +            "d2r_term_mwh": d2r_term_mwh,
 +            "winning_term": winning_term,
 +            "basis": (
-+                "restartable synchronous unit" if chosen is not None
++                chosen[6] if chosen is not None
 +                else "no restartable synchronous unit" if applicable
 +                else "D2-r not applicable"
 +            ),
@@ -340,7 +286,7 @@ index 83b7d3e..5392cc9 100644
 +        }
 +        previous = self.reserve_floor_basis.get(bess.config.asset_id)
 +        self.reserve_floor_basis[bess.config.asset_id] = basis
-+        if winning_term == "d2r" and basis != previous:
++        if winning_term == "d2r_bridge" and basis != previous:
 +            # Retain changes in a winning basis, not duplicate calls/tick data.
 +            self.reserve_floor_history.append(
 +                dict(basis, sim_time_s=self.reserve_sim_time_s)
@@ -350,18 +296,22 @@ index 83b7d3e..5392cc9 100644
      def stage_for_predicted_step(
          self, delta_p_mw: float, dt_lead_seconds: float, sim_time: float
 diff --git a/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py b/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py
-index a7649e0..caf5216 100644
+index a7649e0..ac438ee 100644
 --- a/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py
 +++ b/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py
-@@ -351,6 +351,7 @@ class SimulationState:
+@@ -351,6 +351,11 @@ class SimulationState:
          self.arbitrator.pending_start = self._pending_start
          # DR-2026-10-22-ISL-P4: the adapter resolves the audit sink at event time.
          self.arbitrator.successful_start_observer = self._observe_predicted_step_start
 +        self.arbitrator.live_grid_forming_fc = self._reserve_has_live_gf_fc
++        # DR C2: observation only; use the unchanged release path's interlocks.
++        self.arbitrator.releasable_hot_standby = (
++            lambda sim_time: _releasable_hot_standby_turbines(self.turbines, sim_time)
++        )
          # Step 10: curtailment ladder and pre-staging engine.
          self.curtailment_ladder = CurtailmentLadder()
          if self.site.pre_staging_config is not None:
-@@ -386,6 +387,15 @@ class SimulationState:
+@@ -386,6 +391,15 @@ class SimulationState:
              self._job_owner_index[signal.job_id] = len(self._job_owner_index) % len(self.gpu_modules)
          return self.gpu_modules[self._job_owner_index[signal.job_id]]
  
@@ -377,7 +327,7 @@ index a7649e0..caf5216 100644
      def _observe_predicted_step_start(
          self,
          turbine: TurbineModule,
-@@ -985,6 +995,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
+@@ -985,6 +999,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
      # TickResult so the persistence layer can record both clocks per tick.
      sim_time = clock.sim_time
      dt_seconds = clock.dt_seconds
@@ -385,7 +335,7 @@ index a7649e0..caf5216 100644
  
      # 0. Kubernetes demand agent — must run BEFORE gpu.advance() so demand
      #    changes driven by the scheduler take effect in the current tick's power
-@@ -2022,9 +2033,25 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
+@@ -2022,9 +2037,25 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
      _post_loading_turbine_output_mw = sum(
          t.output_mw() for t in state.turbines if t.is_on_bus
      )
@@ -413,7 +363,7 @@ index a7649e0..caf5216 100644
              _bess_physical_ceilings_mw,
              _bess_normal_dispatch_ceilings_mw,
          )
-@@ -2098,7 +2125,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
+@@ -2098,7 +2129,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
      # authorizes that retained energy for this tick only; no other contingency
      # state is introduced here.
      _bess_soc_floors_mwh = (
@@ -423,7 +373,7 @@ index a7649e0..caf5216 100644
          else _bess_reconciled_reserve_mwh
      )
 diff --git a/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/build_warnings.py b/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/build_warnings.py
-index bb24105..21988c1 100644
+index bb24105..fc007ea 100644
 --- a/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/build_warnings.py
 +++ b/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/build_warnings.py
 @@ -34,7 +34,11 @@ def reserve_capacity_warnings(state) -> list[dict]:
@@ -431,7 +381,7 @@ index bb24105..21988c1 100644
              "floor_mwh": floor,
              "usable_mwh": bess.config.usable_mwh,
 -            "winning_term": "diesel_floor" if diesel_term >= floor else "depth_reserve",
-+            # Approved Phase 4 clarification: attribution only; D9b's trigger,
++            # DR C3, PROPOSED_HERE: d2r_bridge is attribution only; D9b's trigger,
 +            # warning code and no-cap/no-reject behavior remain unchanged.
 +            "winning_term": arbitrator.reserve_floor_basis[
 +                bess.config.asset_id
@@ -460,10 +410,10 @@ index 226dcfd..73d675f 100644
          end_sim_time=float(spec_data.get("end_sim_time", 300.0)),
 diff --git a/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_phase4_reserve.py b/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_phase4_reserve.py
 new file mode 100644
-index 0000000..6672c66
+index 0000000..9584f83
 --- /dev/null
 +++ b/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_phase4_reserve.py
-@@ -0,0 +1,208 @@
+@@ -0,0 +1,235 @@
 +"""TC-ISL-01–03: DR D2-r/D1-b; fixtures are not scenario calibrations."""
 +import copy
 +import json
@@ -540,7 +490,8 @@ index 0000000..6672c66
 +    expected = MARGIN_MULTIPLIER * 10.0 * 600.0 / 3600.0
 +    assert arb.soc_floor_mwh(bess) == pytest.approx(expected)
 +    basis = ctx.metadata["bess_reserve_floor_basis"]["bess-reserve"]
-+    assert basis["winning_term"] == "d2r"
++    assert basis["winning_term"] == "d2r_bridge"
++    assert basis["basis"] == "offline_restart"
 +    assert basis["unit_id"] == "gt-reserve"
 +    assert basis["eligibility_wait_s"] == 0.0
 +    assert basis["start_duration_s"] == 600.0
@@ -591,6 +542,7 @@ index 0000000..6672c66
 +    basis = state.arbitrator.reserve_floor_basis["bess-reserve"]
 +    assert basis["start_duration_s"] == 120.0
 +    assert basis["eligibility_wait_s"] == 0.0
++    assert basis["basis"] == "starting_remaining"
 +    print({"TC-ISL-01 STARTING": basis})
 +
 +
@@ -601,10 +553,35 @@ index 0000000..6672c66
 +    floor = state.arbitrator.soc_floor_mwh(state.bess_units[0])
 +    warnings = reserve_capacity_warnings(state)
 +    assert floor > 1.0
-+    assert warnings[0]["winning_term"] == "d2r"
++    assert warnings[0]["winning_term"] == "d2r_bridge"
 +    assert warnings[0]["floor_mwh"] == floor
 +    assert state.arbitrator.soc_floor_mwh(state.bess_units[0]) == floor
 +    print({"TC-ISL-01 warning": warnings})
++
++
++def test_tc_isl_01_hot_standby_release_basis_and_unchanged_interlocks():
++    ctx = _context()
++    state = ctx.sim_state
++    unit = state.turbines[0]
++    unit.config.hot_standby = True
++    assert unit.start_eligibility(0.0) == (False, "hot_standby")
++    floor = state.arbitrator.soc_floor_mwh(state.bess_units[0])
++    basis = state.arbitrator.reserve_floor_basis["bess-reserve"]
++    assert basis["basis"] == "hot_standby_release"
++    assert basis["eligibility_wait_s"] == 0.0
++    assert floor == pytest.approx(MARGIN_MULTIPLIER * 10.0 * 600.0 / 3600.0)
++    assert unit.config.hot_standby
++    assert unit.state == TurbineState.OFFLINE
++    # PROPOSED_HERE: blocked release fixture, not a change to machine guards.
++    unit.config.min_down_enabled = True
++    unit.config.t_min_down_s = 90.0
++    unit._stop_time_s = 0.0
++    assert state.arbitrator.soc_floor_mwh(state.bess_units[0]) == 0.0
++    assert state.arbitrator.reserve_floor_basis["bess-reserve"]["basis"] == (
++        "no restartable synchronous unit"
++    )
++    assert unit.config.hot_standby
++    print({"TC-ISL-01 hot standby": basis, "blocked_floor": 0.0})
 +
 +
 +@pytest.mark.parametrize("overrides", [

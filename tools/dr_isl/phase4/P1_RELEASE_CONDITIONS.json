@@ -1,0 +1,63 @@
+{
+  "application_base": "ae49aaab89564ccf2ef42d505e021641484d0d3a",
+  "head": "807f4d53d2dbe2693c701aa34320990688025567",
+  "application_code_at_base": true,
+  "newer_candidate_stash": "69350a319e71e97f136b875b00c4660624aee59a",
+  "earlier_candidate_stash": "85595a8189a7adc9745b5fd326196f6325b0e275",
+  "operation": "P1 read-only source audit; no simulation or test in this second resumption",
+  "release_conditions": [
+    "Coverage state is COVERED_WITH_SHED or CANNOT_CARRY (simulation_core.py:770-773).",
+    "Sustained risk condition is met after update(risk_state, dt_seconds), using configured contingency_release_confirm_s (simulation_core.py:348-350,774,783-784; commitment.py:120-130).",
+    "Episode is armed (simulation_core.py:301,779-780,785); a complete COVERED tick rearms; successful release disarms at805.",
+    "Pending-start register is empty (simulation_core.py:786).",
+    "An OFFLINE hot-standby turbine passes the shared start predicate after only the reserve label is temporarily cleared and restored (simulation_core.py:629-678).",
+    "Choose the first such unit in existing thermal/roster order (simulation_core.py:789-796).",
+    "Clear label and command_start; only STARTING success is recorded; rejection restores reserve label (simulation_core.py:796-805)."
+  ],
+  "source": [
+    {
+      "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py",
+      "symbol": "_offline_turbine_roster",
+      "first_line": 629,
+      "last_line": 645,
+      "literal_source": "629: def _offline_turbine_roster(\n630:     turbines: list[TurbineModule],\n631: ) -> list[TurbineModule]:\n632:     \"\"\"Return offline turbines in hot \u2192 warm \u2192 cold, then roster order.\"\"\"\n633:     roster_index = {id(turbine): index for index, turbine in enumerate(turbines)}\n634:     candidates = [\n635:         turbine\n636:         for turbine in turbines\n637:         if turbine.state == TurbineState.OFFLINE\n638:     ]\n639:     return sorted(\n640:         candidates,\n641:         key=lambda turbine: (\n642:             _STANDBY_THERMAL_PRIORITY[turbine.thermal_state],\n643:             roster_index[id(turbine)],\n644:         ),\n645:     )"
+    },
+    {
+      "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py",
+      "symbol": "_releasable_hot_standby_turbines",
+      "first_line": 664,
+      "last_line": 678,
+      "literal_source": "664: def _releasable_hot_standby_turbines(\n665:     turbines: list[TurbineModule], sim_time: float,\n666: ) -> list[TurbineModule]:\n667:     \"\"\"Evaluate unchanged interlocks under the existing explicit release authority.\"\"\"\n668:     candidates = []\n669:     for turbine in _offline_turbine_roster(turbines):\n670:         if turbine.config.hot_standby:\n671:             turbine.config.hot_standby = False\n672:             try:\n673:                 eligible, _ = turbine.start_eligibility(sim_time)\n674:             finally:\n675:                 turbine.config.hot_standby = True\n676:             if eligible:\n677:                 candidates.append(turbine)\n678:     return candidates"
+    },
+    {
+      "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py",
+      "symbol": "_release_hot_standby_for_contingency",
+      "first_line": 757,
+      "last_line": 826,
+      "literal_source": "757: def _release_hot_standby_for_contingency(\n758:     state: SimulationState,\n759:     coverage: ContingencyCoverage,\n760:     *,\n761:     sim_time: float,\n762:     dt_seconds: float,\n763: ) -> ContingencyReleaseAlert | None:\n764:     \"\"\"Release at most one hot standby after sustained real N-1 risk.\n765: \n766:     This is intentionally not part of evaluate_commitment().  The ordinary\n767:     commitment path must continue to exclude hot-standby units from its\n768:     offline candidates; this path is the inverse, contingency-only action.\n769:     \"\"\"\n770:     risk_state = coverage.state in (\n771:         ContingencyState.COVERED_WITH_SHED,\n772:         ContingencyState.CANNOT_CARRY,\n773:     )\n774:     state._contingency_release_cond.update(risk_state, dt_seconds)\n775: \n776:     # One complete COVERED tick re-arms the episode.  A bad condition never\n777:     # re-arms itself, even after the first released unit reaches STARTING or\n778:     # SYNCHRONISED.\n779:     if coverage.state == ContingencyState.COVERED:\n780:         state._contingency_release_armed = True\n781: \n782:     if (\n783:         not risk_state\n784:         or not state._contingency_release_cond.met\n785:         or not state._contingency_release_armed\n786:         or not state._pending_start.is_empty\n787:     ):\n788:         return None\n789: \n790:     hot_standby_units = _releasable_hot_standby_turbines(state.turbines, sim_time)\n791:     if not hot_standby_units:\n792:         return None\n793: \n794:     turbine = hot_standby_units[0]\n795:     before_state = turbine.state\n796:     turbine.config.hot_standby = False\n797:     turbine.command_start(sim_time)\n798:     if turbine.state != TurbineState.STARTING:\n799:         # Preserve the reserve label when the turbine's own start guards reject\n800:         # the command; no release was actually made and a later tick may retry.\n801:         turbine.config.hot_standby = True\n802:         return None\n803: \n804:     state._pending_start.record_start(turbine.config.asset_id, sim_time)\n805:     state._contingency_release_armed = False\n806:     _record_turbine_transition(\n807:         state,\n808:         turbine,\n809:         sim_time=sim_time,\n810:         action=\"release\",\n811:         source=\"automatic_contingency\",\n812:         reason=\"automatic contingency cascade release\",\n813:         from_state=before_state,\n814:         to_state=turbine.state,\n815:         controller_approved=(\n816:             True\n817:             if getattr(state, \"_commitment_mode\", \"baseline\") == \"informed\"\n818:             else None\n819:         ),\n820:     )\n821:     return ContingencyReleaseAlert(\n822:         turbine_id=turbine.config.asset_id,\n823:         coverage_state=coverage.state.value,\n824:         shed_mw=float(coverage.shed_required_mw),\n825:         fires_at_sim_time=sim_time,\n826:     )"
+    },
+    {
+      "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py",
+      "symbol": "start_eligibility",
+      "first_line": 1057,
+      "last_line": 1067,
+      "literal_source": "1057:     def start_eligibility(self, sim_time: float) -> tuple[bool, str]:\n1058:         \"\"\"DR D2 / IMPL-ISL-5: the single, unchanged turbine start interlock.\"\"\"\n1059:         if self.config.hot_standby:\n1060:             return False, \"hot_standby\"\n1061:         if self.state != TurbineState.OFFLINE:\n1062:             return False, \"state\"\n1063:         if self.config.min_down_enabled and not math.isnan(self._stop_time_s):\n1064:             elapsed = sim_time - self._stop_time_s\n1065:             if elapsed < self.config.t_min_down_s:\n1066:                 return False, \"min_down\"\n1067:         return True, \"eligible\""
+    },
+    {
+      "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/commitment.py",
+      "symbol": "SustainedCondition",
+      "first_line": 103,
+      "last_line": 130,
+      "literal_source": "103: class SustainedCondition:\n104:     \"\"\"Durable hysteresis timer for commit and decommit conditions.\n105: \n106:     Tracks how long a condition has been continuously true.  Resets to 0.0\n107:     on the first tick the condition is false.\n108: \n109:     Design\n110:     ------\n111:     sustained_s  : accumulated seconds the condition has been continuously true.\n112:     threshold_s  : minimum duration required before met is True.\n113: \n114:     Not frozen \u2014 evaluate_commitment() mutates sustained_s per tick.\n115:     No I/O, no wall clock; the caller passes dt_s and the boolean predicate.\n116:     \"\"\"\n117:     sustained_s: float = 0.0\n118:     threshold_s: float = 0.0\n119: \n120:     def update(self, condition_true: bool, dt_s: float) -> None:\n121:         \"\"\"Advance by dt_s when the condition holds; reset to 0.0 otherwise.\"\"\"\n122:         if condition_true:\n123:             self.sustained_s = self.sustained_s + dt_s\n124:         else:\n125:             self.sustained_s = 0.0\n126: \n127:     @property\n128:     def met(self) -> bool:\n129:         \"\"\"True when the condition has been sustained \u2265 threshold_s seconds.\"\"\"\n130:         return self.sustained_s >= self.threshold_s"
+    }
+  ],
+  "unresolved": [
+    "Whether C2(c) means unit eligibility under release authority, or all live contingency episode/trigger gates.",
+    "Authorization to update the existing nonzero diesel-only floor expectation in TC-ISL-18."
+  ],
+  "P2": "NOT RUN",
+  "P3": "NOT RUN",
+  "P4": "NOT RUN",
+  "P5": "NOT REACHED",
+  "P6": "NO COMMITS: P3/P4 not passed"
+}
