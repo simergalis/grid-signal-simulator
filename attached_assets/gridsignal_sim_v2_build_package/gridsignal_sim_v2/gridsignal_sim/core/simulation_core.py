@@ -943,6 +943,11 @@ def _cost_ranked_dispatch_allocations(
     return allocations
 
 
+def _dispatch_dump_response_mw(surplus_mw: float, elapsed_s: float, delay_s: float) -> float:
+    """DR D11 / IMPL-ISL-19: one linear sink response (b74830d)."""
+    return surplus_mw * (1.0 if delay_s <= 0.0 else min(1.0, elapsed_s / delay_s))
+
+
 def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     """The fixed-order tick evaluation (Design Spec Section 5 / 10.1):
 
@@ -3199,39 +3204,35 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     )
     # Once synchronized turbines have reached their minimum stable load and the
     # BESS has accepted all energy it physically can, the remaining positive
-    # residual is an explicit dispatch-curtailment sink.  Keep generation and
-    # turbine fuel physical, but do not subtract that sink before the
-    # electromechanical response: the rotor must see the surplus on this tick.
+    # residual is an explicit dispatch-curtailment sink. Keep generation and
+    # turbine fuel physical. DR D11 / IMPL-ISL-19 preserves b74830d's rotor
+    # transient, but subtracts the achieved dump response in each substep.
     #
     # Turbine rundown is already time-based above (machine ramp rate and the
     # existing commitment/unloading policy).  The explicit dump action has its
     # own configurable response delay on SiteConfig; this ledger value is the
     # surplus scheduled for that action, not a fictional change to measured
     # generation.  Keeping it as an explicit balance term preserves a closed
-    # physical ledger while frequency_forcing_mw receives the pre-curtailment
-    # residual.
+    # physical ledger. The swing equation sees only the residual not yet
+    # absorbed by the finite dump response; the ledger value is unchanged.
     _surplus_before_dump_mw = (
         max(0.0, _p_gen_mw - p_demand_mw) if _islanded else 0.0
     )
+    # DR D11 / IMPL-ISL-19, b74830d: preserve the scheduled ledger
+    # sink, but let the rotor see the finite, substep-resolved dump transient.
+    _dump_elapsed_start_s = state._dispatch_curtailment_elapsed_s
+    _dump_delay_s = max(
+        0.0, float(getattr(state.site, "dispatch_curtailment_response_delay_s", 0.0)),
+    )
     if _surplus_before_dump_mw <= 1e-12:
         state._dispatch_curtailment_elapsed_s = 0.0
+        _dump_elapsed_start_s = 0.0
         _p_dispatch_curtailed_mw = 0.0
     else:
-        _dump_delay_s = max(
-            0.0,
-            float(getattr(state.site, "dispatch_curtailment_response_delay_s", 0.0)),
-        )
-        state._dispatch_curtailment_elapsed_s = min(
+        _p_dispatch_curtailed_mw = _dispatch_dump_response_mw(
+            _surplus_before_dump_mw,
+            min(_dump_delay_s, _dump_elapsed_start_s + max(0.0, dt_seconds)),
             _dump_delay_s,
-            state._dispatch_curtailment_elapsed_s + max(0.0, dt_seconds),
-        )
-        _dump_response_fraction = (
-            1.0
-            if _dump_delay_s <= 0.0
-            else state._dispatch_curtailment_elapsed_s / _dump_delay_s
-        )
-        _p_dispatch_curtailed_mw = (
-            _surplus_before_dump_mw * min(1.0, _dump_response_fraction)
         )
     _balance_residual_mw = _p_gen_mw - p_demand_mw
 
@@ -3367,9 +3368,10 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     _fp_collapse_frequency_hz: Optional[float] = None
     _fc_ride_through_trips: list[dict] = []
     # FC trips can change the supply imbalance during this outer tick.  Keep a
-    # mutable forcing for the sub-step integrator; the public forcing is
-    # reconciled to the post-trip balance below.
+    # mutable raw forcing for the sub-step integrator and post-trip D4 balance.
+    # D11 internal integrator state; D11-t public telemetry is reconciled below.
     _dynamic_frequency_forcing_mw = _frequency_forcing_mw
+    _last_integrated_frequency_forcing_mw = 0.0
     # Phase 2A: protection_provisional — True for every islanded tick.
     # D_eff uses d_motor + fixed_speed_cooling_fraction (both PROVISIONAL-UNMEASURED).
     _protection_provisional: bool = _islanded
@@ -3460,6 +3462,23 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                 break
             _f_dev = _f - _f0
 
+            # D11: advance from the episode snapshot, not repeated additions.
+            # The last substep uses exact outer dt to preserve ledger timing.
+            _achieved_dump_mw = 0.0
+            if _surplus_before_dump_mw > 1e-12:
+                _dump_sub_elapsed_s = (
+                    dt_seconds if _k == _n_sub - 1 else (_k + 1) * _dt_sub
+                )
+                state._dispatch_curtailment_elapsed_s = min(
+                    _dump_delay_s,
+                    _dump_elapsed_start_s + max(0.0, _dump_sub_elapsed_s),
+                )
+                _achieved_dump_mw = _dispatch_dump_response_mw(
+                    _surplus_before_dump_mw,
+                    state._dispatch_curtailment_elapsed_s,
+                    _dump_delay_s,
+                )
+
             # Phase 3: Swing equation sub-step.
             # 2·H_agg/f0 · df/dt = P_net/S_base − D_eff·(f−f0)/f0
             # => df/dt = [P_net_pu·f0 − D_eff·f_dev] / (2·H_agg)
@@ -3479,9 +3498,12 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             # Within-tick shed from UFLS is added to the forcing since shed
             # reduces the effective load immediately (sub-step granularity).
             if _s_base_mva > 0.0 and _h_aggregate > 0.0:
+                _last_integrated_frequency_forcing_mw = (
+                    _dynamic_frequency_forcing_mw - _achieved_dump_mw
+                    + _shed_this_tick_mw
+                )
                 _p_net_pu = (
-                    (_dynamic_frequency_forcing_mw + _shed_this_tick_mw)
-                    / _s_base_mva
+                    _last_integrated_frequency_forcing_mw / _s_base_mva
                 )
                 _df_dt_sub = (
                     _p_net_pu * _f0 - _d_eff * _f_dev
@@ -4122,7 +4144,13 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         # Phase 13.2: balance decomposition — three independent channels.
         # D4 (sum == scratch residual) is asserted inline above, not via a broadcast field.
         grid_exchange_mw=_grid_exchange_mw,
-        frequency_forcing_mw=_frequency_forcing_mw,
+        # DR D11-t / IMPL-ISL-10, b74830d: public forcing is the existing
+        # post-trip reconciled residual minus the reconciled ledger dump sink.
+        # The substep-integrated forcing remains internal; grid-tied is unchanged.
+        frequency_forcing_mw=(
+            _frequency_forcing_mw - _p_dispatch_curtailed_mw if _islanded
+            else _frequency_forcing_mw
+        ),
         asset_delivery_error_mw=_asset_delivery_error_mw,
         # Phase 13.4: setpoint/actual split.
         model_error_mw=_model_error_mw,
