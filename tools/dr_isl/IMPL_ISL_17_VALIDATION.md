@@ -310,3 +310,302 @@ user requested saving that evidence but explicitly restricted the commit
 to the report alone.
 
 **STOP — end of IMPL-ISL-17 validation.**
+
+## Follow-up D1–D4
+
+### Boundary, commits and scratch-only setup
+
+Follow-up date: 2026-10-22. Requested base: `1dc45ea`.
+Actual main-tree HEAD at entry:
+`1bf1998b52153e68921776b3a91b502ff273a900`.
+The intervening automatic checkpoint is:
+```text
+1bf1998 Add list of failing tests for dr_isl implementation
+tools/dr_isl/IMPL_ISL_17_FAILING_TESTS.txt | 16 ++++++++++++++++
+```
+`git diff --name-only 1dc45ea..1bf1998` lists only that file; application
+code is unchanged. The main working tree was clean at follow-up entry.
+
+Independent detached worktrees:
+```text
+/tmp/IMPL-ISL-17-followup/head    1bf1998
+/tmp/IMPL-ISL-17-followup/phase3  4e2f9b0
+```
+Tests use Python 3.13.11, pytest 9.1.1, pytest-asyncio 1.4.0,
+FastAPI 0.141.1, Starlette 1.3.1, httpx 0.28.1 and anyio 4.14.2.
+Both worktrees use the same installed interpreter/dependencies,
+`PYTHONHASHSEED=1729`, `PYTHONDONTWRITEBYTECODE=1`,
+`-p no:cacheprovider`, and a 200,000,000-byte per-file resource limit.
+No application/test/scenario source is edited in either version. Six
+existing unversioned test files needed by the original V1 order were copied
+byte-for-byte into both scratch worktrees only:
+```text
+tests/test_addendum_g2_fuel_physics.py
+tests/test_addendum_g_stage3_option_c.py
+tests/test_fuel_cell_apparent_rating.py
+tests/test_infrastructure_admission.py
+tests/test_kube_scheduler_phase_a.py
+tests/test_kubernetes_scheduler_demo_scenario.py
+```
+They are absent from both commits because `attached_assets/` is ignored.
+The source/destination SHA-256 values were checked equal; the hashes are in
+`/tmp/IMPL-ISL-17-followup/scratch_fixture_copies.json`.
+Their historical contents cannot be established from git; the current,
+identical source bytes were used for both scratch contexts. They were not
+added to the main tree or committed.
+
+### D1 — reproduction matrix
+
+Target node ID throughout:
+```text
+tests/test_step16_wiring.py::test_network_telemetry_returns_required_fields_for_active_run
+```
+
+| Context | HEAD target | Phase 3 target | Aggregate result |
+|---|---|---|---|
+| Isolation repetition 1 | PASS | PASS | 1 passed each |
+| Isolation repetition 2 | PASS | PASS | 1 passed each |
+| Isolation repetition 3 | PASS | PASS | 1 passed each |
+| Whole `tests/test_step16_wiring.py` | PASS | PASS | 17 passed each |
+| Original V1 preceding-order replay | FAIL, switches=0 | PASS | HEAD: 1816 passed / 17 failed; Phase 3: 1798 passed / 16 failed |
+| Controlled shared-pool occupancy, unchanged target test | FAIL | FAIL | 1 failed each, same line 204 / actual 0 |
+
+The first isolation pair started at
+`2026-10-22T15:10:17.434411+00:00` (HEAD) and
+`2026-10-22T15:10:17.435454+00:00` (Phase 3).
+Whole-file starts were `15:10:32.513231+00:00` and
+`15:10:32.472791+00:00`, respectively.
+Evidence: `/tmp/IMPL-ISL-17-followup/{head,phase3}-{isolation-1,isolation-2,isolation-3,whole-file}.{log,xml}`.
+
+The retained V1 observer records the target at zero-based index **1853**:
+1,853 preceding node IDs, followed by the target. The ordering is from
+`/tmp/IMPL-ISL-17/suite_incremental.xml`, not a newly estimated collection
+order. The 1,854-node prefix list is saved as
+`/tmp/IMPL-ISL-17-followup/v1-prefix-nodeids.txt`,
+SHA-256:
+`f2b830fd775fc80e91be3e81f7947fd8b6a3ee28fd90a0f09ba51f9feb73753a`.
+HEAD replays all 1,854 nodes in precisely that order. Phase 3 replays the
+1,835 available nodes, preserving relative order: the 19 new P4b tests in
+`tests/test_dr_isl_staging_start_events.py` do not exist at Phase 3 and are
+not injected into that version.
+
+Two prefix-launch bootstrap failures ran **zero tests** and are not
+reproduction trials: passing the complete node-ID list as one subprocess
+argument hit `OSError: [Errno 7] Argument list too long`; passing its filename
+resolved that. The first subsequent collection found the six unversioned
+test files absent from clean worktrees and exited 4 without running tests.
+The byte-identical fixture copies above resolved that. No production code
+or test assertion was changed to resolve either setup issue.
+
+Completed original-order replay, one run per commit:
+```text
+HEAD, 1854 selected nodes:
+17 failed, 1816 passed, 3 skipped, 18 xfailed, 41 warnings, 3 subtests passed in 337.10s (0:05:37)
+target: FAIL, time=0.178; test_step16_wiring.py:204, actual switches=[]
+native suite start: 2026-10-22T15:14:00.098744+00:00
+
+Phase 3, 1835 selected nodes:
+16 failed, 1798 passed, 3 skipped, 18 xfailed, 41 warnings, 3 subtests passed in 338.17s (0:05:38)
+target: PASS, time=0.180
+native suite start: 2026-10-22T15:14:00.171131+00:00
+```
+The native case sequence was compared to each saved selected-node list:
+**identical=True** for HEAD and Phase 3. The failure-set difference is
+exactly the target node; the other 16 failures are shared between versions.
+Fourteen are in the known Phase 3 failure list. The two additional shared
+scratch-context failures are:
+```text
+tests/test_gridley.py::test_gridley_sends_retrieved_knowledge_and_snapshot_to_claude
+tests/test_reference_forecast_routes.py::test_reference_forecast_router_is_registered_before_spa_fallback
+```
+The known `tests/test_unit_trip.py::test_tc84f_demo_20mw_contingency_state_changes_after_trip`
+is after the target and is outside this prefix. The prefix totals are not
+represented as a replacement full-suite run or a new product-regression
+verdict. The two shared extra failures were not fixed or investigated
+outside this request.
+Evidence: `/tmp/IMPL-ISL-17-followup/{head,phase3}-v1-prefix.{log,xml}`,
+with version-specific ordered node lists `*-v1-prefix-nodeids.txt`.
+
+### D2 — classification and named shared state
+
+**Classification: pre-existing shared-state/readiness race, sensitive to
+advisory-executor scheduling; not a deterministic P4b regression.**
+All three isolated runs at HEAD pass, satisfying the user's D2 branch.
+The same original assertion is also reproduced at **both** commits under
+the controlled shared-pool condition below.
+
+Named shared state and exact producer/consumer chain:
+
+1. `P/runtime/run_manager.py:2190–2193` creates the process-global
+   `_ADVISORY_EXECUTOR`, a `ThreadPoolExecutor(max_workers=4)`. It is shared
+   across runs/TestClient applications within a test process.
+2. `P/runtime/run_manager.py:2310–2314` stores the context, schedules
+   `_drive(ctx)` using `asyncio.create_task`, and returns the run ID.
+   `P/api/routes/runs.py:686–690` returns the POST response after that;
+   it does **not** wait for a first telemetry sample.
+3. The network test immediately performs GET after POST:
+   `P/tests/test_step16_wiring.py:192–194`, then requires two switches at
+   `:203–204`, with no readiness synchronization.
+4. `_drive` computes the first physical tick at
+   `P/runtime/run_manager.py:2666`, but awaits advisory work using the shared
+   executor at `:3236–3246` **before** synthetic network telemetry ingestion
+   at `:3249–3252`.
+5. The per-run shared producer/consumer object is
+   `ctx.telemetry_ingestor`, constructed fresh in the direct-job builder at
+   `P/runtime/scenario_factory.py:379`. Its
+   `NetworkTelemetryIngestor._store` starts empty at
+   `P/core/network_telemetry.py:225`;
+   `all_records()` reads this store at `:307–309`.
+6. `P/runtime/run_manager.py:1990–2021` creates the spine and leaf records
+   and ingests both. Until that code is reached, the empty store is an
+   actual pre-ingestion state, not a different fixture with zero switches.
+7. GET reads the store at `P/api/routes/advisory.py:437–445`, builds switch
+   rows from it at `:447–468`, and returns the sorted list at `:490–495`.
+   An empty store therefore returns HTTP 200 with `switches=[]`.
+
+Controlled scratch-only reproduction: submit one `threading.Event.wait`
+blocker to each of the existing executor's four workers, run the original
+target test unchanged, then release and join every blocker in a `finally`
+block. No function, guard, demand, clock, fixture or application source was
+replaced. A thread-profile observer recorded the actual endpoint read.
+This is an explicit scheduling experiment, **not** evidence that all four
+workers were occupied during the historical V1 failure.
+
+Literal observations:
+```json
+HEAD:
+{"workers":4,"observations":[{"store_records":0,"drive_tasks":[
+  {"name":"run-run-6bd6f736fc5f","function":"_drive","line":3236,
+   "sim_time":5.0,"record_count":0}]}],"pytest_exit":1}
+Phase 3:
+{"workers":4,"observations":[{"store_records":0,"drive_tasks":[
+  {"name":"run-run-45a3062c0acb","function":"_drive","line":3236,
+   "sim_time":5.0,"record_count":0}]}],"pytest_exit":1}
+```
+Both tests failed at the original `test_step16_wiring.py:204` assertion:
+```text
+assert len(body["switches"]) == 2
+E assert 0 == 2
+E  + where 0 = len([])
+```
+HEAD: `1 failed, 1 warning in 3.04s`.
+Phase 3: `1 failed, 1 warning in 2.99s`.
+Evidence: `/tmp/IMPL-ISL-17-followup/{head,phase3}-shared-pool.{log,xml}`
+and `*-shared-pool-observations.json`.
+
+`P/api/app.py:314–323` cancels and awaits run-loop tasks on TestClient
+shutdown; it does not replace/reset the module-global advisory executor.
+The four-worker global and the late per-run store population are the named
+shared state and timing boundary. No particular historical predecessor's
+unfinished advisory call is asserted without a retained worker trace.
+
+Fix direction, **not implemented**: synchronize the acceptance test with
+actual first telemetry ingestion rather than assuming a returned run ID
+means monitoring data are already populated; do not change physics or add
+an arbitrary sleep.
+
+### D3 — P4b attribution check
+
+The original-order replay **does** show HEAD FAIL / Phase 3 PASS, as reported
+in D1; this contrast is not omitted. However, these are not identical full
+collections: HEAD includes 19 P4b-only preceding tests absent at Phase 3.
+Both versions pass all three isolated trials and the full file, and both
+fail the same controlled shared-pool experiment. Therefore a HEAD-only
+functional failure in a matched state is not established by that one
+prefix contrast. The user's D2 branch explicitly also applies when HEAD
+passes in isolation, which all three trials do.
+
+`git diff --name-only 4e2f9b0 146b89f` for these paths prints nothing:
+```text
+P/api/routes/advisory.py
+P/api/routes/runs.py
+P/runtime/run_manager.py
+P/core/network_telemetry.py
+P/advisory/agent_registry.py
+P/tests/test_step16_wiring.py
+```
+The endpoint-to-store-to-producer chain is D2 items 4–7 above. The P4b hunks
+in `P/core/dispatch.py:622–641` observe a successful pre-staging start;
+`P/core/simulation_core.py:352–353,389–412` wires/records that observation.
+They do not read, clear, write or initialize `NetworkTelemetryIngestor._store`,
+build switch rows, change the shared executor, or establish first-sample
+readiness. The five intended H2 start-log additions and physical identity
+are retained in V2–V5 above.
+
+**Finding: a P4b functional defect in network switch generation is not
+supported.** The shared-state/readiness problem already exists at Phase 3.
+The follow-up does not identify an exact historical thread-scheduling cause
+from the original V1 log alone. Small timing effects of extra code/tests
+are not measured or ruled out; that is not evidence that P4b creates,
+removes or corrupts a network switch record.
+
+### D4 — Phase 3 evidence and non-code factors
+
+The test **passed** in the retained final Phase 3 full suite, not merely by
+absence from a failure list:
+```text
+/tmp/DR-ISL-phase3/finish/suite_incremental.xml
+index=1834
+name=tests/test_step16_wiring.py::test_network_telemetry_returns_required_fields_for_active_run
+time=0.3184244789990771
+failure=False
+```
+The retained native JUnit file `suite_d2a_native.xml` also records PASS,
+duration `0.318`. Its suite start is
+`2026-10-22T13:29:25.262694+00:00`; totals are
+`15 failed, 2152 passed, 3 skipped, 23 xfailed, 54 warnings, 3 subtests passed`
+in `719.19s`.
+
+Original V1:
+```text
+/tmp/IMPL-ISL-17/suite_incremental.xml
+index=1853
+time=0.18861992099846248
+failure=True
+```
+Its native suite start is `2026-10-22T14:38:26.312982+00:00`;
+totals remain the V1 values above. Both native suite files report hostname
+`repl`. The wall times and durations differ; the original per-thread
+executor occupancy was not retained.
+
+| Non-code factor | Literal finding / limitation |
+|---|---|
+| Wall clock | Real wall clock, not simulation-study pinning: the native JUnit start timestamps above differ. Registry invocation receives `_time_module.time()` at `P/runtime/run_manager.py:3241`. |
+| TCP port / dev server | The target constructs `TestClient(create_app())` at `P/tests/test_step16_wiring.py:192`; POST and GET at `:193–194` are in-process requests, not calls to the running dev server. No workflow was restarted or changed. |
+| Network fixture data | `_active_body()` at `P/tests/test_step16_wiring.py:60–73` supplies job `w2-test-job`, node_count=2, end_sim_time=1e15, playback_speed=0.0. Both commits have identical test source and synthetic spine/leaf generator source. These records are produced per tick, not loaded from a network-telemetry CSV or DB fixture. |
+| Per-run store | New ingestor/store for the run; the controlled observation shows `sim_time=5.0`, `record_count=0` while awaiting advisory work in both commits. |
+| Process-global executor | Shared four-worker pool at `P/runtime/run_manager.py:2190–2193`; occupancy deliberately held in the controlled experiment. Historical V1 worker occupancy is unknown. |
+| Python/dependencies | Same installed interpreter and dependency versions for both scratch worktrees, printed above. Historical installation manifests beyond retained suite metadata were not recorded, so no historical package-version difference is asserted. |
+| Test context | Full-file follow-up runs both pass 17/17. Original V1 ran concurrently with streaming scenario comparisons; the retained comparison progress/evidence is under `/tmp/IMPL-ISL-17/`. No claim is made that that concurrency alone caused the failure. |
+| Clean checkout | Six ignored test files needed byte-identical copies into both scratch worktrees; 19 P4b-only tests are unavailable on Phase 3. These setup differences are disclosed in D1 rather than counted as product failures. |
+| Prefix replay | HEAD fails and Phase 3 passes the target in their available original relative order; all other 16 failing IDs are shared. The two common extra scratch-context failures listed in D1 do not occur in the original V1 failure list and were not silently suppressed. |
+
+The failing-ID list is retained **unchanged** as the literal original V1
+full-suite result (16 IDs), not rewritten using this focused follow-up.
+Its SHA-256 remains
+`0b7fdf0a6cfc91854b93fcc233d358603effd3c991279540f1979c3bd2ba0337`.
+The historical V6 zero-added-failures verdict is not silently relabelled
+PASS: the follow-up establishes a pre-existing scheduling/readiness failure
+mode at Phase 3, without changing the original measured suite counts.
+
+Final repository checks after every run:
+```text
+git -C /tmp/IMPL-ISL-17-followup/head status --short
+(empty)
+git -C /tmp/IMPL-ISL-17-followup/phase3 status --short
+(empty)
+git diff 1dc45ea -- P/core P/runtime P/api P/tests P/config/scenarios
+(empty)
+```
+The copied ignored fixture tests are disclosed above even though they do
+not appear in `git status --short`. No tracked application, test or scenario
+source was edited in the main tree or either scratch worktree.
+
+Both the report and `tools/dr_isl/IMPL_ISL_17_FAILING_TESTS.txt` are staged
+for the follow-up report-only commit. The failing-ID file was already
+committed byte-for-byte by automatic checkpoint `1bf1998`; retaining those
+same bytes creates no new diff for it. The new commit's tree retains both
+files together. Its hash is provided in the delivery message.
+
+**STOP — end of follow-up D1–D4. No fix, revert, publish, deployment, push,
+or further Phase 4 work.**
