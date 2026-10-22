@@ -1,9 +1,23 @@
-"""Build-time diagnostics only; never change reserve floors or dispatch."""
+"""Build-time diagnostics only; never change reserve, dispatch or protection."""
 import logging
 
 from core.dispatch import MARGIN_MULTIPLIER
 
 _log = logging.getLogger("gridsignal.scenario_factory")
+
+
+def frequency_configuration_warnings(state) -> list[dict]:
+    """DR D3 / R5.2: warn here on resolved values, not in API schema validation.
+
+    ScenarioSpec remains valid and imports no new core logic. This runtime
+    warning flows through run metadata and the existing run-start response.
+    """
+    from core.frequency_reporting import unprotected_island_warning
+    warning = unprotected_island_warning(state.site)
+    if warning is None:
+        return []
+    _log.warning("DR D3 build warning: %s", warning)
+    return [warning]
 
 
 def reserve_capacity_warnings(state) -> list[dict]:

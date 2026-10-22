@@ -1730,6 +1730,9 @@ class TickResult:
     # D4: sum(grid_exchange_mw + frequency_forcing_mw + asset_delivery_error_mw)
     #     == (_p_gen_mw − p_total_mw) is asserted inline in evaluate_tick().
     frequency_hz:         float = 0.0   # always overwritten by evaluate_tick; 0 = sentinel
+    # DR D3: reporting only, stamped together at the final tick construction.
+    frequency_valid: bool = True
+    protection_configured: bool = False
     # Phase 11.5: site nominal frequency — constant for the duration of a run.
     # Sourced from SiteConfig.frequency_nominal_hz and stamped by run_manager._drive()
     # via dataclasses.replace() (same enrichment path as dt_thermal_seconds).

@@ -13,6 +13,8 @@ without any parallelism.
 
 from __future__ import annotations
 
+from core.frequency_reporting import frequency_is_valid, protection_is_configured
+
 import logging
 import math
 import dataclasses
@@ -4155,6 +4157,10 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         p_generation_mw=_p_generation_mw,
         # Phase 2A: protection_provisional — True for all islanded ticks.
         protection_provisional=_protection_provisional,
+        # DR D3 / IMPL-ISL-3: observe the final achieved frequency exactly once.
+        # No clamp, filter, threshold default or change to the swing equation.
+        frequency_valid=frequency_is_valid(state._frequency_hz, state.site.frequency_nominal_hz),
+        protection_configured=protection_is_configured(state.site),
         # Phase 6: supply/served producers.
         p_served_mw=_p_served_mw,
         p_unserved_mw=_p_unserved_mw,

@@ -795,6 +795,8 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         "bess_setpoint_mw":      round(tick.bess_setpoint_mw, 4),
         "gt_setpoint_mw":        round(tick.gt_setpoint_mw, 4),
         "frequency_hz":          round(tick.frequency_hz, 4),
+        "frequency_valid":       tick.frequency_valid,
+        "protection_configured": tick.protection_configured,
         "frequency_nominal_hz":  round(tick.frequency_nominal_hz, 4),
         # ── Phase 13.2: Balance decomposition ────────────────────────────────
         # Three independent channels.  D4 invariant asserted in evaluate_tick().

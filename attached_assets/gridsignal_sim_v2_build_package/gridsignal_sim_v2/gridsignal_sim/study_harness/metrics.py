@@ -19,6 +19,10 @@ from .errors import (
     StartFuelReconciliationError,
 )
 
+# PROPOSED_HERE: cache identity revision for three additive D3 reporting metrics;
+# not a physics, guard or acceptance-condition revision.
+FREQUENCY_REPORTING_METRICS_VERSION = 1
+
 
 FUEL_COMPONENTS = (
     "load_fuel_mmbtu",
@@ -175,6 +179,8 @@ class MetricsCollector:
 
     def __post_init__(self) -> None:
         self.tick_count = 0
+        self.invalid_frequency_tick_count = 0
+        self.protection_configured = True
         self.last_tick: Any = None
         self.last_telemetry: dict[str, dict[str, Any]] = {}
         self.previous_cumulative: dict[str, dict[str, float]] = {}
@@ -203,6 +209,9 @@ class MetricsCollector:
 
     def add(self, tick: Any) -> None:
         self.tick_count += 1
+        # DR D3: consume the engine's reporting flags; never recompute physics.
+        self.invalid_frequency_tick_count += int(_get(tick, "frequency_valid", True) is False)
+        self.protection_configured = bool(_get(tick, "protection_configured", True))
         self.last_tick = tick
         sim_time = _number(_get(tick, "sim_time_seconds"))
         compute = _number(
@@ -485,6 +494,11 @@ class MetricsCollector:
         daily_rows = _daily_rows(self.daily)
         return {
             "tick_count": self.tick_count,
+            "invalid_frequency_tick_count": self.invalid_frequency_tick_count,
+            "invalid_frequency_fraction": (
+                self.invalid_frequency_tick_count / self.tick_count if self.tick_count else 0.0
+            ),
+            "protection_configured": self.protection_configured,
             "interval_seconds": self.tick_seconds,
             "fuel_by_component_mmbtu": {
                 key: round(value, 9) for key, value in components.items()

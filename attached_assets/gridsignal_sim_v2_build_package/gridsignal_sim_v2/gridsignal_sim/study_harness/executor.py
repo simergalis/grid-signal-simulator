@@ -33,7 +33,7 @@ from .errors import (
     error_payload,
 )
 from .manifest import RunIdentity, RunManifestCache, make_run_identity
-from .metrics import MetricsCollector, collect_metrics
+from .metrics import MetricsCollector, collect_metrics, FREQUENCY_REPORTING_METRICS_VERSION
 
 
 # PROPOSED_HERE: The base scenario ID and study-class labels are harness metadata.
@@ -71,6 +71,8 @@ def make_study_run_identity(
     # The replay trace is an execution input; its content is separately hashed.
     identity_parameters.pop("workload_events", None)
     identity_parameters["study_class"] = study_class_for_scenario(scenario_id)
+    # DR D3: invalidate old metric caches without changing the execution spec.
+    identity_parameters["frequency_reporting_metrics_version"] = FREQUENCY_REPORTING_METRICS_VERSION
     return make_run_identity(
         scenario_id=scenario_id,
         mode=mode,
@@ -154,6 +156,8 @@ def _compact_tick(tick: Any) -> dict[str, Any]:
     row = _tick_result_to_dict(tick)
     keys = (
         "tick_index",
+        "frequency_valid",
+        "protection_configured",
         "sim_time_seconds",
         "p_compute_mw",
         "p_cooling_mw",
