@@ -349,6 +349,8 @@ class SimulationState:
             threshold_s=self._commit_cfg.contingency_release_confirm_s
         )
         self.arbitrator.pending_start = self._pending_start
+        # DR-2026-10-22-ISL-P4: the adapter resolves the audit sink at event time.
+        self.arbitrator.successful_start_observer = self._observe_predicted_step_start
         # Step 10: curtailment ladder and pre-staging engine.
         self.curtailment_ladder = CurtailmentLadder()
         if self.site.pre_staging_config is not None:
@@ -383,6 +385,31 @@ class SimulationState:
         if signal.job_id not in self._job_owner_index:
             self._job_owner_index[signal.job_id] = len(self._job_owner_index) % len(self.gpu_modules)
         return self.gpu_modules[self._job_owner_index[signal.job_id]]
+
+    def _observe_predicted_step_start(
+        self,
+        turbine: TurbineModule,
+        sim_time: float,
+        from_state: TurbineState,
+        delta_p_mw: float,
+        dt_lead_seconds: float,
+    ) -> None:
+        """DR-2026-10-22-ISL-P4: log only; do not change staging or its guards."""
+        _record_turbine_transition(
+            self,
+            turbine,
+            sim_time=sim_time,
+            action="start",
+            # PROPOSED_HERE: forensic source label, not an operational setting.
+            source="predicted_step_staging",
+            reason=(
+                f"predicted step delta_p_mw={delta_p_mw}, "
+                f"dt_lead_seconds={dt_lead_seconds}"
+            ),
+            from_state=from_state,
+            to_state=turbine.state,
+            controller_approved=None,
+        )
 
     def apply_workload_signal(self, signal: WorkloadSignal, dt_lead_seconds: float) -> None:
         """Called by the Run Manager when a scripted WorkloadSignal's

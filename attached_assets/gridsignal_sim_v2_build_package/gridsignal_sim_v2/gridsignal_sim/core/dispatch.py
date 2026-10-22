@@ -15,7 +15,7 @@ import logging
 import math
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, Sequence
+from typing import Callable, Optional, Sequence
 
 from .asset_modules import (
     BessModule,
@@ -376,6 +376,10 @@ class DispatchArbitrator:
         # both operate on the same object.  Unit tests that exercise the arbitrator
         # directly may assign their own PendingStartRegister here.
         self.pending_start: "object | None" = None
+        # DR-2026-10-22-ISL-P4: observe successful staging, never decide starts.
+        self.successful_start_observer: Optional[
+            Callable[[TurbineModule, float, TurbineState, float, float], None]
+        ] = None
 
     # ------------------------------------------------------------------
     # Fleet allocation helper (Step 3 Item 4)
@@ -615,6 +619,8 @@ class DispatchArbitrator:
                 _gate_open = _ps is None or _ps.is_empty  # type: ignore[union-attr]
                 if _gate_open:
                     _ht = _offline[0]
+                    _before_state = _ht.state
+                    _before_start_count = _ht._start_count
                     _ht.command_start(sim_time)
                     # A rejected command (for example a min-down interlock)
                     # must not occupy the shared sequencing register.  Doing so
@@ -622,6 +628,17 @@ class DispatchArbitrator:
                     # ever retrying this unit.
                     if _ps is not None and _ht.state == TurbineState.STARTING:
                         _ps.record_start(_ht.config.asset_id, sim_time)  # type: ignore[union-attr]
+                    # DR-2026-10-22-ISL-P4: account for the actual transition
+                    # after the unchanged command/pending-register operations.
+                    if (
+                        self.successful_start_observer is not None
+                        and _before_state == TurbineState.OFFLINE
+                        and _ht.state == TurbineState.STARTING
+                        and _ht._start_count == _before_start_count + 1
+                    ):
+                        self.successful_start_observer(
+                            _ht, sim_time, _before_state, delta_p_mw, dt_lead_seconds,
+                        )
 
             # On-bus units are driven by apply_loading() toward the fleet setpoint.
             # The former stage_target() on-bus block is deleted in Phase C — its only
