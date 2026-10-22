@@ -585,9 +585,14 @@ def test_tc124_preload_reports_only_incremental_target_and_fuel() -> None:
 def test_tc125_informed_core_proposal_is_logged_by_controller() -> None:
     from runtime.scenario_factory import build_run_context_from_spec
 
+    # DR D2-a: approve an eligible non-reserved target, not the former silently
+    # dropped hot-standby start (asset_modules.py:1069–1070;
+    # simulation_core.py:2383–2387 in base 1345380).
+    spec = _spec(mode="informed", spinning=1, hot=1).model_dump()
+    spec["turbine_units"][1]["hot_standby"] = False
     ctx = build_run_context_from_spec(
         "tc125-core-proposal",
-        _spec(mode="informed", spinning=1, hot=1).model_dump(),
+        spec,
     )
     controller = ctx.turbine_commitment_controller
     decision = SimpleNamespace(
@@ -816,7 +821,8 @@ def test_tc132_core_start_is_vetoed_during_minimum_down_window() -> None:
         synchronized_capacity_mw=0.0,
         bess_soc_fraction=0.5,
     ) is False
-    assert "minimum down time" in (
+    # DR D2: retain the veto, assert the shared start-eligibility wording.
+    assert "start ineligible (min_down)" in (
         ctx.turbine_commitment_controller.log[-1].refusal_reason or ""
     )
 
