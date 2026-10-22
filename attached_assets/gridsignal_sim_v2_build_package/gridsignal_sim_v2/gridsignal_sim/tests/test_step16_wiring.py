@@ -32,6 +32,7 @@ from api.routes.scenarios import build_seeded_store
 from runtime.run_manager import RunManager, WebSocketHub
 from runtime.scenario_factory import build_run_context, build_run_context_from_spec
 from contextlib import contextmanager
+from time import monotonic
 
 from core.sim_clock import SimClock
 from core.simulation_core import evaluate_tick
@@ -191,7 +192,22 @@ def test_network_telemetry_returns_required_fields_for_active_run():
     """
     with TestClient(create_app()) as client:
         run_id = client.post("/runs", json=_active_body()).json()["run_id"]
-        resp = client.get(f"/network-telemetry?run_id={run_id}")
+        # DR IMPL-ISL-18: POST schedules the run, not its first telemetry sample.
+        # runtime/run_manager.py:2190–2193,2310–2314,3236,3252: advisory work can
+        # delay ingestion; api/routes/advisory.py:442–445 reads that empty store.
+        timeout_s = 10.0  # PROPOSED_HERE: finite test-only budget for first ingestion.
+        deadline = monotonic() + timeout_s
+        while True:
+            resp = client.get(f"/network-telemetry?run_id={run_id}")
+            if resp.status_code != 200 or resp.json().get("switches"):
+                break  # Preserve the existing response/schema assertions below.
+            if monotonic() >= deadline:
+                pytest.fail(
+                    f"Run {run_id}: no network telemetry ingested within "
+                    f"{timeout_s:g}s; last response status={resp.status_code}, "
+                    f"last_updated_s={resp.json().get('last_updated_s')}, "
+                    f"switches={resp.json().get('switches')!r}"
+                )
 
     assert resp.status_code == 200
     body = resp.json()
