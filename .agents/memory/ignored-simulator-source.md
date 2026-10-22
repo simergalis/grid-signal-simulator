@@ -14,3 +14,9 @@ An automatic end-of-turn checkpoint can commit staged application changes after 
 **Why:** A stopped implementation remained staged when its report was committed; the following automatic checkpoint committed that implementation under a different message.
 
 **How to apply:** For later status audits, read current HEAD, its changed-file list and Git status instead of repeating the saved report's commit-state claim. Distinguish checkpointed code from a completed validation gate.
+
+An unsuccessful staging command does not prove that the index is unchanged.
+
+**Why:** A scoped add of an already tracked simulator file staged its edit but also returned an ignored-parent warning and a nonzero status.
+
+**How to apply:** Inspect `git diff --cached` and short status before retrying. Do not broaden a force-add merely because the first command reported failure.

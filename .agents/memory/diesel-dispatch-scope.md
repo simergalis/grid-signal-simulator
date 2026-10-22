@@ -26,3 +26,9 @@ Conformance requires same-state allocation equality while diesel is off bus, usi
 **Why:** The user replaced whole-trajectory off-bus equality with restoration of identical historical simulation states into both versions before comparing one allocation.
 
 **How to apply:** Compare turbine/BESS/FC output, curtailment and pre-diesel residual on the same restored state, within the user's 1e-12 MW tolerance or float-exact. Keep this distinct from the pre-on-bus whole-tick identity gate.
+
+The reviewed lifecycle audit permits D10 plumbing in addition to IMPL-ISL-14/15; it is not restricted to an IMPL-ISL-14/15-only full-method diff. START logic must remain unchanged.
+
+**Why:** The user accepted the reviewed audit in substance and explicitly amended the too-narrow criterion to “START logic unchanged; stop/unloading changes limited to D10 plumbing and IMPL-ISL-14/15”.
+
+**How to apply:** Classify delivery/capability/fuel-phase plumbing separately from trigger predicates. Report concurrent synchronized-unit stop requests while another unit unloads; the user made this report-only, not a stop condition.
