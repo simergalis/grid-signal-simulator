@@ -1,0 +1,18 @@
+{
+  "nodeid": "tests/test_plane_separation.py::TestApiStaticLayer::test_api_gate_clean_api_passes",
+  "base": {
+    "outcome": "failed",
+    "stage": "call",
+    "duration": 0.11964453800010233,
+    "failure": "tests/test_plane_separation.py:496: in test_api_gate_clean_api_passes\n    assert not all_violations, (\nE   AssertionError: api/ core-import violations found \u2014 build fails:\nE       api/routes/ingest.py:17: from core.models import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden list)\nE       api/routes/ingest.py:18: from core.slurm_scheduler import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden list)\nE   assert not [\"api/routes/ingest.py:17: from core.models import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden l...ngest.py:18: from core.slurm_scheduler import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden list)\"]"
+  },
+  "candidate": {
+    "outcome": "failed",
+    "stage": "call",
+    "duration": 0.09649366800022108,
+    "failure": "tests/test_plane_separation.py:496: in test_api_gate_clean_api_passes\n    assert not all_violations, (\nE   AssertionError: api/ core-import violations found \u2014 build fails:\nE       api/routes/ingest.py:17: from core.models import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden list)\nE       api/routes/ingest.py:18: from core.slurm_scheduler import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden list)\nE       api/schemas.py:2430: from core.frequency_reporting import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden list)\nE   assert not [\"api/routes/ingest.py:17: from core.models import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden l...py:2430: from core.frequency_reporting import ... \u2014 forbidden in api/ (top-level package 'core' is in forbidden list)\"]"
+  },
+  "new_violation": "api/schemas.py:2430: from core.frequency_reporting import ...",
+  "fix_direction": "Route ScenarioSpec validation through an allowed runtime/shared interface to the same pure predicate; do not duplicate protection logic.",
+  "fixed": false
+}

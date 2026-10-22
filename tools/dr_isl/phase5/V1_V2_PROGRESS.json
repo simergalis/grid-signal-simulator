@@ -1,0 +1,306 @@
+[
+  {
+    "scenario": "scenario-uneven-multisched-01",
+    "arm": "baseline",
+    "ticks": 1440,
+    "first_difference": null,
+    "invalid_frequency_tick_count": 700,
+    "first_invalid_tick": {
+      "tick": 67,
+      "sim_time_seconds": 335.0,
+      "frequency_hz": 40.909530078118486
+    },
+    "frequency_min": -5.000866893367675,
+    "frequency_max": 176.430848113831,
+    "protection_configured": false,
+    "existing_metrics_count": 27,
+    "existing_metric_differences": {},
+    "physical_identical": true,
+    "compact_identical_excluding_new_flags": true,
+    "added_metrics": {
+      "invalid_frequency_tick_count": 700,
+      "protection_configured": false,
+      "invalid_frequency_fraction": 0.4861111111111111
+    },
+    "passed": true,
+    "invalid_frequency_fraction": 0.4861111111111111
+  },
+  {
+    "scenario": "scenario-uneven-multisched-01",
+    "arm": "informed",
+    "ticks": 1440,
+    "first_difference": null,
+    "invalid_frequency_tick_count": 614,
+    "first_invalid_tick": {
+      "tick": 123,
+      "sim_time_seconds": 615.0,
+      "frequency_hz": 66.19487030675623
+    },
+    "frequency_min": 59.534837314959205,
+    "frequency_max": 169.8277840657461,
+    "protection_configured": false,
+    "existing_metrics_count": 27,
+    "existing_metric_differences": {},
+    "physical_identical": true,
+    "compact_identical_excluding_new_flags": true,
+    "added_metrics": {
+      "invalid_frequency_tick_count": 614,
+      "protection_configured": false,
+      "invalid_frequency_fraction": 0.4263888888888889
+    },
+    "passed": true,
+    "invalid_frequency_fraction": 0.4263888888888889
+  },
+  {
+    "scenario": "scenario-h1-k8s-ray-24h",
+    "arm": "baseline",
+    "ticks": 17280,
+    "first_difference": null,
+    "invalid_frequency_tick_count": 13598,
+    "first_invalid_tick": {
+      "tick": 213,
+      "sim_time_seconds": 1065.0,
+      "frequency_hz": 70.13551986008387
+    },
+    "frequency_min": 17.23372983198947,
+    "frequency_max": 224.93353102420852,
+    "protection_configured": false,
+    "existing_metrics_count": 27,
+    "existing_metric_differences": {},
+    "physical_identical": true,
+    "compact_identical_excluding_new_flags": true,
+    "added_metrics": {
+      "invalid_frequency_tick_count": 13598,
+      "protection_configured": false,
+      "invalid_frequency_fraction": 0.7869212962962963
+    },
+    "passed": true,
+    "invalid_frequency_fraction": 0.7869212962962963
+  },
+  {
+    "scenario": "scenario-h1-k8s-ray-24h",
+    "arm": "informed",
+    "ticks": 17280,
+    "first_difference": null,
+    "invalid_frequency_tick_count": 13712,
+    "first_invalid_tick": {
+      "tick": 213,
+      "sim_time_seconds": 1065.0,
+      "frequency_hz": 70.13551986008387
+    },
+    "frequency_min": 48.666827290428756,
+    "frequency_max": 224.93353102420852,
+    "protection_configured": false,
+    "existing_metrics_count": 27,
+    "existing_metric_differences": {},
+    "physical_identical": true,
+    "compact_identical_excluding_new_flags": true,
+    "added_metrics": {
+      "invalid_frequency_tick_count": 13712,
+      "protection_configured": false,
+      "invalid_frequency_fraction": 0.7935185185185185
+    },
+    "passed": true,
+    "invalid_frequency_fraction": 0.7935185185185185
+  },
+  {
+    "scenario": "scenario-h2-slurm-24h",
+    "arm": "baseline",
+    "ticks": 17280,
+    "first_difference": null,
+    "invalid_frequency_tick_count": 16802,
+    "first_invalid_tick": {
+      "tick": 174,
+      "sim_time_seconds": 870.0,
+      "frequency_hz": 70.407865020299
+    },
+    "frequency_min": -225.278937529193,
+    "frequency_max": 245.96773016794788,
+    "protection_configured": false,
+    "existing_metrics_count": 27,
+    "existing_metric_differences": {},
+    "physical_identical": true,
+    "compact_identical_excluding_new_flags": true,
+    "added_metrics": {
+      "invalid_frequency_tick_count": 16802,
+      "protection_configured": false,
+      "invalid_frequency_fraction": 0.9723379629629629
+    },
+    "passed": true,
+    "invalid_frequency_fraction": 0.9723379629629629
+  },
+  {
+    "scenario": "scenario-h2-slurm-24h",
+    "arm": "informed",
+    "ticks": 17280,
+    "first_difference": null,
+    "invalid_frequency_tick_count": 16955,
+    "first_invalid_tick": {
+      "tick": 174,
+      "sim_time_seconds": 870.0,
+      "frequency_hz": 70.407865020299
+    },
+    "frequency_min": 60.0,
+    "frequency_max": 250.44034654726377,
+    "protection_configured": false,
+    "existing_metrics_count": 27,
+    "existing_metric_differences": {},
+    "physical_identical": true,
+    "compact_identical_excluding_new_flags": true,
+    "added_metrics": {
+      "invalid_frequency_tick_count": 16955,
+      "protection_configured": false,
+      "invalid_frequency_fraction": 0.9811921296296297
+    },
+    "passed": true,
+    "invalid_frequency_fraction": 0.9811921296296297
+  },
+  {
+    "scenario": "S10_mit_supercloud_2021-08-11",
+    "arm": "app",
+    "ticks": 17280,
+    "first_difference": null,
+    "invalid_frequency_tick_count": 7264,
+    "first_invalid_tick": {
+      "tick": 1,
+      "sim_time_seconds": 5.0,
+      "frequency_hz": 71.14198664583199
+    },
+    "frequency_min": -729.1075118080669,
+    "frequency_max": 998.9330534505464,
+    "protection_configured": false,
+    "existing_metrics_count": 0,
+    "existing_metric_differences": {},
+    "physical_identical": true,
+    "passed": true,
+    "invalid_frequency_fraction": 0.4203703703703704
+  },
+  {
+    "scenario": "demo-islanded-ramp",
+    "arm": "app",
+    "ticks": 2160,
+    "first_difference": null,
+    "invalid_frequency_tick_count": 103,
+    "first_invalid_tick": {
+      "tick": 136,
+      "sim_time_seconds": 680.0,
+      "frequency_hz": 53.373055059038585
+    },
+    "frequency_min": -127.48961154607643,
+    "frequency_max": 60.0,
+    "protection_configured": false,
+    "existing_metrics_count": 0,
+    "existing_metric_differences": {},
+    "physical_identical": true,
+    "passed": true,
+    "invalid_frequency_fraction": 0.047685185185185185
+  },
+  {
+    "scenario": "scenario-equinix-sj-1",
+    "arm": "app",
+    "ticks": 720,
+    "first_difference": null,
+    "invalid_frequency_tick_count": 0,
+    "first_invalid_tick": null,
+    "frequency_min": 60.0,
+    "frequency_max": 60.0,
+    "protection_configured": true,
+    "existing_metrics_count": 0,
+    "existing_metric_differences": {},
+    "physical_identical": true,
+    "passed": true,
+    "invalid_frequency_fraction": 0.0
+  },
+  {
+    "scenario": "scenario-turbine-01",
+    "arm": "app",
+    "ticks": 720,
+    "first_difference": null,
+    "invalid_frequency_tick_count": 443,
+    "first_invalid_tick": {
+      "tick": 278,
+      "sim_time_seconds": 1390.0,
+      "frequency_hz": 73.5537530660913
+    },
+    "frequency_min": 60.0,
+    "frequency_max": 305.12517226604007,
+    "protection_configured": false,
+    "existing_metrics_count": 0,
+    "existing_metric_differences": {},
+    "physical_identical": true,
+    "passed": true,
+    "invalid_frequency_fraction": 0.6152777777777778
+  },
+  {
+    "scenario": "scenario-hybrid-ai-100mw-addendum-i",
+    "arm": "app",
+    "ticks": 120,
+    "first_difference": null,
+    "invalid_frequency_tick_count": 78,
+    "first_invalid_tick": {
+      "tick": 1,
+      "sim_time_seconds": 5.0,
+      "frequency_hz": -20.29765039999966
+    },
+    "frequency_min": -218.79606450000827,
+    "frequency_max": 285.92631259085584,
+    "protection_configured": false,
+    "existing_metrics_count": 0,
+    "existing_metric_differences": {},
+    "physical_identical": true,
+    "passed": true,
+    "invalid_frequency_fraction": 0.65
+  },
+  {
+    "scenario": "scenario-100mw-fuel-cell-bess-diesel",
+    "arm": "app",
+    "ticks": 252,
+    "first_difference": null,
+    "invalid_frequency_tick_count": 0,
+    "first_invalid_tick": null,
+    "frequency_min": 60.0,
+    "frequency_max": 60.0,
+    "protection_configured": false,
+    "existing_metrics_count": 0,
+    "existing_metric_differences": {},
+    "physical_identical": true,
+    "passed": true,
+    "invalid_frequency_fraction": 0.0
+  },
+  {
+    "scenario": "scenario-fc100-islanded-v2",
+    "arm": "app",
+    "ticks": 264,
+    "first_difference": null,
+    "invalid_frequency_tick_count": 0,
+    "first_invalid_tick": null,
+    "frequency_min": 60.0,
+    "frequency_max": 60.0,
+    "protection_configured": false,
+    "existing_metrics_count": 0,
+    "existing_metric_differences": {},
+    "physical_identical": true,
+    "passed": true,
+    "invalid_frequency_fraction": 0.0
+  },
+  {
+    "scenario": "scenario-fc100-islanded-zero-hot-v2",
+    "arm": "app",
+    "ticks": 264,
+    "first_difference": null,
+    "invalid_frequency_tick_count": 214,
+    "first_invalid_tick": {
+      "tick": 46,
+      "sim_time_seconds": 230.0,
+      "frequency_hz": 39.39674952027191
+    },
+    "frequency_min": -82.80435199997717,
+    "frequency_max": 60.0,
+    "protection_configured": false,
+    "existing_metrics_count": 0,
+    "existing_metric_differences": {},
+    "physical_identical": true,
+    "passed": true,
+    "invalid_frequency_fraction": 0.8106060606060606
+  }
+]

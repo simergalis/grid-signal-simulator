@@ -1,0 +1,18 @@
+
+> gridsignal-dashboard@0.1.0 build
+> tsc --noEmit && vite build
+
+vite v6.4.3 building for production...
+transforming...
+✓ 743 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                     0.62 kB │ gzip:   0.40 kB
+dist/assets/index-BdtHcjGv.css     48.17 kB │ gzip:   9.51 kB
+dist/assets/index-CcJ4Uimd.js   1,282.47 kB │ gzip: 350.11 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 12.44s

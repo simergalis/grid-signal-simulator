@@ -1,0 +1,79 @@
+{
+  "scenario": "scenario-hybrid-ai-100mw-addendum-i",
+  "arm": "app",
+  "ticks": 120,
+  "first_difference": null,
+  "invalid_frequency_tick_count": 78,
+  "first_invalid_tick": {
+    "tick": 1,
+    "sim_time_seconds": 5.0,
+    "frequency_hz": -20.29765039999966
+  },
+  "frequency_min": -218.79606450000827,
+  "frequency_max": 285.92631259085584,
+  "protection_configured": false,
+  "summaries": {
+    "base": {
+      "kind": "summary",
+      "physical_sha256": "9377f009785094697116d356ef554985107ce1ee4c92f01c672f4b30b5f7577a",
+      "ticks": 120,
+      "metrics": {},
+      "record": {},
+      "end_sim_time": 600.0,
+      "build_warnings": [],
+      "final_floor_basis": {
+        "bess-hybrid-edge": {
+          "bess_id": "bess-hybrid-edge",
+          "floor_mwh": 5.52,
+          "depth_reserve_mwh": 5.52,
+          "diesel_floor_mwh": 0.5833333333333334,
+          "d2r_term_mwh": 0.0,
+          "winning_term": "depth_reserve",
+          "basis": "no restartable synchronous unit",
+          "unit_id": null,
+          "eligibility_wait_s": null,
+          "start_duration_s": null,
+          "thermal_state": null,
+          "eligibility_reason": null
+        }
+      },
+      "floor_history_count": 0
+    },
+    "candidate": {
+      "kind": "summary",
+      "physical_sha256": "9377f009785094697116d356ef554985107ce1ee4c92f01c672f4b30b5f7577a",
+      "ticks": 120,
+      "metrics": {},
+      "record": {},
+      "end_sim_time": 600.0,
+      "build_warnings": [
+        {
+          "code": "islanded_frequency_protection_unconfigured",
+          "message": "islanded run without frequency protection configured"
+        }
+      ],
+      "final_floor_basis": {
+        "bess-hybrid-edge": {
+          "bess_id": "bess-hybrid-edge",
+          "floor_mwh": 5.52,
+          "depth_reserve_mwh": 5.52,
+          "diesel_floor_mwh": 0.5833333333333334,
+          "d2r_term_mwh": 0.0,
+          "winning_term": "depth_reserve",
+          "basis": "no restartable synchronous unit",
+          "unit_id": null,
+          "eligibility_wait_s": null,
+          "start_duration_s": null,
+          "thermal_state": null,
+          "eligibility_reason": null
+        }
+      },
+      "floor_history_count": 0
+    }
+  },
+  "existing_metrics_count": 0,
+  "existing_metric_differences": {},
+  "physical_identical": true,
+  "passed": true,
+  "invalid_frequency_fraction": 0.65
+}

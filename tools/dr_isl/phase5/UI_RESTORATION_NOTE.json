@@ -1,0 +1,8 @@
+{
+  "reason": "These three existing UI files were already ignored/untracked before D3; fd87fc7 has no Git copy. Preserve candidate bytes and reverse only the Phase 5 edits for base restoration. Do not claim a pre-edit byte hash was captured.",
+  "files": {
+    "App.tsx": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/App.tsx",
+    "forecastQuality.ts": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/subsystem/panels/forecastQuality.ts",
+    "forecast_quality_panel.test.tsx": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/test/forecast_quality_panel.test.tsx"
+  }
+}

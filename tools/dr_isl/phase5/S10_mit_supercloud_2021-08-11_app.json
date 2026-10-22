@@ -1,0 +1,79 @@
+{
+  "scenario": "S10_mit_supercloud_2021-08-11",
+  "arm": "app",
+  "ticks": 17280,
+  "first_difference": null,
+  "invalid_frequency_tick_count": 7264,
+  "first_invalid_tick": {
+    "tick": 1,
+    "sim_time_seconds": 5.0,
+    "frequency_hz": 71.14198664583199
+  },
+  "frequency_min": -729.1075118080669,
+  "frequency_max": 998.9330534505464,
+  "protection_configured": false,
+  "summaries": {
+    "base": {
+      "kind": "summary",
+      "physical_sha256": "8ba0dec0459ca09b9df4ea6fa17bd72fa16038220f425b0a8dd499bfa87557ab",
+      "ticks": 17280,
+      "metrics": {},
+      "record": {},
+      "end_sim_time": 86400.0,
+      "build_warnings": [],
+      "final_floor_basis": {
+        "bess-0": {
+          "bess_id": "bess-0",
+          "floor_mwh": 10.6875,
+          "depth_reserve_mwh": 0.0,
+          "diesel_floor_mwh": 0.0,
+          "d2r_term_mwh": 10.6875,
+          "winning_term": "d2r_bridge",
+          "basis": "offline_restart",
+          "unit_id": "turbine-4",
+          "eligibility_wait_s": 555.0,
+          "start_duration_s": 300,
+          "thermal_state": "hot",
+          "eligibility_reason": "min_down"
+        }
+      },
+      "floor_history_count": 5234
+    },
+    "candidate": {
+      "kind": "summary",
+      "physical_sha256": "8ba0dec0459ca09b9df4ea6fa17bd72fa16038220f425b0a8dd499bfa87557ab",
+      "ticks": 17280,
+      "metrics": {},
+      "record": {},
+      "end_sim_time": 86400.0,
+      "build_warnings": [
+        {
+          "code": "islanded_frequency_protection_unconfigured",
+          "message": "islanded run without frequency protection configured"
+        }
+      ],
+      "final_floor_basis": {
+        "bess-0": {
+          "bess_id": "bess-0",
+          "floor_mwh": 10.6875,
+          "depth_reserve_mwh": 0.0,
+          "diesel_floor_mwh": 0.0,
+          "d2r_term_mwh": 10.6875,
+          "winning_term": "d2r_bridge",
+          "basis": "offline_restart",
+          "unit_id": "turbine-4",
+          "eligibility_wait_s": 555.0,
+          "start_duration_s": 300,
+          "thermal_state": "hot",
+          "eligibility_reason": "min_down"
+        }
+      },
+      "floor_history_count": 5234
+    }
+  },
+  "existing_metrics_count": 0,
+  "existing_metric_differences": {},
+  "physical_identical": true,
+  "passed": true,
+  "invalid_frequency_fraction": 0.4203703703703704
+}

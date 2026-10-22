@@ -1,0 +1,37 @@
+{'TC-ISL-08a': {'protection_configured': False, 'frequency_valid': True}}
+.{'TC-ISL-08b': [60.0, 54.0, True]}
+.{'TC-ISL-08b': [60.0, 66.0, True]}
+.{'TC-ISL-08b': [60.0, 53.9, False]}
+.{'TC-ISL-08b': [60.0, 90.0, False]}
+.{'TC-ISL-08b': [50.0, 45.0, True]}
+.{'TC-ISL-08b': [50.0, 55.0, True]}
+.{'TC-ISL-08b': [50.0, 55.1, False]}
+.{'TC-ISL-08b unchanged achieved Hz': 90.0}
+.{'TC-ISL-08c': {'island_mode': False}, 'protection_configured': True}
+.{'TC-ISL-08c': {'uf_warning_hz': 59.5}, 'protection_configured': True}
+.{'TC-ISL-08c': {'relay_81u_threshold_hz': 57.5}, 'protection_configured': True}
+.{'TC-ISL-08c': {'ufls_stages': [{'threshold_hz': 58.0, 'delay_s': 1.0, 'block_fraction': 0.1}]}, 'protection_configured': True}
+.{'TC-ISL-08d': {'code': 'islanded_frequency_protection_unconfigured', 'message': 'islanded run without frequency protection configured'}, 'build': 'succeeded'}
+....FF
+=================================== FAILURES ===================================
+__________ test_tc_isl_18_floor_warning_is_diagnostic_only[3600.0-1] ___________
+tests/test_dr_isl_phase2c.py:59: in test_tc_isl_18_floor_warning_is_diagnostic_only
+    assert len(warnings) == expected_count
+E   AssertionError: assert 2 == 1
+E    +  where 2 = len([{'code': 'bess_reserve_floor_above_usable', 'bess_id': 'bess-0', 'floor_mwh': 76.25, 'usable_mwh': 60.0, ...}, {'code': 'islanded_frequency_protection_unconfigured', 'message': 'islanded run without frequency protection configured'}])
+------------------------------ Captured log call -------------------------------
+WARNING  api.schemas:schemas.py:2433 ScenarioSpec validation warning: {'code': 'islanded_frequency_protection_unconfigured', 'message': 'islanded run without frequency protection configured'}
+WARNING  gridsignal.scenario_factory:build_warnings.py:56 DR D9b build warning: {'code': 'bess_reserve_floor_above_usable', 'bess_id': 'bess-0', 'floor_mwh': 76.25, 'usable_mwh': 60.0, 'winning_term': 'diesel_floor', 'diesel_units': [{'asset_id': 'diesel-000', 'delta_t_start_s': 3600.0, 'residual_ramp_s': 60.0, 'start_offset_s': 0.0}], 'diesel_worst_case_sync_s': 3660.0}
+WARNING  gridsignal.scenario_factory:build_warnings.py:15 DR D3 build warning: {'code': 'islanded_frequency_protection_unconfigured', 'message': 'islanded run without frequency protection configured'}
+___________ test_tc_isl_18_floor_warning_is_diagnostic_only[10.0-0] ____________
+tests/test_dr_isl_phase2c.py:59: in test_tc_isl_18_floor_warning_is_diagnostic_only
+    assert len(warnings) == expected_count
+E   AssertionError: assert 1 == 0
+E    +  where 1 = len([{'code': 'islanded_frequency_protection_unconfigured', 'message': 'islanded run without frequency protection configured'}])
+------------------------------ Captured log call -------------------------------
+WARNING  api.schemas:schemas.py:2433 ScenarioSpec validation warning: {'code': 'islanded_frequency_protection_unconfigured', 'message': 'islanded run without frequency protection configured'}
+WARNING  gridsignal.scenario_factory:build_warnings.py:15 DR D3 build warning: {'code': 'islanded_frequency_protection_unconfigured', 'message': 'islanded run without frequency protection configured'}
+=========================== short test summary info ============================
+FAILED tests/test_dr_isl_phase2c.py::test_tc_isl_18_floor_warning_is_diagnostic_only[3600.0-1]
+FAILED tests/test_dr_isl_phase2c.py::test_tc_isl_18_floor_warning_is_diagnostic_only[10.0-0]
+2 failed, 17 passed in 12.74s

@@ -1,0 +1,6 @@
+{
+  "path": "/",
+  "status": 200,
+  "workflow": "artifacts/gridsignal: web",
+  "note": "uncommitted candidate; final committed-code restart still required"
+}

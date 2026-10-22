@@ -1,0 +1,62 @@
+{
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/api/schemas.py": {
+    "sha256": "739953ec6398cfb95c5bedb833fe5b0394b6d44fcdaa6cebff019f6f7d362d2f",
+    "lines": 3051
+  },
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/models.py": {
+    "sha256": "b142a3e98142308f74f824f51e3a862be920b8c6e71daefd4db12f550f405d44",
+    "lines": 1943
+  },
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py": {
+    "sha256": "f3e867309cd1e6aa97ca9ded2b28572763283341a6ac844d0f222d03a135ff47",
+    "lines": 4174
+  },
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/frequency_reporting.py": {
+    "sha256": "4500e888585f6ce105973ad1d8b0535d972774be30ca0c2422ae1405e1573945",
+    "lines": 36
+  },
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/build_warnings.py": {
+    "sha256": "2d045b6937abed6fae8d7ec503ac56f4d68e19544ae44687723b9357e268699a",
+    "lines": 57
+  },
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/run_manager.py": {
+    "sha256": "310aa42250e9e545c605834ca497bd4a27624256527673f4091e46d8fc2e1c5e",
+    "lines": 3766
+  },
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/scenario_factory.py": {
+    "sha256": "1bd2e9a12a64c465ed8679f496f1960e83c4eec2e3d45bcfa036047c75678592",
+    "lines": 2180
+  },
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/study_harness/executor.py": {
+    "sha256": "cb74935312a483f4736217fa3ca4e21891206d7197211046a61dca0b073b1d90",
+    "lines": 606
+  },
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/study_harness/metrics.py": {
+    "sha256": "741cce7c72f88ec9d5e42d104b8fad33e193cc7cbc31c6a2af3d02f139f4868f",
+    "lines": 687
+  },
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_frequency_reporting.py": {
+    "sha256": "406d3560966f35a10fdb6feb496855e3c8255b2cf4dd9272497d8e1e5d166faa",
+    "lines": 92
+  },
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_phase2c.py": {
+    "sha256": "6348b069311e372315c42a2f3ff7bf7705172767cd0ccdc33f1ed392e1252d13",
+    "lines": 78
+  },
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/types.ts": {
+    "sha256": "e351d7b40dd3d1e1dc89d6c01d5effa3fbcaa347a63d6232d06a32b0621a2469",
+    "lines": 1319
+  },
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/App.tsx": {
+    "sha256": "edd7208ef805991c323987617921eeb28bda0aa215f5b704ff55c11b94fa2344",
+    "lines": 471
+  },
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/subsystem/panels/forecastQuality.ts": {
+    "sha256": "15ae7a3f57b723f085e082b79069ca61d65ed8510c420490d5a4f5c4aae5d0da",
+    "lines": 178
+  },
+  "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/test/forecast_quality_panel.test.tsx": {
+    "sha256": "2d649db19e5b85f016b86c85e1617155d6b4976f450a0eda6f7af31a81c2208a",
+    "lines": 302
+  }
+}

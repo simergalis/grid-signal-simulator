@@ -1,0 +1,2 @@
+<?xml version='1.0' encoding='utf-8'?>
+<testsuite tests="1"><testcase classname="tests/test_gpu_load_profile.py" name="test_gpu_load_profile" /></testsuite>

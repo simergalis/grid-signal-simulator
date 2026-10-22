@@ -1,0 +1,10 @@
+{
+  "tracked_application_diff_empty": true,
+  "new_candidate_modules_absent": true,
+  "restored_ignored_ui_sha256": {
+    "App.tsx": "d846c7e9e2a1fc6e61eca0624270aa10eb569ccd2605ce03b923ac95e3becea4",
+    "forecastQuality.ts": "645770f115bf8f2443c76ee7ca37355ef2d259f5a03185d9557dc59519347d98",
+    "forecast_quality_panel.test.tsx": "886872aa94fbaa06918cf107ff414489f12e67a955448496d17317381a7b2f25"
+  },
+  "pre_edit_ui_byte_hash_available": false
+}

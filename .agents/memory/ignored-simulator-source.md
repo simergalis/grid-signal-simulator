@@ -32,3 +32,15 @@ rather than restoring all candidate files.
 restoring a complete candidate is authorized, verify the listed candidate paths
 against the full stash tree; do not assume a successful delta application proves
 the complete candidate is present.
+
+Capture pre-edit copies of existing ignored/untracked source before changing it,
+including the real frontend, not only backend modules.
+
+**Why:** Git has no base version for an ignored file. Force-adding and then
+stashing it removes the workspace copy, even when most of its contents predated
+the change. A clean tracked diff alone cannot prove that such a file was restored.
+
+**How to apply:** Check tracking before edits, preserve baseline bytes outside the
+ignored tree, and retain candidate bytes separately before any stop-gate stash.
+Restore the baseline copy explicitly and verify its hash; do not assume that a
+stash reset reconstructed a file that was never tracked.

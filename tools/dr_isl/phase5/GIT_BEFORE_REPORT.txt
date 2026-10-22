@@ -1,0 +1,4 @@
+M .agents/memory/ignored-simulator-source.md
+?? tools/dr_isl/PHASE_5_FAILING_TESTS.txt
+?? tools/dr_isl/PHASE_5_REPORT.md
+?? tools/dr_isl/phase5/

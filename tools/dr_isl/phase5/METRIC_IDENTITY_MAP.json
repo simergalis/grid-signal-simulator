@@ -1,0 +1,56 @@
+[
+  {
+    "scenario": "scenario-uneven-multisched-01",
+    "arm": "baseline",
+    "old": "9c0da2958408fbbb9355a60b29d123903954a1859114832b894d6fc87140bef1",
+    "new": "130ab8c5b564cfddc9d3efc9c22359f0fad10a42a068f2edac876a315dd0c6fa",
+    "reporting_version": 1,
+    "fixed_engine_commit": "fd87fc7",
+    "fixed_harness_commit": "ae49aaa"
+  },
+  {
+    "scenario": "scenario-uneven-multisched-01",
+    "arm": "informed",
+    "old": "3f8e22a01c22915399621bd5d3ddd50121c52ffe2e1f0e30c6582641731be9f5",
+    "new": "a04be24dcdf14ffc7a9f22e08a3a8b8abe905bf955906f6727273f9dff0dfe4a",
+    "reporting_version": 1,
+    "fixed_engine_commit": "fd87fc7",
+    "fixed_harness_commit": "ae49aaa"
+  },
+  {
+    "scenario": "scenario-h1-k8s-ray-24h",
+    "arm": "baseline",
+    "old": "4387d793abc1698f1eeb40141652502eacf9298a3b40bc09e2eb59fa626d6d1a",
+    "new": "82140afc1a2f3a2f8b0729ee694c073890b6f2f1a5f4ad6e29de70d3c45c2e45",
+    "reporting_version": 1,
+    "fixed_engine_commit": "fd87fc7",
+    "fixed_harness_commit": "ae49aaa"
+  },
+  {
+    "scenario": "scenario-h1-k8s-ray-24h",
+    "arm": "informed",
+    "old": "0afa6d3b4e104f7477be5011ea30d8359d7f02e076b64bf13c8276f8f28b5b3a",
+    "new": "58f1102a6822295259eaff2ff776f1c88b7d3e2b195a42c39fb8058194944782",
+    "reporting_version": 1,
+    "fixed_engine_commit": "fd87fc7",
+    "fixed_harness_commit": "ae49aaa"
+  },
+  {
+    "scenario": "scenario-h2-slurm-24h",
+    "arm": "baseline",
+    "old": "aecf35061701cdc73f67be7c0065e639fefcce00ed60e7bb681aae18f6158f64",
+    "new": "f25e4ee56e2cd731a3051b9fe3af09e0d4040d04b91c3992bc3aac1d8a8a25ab",
+    "reporting_version": 1,
+    "fixed_engine_commit": "fd87fc7",
+    "fixed_harness_commit": "ae49aaa"
+  },
+  {
+    "scenario": "scenario-h2-slurm-24h",
+    "arm": "informed",
+    "old": "08393d79ee19e310ef512b9ad5e7b48fa926661cc69107000a48797aa230c538",
+    "new": "6940aaeb2b99f222b753f5f4e01da00ce491c686674b1947573e5f2737149bff",
+    "reporting_version": 1,
+    "fixed_engine_commit": "fd87fc7",
+    "fixed_harness_commit": "ae49aaa"
+  }
+]

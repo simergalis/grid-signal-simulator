@@ -1,0 +1,206 @@
+{
+  "classification": "IMPL-SSH-07: pre-existing interval-boundary / asynchronous latest-snapshot sampling sensitivity, not a D3 workload-physics regression",
+  "contexts": [
+    {
+      "version": "base",
+      "checkout": "/tmp/DR-ISL-phase5-base",
+      "context": "isolation1",
+      "port": 22127,
+      "http_transport_redirect_only": true,
+      "exit_code": 0,
+      "seconds": 10.015169302000686,
+      "gpu_result": {
+        "outcome": "passed",
+        "stage": "call",
+        "duration": 8.518230332000712,
+        "failure": ""
+      },
+      "preceding_failures": []
+    },
+    {
+      "version": "base",
+      "checkout": "/tmp/DR-ISL-phase5-base",
+      "context": "isolation2",
+      "port": 22127,
+      "http_transport_redirect_only": true,
+      "exit_code": 0,
+      "seconds": 13.005799937999655,
+      "gpu_result": {
+        "outcome": "passed",
+        "stage": "call",
+        "duration": 9.924296252999738,
+        "failure": ""
+      },
+      "preceding_failures": []
+    },
+    {
+      "version": "base",
+      "checkout": "/tmp/DR-ISL-phase5-base",
+      "context": "isolation3",
+      "port": 22127,
+      "http_transport_redirect_only": true,
+      "exit_code": 0,
+      "seconds": 10.003836871999738,
+      "gpu_result": {
+        "outcome": "passed",
+        "stage": "call",
+        "duration": 8.65887560200008,
+        "failure": ""
+      },
+      "preceding_failures": []
+    },
+    {
+      "version": "base",
+      "checkout": "/tmp/DR-ISL-phase5-base",
+      "context": "file",
+      "port": 22127,
+      "http_transport_redirect_only": true,
+      "exit_code": 0,
+      "seconds": 10.005484536999575,
+      "gpu_result": {
+        "outcome": "passed",
+        "stage": "call",
+        "duration": 8.588641654999265,
+        "failure": ""
+      },
+      "preceding_failures": []
+    },
+    {
+      "version": "base",
+      "checkout": "/tmp/DR-ISL-phase5-base",
+      "context": "prefix",
+      "port": 22127,
+      "http_transport_redirect_only": true,
+      "exit_code": 1,
+      "seconds": 174.10072527300053,
+      "gpu_result": {
+        "outcome": "failed",
+        "stage": "call",
+        "duration": 2.359577723000257,
+        "failure": "tests/test_gpu_load_profile.py:284: in test_gpu_load_profile\n    _run_test()\ntests/test_gpu_load_profile.py:169: in _run_test\n    assert abs(frac - expected_frac) < TOLERANCE, (\nE   AssertionError: [FAIL-A] phase-2 sim_t=720.0s: gpu_load_fraction=1.0 expected 0.5\nE   assert 0.5 < 1e-06\nE    +  where 0.5 = abs((1.0 - 0.5))"
+      },
+      "preceding_failures": [
+        "tests/test_13_3_frequency.py::TestI4DeliveryFaultMovesFrequency::test_I4_delivery_fault_causes_frequency_deviation",
+        "tests/test_13_5_criteria.py::TestR4PMinStable::test_R4_fields_present_on_turbine_config",
+        "tests/test_artifact_truncation.py::test_tc173_executor_run_validates_from_truncated_record_and_sidecar",
+        "tests/test_diesel_phase3.py::test_live_diesel_is_less_aggressive_than_disabled_before_curtailment",
+        "tests/test_diesel_setpoint_gap.py::test_hybrid_covered_demand_does_not_release_bess_reserve",
+        "tests/test_fabric_scenarios_e2e.py::test_fabric_scenario_names",
+        "tests/test_forecast_path.py::TestDispatchTruthfulness::test_B1a_islanded_delivery_fault_visible_in_delivery_channel",
+        "tests/test_fuel_cell_phase2.py::test_fixed_target_survives_a_step_load_and_output_remains_rate_limited"
+      ]
+    },
+    {
+      "version": "candidate",
+      "checkout": "/home/runner/workspace",
+      "context": "isolation1",
+      "port": 22128,
+      "http_transport_redirect_only": true,
+      "exit_code": 0,
+      "seconds": 13.017506715999843,
+      "gpu_result": {
+        "outcome": "passed",
+        "stage": "call",
+        "duration": 10.922741540999596,
+        "failure": ""
+      },
+      "preceding_failures": []
+    },
+    {
+      "version": "candidate",
+      "checkout": "/home/runner/workspace",
+      "context": "isolation2",
+      "port": 22128,
+      "http_transport_redirect_only": true,
+      "exit_code": 0,
+      "seconds": 12.006453285999669,
+      "gpu_result": {
+        "outcome": "passed",
+        "stage": "call",
+        "duration": 10.471824712999478,
+        "failure": ""
+      },
+      "preceding_failures": []
+    },
+    {
+      "version": "candidate",
+      "checkout": "/home/runner/workspace",
+      "context": "isolation3",
+      "port": 22128,
+      "http_transport_redirect_only": true,
+      "exit_code": 0,
+      "seconds": 11.004074567000316,
+      "gpu_result": {
+        "outcome": "passed",
+        "stage": "call",
+        "duration": 9.519252881999819,
+        "failure": ""
+      },
+      "preceding_failures": []
+    },
+    {
+      "version": "candidate",
+      "checkout": "/home/runner/workspace",
+      "context": "file",
+      "port": 22128,
+      "http_transport_redirect_only": true,
+      "exit_code": 1,
+      "seconds": 7.004332666000664,
+      "gpu_result": {
+        "outcome": "failed",
+        "stage": "call",
+        "duration": 5.866820145999554,
+        "failure": "tests/test_gpu_load_profile.py:284: in test_gpu_load_profile\n    _run_test()\ntests/test_gpu_load_profile.py:169: in _run_test\n    assert abs(frac - expected_frac) < TOLERANCE, (\nE   AssertionError: [FAIL-A] phase-3 sim_t=2400.0s: gpu_load_fraction=0.5 expected 0.1\nE   assert 0.4 < 1e-06\nE    +  where 0.4 = abs((0.5 - 0.1))"
+      },
+      "preceding_failures": []
+    },
+    {
+      "version": "candidate",
+      "checkout": "/home/runner/workspace",
+      "context": "prefix",
+      "port": 22128,
+      "http_transport_redirect_only": true,
+      "exit_code": 1,
+      "seconds": 175.10047299300004,
+      "gpu_result": {
+        "outcome": "passed",
+        "stage": "call",
+        "duration": 8.673636424000506,
+        "failure": ""
+      },
+      "preceding_failures": [
+        "tests/test_13_3_frequency.py::TestI4DeliveryFaultMovesFrequency::test_I4_delivery_fault_causes_frequency_deviation",
+        "tests/test_13_5_criteria.py::TestR4PMinStable::test_R4_fields_present_on_turbine_config",
+        "tests/test_artifact_truncation.py::test_tc173_executor_run_validates_from_truncated_record_and_sidecar",
+        "tests/test_diesel_phase3.py::test_live_diesel_is_less_aggressive_than_disabled_before_curtailment",
+        "tests/test_diesel_setpoint_gap.py::test_hybrid_covered_demand_does_not_release_bess_reserve",
+        "tests/test_fabric_scenarios_e2e.py::test_fabric_scenario_names",
+        "tests/test_forecast_path.py::TestDispatchTruthfulness::test_B1a_islanded_delivery_fault_visible_in_delivery_channel",
+        "tests/test_fuel_cell_phase2.py::test_fixed_target_survives_a_step_load_and_output_remains_rate_limited"
+      ]
+    }
+  ],
+  "explanation": "Profile is evaluated at interval start; tick timestamp denotes interval end. The test computes expected_fraction from the end timestamp. Latest-snapshot HTTP polling can skip or hit the exact transition tick. fd87fc7 prefix reproduces phase-2 720s mismatch; candidate file and full suite reproduce phase-3 2400s mismatch. Both versions pass all three isolation attempts.",
+  "shared_state": "WebSocketHub._latest_ticks, runtime/run_manager.py:186,231-237,263; /runs/{id}/latest reads this snapshot at api/routes/runs.py:907-939",
+  "fix_direction": "In a separately approved test fix, align expectations with the tick interval convention and use deterministic ingestion/step completion rather than relying on latest-snapshot polling.",
+  "source": {
+    "core/simulation_core.py": [
+      "842: \n843: def _gpu_load_fraction_at(profile: list[tuple[float, float]], t: float) -> float:\n844:     \"\"\"Zero-order-hold lookup for gpu_load_profile.\n845: \n846:     Returns the non-negative load multiplier that applies at sim-time t.\n847:     The last entry whose time_s <= t wins; if t precedes all entries the first\n848:     entry's value is used.  Returns 1.0 for an empty profile (full load, no-op).\n849:     Negative authored values are clamped to zero; values above 1.0 intentionally\n850:     model planned GPU over-peak demand.\n851:     \"\"\"\n852:     if not profile:\n853:         return 1.0\n854:     frac = profile[0][1]          # use first point even before its timestamp\n855:     for time_s, value in profile:\n856:         if time_s <= t:\n857:             frac = value\n858:         else:\n859:             break\n860:     return max(0.0, frac)\n861: ",
+      "1229: \n1230:     # \u2500\u2500 GPU load profile scaling (operator-authored zero-order-hold) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n1231:     # Multiplies p_compute_demand_mw AND the per-job draws passed to the cooling\n1232:     # model by the active fraction so that cooling tracks the same throttled load.\n1233:     # No-op when the profile is empty (the default), so all existing tests and\n1234:     # seeded scenarios are unaffected.\n1235:     _gpu_load_fraction = _gpu_load_fraction_at(state.gpu_load_profile, sim_time)\n1236:     if _gpu_load_fraction != 1.0:\n1237:         p_compute_demand_mw *= _gpu_load_fraction\n1238:         # Scale per-job draws so the cooling model sees the same throttled GPU heat\n1239:         # output \u2014 not the full-TDP value before the profile was applied.\n1240:         _per_job_draws = {k: v * _gpu_load_fraction for k, v in _per_job_draws.items()}\n1241: ",
+      "3813:         if _modelled_fuel_rows else None\n3814:     )\n3815: \n3816:     state.tick_index += 1\n3817:     return TickResult(\n3818:         run_id=state.run_id,\n3819:         tick_index=state.tick_index,\n3820:         # F5: TickResult carries the INTERVAL-END timestamp \u2014 the instant the\n3821:         # state was measured (after asset advance() calls).  SimClock.sim_time\n3822:         # is the interval START; all internal elapsed calculations above use\n3823:         # clock.sim_time directly.  Only the persisted / wire field changes.\n3824:         sim_time_seconds=sim_time + clock.dt_seconds,\n3825:         p_compute_demand_mw=p_compute_demand_mw,\n3826:         p_cooling_demand_mw=p_cooling_demand_mw,\n3827:         p_demand_mw=p_demand_mw,\n3828:         net_demand_mw=net_demand_mw,",
+      "3824:         sim_time_seconds=sim_time + clock.dt_seconds,"
+    ],
+    "runtime/run_manager.py": [
+      "183:     def __init__(self) -> None:\n184:         self._subscribers: dict[str, set[WebSocketLike]] = {}\n185:         # run_id \u2192 most-recently-broadcast tick payload dict\n186:         self._latest_ticks: dict[str, dict] = {}\n187: \n188:     def subscribe(self, run_id: str, ws: WebSocketLike) -> None:",
+      "231:     def get_latest_tick(self, run_id: str) -> \"dict | None\":\n232:         \"\"\"Return the most recently broadcast tick payload dict, or None.\n233: \n234:         Used by GET /runs/{run_id}/latest-tick (FLAG-3 fix) to expose\n235:         the WebSocket tick stream to server-side REST pollers without\n236:         requiring a WebSocket connection.\n237:         \"\"\"",
+      "258:         payload = _tick_result_to_dict(tick_result)\n259:         payload[\"t_emit_ns\"] = str(_t.monotonic_ns())\n260: \n261:         # FLAG-3 fix: cache for REST polling.  Overwrite unconditionally \u2014 only\n262:         # the latest tick is kept; the full history lives in CompletedRun.tick_dicts.\n263:         self._latest_ticks[run_id] = payload\n264: \n265:         subs = list(self._subscribers.get(run_id, ()))"
+    ],
+    "api/routes/runs.py": [
+      "907: async def get_latest_tick(\n908:     run_id: str,\n909:     request: Request,\n910:     manager: RunManager = Depends(_run_manager),\n911: ) -> dict:\n912:     \"\"\"Return the most recently broadcast tick payload for *run_id*.\n913: \n914:     This endpoint closes the monitoring gap identified as FLAG-3: the WebSocket\n915:     tick stream carries all critical energy variables (p_generation_mw,\n916:     p_demand_mw, d4_balance_defect_mw, bess_output_mw, soc_pct, fuel_cell_output_mw,\n917:     grid_exchange_mw, bess_bridging_seconds, insufficient_reserve_alert \u2026) but no\n918:     REST endpoint existed for server-side tooling to read them without a WebSocket.\n919: \n920:     Response payload is the verbatim dict broadcast over the WebSocket (same keys,\n921:     same types), plus the ``t_emit_ns`` monotonic-clock stamp from the server.\n922:     Suitable for polling: call every 5\u201310 s (one or two tick intervals) to track\n923:     the latest physics state from monitoring scripts, CI health-checks, or ops\n924:     dashboards.\n925: \n926:     Active run  \u2192 returns the cached payload from the most recent broadcast.\n927:     Completed run \u2192 returns the final tick from CompletedRun.tick_dicts (in-memory).\n928:     Completed + restarted server \u2192 409 Gone (tick history unavailable after restart).\n929:     Unknown run_id \u2192 404.\n930:     \"\"\"\n931:     from fastapi.responses import JSONResponse\n932: \n933:     hub = request.app.state.ws_hub\n934:     ctx = manager.get_context(run_id)\n935: \n936:     if ctx is not None:\n937:         # Active run \u2014 serve from hub's latest-tick cache.\n938:         payload = hub.get_latest_tick(run_id)\n939:         if payload is None:"
+    ],
+    "tests/test_gpu_load_profile.py": [
+      "80:     if sim_t >= PHASE2_END:\n81:         return FRAC_P3\n82:     if sim_t >= PHASE1_END:\n83:         return FRAC_P2\n84:     return FRAC_P1\n85: \n86: \n87: def _phase_name(sim_t: float) -> str:\n88:     if sim_t >= PHASE2_END:\n89:         return \"phase-3\"",
+      "146:                 time.sleep(POLL_S)\n147:                 continue\n148: \n149:             sim_t = float(tick.get(\"sim_time_seconds\", 0.0))\n150:             frac  = float(tick.get(\"gpu_load_fraction\", 1.0))\n151:             pload = float(tick.get(\"p_compute_demand_mw\", 0.0))\n152: \n153:             # Skip duplicate ticks (sim advances in 5 s steps at max speed)\n154:             if sim_t == seen_sim_t:\n155:                 time.sleep(POLL_S)\n156:                 continue\n157:             seen_sim_t = sim_t\n158: \n159:             phase = _phase_name(sim_t)\n160:             expected_frac = _expected_fraction(sim_t)\n161: \n162:             print(\n163:                 f\"  {phase}  sim_t={sim_t:7.1f}s  \"\n164:                 f\"frac={frac:.2f} (expect {expected_frac:.2f})  \"\n165:                 f\"p_compute={pload:.2f} MW\"\n166:             )\n167: \n168:             # \u2500\u2500 CHECK A: fraction must match expected at every tick \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n169:             assert abs(frac - expected_frac) < TOLERANCE, (\n170:                 f\"[FAIL-A] {phase} sim_t={sim_t:.1f}s: \""
+    ]
+  }
+}

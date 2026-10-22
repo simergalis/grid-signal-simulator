@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "study_arms": 6,
+  "checks": [
+    "count",
+    "fraction",
+    "protection_configured"
+  ]
+}

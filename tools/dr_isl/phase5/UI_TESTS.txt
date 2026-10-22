@@ -1,0 +1,35 @@
+
+> gridsignal-dashboard@0.1.0 test
+> vitest run --run src/test/forecast_quality_panel.test.tsx
+
+
+ RUN  v4.1.10 /home/runner/workspace/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend
+
+ ✓ src/test/forecast_quality_panel.test.tsx > FQ-1 — chart series: predicted=forecast_mw, actual=p_total_mw > deriveData returns a chart element (non-null) when history is present 2ms
+ ✓ src/test/forecast_quality_panel.test.tsx > FQ-1 — chart series: predicted=forecast_mw, actual=p_total_mw > predicted series y-values come from forecast_mw, not p_total_mw 0ms
+ ✓ src/test/forecast_quality_panel.test.tsx > FQ-1 — chart series: predicted=forecast_mw, actual=p_total_mw > heroValue encodes half the confidence band width (±) 0ms
+ ✓ src/test/forecast_quality_panel.test.tsx > FQ-2 — BESS setpoint gap amber when |setpoint − measured| > 0.5 MW > saturation case: setpoint=5.0, measured=0.0 → gap row coloured amber 0ms
+ ✓ src/test/forecast_quality_panel.test.tsx > FQ-2 — BESS setpoint gap amber when |setpoint − measured| > 0.5 MW > gap row sub-label says "setpoint − measured" 0ms
+ ✓ src/test/forecast_quality_panel.test.tsx > FQ-3 — BESS setpoint gap ≤ 0.5 MW → no amber colouring > small gap (0.1 MW) → gap row colour is undefined (nominal) 0ms
+ ✓ src/test/forecast_quality_panel.test.tsx > FQ-3 — BESS setpoint gap ≤ 0.5 MW → no amber colouring > zero gap → gap value starts with +0.000 0ms
+ ✓ src/test/forecast_quality_panel.test.tsx > D3 — invalid frequency reporting > keeps achieved Hz and marks invalid operation grey with the reporting label 0ms
+ ✓ src/test/forecast_quality_panel.test.tsx > FQ-4 — frequency row shows deviation in islanded mode > islanded tick: frequency row value includes Hz figure 0ms
+ ✓ src/test/forecast_quality_panel.test.tsx > FQ-4 — frequency row shows deviation in islanded mode > islanded tick: 0.6 Hz deviation → amber colour 0ms
+ ✓ src/test/forecast_quality_panel.test.tsx > FQ-4 — frequency row shows deviation in islanded mode > islanded tick: 1.6 Hz deviation → red colour 0ms
+ ✓ src/test/forecast_quality_panel.test.tsx > FQ-5 — 50 Hz site shows zero deviation when frequency_hz = nominal > 50 Hz grid-connected: frequency row shows "grid-tied", not a deviation 0ms
+ ✓ src/test/forecast_quality_panel.test.tsx > FQ-5 — 50 Hz site shows zero deviation when frequency_hz = nominal > 50 Hz islanded at nominal: deviation shows 0.000 0ms
+ ✓ src/test/forecast_quality_panel.test.tsx > FQ-7 — widening percentages come from the tick metadata > uses the authoritative stale-profile and workload-signal percentages 1ms
+ ✓ src/test/forecast_quality_panel.test.tsx > FQ-7 — widening percentages come from the tick metadata > has a static explanation for an absent workload signal 0ms
+ ✓ src/test/forecast_quality_panel.test.tsx > FQ-6 — grid-connected: frequency row is informational, not an indicator > 60 Hz grid-connected: row value is "grid-tied" 0ms
+ ✓ src/test/forecast_quality_panel.test.tsx > FQ-6 — grid-connected: frequency row is informational, not an indicator > no-tick path: returns a chart with "No data" placeholder 0ms
+
+ Test Files  1 passed (1)
+      Tests  17 passed (17)
+   Start at  19:50:48
+   Duration  5.10s (transform 212ms, setup 298ms, import 684ms, tests 9ms, environment 3.35s)
+
+npm notice
+npm notice New minor version of npm available! 11.6.2 -> 11.21.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.21.1
+npm notice To update run: npm install -g npm@11.21.1
+npm notice

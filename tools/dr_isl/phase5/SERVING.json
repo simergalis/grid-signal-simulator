@@ -1,0 +1,9 @@
+{
+  "workflow": "artifacts/gridsignal: web",
+  "app_source_base": "fd87fc75b995f19556f598cdc5b0f443a4edce75",
+  "candidate_running": false,
+  "restarted_after_base_restoration": true,
+  "get_root_status": 200,
+  "preview": "RESTORED_PREVIEW.jpg: signed-out base app; expected unauthenticated API 401",
+  "build": "RESTORED_BASE_BUILD.txt: success; pre-existing bundle-size warning"
+}

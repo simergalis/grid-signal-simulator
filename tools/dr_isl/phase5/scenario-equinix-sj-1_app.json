@@ -1,0 +1,70 @@
+{
+  "scenario": "scenario-equinix-sj-1",
+  "arm": "app",
+  "ticks": 720,
+  "first_difference": null,
+  "invalid_frequency_tick_count": 0,
+  "first_invalid_tick": null,
+  "frequency_min": 60.0,
+  "frequency_max": 60.0,
+  "protection_configured": true,
+  "summaries": {
+    "base": {
+      "kind": "summary",
+      "physical_sha256": "328309c3a181aefdb702a0577f41acfe673a945450ce61f9ad560696cf0aaa84",
+      "ticks": 720,
+      "metrics": {},
+      "record": {},
+      "end_sim_time": 3600.0,
+      "build_warnings": [],
+      "final_floor_basis": {
+        "bess-0": {
+          "bess_id": "bess-0",
+          "floor_mwh": 55.199999999999996,
+          "depth_reserve_mwh": 55.199999999999996,
+          "diesel_floor_mwh": 0.0,
+          "d2r_term_mwh": 0.0,
+          "winning_term": "depth_reserve",
+          "basis": "D2-r not applicable",
+          "unit_id": null,
+          "eligibility_wait_s": null,
+          "start_duration_s": null,
+          "thermal_state": null,
+          "eligibility_reason": null
+        }
+      },
+      "floor_history_count": 0
+    },
+    "candidate": {
+      "kind": "summary",
+      "physical_sha256": "328309c3a181aefdb702a0577f41acfe673a945450ce61f9ad560696cf0aaa84",
+      "ticks": 720,
+      "metrics": {},
+      "record": {},
+      "end_sim_time": 3600.0,
+      "build_warnings": [],
+      "final_floor_basis": {
+        "bess-0": {
+          "bess_id": "bess-0",
+          "floor_mwh": 55.199999999999996,
+          "depth_reserve_mwh": 55.199999999999996,
+          "diesel_floor_mwh": 0.0,
+          "d2r_term_mwh": 0.0,
+          "winning_term": "depth_reserve",
+          "basis": "D2-r not applicable",
+          "unit_id": null,
+          "eligibility_wait_s": null,
+          "start_duration_s": null,
+          "thermal_state": null,
+          "eligibility_reason": null
+        }
+      },
+      "floor_history_count": 0
+    }
+  },
+  "existing_metrics_count": 0,
+  "existing_metric_differences": {},
+  "physical_identical": true,
+  "passed": true,
+  "invalid_frequency_fraction": 0.0
+}

@@ -1,0 +1,20 @@
+{
+  "state": "RUNNING",
+  "command": [
+    "/home/runner/workspace/.pythonlibs/bin/python3",
+    "-m",
+    "pytest",
+    "tests",
+    "-q",
+    "--tb=short",
+    "--disable-warnings",
+    "-p",
+    "P5_observer",
+    "--p2-output",
+    "/home/runner/workspace/tools/dr_isl/phase5/P5_FULL_SUITE",
+    "--p2-port",
+    "22126",
+    "--junitxml=/home/runner/workspace/tools/dr_isl/phase5/P5_FULL_SUITE_FINAL.xml"
+  ],
+  "cwd": "/home/runner/workspace/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim"
+}

@@ -1,0 +1,21 @@
+{
+  "common_order_identical": true,
+  "base_count": 786,
+  "candidate_count": 800,
+  "candidate_only": [
+    "tests/test_dr_isl_frequency_reporting.py::test_tc_isl_08a_unprotected_island_flags_and_wire_persistence",
+    "tests/test_dr_isl_frequency_reporting.py::test_tc_isl_08b_band_does_not_modify_frequency[60.0-54.0-True]",
+    "tests/test_dr_isl_frequency_reporting.py::test_tc_isl_08b_band_does_not_modify_frequency[60.0-66.0-True]",
+    "tests/test_dr_isl_frequency_reporting.py::test_tc_isl_08b_band_does_not_modify_frequency[60.0-53.9-False]",
+    "tests/test_dr_isl_frequency_reporting.py::test_tc_isl_08b_band_does_not_modify_frequency[60.0-90.0-False]",
+    "tests/test_dr_isl_frequency_reporting.py::test_tc_isl_08b_band_does_not_modify_frequency[50.0-45.0-True]",
+    "tests/test_dr_isl_frequency_reporting.py::test_tc_isl_08b_band_does_not_modify_frequency[50.0-55.0-True]",
+    "tests/test_dr_isl_frequency_reporting.py::test_tc_isl_08b_band_does_not_modify_frequency[50.0-55.1-False]",
+    "tests/test_dr_isl_frequency_reporting.py::test_tc_isl_08b_tick_frequency_unchanged_when_flag_changes",
+    "tests/test_dr_isl_frequency_reporting.py::test_tc_isl_08c_grid_tied_or_protected[extra0]",
+    "tests/test_dr_isl_frequency_reporting.py::test_tc_isl_08c_grid_tied_or_protected[extra1]",
+    "tests/test_dr_isl_frequency_reporting.py::test_tc_isl_08c_grid_tied_or_protected[extra2]",
+    "tests/test_dr_isl_frequency_reporting.py::test_tc_isl_08c_grid_tied_or_protected[extra3]",
+    "tests/test_dr_isl_frequency_reporting.py::test_tc_isl_08d_null_protection_warns_and_still_validates"
+  ]
+}
