@@ -1,0 +1,9 @@
+{
+  "scenario": "S10_mit_supercloud_2021-08-11",
+  "arm": "app",
+  "same_ticks": true,
+  "nonfrequency_identical": true,
+  "energy_differences": {},
+  "fuel_identical": true,
+  "study_metric_differences": {}
+}

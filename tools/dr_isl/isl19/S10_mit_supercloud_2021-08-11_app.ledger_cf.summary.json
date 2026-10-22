@@ -1,0 +1,123 @@
+{
+  "kind": "summary",
+  "physical_sha256": "4827bc534a7908166dc4969d1c1539c9b61cdfd6144ea4caf76549f37847ea09",
+  "ticks": 17280,
+  "metrics": {},
+  "record": {},
+  "end_sim_time": 86400.0,
+  "build_warnings": [
+    {
+      "code": "islanded_frequency_protection_unconfigured",
+      "message": "islanded run without frequency protection configured"
+    }
+  ],
+  "final_floor_basis": {
+    "bess-0": {
+      "bess_id": "bess-0",
+      "floor_mwh": 10.6875,
+      "depth_reserve_mwh": 0.0,
+      "diesel_floor_mwh": 0.0,
+      "d2r_term_mwh": 10.6875,
+      "winning_term": "d2r_bridge",
+      "basis": "offline_restart",
+      "unit_id": "turbine-4",
+      "eligibility_wait_s": 555.0,
+      "start_duration_s": 300,
+      "thermal_state": "hot",
+      "eligibility_reason": "min_down"
+    }
+  },
+  "floor_history_count": 5234,
+  "audit": {
+    "ticks": 17280,
+    "frequency_min": 60.0,
+    "frequency_max": 60.0,
+    "invalid_ticks": 0,
+    "invalid_fraction": 0.0,
+    "classes": {
+      "all_curtailment_positive": 5869,
+      "all_curtailment_zero": 11411
+    },
+    "extra_counts": {},
+    "distributions": {},
+    "representative_ticks": {},
+    "first_invalid": null,
+    "energy": {
+      "p_demand_mw_mwh": 620.9086288248361,
+      "p_compute_demand_mw_mwh": 514.3713154094312,
+      "p_cooling_demand_mw_mwh": 106.53731341538261,
+      "p_served_mw_mwh": 612.4446369086545,
+      "p_unserved_mw_mwh": 8.4639919161834,
+      "p_dispatch_curtailed_mw_mwh": 48.51928134810935,
+      "p_generation_mw_mwh": 660.9639182568324,
+      "turbine_output_mw_mwh": 667.8423099175071,
+      "bess_output_mw_mwh": -6.8783916606638815,
+      "fuel_cell_output_mw_mwh": 0.0,
+      "diesel_output_mw_mwh": 0.0
+    },
+    "turbine_fuel_last": {
+      "turbine-0": {
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "hot_standby_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null
+      },
+      "turbine-1": {
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "hot_standby_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null
+      },
+      "turbine-2": {
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "hot_standby_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null
+      },
+      "turbine-3": {
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "hot_standby_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null
+      },
+      "turbine-4": {
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "hot_standby_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null
+      }
+    },
+    "diesel_last": {
+      "diesel_fuel_remaining_gal": 0.0,
+      "diesel_fuel_runtime_hours_remaining": null
+    },
+    "physical_balance_failures": 0,
+    "fc_trips": 0,
+    "site": {
+      "island_mode": "islanded",
+      "frequency_nominal_hz": 60.0,
+      "dynamic_step_s": 0.01,
+      "dispatch_curtailment_response_delay_s": 0.5,
+      "inertia_constant_s": 4.0,
+      "vsm_inertia_constant_s": 2.0,
+      "fixed_speed_cooling_fraction": 0.3,
+      "d_motor": 2.5,
+      "uf_warning_hz": null,
+      "ufls_stage1_hz": null,
+      "island_collapse_hz": null,
+      "of_warning_hz": null,
+      "of_trip_hz": null,
+      "ufls_stages": [],
+      "relay_81u_threshold_hz": null,
+      "relay_81u_delay_s": 0.1
+    },
+    "nonfrequency_sha256": "8a9415b84b564b706b7ee2e13035902f0dc3da941b74834de398feed7e3ddebe",
+    "targeted_channels_csv": "/home/runner/workspace/tools/dr_isl/isl19/S10_mit_supercloud_2021-08-11_app.ledger_cf.channels.csv",
+    "csv_bytes": 7544216
+  },
+  "instrumentation": {
+    "original_sha256": "f3e867309cd1e6aa97ca9ded2b28572763283341a6ac844d0f222d03a135ff47",
+    "scratch_sha256": "395ba0cd23bec900e19d4e19e45c54bb9062df33f9810da23dac411a8caa3525",
+    "scratch_file": "/tmp/isl19-scratch/5616/simulation_core.py"
+  }
+}

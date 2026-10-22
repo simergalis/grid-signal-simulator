@@ -1,0 +1,222 @@
+{
+  "application_base": "5225a05a7f2dc76acd18dad172fd2cf002c6afd8",
+  "application_diff": "",
+  "all_original_core_hashes_equal": true,
+  "original_core_sha256": "f3e867309cd1e6aa97ca9ded2b28572763283341a6ac844d0f222d03a135ff47",
+  "counterfactual_and_instrumentation_sources": [
+    {
+      "original_path": "tools/dr_isl/isl19/observer.py",
+      "scratch_path": "/tmp/isl19-scratch/driver_5225a05/observer.py",
+      "sha256": "c0af2219b412d5303dccf5e2c3429c626cd6973e50652361ceb875f0c21ca266",
+      "committed": false
+    },
+    {
+      "original_path": "tools/dr_isl/isl19/worker.py",
+      "scratch_path": "/tmp/isl19-scratch/driver_5225a05/worker.py",
+      "sha256": "868bf90843da7b1f7a526175c2f963ef8b7f73725851d6d94f423f5dd0508aef",
+      "committed": false
+    },
+    {
+      "original_path": "tools/dr_isl/isl19/run.py",
+      "scratch_path": "/tmp/isl19-scratch/driver_5225a05/run.py",
+      "sha256": "54fa37478394f53ca53388d958b3eb104ef7cf445e9e085a20fb759a370c49c7",
+      "committed": false
+    },
+    {
+      "original_path": "tools/dr_isl/isl19/report.py",
+      "scratch_path": "/tmp/isl19-scratch/driver_5225a05/report.py",
+      "sha256": "1803d4ced9a3d1548d16b34912cea497b1550a5027da83b4e7c30f89a77ba6af",
+      "committed": false
+    }
+  ],
+  "files": [
+    {
+      "path": "tools/dr_isl/isl19/FUNCTION_LOCATIONS.json",
+      "bytes": 6265,
+      "sha256": "e0ca1067fbe6358f90476e7863ef948b6a240a460eb4fa0a1feb755f99ec0473"
+    },
+    {
+      "path": "tools/dr_isl/isl19/OBSERVATION_CONTROLS.json",
+      "bytes": 1120,
+      "sha256": "18288e3f61a6869a7fbb2be056684e710536e3ecbe7da32956f4f90c740e1924"
+    },
+    {
+      "path": "tools/dr_isl/isl19/PROVENANCE.txt",
+      "bytes": 7490,
+      "sha256": "a03fdc57f2f1a49e148f3a88286a6487e723f4d5e37170267aeb8c31bd4b011c"
+    },
+    {
+      "path": "tools/dr_isl/isl19/REPRESENTATIVE_TICKS.json",
+      "bytes": 138537,
+      "sha256": "b79abfd57137872f24e822ec1405bdfdd2f98574464f76eb1b9860554b611889"
+    },
+    {
+      "path": "tools/dr_isl/isl19/RESULTS.json",
+      "bytes": 10270,
+      "sha256": "1d94bd86539c50e0d11b6831d2241081d79afd6b1bf4eec6900910f91d70765b"
+    },
+    {
+      "path": "tools/dr_isl/isl19/RUN.log",
+      "bytes": 1984,
+      "sha256": "1cd9e92126272115cf78f53441f7f8cbc627b0af46897300673ba7bb0dcb57c6"
+    },
+    {
+      "path": "tools/dr_isl/isl19/S10_mit_supercloud_2021-08-11_app.baseline.channels.csv",
+      "bytes": 8711572,
+      "sha256": "9c20089c3df554026b3517f23eb8b2f463cf0900e202051a717bdc571511dc95"
+    },
+    {
+      "path": "tools/dr_isl/isl19/S10_mit_supercloud_2021-08-11_app.baseline.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tools/dr_isl/isl19/S10_mit_supercloud_2021-08-11_app.baseline.summary.json",
+      "bytes": 41259,
+      "sha256": "dd281409a08b5d6b58ed85e5d5f93bef72e2efd5073921223da7309b566ecf1a"
+    },
+    {
+      "path": "tools/dr_isl/isl19/S10_mit_supercloud_2021-08-11_app.comparison.json",
+      "bytes": 210,
+      "sha256": "b1a03da79f839b390a1615b481a38866eb49e3f01b5028d1697b5aa1406223d0"
+    },
+    {
+      "path": "tools/dr_isl/isl19/S10_mit_supercloud_2021-08-11_app.ledger_cf.channels.csv",
+      "bytes": 7544216,
+      "sha256": "17212738b853eee1a8d20811d776f248c14cf6f8e13289a232467636a1168386"
+    },
+    {
+      "path": "tools/dr_isl/isl19/S10_mit_supercloud_2021-08-11_app.ledger_cf.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tools/dr_isl/isl19/S10_mit_supercloud_2021-08-11_app.ledger_cf.summary.json",
+      "bytes": 3857,
+      "sha256": "8e7af0bf36f92651797435130889f5ba4119384e34218137b3431418b11aed10"
+    },
+    {
+      "path": "tools/dr_isl/isl19/STATUS.json",
+      "bytes": 126,
+      "sha256": "e7728aac0a500f8202dd733559df8e1d2fd6ae73094a49ac37ad7e321e91c7a3"
+    },
+    {
+      "path": "tools/dr_isl/isl19/TRACE_LOADING_SOURCES.txt",
+      "bytes": 10480,
+      "sha256": "9418ae384a03f35f80d959b291717b19c3ad954a7738b62b2d58efa39f20521b"
+    },
+    {
+      "path": "tools/dr_isl/isl19/TRACE_SOURCES.txt",
+      "bytes": 60840,
+      "sha256": "df2bb28b35986cb400626b9dd0e3128aa24c99a52b7e1846c836a3a3e45e2e41"
+    },
+    {
+      "path": "tools/dr_isl/isl19/scenario-h1-k8s-ray-24h_baseline.baseline.channels.csv",
+      "bytes": 9327264,
+      "sha256": "94e67e2d24a421c67ff4a3875c311502c24813349d44a603af613e523de51e49"
+    },
+    {
+      "path": "tools/dr_isl/isl19/scenario-h1-k8s-ray-24h_baseline.baseline.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tools/dr_isl/isl19/scenario-h1-k8s-ray-24h_baseline.baseline.summary.json",
+      "bytes": 97196,
+      "sha256": "d5261ee4983555ce08af5be8ecaec6ecd6c828326ffc7e68b3960bf63f765ea9"
+    },
+    {
+      "path": "tools/dr_isl/isl19/scenario-h1-k8s-ray-24h_baseline.comparison.json",
+      "bytes": 356,
+      "sha256": "58102d415f4ad0d93b41e36d14b6dd71fdafb017d9de61a509556b733e2f7a4d"
+    },
+    {
+      "path": "tools/dr_isl/isl19/scenario-h1-k8s-ray-24h_baseline.ledger_cf.channels.csv",
+      "bytes": 7937141,
+      "sha256": "f1ba9aa7d38ad54c66177b89d02cbf43b32d1264e3e3cf46b3b1788738f005ac"
+    },
+    {
+      "path": "tools/dr_isl/isl19/scenario-h1-k8s-ray-24h_baseline.ledger_cf.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tools/dr_isl/isl19/scenario-h1-k8s-ray-24h_baseline.ledger_cf.summary.json",
+      "bytes": 59192,
+      "sha256": "bb6ebdcca37306f275c14ba87c710fd8a4d12869a56679b898039ddecdab6fa8"
+    },
+    {
+      "path": "tools/dr_isl/isl19/scenario-uneven-multisched-01_baseline.baseline.channels.csv",
+      "bytes": 763944,
+      "sha256": "4edbc04ba861cedd4e19c39477f33ad88a33b16df9ee500ed47c37851f80a055"
+    },
+    {
+      "path": "tools/dr_isl/isl19/scenario-uneven-multisched-01_baseline.baseline.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tools/dr_isl/isl19/scenario-uneven-multisched-01_baseline.baseline.summary.json",
+      "bytes": 68088,
+      "sha256": "cb5b5e11e9327c5005feb7f33e90a26f6c601a034909b5e5f14c03823581ee43"
+    },
+    {
+      "path": "tools/dr_isl/isl19/scenario-uneven-multisched-01_baseline.comparison.json",
+      "bytes": 360,
+      "sha256": "8edd2b755f8bf5e299110ebc9b488b427e0cc6192c526997af9621119339381f"
+    },
+    {
+      "path": "tools/dr_isl/isl19/scenario-uneven-multisched-01_baseline.ledger_cf.channels.csv",
+      "bytes": 657611,
+      "sha256": "5e428e45de77eab3cfa9ce8eadf6edaddc7d65a0565b4354d90de97fd4e2fd2c"
+    },
+    {
+      "path": "tools/dr_isl/isl19/scenario-uneven-multisched-01_baseline.ledger_cf.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tools/dr_isl/isl19/scenario-uneven-multisched-01_baseline.ledger_cf.summary.json",
+      "bytes": 29738,
+      "sha256": "cab1710b9098e91373281a5847ecb43dcbb607b47e866281e449becfe09f785c"
+    },
+    {
+      "path": "tools/dr_isl/isl19/scenario-uneven-multisched-01_informed.baseline.channels.csv",
+      "bytes": 752343,
+      "sha256": "09b987340bb9f452cea00d37d838fd01484153fe6c092dfedd965ba382b2092a"
+    },
+    {
+      "path": "tools/dr_isl/isl19/scenario-uneven-multisched-01_informed.baseline.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tools/dr_isl/isl19/scenario-uneven-multisched-01_informed.baseline.summary.json",
+      "bytes": 70752,
+      "sha256": "d4f21b1f19d5d01664c4f82a18b5d1e33a29f116bb5a871680d3f460733ae644"
+    },
+    {
+      "path": "tools/dr_isl/isl19/scenario-uneven-multisched-01_informed.comparison.json",
+      "bytes": 360,
+      "sha256": "1448e34ef1e024c59f8f6c351cbcdc2e0ee0c394a30bb8fd41a84696e09dd5a5"
+    },
+    {
+      "path": "tools/dr_isl/isl19/scenario-uneven-multisched-01_informed.ledger_cf.channels.csv",
+      "bytes": 653450,
+      "sha256": "359dc4a13e91353a47edb1ac5e16258ec61a2d22dc8fbc1047e84a3be03ca74b"
+    },
+    {
+      "path": "tools/dr_isl/isl19/scenario-uneven-multisched-01_informed.ledger_cf.stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tools/dr_isl/isl19/scenario-uneven-multisched-01_informed.ledger_cf.summary.json",
+      "bytes": 32220,
+      "sha256": "f96bf10d436e12812c4c74526a9e2ef9d95f583458e8a27cf04695afc46ed534"
+    }
+  ],
+  "report_sha256": "7e02e5b7313a847d175d2609e9f08e192b0431ac291518476d5f0382bf41b09e",
+  "largest_evidence_file_bytes": 9327264,
+  "runs_completed": 8
+}

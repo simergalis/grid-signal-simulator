@@ -1,0 +1,362 @@
+[
+  {
+    "name": "scenario-uneven-multisched-01_baseline",
+    "scenario": "scenario-uneven-multisched-01",
+    "arm": "baseline",
+    "ticks": 1440,
+    "invalid_ticks": 700,
+    "invalid_fraction": 0.4861111111111111,
+    "invalid_with_curtailment": 637,
+    "invalid_without_curtailment": 63,
+    "share_invalid_with_curtailment": 0.91,
+    "share_invalid_without_curtailment": 0.09,
+    "forcing_minus_curtailment_distribution": {
+      "n": 637,
+      "min": 0.0,
+      "max": 0.0,
+      "mean": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "within_1e_9": 637
+    },
+    "subgroups": {
+      "curtailment_positive/positive/over": 637,
+      "curtailment_zero/negative/under": 27,
+      "curtailment_zero/zero/under": 26,
+      "curtailment_zero/zero/over": 10
+    },
+    "zero_curtailment_extrema": {
+      "h_aggregate": {
+        "min": 4.0,
+        "max": 4.0
+      },
+      "s_base_mva": {
+        "min": 58.82352941176471,
+        "max": 117.64705882352942
+      },
+      "dt_sub": {
+        "min": 0.01,
+        "max": 0.01
+      },
+      "substeps": {
+        "min": 500.0,
+        "max": 500.0
+      },
+      "df_dt_last": {
+        "min": -2.5947295935047276,
+        "max": 0.8502776423486905
+      },
+      "euler_damping_factor": {
+        "min": 0.9997888497242601,
+        "max": 0.9999746286540054
+      },
+      "demand_step_mw": {
+        "min": -8.80499876290473,
+        "max": 60.05387828026538
+      }
+    },
+    "frequency_min": -5.000866893367675,
+    "frequency_max": 176.430848113831,
+    "baseline_physical_sha256": "90f4b8a55acceb521f972d9596c5137f104dbc34e158ac3bc58cadf73e5164f1",
+    "counterfactual_frequency_min": 60.0,
+    "counterfactual_frequency_max": 60.0,
+    "counterfactual_invalid_ticks": 0,
+    "counterfactual_invalid_fraction": 0.0,
+    "comparison": {
+      "scenario": "scenario-uneven-multisched-01",
+      "arm": "baseline",
+      "same_ticks": true,
+      "nonfrequency_identical": true,
+      "energy_differences": {},
+      "fuel_identical": true,
+      "study_metric_differences": {
+        "invalid_frequency_tick_count": [
+          700,
+          0
+        ],
+        "invalid_frequency_fraction": [
+          0.4861111111111111,
+          0.0
+        ]
+      }
+    },
+    "consistency_checks": {
+      "raw_forcing_equals_published": true,
+      "predicted_served_equals_final_served": true,
+      "pre_sink_equals_final_sink": true
+    },
+    "new_sync_after_inertia_selection": [],
+    "baseline_physical_balance_failures": 0,
+    "counterfactual_physical_balance_failures": 0,
+    "fc_trips": 0
+  },
+  {
+    "name": "scenario-uneven-multisched-01_informed",
+    "scenario": "scenario-uneven-multisched-01",
+    "arm": "informed",
+    "ticks": 1440,
+    "invalid_ticks": 614,
+    "invalid_fraction": 0.4263888888888889,
+    "invalid_with_curtailment": 446,
+    "invalid_without_curtailment": 168,
+    "share_invalid_with_curtailment": 0.7263843648208469,
+    "share_invalid_without_curtailment": 0.2736156351791531,
+    "forcing_minus_curtailment_distribution": {
+      "n": 446,
+      "min": 0.0,
+      "max": 0.0,
+      "mean": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "within_1e_9": 446
+    },
+    "subgroups": {
+      "curtailment_positive/positive/over": 446,
+      "curtailment_zero/zero/over": 168
+    },
+    "zero_curtailment_extrema": {
+      "h_aggregate": {
+        "min": 4.0,
+        "max": 4.0
+      },
+      "s_base_mva": {
+        "min": 58.82352941176471,
+        "max": 117.64705882352942
+      },
+      "dt_sub": {
+        "min": 0.01,
+        "max": 0.01
+      },
+      "substeps": {
+        "min": 500.0,
+        "max": 500.0
+      },
+      "df_dt_last": {
+        "min": -0.18783752780627933,
+        "max": -0.012400982018611832
+      },
+      "euler_damping_factor": {
+        "min": 0.9997656466116882,
+        "max": 0.9999817527042887
+      },
+      "demand_step_mw": {
+        "min": -2.694999107298173,
+        "max": 83.99548392923171
+      }
+    },
+    "frequency_min": 59.534837314959205,
+    "frequency_max": 169.8277840657461,
+    "baseline_physical_sha256": "ea12dabd9944d98aad3f8fc966122f2432e33fb7bd150c8dc313ca9a88dd27a6",
+    "counterfactual_frequency_min": 60.0,
+    "counterfactual_frequency_max": 60.0,
+    "counterfactual_invalid_ticks": 0,
+    "counterfactual_invalid_fraction": 0.0,
+    "comparison": {
+      "scenario": "scenario-uneven-multisched-01",
+      "arm": "informed",
+      "same_ticks": true,
+      "nonfrequency_identical": true,
+      "energy_differences": {},
+      "fuel_identical": true,
+      "study_metric_differences": {
+        "invalid_frequency_tick_count": [
+          614,
+          0
+        ],
+        "invalid_frequency_fraction": [
+          0.4263888888888889,
+          0.0
+        ]
+      }
+    },
+    "consistency_checks": {
+      "raw_forcing_equals_published": true,
+      "predicted_served_equals_final_served": true,
+      "pre_sink_equals_final_sink": true
+    },
+    "new_sync_after_inertia_selection": [],
+    "baseline_physical_balance_failures": 0,
+    "counterfactual_physical_balance_failures": 0,
+    "fc_trips": 0
+  },
+  {
+    "name": "scenario-h1-k8s-ray-24h_baseline",
+    "scenario": "scenario-h1-k8s-ray-24h",
+    "arm": "baseline",
+    "ticks": 17280,
+    "invalid_ticks": 13598,
+    "invalid_fraction": 0.7869212962962963,
+    "invalid_with_curtailment": 11753,
+    "invalid_without_curtailment": 1845,
+    "share_invalid_with_curtailment": 0.8643182821003089,
+    "share_invalid_without_curtailment": 0.13568171789969113,
+    "forcing_minus_curtailment_distribution": {
+      "n": 11753,
+      "min": 0.0,
+      "max": 0.0,
+      "mean": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "within_1e_9": 11753
+    },
+    "subgroups": {
+      "curtailment_positive/positive/over": 11740,
+      "curtailment_positive/positive/under": 13,
+      "curtailment_zero/zero/over": 1117,
+      "curtailment_zero/negative/over": 5,
+      "curtailment_zero/negative/under": 52,
+      "curtailment_zero/zero/under": 671
+    },
+    "zero_curtailment_extrema": {
+      "h_aggregate": {
+        "min": 4.0,
+        "max": 4.0
+      },
+      "s_base_mva": {
+        "min": 58.82352941176471,
+        "max": 117.64705882352942
+      },
+      "dt_sub": {
+        "min": 0.01,
+        "max": 0.01
+      },
+      "substeps": {
+        "min": 500.0,
+        "max": 500.0
+      },
+      "df_dt_last": {
+        "min": -2.9474158067892446,
+        "max": 0.10415782156434392
+      },
+      "euler_damping_factor": {
+        "min": 0.9993524706466812,
+        "max": 0.9999960064421624
+      },
+      "demand_step_mw": {
+        "min": -44.997198,
+        "max": 84.17219496617619
+      }
+    },
+    "frequency_min": 17.23372983198947,
+    "frequency_max": 224.93353102420852,
+    "baseline_physical_sha256": "57a1370fd9d26d4bea4d2361f3ae2086aede264badba0c314095219d9741727b",
+    "counterfactual_frequency_min": 60.0,
+    "counterfactual_frequency_max": 60.0,
+    "counterfactual_invalid_ticks": 0,
+    "counterfactual_invalid_fraction": 0.0,
+    "comparison": {
+      "scenario": "scenario-h1-k8s-ray-24h",
+      "arm": "baseline",
+      "same_ticks": true,
+      "nonfrequency_identical": true,
+      "energy_differences": {},
+      "fuel_identical": true,
+      "study_metric_differences": {
+        "invalid_frequency_tick_count": [
+          13598,
+          0
+        ],
+        "invalid_frequency_fraction": [
+          0.7869212962962963,
+          0.0
+        ]
+      }
+    },
+    "consistency_checks": {
+      "raw_forcing_equals_published": true,
+      "predicted_served_equals_final_served": true,
+      "pre_sink_equals_final_sink": true
+    },
+    "new_sync_after_inertia_selection": [],
+    "baseline_physical_balance_failures": 0,
+    "counterfactual_physical_balance_failures": 0,
+    "fc_trips": 0
+  },
+  {
+    "name": "S10_mit_supercloud_2021-08-11_app",
+    "scenario": "S10_mit_supercloud_2021-08-11",
+    "arm": "app",
+    "ticks": 17280,
+    "invalid_ticks": 7264,
+    "invalid_fraction": 0.4203703703703704,
+    "invalid_with_curtailment": 5615,
+    "invalid_without_curtailment": 1649,
+    "share_invalid_with_curtailment": 0.7729900881057269,
+    "share_invalid_without_curtailment": 0.22700991189427314,
+    "forcing_minus_curtailment_distribution": {
+      "n": 5615,
+      "min": 0.0,
+      "max": 0.0,
+      "mean": 0.0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "p99": 0.0,
+      "within_1e_9": 5615
+    },
+    "subgroups": {
+      "curtailment_positive/positive/over": 5615,
+      "curtailment_zero/zero/over": 1075,
+      "curtailment_zero/negative/over": 32,
+      "curtailment_zero/negative/under": 446,
+      "curtailment_zero/zero/under": 96
+    },
+    "zero_curtailment_extrema": {
+      "h_aggregate": {
+        "min": 4.0,
+        "max": 4.0
+      },
+      "s_base_mva": {
+        "min": 17.647058823529413,
+        "max": 88.23529411764707
+      },
+      "dt_sub": {
+        "min": 0.01,
+        "max": 0.01
+      },
+      "substeps": {
+        "min": 500.0,
+        "max": 500.0
+      },
+      "df_dt_last": {
+        "min": -12.139504541171434,
+        "max": 6.2002958007712525
+      },
+      "euler_damping_factor": {
+        "min": 0.99984375,
+        "max": 1.0
+      },
+      "demand_step_mw": {
+        "min": -1.0695631785543824,
+        "max": 10.300082400000008
+      }
+    },
+    "frequency_min": -729.1075118080669,
+    "frequency_max": 998.9330534505464,
+    "baseline_physical_sha256": "8ba0dec0459ca09b9df4ea6fa17bd72fa16038220f425b0a8dd499bfa87557ab",
+    "counterfactual_frequency_min": 60.0,
+    "counterfactual_frequency_max": 60.0,
+    "counterfactual_invalid_ticks": 0,
+    "counterfactual_invalid_fraction": 0.0,
+    "comparison": {
+      "scenario": "S10_mit_supercloud_2021-08-11",
+      "arm": "app",
+      "same_ticks": true,
+      "nonfrequency_identical": true,
+      "energy_differences": {},
+      "fuel_identical": true,
+      "study_metric_differences": {}
+    },
+    "consistency_checks": {
+      "raw_forcing_equals_published": true,
+      "predicted_served_equals_final_served": true,
+      "pre_sink_equals_final_sink": true
+    },
+    "new_sync_after_inertia_selection": [],
+    "baseline_physical_balance_failures": 0,
+    "counterfactual_physical_balance_failures": 0,
+    "fc_trips": 0
+  }
+]

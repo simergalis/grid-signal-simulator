@@ -56,3 +56,6 @@ __pycache__/
 *.pyo
 system_stats.csv
 gridsignal_logger.py
+
+# DR D11.0: local per-tick diagnostic channels must not enter Git.
+tools/dr_isl/**/*.channels.csv

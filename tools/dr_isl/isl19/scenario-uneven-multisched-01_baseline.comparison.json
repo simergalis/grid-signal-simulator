@@ -1,0 +1,18 @@
+{
+  "scenario": "scenario-uneven-multisched-01",
+  "arm": "baseline",
+  "same_ticks": true,
+  "nonfrequency_identical": true,
+  "energy_differences": {},
+  "fuel_identical": true,
+  "study_metric_differences": {
+    "invalid_frequency_tick_count": [
+      700,
+      0
+    ],
+    "invalid_frequency_fraction": [
+      0.4861111111111111,
+      0.0
+    ]
+  }
+}

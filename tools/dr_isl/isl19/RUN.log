@@ -1,0 +1,20 @@
+{"done": true, "scenario": "scenario-uneven-multisched-01", "arm": "baseline", "mode": "baseline", "ticks": 1440}
+
+{"done": true, "scenario": "scenario-uneven-multisched-01", "arm": "baseline", "mode": "ledger_cf", "ticks": 1440}
+
+{"scenario": "scenario-uneven-multisched-01", "arm": "baseline", "same_ticks": true, "nonfrequency_identical": true, "energy_differences": {}, "fuel_identical": true, "study_metric_differences": {"invalid_frequency_tick_count": [700, 0], "invalid_frequency_fraction": [0.4861111111111111, 0.0]}}
+{"done": true, "scenario": "scenario-uneven-multisched-01", "arm": "informed", "mode": "baseline", "ticks": 1440}
+
+{"done": true, "scenario": "scenario-uneven-multisched-01", "arm": "informed", "mode": "ledger_cf", "ticks": 1440}
+
+{"scenario": "scenario-uneven-multisched-01", "arm": "informed", "same_ticks": true, "nonfrequency_identical": true, "energy_differences": {}, "fuel_identical": true, "study_metric_differences": {"invalid_frequency_tick_count": [614, 0], "invalid_frequency_fraction": [0.4263888888888889, 0.0]}}
+{"done": true, "scenario": "scenario-h1-k8s-ray-24h", "arm": "baseline", "mode": "baseline", "ticks": 17280}
+
+{"done": true, "scenario": "scenario-h1-k8s-ray-24h", "arm": "baseline", "mode": "ledger_cf", "ticks": 17280}
+
+{"scenario": "scenario-h1-k8s-ray-24h", "arm": "baseline", "same_ticks": true, "nonfrequency_identical": true, "energy_differences": {}, "fuel_identical": true, "study_metric_differences": {"invalid_frequency_tick_count": [13598, 0], "invalid_frequency_fraction": [0.7869212962962963, 0.0]}}
+{"done": true, "scenario": "S10_mit_supercloud_2021-08-11", "arm": "app", "mode": "baseline", "ticks": 17280}
+
+{"done": true, "scenario": "S10_mit_supercloud_2021-08-11", "arm": "app", "mode": "ledger_cf", "ticks": 17280}
+
+{"scenario": "S10_mit_supercloud_2021-08-11", "arm": "app", "same_ticks": true, "nonfrequency_identical": true, "energy_differences": {}, "fuel_identical": true, "study_metric_differences": {}}

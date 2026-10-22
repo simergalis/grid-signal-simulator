@@ -1,0 +1,204 @@
+
+attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/loading.py:33-139
+33: def compute_loading_setpoints(
+34:     synchronised: "list[TurbineModule]",
+35:     p_fleet: float,
+36:     *,
+37:     output_bounds: dict[str, tuple[float, float]] | None = None,
+38: ) -> tuple[list[float], float]:
+39:     """Compute per-unit setpoints for units in A.  Pure — no side effects.
+40: 
+41:     Args:
+42:         synchronised: units with state SYNCHRONISED (allocated set A).
+43:                       T (TRANSITIONAL) is empty until Phase 3;
+44:                       P_allocated == P_fleet in this build.
+45:         p_fleet:      fleet setpoint (gt_setpoint_mw from the droop block).
+46: 
+47:     Returns:
+48:         (setpoints, sub_msl_surplus_mw)
+49:         sub_msl_surplus_mw > 0 when P_fleet < Σ msl_i.  The fleet holds at
+50:         the floor; the surplus is reported and not resolved here.
+51: 
+52:     Invariants:
+53:         TC-77: order-independent — permuting synchronised yields the same
+54:                setpoints (redistribution loop depends only on rated_mw values).
+55:         TC-78: terminates within |A| passes (monotone residual, bounded set).
+56:         sub_msl_surplus_mw populated and setpoints at floor when sub-MSL.
+57:     """
+58:     if not synchronised:
+59:         return [], 0.0
+60: 
+61:     # P_allocated = P_fleet − Σ_{i∈T} output_i.  T is empty until Phase 3.
+62:     p_allocated = p_fleet
+63: 
+64:     total_rated = sum(t.config.rated_mw for t in synchronised)
+65:     if total_rated < 1e-9:
+66:         return [0.0] * len(synchronised), 0.0
+67: 
+68:     msl_i = [t.config.p_min_stable_frac * t.config.rated_mw for t in synchronised]
+69:     ceiling_i = [t.config.rated_mw for t in synchronised]
+70:     if output_bounds is not None:
+71:         # D10: the same sequential allocator can use this interval's physical
+72:         # ramp/policy envelope; no second turbine/diesel loading algorithm.
+73:         msl_i = [output_bounds[t.config.asset_id][0] for t in synchronised]
+74:         ceiling_i = [output_bounds[t.config.asset_id][1] for t in synchronised]
+75:     sum_msl = sum(msl_i)
+76: 
+77:     # ── Sub-MSL: feasible band lower bound ───────────────────────────────────
+78:     if p_allocated < sum_msl - 1e-9:
+79:         # Fleet cannot absorb demand below Σ msl without de-committing.
+80:         # Hold at the floor; report surplus; do not route or resolve.
+81:         sub_msl_surplus_mw = sum_msl - p_allocated
+82:         return list(msl_i), sub_msl_surplus_mw
+83: 
+84:     # ── Normal case: P_allocated ∈ [Σ msl, Σ rated] ─────────────────────────
+85:     # Phase E Item 7: sequential base-loading replaces proportional sharing.
+86:     #
+87:     # WHY: proportional sharing (shares = rated_i / Σ rated) gives every unit
+88:     # the same utilisation fraction as the fleet.  Per-unit utilisation is then
+89:     # a scalar multiple of fleet utilisation, so the Phase D commit trigger
+90:     # (which fires on per-unit saturation) becomes indistinguishable from a
+91:     # fleet-level trigger — the two are mutually defeating.
+92:     #
+93:     # HOW: every unit receives at least its MSL (floor already set above);
+94:     # residual above Σ MSL is allocated in commitment order (list order = order
+95:     # units were started), filling each unit to its rated_mw before advancing.
+96:     # The "marginal unit" (last to receive residual) runs below rated while
+97:     # more-senior units are at rated — utilisation diverges (TC-96).
+98:     #
+99:     # The existing redistribution loop still runs to correct any numeric slip;
+100:     # it is a no-op for valid sequential allocations (setpoints already clamped
+101:     # within [msl, rated]).
+102:     setpoints   = list(msl_i)                         # floor: every unit at MSL
+103:     _residual_s = max(0.0, p_allocated - sum(msl_i))  # headroom above Σ MSL
+104:     for i, t in enumerate(synchronised):
+105:         if _residual_s < 1e-9:
+106:             break
+107:         _headroom_i   = ceiling_i[i] - msl_i[i]
+108:         _fill_i       = min(_residual_s, _headroom_i)
+109:         setpoints[i] += _fill_i
+110:         _residual_s  -= _fill_i
+111: 
+112:     # ── Residual redistribution — terminates within |A| passes ───────────────
+113:     # Each pass: identify clamped units, accumulate residual, redistribute.
+114:     # With sequential base-loading the initial setpoints are already in
+115:     # [msl, rated]; this loop is a safety guard against numeric edge cases.
+116:     n = len(synchronised)
+117:     for _ in range(n):
+118:         residual = 0.0
+119:         unclamped: list[int] = []
+120:         for i, t in enumerate(synchronised):
+121:             lo = msl_i[i]
+122:             hi = ceiling_i[i]
+123:             if setpoints[i] < lo - 1e-9:
+124:                 residual += lo - setpoints[i]   # positive: we under-allocated
+125:                 setpoints[i] = lo
+126:             elif setpoints[i] > hi + 1e-9:
+127:                 residual += hi - setpoints[i]   # negative: we over-allocated
+128:                 setpoints[i] = hi
+129:             else:
+130:                 unclamped.append(i)
+131:         if abs(residual) < 1e-9 or not unclamped:
+132:             break
+133:         unclamped_rated = sum(synchronised[i].config.rated_mw for i in unclamped)
+134:         if unclamped_rated < 1e-9:
+135:             break
+136:         for i in unclamped:
+137:             setpoints[i] += residual * synchronised[i].config.rated_mw / unclamped_rated
+138: 
+139:     return setpoints, 0.0
+
+attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/loading.py:146-151
+146: def ramp_limited_output(turbine: "TurbineModule", target_mw: float, dt_seconds: float) -> float:
+147:     """Pure prediction of the existing loading step, also used to apply it."""
+148:     delta = target_mw - turbine.output_mw()
+149:     max_step = turbine.config.r_asset_mw_per_s * dt_seconds
+150:     step = max(-max_step, min(max_step, delta))
+151:     return turbine.output_mw() + step
+
+attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/loading.py:154-175
+154: def apply_loading(
+155:     synchronised: "list[TurbineModule]",
+156:     p_fleet: float,
+157:     dt_seconds: float,
+158:     *,
+159:     output_bounds: dict[str, tuple[float, float]] | None = None,
+160: ) -> float:
+161:     """Compute setpoints and advance SYNCHRONISED unit outputs toward them.
+162: 
+163:     Movement toward setpoint, all units, both directions:
+164:         output_i ← output_i + clamp(setpoint_i − output_i, −r_i·Δt, +r_i·Δt)
+165: 
+166:     Returns sub_msl_surplus_mw (0.0 when P_fleet ≥ Σ msl_i).
+167:     No stored state — calling twice with the same inputs is idempotent for the
+168:     setpoint computation, though output_mw will advance twice.
+169:     """
+170:     setpoints, sub_msl_surplus_mw = compute_loading_setpoints(
+171:         synchronised, p_fleet, output_bounds=output_bounds,
+172:     )
+173:     for t, sp in zip(synchronised, setpoints):
+174:         t.set_output(ramp_limited_output(t, sp, dt_seconds))
+175:     return sub_msl_surplus_mw
+
+attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/loading.py:178-204
+178: def apply_loading_targets(
+179:     synchronised: "list[TurbineModule]",
+180:     targets_mw: "dict[str, float]",
+181:     dt_seconds: float,
+182: ) -> float:
+183:     """Advance units toward explicit per-unit targets.
+184: 
+185:     This is the same loading/setpoint mechanism as ``apply_loading`` with a
+186:     controller-provided target overlay.  It does not add a turbine state or
+187:     bypass the per-unit ramp and output clamp.
+188:     """
+189:     sub_msl_surplus_mw = 0.0
+190:     for turbine in synchronised:
+191:         minimum = max(
+192:             0.0,
+193:             float(turbine.config.p_min_stable_frac)
+194:             * float(turbine.config.rated_mw),
+195:         )
+196:         target = max(
+197:             minimum,
+198:             min(
+199:                 float(turbine.config.rated_mw),
+200:                 float(targets_mw.get(turbine.config.asset_id, minimum)),
+201:             ),
+202:         )
+203:         turbine.set_output(ramp_limited_output(turbine, target, dt_seconds))
+204:     return sub_msl_surplus_mw
+
+attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/loading.py:211-242
+211: def ramp_capability(horizon_s: float, turbines: "list[TurbineModule]") -> float:
+212:     """Fleet ramp capability (MW) over horizon *horizon_s* seconds.
+213: 
+214:     Only units that are fully on-bus contribute; STARTING units contribute zero
+215:     regardless of horizon (Task #198 item 2 — a unit not yet closed its breaker
+216:     must not be banked as reserve; starts fail).
+217: 
+218:     For SYNCHRONISED only (contributes_to_reserve = True):
+219:         contribution = min(r_i × horizon_s, max(0, rated_i − output_i))
+220:     UNLOADING units hold no upward headroom (tracking down) — contribute 0.
+221:     STARTING, OFFLINE, OUT_OF_SERVICE, and hot-standby units: 0.
+222: 
+223:     TC-79: headroom dominates when output_i ≈ 0.9 × rated_i — capability equals
+224:            (rated_i − output_i), not r_i × horizon_s × n.
+225:     TC-80 (corrected): STARTING units always contribute 0, regardless of horizon.
+226:            Full credit appears only once the unit transitions to SYNCHRONISED.
+227:     """
+228:     from .asset_modules import TurbineState   # local import — avoids circular at module level
+229: 
+230:     total = 0.0
+231:     for t in turbines:
+232:         if t.config.hot_standby:
+233:             continue
+234:         if t.state == TurbineState.STARTING:
+235:             pass   # zero — not on bus; starts fail; must not be banked as reserve
+236:         elif t.contributes_to_reserve:
+237:             # Item 4: contributes_to_reserve = SYNCHRONISED only.  UNLOADING holds
+238:             # no upward headroom and must not be credited toward ramp reserve.
+239:             headroom = max(0.0, t.config.rated_mw - t.output_mw())
+240:             total += min(t.config.r_asset_mw_per_s * horizon_s, headroom)
+241:         # OFFLINE / OUT_OF_SERVICE / UNLOADING: contribute 0
+242:     return total

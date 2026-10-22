@@ -1,0 +1,1102 @@
+
+attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py:863-945
+863: def _cost_ranked_dispatch_allocations(
+864:     demand_mw: float,
+865:     *,
+866:     bess_available_mw: float,
+867:     turbine_available_mw: float,
+868:     fuel_cell_available_mw: float,
+869:     diesel_available_mw: float = 0.0,
+870: ) -> dict[str, float]:
+871:     """Allocate discretionary demand using the shared marginal-cost ranking.
+872: 
+873:     Renewable output and physically unavoidable turbine minimum-stable output
+874:     are removed before this helper is called.  The remaining dispatchable MW is
+875:     allocated greedily from :class:`PowerRanker`, so the physics path and the
+876:     operator advisory use one catalogue-backed source of truth.
+877:     """
+878:     sources = [
+879:         _PowerSource(
+880:             source_id="bess-fleet",
+881:             source_type=_PowerSourceType.BESS,
+882:             dispatchable=True,
+883:             counts_toward_reserve=True,
+884:             marginal_cost_mwh=float(_sp.value("bess_marginal_cost_mwh")),
+885:             response_latency_class=_ResponseLatencyClass.INSTANT,
+886:             authority_tier=_AuthorityTier.AUTONOMOUS,
+887:             available_mw=max(0.0, bess_available_mw),
+888:             cost_basis_note="catalogue: bess_marginal_cost_mwh",
+889:         ),
+890:         _PowerSource(
+891:             source_id="turbine-fleet",
+892:             source_type=_PowerSourceType.TURBINE,
+893:             dispatchable=True,
+894:             counts_toward_reserve=True,
+895:             marginal_cost_mwh=float(_sp.value("turbine_variable_per_mwh")),
+896:             response_latency_class=_ResponseLatencyClass.THERMAL_LAG,
+897:             authority_tier=_AuthorityTier.AUTONOMOUS,
+898:             available_mw=max(0.0, turbine_available_mw),
+899:             cost_basis_note="catalogue: turbine_variable_per_mwh",
+900:         ),
+901:         _PowerSource(
+902:             source_id="fuel-cell-fleet",
+903:             source_type=_PowerSourceType.FUEL_CELL,
+904:             dispatchable=True,
+905:             counts_toward_reserve=False,
+906:             marginal_cost_mwh=float(_sp.value("fuel_cell_ppa_rate_mwh")),
+907:             response_latency_class=_ResponseLatencyClass.RAMP_LIMITED,
+908:             authority_tier=_AuthorityTier.AUTONOMOUS,
+909:             available_mw=max(0.0, fuel_cell_available_mw),
+910:             cost_basis_note="catalogue: fuel_cell_ppa_rate_mwh",
+911:         ),
+912:     ]
+913:     if diesel_available_mw > 0.0:
+914:         sources.append(_PowerSource(
+915:             source_id="diesel-fleet",
+916:             source_type=_PowerSourceType.DIESEL,
+917:             dispatchable=True,
+918:             counts_toward_reserve=True,
+919:             # PROPOSED_HERE, D10 fallback: no catalogue diesel price exists.
+920:             # Rank-only infinity (not a fuel price): diesel is last on rise /
+921:             # first on back-down because diesel fuel/MWh exceeds gas and FC.
+922:             # Source: approved DR-2026-10-20-ISLAND-COLLAPSE D10.
+923:             marginal_cost_mwh=math.inf,
+924:             response_latency_class=_ResponseLatencyClass.RAMP_LIMITED,
+925:             authority_tier=_AuthorityTier.AUTONOMOUS,
+926:             available_mw=diesel_available_mw,
+927:             cost_basis_note="D10: ranking-only last; no catalogue diesel price",
+928:         ))
+929:     ranked = _PowerRanker().rank(sources).ranked_sources
+930:     remaining_mw = max(0.0, demand_mw)
+931:     allocations = {
+932:         "bess-fleet": 0.0,
+933:         "turbine-fleet": 0.0,
+934:         "fuel-cell-fleet": 0.0,
+935:         "diesel-fleet": 0.0,
+936:     }
+937:     for source in ranked:
+938:         if remaining_mw <= 1e-9:
+939:             break
+940:         allocated_mw = min(source.available_mw, remaining_mw)
+941:         allocations[source.source_id] = allocated_mw
+942:         remaining_mw -= allocated_mw
+943:     return allocations
+944: 
+945: 
+
+attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py:1220-1235
+1220:     # one module via _job_owner_index, so no double-counting).  Pass this to
+1221:     # CoolingModule's simulation path instead of the old aggregate scalar.
+1222:     # The engine reads per_job_compute_mw() directly — it does NOT infer job
+1223:     # boundaries from aggregate draw shape (§8 / Build Plan v2.2 Step 3 Item 3).
+1224:     _per_job_draws: dict[str, float] = {}
+1225:     for _g in state.gpu_modules:
+1226:         for _job_id in _g._node_counts:
+1227:             _per_job_draws[_job_id] = _g.per_job_compute_mw(_job_id)
+1228:     p_compute_demand_mw = sum(_per_job_draws.values())
+1229: 
+1230:     # ── GPU load profile scaling (operator-authored zero-order-hold) ──────────
+1231:     # Multiplies p_compute_demand_mw AND the per-job draws passed to the cooling
+1232:     # model by the active fraction so that cooling tracks the same throttled load.
+1233:     # No-op when the profile is empty (the default), so all existing tests and
+1234:     # seeded scenarios are unaffected.
+1235:     _gpu_load_fraction = _gpu_load_fraction_at(state.gpu_load_profile, sim_time)
+
+attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py:1305-1335
+1305:             # Floor not binding: jobs carry the load.  Zero the floor envelope so
+1306:             # its history drains to zero and does not inflate cooling demand.
+1307:             _per_job_draws = dict(_per_job_draws)
+1308:             _per_job_draws["__floor__"] = 0.0
+1309: 
+1310:     _demand_replay = state.demand_replay_trace
+1311:     if _demand_replay is not None and state.tick_index < len(_demand_replay):
+1312:         # The live probe already measured the scheduler-shaped demand and the
+1313:         # lagged cooling term.  Replaying both values avoids invoking any
+1314:         # background scheduler path in the comparison runs while preserving
+1315:         # the exact physical demand presented to both commitment modes.
+1316:         p_compute_demand_mw, p_cooling_demand_mw = _demand_replay[state.tick_index]
+1317:     else:
+1318:         state.cooling.record_job_compute(sim_time, _per_job_draws)
+1319: 
+1320:         # 2. Cooling term (lagged)
+1321:         state.cooling.advance(sim_time, dt_seconds)
+1322:         p_cooling_demand_mw = state.cooling.output_mw()
+1323: 
+1324:     p_demand_mw = p_compute_demand_mw + p_cooling_demand_mw
+1325: 
+1326:     # _islanded: hoisted here (before section 3) so the §INV-CURT inverter
+1327:     # curtailment block can reference it before the Phase 13.3 droop block.
+1328:     # A single assignment; the same object is referenced throughout evaluate_tick().
+1329:     _islanded = (state.site.island_mode == IslandMode.ISLANDED)
+1330: 
+1331:     # 3. Solar offset (Extension E-1 / §7.1.1) — evaluated BEFORE arbitration
+1332:     #    so the fleet sizes against P_dispatch_required, not P_total.
+1333:     #    P_renewable can vanish without notice (Δt_lead = 0 for inverter trips);
+1334:     #    the arbitrator must never count it as ramp capability.
+1335:     for solar in state.solar_arrays:
+
+attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py:1540-1596
+1540:         if hz is not None
+1541:     ]
+1542:     try:
+1543:         _droop_max_f_err_hz: float | None = _droop_max_freq_error(
+1544:             state.site.frequency_nominal_hz, _first_stage_thresholds_hz
+1545:         )
+1546:     except ValueError:
+1547:         # No first-stage protective settings configured for this run — skip droop.
+1548:         _droop_max_f_err_hz = None
+1549:     if (
+1550:         _islanded
+1551:         and _on_bus_turbines
+1552:         and abs(_f_error_hz) > _governor_deadband_hz
+1553:         and _droop_max_f_err_hz is not None
+1554:     ):
+1555:         # Phase 1 active — bounded per-unit droop with headroom limits and Δf clamp.
+1556:         # Prevents the fleet ceiling from becoming the operating point (the pathology
+1557:         # that drove 21.2 MW of generation into a 6.86 MW load on demo-20mw).
+1558:         _droop_units = [
+1559:             _DroopUnit(
+1560:                 unit_id=t.config.asset_id,
+1561:                 rated_mw=t.config.rated_mw,
+1562:                 output_mw=t.output_mw(),
+1563:                 droop_r=t.config.droop_r,
+1564:                 power_factor=t.config.power_factor,
+1565:                 msl_mw=t.config.p_min_stable_frac * t.config.rated_mw,
+1566:             )
+1567:             for t in _on_bus_turbines
+1568:         ]
+1569:         _droop_phase1 = _droop_correction_fn(
+1570:             _droop_units,
+1571:             frequency_hz=state._frequency_hz,
+1572:             frequency_nominal_hz=state.site.frequency_nominal_hz,
+1573:             governor_deadband_hz=_governor_deadband_hz,
+1574:             max_frequency_error_hz=_droop_max_f_err_hz,
+1575:         )
+1576:         _p_dispatch_droop_mw, _droop_phase1 = _droop_dispatch_mw(
+1577:             p_dispatch_required_mw, _droop_phase1, _sync_ceiling_mw)
+1578:         _droop_correction_mw = _droop_phase1.correction_mw
+1579:         if _droop_phase1.fleet_ceiling_binding:
+1580:             _log.debug(
+1581:                 "droop fleet ceiling binding: sync_ceiling=%.2f MW, "
+1582:                 "bounded_correction=%.4f MW; verify frequency model is stable",
+1583:                 _sync_ceiling_mw, _droop_correction_mw,
+1584:             )
+1585:     else:
+1586:         # Deadband / no turbines / no protective settings — zero correction.
+1587:         _droop_correction_mw = 0.0
+1588:         _p_dispatch_droop_mw = max(
+1589:             0.0,
+1590:             min(p_dispatch_required_mw + _droop_correction_mw, _sync_ceiling_mw),
+1591:         )
+1592: 
+1593:     # Conventional comparison policy: baseline runs keep enough turbine
+1594:     # commitment available to sustain the configured generation basepoint. The
+1595:     # target is a floor, not a cap: demand above it still flows through the
+1596:     # existing peak-following dispatch. Informed mode is intentionally not
+
+attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py:1750-1820
+1750:     # minimum-stable output remains a physical must-run floor; only capacity
+1751:     # above that floor competes with BESS and fuel-cell capacity on $/MWh.
+1752:     #
+1753:     # Units that synchronised during this interval are excluded from the loading
+1754:     # set until the next tick.  Their current output is therefore unavoidable
+1755:     # this interval and is removed before ranking, preventing a second source
+1756:     # from being allocated against the same demand.
+1757:     _controllable_turbine_ids = {
+1758:         t.config.asset_id for t in _synchronised_units
+1759:     }
+1760:     _uncontrolled_on_bus_mw = sum(
+1761:         t.output_mw()
+1762:         for t in state.turbines
+1763:         if t.is_on_bus and t.config.asset_id not in _controllable_turbine_ids
+1764:     )
+1765:     _sync_msl_mw = sum(
+1766:         t.config.p_min_stable_frac * t.config.rated_mw
+1767:         for t in _truly_sync_units
+1768:     )
+1769:     _turbine_must_run_mw = (
+1770:         _uncontrolled_on_bus_mw + _msl_held_mw + _sync_msl_mw
+1771:     )
+1772:     _turbine_incremental_available_mw = sum(
+1773:         max(
+1774:             0.0,
+1775:             t.config.rated_mw
+1776:             - t.config.p_min_stable_frac * t.config.rated_mw,
+1777:         )
+1778:         for t in _truly_sync_units
+1779:     )
+1780:     if state.diesel_units:
+1781:         state.diesel_fleet_coordinator.advance_units(
+1782:             sim_time, dt_seconds, dispatch_controlled=True,
+1783:         )
+1784:     _diesel_on_bus = any(unit.is_on_bus for unit in state.diesel_units)
+1785:     _diesel_loading_bounds = None
+1786:     if _diesel_on_bus:
+1787:         # DR D10 / D10-gap, T2: an off-bus fleet contributes no dispatch terms.
+1788:         # Preserve the pre-D10 primary envelopes until diesel is actually on bus.
+1789:         # D10: one ramp calculation/one sequential loading allocator. Preserve
+1790:         # the existing controller/baseload policy as a physical floor, rather
+1791:         # than allocating diesel against turbine MW already held by that policy.
+1792:         _diesel_loading_bounds = {}
+1793:         _policy_targets = dict(getattr(state, "_preload_targets_mw", {}) or {})
+1794:         _explicit_policy_targets = bool(_policy_targets)
+1795:         if not _policy_targets and _generation_baseload_active:
+1796:             _base_setpoints, _ = compute_loading_setpoints(
+1797:                 _truly_sync_units,
+1798:                 max(0.0, _generation_baseload_target_mw - _uncontrolled_on_bus_mw - _msl_held_mw),
+1799:             )
+1800:             _policy_targets = {
+1801:                 t.config.asset_id: sp for t, sp in zip(_truly_sync_units, _base_setpoints)
+1802:             }
+1803:         for _t in _truly_sync_units:
+1804:             _minimum = _t.config.p_min_stable_frac * _t.config.rated_mw
+1805:             _lo = ramp_limited_output(_t, _minimum, dt_seconds)
+1806:             _hi = ramp_limited_output(_t, _t.config.rated_mw, dt_seconds)
+1807:             if _explicit_policy_targets or _t.config.asset_id in _policy_targets:
+1808:                 # apply_loading_targets holds omitted units at minimum too.
+1809:                 _target = max(_minimum, min(_t.config.rated_mw, _policy_targets.get(_t.config.asset_id, _minimum)))
+1810:                 _lo = ramp_limited_output(_t, _target, dt_seconds)
+1811:                 if _explicit_policy_targets or not _generation_peak_following:
+1812:                     _hi = _lo
+1813:             _diesel_loading_bounds[_t.config.asset_id] = (_lo, max(_lo, _hi))
+1814:         _msl_held_mw = sum(
+1815:             ramp_limited_output(t, t.config.p_min_stable_frac * t.config.rated_mw, dt_seconds)
+1816:             for t in _unloading_units
+1817:         )
+1818:         _turbine_must_run_mw = (
+1819:             _uncontrolled_on_bus_mw + _msl_held_mw
+1820:             + sum(bounds[0] for bounds in _diesel_loading_bounds.values())
+
+attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py:1895-1955
+1895:     _economic_demand_mw = max(0.0, _economic_demand_mw - _diesel_dispatch_floor_mw)
+1896:     _economic_allocations = _cost_ranked_dispatch_allocations(
+1897:         _economic_demand_mw,
+1898:         bess_available_mw=_bess_available_mw,
+1899:         turbine_available_mw=_turbine_incremental_available_mw,
+1900:         fuel_cell_available_mw=0.0,
+1901:         diesel_available_mw=_diesel_dispatch_headroom_mw,
+1902:     )
+1903:     _diesel_dispatch_target_mw = _diesel_dispatch_floor_mw + _economic_allocations["diesel-fleet"]
+1904:     _diesel_extra_mw = _economic_allocations["diesel-fleet"]
+1905:     for _diesel in state.diesel_units:
+1906:         _extra = min(
+1907:             _diesel_extra_mw,
+1908:             _diesel.dispatch_ceiling_mw - _diesel.dispatch_floor_mw,
+1909:         )
+1910:         _diesel.apply_dispatch_target(_diesel.dispatch_floor_mw + _extra)
+1911:         _diesel_extra_mw -= _extra
+1912:     _planned_bess_setpoint_mw = _economic_allocations["bess-fleet"]
+1913:     _thermal_dispatch_target_mw = (
+1914:         _turbine_must_run_mw + _economic_allocations["turbine-fleet"]
+1915:     )
+1916:     if _generation_baseload_active:
+1917:         # The conventional policy is a generation floor.  Peak-following keeps
+1918:         # the turbine fleet itself above the floor when demand requires it.
+1919:         # This is intentionally different from the normal merit order: the
+1920:         # BESS remains transient/residual support rather than silently
+1921:         # replacing conventional turbine generation during a peak.
+1922:         _conventional_following_target_mw = max(
+1923:             0.0,
+1924:             _p_dispatch_droop_mw - fuel_cell_output_mw - _diesel_dispatch_target_mw,
+1925:         )
+1926:         if _generation_peak_following:
+1927:             _thermal_dispatch_target_mw = max(
+1928:                 _thermal_dispatch_target_mw,
+1929:                 _generation_baseload_target_mw,
+1930:                 _conventional_following_target_mw,
+1931:             )
+1932:         else:
+1933:             _thermal_dispatch_target_mw = _generation_baseload_target_mw
+1934:     _preload_targets_mw = dict(getattr(state, "_preload_targets_mw", {}) or {})
+1935:     if _preload_targets_mw:
+1936:         _thermal_dispatch_target_mw = max(
+1937:             _thermal_dispatch_target_mw,
+1938:             _uncontrolled_on_bus_mw
+1939:             + _msl_held_mw
+1940:             + sum(_preload_targets_mw.values()),
+1941:         )
+1942: 
+1943:     for _ut in _unloading_units:
+1944:         _ut_msl_mw = _ut.config.p_min_stable_frac * _ut.config.rated_mw
+1945:         apply_loading([_ut], _ut_msl_mw, dt_seconds)
+1946:     _p_sync_fleet_mw = max(
+1947:         0.0,
+1948:         _thermal_dispatch_target_mw
+1949:         - _uncontrolled_on_bus_mw
+1950:         - _msl_held_mw,
+1951:     )
+1952:     if _preload_targets_mw:
+1953:         _sub_msl_surplus_mw = apply_loading_targets(
+1954:             _truly_sync_units, _preload_targets_mw, dt_seconds
+1955:         )
+
+attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py:2390-2490
+2390:                             _cascade_promotion_text,
+2391:                         )
+2392:                     else:
+2393:                         _next_hs.config.hot_standby = True
+2394:                 else:
+2395:                     # ── OFFLINE (non-hot-standby) units: via evaluate_commitment ──
+2396:                     _cascade_trigger = bool(_avail_offline)
+2397: 
+2398:     _commit_decision: CommitmentDecision = evaluate_commitment(
+2399:         on_bus               = _avail_on_bus,
+2400:         offline              = _avail_offline,
+2401:         # Commitment reserve and decommit eligibility concern actual residual
+2402:         # site demand, not MSL generation already forced on the bus or a
+2403:         # governor-adjusted loading command.  Passing the MSL-inflated target
+2404:         # here makes a safe post-BESS shutdown look like a reserve violation.
+2405:         p_demand_mw          = _commitment_demand_mw,
+2406:         pending              = state._pending_start,
+2407:         commit_cond          = state._commit_cond,
+2408:         decommit_cond        = state._decommit_cond,
+2409:         cfg                  = state._commit_cfg,
+2410:         dt_s                 = dt_seconds,
+2411:         sim_time             = sim_time,
+2412:         force_commit_trigger = _cascade_trigger or _baseload_commitment_needed,
+2413:         decommit_enabled     = _bess_rundown_enabled and not _generation_baseload_active,
+2414:         decommit_reason_context = _bess_rundown_reason,
+2415:     )
+2416:     _log_start_ineligibility_episode(state, _commit_decision, sim_time)
+2417:     if (
+2418:         _commit_decision.action == "commit"
+2419:         and _commit_decision.target_unit_id is not None
+2420:     ):
+2421:         for _cht in state.turbines:
+2422:             if _cht.config.asset_id == _commit_decision.target_unit_id:
+2423:                 _approved = True
+2424:                 if (
+2425:                     getattr(state, "_commitment_mode", "baseline") == "informed"
+2426:                     and getattr(state, "_commitment_transition_sink", None) is not None
+2427:                 ):
+2428:                     _approved = state._commitment_transition_sink.adjudicate_core_proposal(
+2429:                         state=state,
+2430:                         decision=_commit_decision,
+2431:                         sim_time_s=sim_time,
+2432:                         synchronized_capacity_mw=sum(
+2433:                             max(0.0, float(item.config.rated_mw))
+2434:                             for item in state.turbines
+2435:                             if item.contributes_to_reserve
+2436:                         ),
+2437:                         bess_soc_fraction=min(
+2438:                             (
+2439:                                 float(getattr(unit, "soc_fraction", 0.0))
+2440:                                 for unit in state.bess_units
+2441:                             ),
+2442:                             default=0.0,
+2443:                         ),
+2444:                     )
+2445:                 if not _approved:
+2446:                     break
+2447:                 _before_state = _cht.state
+2448:                 _cht.command_start(sim_time)
+2449:                 # Only record the pending start when command_start() actually
+2450:                 # transitioned the unit to STARTING.  command_start() can
+2451:                 # silently drop (hot_standby guard, min-down-time, wrong state)
+2452:                 # without changing state.  Calling record_start() when the
+2453:                 # unit stayed OFFLINE would set pending_unit_id permanently —
+2454:                 # clear_on_synchronised() never fires → all future commits
+2455:                 # blocked for the rest of the run.
+2456:                 if _cht.state == TurbineState.STARTING:
+2457:                     state._pending_start.record_start(_cht.config.asset_id, sim_time)
+2458:                     _record_turbine_transition(
+2459:                         state,
+2460:                         _cht,
+2461:                         sim_time=sim_time,
+2462:                         action="start",
+2463:                         source="core_commitment",
+2464:                         reason=_commit_decision.reason,
+2465:                         from_state=_before_state,
+2466:                         to_state=_cht.state,
+2467:                         controller_approved=(
+2468:                             True
+2469:                             if getattr(state, "_commitment_mode", "baseline")
+2470:                             == "informed"
+2471:                             else None
+2472:                         ),
+2473:                     )
+2474:                     _log.info(
+2475:                         "Commitment engine: start %r at sim_time=%.1f (%s)",
+2476:                         _cht.config.asset_id,
+2477:                         sim_time,
+2478:                         _commit_decision.reason,
+2479:                     )
+2480:                 else:
+2481:                     _log.warning(
+2482:                         "Commitment engine: start %r silently dropped by "
+2483:                         "command_start() at sim_time=%.1f (state=%s) — "
+2484:                         "pending register NOT set; engine will retry next tick",
+2485:                         _cht.config.asset_id, sim_time, _cht.state.name,
+2486:                     )
+2487:                 break
+2488:     elif (
+2489:         _commit_decision.action == "decommit"
+2490:         and _commit_decision.target_unit_id is not None
+
+attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py:2550-2615
+2550:                                 True
+2551:                                 if getattr(state, "_commitment_mode", "baseline")
+2552:                                 == "informed"
+2553:                                 else None
+2554:                             ),
+2555:                         )
+2556:                         _log.info(
+2557:                             "Commitment engine: stop %r at sim_time=%.1f (%s)",
+2558:                             _cht.config.asset_id, sim_time, _commit_decision.reason,
+2559:                         )
+2560:                     else:
+2561:                         # R5 guard deferred the stop — thread the reason into
+2562:                         # blocked_by so the fleet modal and run log surface it.
+2563:                         _commit_decision = CommitmentDecision(
+2564:                             action="hold",
+2565:                             target_unit_id=_commit_decision.target_unit_id,
+2566:                             reason=_commit_decision.reason,
+2567:                             blocked_by=_stop_block,
+2568:                             floor_mw=_commit_decision.floor_mw,
+2569:                             floor_violated=_commit_decision.floor_violated,
+2570:                         )
+2571:                         _log.debug(
+2572:                             "R5 guard: decommit of %r deferred at sim_time=%.1f: %s",
+2573:                             _cht.config.asset_id, sim_time, _stop_block,
+2574:                         )
+2575:                     break
+2576:         else:
+2577:             _stop_deferral = (
+2578:                 "another turbine is still in the controlled unloading sequence"
+2579:                 if _n_unloading > 0
+2580:                 else (
+2581:                     "waiting for breaker-open settling interval "
+2582:                     f"({_settle_s:.0f} s)"
+2583:                 )
+2584:             )
+2585:             _commit_decision = CommitmentDecision(
+2586:                 action="hold",
+2587:                 target_unit_id=_commit_decision.target_unit_id,
+2588:                 reason=_commit_decision.reason,
+2589:                 blocked_by=_stop_deferral,
+2590:                 floor_mw=_commit_decision.floor_mw,
+2591:                 floor_violated=_commit_decision.floor_violated,
+2592:             )
+2593:             _log.debug(
+2594:                 "Decommit of %r deferred: n_unloading=%d settle_ok=%s (sim_time=%.1f)",
+2595:                 _commit_decision.target_unit_id, _n_unloading, _settle_ok, sim_time,
+2596:             )
+2597: 
+2598:     # ── GS-DEF-CMT-001 Phase A diagnostic — logging only, no behavior change ─
+2599:     # Writes every tick from t=0 to t=1400 s to /tmp/cmt001_diag.log.
+2600:     # Remove after Phase A review.
+2601:     if sim_time <= 1400.0:
+2602:         _cmt_on_bus_rated = [u.rated_mw for u in _avail_on_bus if not u.hot_standby]
+2603:         _cmt_total_rated  = sum(_cmt_on_bus_rated)
+2604:         _cmt_largest      = max(_cmt_on_bus_rated, default=0.0)
+2605:         _cmt_U            = (_commitment_demand_mw / _cmt_total_rated
+2606:                              if _cmt_total_rated > 0.0 else 0.0)
+2607:         _cmt_floor_deficit = _commit_decision.floor_mw - _cmt_total_rated
+2608:         _cmt_bess_soc_pct  = (state.bess_units[0].soc_fraction * 100.0
+2609:                                if state.bess_units else float("nan"))
+2610:         _cmt_bess_anchor   = (state.bess_units[0].config.p_anchor_reserve_mw
+2611:                                if state.bess_units else 0.0)
+2612:         _cmt_t_states = {t.config.asset_id: t.state.name for t in state.turbines}
+2613:         _cmt_line = (
+2614:             f"CMT001 "
+2615:             f"t={sim_time:.1f} commit_raised={_commit_decision.action == 'commit'} action={_commit_decision.action!r} "
+
+attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py:2745-2860
+2745:     _fc_declining_alert: dict | None = None
+2746:     _fc_persistent_alert: dict | None = None
+2747:     # A block array's commanded-minus-achieved gap is independently material:
+2748:     # it persists after a staged-event window has elapsed, unlike the pending
+2749:     # peak marker.  Keep it as a distinct readiness record rather than hiding
+2750:     # it when the BESS is covering the electrical balance.
+2751:     _fc_dispatch_deficit_mw = max(0.0, _fc_commanded_mw - fuel_cell_output_mw)
+2752:     # A positive lead is still a forecast/ramp window.  Do not publish these
+2753:     # physical records until the load has landed; otherwise a forecast gap is
+2754:     # mislabeled as an irreducible present deficit.
+2755:     # Ramped GPU intervals can leave a round-off-sized positive lead at the
+2756:     # exact load-landing boundary (for example t=60 in the G-1 reference).
+2757:     # Treat that as post-load rather than suppressing the physical record for
+2758:     # one tick; a material remaining lead remains forecast-only.
+2759:     _load_has_landed = math.isclose(dt_lead_next_s, 0.0, abs_tol=1e-9)
+2760:     if _fc_summary and _fc_dispatch_deficit_mw > 0.0 and _load_has_landed:
+2761:         _eventual_hot_closure_mw = float(
+2762:             _fc_summary["eventual_hot_closure_mw"]
+2763:         )
+2764:         _hot_closure_mw = min(
+2765:             _fc_dispatch_deficit_mw, _eventual_hot_closure_mw
+2766:         )
+2767:         _persistent_before_bess_mw = max(
+2768:             0.0, _fc_dispatch_deficit_mw - _hot_closure_mw
+2769:         )
+2770:         if _hot_closure_mw > 0.0:
+2771:             _fc_declining_alert = {
+2772:                 "event_fast_window_s": dt_lead_next_s,
+2773:                 "shortfall_mw": _fc_dispatch_deficit_mw,
+2774:                 "closing_mw": _hot_closure_mw,
+2775:                 "remaining_mw": _persistent_before_bess_mw,
+2776:                 "eventual_hot_closure_mw": _eventual_hot_closure_mw,
+2777:             }
+2778:         if _persistent_before_bess_mw > 0.0:
+2779:             _firm_bess_mw = sum(
+2780:                 b.bridging_available_mw(state.site.island_mode)
+2781:                 for b in state.bess_units
+2782:             )
+2783:             _bess_substitution_mw = min(_persistent_before_bess_mw, _firm_bess_mw)
+2784:             if _bess_substitution_mw > 0.0 and state.bess_units:
+2785:                 _reserve_ceilings = [
+2786:                     b.bridging_available_mw(state.site.island_mode)
+2787:                     for b in state.bess_units
+2788:                 ]
+2789:                 _reserve_allocations = state.arbitrator._capped_equal_share_allocations(
+2790:                     _bess_substitution_mw, _reserve_ceilings
+2791:                 )
+2792:                 _bess_endurance_s = min(
+2793:                     b.max_sustainable_seconds(allocation, state.site.island_mode)
+2794:                     for b, allocation in zip(state.bess_units, _reserve_allocations)
+2795:                 )
+2796:             else:
+2797:                 _bess_endurance_s = 0.0
+2798:             _fc_persistent_alert = {
+2799:                 "event_fast_window_s": dt_lead_next_s,
+2800:                 "persistent_shortfall_mw": _persistent_before_bess_mw,
+2801:                 "bess_substitution_mw": _bess_substitution_mw,
+2802:                 "bess_endurance_seconds_before_unserved_load": _bess_endurance_s,
+2803:                 "unserved_load_mw_after_bess": max(
+2804:                     0.0, _persistent_before_bess_mw - _bess_substitution_mw
+2805:                 ),
+2806:             }
+2807: 
+2808:     # 4d. §26.4 unified selection + §23.2 curtailment ladder (Step 10/11).
+2809:     #
+2810:     # Step 11 K1/K3: build one pool from all candidate sources and pass to
+2811:     # select_candidates() — the TC-49 live path.  Pool members:
+2812:     #   _arb_candidates: BESS (pos=0) + turbine (pos=1) from arbitrator.tick()
+2813:     #   _curtailment_candidates: tiers A-D (pos=4,5) from generate_candidates()
+2814:     #
+2815:     # is_low_confidence: pre-computed from GPU state and site.uncalibrated so
+2816:     # TC-43's low_confidence interlock can block the ladder before ConfidenceEngine
+2817:     # runs (step 6).  Same tags as step 6 — they cannot disagree.
+2818:     #
+2819:     # Phase 11.2 — workload signal absence/staleness flags.
+2820:     # Computed here (before curtailment gating) so _workload_signal_absent can
+2821:     # be folded into _is_low_confidence and block autonomous curtailment
+2822:     # (never-silent rule — mirrors TC-43's unmapped-hardware interlock).
+2823:     # SOLAR_STEP and UNIT_TRIP events never update the timestamp (early-return
+2824:     # in apply_workload_signal ensures it), so they do not reset staleness.
+2825:     _workload_signal_absent = (
+2826:         bool(state.gpu_modules) and not state._ever_received_workload_signal
+2827:     )
+2828:     _workload_signal_stale = (
+2829:         bool(state.gpu_modules)
+2830:         and state._ever_received_workload_signal
+2831:         and (sim_time - state._last_workload_signal_sim_time) >= state.site.workload_signal_stale_s
+2832:     )
+2833: 
+2834:     # Scenario-scripted DQ inject events: any active window makes this tick
+2835:     # low-confidence regardless of real hardware/calibration state.
+2836:     _dq_injected = any(
+2837:         s <= sim_time < e
+2838:         for s, e, _ in state.site.dq_inject_events
+2839:     )
+2840:     _is_low_confidence = (
+2841:         any(g.has_active_unmapped_jobs() for g in state.gpu_modules)
+2842:         or state.site.uncalibrated
+2843:         # Phase 11.2: absent feed is structurally equivalent to unmapped hardware
+2844:         # for the purposes of the curtailment interlock (TC-43 pattern).
+2845:         or _workload_signal_absent
+2846:         # Scripted inject windows (demo / scenario testing).
+2847:         or _dq_injected
+2848:     )
+2849:     # Remaining gap passed to the curtailment ladder accounts for all measured
+2850:     # dispatch sources, including diesel coordinated above.
+2851:     _remaining_gap_mw = max(0.0, _gap_before_diesel_mw - diesel_output_mw)
+2852: 
+2853:     # TC-64: if PMS fast shed is active, curtailment is bypassed entirely.
+2854:     # GridSignal must not curtail in response to a PMS-driven load reduction.
+2855:     # TC-66: the event is already in pms.fast_shed_log for forecast-error attribution.
+2856:     if _pms_shed_active:
+2857:         _log.info(
+2858:             "PMS fast shed active at sim_time=%.1f — "
+2859:             "curtailment ladder bypassed (TC-64). "
+2860:             "Event recorded for forecast-error attribution (TC-66).",
+
+attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py:3190-3240
+3190:     # in grid-connected mode, the grid absorbs / provides the mismatch.
+3191:     # Branch B: _balance_residual_mw is a local scratch variable; it is NOT on
+3192:     # TickResult.  D4 is asserted inline below before any use in the swing eq.
+3193:     _p_gen_mw = (
+3194:         turbine_output_mw
+3195:         + bess_output_mw
+3196:         + fuel_cell_output_mw
+3197:         + p_renewable_mw
+3198:         + diesel_output_mw
+3199:     )
+3200:     # Once synchronized turbines have reached their minimum stable load and the
+3201:     # BESS has accepted all energy it physically can, the remaining positive
+3202:     # residual is an explicit dispatch-curtailment sink.  Keep generation and
+3203:     # turbine fuel physical, but do not subtract that sink before the
+3204:     # electromechanical response: the rotor must see the surplus on this tick.
+3205:     #
+3206:     # Turbine rundown is already time-based above (machine ramp rate and the
+3207:     # existing commitment/unloading policy).  The explicit dump action has its
+3208:     # own configurable response delay on SiteConfig; this ledger value is the
+3209:     # surplus scheduled for that action, not a fictional change to measured
+3210:     # generation.  Keeping it as an explicit balance term preserves a closed
+3211:     # physical ledger while frequency_forcing_mw receives the pre-curtailment
+3212:     # residual.
+3213:     _surplus_before_dump_mw = (
+3214:         max(0.0, _p_gen_mw - p_demand_mw) if _islanded else 0.0
+3215:     )
+3216:     if _surplus_before_dump_mw <= 1e-12:
+3217:         state._dispatch_curtailment_elapsed_s = 0.0
+3218:         _p_dispatch_curtailed_mw = 0.0
+3219:     else:
+3220:         _dump_delay_s = max(
+3221:             0.0,
+3222:             float(getattr(state.site, "dispatch_curtailment_response_delay_s", 0.0)),
+3223:         )
+3224:         state._dispatch_curtailment_elapsed_s = min(
+3225:             _dump_delay_s,
+3226:             state._dispatch_curtailment_elapsed_s + max(0.0, dt_seconds),
+3227:         )
+3228:         _dump_response_fraction = (
+3229:             1.0
+3230:             if _dump_delay_s <= 0.0
+3231:             else state._dispatch_curtailment_elapsed_s / _dump_delay_s
+3232:         )
+3233:         _p_dispatch_curtailed_mw = (
+3234:             _surplus_before_dump_mw * min(1.0, _dump_response_fraction)
+3235:         )
+3236:     _balance_residual_mw = _p_gen_mw - p_demand_mw
+3237: 
+3238:     # ── Phase 13.2: balance decomposition — three independent channels ────────
+3239:     #
+3240:     # _p_commanded_mw: what the dispatch logic ASKED all dispatchable + renewable
+
+attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py:3310-3335
+3310:     )
+3311:     _asset_delivery_error_mw = (           # reporting only — NOT a D4 term
+3312:         (turbine_output_mw - _turb_setpoint_for_error_mw)
+3313:         + (bess_output_mw  - _bess_setpoint_mw)
+3314:     )
+3315:     if _islanded:
+3316:         _grid_exchange_mw     = 0.0                    # PCC open (D1)
+3317:         _frequency_forcing_mw = _balance_residual_mw   # actual supply-demand → rotors
+3318:     else:
+3319:         _grid_import_limit_mw = state.site.grid_import_limit_mw
+3320:         if _grid_import_limit_mw is None:
+3321:             _grid_exchange_mw     = _balance_residual_mw
+3322:             _frequency_forcing_mw = 0.0                # unlimited grid holds frequency (D2)
+3323:         else:
+3324:             # Negative grid_exchange_mw means import.  Clamp only that direction;
+3325:             # positive export remains unconstrained.  Any deficit beyond the PCC
+3326:             # ceiling stays visible in the second D4 energy channel.
+3327:             _grid_exchange_mw = max(
+3328:                 _balance_residual_mw,
+3329:                 -max(0.0, _grid_import_limit_mw),
+3330:             )
+3331:             _frequency_forcing_mw = _balance_residual_mw - _grid_exchange_mw
+3332: 
+3333:     # GS-CHG-2026-08-08 successor Phase 1 — P_generation aggregate producer.
+3334:     # ONE computation site; the serialiser must NOT sum these components again (Spec 19 / TC-92).
+3335:     # _p_gen_mw = turbine + BESS + solar (already computed at line ~1291).
+
+attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py:3370-3385
+3370:     # mutable forcing for the sub-step integrator; the public forcing is
+3371:     # reconciled to the post-trip balance below.
+3372:     _dynamic_frequency_forcing_mw = _frequency_forcing_mw
+3373:     # Phase 2A: protection_provisional — True for every islanded tick.
+3374:     # D_eff uses d_motor + fixed_speed_cooling_fraction (both PROVISIONAL-UNMEASURED).
+3375:     _protection_provisional: bool = _islanded
+3376: 
+3377:     if _islanded:
+3378:         _f0 = state.site.frequency_nominal_hz
+3379:         # DR-2026-10-20-ISLAND-COLLAPSE D1 / Addendum G2 §G2.6.2:
+3380:         # synchronous machines form the grid too. Reuse the swing equation's
+3381:         # _on_bus_turbines population above; diesel exposes the same breaker
+3382:         # semantics through is_on_bus. One predicate also handles FC trips.
+3383:         def _has_live_grid_forming_source() -> bool:
+3384:             return (
+3385:                 any(unit.is_on_bus for unit in _on_bus_turbines)
+
+attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py:3438-3491
+3438:         _dt_sub = state.site.dynamic_step_s
+3439:         _n_sub  = max(1, round(dt_seconds / _dt_sub))
+3440:         _dt_sub = dt_seconds / _n_sub  # actual sub-step (may differ by float rounding)
+3441: 
+3442:         # Phase 3: Load damping D_eff (dimensionless, pu/pu).
+3443:         # Only fixed-speed motors damp frequency; VFD loads and IT loads do NOT.
+3444:         # D_eff ≈ 0.13 at typical 0.45 × 0.30 × 2.5 = 0.3375 MW/MW cooling fraction.
+3445:         _d_eff: float = 0.0
+3446:         if p_demand_mw > 1e-9:
+3447:             _d_eff = (
+3448:                 (p_cooling_demand_mw / p_demand_mw)
+3449:                 * state.site.fixed_speed_cooling_fraction
+3450:                 * state.site.d_motor
+3451:             )
+3452: 
+3453:         # Shed accumulated within this outer tick's sub-steps (affects swing eq).
+3454:         _shed_this_tick_mw: float = 0.0
+3455: 
+3456:         _f = state._frequency_hz  # working frequency across sub-steps
+3457: 
+3458:         for _k in range(_n_sub):
+3459:             if _island_collapsed_this_tick:
+3460:                 break
+3461:             _f_dev = _f - _f0
+3462: 
+3463:             # Phase 3: Swing equation sub-step.
+3464:             # 2·H_agg/f0 · df/dt = P_net/S_base − D_eff·(f−f0)/f0
+3465:             # => df/dt = [P_net_pu·f0 − D_eff·f_dev] / (2·H_agg)
+3466:             #
+3467:             # Forcing: _frequency_forcing_mw is the outer-tick balance residual
+3468:             # (constant within the sub-step loop). This is the dispatch-plan
+3469:             # imbalance that drives rotating inertia.
+3470:             #
+3471:             # Governor feedback (Phase 4) runs SEPARATELY below and advances the
+3472:             # governor state using the instantaneous frequency deviation. The
+3473:             # governor terminal state (_gov_power_mw) is used as the NEXT outer
+3474:             # tick's dispatch correction (outer droop), NOT as a within-tick
+3475:             # feedback to the swing equation. This one-outer-tick delay correctly
+3476:             # models the governor's role: it adjusts the NEXT dispatch setpoint,
+3477:             # not the current tick's balance residual.
+3478:             #
+3479:             # Within-tick shed from UFLS is added to the forcing since shed
+3480:             # reduces the effective load immediately (sub-step granularity).
+3481:             if _s_base_mva > 0.0 and _h_aggregate > 0.0:
+3482:                 _p_net_pu = (
+3483:                     (_dynamic_frequency_forcing_mw + _shed_this_tick_mw)
+3484:                     / _s_base_mva
+3485:                 )
+3486:                 _df_dt_sub = (
+3487:                     _p_net_pu * _f0 - _d_eff * _f_dev
+3488:                 ) / (2.0 * _h_aggregate)
+3489:                 _f += _df_dt_sub * _dt_sub
+3490:             # If _s_base_mva==0 or _h_aggregate==0: degenerate; f unchanged.
+3491:             if isinstance(state.fuel_cell_module, BlockFuelCellFleet):
+
+attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py:3492-3539
+3492:                 _fc_output_before_trip_mw = state.fuel_cell_module.output_mw()
+3493:                 _fc_trip_records = state.fuel_cell_module.evaluate_ride_through(
+3494:                     _f, _df_dt_sub if _s_base_mva > 0.0 and _h_aggregate > 0.0 else 0.0,
+3495:                     _dt_sub,
+3496:                 )
+3497:                 _fc_ride_through_trips.extend(_fc_trip_records)
+3498:                 if _fc_trip_records:
+3499:                     _dynamic_frequency_forcing_mw -= (
+3500:                         _fc_output_before_trip_mw
+3501:                         - state.fuel_cell_module.output_mw()
+3502:                     )
+3503:                 # A frequency/ROCOF trip can remove the final live grid-former.
+3504:                 if (
+3505:                     _grid_forming_viability_opted_in
+3506:                     and not _has_live_grid_forming_source()
+3507:                 ):
+3508:                     _island_collapsed_this_tick = True
+3509:                     _fp_collapse_reason = "island_collapse_no_grid_forming_source"
+3510:                     _fp_collapse_frequency_hz = _f
+3511:                     state._frequency_hz = _f
+3512:                     break
+3513: 
+3514:             # Phase 4: Advance per-unit bounded governor cascade (valve lag → fuel lag).
+3515:             # Governor reads the instantaneous frequency deviation and advances its
+3516:             # cascade state. The terminal _gov_power_mw is used by the NEXT outer
+3517:             # tick's dispatch correction (outer droop formula). This is a one-outer-tick
+3518:             # delay, which is the correct model for governor response to frequency events.
+3519:             # Not added to the swing equation forcing within this tick.
+3520:             for _t in _on_bus_turbines:
+3521:                 _s_i = _t.config.rated_mw / _t.config.power_factor  # MVA base for this unit
+3522:                 # Governor demand: droop signal in MW (positive = more output needed).
+3523:                 _gov_target = (
+3524:                     (-_f_dev / (_t.config.droop_r * _f0)) * _s_i
+3525:                     if abs(_f_dev) > _GOVERNOR_DEADBAND_HZ and _t.config.droop_r > 0.0
+3526:                     else 0.0
+3527:                 )
+3528:                 # Valve first-order lag.
+3529:                 _alpha_v = 1.0 - math.exp(-_dt_sub / _t.config.valve_actuation_tc_s)
+3530:                 _new_valve = _t._gov_valve_mw + (_gov_target - _t._gov_valve_mw) * _alpha_v
+3531:                 # Fuel/power first-order lag.
+3532:                 _alpha_f = 1.0 - math.exp(-_dt_sub / _t.config.fuel_to_power_tc_s)
+3533:                 _new_power = _t._gov_power_mw + (_new_valve - _t._gov_power_mw) * _alpha_f
+3534:                 # Rate limiter: max_instantaneous_load_step_mw per sub-step.
+3535:                 _step = _new_power - _t._gov_power_mw
+3536:                 if abs(_step) > _t.config.max_instantaneous_load_step_mw:
+3537:                     _new_power = _t._gov_power_mw + math.copysign(
+3538:                         _t.config.max_instantaneous_load_step_mw, _step
+3539:                     )
+
+attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py:3652-3667
+3652:     if _fc_ride_through_trips and isinstance(state.fuel_cell_module, BlockFuelCellFleet):
+3653:         fuel_cell_output_mw = state.fuel_cell_module.output_mw()
+3654:         fuel_cell_state = state.fuel_cell_module.state.value
+3655:         fuel_cell_time_to_ready_s = state.fuel_cell_module.time_to_ready_s
+3656:         _fc_summary = state.fuel_cell_module.readiness_summary(dt_lead_next_s)
+3657:         _p_gen_mw = (
+3658:             turbine_output_mw + bess_output_mw + fuel_cell_output_mw
+3659:             + p_renewable_mw + diesel_output_mw
+3660:         )
+3661:         _balance_residual_mw = _p_gen_mw - p_demand_mw
+3662:         # The protection path runs only with PCC open, so grid exchange stays
+3663:         # exactly zero and local generation is the public aggregate.
+3664:         _frequency_forcing_mw = _balance_residual_mw
+3665:         _p_generation_mw = _p_gen_mw
+3666: 
+3667:     # ── Phase 11.6: compute inlet temperature (Section 8 thermal model) ───────
+
+attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py:3690-3770
+3690:     # electrically unserved.
+3691:     # Per-subsystem shed is proportional to demand fraction because stage
+3692:     # definitions specify a block fraction of total demand only.
+3693:     _cumulative_shed_mw = state._cumulative_shed_mw  # monotonic run total
+3694:     # DR D7 (IMPL-ISL-11), 78555831 / c0737fc: permitted import is already
+3695:     # included in _p_generation_mw; use one physical shortfall rule in both modes.
+3696:     _supply_shortfall_mw = max(0.0, p_demand_mw - _p_generation_mw)
+3697:     _p_unserved_mw = min(
+3698:         p_demand_mw,
+3699:         max(_cumulative_shed_mw, _supply_shortfall_mw),
+3700:     )
+3701:     _p_served_mw = p_demand_mw - _p_unserved_mw
+3702:     # DR IMPL-ISL-10, 72aa49a / b74830d: the pre-trip surplus sink cannot
+3703:     # exceed achieved surplus after supply and served-load reconciliation.
+3704:     _p_dispatch_curtailed_mw = min(
+3705:         _p_dispatch_curtailed_mw,
+3706:         max(0.0, _p_generation_mw - _p_served_mw),
+3707:     )
+3708:     # p_imbalance is the measured generation-versus-served-load channel.  An
+3709:     # explicit curtailment sink closes the physical ledger, but it must not
+3710:     # erase the surplus from the frequency/imbalance signal on the same tick.
+3711:     _p_imbalance_mw = _p_generation_mw - _p_served_mw
+3712: 
+3713:     # D4 — power balance identity (Phase 0 + DR-BAL-5, DR-2026-08-09-BALANCE).
+3714:     #
+3715:     # FINDING (Phase 0): the previous expression
+3716:     #   _d4_sum = _grid_exchange_mw + _frequency_forcing_mw
+3717:     #   _d4_balance_defect_mw = _d4_sum - _balance_residual_mw
+3718:     # was a routing consistency check, identically zero by algebraic construction
+3719:     # when islanded: _grid_exchange_mw=0, _frequency_forcing_mw=_balance_residual_mw
+3720:     # → defect = _balance_residual_mw - _balance_residual_mw = 0. Defect #273.
+3721:     #
+3722:     # Replacement: supply-demand residual (local_gen + import − served − losses).
+3723:     # Sign convention: positive = surplus generation (per core/power_balance.py).
+3724:     #
+3725:     # Convention note: power_balance.py uses GRID_EXCHANGE_POSITIVE_IS_IMPORT=True,
+3726:     # meaning it expects a positive value for grid import.  simulation_core's
+3727:     # _grid_exchange_mw is negative on import (balance_residual < 0 when local gen
+3728:     # < demand), so we pass −_grid_exchange_mw here to match the convention.
+3729:     #
+3730:     # p_unserved_mw contains deliberate UFLS shed or a physical supply
+3731:     # deficit after permitted import, whichever is larger. Both reduce served
+3732:     # load for D4: an anchor-reserved MW above the BESS bridge ceiling cannot be
+3733:     # reported as electrically served.
+3734:     # p_losses_mw defaults to 0.0 — the model does not represent losses.
+3735:     _balance_terms = _BalanceTerms(
+3736:         p_generation_mw=_p_gen_mw,            # local generation, including diesel
+3737:         p_demand_mw=p_demand_mw,
+3738:         p_unserved_mw=_p_unserved_mw,
+3739:         grid_exchange_mw=-_grid_exchange_mw,   # negate: positive = import (POSITIVE_IS_IMPORT=True)
+3740:         island_mode=_BAL_ISLANDED if _islanded else _BAL_GRID_TIE,
+3741:     )
+3742:     _d4_balance_defect_mw = _balance_defect_mw(_balance_terms)
+3743: 
+3744:     # Authoritative physical per-tick ledger invariant. All terms below were
+3745:     # already produced by the simulation path; this is the one place they are
+3746:     # assembled and evaluated. A generation deficit remains a real residual and
+3747:     # p_imbalance_mw; it is never hidden inside the explicit-shed field.
+3748:     _p_losses_mw = 0.0  # no loss model is currently represented by the simulator
+3749:     _physical_balance = _evaluate_physical_balance(
+3750:         _BalanceTerms(
+3751:             p_generation_mw=_p_gen_mw,
+3752:             p_demand_mw=p_demand_mw,
+3753:             p_unserved_mw=_p_unserved_mw,
+3754:             p_served_mw=_p_served_mw,
+3755:             grid_exchange_mw=-_grid_exchange_mw,
+3756:             p_losses_mw=_p_losses_mw,
+3757:             island_mode=_BAL_ISLANDED if _islanded else _BAL_GRID_TIE,
+3758:             p_turbine_mw=turbine_output_mw,
+3759:             p_bess_mw=bess_output_mw,
+3760:             p_fuel_cell_mw=fuel_cell_output_mw,
+3761:             p_renewable_mw=p_renewable_mw,
+3762:             p_curtailment_mw=_p_dispatch_curtailed_mw,
+3763:         ),
+3764:         tolerance_mw=_sp.value("balance_defect_tolerance_mw"),
+3765:     )
+3766: 
+3767:     if not _physical_balance.passed:
+3768:         _log.warning(
+3769:             "physical balance invariant does not close: %+.4g MW "
+3770:             "(generation=%.4f, served=%.4f, unserved=%.4f, "
+
+attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py:4118-4133
+4118:         # _turb_setpoint_for_error_mw would make the D5 formula check inconsistent.
+4119:         gt_setpoint_mw=_turb_setpoint_for_error_mw,
+4120:         # balance_residual_mw REMOVED (Branch B) — local scratch only; D4 asserted above.
+4121:         frequency_hz=state._frequency_hz,
+4122:         # Phase 13.2: balance decomposition — three independent channels.
+4123:         # D4 (sum == scratch residual) is asserted inline above, not via a broadcast field.
+4124:         grid_exchange_mw=_grid_exchange_mw,
+4125:         frequency_forcing_mw=_frequency_forcing_mw,
+4126:         asset_delivery_error_mw=_asset_delivery_error_mw,
+4127:         # Phase 13.4: setpoint/actual split.
+4128:         model_error_mw=_model_error_mw,
+4129:         binding_constraint=_binding_constraint,
+4130:         # Phase 11.6: cooling thermal lag — compute inlet temperature.
+4131:         compute_inlet_temp_c=_compute_inlet_temp_c,
+4132:         # Phase 1b: loading-layer outputs.
+4133:         sub_msl_surplus_mw=_sub_msl_surplus_mw,
+
+attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/power_balance.py:133-166
+133: def served_load_mw(terms: BalanceTerms) -> float:
+134:     """Load actually carried: total demand less whatever was shed.
+135: 
+136:     The load-side value is intentionally independent of supply. A generation
+137:     deficit remains visible in the balance residual and p_imbalance_mw rather
+138:     than being silently absorbed into the served/unserved split.
+139:     """
+140:     if terms.p_served_mw is not None:
+141:         return terms.p_served_mw
+142:     return terms.p_demand_mw - terms.p_unserved_mw
+143: 
+144: 
+145: def balance_defect_mw(terms: BalanceTerms) -> float:
+146:     """Signed identity residual. Positive means surplus generation.
+147: 
+148:     Islanded, this quantity must be zero at every instant: there is nowhere for
+149:     surplus to go and nothing to supply a deficit. A non-zero value is not a
+150:     measurement of anything physical -- it is the amount by which the model has
+151:     failed to close, and it should drive frequency once phase 2 lands.
+152:     """
+153:     imp = (
+154:         0.0
+155:         if str(terms.island_mode).lower() == ISLANDED
+156:         else terms.grid_exchange_mw
+157:     )
+158:     if not GRID_EXCHANGE_POSITIVE_IS_IMPORT:
+159:         imp = -imp
+160:     return (
+161:         terms.p_generation_mw
+162:         + imp
+163:         - served_load_mw(terms)
+164:         - terms.p_losses_mw
+165:         - terms.p_curtailment_mw
+166:     )
+
+attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/power_balance.py:186-216
+186: def evaluate_physical_balance(
+187:     terms: BalanceTerms,
+188:     *,
+189:     tolerance_mw: float,
+190: ) -> BalanceResult:
+191:     """Evaluate the authoritative physical per-tick ledger invariant.
+192: 
+193:     Unlike the legacy D4 routing check, islanded mode compares independently
+194:     computed supply and load ledger terms:
+195: 
+196:         generation + grid import
+197:           = served load + unserved load + represented losses
+198: 
+199:     Grid-tied results remain provisional because current PCC exchange is routed
+200:     from the same supply-demand residual. The serialized verification mode makes
+201:     that distinction explicit. The tolerance is required at this boundary so
+202:     callers cannot accidentally turn a missing catalogue value into an implicit
+203:     pass.
+204:     """
+205:     if (
+206:         tolerance_mw is None
+207:         or not math.isfinite(tolerance_mw)
+208:         or tolerance_mw < 0
+209:     ):
+210:         raise ValueError("physical balance invariant requires a non-negative tolerance")
+211:     return evaluate(terms, tolerance_mw=tolerance_mw)
+212: 
+213: 
+214: # ---------------------------------------------------------------------------
+215: # Noise-floor calibration
+216: #
+
+attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/models.py:496-505
+496:     # unlimited grid-balancing behavior.  The ceiling applies only to imports;
+497:     # grid export remains unconstrained.
+498:     grid_import_limit_mw: Optional[float] = None
+499:     # Explicit islanded surplus dump response delay.  The dispatch-curtailment
+500:     # ledger remains authoritative on the tick where surplus is measured, while
+501:     # the control action is treated as a delayed response after turbine rundown.
+502:     # PROPOSED_HERE: validate against site protection and dump-load settings.
+503:     dispatch_curtailment_response_delay_s: float = 0.5
+504:     # Normal-operation BESS depth of discharge, measured as a fraction of the
+505:     # unit's configured initial SoC.  Once this depth has been used, normal
+
+attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/run_manager.py:1808-1858
+1808:     def step(self) -> TickResult:
+1809:         """Advance exactly one tick and return the result. Synchronous
+1810:         and deterministic -- see core/simulation_core.py.
+1811: 
+1812:         Step 4 — runtime purity sentinel: set _EVALUATE_TICK_PERMITTED True
+1813:         for the duration of evaluate_tick(), then reset it unconditionally.
+1814:         The sentinel is defined in core/_plane_guard.py (so evaluate_tick can
+1815:         check it without importing runtime/); it is SET HERE by the runtime
+1816:         caller, never inside core/ itself — self-signing would defeat the guard.
+1817: 
+1818:         Step 5 — SimClock injection: construct the SimClock here (the only
+1819:         place in the runtime that reads the wall clock) and pass it into
+1820:         evaluate_tick().  core/ never reads the wall clock directly — the
+1821:         static gate in scripts/check_plane_separation.py enforces this.
+1822:         wall_stamp_utc is a UTC Unix timestamp (time.time()) so the persistence
+1823:         layer can record both clocks alongside every RunTimeseries row, enabling
+1824:         forecast-error attribution against real latency (v2.5 §22.8).
+1825:         """
+1826:         self._advance_internal_slurm()
+1827:         self._apply_due_events()
+1828:         if self.turbine_commitment_controller is not None:
+1829:             self.turbine_commitment_controller.evaluate(
+1830:                 ctx=self,
+1831:                 power_for_event=self._event_power_mw,
+1832:             )
+1833:         # Forecast commands are produced immediately before physics and use the
+1834:         # same drain as HTTP operator commands.
+1835:         self.drain_operator_commands()
+1836:         clock = SimClock(
+1837:             sim_time=self.sim_time,
+1838:             dt_seconds=TICK_INTERVAL_SIM_SECONDS,
+1839:             wall_stamp_utc=_time_module.time(),
+1840:             rate=self.playback_speed,
+1841:             tick_seq=self.sim_state.tick_index,
+1842:         )
+1843:         _token = _EVALUATE_TICK_PERMITTED.set(True)
+1844:         try:
+1845:             result = evaluate_tick(self.sim_state, clock)
+1846:         finally:
+1847:             _EVALUATE_TICK_PERMITTED.reset(_token)
+1848:         self.sim_time += TICK_INTERVAL_SIM_SECONDS
+1849:         self._measured_site_demand_history.append(
+1850:             (
+1851:                 result.sim_time_seconds,
+1852:                 max(0.0, result.p_demand_mw),
+1853:                 max(0.0, result.p_compute_demand_mw),
+1854:                 max(0.0, result.p_cooling_demand_mw),
+1855:             )
+1856:         )
+1857:         if self.turbine_commitment_controller is not None:
+1858:             self.turbine_commitment_controller.record_tick(self, result)
+
+docs/addendum-h-phase2a-change-record.md:35-56
+35: ## IMPL-H56/H57 physics-ordering repair
+36: 
+37: The repair restores the intended ordering without changing commitment policy,
+38: the acceptance rule, the baseline fixture, or alert/disposition behavior:
+39: 
+40: - Islanded `frequency_forcing_mw` and `p_imbalance_mw` now use measured
+41:   generation minus served load before the explicit dispatch-curtailment sink.
+42:   Positive surplus therefore reaches the swing equation on the same tick it
+43:   occurs.
+44: - Turbine rundown remains governed by the existing physical ramp and
+45:   commitment/unloading paths. The explicit dump sink is applied only to the
+46:   residual after BESS absorption and turbine rundown.
+47: - The dump response has a configurable
+48:   `dispatch_curtailment_response_delay_s` input, marked `PROPOSED_HERE`, and
+49:   ramps the explicit sink to full response over that delay. The default
+50:   0.5-second delay is below the unchanged 5-second smoke interval.
+51: - `p_dispatch_curtailed_mw` remains an explicit term in the physical balance
+52:   ledger, and the separate unaccounted-surplus channel remains zero.
+53: 
+54: The implementation is in `core/simulation_core.py` (balance ordering and
+55: response timer), with the configuration surfaced through `core/models.py`,
+56: `api/schemas.py`, and `runtime/scenario_factory.py`.

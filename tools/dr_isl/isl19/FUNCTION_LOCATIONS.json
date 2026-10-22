@@ -1,0 +1,188 @@
+[
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py",
+    "function": "AssetModule.advance",
+    "start": 59,
+    "end": 60
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py",
+    "function": "AssetModule.output_mw",
+    "start": 63,
+    "end": 66
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py",
+    "function": "GPUModule.advance",
+    "start": 372,
+    "end": 438
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py",
+    "function": "GPUModule.output_mw",
+    "start": 460,
+    "end": 462
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py",
+    "function": "GPUModule.per_job_compute_mw",
+    "start": 464,
+    "end": 521
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py",
+    "function": "CoolingModule.advance",
+    "start": 848,
+    "end": 882
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py",
+    "function": "CoolingModule.output_mw",
+    "start": 884,
+    "end": 885
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py",
+    "function": "TurbineModule.advance",
+    "start": 1201,
+    "end": 1221
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py",
+    "function": "TurbineModule.output_mw",
+    "start": 1225,
+    "end": 1226
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py",
+    "function": "DieselModule.advance",
+    "start": 1456,
+    "end": 1528
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py",
+    "function": "DieselModule.output_mw",
+    "start": 1530,
+    "end": 1531
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py",
+    "function": "DieselModule.apply_dispatch_target",
+    "start": 1555,
+    "end": 1560
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py",
+    "function": "BessModule.cover_shortfall",
+    "start": 1680,
+    "end": 1761
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py",
+    "function": "BessModule.absorb_surplus",
+    "start": 1763,
+    "end": 1817
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py",
+    "function": "BessModule.advance",
+    "start": 1819,
+    "end": 1823
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py",
+    "function": "BessModule.output_mw",
+    "start": 1825,
+    "end": 1826
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py",
+    "function": "SolarModule.advance",
+    "start": 1874,
+    "end": 1884
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py",
+    "function": "SolarModule.output_mw",
+    "start": 1896,
+    "end": 1897
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/dispatch.py",
+    "function": "DispatchArbitrator.tick",
+    "start": 853,
+    "end": 1022
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/dispatch.py",
+    "function": "CurtailmentLadder.tick",
+    "start": 1242,
+    "end": 1325
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/diesel_fleet.py",
+    "function": "DieselFleetCoordinator.output_mw",
+    "start": 114,
+    "end": 123
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/diesel_fleet.py",
+    "function": "DieselFleetCoordinator.step",
+    "start": 180,
+    "end": 257
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/diesel_fleet.py",
+    "function": "DieselFleetCoordinator.advance_units",
+    "start": 375,
+    "end": 378
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/run_manager.py",
+    "function": "RunContext.step",
+    "start": 1808,
+    "end": 1884
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/study_harness/executor.py",
+    "function": "StudyRunExecutor._probe",
+    "start": 302,
+    "end": 328
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/study_harness/executor.py",
+    "function": "StudyRunExecutor._run_mode",
+    "start": 330,
+    "end": 483
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/loading.py",
+    "function": "compute_loading_setpoints",
+    "start": 33,
+    "end": 139
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/loading.py",
+    "function": "ramp_limited_output",
+    "start": 146,
+    "end": 151
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/loading.py",
+    "function": "apply_loading",
+    "start": 154,
+    "end": 175
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/loading.py",
+    "function": "apply_loading_targets",
+    "start": 178,
+    "end": 204
+  },
+  {
+    "file": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/loading.py",
+    "function": "ramp_capability",
+    "start": 211,
+    "end": 242
+  }
+]

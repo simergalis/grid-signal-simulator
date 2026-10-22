@@ -1,0 +1,18 @@
+{
+  "scenario": "scenario-h1-k8s-ray-24h",
+  "arm": "baseline",
+  "same_ticks": true,
+  "nonfrequency_identical": true,
+  "energy_differences": {},
+  "fuel_identical": true,
+  "study_metric_differences": {
+    "invalid_frequency_tick_count": [
+      13598,
+      0
+    ],
+    "invalid_frequency_fraction": [
+      0.7869212962962963,
+      0.0
+    ]
+  }
+}
