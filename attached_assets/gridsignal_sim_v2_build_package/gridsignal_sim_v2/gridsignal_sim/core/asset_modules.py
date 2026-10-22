@@ -1054,18 +1054,6 @@ class TurbineModule(AssetModule):
         self._last_setpoint_mw = float(new_output_mw)   # store before rate-clip
         self._current_output_mw = max(0.0, min(new_output_mw, self.config.rated_mw))
 
-    def start_eligibility(self, sim_time: float) -> tuple[bool, str]:
-        """DR D2 / IMPL-ISL-5: the single, unchanged turbine start interlock."""
-        if self.config.hot_standby:
-            return False, "hot_standby"
-        if self.state != TurbineState.OFFLINE:
-            return False, "state"
-        if self.config.min_down_enabled and not math.isnan(self._stop_time_s):
-            elapsed = sim_time - self._stop_time_s
-            if elapsed < self.config.t_min_down_s:
-                return False, "min_down"
-        return True, "eligible"
-
     def command_start(self, sim_time: float) -> None:
         """Transition OFFLINE → STARTING.  Phase 2 commitment-logic entry point.
 
@@ -1078,10 +1066,19 @@ class TurbineModule(AssetModule):
 
         No output is produced while STARTING (_current_output_mw stays 0.0).
         """
-        # DR D2 / IMPL-ISL-5: retain the safety check, using the same predicate
-        # as selection and the availability boundary (no second guard copy).
-        if not self.start_eligibility(sim_time)[0]:
+        if self.config.hot_standby:
             return
+        if self.state != TurbineState.OFFLINE:
+            return
+
+        # R6: enforce minimum down-time when the constraint is enabled.
+        # Phase E closeout Item 1 / D-03: gated on min_down_enabled so tests
+        # that create TurbineConfig() directly (min_down_enabled=False default)
+        # are unaffected.
+        if self.config.min_down_enabled and not math.isnan(self._stop_time_s):
+            elapsed = sim_time - self._stop_time_s
+            if elapsed < self.config.t_min_down_s:
+                return  # cooling window not yet satisfied
 
         # Determine thermal state from time offline since last synchronisation.
         # First start (never stopped): use config.initial_thermal_state so the
@@ -1117,9 +1114,7 @@ class TurbineModule(AssetModule):
                 ThermalState.COLD: self.config.fuel.start_fuel_mmbtu_cold,
             }[self._thermal_state]
 
-    # PROPOSED_HERE: epoch default preserves existing no-argument boundary
-    # callers; runtime selection always passes the actual simulation time.
-    def unit_availability(self, sim_time: float = 0.0) -> "UnitAvailability":
+    def unit_availability(self) -> "UnitAvailability":
         """Build a UnitAvailability boundary object from current state.
 
         Called by simulation_core.py each tick to build the availability list
@@ -1137,7 +1132,6 @@ class TurbineModule(AssetModule):
         else:
             time_to_online = None
 
-        eligible, reason = self.start_eligibility(sim_time)
         return UnitAvailability(
             unit_id=self.config.asset_id,
             state=self.state,
@@ -1148,8 +1142,6 @@ class TurbineModule(AssetModule):
             time_to_online_s=time_to_online,
             out_of_service_reason=self._out_of_service_reason,
             hot_standby=self.config.hot_standby,
-            start_eligible=eligible,
-            start_ineligibility_reason=None if eligible else reason,
         )
 
     def command_stop(self, sim_time: float) -> Optional[str]:

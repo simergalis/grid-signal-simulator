@@ -590,8 +590,7 @@ class DispatchArbitrator:
         if not _active_turbines and not _active_fuel_cells:
             required_ramp_s = float("inf")
         else:
-            # DR D2 / IMPL-ISL-5: staging shares command_start's interlock.
-            _offline = [t for t in _active_turbines if t.start_eligibility(sim_time)[0]]
+            _offline = [t for t in _active_turbines if t.state == TurbineState.OFFLINE]
             _on_bus  = [t for t in _active_turbines if t.state != TurbineState.OFFLINE]
 
             # ── Stage offline turbines: N_needed + 1 N-1 spare ──────────────────

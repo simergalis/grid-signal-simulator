@@ -25,6 +25,9 @@ Addendum H study records.
 
 **Why:** The user reserves certified-record decisions for separate review.
 
-**How to apply:** If a reference baseline rejects a turbine start, report where
-and the resulting before/after metric deltas, then stop before committing the
-implementation until the reviewer decides. Do not silently recertify the record.
+**How to apply:** If a certified reference baseline rejects a turbine start,
+report where and the resulting before/after metric deltas, then stop before
+committing until the reviewer decides. Do not silently recertify the record.
+The user explicitly distinguishes certified H1-24h (must remain metric- and
+tick-identical) from H2-24h informed (not certified and permitted to change
+under turbine start-eligibility correction, with before/after deltas reported).

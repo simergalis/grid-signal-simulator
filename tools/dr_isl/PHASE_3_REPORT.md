@@ -1,800 +1,935 @@
-# DR-2026-10-20-ISLAND-COLLAPSE — PHASE 3 STOP REPORT
+# DR-2026-10-20-ISLAND-COLLAPSE — Phase 3 resumption STOP report
 
-STATUS: STOPPED; Phase 3 is NOT finished or validated.
+STATUS: STOPPED at B1. NOT finished, NOT validated, no Phase 4.
+Base: `134538067d4eb4c2ce14232e483e9a91fd31276b`. Observed HEAD: `5716d223d8623ab2e01b28ebe859dd2e4decc21f`.
+`5716d22` automatically checkpointed the earlier crashing candidate; it was NOT a validated implementation commit.
+No implementation/report commit was made during this resumption. No publish, deploy or push.
 
-Base = 134538067d4eb4c2ce14232e483e9a91fd31276b; Git subject = Published your App. git diff --stat 5e55706..1345380 is empty. This is a Git finding, not a new production-deployment check.
+## Stop finding — B1 H2 informed
+Observer source: `/tmp/DR-ISL-phase3/check.py:88–104,130–134`; full observer source is appended below.
+Physical hash contract: sorted compact JSON plus LF, in tick order; exclusions are exactly advisory_telemetry, fabric_modal, wall_stamp_utc, insufficient_reserve_proposal_id.
+Prefix contains ticks 1–10070, strictly before the first BASE rejection at tick 10071.
+Fresh BASE prefix: `f4463c9b45ca12ea303b4000525278c63e858766cbc8c0cd9f3255723b2dbda4`.
+Candidate repetition 1 prefix: `b83c21c585130e172aa3fd179748a54d917868c70e6a1d0beafc7e9908724ffc`.
+Candidate repetition 2 prefix: `b83c21c585130e172aa3fd179748a54d917868c70e6a1d0beafc7e9908724ffc`.
+B1 equality = false. The fresh base compact hash also reproduces the saved base hash.
+No first-differing-tick or field diagnosis was run after this failed gate. The mismatch is established within the prefix; its precise first tick/field and cause are NOT determined here.
+H2 informed's allowed post-rejection metric changes do not waive B1 pre-divergence identity.
+H1 tasks were stopped; there is no completed H1 record from this resumption and no certified H1 PASS claim.
 
-HEAD at report = 134538067d4eb4c2ce14232e483e9a91fd31276b. No deliberate Phase 3 commit was made.
-
-P = attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim; T = /tmp/DR-ISL-phase3/.
-
-No publish, deployment, push or Phase 4. No source repair was made after the candidate probe failed. The working tree contains a known-crashing, UNVALIDATED candidate; do not treat it as production-ready.
-
-## STOP conditions and scope of the remaining evidence
-
-B5 is triggered: the base H2 informed arm rejects six starts while an eligible alternate exists. Lloyd's decision on certified records is required before an implementation commit. The requested candidate quantification then failed during the probe, before an actual H2 arm result existed. No before/after metric deltas can therefore be reported. No full suite was started.
-
-## 3.0 Design and 3.1 unvalidated implementation
-
-The before-edit design is tools/dr_isl/PHASE_3_DESIGN.md; it includes the runtime caller found by the base trace.
-
-One TurbineModule.start_eligibility preserves hot_standby, state and minimum-down conditions/order. command_start delegates its safety check; unit_availability carries a verdict; core commitment, pre-staging and forecast candidate selection consume it. Explicit operator targets are not retargeted. A raw offline roster remains separate from start selection so reserve labels are not erased by the hot-standby guard. The newly introduced blocked-episode logger is defective for an existing nullable blocked_by value.
-
-Current source locations and changed line ranges (literal diff hunk headers):
-
-```text
-+++ b/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py
-@@ -1056,0 +1057,12 @@ class TurbineModule(AssetModule):
-@@ -1069 +1081,3 @@ class TurbineModule(AssetModule):
-@@ -1071,11 +1084,0 @@ class TurbineModule(AssetModule):
-@@ -1117 +1120,3 @@ class TurbineModule(AssetModule):
-@@ -1134,0 +1140 @@ class TurbineModule(AssetModule):
-@@ -1144,0 +1151,2 @@ class TurbineModule(AssetModule):
-+++ b/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/commitment.py
-@@ -328,0 +329,13 @@ def evaluate_commitment(
-@@ -331 +344 @@ def evaluate_commitment(
-+++ b/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/dispatch.py
-@@ -593 +593,2 @@ class DispatchArbitrator:
-+++ b/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/models.py
-@@ -747,0 +748,5 @@ class UnitAvailability:
-+++ b/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py
-@@ -293,0 +294 @@ class SimulationState:
-@@ -601 +602 @@ _STANDBY_THERMAL_PRIORITY = {
-@@ -619,0 +621,43 @@ def _offline_turbines_by_thermal_priority(
-@@ -630 +674 @@ def _promote_reserve_standby_labels(
-@@ -717,5 +761 @@ def _release_hot_standby_for_contingency(
-@@ -2181 +2221 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
-@@ -2184,3 +2224,4 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
-@@ -2242,5 +2283 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
-@@ -2318,0 +2356 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
-@@ -2538 +2576 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
-+++ b/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/run_manager.py
-@@ -1522 +1522,3 @@ class RunContext:
-@@ -1524 +1526 @@ class RunContext:
-+++ b/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/turbine_commitment.py
-@@ -622,14 +622,19 @@ class ForecastDrivenTurbineController:
-@@ -831 +836 @@ class ForecastDrivenTurbineController:
-@@ -1199 +1204 @@ class ForecastDrivenTurbineController:
-+++ b/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_start_eligibility.py
-@@ -0,0 +1,117 @@
+## 3.F crash repair and TC-ISL-06
+Saved candidate source: `b416122acfa07c59d4a3521a90361d5be775d612:attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py:658–660`.
+```python
+blocked = isinstance(decision.blocked_by, str) and decision.blocked_by.startswith(
+    "no eligible turbine:"
+)
 ```
+No CommitmentDecision or commitment outcome code was changed in this resumption.
+Saved regression: `b416122acfa07c59d4a3521a90361d5be775d612:attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_start_eligibility.py:107–114`.
+The test exercises None, empty string, another reason and a non-string value; each clears the episode flag and emits no log.
+Literal pytest result: `5 passed in 4.78s`. TC-ISL-06a,b,c,d and the existing boundary test passed.
+JUnit: `tools/dr_isl/PHASE_3_TC06.xml`. Both full base-demo arms ran twice (1440 ticks each); H2 informed ran twice (17280 ticks each), without exception.
+These successful runs establish crash repair, not acceptance of the complete D2 candidate.
 
-## 3.2 TC-ISL-06
+## B1/B3/B4 — no-rejection scenarios
+|Scenario|Ticks|Rejections|Whole physical hash matches saved BASE|Hash|
+|---|---:|---:|---|---|
+|demo-islanded-ramp|2160|0|True|fe798e4292b478ef3f6e25d67e4e22123867f51e49b991ac13981ecaa8114b2a|
+|scenario-100mw-fuel-cell-bess-diesel|252|0|True|565edaad7557ed06b545d92fe6c10105ef1a709e1aeb2e224d041e1e475e581b|
+|scenario-equinix-sj-1|720|0|True|328309c3a181aefdb702a0577f41acfe673a945450ce61f9ad560696cf0aaa84|
+|scenario-fc100-islanded-v2|264|0|True|d8146d3e37d9d7e1b306bbf2dc7dea7b2675be9c2bdabca0a209a028772c73d3|
+|scenario-fc100-islanded-zero-hot-v2|264|0|True|d89d3132a5f87e94de6869a1246f5d3f434e03ecab72d744f90329ac8608d8f2|
+|scenario-hybrid-ai-100mw-addendum-i|120|0|True|9377f009785094697116d356ef554985107ce1ee4c92f01c672f4b30b5f7577a|
+|scenario-turbine-01|720|0|True|006006e6c9eac82460ee4a343a4d1691f2a34f231ca7fb038c7ae583ab63471a|
 
-TC-ISL-06 collision search before creation returned no matches. New node IDs:
-
-```text
-tests/test_dr_isl_start_eligibility.py::test_tc_isl_06a_single_guard_call_graph
-tests/test_dr_isl_start_eligibility.py::test_tc_isl_06b_skip_min_down_start_alternate
-tests/test_dr_isl_start_eligibility.py::test_tc_isl_06c_no_eligible_one_log_per_episode
-tests/test_dr_isl_start_eligibility.py::test_tc_isl_06_guard_boundaries_unchanged
-```
-
-```text
-....                                                                     [100%]
-4 passed in 6.87s
-```
-
-The four tests pass, but do not cover nullable CommitmentDecision.blocked_by. No existing test was edited. The later integration/probe failure is not relabelled a test pass.
-
-## 3.3 B1–B4: completed BASE captures only; candidate comparisons NOT VERIFIED
-
-For app cases the canonical physical hash is the streaming sink hash, after RunManager enrichment. The command observer also hashes RunContext.step output before that enrichment; its hashes/prefixes are labelled INTERNAL, not substituted for Phase 2d sink references. This boundary difference is an instrumentation detail, not a physical divergence.
-
-| Base scenario/arm | Ticks | Rejected command attempts | Canonical physical SHA-256 |
-
-|---|---|---|---|
-
-| S10_mit_supercloud_2021-08-11 / app | 17280 | 1154 | 51dfe89b51138d85930b01684c95c58d60d7dcd1ed0c36801657c9d41840ef52 |
-
-| demo-islanded-ramp / app | 2160 | 0 | fe798e4292b478ef3f6e25d67e4e22123867f51e49b991ac13981ecaa8114b2a |
-
-| scenario-100mw-fuel-cell-bess-diesel / app | 252 | 0 | 565edaad7557ed06b545d92fe6c10105ef1a709e1aeb2e224d041e1e475e581b |
-
-| scenario-equinix-sj-1 / app | 720 | 0 | 328309c3a181aefdb702a0577f41acfe673a945450ce61f9ad560696cf0aaa84 |
-
-| scenario-fc100-islanded-v2 / app | 264 | 0 | d8146d3e37d9d7e1b306bbf2dc7dea7b2675be9c2bdabca0a209a028772c73d3 |
-
-| scenario-fc100-islanded-zero-hot-v2 / app | 264 | 0 | d89d3132a5f87e94de6869a1246f5d3f434e03ecab72d744f90329ac8608d8f2 |
-
-| scenario-hybrid-ai-100mw-addendum-i / app | 120 | 0 | 9377f009785094697116d356ef554985107ce1ee4c92f01c672f4b30b5f7577a |
-
-| scenario-turbine-01 / app | 720 | 0 | 006006e6c9eac82460ee4a343a4d1691f2a34f231ca7fb038c7ae583ab63471a |
-
-| scenario-uneven-multisched-01 / baseline | 1440 | 0 | 90f4b8a55acceb521f972d9596c5137f104dbc34e158ac3bc58cadf73e5164f1 |
-
-| scenario-uneven-multisched-01 / informed | 1440 | 0 | ea12dabd9944d98aad3f8fc966122f2432e33fb7bd150c8dc313ca9a88dd27a6 |
-
-B1 first BASE rejection: S10 pre-staging tick 1059, command sim_time=5288 s; first core commitment rejection tick 1070, sim_time=5345 s. H2 informed first rejection tick 10071, sim_time=50350 s. Completed other base cases in the table have no rejected command. No HEAD prefix/whole-run comparison passed: no corresponding completed HEAD runs exist.
-
-### B2 S10_mit_supercloud_2021-08-11, BASE ONLY
-
-ticks=17280; min BESS SoC=0.0; frequency min/max=[-737.1409980342337, 998.9330534505464]; unserved MWh=12.5194325350618; observed island_collapsed=True events=None (None means none observed; full requested horizon completed).
-
-Rejected attempts=1154; core=1132; pre-staging=22.
-
-Phase D comparison window 5345–10050 s: 234 core rejections, 50 with an eligible alternate. The 234/50 figures are reproduced for that window; the full 24h totals are larger.
-
-```json
-[
-  {
-    "tick": 1,
-    "sim_time": 0.0,
-    "unit": "turbine-1",
-    "caller": "dispatch.py:617"
-  },
-  {
-    "tick": 107,
-    "sim_time": 527.0,
-    "unit": "turbine-2",
-    "caller": "dispatch.py:617"
-  },
-  {
-    "tick": 226,
-    "sim_time": 1125.0,
-    "unit": "turbine-3",
-    "caller": "simulation_core.py:2350"
-  },
-  {
-    "tick": 420,
-    "sim_time": 2092.0,
-    "unit": "turbine-4",
-    "caller": "dispatch.py:617"
-  },
-  {
-    "tick": 1216,
-    "sim_time": 6075.0,
-    "unit": "turbine-3",
-    "caller": "simulation_core.py:2350"
-  },
-  {
-    "tick": 1375,
-    "sim_time": 6867.0,
-    "unit": "turbine-4",
-    "caller": "dispatch.py:617"
-  },
-  {
-    "tick": 2012,
-    "sim_time": 10055.0,
-    "unit": "turbine-3",
-    "caller": "simulation_core.py:2350"
-  },
-  {
-    "tick": 2072,
-    "sim_time": 10355.0,
-    "unit": "turbine-4",
-    "caller": "simulation_core.py:2350"
-  },
-  {
-    "tick": 2906,
-    "sim_time": 14525.0,
-    "unit": "turbine-4",
-    "caller": "simulation_core.py:2350"
-  },
-  {
-    "tick": 3549,
-    "sim_time": 17740.0,
-    "unit": "turbine-3",
-    "caller": "simulation_core.py:2350"
-  },
-  {
-    "tick": 3609,
-    "sim_time": 18040.0,
-    "unit": "turbine-4",
-    "caller": "simulation_core.py:2350"
-  },
-  {
-    "tick": 5271,
-    "sim_time": 26347.0,
-    "unit": "turbine-3",
-    "caller": "dispatch.py:617"
-  },
-  {
-    "tick": 6667,
-    "sim_time": 33330.0,
-    "unit": "turbine-4",
-    "caller": "simulation_core.py:2350"
-  },
-  {
-    "tick": 6832,
-    "sim_time": 34155.0,
-    "unit": "turbine-1",
-    "caller": "simulation_core.py:2350"
-  },
-  {
-    "tick": 6892,
-    "sim_time": 34455.0,
-    "unit": "turbine-3",
-    "caller": "simulation_core.py:2350"
-  },
-  {
-    "tick": 6964,
-    "sim_time": 34815.0,
-    "unit": "turbine-2",
-    "caller": "simulation_core.py:2350"
-  },
-  {
-    "tick": 7479,
-    "sim_time": 37390.0,
-    "unit": "turbine-4",
-    "caller": "simulation_core.py:2350"
-  },
-  {
-    "tick": 8150,
-    "sim_time": 40745.0,
-    "unit": "turbine-4",
-    "caller": "simulation_core.py:2350"
-  },
-  {
-    "tick": 8639,
-    "sim_time": 43186.0,
-    "unit": "turbine-3",
-    "caller": "dispatch.py:617"
-  },
-  {
-    "tick": 10491,
-    "sim_time": 52449.0,
-    "unit": "turbine-2",
-    "caller": "dispatch.py:617"
-  },
-  {
-    "tick": 10550,
-    "sim_time": 52745.0,
-    "unit": "turbine-3",
-    "caller": "simulation_core.py:2350"
-  },
-  {
-    "tick": 10622,
-    "sim_time": 53105.0,
-    "unit": "turbine-4",
-    "caller": "simulation_core.py:2350"
-  },
-  {
-    "tick": 11514,
-    "sim_time": 57565.0,
-    "unit": "turbine-3",
-    "caller": "simulation_core.py:2350"
-  },
-  {
-    "tick": 11574,
-    "sim_time": 57865.0,
-    "unit": "turbine-4",
-    "caller": "simulation_core.py:2350"
-  },
-  {
-    "tick": 14726,
-    "sim_time": 73623.0,
-    "unit": "turbine-2",
-    "caller": "dispatch.py:617"
-  },
-  {
-    "tick": 14789,
-    "sim_time": 73940.0,
-    "unit": "turbine-3",
-    "caller": "dispatch.py:617"
-  },
-  {
-    "tick": 14859,
-    "sim_time": 74290.0,
-    "unit": "turbine-4",
-    "caller": "dispatch.py:617"
-  },
-  {
-    "tick": 15530,
-    "sim_time": 77642.0,
-    "unit": "turbine-2",
-    "caller": "dispatch.py:617"
-  },
-  {
-    "tick": 15621,
-    "sim_time": 78099.0,
-    "unit": "turbine-3",
-    "caller": "dispatch.py:617"
-  },
-  {
-    "tick": 15810,
-    "sim_time": 79044.0,
-    "unit": "turbine-4",
-    "caller": "dispatch.py:617"
-  },
-  {
-    "tick": 16562,
-    "sim_time": 82804.0,
-    "unit": "turbine-3",
-    "caller": "dispatch.py:617"
-  },
-  {
-    "tick": 16720,
-    "sim_time": 83593.0,
-    "unit": "turbine-4",
-    "caller": "dispatch.py:617"
-  }
-]
-```
-
-Candidate rejection counts, start times and outcome deltas: NOT AVAILABLE; not run after STOP.
-
-### B3 demo-islanded-ramp, BASE ONLY
-
-ticks=2160; min BESS SoC=0.0; frequency min/max=[-127.48961154607643, 60.0]; unserved MWh=0.7984763561509628; observed island_collapsed=True events=None (None means none observed; full requested horizon completed).
-
-Rejected attempts=0; core=0; pre-staging=0.
-
-```json
-[
-  {
-    "tick": 1,
-    "sim_time": 0.0,
-    "unit": "turbine-1",
-    "caller": "dispatch.py:617"
-  },
-  {
-    "tick": 72,
-    "sim_time": 355.0,
-    "unit": "turbine-2",
-    "caller": "simulation_core.py:2350"
-  },
-  {
-    "tick": 192,
-    "sim_time": 955.0,
-    "unit": "turbine-3",
-    "caller": "simulation_core.py:2350"
-  }
-]
-```
-
-Candidate rejection counts, start times and outcome deltas: NOT AVAILABLE; not run after STOP.
-
-## B5 H2 — literal baseline rejection evidence
-
-BASE repetition 2: ticks=17280, rejected starts=6.
-
-BASE repetition 1: ticks=17280, rejected starts=6.
-
-| Tick | Command time s | Unit | Stop time s | Elapsed / minimum s | Eligible alternate |
-
-|---|---|---|---|---|---|
-
-| 10071 | 50350.0 | gt-hot-01 | 49480.0 | 870.0 / 900.0 | gt-hot-02 |
-
-| 10072 | 50355.0 | gt-hot-01 | 49480.0 | 875.0 / 900.0 | gt-hot-02 |
-
-| 10073 | 50360.0 | gt-hot-01 | 49480.0 | 880.0 / 900.0 | gt-hot-02 |
-
-| 10074 | 50365.0 | gt-hot-01 | 49480.0 | 885.0 / 900.0 | gt-hot-02 |
-
-| 10075 | 50370.0 | gt-hot-01 | 49480.0 | 890.0 / 900.0 | gt-hot-02 |
-
-| 10076 | 50375.0 | gt-hot-01 | 49480.0 | 895.0 / 900.0 | gt-hot-02 |
-
-Base command application: P/runtime/run_manager.py:1523. Base candidate selection: P/runtime/turbine_commitment.py:622–635, call :831. This is forecast START selection; the earlier progress message's 'preload' wording was imprecise. Explicit operator command application is not itself retargeted.
-
-Completed H2 baseline controls (both repetitions):
-
-- informed scenario-h2-slurm-24h-informed-base-2: ticks=17280, compact_sha256=6ae0ce3d7a1b300cd4402fbd640abc67addb953b453075454c39bdefad8b0711, native status=PASS.
-
-- informed scenario-h2-slurm-24h-informed-base-1: ticks=17280, compact_sha256=6ae0ce3d7a1b300cd4402fbd640abc67addb953b453075454c39bdefad8b0711, native status=PASS.
-
-- baseline scenario-h2-slurm-24h-baseline-base-2: ticks=17280, compact_sha256=8d0d3037dcaa712ccc34a5f744654af15b8654363911e63566f78467443e8b66, native status=FAIL.
-
-```json
-[
-  {
-    "type": "StartFuelReconciliationError",
-    "message": "start fuel does not reconcile with recorded start events: reported=124.000000000, measured=124.000000000, recorded_events=6, measured_events=11, hot_standby_release_charged=True"
-  }
-]
-```
-
-- baseline scenario-h2-slurm-24h-baseline-base-1: ticks=17280, compact_sha256=8d0d3037dcaa712ccc34a5f744654af15b8654363911e63566f78467443e8b66, native status=FAIL.
-
-```json
-[
-  {
-    "type": "StartFuelReconciliationError",
-    "message": "start fuel does not reconcile with recorded start events: reported=124.000000000, measured=124.000000000, recorded_events=6, measured_events=11, hot_standby_release_charged=True"
-  }
-]
-```
-
-The base H2 baseline's 6 recorded versus 11 measured starts, 124.000000000 reported/measured MMBtu FAIL is reproduced twice. Whether the candidate changes it is NOT MEASURED; the candidate probe aborted before an arm/control completed.
-
-### Candidate probe — new implementation defect, not a stale test
-
-```text
-Traceback (most recent call last):
-  File "/tmp/DR-ISL-phase3/observe.py", line 112, in <module>
-    adapter.run(package, a.scenario, a.arm, label)
-    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/tmp/DR-ISL-phase3/harness.py", line 79, in run
-    events, demand = executor._probe(spec, run_id=f"{sid}-study-s1-probe")
-                     ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/runner/workspace/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/study_harness/executor.py", line 311, in _probe
-    tick = ctx.step()
-  File "/tmp/DR-ISL-phase3/observe.py", line 92, in step
-    tick = original_step(context)
-  File "/home/runner/workspace/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/run_manager.py", line 1843, in step
-    result = evaluate_tick(self.sim_state, clock)
-  File "/home/runner/workspace/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py", line 2356, in evaluate_tick
-    _log_start_ineligibility_episode(state, _commit_decision, sim_time)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/runner/workspace/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py", line 658, in _log_start_ineligibility_episode
-    blocked = decision.blocked_by.startswith("no eligible turbine:")
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AttributeError: 'NoneType' object has no attribute 'startswith'
-```
-
-P/core/simulation_core.py:658 calls decision.blocked_by.startswith(...). P/core/commitment.py:359 initializes decommit_blocked_by=None and :431 returns it on an ordinary hold. That existing nullable value exposes the new logger's invalid assumption. This is a CANDIDATE BUG. It was not fixed after the stop condition.
-
-Every candidate H2 metric/delta, compact hash and native guard verdict is UNAVAILABLE. The batch exited 1 on its first candidate probe; later head repetitions/controls did not execute. The unrelated H base batch was stopped once the rejection condition was known; no completed H1 record is claimed.
-
-Full BASE H2 metrics (all keys, not just selected numbers):
-
-### BASE H2 baseline
-
+## B2 S10 — completed before B1 stop
+Ticks: 17280; rejected starts: BASE 1154 (core 1132, pre-staging 22) -> candidate 0.
+Prefix before tick 1059: `279f34c055bcc2a6f6a8b09790a33c5112ea60a598a23eb9531b45dbe3f15c3d`, identical to saved BASE `279f34c055bcc2a6f6a8b09790a33c5112ea60a598a23eb9531b45dbe3f15c3d`.
+Candidate ineligibility log episodes: 8.
+Candidate full trace summary and complete BASE/candidate turbine START attempts:
 ```json
 {
-  "tick_count": 17280,
-  "interval_seconds": 5.0,
-  "fuel_by_component_mmbtu": {
-    "load_fuel_mmbtu": 5136.719001539,
-    "no_load_fuel_mmbtu": 65.231666667,
-    "hot_standby_fuel_mmbtu": 4.552430556,
-    "start_fuel_mmbtu": 124.0
+  "candidate_summary": {
+    "steps": 17280,
+    "collapsed": [],
+    "min_soc": 0.0,
+    "frequency": [
+      -729.1075118080669,
+      998.9330534505464
+    ],
+    "unserved": 10.600341682490331,
+    "balance_failures": [],
+    "internal_physical_sha256": "0590ededec7f9988b76b441e89cb7c5d0ee5b7ae5e8baff96f0ce634934d8ac1",
+    "prefix_sha256": "279f34c055bcc2a6f6a8b09790a33c5112ea60a598a23eb9531b45dbe3f15c3d"
   },
-  "turbine_fuel_mmbtu": 5330.503098761,
-  "fuel_reconciled": true,
-  "start_fuel_reconciliation": {
-    "release_charged": true,
-    "recorded_event_count": 6,
-    "measured_event_count": 11,
-    "measured_start_fuel_mmbtu": 124.0,
-    "tier_sum_mmbtu": 124.0,
-    "passed": false
-  },
-  "dispatch_curtailment_mwh": 349.917690813,
-  "dispatch_curtailment_interval_exposure_fuel_mmbtu": 4838.569627585,
-  "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
-    "load_fuel_mmbtu": 4712.832474807,
-    "no_load_fuel_mmbtu": 61.375,
-    "hot_standby_fuel_mmbtu": 4.362152778,
-    "start_fuel_mmbtu": 60.0
-  },
-  "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
-    "gt-spin-01": 2130.396041667,
-    "gt-spin-02": 2130.396041667,
-    "gt-hot-01": 345.279002588,
-    "gt-hot-02": 232.498541667
-  },
-  "dispatch_curtailment_attributable_fuel_mmbtu": 3680.617469434,
-  "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
-    "gt-spin-01": 1639.723878254,
-    "gt-spin-02": 1639.723878254,
-    "gt-hot-01": 221.207657519,
-    "gt-hot-02": 179.962055406
-  },
-  "unserved_mwh": 5.011418076,
-  "peak_unserved_mw": 44.86838787,
-  "served_mwh": 138.948956374,
-  "unserved_intervals": [
+  "base_starts": [
     {
-      "start_sim_time_s": 29125.0,
-      "end_sim_time_s": 29410.0,
-      "peak_unserved_mw": 38.098732218014646
+      "tick": 1,
+      "sim_time": 0.0,
+      "unit": "turbine-1",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "dispatch.py:617",
+      "stop_time_s": null,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": [
+        "turbine-2",
+        "turbine-3",
+        "turbine-4"
+      ]
     },
     {
-      "start_sim_time_s": 29450.0,
-      "end_sim_time_s": 29460.0,
-      "peak_unserved_mw": 4.37595409165764
+      "tick": 107,
+      "sim_time": 527.0,
+      "unit": "turbine-2",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "dispatch.py:617",
+      "stop_time_s": null,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": [
+        "turbine-3",
+        "turbine-4"
+      ]
     },
     {
-      "start_sim_time_s": 36310.0,
-      "end_sim_time_s": 36415.0,
-      "peak_unserved_mw": 40.894865912415625
+      "tick": 226,
+      "sim_time": 1125.0,
+      "unit": "turbine-3",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "simulation_core.py:2350",
+      "stop_time_s": null,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": [
+        "turbine-4"
+      ]
     },
     {
-      "start_sim_time_s": 43510.0,
-      "end_sim_time_s": 43620.0,
-      "peak_unserved_mw": 41.9036584956214
+      "tick": 420,
+      "sim_time": 2092.0,
+      "unit": "turbine-4",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "dispatch.py:617",
+      "stop_time_s": null,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": []
     },
     {
-      "start_sim_time_s": 50710.0,
-      "end_sim_time_s": 50815.0,
-      "peak_unserved_mw": 40.390845418775996
+      "tick": 1216,
+      "sim_time": 6075.0,
+      "unit": "turbine-3",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "simulation_core.py:2350",
+      "stop_time_s": 5175.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": [
+        "turbine-4"
+      ]
     },
     {
-      "start_sim_time_s": 57910.0,
-      "end_sim_time_s": 58025.0,
-      "peak_unserved_mw": 44.86838786968556
+      "tick": 1375,
+      "sim_time": 6867.0,
+      "unit": "turbine-4",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "dispatch.py:617",
+      "stop_time_s": 5050.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": []
     },
     {
-      "start_sim_time_s": 65110.0,
-      "end_sim_time_s": 65215.0,
-      "peak_unserved_mw": 40.390845418775996
+      "tick": 2012,
+      "sim_time": 10055.0,
+      "unit": "turbine-3",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "simulation_core.py:2350",
+      "stop_time_s": 9155.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": [
+        "turbine-4"
+      ]
+    },
+    {
+      "tick": 2072,
+      "sim_time": 10355.0,
+      "unit": "turbine-4",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "simulation_core.py:2350",
+      "stop_time_s": 9030.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": []
+    },
+    {
+      "tick": 2906,
+      "sim_time": 14525.0,
+      "unit": "turbine-4",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "simulation_core.py:2350",
+      "stop_time_s": 13625.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": []
+    },
+    {
+      "tick": 3549,
+      "sim_time": 17740.0,
+      "unit": "turbine-3",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "simulation_core.py:2350",
+      "stop_time_s": 16840.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": [
+        "turbine-4"
+      ]
+    },
+    {
+      "tick": 3609,
+      "sim_time": 18040.0,
+      "unit": "turbine-4",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "simulation_core.py:2350",
+      "stop_time_s": 16715.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": []
+    },
+    {
+      "tick": 5271,
+      "sim_time": 26347.0,
+      "unit": "turbine-3",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "dispatch.py:617",
+      "stop_time_s": 20650.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": [
+        "turbine-4"
+      ]
+    },
+    {
+      "tick": 6667,
+      "sim_time": 33330.0,
+      "unit": "turbine-4",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "simulation_core.py:2350",
+      "stop_time_s": 20525.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": [
+        "turbine-2",
+        "turbine-3"
+      ]
+    },
+    {
+      "tick": 6832,
+      "sim_time": 34155.0,
+      "unit": "turbine-1",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "simulation_core.py:2350",
+      "stop_time_s": 33255.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": [
+        "turbine-2",
+        "turbine-3"
+      ]
+    },
+    {
+      "tick": 6892,
+      "sim_time": 34455.0,
+      "unit": "turbine-3",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "simulation_core.py:2350",
+      "stop_time_s": 28570.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": [
+        "turbine-2"
+      ]
+    },
+    {
+      "tick": 6964,
+      "sim_time": 34815.0,
+      "unit": "turbine-2",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "simulation_core.py:2350",
+      "stop_time_s": 26645.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": []
+    },
+    {
+      "tick": 7479,
+      "sim_time": 37390.0,
+      "unit": "turbine-4",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "simulation_core.py:2350",
+      "stop_time_s": 36490.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": []
+    },
+    {
+      "tick": 8150,
+      "sim_time": 40745.0,
+      "unit": "turbine-4",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "simulation_core.py:2350",
+      "stop_time_s": 39845.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": []
+    },
+    {
+      "tick": 8639,
+      "sim_time": 43186.0,
+      "unit": "turbine-3",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "dispatch.py:617",
+      "stop_time_s": 39970.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": []
+    },
+    {
+      "tick": 10491,
+      "sim_time": 52449.0,
+      "unit": "turbine-2",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "dispatch.py:617",
+      "stop_time_s": 51195.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": [
+        "turbine-3",
+        "turbine-4"
+      ]
+    },
+    {
+      "tick": 10550,
+      "sim_time": 52745.0,
+      "unit": "turbine-3",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "simulation_core.py:2350",
+      "stop_time_s": 46890.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": [
+        "turbine-4"
+      ]
+    },
+    {
+      "tick": 10622,
+      "sim_time": 53105.0,
+      "unit": "turbine-4",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "simulation_core.py:2350",
+      "stop_time_s": 43135.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": []
+    },
+    {
+      "tick": 11514,
+      "sim_time": 57565.0,
+      "unit": "turbine-3",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "simulation_core.py:2350",
+      "stop_time_s": 56665.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": [
+        "turbine-4"
+      ]
+    },
+    {
+      "tick": 11574,
+      "sim_time": 57865.0,
+      "unit": "turbine-4",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "simulation_core.py:2350",
+      "stop_time_s": 56540.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": []
+    },
+    {
+      "tick": 14726,
+      "sim_time": 73623.0,
+      "unit": "turbine-2",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "dispatch.py:617",
+      "stop_time_s": 71655.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": [
+        "turbine-3",
+        "turbine-4"
+      ]
+    },
+    {
+      "tick": 14789,
+      "sim_time": 73940.0,
+      "unit": "turbine-3",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "dispatch.py:617",
+      "stop_time_s": 71530.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": [
+        "turbine-4"
+      ]
+    },
+    {
+      "tick": 14859,
+      "sim_time": 74290.0,
+      "unit": "turbine-4",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "dispatch.py:617",
+      "stop_time_s": 71405.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": []
+    },
+    {
+      "tick": 15530,
+      "sim_time": 77642.0,
+      "unit": "turbine-2",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "dispatch.py:617",
+      "stop_time_s": 76700.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": [
+        "turbine-3",
+        "turbine-4"
+      ]
+    },
+    {
+      "tick": 15621,
+      "sim_time": 78099.0,
+      "unit": "turbine-3",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "dispatch.py:617",
+      "stop_time_s": 76575.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": [
+        "turbine-4"
+      ]
+    },
+    {
+      "tick": 15810,
+      "sim_time": 79044.0,
+      "unit": "turbine-4",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "dispatch.py:617",
+      "stop_time_s": 76450.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": []
+    },
+    {
+      "tick": 16562,
+      "sim_time": 82804.0,
+      "unit": "turbine-3",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "dispatch.py:617",
+      "stop_time_s": 81330.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": [
+        "turbine-4"
+      ]
+    },
+    {
+      "tick": 16720,
+      "sim_time": 83593.0,
+      "unit": "turbine-4",
+      "eligible": true,
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting",
+      "caller": "dispatch.py:617",
+      "stop_time_s": 81205.0,
+      "t_min_down_s": 900.0,
+      "eligible_alternates": []
     }
   ],
-  "energy_balance": {
-    "closure_status": true,
-    "max_abs_physical_ledger_defect_mw": 0.0,
-    "served_demand_mwh": 138.948956374,
-    "unserved_demand_mwh": 5.011418076
-  },
-  "bess_soc_min": 0.950386947,
-  "bess_soc_max": 0.999999999,
-  "bess_soc_final": 0.999999998,
-  "commitment": {
-    "distinct_event_count": 39,
-    "visible_distinct_event_count": 39,
-    "suppressed_repeat_count": 0,
-    "log_complete": true,
-    "omitted_record_count": 0,
-    "reserve_floor_refusal_count": 0,
-    "reserve_floor_distinct_event_count": 0,
-    "reserve_floor_visible_distinct_event_count": 0,
-    "reserve_floor_suppressed_repeat_count": 0,
-    "reserve_floor_log_complete": true,
-    "reserve_floor_omitted_record_count": 0,
-    "same_unit_restart_within_min_down_window_count": 0
-  },
-  "forecast": {
-    "miss_count": 0,
-    "miss_peak_mw": 0.0
-  },
-  "compute_trace_sha256": "ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b",
-  "compute_trace_count": 17280,
-  "daily_breakdown": [
+  "candidate_starts": [
     {
-      "day": 1,
-      "kind": "weekday",
-      "fuel_by_component_mmbtu": {
-        "load_fuel_mmbtu": 5136.719001539,
-        "no_load_fuel_mmbtu": 65.231666667,
-        "hot_standby_fuel_mmbtu": 4.552430556,
-        "start_fuel_mmbtu": 124.0
-      },
-      "fuel_mmbtu": 5330.503098761,
-      "unserved_mwh": 5.011418076,
-      "curtailed_mwh": 349.917690813,
-      "bess_soc_end": 0.999999998
+      "tick": 1,
+      "sim_time": 0.0,
+      "unit": "turbine-1",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 107,
+      "sim_time": 527.0,
+      "unit": "turbine-2",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 226,
+      "sim_time": 1125.0,
+      "unit": "turbine-3",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 420,
+      "sim_time": 2092.0,
+      "unit": "turbine-4",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 1191,
+      "sim_time": 5950.0,
+      "unit": "turbine-4",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 1375,
+      "sim_time": 6867.0,
+      "unit": "turbine-3",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 1915,
+      "sim_time": 9569.0,
+      "unit": "turbine-4",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 1987,
+      "sim_time": 9930.0,
+      "unit": "turbine-3",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 2906,
+      "sim_time": 14525.0,
+      "unit": "turbine-4",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 3524,
+      "sim_time": 17615.0,
+      "unit": "turbine-4",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 3584,
+      "sim_time": 17915.0,
+      "unit": "turbine-3",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 5271,
+      "sim_time": 26347.0,
+      "unit": "turbine-3",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 6662,
+      "sim_time": 33303.0,
+      "unit": "turbine-2",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 6733,
+      "sim_time": 33660.0,
+      "unit": "turbine-4",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 6805,
+      "sim_time": 34020.0,
+      "unit": "turbine-3",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 6877,
+      "sim_time": 34380.0,
+      "unit": "turbine-1",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 7479,
+      "sim_time": 37390.0,
+      "unit": "turbine-4",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 7539,
+      "sim_time": 37690.0,
+      "unit": "turbine-3",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 8150,
+      "sim_time": 40745.0,
+      "unit": "turbine-4",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 8639,
+      "sim_time": 43186.0,
+      "unit": "turbine-3",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 9389,
+      "sim_time": 46938.0,
+      "unit": "turbine-4",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 10491,
+      "sim_time": 52449.0,
+      "unit": "turbine-2",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 10550,
+      "sim_time": 52745.0,
+      "unit": "turbine-3",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 10622,
+      "sim_time": 53105.0,
+      "unit": "turbine-4",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 11489,
+      "sim_time": 57440.0,
+      "unit": "turbine-4",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 11549,
+      "sim_time": 57740.0,
+      "unit": "turbine-3",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 12154,
+      "sim_time": 60765.0,
+      "unit": "turbine-4",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 12517,
+      "sim_time": 62576.0,
+      "unit": "turbine-3",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 14726,
+      "sim_time": 73623.0,
+      "unit": "turbine-2",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 14789,
+      "sim_time": 73940.0,
+      "unit": "turbine-3",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 14859,
+      "sim_time": 74290.0,
+      "unit": "turbine-4",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 15474,
+      "sim_time": 77365.0,
+      "unit": "turbine-4",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 15558,
+      "sim_time": 77785.0,
+      "unit": "turbine-2",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 15621,
+      "sim_time": 78099.0,
+      "unit": "turbine-3",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 16161,
+      "sim_time": 80798.0,
+      "unit": "turbine-4",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 16254,
+      "sim_time": 81262.0,
+      "unit": "turbine-3",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 16779,
+      "sim_time": 83890.0,
+      "unit": "turbine-4",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
+    },
+    {
+      "tick": 16868,
+      "sim_time": 84335.0,
+      "unit": "turbine-3",
+      "reason": "eligible",
+      "before": "offline",
+      "after": "starting"
     }
   ],
-  "constraints_valid": false,
-  "hard_violations": [
-    "start_count_reconciliation:gt-hot-01:asset=2:log=1:untracked_path=production_command_or_cascade",
-    "start_count_reconciliation:gt-hot-01:asset=3:log=1:untracked_path=production_command_or_cascade",
-    "start_count_reconciliation:gt-hot-01:asset=4:log=1:untracked_path=production_command_or_cascade",
-    "start_count_reconciliation:gt-hot-01:asset=5:log=1:untracked_path=production_command_or_cascade",
-    "start_count_reconciliation:gt-hot-01:asset=6:log=1:untracked_path=production_command_or_cascade"
+  "ineligibility_episodes": [
+    "Commitment engine: no eligible turbine: turbine-3=min_down; turbine-4=min_down at sim_time=5345.0",
+    "Commitment engine: no eligible turbine: turbine-3=min_down at sim_time=9865.0",
+    "Commitment engine: no eligible turbine: turbine-4=min_down at sim_time=13730.0",
+    "Commitment engine: no eligible turbine: turbine-4=min_down at sim_time=16820.0",
+    "Commitment engine: no eligible turbine: turbine-4=min_down at sim_time=36595.0",
+    "Commitment engine: no eligible turbine: turbine-4=min_down at sim_time=39960.0",
+    "Commitment engine: no eligible turbine: turbine-4=min_down; turbine-3=min_down at sim_time=56825.0",
+    "Commitment engine: no eligible turbine: turbine-4=min_down at sim_time=59980.0"
   ]
 }
 ```
+Empty collapsed list means no TickResult with island_collapsed=true was observed; it is not an assertion of acceptable frequency or power adequacy.
 
-### BASE H2 informed
+## B5 H2 informed — completed observations, NOT accepted
+Fresh BASE compact: `6ae0ce3d7a1b300cd4402fbd640abc67addb953b453075454c39bdefad8b0711`.
+Candidate compact (both repetitions): `0def2a33daa2770e5095d8cb63b2c5e7d01ab65c85aaf4db3bd732a89623a3c7`.
+Full metric table (native MetricsCollector keys; candidate repetitions agree on every listed metric):
+|Metric|BASE|Candidate|
+|---|---|---|
+|tick_count|17280|17280|
+|interval_seconds|5.0|5.0|
+|fuel_by_component_mmbtu|{"hot_standby_fuel_mmbtu": 3.761458333, "load_fuel_mmbtu": 5107.722017303, "no_load_fuel_mmbtu": 64.866666667, "start_fuel_mmbtu": 152.0}|{"hot_standby_fuel_mmbtu": 3.761458333, "load_fuel_mmbtu": 5106.733034717, "no_load_fuel_mmbtu": 64.855, "start_fuel_mmbtu": 152.0}|
+|turbine_fuel_mmbtu|5328.350142303|5327.34949305|
+|fuel_reconciled|true|true|
+|start_fuel_reconciliation|{"measured_event_count": 14, "measured_start_fuel_mmbtu": 152.0, "passed": true, "recorded_event_count": 14, "release_charged": true, "tier_sum_mmbtu": null}|{"measured_event_count": 14, "measured_start_fuel_mmbtu": 152.0, "passed": true, "recorded_event_count": 14, "release_charged": true, "tier_sum_mmbtu": null}|
+|dispatch_curtailment_mwh|343.106291593|342.977539092|
+|dispatch_curtailment_interval_exposure_fuel_mmbtu|4894.248370795|4892.43517635|
+|dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu|{"hot_standby_fuel_mmbtu": 3.642013889, "load_fuel_mmbtu": 4677.688023572, "no_load_fuel_mmbtu": 60.918333333, "start_fuel_mmbtu": 152.0}|{"hot_standby_fuel_mmbtu": 3.642013889, "load_fuel_mmbtu": 4675.898162461, "no_load_fuel_mmbtu": 60.895, "start_fuel_mmbtu": 152.0}|
+|dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu|{"gt-hot-01": 738.419791667, "gt-hot-02": 294.486527778, "gt-spin-01": 2152.666217898, "gt-spin-02": 1708.675833457}|{"gt-hot-01": 737.513194445, "gt-hot-02": 293.579930556, "gt-spin-01": 2152.666217898, "gt-spin-02": 1708.675833457}|
+|dispatch_curtailment_attributable_fuel_mmbtu|3608.878484911|3607.524008603|
+|dispatch_curtailment_attributable_fuel_by_unit_mmbtu|{"gt-hot-01": 537.463176576, "gt-hot-02": 164.951193898, "gt-spin-01": 1645.626267003, "gt-spin-02": 1260.837847434}|{"gt-hot-01": 536.782073718, "gt-hot-02": 164.270090991, "gt-spin-01": 1645.630131731, "gt-spin-02": 1260.841712162}|
+|unserved_mwh|0.893328423|0.859772492|
+|peak_unserved_mw|42.36838787|42.36838787|
+|served_mwh|143.067046027|143.100601957|
+|unserved_intervals|[{"end_sim_time_s": 29165.0, "peak_unserved_mw": 19.287968405751712, "start_sim_time_s": 29130.0}, {"end_sim_time_s": 29235.0, "peak_unserved_mw": 1.8802011558611156, "start_sim_time_s": 29215.0}, {"end_sim_time_s": 36350.0, "peak_unserved_mw": 38.394865912415625, "start_sim_time_s": 36310.0}, {"end_sim_time_s": 43555.0, "peak_unserved_mw": 39.4036584956214, "start_sim_time_s": 43510.0}, {"end_sim_time_s": 50730.0, "peak_unserved_mw": 29.140845418775996, "start_sim_time_s": 50710.0}, {"end_sim_time_s": 50760.0, "peak_unserved_mw": 1.25, "start_sim_time_s": 50750.0}, {"end_sim_time_s": 57940.0, "peak_unserved_mw": 42.36838786968556, "start_sim_time_s": 57910.0}, {"end_sim_time_s": 65140.0, "peak_unserved_mw": 37.890845418775996, "start_sim_time_s": 65110.0}]|[{"end_sim_time_s": 29165.0, "peak_unserved_mw": 19.287968405751712, "start_sim_time_s": 29130.0}, {"end_sim_time_s": 29235.0, "peak_unserved_mw": 1.8802011558611156, "start_sim_time_s": 29215.0}, {"end_sim_time_s": 36350.0, "peak_unserved_mw": 38.394865912415625, "start_sim_time_s": 36310.0}, {"end_sim_time_s": 43555.0, "peak_unserved_mw": 39.4036584956214, "start_sim_time_s": 43510.0}, {"end_sim_time_s": 50725.0, "peak_unserved_mw": 26.640845418775996, "start_sim_time_s": 50710.0}, {"end_sim_time_s": 57940.0, "peak_unserved_mw": 42.36838786968556, "start_sim_time_s": 57910.0}, {"end_sim_time_s": 65140.0, "peak_unserved_mw": 37.890845418775996, "start_sim_time_s": 65110.0}]|
+|energy_balance|{"closure_status": true, "max_abs_physical_ledger_defect_mw": 0.0, "served_demand_mwh": 143.067046027, "unserved_demand_mwh": 0.893328423}|{"closure_status": true, "max_abs_physical_ledger_defect_mw": 0.0, "served_demand_mwh": 143.100601957, "unserved_demand_mwh": 0.859772492}|
+|bess_soc_min|0.950386947|0.950386947|
+|bess_soc_max|0.999999998|0.999999998|
+|bess_soc_final|0.999999987|0.999999987|
+|commitment|{"distinct_event_count": 67, "log_complete": true, "omitted_record_count": 0, "reserve_floor_distinct_event_count": 14890, "reserve_floor_log_complete": true, "reserve_floor_omitted_record_count": 0, "reserve_floor_refusal_count": 14890, "reserve_floor_suppressed_repeat_count": 0, "reserve_floor_visible_distinct_event_count": 14890, "same_unit_restart_within_min_down_window_count": 0, "suppressed_repeat_count": 11205, "visible_distinct_event_count": 67}|{"distinct_event_count": 65, "log_complete": true, "omitted_record_count": 0, "reserve_floor_distinct_event_count": 14904, "reserve_floor_log_complete": true, "reserve_floor_omitted_record_count": 0, "reserve_floor_refusal_count": 14904, "reserve_floor_suppressed_repeat_count": 0, "reserve_floor_visible_distinct_event_count": 14904, "same_unit_restart_within_min_down_window_count": 0, "suppressed_repeat_count": 11198, "visible_distinct_event_count": 65}|
+|forecast|{"miss_count": 39, "miss_peak_mw": 13.130749227}|{"miss_count": 39, "miss_peak_mw": 13.130749227}|
+|compute_trace_sha256|"ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b"|"ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b"|
+|compute_trace_count|17280|17280|
+|daily_breakdown|[{"bess_soc_end": 0.999999987, "curtailed_mwh": 343.106291593, "day": 1, "fuel_by_component_mmbtu": {"hot_standby_fuel_mmbtu": 3.761458333, "load_fuel_mmbtu": 5107.722017303, "no_load_fuel_mmbtu": 64.866666667, "start_fuel_mmbtu": 152.0}, "fuel_mmbtu": 5328.350142303, "kind": "weekday", "unserved_mwh": 0.893328423}]|[{"bess_soc_end": 0.999999987, "curtailed_mwh": 342.977539092, "day": 1, "fuel_by_component_mmbtu": {"hot_standby_fuel_mmbtu": 3.761458333, "load_fuel_mmbtu": 5106.733034717, "no_load_fuel_mmbtu": 64.855, "start_fuel_mmbtu": 152.0}, "fuel_mmbtu": 5327.34949305, "kind": "weekday", "unserved_mwh": 0.859772492}]|
+|constraints_valid|true|true|
+|hard_violations|[]|[]|
+Candidate full metrics repeat-identical = True
+BASE rejected starts: 6 per saved repetition; fresh repetition also 6. Candidate: 0 in both repetitions.
+Replacement accepted START: gt-hot-02 at sim_time 50350.0 s, tick 10071; gt-hot-01 starts at 50380.0 s, tick 10077.
+Candidate constraints_valid=True, hard_violations=[], status=PASS, guard_failures=[].
+H2 baseline was NOT re-run before the stop. Its historical FAIL (recorded 6 vs measured 11 starts, fuel 124.0 MMBtu) is preserved in prior evidence; baseline identity and a new compare_runs gate are NOT established.
+No comparison combines different engine commits under a fabricated build-parity PASS.
 
-```json
-{
-  "tick_count": 17280,
-  "interval_seconds": 5.0,
-  "fuel_by_component_mmbtu": {
-    "load_fuel_mmbtu": 5107.722017303,
-    "no_load_fuel_mmbtu": 64.866666667,
-    "hot_standby_fuel_mmbtu": 3.761458333,
-    "start_fuel_mmbtu": 152.0
-  },
-  "turbine_fuel_mmbtu": 5328.350142303,
-  "fuel_reconciled": true,
-  "start_fuel_reconciliation": {
-    "release_charged": true,
-    "recorded_event_count": 14,
-    "measured_event_count": 14,
-    "measured_start_fuel_mmbtu": 152.0,
-    "tier_sum_mmbtu": null,
-    "passed": true
-  },
-  "dispatch_curtailment_mwh": 343.106291593,
-  "dispatch_curtailment_interval_exposure_fuel_mmbtu": 4894.248370795,
-  "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
-    "load_fuel_mmbtu": 4677.688023572,
-    "no_load_fuel_mmbtu": 60.918333333,
-    "hot_standby_fuel_mmbtu": 3.642013889,
-    "start_fuel_mmbtu": 152.0
-  },
-  "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
-    "gt-spin-01": 2152.666217898,
-    "gt-spin-02": 1708.675833457,
-    "gt-hot-01": 738.419791667,
-    "gt-hot-02": 294.486527778
-  },
-  "dispatch_curtailment_attributable_fuel_mmbtu": 3608.878484911,
-  "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
-    "gt-spin-01": 1645.626267003,
-    "gt-spin-02": 1260.837847434,
-    "gt-hot-01": 537.463176576,
-    "gt-hot-02": 164.951193898
-  },
-  "unserved_mwh": 0.893328423,
-  "peak_unserved_mw": 42.36838787,
-  "served_mwh": 143.067046027,
-  "unserved_intervals": [
-    {
-      "start_sim_time_s": 29130.0,
-      "end_sim_time_s": 29165.0,
-      "peak_unserved_mw": 19.287968405751712
-    },
-    {
-      "start_sim_time_s": 29215.0,
-      "end_sim_time_s": 29235.0,
-      "peak_unserved_mw": 1.8802011558611156
-    },
-    {
-      "start_sim_time_s": 36310.0,
-      "end_sim_time_s": 36350.0,
-      "peak_unserved_mw": 38.394865912415625
-    },
-    {
-      "start_sim_time_s": 43510.0,
-      "end_sim_time_s": 43555.0,
-      "peak_unserved_mw": 39.4036584956214
-    },
-    {
-      "start_sim_time_s": 50710.0,
-      "end_sim_time_s": 50730.0,
-      "peak_unserved_mw": 29.140845418775996
-    },
-    {
-      "start_sim_time_s": 50750.0,
-      "end_sim_time_s": 50760.0,
-      "peak_unserved_mw": 1.25
-    },
-    {
-      "start_sim_time_s": 57910.0,
-      "end_sim_time_s": 57940.0,
-      "peak_unserved_mw": 42.36838786968556
-    },
-    {
-      "start_sim_time_s": 65110.0,
-      "end_sim_time_s": 65140.0,
-      "peak_unserved_mw": 37.890845418775996
-    }
-  ],
-  "energy_balance": {
-    "closure_status": true,
-    "max_abs_physical_ledger_defect_mw": 0.0,
-    "served_demand_mwh": 143.067046027,
-    "unserved_demand_mwh": 0.893328423
-  },
-  "bess_soc_min": 0.950386947,
-  "bess_soc_max": 0.999999998,
-  "bess_soc_final": 0.999999987,
-  "commitment": {
-    "distinct_event_count": 67,
-    "visible_distinct_event_count": 67,
-    "suppressed_repeat_count": 11205,
-    "log_complete": true,
-    "omitted_record_count": 0,
-    "reserve_floor_refusal_count": 14890,
-    "reserve_floor_distinct_event_count": 14890,
-    "reserve_floor_visible_distinct_event_count": 14890,
-    "reserve_floor_suppressed_repeat_count": 0,
-    "reserve_floor_log_complete": true,
-    "reserve_floor_omitted_record_count": 0,
-    "same_unit_restart_within_min_down_window_count": 0
-  },
-  "forecast": {
-    "miss_count": 39,
-    "miss_peak_mw": 13.130749227
-  },
-  "compute_trace_sha256": "ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b",
-  "compute_trace_count": 17280,
-  "daily_breakdown": [
-    {
-      "day": 1,
-      "kind": "weekday",
-      "fuel_by_component_mmbtu": {
-        "load_fuel_mmbtu": 5107.722017303,
-        "no_load_fuel_mmbtu": 64.866666667,
-        "hot_standby_fuel_mmbtu": 3.761458333,
-        "start_fuel_mmbtu": 152.0
-      },
-      "fuel_mmbtu": 5328.350142303,
-      "unserved_mwh": 0.893328423,
-      "curtailed_mwh": 343.106291593,
-      "bess_soc_end": 0.999999987
-    }
-  ],
-  "constraints_valid": true,
-  "hard_violations": []
-}
-```
+## B6 base demo
+|Arm|Repetition|Ticks|Curtailment MWh|Turbine MMBtu|Unserved MWh|Peak unserved MW|All saved metrics / compact hash equal|
+|---|---:|---:|---:|---:|---:|---:|---|
+|baseline|1|1440|8.136511735|714.363019086|0.351692658|22.309362466|True|
+|baseline|2|1440|8.136511735|714.363019086|0.351692658|22.309362466|True|
+|informed|1|1440|5.278943188|665.398247704|0.020719074|7.52325057|True|
+|informed|2|1440|5.278943188|665.398247704|0.020719074|7.52325057|True|
 
-### B6 base demo
+## 3.4 / 3.5 — not reached
+Full suite: NOT RUN after B1 failure. Passed/failed/added/removed counts: NOT AVAILABLE.
+No PHASE_3_FAILING_TESTS.txt was created; an empty list would falsely imply a completed passing suite.
+No validated implementation commit or report-only commit was made. HEAD remains the automatic unvalidated checkpoint.
 
-Both BASE arms completed with zero rejected commands; full base metrics are in PHASE_3_EVIDENCE.json. No candidate arm completed/was validated after the STOP. No identical result or reissued compare_runs verdict is claimed.
+## Safe stopped state / stash
+Stash: `stash@{0}` = `b416122acfa07c59d4a3521a90361d5be775d612`; its tree contains the complete D2 candidate plus nullable logger repair and test.
+Because HEAD itself contains the earlier checkpointed crashing candidate, stashing only the new working changes would expose that crash again.
+Therefore the eight candidate application/test paths were additionally restored in index and worktree from 1345380, without changing HEAD or rewriting history.
+Verification: `git diff 1345380 -- P/core P/runtime P/tests` = empty output.
+The new candidate test is absent in restored BASE; it is preserved in the stash and diff below.
+Current source is BASE, not the rejected candidate. Staged restorations are intentional; Git status is NOT clean.
+The existing GridSignal web workflow was restarted once after restoration; log records Application startup complete and GET / HTTP/1.1 200 OK.
+Workflow log: `/tmp/logs/artifactsgridsignal_web_20261022_074844_708_c05a8106.log`.
 
-## 3.4 Full suite
-
-NOT RUN. Pass/fail counts and added/removed/remaining comparison are NOT MEASURED. No PHASE_3_FAILING_TESTS.txt is created, rather than presenting an empty list as a passing suite. The Phase 2d 15-failure baseline remains tools/dr_isl/PHASE_2D_FAILING_TESTS.txt.
-
-## 3.5 Commit and tracking status
-
-No Phase 3 implementation, test-update or report commit: B5 requires STOP before committing. Any subsequent automatic checkpoint remains UNVALIDATED until the gates and Lloyd's record decision. The new P test is explicitly force-added/tracked; no scenario JSON was changed.
-
+Current git status:
 ```text
- M .agents/memory/MEMORY.md
- M .agents/memory/s1-study-harness.md
- M attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py
- M attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/commitment.py
- M attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/dispatch.py
- M attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/models.py
- M attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py
- M attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/run_manager.py
- M attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/turbine_commitment.py
-A  attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_start_eligibility.py
-?? tools/dr_isl/PHASE_3_DESIGN.md
-?? tools/dr_isl/PHASE_3_EVIDENCE.json
-?? tools/dr_isl/PHASE_3_REPORT.md
-?? tools/dr_isl/PHASE_3_TC06.xml
+M .agents/memory/s1-study-harness.md
+M  attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py
+M  attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/commitment.py
+M  attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/dispatch.py
+M  attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/models.py
+M  attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py
+M  attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/run_manager.py
+M  attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/turbine_commitment.py
+D  attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_start_eligibility.py
+ M tools/dr_isl/PHASE_3_EVIDENCE.json
+ M tools/dr_isl/PHASE_3_TC06.xml
 ```
 
-Scenario diff:
+## Storage and evidence limitations
+No full per-tick exports were written. SHA-256 and metrics streamed in memory; native compact rows remained in memory until hashed.
+Every scratch file is below 200,000,000 bytes. Original persisted baseline_runner.py was not edited.
+The missing registered scratch worktree required git worktree add --force; the initial failed worktree attempt did not produce a scenario result.
+H2 candidate identity seed field is 42 from the reconstructed helper; the fresh base uses None. This affects identity metadata only: run context IDs and configured RNG pinning are identical, and fresh base exactly reproduces saved BASE full physical and compact hashes.
+This seed-label difference is disclosed, not used to waive the physical prefix mismatch. Certified H1 checks were not completed.
 
-```text
-(empty)
-```
-
-Phase 3 commits since base:
-
-```text
-(none)
-```
-
-Baseline runner content diff:
-
-```text
-(empty)
-```
-
-Scratch storage: streaming hashes/metrics and command-event evidence only, no scenario-run full tick exports. Files are capped by RLIMIT_FSIZE=200000000. The pre-existing core diagnostic has a hardcoded /tmp/cmt001_diag.log path; it is not a new Phase 3 source edit. Output-only adapters suppress normal study tick artifacts.
-
-```json
-[
-  [
-    21083303,
-    "base/docs/addendum-h-phase2b-results/scenario-h1-k8s-ray-7d-baseline_ticks.jsonl.gz"
-  ],
-  [
-    20527305,
-    "base/docs/addendum-h-phase2b-results/scenario-h1-k8s-ray-7d-informed_ticks.jsonl.gz"
-  ],
-  [
-    19864183,
-    "base/tools/invariants/recordings/run-37d6809c8917.jsonl"
-  ],
-  [
-    18833087,
-    "base/docs/addendum-h-phase2b-results/scenario-h2-slurm-7d-informed_ticks.jsonl.gz"
-  ],
-  [
-    16201652,
-    "base/docs/addendum-h-phase2b-results/scenario-h2-slurm-7d-baseline_ticks.jsonl.gz"
-  ],
-  [
-    5405213,
-    "base/reports/NAR-001_residuals.jsonl"
-  ],
-  [
-    2117665,
-    "base/docs/addendum-h-phase2b-results/scenario-h1-k8s-ray-24h-baseline_ticks.jsonl.gz"
-  ],
-  [
-    2063195,
-    "base/docs/addendum-h-phase2b-results/scenario-h1-k8s-ray-24h-informed_ticks.jsonl.gz"
-  ]
-]
-```
-
-## Full literal candidate diff (uncommitted, UNVALIDATED)
-
+## Full stopped candidate diff (BASE 1345380 -> stashed candidate; NOT active source)
 ```diff
 diff --git a/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py b/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py
 index 1b2b974..11ec12b 100644
@@ -929,7 +1064,7 @@ index cf0140b..3044d09 100644
      @property
      def is_starting(self) -> bool:
 diff --git a/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py b/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py
-index 60596e0..94d3a3a 100644
+index 60596e0..c30fc99 100644
 --- a/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py
 +++ b/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py
 @@ -291,6 +291,7 @@ class SimulationState:
@@ -949,7 +1084,7 @@ index 60596e0..94d3a3a 100644
      turbines: list[TurbineModule],
  ) -> list[TurbineModule]:
      """Return offline turbines in hot → warm → cold, then roster order."""
-@@ -617,6 +618,49 @@ def _offline_turbines_by_thermal_priority(
+@@ -617,6 +618,51 @@ def _offline_turbines_by_thermal_priority(
      )
  
  
@@ -990,7 +1125,9 @@ index 60596e0..94d3a3a 100644
 +    state: SimulationState, decision: CommitmentDecision, sim_time: float,
 +) -> None:
 +    """DR D2: one commitment-log reason per contiguous blocked episode."""
-+    blocked = decision.blocked_by.startswith("no eligible turbine:")
++    blocked = isinstance(decision.blocked_by, str) and decision.blocked_by.startswith(
++        "no eligible turbine:"
++    )
 +    if blocked and not state._start_ineligible_episode_logged:
 +        _log.info("Commitment engine: %s at sim_time=%.1f", decision.blocked_by, sim_time)
 +    state._start_ineligible_episode_logged = blocked
@@ -999,7 +1136,7 @@ index 60596e0..94d3a3a 100644
  def _promote_reserve_standby_labels(
      turbines: list[TurbineModule],
  ) -> tuple[str, ...]:
-@@ -627,7 +671,7 @@ def _promote_reserve_standby_labels(
+@@ -627,7 +673,7 @@ def _promote_reserve_standby_labels(
      """
      remaining = [
          turbine
@@ -1008,7 +1145,7 @@ index 60596e0..94d3a3a 100644
          if turbine.config.hot_standby
      ]
      desired = [ThermalState.HOT, ThermalState.WARM]
-@@ -714,11 +758,7 @@ def _release_hot_standby_for_contingency(
+@@ -714,11 +760,7 @@ def _release_hot_standby_for_contingency(
      ):
          return None
  
@@ -1021,7 +1158,7 @@ index 60596e0..94d3a3a 100644
      if not hot_standby_units:
          return None
  
-@@ -2178,12 +2218,13 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
+@@ -2178,12 +2220,13 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
      # reserve; using them here would make the commitment decision disagree with
      # the operator-facing reserve summary during the controlled rundown.
      _avail_on_bus = [
@@ -1039,7 +1176,7 @@ index 60596e0..94d3a3a 100644
      ]
  
      # ── Cascade commit trigger (site.cascade_commit_fraction) ─────────────
-@@ -2239,11 +2280,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
+@@ -2239,11 +2282,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                  # command_start().  Fix: clear the flag, THEN call command_start()
                  # (the guard is gone so it transitions OFFLINE → STARTING normally,
                  # using initial_thermal_state="hot" → hot_start_s duration).
@@ -1052,7 +1189,7 @@ index 60596e0..94d3a3a 100644
                  if _hs_units and state._pending_start.is_empty:
                      _next_hs = _hs_units[0]
                      _before_state = _next_hs.state
-@@ -2316,6 +2353,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
+@@ -2316,6 +2355,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
          decommit_enabled     = _bess_rundown_enabled and not _generation_baseload_active,
          decommit_reason_context = _bess_rundown_reason,
      )
@@ -1060,7 +1197,7 @@ index 60596e0..94d3a3a 100644
      if (
          _commit_decision.action == "commit"
          and _commit_decision.target_unit_id is not None
-@@ -2535,7 +2573,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
+@@ -2535,7 +2575,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
      # UNLOADING units are pinned at MSL with no upward headroom — counting their
      # nameplate overstates reserve precisely when the fleet is shrinking.
      # Distinct from on_bus_output_mw which INCLUDES UNLOADING (they do produce).
@@ -1151,10 +1288,10 @@ index ca8445f..19e8ba6 100644
                      "forecast controller veto: unit is not offline and cannot start"
 diff --git a/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_start_eligibility.py b/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_start_eligibility.py
 new file mode 100644
-index 0000000..61d5f82
+index 0000000..d1036fb
 --- /dev/null
 +++ b/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_start_eligibility.py
-@@ -0,0 +1,117 @@
+@@ -0,0 +1,127 @@
 +"""DR D2 / IMPL-ISL-5, TC-ISL-06: one unchanged turbine start interlock."""
 +import ast
 +from dataclasses import replace
@@ -1261,6 +1398,16 @@ index 0000000..61d5f82
 +        assert not any("silently dropped" in r.message for r in caplog.records)
 +
 +
++def test_tc_isl_06d_ordinary_hold_is_not_an_ineligibility_episode(caplog):
++    state = SimpleNamespace(_start_ineligible_episode_logged=True)
++    with caplog.at_level(logging.INFO, logger="core.simulation_core"):
++        for reason in (None, "", "minimum run time", 123):
++            decision = SimpleNamespace(blocked_by=reason)
++            _log_start_ineligibility_episode(state, decision, 100.0)
++            assert state._start_ineligible_episode_logged is False
++    assert not caplog.records
++
++
 +def test_tc_isl_06_guard_boundaries_unchanged():
 +    unit = _unit("boundary", True)
 +    assert unit.start_eligibility(899.0) == (False, "min_down")
@@ -1272,13 +1419,215 @@ index 0000000..61d5f82
 +    assert unit.start_eligibility(0.0) == (False, "hot_standby")
 +    unit.config.hot_standby = False
 +    assert unit.start_eligibility(0.0) == (False, "state")
+
 ```
 
-## Persisted deliverables
+## Output-only observer used for the runs
+```python
+#!/usr/bin/env python3
+"""Output-only Phase 3 observer. No tick exports; all files <200 MB."""
+import argparse, asyncio, copy, hashlib, importlib.util, json, logging, os
+from pathlib import Path
+import random, resource, sys
+from types import SimpleNamespace
+from unittest.mock import patch
 
-- tools/dr_isl/PHASE_3_DESIGN.md
-- tools/dr_isl/PHASE_3_REPORT.md
-- tools/dr_isl/PHASE_3_EVIDENCE.json
-- tools/dr_isl/PHASE_3_TC06.xml
+resource.setrlimit(resource.RLIMIT_FSIZE, (200_000_000, 200_000_000))
+ROOT = Path("/home/runner/workspace")
+P = Path("attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim")
+T = Path("/tmp/DR-ISL-phase3")
+a = argparse.ArgumentParser()
+a.add_argument("scenario")
+a.add_argument("--arm", default="app")
+a.add_argument("--version", default="candidate")
+a.add_argument("--reps", type=int, default=1)
+args = a.parse_args()
+pkg = ROOT / P if args.version == "candidate" else T / "base" / P
+sys.path.insert(0, str(pkg))
+sys.dont_write_bytecode = True
+os.chdir(pkg)
+import numpy as np
+from core.asset_modules import TurbineModule
+from core.models import TurbineState
+from core.simulation_core import SimulationState
+from runtime.fabric_engine import FabricEngine
+from runtime.run_manager import RunContext, RunManager, WebSocketHub, InMemoryTimeseriesSink
+from runtime.scenario_factory import build_run_context_from_spec
+from api.schemas import ScenarioSpec
+from study_harness import executor
 
-STOP. No Phase 4.
+loader = importlib.util.spec_from_file_location("pinning", ROOT / "tools/dr_isl/baseline_runner.py")
+pin = importlib.util.module_from_spec(loader)
+loader.loader.exec_module(pin)
+orig_fabric = FabricEngine.__init__
+orig_build = executor.build_run_context_from_spec
+orig_start = TurbineModule.command_start
+orig_step = RunContext.step
+active = None
+trace = None
+
+def fabric(self, *pos, **kw):
+    kw["seed"] = 1729
+    return orig_fabric(self, *pos, **kw)
+
+def build(run_id, spec, **kw):
+    global active
+    spec = copy.deepcopy(spec)
+    pin.pin_spec(spec)
+    ctx = orig_build(run_id, spec, **kw)
+    for i, diesel in enumerate(ctx.sim_state.diesel_units):
+        diesel._rng.seed(1729 + i)
+    active = ctx
+    return ctx
+
+def start(self, sim_time):
+    state = self.state
+    if self.config.hot_standby:
+        reason = "hot_standby"
+    elif state != TurbineState.OFFLINE:
+        reason = "state"
+    elif self.config.min_down_enabled and not np.isnan(self._stop_time_s) and sim_time - self._stop_time_s < self.config.t_min_down_s:
+        reason = "min_down"
+    else:
+        reason = "eligible"
+    result = orig_start(self, sim_time)
+    if trace is not None:
+        trace["attempts"].append(dict(
+            tick=active.sim_state.tick_index + 1, sim_time=sim_time,
+            unit=self.config.asset_id, reason=reason,
+            before=state.value, after=self.state.value,
+        ))
+    return result
+
+class LogCounter(logging.Handler):
+    def emit(self, record):
+        if trace is not None and "no eligible turbine:" in record.getMessage():
+            trace["episodes"].append(record.getMessage())
+
+def reset_trace():
+    return dict(steps=0, digest=hashlib.sha256(), prefix=hashlib.sha256(),
+                attempts=[], episodes=[], collapsed=[], min_soc=1.0,
+                frequency=[float("inf"), -float("inf")], unserved=0.0,
+                balance_failures=[])
+
+cutoff = 1059 if args.scenario.startswith("S10") else 10071
+
+def step(self, *pos, **kw):
+    tick = orig_step(self, *pos, **kw)
+    if trace is not None:
+        row = pin.plain(tick)
+        encoded = pin.encoded({k: v for k, v in row.items() if k not in pin.EXCLUDED})
+        trace["digest"].update(encoded)
+        trace["steps"] += 1
+        if trace["steps"] < cutoff:
+            trace["prefix"].update(encoded)
+        trace["min_soc"] = min(trace["min_soc"], tick.bess_soc_fraction)
+        trace["frequency"][0] = min(trace["frequency"][0], tick.frequency_hz)
+        trace["frequency"][1] = max(trace["frequency"][1], tick.frequency_hz)
+        trace["unserved"] += tick.p_unserved_mw * 5 / 3600
+        if tick.island_collapsed:
+            trace["collapsed"].append(dict(tick=tick.tick_index, reason=tick.collapse_reason))
+        if not tick.physical_balance.passed:
+            trace["balance_failures"].append(tick.tick_index)
+    return tick
+
+class Sink(InMemoryTimeseriesSink):
+    def __init__(self):
+        super().__init__()
+        self.digest = hashlib.sha256()
+        self.count = 0
+    async def append(self, tick):
+        row = pin.plain(tick)
+        self.digest.update(pin.encoded({k: v for k, v in row.items() if k not in pin.EXCLUDED}))
+        self.count += 1
+
+class Writer:
+    def write(self, *, identity, record, summary, tick_rows):
+        digest = hashlib.sha256()
+        for row in tick_rows:
+            digest.update(pin.encoded(row))
+        record["diagnostic_compact_sha256"] = digest.hexdigest()
+        return SimpleNamespace(as_dict=lambda: {})
+
+class Cache:
+    def put(self, identity, record):
+        return record
+
+def export_trace():
+    out = {k: v for k, v in trace.items() if k not in {"digest", "prefix"}}
+    out["internal_physical_sha256"] = trace["digest"].hexdigest()
+    out["prefix_sha256"] = trace["prefix"].hexdigest()
+    return out
+
+async def run():
+    global trace
+    for rep in range(1, args.reps + 1):
+        random.seed(1729)
+        np.random.seed(1729)
+        trace = None
+        if args.arm == "app":
+            spec = ScenarioSpec.model_validate_json(
+                (pkg / "config/scenarios" / (args.scenario + ".json")).read_bytes()
+            ).model_dump(mode="json")
+            ctx = build(args.scenario, spec, playback_speed=0.0)
+            sink = Sink()
+            ctx.sink = sink
+            trace = reset_trace()
+            manager = RunManager(WebSocketHub())
+            await manager.start_run(ctx)
+            await manager._tasks[ctx.run_id]
+            record = dict(physical_sha256=sink.digest.hexdigest(), tick_count=sink.count)
+        else:
+            ex = executor.StudyRunExecutor(
+                output_dir=T / "unused", engine_commit="phase2c-comparison",
+                harness_commit="phase2c-comparison")
+            ex.writer, ex.cache = Writer(), Cache()
+            spec = ex._expanded_spec(args.scenario, None, None)
+            pin.pin_spec(spec)
+            replay, demand = ex._probe(spec, run_id=f"{args.scenario}-study-s1-probe")
+            trace = reset_trace()
+            record = ex._run_mode(
+                scenario_id=args.scenario, mode=args.arm, spec=spec,
+                replay_events=replay, demand_replay=demand,
+                seed=None if args.scenario.startswith("scenario-h") else 42,
+                allow_guard_failure=True, reuse_cache=False)
+        out = dict(scenario=args.scenario, arm=args.arm, version=args.version,
+                   repetition=rep, trace=export_trace(), record=record)
+        dest = T / f"{args.version}-{args.scenario}-{args.arm}-{rep}.json"
+        dest.write_text(json.dumps(pin.plain(out), indent=2, allow_nan=True))
+        print(json.dumps(dict(file=str(dest), ticks=trace["steps"],
+              rejected=sum(x["reason"] != "eligible" for x in trace["attempts"]),
+              curtailment=record.get("dispatch_curtailment_mwh"),
+              hash=record.get("physical_sha256", record.get("diagnostic_compact_sha256")))), flush=True)
+
+logging.basicConfig(level=logging.ERROR)
+handler = LogCounter()
+logging.getLogger("core.simulation_core").addHandler(handler)
+logging.getLogger("core.simulation_core").setLevel(logging.INFO)
+with patch("time.time", return_value=1792454400.0), \
+     patch.object(FabricEngine, "__init__", fabric), \
+     patch.object(TurbineModule, "command_start", start), \
+     patch.object(RunContext, "step", step), \
+     patch.object(executor, "build_run_context_from_spec", build):
+    asyncio.run(run())
+
+```
+
+STOP — Phase 3 failed B1. Do not resume, diagnose further, commit D2, or start Phase 4 without review.
+
+## Final Git status after saving report/evidence
+
+```text
+ M .agents/memory/s1-study-harness.md
+M  attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/asset_modules.py
+M  attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/commitment.py
+M  attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/dispatch.py
+M  attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/models.py
+M  attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/core/simulation_core.py
+M  attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/run_manager.py
+M  attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/runtime/turbine_commitment.py
+D  attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/tests/test_dr_isl_start_eligibility.py
+ M tools/dr_isl/PHASE_3_EVIDENCE.json
+ M tools/dr_isl/PHASE_3_REPORT.md
+ M tools/dr_isl/PHASE_3_TC06.xml
+```

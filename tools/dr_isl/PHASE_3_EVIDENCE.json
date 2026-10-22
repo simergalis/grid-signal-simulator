@@ -38102,5 +38102,3743 @@
     "added": null,
     "removed": null
   },
-  "test_log": "....                                                                     [100%]\n4 passed in 6.87s\n"
+  "test_log": "....                                                                     [100%]\n4 passed in 6.87s\n",
+  "resumed_2026_10_22": {
+    "status": "STOPPED at B1 H2 informed pre-divergence identity",
+    "head": "5716d223d8623ab2e01b28ebe859dd2e4decc21f",
+    "base": "134538067d4eb4c2ce14232e483e9a91fd31276b",
+    "stash": "b416122acfa07c59d4a3521a90361d5be775d612",
+    "completed": [
+      {
+        "scenario": "S10_mit_supercloud_2021-08-11",
+        "arm": "app",
+        "version": "candidate",
+        "repetition": 1,
+        "trace": {
+          "steps": 17280,
+          "attempts": [
+            {
+              "tick": 1,
+              "sim_time": 0.0,
+              "unit": "turbine-1",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 107,
+              "sim_time": 527.0,
+              "unit": "turbine-2",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 226,
+              "sim_time": 1125.0,
+              "unit": "turbine-3",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 420,
+              "sim_time": 2092.0,
+              "unit": "turbine-4",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 1191,
+              "sim_time": 5950.0,
+              "unit": "turbine-4",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 1375,
+              "sim_time": 6867.0,
+              "unit": "turbine-3",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 1915,
+              "sim_time": 9569.0,
+              "unit": "turbine-4",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 1987,
+              "sim_time": 9930.0,
+              "unit": "turbine-3",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 2906,
+              "sim_time": 14525.0,
+              "unit": "turbine-4",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 3524,
+              "sim_time": 17615.0,
+              "unit": "turbine-4",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 3584,
+              "sim_time": 17915.0,
+              "unit": "turbine-3",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 5271,
+              "sim_time": 26347.0,
+              "unit": "turbine-3",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 6662,
+              "sim_time": 33303.0,
+              "unit": "turbine-2",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 6733,
+              "sim_time": 33660.0,
+              "unit": "turbine-4",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 6805,
+              "sim_time": 34020.0,
+              "unit": "turbine-3",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 6877,
+              "sim_time": 34380.0,
+              "unit": "turbine-1",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 7479,
+              "sim_time": 37390.0,
+              "unit": "turbine-4",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 7539,
+              "sim_time": 37690.0,
+              "unit": "turbine-3",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 8150,
+              "sim_time": 40745.0,
+              "unit": "turbine-4",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 8639,
+              "sim_time": 43186.0,
+              "unit": "turbine-3",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 9389,
+              "sim_time": 46938.0,
+              "unit": "turbine-4",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 10491,
+              "sim_time": 52449.0,
+              "unit": "turbine-2",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 10550,
+              "sim_time": 52745.0,
+              "unit": "turbine-3",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 10622,
+              "sim_time": 53105.0,
+              "unit": "turbine-4",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 11489,
+              "sim_time": 57440.0,
+              "unit": "turbine-4",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 11549,
+              "sim_time": 57740.0,
+              "unit": "turbine-3",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 12154,
+              "sim_time": 60765.0,
+              "unit": "turbine-4",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 12517,
+              "sim_time": 62576.0,
+              "unit": "turbine-3",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 14726,
+              "sim_time": 73623.0,
+              "unit": "turbine-2",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 14789,
+              "sim_time": 73940.0,
+              "unit": "turbine-3",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 14859,
+              "sim_time": 74290.0,
+              "unit": "turbine-4",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 15474,
+              "sim_time": 77365.0,
+              "unit": "turbine-4",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 15558,
+              "sim_time": 77785.0,
+              "unit": "turbine-2",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 15621,
+              "sim_time": 78099.0,
+              "unit": "turbine-3",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 16161,
+              "sim_time": 80798.0,
+              "unit": "turbine-4",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 16254,
+              "sim_time": 81262.0,
+              "unit": "turbine-3",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 16779,
+              "sim_time": 83890.0,
+              "unit": "turbine-4",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 16868,
+              "sim_time": 84335.0,
+              "unit": "turbine-3",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            }
+          ],
+          "episodes": [
+            "Commitment engine: no eligible turbine: turbine-3=min_down; turbine-4=min_down at sim_time=5345.0",
+            "Commitment engine: no eligible turbine: turbine-3=min_down at sim_time=9865.0",
+            "Commitment engine: no eligible turbine: turbine-4=min_down at sim_time=13730.0",
+            "Commitment engine: no eligible turbine: turbine-4=min_down at sim_time=16820.0",
+            "Commitment engine: no eligible turbine: turbine-4=min_down at sim_time=36595.0",
+            "Commitment engine: no eligible turbine: turbine-4=min_down at sim_time=39960.0",
+            "Commitment engine: no eligible turbine: turbine-4=min_down; turbine-3=min_down at sim_time=56825.0",
+            "Commitment engine: no eligible turbine: turbine-4=min_down at sim_time=59980.0"
+          ],
+          "collapsed": [],
+          "min_soc": 0.0,
+          "frequency": [
+            -729.1075118080669,
+            998.9330534505464
+          ],
+          "unserved": 10.600341682490331,
+          "balance_failures": [],
+          "internal_physical_sha256": "0590ededec7f9988b76b441e89cb7c5d0ee5b7ae5e8baff96f0ce634934d8ac1",
+          "prefix_sha256": "279f34c055bcc2a6f6a8b09790a33c5112ea60a598a23eb9531b45dbe3f15c3d"
+        },
+        "record": {
+          "physical_sha256": "4370c9ebfbfc90d2812cad93285c9749645974502508e8188c3567eb3e60d34d",
+          "tick_count": 17280
+        }
+      },
+      {
+        "scenario": "demo-islanded-ramp",
+        "arm": "app",
+        "version": "candidate",
+        "repetition": 1,
+        "trace": {
+          "steps": 2160,
+          "attempts": [
+            {
+              "tick": 1,
+              "sim_time": 0.0,
+              "unit": "turbine-1",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 72,
+              "sim_time": 355.0,
+              "unit": "turbine-2",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 192,
+              "sim_time": 955.0,
+              "unit": "turbine-3",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            }
+          ],
+          "episodes": [],
+          "collapsed": [],
+          "min_soc": 0.0,
+          "frequency": [
+            -127.48961154607643,
+            60.0
+          ],
+          "unserved": 0.7984763561509628,
+          "balance_failures": [],
+          "internal_physical_sha256": "fcdcac87293b1a04c02f599b3a092257d905454699652cff2e311e891ed821e5",
+          "prefix_sha256": "fcdcac87293b1a04c02f599b3a092257d905454699652cff2e311e891ed821e5"
+        },
+        "record": {
+          "physical_sha256": "fe798e4292b478ef3f6e25d67e4e22123867f51e49b991ac13981ecaa8114b2a",
+          "tick_count": 2160
+        }
+      },
+      {
+        "scenario": "scenario-100mw-fuel-cell-bess-diesel",
+        "arm": "app",
+        "version": "candidate",
+        "repetition": 1,
+        "trace": {
+          "steps": 252,
+          "attempts": [],
+          "episodes": [],
+          "collapsed": [],
+          "min_soc": 1.0,
+          "frequency": [
+            60.0,
+            60.0
+          ],
+          "unserved": 0.0,
+          "balance_failures": [],
+          "internal_physical_sha256": "29e518216802048738f35f06677b48332cc00da4c073e2809b1dd9c92d07aa6a",
+          "prefix_sha256": "29e518216802048738f35f06677b48332cc00da4c073e2809b1dd9c92d07aa6a"
+        },
+        "record": {
+          "physical_sha256": "565edaad7557ed06b545d92fe6c10105ef1a709e1aeb2e224d041e1e475e581b",
+          "tick_count": 252
+        }
+      },
+      {
+        "scenario": "scenario-equinix-sj-1",
+        "arm": "app",
+        "version": "candidate",
+        "repetition": 1,
+        "trace": {
+          "steps": 720,
+          "attempts": [],
+          "episodes": [],
+          "collapsed": [],
+          "min_soc": 0.9502206505501637,
+          "frequency": [
+            60.0,
+            60.0
+          ],
+          "unserved": 0.2522715264615146,
+          "balance_failures": [],
+          "internal_physical_sha256": "3f2a752d82732612d5767fdcd4e22e6e9af0985874529e102a639afa440ee055",
+          "prefix_sha256": "3f2a752d82732612d5767fdcd4e22e6e9af0985874529e102a639afa440ee055"
+        },
+        "record": {
+          "physical_sha256": "328309c3a181aefdb702a0577f41acfe673a945450ce61f9ad560696cf0aaa84",
+          "tick_count": 720
+        }
+      },
+      {
+        "scenario": "scenario-fc100-islanded-v2",
+        "arm": "app",
+        "version": "candidate",
+        "repetition": 1,
+        "trace": {
+          "steps": 264,
+          "attempts": [],
+          "episodes": [],
+          "collapsed": [],
+          "min_soc": 0.919502083921072,
+          "frequency": [
+            60.0,
+            60.0
+          ],
+          "unserved": 0.0,
+          "balance_failures": [],
+          "internal_physical_sha256": "98ede81f8d3f4b3c7608fcb8ca0b33a50c254b620312ca2639b7c49d0cb06e6b",
+          "prefix_sha256": "98ede81f8d3f4b3c7608fcb8ca0b33a50c254b620312ca2639b7c49d0cb06e6b"
+        },
+        "record": {
+          "physical_sha256": "d8146d3e37d9d7e1b306bbf2dc7dea7b2675be9c2bdabca0a209a028772c73d3",
+          "tick_count": 264
+        }
+      },
+      {
+        "scenario": "scenario-fc100-islanded-zero-hot-v2",
+        "arm": "app",
+        "version": "candidate",
+        "repetition": 1,
+        "trace": {
+          "steps": 264,
+          "attempts": [],
+          "episodes": [],
+          "collapsed": [],
+          "min_soc": 0.42374204369743096,
+          "frequency": [
+            -82.80435199997717,
+            60.0
+          ],
+          "unserved": 6.045185894310674,
+          "balance_failures": [],
+          "internal_physical_sha256": "786dfb56ee4bf7be3dca3af227cd4915b6ce8a54107b06a0bdb5da13f2f2f00b",
+          "prefix_sha256": "786dfb56ee4bf7be3dca3af227cd4915b6ce8a54107b06a0bdb5da13f2f2f00b"
+        },
+        "record": {
+          "physical_sha256": "d89d3132a5f87e94de6869a1246f5d3f434e03ecab72d744f90329ac8608d8f2",
+          "tick_count": 264
+        }
+      },
+      {
+        "scenario": "scenario-h2-slurm-24h",
+        "arm": "informed",
+        "version": "candidate",
+        "repetition": 1,
+        "trace": {
+          "steps": 17280,
+          "attempts": [
+            {
+              "tick": 5083,
+              "sim_time": 25410.0,
+              "unit": "gt-hot-01",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 5751,
+              "sim_time": 28750.0,
+              "unit": "gt-hot-02",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 5752,
+              "sim_time": 28755.0,
+              "unit": "gt-spin-02",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 7191,
+              "sim_time": 35950.0,
+              "unit": "gt-spin-02",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 7192,
+              "sim_time": 35955.0,
+              "unit": "gt-hot-02",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 8631,
+              "sim_time": 43150.0,
+              "unit": "gt-spin-02",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 8632,
+              "sim_time": 43155.0,
+              "unit": "gt-hot-02",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 9890,
+              "sim_time": 49445.0,
+              "unit": "gt-spin-02",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 10071,
+              "sim_time": 50350.0,
+              "unit": "gt-hot-02",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 10077,
+              "sim_time": 50380.0,
+              "unit": "gt-hot-01",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 11511,
+              "sim_time": 57550.0,
+              "unit": "gt-hot-01",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 11512,
+              "sim_time": 57555.0,
+              "unit": "gt-hot-02",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 12951,
+              "sim_time": 64750.0,
+              "unit": "gt-hot-01",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 12952,
+              "sim_time": 64755.0,
+              "unit": "gt-hot-02",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            }
+          ],
+          "episodes": [
+            "Commitment engine: no eligible turbine: gt-spin-02=min_down at sim_time=25400.0"
+          ],
+          "collapsed": [],
+          "min_soc": 0.9503869467934404,
+          "frequency": [
+            60.0,
+            250.44034654726377
+          ],
+          "unserved": 0.8597724919622103,
+          "balance_failures": [],
+          "internal_physical_sha256": "b7383d283f09d625f531ecc216b447b868792f50069bbc662b1636d2b988bbfb",
+          "prefix_sha256": "b83c21c585130e172aa3fd179748a54d917868c70e6a1d0beafc7e9908724ffc"
+        },
+        "record": {
+          "tick_count": 17280,
+          "interval_seconds": 5.0,
+          "fuel_by_component_mmbtu": {
+            "load_fuel_mmbtu": 5106.733034717,
+            "no_load_fuel_mmbtu": 64.855,
+            "hot_standby_fuel_mmbtu": 3.761458333,
+            "start_fuel_mmbtu": 152.0
+          },
+          "turbine_fuel_mmbtu": 5327.34949305,
+          "fuel_reconciled": true,
+          "start_fuel_reconciliation": {
+            "release_charged": true,
+            "recorded_event_count": 14,
+            "measured_event_count": 14,
+            "measured_start_fuel_mmbtu": 152.0,
+            "tier_sum_mmbtu": null,
+            "passed": true
+          },
+          "dispatch_curtailment_mwh": 342.977539092,
+          "dispatch_curtailment_interval_exposure_fuel_mmbtu": 4892.43517635,
+          "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+            "load_fuel_mmbtu": 4675.898162461,
+            "no_load_fuel_mmbtu": 60.895,
+            "hot_standby_fuel_mmbtu": 3.642013889,
+            "start_fuel_mmbtu": 152.0
+          },
+          "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+            "gt-spin-01": 2152.666217898,
+            "gt-spin-02": 1708.675833457,
+            "gt-hot-01": 737.513194445,
+            "gt-hot-02": 293.579930556
+          },
+          "dispatch_curtailment_attributable_fuel_mmbtu": 3607.524008603,
+          "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+            "gt-spin-01": 1645.630131731,
+            "gt-spin-02": 1260.841712162,
+            "gt-hot-01": 536.782073718,
+            "gt-hot-02": 164.270090991
+          },
+          "unserved_mwh": 0.859772492,
+          "peak_unserved_mw": 42.36838787,
+          "served_mwh": 143.100601957,
+          "unserved_intervals": [
+            {
+              "start_sim_time_s": 29130.0,
+              "end_sim_time_s": 29165.0,
+              "peak_unserved_mw": 19.287968405751712
+            },
+            {
+              "start_sim_time_s": 29215.0,
+              "end_sim_time_s": 29235.0,
+              "peak_unserved_mw": 1.8802011558611156
+            },
+            {
+              "start_sim_time_s": 36310.0,
+              "end_sim_time_s": 36350.0,
+              "peak_unserved_mw": 38.394865912415625
+            },
+            {
+              "start_sim_time_s": 43510.0,
+              "end_sim_time_s": 43555.0,
+              "peak_unserved_mw": 39.4036584956214
+            },
+            {
+              "start_sim_time_s": 50710.0,
+              "end_sim_time_s": 50725.0,
+              "peak_unserved_mw": 26.640845418775996
+            },
+            {
+              "start_sim_time_s": 57910.0,
+              "end_sim_time_s": 57940.0,
+              "peak_unserved_mw": 42.36838786968556
+            },
+            {
+              "start_sim_time_s": 65110.0,
+              "end_sim_time_s": 65140.0,
+              "peak_unserved_mw": 37.890845418775996
+            }
+          ],
+          "energy_balance": {
+            "closure_status": true,
+            "max_abs_physical_ledger_defect_mw": 0.0,
+            "served_demand_mwh": 143.100601957,
+            "unserved_demand_mwh": 0.859772492
+          },
+          "bess_soc_min": 0.950386947,
+          "bess_soc_max": 0.999999998,
+          "bess_soc_final": 0.999999987,
+          "commitment": {
+            "distinct_event_count": 65,
+            "visible_distinct_event_count": 65,
+            "suppressed_repeat_count": 11198,
+            "log_complete": true,
+            "omitted_record_count": 0,
+            "reserve_floor_refusal_count": 14904,
+            "reserve_floor_distinct_event_count": 14904,
+            "reserve_floor_visible_distinct_event_count": 14904,
+            "reserve_floor_suppressed_repeat_count": 0,
+            "reserve_floor_log_complete": true,
+            "reserve_floor_omitted_record_count": 0,
+            "same_unit_restart_within_min_down_window_count": 0
+          },
+          "forecast": {
+            "miss_count": 39,
+            "miss_peak_mw": 13.130749227
+          },
+          "compute_trace_sha256": "ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b",
+          "compute_trace_count": 17280,
+          "daily_breakdown": [
+            {
+              "day": 1,
+              "kind": "weekday",
+              "fuel_by_component_mmbtu": {
+                "load_fuel_mmbtu": 5106.733034717,
+                "no_load_fuel_mmbtu": 64.855,
+                "hot_standby_fuel_mmbtu": 3.761458333,
+                "start_fuel_mmbtu": 152.0
+              },
+              "fuel_mmbtu": 5327.34949305,
+              "unserved_mwh": 0.859772492,
+              "curtailed_mwh": 342.977539092,
+              "bess_soc_end": 0.999999987
+            }
+          ],
+          "constraints_valid": true,
+          "hard_violations": [],
+          "status": "PASS",
+          "guard_failures": null,
+          "diagnostic_compact_sha256": "0def2a33daa2770e5095d8cb63b2c5e7d01ab65c85aaf4db3bd732a89623a3c7",
+          "identity": {
+            "scenario_id": "scenario-h2-slurm-24h",
+            "mode": "informed",
+            "parameter_set": {
+              "name": "Addendum H-2 Slurm fixed-allocation reference \u2014 24h",
+              "description": "Addendum H H2 reference scenario with scheduler-shaped GPU workload demand over 1 day(s), derived from scenario-uneven-multisched-01.",
+              "hardware_profile_id": "enterprise_8gpu_air",
+              "dt_lead_seconds": 45.0,
+              "initial_spinning_count": 2,
+              "base_load_mw": null,
+              "n_plus_one_required": false,
+              "island_mode": true,
+              "frequency_nominal_hz": 60.0,
+              "power_factor": 0.85,
+              "end_sim_time": 86400.0,
+              "turbine_units": [
+                {
+                  "asset_id": "gt-spin-01",
+                  "rated_mw": 25.0,
+                  "r_asset_mw_per_s": 0.5,
+                  "hot_standby": false,
+                  "initial_state": "spinning",
+                  "p_min_stable_frac": 0.35,
+                  "thermal_state": "hot",
+                  "hot_start_s": 300.0,
+                  "warm_start_s": 360.0,
+                  "cold_start_s": 600.0,
+                  "gt_mode": "aero"
+                },
+                {
+                  "asset_id": "gt-spin-02",
+                  "rated_mw": 25.0,
+                  "r_asset_mw_per_s": 0.5,
+                  "hot_standby": false,
+                  "initial_state": "spinning",
+                  "p_min_stable_frac": 0.35,
+                  "thermal_state": "hot",
+                  "hot_start_s": 300.0,
+                  "warm_start_s": 360.0,
+                  "cold_start_s": 600.0,
+                  "gt_mode": "aero"
+                },
+                {
+                  "asset_id": "gt-hot-01",
+                  "rated_mw": 25.0,
+                  "r_asset_mw_per_s": 0.5,
+                  "hot_standby": true,
+                  "p_min_stable_frac": 0.35,
+                  "thermal_state": "hot",
+                  "hot_start_s": 300.0,
+                  "warm_start_s": 360.0,
+                  "cold_start_s": 600.0,
+                  "gt_mode": "aero"
+                },
+                {
+                  "asset_id": "gt-hot-02",
+                  "rated_mw": 25.0,
+                  "r_asset_mw_per_s": 0.5,
+                  "hot_standby": true,
+                  "p_min_stable_frac": 0.35,
+                  "thermal_state": "hot",
+                  "hot_start_s": 300.0,
+                  "warm_start_s": 360.0,
+                  "cold_start_s": 600.0,
+                  "gt_mode": "aero"
+                }
+              ],
+              "bess_units": [
+                {
+                  "asset_id": "bess-0",
+                  "rated_mw": 30.0,
+                  "usable_mwh": 60.0,
+                  "initial_soc_fraction": 0.95,
+                  "grid_forming": true,
+                  "p_anchor_reserve_mw": 1.0,
+                  "authority_tier": "autonomous"
+                }
+              ],
+              "diesel_power_block": {
+                "enabled": true,
+                "target_capacity_mw": 20.0,
+                "unit_rating_mw": 20.0,
+                "p_start": 1.0,
+                "target_reliability": 1.0,
+                "f_block": 1.0,
+                "delta_t_start_s": 10.0,
+                "residual_ramp_s": 60.0,
+                "start_stagger_interval_s": 1.0,
+                "authority_tier": "advisory_only"
+              },
+              "turbine_commitment_mode": "informed",
+              "study_class": "addendum_h"
+            },
+            "seed": 42,
+            "duration_seconds": 86400.0,
+            "tick_seconds": 5.0,
+            "engine_commit": "phase2c-comparison",
+            "harness_commit": "phase2c-comparison"
+          },
+          "identity_digest": "bf3217f9245ae648503b5b24fb2d7bf84cc650931cbcceb796a2ef1afb3854a3",
+          "measured_start_event_count": 14,
+          "measured_start_events": [
+            {
+              "sim_time_s": 25415.0,
+              "unit_id": "gt-hot-01",
+              "tier_fuel_mmbtu": 8.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 28755.0,
+              "unit_id": "gt-hot-02",
+              "tier_fuel_mmbtu": 8.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 28760.0,
+              "unit_id": "gt-spin-02",
+              "tier_fuel_mmbtu": 8.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 35955.0,
+              "unit_id": "gt-spin-02",
+              "tier_fuel_mmbtu": 12.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 35960.0,
+              "unit_id": "gt-hot-02",
+              "tier_fuel_mmbtu": 12.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 43155.0,
+              "unit_id": "gt-spin-02",
+              "tier_fuel_mmbtu": 12.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 43160.0,
+              "unit_id": "gt-hot-02",
+              "tier_fuel_mmbtu": 12.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 49450.0,
+              "unit_id": "gt-spin-02",
+              "tier_fuel_mmbtu": 12.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 50355.0,
+              "unit_id": "gt-hot-02",
+              "tier_fuel_mmbtu": 12.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 50385.0,
+              "unit_id": "gt-hot-01",
+              "tier_fuel_mmbtu": 8.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 57555.0,
+              "unit_id": "gt-hot-01",
+              "tier_fuel_mmbtu": 12.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 57560.0,
+              "unit_id": "gt-hot-02",
+              "tier_fuel_mmbtu": 12.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 64755.0,
+              "unit_id": "gt-hot-01",
+              "tier_fuel_mmbtu": 12.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 64760.0,
+              "unit_id": "gt-hot-02",
+              "tier_fuel_mmbtu": 12.0,
+              "charged": true
+            }
+          ]
+        }
+      },
+      {
+        "scenario": "scenario-h2-slurm-24h",
+        "arm": "informed",
+        "version": "candidate",
+        "repetition": 2,
+        "trace": {
+          "steps": 17280,
+          "attempts": [
+            {
+              "tick": 5083,
+              "sim_time": 25410.0,
+              "unit": "gt-hot-01",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 5751,
+              "sim_time": 28750.0,
+              "unit": "gt-hot-02",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 5752,
+              "sim_time": 28755.0,
+              "unit": "gt-spin-02",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 7191,
+              "sim_time": 35950.0,
+              "unit": "gt-spin-02",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 7192,
+              "sim_time": 35955.0,
+              "unit": "gt-hot-02",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 8631,
+              "sim_time": 43150.0,
+              "unit": "gt-spin-02",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 8632,
+              "sim_time": 43155.0,
+              "unit": "gt-hot-02",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 9890,
+              "sim_time": 49445.0,
+              "unit": "gt-spin-02",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 10071,
+              "sim_time": 50350.0,
+              "unit": "gt-hot-02",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 10077,
+              "sim_time": 50380.0,
+              "unit": "gt-hot-01",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 11511,
+              "sim_time": 57550.0,
+              "unit": "gt-hot-01",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 11512,
+              "sim_time": 57555.0,
+              "unit": "gt-hot-02",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 12951,
+              "sim_time": 64750.0,
+              "unit": "gt-hot-01",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 12952,
+              "sim_time": 64755.0,
+              "unit": "gt-hot-02",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            }
+          ],
+          "episodes": [
+            "Commitment engine: no eligible turbine: gt-spin-02=min_down at sim_time=25400.0"
+          ],
+          "collapsed": [],
+          "min_soc": 0.9503869467934404,
+          "frequency": [
+            60.0,
+            250.44034654726377
+          ],
+          "unserved": 0.8597724919622103,
+          "balance_failures": [],
+          "internal_physical_sha256": "b7383d283f09d625f531ecc216b447b868792f50069bbc662b1636d2b988bbfb",
+          "prefix_sha256": "b83c21c585130e172aa3fd179748a54d917868c70e6a1d0beafc7e9908724ffc"
+        },
+        "record": {
+          "tick_count": 17280,
+          "interval_seconds": 5.0,
+          "fuel_by_component_mmbtu": {
+            "load_fuel_mmbtu": 5106.733034717,
+            "no_load_fuel_mmbtu": 64.855,
+            "hot_standby_fuel_mmbtu": 3.761458333,
+            "start_fuel_mmbtu": 152.0
+          },
+          "turbine_fuel_mmbtu": 5327.34949305,
+          "fuel_reconciled": true,
+          "start_fuel_reconciliation": {
+            "release_charged": true,
+            "recorded_event_count": 14,
+            "measured_event_count": 14,
+            "measured_start_fuel_mmbtu": 152.0,
+            "tier_sum_mmbtu": null,
+            "passed": true
+          },
+          "dispatch_curtailment_mwh": 342.977539092,
+          "dispatch_curtailment_interval_exposure_fuel_mmbtu": 4892.43517635,
+          "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+            "load_fuel_mmbtu": 4675.898162461,
+            "no_load_fuel_mmbtu": 60.895,
+            "hot_standby_fuel_mmbtu": 3.642013889,
+            "start_fuel_mmbtu": 152.0
+          },
+          "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+            "gt-spin-01": 2152.666217898,
+            "gt-spin-02": 1708.675833457,
+            "gt-hot-01": 737.513194445,
+            "gt-hot-02": 293.579930556
+          },
+          "dispatch_curtailment_attributable_fuel_mmbtu": 3607.524008603,
+          "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+            "gt-spin-01": 1645.630131731,
+            "gt-spin-02": 1260.841712162,
+            "gt-hot-01": 536.782073718,
+            "gt-hot-02": 164.270090991
+          },
+          "unserved_mwh": 0.859772492,
+          "peak_unserved_mw": 42.36838787,
+          "served_mwh": 143.100601957,
+          "unserved_intervals": [
+            {
+              "start_sim_time_s": 29130.0,
+              "end_sim_time_s": 29165.0,
+              "peak_unserved_mw": 19.287968405751712
+            },
+            {
+              "start_sim_time_s": 29215.0,
+              "end_sim_time_s": 29235.0,
+              "peak_unserved_mw": 1.8802011558611156
+            },
+            {
+              "start_sim_time_s": 36310.0,
+              "end_sim_time_s": 36350.0,
+              "peak_unserved_mw": 38.394865912415625
+            },
+            {
+              "start_sim_time_s": 43510.0,
+              "end_sim_time_s": 43555.0,
+              "peak_unserved_mw": 39.4036584956214
+            },
+            {
+              "start_sim_time_s": 50710.0,
+              "end_sim_time_s": 50725.0,
+              "peak_unserved_mw": 26.640845418775996
+            },
+            {
+              "start_sim_time_s": 57910.0,
+              "end_sim_time_s": 57940.0,
+              "peak_unserved_mw": 42.36838786968556
+            },
+            {
+              "start_sim_time_s": 65110.0,
+              "end_sim_time_s": 65140.0,
+              "peak_unserved_mw": 37.890845418775996
+            }
+          ],
+          "energy_balance": {
+            "closure_status": true,
+            "max_abs_physical_ledger_defect_mw": 0.0,
+            "served_demand_mwh": 143.100601957,
+            "unserved_demand_mwh": 0.859772492
+          },
+          "bess_soc_min": 0.950386947,
+          "bess_soc_max": 0.999999998,
+          "bess_soc_final": 0.999999987,
+          "commitment": {
+            "distinct_event_count": 65,
+            "visible_distinct_event_count": 65,
+            "suppressed_repeat_count": 11198,
+            "log_complete": true,
+            "omitted_record_count": 0,
+            "reserve_floor_refusal_count": 14904,
+            "reserve_floor_distinct_event_count": 14904,
+            "reserve_floor_visible_distinct_event_count": 14904,
+            "reserve_floor_suppressed_repeat_count": 0,
+            "reserve_floor_log_complete": true,
+            "reserve_floor_omitted_record_count": 0,
+            "same_unit_restart_within_min_down_window_count": 0
+          },
+          "forecast": {
+            "miss_count": 39,
+            "miss_peak_mw": 13.130749227
+          },
+          "compute_trace_sha256": "ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b",
+          "compute_trace_count": 17280,
+          "daily_breakdown": [
+            {
+              "day": 1,
+              "kind": "weekday",
+              "fuel_by_component_mmbtu": {
+                "load_fuel_mmbtu": 5106.733034717,
+                "no_load_fuel_mmbtu": 64.855,
+                "hot_standby_fuel_mmbtu": 3.761458333,
+                "start_fuel_mmbtu": 152.0
+              },
+              "fuel_mmbtu": 5327.34949305,
+              "unserved_mwh": 0.859772492,
+              "curtailed_mwh": 342.977539092,
+              "bess_soc_end": 0.999999987
+            }
+          ],
+          "constraints_valid": true,
+          "hard_violations": [],
+          "status": "PASS",
+          "guard_failures": null,
+          "diagnostic_compact_sha256": "0def2a33daa2770e5095d8cb63b2c5e7d01ab65c85aaf4db3bd732a89623a3c7",
+          "identity": {
+            "scenario_id": "scenario-h2-slurm-24h",
+            "mode": "informed",
+            "parameter_set": {
+              "name": "Addendum H-2 Slurm fixed-allocation reference \u2014 24h",
+              "description": "Addendum H H2 reference scenario with scheduler-shaped GPU workload demand over 1 day(s), derived from scenario-uneven-multisched-01.",
+              "hardware_profile_id": "enterprise_8gpu_air",
+              "dt_lead_seconds": 45.0,
+              "initial_spinning_count": 2,
+              "base_load_mw": null,
+              "n_plus_one_required": false,
+              "island_mode": true,
+              "frequency_nominal_hz": 60.0,
+              "power_factor": 0.85,
+              "end_sim_time": 86400.0,
+              "turbine_units": [
+                {
+                  "asset_id": "gt-spin-01",
+                  "rated_mw": 25.0,
+                  "r_asset_mw_per_s": 0.5,
+                  "hot_standby": false,
+                  "initial_state": "spinning",
+                  "p_min_stable_frac": 0.35,
+                  "thermal_state": "hot",
+                  "hot_start_s": 300.0,
+                  "warm_start_s": 360.0,
+                  "cold_start_s": 600.0,
+                  "gt_mode": "aero"
+                },
+                {
+                  "asset_id": "gt-spin-02",
+                  "rated_mw": 25.0,
+                  "r_asset_mw_per_s": 0.5,
+                  "hot_standby": false,
+                  "initial_state": "spinning",
+                  "p_min_stable_frac": 0.35,
+                  "thermal_state": "hot",
+                  "hot_start_s": 300.0,
+                  "warm_start_s": 360.0,
+                  "cold_start_s": 600.0,
+                  "gt_mode": "aero"
+                },
+                {
+                  "asset_id": "gt-hot-01",
+                  "rated_mw": 25.0,
+                  "r_asset_mw_per_s": 0.5,
+                  "hot_standby": true,
+                  "p_min_stable_frac": 0.35,
+                  "thermal_state": "hot",
+                  "hot_start_s": 300.0,
+                  "warm_start_s": 360.0,
+                  "cold_start_s": 600.0,
+                  "gt_mode": "aero"
+                },
+                {
+                  "asset_id": "gt-hot-02",
+                  "rated_mw": 25.0,
+                  "r_asset_mw_per_s": 0.5,
+                  "hot_standby": true,
+                  "p_min_stable_frac": 0.35,
+                  "thermal_state": "hot",
+                  "hot_start_s": 300.0,
+                  "warm_start_s": 360.0,
+                  "cold_start_s": 600.0,
+                  "gt_mode": "aero"
+                }
+              ],
+              "bess_units": [
+                {
+                  "asset_id": "bess-0",
+                  "rated_mw": 30.0,
+                  "usable_mwh": 60.0,
+                  "initial_soc_fraction": 0.95,
+                  "grid_forming": true,
+                  "p_anchor_reserve_mw": 1.0,
+                  "authority_tier": "autonomous"
+                }
+              ],
+              "diesel_power_block": {
+                "enabled": true,
+                "target_capacity_mw": 20.0,
+                "unit_rating_mw": 20.0,
+                "p_start": 1.0,
+                "target_reliability": 1.0,
+                "f_block": 1.0,
+                "delta_t_start_s": 10.0,
+                "residual_ramp_s": 60.0,
+                "start_stagger_interval_s": 1.0,
+                "authority_tier": "advisory_only"
+              },
+              "turbine_commitment_mode": "informed",
+              "study_class": "addendum_h"
+            },
+            "seed": 42,
+            "duration_seconds": 86400.0,
+            "tick_seconds": 5.0,
+            "engine_commit": "phase2c-comparison",
+            "harness_commit": "phase2c-comparison"
+          },
+          "identity_digest": "bf3217f9245ae648503b5b24fb2d7bf84cc650931cbcceb796a2ef1afb3854a3",
+          "measured_start_event_count": 14,
+          "measured_start_events": [
+            {
+              "sim_time_s": 25415.0,
+              "unit_id": "gt-hot-01",
+              "tier_fuel_mmbtu": 8.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 28755.0,
+              "unit_id": "gt-hot-02",
+              "tier_fuel_mmbtu": 8.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 28760.0,
+              "unit_id": "gt-spin-02",
+              "tier_fuel_mmbtu": 8.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 35955.0,
+              "unit_id": "gt-spin-02",
+              "tier_fuel_mmbtu": 12.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 35960.0,
+              "unit_id": "gt-hot-02",
+              "tier_fuel_mmbtu": 12.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 43155.0,
+              "unit_id": "gt-spin-02",
+              "tier_fuel_mmbtu": 12.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 43160.0,
+              "unit_id": "gt-hot-02",
+              "tier_fuel_mmbtu": 12.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 49450.0,
+              "unit_id": "gt-spin-02",
+              "tier_fuel_mmbtu": 12.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 50355.0,
+              "unit_id": "gt-hot-02",
+              "tier_fuel_mmbtu": 12.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 50385.0,
+              "unit_id": "gt-hot-01",
+              "tier_fuel_mmbtu": 8.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 57555.0,
+              "unit_id": "gt-hot-01",
+              "tier_fuel_mmbtu": 12.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 57560.0,
+              "unit_id": "gt-hot-02",
+              "tier_fuel_mmbtu": 12.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 64755.0,
+              "unit_id": "gt-hot-01",
+              "tier_fuel_mmbtu": 12.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 64760.0,
+              "unit_id": "gt-hot-02",
+              "tier_fuel_mmbtu": 12.0,
+              "charged": true
+            }
+          ]
+        }
+      },
+      {
+        "scenario": "scenario-hybrid-ai-100mw-addendum-i",
+        "arm": "app",
+        "version": "candidate",
+        "repetition": 1,
+        "trace": {
+          "steps": 120,
+          "attempts": [],
+          "episodes": [],
+          "collapsed": [],
+          "min_soc": 0.8529210430639989,
+          "frequency": [
+            -218.79606450000827,
+            285.92631259085584
+          ],
+          "unserved": 0.11040934910053687,
+          "balance_failures": [],
+          "internal_physical_sha256": "bdbe9e06e39ef91596f0c384632c9ad9e6cd39e96d267c31195ccf1cfffd5830",
+          "prefix_sha256": "bdbe9e06e39ef91596f0c384632c9ad9e6cd39e96d267c31195ccf1cfffd5830"
+        },
+        "record": {
+          "physical_sha256": "9377f009785094697116d356ef554985107ce1ee4c92f01c672f4b30b5f7577a",
+          "tick_count": 120
+        }
+      },
+      {
+        "scenario": "scenario-turbine-01",
+        "arm": "app",
+        "version": "candidate",
+        "repetition": 1,
+        "trace": {
+          "steps": 720,
+          "attempts": [],
+          "episodes": [],
+          "collapsed": [],
+          "min_soc": 0.9501413731433364,
+          "frequency": [
+            60.0,
+            305.12517226604007
+          ],
+          "unserved": 2.0970879354030734e-17,
+          "balance_failures": [],
+          "internal_physical_sha256": "fd953351957f0ae8c83d7f64ebde266fff751f9bb74eb843a1997d44f2692109",
+          "prefix_sha256": "fd953351957f0ae8c83d7f64ebde266fff751f9bb74eb843a1997d44f2692109"
+        },
+        "record": {
+          "physical_sha256": "006006e6c9eac82460ee4a343a4d1691f2a34f231ca7fb038c7ae583ab63471a",
+          "tick_count": 720
+        }
+      },
+      {
+        "scenario": "scenario-uneven-multisched-01",
+        "arm": "baseline",
+        "version": "candidate",
+        "repetition": 1,
+        "trace": {
+          "steps": 1440,
+          "attempts": [
+            {
+              "tick": 25,
+              "sim_time": 120.0,
+              "unit": "gt-hot-01",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 88,
+              "sim_time": 435.0,
+              "unit": "gt-hot-02",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            }
+          ],
+          "episodes": [],
+          "collapsed": [],
+          "min_soc": 0.7467893421481979,
+          "frequency": [
+            -5.000866893367675,
+            176.430848113831
+          ],
+          "unserved": 0.35169265793352056,
+          "balance_failures": [],
+          "internal_physical_sha256": "90f4b8a55acceb521f972d9596c5137f104dbc34e158ac3bc58cadf73e5164f1",
+          "prefix_sha256": "90f4b8a55acceb521f972d9596c5137f104dbc34e158ac3bc58cadf73e5164f1"
+        },
+        "record": {
+          "tick_count": 1440,
+          "interval_seconds": 5.0,
+          "fuel_by_component_mmbtu": {
+            "load_fuel_mmbtu": 690.133782974,
+            "no_load_fuel_mmbtu": 8.19,
+            "hot_standby_fuel_mmbtu": 0.039236111,
+            "start_fuel_mmbtu": 16.0
+          },
+          "turbine_fuel_mmbtu": 714.363019086,
+          "fuel_reconciled": true,
+          "start_fuel_reconciliation": {
+            "release_charged": true,
+            "recorded_event_count": 2,
+            "measured_event_count": 2,
+            "measured_start_fuel_mmbtu": 16.0,
+            "tier_sum_mmbtu": null,
+            "passed": true
+          },
+          "dispatch_curtailment_mwh": 8.136511735,
+          "dispatch_curtailment_interval_exposure_fuel_mmbtu": 291.229346912,
+          "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+            "load_fuel_mmbtu": 287.502680246,
+            "no_load_fuel_mmbtu": 3.726666667,
+            "hot_standby_fuel_mmbtu": 0.0,
+            "start_fuel_mmbtu": 0.0
+          },
+          "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+            "gt-spin-01": 93.186666667,
+            "gt-spin-02": 92.778235801,
+            "gt-hot-01": 54.624513889,
+            "gt-hot-02": 50.639930556
+          },
+          "dispatch_curtailment_attributable_fuel_mmbtu": 85.443185219,
+          "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+            "gt-spin-01": 29.816221037,
+            "gt-spin-02": 29.711129581,
+            "gt-hot-01": 14.277890997,
+            "gt-hot-02": 11.637943604
+          },
+          "unserved_mwh": 0.351692658,
+          "peak_unserved_mw": 22.309362466,
+          "served_mwh": 64.203838044,
+          "unserved_intervals": [
+            {
+              "start_sim_time_s": 325.0,
+              "end_sim_time_s": 465.0,
+              "peak_unserved_mw": 22.30936246553462
+            },
+            {
+              "start_sim_time_s": 1850.0,
+              "end_sim_time_s": 1855.0,
+              "peak_unserved_mw": 4.628919357798523
+            }
+          ],
+          "energy_balance": {
+            "closure_status": true,
+            "max_abs_physical_ledger_defect_mw": 0.0,
+            "served_demand_mwh": 64.203838044,
+            "unserved_demand_mwh": 0.351692658
+          },
+          "bess_soc_min": 0.746789342,
+          "bess_soc_max": 0.999999999,
+          "bess_soc_final": 0.999999999,
+          "commitment": {
+            "distinct_event_count": 8,
+            "visible_distinct_event_count": 8,
+            "suppressed_repeat_count": 0,
+            "log_complete": true,
+            "omitted_record_count": 0,
+            "reserve_floor_refusal_count": 0,
+            "reserve_floor_distinct_event_count": 0,
+            "reserve_floor_visible_distinct_event_count": 0,
+            "reserve_floor_suppressed_repeat_count": 0,
+            "reserve_floor_log_complete": true,
+            "reserve_floor_omitted_record_count": 0,
+            "same_unit_restart_within_min_down_window_count": 0
+          },
+          "forecast": {
+            "miss_count": 0,
+            "miss_peak_mw": 0.0
+          },
+          "compute_trace_sha256": "fb3a32d783d0a61ddd2cb8ec7bfbe0204712a2c6f6f9398ef60932160dafa54b",
+          "compute_trace_count": 1440,
+          "daily_breakdown": [
+            {
+              "day": 1,
+              "kind": "weekday",
+              "fuel_by_component_mmbtu": {
+                "load_fuel_mmbtu": 690.133782974,
+                "no_load_fuel_mmbtu": 8.19,
+                "hot_standby_fuel_mmbtu": 0.039236111,
+                "start_fuel_mmbtu": 16.0
+              },
+              "fuel_mmbtu": 714.363019086,
+              "unserved_mwh": 0.351692658,
+              "curtailed_mwh": 8.136511735,
+              "bess_soc_end": 0.999999999
+            }
+          ],
+          "constraints_valid": true,
+          "hard_violations": [],
+          "status": "PASS",
+          "guard_failures": null,
+          "diagnostic_compact_sha256": "a2370e5fd24c65cbfd2e70b41f154eeee8857060a689f05a7c7d6ef93c49fd48",
+          "identity": {
+            "scenario_id": "scenario-uneven-multisched-01",
+            "mode": "baseline",
+            "parameter_set": {
+              "name": "01 Turbine Scenario with Kubernetes Slurm Ray",
+              "description": "Two-hour Kubernetes, Slurm, and Ray demonstration with 45 MW and 90 MW bursts starting at t=30 s and t=310 s, followed by bursts at t=920 s, t=1850 s, and t=2700 s. Burst durations are 240 s, 300 s, and 600 s for the final three bursts, so workloads do not overlap. Two gas turbines are spinning at 35% minimum stable load from t=0; two more start from hot standby at Burst-02 and the grid-forming BESS bridges their startup gap. GE assumptions: 300-second hot start, 360-second warm start, 600-second cold start, and 30 MW/min ramp. Diesel delta_t_start_s revised 3600 \u2192 10 s on 2026-10-21 (DR-2026-10-20-ISLAND-COLLAPSE D9c; NFPA 110 Type 10; PROPOSED_HERE).",
+              "phase2b_reference_base_scenario": null,
+              "phase2b_reference_family": null,
+              "phase2b_reference_days": null,
+              "site_name": "Santa Clara, CA, USA",
+              "site_latitude": 37.3541,
+              "site_longitude": -121.9552,
+              "site_utc_offset_h": -8.130346666666666,
+              "hardware_profile_id": "enterprise_8gpu_air",
+              "dt_lead_seconds": 45.0,
+              "turbine_commitment_mode": "baseline",
+              "turbine_forecast_lead_seconds": 600.0,
+              "turbine_commitment_floor": 1,
+              "turbine_commitment_sensitivity_mw": 2.0,
+              "generation_baseload_mw": null,
+              "generation_peak_following": true,
+              "dispatch_curtailment_response_delay_s": 0.5,
+              "initial_spinning_count": 2,
+              "base_load_mw": null,
+              "n_plus_one_required": false,
+              "bess_units": [
+                {
+                  "asset_id": "bess-0",
+                  "rated_mw": 30.0,
+                  "usable_mwh": 60.0,
+                  "initial_soc_fraction": 0.95,
+                  "grid_forming": true,
+                  "p_anchor_reserve_mw": 1.0,
+                  "authority_tier": "autonomous"
+                }
+              ],
+              "turbine_units": [
+                {
+                  "asset_id": "gt-spin-01",
+                  "rated_mw": 25.0,
+                  "r_asset_mw_per_s": 0.5,
+                  "run_hours_h": null,
+                  "hot_standby": false,
+                  "gt_mode": "aero",
+                  "initial_state": "spinning",
+                  "p_min_stable_frac": 0.35,
+                  "t_min_run_s": 1800.0,
+                  "min_run_enabled": true,
+                  "t_min_down_s": 900.0,
+                  "min_down_enabled": true,
+                  "cold_start_s": 600.0,
+                  "warm_start_s": 360.0,
+                  "hot_start_s": 300.0,
+                  "thermal_state": "hot",
+                  "fuel": null,
+                  "power_factor": null,
+                  "inertia_constant_s": null,
+                  "droop_r": null,
+                  "valve_actuation_tc_s": null,
+                  "fuel_to_power_tc_s": null,
+                  "max_instantaneous_load_step_mw": null,
+                  "authority_tier": "autonomous"
+                },
+                {
+                  "asset_id": "gt-spin-02",
+                  "rated_mw": 25.0,
+                  "r_asset_mw_per_s": 0.5,
+                  "run_hours_h": null,
+                  "hot_standby": false,
+                  "gt_mode": "aero",
+                  "initial_state": "spinning",
+                  "p_min_stable_frac": 0.35,
+                  "t_min_run_s": 1800.0,
+                  "min_run_enabled": true,
+                  "t_min_down_s": 900.0,
+                  "min_down_enabled": true,
+                  "cold_start_s": 600.0,
+                  "warm_start_s": 360.0,
+                  "hot_start_s": 300.0,
+                  "thermal_state": "hot",
+                  "fuel": null,
+                  "power_factor": null,
+                  "inertia_constant_s": null,
+                  "droop_r": null,
+                  "valve_actuation_tc_s": null,
+                  "fuel_to_power_tc_s": null,
+                  "max_instantaneous_load_step_mw": null,
+                  "authority_tier": "autonomous"
+                },
+                {
+                  "asset_id": "gt-hot-01",
+                  "rated_mw": 25.0,
+                  "r_asset_mw_per_s": 0.5,
+                  "run_hours_h": null,
+                  "hot_standby": true,
+                  "gt_mode": "aero",
+                  "initial_state": "offline",
+                  "p_min_stable_frac": 0.35,
+                  "t_min_run_s": 1800.0,
+                  "min_run_enabled": true,
+                  "t_min_down_s": 900.0,
+                  "min_down_enabled": true,
+                  "cold_start_s": 600.0,
+                  "warm_start_s": 360.0,
+                  "hot_start_s": 300.0,
+                  "thermal_state": "hot",
+                  "fuel": null,
+                  "power_factor": null,
+                  "inertia_constant_s": null,
+                  "droop_r": null,
+                  "valve_actuation_tc_s": null,
+                  "fuel_to_power_tc_s": null,
+                  "max_instantaneous_load_step_mw": null,
+                  "authority_tier": "autonomous"
+                },
+                {
+                  "asset_id": "gt-hot-02",
+                  "rated_mw": 25.0,
+                  "r_asset_mw_per_s": 0.5,
+                  "run_hours_h": null,
+                  "hot_standby": true,
+                  "gt_mode": "aero",
+                  "initial_state": "offline",
+                  "p_min_stable_frac": 0.35,
+                  "t_min_run_s": 1800.0,
+                  "min_run_enabled": true,
+                  "t_min_down_s": 900.0,
+                  "min_down_enabled": true,
+                  "cold_start_s": 600.0,
+                  "warm_start_s": 360.0,
+                  "hot_start_s": 300.0,
+                  "thermal_state": "hot",
+                  "fuel": null,
+                  "power_factor": null,
+                  "inertia_constant_s": null,
+                  "droop_r": null,
+                  "valve_actuation_tc_s": null,
+                  "fuel_to_power_tc_s": null,
+                  "max_instantaneous_load_step_mw": null,
+                  "authority_tier": "autonomous"
+                }
+              ],
+              "fuel_cell_units": [],
+              "diesel_power_block": {
+                "enabled": true,
+                "target_capacity_mw": 20.0,
+                "unit_rating_mw": 20.0,
+                "p_start": 1.0,
+                "target_reliability": 1.0,
+                "f_block": 1.0,
+                "delta_t_start_s": 10.0,
+                "residual_ramp_s": 60.0,
+                "start_stagger_interval_s": 1.0,
+                "debounce_s": 1.0,
+                "restore_hold_s": 300.0,
+                "min_run_s": 900.0,
+                "min_down_s": 300.0,
+                "min_stable_load_mw_fraction": 0.3,
+                "cooldown_s": 300.0,
+                "fuel_burn_gal_per_hr_per_unit_at_full_load": 230.0,
+                "fuel_type": "diesel",
+                "min_fuel_runtime_hours": 48.0,
+                "authority_tier": "advisory_only"
+              },
+              "diesel_units": [
+                {
+                  "asset_id": "diesel-000",
+                  "rated_mw": 20.0,
+                  "role": "primary",
+                  "start_offset_s": 0.0,
+                  "delta_t_start_s": 10.0,
+                  "f_block": 1.0,
+                  "residual_ramp_s": 60.0,
+                  "min_stable_load_mw": 6.0,
+                  "min_run_s": 900.0,
+                  "min_down_s": 300.0,
+                  "cooldown_s": 300.0,
+                  "authority_tier": "advisory_only"
+                }
+              ],
+              "solar_rated_mw": 0.0,
+              "fuel_cell_enabled": false,
+              "fuel_cell_rated_mw": 0.0,
+              "fuel_cell_stack_count": 1,
+              "fuel_cell_initial_state": null,
+              "fuel_cell_state": null,
+              "fuel_cell_baseload_target_mw": null,
+              "fuel_cell_load_following": false,
+              "fuel_cell_ramp_rate_mw_per_s": 0.02,
+              "fuel_cell_ramp_down_rate_mw_per_s": null,
+              "fuel_cell_min_stable_fraction": 0.5,
+              "operating_tier": null,
+              "edl_calendar_month": null,
+              "tenant_budgets": null,
+              "operator_response_profile": null,
+              "grid_authority_tier": "autonomous",
+              "design_peak_load_mw": null,
+              "irradiance_steps": [
+                [
+                  0.0,
+                  1.0
+                ]
+              ],
+              "gpu_load_profile": [],
+              "workload_floor_fraction": null,
+              "island_mode": true,
+              "grid_import_limit_mw": null,
+              "bess_normal_dispatch_depth_fraction": 0.0,
+              "bess_bridging_floor_fraction": 0.15,
+              "bess_bridging_floor_anchor_multiple": 2.0,
+              "bess_material_discharge_fraction": 0.05,
+              "bess_material_discharge_min_mw": 1.0,
+              "bess_catchup_sustain_s": 30.0,
+              "bess_catchup_slope_window_s": 15.0,
+              "bess_catchup_bridge_margin": 0.8,
+              "frequency_nominal_hz": 60.0,
+              "uf_warning_hz": null,
+              "ufls_stage1_hz": null,
+              "island_collapse_hz": null,
+              "of_warning_hz": null,
+              "of_trip_hz": null,
+              "ufls_stages": null,
+              "relay_81u_threshold_hz": null,
+              "relay_81u_delay_s": null,
+              "power_factor": 0.85,
+              "pue_base": 1.03,
+              "end_sim_time": 7200.0,
+              "demo_description": "",
+              "default_playback_speed": 1.0,
+              "dt_thermal_seconds": 90.0,
+              "plant_dt_thermal_seconds": null,
+              "alpha_max": 0.2,
+              "plant_alpha_max": null,
+              "tau_seconds": 20.0,
+              "plant_tau_seconds": null,
+              "anchor_reserve_pct": 0.0,
+              "band_enabled": false,
+              "band_pct_calibrated": 0.0,
+              "band_mult_uncalibrated": 2.0,
+              "band_mult_unmapped_hw": 1.5,
+              "pre_staging_config": null,
+              "pms_config": null,
+              "procurement_config": null,
+              "maintenance_config": null,
+              "ramp_relaxation_config": null,
+              "kube_config": null,
+              "load_config": null,
+              "ambient_steps": [],
+              "cluster_gen_config": null,
+              "stressor_gen_config": null,
+              "param_sampling_config": null,
+              "telemetry_corruption_config": null,
+              "generation_block": null,
+              "calibrated": false,
+              "dq_inject_events": [],
+              "solar_origin_utc_hour": null,
+              "tenant_events": [],
+              "generator_config": null,
+              "assertions": [],
+              "fabric_scenario_id": null,
+              "cascade_commit_fraction": null,
+              "fuel_cell_turbine_commit_fraction": null,
+              "ui_bess_rated_mw": null,
+              "ui_bess_usable_mwh": null,
+              "grid_import_price_per_mwh": null,
+              "bess_charge_price_override_per_mwh": null,
+              "study_input_provenance": {
+                "canonicalised": true,
+                "validation": "ScenarioSpec.model_validate_json -> model_dump(mode=json)",
+                "source": "config/scenarios/scenario-uneven-multisched-01.json",
+                "post_validation_overrides": [
+                  {
+                    "field": "turbine_units",
+                    "operation": "apply_study_fuel_model"
+                  }
+                ]
+              },
+              "study_class": "base_demo"
+            },
+            "seed": 42,
+            "duration_seconds": 7200.0,
+            "tick_seconds": 5.0,
+            "engine_commit": "phase2c-comparison",
+            "harness_commit": "phase2c-comparison"
+          },
+          "identity_digest": "8e879dbacfc52de77204e30553b46293f5f5d14c525c97b52fa04fa38b3b2e6b",
+          "measured_start_event_count": 2,
+          "measured_start_events": [
+            {
+              "sim_time_s": 125.0,
+              "unit_id": "gt-hot-01",
+              "tier_fuel_mmbtu": 8.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 440.0,
+              "unit_id": "gt-hot-02",
+              "tier_fuel_mmbtu": 8.0,
+              "charged": true
+            }
+          ]
+        }
+      },
+      {
+        "scenario": "scenario-uneven-multisched-01",
+        "arm": "baseline",
+        "version": "candidate",
+        "repetition": 2,
+        "trace": {
+          "steps": 1440,
+          "attempts": [
+            {
+              "tick": 25,
+              "sim_time": 120.0,
+              "unit": "gt-hot-01",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 88,
+              "sim_time": 435.0,
+              "unit": "gt-hot-02",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            }
+          ],
+          "episodes": [],
+          "collapsed": [],
+          "min_soc": 0.7467893421481979,
+          "frequency": [
+            -5.000866893367675,
+            176.430848113831
+          ],
+          "unserved": 0.35169265793352056,
+          "balance_failures": [],
+          "internal_physical_sha256": "90f4b8a55acceb521f972d9596c5137f104dbc34e158ac3bc58cadf73e5164f1",
+          "prefix_sha256": "90f4b8a55acceb521f972d9596c5137f104dbc34e158ac3bc58cadf73e5164f1"
+        },
+        "record": {
+          "tick_count": 1440,
+          "interval_seconds": 5.0,
+          "fuel_by_component_mmbtu": {
+            "load_fuel_mmbtu": 690.133782974,
+            "no_load_fuel_mmbtu": 8.19,
+            "hot_standby_fuel_mmbtu": 0.039236111,
+            "start_fuel_mmbtu": 16.0
+          },
+          "turbine_fuel_mmbtu": 714.363019086,
+          "fuel_reconciled": true,
+          "start_fuel_reconciliation": {
+            "release_charged": true,
+            "recorded_event_count": 2,
+            "measured_event_count": 2,
+            "measured_start_fuel_mmbtu": 16.0,
+            "tier_sum_mmbtu": null,
+            "passed": true
+          },
+          "dispatch_curtailment_mwh": 8.136511735,
+          "dispatch_curtailment_interval_exposure_fuel_mmbtu": 291.229346912,
+          "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+            "load_fuel_mmbtu": 287.502680246,
+            "no_load_fuel_mmbtu": 3.726666667,
+            "hot_standby_fuel_mmbtu": 0.0,
+            "start_fuel_mmbtu": 0.0
+          },
+          "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+            "gt-spin-01": 93.186666667,
+            "gt-spin-02": 92.778235801,
+            "gt-hot-01": 54.624513889,
+            "gt-hot-02": 50.639930556
+          },
+          "dispatch_curtailment_attributable_fuel_mmbtu": 85.443185219,
+          "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+            "gt-spin-01": 29.816221037,
+            "gt-spin-02": 29.711129581,
+            "gt-hot-01": 14.277890997,
+            "gt-hot-02": 11.637943604
+          },
+          "unserved_mwh": 0.351692658,
+          "peak_unserved_mw": 22.309362466,
+          "served_mwh": 64.203838044,
+          "unserved_intervals": [
+            {
+              "start_sim_time_s": 325.0,
+              "end_sim_time_s": 465.0,
+              "peak_unserved_mw": 22.30936246553462
+            },
+            {
+              "start_sim_time_s": 1850.0,
+              "end_sim_time_s": 1855.0,
+              "peak_unserved_mw": 4.628919357798523
+            }
+          ],
+          "energy_balance": {
+            "closure_status": true,
+            "max_abs_physical_ledger_defect_mw": 0.0,
+            "served_demand_mwh": 64.203838044,
+            "unserved_demand_mwh": 0.351692658
+          },
+          "bess_soc_min": 0.746789342,
+          "bess_soc_max": 0.999999999,
+          "bess_soc_final": 0.999999999,
+          "commitment": {
+            "distinct_event_count": 8,
+            "visible_distinct_event_count": 8,
+            "suppressed_repeat_count": 0,
+            "log_complete": true,
+            "omitted_record_count": 0,
+            "reserve_floor_refusal_count": 0,
+            "reserve_floor_distinct_event_count": 0,
+            "reserve_floor_visible_distinct_event_count": 0,
+            "reserve_floor_suppressed_repeat_count": 0,
+            "reserve_floor_log_complete": true,
+            "reserve_floor_omitted_record_count": 0,
+            "same_unit_restart_within_min_down_window_count": 0
+          },
+          "forecast": {
+            "miss_count": 0,
+            "miss_peak_mw": 0.0
+          },
+          "compute_trace_sha256": "fb3a32d783d0a61ddd2cb8ec7bfbe0204712a2c6f6f9398ef60932160dafa54b",
+          "compute_trace_count": 1440,
+          "daily_breakdown": [
+            {
+              "day": 1,
+              "kind": "weekday",
+              "fuel_by_component_mmbtu": {
+                "load_fuel_mmbtu": 690.133782974,
+                "no_load_fuel_mmbtu": 8.19,
+                "hot_standby_fuel_mmbtu": 0.039236111,
+                "start_fuel_mmbtu": 16.0
+              },
+              "fuel_mmbtu": 714.363019086,
+              "unserved_mwh": 0.351692658,
+              "curtailed_mwh": 8.136511735,
+              "bess_soc_end": 0.999999999
+            }
+          ],
+          "constraints_valid": true,
+          "hard_violations": [],
+          "status": "PASS",
+          "guard_failures": null,
+          "diagnostic_compact_sha256": "a2370e5fd24c65cbfd2e70b41f154eeee8857060a689f05a7c7d6ef93c49fd48",
+          "identity": {
+            "scenario_id": "scenario-uneven-multisched-01",
+            "mode": "baseline",
+            "parameter_set": {
+              "name": "01 Turbine Scenario with Kubernetes Slurm Ray",
+              "description": "Two-hour Kubernetes, Slurm, and Ray demonstration with 45 MW and 90 MW bursts starting at t=30 s and t=310 s, followed by bursts at t=920 s, t=1850 s, and t=2700 s. Burst durations are 240 s, 300 s, and 600 s for the final three bursts, so workloads do not overlap. Two gas turbines are spinning at 35% minimum stable load from t=0; two more start from hot standby at Burst-02 and the grid-forming BESS bridges their startup gap. GE assumptions: 300-second hot start, 360-second warm start, 600-second cold start, and 30 MW/min ramp. Diesel delta_t_start_s revised 3600 \u2192 10 s on 2026-10-21 (DR-2026-10-20-ISLAND-COLLAPSE D9c; NFPA 110 Type 10; PROPOSED_HERE).",
+              "phase2b_reference_base_scenario": null,
+              "phase2b_reference_family": null,
+              "phase2b_reference_days": null,
+              "site_name": "Santa Clara, CA, USA",
+              "site_latitude": 37.3541,
+              "site_longitude": -121.9552,
+              "site_utc_offset_h": -8.130346666666666,
+              "hardware_profile_id": "enterprise_8gpu_air",
+              "dt_lead_seconds": 45.0,
+              "turbine_commitment_mode": "baseline",
+              "turbine_forecast_lead_seconds": 600.0,
+              "turbine_commitment_floor": 1,
+              "turbine_commitment_sensitivity_mw": 2.0,
+              "generation_baseload_mw": null,
+              "generation_peak_following": true,
+              "dispatch_curtailment_response_delay_s": 0.5,
+              "initial_spinning_count": 2,
+              "base_load_mw": null,
+              "n_plus_one_required": false,
+              "bess_units": [
+                {
+                  "asset_id": "bess-0",
+                  "rated_mw": 30.0,
+                  "usable_mwh": 60.0,
+                  "initial_soc_fraction": 0.95,
+                  "grid_forming": true,
+                  "p_anchor_reserve_mw": 1.0,
+                  "authority_tier": "autonomous"
+                }
+              ],
+              "turbine_units": [
+                {
+                  "asset_id": "gt-spin-01",
+                  "rated_mw": 25.0,
+                  "r_asset_mw_per_s": 0.5,
+                  "run_hours_h": null,
+                  "hot_standby": false,
+                  "gt_mode": "aero",
+                  "initial_state": "spinning",
+                  "p_min_stable_frac": 0.35,
+                  "t_min_run_s": 1800.0,
+                  "min_run_enabled": true,
+                  "t_min_down_s": 900.0,
+                  "min_down_enabled": true,
+                  "cold_start_s": 600.0,
+                  "warm_start_s": 360.0,
+                  "hot_start_s": 300.0,
+                  "thermal_state": "hot",
+                  "fuel": null,
+                  "power_factor": null,
+                  "inertia_constant_s": null,
+                  "droop_r": null,
+                  "valve_actuation_tc_s": null,
+                  "fuel_to_power_tc_s": null,
+                  "max_instantaneous_load_step_mw": null,
+                  "authority_tier": "autonomous"
+                },
+                {
+                  "asset_id": "gt-spin-02",
+                  "rated_mw": 25.0,
+                  "r_asset_mw_per_s": 0.5,
+                  "run_hours_h": null,
+                  "hot_standby": false,
+                  "gt_mode": "aero",
+                  "initial_state": "spinning",
+                  "p_min_stable_frac": 0.35,
+                  "t_min_run_s": 1800.0,
+                  "min_run_enabled": true,
+                  "t_min_down_s": 900.0,
+                  "min_down_enabled": true,
+                  "cold_start_s": 600.0,
+                  "warm_start_s": 360.0,
+                  "hot_start_s": 300.0,
+                  "thermal_state": "hot",
+                  "fuel": null,
+                  "power_factor": null,
+                  "inertia_constant_s": null,
+                  "droop_r": null,
+                  "valve_actuation_tc_s": null,
+                  "fuel_to_power_tc_s": null,
+                  "max_instantaneous_load_step_mw": null,
+                  "authority_tier": "autonomous"
+                },
+                {
+                  "asset_id": "gt-hot-01",
+                  "rated_mw": 25.0,
+                  "r_asset_mw_per_s": 0.5,
+                  "run_hours_h": null,
+                  "hot_standby": true,
+                  "gt_mode": "aero",
+                  "initial_state": "offline",
+                  "p_min_stable_frac": 0.35,
+                  "t_min_run_s": 1800.0,
+                  "min_run_enabled": true,
+                  "t_min_down_s": 900.0,
+                  "min_down_enabled": true,
+                  "cold_start_s": 600.0,
+                  "warm_start_s": 360.0,
+                  "hot_start_s": 300.0,
+                  "thermal_state": "hot",
+                  "fuel": null,
+                  "power_factor": null,
+                  "inertia_constant_s": null,
+                  "droop_r": null,
+                  "valve_actuation_tc_s": null,
+                  "fuel_to_power_tc_s": null,
+                  "max_instantaneous_load_step_mw": null,
+                  "authority_tier": "autonomous"
+                },
+                {
+                  "asset_id": "gt-hot-02",
+                  "rated_mw": 25.0,
+                  "r_asset_mw_per_s": 0.5,
+                  "run_hours_h": null,
+                  "hot_standby": true,
+                  "gt_mode": "aero",
+                  "initial_state": "offline",
+                  "p_min_stable_frac": 0.35,
+                  "t_min_run_s": 1800.0,
+                  "min_run_enabled": true,
+                  "t_min_down_s": 900.0,
+                  "min_down_enabled": true,
+                  "cold_start_s": 600.0,
+                  "warm_start_s": 360.0,
+                  "hot_start_s": 300.0,
+                  "thermal_state": "hot",
+                  "fuel": null,
+                  "power_factor": null,
+                  "inertia_constant_s": null,
+                  "droop_r": null,
+                  "valve_actuation_tc_s": null,
+                  "fuel_to_power_tc_s": null,
+                  "max_instantaneous_load_step_mw": null,
+                  "authority_tier": "autonomous"
+                }
+              ],
+              "fuel_cell_units": [],
+              "diesel_power_block": {
+                "enabled": true,
+                "target_capacity_mw": 20.0,
+                "unit_rating_mw": 20.0,
+                "p_start": 1.0,
+                "target_reliability": 1.0,
+                "f_block": 1.0,
+                "delta_t_start_s": 10.0,
+                "residual_ramp_s": 60.0,
+                "start_stagger_interval_s": 1.0,
+                "debounce_s": 1.0,
+                "restore_hold_s": 300.0,
+                "min_run_s": 900.0,
+                "min_down_s": 300.0,
+                "min_stable_load_mw_fraction": 0.3,
+                "cooldown_s": 300.0,
+                "fuel_burn_gal_per_hr_per_unit_at_full_load": 230.0,
+                "fuel_type": "diesel",
+                "min_fuel_runtime_hours": 48.0,
+                "authority_tier": "advisory_only"
+              },
+              "diesel_units": [
+                {
+                  "asset_id": "diesel-000",
+                  "rated_mw": 20.0,
+                  "role": "primary",
+                  "start_offset_s": 0.0,
+                  "delta_t_start_s": 10.0,
+                  "f_block": 1.0,
+                  "residual_ramp_s": 60.0,
+                  "min_stable_load_mw": 6.0,
+                  "min_run_s": 900.0,
+                  "min_down_s": 300.0,
+                  "cooldown_s": 300.0,
+                  "authority_tier": "advisory_only"
+                }
+              ],
+              "solar_rated_mw": 0.0,
+              "fuel_cell_enabled": false,
+              "fuel_cell_rated_mw": 0.0,
+              "fuel_cell_stack_count": 1,
+              "fuel_cell_initial_state": null,
+              "fuel_cell_state": null,
+              "fuel_cell_baseload_target_mw": null,
+              "fuel_cell_load_following": false,
+              "fuel_cell_ramp_rate_mw_per_s": 0.02,
+              "fuel_cell_ramp_down_rate_mw_per_s": null,
+              "fuel_cell_min_stable_fraction": 0.5,
+              "operating_tier": null,
+              "edl_calendar_month": null,
+              "tenant_budgets": null,
+              "operator_response_profile": null,
+              "grid_authority_tier": "autonomous",
+              "design_peak_load_mw": null,
+              "irradiance_steps": [
+                [
+                  0.0,
+                  1.0
+                ]
+              ],
+              "gpu_load_profile": [],
+              "workload_floor_fraction": null,
+              "island_mode": true,
+              "grid_import_limit_mw": null,
+              "bess_normal_dispatch_depth_fraction": 0.0,
+              "bess_bridging_floor_fraction": 0.15,
+              "bess_bridging_floor_anchor_multiple": 2.0,
+              "bess_material_discharge_fraction": 0.05,
+              "bess_material_discharge_min_mw": 1.0,
+              "bess_catchup_sustain_s": 30.0,
+              "bess_catchup_slope_window_s": 15.0,
+              "bess_catchup_bridge_margin": 0.8,
+              "frequency_nominal_hz": 60.0,
+              "uf_warning_hz": null,
+              "ufls_stage1_hz": null,
+              "island_collapse_hz": null,
+              "of_warning_hz": null,
+              "of_trip_hz": null,
+              "ufls_stages": null,
+              "relay_81u_threshold_hz": null,
+              "relay_81u_delay_s": null,
+              "power_factor": 0.85,
+              "pue_base": 1.03,
+              "end_sim_time": 7200.0,
+              "demo_description": "",
+              "default_playback_speed": 1.0,
+              "dt_thermal_seconds": 90.0,
+              "plant_dt_thermal_seconds": null,
+              "alpha_max": 0.2,
+              "plant_alpha_max": null,
+              "tau_seconds": 20.0,
+              "plant_tau_seconds": null,
+              "anchor_reserve_pct": 0.0,
+              "band_enabled": false,
+              "band_pct_calibrated": 0.0,
+              "band_mult_uncalibrated": 2.0,
+              "band_mult_unmapped_hw": 1.5,
+              "pre_staging_config": null,
+              "pms_config": null,
+              "procurement_config": null,
+              "maintenance_config": null,
+              "ramp_relaxation_config": null,
+              "kube_config": null,
+              "load_config": null,
+              "ambient_steps": [],
+              "cluster_gen_config": null,
+              "stressor_gen_config": null,
+              "param_sampling_config": null,
+              "telemetry_corruption_config": null,
+              "generation_block": null,
+              "calibrated": false,
+              "dq_inject_events": [],
+              "solar_origin_utc_hour": null,
+              "tenant_events": [],
+              "generator_config": null,
+              "assertions": [],
+              "fabric_scenario_id": null,
+              "cascade_commit_fraction": null,
+              "fuel_cell_turbine_commit_fraction": null,
+              "ui_bess_rated_mw": null,
+              "ui_bess_usable_mwh": null,
+              "grid_import_price_per_mwh": null,
+              "bess_charge_price_override_per_mwh": null,
+              "study_input_provenance": {
+                "canonicalised": true,
+                "validation": "ScenarioSpec.model_validate_json -> model_dump(mode=json)",
+                "source": "config/scenarios/scenario-uneven-multisched-01.json",
+                "post_validation_overrides": [
+                  {
+                    "field": "turbine_units",
+                    "operation": "apply_study_fuel_model"
+                  }
+                ]
+              },
+              "study_class": "base_demo"
+            },
+            "seed": 42,
+            "duration_seconds": 7200.0,
+            "tick_seconds": 5.0,
+            "engine_commit": "phase2c-comparison",
+            "harness_commit": "phase2c-comparison"
+          },
+          "identity_digest": "8e879dbacfc52de77204e30553b46293f5f5d14c525c97b52fa04fa38b3b2e6b",
+          "measured_start_event_count": 2,
+          "measured_start_events": [
+            {
+              "sim_time_s": 125.0,
+              "unit_id": "gt-hot-01",
+              "tier_fuel_mmbtu": 8.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 440.0,
+              "unit_id": "gt-hot-02",
+              "tier_fuel_mmbtu": 8.0,
+              "charged": true
+            }
+          ]
+        }
+      },
+      {
+        "scenario": "scenario-uneven-multisched-01",
+        "arm": "informed",
+        "version": "candidate",
+        "repetition": 1,
+        "trace": {
+          "steps": 1440,
+          "attempts": [
+            {
+              "tick": 1,
+              "sim_time": 0.0,
+              "unit": "gt-hot-01",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 2,
+              "sim_time": 5.0,
+              "unit": "gt-hot-02",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            }
+          ],
+          "episodes": [],
+          "collapsed": [],
+          "min_soc": 0.8597510608338207,
+          "frequency": [
+            59.534837314959205,
+            169.8277840657461
+          ],
+          "unserved": 0.020719073635471947,
+          "balance_failures": [],
+          "internal_physical_sha256": "ea12dabd9944d98aad3f8fc966122f2432e33fb7bd150c8dc313ca9a88dd27a6",
+          "prefix_sha256": "ea12dabd9944d98aad3f8fc966122f2432e33fb7bd150c8dc313ca9a88dd27a6"
+        },
+        "record": {
+          "tick_count": 1440,
+          "interval_seconds": 5.0,
+          "fuel_by_component_mmbtu": {
+            "load_fuel_mmbtu": 642.554567148,
+            "no_load_fuel_mmbtu": 6.843333333,
+            "hot_standby_fuel_mmbtu": 0.000347222,
+            "start_fuel_mmbtu": 16.0
+          },
+          "turbine_fuel_mmbtu": 665.398247704,
+          "fuel_reconciled": true,
+          "start_fuel_reconciliation": {
+            "release_charged": true,
+            "recorded_event_count": 2,
+            "measured_event_count": 2,
+            "measured_start_fuel_mmbtu": 16.0,
+            "tier_sum_mmbtu": null,
+            "passed": true
+          },
+          "dispatch_curtailment_mwh": 5.278943188,
+          "dispatch_curtailment_interval_exposure_fuel_mmbtu": 141.143846919,
+          "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+            "load_fuel_mmbtu": 139.390513585,
+            "no_load_fuel_mmbtu": 1.753333333,
+            "hot_standby_fuel_mmbtu": 0.0,
+            "start_fuel_mmbtu": 0.0
+          },
+          "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+            "gt-spin-01": 61.708845913,
+            "gt-spin-02": 61.092791773,
+            "gt-hot-01": 9.303598121,
+            "gt-hot-02": 9.038611111
+          },
+          "dispatch_curtailment_attributable_fuel_mmbtu": 55.021850379,
+          "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+            "gt-spin-01": 26.368861337,
+            "gt-spin-02": 26.22775275,
+            "gt-hot-01": 1.242273356,
+            "gt-hot-02": 1.182962935
+          },
+          "unserved_mwh": 0.020719074,
+          "peak_unserved_mw": 7.52325057,
+          "served_mwh": 64.534811628,
+          "unserved_intervals": [
+            {
+              "start_sim_time_s": 335.0,
+              "end_sim_time_s": 345.0,
+              "peak_unserved_mw": 7.5232505700275
+            }
+          ],
+          "energy_balance": {
+            "closure_status": true,
+            "max_abs_physical_ledger_defect_mw": 0.0,
+            "served_demand_mwh": 64.534811628,
+            "unserved_demand_mwh": 0.020719074
+          },
+          "bess_soc_min": 0.859751061,
+          "bess_soc_max": 0.999999999,
+          "bess_soc_final": 0.999999999,
+          "commitment": {
+            "distinct_event_count": 11,
+            "visible_distinct_event_count": 11,
+            "suppressed_repeat_count": 1374,
+            "log_complete": true,
+            "omitted_record_count": 0,
+            "reserve_floor_refusal_count": 1377,
+            "reserve_floor_distinct_event_count": 1377,
+            "reserve_floor_visible_distinct_event_count": 1377,
+            "reserve_floor_suppressed_repeat_count": 0,
+            "reserve_floor_log_complete": true,
+            "reserve_floor_omitted_record_count": 0,
+            "same_unit_restart_within_min_down_window_count": 0
+          },
+          "forecast": {
+            "miss_count": 4,
+            "miss_peak_mw": 3.208264895
+          },
+          "compute_trace_sha256": "fb3a32d783d0a61ddd2cb8ec7bfbe0204712a2c6f6f9398ef60932160dafa54b",
+          "compute_trace_count": 1440,
+          "daily_breakdown": [
+            {
+              "day": 1,
+              "kind": "weekday",
+              "fuel_by_component_mmbtu": {
+                "load_fuel_mmbtu": 642.554567148,
+                "no_load_fuel_mmbtu": 6.843333333,
+                "hot_standby_fuel_mmbtu": 0.000347222,
+                "start_fuel_mmbtu": 16.0
+              },
+              "fuel_mmbtu": 665.398247704,
+              "unserved_mwh": 0.020719074,
+              "curtailed_mwh": 5.278943188,
+              "bess_soc_end": 0.999999999
+            }
+          ],
+          "constraints_valid": true,
+          "hard_violations": [],
+          "status": "PASS",
+          "guard_failures": null,
+          "diagnostic_compact_sha256": "0197b5b22abae47ed48635835a25f0bdfb6580a0df61291c82fbfc246fcacc65",
+          "identity": {
+            "scenario_id": "scenario-uneven-multisched-01",
+            "mode": "informed",
+            "parameter_set": {
+              "name": "01 Turbine Scenario with Kubernetes Slurm Ray",
+              "description": "Two-hour Kubernetes, Slurm, and Ray demonstration with 45 MW and 90 MW bursts starting at t=30 s and t=310 s, followed by bursts at t=920 s, t=1850 s, and t=2700 s. Burst durations are 240 s, 300 s, and 600 s for the final three bursts, so workloads do not overlap. Two gas turbines are spinning at 35% minimum stable load from t=0; two more start from hot standby at Burst-02 and the grid-forming BESS bridges their startup gap. GE assumptions: 300-second hot start, 360-second warm start, 600-second cold start, and 30 MW/min ramp. Diesel delta_t_start_s revised 3600 \u2192 10 s on 2026-10-21 (DR-2026-10-20-ISLAND-COLLAPSE D9c; NFPA 110 Type 10; PROPOSED_HERE).",
+              "phase2b_reference_base_scenario": null,
+              "phase2b_reference_family": null,
+              "phase2b_reference_days": null,
+              "site_name": "Santa Clara, CA, USA",
+              "site_latitude": 37.3541,
+              "site_longitude": -121.9552,
+              "site_utc_offset_h": -8.130346666666666,
+              "hardware_profile_id": "enterprise_8gpu_air",
+              "dt_lead_seconds": 45.0,
+              "turbine_commitment_mode": "informed",
+              "turbine_forecast_lead_seconds": 600.0,
+              "turbine_commitment_floor": 1,
+              "turbine_commitment_sensitivity_mw": 2.0,
+              "generation_baseload_mw": null,
+              "generation_peak_following": true,
+              "dispatch_curtailment_response_delay_s": 0.5,
+              "initial_spinning_count": 2,
+              "base_load_mw": null,
+              "n_plus_one_required": false,
+              "bess_units": [
+                {
+                  "asset_id": "bess-0",
+                  "rated_mw": 30.0,
+                  "usable_mwh": 60.0,
+                  "initial_soc_fraction": 0.95,
+                  "grid_forming": true,
+                  "p_anchor_reserve_mw": 1.0,
+                  "authority_tier": "autonomous"
+                }
+              ],
+              "turbine_units": [
+                {
+                  "asset_id": "gt-spin-01",
+                  "rated_mw": 25.0,
+                  "r_asset_mw_per_s": 0.5,
+                  "run_hours_h": null,
+                  "hot_standby": false,
+                  "gt_mode": "aero",
+                  "initial_state": "spinning",
+                  "p_min_stable_frac": 0.35,
+                  "t_min_run_s": 1800.0,
+                  "min_run_enabled": true,
+                  "t_min_down_s": 900.0,
+                  "min_down_enabled": true,
+                  "cold_start_s": 600.0,
+                  "warm_start_s": 360.0,
+                  "hot_start_s": 300.0,
+                  "thermal_state": "hot",
+                  "fuel": null,
+                  "power_factor": null,
+                  "inertia_constant_s": null,
+                  "droop_r": null,
+                  "valve_actuation_tc_s": null,
+                  "fuel_to_power_tc_s": null,
+                  "max_instantaneous_load_step_mw": null,
+                  "authority_tier": "autonomous"
+                },
+                {
+                  "asset_id": "gt-spin-02",
+                  "rated_mw": 25.0,
+                  "r_asset_mw_per_s": 0.5,
+                  "run_hours_h": null,
+                  "hot_standby": false,
+                  "gt_mode": "aero",
+                  "initial_state": "spinning",
+                  "p_min_stable_frac": 0.35,
+                  "t_min_run_s": 1800.0,
+                  "min_run_enabled": true,
+                  "t_min_down_s": 900.0,
+                  "min_down_enabled": true,
+                  "cold_start_s": 600.0,
+                  "warm_start_s": 360.0,
+                  "hot_start_s": 300.0,
+                  "thermal_state": "hot",
+                  "fuel": null,
+                  "power_factor": null,
+                  "inertia_constant_s": null,
+                  "droop_r": null,
+                  "valve_actuation_tc_s": null,
+                  "fuel_to_power_tc_s": null,
+                  "max_instantaneous_load_step_mw": null,
+                  "authority_tier": "autonomous"
+                },
+                {
+                  "asset_id": "gt-hot-01",
+                  "rated_mw": 25.0,
+                  "r_asset_mw_per_s": 0.5,
+                  "run_hours_h": null,
+                  "hot_standby": true,
+                  "gt_mode": "aero",
+                  "initial_state": "offline",
+                  "p_min_stable_frac": 0.35,
+                  "t_min_run_s": 1800.0,
+                  "min_run_enabled": true,
+                  "t_min_down_s": 900.0,
+                  "min_down_enabled": true,
+                  "cold_start_s": 600.0,
+                  "warm_start_s": 360.0,
+                  "hot_start_s": 300.0,
+                  "thermal_state": "hot",
+                  "fuel": null,
+                  "power_factor": null,
+                  "inertia_constant_s": null,
+                  "droop_r": null,
+                  "valve_actuation_tc_s": null,
+                  "fuel_to_power_tc_s": null,
+                  "max_instantaneous_load_step_mw": null,
+                  "authority_tier": "autonomous"
+                },
+                {
+                  "asset_id": "gt-hot-02",
+                  "rated_mw": 25.0,
+                  "r_asset_mw_per_s": 0.5,
+                  "run_hours_h": null,
+                  "hot_standby": true,
+                  "gt_mode": "aero",
+                  "initial_state": "offline",
+                  "p_min_stable_frac": 0.35,
+                  "t_min_run_s": 1800.0,
+                  "min_run_enabled": true,
+                  "t_min_down_s": 900.0,
+                  "min_down_enabled": true,
+                  "cold_start_s": 600.0,
+                  "warm_start_s": 360.0,
+                  "hot_start_s": 300.0,
+                  "thermal_state": "hot",
+                  "fuel": null,
+                  "power_factor": null,
+                  "inertia_constant_s": null,
+                  "droop_r": null,
+                  "valve_actuation_tc_s": null,
+                  "fuel_to_power_tc_s": null,
+                  "max_instantaneous_load_step_mw": null,
+                  "authority_tier": "autonomous"
+                }
+              ],
+              "fuel_cell_units": [],
+              "diesel_power_block": {
+                "enabled": true,
+                "target_capacity_mw": 20.0,
+                "unit_rating_mw": 20.0,
+                "p_start": 1.0,
+                "target_reliability": 1.0,
+                "f_block": 1.0,
+                "delta_t_start_s": 10.0,
+                "residual_ramp_s": 60.0,
+                "start_stagger_interval_s": 1.0,
+                "debounce_s": 1.0,
+                "restore_hold_s": 300.0,
+                "min_run_s": 900.0,
+                "min_down_s": 300.0,
+                "min_stable_load_mw_fraction": 0.3,
+                "cooldown_s": 300.0,
+                "fuel_burn_gal_per_hr_per_unit_at_full_load": 230.0,
+                "fuel_type": "diesel",
+                "min_fuel_runtime_hours": 48.0,
+                "authority_tier": "advisory_only"
+              },
+              "diesel_units": [
+                {
+                  "asset_id": "diesel-000",
+                  "rated_mw": 20.0,
+                  "role": "primary",
+                  "start_offset_s": 0.0,
+                  "delta_t_start_s": 10.0,
+                  "f_block": 1.0,
+                  "residual_ramp_s": 60.0,
+                  "min_stable_load_mw": 6.0,
+                  "min_run_s": 900.0,
+                  "min_down_s": 300.0,
+                  "cooldown_s": 300.0,
+                  "authority_tier": "advisory_only"
+                }
+              ],
+              "solar_rated_mw": 0.0,
+              "fuel_cell_enabled": false,
+              "fuel_cell_rated_mw": 0.0,
+              "fuel_cell_stack_count": 1,
+              "fuel_cell_initial_state": null,
+              "fuel_cell_state": null,
+              "fuel_cell_baseload_target_mw": null,
+              "fuel_cell_load_following": false,
+              "fuel_cell_ramp_rate_mw_per_s": 0.02,
+              "fuel_cell_ramp_down_rate_mw_per_s": null,
+              "fuel_cell_min_stable_fraction": 0.5,
+              "operating_tier": null,
+              "edl_calendar_month": null,
+              "tenant_budgets": null,
+              "operator_response_profile": null,
+              "grid_authority_tier": "autonomous",
+              "design_peak_load_mw": null,
+              "irradiance_steps": [
+                [
+                  0.0,
+                  1.0
+                ]
+              ],
+              "gpu_load_profile": [],
+              "workload_floor_fraction": null,
+              "island_mode": true,
+              "grid_import_limit_mw": null,
+              "bess_normal_dispatch_depth_fraction": 0.0,
+              "bess_bridging_floor_fraction": 0.15,
+              "bess_bridging_floor_anchor_multiple": 2.0,
+              "bess_material_discharge_fraction": 0.05,
+              "bess_material_discharge_min_mw": 1.0,
+              "bess_catchup_sustain_s": 30.0,
+              "bess_catchup_slope_window_s": 15.0,
+              "bess_catchup_bridge_margin": 0.8,
+              "frequency_nominal_hz": 60.0,
+              "uf_warning_hz": null,
+              "ufls_stage1_hz": null,
+              "island_collapse_hz": null,
+              "of_warning_hz": null,
+              "of_trip_hz": null,
+              "ufls_stages": null,
+              "relay_81u_threshold_hz": null,
+              "relay_81u_delay_s": null,
+              "power_factor": 0.85,
+              "pue_base": 1.03,
+              "end_sim_time": 7200.0,
+              "demo_description": "",
+              "default_playback_speed": 1.0,
+              "dt_thermal_seconds": 90.0,
+              "plant_dt_thermal_seconds": null,
+              "alpha_max": 0.2,
+              "plant_alpha_max": null,
+              "tau_seconds": 20.0,
+              "plant_tau_seconds": null,
+              "anchor_reserve_pct": 0.0,
+              "band_enabled": false,
+              "band_pct_calibrated": 0.0,
+              "band_mult_uncalibrated": 2.0,
+              "band_mult_unmapped_hw": 1.5,
+              "pre_staging_config": null,
+              "pms_config": null,
+              "procurement_config": null,
+              "maintenance_config": null,
+              "ramp_relaxation_config": null,
+              "kube_config": null,
+              "load_config": null,
+              "ambient_steps": [],
+              "cluster_gen_config": null,
+              "stressor_gen_config": null,
+              "param_sampling_config": null,
+              "telemetry_corruption_config": null,
+              "generation_block": null,
+              "calibrated": false,
+              "dq_inject_events": [],
+              "solar_origin_utc_hour": null,
+              "tenant_events": [],
+              "generator_config": null,
+              "assertions": [],
+              "fabric_scenario_id": null,
+              "cascade_commit_fraction": null,
+              "fuel_cell_turbine_commit_fraction": null,
+              "ui_bess_rated_mw": null,
+              "ui_bess_usable_mwh": null,
+              "grid_import_price_per_mwh": null,
+              "bess_charge_price_override_per_mwh": null,
+              "study_input_provenance": {
+                "canonicalised": true,
+                "validation": "ScenarioSpec.model_validate_json -> model_dump(mode=json)",
+                "source": "config/scenarios/scenario-uneven-multisched-01.json",
+                "post_validation_overrides": [
+                  {
+                    "field": "turbine_units",
+                    "operation": "apply_study_fuel_model"
+                  }
+                ]
+              },
+              "study_class": "base_demo"
+            },
+            "seed": 42,
+            "duration_seconds": 7200.0,
+            "tick_seconds": 5.0,
+            "engine_commit": "phase2c-comparison",
+            "harness_commit": "phase2c-comparison"
+          },
+          "identity_digest": "38d4785d3a9bad7208c3ca20f3ba6ab0a36cab3ad60c3240ff8a0807c0a4effc",
+          "measured_start_event_count": 2,
+          "measured_start_events": [
+            {
+              "sim_time_s": 5.0,
+              "unit_id": "gt-hot-01",
+              "tier_fuel_mmbtu": 8.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 10.0,
+              "unit_id": "gt-hot-02",
+              "tier_fuel_mmbtu": 8.0,
+              "charged": true
+            }
+          ]
+        }
+      },
+      {
+        "scenario": "scenario-uneven-multisched-01",
+        "arm": "informed",
+        "version": "candidate",
+        "repetition": 2,
+        "trace": {
+          "steps": 1440,
+          "attempts": [
+            {
+              "tick": 1,
+              "sim_time": 0.0,
+              "unit": "gt-hot-01",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            },
+            {
+              "tick": 2,
+              "sim_time": 5.0,
+              "unit": "gt-hot-02",
+              "reason": "eligible",
+              "before": "offline",
+              "after": "starting"
+            }
+          ],
+          "episodes": [],
+          "collapsed": [],
+          "min_soc": 0.8597510608338207,
+          "frequency": [
+            59.534837314959205,
+            169.8277840657461
+          ],
+          "unserved": 0.020719073635471947,
+          "balance_failures": [],
+          "internal_physical_sha256": "ea12dabd9944d98aad3f8fc966122f2432e33fb7bd150c8dc313ca9a88dd27a6",
+          "prefix_sha256": "ea12dabd9944d98aad3f8fc966122f2432e33fb7bd150c8dc313ca9a88dd27a6"
+        },
+        "record": {
+          "tick_count": 1440,
+          "interval_seconds": 5.0,
+          "fuel_by_component_mmbtu": {
+            "load_fuel_mmbtu": 642.554567148,
+            "no_load_fuel_mmbtu": 6.843333333,
+            "hot_standby_fuel_mmbtu": 0.000347222,
+            "start_fuel_mmbtu": 16.0
+          },
+          "turbine_fuel_mmbtu": 665.398247704,
+          "fuel_reconciled": true,
+          "start_fuel_reconciliation": {
+            "release_charged": true,
+            "recorded_event_count": 2,
+            "measured_event_count": 2,
+            "measured_start_fuel_mmbtu": 16.0,
+            "tier_sum_mmbtu": null,
+            "passed": true
+          },
+          "dispatch_curtailment_mwh": 5.278943188,
+          "dispatch_curtailment_interval_exposure_fuel_mmbtu": 141.143846919,
+          "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+            "load_fuel_mmbtu": 139.390513585,
+            "no_load_fuel_mmbtu": 1.753333333,
+            "hot_standby_fuel_mmbtu": 0.0,
+            "start_fuel_mmbtu": 0.0
+          },
+          "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+            "gt-spin-01": 61.708845913,
+            "gt-spin-02": 61.092791773,
+            "gt-hot-01": 9.303598121,
+            "gt-hot-02": 9.038611111
+          },
+          "dispatch_curtailment_attributable_fuel_mmbtu": 55.021850379,
+          "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+            "gt-spin-01": 26.368861337,
+            "gt-spin-02": 26.22775275,
+            "gt-hot-01": 1.242273356,
+            "gt-hot-02": 1.182962935
+          },
+          "unserved_mwh": 0.020719074,
+          "peak_unserved_mw": 7.52325057,
+          "served_mwh": 64.534811628,
+          "unserved_intervals": [
+            {
+              "start_sim_time_s": 335.0,
+              "end_sim_time_s": 345.0,
+              "peak_unserved_mw": 7.5232505700275
+            }
+          ],
+          "energy_balance": {
+            "closure_status": true,
+            "max_abs_physical_ledger_defect_mw": 0.0,
+            "served_demand_mwh": 64.534811628,
+            "unserved_demand_mwh": 0.020719074
+          },
+          "bess_soc_min": 0.859751061,
+          "bess_soc_max": 0.999999999,
+          "bess_soc_final": 0.999999999,
+          "commitment": {
+            "distinct_event_count": 11,
+            "visible_distinct_event_count": 11,
+            "suppressed_repeat_count": 1374,
+            "log_complete": true,
+            "omitted_record_count": 0,
+            "reserve_floor_refusal_count": 1377,
+            "reserve_floor_distinct_event_count": 1377,
+            "reserve_floor_visible_distinct_event_count": 1377,
+            "reserve_floor_suppressed_repeat_count": 0,
+            "reserve_floor_log_complete": true,
+            "reserve_floor_omitted_record_count": 0,
+            "same_unit_restart_within_min_down_window_count": 0
+          },
+          "forecast": {
+            "miss_count": 4,
+            "miss_peak_mw": 3.208264895
+          },
+          "compute_trace_sha256": "fb3a32d783d0a61ddd2cb8ec7bfbe0204712a2c6f6f9398ef60932160dafa54b",
+          "compute_trace_count": 1440,
+          "daily_breakdown": [
+            {
+              "day": 1,
+              "kind": "weekday",
+              "fuel_by_component_mmbtu": {
+                "load_fuel_mmbtu": 642.554567148,
+                "no_load_fuel_mmbtu": 6.843333333,
+                "hot_standby_fuel_mmbtu": 0.000347222,
+                "start_fuel_mmbtu": 16.0
+              },
+              "fuel_mmbtu": 665.398247704,
+              "unserved_mwh": 0.020719074,
+              "curtailed_mwh": 5.278943188,
+              "bess_soc_end": 0.999999999
+            }
+          ],
+          "constraints_valid": true,
+          "hard_violations": [],
+          "status": "PASS",
+          "guard_failures": null,
+          "diagnostic_compact_sha256": "0197b5b22abae47ed48635835a25f0bdfb6580a0df61291c82fbfc246fcacc65",
+          "identity": {
+            "scenario_id": "scenario-uneven-multisched-01",
+            "mode": "informed",
+            "parameter_set": {
+              "name": "01 Turbine Scenario with Kubernetes Slurm Ray",
+              "description": "Two-hour Kubernetes, Slurm, and Ray demonstration with 45 MW and 90 MW bursts starting at t=30 s and t=310 s, followed by bursts at t=920 s, t=1850 s, and t=2700 s. Burst durations are 240 s, 300 s, and 600 s for the final three bursts, so workloads do not overlap. Two gas turbines are spinning at 35% minimum stable load from t=0; two more start from hot standby at Burst-02 and the grid-forming BESS bridges their startup gap. GE assumptions: 300-second hot start, 360-second warm start, 600-second cold start, and 30 MW/min ramp. Diesel delta_t_start_s revised 3600 \u2192 10 s on 2026-10-21 (DR-2026-10-20-ISLAND-COLLAPSE D9c; NFPA 110 Type 10; PROPOSED_HERE).",
+              "phase2b_reference_base_scenario": null,
+              "phase2b_reference_family": null,
+              "phase2b_reference_days": null,
+              "site_name": "Santa Clara, CA, USA",
+              "site_latitude": 37.3541,
+              "site_longitude": -121.9552,
+              "site_utc_offset_h": -8.130346666666666,
+              "hardware_profile_id": "enterprise_8gpu_air",
+              "dt_lead_seconds": 45.0,
+              "turbine_commitment_mode": "informed",
+              "turbine_forecast_lead_seconds": 600.0,
+              "turbine_commitment_floor": 1,
+              "turbine_commitment_sensitivity_mw": 2.0,
+              "generation_baseload_mw": null,
+              "generation_peak_following": true,
+              "dispatch_curtailment_response_delay_s": 0.5,
+              "initial_spinning_count": 2,
+              "base_load_mw": null,
+              "n_plus_one_required": false,
+              "bess_units": [
+                {
+                  "asset_id": "bess-0",
+                  "rated_mw": 30.0,
+                  "usable_mwh": 60.0,
+                  "initial_soc_fraction": 0.95,
+                  "grid_forming": true,
+                  "p_anchor_reserve_mw": 1.0,
+                  "authority_tier": "autonomous"
+                }
+              ],
+              "turbine_units": [
+                {
+                  "asset_id": "gt-spin-01",
+                  "rated_mw": 25.0,
+                  "r_asset_mw_per_s": 0.5,
+                  "run_hours_h": null,
+                  "hot_standby": false,
+                  "gt_mode": "aero",
+                  "initial_state": "spinning",
+                  "p_min_stable_frac": 0.35,
+                  "t_min_run_s": 1800.0,
+                  "min_run_enabled": true,
+                  "t_min_down_s": 900.0,
+                  "min_down_enabled": true,
+                  "cold_start_s": 600.0,
+                  "warm_start_s": 360.0,
+                  "hot_start_s": 300.0,
+                  "thermal_state": "hot",
+                  "fuel": null,
+                  "power_factor": null,
+                  "inertia_constant_s": null,
+                  "droop_r": null,
+                  "valve_actuation_tc_s": null,
+                  "fuel_to_power_tc_s": null,
+                  "max_instantaneous_load_step_mw": null,
+                  "authority_tier": "autonomous"
+                },
+                {
+                  "asset_id": "gt-spin-02",
+                  "rated_mw": 25.0,
+                  "r_asset_mw_per_s": 0.5,
+                  "run_hours_h": null,
+                  "hot_standby": false,
+                  "gt_mode": "aero",
+                  "initial_state": "spinning",
+                  "p_min_stable_frac": 0.35,
+                  "t_min_run_s": 1800.0,
+                  "min_run_enabled": true,
+                  "t_min_down_s": 900.0,
+                  "min_down_enabled": true,
+                  "cold_start_s": 600.0,
+                  "warm_start_s": 360.0,
+                  "hot_start_s": 300.0,
+                  "thermal_state": "hot",
+                  "fuel": null,
+                  "power_factor": null,
+                  "inertia_constant_s": null,
+                  "droop_r": null,
+                  "valve_actuation_tc_s": null,
+                  "fuel_to_power_tc_s": null,
+                  "max_instantaneous_load_step_mw": null,
+                  "authority_tier": "autonomous"
+                },
+                {
+                  "asset_id": "gt-hot-01",
+                  "rated_mw": 25.0,
+                  "r_asset_mw_per_s": 0.5,
+                  "run_hours_h": null,
+                  "hot_standby": true,
+                  "gt_mode": "aero",
+                  "initial_state": "offline",
+                  "p_min_stable_frac": 0.35,
+                  "t_min_run_s": 1800.0,
+                  "min_run_enabled": true,
+                  "t_min_down_s": 900.0,
+                  "min_down_enabled": true,
+                  "cold_start_s": 600.0,
+                  "warm_start_s": 360.0,
+                  "hot_start_s": 300.0,
+                  "thermal_state": "hot",
+                  "fuel": null,
+                  "power_factor": null,
+                  "inertia_constant_s": null,
+                  "droop_r": null,
+                  "valve_actuation_tc_s": null,
+                  "fuel_to_power_tc_s": null,
+                  "max_instantaneous_load_step_mw": null,
+                  "authority_tier": "autonomous"
+                },
+                {
+                  "asset_id": "gt-hot-02",
+                  "rated_mw": 25.0,
+                  "r_asset_mw_per_s": 0.5,
+                  "run_hours_h": null,
+                  "hot_standby": true,
+                  "gt_mode": "aero",
+                  "initial_state": "offline",
+                  "p_min_stable_frac": 0.35,
+                  "t_min_run_s": 1800.0,
+                  "min_run_enabled": true,
+                  "t_min_down_s": 900.0,
+                  "min_down_enabled": true,
+                  "cold_start_s": 600.0,
+                  "warm_start_s": 360.0,
+                  "hot_start_s": 300.0,
+                  "thermal_state": "hot",
+                  "fuel": null,
+                  "power_factor": null,
+                  "inertia_constant_s": null,
+                  "droop_r": null,
+                  "valve_actuation_tc_s": null,
+                  "fuel_to_power_tc_s": null,
+                  "max_instantaneous_load_step_mw": null,
+                  "authority_tier": "autonomous"
+                }
+              ],
+              "fuel_cell_units": [],
+              "diesel_power_block": {
+                "enabled": true,
+                "target_capacity_mw": 20.0,
+                "unit_rating_mw": 20.0,
+                "p_start": 1.0,
+                "target_reliability": 1.0,
+                "f_block": 1.0,
+                "delta_t_start_s": 10.0,
+                "residual_ramp_s": 60.0,
+                "start_stagger_interval_s": 1.0,
+                "debounce_s": 1.0,
+                "restore_hold_s": 300.0,
+                "min_run_s": 900.0,
+                "min_down_s": 300.0,
+                "min_stable_load_mw_fraction": 0.3,
+                "cooldown_s": 300.0,
+                "fuel_burn_gal_per_hr_per_unit_at_full_load": 230.0,
+                "fuel_type": "diesel",
+                "min_fuel_runtime_hours": 48.0,
+                "authority_tier": "advisory_only"
+              },
+              "diesel_units": [
+                {
+                  "asset_id": "diesel-000",
+                  "rated_mw": 20.0,
+                  "role": "primary",
+                  "start_offset_s": 0.0,
+                  "delta_t_start_s": 10.0,
+                  "f_block": 1.0,
+                  "residual_ramp_s": 60.0,
+                  "min_stable_load_mw": 6.0,
+                  "min_run_s": 900.0,
+                  "min_down_s": 300.0,
+                  "cooldown_s": 300.0,
+                  "authority_tier": "advisory_only"
+                }
+              ],
+              "solar_rated_mw": 0.0,
+              "fuel_cell_enabled": false,
+              "fuel_cell_rated_mw": 0.0,
+              "fuel_cell_stack_count": 1,
+              "fuel_cell_initial_state": null,
+              "fuel_cell_state": null,
+              "fuel_cell_baseload_target_mw": null,
+              "fuel_cell_load_following": false,
+              "fuel_cell_ramp_rate_mw_per_s": 0.02,
+              "fuel_cell_ramp_down_rate_mw_per_s": null,
+              "fuel_cell_min_stable_fraction": 0.5,
+              "operating_tier": null,
+              "edl_calendar_month": null,
+              "tenant_budgets": null,
+              "operator_response_profile": null,
+              "grid_authority_tier": "autonomous",
+              "design_peak_load_mw": null,
+              "irradiance_steps": [
+                [
+                  0.0,
+                  1.0
+                ]
+              ],
+              "gpu_load_profile": [],
+              "workload_floor_fraction": null,
+              "island_mode": true,
+              "grid_import_limit_mw": null,
+              "bess_normal_dispatch_depth_fraction": 0.0,
+              "bess_bridging_floor_fraction": 0.15,
+              "bess_bridging_floor_anchor_multiple": 2.0,
+              "bess_material_discharge_fraction": 0.05,
+              "bess_material_discharge_min_mw": 1.0,
+              "bess_catchup_sustain_s": 30.0,
+              "bess_catchup_slope_window_s": 15.0,
+              "bess_catchup_bridge_margin": 0.8,
+              "frequency_nominal_hz": 60.0,
+              "uf_warning_hz": null,
+              "ufls_stage1_hz": null,
+              "island_collapse_hz": null,
+              "of_warning_hz": null,
+              "of_trip_hz": null,
+              "ufls_stages": null,
+              "relay_81u_threshold_hz": null,
+              "relay_81u_delay_s": null,
+              "power_factor": 0.85,
+              "pue_base": 1.03,
+              "end_sim_time": 7200.0,
+              "demo_description": "",
+              "default_playback_speed": 1.0,
+              "dt_thermal_seconds": 90.0,
+              "plant_dt_thermal_seconds": null,
+              "alpha_max": 0.2,
+              "plant_alpha_max": null,
+              "tau_seconds": 20.0,
+              "plant_tau_seconds": null,
+              "anchor_reserve_pct": 0.0,
+              "band_enabled": false,
+              "band_pct_calibrated": 0.0,
+              "band_mult_uncalibrated": 2.0,
+              "band_mult_unmapped_hw": 1.5,
+              "pre_staging_config": null,
+              "pms_config": null,
+              "procurement_config": null,
+              "maintenance_config": null,
+              "ramp_relaxation_config": null,
+              "kube_config": null,
+              "load_config": null,
+              "ambient_steps": [],
+              "cluster_gen_config": null,
+              "stressor_gen_config": null,
+              "param_sampling_config": null,
+              "telemetry_corruption_config": null,
+              "generation_block": null,
+              "calibrated": false,
+              "dq_inject_events": [],
+              "solar_origin_utc_hour": null,
+              "tenant_events": [],
+              "generator_config": null,
+              "assertions": [],
+              "fabric_scenario_id": null,
+              "cascade_commit_fraction": null,
+              "fuel_cell_turbine_commit_fraction": null,
+              "ui_bess_rated_mw": null,
+              "ui_bess_usable_mwh": null,
+              "grid_import_price_per_mwh": null,
+              "bess_charge_price_override_per_mwh": null,
+              "study_input_provenance": {
+                "canonicalised": true,
+                "validation": "ScenarioSpec.model_validate_json -> model_dump(mode=json)",
+                "source": "config/scenarios/scenario-uneven-multisched-01.json",
+                "post_validation_overrides": [
+                  {
+                    "field": "turbine_units",
+                    "operation": "apply_study_fuel_model"
+                  }
+                ]
+              },
+              "study_class": "base_demo"
+            },
+            "seed": 42,
+            "duration_seconds": 7200.0,
+            "tick_seconds": 5.0,
+            "engine_commit": "phase2c-comparison",
+            "harness_commit": "phase2c-comparison"
+          },
+          "identity_digest": "38d4785d3a9bad7208c3ca20f3ba6ab0a36cab3ad60c3240ff8a0807c0a4effc",
+          "measured_start_event_count": 2,
+          "measured_start_events": [
+            {
+              "sim_time_s": 5.0,
+              "unit_id": "gt-hot-01",
+              "tier_fuel_mmbtu": 8.0,
+              "charged": true
+            },
+            {
+              "sim_time_s": 10.0,
+              "unit_id": "gt-hot-02",
+              "tier_fuel_mmbtu": 8.0,
+              "charged": true
+            }
+          ]
+        }
+      }
+    ],
+    "base_H2_fresh": {
+      "scenario": "scenario-h2-slurm-24h",
+      "arm": "informed",
+      "version": "base",
+      "repetition": 1,
+      "trace": {
+        "steps": 17280,
+        "attempts": [
+          {
+            "tick": 5083,
+            "sim_time": 25410.0,
+            "unit": "gt-hot-01",
+            "reason": "eligible",
+            "before": "offline",
+            "after": "starting"
+          },
+          {
+            "tick": 5751,
+            "sim_time": 28750.0,
+            "unit": "gt-hot-02",
+            "reason": "eligible",
+            "before": "offline",
+            "after": "starting"
+          },
+          {
+            "tick": 5752,
+            "sim_time": 28755.0,
+            "unit": "gt-spin-02",
+            "reason": "eligible",
+            "before": "offline",
+            "after": "starting"
+          },
+          {
+            "tick": 7191,
+            "sim_time": 35950.0,
+            "unit": "gt-spin-02",
+            "reason": "eligible",
+            "before": "offline",
+            "after": "starting"
+          },
+          {
+            "tick": 7192,
+            "sim_time": 35955.0,
+            "unit": "gt-hot-02",
+            "reason": "eligible",
+            "before": "offline",
+            "after": "starting"
+          },
+          {
+            "tick": 8631,
+            "sim_time": 43150.0,
+            "unit": "gt-spin-02",
+            "reason": "eligible",
+            "before": "offline",
+            "after": "starting"
+          },
+          {
+            "tick": 8632,
+            "sim_time": 43155.0,
+            "unit": "gt-hot-02",
+            "reason": "eligible",
+            "before": "offline",
+            "after": "starting"
+          },
+          {
+            "tick": 9890,
+            "sim_time": 49445.0,
+            "unit": "gt-spin-02",
+            "reason": "eligible",
+            "before": "offline",
+            "after": "starting"
+          },
+          {
+            "tick": 10071,
+            "sim_time": 50350.0,
+            "unit": "gt-hot-01",
+            "reason": "min_down",
+            "before": "offline",
+            "after": "offline"
+          },
+          {
+            "tick": 10072,
+            "sim_time": 50355.0,
+            "unit": "gt-hot-01",
+            "reason": "min_down",
+            "before": "offline",
+            "after": "offline"
+          },
+          {
+            "tick": 10073,
+            "sim_time": 50360.0,
+            "unit": "gt-hot-01",
+            "reason": "min_down",
+            "before": "offline",
+            "after": "offline"
+          },
+          {
+            "tick": 10074,
+            "sim_time": 50365.0,
+            "unit": "gt-hot-01",
+            "reason": "min_down",
+            "before": "offline",
+            "after": "offline"
+          },
+          {
+            "tick": 10075,
+            "sim_time": 50370.0,
+            "unit": "gt-hot-01",
+            "reason": "min_down",
+            "before": "offline",
+            "after": "offline"
+          },
+          {
+            "tick": 10076,
+            "sim_time": 50375.0,
+            "unit": "gt-hot-01",
+            "reason": "min_down",
+            "before": "offline",
+            "after": "offline"
+          },
+          {
+            "tick": 10077,
+            "sim_time": 50380.0,
+            "unit": "gt-hot-01",
+            "reason": "eligible",
+            "before": "offline",
+            "after": "starting"
+          },
+          {
+            "tick": 10078,
+            "sim_time": 50385.0,
+            "unit": "gt-hot-02",
+            "reason": "eligible",
+            "before": "offline",
+            "after": "starting"
+          },
+          {
+            "tick": 11511,
+            "sim_time": 57550.0,
+            "unit": "gt-hot-01",
+            "reason": "eligible",
+            "before": "offline",
+            "after": "starting"
+          },
+          {
+            "tick": 11512,
+            "sim_time": 57555.0,
+            "unit": "gt-hot-02",
+            "reason": "eligible",
+            "before": "offline",
+            "after": "starting"
+          },
+          {
+            "tick": 12951,
+            "sim_time": 64750.0,
+            "unit": "gt-hot-01",
+            "reason": "eligible",
+            "before": "offline",
+            "after": "starting"
+          },
+          {
+            "tick": 12952,
+            "sim_time": 64755.0,
+            "unit": "gt-hot-02",
+            "reason": "eligible",
+            "before": "offline",
+            "after": "starting"
+          }
+        ],
+        "episodes": [],
+        "collapsed": [],
+        "min_soc": 0.9503869467934404,
+        "frequency": [
+          60.0,
+          250.28639130094405
+        ],
+        "unserved": 0.8933284225336182,
+        "balance_failures": [],
+        "internal_physical_sha256": "3b40147d28ee89f1ec312b7f57f1c9f77e82c99bd7e6ee4447ff5384f951dbdf",
+        "prefix_sha256": "f4463c9b45ca12ea303b4000525278c63e858766cbc8c0cd9f3255723b2dbda4"
+      },
+      "record": {
+        "tick_count": 17280,
+        "interval_seconds": 5.0,
+        "fuel_by_component_mmbtu": {
+          "load_fuel_mmbtu": 5107.722017303,
+          "no_load_fuel_mmbtu": 64.866666667,
+          "hot_standby_fuel_mmbtu": 3.761458333,
+          "start_fuel_mmbtu": 152.0
+        },
+        "turbine_fuel_mmbtu": 5328.350142303,
+        "fuel_reconciled": true,
+        "start_fuel_reconciliation": {
+          "release_charged": true,
+          "recorded_event_count": 14,
+          "measured_event_count": 14,
+          "measured_start_fuel_mmbtu": 152.0,
+          "tier_sum_mmbtu": null,
+          "passed": true
+        },
+        "dispatch_curtailment_mwh": 343.106291593,
+        "dispatch_curtailment_interval_exposure_fuel_mmbtu": 4894.248370795,
+        "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+          "load_fuel_mmbtu": 4677.688023572,
+          "no_load_fuel_mmbtu": 60.918333333,
+          "hot_standby_fuel_mmbtu": 3.642013889,
+          "start_fuel_mmbtu": 152.0
+        },
+        "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+          "gt-spin-01": 2152.666217898,
+          "gt-spin-02": 1708.675833457,
+          "gt-hot-01": 738.419791667,
+          "gt-hot-02": 294.486527778
+        },
+        "dispatch_curtailment_attributable_fuel_mmbtu": 3608.878484911,
+        "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+          "gt-spin-01": 1645.626267003,
+          "gt-spin-02": 1260.837847434,
+          "gt-hot-01": 537.463176576,
+          "gt-hot-02": 164.951193898
+        },
+        "unserved_mwh": 0.893328423,
+        "peak_unserved_mw": 42.36838787,
+        "served_mwh": 143.067046027,
+        "unserved_intervals": [
+          {
+            "start_sim_time_s": 29130.0,
+            "end_sim_time_s": 29165.0,
+            "peak_unserved_mw": 19.287968405751712
+          },
+          {
+            "start_sim_time_s": 29215.0,
+            "end_sim_time_s": 29235.0,
+            "peak_unserved_mw": 1.8802011558611156
+          },
+          {
+            "start_sim_time_s": 36310.0,
+            "end_sim_time_s": 36350.0,
+            "peak_unserved_mw": 38.394865912415625
+          },
+          {
+            "start_sim_time_s": 43510.0,
+            "end_sim_time_s": 43555.0,
+            "peak_unserved_mw": 39.4036584956214
+          },
+          {
+            "start_sim_time_s": 50710.0,
+            "end_sim_time_s": 50730.0,
+            "peak_unserved_mw": 29.140845418775996
+          },
+          {
+            "start_sim_time_s": 50750.0,
+            "end_sim_time_s": 50760.0,
+            "peak_unserved_mw": 1.25
+          },
+          {
+            "start_sim_time_s": 57910.0,
+            "end_sim_time_s": 57940.0,
+            "peak_unserved_mw": 42.36838786968556
+          },
+          {
+            "start_sim_time_s": 65110.0,
+            "end_sim_time_s": 65140.0,
+            "peak_unserved_mw": 37.890845418775996
+          }
+        ],
+        "energy_balance": {
+          "closure_status": true,
+          "max_abs_physical_ledger_defect_mw": 0.0,
+          "served_demand_mwh": 143.067046027,
+          "unserved_demand_mwh": 0.893328423
+        },
+        "bess_soc_min": 0.950386947,
+        "bess_soc_max": 0.999999998,
+        "bess_soc_final": 0.999999987,
+        "commitment": {
+          "distinct_event_count": 67,
+          "visible_distinct_event_count": 67,
+          "suppressed_repeat_count": 11205,
+          "log_complete": true,
+          "omitted_record_count": 0,
+          "reserve_floor_refusal_count": 14890,
+          "reserve_floor_distinct_event_count": 14890,
+          "reserve_floor_visible_distinct_event_count": 14890,
+          "reserve_floor_suppressed_repeat_count": 0,
+          "reserve_floor_log_complete": true,
+          "reserve_floor_omitted_record_count": 0,
+          "same_unit_restart_within_min_down_window_count": 0
+        },
+        "forecast": {
+          "miss_count": 39,
+          "miss_peak_mw": 13.130749227
+        },
+        "compute_trace_sha256": "ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b",
+        "compute_trace_count": 17280,
+        "daily_breakdown": [
+          {
+            "day": 1,
+            "kind": "weekday",
+            "fuel_by_component_mmbtu": {
+              "load_fuel_mmbtu": 5107.722017303,
+              "no_load_fuel_mmbtu": 64.866666667,
+              "hot_standby_fuel_mmbtu": 3.761458333,
+              "start_fuel_mmbtu": 152.0
+            },
+            "fuel_mmbtu": 5328.350142303,
+            "unserved_mwh": 0.893328423,
+            "curtailed_mwh": 343.106291593,
+            "bess_soc_end": 0.999999987
+          }
+        ],
+        "constraints_valid": true,
+        "hard_violations": [],
+        "status": "PASS",
+        "guard_failures": null,
+        "diagnostic_compact_sha256": "6ae0ce3d7a1b300cd4402fbd640abc67addb953b453075454c39bdefad8b0711",
+        "identity": {
+          "scenario_id": "scenario-h2-slurm-24h",
+          "mode": "informed",
+          "parameter_set": {
+            "name": "Addendum H-2 Slurm fixed-allocation reference \u2014 24h",
+            "description": "Addendum H H2 reference scenario with scheduler-shaped GPU workload demand over 1 day(s), derived from scenario-uneven-multisched-01.",
+            "hardware_profile_id": "enterprise_8gpu_air",
+            "dt_lead_seconds": 45.0,
+            "initial_spinning_count": 2,
+            "base_load_mw": null,
+            "n_plus_one_required": false,
+            "island_mode": true,
+            "frequency_nominal_hz": 60.0,
+            "power_factor": 0.85,
+            "end_sim_time": 86400.0,
+            "turbine_units": [
+              {
+                "asset_id": "gt-spin-01",
+                "rated_mw": 25.0,
+                "r_asset_mw_per_s": 0.5,
+                "hot_standby": false,
+                "initial_state": "spinning",
+                "p_min_stable_frac": 0.35,
+                "thermal_state": "hot",
+                "hot_start_s": 300.0,
+                "warm_start_s": 360.0,
+                "cold_start_s": 600.0,
+                "gt_mode": "aero"
+              },
+              {
+                "asset_id": "gt-spin-02",
+                "rated_mw": 25.0,
+                "r_asset_mw_per_s": 0.5,
+                "hot_standby": false,
+                "initial_state": "spinning",
+                "p_min_stable_frac": 0.35,
+                "thermal_state": "hot",
+                "hot_start_s": 300.0,
+                "warm_start_s": 360.0,
+                "cold_start_s": 600.0,
+                "gt_mode": "aero"
+              },
+              {
+                "asset_id": "gt-hot-01",
+                "rated_mw": 25.0,
+                "r_asset_mw_per_s": 0.5,
+                "hot_standby": true,
+                "p_min_stable_frac": 0.35,
+                "thermal_state": "hot",
+                "hot_start_s": 300.0,
+                "warm_start_s": 360.0,
+                "cold_start_s": 600.0,
+                "gt_mode": "aero"
+              },
+              {
+                "asset_id": "gt-hot-02",
+                "rated_mw": 25.0,
+                "r_asset_mw_per_s": 0.5,
+                "hot_standby": true,
+                "p_min_stable_frac": 0.35,
+                "thermal_state": "hot",
+                "hot_start_s": 300.0,
+                "warm_start_s": 360.0,
+                "cold_start_s": 600.0,
+                "gt_mode": "aero"
+              }
+            ],
+            "bess_units": [
+              {
+                "asset_id": "bess-0",
+                "rated_mw": 30.0,
+                "usable_mwh": 60.0,
+                "initial_soc_fraction": 0.95,
+                "grid_forming": true,
+                "p_anchor_reserve_mw": 1.0,
+                "authority_tier": "autonomous"
+              }
+            ],
+            "diesel_power_block": {
+              "enabled": true,
+              "target_capacity_mw": 20.0,
+              "unit_rating_mw": 20.0,
+              "p_start": 1.0,
+              "target_reliability": 1.0,
+              "f_block": 1.0,
+              "delta_t_start_s": 10.0,
+              "residual_ramp_s": 60.0,
+              "start_stagger_interval_s": 1.0,
+              "authority_tier": "advisory_only"
+            },
+            "turbine_commitment_mode": "informed",
+            "study_class": "addendum_h"
+          },
+          "seed": null,
+          "duration_seconds": 86400.0,
+          "tick_seconds": 5.0,
+          "engine_commit": "phase2c-comparison",
+          "harness_commit": "phase2c-comparison"
+        },
+        "identity_digest": "f0e1a512bae46769c27ab5d7826ebccaebb7ab10236a62c090b10ae68fe4c4dc",
+        "measured_start_event_count": 14,
+        "measured_start_events": [
+          {
+            "sim_time_s": 25415.0,
+            "unit_id": "gt-hot-01",
+            "tier_fuel_mmbtu": 8.0,
+            "charged": true
+          },
+          {
+            "sim_time_s": 28755.0,
+            "unit_id": "gt-hot-02",
+            "tier_fuel_mmbtu": 8.0,
+            "charged": true
+          },
+          {
+            "sim_time_s": 28760.0,
+            "unit_id": "gt-spin-02",
+            "tier_fuel_mmbtu": 8.0,
+            "charged": true
+          },
+          {
+            "sim_time_s": 35955.0,
+            "unit_id": "gt-spin-02",
+            "tier_fuel_mmbtu": 12.0,
+            "charged": true
+          },
+          {
+            "sim_time_s": 35960.0,
+            "unit_id": "gt-hot-02",
+            "tier_fuel_mmbtu": 12.0,
+            "charged": true
+          },
+          {
+            "sim_time_s": 43155.0,
+            "unit_id": "gt-spin-02",
+            "tier_fuel_mmbtu": 12.0,
+            "charged": true
+          },
+          {
+            "sim_time_s": 43160.0,
+            "unit_id": "gt-hot-02",
+            "tier_fuel_mmbtu": 12.0,
+            "charged": true
+          },
+          {
+            "sim_time_s": 49450.0,
+            "unit_id": "gt-spin-02",
+            "tier_fuel_mmbtu": 12.0,
+            "charged": true
+          },
+          {
+            "sim_time_s": 50385.0,
+            "unit_id": "gt-hot-01",
+            "tier_fuel_mmbtu": 8.0,
+            "charged": true
+          },
+          {
+            "sim_time_s": 50390.0,
+            "unit_id": "gt-hot-02",
+            "tier_fuel_mmbtu": 12.0,
+            "charged": true
+          },
+          {
+            "sim_time_s": 57555.0,
+            "unit_id": "gt-hot-01",
+            "tier_fuel_mmbtu": 12.0,
+            "charged": true
+          },
+          {
+            "sim_time_s": 57560.0,
+            "unit_id": "gt-hot-02",
+            "tier_fuel_mmbtu": 12.0,
+            "charged": true
+          },
+          {
+            "sim_time_s": 64755.0,
+            "unit_id": "gt-hot-01",
+            "tier_fuel_mmbtu": 12.0,
+            "charged": true
+          },
+          {
+            "sim_time_s": 64760.0,
+            "unit_id": "gt-hot-02",
+            "tier_fuel_mmbtu": 12.0,
+            "charged": true
+          }
+        ]
+      }
+    },
+    "B1_H2_prefix_equal": false,
+    "suite": {
+      "status": "NOT RUN after B1 stop",
+      "passed": null,
+      "failed": null,
+      "added": null,
+      "removed": null
+    }
+  }
 }

@@ -1519,11 +1519,9 @@ class RunContext:
                         unit_id, self.sim_time, self.run_id,
                     )
                 elif action == "start":
-                    # DR D2 / IMPL-ISL-5: explicit operator commands retain
-                    # their target; eligibility is not independently reimplemented.
-                    eligible, _ = turbine.start_eligibility(self.sim_time)
+                    was_offline = turbine.state == _TurbineState.OFFLINE
                     turbine.command_start(self.sim_time)
-                    accepted = eligible and turbine.state == _TurbineState.STARTING
+                    accepted = was_offline and turbine.state == _TurbineState.STARTING
                     if not accepted:
                         refusal_reason = (
                             "start refused: unit is not offline or minimum down time "
