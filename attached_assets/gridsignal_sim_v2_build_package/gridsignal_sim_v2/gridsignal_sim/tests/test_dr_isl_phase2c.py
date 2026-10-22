@@ -51,6 +51,9 @@ def test_tc_isl_18_floor_warning_is_diagnostic_only(start_s, expected_count, cap
     bess = ctx.sim_state.bess_units[0]
     arbitrator = ctx.sim_state.arbitrator
     expected_floor = 2.5 * 30.0 * (start_s + 60.0) / 3600.0
+    # DR D2-r/C2(c), approved TC-ISL-18 update: retain all three reserve terms.
+    basis = arbitrator.reserve_floor_basis[bess.config.asset_id]
+    expected_floor = max(expected_floor, basis["depth_reserve_mwh"], basis["d2r_term_mwh"])
     assert arbitrator.soc_floor_mwh(bess) == pytest.approx(expected_floor)
     warnings = ctx.metadata["build_warnings"]
     assert len(warnings) == expected_count
