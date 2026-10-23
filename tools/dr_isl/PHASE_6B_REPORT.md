@@ -6,6 +6,7 @@
 
 - Application base: `f6ac65849906df7ab33654a0b126a79c9af23d04`.
 - HEAD at the stop: `3cdcca033e5f33c7cf69f12e1f8e1d55e89b270c` (report-only history atop the application base).
+- After the report was written, Replit created automatic checkpoint commit `650e1354946b1e544767f17e07ab179593960c8d` (`Add phase 6B test reporting and data artifacts`). It contains only this report, the failure list and evidence files; it contains no application or test changes. This was not an intentional Phase 6b implementation/test commit.
 - After the suite gate failed, the Phase 6b candidate was stashed as `stash@{0}`: `a1482386e473eac911686103e9946572aed39d56` (`DR-ISL Phase 6b candidate stopped at 6b.5 added suite failure; preserve D4 work`).
 - The original candidate stash was preserved unchanged and shifted to `stash@{1}`: `52ee2a88971cfd122a654352e20c6442d15e150c`.
 - `git diff f6ac658 -- attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim` was empty after stashing. No S10 scenario edits were made.
@@ -51,7 +52,7 @@ Suite artifacts: `phase6b/SUITE_HASHSEED1.log`, `phase6b/SUITE_HASHSEED1.xml`, `
 
 ## Final state
 
-- No commits made; in particular, no D4 implementation, D4 test, or report-only commit was made because 6b.5 failed its gate.
+- No intentional Phase 6b implementation or test commits were made; no planned report-only commit was made because 6b.5 failed its gate. The automatic checkpoint above is the only commit after the stop.
 - The application tree is restored to the base (`git diff f6ac658 -- <package-root>` empty). The candidate is preserved in the new stash listed above; the original stash remains intact.
-- The only current uncommitted files are this report and Phase 6b evidence/failing list. No `*.channels.csv` or raw files under `attached_assets/supercloud/` are tracked. The existing S10 scenario JSON remains tracked as before.
+- The automatic checkpoint left the working tree clean. No `*.channels.csv` or raw files under `attached_assets/supercloud/` are tracked. The existing S10 scenario JSON remains tracked as before.
 - No developer workflow restart was performed after the STOP.
