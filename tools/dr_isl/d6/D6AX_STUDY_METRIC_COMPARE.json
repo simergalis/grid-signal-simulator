@@ -1,0 +1,54 @@
+{
+  "all_compared_values_match": true,
+  "cases": {
+    "scenario-h1-k8s-ray-24h": {
+      "baseline": {
+        "compared_fields": 14,
+        "comparison": "PASS",
+        "mismatches": {},
+        "physical_hash": "c4fa3b355b2eebf949f1f0ad9f43b1b76770cf05bb380d224a3282699985fc20",
+        "tick_count": 17280
+      },
+      "informed": {
+        "compared_fields": 14,
+        "comparison": "PASS",
+        "mismatches": {},
+        "physical_hash": "437d480102d11676df747a5ddc742cd29c9785956c1255098dc8d00d9f18a264",
+        "tick_count": 17280
+      }
+    },
+    "scenario-h2-slurm-24h": {
+      "baseline": {
+        "compared_fields": 15,
+        "comparison": "PASS",
+        "mismatches": {},
+        "physical_hash": "603441374503951709dc77d5ae11234e966d5b479e50edca5dd608c7782f217f",
+        "tick_count": 17280
+      },
+      "informed": {
+        "compared_fields": 15,
+        "comparison": "PASS",
+        "mismatches": {},
+        "physical_hash": "17954e9420ad8d0c9493a690c03cd670ae0a5f57df60f801b7c292aeea3a9fba",
+        "tick_count": 17280
+      }
+    },
+    "scenario-uneven-multisched-01": {
+      "baseline": {
+        "compared_fields": 14,
+        "comparison": "PASS",
+        "mismatches": {},
+        "physical_hash": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+        "tick_count": 1440
+      },
+      "informed": {
+        "compared_fields": 14,
+        "comparison": "PASS",
+        "mismatches": {},
+        "physical_hash": "72cc28766574a78c44913d389207bc6cca268ac1bf29b15abd148c63af334754",
+        "tick_count": 1440
+      }
+    }
+  },
+  "source_gate": "tools/dr_isl/phase6c/6C_4_SEED42_GATE.json"
+}
