@@ -63,12 +63,53 @@ def compare_metrics(
     informed_balance = bool(
         informed.get("energy_balance", {}).get("closure_status", False)
     )
-    baseline_valid = not bool(baseline.get("hard_violations")) and bool(
-        baseline.get("constraints_valid", True)
+    # PROPOSED_HERE: zero invalid-tick tolerance when feedback is configured.
+    # OPEN-ISL-3 rationale: an out-of-band tick means configured frequency
+    # protection did not act, so frequency-dependent results are not credible.
+    baseline_frequency_valid = (
+        not bool(baseline.get("frequency_feedback_configured", False))
+        or int(baseline.get("invalid_frequency_tick_count", 0)) == 0
     )
-    informed_valid = not bool(informed.get("hard_violations")) and bool(
-        informed.get("constraints_valid", True)
+    informed_frequency_valid = (
+        not bool(informed.get("frequency_feedback_configured", False))
+        or int(informed.get("invalid_frequency_tick_count", 0)) == 0
     )
+    baseline_valid = (
+        not bool(baseline.get("hard_violations"))
+        and bool(baseline.get("constraints_valid", True))
+        and baseline_frequency_valid
+    )
+    informed_valid = (
+        not bool(informed.get("hard_violations"))
+        and bool(informed.get("constraints_valid", True))
+        and informed_frequency_valid
+    )
+    frequency_inputs = {
+        "baseline_frequency_feedback_configured": bool(
+            baseline.get("frequency_feedback_configured", False)
+        ),
+        "baseline_protection_configured": bool(
+            baseline.get("protection_configured", True)
+        ),
+        "baseline_invalid_frequency_tick_count": int(
+            baseline.get("invalid_frequency_tick_count", 0)
+        ),
+        "baseline_invalid_frequency_fraction": float(
+            baseline.get("invalid_frequency_fraction", 0.0)
+        ),
+        "informed_frequency_feedback_configured": bool(
+            informed.get("frequency_feedback_configured", False)
+        ),
+        "informed_protection_configured": bool(
+            informed.get("protection_configured", True)
+        ),
+        "informed_invalid_frequency_tick_count": int(
+            informed.get("invalid_frequency_tick_count", 0)
+        ),
+        "informed_invalid_frequency_fraction": float(
+            informed.get("invalid_frequency_fraction", 0.0)
+        ),
+    }
     conditions = {
         AcceptanceCondition.BUILD_PARITY.value: True,
         AcceptanceCondition.BASELINE_VALID.value: baseline_valid,
@@ -95,10 +136,82 @@ def compare_metrics(
         )
         <= float(baseline.get("peak_unserved_mw", 0.0)) + 1e-9,
     }
+    condition_inputs = {
+        AcceptanceCondition.BUILD_PARITY.value: {
+            "baseline_engine_commit": baseline_engine,
+            "informed_engine_commit": informed_engine,
+            "baseline_harness_commit": baseline_harness,
+            "informed_harness_commit": informed_harness,
+        },
+        AcceptanceCondition.BASELINE_VALID.value: {
+            "baseline_constraints_valid": bool(
+                baseline.get("constraints_valid", True)
+            ),
+            "baseline_hard_violations": list(
+                baseline.get("hard_violations", [])
+            ),
+            "baseline_frequency_valid": baseline_frequency_valid,
+        },
+        AcceptanceCondition.INFORMED_VALID.value: {
+            "informed_constraints_valid": bool(
+                informed.get("constraints_valid", True)
+            ),
+            "informed_hard_violations": list(
+                informed.get("hard_violations", [])
+            ),
+            "informed_frequency_valid": informed_frequency_valid,
+        },
+        AcceptanceCondition.BASELINE_ENERGY_BALANCE.value: {
+            "baseline_energy_balance": baseline_balance,
+        },
+        AcceptanceCondition.INFORMED_ENERGY_BALANCE.value: {
+            "informed_energy_balance": informed_balance,
+        },
+        AcceptanceCondition.BASELINE_FUEL_RECONCILED.value: {
+            "baseline_fuel_reconciled": bool(
+                baseline.get("fuel_reconciled", False)
+            ),
+        },
+        AcceptanceCondition.INFORMED_FUEL_RECONCILED.value: {
+            "informed_fuel_reconciled": bool(
+                informed.get("fuel_reconciled", False)
+            ),
+        },
+        AcceptanceCondition.IDENTICAL_COMPUTE_TRACE.value: {
+            "baseline_compute_trace_sha256": baseline.get(
+                "compute_trace_sha256"
+            ),
+            "informed_compute_trace_sha256": informed.get(
+                "compute_trace_sha256"
+            ),
+        },
+        AcceptanceCondition.INFORMED_UNSERVED_ENERGY_NO_WORSE.value: {
+            "baseline_unserved_mwh": float(
+                baseline.get("unserved_mwh", 0.0)
+            ),
+            "informed_unserved_mwh": float(
+                informed.get("unserved_mwh", 0.0)
+            ),
+            "tolerance_mwh": 1e-9,
+        },
+        AcceptanceCondition.INFORMED_PEAK_UNSERVED_NO_WORSE.value: {
+            "baseline_peak_unserved_mw": float(
+                baseline.get("peak_unserved_mw", 0.0)
+            ),
+            "informed_peak_unserved_mw": float(
+                informed.get("peak_unserved_mw", 0.0)
+            ),
+            "tolerance_mw": 1e-9,
+        },
+    }
+    for inputs in condition_inputs.values():
+        inputs.update(frequency_inputs)
     return {
         "conditions": conditions,
         "condition_order": [condition.value for condition in AcceptanceCondition],
         "verdict": "PASS" if all(conditions.values()) else "FAIL",
+        "frequency_inputs": frequency_inputs,
+        "condition_inputs": condition_inputs,
         "informed_vs_baseline": {
             "baseline_unserved_mwh": float(baseline.get("unserved_mwh", 0.0)),
             "informed_unserved_mwh": float(informed.get("unserved_mwh", 0.0)),

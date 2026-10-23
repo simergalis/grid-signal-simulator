@@ -364,7 +364,13 @@ class StudyRunExecutor:
                 playback_speed=0.0,
             )
             ctx.sim_state.demand_replay_trace = demand_replay
-            collector = MetricsCollector(self.tick_seconds)
+            frequency_feedback = bool(
+                ctx.metadata.get("frequency_feedback_configured", False)
+            )
+            collector = MetricsCollector(
+                self.tick_seconds,
+                frequency_feedback_configured=frequency_feedback,
+            )
             tick_rows: list[dict[str, Any]] = []
             tick_count = int(round(duration_seconds / self.tick_seconds))
             for _ in range(tick_count):
@@ -378,6 +384,7 @@ class StudyRunExecutor:
                     progress_callback(len(tick_rows) * self.tick_seconds)
             raw_metadata = _controller_metadata(ctx)
             raw_metadata["build_warnings"] = ctx.metadata.get("build_warnings", [])
+            raw_metadata["frequency_feedback_configured"] = frequency_feedback
             if "study_input_provenance" in spec:
                 provenance = copy.deepcopy(spec["study_input_provenance"])
                 provenance["post_validation_overrides"].extend([

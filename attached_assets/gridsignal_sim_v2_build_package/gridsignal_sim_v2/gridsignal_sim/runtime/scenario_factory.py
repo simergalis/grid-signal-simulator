@@ -1946,6 +1946,10 @@ def build_run_context_from_spec(
     # DR-2026-10-20-ISLAND-COLLAPSE D9b: warn once at build, never alter the floor.
     from runtime.build_warnings import reserve_capacity_warnings, frequency_configuration_warnings
     _build_warnings = reserve_capacity_warnings(sim_state) + frequency_configuration_warnings(sim_state)
+    from core.frequency_reporting import frequency_feedback_configured
+    _frequency_feedback_configured = frequency_feedback_configured(
+        sim_state.site, sim_state.fuel_cell_module
+    )
     return RunContext(
         run_id=run_id,
         sim_state=sim_state,
@@ -1953,6 +1957,7 @@ def build_run_context_from_spec(
         # in run metadata, including build-time no-restartable-unit evidence.
         metadata={
             "build_warnings": _build_warnings,
+            "frequency_feedback_configured": _frequency_feedback_configured,
             "bess_reserve_floor_basis": sim_state.arbitrator.reserve_floor_basis,
             "bess_reserve_floor_history": sim_state.arbitrator.reserve_floor_history,
         },

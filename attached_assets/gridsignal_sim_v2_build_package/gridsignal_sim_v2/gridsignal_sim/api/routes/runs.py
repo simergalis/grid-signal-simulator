@@ -137,6 +137,10 @@ async def _load_completed_from_db(run_id: str) -> "CompletedRun | None":
             verdict=_verdict,
             tick_dicts=[],        # Not persisted — timeseries endpoint returns 410
             dropped_ticks=_v.get("dropped_ticks", 0),
+            frequency_feedback_configured=_v.get("frequency_feedback_configured"),
+            protection_configured=_v.get("protection_configured"),
+            invalid_frequency_tick_count=_v.get("invalid_frequency_tick_count"),
+            invalid_frequency_fraction=_v.get("invalid_frequency_fraction"),
             # Task #428: restore run-level EDL total persisted in verdict_json.
             # None when the key is absent (pre-#428 rows) or was null (headless).
             total_edl_dispatch_cost_usd=_v.get("total_edl_dispatch_cost_usd"),
@@ -1122,6 +1126,24 @@ async def get_energy_summary(
 
     storage_charge_mwh = discharge_mwh / RT_EFF if RT_EFF > 0 else discharge_mwh
     duration_hours     = len(completed.tick_dicts) * DT_H
+    invalid_frequency_tick_count = completed.invalid_frequency_tick_count
+    invalid_frequency_fraction = completed.invalid_frequency_fraction
+    protection_configured = completed.protection_configured
+    # Older DB-fallback runs may predate persisted frequency summaries. If their
+    # in-memory ticks exist, derive the reporting counters without affecting the run.
+    if invalid_frequency_tick_count is None and completed.tick_dicts:
+        invalid_frequency_tick_count = sum(
+            row.get("frequency_valid", True) is False
+            for row in completed.tick_dicts
+        )
+    if invalid_frequency_fraction is None and completed.tick_dicts:
+        invalid_frequency_fraction = (
+            invalid_frequency_tick_count / len(completed.tick_dicts)
+        )
+    if protection_configured is None and completed.tick_dicts:
+        protection_configured = bool(
+            completed.tick_dicts[-1].get("protection_configured", True)
+        )
 
     # ── §21.2 cost model (AB2) ────────────────────────────────────────────
     # compute_run_cost_from_completed lives in runtime/ so that api/ never
@@ -1141,6 +1163,10 @@ async def get_energy_summary(
         "grid_import_mwh":      round(grid_import_mwh,      4),
         "generation_mwh":       round(generation_mwh,       4),
         "storage_charge_mwh":   round(storage_charge_mwh,   4),
+        "frequency_feedback_configured": completed.frequency_feedback_configured,
+        "protection_configured": protection_configured,
+        "invalid_frequency_tick_count": invalid_frequency_tick_count,
+        "invalid_frequency_fraction": invalid_frequency_fraction,
         # Addendum H Phase 1: sealed turbine gas accounting.  A frame-only
         # run reports not_modelled and null fuel totals rather than zero fuel.
         "turbine_fuel_status": completed.turbine_fuel_status,

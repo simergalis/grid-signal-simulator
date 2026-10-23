@@ -1918,6 +1918,10 @@ class CompletedRun:
     verdict: VerdictResult
     tick_dicts: list[dict]   # ordered by tick_index; gap_before added by endpoint
     dropped_ticks: int
+    frequency_feedback_configured: bool | None = None
+    protection_configured: bool | None = None
+    invalid_frequency_tick_count: int | None = None
+    invalid_frequency_fraction: float | None = None
     # AB2: turbine fleet rated capacity (MW); used by energy-summary cost model.
     turbine_rated_mw: float = 0.0
     # Phase 0 (DR-2026-08-09-BALANCE): power balance gate verdict.
@@ -3566,6 +3570,20 @@ class RunManager:
                     if _commitment_controller is not None
                     else 0.0
                 )
+                _frequency_feedback_configured = bool(
+                    ctx.metadata.get("frequency_feedback_configured", False)
+                )
+                _protection_configured = (
+                    bool(tick_dicts[-1].get("protection_configured", True))
+                    if tick_dicts else True
+                )
+                _invalid_frequency_tick_count = sum(
+                    row.get("frequency_valid", True) is False for row in tick_dicts
+                )
+                _invalid_frequency_fraction = (
+                    _invalid_frequency_tick_count / len(tick_dicts)
+                    if tick_dicts else 0.0
+                )
 
                 # Amend verdict_json with total_edl_dispatch_cost_usd so that
                 # the value survives a server restart.  persist_completed_hook
@@ -3576,6 +3594,16 @@ class RunManager:
                     import json as _json_va
                     _vd = _json_va.loads(verdict_json)
                     _vd["total_edl_dispatch_cost_usd"] = _total_edl_dispatch_cost_usd
+                    _vd["frequency_feedback_configured"] = (
+                        _frequency_feedback_configured
+                    )
+                    _vd["protection_configured"] = _protection_configured
+                    _vd["invalid_frequency_tick_count"] = (
+                        _invalid_frequency_tick_count
+                    )
+                    _vd["invalid_frequency_fraction"] = (
+                        _invalid_frequency_fraction
+                    )
                     _vd["turbine_commitment_logs"] = (
                         [
                             record.as_dict()
@@ -3628,6 +3656,10 @@ class RunManager:
                     ),
                     tick_dicts=tick_dicts,
                     dropped_ticks=dropped,
+                    frequency_feedback_configured=_frequency_feedback_configured,
+                    protection_configured=_protection_configured,
+                    invalid_frequency_tick_count=_invalid_frequency_tick_count,
+                    invalid_frequency_fraction=_invalid_frequency_fraction,
                     turbine_rated_mw=ctx.turbine_rated_mw,
                     balance_gate=_balance_gate,
                     balance_independent=_balance_independent,

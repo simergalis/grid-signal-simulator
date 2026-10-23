@@ -587,15 +587,27 @@ class StudyService:
             "commitment": {"commitment": record.get("commitment")},
             "forecast": {"forecast": record.get("forecast")},
             "energy": {
-                key: record.get(key)
-                for key in (
+                **{
+                    key: record.get(key)
+                    for key in (
                     "served_mwh",
                     "unserved_mwh",
                     "peak_unserved_mw",
                     "energy_balance",
                     "dispatch_curtailment_mwh",
-                )
-                if key in record
+                    )
+                    if key in record
+                },
+                "frequency_feedback_configured": record.get(
+                    "frequency_feedback_configured"
+                ),
+                "protection_configured": record.get("protection_configured"),
+                "invalid_frequency_tick_count": record.get(
+                    "invalid_frequency_tick_count"
+                ),
+                "invalid_frequency_fraction": record.get(
+                    "invalid_frequency_fraction"
+                ),
             },
             "daily": {
                 "daily_breakdown": list_page(
@@ -774,6 +786,30 @@ class StudyService:
             "informed_peak_unserved_mw": float(
                 informed.get("peak_unserved_mw", 0.0)
             ),
+            "baseline_frequency_feedback_configured": bool(
+                baseline.get("frequency_feedback_configured", False)
+            ),
+            "baseline_protection_configured": bool(
+                baseline.get("protection_configured", True)
+            ),
+            "baseline_invalid_frequency_tick_count": int(
+                baseline.get("invalid_frequency_tick_count", 0)
+            ),
+            "baseline_invalid_frequency_fraction": float(
+                baseline.get("invalid_frequency_fraction", 0.0)
+            ),
+            "informed_frequency_feedback_configured": bool(
+                informed.get("frequency_feedback_configured", False)
+            ),
+            "informed_protection_configured": bool(
+                informed.get("protection_configured", True)
+            ),
+            "informed_invalid_frequency_tick_count": int(
+                informed.get("invalid_frequency_tick_count", 0)
+            ),
+            "informed_invalid_frequency_fraction": float(
+                informed.get("invalid_frequency_fraction", 0.0)
+            ),
         }
         for name in comparison["condition_order"]:
             conditions.append(
@@ -802,6 +838,7 @@ class StudyService:
             "verdict": comparison["verdict"],
             "conditions": list_page(conditions, page_size=MAX_PAGE_SIZE),
             "numeric_inputs": numeric_inputs,
+            "frequency_inputs": comparison.get("frequency_inputs", {}),
         }
         if baseline_study_class == STUDY_CLASS_BASE_DEMO:
             payload["claim_note"] = "demonstration scenario; not an Addendum H study result"

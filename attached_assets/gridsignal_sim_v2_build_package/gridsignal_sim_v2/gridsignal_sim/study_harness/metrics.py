@@ -19,9 +19,9 @@ from .errors import (
     StartFuelReconciliationError,
 )
 
-# PROPOSED_HERE: cache identity revision for three additive D3 reporting metrics;
-# not a physics, guard or acceptance-condition revision.
-FREQUENCY_REPORTING_METRICS_VERSION = 1
+# PROPOSED_HERE: cache identity revision for OPEN-ISL-3's additive feedback
+# metric and frequency-validity inputs; not a physics or guard revision.
+FREQUENCY_REPORTING_METRICS_VERSION = 2
 
 
 FUEL_COMPONENTS = (
@@ -176,6 +176,7 @@ class MetricsCollector:
     """Streaming state holder; all study arithmetic remains in this module."""
 
     tick_seconds: float = TICK_SECONDS_DEFAULT
+    frequency_feedback_configured: bool = False
 
     def __post_init__(self) -> None:
         self.tick_count = 0
@@ -498,6 +499,7 @@ class MetricsCollector:
             "invalid_frequency_fraction": (
                 self.invalid_frequency_tick_count / self.tick_count if self.tick_count else 0.0
             ),
+            "frequency_feedback_configured": self.frequency_feedback_configured,
             "protection_configured": self.protection_configured,
             "interval_seconds": self.tick_seconds,
             "fuel_by_component_mmbtu": {
@@ -671,8 +673,12 @@ def collect_metrics(
     commitment_log: Iterable[Mapping[str, Any]] | None = None,
     tick_seconds: float = TICK_SECONDS_DEFAULT,
     minimum_down_seconds_by_unit: Mapping[str, float] | None = None,
+    frequency_feedback_configured: bool = False,
 ) -> dict[str, Any]:
-    collector = MetricsCollector(tick_seconds=float(tick_seconds))
+    collector = MetricsCollector(
+        tick_seconds=float(tick_seconds),
+        frequency_feedback_configured=bool(frequency_feedback_configured),
+    )
     for tick in ticks:
         collector.add(tick)
     result = collector.finalize(
