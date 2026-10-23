@@ -1,0 +1,662 @@
+{
+  "catalogue": [
+    {
+      "display_name": "40 demo-pms-shortfall",
+      "frequency_feedback_configured": false,
+      "scenario_id": "demo-pms-shortfall",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "41 demo-pms",
+      "frequency_feedback_configured": false,
+      "scenario_id": "demo-pms",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "42 demo-prestage",
+      "frequency_feedback_configured": false,
+      "scenario_id": "demo-prestage",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "43 demo-20mw",
+      "frequency_feedback_configured": false,
+      "scenario_id": "demo-20mw",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "44 demo-forecast-quality",
+      "frequency_feedback_configured": false,
+      "scenario_id": "demo-forecast-quality",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "45 demo-advisory-agents",
+      "frequency_feedback_configured": false,
+      "scenario_id": "demo-advisory-agents",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "46 demo-alert",
+      "frequency_feedback_configured": false,
+      "scenario_id": "demo-alert",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "47 demo-5mw",
+      "frequency_feedback_configured": false,
+      "scenario_id": "demo-5mw",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "48 demo-baseline",
+      "frequency_feedback_configured": false,
+      "scenario_id": "demo-baseline",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "49 demo-3turbine",
+      "frequency_feedback_configured": false,
+      "scenario_id": "demo-3turbine",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "50 demo-fleet",
+      "frequency_feedback_configured": false,
+      "scenario_id": "demo-fleet",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "51 demo-tc33-compute",
+      "frequency_feedback_configured": false,
+      "scenario_id": "demo-tc33-compute",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "52 demo-tc33-renewable",
+      "frequency_feedback_configured": false,
+      "scenario_id": "demo-tc33-renewable",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "53 demo-solar-peak",
+      "frequency_feedback_configured": false,
+      "scenario_id": "demo-solar-peak",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "21 scenario-kube-peak-overage",
+      "frequency_feedback_configured": false,
+      "scenario_id": "scenario-kube-peak-overage",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "11 demo-operator-trip",
+      "frequency_feedback_configured": false,
+      "scenario_id": "demo-operator-trip",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "12 islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs",
+      "frequency_feedback_configured": false,
+      "scenario_id": "islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "54 test-fc-dispatch",
+      "frequency_feedback_configured": false,
+      "scenario_id": "test-fc-dispatch",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "55 grid-resonance-stress",
+      "frequency_feedback_configured": false,
+      "scenario_id": "grid-resonance-stress",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "02 Regression test \u2014 Healthy training baseline",
+      "frequency_feedback_configured": false,
+      "scenario_id": "regression-test-healthy-training-baseline",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "03 Regression test \u2014 Checkpoint storage hotspot",
+      "frequency_feedback_configured": false,
+      "scenario_id": "regression-test-checkpoint-storage-hotspot",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "04 Regression test \u2014 Clean job termination",
+      "frequency_feedback_configured": false,
+      "scenario_id": "regression-test-clean-job-termination",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "05 Regression test \u2014 Control-path latency isolation",
+      "frequency_feedback_configured": false,
+      "scenario_id": "regression-test-control-path-latency-isolation",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "06 Regression test \u2014 Gray link failure",
+      "frequency_feedback_configured": false,
+      "scenario_id": "regression-test-gray-link-failure",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "07 Regression test \u2014 Degraded fabric observability",
+      "frequency_feedback_configured": false,
+      "scenario_id": "regression-test-degraded-fabric-observability",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "08 Regression test \u2014 Slow checkpoint",
+      "frequency_feedback_configured": false,
+      "scenario_id": "regression-test-slow-checkpoint",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "09 Regression test \u2014 Transceiver degradation",
+      "frequency_feedback_configured": false,
+      "scenario_id": "regression-test-transceiver-degradation",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "10 Islanded 8-60-10 MW ramp - sequential commitment and release",
+      "frequency_feedback_configured": false,
+      "scenario_id": "demo-islanded-ramp",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "13 10-Tenant Random GPU Load \u2014 3 h",
+      "frequency_feedback_configured": false,
+      "scenario_id": "demo-10-tenant-random-gpu",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "14 10-Tenant Full-Ceiling GPU Load \u2014 3 h (tight headroom)",
+      "frequency_feedback_configured": false,
+      "scenario_id": "demo-10-tenant-full-ceiling",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "15 Shaped Load \u2014 5%\u219240%\u2192120%\u219240%\u219220% (90 min)",
+      "frequency_feedback_configured": false,
+      "scenario_id": "demo-10-tenant-overload-120pct",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "16 Grid \u00b7 Fuel Cell \u00b7 BESS \u2014 Shaped Load 5%\u219240%\u2192120%\u219240%\u219220% (90 min)",
+      "frequency_feedback_configured": false,
+      "scenario_id": "demo-grid-fc-bess-shaped-load",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "17 20-Tenant Contract Breach \u2014 T01 Spikes to ~150 % of 1 MW Ceiling at t=5 min",
+      "frequency_feedback_configured": false,
+      "scenario_id": "demo-20-tenant-contract-breach",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "18 Turbine, Fuel Cell, BESS \u2014 20 Tenants \u2014 1 Tenant Exceeds Capacity",
+      "frequency_feedback_configured": false,
+      "scenario_id": "demo-turbine-fc-bess-20-tenants-overage",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "19 Islanded 8-60-10 MW ramp - sequential commitment and release",
+      "frequency_feedback_configured": false,
+      "scenario_id": "islanded-8-60-10-ramp",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "20 BESS \u00b7 Fuel Cell \u00b7 Grid \u2014 Peak Stress 80%\u2192120%\u219260% (60 min)",
+      "frequency_feedback_configured": false,
+      "scenario_id": "demo-fc-bess-grid-peak",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "22 Rolling Planning \u2014 Three Forecast Peaks",
+      "frequency_feedback_configured": false,
+      "scenario_id": "demo-rolling-planning-peaks",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "23 Customer Scenario - scenario-equinix-sj-1",
+      "frequency_feedback_configured": false,
+      "scenario_id": "scenario-equinix-sj-1",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "24 Kubernetes Scheduler - Resource Queue Demo",
+      "frequency_feedback_configured": false,
+      "scenario_id": "scenario-kubernetes-scheduler-demo",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "25 Customer Scenario - scenario-equinix-sj-2-24h",
+      "frequency_feedback_configured": false,
+      "scenario_id": "scenario-equinix-sj-2-24h",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "26 Customer Scenario - scenario-turbine-01",
+      "frequency_feedback_configured": false,
+      "scenario_id": "scenario-turbine-01",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "01 Turbine Scenario with Kubernetes Slurm Ray",
+      "frequency_feedback_configured": false,
+      "scenario_id": "scenario-uneven-multisched-01",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "Addendum H-1 Kubernetes + Ray reference \u2014 24h",
+      "frequency_feedback_configured": false,
+      "scenario_id": "scenario-h1-k8s-ray-24h",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "Addendum H-1 Kubernetes + Ray reference \u2014 7d",
+      "frequency_feedback_configured": false,
+      "scenario_id": "scenario-h1-k8s-ray-7d",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "Addendum H-2 Slurm fixed-allocation reference \u2014 24h",
+      "frequency_feedback_configured": false,
+      "scenario_id": "scenario-h2-slurm-24h",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "Addendum H-2 Slurm fixed-allocation reference \u2014 7d",
+      "frequency_feedback_configured": false,
+      "scenario_id": "scenario-h2-slurm-7d",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "27 100 MW Fuel Cell Data Center \u2014 BESS + N+1 Diesel Backup",
+      "frequency_feedback_configured": false,
+      "scenario_id": "scenario-100mw-fuel-cell-bess-diesel",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "28 FC100 Islanded Readiness Reference",
+      "frequency_feedback_configured": true,
+      "scenario_id": "scenario-fc100-islanded-v2",
+      "trigger_paths": [
+        "fuel_cell_ride_through"
+      ]
+    },
+    {
+      "display_name": "29 FC100 Islanded Zero-Hot-Standby Reference",
+      "frequency_feedback_configured": true,
+      "scenario_id": "scenario-fc100-islanded-zero-hot-v2",
+      "trigger_paths": [
+        "fuel_cell_ride_through"
+      ]
+    },
+    {
+      "display_name": "30 Lead-time collection \u2014 enterprise 8-GPU air \u2014 training",
+      "frequency_feedback_configured": false,
+      "scenario_id": "lead-time-enterprise-8gpu-air-training",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "31 Lead-time collection \u2014 enterprise 8-GPU air \u2014 inference",
+      "frequency_feedback_configured": false,
+      "scenario_id": "lead-time-enterprise-8gpu-air-inference",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "32 Lead-time collection \u2014 H100 SXM5 8-way NVL4 \u2014 training",
+      "frequency_feedback_configured": false,
+      "scenario_id": "lead-time-h100-sxm5-8way-nvl4-training",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "33 Lead-time collection \u2014 H100 SXM5 8-way NVL4 \u2014 inference",
+      "frequency_feedback_configured": false,
+      "scenario_id": "lead-time-h100-sxm5-8way-nvl4-inference",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "34 Lead-time collection \u2014 GB200 NVL72 liquid \u2014 training",
+      "frequency_feedback_configured": false,
+      "scenario_id": "lead-time-nextgen-rack-liquid-training",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "35 Lead-time collection \u2014 GB200 NVL72 liquid \u2014 inference",
+      "frequency_feedback_configured": false,
+      "scenario_id": "lead-time-nextgen-rack-liquid-inference",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "36 Addendum H \u2014 lead-time profile validation",
+      "frequency_feedback_configured": false,
+      "scenario_id": "addendum-h-lead-time-profile-validation",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "S10_mit_supercloud_2021-08-11",
+      "frequency_feedback_configured": false,
+      "scenario_id": "S10_mit_supercloud_2021-08-11",
+      "trigger_paths": []
+    },
+    {
+      "display_name": "56 Islanded FC + BESS + Diesel \u2014 Slurm GPU Peaks (90 min)",
+      "frequency_feedback_configured": true,
+      "scenario_id": "islanded-fc-bess-diesel-slurm-gpu-peaks",
+      "trigger_paths": [
+        "fuel_cell_ride_through"
+      ]
+    }
+  ],
+  "scenario_directory": [
+    {
+      "build": "ok",
+      "file": "config/scenarios/S10_mit_supercloud_2021-08-11.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "S10_mit_supercloud_2021-08-11",
+      "trigger_paths": []
+    },
+    {
+      "build": "unavailable",
+      "error": "ValidationError: 4 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...subsequent comparison.'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'phase_exists' found using 'check' does n",
+      "file": "config/scenarios/S1_baseline_training.json"
+    },
+    {
+      "build": "unavailable",
+      "error": "ValidationError: 6 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...torage hardware fault.\"}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'phase_exists' found using 'check' does n",
+      "file": "config/scenarios/S2_checkpoint_hotspot.json"
+    },
+    {
+      "build": "unavailable",
+      "error": "ValidationError: 4 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...ant operational check.\"}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'phase_exists' found using 'check' does n",
+      "file": "config/scenarios/S3_job_end_withholds.json"
+    },
+    {
+      "build": "unavailable",
+      "error": "ValidationError: 6 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...response matters most.\"}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'control_breach_exists' found using 'chec",
+      "file": "config/scenarios/S4_control_path_nfr2_breach.json"
+    },
+    {
+      "build": "unavailable",
+      "error": "ValidationError: 2 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...operational safeguard.\"}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'gray_loss_elevated' found using 'check' ",
+      "file": "config/scenarios/S5_gray_failure.json"
+    },
+    {
+      "build": "unavailable",
+      "error": "ValidationError: 4 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...ch require an upgrade.'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'capability_tier_assertion' found using '",
+      "file": "config/scenarios/S6_baseline_tier_degradation.json"
+    },
+    {
+      "build": "unavailable",
+      "error": "ValidationError: 4 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...ontier model training.'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'phase_exists' found using 'check' does n",
+      "file": "config/scenarios/S7_slow_checkpoint.json"
+    },
+    {
+      "build": "unavailable",
+      "error": "ValidationError: 2 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...ed unexpected results.'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'crc_errors_present' found using 'check' ",
+      "file": "config/scenarios/S8_transceiver_degrade.json"
+    },
+    {
+      "build": "unavailable",
+      "error": "ValidationError: 10 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'_comment': 'Regression ...000.0, 'ramp_s': 60.0}]}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nworkload_events.0.event_type\n  Field required [type=missing, inpu",
+      "file": "config/scenarios/S9_islanded_ramp_protection.json"
+    },
+    {
+      "build": "unavailable",
+      "error": "ValidationError: 1 validation error for ScenarioSpec\nworkload_events.2.workload_class\n  Input should be 'training', 'inference' or 'other' [type=literal_error, input_value='checkpointing', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/literal_error",
+      "file": "config/scenarios/addendum-h-cav-1-workload-class-validation.json"
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/addendum-h-lead-time-profile-validation.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "36 Addendum H \u2014 lead-time profile validation",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/demo-10-tenant-full-ceiling.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "14 10-Tenant Full-Ceiling GPU Load \u2014 3 h (tight headroom)",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/demo-10-tenant-overload-120pct.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "15 Shaped Load \u2014 5%\u219240%\u2192120%\u219240%\u219220% (90 min)",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/demo-10-tenant-random-gpu.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "13 10-Tenant Random GPU Load \u2014 3 h",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/demo-20-tenant-contract-breach.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "17 20-Tenant Contract Breach \u2014 T01 Spikes to ~150 % of 1 MW Ceiling at t=5 min",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/demo-fc-bess-grid-peak.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "20 BESS \u00b7 Fuel Cell \u00b7 Grid \u2014 Peak Stress 80%\u2192120%\u219260% (60 min)",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/demo-grid-fc-bess-shaped-load.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "16 Grid \u00b7 Fuel Cell \u00b7 BESS \u2014 Shaped Load 5%\u219240%\u2192120%\u219240%\u219220% (90 min)",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/demo-islanded-ramp.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "10 Islanded 8-60-10 MW ramp - sequential commitment and release",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/demo-operator-trip.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "11 demo-operator-trip",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/demo-rolling-planning-peaks.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "22 Rolling Planning \u2014 Three Forecast Peaks",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/demo-turbine-fc-bess-20-tenants-overage.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "18 Turbine, Fuel Cell, BESS \u2014 20 Tenants \u2014 1 Tenant Exceeds Capacity",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/islanded-8-60-10-ramp.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "19 Islanded 8-60-10 MW ramp - sequential commitment and release",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "12 islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/lead-time-enterprise-8gpu-air-inference.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "31 Lead-time collection \u2014 enterprise 8-GPU air \u2014 inference",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/lead-time-enterprise-8gpu-air-training.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "30 Lead-time collection \u2014 enterprise 8-GPU air \u2014 training",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/lead-time-h100-sxm5-8way-nvl4-inference.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "33 Lead-time collection \u2014 H100 SXM5 8-way NVL4 \u2014 inference",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/lead-time-h100-sxm5-8way-nvl4-training.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "32 Lead-time collection \u2014 H100 SXM5 8-way NVL4 \u2014 training",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/lead-time-nextgen-rack-liquid-inference.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "35 Lead-time collection \u2014 GB200 NVL72 liquid \u2014 inference",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/lead-time-nextgen-rack-liquid-training.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "34 Lead-time collection \u2014 GB200 NVL72 liquid \u2014 training",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/scenario-100mw-fuel-cell-bess-diesel.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "27 100 MW Fuel Cell Data Center \u2014 BESS + N+1 Diesel Backup",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/scenario-equinix-sj-1.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "23 scenario-equinix-sj-1",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/scenario-equinix-sj-2-24h.json.gz.b64",
+      "frequency_feedback_configured": false,
+      "scenario_name": "Customer Scenario - scenario-equinix-sj-2-24h",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/scenario-equinox-sj-1.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "39 scenario-equinix-sj-1",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/scenario-fc100-islanded-v2.json",
+      "frequency_feedback_configured": true,
+      "scenario_name": "28 FC100 Islanded Readiness Reference",
+      "trigger_paths": [
+        "fuel_cell_ride_through"
+      ]
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/scenario-fc100-islanded-zero-hot-v2.json",
+      "frequency_feedback_configured": true,
+      "scenario_name": "29 FC100 Islanded Zero-Hot-Standby Reference",
+      "trigger_paths": [
+        "fuel_cell_ride_through"
+      ]
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/scenario-h1-k8s-ray-24h.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "Addendum H-1 Kubernetes + Ray reference \u2014 24h",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/scenario-h1-k8s-ray-7d.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "Addendum H-1 Kubernetes + Ray reference \u2014 7d",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/scenario-h2-slurm-24h.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "Addendum H-2 Slurm fixed-allocation reference \u2014 24h",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/scenario-h2-slurm-7d.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "Addendum H-2 Slurm fixed-allocation reference \u2014 7d",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/scenario-hybrid-ai-100mw-addendum-i.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "38 100MW Hybrid AI Data Center \u2014 Addendum I Combined Load",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/scenario-kube-peak-overage.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "21 scenario-kube-peak-overage",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/scenario-kubernetes-scheduler-demo.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "24 Kubernetes Scheduler - Resource Queue Demo",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/scenario-turbine-01.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "26 scenario-turbine-01",
+      "trigger_paths": []
+    },
+    {
+      "build": "ok",
+      "file": "config/scenarios/scenario-uneven-multisched-01.json",
+      "frequency_feedback_configured": false,
+      "scenario_name": "01 Turbine Scenario with Kubernetes Slurm Ray",
+      "trigger_paths": []
+    }
+  ],
+  "scenario_directory_file_count": 45,
+  "seeded_catalogue_count": 58,
+  "source_commit": "5fbf357 scenario catalogue; frequency-feedback classification from the Phase 5b candidate"
+}

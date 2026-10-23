@@ -1,0 +1,1310 @@
+{
+  "base_commit": "5fbf357",
+  "catalogue_inventory": {
+    "directory_entries": [
+      {
+        "build": "ok",
+        "file": "config/scenarios/S10_mit_supercloud_2021-08-11.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "S10_mit_supercloud_2021-08-11",
+        "trigger_paths": []
+      },
+      {
+        "build": "unavailable",
+        "error": "ValidationError: 4 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...subsequent comparison.'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'phase_exists' found using 'check' does n",
+        "file": "config/scenarios/S1_baseline_training.json"
+      },
+      {
+        "build": "unavailable",
+        "error": "ValidationError: 6 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...torage hardware fault.\"}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'phase_exists' found using 'check' does n",
+        "file": "config/scenarios/S2_checkpoint_hotspot.json"
+      },
+      {
+        "build": "unavailable",
+        "error": "ValidationError: 4 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...ant operational check.\"}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'phase_exists' found using 'check' does n",
+        "file": "config/scenarios/S3_job_end_withholds.json"
+      },
+      {
+        "build": "unavailable",
+        "error": "ValidationError: 6 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...response matters most.\"}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'control_breach_exists' found using 'chec",
+        "file": "config/scenarios/S4_control_path_nfr2_breach.json"
+      },
+      {
+        "build": "unavailable",
+        "error": "ValidationError: 2 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...operational safeguard.\"}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'gray_loss_elevated' found using 'check' ",
+        "file": "config/scenarios/S5_gray_failure.json"
+      },
+      {
+        "build": "unavailable",
+        "error": "ValidationError: 4 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...ch require an upgrade.'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'capability_tier_assertion' found using '",
+        "file": "config/scenarios/S6_baseline_tier_degradation.json"
+      },
+      {
+        "build": "unavailable",
+        "error": "ValidationError: 4 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...ontier model training.'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'phase_exists' found using 'check' does n",
+        "file": "config/scenarios/S7_slow_checkpoint.json"
+      },
+      {
+        "build": "unavailable",
+        "error": "ValidationError: 2 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...ed unexpected results.'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'crc_errors_present' found using 'check' ",
+        "file": "config/scenarios/S8_transceiver_degrade.json"
+      },
+      {
+        "build": "unavailable",
+        "error": "ValidationError: 10 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'_comment': 'Regression ...000.0, 'ramp_s': 60.0}]}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nworkload_events.0.event_type\n  Field required [type=missing, inpu",
+        "file": "config/scenarios/S9_islanded_ramp_protection.json"
+      },
+      {
+        "build": "unavailable",
+        "error": "ValidationError: 1 validation error for ScenarioSpec\nworkload_events.2.workload_class\n  Input should be 'training', 'inference' or 'other' [type=literal_error, input_value='checkpointing', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/literal_error",
+        "file": "config/scenarios/addendum-h-cav-1-workload-class-validation.json"
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/addendum-h-lead-time-profile-validation.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "36 Addendum H \u2014 lead-time profile validation",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/demo-10-tenant-full-ceiling.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "14 10-Tenant Full-Ceiling GPU Load \u2014 3 h (tight headroom)",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/demo-10-tenant-overload-120pct.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "15 Shaped Load \u2014 5%\u219240%\u2192120%\u219240%\u219220% (90 min)",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/demo-10-tenant-random-gpu.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "13 10-Tenant Random GPU Load \u2014 3 h",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/demo-20-tenant-contract-breach.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "17 20-Tenant Contract Breach \u2014 T01 Spikes to ~150 % of 1 MW Ceiling at t=5 min",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/demo-fc-bess-grid-peak.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "20 BESS \u00b7 Fuel Cell \u00b7 Grid \u2014 Peak Stress 80%\u2192120%\u219260% (60 min)",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/demo-grid-fc-bess-shaped-load.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "16 Grid \u00b7 Fuel Cell \u00b7 BESS \u2014 Shaped Load 5%\u219240%\u2192120%\u219240%\u219220% (90 min)",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/demo-islanded-ramp.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "10 Islanded 8-60-10 MW ramp - sequential commitment and release",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/demo-operator-trip.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "11 demo-operator-trip",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/demo-rolling-planning-peaks.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "22 Rolling Planning \u2014 Three Forecast Peaks",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/demo-turbine-fc-bess-20-tenants-overage.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "18 Turbine, Fuel Cell, BESS \u2014 20 Tenants \u2014 1 Tenant Exceeds Capacity",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/islanded-8-60-10-ramp.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "19 Islanded 8-60-10 MW ramp - sequential commitment and release",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "12 islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/lead-time-enterprise-8gpu-air-inference.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "31 Lead-time collection \u2014 enterprise 8-GPU air \u2014 inference",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/lead-time-enterprise-8gpu-air-training.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "30 Lead-time collection \u2014 enterprise 8-GPU air \u2014 training",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/lead-time-h100-sxm5-8way-nvl4-inference.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "33 Lead-time collection \u2014 H100 SXM5 8-way NVL4 \u2014 inference",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/lead-time-h100-sxm5-8way-nvl4-training.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "32 Lead-time collection \u2014 H100 SXM5 8-way NVL4 \u2014 training",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/lead-time-nextgen-rack-liquid-inference.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "35 Lead-time collection \u2014 GB200 NVL72 liquid \u2014 inference",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/lead-time-nextgen-rack-liquid-training.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "34 Lead-time collection \u2014 GB200 NVL72 liquid \u2014 training",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/scenario-100mw-fuel-cell-bess-diesel.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "27 100 MW Fuel Cell Data Center \u2014 BESS + N+1 Diesel Backup",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/scenario-equinix-sj-1.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "23 scenario-equinix-sj-1",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/scenario-equinix-sj-2-24h.json.gz.b64",
+        "frequency_feedback_configured": false,
+        "scenario_name": "Customer Scenario - scenario-equinix-sj-2-24h",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/scenario-equinox-sj-1.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "39 scenario-equinix-sj-1",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/scenario-fc100-islanded-v2.json",
+        "frequency_feedback_configured": true,
+        "scenario_name": "28 FC100 Islanded Readiness Reference",
+        "trigger_paths": [
+          "fuel_cell_ride_through"
+        ]
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/scenario-fc100-islanded-zero-hot-v2.json",
+        "frequency_feedback_configured": true,
+        "scenario_name": "29 FC100 Islanded Zero-Hot-Standby Reference",
+        "trigger_paths": [
+          "fuel_cell_ride_through"
+        ]
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/scenario-h1-k8s-ray-24h.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "Addendum H-1 Kubernetes + Ray reference \u2014 24h",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/scenario-h1-k8s-ray-7d.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "Addendum H-1 Kubernetes + Ray reference \u2014 7d",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/scenario-h2-slurm-24h.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "Addendum H-2 Slurm fixed-allocation reference \u2014 24h",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/scenario-h2-slurm-7d.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "Addendum H-2 Slurm fixed-allocation reference \u2014 7d",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/scenario-hybrid-ai-100mw-addendum-i.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "38 100MW Hybrid AI Data Center \u2014 Addendum I Combined Load",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/scenario-kube-peak-overage.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "21 scenario-kube-peak-overage",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/scenario-kubernetes-scheduler-demo.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "24 Kubernetes Scheduler - Resource Queue Demo",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/scenario-turbine-01.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "26 scenario-turbine-01",
+        "trigger_paths": []
+      },
+      {
+        "build": "ok",
+        "file": "config/scenarios/scenario-uneven-multisched-01.json",
+        "frequency_feedback_configured": false,
+        "scenario_name": "01 Turbine Scenario with Kubernetes Slurm Ray",
+        "trigger_paths": []
+      }
+    ],
+    "scenario_directory_file_count": 45,
+    "seeded_catalogue_count": 58,
+    "seeded_entries": [
+      {
+        "display_name": "40 demo-pms-shortfall",
+        "frequency_feedback_configured": false,
+        "scenario_id": "demo-pms-shortfall",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "41 demo-pms",
+        "frequency_feedback_configured": false,
+        "scenario_id": "demo-pms",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "42 demo-prestage",
+        "frequency_feedback_configured": false,
+        "scenario_id": "demo-prestage",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "43 demo-20mw",
+        "frequency_feedback_configured": false,
+        "scenario_id": "demo-20mw",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "44 demo-forecast-quality",
+        "frequency_feedback_configured": false,
+        "scenario_id": "demo-forecast-quality",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "45 demo-advisory-agents",
+        "frequency_feedback_configured": false,
+        "scenario_id": "demo-advisory-agents",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "46 demo-alert",
+        "frequency_feedback_configured": false,
+        "scenario_id": "demo-alert",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "47 demo-5mw",
+        "frequency_feedback_configured": false,
+        "scenario_id": "demo-5mw",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "48 demo-baseline",
+        "frequency_feedback_configured": false,
+        "scenario_id": "demo-baseline",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "49 demo-3turbine",
+        "frequency_feedback_configured": false,
+        "scenario_id": "demo-3turbine",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "50 demo-fleet",
+        "frequency_feedback_configured": false,
+        "scenario_id": "demo-fleet",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "51 demo-tc33-compute",
+        "frequency_feedback_configured": false,
+        "scenario_id": "demo-tc33-compute",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "52 demo-tc33-renewable",
+        "frequency_feedback_configured": false,
+        "scenario_id": "demo-tc33-renewable",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "53 demo-solar-peak",
+        "frequency_feedback_configured": false,
+        "scenario_id": "demo-solar-peak",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "21 scenario-kube-peak-overage",
+        "frequency_feedback_configured": false,
+        "scenario_id": "scenario-kube-peak-overage",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "11 demo-operator-trip",
+        "frequency_feedback_configured": false,
+        "scenario_id": "demo-operator-trip",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "12 islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs",
+        "frequency_feedback_configured": false,
+        "scenario_id": "islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "54 test-fc-dispatch",
+        "frequency_feedback_configured": false,
+        "scenario_id": "test-fc-dispatch",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "55 grid-resonance-stress",
+        "frequency_feedback_configured": false,
+        "scenario_id": "grid-resonance-stress",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "02 Regression test \u2014 Healthy training baseline",
+        "frequency_feedback_configured": false,
+        "scenario_id": "regression-test-healthy-training-baseline",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "03 Regression test \u2014 Checkpoint storage hotspot",
+        "frequency_feedback_configured": false,
+        "scenario_id": "regression-test-checkpoint-storage-hotspot",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "04 Regression test \u2014 Clean job termination",
+        "frequency_feedback_configured": false,
+        "scenario_id": "regression-test-clean-job-termination",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "05 Regression test \u2014 Control-path latency isolation",
+        "frequency_feedback_configured": false,
+        "scenario_id": "regression-test-control-path-latency-isolation",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "06 Regression test \u2014 Gray link failure",
+        "frequency_feedback_configured": false,
+        "scenario_id": "regression-test-gray-link-failure",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "07 Regression test \u2014 Degraded fabric observability",
+        "frequency_feedback_configured": false,
+        "scenario_id": "regression-test-degraded-fabric-observability",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "08 Regression test \u2014 Slow checkpoint",
+        "frequency_feedback_configured": false,
+        "scenario_id": "regression-test-slow-checkpoint",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "09 Regression test \u2014 Transceiver degradation",
+        "frequency_feedback_configured": false,
+        "scenario_id": "regression-test-transceiver-degradation",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "10 Islanded 8-60-10 MW ramp - sequential commitment and release",
+        "frequency_feedback_configured": false,
+        "scenario_id": "demo-islanded-ramp",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "13 10-Tenant Random GPU Load \u2014 3 h",
+        "frequency_feedback_configured": false,
+        "scenario_id": "demo-10-tenant-random-gpu",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "14 10-Tenant Full-Ceiling GPU Load \u2014 3 h (tight headroom)",
+        "frequency_feedback_configured": false,
+        "scenario_id": "demo-10-tenant-full-ceiling",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "15 Shaped Load \u2014 5%\u219240%\u2192120%\u219240%\u219220% (90 min)",
+        "frequency_feedback_configured": false,
+        "scenario_id": "demo-10-tenant-overload-120pct",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "16 Grid \u00b7 Fuel Cell \u00b7 BESS \u2014 Shaped Load 5%\u219240%\u2192120%\u219240%\u219220% (90 min)",
+        "frequency_feedback_configured": false,
+        "scenario_id": "demo-grid-fc-bess-shaped-load",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "17 20-Tenant Contract Breach \u2014 T01 Spikes to ~150 % of 1 MW Ceiling at t=5 min",
+        "frequency_feedback_configured": false,
+        "scenario_id": "demo-20-tenant-contract-breach",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "18 Turbine, Fuel Cell, BESS \u2014 20 Tenants \u2014 1 Tenant Exceeds Capacity",
+        "frequency_feedback_configured": false,
+        "scenario_id": "demo-turbine-fc-bess-20-tenants-overage",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "19 Islanded 8-60-10 MW ramp - sequential commitment and release",
+        "frequency_feedback_configured": false,
+        "scenario_id": "islanded-8-60-10-ramp",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "20 BESS \u00b7 Fuel Cell \u00b7 Grid \u2014 Peak Stress 80%\u2192120%\u219260% (60 min)",
+        "frequency_feedback_configured": false,
+        "scenario_id": "demo-fc-bess-grid-peak",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "22 Rolling Planning \u2014 Three Forecast Peaks",
+        "frequency_feedback_configured": false,
+        "scenario_id": "demo-rolling-planning-peaks",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "23 Customer Scenario - scenario-equinix-sj-1",
+        "frequency_feedback_configured": false,
+        "scenario_id": "scenario-equinix-sj-1",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "24 Kubernetes Scheduler - Resource Queue Demo",
+        "frequency_feedback_configured": false,
+        "scenario_id": "scenario-kubernetes-scheduler-demo",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "25 Customer Scenario - scenario-equinix-sj-2-24h",
+        "frequency_feedback_configured": false,
+        "scenario_id": "scenario-equinix-sj-2-24h",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "26 Customer Scenario - scenario-turbine-01",
+        "frequency_feedback_configured": false,
+        "scenario_id": "scenario-turbine-01",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "01 Turbine Scenario with Kubernetes Slurm Ray",
+        "frequency_feedback_configured": false,
+        "scenario_id": "scenario-uneven-multisched-01",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "Addendum H-1 Kubernetes + Ray reference \u2014 24h",
+        "frequency_feedback_configured": false,
+        "scenario_id": "scenario-h1-k8s-ray-24h",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "Addendum H-1 Kubernetes + Ray reference \u2014 7d",
+        "frequency_feedback_configured": false,
+        "scenario_id": "scenario-h1-k8s-ray-7d",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "Addendum H-2 Slurm fixed-allocation reference \u2014 24h",
+        "frequency_feedback_configured": false,
+        "scenario_id": "scenario-h2-slurm-24h",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "Addendum H-2 Slurm fixed-allocation reference \u2014 7d",
+        "frequency_feedback_configured": false,
+        "scenario_id": "scenario-h2-slurm-7d",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "27 100 MW Fuel Cell Data Center \u2014 BESS + N+1 Diesel Backup",
+        "frequency_feedback_configured": false,
+        "scenario_id": "scenario-100mw-fuel-cell-bess-diesel",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "28 FC100 Islanded Readiness Reference",
+        "frequency_feedback_configured": true,
+        "scenario_id": "scenario-fc100-islanded-v2",
+        "trigger_paths": [
+          "fuel_cell_ride_through"
+        ]
+      },
+      {
+        "display_name": "29 FC100 Islanded Zero-Hot-Standby Reference",
+        "frequency_feedback_configured": true,
+        "scenario_id": "scenario-fc100-islanded-zero-hot-v2",
+        "trigger_paths": [
+          "fuel_cell_ride_through"
+        ]
+      },
+      {
+        "display_name": "30 Lead-time collection \u2014 enterprise 8-GPU air \u2014 training",
+        "frequency_feedback_configured": false,
+        "scenario_id": "lead-time-enterprise-8gpu-air-training",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "31 Lead-time collection \u2014 enterprise 8-GPU air \u2014 inference",
+        "frequency_feedback_configured": false,
+        "scenario_id": "lead-time-enterprise-8gpu-air-inference",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "32 Lead-time collection \u2014 H100 SXM5 8-way NVL4 \u2014 training",
+        "frequency_feedback_configured": false,
+        "scenario_id": "lead-time-h100-sxm5-8way-nvl4-training",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "33 Lead-time collection \u2014 H100 SXM5 8-way NVL4 \u2014 inference",
+        "frequency_feedback_configured": false,
+        "scenario_id": "lead-time-h100-sxm5-8way-nvl4-inference",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "34 Lead-time collection \u2014 GB200 NVL72 liquid \u2014 training",
+        "frequency_feedback_configured": false,
+        "scenario_id": "lead-time-nextgen-rack-liquid-training",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "35 Lead-time collection \u2014 GB200 NVL72 liquid \u2014 inference",
+        "frequency_feedback_configured": false,
+        "scenario_id": "lead-time-nextgen-rack-liquid-inference",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "36 Addendum H \u2014 lead-time profile validation",
+        "frequency_feedback_configured": false,
+        "scenario_id": "addendum-h-lead-time-profile-validation",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "S10_mit_supercloud_2021-08-11",
+        "frequency_feedback_configured": false,
+        "scenario_id": "S10_mit_supercloud_2021-08-11",
+        "trigger_paths": []
+      },
+      {
+        "display_name": "56 Islanded FC + BESS + Diesel \u2014 Slurm GPU Peaks (90 min)",
+        "frequency_feedback_configured": true,
+        "scenario_id": "islanded-fc-bess-diesel-slurm-gpu-peaks",
+        "trigger_paths": [
+          "fuel_cell_ride_through"
+        ]
+      }
+    ],
+    "source": "tools/dr_isl/phase5b/CATALOGUE_INVENTORY.json"
+  },
+  "comment_only_commit": "0e7c3d3",
+  "d11_cases_source": "tools/dr_isl/d11/D11_3_RESULTS.json; D11 frequency_after values are the 5fbf357-era D11/D11-t values.",
+  "physical_cases": [
+    {
+      "arm": "app",
+      "balance_failure_count": 0,
+      "frequency_after_D11": {
+        "first_invalid": {
+          "frequency_forcing_mw": -5.496637964444439,
+          "frequency_hz": 51.13217924234165,
+          "frequency_valid": false,
+          "p_dispatch_curtailed_mw": 0.0,
+          "sim_time": 9605.0,
+          "tick_index": 1921
+        },
+        "fraction": 0.034375,
+        "invalid": 594,
+        "invalid_categories": {
+          "carried_frequency": 118,
+          "curtailment_positive": 0,
+          "deficit_forcing": 476,
+          "other": 0
+        },
+        "maximum": 60.54595734564584,
+        "minimum": -749.6905479257669,
+        "ticks": 17280
+      },
+      "frequency_feedback_configured": false,
+      "frequency_max_hz": 60.54595734564584,
+      "frequency_min_hz": -749.6905479257669,
+      "invalid_frequency_fraction": 0.034375,
+      "invalid_frequency_tick_count": 594,
+      "physical_identical": true,
+      "physical_sha256_5fbf357": "3e24904fd7e8f71afa1f5b30ec2f2958a6b43e7670ab9fefae04f3440aa57bff",
+      "physical_sha256_candidate": "3e24904fd7e8f71afa1f5b30ec2f2958a6b43e7670ab9fefae04f3440aa57bff",
+      "protection_configured": false,
+      "scenario": "S10_mit_supercloud_2021-08-11",
+      "ticks": 17280
+    },
+    {
+      "arm": "app",
+      "balance_failure_count": 0,
+      "frequency_after_D11": {
+        "first_invalid": null,
+        "fraction": 0.0,
+        "invalid": 0,
+        "invalid_categories": {
+          "carried_frequency": 0,
+          "curtailment_positive": 0,
+          "deficit_forcing": 0,
+          "other": 0
+        },
+        "maximum": 60.0,
+        "minimum": 60.0,
+        "ticks": 720
+      },
+      "frequency_feedback_configured": false,
+      "frequency_max_hz": 60.0,
+      "frequency_min_hz": 60.0,
+      "invalid_frequency_fraction": 0.0,
+      "invalid_frequency_tick_count": 0,
+      "physical_identical": true,
+      "physical_sha256_5fbf357": "84a8294e726190fa58a869f9e64b455bfb3ef7675bad448ae39f643f269db510",
+      "physical_sha256_candidate": "84a8294e726190fa58a869f9e64b455bfb3ef7675bad448ae39f643f269db510",
+      "protection_configured": true,
+      "scenario": "scenario-equinix-sj-1",
+      "ticks": 720
+    },
+    {
+      "arm": "app",
+      "balance_failure_count": 0,
+      "frequency_after_D11": {
+        "first_invalid": null,
+        "fraction": 0.0,
+        "invalid": 0,
+        "invalid_categories": {
+          "carried_frequency": 0,
+          "curtailment_positive": 0,
+          "deficit_forcing": 0,
+          "other": 0
+        },
+        "maximum": 60.58640692110985,
+        "minimum": 60.0,
+        "ticks": 720
+      },
+      "frequency_feedback_configured": false,
+      "frequency_max_hz": 60.58640692110985,
+      "frequency_min_hz": 60.0,
+      "invalid_frequency_fraction": 0.0,
+      "invalid_frequency_tick_count": 0,
+      "physical_identical": true,
+      "physical_sha256_5fbf357": "23fffd3cf5f1281cb72742254e05d393c705e5cdacf2fe5036541e8deedb59b4",
+      "physical_sha256_candidate": "23fffd3cf5f1281cb72742254e05d393c705e5cdacf2fe5036541e8deedb59b4",
+      "protection_configured": false,
+      "scenario": "scenario-turbine-01",
+      "ticks": 720
+    },
+    {
+      "arm": "app",
+      "balance_failure_count": 0,
+      "frequency_after_D11": {
+        "first_invalid": {
+          "frequency_forcing_mw": -18.893564800000007,
+          "frequency_hz": -20.29765039999966,
+          "frequency_valid": false,
+          "p_dispatch_curtailed_mw": 0.0,
+          "sim_time": 5.0,
+          "tick_index": 1
+        },
+        "fraction": 0.45,
+        "invalid": 54,
+        "invalid_categories": {
+          "carried_frequency": 44,
+          "curtailment_positive": 0,
+          "deficit_forcing": 10,
+          "other": 0
+        },
+        "maximum": 60.97955266880781,
+        "minimum": -218.79606450000827,
+        "ticks": 120
+      },
+      "frequency_feedback_configured": false,
+      "frequency_max_hz": 60.97955266880781,
+      "frequency_min_hz": -218.79606450000827,
+      "invalid_frequency_fraction": 0.45,
+      "invalid_frequency_tick_count": 54,
+      "physical_identical": true,
+      "physical_sha256_5fbf357": "5b71aa3959769d9b579e7781b120bf1fcabecdaed1476481f2e6e5bf56f1ddfb",
+      "physical_sha256_candidate": "5b71aa3959769d9b579e7781b120bf1fcabecdaed1476481f2e6e5bf56f1ddfb",
+      "protection_configured": false,
+      "scenario": "scenario-hybrid-ai-100mw-addendum-i",
+      "ticks": 120
+    },
+    {
+      "arm": "app",
+      "balance_failure_count": 0,
+      "frequency_after_D11": {
+        "first_invalid": null,
+        "fraction": 0.0,
+        "invalid": 0,
+        "invalid_categories": {
+          "carried_frequency": 0,
+          "curtailment_positive": 0,
+          "deficit_forcing": 0,
+          "other": 0
+        },
+        "maximum": 60.0,
+        "minimum": 60.0,
+        "ticks": 252
+      },
+      "frequency_feedback_configured": false,
+      "frequency_max_hz": 60.0,
+      "frequency_min_hz": 60.0,
+      "invalid_frequency_fraction": 0.0,
+      "invalid_frequency_tick_count": 0,
+      "physical_identical": true,
+      "physical_sha256_5fbf357": "dad91d98830c78f678ed4c490729d1a6772046251a979e6c50af3a5f9f6300cb",
+      "physical_sha256_candidate": "dad91d98830c78f678ed4c490729d1a6772046251a979e6c50af3a5f9f6300cb",
+      "protection_configured": false,
+      "scenario": "scenario-100mw-fuel-cell-bess-diesel",
+      "ticks": 252
+    },
+    {
+      "arm": "app",
+      "balance_failure_count": 0,
+      "frequency_after_D11": {
+        "first_invalid": null,
+        "fraction": 0.0,
+        "invalid": 0,
+        "invalid_categories": {
+          "carried_frequency": 0,
+          "curtailment_positive": 0,
+          "deficit_forcing": 0,
+          "other": 0
+        },
+        "maximum": 60.0,
+        "minimum": 60.0,
+        "ticks": 264
+      },
+      "frequency_feedback_configured": true,
+      "frequency_max_hz": 60.0,
+      "frequency_min_hz": 60.0,
+      "invalid_frequency_fraction": 0.0,
+      "invalid_frequency_tick_count": 0,
+      "physical_identical": true,
+      "physical_sha256_5fbf357": "44b5f15a0cee3477fd14f3d22255c17ef42abd6a3765d8adc3443abbf9b88565",
+      "physical_sha256_candidate": "44b5f15a0cee3477fd14f3d22255c17ef42abd6a3765d8adc3443abbf9b88565",
+      "protection_configured": false,
+      "scenario": "scenario-fc100-islanded-v2",
+      "ticks": 264
+    },
+    {
+      "arm": "app",
+      "balance_failure_count": 0,
+      "frequency_after_D11": {
+        "first_invalid": {
+          "frequency_forcing_mw": -20.944261432913944,
+          "frequency_hz": 39.39674952027191,
+          "frequency_valid": false,
+          "p_dispatch_curtailed_mw": 0.0,
+          "sim_time": 230.0,
+          "tick_index": 46
+        },
+        "fraction": 0.8106060606060606,
+        "invalid": 214,
+        "invalid_categories": {
+          "carried_frequency": 7,
+          "curtailment_positive": 0,
+          "deficit_forcing": 207,
+          "other": 0
+        },
+        "maximum": 60.0,
+        "minimum": -82.80435199997717,
+        "ticks": 264
+      },
+      "frequency_feedback_configured": true,
+      "frequency_max_hz": 60.0,
+      "frequency_min_hz": -82.80435199997717,
+      "invalid_frequency_fraction": 0.8106060606060606,
+      "invalid_frequency_tick_count": 214,
+      "physical_identical": true,
+      "physical_sha256_5fbf357": "0bc7e7a2a5af0798a4b4a3cdc69687e6084ff57bde0c2b34500545f84115b8ce",
+      "physical_sha256_candidate": "0bc7e7a2a5af0798a4b4a3cdc69687e6084ff57bde0c2b34500545f84115b8ce",
+      "protection_configured": false,
+      "scenario": "scenario-fc100-islanded-zero-hot-v2",
+      "ticks": 264
+    },
+    {
+      "arm": "app",
+      "balance_failure_count": 0,
+      "frequency_after_D11": {
+        "first_invalid": {
+          "frequency_forcing_mw": -1.5300785665427696,
+          "frequency_hz": 53.373055059038585,
+          "frequency_valid": false,
+          "p_dispatch_curtailed_mw": 0.0,
+          "sim_time": 680.0,
+          "tick_index": 136
+        },
+        "fraction": 0.047685185185185185,
+        "invalid": 103,
+        "invalid_categories": {
+          "carried_frequency": 13,
+          "curtailment_positive": 0,
+          "deficit_forcing": 90,
+          "other": 0
+        },
+        "maximum": 60.0,
+        "minimum": -127.48961154607643,
+        "ticks": 2160
+      },
+      "frequency_feedback_configured": false,
+      "frequency_max_hz": 60.0,
+      "frequency_min_hz": -127.48961154607643,
+      "invalid_frequency_fraction": 0.047685185185185185,
+      "invalid_frequency_tick_count": 103,
+      "physical_identical": true,
+      "physical_sha256_5fbf357": "e3b8cc8dfcc4fc4847f653b260e0e9a7c6ee88e1722930ca59567875df2219d6",
+      "physical_sha256_candidate": "e3b8cc8dfcc4fc4847f653b260e0e9a7c6ee88e1722930ca59567875df2219d6",
+      "protection_configured": false,
+      "scenario": "demo-islanded-ramp",
+      "ticks": 2160
+    }
+  ],
+  "physical_hash_contract": "Pinned baseline_runner.py:7\u20139: SHA-256 over ticks in order, compact sorted-key JSON plus LF, excluding exactly advisory_telemetry, fabric_modal, wall_stamp_utc, insufficient_reserve_proposal_id; NaN allowed. frequency_valid and protection_configured are included when present.",
+  "study_pairs": [
+    {
+      "arms": {
+        "baseline": {
+          "D11_nonfrequency_metric_count": 28,
+          "D11_original_metric_count": 27,
+          "current_metrics": {
+            "compute_trace_sha256": "916eb28339ae921141941a8c90069e573e80ef4bf65f2be39cc3e45b8747ccff",
+            "constraints_valid": true,
+            "dispatch_curtailment_attributable_fuel_mmbtu": 1974.088304814,
+            "dispatch_curtailment_interval_exposure_fuel_mmbtu": 3394.620064264,
+            "dispatch_curtailment_mwh": 187.690139189,
+            "fuel_by_component_mmbtu": {
+              "hot_standby_fuel_mmbtu": 4.142013889,
+              "load_fuel_mmbtu": 5847.168216351,
+              "no_load_fuel_mmbtu": 72.43,
+              "start_fuel_mmbtu": 116.0
+            },
+            "hard_violations": [],
+            "peak_unserved_mw": 35.021533247,
+            "unserved_mwh": 0.894372986
+          },
+          "frequency_feedback_configured": false,
+          "identity_digest_5fbf357": "bbb8757bd015209332abf04ac60e6881a1414372ea15ed0ccd2a58185cf5b479",
+          "identity_digest_candidate": "df902e8cdba3b85bf6b0040ab50bf84184191359932bb3abb67b52caa3ddf025",
+          "invalid_frequency_fraction": 0.04693287037037037,
+          "invalid_frequency_tick_count": 811,
+          "original_27_study_metrics_identical": true,
+          "physical_identical": true,
+          "physical_sha256_5fbf357": "249a9925b8f97e20db79cf6f02bf0c282f2f57ec825026af0ec183a0d4dad7f1",
+          "physical_sha256_candidate": "249a9925b8f97e20db79cf6f02bf0c282f2f57ec825026af0ec183a0d4dad7f1",
+          "protection_configured": false,
+          "run_record_existing_field_differences": [],
+          "run_record_existing_fields_missing": [],
+          "run_record_new_nonidentity_fields": []
+        },
+        "informed": {
+          "D11_nonfrequency_metric_count": 28,
+          "D11_original_metric_count": 27,
+          "current_metrics": {
+            "compute_trace_sha256": "916eb28339ae921141941a8c90069e573e80ef4bf65f2be39cc3e45b8747ccff",
+            "constraints_valid": true,
+            "dispatch_curtailment_attributable_fuel_mmbtu": 1858.026440381,
+            "dispatch_curtailment_interval_exposure_fuel_mmbtu": 3120.455542377,
+            "dispatch_curtailment_mwh": 176.779572526,
+            "fuel_by_component_mmbtu": {
+              "hot_standby_fuel_mmbtu": 4.110069444,
+              "load_fuel_mmbtu": 5660.766981827,
+              "no_load_fuel_mmbtu": 68.021666667,
+              "start_fuel_mmbtu": 116.0
+            },
+            "hard_violations": [],
+            "peak_unserved_mw": 20.746308977,
+            "unserved_mwh": 0.124133405
+          },
+          "frequency_feedback_configured": false,
+          "identity_digest_5fbf357": "e691cc40ef94b620dd9be22762763ecfaa9a9c42928b32c1f0b74db057b9fd9e",
+          "identity_digest_candidate": "baead489d13c888c3ef90cae1074280a35ca010102df1785fd48cc68af765452",
+          "invalid_frequency_fraction": 0.004398148148148148,
+          "invalid_frequency_tick_count": 76,
+          "original_27_study_metrics_identical": true,
+          "physical_identical": true,
+          "physical_sha256_5fbf357": "0c929bba5ae33582779fc3790b9e66b4d48ed17820a70bdb9885c12db40cc6f7",
+          "physical_sha256_candidate": "0c929bba5ae33582779fc3790b9e66b4d48ed17820a70bdb9885c12db40cc6f7",
+          "protection_configured": false,
+          "run_record_existing_field_differences": [],
+          "run_record_existing_fields_missing": [],
+          "run_record_new_nonidentity_fields": []
+        }
+      },
+      "compare_runs": {
+        "baseline_conditions_5fbf357": {
+          "baseline_energy_balance": true,
+          "baseline_fuel_reconciled": true,
+          "baseline_valid": true,
+          "build_parity": true,
+          "identical_compute_trace": true,
+          "informed_energy_balance": true,
+          "informed_fuel_reconciled": true,
+          "informed_peak_unserved_no_worse": true,
+          "informed_unserved_energy_no_worse": true,
+          "informed_valid": true
+        },
+        "baseline_verdict_5fbf357": "PASS",
+        "candidate_condition_count": 10,
+        "candidate_conditions": {
+          "baseline_energy_balance": true,
+          "baseline_fuel_reconciled": true,
+          "baseline_valid": true,
+          "build_parity": true,
+          "identical_compute_trace": true,
+          "informed_energy_balance": true,
+          "informed_fuel_reconciled": true,
+          "informed_peak_unserved_no_worse": true,
+          "informed_unserved_energy_no_worse": true,
+          "informed_valid": true
+        },
+        "candidate_pass_count": 10,
+        "candidate_verdict": "PASS",
+        "condition_inputs_include_frequency_fields": true,
+        "condition_order": [
+          "build_parity",
+          "baseline_valid",
+          "informed_valid",
+          "baseline_energy_balance",
+          "informed_energy_balance",
+          "baseline_fuel_reconciled",
+          "informed_fuel_reconciled",
+          "identical_compute_trace",
+          "informed_unserved_energy_no_worse",
+          "informed_peak_unserved_no_worse"
+        ],
+        "condition_order_unchanged": true,
+        "conditions_identical": true,
+        "frequency_inputs": {
+          "baseline_frequency_feedback_configured": false,
+          "baseline_invalid_frequency_fraction": 0.04693287037037037,
+          "baseline_invalid_frequency_tick_count": 811,
+          "baseline_protection_configured": false,
+          "informed_frequency_feedback_configured": false,
+          "informed_invalid_frequency_fraction": 0.004398148148148148,
+          "informed_invalid_frequency_tick_count": 76,
+          "informed_protection_configured": false
+        }
+      },
+      "scenario": "scenario-h1-k8s-ray-24h"
+    },
+    {
+      "arms": {
+        "baseline": {
+          "D11_nonfrequency_metric_count": 28,
+          "D11_original_metric_count": 27,
+          "current_metrics": {
+            "compute_trace_sha256": "ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b",
+            "constraints_valid": true,
+            "dispatch_curtailment_attributable_fuel_mmbtu": 3680.617469434,
+            "dispatch_curtailment_interval_exposure_fuel_mmbtu": 4838.569627585,
+            "dispatch_curtailment_mwh": 349.917690813,
+            "fuel_by_component_mmbtu": {
+              "hot_standby_fuel_mmbtu": 4.552430556,
+              "load_fuel_mmbtu": 5136.719001539,
+              "no_load_fuel_mmbtu": 65.231666667,
+              "start_fuel_mmbtu": 124.0
+            },
+            "hard_violations": [],
+            "peak_unserved_mw": 44.86838787,
+            "unserved_mwh": 5.011418076
+          },
+          "frequency_feedback_configured": false,
+          "identity_digest_5fbf357": "73b57df453940e83c07276d58a9af15641026d455952fcfad5ee3d43b1e3ef9e",
+          "identity_digest_candidate": "d6236c2eb33315d8fff5233f559fb96310fc811a5285da8522e8d5ea13ef8991",
+          "invalid_frequency_fraction": 0.03177083333333333,
+          "invalid_frequency_tick_count": 549,
+          "original_27_study_metrics_identical": true,
+          "physical_identical": true,
+          "physical_sha256_5fbf357": "3f39c1e60e3b1b30eb51455b50c2c429947f24955a9744e2d22680a86c5b524e",
+          "physical_sha256_candidate": "3f39c1e60e3b1b30eb51455b50c2c429947f24955a9744e2d22680a86c5b524e",
+          "protection_configured": false,
+          "run_record_existing_field_differences": [],
+          "run_record_existing_fields_missing": [],
+          "run_record_new_nonidentity_fields": []
+        },
+        "informed": {
+          "D11_nonfrequency_metric_count": 28,
+          "D11_original_metric_count": 27,
+          "current_metrics": {
+            "compute_trace_sha256": "ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b",
+            "constraints_valid": true,
+            "dispatch_curtailment_attributable_fuel_mmbtu": 3607.524008603,
+            "dispatch_curtailment_interval_exposure_fuel_mmbtu": 4892.43517635,
+            "dispatch_curtailment_mwh": 342.977539092,
+            "fuel_by_component_mmbtu": {
+              "hot_standby_fuel_mmbtu": 3.761458333,
+              "load_fuel_mmbtu": 5106.733034717,
+              "no_load_fuel_mmbtu": 64.855,
+              "start_fuel_mmbtu": 152.0
+            },
+            "hard_violations": [],
+            "peak_unserved_mw": 42.36838787,
+            "unserved_mwh": 0.859772492
+          },
+          "frequency_feedback_configured": false,
+          "identity_digest_5fbf357": "0faa5c303c9ca00796e92ab21ea4f121be096676dbfa542b2fa241c38e14809e",
+          "identity_digest_candidate": "19e73b1f0fe66410820f952d79415807cdf349d2e6df8390b08c51786089da27",
+          "invalid_frequency_fraction": 0.023842592592592592,
+          "invalid_frequency_tick_count": 412,
+          "original_27_study_metrics_identical": true,
+          "physical_identical": true,
+          "physical_sha256_5fbf357": "85aff01fe0a381f3438c6e9cdf53c942501ea1585d72d3dbf6c1f9992ea62ee4",
+          "physical_sha256_candidate": "85aff01fe0a381f3438c6e9cdf53c942501ea1585d72d3dbf6c1f9992ea62ee4",
+          "protection_configured": false,
+          "run_record_existing_field_differences": [],
+          "run_record_existing_fields_missing": [],
+          "run_record_new_nonidentity_fields": []
+        }
+      },
+      "compare_runs": {
+        "baseline_conditions_5fbf357": {
+          "baseline_energy_balance": true,
+          "baseline_fuel_reconciled": true,
+          "baseline_valid": true,
+          "build_parity": true,
+          "identical_compute_trace": true,
+          "informed_energy_balance": true,
+          "informed_fuel_reconciled": true,
+          "informed_peak_unserved_no_worse": true,
+          "informed_unserved_energy_no_worse": true,
+          "informed_valid": true
+        },
+        "baseline_verdict_5fbf357": "PASS",
+        "candidate_condition_count": 10,
+        "candidate_conditions": {
+          "baseline_energy_balance": true,
+          "baseline_fuel_reconciled": true,
+          "baseline_valid": true,
+          "build_parity": true,
+          "identical_compute_trace": true,
+          "informed_energy_balance": true,
+          "informed_fuel_reconciled": true,
+          "informed_peak_unserved_no_worse": true,
+          "informed_unserved_energy_no_worse": true,
+          "informed_valid": true
+        },
+        "candidate_pass_count": 10,
+        "candidate_verdict": "PASS",
+        "condition_inputs_include_frequency_fields": true,
+        "condition_order": [
+          "build_parity",
+          "baseline_valid",
+          "informed_valid",
+          "baseline_energy_balance",
+          "informed_energy_balance",
+          "baseline_fuel_reconciled",
+          "informed_fuel_reconciled",
+          "identical_compute_trace",
+          "informed_unserved_energy_no_worse",
+          "informed_peak_unserved_no_worse"
+        ],
+        "condition_order_unchanged": true,
+        "conditions_identical": true,
+        "frequency_inputs": {
+          "baseline_frequency_feedback_configured": false,
+          "baseline_invalid_frequency_fraction": 0.03177083333333333,
+          "baseline_invalid_frequency_tick_count": 549,
+          "baseline_protection_configured": false,
+          "informed_frequency_feedback_configured": false,
+          "informed_invalid_frequency_fraction": 0.023842592592592592,
+          "informed_invalid_frequency_tick_count": 412,
+          "informed_protection_configured": false
+        }
+      },
+      "scenario": "scenario-h2-slurm-24h"
+    },
+    {
+      "arms": {
+        "baseline": {
+          "D11_nonfrequency_metric_count": 28,
+          "D11_original_metric_count": 27,
+          "current_metrics": {
+            "compute_trace_sha256": "fb3a32d783d0a61ddd2cb8ec7bfbe0204712a2c6f6f9398ef60932160dafa54b",
+            "constraints_valid": true,
+            "dispatch_curtailment_attributable_fuel_mmbtu": 85.443185219,
+            "dispatch_curtailment_interval_exposure_fuel_mmbtu": 291.229346912,
+            "dispatch_curtailment_mwh": 8.136511735,
+            "fuel_by_component_mmbtu": {
+              "hot_standby_fuel_mmbtu": 0.039236111,
+              "load_fuel_mmbtu": 690.133782974,
+              "no_load_fuel_mmbtu": 8.19,
+              "start_fuel_mmbtu": 16.0
+            },
+            "hard_violations": [],
+            "peak_unserved_mw": 22.309362466,
+            "unserved_mwh": 0.351692658
+          },
+          "frequency_feedback_configured": false,
+          "identity_digest_5fbf357": "28c92cb654c3c5700e52cacfe07ba33bb8570c5547c70660c5ab42d6846a4c2d",
+          "identity_digest_candidate": "51ec0e544abdbd4225253ed61c484c67c620323dc1c2056dabe838c8d4f0d6de",
+          "invalid_frequency_fraction": 0.03680555555555556,
+          "invalid_frequency_tick_count": 53,
+          "original_27_study_metrics_identical": true,
+          "physical_identical": true,
+          "physical_sha256_5fbf357": "e9a25202a069acdb648779981f07bc27e1cbe53a5a2b44e1571bd8724912a5f9",
+          "physical_sha256_candidate": "e9a25202a069acdb648779981f07bc27e1cbe53a5a2b44e1571bd8724912a5f9",
+          "protection_configured": false,
+          "run_record_existing_field_differences": [],
+          "run_record_existing_fields_missing": [],
+          "run_record_new_nonidentity_fields": []
+        },
+        "informed": {
+          "D11_nonfrequency_metric_count": 28,
+          "D11_original_metric_count": 27,
+          "current_metrics": {
+            "compute_trace_sha256": "fb3a32d783d0a61ddd2cb8ec7bfbe0204712a2c6f6f9398ef60932160dafa54b",
+            "constraints_valid": true,
+            "dispatch_curtailment_attributable_fuel_mmbtu": 55.021850379,
+            "dispatch_curtailment_interval_exposure_fuel_mmbtu": 141.143846919,
+            "dispatch_curtailment_mwh": 5.278943188,
+            "fuel_by_component_mmbtu": {
+              "hot_standby_fuel_mmbtu": 0.000347222,
+              "load_fuel_mmbtu": 642.554567148,
+              "no_load_fuel_mmbtu": 6.843333333,
+              "start_fuel_mmbtu": 16.0
+            },
+            "hard_violations": [],
+            "peak_unserved_mw": 7.52325057,
+            "unserved_mwh": 0.020719074
+          },
+          "frequency_feedback_configured": false,
+          "identity_digest_5fbf357": "8a09e4c6d87b79e1be997389a75852ce771a4f2d8e96d9c5ee3fe1725b8742fe",
+          "identity_digest_candidate": "d1f726d3526cede60673da3f3f7503951c8ea7951f40ded8d6f00ff19b52fb35",
+          "invalid_frequency_fraction": 0.0,
+          "invalid_frequency_tick_count": 0,
+          "original_27_study_metrics_identical": true,
+          "physical_identical": true,
+          "physical_sha256_5fbf357": "34bc07cdebda13c4e07bc990408745fbeeb5f916248cd7159d9f8fd656ee2702",
+          "physical_sha256_candidate": "34bc07cdebda13c4e07bc990408745fbeeb5f916248cd7159d9f8fd656ee2702",
+          "protection_configured": false,
+          "run_record_existing_field_differences": [],
+          "run_record_existing_fields_missing": [],
+          "run_record_new_nonidentity_fields": []
+        }
+      },
+      "compare_runs": {
+        "baseline_conditions_5fbf357": {
+          "baseline_energy_balance": true,
+          "baseline_fuel_reconciled": true,
+          "baseline_valid": true,
+          "build_parity": true,
+          "identical_compute_trace": true,
+          "informed_energy_balance": true,
+          "informed_fuel_reconciled": true,
+          "informed_peak_unserved_no_worse": true,
+          "informed_unserved_energy_no_worse": true,
+          "informed_valid": true
+        },
+        "baseline_verdict_5fbf357": "PASS",
+        "candidate_condition_count": 10,
+        "candidate_conditions": {
+          "baseline_energy_balance": true,
+          "baseline_fuel_reconciled": true,
+          "baseline_valid": true,
+          "build_parity": true,
+          "identical_compute_trace": true,
+          "informed_energy_balance": true,
+          "informed_fuel_reconciled": true,
+          "informed_peak_unserved_no_worse": true,
+          "informed_unserved_energy_no_worse": true,
+          "informed_valid": true
+        },
+        "candidate_pass_count": 10,
+        "candidate_verdict": "PASS",
+        "condition_inputs_include_frequency_fields": true,
+        "condition_order": [
+          "build_parity",
+          "baseline_valid",
+          "informed_valid",
+          "baseline_energy_balance",
+          "informed_energy_balance",
+          "baseline_fuel_reconciled",
+          "informed_fuel_reconciled",
+          "identical_compute_trace",
+          "informed_unserved_energy_no_worse",
+          "informed_peak_unserved_no_worse"
+        ],
+        "condition_order_unchanged": true,
+        "conditions_identical": true,
+        "frequency_inputs": {
+          "baseline_frequency_feedback_configured": false,
+          "baseline_invalid_frequency_fraction": 0.03680555555555556,
+          "baseline_invalid_frequency_tick_count": 53,
+          "baseline_protection_configured": false,
+          "informed_frequency_feedback_configured": false,
+          "informed_invalid_frequency_fraction": 0.0,
+          "informed_invalid_frequency_tick_count": 0,
+          "informed_protection_configured": false
+        }
+      },
+      "scenario": "scenario-uneven-multisched-01"
+    }
+  ]
+}

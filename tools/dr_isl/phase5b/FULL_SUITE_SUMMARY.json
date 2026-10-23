@@ -1,0 +1,26 @@
+{
+  "command": "PYTHONHASHSEED=1729 python -m pytest -q --junitxml=tools/dr_isl/phase5b/FULL_SUITE.xml",
+  "exit_code": 1,
+  "duration_seconds": 682.87,
+  "pytest_counts": {
+    "passed": 2212,
+    "failed": 15,
+    "skipped": 3,
+    "xfailed": 23,
+    "subtests_passed": 3,
+    "warnings": 54
+  },
+  "junit_counts": {
+    "tests": 2256,
+    "failures": 15,
+    "errors": 0,
+    "skipped_including_xfail": 26
+  },
+  "test_gpu_load_profile": "passed",
+  "comparison_baseline": "tools/dr_isl/D11T_FAILING_TESTS.txt",
+  "added_failures": [],
+  "removed_failures": [],
+  "remaining_failures": 15,
+  "failing_ids_file": "tools/dr_isl/PHASE_5B_FAILING_TESTS.txt",
+  "junit_file": "tools/dr_isl/phase5b/FULL_SUITE.xml"
+}
