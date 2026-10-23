@@ -1,0 +1,46 @@
+{
+  "scenario": "scenario-uneven-multisched-01",
+  "seed": 42,
+  "reuse_cache": false,
+  "source": "StudyRunExecutor.run_pair after applying the D4 candidate and shared seed-manifest identity pass-through",
+  "comparison_verdict": "PASS",
+  "comparison_conditions": {
+    "count": 10,
+    "all_passed": true
+  },
+  "baseline": {
+    "physical_hash": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+    "dispatch_curtailment_mwh": 8.136511735,
+    "attributable_curtailment_fuel_mmbtu": 85.443185219,
+    "interval_exposure_curtailment_fuel_mmbtu": 291.229346912,
+    "turbine_fuel_mmbtu": 714.363019086,
+    "unserved_mwh": 0.351692658,
+    "peak_unserved_mw": 22.309362466,
+    "frequency_feedback_configured": false,
+    "protection_configured": false,
+    "invalid_frequency_tick_count": 53,
+    "invalid_frequency_fraction": 0.03680555555555556,
+    "recorded_starts": 2,
+    "measured_starts": 2,
+    "start_fuel_reconciliation_passed": true
+  },
+  "informed": {
+    "physical_hash": "72cc28766574a78c44913d389207bc6cca268ac1bf29b15abd148c63af334754",
+    "dispatch_curtailment_mwh": 5.278943188,
+    "attributable_curtailment_fuel_mmbtu": 55.021850379,
+    "interval_exposure_curtailment_fuel_mmbtu": 141.143846919,
+    "turbine_fuel_mmbtu": 665.398247704,
+    "unserved_mwh": 0.020719074,
+    "peak_unserved_mw": 7.52325057,
+    "frequency_feedback_configured": false,
+    "protection_configured": false,
+    "invalid_frequency_tick_count": 0,
+    "invalid_frequency_fraction": 0.0,
+    "recorded_starts": 2,
+    "measured_starts": 2,
+    "start_fuel_reconciliation_passed": true
+  },
+  "base_demo_certified_values_match": true,
+  "reference": "tools/dr_isl/phase6/6_3A_BASE_DEMO_CANDIDATE.json",
+  "status": "PASS"
+}

@@ -1,0 +1,16 @@
+{
+  "focused_mcp_tests": {
+    "node_ids": [
+      "tests/test_mcp_server.py::test_tc163_base_demo_comparison_includes_claim_note",
+      "tests/test_mcp_server.py::test_tc164_shared_identity_and_cache_match_for_every_study_scenario",
+      "tests/test_mcp_server.py::test_tc_ssh08_05_identical_real_commits_still_compare"
+    ],
+    "result": "3 passed, 1 warning in 10.41s",
+    "warning": "StarletteDeprecationWarning: Using httpx with starlette.testclient is deprecated; install httpx2 instead."
+  },
+  "h1_bounded_forecast_history": {
+    "node_id": "tests/test_study_harness.py::test_h1_informed_is_deterministic_with_bounded_forecast_history",
+    "result": "1 passed in 329.18s"
+  },
+  "status": "PASS"
+}

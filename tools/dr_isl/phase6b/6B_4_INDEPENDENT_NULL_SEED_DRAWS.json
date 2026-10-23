@@ -1,0 +1,726 @@
+{
+  "replays": {},
+  "runs": {
+    "S10_mit_supercloud_2021-08-11": {
+      "pinned_5b_hash": "3e24904fd7e8f71afa1f5b30ec2f2958a6b43e7670ab9fefae04f3440aa57bff",
+      "pyhashseed_1": {
+        "balance_failure_ticks": [],
+        "frequency_max_hz": 60.54595734564584,
+        "frequency_min_hz": -749.6905479257669,
+        "physical_sha256": "3e24904fd7e8f71afa1f5b30ec2f2958a6b43e7670ab9fefae04f3440aa57bff",
+        "requested_seed": null,
+        "scenario_id": "S10_mit_supercloud_2021-08-11",
+        "seed_manifest": {
+          "consumer_seeds": {
+            "advisory_deidentification": 8352066818871484118,
+            "fabric": 7862347866205039226,
+            "price_curve": 42,
+            "procurement_price_curve": 42,
+            "scada": 42,
+            "solar_sim": 16850659265676162496
+          },
+          "consumer_sources": {
+            "advisory_deidentification": "derived_from_run_seed",
+            "fabric": "derived_from_run_seed",
+            "price_curve": "explicit_config",
+            "procurement_price_curve": "explicit_config",
+            "scada": "explicit_config",
+            "solar_sim": "derived_from_run_seed"
+          },
+          "requested_run_seed": null,
+          "resolved_at_utc": "2026-10-23T13:44:32.114522+00:00",
+          "root_seed": 9704025095942562684,
+          "root_seed_drawn": true,
+          "seed_derivation_version": "d4-sha256-v1"
+        },
+        "ticks": 17280
+      },
+      "pyhashseed_987654321": {
+        "balance_failure_ticks": [],
+        "frequency_max_hz": 60.54595734564584,
+        "frequency_min_hz": -749.6905479257669,
+        "physical_sha256": "3e24904fd7e8f71afa1f5b30ec2f2958a6b43e7670ab9fefae04f3440aa57bff",
+        "requested_seed": null,
+        "scenario_id": "S10_mit_supercloud_2021-08-11",
+        "seed_manifest": {
+          "consumer_seeds": {
+            "advisory_deidentification": 5167603977948460846,
+            "fabric": 7069976456041316768,
+            "price_curve": 42,
+            "procurement_price_curve": 42,
+            "scada": 42,
+            "solar_sim": 6910448898294667260
+          },
+          "consumer_sources": {
+            "advisory_deidentification": "derived_from_run_seed",
+            "fabric": "derived_from_run_seed",
+            "price_curve": "explicit_config",
+            "procurement_price_curve": "explicit_config",
+            "scada": "explicit_config",
+            "solar_sim": "derived_from_run_seed"
+          },
+          "requested_run_seed": null,
+          "resolved_at_utc": "2026-10-23T13:49:29.433484+00:00",
+          "root_seed": 8917982951126935006,
+          "root_seed_drawn": true,
+          "seed_derivation_version": "d4-sha256-v1"
+        },
+        "ticks": 17280
+      },
+      "same_as_pinned_5b": true,
+      "same_physical_hash": true
+    },
+    "demo-islanded-ramp": {
+      "pinned_5b_hash": "e3b8cc8dfcc4fc4847f653b260e0e9a7c6ee88e1722930ca59567875df2219d6",
+      "pyhashseed_1": {
+        "balance_failure_ticks": [],
+        "frequency_max_hz": 60.0,
+        "frequency_min_hz": -102.9159963753514,
+        "physical_sha256": "81c649616d3a82c9107b46f5c779d1a214a4f44e6142a1253d3f913f58544df7",
+        "requested_seed": null,
+        "scenario_id": "demo-islanded-ramp",
+        "seed_manifest": {
+          "consumer_seeds": {
+            "advisory_deidentification": 17257702264563430863,
+            "fabric": 17082700008018689522,
+            "kube:legacy-shared-fleet:A": 7301206569729542094,
+            "kube:legacy-shared-fleet:B": 7860891015452311909,
+            "kube:legacy-shared-fleet:C": 12626285384977149044,
+            "price_curve": 42,
+            "procurement_price_curve": 42,
+            "scada": 42,
+            "solar_sim": 13044203893276849818
+          },
+          "consumer_sources": {
+            "advisory_deidentification": "derived_from_run_seed",
+            "fabric": "derived_from_run_seed",
+            "kube:legacy-shared-fleet:A": "derived_from_run_seed",
+            "kube:legacy-shared-fleet:B": "derived_from_run_seed",
+            "kube:legacy-shared-fleet:C": "derived_from_run_seed",
+            "price_curve": "explicit_config",
+            "procurement_price_curve": "explicit_config",
+            "scada": "explicit_config",
+            "solar_sim": "derived_from_run_seed"
+          },
+          "requested_run_seed": null,
+          "resolved_at_utc": "2026-10-23T13:56:50.410165+00:00",
+          "root_seed": 5887540250213314481,
+          "root_seed_drawn": true,
+          "seed_derivation_version": "d4-sha256-v1"
+        },
+        "ticks": 2160
+      },
+      "pyhashseed_987654321": {
+        "balance_failure_ticks": [],
+        "frequency_max_hz": 60.0,
+        "frequency_min_hz": -124.38977073529821,
+        "physical_sha256": "4a4f51d2062a6bf7ca17ffc792752a932f0f5d42a17db80617ac0d75077fb119",
+        "requested_seed": null,
+        "scenario_id": "demo-islanded-ramp",
+        "seed_manifest": {
+          "consumer_seeds": {
+            "advisory_deidentification": 9920042838141250575,
+            "fabric": 17363080837904076827,
+            "kube:legacy-shared-fleet:A": 9202426139499458535,
+            "kube:legacy-shared-fleet:B": 11209522751463079149,
+            "kube:legacy-shared-fleet:C": 10062698433073188307,
+            "price_curve": 42,
+            "procurement_price_curve": 42,
+            "scada": 42,
+            "solar_sim": 6369597640789655720
+          },
+          "consumer_sources": {
+            "advisory_deidentification": "derived_from_run_seed",
+            "fabric": "derived_from_run_seed",
+            "kube:legacy-shared-fleet:A": "derived_from_run_seed",
+            "kube:legacy-shared-fleet:B": "derived_from_run_seed",
+            "kube:legacy-shared-fleet:C": "derived_from_run_seed",
+            "price_curve": "explicit_config",
+            "procurement_price_curve": "explicit_config",
+            "scada": "explicit_config",
+            "solar_sim": "derived_from_run_seed"
+          },
+          "requested_run_seed": null,
+          "resolved_at_utc": "2026-10-23T13:57:34.360127+00:00",
+          "root_seed": 6131235703570113716,
+          "root_seed_drawn": true,
+          "seed_derivation_version": "d4-sha256-v1"
+        },
+        "ticks": 2160
+      },
+      "same_as_pinned_5b": false,
+      "same_physical_hash": false
+    },
+    "scenario-100mw-fuel-cell-bess-diesel": {
+      "pinned_5b_hash": "dad91d98830c78f678ed4c490729d1a6772046251a979e6c50af3a5f9f6300cb",
+      "pyhashseed_1": {
+        "balance_failure_ticks": [],
+        "frequency_max_hz": 60.0,
+        "frequency_min_hz": 60.0,
+        "physical_sha256": "dad91d98830c78f678ed4c490729d1a6772046251a979e6c50af3a5f9f6300cb",
+        "requested_seed": null,
+        "scenario_id": "scenario-100mw-fuel-cell-bess-diesel",
+        "seed_manifest": {
+          "consumer_seeds": {
+            "advisory_deidentification": 10738983433903537400,
+            "diesel:diesel-000": 13668332221558825370,
+            "diesel:diesel-001": 3480484853172924602,
+            "diesel:diesel-002": 5941676999121182304,
+            "diesel:diesel-003": 6829255061953192815,
+            "diesel:diesel-004": 6874018995074144339,
+            "diesel:diesel-005": 218196703369172102,
+            "diesel:diesel-006": 8900716007008183474,
+            "diesel:diesel-007": 7092980276608748573,
+            "diesel:diesel-008": 17366481991996502913,
+            "diesel:diesel-009": 17579188267565688544,
+            "diesel:diesel-010": 16100399764198602455,
+            "fabric": 16863897635064177133,
+            "price_curve": 42,
+            "procurement_price_curve": 42,
+            "scada": 42,
+            "solar_sim": 1043102769614988333
+          },
+          "consumer_sources": {
+            "advisory_deidentification": "derived_from_run_seed",
+            "diesel:diesel-000": "derived_from_run_seed",
+            "diesel:diesel-001": "derived_from_run_seed",
+            "diesel:diesel-002": "derived_from_run_seed",
+            "diesel:diesel-003": "derived_from_run_seed",
+            "diesel:diesel-004": "derived_from_run_seed",
+            "diesel:diesel-005": "derived_from_run_seed",
+            "diesel:diesel-006": "derived_from_run_seed",
+            "diesel:diesel-007": "derived_from_run_seed",
+            "diesel:diesel-008": "derived_from_run_seed",
+            "diesel:diesel-009": "derived_from_run_seed",
+            "diesel:diesel-010": "derived_from_run_seed",
+            "fabric": "derived_from_run_seed",
+            "price_curve": "explicit_config",
+            "procurement_price_curve": "explicit_config",
+            "scada": "explicit_config",
+            "solar_sim": "derived_from_run_seed"
+          },
+          "requested_run_seed": null,
+          "resolved_at_utc": "2026-10-23T13:55:32.110678+00:00",
+          "root_seed": 5229352533645936335,
+          "root_seed_drawn": true,
+          "seed_derivation_version": "d4-sha256-v1"
+        },
+        "ticks": 252
+      },
+      "pyhashseed_987654321": {
+        "balance_failure_ticks": [],
+        "frequency_max_hz": 60.0,
+        "frequency_min_hz": 60.0,
+        "physical_sha256": "dad91d98830c78f678ed4c490729d1a6772046251a979e6c50af3a5f9f6300cb",
+        "requested_seed": null,
+        "scenario_id": "scenario-100mw-fuel-cell-bess-diesel",
+        "seed_manifest": {
+          "consumer_seeds": {
+            "advisory_deidentification": 16469395779905365285,
+            "diesel:diesel-000": 17201967319411378413,
+            "diesel:diesel-001": 7253632964826415863,
+            "diesel:diesel-002": 4686038436246559126,
+            "diesel:diesel-003": 347089911947247550,
+            "diesel:diesel-004": 7391855575049959335,
+            "diesel:diesel-005": 14229778996973609475,
+            "diesel:diesel-006": 17089131659960707372,
+            "diesel:diesel-007": 4514620958741103986,
+            "diesel:diesel-008": 603159657097229397,
+            "diesel:diesel-009": 5434817693898866284,
+            "diesel:diesel-010": 7407569385259485920,
+            "fabric": 14294104549338432828,
+            "price_curve": 42,
+            "procurement_price_curve": 42,
+            "scada": 42,
+            "solar_sim": 7457299143532178397
+          },
+          "consumer_sources": {
+            "advisory_deidentification": "derived_from_run_seed",
+            "diesel:diesel-000": "derived_from_run_seed",
+            "diesel:diesel-001": "derived_from_run_seed",
+            "diesel:diesel-002": "derived_from_run_seed",
+            "diesel:diesel-003": "derived_from_run_seed",
+            "diesel:diesel-004": "derived_from_run_seed",
+            "diesel:diesel-005": "derived_from_run_seed",
+            "diesel:diesel-006": "derived_from_run_seed",
+            "diesel:diesel-007": "derived_from_run_seed",
+            "diesel:diesel-008": "derived_from_run_seed",
+            "diesel:diesel-009": "derived_from_run_seed",
+            "diesel:diesel-010": "derived_from_run_seed",
+            "fabric": "derived_from_run_seed",
+            "price_curve": "explicit_config",
+            "procurement_price_curve": "explicit_config",
+            "scada": "explicit_config",
+            "solar_sim": "derived_from_run_seed"
+          },
+          "requested_run_seed": null,
+          "resolved_at_utc": "2026-10-23T13:55:34.835823+00:00",
+          "root_seed": 16651547631176063766,
+          "root_seed_drawn": true,
+          "seed_derivation_version": "d4-sha256-v1"
+        },
+        "ticks": 252
+      },
+      "same_as_pinned_5b": true,
+      "same_physical_hash": true
+    },
+    "scenario-equinix-sj-1": {
+      "pinned_5b_hash": "84a8294e726190fa58a869f9e64b455bfb3ef7675bad448ae39f643f269db510",
+      "pyhashseed_1": {
+        "balance_failure_ticks": [],
+        "frequency_max_hz": 60.0,
+        "frequency_min_hz": 60.0,
+        "physical_sha256": "84a8294e726190fa58a869f9e64b455bfb3ef7675bad448ae39f643f269db510",
+        "requested_seed": null,
+        "scenario_id": "scenario-equinix-sj-1",
+        "seed_manifest": {
+          "consumer_seeds": {
+            "advisory_deidentification": 748760014706926165,
+            "fabric": 7434125860252584266,
+            "kube:sj1-k8s-h100": 42,
+            "kube:sj1-ray-gb200": 2042,
+            "kube:sj1-slurm-h100": 1042,
+            "price_curve": 42,
+            "procurement_price_curve": 42,
+            "scada": 42,
+            "solar_sim": 8075164891224937087
+          },
+          "consumer_sources": {
+            "advisory_deidentification": "derived_from_run_seed",
+            "fabric": "derived_from_run_seed",
+            "kube:sj1-k8s-h100": "explicit_config",
+            "kube:sj1-ray-gb200": "explicit_config",
+            "kube:sj1-slurm-h100": "explicit_config",
+            "price_curve": "explicit_config",
+            "procurement_price_curve": "explicit_config",
+            "scada": "explicit_config",
+            "solar_sim": "derived_from_run_seed"
+          },
+          "requested_run_seed": null,
+          "resolved_at_utc": "2026-10-23T13:54:50.255337+00:00",
+          "root_seed": 12047468256821004112,
+          "root_seed_drawn": true,
+          "seed_derivation_version": "d4-sha256-v1"
+        },
+        "ticks": 720
+      },
+      "pyhashseed_987654321": {
+        "balance_failure_ticks": [],
+        "frequency_max_hz": 60.0,
+        "frequency_min_hz": 60.0,
+        "physical_sha256": "84a8294e726190fa58a869f9e64b455bfb3ef7675bad448ae39f643f269db510",
+        "requested_seed": null,
+        "scenario_id": "scenario-equinix-sj-1",
+        "seed_manifest": {
+          "consumer_seeds": {
+            "advisory_deidentification": 7475498217997139650,
+            "fabric": 1716124536467154885,
+            "kube:sj1-k8s-h100": 42,
+            "kube:sj1-ray-gb200": 2042,
+            "kube:sj1-slurm-h100": 1042,
+            "price_curve": 42,
+            "procurement_price_curve": 42,
+            "scada": 42,
+            "solar_sim": 7593916036631096846
+          },
+          "consumer_sources": {
+            "advisory_deidentification": "derived_from_run_seed",
+            "fabric": "derived_from_run_seed",
+            "kube:sj1-k8s-h100": "explicit_config",
+            "kube:sj1-ray-gb200": "explicit_config",
+            "kube:sj1-slurm-h100": "explicit_config",
+            "price_curve": "explicit_config",
+            "procurement_price_curve": "explicit_config",
+            "scada": "explicit_config",
+            "solar_sim": "derived_from_run_seed"
+          },
+          "requested_run_seed": null,
+          "resolved_at_utc": "2026-10-23T13:55:00.345378+00:00",
+          "root_seed": 12963857723379829324,
+          "root_seed_drawn": true,
+          "seed_derivation_version": "d4-sha256-v1"
+        },
+        "ticks": 720
+      },
+      "same_as_pinned_5b": true,
+      "same_physical_hash": true
+    },
+    "scenario-fc100-islanded-v2": {
+      "pinned_5b_hash": "44b5f15a0cee3477fd14f3d22255c17ef42abd6a3765d8adc3443abbf9b88565",
+      "pyhashseed_1": {
+        "balance_failure_ticks": [],
+        "frequency_max_hz": 60.0,
+        "frequency_min_hz": 60.0,
+        "physical_sha256": "44b5f15a0cee3477fd14f3d22255c17ef42abd6a3765d8adc3443abbf9b88565",
+        "requested_seed": null,
+        "scenario_id": "scenario-fc100-islanded-v2",
+        "seed_manifest": {
+          "consumer_seeds": {
+            "advisory_deidentification": 10160851250526530014,
+            "diesel:diesel-000": 10946259422787018342,
+            "fabric": 10388123781083922358,
+            "price_curve": 42,
+            "procurement_price_curve": 42,
+            "scada": 42,
+            "solar_sim": 2213724800688897647
+          },
+          "consumer_sources": {
+            "advisory_deidentification": "derived_from_run_seed",
+            "diesel:diesel-000": "derived_from_run_seed",
+            "fabric": "derived_from_run_seed",
+            "price_curve": "explicit_config",
+            "procurement_price_curve": "explicit_config",
+            "scada": "explicit_config",
+            "solar_sim": "derived_from_run_seed"
+          },
+          "requested_run_seed": null,
+          "resolved_at_utc": "2026-10-23T13:55:37.461959+00:00",
+          "root_seed": 13663072034117881923,
+          "root_seed_drawn": true,
+          "seed_derivation_version": "d4-sha256-v1"
+        },
+        "ticks": 264
+      },
+      "pyhashseed_987654321": {
+        "balance_failure_ticks": [],
+        "frequency_max_hz": 60.0,
+        "frequency_min_hz": 60.0,
+        "physical_sha256": "44b5f15a0cee3477fd14f3d22255c17ef42abd6a3765d8adc3443abbf9b88565",
+        "requested_seed": null,
+        "scenario_id": "scenario-fc100-islanded-v2",
+        "seed_manifest": {
+          "consumer_seeds": {
+            "advisory_deidentification": 14179444513982481009,
+            "diesel:diesel-000": 13805349999304469347,
+            "fabric": 14044894552538350717,
+            "price_curve": 42,
+            "procurement_price_curve": 42,
+            "scada": 42,
+            "solar_sim": 1858526458474061891
+          },
+          "consumer_sources": {
+            "advisory_deidentification": "derived_from_run_seed",
+            "diesel:diesel-000": "derived_from_run_seed",
+            "fabric": "derived_from_run_seed",
+            "price_curve": "explicit_config",
+            "procurement_price_curve": "explicit_config",
+            "scada": "explicit_config",
+            "solar_sim": "derived_from_run_seed"
+          },
+          "requested_run_seed": null,
+          "resolved_at_utc": "2026-10-23T13:56:05.285346+00:00",
+          "root_seed": 17872578242935351896,
+          "root_seed_drawn": true,
+          "seed_derivation_version": "d4-sha256-v1"
+        },
+        "ticks": 264
+      },
+      "same_as_pinned_5b": true,
+      "same_physical_hash": true
+    },
+    "scenario-fc100-islanded-zero-hot-v2": {
+      "pinned_5b_hash": "0bc7e7a2a5af0798a4b4a3cdc69687e6084ff57bde0c2b34500545f84115b8ce",
+      "pyhashseed_1": {
+        "balance_failure_ticks": [],
+        "frequency_max_hz": 60.0,
+        "frequency_min_hz": -82.80435199997717,
+        "physical_sha256": "0bc7e7a2a5af0798a4b4a3cdc69687e6084ff57bde0c2b34500545f84115b8ce",
+        "requested_seed": null,
+        "scenario_id": "scenario-fc100-islanded-zero-hot-v2",
+        "seed_manifest": {
+          "consumer_seeds": {
+            "advisory_deidentification": 3725731708560263615,
+            "diesel:diesel-000": 4099839615500663179,
+            "fabric": 10341635130845444229,
+            "price_curve": 42,
+            "procurement_price_curve": 42,
+            "scada": 42,
+            "solar_sim": 8747139236258720120
+          },
+          "consumer_sources": {
+            "advisory_deidentification": "derived_from_run_seed",
+            "diesel:diesel-000": "derived_from_run_seed",
+            "fabric": "derived_from_run_seed",
+            "price_curve": "explicit_config",
+            "procurement_price_curve": "explicit_config",
+            "scada": "explicit_config",
+            "solar_sim": "derived_from_run_seed"
+          },
+          "requested_run_seed": null,
+          "resolved_at_utc": "2026-10-23T13:56:33.378279+00:00",
+          "root_seed": 3734768894482224062,
+          "root_seed_drawn": true,
+          "seed_derivation_version": "d4-sha256-v1"
+        },
+        "ticks": 264
+      },
+      "pyhashseed_987654321": {
+        "balance_failure_ticks": [],
+        "frequency_max_hz": 60.0,
+        "frequency_min_hz": -82.80435199997717,
+        "physical_sha256": "0bc7e7a2a5af0798a4b4a3cdc69687e6084ff57bde0c2b34500545f84115b8ce",
+        "requested_seed": null,
+        "scenario_id": "scenario-fc100-islanded-zero-hot-v2",
+        "seed_manifest": {
+          "consumer_seeds": {
+            "advisory_deidentification": 8183807706743063048,
+            "diesel:diesel-000": 14629340860925586286,
+            "fabric": 17420412398659924460,
+            "price_curve": 42,
+            "procurement_price_curve": 42,
+            "scada": 42,
+            "solar_sim": 10449082284761905874
+          },
+          "consumer_sources": {
+            "advisory_deidentification": "derived_from_run_seed",
+            "diesel:diesel-000": "derived_from_run_seed",
+            "fabric": "derived_from_run_seed",
+            "price_curve": "explicit_config",
+            "procurement_price_curve": "explicit_config",
+            "scada": "explicit_config",
+            "solar_sim": "derived_from_run_seed"
+          },
+          "requested_run_seed": null,
+          "resolved_at_utc": "2026-10-23T13:56:42.099076+00:00",
+          "root_seed": 2267246036288054958,
+          "root_seed_drawn": true,
+          "seed_derivation_version": "d4-sha256-v1"
+        },
+        "ticks": 264
+      },
+      "same_as_pinned_5b": true,
+      "same_physical_hash": true
+    },
+    "scenario-hybrid-ai-100mw-addendum-i": {
+      "pinned_5b_hash": "5b71aa3959769d9b579e7781b120bf1fcabecdaed1476481f2e6e5bf56f1ddfb",
+      "pyhashseed_1": {
+        "balance_failure_ticks": [],
+        "frequency_max_hz": 60.97955266880781,
+        "frequency_min_hz": -218.79606450000827,
+        "physical_sha256": "5b71aa3959769d9b579e7781b120bf1fcabecdaed1476481f2e6e5bf56f1ddfb",
+        "requested_seed": null,
+        "scenario_id": "scenario-hybrid-ai-100mw-addendum-i",
+        "seed_manifest": {
+          "consumer_seeds": {
+            "advisory_deidentification": 14623585839402061999,
+            "diesel:diesel-000": 403813999930309883,
+            "diesel:diesel-001": 4591168082201684392,
+            "diesel:diesel-002": 5150748693805661422,
+            "diesel:diesel-003": 1654621308331585220,
+            "diesel:diesel-004": 13801092785564373555,
+            "diesel:diesel-005": 13370287156518248622,
+            "diesel:diesel-006": 2199244954063367977,
+            "diesel:diesel-007": 5072271040002450826,
+            "diesel:diesel-008": 7055298646814607302,
+            "diesel:diesel-009": 18264341502551198470,
+            "diesel:diesel-010": 2329555527424528520,
+            "diesel:diesel-011": 9224463194754180605,
+            "diesel:diesel-012": 11858779864120275339,
+            "diesel:diesel-013": 10653702027200898289,
+            "diesel:diesel-014": 18036631311669519307,
+            "diesel:diesel-015": 6785484068370293770,
+            "diesel:diesel-016": 14489594491905452814,
+            "diesel:diesel-017": 15683029722197261356,
+            "diesel:diesel-018": 5406157124562117149,
+            "diesel:diesel-019": 15699572051486997390,
+            "fabric": 4548213991853448211,
+            "price_curve": 42,
+            "procurement_price_curve": 42,
+            "scada": 42,
+            "solar_sim": 10978927515753139611
+          },
+          "consumer_sources": {
+            "advisory_deidentification": "derived_from_run_seed",
+            "diesel:diesel-000": "derived_from_run_seed",
+            "diesel:diesel-001": "derived_from_run_seed",
+            "diesel:diesel-002": "derived_from_run_seed",
+            "diesel:diesel-003": "derived_from_run_seed",
+            "diesel:diesel-004": "derived_from_run_seed",
+            "diesel:diesel-005": "derived_from_run_seed",
+            "diesel:diesel-006": "derived_from_run_seed",
+            "diesel:diesel-007": "derived_from_run_seed",
+            "diesel:diesel-008": "derived_from_run_seed",
+            "diesel:diesel-009": "derived_from_run_seed",
+            "diesel:diesel-010": "derived_from_run_seed",
+            "diesel:diesel-011": "derived_from_run_seed",
+            "diesel:diesel-012": "derived_from_run_seed",
+            "diesel:diesel-013": "derived_from_run_seed",
+            "diesel:diesel-014": "derived_from_run_seed",
+            "diesel:diesel-015": "derived_from_run_seed",
+            "diesel:diesel-016": "derived_from_run_seed",
+            "diesel:diesel-017": "derived_from_run_seed",
+            "diesel:diesel-018": "derived_from_run_seed",
+            "diesel:diesel-019": "derived_from_run_seed",
+            "fabric": "derived_from_run_seed",
+            "price_curve": "explicit_config",
+            "procurement_price_curve": "explicit_config",
+            "scada": "explicit_config",
+            "solar_sim": "derived_from_run_seed"
+          },
+          "requested_run_seed": null,
+          "resolved_at_utc": "2026-10-23T13:55:29.302847+00:00",
+          "root_seed": 5813331343168719712,
+          "root_seed_drawn": true,
+          "seed_derivation_version": "d4-sha256-v1"
+        },
+        "ticks": 120
+      },
+      "pyhashseed_987654321": {
+        "balance_failure_ticks": [],
+        "frequency_max_hz": 60.97955266880781,
+        "frequency_min_hz": -218.79606450000827,
+        "physical_sha256": "5b71aa3959769d9b579e7781b120bf1fcabecdaed1476481f2e6e5bf56f1ddfb",
+        "requested_seed": null,
+        "scenario_id": "scenario-hybrid-ai-100mw-addendum-i",
+        "seed_manifest": {
+          "consumer_seeds": {
+            "advisory_deidentification": 11811646542435318897,
+            "diesel:diesel-000": 2357600413574763083,
+            "diesel:diesel-001": 17410619816220479429,
+            "diesel:diesel-002": 12205142685497592924,
+            "diesel:diesel-003": 12298757983226210888,
+            "diesel:diesel-004": 13953258310424500674,
+            "diesel:diesel-005": 2828338088397909780,
+            "diesel:diesel-006": 11657001609426340169,
+            "diesel:diesel-007": 3310545319442404161,
+            "diesel:diesel-008": 17391699805726829536,
+            "diesel:diesel-009": 10398909430495957437,
+            "diesel:diesel-010": 6186746638953688765,
+            "diesel:diesel-011": 8524628071112203039,
+            "diesel:diesel-012": 10825764692728953694,
+            "diesel:diesel-013": 2273372491603001852,
+            "diesel:diesel-014": 11073811215640419574,
+            "diesel:diesel-015": 358207965067694458,
+            "diesel:diesel-016": 14429031125852080413,
+            "diesel:diesel-017": 575337975311492116,
+            "diesel:diesel-018": 10101762104457784307,
+            "diesel:diesel-019": 6407938391543473650,
+            "fabric": 5684855665669713713,
+            "price_curve": 42,
+            "procurement_price_curve": 42,
+            "scada": 42,
+            "solar_sim": 13195490613162425444
+          },
+          "consumer_sources": {
+            "advisory_deidentification": "derived_from_run_seed",
+            "diesel:diesel-000": "derived_from_run_seed",
+            "diesel:diesel-001": "derived_from_run_seed",
+            "diesel:diesel-002": "derived_from_run_seed",
+            "diesel:diesel-003": "derived_from_run_seed",
+            "diesel:diesel-004": "derived_from_run_seed",
+            "diesel:diesel-005": "derived_from_run_seed",
+            "diesel:diesel-006": "derived_from_run_seed",
+            "diesel:diesel-007": "derived_from_run_seed",
+            "diesel:diesel-008": "derived_from_run_seed",
+            "diesel:diesel-009": "derived_from_run_seed",
+            "diesel:diesel-010": "derived_from_run_seed",
+            "diesel:diesel-011": "derived_from_run_seed",
+            "diesel:diesel-012": "derived_from_run_seed",
+            "diesel:diesel-013": "derived_from_run_seed",
+            "diesel:diesel-014": "derived_from_run_seed",
+            "diesel:diesel-015": "derived_from_run_seed",
+            "diesel:diesel-016": "derived_from_run_seed",
+            "diesel:diesel-017": "derived_from_run_seed",
+            "diesel:diesel-018": "derived_from_run_seed",
+            "diesel:diesel-019": "derived_from_run_seed",
+            "fabric": "derived_from_run_seed",
+            "price_curve": "explicit_config",
+            "procurement_price_curve": "explicit_config",
+            "scada": "explicit_config",
+            "solar_sim": "derived_from_run_seed"
+          },
+          "requested_run_seed": null,
+          "resolved_at_utc": "2026-10-23T13:55:30.710770+00:00",
+          "root_seed": 11906998187016783289,
+          "root_seed_drawn": true,
+          "seed_derivation_version": "d4-sha256-v1"
+        },
+        "ticks": 120
+      },
+      "same_as_pinned_5b": true,
+      "same_physical_hash": true
+    },
+    "scenario-turbine-01": {
+      "pinned_5b_hash": "23fffd3cf5f1281cb72742254e05d393c705e5cdacf2fe5036541e8deedb59b4",
+      "pyhashseed_1": {
+        "balance_failure_ticks": [],
+        "frequency_max_hz": 60.58640692110985,
+        "frequency_min_hz": 60.0,
+        "physical_sha256": "23fffd3cf5f1281cb72742254e05d393c705e5cdacf2fe5036541e8deedb59b4",
+        "requested_seed": null,
+        "scenario_id": "scenario-turbine-01",
+        "seed_manifest": {
+          "consumer_seeds": {
+            "advisory_deidentification": 2274601624873432810,
+            "fabric": 5035683478082239087,
+            "kube:sj1-k8s-h100": 42,
+            "kube:sj1-ray-gb200": 2042,
+            "kube:sj1-slurm-h100": 1042,
+            "price_curve": 42,
+            "procurement_price_curve": 42,
+            "scada": 42,
+            "solar_sim": 698132371826462161
+          },
+          "consumer_sources": {
+            "advisory_deidentification": "derived_from_run_seed",
+            "fabric": "derived_from_run_seed",
+            "kube:sj1-k8s-h100": "explicit_config",
+            "kube:sj1-ray-gb200": "explicit_config",
+            "kube:sj1-slurm-h100": "explicit_config",
+            "price_curve": "explicit_config",
+            "procurement_price_curve": "explicit_config",
+            "scada": "explicit_config",
+            "solar_sim": "derived_from_run_seed"
+          },
+          "requested_run_seed": null,
+          "resolved_at_utc": "2026-10-23T13:55:09.925958+00:00",
+          "root_seed": 11063164500835171297,
+          "root_seed_drawn": true,
+          "seed_derivation_version": "d4-sha256-v1"
+        },
+        "ticks": 720
+      },
+      "pyhashseed_987654321": {
+        "balance_failure_ticks": [],
+        "frequency_max_hz": 60.58640692110985,
+        "frequency_min_hz": 60.0,
+        "physical_sha256": "23fffd3cf5f1281cb72742254e05d393c705e5cdacf2fe5036541e8deedb59b4",
+        "requested_seed": null,
+        "scenario_id": "scenario-turbine-01",
+        "seed_manifest": {
+          "consumer_seeds": {
+            "advisory_deidentification": 3999165521432788711,
+            "fabric": 1786875502315947399,
+            "kube:sj1-k8s-h100": 42,
+            "kube:sj1-ray-gb200": 2042,
+            "kube:sj1-slurm-h100": 1042,
+            "price_curve": 42,
+            "procurement_price_curve": 42,
+            "scada": 42,
+            "solar_sim": 11527592752947146778
+          },
+          "consumer_sources": {
+            "advisory_deidentification": "derived_from_run_seed",
+            "fabric": "derived_from_run_seed",
+            "kube:sj1-k8s-h100": "explicit_config",
+            "kube:sj1-ray-gb200": "explicit_config",
+            "kube:sj1-slurm-h100": "explicit_config",
+            "price_curve": "explicit_config",
+            "procurement_price_curve": "explicit_config",
+            "scada": "explicit_config",
+            "solar_sim": "derived_from_run_seed"
+          },
+          "requested_run_seed": null,
+          "resolved_at_utc": "2026-10-23T13:55:19.779206+00:00",
+          "root_seed": 3434962841345100788,
+          "root_seed_drawn": true,
+          "seed_derivation_version": "d4-sha256-v1"
+        },
+        "ticks": 720
+      },
+      "same_as_pinned_5b": true,
+      "same_physical_hash": true
+    }
+  },
+  "status": "STOP_HASHSEED_DIVERGENCE"
+}

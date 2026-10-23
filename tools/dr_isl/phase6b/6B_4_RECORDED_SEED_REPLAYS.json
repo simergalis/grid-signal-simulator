@@ -1,0 +1,93 @@
+{
+  "replays": {
+    "S10_mit_supercloud_2021-08-11": {
+      "first_hash": "3e24904fd7e8f71afa1f5b30ec2f2958a6b43e7670ab9fefae04f3440aa57bff",
+      "first_hashseed": 1,
+      "hashseed": 987654321,
+      "identical": true,
+      "matches_pinned": true,
+      "pinned_5b_hash": "3e24904fd7e8f71afa1f5b30ec2f2958a6b43e7670ab9fefae04f3440aa57bff",
+      "replay_hash": "3e24904fd7e8f71afa1f5b30ec2f2958a6b43e7670ab9fefae04f3440aa57bff",
+      "root_seed": 9704025095942562684,
+      "tick_count": 17280
+    },
+    "demo-islanded-ramp": {
+      "first_hash": "81c649616d3a82c9107b46f5c779d1a214a4f44e6142a1253d3f913f58544df7",
+      "first_hashseed": 1,
+      "hashseed": 987654321,
+      "identical": true,
+      "matches_pinned": false,
+      "pinned_5b_hash": "e3b8cc8dfcc4fc4847f653b260e0e9a7c6ee88e1722930ca59567875df2219d6",
+      "replay_hash": "81c649616d3a82c9107b46f5c779d1a214a4f44e6142a1253d3f913f58544df7",
+      "root_seed": 5887540250213314481,
+      "tick_count": 2160
+    },
+    "scenario-100mw-fuel-cell-bess-diesel": {
+      "first_hash": "dad91d98830c78f678ed4c490729d1a6772046251a979e6c50af3a5f9f6300cb",
+      "first_hashseed": 1,
+      "hashseed": 987654321,
+      "identical": true,
+      "matches_pinned": true,
+      "pinned_5b_hash": "dad91d98830c78f678ed4c490729d1a6772046251a979e6c50af3a5f9f6300cb",
+      "replay_hash": "dad91d98830c78f678ed4c490729d1a6772046251a979e6c50af3a5f9f6300cb",
+      "root_seed": 5229352533645936335,
+      "tick_count": 252
+    },
+    "scenario-equinix-sj-1": {
+      "first_hash": "84a8294e726190fa58a869f9e64b455bfb3ef7675bad448ae39f643f269db510",
+      "first_hashseed": 1,
+      "hashseed": 987654321,
+      "identical": true,
+      "matches_pinned": true,
+      "pinned_5b_hash": "84a8294e726190fa58a869f9e64b455bfb3ef7675bad448ae39f643f269db510",
+      "replay_hash": "84a8294e726190fa58a869f9e64b455bfb3ef7675bad448ae39f643f269db510",
+      "root_seed": 12047468256821004112,
+      "tick_count": 720
+    },
+    "scenario-fc100-islanded-v2": {
+      "first_hash": "44b5f15a0cee3477fd14f3d22255c17ef42abd6a3765d8adc3443abbf9b88565",
+      "first_hashseed": 1,
+      "hashseed": 987654321,
+      "identical": true,
+      "matches_pinned": true,
+      "pinned_5b_hash": "44b5f15a0cee3477fd14f3d22255c17ef42abd6a3765d8adc3443abbf9b88565",
+      "replay_hash": "44b5f15a0cee3477fd14f3d22255c17ef42abd6a3765d8adc3443abbf9b88565",
+      "root_seed": 13663072034117881923,
+      "tick_count": 264
+    },
+    "scenario-fc100-islanded-zero-hot-v2": {
+      "first_hash": "0bc7e7a2a5af0798a4b4a3cdc69687e6084ff57bde0c2b34500545f84115b8ce",
+      "first_hashseed": 1,
+      "hashseed": 987654321,
+      "identical": true,
+      "matches_pinned": true,
+      "pinned_5b_hash": "0bc7e7a2a5af0798a4b4a3cdc69687e6084ff57bde0c2b34500545f84115b8ce",
+      "replay_hash": "0bc7e7a2a5af0798a4b4a3cdc69687e6084ff57bde0c2b34500545f84115b8ce",
+      "root_seed": 3734768894482224062,
+      "tick_count": 264
+    },
+    "scenario-hybrid-ai-100mw-addendum-i": {
+      "first_hash": "5b71aa3959769d9b579e7781b120bf1fcabecdaed1476481f2e6e5bf56f1ddfb",
+      "first_hashseed": 1,
+      "hashseed": 987654321,
+      "identical": true,
+      "matches_pinned": true,
+      "pinned_5b_hash": "5b71aa3959769d9b579e7781b120bf1fcabecdaed1476481f2e6e5bf56f1ddfb",
+      "replay_hash": "5b71aa3959769d9b579e7781b120bf1fcabecdaed1476481f2e6e5bf56f1ddfb",
+      "root_seed": 5813331343168719712,
+      "tick_count": 120
+    },
+    "scenario-turbine-01": {
+      "first_hash": "23fffd3cf5f1281cb72742254e05d393c705e5cdacf2fe5036541e8deedb59b4",
+      "first_hashseed": 1,
+      "hashseed": 987654321,
+      "identical": true,
+      "matches_pinned": true,
+      "pinned_5b_hash": "23fffd3cf5f1281cb72742254e05d393c705e5cdacf2fe5036541e8deedb59b4",
+      "replay_hash": "23fffd3cf5f1281cb72742254e05d393c705e5cdacf2fe5036541e8deedb59b4",
+      "root_seed": 11063164500835171297,
+      "tick_count": 720
+    }
+  },
+  "status": "PASS"
+}

@@ -1,0 +1,61 @@
+{
+  "scenario": "scenario-h2-slurm-24h",
+  "seed": 42,
+  "reuse_cache": false,
+  "baseline_physical_hash": "603441374503951709dc77d5ae11234e966d5b479e50edca5dd608c7782f217f",
+  "informed_physical_hash": "17954e9420ad8d0c9493a690c03cd670ae0a5f57df60f801b7c292aeea3a9fba",
+  "reference": "tools/dr_isl/phase6/6_3A_TICK_FIELD_COMPARISON.json",
+  "baseline_matches_reference": true,
+  "informed_matches_reference": true,
+  "baseline": {
+    "dispatch_curtailment_mwh": 349.917690813,
+    "attributable_curtailment_fuel_mmbtu": 3680.617469434,
+    "interval_exposure_curtailment_fuel_mmbtu": 4838.569627585,
+    "fuel_by_component_mmbtu": {
+      "hot_standby_fuel_mmbtu": 4.552430556,
+      "load_fuel_mmbtu": 5136.719001539,
+      "no_load_fuel_mmbtu": 65.231666667,
+      "start_fuel_mmbtu": 124.0
+    },
+    "turbine_fuel_mmbtu": 5330.503098761,
+    "unserved_mwh": 5.011418076,
+    "peak_unserved_mw": 44.86838787,
+    "bess_soc_final": 0.999999998,
+    "stop_floor_refusal_count": 0,
+    "forecast_misses": 0,
+    "start_events_recorded_measured": [11, 11],
+    "start_fuel_reconciliation_passed": true,
+    "frequency_feedback_configured": false,
+    "invalid_frequency_tick_count": 549,
+    "invalid_frequency_fraction": 0.03177083333333333
+  },
+  "informed": {
+    "dispatch_curtailment_mwh": 342.977539092,
+    "attributable_curtailment_fuel_mmbtu": 3607.524008603,
+    "interval_exposure_curtailment_fuel_mmbtu": 4892.43517635,
+    "fuel_by_component_mmbtu": {
+      "hot_standby_fuel_mmbtu": 3.761458333,
+      "load_fuel_mmbtu": 5106.733034717,
+      "no_load_fuel_mmbtu": 64.855,
+      "start_fuel_mmbtu": 152.0
+    },
+    "turbine_fuel_mmbtu": 5327.34949305,
+    "unserved_mwh": 0.859772492,
+    "peak_unserved_mw": 42.36838787,
+    "bess_soc_final": 0.999999987,
+    "stop_floor_refusal_count": 14904,
+    "forecast_misses": 39,
+    "start_events_recorded_measured": [14, 14],
+    "start_fuel_reconciliation_passed": true,
+    "frequency_feedback_configured": false,
+    "invalid_frequency_tick_count": 412,
+    "invalid_frequency_fraction": 0.023842592592592592
+  },
+  "compute_trace_sha256": "ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b",
+  "comparison_verdict": "PASS",
+  "comparison_conditions": {
+    "count": 10,
+    "all_passed": true
+  },
+  "status": "PASS"
+}

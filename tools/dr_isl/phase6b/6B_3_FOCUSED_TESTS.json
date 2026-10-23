@@ -1,0 +1,14 @@
+{
+  "test_file": "tests/test_dr_isl_phase6_reproducibility.py",
+  "test_cases": [
+    "test_tc_isl_34_null_root_is_drawn_once_and_recorded",
+    "test_tc_isl_35_consumer_seed_is_stable_across_hash_seeds",
+    "test_tc_isl_36_each_diesel_uses_its_recorded_derived_seed",
+    "test_tc_isl_37_fabric_seed_is_independent_of_python_hash",
+    "test_tc_isl_38_nonphysical_fields_are_excluded_from_identity",
+    "test_tc_isl_39_advisory_cadence_uses_sim_time_outside_live_mode",
+    "test_tc_isl_40_replay_with_recorded_seed_has_identical_physical_hash"
+  ],
+  "result": "7 passed",
+  "runtime": "5.37s"
+}

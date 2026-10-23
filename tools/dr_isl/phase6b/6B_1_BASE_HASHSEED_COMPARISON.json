@@ -1,0 +1,87 @@
+{
+  "base_commit": "f6ac65849906df7ab33654a0b126a79c9af23d04",
+  "scenario_id": "scenario-uneven-multisched-01",
+  "requested_seed": 42,
+  "baseline_arm": {
+    "tick_count": 1440,
+    "runs": [
+      {
+        "pythonhashseed": "1",
+        "full_tick_sha256": "dca8f59f895f2713f9a383744f8a018f86a1020277d1f7f25d9a9aee076a4e1d",
+        "phase5b_contract_sha256": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+        "record_identity_digest": "2c9d0a89e61c435624dd2ecf703608cdca96f122e19fc0605fe10fb4d9a8753f"
+      },
+      {
+        "pythonhashseed": "987654321",
+        "full_tick_sha256": "f64724bfc4af936237ea8a402cbb409cb117dcb69c765e097509afd8f7f5e329",
+        "phase5b_contract_sha256": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+        "record_identity_digest": "2c9d0a89e61c435624dd2ecf703608cdca96f122e19fc0605fe10fb4d9a8753f"
+      },
+      {
+        "pythonhashseed": "1729",
+        "full_tick_sha256": "5cb10b8bb9875c92184938e4263db5cc1902efca3110f0422130409a38a636a9",
+        "phase5b_contract_sha256": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+        "record_identity_digest": "2c9d0a89e61c435624dd2ecf703608cdca96f122e19fc0605fe10fb4d9a8753f"
+      }
+    ],
+    "pairwise_field_differences": {
+      "fields": [
+        {
+          "field": "wall_stamp_utc",
+          "differing_tick_count": 1440,
+          "first_tick_index": 1,
+          "first_sim_time_seconds": 5.0,
+          "values": {
+            "pythonhashseed_1": 1792760648.9694517,
+            "pythonhashseed_987654321": 1792760673.8864102,
+            "pythonhashseed_1729": 1792760730.702224
+          }
+        }
+      ],
+      "all_other_tick_fields_identical": true
+    },
+    "physical_energy_fuel_served_unserved_curtailment_soc_start_dispatch_fields_differ": false,
+    "metrics": {
+      "dispatch_curtailment_mwh": 8.136511735,
+      "turbine_fuel_mmbtu": 714.363019086,
+      "unserved_mwh": 0.351692658,
+      "peak_unserved_mw": 22.309362466,
+      "bess_soc_final": 0.999999999,
+      "recorded_start_count": 2,
+      "measured_start_count": 2,
+      "start_fuel_reconciliation_passed": true
+    }
+  },
+  "informed_hash_check": {
+    "tick_count": 1440,
+    "runs": [
+      {
+        "pythonhashseed": "1",
+        "full_tick_sha256": "8882b2d8865fffec24e3b036f65919de22c2a9778bbc0dc2cba0d17b7841d6c8",
+        "phase5b_contract_sha256": "72cc28766574a78c44913d389207bc6cca268ac1bf29b15abd148c63af334754"
+      },
+      {
+        "pythonhashseed": "987654321",
+        "full_tick_sha256": "1d0b85bbf942fd49f34dc6508fc9e3cb742bbb6986adfe7f8357369e63373afb",
+        "phase5b_contract_sha256": "72cc28766574a78c44913d389207bc6cca268ac1bf29b15abd148c63af334754"
+      },
+      {
+        "pythonhashseed": "1729",
+        "full_tick_sha256": "3a48d3d7186e258aeb1776bc0233f36e431c50ef8806136d10cd16ea0bcf8ae5",
+        "phase5b_contract_sha256": "72cc28766574a78c44913d389207bc6cca268ac1bf29b15abd148c63af334754"
+      }
+    ]
+  },
+  "saved_phase5b_hashes": {
+    "baseline": "e9a25202a069acdb648779981f07bc27e1cbe53a5a2b44e1571bd8724912a5f9",
+    "informed": "34bc07cdebda13c4e07bc990408745fbeeb5f916248cd7159d9f8fd656ee2702",
+    "reproduced_under_tested_pythonhashseed_values": false
+  },
+  "pythonhashseed_source": {
+    "file": "tools/dr_isl/baseline_runner.py",
+    "lines": "180-181",
+    "configured_value": "1729",
+    "historical_phase5b_run_value_separately_recorded": false
+  },
+  "gate": "PASS: no energy, fuel, served/unserved, curtailment, SoC, start, or dispatch field differed across baseline runs. Historical Phase 5b hashes did not reproduce; see the B2 gate."
+}

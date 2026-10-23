@@ -1,0 +1,59 @@
+{
+  "scenario": "scenario-h1-k8s-ray-24h",
+  "seed": 42,
+  "reuse_cache": false,
+  "baseline_physical_hash": "c4fa3b355b2eebf949f1f0ad9f43b1b76770cf05bb380d224a3282699985fc20",
+  "informed_physical_hash": "437d480102d11676df747a5ddc742cd29c9785956c1255098dc8d00d9f18a264",
+  "reference": "tools/dr_isl/phase6/6_3A_TICK_FIELD_COMPARISON.json",
+  "baseline_matches_reference": true,
+  "informed_matches_reference": true,
+  "baseline": {
+    "dispatch_curtailment_mwh": 187.690139189,
+    "attributable_curtailment_fuel_mmbtu": 1974.088304814,
+    "interval_exposure_curtailment_fuel_mmbtu": 3394.620064264,
+    "fuel_by_component_mmbtu": {
+      "hot_standby_fuel_mmbtu": 4.142013889,
+      "load_fuel_mmbtu": 5847.168216351,
+      "no_load_fuel_mmbtu": 72.43,
+      "start_fuel_mmbtu": 116.0
+    },
+    "turbine_fuel_mmbtu": 6039.74023024,
+    "unserved_mwh": 0.894372986,
+    "peak_unserved_mw": 35.021533247,
+    "bess_soc_final": 0.999999998,
+    "stop_floor_refusal_count": 0,
+    "start_events_recorded_measured": [12, 12],
+    "start_fuel_reconciliation_passed": true,
+    "frequency_feedback_configured": false,
+    "invalid_frequency_tick_count": 811,
+    "invalid_frequency_fraction": 0.04693287037037037
+  },
+  "informed": {
+    "dispatch_curtailment_mwh": 176.779572526,
+    "attributable_curtailment_fuel_mmbtu": 1858.026440381,
+    "interval_exposure_curtailment_fuel_mmbtu": 3120.455542377,
+    "fuel_by_component_mmbtu": {
+      "hot_standby_fuel_mmbtu": 4.110069444,
+      "load_fuel_mmbtu": 5660.766981827,
+      "no_load_fuel_mmbtu": 68.021666667,
+      "start_fuel_mmbtu": 116.0
+    },
+    "turbine_fuel_mmbtu": 5848.898717938,
+    "unserved_mwh": 0.124133405,
+    "peak_unserved_mw": 20.746308977,
+    "bess_soc_final": 0.999999989,
+    "stop_floor_refusal_count": 16340,
+    "start_events_recorded_measured": [12, 12],
+    "start_fuel_reconciliation_passed": true,
+    "frequency_feedback_configured": false,
+    "invalid_frequency_tick_count": 76,
+    "invalid_frequency_fraction": 0.004398148148148148
+  },
+  "compute_trace_sha256": "916eb28339ae921141941a8c90069e573e80ef4bf65f2be39cc3e45b8747ccff",
+  "comparison_verdict": "PASS",
+  "comparison_conditions": {
+    "count": 10,
+    "all_passed": true
+  },
+  "status": "PASS"
+}
