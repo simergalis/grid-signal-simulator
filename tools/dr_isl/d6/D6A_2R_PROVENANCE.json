@@ -1,0 +1,26 @@
+{
+  "context_replay": "tools/dr_isl/d6/D6A_2R_60TICK_SUMMARY.json",
+  "current_file_sha256": "8126ee38ef2206f55d28ea9f4da029df836fbf7c4daf7d65e266d821f323f7ad",
+  "current_raw_canonical_sha256": "28f3607147b51a752b4c6df418a423eebe669d5e22808135803cdc0da7025973",
+  "current_s10_path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/S10_mit_supercloud_2021-08-11.json",
+  "generated_candidate_path": "tools/dr_isl/d6/S10_D6A_PROVENANCE_REPRO.json",
+  "generated_file_sha256": "9a12c0bcff2e5a84f2b9af89e5d6a4d3ccb979b016c3ccc7e90f93a0605d98da",
+  "generated_raw_canonical_sha256": "d54befa859e407e4547327f19b6b87d5cd18181778106dbca6df0668c47ee472",
+  "normalization": "ScenarioSpec.model_validate(json.loads(file)).model_dump(mode=\"json\"), default options; both normalized documents identical",
+  "normalized_canonical_sha256": "f8345bbece33731115bcac9f699741c941c80bbd4e5a007deff093a8a1d492ff",
+  "seeder_code": "P/api/routes/scenarios.py:1444-1455; ScenarioStore._seed at :130-136 serializes spec.model_dump_json()",
+  "settings": {
+    "date": "2021-08-11",
+    "generator_source_commit": "0aac1a42ec95ba6d6ba612bf3272bb71868662a5",
+    "input_sha256": "27259e5b8e6daecd80b7853126af40ba759bc25edc9053fc174ef7a4f186aa01",
+    "partitions": [
+      "normal",
+      "gaia",
+      "test"
+    ],
+    "partitions_status": "INFERRED; not a saved historical invocation",
+    "peak_mw": 50.0,
+    "profile": "hopper_8gpu_air",
+    "template": "demo-islanded-ramp.json"
+  }
+}

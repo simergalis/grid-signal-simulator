@@ -1,0 +1,29 @@
+{
+  "schema_version": "supercloud-s10-build-v1",
+  "day_utc": "2021-08-11",
+  "gpu_jobs": 154,
+  "jobs_started_before_window": 1,
+  "jobs_running_past_window": 69,
+  "events": 239,
+  "peak_concurrent_gpus": 424,
+  "chassis_per_gpu": 11.5612,
+  "hardware_profile_id": "hopper_8gpu_air",
+  "rated_kw_per_chassis": 10.2,
+  "target_peak_mw": 50.0,
+  "peak_compute_mw_after_rounding": 50.0,
+  "gpu_count_distribution": {
+    "1": 64,
+    "2": 46,
+    "64": 11,
+    "256": 7,
+    "128": 6,
+    "424": 4,
+    "32": 4,
+    "8": 4,
+    "16": 3,
+    "4": 3,
+    "392": 2
+  },
+  "skipped": {},
+  "template": "demo-islanded-ramp.json"
+}

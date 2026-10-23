@@ -1,0 +1,34 @@
+{
+  "partition_aggregates": {
+    "db": {
+      "cpu_only_allocated_cores_max": 32,
+      "cpu_only_allocated_cores_min": 32,
+      "cpu_only_core_hours": 4.568889,
+      "cpu_only_jobs": 1,
+      "gpu_allocated_jobs": 0,
+      "gpu_tres_ids": []
+    },
+    "normal": {
+      "cpu_only_allocated_cores_max": 25,
+      "cpu_only_allocated_cores_min": 1,
+      "cpu_only_core_hours": 554.4025,
+      "cpu_only_jobs": 9,
+      "gpu_allocated_jobs": 154,
+      "gpu_tres_ids": [
+        1002
+      ]
+    },
+    "xeon-p8": {
+      "cpu_only_allocated_cores_max": 384,
+      "cpu_only_allocated_cores_min": 1,
+      "cpu_only_core_hours": 9360.0025,
+      "cpu_only_jobs": 416,
+      "gpu_allocated_jobs": 0,
+      "gpu_tres_ids": []
+    }
+  },
+  "rule": "CPU-only rows have TRES id 1 cores > 0 and neither GPU TRES id 1001 nor 1002 allocated; count only overlap with UTC day; aggregate only, no row-level data.",
+  "total_cpu_only_core_hours": 9918.973889,
+  "total_cpu_only_jobs": 426,
+  "utc_day": "2021-08-11"
+}

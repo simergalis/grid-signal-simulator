@@ -1,0 +1,22 @@
+{
+  "method": "RunManager headless path; ScenarioSpec validate+model_dump; explicit seed 42; time pinned; context built full-length then end_sim_time set to 300s for 60 ticks",
+  "physical_hashes_equal": true,
+  "runs": [
+    {
+      "balance_failure_count": 0,
+      "end_sim_time_s": 300.0,
+      "physical_sha256": "01bde90a117c760c9f31cbd00c70feb65ac5e386ac51c9e012c907d07849c4aa",
+      "run_seed": 42,
+      "source": "generated",
+      "ticks": 60
+    },
+    {
+      "balance_failure_count": 0,
+      "end_sim_time_s": 300.0,
+      "physical_sha256": "01bde90a117c760c9f31cbd00c70feb65ac5e386ac51c9e012c907d07849c4aa",
+      "run_seed": 42,
+      "source": "current",
+      "ticks": 60
+    }
+  ]
+}

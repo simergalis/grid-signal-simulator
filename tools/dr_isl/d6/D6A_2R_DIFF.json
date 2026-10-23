@@ -1,0 +1,459 @@
+{
+  "normalization": "ScenarioSpec.model_validate(dict).model_dump(mode=\"json\") for both",
+  "normalized_canonical_identical": true,
+  "normalized_difference_patterns": [],
+  "normalized_sha256_current": "f8345bbece33731115bcac9f699741c941c80bbd4e5a007deff093a8a1d492ff",
+  "normalized_sha256_generated": "f8345bbece33731115bcac9f699741c941c80bbd4e5a007deff093a8a1d492ff",
+  "raw_canonical_identical": false,
+  "raw_difference_patterns": [
+    {
+      "class": "current_key_only_null_absent",
+      "count": 1,
+      "distinct_values": {},
+      "path_pattern": "$.base_load_mw"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 1,
+      "distinct_values": {
+        "{\"current_value\": 2.0}": 1
+      },
+      "path_pattern": "$.bess_bridging_floor_anchor_multiple"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 1,
+      "distinct_values": {
+        "{\"current_value\": 0.15}": 1
+      },
+      "path_pattern": "$.bess_bridging_floor_fraction"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 1,
+      "distinct_values": {
+        "{\"current_value\": 0.8}": 1
+      },
+      "path_pattern": "$.bess_catchup_bridge_margin"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 1,
+      "distinct_values": {
+        "{\"current_value\": 15.0}": 1
+      },
+      "path_pattern": "$.bess_catchup_slope_window_s"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 1,
+      "distinct_values": {
+        "{\"current_value\": 30.0}": 1
+      },
+      "path_pattern": "$.bess_catchup_sustain_s"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 1,
+      "distinct_values": {},
+      "path_pattern": "$.bess_charge_price_override_per_mwh"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 1,
+      "distinct_values": {
+        "{\"current_value\": 0.05}": 1
+      },
+      "path_pattern": "$.bess_material_discharge_fraction"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 1,
+      "distinct_values": {
+        "{\"current_value\": 1.0}": 1
+      },
+      "path_pattern": "$.bess_material_discharge_min_mw"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 1,
+      "distinct_values": {
+        "{\"current_value\": 0.0}": 1
+      },
+      "path_pattern": "$.bess_normal_dispatch_depth_fraction"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 1,
+      "distinct_values": {
+        "{\"current_value\": \"autonomous\"}": 1
+      },
+      "path_pattern": "$.bess_units[*].authority_tier"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 1,
+      "distinct_values": {},
+      "path_pattern": "$.cascade_commit_fraction"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 1,
+      "distinct_values": {},
+      "path_pattern": "$.diesel_power_block"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 1,
+      "distinct_values": {
+        "{\"current_value\": []}": 1
+      },
+      "path_pattern": "$.diesel_units"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 1,
+      "distinct_values": {
+        "{\"current_value\": []}": 1
+      },
+      "path_pattern": "$.dq_inject_events"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 1,
+      "distinct_values": {},
+      "path_pattern": "$.edl_calendar_month"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 1,
+      "distinct_values": {},
+      "path_pattern": "$.fuel_cell_baseload_target_mw"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 1,
+      "distinct_values": {
+        "{\"current_value\": false}": 1
+      },
+      "path_pattern": "$.fuel_cell_enabled"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 1,
+      "distinct_values": {},
+      "path_pattern": "$.fuel_cell_initial_state"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 1,
+      "distinct_values": {
+        "{\"current_value\": false}": 1
+      },
+      "path_pattern": "$.fuel_cell_load_following"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 1,
+      "distinct_values": {
+        "{\"current_value\": 0.5}": 1
+      },
+      "path_pattern": "$.fuel_cell_min_stable_fraction"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 1,
+      "distinct_values": {},
+      "path_pattern": "$.fuel_cell_ramp_down_rate_mw_per_s"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 1,
+      "distinct_values": {
+        "{\"current_value\": 0.02}": 1
+      },
+      "path_pattern": "$.fuel_cell_ramp_rate_mw_per_s"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 1,
+      "distinct_values": {
+        "{\"current_value\": 0.0}": 1
+      },
+      "path_pattern": "$.fuel_cell_rated_mw"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 1,
+      "distinct_values": {
+        "{\"current_value\": 1}": 1
+      },
+      "path_pattern": "$.fuel_cell_stack_count"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 1,
+      "distinct_values": {},
+      "path_pattern": "$.fuel_cell_state"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 1,
+      "distinct_values": {},
+      "path_pattern": "$.fuel_cell_turbine_commit_fraction"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 1,
+      "distinct_values": {
+        "{\"current_value\": []}": 1
+      },
+      "path_pattern": "$.fuel_cell_units"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 1,
+      "distinct_values": {},
+      "path_pattern": "$.generator_config"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 1,
+      "distinct_values": {
+        "{\"current_value\": \"autonomous\"}": 1
+      },
+      "path_pattern": "$.grid_authority_tier"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 1,
+      "distinct_values": {},
+      "path_pattern": "$.grid_import_limit_mw"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 1,
+      "distinct_values": {},
+      "path_pattern": "$.grid_import_price_per_mwh"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 1,
+      "distinct_values": {},
+      "path_pattern": "$.initial_spinning_count"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 1,
+      "distinct_values": {
+        "{\"current_value\": []}": 1
+      },
+      "path_pattern": "$.kube_clusters"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 1,
+      "distinct_values": {
+        "{\"current_value\": false}": 1
+      },
+      "path_pattern": "$.n_plus_one_required"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 1,
+      "distinct_values": {},
+      "path_pattern": "$.operating_tier"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 1,
+      "distinct_values": {},
+      "path_pattern": "$.operator_response_profile"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 1,
+      "distinct_values": {
+        "{\"current_value\": 37.3541}": 1
+      },
+      "path_pattern": "$.site_latitude"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 1,
+      "distinct_values": {
+        "{\"current_value\": -121.9552}": 1
+      },
+      "path_pattern": "$.site_longitude"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 1,
+      "distinct_values": {
+        "{\"current_value\": \"Santa Clara, CA, USA\"}": 1
+      },
+      "path_pattern": "$.site_name"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 1,
+      "distinct_values": {
+        "{\"current_value\": -8.130346666666666}": 1
+      },
+      "path_pattern": "$.site_utc_offset_h"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 1,
+      "distinct_values": {},
+      "path_pattern": "$.slurm_config"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 1,
+      "distinct_values": {},
+      "path_pattern": "$.tenant_budgets"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 1,
+      "distinct_values": {
+        "{\"current_value\": []}": 1
+      },
+      "path_pattern": "$.tenant_events"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 5,
+      "distinct_values": {
+        "{\"current_value\": \"autonomous\"}": 5
+      },
+      "path_pattern": "$.turbine_units[*].authority_tier"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 1,
+      "distinct_values": {},
+      "path_pattern": "$.turbine_units[*].cold_start_s"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 5,
+      "distinct_values": {
+        "{\"current_value\": \"offline\"}": 5
+      },
+      "path_pattern": "$.turbine_units[*].initial_state"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 239,
+      "distinct_values": {},
+      "path_pattern": "$.workload_events[*].admission_domain_id"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 239,
+      "distinct_values": {},
+      "path_pattern": "$.workload_events[*].admission_provider"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 239,
+      "distinct_values": {},
+      "path_pattern": "$.workload_events[*].admission_queue_id"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 239,
+      "distinct_values": {},
+      "path_pattern": "$.workload_events[*].capacity_budget_id"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 239,
+      "distinct_values": {},
+      "path_pattern": "$.workload_events[*].capacity_unit"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 239,
+      "distinct_values": {},
+      "path_pattern": "$.workload_events[*].cluster_id"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 239,
+      "distinct_values": {},
+      "path_pattern": "$.workload_events[*].electrical_group_id"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 239,
+      "distinct_values": {
+        "{\"current_value\": 1}": 239
+      },
+      "path_pattern": "$.workload_events[*].gpus_per_unit"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 239,
+      "distinct_values": {},
+      "path_pattern": "$.workload_events[*].infrastructure_allocation_id"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 239,
+      "distinct_values": {},
+      "path_pattern": "$.workload_events[*].power_enforcement_policy"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 239,
+      "distinct_values": {},
+      "path_pattern": "$.workload_events[*].ray_cluster_id"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 239,
+      "distinct_values": {},
+      "path_pattern": "$.workload_events[*].ray_workload_id"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 239,
+      "distinct_values": {
+        "{\"current_value\": 0.0}": 239
+      },
+      "path_pattern": "$.workload_events[*].renewable_shortfall_mw"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 239,
+      "distinct_values": {},
+      "path_pattern": "$.workload_events[*].request_rate"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 239,
+      "distinct_values": {},
+      "path_pattern": "$.workload_events[*].scheduler_domain"
+    },
+    {
+      "class": "current_key_only_null_absent",
+      "count": 239,
+      "distinct_values": {},
+      "path_pattern": "$.workload_events[*].tenant_id"
+    },
+    {
+      "class": "current_nonnull_vs_generated_absent",
+      "count": 239,
+      "distinct_values": {
+        "{\"current_value\": \"training\"}": 239
+      },
+      "path_pattern": "$.workload_events[*].workload_class"
+    }
+  ],
+  "seeder_reference": "api/routes/scenarios.py model_validate_json; ScenarioStore._seed model_dump_json",
+  "workload_events_current": 239,
+  "workload_events_generated": 239
+}
