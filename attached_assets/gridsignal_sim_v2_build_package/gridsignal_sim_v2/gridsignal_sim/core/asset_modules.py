@@ -940,6 +940,10 @@ class TurbineModule(AssetModule):
     # _gov_power_mw: current governor mechanical power output (output of fuel-lag).
     # Both are initialised to 0.0 (no governor correction at start of run).
     # Updated each sub-step in the swing-equation loop; persist across outer ticks.
+    # DR IMPL-ISL-20 / IMPL-ISL-21: diagnostic cascade state only; no
+    # executable dispatch consumes it. The terminal state is rate-limited but
+    # not capped to unit headroom. Primary response is spec gap PX-2 (Forecast
+    # Engine FS v2.5) and needs a design addendum before it can be wired.
     _gov_valve_mw: float = 0.0
     _gov_power_mw: float = 0.0
     # Addendum H Phase 1 gas accounting.  These counters are local to a

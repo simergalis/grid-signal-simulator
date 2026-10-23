@@ -1460,10 +1460,10 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     #   H_agg = Σ(H_i × S_i) / Σ(S_i)  — capacity-weighted H.
     # On-bus turbines only: OFFLINE/STARTING contribute zero rotational inertia.
     #
-    # Phase 4: Governor outer droop uses the per-turbine governor terminal state
-    # (_gov_power_mw) from the previous tick's sub-step loop, not an instantaneous
-    # droop formula. This correctly models the cascade dynamics (valve_tc → fuel_tc)
-    # with the max_load_step bound, and persists across outer ticks.
+    # DR IMPL-ISL-20 / IMPL-ISL-21: the cascade advances diagnostic state that
+    # executable dispatch does not consume. Its terminal state is rate-limited
+    # but not capped to unit headroom. Primary frequency response remains spec
+    # gap PX-2 (Forecast Engine FS v2.5); do not wire it without a design addendum.
     #
     # §REPORT-2A (island_collapse_hz defect): The existing island_collapse_hz
     # (IEEE 1547 Cat I = 57.0 Hz) is a grid-connected DER interconnection threshold.
@@ -1519,9 +1519,10 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     #   t.current_output_mw → t.output_mw()      (method, not attribute)
     #   t.config.msl_mw   → t.config.p_min_stable_frac * t.config.rated_mw
     #
-    # WHY INSTANTANEOUS FOR DISPATCH: same as before — see original comment above.
-    # The sub-step governor cascade in Phase 3+4+5 still uses _GOVERNOR_DEADBAND_HZ
-    # at line ~1525; that usage is unchanged here.
+    # DR IMPL-ISL-20 / IMPL-ISL-21: the bounded dispatch correction is the
+    # only frequency-responsive MW path here; the diagnostic governor cascade
+    # does not feed a later dispatch setpoint. Primary response is PX-2, not
+    # part of the executable model without a design addendum.
     _f_error_hz = state._frequency_hz - state.site.frequency_nominal_hz
     _governor_deadband_hz = _sp.value("governor_deadband_hz")
     # Dispatch ceiling = total installed fleet (not just on-bus) — dispatch intent,
@@ -3487,13 +3488,12 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             # (constant within the sub-step loop). This is the dispatch-plan
             # imbalance that drives rotating inertia.
             #
-            # Governor feedback (Phase 4) runs SEPARATELY below and advances the
-            # governor state using the instantaneous frequency deviation. The
-            # governor terminal state (_gov_power_mw) is used as the NEXT outer
-            # tick's dispatch correction (outer droop), NOT as a within-tick
-            # feedback to the swing equation. This one-outer-tick delay correctly
-            # models the governor's role: it adjusts the NEXT dispatch setpoint,
-            # not the current tick's balance residual.
+            # DR IMPL-ISL-20 / IMPL-ISL-21: the cascade below advances diagnostic
+            # governor state from instantaneous frequency deviation, but no
+            # executable code consumes its terminal _gov_power_mw. That state is
+            # rate-limited but not capped to unit headroom; primary frequency
+            # response is PX-2 (Forecast Engine FS v2.5), a spec gap that needs
+            # a design addendum before it is wired into forcing or dispatch.
             #
             # Within-tick shed from UFLS is added to the forcing since shed
             # reduces the effective load immediately (sub-step granularity).
@@ -3533,12 +3533,10 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
                     state._frequency_hz = _f
                     break
 
-            # Phase 4: Advance per-unit bounded governor cascade (valve lag → fuel lag).
-            # Governor reads the instantaneous frequency deviation and advances its
-            # cascade state. The terminal _gov_power_mw is used by the NEXT outer
-            # tick's dispatch correction (outer droop formula). This is a one-outer-tick
-            # delay, which is the correct model for governor response to frequency events.
-            # Not added to the swing equation forcing within this tick.
+            # DR IMPL-ISL-20 / IMPL-ISL-21: advance diagnostic cascade state only.
+            # No executable code consumes this terminal state; it is rate-limited
+            # but not capped to unit headroom. Primary response is PX-2 in
+            # Forecast Engine FS v2.5 and requires a design addendum before wiring.
             for _t in _on_bus_turbines:
                 _s_i = _t.config.rated_mw / _t.config.power_factor  # MVA base for this unit
                 # Governor demand: droop signal in MW (positive = more output needed).
