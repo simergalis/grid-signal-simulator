@@ -88,3 +88,132 @@ def test_events_pair_up_and_carry_no_dataset_ids():
 def test_empty_day_is_an_error():
     with pytest.raises(ValueError):
         ms.build_scenario([], TEMPLATE, day=DAY, peak_mw=50.0, rated_kw=10.2)
+
+
+def test_cpu_only_load_counts_all_supported_partitions_and_not_gpu_rows():
+    rows = [
+        _row(2001, nodes=("cpu-n",), part="normal", cpus=4,
+             start=D0 + 100, end=D0 + 200),
+        _row(2002, nodes=("cpu-p8",), part="xeon-p8", cpus=8,
+             start=D0 + 150, end=D0 + 250),
+        _row(2003, nodes=("cpu-db",), part="db", cpus=2,
+             start=D0 + 200, end=D0 + 300),
+        _row(2004, nodes=("gpu-n",), part="normal", cpus=4, gpus=1,
+             start=D0 + 100, end=D0 + 300),
+    ]
+    jobs, skipped = ms.cpu_only_jobs_for_day(rows, DAY)
+    assert skipped == {}
+    assert [(job.partition, job.allocated_cores) for job in jobs] == [
+        ("normal", 4),
+        ("xeon-p8", 8),
+        ("db", 2),
+    ]
+    assert len(jobs) == 3  # the GPU row is not double-counted as CPU-only
+    assert sum(
+        job.allocated_cores * (job.end_s - job.start_s) / 3600
+        for job in jobs
+    ) == pytest.approx(14 / 36)
+
+
+def test_cpu_profile_uses_gpu_scale_and_records_rate_labels():
+    rows = [
+        _row(2011, nodes=("cpu-n",), part="normal", cpus=4,
+             start=D0 + 100, end=D0 + 200),
+        _row(2012, nodes=("cpu-p8",), part="xeon-p8", cpus=8,
+             start=D0 + 150, end=D0 + 250),
+        _row(2013, nodes=("cpu-db",), part="db", cpus=2,
+             start=D0 + 200, end=D0 + 300),
+        _row(2014, nodes=("gpu-n",), part="normal", cpus=4, gpus=1,
+             start=D0 + 100, end=D0 + 300),
+    ]
+    cpu_jobs, _ = ms.cpu_only_jobs_for_day(rows, DAY)
+    gpu_jobs, _ = ms.gpu_jobs_for_day(rows, DAY)
+    profile = ms.cpu_load_profile_mw(cpu_jobs, chassis_per_gpu=2.0)
+    assert profile == [
+        [0.0, 0.0],
+        [100.0, pytest.approx(0.00006)],
+        [150.0, pytest.approx(0.00017)],
+        [200.0, pytest.approx(0.00014)],
+        [250.0, pytest.approx(0.00003)],
+        [300.0, pytest.approx(0.0)],
+    ]
+    base_spec, _ = ms.build_scenario(
+        gpu_jobs,
+        TEMPLATE,
+        day=DAY,
+        peak_mw=50.0,
+        rated_kw=10.2,
+    )
+    spec, report = ms.build_scenario(
+        gpu_jobs,
+        TEMPLATE,
+        day=DAY,
+        peak_mw=50.0,
+        rated_kw=10.2,
+        cpu_jobs=cpu_jobs,
+        gpu_partitions=("normal", "gaia", "test"),
+        generator_commit="source-test-commit",
+        input_sha256="a" * 64,
+        template_name="demo-islanded-ramp.json",
+    )
+    assert spec["workload_events"] == base_spec["workload_events"]
+    assert len([e for e in spec["workload_events"] if e["event_type"] == "starting"]) == 1
+    assert spec["non_gpu_load_profile_mw"] == report["cpu_load_profile_mw"]
+    assert report["invocation"]["generator_commit"] == "source-test-commit"
+    assert report["invocation"]["input_sha256"] == "a" * 64
+    assert report["cpu_watts_per_core"]["normal"]["status"] == "INFERRED"
+    assert report["cpu_watts_per_core"]["db"]["status"] == "INFERRED"
+    assert report["cpu_watts_per_core"]["xeon-p8"]["status"] == "CITED"
+
+
+def test_derived_initial_soc_is_written_and_recorded_in_invocation():
+    gpu_jobs, _ = ms.gpu_jobs_for_day(_rows(), DAY)
+    cpu_jobs, _ = ms.cpu_only_jobs_for_day(
+        [
+            _row(2051, nodes=("cpu-n",), part="normal", cpus=4,
+                 start=D0 + 100, end=D0 + 200),
+        ],
+        DAY,
+    )
+    derivation = {
+        "curtailment_energy_mwh": 4.2,
+        "usable_bess_mwh": 14.0,
+        "minimum_soc_fraction": 0.0,
+        "formula": "max(minimum_soc_fraction, 1 - energy / usable_mwh)",
+    }
+    spec, report = ms.build_scenario(
+        gpu_jobs,
+        TEMPLATE,
+        day=DAY,
+        peak_mw=50.0,
+        rated_kw=10.2,
+        cpu_jobs=cpu_jobs,
+        initial_soc_fraction=0.7,
+        soc_derivation=derivation,
+    )
+    assert spec["bess_units"][0]["initial_soc_fraction"] == 0.7
+    assert report["initial_soc_fraction_override"] == 0.7
+    assert report["soc_derivation"] == derivation
+    assert report["invocation"]["initial_soc_by_bess"] == {"bess-0": 0.7}
+    assert report["invocation"]["soc_derivation"] == derivation
+    assert "PROPOSED_HERE" in spec["description"]
+    assert "D6a.4" in spec["description"]
+
+    with pytest.raises(ValueError, match=r"finite and in \[0, 1\]"):
+        ms.build_scenario(
+            gpu_jobs,
+            TEMPLATE,
+            day=DAY,
+            peak_mw=50.0,
+            rated_kw=10.2,
+            initial_soc_fraction=1.01,
+        )
+
+
+def test_cpu_only_unknown_partition_fails_closed():
+    rows = [
+        _row(2021, nodes=("cpu-unknown",), part="unknown-partition", cpus=4,
+             start=D0 + 100, end=D0 + 200),
+    ]
+    with pytest.raises(ValueError, match="unsupported partition"):
+        ms.cpu_only_jobs_for_day(rows, DAY)
