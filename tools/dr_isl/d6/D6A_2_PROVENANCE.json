@@ -1,0 +1,18 @@
+{
+  "comparison": "canonical JSON (UTF-8, sorted keys, compact separators)",
+  "identical": false,
+  "current_raw_file_sha256": "8126ee38ef2206f55d28ea9f4da029df836fbf7c4daf7d65e266d821f323f7ad",
+  "generated_raw_file_sha256": "9a12c0bcff2e5a84f2b9af89e5d6a4d3ccb979b016c3ccc7e90f93a0605d98da",
+  "current_canonical_json_sha256": "28f3607147b51a752b4c6df418a423eebe669d5e22808135803cdc0da7025973",
+  "generated_canonical_json_sha256": "d54befa859e407e4547327f19b6b87d5cd18181778106dbca6df0668c47ee472",
+  "first_difference": {
+    "path": "$.base_load_mw",
+    "current": {
+      "key_present": true,
+      "value": null
+    },
+    "generated": {
+      "key_present": false
+    }
+  }
+}
