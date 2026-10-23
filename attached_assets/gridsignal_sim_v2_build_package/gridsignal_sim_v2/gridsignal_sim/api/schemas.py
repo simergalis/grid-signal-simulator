@@ -1912,6 +1912,15 @@ class ScenarioSpec(BaseModel):
             "p_compute_demand_mw each tick so operators can shape GPU utilisation over time."
         ),
     )
+    # DR D6a-X: measured non-GPU IT demand. None/empty preserves legacy scenarios.
+    non_gpu_load_profile_mw: Optional[list[tuple[float, float]]] = Field(
+        default=None,
+        description=(
+            "Optional zero-order-hold IT-load series [[sim_time_s, MW], ...] "
+            "for non-GPU demand. Load is 0 MW before the first point and the "
+            "last value is held after the final point. Empty/None means unused."
+        ),
+    )
 
     # Phase 11.4 — Workload floor fraction.
     # Sets the minimum compute load as a fraction (0–1) of the scenario's declared
@@ -2512,6 +2521,32 @@ class ScenarioSpec(BaseModel):
                 f"duration ({self.end_sim_time:.0f}s): {bad_str}. "
                 f"Remove or adjust these points so every timestamp is ≤ end_sim_time."
             )
+        return self
+
+    @model_validator(mode="after")
+    def _validate_non_gpu_load_profile(self) -> "ScenarioSpec":
+        """Validate the additive non-GPU demand step series (DR D6a-X)."""
+        profile = self.non_gpu_load_profile_mw or []
+        previous_time = -1.0
+        for index, (time_s, load_mw) in enumerate(profile):
+            if not _math.isfinite(time_s) or time_s < 0.0:
+                raise ValueError(
+                    f"non_gpu_load_profile_mw[{index}] time must be finite and >= 0"
+                )
+            if time_s <= previous_time:
+                raise ValueError(
+                    "non_gpu_load_profile_mw timestamps must be strictly increasing"
+                )
+            if time_s > self.end_sim_time:
+                raise ValueError(
+                    f"non_gpu_load_profile_mw contains a point at {time_s:.1f}s "
+                    f"beyond the run duration ({self.end_sim_time:.0f}s)"
+                )
+            if not _math.isfinite(load_mw) or load_mw < 0.0:
+                raise ValueError(
+                    f"non_gpu_load_profile_mw[{index}] load must be finite and >= 0"
+                )
+            previous_time = time_s
         return self
 
     def collect_c_rate_warnings(self) -> list[str]:

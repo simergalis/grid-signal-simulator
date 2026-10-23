@@ -1297,6 +1297,11 @@ def build_run_context_from_spec(
         sim_state.gpu_load_profile = sorted(
             (float(t), float(f)) for t, f in _gpu_load_raw
         )
+    _non_gpu_load_raw = spec_data.get("non_gpu_load_profile_mw")
+    if _non_gpu_load_raw:
+        sim_state.non_gpu_load_profile_mw = sorted(
+            (float(t), float(mw)) for t, mw in _non_gpu_load_raw
+        )
 
     # ── Phase 11.4: Workload floor ────────────────────────────────────────
     # Compute the absolute floor MW from workload_floor_fraction × peak and

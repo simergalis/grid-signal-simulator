@@ -214,6 +214,9 @@ class SimulationState:
     # Populated from ScenarioSpec.gpu_load_profile at run start; all existing
     # scripted scenarios and tests omit it (empty = no-op, fully backward-compat).
     gpu_load_profile: list[tuple[float, float]] = field(default_factory=list)
+    # DR D6a-X: measured non-GPU IT demand, as a zero-order-hold MW profile.
+    # None/empty is a strict no-op; this is not a scheduler forecast input.
+    non_gpu_load_profile_mw: list[tuple[float, float]] | None = None
 
     # Phase 11.4 — Workload floor (MW).
     # Computed from ScenarioSpec.workload_floor_fraction × peak_compute_mw
@@ -860,6 +863,26 @@ def _gpu_load_fraction_at(profile: list[tuple[float, float]], t: float) -> float
     return max(0.0, frac)
 
 
+def _non_gpu_load_mw_at(
+    profile: list[tuple[float, float]] | None,
+    t: float,
+) -> float | None:
+    """Return the configured non-GPU load at t, or None when the feature is unused.
+
+    DR D6a-X defines this as zero before the first point, then zero-order hold.
+    Returning None for an absent/empty profile lets the physical identity omit
+    the new field entirely for every pre-existing scenario.
+    """
+    if not profile:
+        return None
+    load_mw = 0.0
+    for time_s, value_mw in profile:
+        if time_s > t:
+            break
+        load_mw = value_mw
+    return load_mw
+
+
 def _cost_ranked_dispatch_allocations(
     demand_mw: float,
     *,
@@ -1232,6 +1255,15 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             _per_job_draws[_job_id] = _g.per_job_compute_mw(_job_id)
     p_compute_demand_mw = sum(_per_job_draws.values())
 
+    # D6a-X: this measured IT component is intentionally separate from GPU
+    # compute telemetry and from scheduler-derived forecast inputs.
+    p_non_gpu_demand_mw = _non_gpu_load_mw_at(
+        state.non_gpu_load_profile_mw, sim_time
+    )
+    _non_gpu_it_mw = (
+        0.0 if p_non_gpu_demand_mw is None else p_non_gpu_demand_mw
+    )
+
     # ── GPU load profile scaling (operator-authored zero-order-hold) ──────────
     # Multiplies p_compute_demand_mw AND the per-job draws passed to the cooling
     # model by the active fraction so that cooling tracks the same throttled load.
@@ -1321,12 +1353,19 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         p_compute_demand_mw, p_cooling_demand_mw = _demand_replay[state.tick_index]
     else:
         state.cooling.record_job_compute(sim_time, _per_job_draws)
+        # The scalar cooling-envelope interface tracks this separate IT load
+        # without changing GPU job envelopes or their workload-event semantics.
+        if state.non_gpu_load_profile_mw:
+            state.cooling.record_compute_sample(sim_time, _non_gpu_it_mw)
 
         # 2. Cooling term (lagged)
         state.cooling.advance(sim_time, dt_seconds)
         p_cooling_demand_mw = state.cooling.output_mw()
 
-    p_demand_mw = p_compute_demand_mw + p_cooling_demand_mw
+    # Single demand-entry point: GPU compute + measured non-GPU IT + cooling.
+    p_demand_mw = (
+        p_compute_demand_mw + _non_gpu_it_mw + p_cooling_demand_mw
+    )
 
     # _islanded: hoisted here (before section 3) so the §INV-CURT inverter
     # curtailment block can reference it before the Phase 13.3 droop block.
@@ -3695,7 +3734,9 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
     # tau_seconds=20s, since exp(−0.1/20) ≈ 0.9950).
     _T_AMBIENT_BASE_C = 20.0  # °C — chosen; representative air-cooled ambient
     _T_RISE_MAX_C     = 15.0  # °C — chosen; typical hot-aisle delta (PROTO-11-COOL)
-    _max_cooling_mw = state.site.alpha_max * max(p_compute_demand_mw, 1e-6)
+    _max_cooling_mw = state.site.alpha_max * max(
+        p_compute_demand_mw + _non_gpu_it_mw, 1e-6
+    )
     _cooling_fraction = (
         min(1.0, p_cooling_demand_mw / _max_cooling_mw)
         if _max_cooling_mw > 1e-9
@@ -3845,6 +3886,7 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         p_compute_demand_mw=p_compute_demand_mw,
         p_cooling_demand_mw=p_cooling_demand_mw,
         p_demand_mw=p_demand_mw,
+        p_non_gpu_demand_mw=p_non_gpu_demand_mw,
         net_demand_mw=net_demand_mw,
         turbine_output_mw=turbine_output_mw,
         bess_output_mw=bess_output_mw,

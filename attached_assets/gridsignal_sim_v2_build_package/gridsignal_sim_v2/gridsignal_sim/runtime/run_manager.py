@@ -430,6 +430,13 @@ def _tick_result_to_dict(tick: TickResult) -> dict:
         "p_cooling_served_mw":   round(tick.p_cooling_served_mw, 4) if tick.p_cooling_served_mw is not None else None,
         "p_cooling_unserved_mw": round(tick.p_cooling_unserved_mw, 4) if tick.p_cooling_unserved_mw is not None else None,
         "p_demand_mw":           round(tick.p_demand_mw, 4),           # producer: simulation_core.py:496
+        # D6a-X: omit the field when no profile exists; this preserves both
+        # legacy wire shape and physical identity. A configured profile emits
+        # a numeric value, including 0 before its first point.
+        **(
+            {"p_non_gpu_demand_mw": round(tick.p_non_gpu_demand_mw, 4)}
+            if tick.p_non_gpu_demand_mw is not None else {}
+        ),
         # Phase 6: p_unserved_mw is explicit UFLS/curtailment shed. p_served_mw
         # is demand less that shed; p_imbalance_mw carries the supply shortfall.
         "p_served_mw":           round(tick.p_served_mw, 4) if tick.p_served_mw is not None else None,

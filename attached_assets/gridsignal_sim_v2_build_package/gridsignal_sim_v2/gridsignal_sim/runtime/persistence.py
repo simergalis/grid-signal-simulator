@@ -118,6 +118,10 @@ def _tick_to_json(tick: TickResult) -> str:
 
     try:
         payload = dataclasses.asdict(tick)
+        # D6a-X: omit the optional telemetry field when there is no profile;
+        # configured profiles serialize numeric values, preserving legacy hashes.
+        if payload.get("p_non_gpu_demand_mw") is None:
+            payload.pop("p_non_gpu_demand_mw", None)
         # BalanceResult exposes derived pass/magnitude/breakdown properties;
         # persist that same authoritative representation rather than making
         # consumers reconstruct it from the dataclass internals.

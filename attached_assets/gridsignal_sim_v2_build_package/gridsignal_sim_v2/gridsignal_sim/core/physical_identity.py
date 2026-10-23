@@ -52,6 +52,10 @@ def physical_tick_json(tick: Any) -> bytes:
         key: value
         for key, value in row.items()
         if key not in PHYSICAL_TICK_HASH_EXCLUSIONS
+        # D6a-X: the optional field is absent from the physical identity when
+        # no profile was configured, preserving every legacy tick hash. A
+        # configured profile emits numeric values (including explicit zeroes).
+        and not (key == "p_non_gpu_demand_mw" and value is None)
     }
     return json.dumps(
         physical,
