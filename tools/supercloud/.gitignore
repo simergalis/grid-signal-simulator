@@ -1,0 +1,4 @@
+# DR-2026-10-19-SUPERCLOUD-INGEST D4: SuperCloud data is CC BY-NC-ND; never commit raw rows.
+*.csv
+*.csv.gz
+data/
