@@ -1,0 +1,19 @@
+{
+  "diagnosis": {
+    "test": "tests/test_mcp_server.py::test_mcp_cache_hit_and_build_parity_error",
+    "result": "PASS after using explicit seed 42 for cached identity and request",
+    "build_parity_half": "unchanged and passed"
+  },
+  "cache_rule_tests": {
+    "TC-ISL-41": "PASS: repeated explicit seed 42 request returned cache_hit=true on second request",
+    "TC-ISL-42": "PASS: null requests returned cache_hit=false, cache_bypass_reason=seed_not_provided, and recorded distinct roots 61001 and 61002",
+    "TC-ISL-43": "PASS: explicit replay of recorded root 62003 returned cache_hit=true"
+  },
+  "focused_result": {
+    "passed": 4,
+    "failed": 0,
+    "warnings": 1,
+    "duration_seconds": 10.22,
+    "log": "tools/dr_isl/phase6c/6C_3_CACHE_TESTS.log"
+  }
+}

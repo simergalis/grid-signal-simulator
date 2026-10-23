@@ -1,0 +1,239 @@
+{
+  "arms": {
+    "baseline": {
+      "mismatches": {},
+      "seed_root": 42,
+      "values": {
+        "attributable_curtailment_fuel_mmbtu": 3680.617469434,
+        "bess_soc_final": 0.999999998,
+        "dispatch_curtailment_mwh": 349.917690813,
+        "forecast_misses": 0,
+        "frequency_feedback_configured": false,
+        "fuel_by_component_mmbtu": {
+          "hot_standby_fuel_mmbtu": 4.552430556,
+          "load_fuel_mmbtu": 5136.719001539,
+          "no_load_fuel_mmbtu": 65.231666667,
+          "start_fuel_mmbtu": 124.0
+        },
+        "interval_exposure_curtailment_fuel_mmbtu": 4838.569627585,
+        "invalid_frequency_fraction": 0.03177083333333333,
+        "invalid_frequency_tick_count": 549,
+        "peak_unserved_mw": 44.86838787,
+        "start_events_recorded_measured": [
+          11,
+          11
+        ],
+        "start_fuel_reconciliation_passed": true,
+        "stop_floor_refusal_count": 0,
+        "turbine_fuel_mmbtu": 5330.503098761,
+        "unserved_mwh": 5.011418076
+      }
+    },
+    "informed": {
+      "mismatches": {},
+      "seed_root": 42,
+      "values": {
+        "attributable_curtailment_fuel_mmbtu": 3607.524008603,
+        "bess_soc_final": 0.999999987,
+        "dispatch_curtailment_mwh": 342.977539092,
+        "forecast_misses": 39,
+        "frequency_feedback_configured": false,
+        "fuel_by_component_mmbtu": {
+          "hot_standby_fuel_mmbtu": 3.761458333,
+          "load_fuel_mmbtu": 5106.733034717,
+          "no_load_fuel_mmbtu": 64.855,
+          "start_fuel_mmbtu": 152.0
+        },
+        "interval_exposure_curtailment_fuel_mmbtu": 4892.43517635,
+        "invalid_frequency_fraction": 0.023842592592592592,
+        "invalid_frequency_tick_count": 412,
+        "peak_unserved_mw": 42.36838787,
+        "start_events_recorded_measured": [
+          14,
+          14
+        ],
+        "start_fuel_reconciliation_passed": true,
+        "stop_floor_refusal_count": 14904,
+        "turbine_fuel_mmbtu": 5327.34949305,
+        "unserved_mwh": 0.859772492
+      }
+    }
+  },
+  "comparison": {
+    "condition_inputs": {
+      "baseline_energy_balance": {
+        "baseline_energy_balance": true,
+        "baseline_frequency_feedback_configured": false,
+        "baseline_invalid_frequency_fraction": 0.03177083333333333,
+        "baseline_invalid_frequency_tick_count": 549,
+        "baseline_protection_configured": false,
+        "informed_frequency_feedback_configured": false,
+        "informed_invalid_frequency_fraction": 0.023842592592592592,
+        "informed_invalid_frequency_tick_count": 412,
+        "informed_protection_configured": false
+      },
+      "baseline_fuel_reconciled": {
+        "baseline_frequency_feedback_configured": false,
+        "baseline_fuel_reconciled": true,
+        "baseline_invalid_frequency_fraction": 0.03177083333333333,
+        "baseline_invalid_frequency_tick_count": 549,
+        "baseline_protection_configured": false,
+        "informed_frequency_feedback_configured": false,
+        "informed_invalid_frequency_fraction": 0.023842592592592592,
+        "informed_invalid_frequency_tick_count": 412,
+        "informed_protection_configured": false
+      },
+      "baseline_valid": {
+        "baseline_constraints_valid": true,
+        "baseline_frequency_feedback_configured": false,
+        "baseline_frequency_valid": true,
+        "baseline_hard_violations": [],
+        "baseline_invalid_frequency_fraction": 0.03177083333333333,
+        "baseline_invalid_frequency_tick_count": 549,
+        "baseline_protection_configured": false,
+        "informed_frequency_feedback_configured": false,
+        "informed_invalid_frequency_fraction": 0.023842592592592592,
+        "informed_invalid_frequency_tick_count": 412,
+        "informed_protection_configured": false
+      },
+      "build_parity": {
+        "baseline_engine_commit": "b6457716ea173a4f62aa46632ce3b3549f697fcc-dirty",
+        "baseline_frequency_feedback_configured": false,
+        "baseline_harness_commit": "b6457716ea173a4f62aa46632ce3b3549f697fcc-dirty",
+        "baseline_invalid_frequency_fraction": 0.03177083333333333,
+        "baseline_invalid_frequency_tick_count": 549,
+        "baseline_protection_configured": false,
+        "informed_engine_commit": "b6457716ea173a4f62aa46632ce3b3549f697fcc-dirty",
+        "informed_frequency_feedback_configured": false,
+        "informed_harness_commit": "b6457716ea173a4f62aa46632ce3b3549f697fcc-dirty",
+        "informed_invalid_frequency_fraction": 0.023842592592592592,
+        "informed_invalid_frequency_tick_count": 412,
+        "informed_protection_configured": false
+      },
+      "identical_compute_trace": {
+        "baseline_compute_trace_sha256": "ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b",
+        "baseline_frequency_feedback_configured": false,
+        "baseline_invalid_frequency_fraction": 0.03177083333333333,
+        "baseline_invalid_frequency_tick_count": 549,
+        "baseline_protection_configured": false,
+        "informed_compute_trace_sha256": "ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b",
+        "informed_frequency_feedback_configured": false,
+        "informed_invalid_frequency_fraction": 0.023842592592592592,
+        "informed_invalid_frequency_tick_count": 412,
+        "informed_protection_configured": false
+      },
+      "informed_energy_balance": {
+        "baseline_frequency_feedback_configured": false,
+        "baseline_invalid_frequency_fraction": 0.03177083333333333,
+        "baseline_invalid_frequency_tick_count": 549,
+        "baseline_protection_configured": false,
+        "informed_energy_balance": true,
+        "informed_frequency_feedback_configured": false,
+        "informed_invalid_frequency_fraction": 0.023842592592592592,
+        "informed_invalid_frequency_tick_count": 412,
+        "informed_protection_configured": false
+      },
+      "informed_fuel_reconciled": {
+        "baseline_frequency_feedback_configured": false,
+        "baseline_invalid_frequency_fraction": 0.03177083333333333,
+        "baseline_invalid_frequency_tick_count": 549,
+        "baseline_protection_configured": false,
+        "informed_frequency_feedback_configured": false,
+        "informed_fuel_reconciled": true,
+        "informed_invalid_frequency_fraction": 0.023842592592592592,
+        "informed_invalid_frequency_tick_count": 412,
+        "informed_protection_configured": false
+      },
+      "informed_peak_unserved_no_worse": {
+        "baseline_frequency_feedback_configured": false,
+        "baseline_invalid_frequency_fraction": 0.03177083333333333,
+        "baseline_invalid_frequency_tick_count": 549,
+        "baseline_peak_unserved_mw": 44.86838787,
+        "baseline_protection_configured": false,
+        "informed_frequency_feedback_configured": false,
+        "informed_invalid_frequency_fraction": 0.023842592592592592,
+        "informed_invalid_frequency_tick_count": 412,
+        "informed_peak_unserved_mw": 42.36838787,
+        "informed_protection_configured": false,
+        "tolerance_mw": 1e-09
+      },
+      "informed_unserved_energy_no_worse": {
+        "baseline_frequency_feedback_configured": false,
+        "baseline_invalid_frequency_fraction": 0.03177083333333333,
+        "baseline_invalid_frequency_tick_count": 549,
+        "baseline_protection_configured": false,
+        "baseline_unserved_mwh": 5.011418076,
+        "informed_frequency_feedback_configured": false,
+        "informed_invalid_frequency_fraction": 0.023842592592592592,
+        "informed_invalid_frequency_tick_count": 412,
+        "informed_protection_configured": false,
+        "informed_unserved_mwh": 0.859772492,
+        "tolerance_mwh": 1e-09
+      },
+      "informed_valid": {
+        "baseline_frequency_feedback_configured": false,
+        "baseline_invalid_frequency_fraction": 0.03177083333333333,
+        "baseline_invalid_frequency_tick_count": 549,
+        "baseline_protection_configured": false,
+        "informed_constraints_valid": true,
+        "informed_frequency_feedback_configured": false,
+        "informed_frequency_valid": true,
+        "informed_hard_violations": [],
+        "informed_invalid_frequency_fraction": 0.023842592592592592,
+        "informed_invalid_frequency_tick_count": 412,
+        "informed_protection_configured": false
+      }
+    },
+    "condition_order": [
+      "build_parity",
+      "baseline_valid",
+      "informed_valid",
+      "baseline_energy_balance",
+      "informed_energy_balance",
+      "baseline_fuel_reconciled",
+      "informed_fuel_reconciled",
+      "identical_compute_trace",
+      "informed_unserved_energy_no_worse",
+      "informed_peak_unserved_no_worse"
+    ],
+    "conditions": {
+      "baseline_energy_balance": true,
+      "baseline_fuel_reconciled": true,
+      "baseline_valid": true,
+      "build_parity": true,
+      "identical_compute_trace": true,
+      "informed_energy_balance": true,
+      "informed_fuel_reconciled": true,
+      "informed_peak_unserved_no_worse": true,
+      "informed_unserved_energy_no_worse": true,
+      "informed_valid": true
+    },
+    "frequency_inputs": {
+      "baseline_frequency_feedback_configured": false,
+      "baseline_invalid_frequency_fraction": 0.03177083333333333,
+      "baseline_invalid_frequency_tick_count": 549,
+      "baseline_protection_configured": false,
+      "informed_frequency_feedback_configured": false,
+      "informed_invalid_frequency_fraction": 0.023842592592592592,
+      "informed_invalid_frequency_tick_count": 412,
+      "informed_protection_configured": false
+    },
+    "informed_vs_baseline": {
+      "baseline_peak_unserved_mw": 44.86838787,
+      "baseline_unserved_mwh": 5.011418076,
+      "informed_peak_unserved_mw": 42.36838787,
+      "informed_unserved_mwh": 0.859772492
+    },
+    "verdict": "PASS"
+  },
+  "comparison_summary": {
+    "all_passed": true,
+    "condition_count": 10,
+    "verdict": "PASS"
+  },
+  "errors": [],
+  "output_cache": "/tmp/phase6c-scenario-h2-slurm-24h-3z5u_e0p",
+  "scenario": "scenario-h2-slurm-24h",
+  "seed": 42,
+  "status": "PASS"
+}

@@ -1,0 +1,8 @@
+{
+  "tests": "tests/test_mcp_server.py, tests/test_study_harness.py, tests/test_dr_isl_phase6_reproducibility.py (TC-ISL-34\u201340, TC-ISL-41\u201343)",
+  "passed": 53,
+  "failed": 0,
+  "warnings": 1,
+  "duration_seconds": 343.42,
+  "exit_code": 0
+}

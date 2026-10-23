@@ -1,0 +1,122 @@
+{
+  "scenario-h1-k8s-ray-24h": {
+    "arms": {
+      "baseline": {
+        "actual": {
+          "attributable_curtailment_fuel_mmbtu": 1974.088304814,
+          "bess_soc_final": 0.999999998,
+          "dispatch_curtailment_mwh": 187.690139189,
+          "frequency_feedback_configured": false,
+          "fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 4.142013889,
+            "load_fuel_mmbtu": 5847.168216351,
+            "no_load_fuel_mmbtu": 72.43,
+            "start_fuel_mmbtu": 116.0
+          },
+          "interval_exposure_curtailment_fuel_mmbtu": 3394.620064264,
+          "invalid_frequency_fraction": 0.04693287037037037,
+          "invalid_frequency_tick_count": 811,
+          "peak_unserved_mw": 35.021533247,
+          "start_events_recorded_measured": [
+            12,
+            12
+          ],
+          "start_fuel_reconciliation_passed": true,
+          "stop_floor_refusal_count": 0,
+          "turbine_fuel_mmbtu": 6039.74023024,
+          "unserved_mwh": 0.894372986
+        },
+        "mismatches": {},
+        "seed_root": 42
+      },
+      "informed": {
+        "actual": {
+          "attributable_curtailment_fuel_mmbtu": 1858.026440381,
+          "bess_soc_final": 0.999999989,
+          "dispatch_curtailment_mwh": 176.779572526,
+          "frequency_feedback_configured": false,
+          "fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 4.110069444,
+            "load_fuel_mmbtu": 5660.766981827,
+            "no_load_fuel_mmbtu": 68.021666667,
+            "start_fuel_mmbtu": 116.0
+          },
+          "interval_exposure_curtailment_fuel_mmbtu": 3120.455542377,
+          "invalid_frequency_fraction": 0.004398148148148148,
+          "invalid_frequency_tick_count": 76,
+          "peak_unserved_mw": 20.746308977,
+          "start_events_recorded_measured": [
+            12,
+            12
+          ],
+          "start_fuel_reconciliation_passed": true,
+          "stop_floor_refusal_count": 16340,
+          "turbine_fuel_mmbtu": 5848.898717938,
+          "unserved_mwh": 0.124133405
+        },
+        "mismatches": {},
+        "seed_root": 42
+      }
+    },
+    "comparison": {
+      "all_passed": true,
+      "condition_count": 10,
+      "verdict": "PASS"
+    },
+    "errors": [],
+    "source_record_cache": "/tmp/phase6c-scenario-h1-k8s-ray-24h-z7iumc25",
+    "status": "PASS"
+  },
+  "scenario-uneven-multisched-01": {
+    "arms": {
+      "baseline": {
+        "actual": {
+          "attributable_curtailment_fuel_mmbtu": 85.443185219,
+          "dispatch_curtailment_mwh": 8.136511735,
+          "frequency_feedback_configured": false,
+          "interval_exposure_curtailment_fuel_mmbtu": 291.229346912,
+          "invalid_frequency_fraction": 0.03680555555555556,
+          "invalid_frequency_tick_count": 53,
+          "measured_starts": 2,
+          "peak_unserved_mw": 22.309362466,
+          "physical_hash": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+          "protection_configured": false,
+          "recorded_starts": 2,
+          "start_fuel_reconciliation_passed": true,
+          "turbine_fuel_mmbtu": 714.363019086,
+          "unserved_mwh": 0.351692658
+        },
+        "mismatches": {},
+        "seed_root": 42
+      },
+      "informed": {
+        "actual": {
+          "attributable_curtailment_fuel_mmbtu": 55.021850379,
+          "dispatch_curtailment_mwh": 5.278943188,
+          "frequency_feedback_configured": false,
+          "interval_exposure_curtailment_fuel_mmbtu": 141.143846919,
+          "invalid_frequency_fraction": 0.0,
+          "invalid_frequency_tick_count": 0,
+          "measured_starts": 2,
+          "peak_unserved_mw": 7.52325057,
+          "physical_hash": "72cc28766574a78c44913d389207bc6cca268ac1bf29b15abd148c63af334754",
+          "protection_configured": false,
+          "recorded_starts": 2,
+          "start_fuel_reconciliation_passed": true,
+          "turbine_fuel_mmbtu": 665.398247704,
+          "unserved_mwh": 0.020719074
+        },
+        "mismatches": {},
+        "seed_root": 42
+      }
+    },
+    "comparison": {
+      "all_passed": true,
+      "condition_count": 10,
+      "verdict": "PASS"
+    },
+    "errors": [],
+    "source_record_cache": "/tmp/phase6c-scenario-uneven-multisched-01-dmceut65",
+    "status": "PASS"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "all_metric_fields_equal_across_processes": true,
+  "all_physical_hashes_equal_to_phase6b": true,
+  "comparison_verdicts": [
+    "PASS",
+    "PASS"
+  ],
+  "condition_counts": [
+    10,
+    10
+  ],
+  "differences": [],
+  "first_run_hashes": {
+    "baseline": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+    "informed": "72cc28766574a78c44913d389207bc6cca268ac1bf29b15abd148c63af334754"
+  },
+  "identity_equal_across_processes": true,
+  "pythonhashseed_values": [
+    "1",
+    "987654321"
+  ],
+  "second_run_hashes": {
+    "baseline": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+    "informed": "72cc28766574a78c44913d389207bc6cca268ac1bf29b15abd148c63af334754"
+  },
+  "status": "PASS"
+}
