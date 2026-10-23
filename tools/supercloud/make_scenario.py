@@ -249,7 +249,10 @@ def cpu_load_profile_mw(
         )
         events[job.start_s] += power_mw
         events[job.end_s] -= power_mw
-    return _profile_from_power_events(dict(events))
+    profile = _profile_from_power_events(dict(events))
+    # Simultaneous floating-point event cancellation can leave a tiny negative
+    # residual; CPU demand is physically non-negative and the schema requires it.
+    return [[time_s, max(0.0, power_mw)] for time_s, power_mw in profile]
 
 
 def _profile_summary(profile: list[list[float]]) -> dict[str, float]:

@@ -129,6 +129,7 @@ def test_cpu_profile_uses_gpu_scale_and_records_rate_labels():
     cpu_jobs, _ = ms.cpu_only_jobs_for_day(rows, DAY)
     gpu_jobs, _ = ms.gpu_jobs_for_day(rows, DAY)
     profile = ms.cpu_load_profile_mw(cpu_jobs, chassis_per_gpu=2.0)
+    assert all(load_mw >= 0.0 for _, load_mw in profile)
     assert profile == [
         [0.0, 0.0],
         [100.0, pytest.approx(0.00006)],
