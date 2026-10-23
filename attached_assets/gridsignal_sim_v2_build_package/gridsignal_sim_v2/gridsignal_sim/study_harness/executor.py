@@ -17,6 +17,12 @@ from runtime.phase2b_reference import (
 )
 from runtime.run_manager import _tick_result_to_dict
 from runtime.scenario_factory import build_run_context_from_spec
+from runtime.seed_resolution import (
+    SEED_DERIVATION_VERSION,
+    resolve_run_seed_manifest,
+    seed_consumers_for_spec,
+)
+from core.physical_identity import PhysicalIdentityHasher
 
 from scripts.run_phase2b_stage1 import (
     REFERENCE_IDS,
@@ -41,6 +47,25 @@ BASE_DEMO_SCENARIO_ID = "scenario-uneven-multisched-01"
 STUDY_CLASS_ADDENDUM_H = "addendum_h"
 STUDY_CLASS_BASE_DEMO = "base_demo"
 BUILD_INFO_PATH = Path(__file__).resolve().parents[1] / "build_info.json"  # PROPOSED_HERE
+# PROPOSED_HERE: bump the study identity when resolved RNG inputs become part
+# of a run's reproducibility contract. Source: DR Phase 6 D4.
+STUDY_IDENTITY_VERSION = 3
+
+
+def seed_cache_bypass_reason(
+    *,
+    reuse_cache: bool,
+    requested_seed: int | str | None,
+) -> str | None:
+    """Return the shared cache-bypass reason for an unseeded request.
+
+    DR D4 records a fresh root seed when the request omits one. DR Phase 6c
+    requires such a request to execute freshly rather than looking up a result
+    under a seed the caller did not provide.
+    """
+    if reuse_cache and requested_seed is None:
+        return "seed_not_provided"
+    return None
 
 
 def study_class_for_scenario(scenario_id: str) -> str:
@@ -73,6 +98,8 @@ def make_study_run_identity(
     identity_parameters["study_class"] = study_class_for_scenario(scenario_id)
     # DR D3: invalidate old metric caches without changing the execution spec.
     identity_parameters["frequency_reporting_metrics_version"] = FREQUENCY_REPORTING_METRICS_VERSION
+    identity_parameters["study_identity_version"] = STUDY_IDENTITY_VERSION
+    identity_parameters["seed_derivation_version"] = SEED_DERIVATION_VERSION
     return make_run_identity(
         scenario_id=scenario_id,
         mode=mode,
@@ -299,15 +326,35 @@ class StudyRunExecutor:
                 overrides.append({"operation": "parameter_overrides", "value": copy.deepcopy(parameter_overrides)})
         return spec
 
+    @staticmethod
+    def resolve_seed_manifest(
+        spec: Mapping[str, Any],
+        seed: int | str | None,
+    ) -> dict[str, Any]:
+        seed_names, configured_seeds = seed_consumers_for_spec(spec)
+        return resolve_run_seed_manifest(
+            seed,
+            consumer_names=seed_names,
+            configured_seeds=configured_seeds,
+        )
+
     def _probe(
         self,
         spec: dict[str, Any],
         *,
         run_id: str,
+        seed_manifest: dict[str, Any],
     ) -> tuple[list[dict[str, Any]], list[tuple[float, float]]]:
         probe_spec = copy.deepcopy(spec)
         probe_spec["turbine_commitment_mode"] = "baseline"
-        ctx = build_run_context_from_spec(run_id, probe_spec, playback_speed=0.0)
+        ctx = build_run_context_from_spec(
+            run_id,
+            probe_spec,
+            playback_speed=0.0,
+            run_seed=seed_manifest["root_seed"],
+            seed_manifest=seed_manifest,
+            execution_mode="study",
+        )
         ctx.sim_state.capture_workload_signal_trace = True
         tick_count = int(round(float(ctx.end_sim_time) / self.tick_seconds))
         demand_replay: list[tuple[float, float]] = []
@@ -336,9 +383,11 @@ class StudyRunExecutor:
         replay_events: list[dict[str, Any]],
         demand_replay: list[tuple[float, float]],
         seed: int | str | None,
+        seed_manifest: dict[str, Any],
         allow_guard_failure: bool = False,
         reuse_cache: bool = True,
         progress_callback: Any | None = None,
+        identity: RunIdentity | None = None,
     ) -> dict[str, Any]:
         study_class = self._study_class_for_scenario(scenario_id)
         run_spec = copy.deepcopy(spec)
@@ -347,21 +396,31 @@ class StudyRunExecutor:
         run_spec.pop("slurm_config", None)
         run_spec["workload_events"] = replay_events
         duration_seconds = float(run_spec["end_sim_time"])
-        identity = make_study_run_identity(
-            scenario_id=scenario_id,
-            mode=mode,
-            spec=run_spec,
-            seed=seed,
-            tick_seconds=self.tick_seconds,
-            engine_commit=self.engine_commit,
-            harness_commit=self.harness_commit,
-        )
+        if identity is None:
+            identity = make_study_run_identity(
+                scenario_id=scenario_id,
+                mode=mode,
+                spec=run_spec,
+                seed=seed_manifest["root_seed"],
+                tick_seconds=self.tick_seconds,
+                engine_commit=self.engine_commit,
+                harness_commit=self.harness_commit,
+            )
+        elif (
+            identity.scenario_id != scenario_id
+            or identity.mode != mode
+            or str(identity.seed) != str(seed_manifest["root_seed"])
+        ):
+            raise ValueError("prepared study identity does not match run inputs")
 
         def execute() -> dict[str, Any]:
             ctx = build_run_context_from_spec(
                 f"{scenario_id}-{mode}-study-s1",
                 run_spec,
                 playback_speed=0.0,
+                run_seed=seed_manifest["root_seed"],
+                seed_manifest=seed_manifest,
+                execution_mode="study",
             )
             ctx.sim_state.demand_replay_trace = demand_replay
             frequency_feedback = bool(
@@ -372,9 +431,11 @@ class StudyRunExecutor:
                 frequency_feedback_configured=frequency_feedback,
             )
             tick_rows: list[dict[str, Any]] = []
+            physical_hasher = PhysicalIdentityHasher()
             tick_count = int(round(duration_seconds / self.tick_seconds))
             for _ in range(tick_count):
                 tick = ctx.step()
+                physical_hasher.update(tick)
                 collector.add(tick)
                 tick_rows.append(_compact_tick(tick))
                 if progress_callback is not None and (
@@ -385,6 +446,10 @@ class StudyRunExecutor:
             raw_metadata = _controller_metadata(ctx)
             raw_metadata["build_warnings"] = ctx.metadata.get("build_warnings", [])
             raw_metadata["frequency_feedback_configured"] = frequency_feedback
+            raw_metadata["seed_manifest"] = copy.deepcopy(
+                ctx.metadata.get("seed_manifest", seed_manifest)
+            )
+            raw_metadata["physical_identity_sha256"] = physical_hasher.hexdigest()
             if "study_input_provenance" in spec:
                 provenance = copy.deepcopy(spec["study_input_provenance"])
                 provenance["post_validation_overrides"].extend([
@@ -500,18 +565,35 @@ class StudyRunExecutor:
         allow_guard_failures: bool = False,
         reuse_cache: bool = True,
         progress_callback: Any | None = None,
+        seed_manifest: dict[str, Any] | None = None,
+        identity: RunIdentity | None = None,
     ) -> dict[str, Any]:
         """Execute one mode through the same S1 probe/replay path as run_pair."""
         if mode not in {"baseline", "informed"}:
             raise ValueError("mode must be baseline or informed")
+        if seed_cache_bypass_reason(
+            reuse_cache=reuse_cache,
+            requested_seed=seed,
+        ):
+            reuse_cache = False
         spec = self._expanded_spec(
             scenario_id,
             parameter_overrides,
             duration_seconds,
         )
+        if seed_manifest is None:
+            seed_manifest = self.resolve_seed_manifest(spec, seed)
+        else:
+            manifest_seed = seed_manifest.get("root_seed")
+            if manifest_seed is None:
+                raise ValueError("prepared seed manifest has no root_seed")
+            if seed is not None and str(seed) != str(manifest_seed):
+                raise ValueError("seed does not match prepared seed manifest")
+            seed = manifest_seed
         replay_events, demand_replay = self._probe(
             spec,
             run_id=f"{scenario_id}-study-s1-probe",
+            seed_manifest=seed_manifest,
         )
         return self._run_mode(
             scenario_id=scenario_id,
@@ -519,10 +601,12 @@ class StudyRunExecutor:
             spec=spec,
             replay_events=replay_events,
             demand_replay=demand_replay,
-            seed=seed,
+            seed=seed_manifest["root_seed"],
+            seed_manifest=seed_manifest,
             allow_guard_failure=allow_guard_failures,
             reuse_cache=reuse_cache,
             progress_callback=progress_callback,
+            identity=identity,
         )
 
     def run_pair(
@@ -534,14 +618,21 @@ class StudyRunExecutor:
         duration_seconds: float | None = None,
         allow_guard_failures: bool = False,
     ) -> dict[str, Any]:
+        cache_bypass_reason = seed_cache_bypass_reason(
+            reuse_cache=True,
+            requested_seed=seed,
+        )
+        reuse_cache = cache_bypass_reason is None
         spec = self._expanded_spec(
             scenario_id,
             parameter_overrides,
             duration_seconds,
         )
+        seed_manifest = self.resolve_seed_manifest(spec, seed)
         replay_events, demand_replay = self._probe(
             spec,
             run_id=f"{scenario_id}-study-s1-probe",
+            seed_manifest=seed_manifest,
         )
         baseline = self._run_mode(
             scenario_id=scenario_id,
@@ -550,7 +641,9 @@ class StudyRunExecutor:
             replay_events=replay_events,
             demand_replay=demand_replay,
             seed=seed,
+            seed_manifest=seed_manifest,
             allow_guard_failure=allow_guard_failures,
+            reuse_cache=reuse_cache,
         )
         informed = self._run_mode(
             scenario_id=scenario_id,
@@ -559,7 +652,9 @@ class StudyRunExecutor:
             replay_events=replay_events,
             demand_replay=demand_replay,
             seed=seed,
+            seed_manifest=seed_manifest,
             allow_guard_failure=allow_guard_failures,
+            reuse_cache=reuse_cache,
         )
         from .acceptance import compare_metrics
 

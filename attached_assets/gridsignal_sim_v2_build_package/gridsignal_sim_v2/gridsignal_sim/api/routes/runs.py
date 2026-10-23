@@ -73,6 +73,10 @@ from runtime.scenario_factory import (
 from runtime.solar_sim import generate_solar_forecast
 from runtime.stressor_gen import generate_stressor_forecast
 from runtime.telemetry_corruption import generate_corruption_schedule
+from runtime.seed_resolution import (
+    resolve_run_seed_manifest,
+    seed_consumers_for_spec,
+)
 
 router = APIRouter(prefix="/runs", tags=["runs"])
 
@@ -352,6 +356,30 @@ async def start_run(
                 spec_data["kube_config"]["headroom_threshold_mw"],
             )
 
+        # Resolve every stochastic input once, before any generator runs.
+        # Null consumer seeds derive from one recorded run root; explicit
+        # scenario seeds remain explicit inputs.
+        _seed_names, _configured_seeds = seed_consumers_for_spec(spec_data)
+        _seed_manifest = resolve_run_seed_manifest(
+            body.run_seed,
+            consumer_names=_seed_names,
+            configured_seeds=_configured_seeds,
+        )
+        _run_wall_time = datetime.datetime.fromisoformat(
+            _seed_manifest["resolved_at_utc"]
+        )
+        for _cfg_key, _seed_key, _consumer in (
+            ("cluster_gen_config", "rng_seed", "cluster_generator"),
+            ("stressor_gen_config", "rng_seed", "stressor_generator"),
+            ("param_sampling_config", "seed", "parameter_sampler"),
+            ("telemetry_corruption_config", "seed", "telemetry_corruption"),
+        ):
+            _cfg = spec_data.get(_cfg_key)
+            if _cfg is not None:
+                _cfg = dict(_cfg)
+                _cfg[_seed_key] = _seed_manifest["consumer_seeds"][_consumer]
+                spec_data[_cfg_key] = _cfg
+
         # ── Pre-run generation pipeline ───────────────────────────────────
         # All generators run concurrently as parallel asyncio tasks and MUST
         # complete before t=0.  No generator runs during the tick loop.
@@ -404,7 +432,7 @@ async def start_run(
         _def_lat      = _effective_loc.latitude_deg
         _def_lon      = _effective_loc.longitude_deg
         # DST-aware UTC offset for the current instant (Tier-1 darkness check).
-        _now_utc_ref  = datetime.datetime.now(datetime.timezone.utc)
+        _now_utc_ref  = _run_wall_time
         _def_utc      = _uoff(_effective_loc.tz_name, _now_utc_ref)
         _def_name     = _effective_loc.site_name
         _def_climate  = _effective_loc.climate_hint
@@ -443,7 +471,7 @@ async def start_run(
         _utc_hour_override = spec_data.get("solar_origin_utc_hour")
         if _utc_hour_override is None and _is_default_irr:
             import math as _math
-            _now_utc = datetime.datetime.now(datetime.timezone.utc)
+            _now_utc = _run_wall_time
             # Tier-1: use ZoneInfo for DST-correct local-hour test.
             try:
                 from zoneinfo import ZoneInfo as _ZI
@@ -490,7 +518,7 @@ async def start_run(
                     )
 
         if _utc_hour_override is not None:
-            _base = datetime.datetime.now(datetime.timezone.utc)
+            _base = _run_wall_time
             _utc_now_solar: datetime.datetime | None = _base.replace(
                 hour=int(_utc_hour_override),
                 minute=0,
@@ -645,7 +673,7 @@ async def start_run(
 
         _gen_block = GenerationBlock(
             seed=_param_cfg.get("seed") if _param_cfg else None,
-            generated_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            generated_at=_run_wall_time.isoformat(),
             generators_used=_generators_used,
             solar_source=_forecast.source if _forecast else "none",
             cluster_source=_cluster_fc.source if _cluster_fc else "none",
@@ -664,6 +692,9 @@ async def start_run(
             run_id,
             spec_data,
             playback_speed=body.playback_speed,
+            run_seed=body.run_seed,
+            seed_manifest=_seed_manifest,
+            execution_mode="interactive",
         )
         # Step 9: propagate stable IDs so the results screen can display them.
         ctx.scenario_id = body.scenario_id
@@ -685,8 +716,15 @@ async def start_run(
             hardware_profile_id=body.hardware_profile_id,
             end_sim_time=body.end_sim_time if body.end_sim_time is not None else 300.0,
             playback_speed=body.playback_speed,
+            run_seed=body.run_seed,
+            execution_mode="interactive",
         )
 
+    _solar_sim = getattr(manager, "solar_sim", None)
+    if _solar_sim is not None and hasattr(_solar_sim, "set_run_seed"):
+        _solar_sim.set_run_seed(
+            int(ctx.metadata["seed_manifest"]["consumer_seeds"]["solar_sim"])
+        )
     await manager.start_run(ctx)
     return StartRunResponse(
         run_id=run_id, soc_floor_pct=_soc_floor, soc_ceil_pct=_soc_ceil,
@@ -772,6 +810,8 @@ async def get_run_result(
         scenario_id=completed.scenario_id,
         scenario_name=completed.scenario_name,
         completed_at=completed.completed_at.isoformat(),
+        seed_manifest=completed.seed_manifest,
+        physical_identity_sha256=completed.physical_identity_sha256,
         overall=v.overall,
         tick_count=v.tick_count,
         dropped_ticks=v.dropped_ticks,

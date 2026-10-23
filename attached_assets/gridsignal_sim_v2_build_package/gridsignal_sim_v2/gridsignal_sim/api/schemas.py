@@ -2834,6 +2834,12 @@ class StartRunRequest(BaseModel):
         ge=0,
         description="Simulated seconds per real second (0 = max speed)",
     )
+    # PROPOSED_HERE: an explicit run root makes every stochastic input replayable;
+    # null draws one root once and records it in run metadata (DR Phase 6 D4).
+    run_seed: Optional[int | str] = Field(
+        default=None,
+        description="Optional reproducibility seed; the resolved value is recorded with the run.",
+    )
 
     # ── Operator BESS size overrides ──────────────────────────────────────────
     # When present these replace rated_mw / usable_mwh on every BESS unit in the
@@ -2937,6 +2943,8 @@ class RunResultResponse(BaseModel):
     scenario_id: Optional[str] = None
     scenario_name: str
     completed_at: str              # ISO-8601 UTC
+    seed_manifest: dict[str, Any] | None = None
+    physical_identity_sha256: str | None = None
     overall: str                   # "PASS" | "FAIL" | "INCONCLUSIVE"
     tick_count: int
     dropped_ticks: int

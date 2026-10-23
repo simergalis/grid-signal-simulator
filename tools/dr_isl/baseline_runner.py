@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # DR-ISL pinned seeder-path baseline runner (no application code changes).
-# Pinning: fabric hash/seed 1729; wall clock 1792454400.0; Python/NumPy 1729;
-# configured kube seeds 1729; per-diesel RNG 1729+i; generator/corruption seeds
-# 1729 when absent/null (Phase 0b reconstruction). Seeder-path execution does
-# not call the API's external/LLM generators; configured corruption is seeded.
+# Pinning: run seed 1729; wall clock 1792454400.0; Python/NumPy 1729;
+# null consumer seeds are derived by the shared SHA-256 seed resolver. Seeder-path
+# execution does not call the API's external/LLM generators; generated inputs
+# and configured corruption seeds are materialized by the factory.
 # Hash contract: SHA-256 over ticks in order, each one UTF-8 compact sorted-key
 # JSON object plus LF; exclude exactly advisory_telemetry, fabric_modal,
 # wall_stamp_utc, insufficient_reserve_proposal_id. NaN allowed.
@@ -12,7 +12,6 @@
 import argparse
 import asyncio
 import dataclasses
-import hashlib
 import json
 import logging
 import os
@@ -22,10 +21,6 @@ import sys
 from unittest.mock import patch
 
 PACKAGE = Path("attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim")
-EXCLUDED = frozenset({
-    "advisory_telemetry", "fabric_modal", "wall_stamp_utc",
-    "insufficient_reserve_proposal_id",
-})
 SEED = 1729
 WALL_CLOCK = 1792454400.0
 
@@ -43,11 +38,6 @@ def plain(value):
     if hasattr(value, "value"):
         return plain(value.value)
     return value
-
-
-def encoded(value):
-    return json.dumps(value, sort_keys=True, separators=(",", ":"),
-                      ensure_ascii=True, allow_nan=True).encode("utf-8") + b"\n"
 
 
 def pin_spec(value):
@@ -95,7 +85,10 @@ async def run(args):
     import numpy as np
     from api.schemas import ScenarioSpec
     from core.simulation_core import SimulationState
-    from runtime.fabric_engine import FabricEngine
+    from core.physical_identity import (
+        PHYSICAL_TICK_HASH_EXCLUSIONS,
+        PhysicalIdentityHasher,
+    )
     from runtime.run_manager import (
         InMemoryTimeseriesSink, RunManager, WebSocketHub, TICK_INTERVAL_SIM_SECONDS,
     )
@@ -103,13 +96,8 @@ async def run(args):
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     logging.basicConfig(filename=str(args.output_dir / "engine.log"), level=logging.ERROR)
-    original_fabric = FabricEngine.__init__
     original_apply = SimulationState.apply_workload_signal
     events = []
-
-    def fabric(self, *positional, **kwargs):
-        kwargs["seed"] = SEED
-        return original_fabric(self, *positional, **kwargs)
 
     def apply(self, signal, *positional, **kwargs):
         events.append({"observed_tick_index": self.tick_index + 1,
@@ -125,11 +113,14 @@ async def run(args):
         spec = ScenarioSpec.model_validate_json(source.read_bytes()).model_dump(mode="json")
         pin_spec(spec)
         with patch("time.time", return_value=WALL_CLOCK), \
-                patch.object(FabricEngine, "__init__", fabric), \
                 patch.object(SimulationState, "apply_workload_signal", apply):
-            ctx = build_run_context_from_spec(args.scenario_id, spec, playback_speed=0.0)
-            for index, unit in enumerate(ctx.sim_state.diesel_units):
-                unit._rng.seed(SEED + index)
+            ctx = build_run_context_from_spec(
+                args.scenario_id,
+                spec,
+                playback_speed=0.0,
+                run_seed=SEED,
+                execution_mode="headless",
+            )
             corruption = spec.get("telemetry_corruption_config")
             if corruption is not None:
                 from runtime.telemetry_corruption import generate_corruption_schedule
@@ -145,17 +136,13 @@ async def run(args):
             manager = RunManager(WebSocketHub())
             await manager.start_run(ctx)
             await manager._tasks[ctx.run_id]
-        digest = hashlib.sha256()
+        digest = PhysicalIdentityHasher()
         failures = []
         prefix = args.output_dir / f"{args.scenario_id}.{repetition}"
-        with Path(str(prefix) + ".ticks.jsonl").open("wb") as output:
-            for tick in sink.rows:
-                row = plain(tick)
-                output.write(encoded(row))
-                digest.update(encoded({key: val for key, val in row.items()
-                                       if key not in EXCLUDED}))
-                if not tick.physical_balance.passed:
-                    failures.append(tick.tick_index)
+        for tick in sink.rows:
+            digest.update(tick)
+            if not tick.physical_balance.passed:
+                failures.append(tick.tick_index)
         Path(str(prefix) + ".events.json").write_text(json.dumps(events, indent=2))
         Path(str(prefix) + ".spec.json").write_text(json.dumps(spec, indent=2))
         summary = {
@@ -167,7 +154,7 @@ async def run(args):
                 tick.physical_balance.verification_mode for tick in sink.rows}),
             "tolerances_mw": sorted({
                 tick.physical_balance.tolerance_mw for tick in sink.rows}),
-            "hash_exclusions": sorted(EXCLUDED),
+            "hash_exclusions": sorted(PHYSICAL_TICK_HASH_EXCLUSIONS),
         }
         Path(str(prefix) + ".summary.json").write_text(json.dumps(summary, indent=2))
         summaries.append(summary)
@@ -177,10 +164,6 @@ async def run(args):
 
 def main():
     args = arguments()
-    if os.environ.get("PYTHONHASHSEED") != str(SEED):
-        env = dict(os.environ, PYTHONHASHSEED=str(SEED),
-                   PYTHONDONTWRITEBYTECODE="1")
-        os.execve(sys.executable, [sys.executable, __file__, *sys.argv[1:]], env)
     asyncio.run(run(args))
 
 

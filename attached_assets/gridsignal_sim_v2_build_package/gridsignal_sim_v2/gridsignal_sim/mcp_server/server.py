@@ -39,6 +39,7 @@ from study_harness.executor import (
     STUDY_CLASS_BASE_DEMO,
     StudyRunExecutor,
     make_study_run_identity,
+    seed_cache_bypass_reason,
     study_class_for_scenario,
 )
 
@@ -409,13 +410,23 @@ class StudyService:
         mode: str,
         parameter_overrides: Mapping[str, Any] | None,
         seed: int | str | None,
+        seed_manifest: Mapping[str, Any] | None = None,
+        spec: Mapping[str, Any] | None = None,
     ):
-        spec = self.executor._expanded_spec(scenario_id, parameter_overrides, None)
+        if spec is None:
+            spec = self.executor._expanded_spec(
+                scenario_id, parameter_overrides, None
+            )
+        resolved_seed = (
+            seed_manifest["root_seed"]
+            if seed_manifest is not None
+            else seed
+        )
         return make_study_run_identity(
             scenario_id=scenario_id,
             mode=mode,
             spec=spec,
-            seed=seed,
+            seed=resolved_seed,
             tick_seconds=self.executor.tick_seconds,
             engine_commit=self.executor.engine_commit,
             harness_commit=self.executor.harness_commit,
@@ -443,14 +454,29 @@ class StudyService:
                 mode=mode,
             )
         self._rate_limiter.check(principal)
+        spec = self.executor._expanded_spec(
+            scenario_id, parameter_overrides, None
+        )
+        cache_bypass_reason = seed_cache_bypass_reason(
+            reuse_cache=reuse_cache,
+            requested_seed=seed,
+        )
+        effective_reuse_cache = reuse_cache and cache_bypass_reason is None
+        seed_manifest = self.executor.resolve_seed_manifest(spec, seed)
         identity = self._identity(
             scenario_id=scenario_id,
             mode=mode,
             parameter_overrides=parameter_overrides,
             seed=seed,
+            seed_manifest=seed_manifest,
+            spec=spec,
         )
         run_id = _run_id_for(scenario_id, mode, identity.digest)
-        cached = self.executor.cache.get(identity) if reuse_cache else None
+        cached = (
+            self.executor.cache.get(identity)
+            if effective_reuse_cache
+            else None
+        )
         if cached is not None:
             record = dict(cached)
             record["cache_hit"] = True
@@ -475,6 +501,7 @@ class StudyService:
                 "run_id": run_id,
                 "status": "COMPLETED",
                 "cache_hit": True,
+                "cache_bypass_reason": None,
                 "estimated_wall_clock_seconds": 0.0,
             }
 
@@ -492,8 +519,9 @@ class StudyService:
             self._execute,
             state,
             parameter_overrides,
-            seed,
-            reuse_cache,
+            seed_manifest,
+            identity,
+            effective_reuse_cache,
         )
         estimate = max(
             1.0,
@@ -504,6 +532,7 @@ class StudyService:
             "run_id": run_id,
             "status": "QUEUED",
             "cache_hit": False,
+            "cache_bypass_reason": cache_bypass_reason,
             "estimated_wall_clock_seconds": round(estimate, 3),
         }
 
@@ -511,7 +540,8 @@ class StudyService:
         self,
         state: RunState,
         parameter_overrides: Mapping[str, Any] | None,
-        seed: int | str | None,
+        seed_manifest: Mapping[str, Any],
+        identity: Any,
         reuse_cache: bool,
     ) -> None:
         with self._lock:
@@ -531,7 +561,9 @@ class StudyService:
                 scenario_id=state.scenario_id,
                 mode=state.mode,
                 parameter_overrides=parameter_overrides,
-                seed=seed,
+                seed=seed_manifest["root_seed"],
+                seed_manifest=dict(seed_manifest),
+                identity=identity,
                 reuse_cache=reuse_cache,
                 progress_callback=progress,
             )

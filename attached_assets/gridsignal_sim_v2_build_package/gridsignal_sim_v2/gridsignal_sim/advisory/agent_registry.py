@@ -68,14 +68,19 @@ class AgentRegistry:
         enabled:           bool = True,
         hardware_profiles: Optional[dict[str, float]] = None,
         max_proposal_mw:   float = 20.0,
+        deidentification_seed: int | None = None,
     ) -> None:
         self._gate   = gate   or AdvisoryGate(max_proposal_mw=max_proposal_mw)
         self._router = router or AdvisoryRouter()
         self._enabled = enabled
+        self._deidentification_seed = deidentification_seed
         # P1: create a single session-stable HardwareClassMap if profiles provided.
         # The map lives for the lifetime of this AgentRegistry (= one advisory session).
         self._hw_class_map: Optional[HardwareClassMap] = (
-            HardwareClassMap(hardware_profiles)
+            HardwareClassMap(
+                hardware_profiles,
+                seed=deidentification_seed,
+            )
             if hardware_profiles
             else None
         )
@@ -152,6 +157,7 @@ class AgentRegistry:
                     hardware_profile_ids=hardware_profile_ids,
                     hardware_profiles=hardware_profiles,
                     hardware_class_map=self._hw_class_map,  # P1: session-stable map
+                    deidentification_seed=self._deidentification_seed,
                 )
                 if p is not None:
                     proposals.append(p)

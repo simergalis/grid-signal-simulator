@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import os
 import uuid as _uuid
+import copy
 from dataclasses import replace as _replace
 
 from core.asset_modules import (
@@ -74,6 +75,10 @@ import core.site_parameters as _sp  # GS-DES-CFG-001 §Phase-6
 from pydantic import TypeAdapter
 
 from runtime.run_manager import InMemoryTimeseriesSink, RunContext
+from runtime.seed_resolution import (
+    resolve_run_seed_manifest,
+    seed_consumers_for_spec,
+)
 from runtime.turbine_commitment import ForecastDrivenTurbineController
 from runtime.pms_test_double import OperatorResponseProfile as _OperatorResponseProfile
 from runtime.verdict import AssertionSpec as _AssertionSpec
@@ -226,7 +231,17 @@ def build_run_context(
     # power_factor: rated pf of the synchronous fleet.  0.85 is CHOSEN (typical gas
     # turbine); calibrate against vendor data for real deployments.
     power_factor: float = 0.85,
+    run_seed: int | str | None = None,
+    execution_mode: str = "headless",
 ) -> RunContext:
+    _seed_manifest = resolve_run_seed_manifest(
+        run_seed,
+        consumer_names={
+            "fabric", "solar_sim", "advisory_deidentification",
+            "scada", "price_curve",
+        },
+        configured_seeds={"scada": 42, "price_curve": 42},
+    )
     site = SiteConfig(
         site_id=f"site-for-{run_id}",
         frequency_nominal_hz=frequency_nominal_hz,
@@ -285,6 +300,9 @@ def build_run_context(
         bess_units=bess_units,
         solar_arrays=solar_arrays,
         cooling=cooling,
+    )
+    sim_state.scada_layer._rng.seed(
+        int(_seed_manifest["consumer_seeds"]["scada"])
     )
     # The convenience factory represents an already operating facility.  The
     # scenario-spec factory below deliberately does not do this: its authored
@@ -365,6 +383,16 @@ def build_run_context(
     return RunContext(
         run_id=run_id,
         sim_state=sim_state,
+        metadata={
+            "seed_manifest": _seed_manifest,
+            "execution_mode": execution_mode,
+            "materialized_run_inputs": {
+                "job_id": job_id,
+                "node_count": node_count,
+                "hardware_profile_id": hardware_profile_id,
+                "end_sim_time": end_sim_time,
+            },
+        },
         events=events,
         dt_lead_seconds=dt_lead_seconds,
         end_sim_time=end_sim_time,
@@ -375,10 +403,15 @@ def build_run_context(
             router=DeterministicRouter() if os.environ.get('PYTEST_CURRENT_TEST')
                    else AdvisoryRouter(),
             enabled=True,
+            deidentification_seed=int(
+                _seed_manifest["consumer_seeds"]["advisory_deidentification"]
+            ),
         ),
         telemetry_ingestor=NetworkTelemetryIngestor(),
         corroborator=FabricCorroborator(),
-        price_curve=SyntheticPriceCurve(seed=42),
+        price_curve=SyntheticPriceCurve(
+            seed=int(_seed_manifest["consumer_seeds"]["price_curve"])
+        ),
         grid_capacity=_grid_cap,
         _rated_cooling_mw=_rated_cooling_mw,
         _design_peak_load_mw=_design_peak_load_mw,
@@ -405,6 +438,7 @@ def build_load_test_context(
     playback_speed: float = 0.0,     # 0 == "max" speed
     frequency_nominal_hz: float = 60.0,   # WECC/SDG&E default; override for non-WECC
     power_factor: float = 0.85,           # CHOSEN — typical gas turbine
+    run_seed: int | str | None = None,
 ) -> RunContext:
     """Builds a RunContext at (or above, via the *_count params) the
     functional spec's NFR-ceiling configuration (Section 11: 50 GPU
@@ -417,6 +451,14 @@ def build_load_test_context(
     the load test representative of evaluate_tick()'s real per-tick
     cost (Design Spec Section 4.3), not just an idle scaffold.
     """
+    _seed_manifest = resolve_run_seed_manifest(
+        run_seed,
+        consumer_names={
+            "fabric", "solar_sim", "advisory_deidentification",
+            "scada", "price_curve",
+        },
+        configured_seeds={"scada": 42, "price_curve": 42},
+    )
     site = SiteConfig(
         site_id=f"site-for-{run_id}",
         frequency_nominal_hz=frequency_nominal_hz,
@@ -464,6 +506,9 @@ def build_load_test_context(
         bess_units=bess_units,
         solar_arrays=solar_arrays,
         cooling=cooling,
+    )
+    sim_state.scada_layer._rng.seed(
+        int(_seed_manifest["consumer_seeds"]["scada"])
     )
 
     # One job per GPU module, all starting at t=0, so the very first
@@ -530,6 +575,18 @@ def build_load_test_context(
     return RunContext(
         run_id=run_id,
         sim_state=sim_state,
+        metadata={
+            "seed_manifest": _seed_manifest,
+            "execution_mode": "headless",
+            "materialized_run_inputs": {
+                "gpu_module_count": gpu_module_count,
+                "turbine_count": turbine_count,
+                "bess_count": bess_count,
+                "solar_count": solar_count,
+                "nodes_per_gpu_module": nodes_per_gpu_module,
+                "end_sim_time": end_sim_time,
+            },
+        },
         events=events,
         dt_lead_seconds=dt_lead_seconds,
         end_sim_time=end_sim_time,
@@ -551,6 +608,9 @@ def build_load_test_context(
             # Other callers (build_run_context, build_run_context_from_spec)
             # are unchanged and continue to honour LP-1 key presence.
             router=DeterministicRouter(),
+            deidentification_seed=int(
+                _seed_manifest["consumer_seeds"]["advisory_deidentification"]
+            ),
             # GS-IMPL-LOADPERF-001: load test measures simulation throughput,
             # not advisory quality.  Agents must be disabled so the advisory
             # pipeline CPU cost (deidentify → _make_bin → statistics.mean,
@@ -565,7 +625,9 @@ def build_load_test_context(
         ),
         telemetry_ingestor=NetworkTelemetryIngestor(),
         corroborator=FabricCorroborator(),
-        price_curve=SyntheticPriceCurve(seed=42),
+        price_curve=SyntheticPriceCurve(
+            seed=int(_seed_manifest["consumer_seeds"]["price_curve"])
+        ),
         grid_capacity=_lt_grid_cap,
         _rated_cooling_mw=_lt_rated_cooling_mw,
         _design_peak_load_mw=_lt_design_peak_load_mw,
@@ -608,6 +670,10 @@ def build_run_context_from_spec(
     run_id: str,
     spec_data: dict,
     playback_speed: float = 0.0,
+    *,
+    run_seed: int | str | None = None,
+    seed_manifest: dict | None = None,
+    execution_mode: str = "headless",
 ) -> RunContext:
     """Build a RunContext from a scenario spec dictionary (JSON-round-trip safe).
 
@@ -632,6 +698,14 @@ def build_run_context_from_spec(
     """
     spec_data = expand_phase2b_reference_spec(spec_data)
     validate_fuel_cell_source_consistency(spec_data)
+    _seed_names, _configured_seeds = seed_consumers_for_spec(spec_data)
+    seed_manifest = resolve_run_seed_manifest(
+        run_seed,
+        consumer_names=_seed_names,
+        configured_seeds=_configured_seeds,
+        existing_manifest=seed_manifest,
+    )
+    _materialized_spec = copy.deepcopy(spec_data)
 
     # ── Site configuration ────────────────────────────────────────────────
     island = (
@@ -1043,6 +1117,14 @@ def build_run_context_from_spec(
         )
         for i, d in enumerate(spec_data.get("diesel_units", []))
     ]
+    for _i, _unit in enumerate(diesel_units):
+        _diesel_seed_name = f"diesel:{_unit.config.asset_id}"
+        seed_manifest = resolve_run_seed_manifest(
+            run_seed,
+            consumer_names={_diesel_seed_name},
+            existing_manifest=seed_manifest,
+        )
+        _unit._rng.seed(int(seed_manifest["consumer_seeds"][_diesel_seed_name]))
 
     # ── Solar ─────────────────────────────────────────────────────────────
     solar_rated_mw = float(spec_data.get("solar_rated_mw", 0.0))
@@ -1079,6 +1161,9 @@ def build_run_context_from_spec(
         diesel_min_fuel_runtime_hours=float(
             _diesel_block.get("min_fuel_runtime_hours", 48.0)
         ),
+    )
+    sim_state.scada_layer._rng.seed(
+        int(seed_manifest["consumer_seeds"]["scada"])
     )
 
     # ── Fuel cell rated capacity ──────────────────────────────────────────
@@ -1277,11 +1362,10 @@ def build_run_context_from_spec(
             # Legacy shared-fleet path: preserve A/B/C scheduler mix, arrival
             # scaling, event IDs, and deterministic seed partitioning.
             _agent_defs = []
-            _base_seed = _kube_raw.get("rng_seed", KubeConfig().rng_seed)
-            for _tid, _stype, _weight, _seed_off in (
-                ("A", "SLURM", 0.40, 0),
-                ("B", "K8S",   0.35, 1),
-                ("C", "RAY",   0.25, 2),
+            for _tid, _stype, _weight in (
+                ("A", "SLURM", 0.40),
+                ("B", "K8S",   0.35),
+                ("C", "RAY",   0.25),
             ):
                 _definition = dict(_kube_raw)
                 _definition.update(
@@ -1290,19 +1374,27 @@ def build_run_context_from_spec(
                     scheduler_type=_stype,
                     capacity_unit="node",
                     workload_share=_weight,
-                    rng_seed=(
-                        None if _base_seed is None
-                        else int(_base_seed) + _seed_off
-                    ),
+                    rng_seed=seed_manifest["consumer_seeds"][
+                        f"kube:legacy-shared-fleet:{_tid}"
+                    ],
                 )
                 _agent_defs.append(_definition)
 
-        for _definition in _agent_defs:
+        for _agent_index, _definition in enumerate(_agent_defs):
             _share = float(_definition.get("workload_share", 1.0))
             _cfg = {
                 k: v for k, v in _definition.items()
                 if k in KubeConfig.__dataclass_fields__
             }
+            if _kube_cluster_raws:
+                _cluster_key = str(
+                    _definition.get("cluster_id")
+                    or _definition.get("tenant_id")
+                    or f"cluster-{_agent_index}"
+                )
+                _cfg["rng_seed"] = seed_manifest["consumer_seeds"][
+                    f"kube:{_cluster_key}"
+                ]
             _cfg["mean_interarrival_s"] = max(
                 5.0,
                 float(_definition.get(
@@ -1577,6 +1669,7 @@ def build_run_context_from_spec(
 
     # ── Workload events ───────────────────────────────────────────────────
     events: list[WorkloadSignal] = []
+    _generated_signal_index = 0
 
     def _scripted_signal(
         evt: dict,
@@ -1586,10 +1679,25 @@ def build_run_context_from_spec(
         job_id: str | None = None,
         node_count: int | None = None,
     ) -> WorkloadSignal:
+        nonlocal _generated_signal_index
+        _generated_signal_index += 1
+        _identity_seed = seed_manifest["root_seed"]
         resolved_event_id = (
-            event_id or evt.get("event_id") or f"evt-{_uuid.uuid4().hex[:8]}"
+            event_id
+            or evt.get("event_id")
+            or "evt-" + _uuid.uuid5(
+                _uuid.NAMESPACE_URL,
+                f"GridSignal:D4:{_identity_seed}:{run_id}:event:{_generated_signal_index}",
+            ).hex[:8]
         )
-        resolved_job_id = job_id or evt.get("job_id") or f"job-{_uuid.uuid4().hex[:8]}"
+        resolved_job_id = (
+            job_id
+            or evt.get("job_id")
+            or "job-" + _uuid.uuid5(
+                _uuid.NAMESPACE_URL,
+                f"GridSignal:D4:{_identity_seed}:{run_id}:job:{_generated_signal_index}",
+            ).hex[:8]
+        )
         return WorkloadSignal(
             event_id=resolved_event_id,
             job_id=resolved_job_id,
@@ -1765,7 +1873,9 @@ def build_run_context_from_spec(
                          available_mw=float(_proc_raw.get("non_firm_available_mw", 3.0)),
                          price_per_mwh=198.0, t_reserve_s=0.0),
         ]
-        _pc_curve = SyntheticPriceCurve(seed=int(_proc_raw.get("price_curve_seed", 42)))
+        _pc_curve = SyntheticPriceCurve(
+            seed=int(seed_manifest["consumer_seeds"]["procurement_price_curve"])
+        )
         _proc_layer = ProcurementLayer(_pc_caps, _pc_curve)
 
     # AD1 — MaintenanceLayer (TC-58, TC-59, TC-60)
@@ -1920,6 +2030,9 @@ def build_run_context_from_spec(
                else AdvisoryRouter(),
         enabled=True,
         max_proposal_mw=float(spec_data.get("advisory_max_mw", 20.0)),
+        deidentification_seed=int(
+            seed_manifest["consumer_seeds"]["advisory_deidentification"]
+        ),
     )
     _commitment_mode = str(spec_data.get("turbine_commitment_mode", "disabled"))
     _turbine_commitment_controller = (
@@ -1960,6 +2073,9 @@ def build_run_context_from_spec(
             "frequency_feedback_configured": _frequency_feedback_configured,
             "bess_reserve_floor_basis": sim_state.arbitrator.reserve_floor_basis,
             "bess_reserve_floor_history": sim_state.arbitrator.reserve_floor_history,
+            "seed_manifest": seed_manifest,
+            "materialized_spec": _materialized_spec,
+            "execution_mode": execution_mode,
         },
         events=events,
         dt_lead_seconds=float(spec_data.get("dt_lead_seconds", 30.0)),
@@ -1976,7 +2092,9 @@ def build_run_context_from_spec(
         ),
         telemetry_ingestor=NetworkTelemetryIngestor(),
         corroborator=FabricCorroborator(),
-        price_curve=SyntheticPriceCurve(seed=42),
+            price_curve=SyntheticPriceCurve(
+                seed=int(seed_manifest["consumer_seeds"]["price_curve"])
+            ),
         grid_capacity=_spec_grid_cap,
         slurm_scheduler=_slurm_engine,
         slurm_job_specs=_slurm_job_specs,
@@ -2067,6 +2185,7 @@ def build_run_context_from_spec(
         fabric_engine=_build_fabric_engine(
             run_id,
             fabric_scenario_id=spec_data.get("fabric_scenario_id"),
+            seed=int(seed_manifest["consumer_seeds"]["fabric"]),
         ),
         # SD-1: site identity stamped onto every TickResult so the WS header
         # renders from authoritative server-side state, not client-held state
@@ -2111,7 +2230,12 @@ def build_run_context_from_spec(
     )
 
 
-def _build_fabric_engine(run_id: str, fabric_scenario_id: str | None = None):
+def _build_fabric_engine(
+    run_id: str,
+    fabric_scenario_id: str | None = None,
+    *,
+    seed: int,
+):
     """
     Instantiate a FabricEngine for a spec-path run.  Failures are caught and
     logged; a None return leaves the tick payload's fabric field null rather
@@ -2126,8 +2250,6 @@ def _build_fabric_engine(run_id: str, fabric_scenario_id: str | None = None):
     _logger = _log.getLogger("gridsignal.scenario_factory")
     try:
         from runtime.fabric_engine import FabricEngine  # lazy — avoids startup cost
-        seed = hash(run_id) % (2 ** 31)  # deterministic per run_id
-
         scenario_data = None
         if fabric_scenario_id:
             from pathlib import Path as _Path

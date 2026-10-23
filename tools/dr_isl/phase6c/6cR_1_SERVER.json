@@ -1,0 +1,22 @@
+{
+  "candidate_ref": "f0d55f26c7bf852d9f50b0e09c2e316f273f93b1",
+  "candidate_test": {
+    "result": "passed",
+    "runtime_seconds": 21,
+    "pytest_reported_seconds": 19.11,
+    "node_id": "tests/test_gpu_load_profile.py::test_gpu_load_profile"
+  },
+  "server": {
+    "pid": 2865,
+    "process": "python3 -m uvicorn api.app:app --host 0.0.0.0 --port 22126 --log-level info",
+    "working_directory": "/home/runner/workspace/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim",
+    "process_start_reported": "Fri Oct 23 11:08:13 2026",
+    "test_base_url": "http://localhost:22126",
+    "test_base_url_source": "tests/test_gpu_load_profile.py:46",
+    "base_commit": "f6ac65849906df7ab33654a0b126a79c9af23d04",
+    "base_commit_time_utc": "2026-10-23T04:25:57Z",
+    "base_runtime_scenario_factory_sha256": "6833036473950d264f6393b92df3abfa5e3c5664fa06effe15d78d7534c4b966",
+    "working_file_sha256_before_candidate_was_applied": "6833036473950d264f6393b92df3abfa5e3c5664fa06effe15d78d7534c4b966",
+    "serves_base_not_candidate_basis": "The uvicorn process predates this candidate application and was not restarted; its working directory is the simulator package. The scenario_factory file hash captured before candidate application matched f6ac658."
+  }
+}

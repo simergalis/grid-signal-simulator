@@ -227,6 +227,10 @@ def _rng_cluster_events(
     rng: random.Random,
 ) -> list[dict]:
     """Poisson/Gaussian cluster events — seeded RNG, no LLM call."""
+    def _event_id(job_id: str, event_type: str, timestamp: float) -> str:
+        key = f"cluster-rng:{job_id}:{event_type}:{timestamp:.1f}"
+        return f"cg-rng-{uuid.uuid5(uuid.NAMESPACE_URL, key).hex[:8]}"
+
     events: list[dict] = []
     job_counter = 0
     sim_time = 0.0
@@ -239,7 +243,7 @@ def _rng_cluster_events(
     jid = f"job-rng-{job_counter:04d}"
     job_counter += 1
     events.append({
-        "event_id": f"cg-rng-{uuid.uuid4().hex[:8]}",
+        "event_id": _event_id(jid, "starting", 0.0),
         "job_id": jid, "event_type": "starting",
         "timestamp": 0.0, "node_count": initial_nodes,
         "hardware_profile_id": hardware_profile_id,
@@ -247,7 +251,7 @@ def _rng_cluster_events(
     })
     end_ts = min(sim_duration_s, initial_duration)
     events.append({
-        "event_id": f"cg-rng-{uuid.uuid4().hex[:8]}",
+        "event_id": _event_id(jid, "job_end", round(end_ts, 1)),
         "job_id": jid, "event_type": "job_end",
         "timestamp": round(end_ts, 1), "node_count": initial_nodes,
         "hardware_profile_id": hardware_profile_id,
@@ -265,14 +269,14 @@ def _rng_cluster_events(
         jid = f"job-rng-{job_counter:04d}"
         job_counter += 1
         events.append({
-            "event_id": f"cg-rng-{uuid.uuid4().hex[:8]}",
+            "event_id": _event_id(jid, "starting", round(sim_time, 1)),
             "job_id": jid, "event_type": "starting",
             "timestamp": round(sim_time, 1), "node_count": nc,
             "hardware_profile_id": hardware_profile_id,
             "renewable_shortfall_mw": 0.0,
         })
         events.append({
-            "event_id": f"cg-rng-{uuid.uuid4().hex[:8]}",
+            "event_id": _event_id(jid, "job_end", round(end_time, 1)),
             "job_id": jid, "event_type": "job_end",
             "timestamp": round(end_time, 1), "node_count": nc,
             "hardware_profile_id": hardware_profile_id,

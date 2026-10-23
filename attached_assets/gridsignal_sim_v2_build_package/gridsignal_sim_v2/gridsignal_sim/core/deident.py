@@ -131,7 +131,12 @@ class HardwareClassMap:
     rated_kw_per_unit; SKU names never appear (TC-29).
     """
 
-    def __init__(self, profiles: dict[str, float]) -> None:
+    def __init__(
+        self,
+        profiles: dict[str, float],
+        *,
+        seed: int | None = None,
+    ) -> None:
         """Create a stable mapping for this advisory session.
 
         Parameters
@@ -141,7 +146,7 @@ class HardwareClassMap:
             The shuffled ordering is fixed for the lifetime of this object.
         """
         sorted_ids = sorted(profiles.keys())
-        rng = _random.Random()        # new instance seeded from os.urandom per session
+        rng = _random.Random(seed)
         rng.shuffle(sorted_ids)
         labels = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
         self._map: dict[str, str] = {
@@ -263,6 +268,7 @@ def deidentify(
     hardware_profile_ids: frozenset[str] = frozenset(),
     hardware_profiles: Optional[dict[str, float]] = None,
     hardware_class_map: Optional[HardwareClassMap] = None,
+    rng_seed: int | None = None,
 ) -> EvidenceWindow:
     """Aggregate and de-identify a tick series into an EvidenceWindow.
 
@@ -385,7 +391,7 @@ def deidentify(
     if hardware_class_map is not None:
         hardware_classes = hardware_class_map.entries()
     elif hardware_profiles:
-        hardware_classes = _build_hardware_classes(hardware_profiles)
+        hardware_classes = _build_hardware_classes(hardware_profiles, rng_seed)
 
     return EvidenceWindow(
         window_sim_seconds=round(window_s, 1),
@@ -453,7 +459,10 @@ def assert_no_pii(
 # Internal helpers
 # ---------------------------------------------------------------------------
 
-def _build_hardware_classes(profiles: dict[str, float]) -> list[HardwareClassEntry]:
+def _build_hardware_classes(
+    profiles: dict[str, float],
+    rng_seed: int | None = None,
+) -> list[HardwareClassEntry]:
     """§21.4: backward-compat per-call random class entries.
 
     Used when hardware_profiles is provided but no HardwareClassMap (session
@@ -470,7 +479,7 @@ def _build_hardware_classes(profiles: dict[str, float]) -> list[HardwareClassEnt
     # Sort by profile_id for determinism WITHIN a call, then shuffle with a
     # fresh RNG seeded from os.urandom — not stable across calls.
     sorted_ids = sorted(profiles.keys())
-    rng = _random.Random()  # seeded from os.urandom; new per call
+    rng = _random.Random(rng_seed)
     rng.shuffle(sorted_ids)
     labels = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
     return [

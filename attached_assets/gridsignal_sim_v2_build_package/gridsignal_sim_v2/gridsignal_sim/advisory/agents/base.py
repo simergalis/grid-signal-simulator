@@ -120,6 +120,7 @@ class BaseAdvisoryAgent:
         hardware_profile_ids: frozenset[str] = frozenset(),  # kept for compat
         hardware_profiles: Optional[dict[str, float]] = None,  # backward compat
         hardware_class_map: Optional[HardwareClassMap] = None,  # P1: session-stable
+        deidentification_seed: int | None = None,
     ) -> Optional[Proposal]:
         """Five-phase loop entry point.
 
@@ -160,6 +161,7 @@ class BaseAdvisoryAgent:
                 hardware_profile_ids=hardware_profile_ids,
                 hardware_profiles=hardware_profiles,
                 hardware_class_map=hardware_class_map,   # P1: session-stable map
+                rng_seed=deidentification_seed,
             )
         except Exception as exc:
             _log.warning("%s: deidentify failed (%s).", self.AGENT_NAME, exc)

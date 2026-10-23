@@ -46,6 +46,7 @@ from core.power_balance import GateVerdict as _PbGateVerdict, gate_run as _pb_ga
 from core.source_audit import SourceAuditTerms as _SrcAuditTerms, audit_tick as _audit_tick
 from core.sim_clock import SimClock
 from core.simulation_core import SimulationState, evaluate_tick
+from core.physical_identity import PhysicalIdentityHasher
 from core._plane_guard import _EVALUATE_TICK_PERMITTED
 from core.site_parameters import get as _sp_catalogue_get
 from core.site_parameters import value as _sp_catalogue_value
@@ -76,6 +77,13 @@ from runtime.pms_test_double import (
 )
 
 logger = logging.getLogger("gridsignal.run_manager")
+
+
+def _advisory_wall_time(ctx: Any, sim_time_seconds: float) -> float:
+    """Use simulation time for reproducible non-interactive advisory cadence."""
+    if ctx.metadata.get("execution_mode") in {"study", "headless"}:
+        return float(sim_time_seconds)
+    return _time_module.time()
 
 
 # GS-IMPL-PSP-002 §4.3 / TC-C13 — production harness guard.
@@ -1922,6 +1930,8 @@ class CompletedRun:
     protection_configured: bool | None = None
     invalid_frequency_tick_count: int | None = None
     invalid_frequency_fraction: float | None = None
+    seed_manifest: Optional[dict[str, Any]] = None
+    physical_identity_sha256: Optional[str] = None
     # AB2: turbine fleet rated capacity (MW); used by energy-summary cost model.
     turbine_rated_mw: float = 0.0
     # Phase 0 (DR-2026-08-09-BALANCE): power balance gate verdict.
@@ -2581,6 +2591,7 @@ class RunManager:
         return self.UNIT_CMD_OK, ""
 
     async def _drive(self, ctx: RunContext) -> None:
+        physical_identity_hasher = PhysicalIdentityHasher()
         # W1b: pre-register all STARTING events with the corroborator so
         # fabric traffic rises can be matched against known predicted starts.
         if ctx.corroborator is not None:
@@ -2638,7 +2649,24 @@ class RunManager:
                 # availability fraction from the SolarSim (which reflects per-bank
                 # enabled/disabled state) and scale it to the scenario's rated MW.
                 _pre_solar_mw: Optional[float] = None  # set below; reused in C backstop
-                if (
+                _solar_replay_trace = ctx.metadata.get("solar_replay_input_mw")
+                if _solar_replay_trace is not None:
+                    _solar_replay_index = int(
+                        ctx.metadata.get("_solar_replay_tick_index", 0)
+                    )
+                    if _solar_replay_index >= len(_solar_replay_trace):
+                        raise RuntimeError(
+                            "recorded SolarSim input trace ended before the run"
+                        )
+                    _pre_solar_mw = float(
+                        _solar_replay_trace[_solar_replay_index]
+                    )
+                    ctx.metadata["_solar_replay_tick_index"] = (
+                        _solar_replay_index + 1
+                    )
+                    for _sm in ctx.sim_state.solar_arrays:
+                        _sm.override_output_mw(_pre_solar_mw)
+                elif (
                     self.solar_sim is not None
                     and ctx.irradiance_profile is not None
                     and ctx.sim_state.solar_arrays
@@ -2666,6 +2694,13 @@ class RunManager:
                         _pre_solar_mw = 0.0
                     for _sm in ctx.sim_state.solar_arrays:
                         _sm.override_output_mw(_pre_solar_mw)
+                if (
+                    _pre_solar_mw is not None
+                    and _solar_replay_trace is None
+                ):
+                    ctx.metadata.setdefault("solar_input_trace_mw", []).append(
+                        float(_pre_solar_mw)
+                    )
 
                 # ── A: evaluate_tick ──────────────────────────────────────
                 if _profiling: _t0 = _time_module.perf_counter()
@@ -3161,6 +3196,7 @@ class RunManager:
                     )
 
                 if _profiling: _t0 = _time_module.perf_counter()
+                physical_identity_hasher.update(tick_result)
                 await ctx.sink.append(tick_result)                 # I/O -- yields to sibling runs
                 if _profiling: _sec.setdefault("C_sink_append", []).append(_time_module.perf_counter() - _t0)
 
@@ -3244,7 +3280,9 @@ class RunManager:
                         functools.partial(
                             ctx.registry.run_all,
                             list(ctx.tick_history),
-                            wall_time=_time_module.time(),
+                            wall_time=_advisory_wall_time(
+                                ctx, tick_result.sim_time_seconds
+                            ),
                             sim_time=tick_result.sim_time_seconds,
                             site_id=ctx.sim_state.site.site_id,
                             job_id=_job_id,
@@ -3651,10 +3689,20 @@ class RunManager:
                     _vd["turbine_commitment_forecast_miss_peak_mw"] = float(
                         getattr(_commitment_controller, "forecast_miss_peak_mw", 0.0)
                     )
+                    ctx.metadata["physical_identity_sha256"] = (
+                        physical_identity_hasher.hexdigest()
+                    )
+                    _vd["seed_manifest"] = ctx.metadata.get("seed_manifest")
+                    _vd["physical_identity_sha256"] = ctx.metadata[
+                        "physical_identity_sha256"
+                    ]
                     verdict_json = _json_va.dumps(_vd)
 
                 # Store for the results/playback screen.
                 _completed_at = datetime.now(timezone.utc)
+                ctx.metadata["physical_identity_sha256"] = (
+                    physical_identity_hasher.hexdigest()
+                )
                 self._completed[ctx.run_id] = CompletedRun(
                     run_id=ctx.run_id,
                     scenario_id=ctx.scenario_id,
@@ -3672,6 +3720,10 @@ class RunManager:
                     protection_configured=_protection_configured,
                     invalid_frequency_tick_count=_invalid_frequency_tick_count,
                     invalid_frequency_fraction=_invalid_frequency_fraction,
+                    seed_manifest=ctx.metadata.get("seed_manifest"),
+                    physical_identity_sha256=ctx.metadata.get(
+                        "physical_identity_sha256"
+                    ),
                     turbine_rated_mw=ctx.turbine_rated_mw,
                     balance_gate=_balance_gate,
                     balance_independent=_balance_independent,

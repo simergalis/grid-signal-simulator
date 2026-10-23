@@ -1,0 +1,8 @@
+{
+  "environment": "candidate source with existing dev server",
+  "started_epoch": 1792771307,
+  "finished_epoch": 1792771328,
+  "runtime_seconds": 21,
+  "return_code": 0,
+  "result": "passed"
+}

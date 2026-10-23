@@ -640,6 +640,10 @@ class SolarSim:
             "",
         )
 
+    def set_run_seed(self, seed: int) -> None:
+        """Set the recorded run's RNG stream without resetting live plant state."""
+        self.rng.seed(int(seed))
+
     # -- lifecycle ---------------------------------------------------------
 
     def _seed_state(self) -> PlantState:

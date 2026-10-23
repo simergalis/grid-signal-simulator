@@ -195,8 +195,12 @@ def _rng_stressor_events(
     for i in range(n_events):
         ts = rng.uniform(sim_duration_s * 0.1, sim_duration_s * 0.9)
         shortfall = rng.uniform(max_solar_mw * 0.15, max_solar_mw * 0.70)
+        event_id = uuid.uuid5(
+            uuid.NAMESPACE_URL,
+            f"stressor-rng:cloud-rng-{i}:solar_step:{round(ts, 1):.1f}",
+        ).hex[:8]
         events.append({
-            "event_id":               f"sg-rng-{uuid.uuid4().hex[:8]}",
+            "event_id":               f"sg-rng-{event_id}",
             "job_id":                 f"cloud-rng-{i}",
             "event_type":             "solar_step",
             "timestamp":              round(ts, 1),

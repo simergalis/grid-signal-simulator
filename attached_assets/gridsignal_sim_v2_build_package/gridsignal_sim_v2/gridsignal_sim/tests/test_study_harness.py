@@ -19,6 +19,10 @@ from study_harness.executor import StudyRunExecutor
 from study_harness.manifest import RunManifestCache, make_run_identity
 from study_harness.metrics import collect_metrics
 from runtime.turbine_commitment import ForecastDrivenTurbineController
+from runtime.seed_resolution import (
+    resolve_run_seed_manifest,
+    seed_consumers_for_spec,
+)
 
 
 def _row(
@@ -332,12 +336,21 @@ def test_h1_informed_is_deterministic_with_bounded_forecast_history(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """The two-snapshot diagnostic bound must not change H-1 physics."""
+    # D4: pass one recorded manifest through probe and both arms so the
+    # determinism assertion compares executions with the same resolved seed.
     scenario_id = "scenario-h1-k8s-ray-24h"
     bounded_executor = StudyRunExecutor(output_dir=tmp_path / "bounded")
     spec = bounded_executor._expanded_spec(scenario_id, None, None)
+    seed_names, configured_seeds = seed_consumers_for_spec(spec)
+    seed_manifest = resolve_run_seed_manifest(
+        42,
+        consumer_names=seed_names,
+        configured_seeds=configured_seeds,
+    )
     replay_events, demand_replay = bounded_executor._probe(
         spec,
         run_id="h1-forecast-bound-determinism-probe",
+        seed_manifest=seed_manifest,
     )
     bounded = bounded_executor._run_mode(
         scenario_id=scenario_id,
@@ -345,7 +358,8 @@ def test_h1_informed_is_deterministic_with_bounded_forecast_history(
         spec=spec,
         replay_events=replay_events,
         demand_replay=demand_replay,
-        seed=None,
+        seed=42,
+        seed_manifest=seed_manifest,
     )
 
     original_init = ForecastDrivenTurbineController.__init__
@@ -369,7 +383,8 @@ def test_h1_informed_is_deterministic_with_bounded_forecast_history(
         spec=spec,
         replay_events=replay_events,
         demand_replay=demand_replay,
-        seed=None,
+        seed=42,
+        seed_manifest=seed_manifest,
     )
 
     metric_keys = (

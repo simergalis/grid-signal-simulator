@@ -16,6 +16,7 @@ from mcp_server.server import (
     app,
     service,
 )
+import runtime.seed_resolution as seed_resolution_module
 
 
 READ_TOKEN = "test-read-principal"
@@ -183,7 +184,9 @@ def test_mcp_cache_hit_and_build_parity_error(
         scenario_id="scenario-h1-k8s-ray-24h",
         mode="informed",
         parameter_overrides=None,
-        seed=None,
+        # D4 includes the resolved seed in the cache identity; 6c's cache-hit
+        # case must therefore use the same explicit seed as the request.
+        seed=42,  # PROPOSED_HERE: deterministic explicit cache-key fixture.
     )
     cached_record = {
         "scenario_id": "scenario-h1-k8s-ray-24h",
@@ -210,6 +213,7 @@ def test_mcp_cache_hit_and_build_parity_error(
             {
                 "scenario_id": "scenario-h1-k8s-ray-24h",
                 "mode": "informed",
+                "seed": 42,  # PROPOSED_HERE: matches the cached identity.
                 "reuse_cache": True,
             },
             RUN_TOKEN,
@@ -266,6 +270,131 @@ def test_mcp_cache_hit_and_build_parity_error(
         assert parity["error"]["informed_engine_commit"] == previous_commit
         assert parity["error"]["baseline_harness_commit"] == current_commit
         assert parity["error"]["informed_harness_commit"] == current_commit
+
+
+def test_tc_isl_41_explicit_seed_reuses_cache(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    """TC-ISL-41: repeated explicit-seed requests reuse the same cached run."""
+    monkeypatch.setenv("GRIDSIGNAL_MCP_READ_TOKEN", READ_TOKEN)
+    monkeypatch.setenv("GRIDSIGNAL_MCP_RUN_TOKEN", RUN_TOKEN)
+    isolated = _isolated_service(monkeypatch, tmp_path)
+    isolated._rate_limiter = RateLimiter(100)
+    arguments = {
+        "scenario_id": "scenario-h1-k8s-ray-24h",
+        "mode": "informed",
+        "parameter_overrides": {"end_sim_time": 5.0},
+        "seed": 42,
+        "reuse_cache": True,
+    }
+    try:
+        with TestClient(app) as client:
+            first = _call(client, "start_run", arguments, RUN_TOKEN)
+            assert first["cache_hit"] is False
+            assert first["cache_bypass_reason"] is None
+            assert _wait_for_run(client, first["run_id"])["status"] == "COMPLETED"
+
+            second = _call(client, "start_run", arguments, RUN_TOKEN)
+            assert second["cache_hit"] is True
+            assert second["cache_bypass_reason"] is None
+            assert second["run_id"] == first["run_id"]
+    finally:
+        isolated._pool.shutdown(wait=True)
+
+
+def test_tc_isl_42_null_seed_requests_run_fresh_and_record_distinct_seeds(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    """TC-ISL-42: null-seed requests bypass lookup and record each fresh seed."""
+    monkeypatch.setenv("GRIDSIGNAL_MCP_READ_TOKEN", READ_TOKEN)
+    monkeypatch.setenv("GRIDSIGNAL_MCP_RUN_TOKEN", RUN_TOKEN)
+    isolated = _isolated_service(monkeypatch, tmp_path)
+    isolated._rate_limiter = RateLimiter(100)
+    # PROPOSED_HERE: distinct synthetic draws make fresh null-seed behavior
+    # deterministic in this test.
+    draws = iter((61001, 61002))
+    # PROPOSED_HERE: fixed synthetic root draw for the recorded-seed replay.
+    monkeypatch.setattr(
+        seed_resolution_module.secrets,
+        "randbits",
+        lambda bit_count: next(draws),
+    )
+    arguments = {
+        "scenario_id": "scenario-h1-k8s-ray-24h",
+        "mode": "informed",
+        "parameter_overrides": {"end_sim_time": 5.0},
+        "reuse_cache": True,
+    }
+    try:
+        with TestClient(app) as client:
+            first = _call(client, "start_run", arguments, RUN_TOKEN)
+            assert first["cache_hit"] is False
+            assert first["cache_bypass_reason"] == "seed_not_provided"
+            assert _wait_for_run(client, first["run_id"])["status"] == "COMPLETED"
+            first_seed = isolated._runs[first["run_id"]].record["seed_manifest"][
+                "root_seed"
+            ]
+
+            second = _call(client, "start_run", arguments, RUN_TOKEN)
+            assert second["cache_hit"] is False
+            assert second["cache_bypass_reason"] == "seed_not_provided"
+            assert _wait_for_run(client, second["run_id"])["status"] == "COMPLETED"
+            second_seed = isolated._runs[second["run_id"]].record["seed_manifest"][
+                "root_seed"
+            ]
+
+            assert first_seed == 61001
+            assert second_seed == 61002
+            assert first_seed != second_seed
+            assert first["run_id"] != second["run_id"]
+    finally:
+        isolated._pool.shutdown(wait=True)
+
+
+def test_tc_isl_43_recorded_null_seed_can_replay_from_cache(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    """TC-ISL-43: an explicit recorded seed can reuse its earlier null-seed run."""
+    monkeypatch.setenv("GRIDSIGNAL_MCP_READ_TOKEN", READ_TOKEN)
+    monkeypatch.setenv("GRIDSIGNAL_MCP_RUN_TOKEN", RUN_TOKEN)
+    isolated = _isolated_service(monkeypatch, tmp_path)
+    isolated._rate_limiter = RateLimiter(100)
+    monkeypatch.setattr(
+        seed_resolution_module.secrets,
+        "randbits",
+        lambda bit_count: 62003,
+    )
+    arguments = {
+        "scenario_id": "scenario-h1-k8s-ray-24h",
+        "mode": "informed",
+        "parameter_overrides": {"end_sim_time": 5.0},
+        "reuse_cache": True,
+    }
+    try:
+        with TestClient(app) as client:
+            first = _call(client, "start_run", arguments, RUN_TOKEN)
+            assert first["cache_hit"] is False
+            assert first["cache_bypass_reason"] == "seed_not_provided"
+            assert _wait_for_run(client, first["run_id"])["status"] == "COMPLETED"
+            recorded_seed = isolated._runs[first["run_id"]].record["seed_manifest"][
+                "root_seed"
+            ]
+            assert recorded_seed == 62003
+
+            replay = _call(
+                client,
+                "start_run",
+                {**arguments, "seed": recorded_seed},
+                RUN_TOKEN,
+            )
+            assert replay["cache_hit"] is True
+            assert replay["cache_bypass_reason"] is None
+            assert replay["run_id"] == first["run_id"]
+    finally:
+        isolated._pool.shutdown(wait=True)
 
 
 def _isolated_service(monkeypatch, tmp_path: Path) -> StudyService:
@@ -434,6 +563,12 @@ def test_tc163_base_demo_comparison_includes_claim_note(
         "compute_trace_sha256": "same-trace",
         "unserved_mwh": 0.0,
         "peak_unserved_mw": 0.0,
+        # IMPL-ISL-22: fixtures must provide known frequency inputs to pass
+        # the fail-closed study-validity gate.
+        "frequency_feedback_configured": False,
+        "protection_configured": False,
+        "invalid_frequency_tick_count": 0,
+        "invalid_frequency_fraction": 0.0,
     }
     baseline_id = "tc163-base-baseline"
     informed_id = "tc163-base-informed"
@@ -480,13 +615,16 @@ def test_tc164_shared_identity_and_cache_match_for_every_study_scenario(
                         "scenario_id": scenario_id,
                         "mode": mode,
                         "parameter_overrides": {"end_sim_time": 5.0},
+                        # D4: the resolved seed is part of run/cache identity;
+                        # an explicit seed makes this cache replay intentional.
+                        "seed": 42,
                         "reuse_cache": True,
                     }
                     identity = isolated._identity(
                         scenario_id=scenario_id,
                         mode=mode,
                         parameter_overrides=arguments["parameter_overrides"],
-                        seed=None,
+                        seed=42,
                     )
                     started = _call(
                         client,
@@ -538,6 +676,11 @@ def _comparison_record(engine_commit: str, harness_commit: str) -> dict:
         "compute_trace_sha256": "same-compute-trace",
         "unserved_mwh": 0.0,
         "peak_unserved_mw": 0.0,
+        # IMPL-ISL-22: comparison fixtures provide all four frequency fields.
+        "frequency_feedback_configured": False,
+        "protection_configured": False,
+        "invalid_frequency_tick_count": 0,
+        "invalid_frequency_fraction": 0.0,
     }
 
 
