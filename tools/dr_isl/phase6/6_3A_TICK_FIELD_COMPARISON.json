@@ -1,0 +1,80 @@
+[
+  {
+    "arm": "baseline",
+    "base_hash": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+    "candidate_hash": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+    "differing_fields": [],
+    "differing_tick_count": 0,
+    "first_difference": null,
+    "hash_identical": true,
+    "run_id": "scenario-uneven-multisched-01-baseline-study-s1",
+    "scenario": "base-demo",
+    "ticks_base": 1440,
+    "ticks_candidate": 1440
+  },
+  {
+    "arm": "informed",
+    "base_hash": "72cc28766574a78c44913d389207bc6cca268ac1bf29b15abd148c63af334754",
+    "candidate_hash": "72cc28766574a78c44913d389207bc6cca268ac1bf29b15abd148c63af334754",
+    "differing_fields": [],
+    "differing_tick_count": 0,
+    "first_difference": null,
+    "hash_identical": true,
+    "run_id": "scenario-uneven-multisched-01-informed-study-s1",
+    "scenario": "base-demo",
+    "ticks_base": 1440,
+    "ticks_candidate": 1440
+  },
+  {
+    "arm": "baseline",
+    "base_hash": "c4fa3b355b2eebf949f1f0ad9f43b1b76770cf05bb380d224a3282699985fc20",
+    "candidate_hash": "c4fa3b355b2eebf949f1f0ad9f43b1b76770cf05bb380d224a3282699985fc20",
+    "differing_fields": [],
+    "differing_tick_count": 0,
+    "first_difference": null,
+    "hash_identical": true,
+    "run_id": "scenario-h1-k8s-ray-24h-baseline-study-s1",
+    "scenario": "H1-24h",
+    "ticks_base": 17280,
+    "ticks_candidate": 17280
+  },
+  {
+    "arm": "informed",
+    "base_hash": "437d480102d11676df747a5ddc742cd29c9785956c1255098dc8d00d9f18a264",
+    "candidate_hash": "437d480102d11676df747a5ddc742cd29c9785956c1255098dc8d00d9f18a264",
+    "differing_fields": [],
+    "differing_tick_count": 0,
+    "first_difference": null,
+    "hash_identical": true,
+    "run_id": "scenario-h1-k8s-ray-24h-informed-study-s1",
+    "scenario": "H1-24h",
+    "ticks_base": 17280,
+    "ticks_candidate": 17280
+  },
+  {
+    "arm": "baseline",
+    "base_hash": "603441374503951709dc77d5ae11234e966d5b479e50edca5dd608c7782f217f",
+    "candidate_hash": "603441374503951709dc77d5ae11234e966d5b479e50edca5dd608c7782f217f",
+    "differing_fields": [],
+    "differing_tick_count": 0,
+    "first_difference": null,
+    "hash_identical": true,
+    "run_id": "scenario-h2-slurm-24h-baseline-study-s1",
+    "scenario": "H2-24h",
+    "ticks_base": 17280,
+    "ticks_candidate": 17280
+  },
+  {
+    "arm": "informed",
+    "base_hash": "17954e9420ad8d0c9493a690c03cd670ae0a5f57df60f801b7c292aeea3a9fba",
+    "candidate_hash": "17954e9420ad8d0c9493a690c03cd670ae0a5f57df60f801b7c292aeea3a9fba",
+    "differing_fields": [],
+    "differing_tick_count": 0,
+    "first_difference": null,
+    "hash_identical": true,
+    "run_id": "scenario-h2-slurm-24h-informed-study-s1",
+    "scenario": "H2-24h",
+    "ticks_base": 17280,
+    "ticks_candidate": 17280
+  }
+]

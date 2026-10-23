@@ -1,0 +1,45 @@
+{
+  "arms": {
+    "baseline": {
+      "compute_trace_sha256": "fb3a32d783d0a61ddd2cb8ec7bfbe0204712a2c6f6f9398ef60932160dafa54b",
+      "dispatch_curtailment_mwh": 8.136511735,
+      "fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 0.039236111,
+        "load_fuel_mmbtu": 690.133782974,
+        "no_load_fuel_mmbtu": 8.19,
+        "start_fuel_mmbtu": 16.0
+      },
+      "invalid_frequency_fraction": 0.03680555555555556,
+      "invalid_frequency_tick_count": 53,
+      "peak_unserved_mw": 22.309362466,
+      "physical_identity_sha256": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+      "unserved_mwh": 0.351692658
+    },
+    "informed": {
+      "compute_trace_sha256": "fb3a32d783d0a61ddd2cb8ec7bfbe0204712a2c6f6f9398ef60932160dafa54b",
+      "dispatch_curtailment_mwh": 5.278943188,
+      "fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 0.000347222,
+        "load_fuel_mmbtu": 642.554567148,
+        "no_load_fuel_mmbtu": 6.843333333,
+        "start_fuel_mmbtu": 16.0
+      },
+      "invalid_frequency_fraction": 0.0,
+      "invalid_frequency_tick_count": 0,
+      "peak_unserved_mw": 7.52325057,
+      "physical_identity_sha256": "72cc28766574a78c44913d389207bc6cca268ac1bf29b15abd148c63af334754",
+      "unserved_mwh": 0.020719074
+    }
+  },
+  "baseline_hashes": {
+    "baseline": "e9a25202a069acdb648779981f07bc27e1cbe53a5a2b44e1571bd8724912a5f9",
+    "informed": "34bc07cdebda13c4e07bc990408745fbeeb5f916248cd7159d9f8fd656ee2702"
+  },
+  "comparison_verdict": "PASS",
+  "hashes_identical_to_6_0": {
+    "baseline": false,
+    "informed": false
+  },
+  "scenario": "scenario-uneven-multisched-01",
+  "seed": 42
+}

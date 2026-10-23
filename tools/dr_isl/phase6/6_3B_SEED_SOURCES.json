@@ -1,0 +1,257 @@
+[
+  {
+    "configured_seeds": {
+      "kube:sj1-k8s-h100": 42,
+      "kube:sj1-ray-gb200": 2042,
+      "kube:sj1-slurm-h100": 1042,
+      "price_curve": 42,
+      "procurement_price_curve": 42,
+      "scada": 42
+    },
+    "consumer_sources": {
+      "advisory_deidentification": "derived_from_run_seed",
+      "fabric": "derived_from_run_seed",
+      "kube:sj1-k8s-h100": "explicit_config",
+      "kube:sj1-ray-gb200": "explicit_config",
+      "kube:sj1-slurm-h100": "explicit_config",
+      "price_curve": "explicit_config",
+      "procurement_price_curve": "explicit_config",
+      "scada": "explicit_config",
+      "solar_sim": "derived_from_run_seed"
+    },
+    "derived_consumers": [
+      "advisory_deidentification",
+      "fabric",
+      "solar_sim"
+    ],
+    "scenario": "scenario-turbine-01"
+  },
+  {
+    "configured_seeds": {
+      "price_curve": 42,
+      "procurement_price_curve": 42,
+      "scada": 42
+    },
+    "consumer_sources": {
+      "advisory_deidentification": "derived_from_run_seed",
+      "fabric": "derived_from_run_seed",
+      "price_curve": "explicit_config",
+      "procurement_price_curve": "explicit_config",
+      "scada": "explicit_config",
+      "solar_sim": "derived_from_run_seed"
+    },
+    "derived_consumers": [
+      "advisory_deidentification",
+      "fabric",
+      "solar_sim"
+    ],
+    "scenario": "S10_mit_supercloud_2021-08-11"
+  },
+  {
+    "configured_seeds": {
+      "kube:sj1-k8s-h100": 42,
+      "kube:sj1-ray-gb200": 2042,
+      "kube:sj1-slurm-h100": 1042,
+      "price_curve": 42,
+      "procurement_price_curve": 42,
+      "scada": 42
+    },
+    "consumer_sources": {
+      "advisory_deidentification": "derived_from_run_seed",
+      "fabric": "derived_from_run_seed",
+      "kube:sj1-k8s-h100": "explicit_config",
+      "kube:sj1-ray-gb200": "explicit_config",
+      "kube:sj1-slurm-h100": "explicit_config",
+      "price_curve": "explicit_config",
+      "procurement_price_curve": "explicit_config",
+      "scada": "explicit_config",
+      "solar_sim": "derived_from_run_seed"
+    },
+    "derived_consumers": [
+      "advisory_deidentification",
+      "fabric",
+      "solar_sim"
+    ],
+    "scenario": "scenario-equinix-sj-1"
+  },
+  {
+    "configured_seeds": {
+      "price_curve": 42,
+      "procurement_price_curve": 42,
+      "scada": 42
+    },
+    "consumer_sources": {
+      "advisory_deidentification": "derived_from_run_seed",
+      "diesel:diesel-000": "derived_from_run_seed",
+      "diesel:diesel-001": "derived_from_run_seed",
+      "diesel:diesel-002": "derived_from_run_seed",
+      "diesel:diesel-003": "derived_from_run_seed",
+      "diesel:diesel-004": "derived_from_run_seed",
+      "diesel:diesel-005": "derived_from_run_seed",
+      "diesel:diesel-006": "derived_from_run_seed",
+      "diesel:diesel-007": "derived_from_run_seed",
+      "diesel:diesel-008": "derived_from_run_seed",
+      "diesel:diesel-009": "derived_from_run_seed",
+      "diesel:diesel-010": "derived_from_run_seed",
+      "diesel:diesel-011": "derived_from_run_seed",
+      "diesel:diesel-012": "derived_from_run_seed",
+      "diesel:diesel-013": "derived_from_run_seed",
+      "diesel:diesel-014": "derived_from_run_seed",
+      "diesel:diesel-015": "derived_from_run_seed",
+      "diesel:diesel-016": "derived_from_run_seed",
+      "diesel:diesel-017": "derived_from_run_seed",
+      "diesel:diesel-018": "derived_from_run_seed",
+      "diesel:diesel-019": "derived_from_run_seed",
+      "fabric": "derived_from_run_seed",
+      "price_curve": "explicit_config",
+      "procurement_price_curve": "explicit_config",
+      "scada": "explicit_config",
+      "solar_sim": "derived_from_run_seed"
+    },
+    "derived_consumers": [
+      "advisory_deidentification",
+      "diesel:diesel-000",
+      "diesel:diesel-001",
+      "diesel:diesel-002",
+      "diesel:diesel-003",
+      "diesel:diesel-004",
+      "diesel:diesel-005",
+      "diesel:diesel-006",
+      "diesel:diesel-007",
+      "diesel:diesel-008",
+      "diesel:diesel-009",
+      "diesel:diesel-010",
+      "diesel:diesel-011",
+      "diesel:diesel-012",
+      "diesel:diesel-013",
+      "diesel:diesel-014",
+      "diesel:diesel-015",
+      "diesel:diesel-016",
+      "diesel:diesel-017",
+      "diesel:diesel-018",
+      "diesel:diesel-019",
+      "fabric",
+      "solar_sim"
+    ],
+    "scenario": "scenario-hybrid-ai-100mw-addendum-i"
+  },
+  {
+    "configured_seeds": {
+      "price_curve": 42,
+      "procurement_price_curve": 42,
+      "scada": 42
+    },
+    "consumer_sources": {
+      "advisory_deidentification": "derived_from_run_seed",
+      "diesel:diesel-000": "derived_from_run_seed",
+      "diesel:diesel-001": "derived_from_run_seed",
+      "diesel:diesel-002": "derived_from_run_seed",
+      "diesel:diesel-003": "derived_from_run_seed",
+      "diesel:diesel-004": "derived_from_run_seed",
+      "diesel:diesel-005": "derived_from_run_seed",
+      "diesel:diesel-006": "derived_from_run_seed",
+      "diesel:diesel-007": "derived_from_run_seed",
+      "diesel:diesel-008": "derived_from_run_seed",
+      "diesel:diesel-009": "derived_from_run_seed",
+      "diesel:diesel-010": "derived_from_run_seed",
+      "fabric": "derived_from_run_seed",
+      "price_curve": "explicit_config",
+      "procurement_price_curve": "explicit_config",
+      "scada": "explicit_config",
+      "solar_sim": "derived_from_run_seed"
+    },
+    "derived_consumers": [
+      "advisory_deidentification",
+      "diesel:diesel-000",
+      "diesel:diesel-001",
+      "diesel:diesel-002",
+      "diesel:diesel-003",
+      "diesel:diesel-004",
+      "diesel:diesel-005",
+      "diesel:diesel-006",
+      "diesel:diesel-007",
+      "diesel:diesel-008",
+      "diesel:diesel-009",
+      "diesel:diesel-010",
+      "fabric",
+      "solar_sim"
+    ],
+    "scenario": "scenario-100mw-fuel-cell-bess-diesel"
+  },
+  {
+    "configured_seeds": {
+      "price_curve": 42,
+      "procurement_price_curve": 42,
+      "scada": 42
+    },
+    "consumer_sources": {
+      "advisory_deidentification": "derived_from_run_seed",
+      "diesel:diesel-000": "derived_from_run_seed",
+      "fabric": "derived_from_run_seed",
+      "price_curve": "explicit_config",
+      "procurement_price_curve": "explicit_config",
+      "scada": "explicit_config",
+      "solar_sim": "derived_from_run_seed"
+    },
+    "derived_consumers": [
+      "advisory_deidentification",
+      "diesel:diesel-000",
+      "fabric",
+      "solar_sim"
+    ],
+    "scenario": "scenario-fc100-islanded-v2"
+  },
+  {
+    "configured_seeds": {
+      "price_curve": 42,
+      "procurement_price_curve": 42,
+      "scada": 42
+    },
+    "consumer_sources": {
+      "advisory_deidentification": "derived_from_run_seed",
+      "diesel:diesel-000": "derived_from_run_seed",
+      "fabric": "derived_from_run_seed",
+      "price_curve": "explicit_config",
+      "procurement_price_curve": "explicit_config",
+      "scada": "explicit_config",
+      "solar_sim": "derived_from_run_seed"
+    },
+    "derived_consumers": [
+      "advisory_deidentification",
+      "diesel:diesel-000",
+      "fabric",
+      "solar_sim"
+    ],
+    "scenario": "scenario-fc100-islanded-zero-hot-v2"
+  },
+  {
+    "configured_seeds": {
+      "kube:legacy-shared-fleet:A": null,
+      "kube:legacy-shared-fleet:B": null,
+      "kube:legacy-shared-fleet:C": null,
+      "price_curve": 42,
+      "procurement_price_curve": 42,
+      "scada": 42
+    },
+    "consumer_sources": {
+      "advisory_deidentification": "derived_from_run_seed",
+      "fabric": "derived_from_run_seed",
+      "kube:legacy-shared-fleet:A": "derived_from_run_seed",
+      "kube:legacy-shared-fleet:B": "derived_from_run_seed",
+      "kube:legacy-shared-fleet:C": "derived_from_run_seed",
+      "price_curve": "explicit_config",
+      "procurement_price_curve": "explicit_config",
+      "scada": "explicit_config",
+      "solar_sim": "derived_from_run_seed"
+    },
+    "derived_consumers": [
+      "advisory_deidentification",
+      "fabric",
+      "kube:legacy-shared-fleet:A",
+      "kube:legacy-shared-fleet:B",
+      "kube:legacy-shared-fleet:C",
+      "solar_sim"
+    ],
+    "scenario": "demo-islanded-ramp"
+  }
+]

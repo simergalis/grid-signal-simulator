@@ -1,0 +1,34 @@
+{
+  "gate": "6.3(a)",
+  "scenario": "scenario-uneven-multisched-01",
+  "run_seed": 42,
+  "reuse_cache": false,
+  "comparison_verdict": "PASS",
+  "saved_6_0_reference_hashes": {
+    "baseline": "e9a25202a069acdb648779981f07bc27e1cbe53a5a2b44e1571bd8724912a5f9",
+    "informed": "34bc07cdebda13c4e07bc990408745fbeeb5f916248cd7159d9f8fd656ee2702"
+  },
+  "saved_reference_note": "The saved 6_0 hashes differ from both sides of the fresh f6ac658-vs-candidate full TickResult comparison; the old per-tick rows/hash context were not retained, so they are not used as the direct Phase 6 base comparator.",
+  "direct_base_vs_candidate_comparison": {
+    "base_commit": "f6ac658",
+    "scenario": "scenario-uneven-multisched-01",
+    "arms": {
+      "baseline": {
+        "tick_count_each": 1440,
+        "differing_tick_count": 0,
+        "common_hash_base_and_candidate": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+        "metrics_identical": true
+      },
+      "informed": {
+        "tick_count_each": 1440,
+        "differing_tick_count": 0,
+        "common_hash_base_and_candidate": "72cc28766574a78c44913d389207bc6cca268ac1bf29b15abd148c63af334754",
+        "metrics_identical": true
+      }
+    },
+    "metric_fields_compared": 31,
+    "comparison_verdict": "PASS",
+    "comparison_conditions_all_true": true
+  },
+  "status": "PASS for the direct explicit-seed pre-D4 base-versus-candidate comparison. The saved 6_0 reference-hash discrepancy is recorded above; it did not correspond to any differing TickResult field in the direct comparison."
+}

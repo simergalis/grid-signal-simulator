@@ -1,0 +1,152 @@
+{
+  "additional_frequency_reporting_field_count": 4,
+  "cases": [
+    {
+      "arm": "baseline",
+      "base_verdict": "PASS",
+      "candidate_conditions": {
+        "baseline_energy_balance": true,
+        "baseline_fuel_reconciled": true,
+        "baseline_valid": true,
+        "build_parity": true,
+        "identical_compute_trace": true,
+        "informed_energy_balance": true,
+        "informed_fuel_reconciled": true,
+        "informed_peak_unserved_no_worse": true,
+        "informed_unserved_energy_no_worse": true,
+        "informed_valid": true
+      },
+      "candidate_verdict": "PASS",
+      "case": "base-demo",
+      "differences": [],
+      "frequency_reporting_fields_identical": true,
+      "metric_field_count": 31,
+      "metrics_identical": true,
+      "original_metric_field_count": 27,
+      "original_metrics_identical": true
+    },
+    {
+      "arm": "informed",
+      "base_verdict": "PASS",
+      "candidate_conditions": {
+        "baseline_energy_balance": true,
+        "baseline_fuel_reconciled": true,
+        "baseline_valid": true,
+        "build_parity": true,
+        "identical_compute_trace": true,
+        "informed_energy_balance": true,
+        "informed_fuel_reconciled": true,
+        "informed_peak_unserved_no_worse": true,
+        "informed_unserved_energy_no_worse": true,
+        "informed_valid": true
+      },
+      "candidate_verdict": "PASS",
+      "case": "base-demo",
+      "differences": [],
+      "frequency_reporting_fields_identical": true,
+      "metric_field_count": 31,
+      "metrics_identical": true,
+      "original_metric_field_count": 27,
+      "original_metrics_identical": true
+    },
+    {
+      "arm": "baseline",
+      "base_verdict": "PASS",
+      "candidate_conditions": {
+        "baseline_energy_balance": true,
+        "baseline_fuel_reconciled": true,
+        "baseline_valid": true,
+        "build_parity": true,
+        "identical_compute_trace": true,
+        "informed_energy_balance": true,
+        "informed_fuel_reconciled": true,
+        "informed_peak_unserved_no_worse": true,
+        "informed_unserved_energy_no_worse": true,
+        "informed_valid": true
+      },
+      "candidate_verdict": "PASS",
+      "case": "H1",
+      "differences": [],
+      "frequency_reporting_fields_identical": true,
+      "metric_field_count": 31,
+      "metrics_identical": true,
+      "original_metric_field_count": 27,
+      "original_metrics_identical": true
+    },
+    {
+      "arm": "informed",
+      "base_verdict": "PASS",
+      "candidate_conditions": {
+        "baseline_energy_balance": true,
+        "baseline_fuel_reconciled": true,
+        "baseline_valid": true,
+        "build_parity": true,
+        "identical_compute_trace": true,
+        "informed_energy_balance": true,
+        "informed_fuel_reconciled": true,
+        "informed_peak_unserved_no_worse": true,
+        "informed_unserved_energy_no_worse": true,
+        "informed_valid": true
+      },
+      "candidate_verdict": "PASS",
+      "case": "H1",
+      "differences": [],
+      "frequency_reporting_fields_identical": true,
+      "metric_field_count": 31,
+      "metrics_identical": true,
+      "original_metric_field_count": 27,
+      "original_metrics_identical": true
+    },
+    {
+      "arm": "baseline",
+      "base_verdict": "PASS",
+      "candidate_conditions": {
+        "baseline_energy_balance": true,
+        "baseline_fuel_reconciled": true,
+        "baseline_valid": true,
+        "build_parity": true,
+        "identical_compute_trace": true,
+        "informed_energy_balance": true,
+        "informed_fuel_reconciled": true,
+        "informed_peak_unserved_no_worse": true,
+        "informed_unserved_energy_no_worse": true,
+        "informed_valid": true
+      },
+      "candidate_verdict": "PASS",
+      "case": "H2",
+      "differences": [],
+      "frequency_reporting_fields_identical": true,
+      "metric_field_count": 31,
+      "metrics_identical": true,
+      "original_metric_field_count": 27,
+      "original_metrics_identical": true
+    },
+    {
+      "arm": "informed",
+      "base_verdict": "PASS",
+      "candidate_conditions": {
+        "baseline_energy_balance": true,
+        "baseline_fuel_reconciled": true,
+        "baseline_valid": true,
+        "build_parity": true,
+        "identical_compute_trace": true,
+        "informed_energy_balance": true,
+        "informed_fuel_reconciled": true,
+        "informed_peak_unserved_no_worse": true,
+        "informed_unserved_energy_no_worse": true,
+        "informed_valid": true
+      },
+      "candidate_verdict": "PASS",
+      "case": "H2",
+      "differences": [],
+      "frequency_reporting_fields_identical": true,
+      "metric_field_count": 31,
+      "metrics_identical": true,
+      "original_metric_field_count": 27,
+      "original_metrics_identical": true
+    }
+  ],
+  "description": "Pre-D4 base f6ac658 vs D4 candidate, explicit seed=42; comparisons include all returned study metric fields. The four Phase 5 frequency-reporting fields are separated from the 27 original metrics.",
+  "original_metric_field_count": 27,
+  "total_metric_fields_compared": 31
+}

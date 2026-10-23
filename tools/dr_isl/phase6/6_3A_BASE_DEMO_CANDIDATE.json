@@ -1,0 +1,218 @@
+{
+  "arms": {
+    "baseline": {
+      "cache_hit": false,
+      "metrics": {
+        "compute_trace_sha256": "fb3a32d783d0a61ddd2cb8ec7bfbe0204712a2c6f6f9398ef60932160dafa54b",
+        "dispatch_curtailment_attributable_fuel_mmbtu": 85.443185219,
+        "dispatch_curtailment_interval_exposure_fuel_mmbtu": 291.229346912,
+        "dispatch_curtailment_mwh": 8.136511735,
+        "fuel_by_component_mmbtu": {
+          "hot_standby_fuel_mmbtu": 0.039236111,
+          "load_fuel_mmbtu": 690.133782974,
+          "no_load_fuel_mmbtu": 8.19,
+          "start_fuel_mmbtu": 16.0
+        },
+        "invalid_frequency_fraction": 0.03680555555555556,
+        "invalid_frequency_tick_count": 53,
+        "peak_unserved_mw": 22.309362466,
+        "unserved_mwh": 0.351692658
+      },
+      "physical_identity_sha256": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6"
+    },
+    "informed": {
+      "cache_hit": false,
+      "metrics": {
+        "compute_trace_sha256": "fb3a32d783d0a61ddd2cb8ec7bfbe0204712a2c6f6f9398ef60932160dafa54b",
+        "dispatch_curtailment_attributable_fuel_mmbtu": 55.021850379,
+        "dispatch_curtailment_interval_exposure_fuel_mmbtu": 141.143846919,
+        "dispatch_curtailment_mwh": 5.278943188,
+        "fuel_by_component_mmbtu": {
+          "hot_standby_fuel_mmbtu": 0.000347222,
+          "load_fuel_mmbtu": 642.554567148,
+          "no_load_fuel_mmbtu": 6.843333333,
+          "start_fuel_mmbtu": 16.0
+        },
+        "invalid_frequency_fraction": 0.0,
+        "invalid_frequency_tick_count": 0,
+        "peak_unserved_mw": 7.52325057,
+        "unserved_mwh": 0.020719074
+      },
+      "physical_identity_sha256": "72cc28766574a78c44913d389207bc6cca268ac1bf29b15abd148c63af334754"
+    }
+  },
+  "comparison": {
+    "condition_inputs": {
+      "baseline_energy_balance": {
+        "baseline_energy_balance": true,
+        "baseline_frequency_feedback_configured": false,
+        "baseline_invalid_frequency_fraction": 0.03680555555555556,
+        "baseline_invalid_frequency_tick_count": 53,
+        "baseline_protection_configured": false,
+        "informed_frequency_feedback_configured": false,
+        "informed_invalid_frequency_fraction": 0.0,
+        "informed_invalid_frequency_tick_count": 0,
+        "informed_protection_configured": false
+      },
+      "baseline_fuel_reconciled": {
+        "baseline_frequency_feedback_configured": false,
+        "baseline_fuel_reconciled": true,
+        "baseline_invalid_frequency_fraction": 0.03680555555555556,
+        "baseline_invalid_frequency_tick_count": 53,
+        "baseline_protection_configured": false,
+        "informed_frequency_feedback_configured": false,
+        "informed_invalid_frequency_fraction": 0.0,
+        "informed_invalid_frequency_tick_count": 0,
+        "informed_protection_configured": false
+      },
+      "baseline_valid": {
+        "baseline_constraints_valid": true,
+        "baseline_frequency_feedback_configured": false,
+        "baseline_frequency_valid": true,
+        "baseline_hard_violations": [],
+        "baseline_invalid_frequency_fraction": 0.03680555555555556,
+        "baseline_invalid_frequency_tick_count": 53,
+        "baseline_protection_configured": false,
+        "informed_frequency_feedback_configured": false,
+        "informed_invalid_frequency_fraction": 0.0,
+        "informed_invalid_frequency_tick_count": 0,
+        "informed_protection_configured": false
+      },
+      "build_parity": {
+        "baseline_engine_commit": "97cdc18ff61f11246bbed290fbc4f9464b055372-dirty",
+        "baseline_frequency_feedback_configured": false,
+        "baseline_harness_commit": "97cdc18ff61f11246bbed290fbc4f9464b055372-dirty",
+        "baseline_invalid_frequency_fraction": 0.03680555555555556,
+        "baseline_invalid_frequency_tick_count": 53,
+        "baseline_protection_configured": false,
+        "informed_engine_commit": "97cdc18ff61f11246bbed290fbc4f9464b055372-dirty",
+        "informed_frequency_feedback_configured": false,
+        "informed_harness_commit": "97cdc18ff61f11246bbed290fbc4f9464b055372-dirty",
+        "informed_invalid_frequency_fraction": 0.0,
+        "informed_invalid_frequency_tick_count": 0,
+        "informed_protection_configured": false
+      },
+      "identical_compute_trace": {
+        "baseline_compute_trace_sha256": "fb3a32d783d0a61ddd2cb8ec7bfbe0204712a2c6f6f9398ef60932160dafa54b",
+        "baseline_frequency_feedback_configured": false,
+        "baseline_invalid_frequency_fraction": 0.03680555555555556,
+        "baseline_invalid_frequency_tick_count": 53,
+        "baseline_protection_configured": false,
+        "informed_compute_trace_sha256": "fb3a32d783d0a61ddd2cb8ec7bfbe0204712a2c6f6f9398ef60932160dafa54b",
+        "informed_frequency_feedback_configured": false,
+        "informed_invalid_frequency_fraction": 0.0,
+        "informed_invalid_frequency_tick_count": 0,
+        "informed_protection_configured": false
+      },
+      "informed_energy_balance": {
+        "baseline_frequency_feedback_configured": false,
+        "baseline_invalid_frequency_fraction": 0.03680555555555556,
+        "baseline_invalid_frequency_tick_count": 53,
+        "baseline_protection_configured": false,
+        "informed_energy_balance": true,
+        "informed_frequency_feedback_configured": false,
+        "informed_invalid_frequency_fraction": 0.0,
+        "informed_invalid_frequency_tick_count": 0,
+        "informed_protection_configured": false
+      },
+      "informed_fuel_reconciled": {
+        "baseline_frequency_feedback_configured": false,
+        "baseline_invalid_frequency_fraction": 0.03680555555555556,
+        "baseline_invalid_frequency_tick_count": 53,
+        "baseline_protection_configured": false,
+        "informed_frequency_feedback_configured": false,
+        "informed_fuel_reconciled": true,
+        "informed_invalid_frequency_fraction": 0.0,
+        "informed_invalid_frequency_tick_count": 0,
+        "informed_protection_configured": false
+      },
+      "informed_peak_unserved_no_worse": {
+        "baseline_frequency_feedback_configured": false,
+        "baseline_invalid_frequency_fraction": 0.03680555555555556,
+        "baseline_invalid_frequency_tick_count": 53,
+        "baseline_peak_unserved_mw": 22.309362466,
+        "baseline_protection_configured": false,
+        "informed_frequency_feedback_configured": false,
+        "informed_invalid_frequency_fraction": 0.0,
+        "informed_invalid_frequency_tick_count": 0,
+        "informed_peak_unserved_mw": 7.52325057,
+        "informed_protection_configured": false,
+        "tolerance_mw": 1e-09
+      },
+      "informed_unserved_energy_no_worse": {
+        "baseline_frequency_feedback_configured": false,
+        "baseline_invalid_frequency_fraction": 0.03680555555555556,
+        "baseline_invalid_frequency_tick_count": 53,
+        "baseline_protection_configured": false,
+        "baseline_unserved_mwh": 0.351692658,
+        "informed_frequency_feedback_configured": false,
+        "informed_invalid_frequency_fraction": 0.0,
+        "informed_invalid_frequency_tick_count": 0,
+        "informed_protection_configured": false,
+        "informed_unserved_mwh": 0.020719074,
+        "tolerance_mwh": 1e-09
+      },
+      "informed_valid": {
+        "baseline_frequency_feedback_configured": false,
+        "baseline_invalid_frequency_fraction": 0.03680555555555556,
+        "baseline_invalid_frequency_tick_count": 53,
+        "baseline_protection_configured": false,
+        "informed_constraints_valid": true,
+        "informed_frequency_feedback_configured": false,
+        "informed_frequency_valid": true,
+        "informed_hard_violations": [],
+        "informed_invalid_frequency_fraction": 0.0,
+        "informed_invalid_frequency_tick_count": 0,
+        "informed_protection_configured": false
+      }
+    },
+    "condition_order": [
+      "build_parity",
+      "baseline_valid",
+      "informed_valid",
+      "baseline_energy_balance",
+      "informed_energy_balance",
+      "baseline_fuel_reconciled",
+      "informed_fuel_reconciled",
+      "identical_compute_trace",
+      "informed_unserved_energy_no_worse",
+      "informed_peak_unserved_no_worse"
+    ],
+    "conditions": {
+      "baseline_energy_balance": true,
+      "baseline_fuel_reconciled": true,
+      "baseline_valid": true,
+      "build_parity": true,
+      "identical_compute_trace": true,
+      "informed_energy_balance": true,
+      "informed_fuel_reconciled": true,
+      "informed_peak_unserved_no_worse": true,
+      "informed_unserved_energy_no_worse": true,
+      "informed_valid": true
+    },
+    "frequency_inputs": {
+      "baseline_frequency_feedback_configured": false,
+      "baseline_invalid_frequency_fraction": 0.03680555555555556,
+      "baseline_invalid_frequency_tick_count": 53,
+      "baseline_protection_configured": false,
+      "informed_frequency_feedback_configured": false,
+      "informed_invalid_frequency_fraction": 0.0,
+      "informed_invalid_frequency_tick_count": 0,
+      "informed_protection_configured": false
+    },
+    "informed_vs_baseline": {
+      "baseline_peak_unserved_mw": 22.309362466,
+      "baseline_unserved_mwh": 0.351692658,
+      "informed_peak_unserved_mw": 7.52325057,
+      "informed_unserved_mwh": 0.020719074
+    },
+    "verdict": "PASS"
+  },
+  "hashes_identical_to_6_0": false,
+  "old_6_0_hashes": {
+    "baseline": "e9a25202a069acdb648779981f07bc27e1cbe53a5a2b44e1571bd8724912a5f9",
+    "informed": "34bc07cdebda13c4e07bc990408745fbeeb5f916248cd7159d9f8fd656ee2702"
+  },
+  "scenario": "scenario-uneven-multisched-01",
+  "seed": 42
+}
