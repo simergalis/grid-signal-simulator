@@ -3570,20 +3570,32 @@ class RunManager:
                     if _commitment_controller is not None
                     else 0.0
                 )
-                _frequency_feedback_configured = bool(
-                    ctx.metadata.get("frequency_feedback_configured", False)
+                _feedback_value = ctx.metadata.get("frequency_feedback_configured")
+                _frequency_feedback_configured = (
+                    _feedback_value if type(_feedback_value) is bool else None
+                )
+                _protection_value = (
+                    tick_dicts[-1].get("protection_configured")
+                    if tick_dicts else None
                 )
                 _protection_configured = (
-                    bool(tick_dicts[-1].get("protection_configured", True))
-                    if tick_dicts else True
+                    _protection_value if type(_protection_value) is bool else None
                 )
-                _invalid_frequency_tick_count = sum(
-                    row.get("frequency_valid", True) is False for row in tick_dicts
-                )
-                _invalid_frequency_fraction = (
-                    _invalid_frequency_tick_count / len(tick_dicts)
-                    if tick_dicts else 0.0
-                )
+                _frequency_valid_values = [
+                    row.get("frequency_valid") for row in tick_dicts
+                ]
+                if tick_dicts and all(
+                    type(value) is bool for value in _frequency_valid_values
+                ):
+                    _invalid_frequency_tick_count = sum(
+                        value is False for value in _frequency_valid_values
+                    )
+                    _invalid_frequency_fraction = (
+                        _invalid_frequency_tick_count / len(tick_dicts)
+                    )
+                else:
+                    _invalid_frequency_tick_count = None
+                    _invalid_frequency_fraction = None
 
                 # Amend verdict_json with total_edl_dispatch_cost_usd so that
                 # the value survives a server restart.  persist_completed_hook

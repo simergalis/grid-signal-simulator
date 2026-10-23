@@ -296,3 +296,107 @@ def test_tc_isl_30_disabled_81u_threshold_does_not_trigger_feedback():
     # PROPOSED_HERE: nominal + 0.1 Hz exercises the existing disabled-relay guard.
     site = _site(relay_81u_threshold_hz=60.1)
     assert frequency_feedback_configured(site) is False
+
+
+def test_tc_isl_31_missing_feedback_is_unknown_and_fails_closed():
+    baseline = _metrics(feedback=False, invalid=0)
+    del baseline["frequency_feedback_configured"]
+    informed = _metrics(feedback=False, invalid=0)
+    comparison = compare_metrics(baseline, informed)
+
+    assert comparison["conditions"]["baseline_valid"] is False
+    assert comparison["conditions"]["informed_valid"] is True
+    assert comparison["frequency_inputs"]["baseline_frequency_feedback_configured"] is None
+    assert comparison["frequency_inputs"]["baseline_invalid_frequency_tick_count"] == 0
+    assert comparison["frequency_inputs"]["baseline_frequency_validity_reason"] == (
+        "frequency_feedback_unknown"
+    )
+    for condition_inputs in comparison["condition_inputs"].values():
+        assert condition_inputs["baseline_frequency_feedback_configured"] is None
+        assert condition_inputs["baseline_frequency_validity_reason"] == (
+            "frequency_feedback_unknown"
+        )
+    print({"TC-ISL-31": comparison["frequency_inputs"],
+           "baseline_valid": comparison["conditions"]["baseline_valid"]})
+
+
+def test_tc_isl_32_true_feedback_with_missing_count_is_unknown_and_fails_closed():
+    baseline = _metrics(feedback=True, invalid=0, protection=True)
+    del baseline["invalid_frequency_tick_count"]
+    informed = _metrics(feedback=False, invalid=0)
+    comparison = compare_metrics(baseline, informed)
+
+    assert comparison["conditions"]["baseline_valid"] is False
+    assert comparison["conditions"]["informed_valid"] is True
+    assert comparison["frequency_inputs"]["baseline_frequency_feedback_configured"] is True
+    assert comparison["frequency_inputs"]["baseline_invalid_frequency_tick_count"] is None
+    assert comparison["frequency_inputs"]["baseline_invalid_frequency_fraction"] == 0.0
+    assert comparison["frequency_inputs"]["baseline_frequency_validity_reason"] == (
+        "invalid_frequency_count_unknown"
+    )
+    for condition_inputs in comparison["condition_inputs"].values():
+        assert condition_inputs["baseline_invalid_frequency_tick_count"] is None
+        assert condition_inputs["baseline_frequency_validity_reason"] == (
+            "invalid_frequency_count_unknown"
+        )
+    print({"TC-ISL-32": comparison["frequency_inputs"],
+           "baseline_valid": comparison["conditions"]["baseline_valid"]})
+
+
+def test_tc_isl_33_populated_validity_unchanged_and_old_db_fields_restore_unknown():
+    comparison = compare_metrics(
+        _metrics(feedback=False, invalid=0),
+        _metrics(feedback=True, invalid=0, protection=True),
+    )
+    assert comparison["conditions"]["baseline_valid"] is True
+    assert comparison["conditions"]["informed_valid"] is True
+    assert comparison["verdict"] == "PASS"
+    assert len(comparison["condition_order"]) == 10
+    assert set(comparison["frequency_inputs"]) == {
+        "baseline_frequency_feedback_configured",
+        "baseline_protection_configured",
+        "baseline_invalid_frequency_tick_count",
+        "baseline_invalid_frequency_fraction",
+        "informed_frequency_feedback_configured",
+        "informed_protection_configured",
+        "informed_invalid_frequency_tick_count",
+        "informed_invalid_frequency_fraction",
+    }
+
+    import json
+    from datetime import datetime, timezone
+    from api.routes.runs import _load_completed_from_db
+
+    row = SimpleNamespace(
+        scenario_id="old-run",
+        name="old-run",
+        verdict=json.dumps({
+            "overall": "PASS", "tick_count": 4, "dropped_ticks": 0, "gap_count": 0
+        }),
+        completed_at=datetime(2026, 10, 23, tzinfo=timezone.utc),
+    )
+
+    class _FakeSession:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return None
+
+        async def execute(self, *args, **kwargs):
+            return SimpleNamespace(scalar_one_or_none=lambda: row)
+
+    with patch("api.db._SessionLocal", lambda: _FakeSession()):
+        restored = asyncio.run(_load_completed_from_db("old-run"))
+    assert restored is not None
+    assert restored.frequency_feedback_configured is None
+    assert restored.protection_configured is None
+    assert restored.invalid_frequency_tick_count is None
+    assert restored.invalid_frequency_fraction is None
+    print({"TC-ISL-33": {"populated_verdict": comparison["verdict"],
+                         "restored_legacy_fields": {
+                             "frequency_feedback_configured": restored.frequency_feedback_configured,
+                             "protection_configured": restored.protection_configured,
+                             "invalid_frequency_tick_count": restored.invalid_frequency_tick_count,
+                             "invalid_frequency_fraction": restored.invalid_frequency_fraction,
+                         }}})

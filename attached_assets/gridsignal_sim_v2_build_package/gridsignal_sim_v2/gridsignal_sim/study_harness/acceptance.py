@@ -26,6 +26,21 @@ def _commit(metrics: dict[str, Any], key: str) -> str:
     return "" if value is None else str(value).strip()
 
 
+def _frequency_validity(metrics: dict[str, Any]) -> tuple[bool, str | None]:
+    """Fail closed when frequency-feedback evidence is absent or malformed."""
+    feedback = metrics.get("frequency_feedback_configured")
+    if type(feedback) is not bool:
+        return False, "frequency_feedback_unknown"
+    if feedback is False:
+        return True, None
+    invalid_count = metrics.get("invalid_frequency_tick_count")
+    if type(invalid_count) is not int:
+        return False, "invalid_frequency_count_unknown"
+    if invalid_count == 0:
+        return True, None
+    return False, "invalid_frequency_ticks_present"
+
+
 def compare_metrics(
     baseline: dict[str, Any],
     informed: dict[str, Any],
@@ -63,16 +78,12 @@ def compare_metrics(
     informed_balance = bool(
         informed.get("energy_balance", {}).get("closure_status", False)
     )
-    # PROPOSED_HERE: zero invalid-tick tolerance when feedback is configured.
-    # OPEN-ISL-3 rationale: an out-of-band tick means configured frequency
-    # protection did not act, so frequency-dependent results are not credible.
-    baseline_frequency_valid = (
-        not bool(baseline.get("frequency_feedback_configured", False))
-        or int(baseline.get("invalid_frequency_tick_count", 0)) == 0
+    # OPEN-ISL-3: unknown evidence is not equivalent to an unprotected run.
+    baseline_frequency_valid, baseline_frequency_reason = _frequency_validity(
+        baseline
     )
-    informed_frequency_valid = (
-        not bool(informed.get("frequency_feedback_configured", False))
-        or int(informed.get("invalid_frequency_tick_count", 0)) == 0
+    informed_frequency_valid, informed_frequency_reason = _frequency_validity(
+        informed
     )
     baseline_valid = (
         not bool(baseline.get("hard_violations"))
@@ -85,31 +96,35 @@ def compare_metrics(
         and informed_frequency_valid
     )
     frequency_inputs = {
-        "baseline_frequency_feedback_configured": bool(
-            baseline.get("frequency_feedback_configured", False)
+        "baseline_frequency_feedback_configured": baseline.get(
+            "frequency_feedback_configured"
         ),
-        "baseline_protection_configured": bool(
-            baseline.get("protection_configured", True)
+        "baseline_protection_configured": baseline.get("protection_configured"),
+        "baseline_invalid_frequency_tick_count": baseline.get(
+            "invalid_frequency_tick_count"
         ),
-        "baseline_invalid_frequency_tick_count": int(
-            baseline.get("invalid_frequency_tick_count", 0)
+        "baseline_invalid_frequency_fraction": baseline.get(
+            "invalid_frequency_fraction"
         ),
-        "baseline_invalid_frequency_fraction": float(
-            baseline.get("invalid_frequency_fraction", 0.0)
+        "informed_frequency_feedback_configured": informed.get(
+            "frequency_feedback_configured"
         ),
-        "informed_frequency_feedback_configured": bool(
-            informed.get("frequency_feedback_configured", False)
+        "informed_protection_configured": informed.get("protection_configured"),
+        "informed_invalid_frequency_tick_count": informed.get(
+            "invalid_frequency_tick_count"
         ),
-        "informed_protection_configured": bool(
-            informed.get("protection_configured", True)
-        ),
-        "informed_invalid_frequency_tick_count": int(
-            informed.get("invalid_frequency_tick_count", 0)
-        ),
-        "informed_invalid_frequency_fraction": float(
-            informed.get("invalid_frequency_fraction", 0.0)
+        "informed_invalid_frequency_fraction": informed.get(
+            "invalid_frequency_fraction"
         ),
     }
+    if baseline_frequency_reason is not None:
+        frequency_inputs["baseline_frequency_validity_reason"] = (
+            baseline_frequency_reason
+        )
+    if informed_frequency_reason is not None:
+        frequency_inputs["informed_frequency_validity_reason"] = (
+            informed_frequency_reason
+        )
     conditions = {
         AcceptanceCondition.BUILD_PARITY.value: True,
         AcceptanceCondition.BASELINE_VALID.value: baseline_valid,
