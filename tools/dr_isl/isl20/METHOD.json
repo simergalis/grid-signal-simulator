@@ -1,0 +1,30 @@
+{
+  "application_commit": "5fbf3577aee83304f41b9c3a5c1498214987367c",
+  "initial_HEAD": "4e33116800e1ecd09d2b5bcce8528d48b6ba1099",
+  "analysis_constants": [
+    {
+      "name": "MW equality and forcing classification tolerance",
+      "value": 1e-09,
+      "designation": "PROPOSED_HERE",
+      "source": "DR IMPL-ISL-20 D2; inherited analysis convention tools/dr_isl/ISL19_REPORT.md:72"
+    },
+    {
+      "name": "Counterfactual R",
+      "value": 0.05,
+      "designation": "PROPOSED_HERE",
+      "source": "NERC Reliability Guideline: Primary Frequency Control, September 2023, Chapter 4/Table 4.2; recommends governor settings not exceeding 3\u20135% depending on unit type",
+      "url": "https://www.nerc.com/globalassets/who-we-are/standing-committees/rstc/rs/primary_frequency_control_reliability_guideline_v_4.0_clean_v3---dr.pdf"
+    }
+  ],
+  "classification": "Invalid ticks: curtailment > epsilon first; else forcing < -epsilon; else |forcing| <= epsilon carried; else positive forcing without curtailment. Four disjoint classes; validity is engine frequency_valid, not an analysis filter.",
+  "episodes": "Maximal consecutive carried-invalid tick intervals. Duration=count*5s; predecessor and successor include forcing and class. New forcing uses public forcing or nonzero integrated raw forcing. Observation is right-censored at run end.",
+  "damping": "tau=2H/D_eff; D_eff=0 means infinite tau; homogeneous discrete prediction f0+(f_start-f0)*(1-D_eff*dt_sub/(2H))**n_sub compared against actual end frequency on zero-forcing ticks.",
+  "counterfactual": "Process-only AST adds the limited droop term to _last_integrated_frequency_forcing_mw before _p_net_pu. No writes to dispatched MW, SoC, ledger or guard thresholds. Native frequency/protection feedback remains enabled; any resulting output/ledger changes are reported, not suppressed.",
+  "headroom": "Instantaneous on-bus synchronous rated-output raising, output-minimum lowering; diesel existing dispatch_floor_mw; nontripped grid-forming BESS anchor-adjusted power and AC stored-energy ceiling for dt_sub, charge space and efficiency for lowering. These are physical headroom bounds, not funded dispatch/reserve permissions. No additional SoC debit is made by this hypothetical forcing term, so integral response energy is not real delivered energy and must be funded in any implementation.",
+  "percentiles": "Linear interpolation of sorted empirical observations; no cutoffs or smoothing.",
+  "evidence_boundary": "Only aggregate summaries, episode records, ten representative carried ticks per case, verbatim source and JSON metadata. No full per-tick export; no CSV. Scratch scripts outside tracked tree.",
+  "measurement_completion": "Eight baseline/droop pairs complete; all baseline non-frequency hashes match D11t. An additional short fc100-zero full-field pair isolates nine status-only differences and confirms identical ledger.",
+  "balance_serialization_note": "BalanceResult.passed is a property, not a serialized field. No pass/fail count is inferred from an absent passed field; identity comparisons include the actual full ledger.",
+  "counterfactual_physical_effects": "Real unit MW, SoC, served/unserved and curtailment unchanged in all eight; fuel unchanged, proven by full non-frequency equality except fc100-zero where only ride-through-status differs. No direct unit/ledger write; native frequency feedback remains enabled.",
+  "representative_count_note": "fc100-zero has only seven distinct carried ticks: all seven, not duplicated to ten."
+}

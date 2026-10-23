@@ -1,0 +1,98 @@
+[
+  {
+    "path": ".locked[51]",
+    "data": {
+      "key": "fixed_speed_cooling_fraction",
+      "value": 0.3,
+      "unit": "",
+      "label": "Fixed-speed cooling motor fraction",
+      "provenance": "PROVISIONAL-UNMEASURED",
+      "provenance_detail": "PROVISIONAL-UNMEASURED \u2014 0.30. Fraction of cooling load served by fixed-speed motors (not VFD). These motors produce load damping proportional to speed. Blocks demo export until measured.",
+      "spec_ref": "\u00a7DR-2026-08-08-FREQ Phase 3",
+      "ui": {
+        "control": "readonly",
+        "group": "frequency"
+      }
+    }
+  },
+  {
+    "path": ".locked[52]",
+    "data": {
+      "key": "d_motor",
+      "value": 2.5,
+      "unit": "pu/pu",
+      "label": "Motor damping coefficient",
+      "provenance": "PROVISIONAL-UNMEASURED",
+      "provenance_detail": "PROVISIONAL-UNMEASURED \u2014 2.5 pu/pu. Affinity law basis. D_eff = (p_cooling/p_demand) x fixed_speed_cooling_fraction x d_motor ~0.13 at nominal operating point. Blocks demo export until measured.",
+      "spec_ref": "\u00a7DR-2026-08-08-FREQ Phase 3",
+      "ui": {
+        "control": "readonly",
+        "group": "frequency"
+      }
+    }
+  },
+  {
+    "path": ".locked[56]",
+    "data": {
+      "key": "ufls_stages",
+      "value": [
+        {
+          "threshold_hz": 59.3,
+          "delay_s": 0.15,
+          "block_fraction": 0.1
+        },
+        {
+          "threshold_hz": 58.9,
+          "delay_s": 0.15,
+          "block_fraction": 0.15
+        },
+        {
+          "threshold_hz": 58.5,
+          "delay_s": 0.15,
+          "block_fraction": 0.2
+        }
+      ],
+      "unit": "list",
+      "label": "UFLS stage definitions",
+      "provenance": "PROVISIONAL-UNMEASURED",
+      "provenance_detail": "PROVISIONAL-UNMEASURED \u2014 3 stages. No measured basis. Thresholds and delays must be confirmed against site relay coordination study. Blocks demo export until measured.",
+      "spec_ref": "\u00a7DR-2026-08-08-FREQ Phase 5",
+      "ui": {
+        "control": "readonly",
+        "group": "frequency"
+      }
+    }
+  },
+  {
+    "path": ".locked[57]",
+    "data": {
+      "key": "relay_81u_threshold_hz",
+      "value": 57.5,
+      "unit": "Hz",
+      "label": "81U relay under-frequency trip threshold (islanded)",
+      "provenance": "PROVISIONAL-UNMEASURED",
+      "provenance_detail": "PROVISIONAL-UNMEASURED \u2014 57.5 Hz. No measured basis for islanded operation. NOTE: island_collapse_hz (IEEE 1547 Cat I = 57.0 Hz) is for grid-connected DER interconnection and must not be used as the islanded protection threshold. This PROVISIONAL value replaces it for islanded mode. Blocks demo export until measured.",
+      "spec_ref": "\u00a7DR-2026-08-08-FREQ Phase 5",
+      "ui": {
+        "control": "readonly",
+        "group": "frequency"
+      }
+    }
+  },
+  {
+    "path": ".locked[58]",
+    "data": {
+      "key": "relay_81u_delay_s",
+      "value": 0.1,
+      "unit": "s",
+      "label": "81U relay clearing delay",
+      "provenance": "PROVISIONAL-UNMEASURED",
+      "provenance_detail": "PROVISIONAL-UNMEASURED \u2014 0.10 s (100 ms). No measured basis. Time from threshold crossing to generator trip. Blocks demo export until measured.",
+      "spec_ref": "\u00a7DR-2026-08-08-FREQ Phase 5",
+      "ui": {
+        "control": "readonly",
+        "group": "frequency"
+      }
+    }
+  }
+]

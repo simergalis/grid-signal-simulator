@@ -1,0 +1,9 @@
+[
+  {
+    "title": "NERC Reliability Guideline: Primary Frequency Control, September 2023",
+    "url": "https://www.nerc.com/globalassets/who-we-are/standing-committees/rstc/rs/primary_frequency_control_reliability_guideline_v_4.0_clean_v3---dr.pdf",
+    "source_method": "NERC-domain web-search result, extended snippet",
+    "verbatim_search_excerpt": "The governor droop settings shall not be less than three percent or greater than five percent. Many combustion turbines have a four percent droop setting.",
+    "use": "Source for Lloyd-approved PROPOSED_HERE R=0.05 diagnostic, not a calibration or a production setting; not a BESS-specific recommendation."
+  }
+]

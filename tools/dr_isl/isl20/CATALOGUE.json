@@ -1,0 +1,1495 @@
+{
+  "seeded_count": 58,
+  "seeded_configured_count": 0,
+  "seeded": [
+    {
+      "id": "S10_mit_supercloud_2021-08-11",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "addendum-h-lead-time-profile-validation",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "demo-10-tenant-full-ceiling",
+      "island_mode": false,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "demo-10-tenant-overload-120pct",
+      "island_mode": false,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "demo-10-tenant-random-gpu",
+      "island_mode": false,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "demo-20-tenant-contract-breach",
+      "island_mode": false,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "demo-20mw",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "demo-3turbine",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "demo-5mw",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "demo-advisory-agents",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "demo-alert",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "demo-baseline",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "demo-fc-bess-grid-peak",
+      "island_mode": false,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "demo-fleet",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "demo-forecast-quality",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "demo-grid-fc-bess-shaped-load",
+      "island_mode": false,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "demo-islanded-ramp",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "demo-operator-trip",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "demo-pms",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "demo-pms-shortfall",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "demo-prestage",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "demo-rolling-planning-peaks",
+      "island_mode": false,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "demo-solar-peak",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "demo-tc33-compute",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "demo-tc33-renewable",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "demo-turbine-fc-bess-20-tenants-overage",
+      "island_mode": false,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "grid-resonance-stress",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "islanded-8-60-10-ramp",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "islanded-fc-bess-diesel-slurm-gpu-peaks",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "lead-time-enterprise-8gpu-air-inference",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "lead-time-enterprise-8gpu-air-training",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "lead-time-h100-sxm5-8way-nvl4-inference",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "lead-time-h100-sxm5-8way-nvl4-training",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "lead-time-nextgen-rack-liquid-inference",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "lead-time-nextgen-rack-liquid-training",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "regression-test-checkpoint-storage-hotspot",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "regression-test-clean-job-termination",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "regression-test-control-path-latency-isolation",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "regression-test-degraded-fabric-observability",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "regression-test-gray-link-failure",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "regression-test-healthy-training-baseline",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "regression-test-slow-checkpoint",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "regression-test-transceiver-degradation",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "scenario-100mw-fuel-cell-bess-diesel",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "scenario-equinix-sj-1",
+      "island_mode": false,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "scenario-equinix-sj-2-24h",
+      "island_mode": false,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "scenario-fc100-islanded-v2",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "scenario-fc100-islanded-zero-hot-v2",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "scenario-h1-k8s-ray-24h",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "scenario-h1-k8s-ray-7d",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "scenario-h2-slurm-24h",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "scenario-h2-slurm-7d",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "scenario-kube-peak-overage",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "scenario-kubernetes-scheduler-demo",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "scenario-turbine-01",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "scenario-uneven-multisched-01",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "id": "test-fc-dispatch",
+      "island_mode": true,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": [],
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    }
+  ],
+  "files": [
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/S10_mit_supercloud_2021-08-11.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/S1_baseline_training.json",
+      "registered": false,
+      "validation_error": "4 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...subsequent comparison.'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'phase_exists' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S1-A1', 'check': ...resent in the timeline'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid\nassertions.1\n  Input tag 'verdict_never' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert',",
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/S2_checkpoint_hotspot.json",
+      "registered": false,
+      "validation_error": "6 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...torage hardware fault.\"}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'phase_exists' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S2-A1', 'check': ...eckpoint phase present'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid\nassertions.1\n  Input tag 'metric_in_phase' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert",
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/S3_job_end_withholds.json",
+      "registered": false,
+      "validation_error": "4 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...ant operational check.\"}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'phase_exists' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S3-A1', 'check': ...'job_end phase present'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid\nassertions.1\n  Input tag 'metric_in_phase' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert",
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/S4_control_path_nfr2_breach.json",
+      "registered": false,
+      "validation_error": "6 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...response matters most.\"}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'control_breach_exists' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S4-A1', 'check': ...stion stressor (TC-84)'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid\nassertions.1\n  Input tag 'metric_always' found using 'check' does not match any of the expected tags: 'no_insufficient_reserv",
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/S5_gray_failure.json",
+      "registered": false,
+      "validation_error": "2 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...operational safeguard.\"}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'gray_loss_elevated' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S5-A1', 'check': ...ove the injected floor'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid",
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/S6_baseline_tier_degradation.json",
+      "registered": false,
+      "validation_error": "4 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...ch require an upgrade.'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'capability_tier_assertion' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S6-A1', 'check': ...graded capability tier'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid\nassertions.1\n  Input tag 'phase_discrimination_false' found using 'check' does not match any of the expected tags: 'no_in",
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/S7_slow_checkpoint.json",
+      "registered": false,
+      "validation_error": "4 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...ontier model training.'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'phase_exists' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S7-A1', 'check': ...eckpoint phase present'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid\nassertions.1\n  Input tag 'metric_in_phase' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert",
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/S8_transceiver_degrade.json",
+      "registered": false,
+      "validation_error": "2 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'scenario_id': 'regressi...ed unexpected results.'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nassertions.0\n  Input tag 'crc_errors_present' found using 'check' does not match any of the expected tags: 'no_insufficient_reserve_alert', 'alert_fires', 'declining_fuel_cell_reserve_alert_fires', 'max_p_total_mw', 'min_final_bess_soc', 'pue_base_in_declared_range', 'persistent_fuel_cell_deficit', 'peak_fuel_cell_array_output', 'no_cold_warming_contingency_capacity', 'fuel_cell_commanded_and_achieved_reported', 'fuel_cell_output_nonzero' [type=union_tag_invalid, input_value={'id': 'S8-A1', 'check': ...ero CRC error counters'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/union_tag_invalid",
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/S9_islanded_ramp_protection.json",
+      "registered": false,
+      "validation_error": "10 validation errors for ScenarioSpec\nname\n  Field required [type=missing, input_value={'_comment': 'Regression ...000.0, 'ramp_s': 60.0}]}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nworkload_events.0.event_type\n  Field required [type=missing, input_value={'timestamp': 0, 'job_id'... 1000.0, 'ramp_s': 60.0}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nworkload_events.1.event_type\n  Field required [type=missing, input_value={'timestamp': 1800, 'job_...1000.0, 'ramp_s': 120.0}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nworkload_events.2.event_type\n  Field required [type=missing, input_value={'timestamp': 3600, 'job_...1000.0, 'ramp_s': 120.0}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nworkload_events.3.event_type\n  Field required [type=missing, input_value={'timestamp': 4800, 'job_... ",
+      "protection": {
+        "uf_warning_hz": 59.5,
+        "ufls_stage1_hz": 58.5,
+        "island_collapse_hz": 57.0,
+        "of_warning_hz": 60.5,
+        "of_trip_hz": 62.0,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": true
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/addendum-h-cav-1-workload-class-validation.json",
+      "registered": false,
+      "validation_error": "1 validation error for ScenarioSpec\nworkload_events.2.workload_class\n  Input should be 'training', 'inference' or 'other' [type=literal_error, input_value='checkpointing', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.13/v/literal_error",
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/addendum-h-lead-time-profile-validation.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/demo-10-tenant-full-ceiling.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/demo-10-tenant-overload-120pct.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/demo-10-tenant-random-gpu.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/demo-20-tenant-contract-breach.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/demo-fc-bess-grid-peak.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/demo-grid-fc-bess-shaped-load.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/demo-islanded-ramp.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/demo-operator-trip.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/demo-rolling-planning-peaks.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/demo-turbine-fc-bess-20-tenants-overage.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/islanded-8-60-10-ramp.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/islanded_ramp_3hr_50MW_BESS_50_to_1000_GPUs.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/lead-time-enterprise-8gpu-air-inference.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/lead-time-enterprise-8gpu-air-training.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/lead-time-h100-sxm5-8way-nvl4-inference.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/lead-time-h100-sxm5-8way-nvl4-training.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/lead-time-nextgen-rack-liquid-inference.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/lead-time-nextgen-rack-liquid-training.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/scenario-100mw-fuel-cell-bess-diesel.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/scenario-equinix-sj-1.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/scenario-equinix-sj-2-24h.json.gz.b64",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/scenario-equinox-sj-1.json",
+      "registered": false,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/scenario-fc100-islanded-v2.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/scenario-fc100-islanded-zero-hot-v2.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/scenario-h1-k8s-ray-24h.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/scenario-h1-k8s-ray-7d.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/scenario-h2-slurm-24h.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/scenario-h2-slurm-7d.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/scenario-hybrid-ai-100mw-addendum-i.json",
+      "registered": false,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/scenario-kube-peak-overage.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/scenario-kubernetes-scheduler-demo.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/scenario-turbine-01.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    },
+    {
+      "path": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/scenario-uneven-multisched-01.json",
+      "registered": true,
+      "validation_error": null,
+      "protection": {
+        "uf_warning_hz": null,
+        "ufls_stage1_hz": null,
+        "island_collapse_hz": null,
+        "of_warning_hz": null,
+        "of_trip_hz": null,
+        "ufls_stages": null,
+        "relay_81u_threshold_hz": null
+      },
+      "any_configured": false
+    }
+  ]
+}

@@ -1,0 +1,199 @@
+{
+  "ticks_before": 264,
+  "ticks_after": 264,
+  "field_counts": {
+    "fuel_cell_ride_through_status": 9
+  },
+  "differing_ticks": [
+    {
+      "tick": 255,
+      "differences": {
+        "fuel_cell_ride_through_status": {
+          "before": [
+            {
+              "asset_id": "fc100-array",
+              "category": 3,
+              "region": "trip_under_56_5hz"
+            }
+          ],
+          "after": [
+            {
+              "asset_id": "fc100-array",
+              "category": 3,
+              "region": "continuous"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "tick": 256,
+      "differences": {
+        "fuel_cell_ride_through_status": {
+          "before": [
+            {
+              "asset_id": "fc100-array",
+              "category": 3,
+              "region": "trip_under_56_5hz"
+            }
+          ],
+          "after": [
+            {
+              "asset_id": "fc100-array",
+              "category": 3,
+              "region": "continuous"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "tick": 257,
+      "differences": {
+        "fuel_cell_ride_through_status": {
+          "before": [
+            {
+              "asset_id": "fc100-array",
+              "category": 3,
+              "region": "trip_under_56_5hz"
+            }
+          ],
+          "after": [
+            {
+              "asset_id": "fc100-array",
+              "category": 3,
+              "region": "continuous"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "tick": 258,
+      "differences": {
+        "fuel_cell_ride_through_status": {
+          "before": [
+            {
+              "asset_id": "fc100-array",
+              "category": 3,
+              "region": "trip_under_56_5hz"
+            }
+          ],
+          "after": [
+            {
+              "asset_id": "fc100-array",
+              "category": 3,
+              "region": "continuous"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "tick": 259,
+      "differences": {
+        "fuel_cell_ride_through_status": {
+          "before": [
+            {
+              "asset_id": "fc100-array",
+              "category": 3,
+              "region": "trip_under_56_5hz"
+            }
+          ],
+          "after": [
+            {
+              "asset_id": "fc100-array",
+              "category": 3,
+              "region": "continuous"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "tick": 260,
+      "differences": {
+        "fuel_cell_ride_through_status": {
+          "before": [
+            {
+              "asset_id": "fc100-array",
+              "category": 3,
+              "region": "trip_under_56_5hz"
+            }
+          ],
+          "after": [
+            {
+              "asset_id": "fc100-array",
+              "category": 3,
+              "region": "continuous"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "tick": 261,
+      "differences": {
+        "fuel_cell_ride_through_status": {
+          "before": [
+            {
+              "asset_id": "fc100-array",
+              "category": 3,
+              "region": "outside_mandatory_under"
+            }
+          ],
+          "after": [
+            {
+              "asset_id": "fc100-array",
+              "category": 3,
+              "region": "continuous"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "tick": 262,
+      "differences": {
+        "fuel_cell_ride_through_status": {
+          "before": [
+            {
+              "asset_id": "fc100-array",
+              "category": 3,
+              "region": "mandatory_under"
+            }
+          ],
+          "after": [
+            {
+              "asset_id": "fc100-array",
+              "category": 3,
+              "region": "continuous"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "tick": 263,
+      "differences": {
+        "fuel_cell_ride_through_status": {
+          "before": [
+            {
+              "asset_id": "fc100-array",
+              "category": 3,
+              "region": "mandatory_under"
+            }
+          ],
+          "after": [
+            {
+              "asset_id": "fc100-array",
+              "category": 3,
+              "region": "continuous"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "ledger_identical": true
+}

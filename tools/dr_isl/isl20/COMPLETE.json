@@ -1,0 +1,61 @@
+{
+  "completed": true,
+  "cases": [
+    {
+      "scenario": "scenario-h1-k8s-ray-24h",
+      "arm": "baseline",
+      "file": "tools/dr_isl/isl20/scenario-h1-k8s-ray-24h_baseline.json",
+      "baseline_invalid": 811,
+      "counterfactual_invalid": 0
+    },
+    {
+      "scenario": "scenario-h1-k8s-ray-24h",
+      "arm": "informed",
+      "file": "tools/dr_isl/isl20/scenario-h1-k8s-ray-24h_informed.json",
+      "baseline_invalid": 76,
+      "counterfactual_invalid": 0
+    },
+    {
+      "scenario": "scenario-h2-slurm-24h",
+      "arm": "baseline",
+      "file": "tools/dr_isl/isl20/scenario-h2-slurm-24h_baseline.json",
+      "baseline_invalid": 549,
+      "counterfactual_invalid": 280
+    },
+    {
+      "scenario": "scenario-h2-slurm-24h",
+      "arm": "informed",
+      "file": "tools/dr_isl/isl20/scenario-h2-slurm-24h_informed.json",
+      "baseline_invalid": 412,
+      "counterfactual_invalid": 0
+    },
+    {
+      "scenario": "S10_mit_supercloud_2021-08-11",
+      "arm": "app",
+      "file": "tools/dr_isl/isl20/S10_mit_supercloud_2021-08-11_app.json",
+      "baseline_invalid": 594,
+      "counterfactual_invalid": 498
+    },
+    {
+      "scenario": "scenario-hybrid-ai-100mw-addendum-i",
+      "arm": "app",
+      "file": "tools/dr_isl/isl20/scenario-hybrid-ai-100mw-addendum-i_app.json",
+      "baseline_invalid": 54,
+      "counterfactual_invalid": 12
+    },
+    {
+      "scenario": "demo-islanded-ramp",
+      "arm": "app",
+      "file": "tools/dr_isl/isl20/demo-islanded-ramp_app.json",
+      "baseline_invalid": 103,
+      "counterfactual_invalid": 100
+    },
+    {
+      "scenario": "scenario-fc100-islanded-zero-hot-v2",
+      "arm": "app",
+      "file": "tools/dr_isl/isl20/scenario-fc100-islanded-zero-hot-v2_app.json",
+      "baseline_invalid": 214,
+      "counterfactual_invalid": 209
+    }
+  ]
+}

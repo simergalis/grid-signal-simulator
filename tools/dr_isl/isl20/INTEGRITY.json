@@ -1,0 +1,89 @@
+{
+  "initial_head": "4e33116800e1ecd09d2b5bcce8528d48b6ba1099",
+  "head_before_report_commit": "4e33116800e1ecd09d2b5bcce8528d48b6ba1099",
+  "application_diff_vs_initial_head": "",
+  "tracked_channel_csvs": "",
+  "dev_process": "PID                  STARTED COMMAND\n  10258 Thu Oct 22 23:26:09 2026 python3 -m uvicorn api.app:app --host 0.0.0.0 --port 22126 --log-level info",
+  "workflow_restart_performed": false,
+  "case_baseline_hashes": [
+    {
+      "scenario": "scenario-h1-k8s-ray-24h",
+      "arm": "baseline",
+      "nonfrequency_sha256": "c3d6a39d63e786f5abef82b30bc045b122e675bc9fcc07ffc60a93262de0b823",
+      "full_physical_sha256": "c4fa3b355b2eebf949f1f0ad9f43b1b76770cf05bb380d224a3282699985fc20",
+      "matches_committed_D11t": true
+    },
+    {
+      "scenario": "scenario-h1-k8s-ray-24h",
+      "arm": "informed",
+      "nonfrequency_sha256": "958efa040f72ec67186b89a70f8ee984069fa19a961332559db36e83f3be845c",
+      "full_physical_sha256": "437d480102d11676df747a5ddc742cd29c9785956c1255098dc8d00d9f18a264",
+      "matches_committed_D11t": true
+    },
+    {
+      "scenario": "scenario-h2-slurm-24h",
+      "arm": "baseline",
+      "nonfrequency_sha256": "905a7f9d83cb2492d77bead4bd687f3959f300535f98838b33c384951cb75ca3",
+      "full_physical_sha256": "603441374503951709dc77d5ae11234e966d5b479e50edca5dd608c7782f217f",
+      "matches_committed_D11t": true
+    },
+    {
+      "scenario": "scenario-h2-slurm-24h",
+      "arm": "informed",
+      "nonfrequency_sha256": "49363ec20bc1634542c5b13d1e56a2fba5c035697689a362c50ab7d797f2d97c",
+      "full_physical_sha256": "17954e9420ad8d0c9493a690c03cd670ae0a5f57df60f801b7c292aeea3a9fba",
+      "matches_committed_D11t": true
+    },
+    {
+      "scenario": "S10_mit_supercloud_2021-08-11",
+      "arm": "app",
+      "nonfrequency_sha256": "8a9415b84b564b706b7ee2e13035902f0dc3da941b74834de398feed7e3ddebe",
+      "full_physical_sha256": "3e24904fd7e8f71afa1f5b30ec2f2958a6b43e7670ab9fefae04f3440aa57bff",
+      "matches_committed_D11t": true
+    },
+    {
+      "scenario": "scenario-hybrid-ai-100mw-addendum-i",
+      "arm": "app",
+      "nonfrequency_sha256": "74f55fca1651deabc7364360b1d0f52941b8564df6e6001be377bc3a3458cfc1",
+      "full_physical_sha256": "5b71aa3959769d9b579e7781b120bf1fcabecdaed1476481f2e6e5bf56f1ddfb",
+      "matches_committed_D11t": true
+    },
+    {
+      "scenario": "demo-islanded-ramp",
+      "arm": "app",
+      "nonfrequency_sha256": "88b04757bff6b8a1d88fc2de6a0396f1da203c724f3021cc4f1db1bd97d16ceb",
+      "full_physical_sha256": "e3b8cc8dfcc4fc4847f653b260e0e9a7c6ee88e1722930ca59567875df2219d6",
+      "matches_committed_D11t": true
+    },
+    {
+      "scenario": "scenario-fc100-islanded-zero-hot-v2",
+      "arm": "app",
+      "nonfrequency_sha256": "aefdc289bec7a9da3c99398716f8549a0eef0bfdf765bd72a1264a95fe44a507",
+      "full_physical_sha256": "0bc7e7a2a5af0798a4b4a3cdc69687e6084ff57bde0c2b34500545f84115b8ce",
+      "matches_committed_D11t": true
+    }
+  ],
+  "native_tool_sha256": {
+    "tools/dr_isl/baseline_runner.py": "12320f7c74c42406cc6eca862b9621621f733c2d9ad94e3ecb0c80652af6593a",
+    "tools/dr_isl/phase4/stream_worker.py": "446a6b10a314c375e64567dbcb250e35bd0f807bb94db6f1bb4b776e90a58e56"
+  },
+  "file_sizes": {
+    "tools/dr_isl/isl20/CATALOGUE.json": 53336,
+    "tools/dr_isl/isl20/TRACE.json": 122388,
+    "tools/dr_isl/isl20/METHOD.json": 2688,
+    "tools/dr_isl/isl20/scenario-h1-k8s-ray-24h_baseline.json": 76139,
+    "tools/dr_isl/isl20/PROGRESS.json": 1676,
+    "tools/dr_isl/isl20/PARAMETER_CATALOGUE.json": 3348,
+    "tools/dr_isl/isl20/scenario-h1-k8s-ray-24h_informed.json": 51462,
+    "tools/dr_isl/isl20/scenario-h2-slurm-24h_baseline.json": 101197,
+    "tools/dr_isl/isl20/scenario-h2-slurm-24h_informed.json": 63506,
+    "tools/dr_isl/isl20/scenario-hybrid-ai-100mw-addendum-i_app.json": 40166,
+    "tools/dr_isl/isl20/demo-islanded-ramp_app.json": 77191,
+    "tools/dr_isl/isl20/scenario-fc100-islanded-zero-hot-v2_app.json": 31059,
+    "tools/dr_isl/isl20/EXTERNAL_SOURCES.json": 669,
+    "tools/dr_isl/isl20/FC_ZERO_COUNTERFACTUAL_DIFFERENCES.json": 4318,
+    "tools/dr_isl/isl20/S10_mit_supercloud_2021-08-11_app.json": 81515,
+    "tools/dr_isl/isl20/COMPLETE.json": 1826,
+    "tools/dr_isl/isl20/DIAGNOSTIC_SOURCE.json": 17378
+  }
+}

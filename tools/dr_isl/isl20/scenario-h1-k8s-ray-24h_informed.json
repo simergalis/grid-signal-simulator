@@ -1,0 +1,1459 @@
+{
+  "scenario": "scenario-h1-k8s-ray-24h",
+  "arm": "informed",
+  "baseline_nonfrequency_hash_matches_D11t": true,
+  "baseline": {
+    "ticks": 17280,
+    "invalid_ticks": 76,
+    "invalid_fraction": 0.004398148148148148,
+    "frequency_min_hz": 48.59156754833297,
+    "frequency_max_hz": 60.458333516015756,
+    "invalid_classes": {
+      "curtailment_positive": 0,
+      "deficit_forcing": 4,
+      "carried": 72,
+      "positive_forcing_no_curtailment": 0
+    },
+    "D_eff_range": {
+      "min": 0.0,
+      "p50": 0.126516669934073,
+      "p95": 0.25658588664624715,
+      "max": 0.6024027348928568
+    },
+    "H_range": {
+      "min": 4.0,
+      "p50": 4.0,
+      "p95": 4.0,
+      "max": 4.0
+    },
+    "S_base_range": {
+      "min": 58.82352941176471,
+      "p50": 58.82352941176471,
+      "p95": 117.64705882352942,
+      "max": 117.64705882352942
+    },
+    "protection": {
+      "uf_warning_hz": null,
+      "ufls_stage1_hz": null,
+      "island_collapse_hz": null,
+      "of_warning_hz": null,
+      "of_trip_hz": null,
+      "ufls_stages": [],
+      "relay_81u_threshold_hz": null,
+      "relay_81u_delay_s": 0.1,
+      "relay_81u_reset_hz": null,
+      "anchor_mode": "vsm"
+    },
+    "protection_configured": false,
+    "carried": {
+      "episodes": [
+        {
+          "first_carried": {
+            "tick": 13335,
+            "sim_time": 66675.0,
+            "hz": 48.71005784982968,
+            "forcing": 0.0,
+            "curtailment": 0.0,
+            "unserved": 0.0
+          },
+          "last_carried": {
+            "tick": 13406,
+            "sim_time": 67030.0,
+            "hz": 53.99893675925773,
+            "forcing": 0.0,
+            "curtailment": 0.0,
+            "unserved": 0.0
+          },
+          "preceding_tick": {
+            "tick": 13334,
+            "sim_time": 66670.0,
+            "hz": 48.59156754833297,
+            "forcing": -1.25,
+            "curtailment": 0.0,
+            "unserved": 1.25
+          },
+          "preceding_class": "deficit_forcing",
+          "next_tick": {
+            "tick": 13407,
+            "sim_time": 67035.0,
+            "hz": 54.0455821276403,
+            "forcing": 0.0,
+            "curtailment": 0.0,
+            "unserved": 0.0
+          },
+          "end_reason": "relaxation",
+          "duration_s": 360,
+          "first_frequency_before": 48.59156754833297,
+          "start_tau_s": 478.90850798766525,
+          "max_observed_homogeneous_decay_error_hz": 3.410605131648481e-13,
+          "integrator_forcing_nonzero_tick_count": 0
+        }
+      ],
+      "episode_count": 1,
+      "episode_duration_s": {
+        "min": 360,
+        "p50": 360.0,
+        "p95": 360.0,
+        "max": 360
+      },
+      "tau_s": {
+        "min": 474.0413606460816,
+        "p50": 548.9915470296237,
+        "p95": 640.7663914739073,
+        "max": 640.7663923765141
+      },
+      "infinite_tau_tick_count": 0,
+      "generation_equals_demand_ticks": 72,
+      "generation_not_equal_demand_ticks": 0,
+      "max_abs_generation_minus_demand_mw": 0.0,
+      "integrator_zero_forcing_ticks": 72,
+      "integrator_nonzero_forcing_ticks": 0,
+      "homogeneous_decay_error_hz": {
+        "min": 7.105427357601002e-15,
+        "p50": 1.1723955140041653e-13,
+        "p95": 2.504663143554354e-13,
+        "max": 3.410605131648481e-13
+      },
+      "representative_ticks": [
+        {
+          "tick": 13335,
+          "sim_time": 66675.0,
+          "hz": 48.71005784982968,
+          "valid": false,
+          "forcing": 0.0,
+          "curtailment": 0.0,
+          "generation": 94.23211356133493,
+          "demand": 94.23211356133493,
+          "served": 94.23211356133493,
+          "unserved": 0.0,
+          "turbine": 65.23211356133493,
+          "bess": 29.0,
+          "diesel": 0.0,
+          "fuel_cell": 0.0,
+          "observation": {
+            "H": 4.0,
+            "S_base": 117.64705882352942,
+            "D_eff": 0.016704652071468415,
+            "dt_sub": 0.01,
+            "substeps": 500,
+            "f0": 60.0,
+            "frequency_before": 48.59156754833297,
+            "homogeneous_predicted_hz": 48.710057849829624,
+            "tau_s": 478.90850798766525,
+            "turbine_headroom_mw": 34.76788643866507,
+            "turbine_minimum_mw": 35.0,
+            "bess_raise_headroom_mw": 0.0,
+            "bess_lower_headroom_mw": 59.0,
+            "governor_units": [
+              {
+                "id": "gt-spin-01",
+                "output": 25.0,
+                "gov_power": 138.966210801112,
+                "gov_valve": 139.66853894046113,
+                "headroom": 0.0,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-spin-02",
+                "output": 22.732113561334927,
+                "gov_power": 138.966210801112,
+                "gov_valve": 139.66853894046113,
+                "headroom": 2.267886438665073,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-hot-01",
+                "output": 8.75,
+                "gov_power": 138.966210801112,
+                "gov_valve": 139.66853894046113,
+                "headroom": 16.25,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-hot-02",
+                "output": 8.75,
+                "gov_power": 138.966210801112,
+                "gov_valve": 139.66853894046113,
+                "headroom": 16.25,
+                "minimum": 8.75
+              }
+            ],
+            "raw_forcing_min": 0.0,
+            "raw_forcing_max": 0.0,
+            "raw_nonzero_substeps": 0,
+            "raw_forcing_energy_mwh": 0.0,
+            "implied_response_abs_mwh": 0.0,
+            "implied_response_signed_mwh": 0.0,
+            "dispatch_droop_mw": 0.0,
+            "droop_frequency_limit": null,
+            "governor_end_sum_mw": 554.7848310612447,
+            "observed_decay_error_hz": 5.684341886080802e-14,
+            "posttrip_vs_integrator_mw": 0.0,
+            "protection": {
+              "uf_warning_hz": null,
+              "ufls_stage1_hz": null,
+              "island_collapse_hz": null,
+              "of_warning_hz": null,
+              "of_trip_hz": null,
+              "ufls_stages": [],
+              "relay_81u_threshold_hz": null,
+              "relay_81u_delay_s": 0.1,
+              "relay_81u_reset_hz": null,
+              "anchor_mode": "vsm"
+            }
+          },
+          "nonfrequency_tick_sha": "2a8dc02207a1feb4480176814d836c4d9d85d3e90e79aa5cc8f659aba2a0d537",
+          "physical_energy_tick_sha": "d74d9035f2bbb30e20176f00cfb21b3c49f55deba0eb91bdc4e06b399f02cc77",
+          "observed_decay_tau_s": 478.9035079701437
+        },
+        {
+          "tick": 13343,
+          "sim_time": 66715.0,
+          "hz": 49.57784395846489,
+          "valid": false,
+          "forcing": 0.0,
+          "curtailment": 0.0,
+          "generation": 93.97497718794408,
+          "demand": 93.97497718794408,
+          "served": 93.97497718794408,
+          "unserved": 0.0,
+          "turbine": 64.97497718794408,
+          "bess": 29.0,
+          "diesel": 0.0,
+          "fuel_cell": 0.0,
+          "observation": {
+            "H": 4.0,
+            "S_base": 117.64705882352942,
+            "D_eff": 0.014698193415845452,
+            "dt_sub": 0.01,
+            "substeps": 500,
+            "f0": 60.0,
+            "frequency_before": 49.48166017050267,
+            "homogeneous_predicted_hz": 49.57784395846511,
+            "tau_s": 544.2845779519791,
+            "turbine_headroom_mw": 35.02502281205592,
+            "turbine_minimum_mw": 35.0,
+            "bess_raise_headroom_mw": 0.0,
+            "bess_lower_headroom_mw": 59.0,
+            "governor_units": [
+              {
+                "id": "gt-spin-01",
+                "output": 25.0,
+                "gov_power": 129.18416208751344,
+                "gov_valve": 128.94949418168144,
+                "headroom": 0.0,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-spin-02",
+                "output": 22.474977187944077,
+                "gov_power": 129.18416208751344,
+                "gov_valve": 128.94949418168144,
+                "headroom": 2.525022812055923,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-hot-01",
+                "output": 8.75,
+                "gov_power": 129.18416208751344,
+                "gov_valve": 128.94949418168144,
+                "headroom": 16.25,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-hot-02",
+                "output": 8.75,
+                "gov_power": 129.18416208751344,
+                "gov_valve": 128.94949418168144,
+                "headroom": 16.25,
+                "minimum": 8.75
+              }
+            ],
+            "raw_forcing_min": 0.0,
+            "raw_forcing_max": 0.0,
+            "raw_nonzero_substeps": 0,
+            "raw_forcing_energy_mwh": 0.0,
+            "implied_response_abs_mwh": 0.0,
+            "implied_response_signed_mwh": 0.0,
+            "dispatch_droop_mw": 0.0,
+            "droop_frequency_limit": null,
+            "governor_end_sum_mw": 512.0185250922308,
+            "observed_decay_error_hz": -2.2026824808563106e-13,
+            "posttrip_vs_integrator_mw": 0.0,
+            "protection": {
+              "uf_warning_hz": null,
+              "ufls_stage1_hz": null,
+              "island_collapse_hz": null,
+              "of_warning_hz": null,
+              "of_trip_hz": null,
+              "ufls_stages": [],
+              "relay_81u_threshold_hz": null,
+              "relay_81u_delay_s": 0.1,
+              "relay_81u_reset_hz": null,
+              "anchor_mode": "vsm"
+            }
+          },
+          "nonfrequency_tick_sha": "75f7537405c08a312e9c4b19d5ec6cba432e6be86efcd330be2cb49ab4f3ddb0",
+          "physical_energy_tick_sha": "7aa176e6f18b6458c9ba170fe7d34463c55a6e5dd043e2e21827e74ed0ea177b",
+          "observed_decay_tau_s": 544.2795779364483
+        },
+        {
+          "tick": 13351,
+          "sim_time": 66755.0,
+          "hz": 50.34212127072446,
+          "valid": false,
+          "forcing": 0.0,
+          "curtailment": 0.0,
+          "generation": 94.05342346828577,
+          "demand": 94.05342346828577,
+          "served": 94.05342346828577,
+          "unserved": 0.0,
+          "turbine": 77.81062572022954,
+          "bess": 16.242797748056233,
+          "diesel": 0.0,
+          "fuel_cell": 0.0,
+          "observation": {
+            "H": 4.0,
+            "S_base": 117.64705882352942,
+            "D_eff": 0.015311479881430641,
+            "dt_sub": 0.01,
+            "substeps": 500,
+            "f0": 60.0,
+            "frequency_before": 50.24925397591535,
+            "homogeneous_predicted_hz": 50.34212127072432,
+            "tau_s": 522.4837874555933,
+            "turbine_headroom_mw": 22.189374279770462,
+            "turbine_minimum_mw": 35.0,
+            "bess_raise_headroom_mw": 12.757202251943767,
+            "bess_lower_headroom_mw": 46.24279774805623,
+            "governor_units": [
+              {
+                "id": "gt-spin-01",
+                "output": 25.0,
+                "gov_power": 119.777546931246,
+                "gov_valve": 119.54273456208784,
+                "headroom": 0.0,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-spin-02",
+                "output": 25.0,
+                "gov_power": 119.777546931246,
+                "gov_valve": 119.54273456208784,
+                "headroom": 0.0,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-hot-01",
+                "output": 18.75,
+                "gov_power": 119.777546931246,
+                "gov_valve": 119.54273456208784,
+                "headroom": 6.25,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-hot-02",
+                "output": 9.060625720229538,
+                "gov_power": 119.777546931246,
+                "gov_valve": 119.54273456208784,
+                "headroom": 15.939374279770462,
+                "minimum": 8.75
+              }
+            ],
+            "raw_forcing_min": 0.0,
+            "raw_forcing_max": 0.0,
+            "raw_nonzero_substeps": 0,
+            "raw_forcing_energy_mwh": 0.0,
+            "implied_response_abs_mwh": 0.0,
+            "implied_response_signed_mwh": 0.0,
+            "dispatch_droop_mw": 0.0,
+            "droop_frequency_limit": null,
+            "governor_end_sum_mw": 474.51519252698836,
+            "observed_decay_error_hz": 1.4210854715202004e-13,
+            "posttrip_vs_integrator_mw": 0.0,
+            "protection": {
+              "uf_warning_hz": null,
+              "ufls_stage1_hz": null,
+              "island_collapse_hz": null,
+              "of_warning_hz": null,
+              "of_trip_hz": null,
+              "ufls_stages": [],
+              "relay_81u_threshold_hz": null,
+              "relay_81u_delay_s": 0.1,
+              "relay_81u_reset_hz": null,
+              "anchor_mode": "vsm"
+            }
+          },
+          "nonfrequency_tick_sha": "dabc0780ffe6872162c260ea644a18443d8594a8928826f890980d85be4a37b0",
+          "physical_energy_tick_sha": "092643a8b2bd07a827928c0ba718d7d3ecf5f988702a3a5a1fbbd84696b51a03",
+          "observed_decay_tau_s": 522.4787874396278
+        },
+        {
+          "tick": 13359,
+          "sim_time": 66795.0,
+          "hz": 51.06267608379243,
+          "valid": false,
+          "forcing": 0.0,
+          "curtailment": 0.0,
+          "generation": 93.71078993848054,
+          "demand": 93.71078993848054,
+          "served": 93.71078993848054,
+          "unserved": 0.0,
+          "turbine": 68.46078993848054,
+          "bess": 25.25,
+          "diesel": 0.0,
+          "fuel_cell": 0.0,
+          "observation": {
+            "H": 4.0,
+            "S_base": 117.64705882352942,
+            "D_eff": 0.015592889088008642,
+            "dt_sub": 0.01,
+            "substeps": 500,
+            "f0": 60.0,
+            "frequency_before": 50.97515024170475,
+            "homogeneous_predicted_hz": 51.06267608379244,
+            "tau_s": 513.054377213022,
+            "turbine_headroom_mw": 31.539210061519455,
+            "turbine_minimum_mw": 35.0,
+            "bess_raise_headroom_mw": 3.75,
+            "bess_lower_headroom_mw": 55.25,
+            "governor_units": [
+              {
+                "id": "gt-spin-01",
+                "output": 25.0,
+                "gov_power": 110.85770226707976,
+                "gov_valve": 110.64283947006835,
+                "headroom": 0.0,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-spin-02",
+                "output": 22.210789938480545,
+                "gov_power": 110.85770226707976,
+                "gov_valve": 110.64283947006835,
+                "headroom": 2.789210061519455,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-hot-01",
+                "output": 12.5,
+                "gov_power": 110.85770226707976,
+                "gov_valve": 110.64283947006835,
+                "headroom": 12.5,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-hot-02",
+                "output": 8.75,
+                "gov_power": 110.85770226707976,
+                "gov_valve": 110.64283947006835,
+                "headroom": 16.25,
+                "minimum": 8.75
+              }
+            ],
+            "raw_forcing_min": 0.0,
+            "raw_forcing_max": 0.0,
+            "raw_nonzero_substeps": 0,
+            "raw_forcing_energy_mwh": 0.0,
+            "implied_response_abs_mwh": 0.0,
+            "implied_response_signed_mwh": 0.0,
+            "dispatch_droop_mw": 0.0,
+            "droop_frequency_limit": null,
+            "governor_end_sum_mw": 439.1309259241413,
+            "observed_decay_error_hz": -7.105427357601002e-15,
+            "posttrip_vs_integrator_mw": 0.0,
+            "protection": {
+              "uf_warning_hz": null,
+              "ufls_stage1_hz": null,
+              "island_collapse_hz": null,
+              "of_warning_hz": null,
+              "of_trip_hz": null,
+              "ufls_stages": [],
+              "relay_81u_threshold_hz": null,
+              "relay_81u_delay_s": 0.1,
+              "relay_81u_reset_hz": null,
+              "anchor_mode": "vsm"
+            }
+          },
+          "nonfrequency_tick_sha": "45d0d24f540cdfc18241b3e7dc0f0b327a17fe2a2fcd00804002c116842e76bf",
+          "physical_energy_tick_sha": "4ba2c5cb40cc1680a5dc29345d5b328d8313981f3160ab08ba255b7a53f08db7",
+          "observed_decay_tau_s": 513.0493771967267
+        },
+        {
+          "tick": 13367,
+          "sim_time": 66835.0,
+          "hz": 51.73389026189412,
+          "valid": false,
+          "forcing": 0.0,
+          "curtailment": 0.0,
+          "generation": 93.71460185570213,
+          "demand": 93.71460185570213,
+          "served": 93.71460185570213,
+          "unserved": 0.0,
+          "turbine": 64.71460185570213,
+          "bess": 29.0,
+          "diesel": 0.0,
+          "fuel_cell": 0.0,
+          "observation": {
+            "H": 4.0,
+            "S_base": 117.64705882352942,
+            "D_eff": 0.015622761691192175,
+            "dt_sub": 0.01,
+            "substeps": 500,
+            "f0": 60.0,
+            "frequency_before": 51.65278197040183,
+            "homogeneous_predicted_hz": 51.73389026189395,
+            "tau_s": 512.0733554113068,
+            "turbine_headroom_mw": 35.28539814429787,
+            "turbine_minimum_mw": 35.0,
+            "bess_raise_headroom_mw": 0.0,
+            "bess_lower_headroom_mw": 59.0,
+            "governor_units": [
+              {
+                "id": "gt-spin-01",
+                "output": 25.0,
+                "gov_power": 102.53453300914548,
+                "gov_valve": 102.33531167132645,
+                "headroom": 0.0,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-spin-02",
+                "output": 22.214601855702128,
+                "gov_power": 102.53453300914548,
+                "gov_valve": 102.33531167132645,
+                "headroom": 2.785398144297872,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-hot-01",
+                "output": 8.75,
+                "gov_power": 102.53453300914548,
+                "gov_valve": 102.33531167132645,
+                "headroom": 16.25,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-hot-02",
+                "output": 8.75,
+                "gov_power": 102.53453300914548,
+                "gov_valve": 102.33531167132645,
+                "headroom": 16.25,
+                "minimum": 8.75
+              }
+            ],
+            "raw_forcing_min": 0.0,
+            "raw_forcing_max": 0.0,
+            "raw_nonzero_substeps": 0,
+            "raw_forcing_energy_mwh": 0.0,
+            "implied_response_abs_mwh": 0.0,
+            "implied_response_signed_mwh": 0.0,
+            "dispatch_droop_mw": 0.0,
+            "droop_frequency_limit": null,
+            "governor_end_sum_mw": 406.15298091397216,
+            "observed_decay_error_hz": 1.7053025658242404e-13,
+            "posttrip_vs_integrator_mw": 0.0,
+            "protection": {
+              "uf_warning_hz": null,
+              "ufls_stage1_hz": null,
+              "island_collapse_hz": null,
+              "of_warning_hz": null,
+              "of_trip_hz": null,
+              "ufls_stages": [],
+              "relay_81u_threshold_hz": null,
+              "relay_81u_delay_s": 0.1,
+              "relay_81u_reset_hz": null,
+              "anchor_mode": "vsm"
+            }
+          },
+          "nonfrequency_tick_sha": "26772fc9913b8bc2b9727c9048e482fe12651f066e577b604fed825038b15969",
+          "physical_energy_tick_sha": "180eff37cfccd47b0ba97ce93b40437384fa7a99c9b93f053ab12d2decc67b7d",
+          "observed_decay_tau_s": 512.0683553950546
+        },
+        {
+          "tick": 13374,
+          "sim_time": 66870.0,
+          "hz": 52.24301243215235,
+          "valid": false,
+          "forcing": 0.0,
+          "curtailment": 0.0,
+          "generation": 93.39004314634907,
+          "demand": 93.39004314634907,
+          "served": 93.39004314634907,
+          "unserved": 0.0,
+          "turbine": 64.39004314634907,
+          "bess": 29.0,
+          "diesel": 0.0,
+          "fuel_cell": 0.0,
+          "observation": {
+            "H": 4.0,
+            "S_base": 117.64705882352942,
+            "D_eff": 0.013070578175544214,
+            "dt_sub": 0.01,
+            "substeps": 500,
+            "f0": 60.0,
+            "frequency_before": 52.17938467986311,
+            "homogeneous_predicted_hz": 52.24301243215225,
+            "tau_s": 612.0616771925552,
+            "turbine_headroom_mw": 35.60995685365093,
+            "turbine_minimum_mw": 35.0,
+            "bess_raise_headroom_mw": 0.0,
+            "bess_lower_headroom_mw": 59.0,
+            "governor_units": [
+              {
+                "id": "gt-spin-01",
+                "output": 25.0,
+                "gov_power": 96.0291067691329,
+                "gov_valve": 95.8729915443655,
+                "headroom": 0.0,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-spin-02",
+                "output": 21.890043146349072,
+                "gov_power": 96.0291067691329,
+                "gov_valve": 95.8729915443655,
+                "headroom": 3.109956853650928,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-hot-01",
+                "output": 8.75,
+                "gov_power": 96.0291067691329,
+                "gov_valve": 95.8729915443655,
+                "headroom": 16.25,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-hot-02",
+                "output": 8.75,
+                "gov_power": 96.0291067691329,
+                "gov_valve": 95.8729915443655,
+                "headroom": 16.25,
+                "minimum": 8.75
+              }
+            ],
+            "raw_forcing_min": 0.0,
+            "raw_forcing_max": 0.0,
+            "raw_nonzero_substeps": 0,
+            "raw_forcing_energy_mwh": 0.0,
+            "implied_response_abs_mwh": 0.0,
+            "implied_response_signed_mwh": 0.0,
+            "dispatch_droop_mw": 0.0,
+            "droop_frequency_limit": null,
+            "governor_end_sum_mw": 380.99128886751413,
+            "observed_decay_error_hz": 9.947598300641403e-14,
+            "posttrip_vs_integrator_mw": 0.0,
+            "protection": {
+              "uf_warning_hz": null,
+              "ufls_stage1_hz": null,
+              "island_collapse_hz": null,
+              "of_warning_hz": null,
+              "of_trip_hz": null,
+              "ufls_stages": [],
+              "relay_81u_threshold_hz": null,
+              "relay_81u_delay_s": 0.1,
+              "relay_81u_reset_hz": null,
+              "anchor_mode": "vsm"
+            }
+          },
+          "nonfrequency_tick_sha": "78ef82d7915cb8a90d3e2ff5cd4b24664054fd25edde462ad62d1a569a28076c",
+          "physical_energy_tick_sha": "cdca42253d756133a3eaf6ba32b8928941398d1bf541d686c2124aeb12e2a6a2",
+          "observed_decay_tau_s": 612.0566771790154
+        },
+        {
+          "tick": 13382,
+          "sim_time": 66910.0,
+          "hz": 52.733750643596764,
+          "valid": false,
+          "forcing": 0.0,
+          "curtailment": 0.0,
+          "generation": 93.39005668150872,
+          "demand": 93.39005668150872,
+          "served": 93.39005668150872,
+          "unserved": 0.0,
+          "turbine": 64.39005668150872,
+          "bess": 29.0,
+          "diesel": 0.0,
+          "fuel_cell": 0.0,
+          "observation": {
+            "H": 4.0,
+            "S_base": 117.64705882352942,
+            "D_eff": 0.01307068497982004,
+            "dt_sub": 0.01,
+            "substeps": 500,
+            "f0": 60.0,
+            "frequency_before": 52.67414774963013,
+            "homogeneous_predicted_hz": 52.73375064359654,
+            "tau_s": 612.0566758629161,
+            "turbine_headroom_mw": 35.609943318491275,
+            "turbine_minimum_mw": 35.0,
+            "bess_raise_headroom_mw": 0.0,
+            "bess_lower_headroom_mw": 59.0,
+            "governor_units": [
+              {
+                "id": "gt-spin-01",
+                "output": 25.0,
+                "gov_power": 89.95392570362596,
+                "gov_valve": 89.80768706473303,
+                "headroom": 0.0,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-spin-02",
+                "output": 21.890056681508725,
+                "gov_power": 89.95392570362596,
+                "gov_valve": 89.80768706473303,
+                "headroom": 3.1099433184912755,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-hot-01",
+                "output": 8.75,
+                "gov_power": 89.95392570362596,
+                "gov_valve": 89.80768706473303,
+                "headroom": 16.25,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-hot-02",
+                "output": 8.75,
+                "gov_power": 89.95392570362596,
+                "gov_valve": 89.80768706473303,
+                "headroom": 16.25,
+                "minimum": 8.75
+              }
+            ],
+            "raw_forcing_min": 0.0,
+            "raw_forcing_max": 0.0,
+            "raw_nonzero_substeps": 0,
+            "raw_forcing_energy_mwh": 0.0,
+            "implied_response_abs_mwh": 0.0,
+            "implied_response_signed_mwh": 0.0,
+            "dispatch_droop_mw": 0.0,
+            "droop_frequency_limit": null,
+            "governor_end_sum_mw": 356.88825429645226,
+            "observed_decay_error_hz": 2.2737367544323206e-13,
+            "posttrip_vs_integrator_mw": 0.0,
+            "protection": {
+              "uf_warning_hz": null,
+              "ufls_stage1_hz": null,
+              "island_collapse_hz": null,
+              "of_warning_hz": null,
+              "of_trip_hz": null,
+              "ufls_stages": [],
+              "relay_81u_threshold_hz": null,
+              "relay_81u_delay_s": 0.1,
+              "relay_81u_reset_hz": null,
+              "anchor_mode": "vsm"
+            }
+          },
+          "nonfrequency_tick_sha": "ad916f714e1e97a633c1672e8d690c4373b610c344fbd7da0006bd78532b050e",
+          "physical_energy_tick_sha": "2411a18981c275687aa5081d92559ed73e6f97cc3424fc36d892390c5d769b44",
+          "observed_decay_tau_s": 612.0516758489797
+        },
+        {
+          "tick": 13390,
+          "sim_time": 66950.0,
+          "hz": 53.19344416657363,
+          "valid": false,
+          "forcing": 0.0,
+          "curtailment": 0.0,
+          "generation": 93.39005851329338,
+          "demand": 93.39005851329338,
+          "served": 93.39005851329338,
+          "unserved": 0.0,
+          "turbine": 64.39005851329338,
+          "bess": 29.0,
+          "diesel": 0.0,
+          "fuel_cell": 0.0,
+          "observation": {
+            "H": 4.0,
+            "S_base": 117.64705882352942,
+            "D_eff": 0.01307069943420458,
+            "dt_sub": 0.01,
+            "substeps": 500,
+            "f0": 60.0,
+            "frequency_before": 53.13761194059352,
+            "homogeneous_predicted_hz": 53.19344416657343,
+            "tau_s": 612.0559990129435,
+            "turbine_headroom_mw": 35.60994148670662,
+            "turbine_minimum_mw": 35.0,
+            "bess_raise_headroom_mw": 0.0,
+            "bess_lower_headroom_mw": 59.0,
+            "governor_units": [
+              {
+                "id": "gt-spin-01",
+                "output": 25.0,
+                "gov_power": 84.26306268171051,
+                "gov_valve": 84.12607551811973,
+                "headroom": 0.0,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-spin-02",
+                "output": 21.890058513293383,
+                "gov_power": 84.26306268171051,
+                "gov_valve": 84.12607551811973,
+                "headroom": 3.1099414867066173,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-hot-01",
+                "output": 8.75,
+                "gov_power": 84.26306268171051,
+                "gov_valve": 84.12607551811973,
+                "headroom": 16.25,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-hot-02",
+                "output": 8.75,
+                "gov_power": 84.26306268171051,
+                "gov_valve": 84.12607551811973,
+                "headroom": 16.25,
+                "minimum": 8.75
+              }
+            ],
+            "raw_forcing_min": 0.0,
+            "raw_forcing_max": 0.0,
+            "raw_nonzero_substeps": 0,
+            "raw_forcing_energy_mwh": 0.0,
+            "implied_response_abs_mwh": 0.0,
+            "implied_response_signed_mwh": 0.0,
+            "dispatch_droop_mw": 0.0,
+            "droop_frequency_limit": null,
+            "governor_end_sum_mw": 334.3100016664749,
+            "observed_decay_error_hz": 1.9895196601282805e-13,
+            "posttrip_vs_integrator_mw": 0.0,
+            "protection": {
+              "uf_warning_hz": null,
+              "ufls_stage1_hz": null,
+              "island_collapse_hz": null,
+              "of_warning_hz": null,
+              "of_trip_hz": null,
+              "ufls_stages": [],
+              "relay_81u_threshold_hz": null,
+              "relay_81u_delay_s": 0.1,
+              "relay_81u_reset_hz": null,
+              "anchor_mode": "vsm"
+            }
+          },
+          "nonfrequency_tick_sha": "caa14d90f8afa17bcfb144fc3e412e483a5377d86eb2124b570a30a85cf7d68b",
+          "physical_energy_tick_sha": "3464dc097dbf72f8f9208ba85dbbd6a5f2f843ff007580de96c3fe7449f32312",
+          "observed_decay_tau_s": 612.0509989987719
+        },
+        {
+          "tick": 13398,
+          "sim_time": 66990.0,
+          "hz": 53.61237583506481,
+          "valid": false,
+          "forcing": 0.0,
+          "curtailment": 0.0,
+          "generation": 93.3158987986009,
+          "demand": 93.3158987986009,
+          "served": 93.3158987986009,
+          "unserved": 0.0,
+          "turbine": 64.3158987986009,
+          "bess": 29.0,
+          "diesel": 0.0,
+          "fuel_cell": 0.0,
+          "observation": {
+            "H": 4.0,
+            "S_base": 117.64705882352942,
+            "D_eff": 0.012485049321178951,
+            "dt_sub": 0.01,
+            "substeps": 500,
+            "f0": 60.0,
+            "frequency_before": 53.562336840756295,
+            "homogeneous_predicted_hz": 53.61237583506469,
+            "tau_s": 640.7663914013732,
+            "turbine_headroom_mw": 35.6841012013991,
+            "turbine_minimum_mw": 35.0,
+            "bess_raise_headroom_mw": 0.0,
+            "bess_lower_headroom_mw": 59.0,
+            "governor_units": [
+              {
+                "id": "gt-spin-01",
+                "output": 25.0,
+                "gov_power": 79.04092415543734,
+                "gov_valve": 78.91818425107884,
+                "headroom": 0.0,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-spin-02",
+                "output": 21.815898798600898,
+                "gov_power": 79.04092415543734,
+                "gov_valve": 78.91818425107884,
+                "headroom": 3.184101201399102,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-hot-01",
+                "output": 8.75,
+                "gov_power": 79.04092415543734,
+                "gov_valve": 78.91818425107884,
+                "headroom": 16.25,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-hot-02",
+                "output": 8.75,
+                "gov_power": 79.04092415543734,
+                "gov_valve": 78.91818425107884,
+                "headroom": 16.25,
+                "minimum": 8.75
+              }
+            ],
+            "raw_forcing_min": 0.0,
+            "raw_forcing_max": 0.0,
+            "raw_nonzero_substeps": 0,
+            "raw_forcing_energy_mwh": 0.0,
+            "implied_response_abs_mwh": 0.0,
+            "implied_response_signed_mwh": 0.0,
+            "dispatch_droop_mw": 0.0,
+            "droop_frequency_limit": null,
+            "governor_end_sum_mw": 313.70620342524194,
+            "observed_decay_error_hz": 1.2079226507921703e-13,
+            "posttrip_vs_integrator_mw": 0.0,
+            "protection": {
+              "uf_warning_hz": null,
+              "ufls_stage1_hz": null,
+              "island_collapse_hz": null,
+              "of_warning_hz": null,
+              "of_trip_hz": null,
+              "ufls_stages": [],
+              "relay_81u_threshold_hz": null,
+              "relay_81u_delay_s": 0.1,
+              "relay_81u_reset_hz": null,
+              "anchor_mode": "vsm"
+            }
+          },
+          "nonfrequency_tick_sha": "b98894fb943fdd6d9a246c13c53b57873f303b34f6cd5335fa81507635031ab8",
+          "physical_energy_tick_sha": "67f71d3a4990f11864425d81ee9d6d89ab5dad0c0cb8ccc4a9fdfaefc7e5979a",
+          "observed_decay_tau_s": 640.7613913886638
+        },
+        {
+          "tick": 13406,
+          "sim_time": 67030.0,
+          "hz": 53.99893675925773,
+          "valid": false,
+          "forcing": 0.0,
+          "curtailment": 0.0,
+          "generation": 93.31589879981065,
+          "demand": 93.31589879981065,
+          "served": 93.31589879981065,
+          "unserved": 0.0,
+          "turbine": 64.31589879981065,
+          "bess": 29.0,
+          "diesel": 0.0,
+          "fuel_cell": 0.0,
+          "observation": {
+            "H": 4.0,
+            "S_base": 117.64705882352942,
+            "D_eff": 0.012485049330740124,
+            "dt_sub": 0.01,
+            "substeps": 500,
+            "f0": 60.0,
+            "frequency_before": 53.95192598313404,
+            "homogeneous_predicted_hz": 53.99893675925763,
+            "tau_s": 640.766390910668,
+            "turbine_headroom_mw": 35.684101200189346,
+            "turbine_minimum_mw": 35.0,
+            "bess_raise_headroom_mw": 0.0,
+            "bess_lower_headroom_mw": 59.0,
+            "governor_units": [
+              {
+                "id": "gt-spin-01",
+                "output": 25.0,
+                "gov_power": 74.25759127641636,
+                "gov_valve": 74.14227924336032,
+                "headroom": 0.0,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-spin-02",
+                "output": 21.815898799810654,
+                "gov_power": 74.25759127641636,
+                "gov_valve": 74.14227924336032,
+                "headroom": 3.184101200189346,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-hot-01",
+                "output": 8.75,
+                "gov_power": 74.25759127641636,
+                "gov_valve": 74.14227924336032,
+                "headroom": 16.25,
+                "minimum": 8.75
+              },
+              {
+                "id": "gt-hot-02",
+                "output": 8.75,
+                "gov_power": 74.25759127641636,
+                "gov_valve": 74.14227924336032,
+                "headroom": 16.25,
+                "minimum": 8.75
+              }
+            ],
+            "raw_forcing_min": 0.0,
+            "raw_forcing_max": 0.0,
+            "raw_nonzero_substeps": 0,
+            "raw_forcing_energy_mwh": 0.0,
+            "implied_response_abs_mwh": 0.0,
+            "implied_response_signed_mwh": 0.0,
+            "dispatch_droop_mw": 0.0,
+            "droop_frequency_limit": null,
+            "governor_end_sum_mw": 294.7215924357452,
+            "observed_decay_error_hz": 9.947598300641403e-14,
+            "posttrip_vs_integrator_mw": 0.0,
+            "protection": {
+              "uf_warning_hz": null,
+              "ufls_stage1_hz": null,
+              "island_collapse_hz": null,
+              "of_warning_hz": null,
+              "of_trip_hz": null,
+              "ufls_stages": [],
+              "relay_81u_threshold_hz": null,
+              "relay_81u_delay_s": 0.1,
+              "relay_81u_reset_hz": null,
+              "anchor_mode": "vsm"
+            }
+          },
+          "nonfrequency_tick_sha": "4b3d83d3670850b8de3c3b750649102f02016fb1998d4e0090bb6bb4a014c799",
+          "physical_energy_tick_sha": "e6e8c56c019c66fe0d624cd2853098f0528d89c645f580077ce589d9aa381b16",
+          "observed_decay_tau_s": 640.7613908965811
+        }
+      ],
+      "representative_tick_count": 10
+    },
+    "deficit": {
+      "count": 4,
+      "with_unserved": 4,
+      "without_unserved": 0,
+      "unserved_mwh_on_invalid_deficit_ticks": 0.051200998840917854
+    },
+    "implied_response_abs_mwh": 0.0,
+    "implied_response_signed_mwh": 0.0,
+    "served_mwh": 368.55197607415795,
+    "unserved_mwh": 0.1241334047798591,
+    "curtailment_mwh": 176.77957252622952,
+    "native_summary": {
+      "kind": "summary",
+      "physical_sha256": "437d480102d11676df747a5ddc742cd29c9785956c1255098dc8d00d9f18a264",
+      "ticks": 17280,
+      "nonfrequency_sha256": "958efa040f72ec67186b89a70f8ee984069fa19a961332559db36e83f3be845c",
+      "metrics": {
+        "tick_count": 17280,
+        "invalid_frequency_tick_count": 76,
+        "invalid_frequency_fraction": 0.004398148148148148,
+        "protection_configured": false,
+        "interval_seconds": 5.0,
+        "fuel_by_component_mmbtu": {
+          "load_fuel_mmbtu": 5660.766981827,
+          "no_load_fuel_mmbtu": 68.021666667,
+          "hot_standby_fuel_mmbtu": 4.110069444,
+          "start_fuel_mmbtu": 116.0
+        },
+        "turbine_fuel_mmbtu": 5848.898717938,
+        "fuel_reconciled": true,
+        "start_fuel_reconciliation": {
+          "release_charged": true,
+          "recorded_event_count": 12,
+          "measured_event_count": 12,
+          "measured_start_fuel_mmbtu": 116.0,
+          "tier_sum_mmbtu": null,
+          "passed": true
+        },
+        "dispatch_curtailment_mwh": 176.779572526,
+        "dispatch_curtailment_interval_exposure_fuel_mmbtu": 3120.455542377,
+        "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+          "load_fuel_mmbtu": 3076.704847933,
+          "no_load_fuel_mmbtu": 39.875,
+          "hot_standby_fuel_mmbtu": 3.875694444,
+          "start_fuel_mmbtu": 0.0
+        },
+        "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+          "gt-spin-01": 1517.310386732,
+          "gt-spin-02": 1515.555086201,
+          "gt-hot-01": 64.949375,
+          "gt-hot-02": 22.640694444
+        },
+        "dispatch_curtailment_attributable_fuel_mmbtu": 1858.026440381,
+        "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+          "gt-spin-01": 911.921257907,
+          "gt-spin-02": 911.395881109,
+          "gt-hot-01": 32.505522721,
+          "gt-hot-02": 2.203778644
+        },
+        "unserved_mwh": 0.124133405,
+        "peak_unserved_mw": 20.746308977,
+        "served_mwh": 368.551976074,
+        "unserved_intervals": [
+          {
+            "start_sim_time_s": 30650.0,
+            "end_sim_time_s": 30660.0,
+            "peak_unserved_mw": 3.783533866069419
+          },
+          {
+            "start_sim_time_s": 36030.0,
+            "end_sim_time_s": 36040.0,
+            "peak_unserved_mw": 4.552312656116847
+          },
+          {
+            "start_sim_time_s": 37850.0,
+            "end_sim_time_s": 37865.0,
+            "peak_unserved_mw": 6.706977469665091
+          },
+          {
+            "start_sim_time_s": 45050.0,
+            "end_sim_time_s": 45060.0,
+            "peak_unserved_mw": 14.968336793567588
+          },
+          {
+            "start_sim_time_s": 52250.0,
+            "end_sim_time_s": 52260.0,
+            "peak_unserved_mw": 6.873673087220638
+          },
+          {
+            "start_sim_time_s": 57630.0,
+            "end_sim_time_s": 57635.0,
+            "peak_unserved_mw": 0.7155264052397072
+          },
+          {
+            "start_sim_time_s": 66650.0,
+            "end_sim_time_s": 66670.0,
+            "peak_unserved_mw": 20.746308977465503
+          }
+        ],
+        "energy_balance": {
+          "closure_status": true,
+          "max_abs_physical_ledger_defect_mw": 0.0,
+          "served_demand_mwh": 368.551976074,
+          "unserved_demand_mwh": 0.124133405
+        },
+        "bess_soc_min": 0.877673489,
+        "bess_soc_max": 0.999999999,
+        "bess_soc_final": 0.999999989,
+        "commitment": {
+          "distinct_event_count": 59,
+          "visible_distinct_event_count": 59,
+          "suppressed_repeat_count": 14027,
+          "log_complete": true,
+          "omitted_record_count": 0,
+          "reserve_floor_refusal_count": 16340,
+          "reserve_floor_distinct_event_count": 16338,
+          "reserve_floor_visible_distinct_event_count": 16338,
+          "reserve_floor_suppressed_repeat_count": 2,
+          "reserve_floor_log_complete": true,
+          "reserve_floor_omitted_record_count": 0,
+          "same_unit_restart_within_min_down_window_count": 0
+        },
+        "forecast": {
+          "miss_count": 0,
+          "miss_peak_mw": 0.0
+        },
+        "compute_trace_sha256": "916eb28339ae921141941a8c90069e573e80ef4bf65f2be39cc3e45b8747ccff",
+        "compute_trace_count": 17280,
+        "daily_breakdown": [
+          {
+            "day": 1,
+            "kind": "weekday",
+            "fuel_by_component_mmbtu": {
+              "load_fuel_mmbtu": 5660.766981827,
+              "no_load_fuel_mmbtu": 68.021666667,
+              "hot_standby_fuel_mmbtu": 4.110069444,
+              "start_fuel_mmbtu": 116.0
+            },
+            "fuel_mmbtu": 5848.898717938,
+            "unserved_mwh": 0.124133405,
+            "curtailed_mwh": 176.779572526,
+            "bess_soc_end": 0.999999989
+          }
+        ],
+        "constraints_valid": true,
+        "hard_violations": []
+      },
+      "record": {
+        "constraints_valid": true,
+        "hard_violations": []
+      },
+      "end_sim_time": 86400.0,
+      "build_warnings": [
+        {
+          "code": "islanded_frequency_protection_unconfigured",
+          "message": "islanded run without frequency protection configured"
+        }
+      ],
+      "final_floor_basis": {
+        "bess-0": {
+          "bess_id": "bess-0",
+          "floor_mwh": 12.5,
+          "depth_reserve_mwh": 0.0,
+          "diesel_floor_mwh": 0.0,
+          "d2r_term_mwh": 12.5,
+          "winning_term": "d2r_bridge",
+          "basis": "offline_restart",
+          "unit_id": "gt-hot-01",
+          "eligibility_wait_s": 0.0,
+          "start_duration_s": 600.0,
+          "thermal_state": "cold",
+          "eligibility_reason": "eligible"
+        }
+      },
+      "floor_history_count": 1863
+    }
+  },
+  "counterfactual": {
+    "ticks": 17280,
+    "invalid_ticks": 0,
+    "invalid_fraction": 0.0,
+    "frequency_min_hz": 59.378206979458206,
+    "frequency_max_hz": 60.01707795363138,
+    "invalid_classes": {
+      "curtailment_positive": 0,
+      "deficit_forcing": 0,
+      "carried": 0,
+      "positive_forcing_no_curtailment": 0
+    },
+    "D_eff_range": {
+      "min": 0.0,
+      "p50": 0.126516669934073,
+      "p95": 0.25658588664624715,
+      "max": 0.6024027348928568
+    },
+    "H_range": {
+      "min": 4.0,
+      "p50": 4.0,
+      "p95": 4.0,
+      "max": 4.0
+    },
+    "S_base_range": {
+      "min": 58.82352941176471,
+      "p50": 58.82352941176471,
+      "p95": 117.64705882352942,
+      "max": 117.64705882352942
+    },
+    "protection": {
+      "uf_warning_hz": null,
+      "ufls_stage1_hz": null,
+      "island_collapse_hz": null,
+      "of_warning_hz": null,
+      "of_trip_hz": null,
+      "ufls_stages": [],
+      "relay_81u_threshold_hz": null,
+      "relay_81u_delay_s": 0.1,
+      "relay_81u_reset_hz": null,
+      "anchor_mode": "vsm"
+    },
+    "protection_configured": false,
+    "carried": {
+      "episodes": [],
+      "episode_count": 0,
+      "episode_duration_s": null,
+      "tau_s": null,
+      "infinite_tau_tick_count": 0,
+      "generation_equals_demand_ticks": 0,
+      "generation_not_equal_demand_ticks": 0,
+      "max_abs_generation_minus_demand_mw": null,
+      "integrator_zero_forcing_ticks": 0,
+      "integrator_nonzero_forcing_ticks": 0,
+      "homogeneous_decay_error_hz": null,
+      "representative_ticks": [],
+      "representative_tick_count": 0
+    },
+    "deficit": {
+      "count": 0,
+      "with_unserved": 0,
+      "without_unserved": 0,
+      "unserved_mwh_on_invalid_deficit_ticks": 0
+    },
+    "implied_response_abs_mwh": 0.14455566289953414,
+    "implied_response_signed_mwh": 0.10344889730723224,
+    "served_mwh": 368.55197607415795,
+    "unserved_mwh": 0.1241334047798591,
+    "curtailment_mwh": 176.77957252622952,
+    "native_summary": {
+      "kind": "summary",
+      "physical_sha256": "341c20a651438e8be0508aa8318cb084ce23526c0a68b25c0d032e1d62e41606",
+      "ticks": 17280,
+      "nonfrequency_sha256": "958efa040f72ec67186b89a70f8ee984069fa19a961332559db36e83f3be845c",
+      "metrics": {
+        "tick_count": 17280,
+        "invalid_frequency_tick_count": 0,
+        "invalid_frequency_fraction": 0.0,
+        "protection_configured": false,
+        "interval_seconds": 5.0,
+        "fuel_by_component_mmbtu": {
+          "load_fuel_mmbtu": 5660.766981827,
+          "no_load_fuel_mmbtu": 68.021666667,
+          "hot_standby_fuel_mmbtu": 4.110069444,
+          "start_fuel_mmbtu": 116.0
+        },
+        "turbine_fuel_mmbtu": 5848.898717938,
+        "fuel_reconciled": true,
+        "start_fuel_reconciliation": {
+          "release_charged": true,
+          "recorded_event_count": 12,
+          "measured_event_count": 12,
+          "measured_start_fuel_mmbtu": 116.0,
+          "tier_sum_mmbtu": null,
+          "passed": true
+        },
+        "dispatch_curtailment_mwh": 176.779572526,
+        "dispatch_curtailment_interval_exposure_fuel_mmbtu": 3120.455542377,
+        "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+          "load_fuel_mmbtu": 3076.704847933,
+          "no_load_fuel_mmbtu": 39.875,
+          "hot_standby_fuel_mmbtu": 3.875694444,
+          "start_fuel_mmbtu": 0.0
+        },
+        "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+          "gt-spin-01": 1517.310386732,
+          "gt-spin-02": 1515.555086201,
+          "gt-hot-01": 64.949375,
+          "gt-hot-02": 22.640694444
+        },
+        "dispatch_curtailment_attributable_fuel_mmbtu": 1858.026440381,
+        "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+          "gt-spin-01": 911.921257907,
+          "gt-spin-02": 911.395881109,
+          "gt-hot-01": 32.505522721,
+          "gt-hot-02": 2.203778644
+        },
+        "unserved_mwh": 0.124133405,
+        "peak_unserved_mw": 20.746308977,
+        "served_mwh": 368.551976074,
+        "unserved_intervals": [
+          {
+            "start_sim_time_s": 30650.0,
+            "end_sim_time_s": 30660.0,
+            "peak_unserved_mw": 3.783533866069419
+          },
+          {
+            "start_sim_time_s": 36030.0,
+            "end_sim_time_s": 36040.0,
+            "peak_unserved_mw": 4.552312656116847
+          },
+          {
+            "start_sim_time_s": 37850.0,
+            "end_sim_time_s": 37865.0,
+            "peak_unserved_mw": 6.706977469665091
+          },
+          {
+            "start_sim_time_s": 45050.0,
+            "end_sim_time_s": 45060.0,
+            "peak_unserved_mw": 14.968336793567588
+          },
+          {
+            "start_sim_time_s": 52250.0,
+            "end_sim_time_s": 52260.0,
+            "peak_unserved_mw": 6.873673087220638
+          },
+          {
+            "start_sim_time_s": 57630.0,
+            "end_sim_time_s": 57635.0,
+            "peak_unserved_mw": 0.7155264052397072
+          },
+          {
+            "start_sim_time_s": 66650.0,
+            "end_sim_time_s": 66670.0,
+            "peak_unserved_mw": 20.746308977465503
+          }
+        ],
+        "energy_balance": {
+          "closure_status": true,
+          "max_abs_physical_ledger_defect_mw": 0.0,
+          "served_demand_mwh": 368.551976074,
+          "unserved_demand_mwh": 0.124133405
+        },
+        "bess_soc_min": 0.877673489,
+        "bess_soc_max": 0.999999999,
+        "bess_soc_final": 0.999999989,
+        "commitment": {
+          "distinct_event_count": 59,
+          "visible_distinct_event_count": 59,
+          "suppressed_repeat_count": 14027,
+          "log_complete": true,
+          "omitted_record_count": 0,
+          "reserve_floor_refusal_count": 16340,
+          "reserve_floor_distinct_event_count": 16338,
+          "reserve_floor_visible_distinct_event_count": 16338,
+          "reserve_floor_suppressed_repeat_count": 2,
+          "reserve_floor_log_complete": true,
+          "reserve_floor_omitted_record_count": 0,
+          "same_unit_restart_within_min_down_window_count": 0
+        },
+        "forecast": {
+          "miss_count": 0,
+          "miss_peak_mw": 0.0
+        },
+        "compute_trace_sha256": "916eb28339ae921141941a8c90069e573e80ef4bf65f2be39cc3e45b8747ccff",
+        "compute_trace_count": 17280,
+        "daily_breakdown": [
+          {
+            "day": 1,
+            "kind": "weekday",
+            "fuel_by_component_mmbtu": {
+              "load_fuel_mmbtu": 5660.766981827,
+              "no_load_fuel_mmbtu": 68.021666667,
+              "hot_standby_fuel_mmbtu": 4.110069444,
+              "start_fuel_mmbtu": 116.0
+            },
+            "fuel_mmbtu": 5848.898717938,
+            "unserved_mwh": 0.124133405,
+            "curtailed_mwh": 176.779572526,
+            "bess_soc_end": 0.999999989
+          }
+        ],
+        "constraints_valid": true,
+        "hard_violations": []
+      },
+      "record": {
+        "constraints_valid": true,
+        "hard_violations": []
+      },
+      "end_sim_time": 86400.0,
+      "build_warnings": [
+        {
+          "code": "islanded_frequency_protection_unconfigured",
+          "message": "islanded run without frequency protection configured"
+        }
+      ],
+      "final_floor_basis": {
+        "bess-0": {
+          "bess_id": "bess-0",
+          "floor_mwh": 12.5,
+          "depth_reserve_mwh": 0.0,
+          "diesel_floor_mwh": 0.0,
+          "d2r_term_mwh": 12.5,
+          "winning_term": "d2r_bridge",
+          "basis": "offline_restart",
+          "unit_id": "gt-hot-01",
+          "eligibility_wait_s": 0.0,
+          "start_duration_s": 600.0,
+          "thermal_state": "cold",
+          "eligibility_reason": "eligible"
+        }
+      },
+      "floor_history_count": 1863
+    }
+  },
+  "metric_differences": {
+    "invalid_frequency_fraction": {
+      "before": 0.004398148148148148,
+      "after": 0.0
+    },
+    "invalid_frequency_tick_count": {
+      "before": 76,
+      "after": 0
+    }
+  },
+  "nonfrequency_changed_ticks": 0,
+  "energy_fields_changed_ticks": 0,
+  "first_energy_difference": null,
+  "counterfactual_response_share_of_served": 0.0003922259878765308,
+  "remaining_invalid_only_deficit": true,
+  "official_D3_method": "Native process-only droop injection; actual power, SoC, served/unserved and curtailment hashes are identical to baseline. The sole extra non-frequency telemetry difference is fuel_cell_ride_through_status on 9 fc100-zero ticks; its full ledger is independently verified identical. No real unit output or ledger is changed."
+}
