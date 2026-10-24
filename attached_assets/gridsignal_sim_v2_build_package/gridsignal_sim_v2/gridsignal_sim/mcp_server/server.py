@@ -640,6 +640,11 @@ class StudyService:
                 "invalid_frequency_fraction": record.get(
                     "invalid_frequency_fraction"
                 ),
+                **(
+                    {"operating_cost": record["operating_cost"]}
+                    if "operating_cost" in record
+                    else {}
+                ),
             },
             "daily": {
                 "daily_breakdown": list_page(

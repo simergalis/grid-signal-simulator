@@ -55,6 +55,7 @@ from runtime.turbine_commitment import (
     ForecastDrivenTurbineController,
     summarize_unserved_ticks,
 )
+from runtime.operating_cost import compute_operating_cost
 
 # GS-IMPL-PSP-002 Phase 4 — Economic Dispatch Loop + §4.3 escalation wiring.
 # runtime/ → core/ is the allowed import direction; these never cross into api/.
@@ -1356,6 +1357,13 @@ class RunContext:
     # API call.  Set by build_run_context_from_spec from spec_data["turbine_units"].
     # Empty tuple for contexts built without a spec (tests, load test).
     turbine_unit_specs: tuple = field(default_factory=tuple)
+    # Optional operating-cost data are carried as metadata only. They are
+    # consumed after a run and never enter dispatch or the physical ledger.
+    operating_cost_inputs: Optional[dict[str, Any]] = None
+    turbine_fuel_heat_rate_basis_by_unit: dict[str, Optional[str]] = field(
+        default_factory=dict
+    )
+    diesel_fuel_initial_gal: Optional[float] = None
     # Per-run state for the BESS bridge escalation evaluator.
     _bess_discharge_sustained_s: float = 0.0
     _turbine_output_history: list[tuple[float, float]] = field(default_factory=list)
@@ -1974,6 +1982,12 @@ class CompletedRun:
     turbine_minutes_below_low_load_threshold: float = 0.0
     turbine_fuel_telemetry: list[dict] = field(default_factory=list)
     turbine_fuel_parameter_provenance: Optional[dict] = None
+    operating_cost_inputs: Optional[dict[str, Any]] = None
+    operating_cost: Optional[dict[str, Any]] = None
+    turbine_fuel_heat_rate_basis_by_unit: dict[str, Optional[str]] = field(
+        default_factory=dict
+    )
+    diesel_fuel_consumed_gal: Optional[float] = None
     # Addendum H Phase 2a: sealed controller audit trail for the run summary.
     turbine_commitment_logs: list[dict] = field(default_factory=list)
     turbine_commitment_constraints_valid: bool = True
@@ -3567,6 +3581,50 @@ class RunManager:
                     )
 
                 _fuel_summary = tick_dicts[-1] if tick_dicts else {}
+                _diesel_fuel_used_gal = None
+                _diesel_coordinator = ctx.sim_state.diesel_fleet_coordinator
+                if (
+                    ctx.diesel_fuel_initial_gal is not None
+                    and _diesel_coordinator is not None
+                ):
+                    _diesel_fuel_used_gal = max(
+                        0.0,
+                        float(ctx.diesel_fuel_initial_gal)
+                        - float(_diesel_coordinator.fuel_remaining_gal),
+                    )
+                _fuel_rows_for_cost = list(
+                    _fuel_summary.get("turbine_fuel_telemetry", [])
+                )
+                _fuel_by_unit_for_cost = {
+                    str(row["asset_id"]): float(row["total_fuel_mmbtu"])
+                    for row in _fuel_rows_for_cost
+                    if row.get("asset_id") is not None
+                    and row.get("fuel_modelled") is True
+                    and row.get("total_fuel_mmbtu") is not None
+                }
+                _operating_cost_result = (
+                    compute_operating_cost(
+                        ctx.operating_cost_inputs,
+                        tick_dicts,
+                        interval_seconds=5.0,
+                        turbine_fuel_by_unit_mmbtu=_fuel_by_unit_for_cost,
+                        fuel_basis_by_unit=ctx.turbine_fuel_heat_rate_basis_by_unit,
+                        fuel_quantity_complete=(
+                            bool(_fuel_rows_for_cost)
+                            and all(
+                                row.get("fuel_modelled") is True
+                                for row in _fuel_rows_for_cost
+                            )
+                        ),
+                        diesel_fuel_gallons=_diesel_fuel_used_gal,
+                        turbine_rated_mw=ctx.turbine_rated_mw,
+                        turbine_start_count=int(
+                            _fuel_summary.get("turbine_start_count", 0)
+                        ),
+                    )
+                    if ctx.operating_cost_inputs is not None
+                    else None
+                )
                 _commitment_controller = ctx.turbine_commitment_controller
                 _commitment_start_counts = (
                     {
@@ -3651,6 +3709,8 @@ class RunManager:
                     import json as _json_va
                     _vd = _json_va.loads(verdict_json)
                     _vd["total_edl_dispatch_cost_usd"] = _total_edl_dispatch_cost_usd
+                    if _operating_cost_result is not None:
+                        _vd["operating_cost"] = _operating_cost_result
                     _vd["frequency_feedback_configured"] = (
                         _frequency_feedback_configured
                     )
@@ -3768,6 +3828,12 @@ class RunManager:
                     turbine_fuel_parameter_provenance=_fuel_summary.get(
                         "turbine_fuel_parameter_provenance"
                     ),
+                    operating_cost_inputs=ctx.operating_cost_inputs,
+                    operating_cost=_operating_cost_result,
+                    turbine_fuel_heat_rate_basis_by_unit=dict(
+                        ctx.turbine_fuel_heat_rate_basis_by_unit
+                    ),
+                    diesel_fuel_consumed_gal=_diesel_fuel_used_gal,
                     turbine_commitment_logs=(
                         [
                             record.as_dict()

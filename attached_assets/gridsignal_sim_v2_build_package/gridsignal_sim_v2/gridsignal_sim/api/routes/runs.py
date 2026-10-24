@@ -65,6 +65,7 @@ from api.schemas import (
 from runtime.cluster_gen import generate_cluster_forecast
 from runtime.param_sampler import sample_run_parameters
 from runtime.run_manager import RunManager, compute_run_cost_from_completed
+from runtime.operating_cost import compute_operating_cost
 from runtime.scenario_factory import (
     build_run_context,
     build_run_context_from_spec,
@@ -172,6 +173,11 @@ async def _load_completed_from_db(run_id: str) -> "CompletedRun | None":
             ),
             turbine_commitment_preload_actions=list(
                 _v.get("turbine_commitment_preload_actions", [])
+            ),
+            operating_cost=(
+                dict(_v["operating_cost"])
+                if isinstance(_v.get("operating_cost"), dict)
+                else None
             ),
             turbine_commitment_preload_fuel_mmbtu=float(
                 _v.get("turbine_commitment_preload_fuel_mmbtu", 0.0)
@@ -1196,7 +1202,32 @@ async def get_energy_summary(
         duration_hours     = duration_hours,
     )
 
-    return {
+    fuel_rows = completed.turbine_fuel_telemetry
+    fuel_by_unit = {
+        str(row.get("asset_id")): float(row["total_fuel_mmbtu"])
+        for row in fuel_rows
+        if row.get("asset_id") is not None
+        and row.get("fuel_modelled") is True
+        and row.get("total_fuel_mmbtu") is not None
+    }
+    operating_cost = completed.operating_cost
+    if operating_cost is None:
+        operating_cost = compute_operating_cost(
+            completed.operating_cost_inputs,
+            completed.tick_dicts,
+            interval_seconds=5.0,
+            turbine_fuel_by_unit_mmbtu=fuel_by_unit,
+            fuel_basis_by_unit=completed.turbine_fuel_heat_rate_basis_by_unit,
+            fuel_quantity_complete=(
+                bool(fuel_rows)
+                and all(row.get("fuel_modelled") is True for row in fuel_rows)
+            ),
+            diesel_fuel_gallons=completed.diesel_fuel_consumed_gal,
+            turbine_rated_mw=completed.turbine_rated_mw,
+            turbine_start_count=completed.turbine_start_count,
+        )
+
+    payload = {
         "run_id":               run_id,
         "label":                completed.scenario_name or run_id,
         "duration_hours":       round(duration_hours,       4),
@@ -1234,6 +1265,9 @@ async def get_energy_summary(
         "cost_breakdown":    cost_breakdown,
         "cost_model_config": cost_cfg,
     }
+    if operating_cost is not None:
+        payload["operating_cost"] = operating_cost
+    return payload
 
 
 @router.post(

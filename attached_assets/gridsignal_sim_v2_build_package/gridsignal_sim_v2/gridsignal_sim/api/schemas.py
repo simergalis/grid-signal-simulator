@@ -889,6 +889,8 @@ class TurbineFuelSpec(BaseModel):
 
     fuel_type: Literal["natural_gas"] = "natural_gas"
     fuel_units: Literal["MMBtu"] = "MMBtu"
+    # Explicit accounting basis; unknown remains null rather than being inferred.
+    heat_rate_basis: Optional[Literal["LHV", "HHV"]] = None
     part_load_heat_rate_btu_per_kwh: list[tuple[float, float]] = Field(
         default=[(0.25, 11000.0), (0.50, 9800.0), (0.75, 9000.0), (1.0, 8500.0)],
         description="(load fraction, Btu/kWh) points; interpolated linearly.",
@@ -929,6 +931,58 @@ class TurbineFuelSpec(BaseModel):
             name: self.provenance.get(name, "Authored — PROPOSED_HERE")
             for name in names
         }
+        if self.heat_rate_basis is not None:
+            self.provenance["heat_rate_basis"] = self.provenance.get(
+                "heat_rate_basis",
+                "Authored — PROPOSED_HERE",
+            )
+        return self
+
+
+class OperatingCostInputs(BaseModel):
+    """Optional sourced prices for a separate, itemized run-cost report."""
+
+    gas_price_usd_per_mmbtu: Optional[float] = Field(default=None, ge=0.0)
+    gas_price_basis: Optional[Literal["LHV", "HHV"]] = None
+    gas_price_usd_per_mmbtu_provenance: Optional[str] = None
+    gas_price_basis_provenance: Optional[str] = None
+    diesel_price_usd_per_gal: Optional[float] = Field(default=None, ge=0.0)
+    diesel_price_usd_per_gal_provenance: Optional[str] = None
+    turbine_variable_om_usd_per_mwh: Optional[float] = Field(default=None, ge=0.0)
+    turbine_variable_om_usd_per_mwh_provenance: Optional[str] = None
+    turbine_fixed_om_usd_per_kw_yr: Optional[float] = Field(default=None, ge=0.0)
+    turbine_fixed_om_usd_per_kw_yr_provenance: Optional[str] = None
+    turbine_start_cost_usd_per_start: Optional[float] = Field(default=None, ge=0.0)
+    turbine_start_cost_usd_per_start_provenance: Optional[str] = None
+    bess_degradation_usd_per_mwh: Optional[float] = Field(default=None, ge=0.0)
+    bess_degradation_usd_per_mwh_provenance: Optional[str] = None
+    unserved_energy_value_usd_per_mwh: Optional[float] = Field(default=None, ge=0.0)
+    unserved_energy_value_usd_per_mwh_provenance: Optional[str] = None
+    currency_year: Optional[str] = None
+    currency_year_provenance: Optional[str] = None
+
+    @model_validator(mode="after")
+    def _validate_cost_provenance(self) -> "OperatingCostInputs":
+        pairs = (
+            ("gas_price_usd_per_mmbtu", "gas_price_usd_per_mmbtu_provenance"),
+            ("gas_price_basis", "gas_price_basis_provenance"),
+            ("diesel_price_usd_per_gal", "diesel_price_usd_per_gal_provenance"),
+            ("turbine_variable_om_usd_per_mwh", "turbine_variable_om_usd_per_mwh_provenance"),
+            ("turbine_fixed_om_usd_per_kw_yr", "turbine_fixed_om_usd_per_kw_yr_provenance"),
+            ("turbine_start_cost_usd_per_start", "turbine_start_cost_usd_per_start_provenance"),
+            ("bess_degradation_usd_per_mwh", "bess_degradation_usd_per_mwh_provenance"),
+            ("unserved_energy_value_usd_per_mwh", "unserved_energy_value_usd_per_mwh_provenance"),
+            ("currency_year", "currency_year_provenance"),
+        )
+        for value_field, provenance_field in pairs:
+            value = getattr(self, value_field)
+            provenance = getattr(self, provenance_field)
+            if value is not None and not (provenance and provenance.strip()):
+                raise ValueError(f"{value_field} requires {provenance_field}")
+            if value is None and not provenance:
+                setattr(self, provenance_field, "Not configured; no value is priced.")
+        if self.gas_price_usd_per_mmbtu is not None and self.gas_price_basis is None:
+            raise ValueError("gas_price_basis is required when a gas price is configured")
         return self
 
 
@@ -1769,6 +1823,8 @@ class ScenarioSpec(BaseModel):
 
     bess_units: list[BessUnitSpec] = Field(min_length=0, default_factory=list)
     turbine_units: list[TurbineUnitSpec] = Field(min_length=0, default_factory=list)
+    # Separate opt-in accounting inputs; never used by dispatch or physics.
+    operating_cost_inputs: Optional[OperatingCostInputs] = None
     # Addendum G-1 block-addressable fleet.  When populated it supersedes the
     # legacy aggregate fuel_cell_* fields below; those fields remain wire
     # compatible for existing scenarios.

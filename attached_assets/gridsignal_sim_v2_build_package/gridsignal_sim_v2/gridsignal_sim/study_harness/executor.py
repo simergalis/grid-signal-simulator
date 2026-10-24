@@ -40,6 +40,7 @@ from .errors import (
 )
 from .manifest import RunIdentity, RunManifestCache, make_run_identity
 from .metrics import MetricsCollector, collect_metrics, FREQUENCY_REPORTING_METRICS_VERSION
+from runtime.operating_cost import compute_operating_cost
 
 
 # PROPOSED_HERE: The base scenario ID and study-class labels are harness metadata.
@@ -433,11 +434,24 @@ class StudyRunExecutor:
             tick_rows: list[dict[str, Any]] = []
             physical_hasher = PhysicalIdentityHasher()
             tick_count = int(round(duration_seconds / self.tick_seconds))
+            diesel_fleet = ctx.sim_state.diesel_fleet_coordinator
+            diesel_fuel_initial_gal = (
+                float(diesel_fleet.fuel_remaining_gal)
+                if diesel_fleet is not None
+                else None
+            )
             for _ in range(tick_count):
                 tick = ctx.step()
                 physical_hasher.update(tick)
                 collector.add(tick)
-                tick_rows.append(_compact_tick(tick))
+                compact = _compact_tick(tick)
+                # Keep the additive CPU IT quantity in opt-in study artifacts
+                # only; absent profiles leave the established compact schema alone.
+                if run_spec.get("non_gpu_load_profile_mw") is not None:
+                    compact["p_non_gpu_demand_mw"] = float(
+                        getattr(tick, "p_non_gpu_demand_mw", 0.0) or 0.0
+                    )
+                tick_rows.append(compact)
                 if progress_callback is not None and (
                     len(tick_rows) == tick_count
                     or len(tick_rows) % 100 == 0
@@ -509,6 +523,57 @@ class StudyRunExecutor:
                 reconciliation["measured_event_count"] = (
                     error.measured_event_count
                 )
+            operating_cost_inputs = run_spec.get("operating_cost_inputs")
+            if operating_cost_inputs is not None:
+                fuel_basis_by_unit = {
+                    str(unit.get("asset_id") or f"turbine-{i}"): (
+                        (unit.get("fuel") or {}).get("heat_rate_basis")
+                    )
+                    for i, unit in enumerate(run_spec.get("turbine_units", []))
+                }
+                fuel_by_unit = {
+                    str(unit_id): sum(
+                        float(component or 0.0)
+                        for component in components.values()
+                    )
+                    for unit_id, components in collector.previous_cumulative.items()
+                }
+                fuel_rows = list(collector.last_telemetry.values())
+                fuel_complete = bool(fuel_rows) and all(
+                    row.get("fuel_modelled") is True for row in fuel_rows
+                )
+                diesel_fuel_used_gal = None
+                if (
+                    diesel_fuel_initial_gal is not None
+                    and ctx.sim_state.diesel_fleet_coordinator is not None
+                ):
+                    diesel_fuel_used_gal = max(
+                        0.0,
+                        diesel_fuel_initial_gal
+                        - float(
+                            ctx.sim_state.diesel_fleet_coordinator.fuel_remaining_gal
+                        ),
+                    )
+                operating_cost = compute_operating_cost(
+                    operating_cost_inputs,
+                    tick_rows,
+                    interval_seconds=self.tick_seconds,
+                    turbine_fuel_by_unit_mmbtu=fuel_by_unit,
+                    fuel_basis_by_unit=fuel_basis_by_unit,
+                    fuel_quantity_complete=fuel_complete,
+                    diesel_fuel_gallons=diesel_fuel_used_gal,
+                    turbine_rated_mw=sum(
+                        float(unit.get("rated_mw", 0.0))
+                        for unit in run_spec.get("turbine_units", [])
+                    ),
+                    turbine_start_count=sum(
+                        int(getattr(turbine, "_start_count", 0))
+                        for turbine in ctx.sim_state.turbines
+                    ),
+                )
+                if operating_cost is not None:
+                    metrics["operating_cost"] = operating_cost
+
             metadata = dict(raw_metadata)
             metadata["commitment_log_record_count"] = len(
                 raw_metadata["commitment_log"]

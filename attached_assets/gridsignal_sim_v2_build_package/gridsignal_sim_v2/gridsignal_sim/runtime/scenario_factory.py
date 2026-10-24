@@ -2121,6 +2121,24 @@ def build_run_context_from_spec(
         # PROTO-32-AMB: ambient temperature metadata for the Solar PV modal.
         ambient_avg_c=_ambient_avg_c,
         ambient_alpha_scale=_ambient_scale,
+        # Optional operating-cost inputs and fuel basis are carried only to
+        # post-run accounting; neither is read by dispatch or physical logic.
+        operating_cost_inputs=(
+            dict(spec_data["operating_cost_inputs"])
+            if spec_data.get("operating_cost_inputs") is not None
+            else None
+        ),
+        turbine_fuel_heat_rate_basis_by_unit={
+            str(t.get("asset_id") or f"turbine-{i}"): (
+                (t.get("fuel") or {}).get("heat_rate_basis")
+            )
+            for i, t in enumerate(spec_data.get("turbine_units", []))
+        },
+        diesel_fuel_initial_gal=(
+            float(sim_state.diesel_fleet_coordinator.fuel_remaining_gal)
+            if sim_state.diesel_fleet_coordinator is not None
+            else None
+        ),
         # AE2: per-unit specs as plain dicts for the fleet modal.
         turbine_unit_specs=tuple(
             {
