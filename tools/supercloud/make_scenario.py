@@ -151,7 +151,10 @@ SGT400_PROXY_FUEL_BLOCK = {
             "10,103 × 0.947817 = 9,575.795151 Btu/kWh, rounded to 9,576. "
             "The brochure states gross efficiency but does not state ISO "
             "conditions or the heat-rate LHV/HHV/net/gross basis; ASSUMED LHV "
-            "is PROPOSED_HERE. Part-load shape PROPOSED_HERE: core/models.py "
+            "is PROPOSED_HERE. Source: https://assets.siemens-energy.com/dam/"
+            "d7e01f44-f091-44f2-bf71-b20b010483e1/"
+            "GT-Portfolio-Brochure-2024__FINAL_Low_Resolution-pdf_Original%20file.pdf. "
+            "Part-load shape PROPOSED_HERE: core/models.py "
             "AERODERIVATIVE_FUEL_PARAMETERS curve scaled by 9,576/8,500."
         ),
         "synchronized_no_load_fuel_mmbtu_per_h": (
