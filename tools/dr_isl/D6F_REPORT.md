@@ -133,3 +133,44 @@ Against the 16 IDs in `tools/dr_isl/PHASE_6C_FAILING_TESTS.txt`, there are 15 co
 The added failure is a test-fixture/API-shape incompatibility, not a frequency assertion: `tests/test_dr_isl_frequency_feedback.py:232` calls `get_energy_summary`; `P/api/routes/runs.py:1213` reads `completed.operating_cost`; the test's `SimpleNamespace` fixture at `tests/test_dr_isl_frequency_feedback.py:208–228` has no `operating_cost` attribute. The exact exception is `AttributeError: 'types.SimpleNamespace' object has no attribute 'operating_cost'`. Per the gate, no test or application change was made and the `PYTHONHASHSEED=987654321` suite was not run.
 
 No D6-F implementation, test, or documentation commit was made after this added failure. The only new commit for this stop is report/evidence-only; no application workflow restart, publish, deploy, or push was performed. The package S10 scenario JSON was not edited, and no SuperCloud raw data or row-level extract is tracked. D6b was not started.
+
+## R-1/R-2 resumed completion
+
+### R-1 fixture correction
+
+The fixture-only correction is in `P/tests/test_dr_isl_frequency_feedback.py:229–234`. It adds the real no-fuel defaults without changing TC-ISL-29's assertions:
+
+- `operating_cost=None` and `operating_cost_inputs=None`: `CompletedRun` defaults at `P/runtime/run_manager.py:1985–1986`.
+- `turbine_fuel_heat_rate_basis_by_unit={}`: default factory at `P/runtime/run_manager.py:1987–1989`.
+- `diesel_fuel_consumed_gal=None`: default at `P/runtime/run_manager.py:1990`.
+- `turbine_rated_mw=0.0`: default at `P/runtime/run_manager.py:1951`.
+
+The legacy database restore path is `P/api/routes/runs.py:85–171`; it constructs `CompletedRun` at line 137 and leaves absent optional operating-cost properties to the dataclass defaults. TC-ISL-33 verifies the restored legacy frequency fields remain unknown (`None`).
+
+When `operating_cost` and `operating_cost_inputs` are both `None`, the REST energy summary does not include the `operating_cost` key (`P/api/routes/runs.py:1268–1269`). TC-ISL-29's four frequency-field assertions were left unchanged and passed.
+
+Focused verification: `python -m pytest -q tests/test_dr_isl_frequency_feedback.py tests/test_operating_cost.py` — **25 passed in 9.83 s**. This covers TC-ISL-29–33, TC-ISL-60/61, and the operating-cost tests.
+
+### R-2 full-suite runs
+
+Both completed against the real package; the only baseline delta is the waived IMPL-SSH-07 GPU test passing:
+
+| `PYTHONHASHSEED` | Passed | Failed | Skipped | Xfailed | Warnings | Duration |
+|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 2,243 | 15 | 3 | 23 | 54 | 1,036.14 s |
+| 987654321 | 2,243 | 15 | 3 | 23 | 54 | 1,010.52 s |
+
+For each run, **15 failures are common with `tools/dr_isl/PHASE_6C_FAILING_TESTS.txt`; added = 0; removed = `tests/test_gpu_load_profile.py::test_gpu_load_profile`**. The two current failing-ID sets are identical. The GPU test passed in both full-suite runs; the three known Gridley failures remain. Exact lists and machine-readable summaries are `tools/dr_isl/d6f/FULL_SUITE_RESUME_SEED1_FAILING_TESTS.txt`, `FULL_SUITE_RESUME_SEED1_SUMMARY.json`, `FULL_SUITE_RESUME_SEED987654321_FAILING_TESTS.txt`, and `FULL_SUITE_RESUME_SEED987654321_SUMMARY.json`.
+
+The original F-4 stop above is historical and superseded by this R-1/R-2 completion. No endpoint or other application code was changed for this resumption; the test fixture was the only tracked source edit. The tracked S10 scenario remains unchanged. The broad command `git ls-files | grep -i -E 'slurm|channels.csv|gridsignal.db'` returns 54 existing code, documentation, scenario, and test paths (for example `core/slurm_scheduler.py` and `scenario-h2-slurm-24h.json`); it does not return raw `slurm-log.csv`, `tres-mapping.txt`, `*.channels.csv`, or `gridsignal.db`.
+
+The operating-cost module, documentation, and Scenario Planner table are recorded in their implementation commit; the test changes are recorded separately. No production workflow restart, publish, deploy, or push was performed. D6b was not started.
+
+### R-3 commit record
+
+- Implementation: `ed0b54bd066461e998cf243d53ce24bb1f188be2` — `D6-F: add opt-in itemized operating-cost reporting`. Files: `P/runtime/operating_cost.py:1–321`, `P/docs/operating-cost-model.md:1–81`, and `frontend/src/components/ScenarioPlannerPage.tsx:657–713` (read-only itemized table). REST/MCP exposure was already committed at `0ba855a`; REST lines `P/api/routes/runs.py:1213–1228,1268–1269`, MCP lines `P/mcp_server/server.py:643–645`.
+- Tests: `2a0f1fbb3dbf0a1a75cc3bc07e1947e971cd9986` — `D6-F: cover operating-cost accounting and legacy energy-summary fixture`. Files: `P/tests/test_operating_cost.py:1–278` and `P/tests/test_dr_isl_frequency_feedback.py:229–234`.
+- The S10 fuel candidate and `COST_INPUTS.json` were already tracked in the earlier D6-F generator/evidence commits; the source S10 scenario remains unchanged.
+- R-2 evidence is stored under `tools/dr_isl/d6f/`: the two JUnit XML files, failing-ID lists, and JSON summaries named above.
+- `git ls-files | grep -i -E 'slurm|channels.csv|gridsignal.db'` has 54 path matches because the repository tracks Slurm-related source, tests, docs, scenarios, and earlier reports. The more specific tracked-data check for `slurm-log.csv`, `tres-mapping.txt`, `*.channels.csv`, and `gridsignal.db` is empty.
+- No deployment workflow was restarted. No publish, deploy, or push occurred. D6b was not started.

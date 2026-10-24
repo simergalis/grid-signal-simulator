@@ -1,0 +1,20 @@
+{
+  "pythonhashseed": 1,
+  "counts": {
+    "passed": 2243,
+    "failed": 15,
+    "skipped": 3,
+    "xfailed": 23,
+    "warnings": 54,
+    "subtests_passed": 3,
+    "duration_seconds": 1036.14
+  },
+  "baseline_count": 16,
+  "common": 15,
+  "added": [],
+  "removed": [
+    "tests/test_gpu_load_profile.py::test_gpu_load_profile"
+  ],
+  "failing_ids_file": "FULL_SUITE_RESUME_SEED1_FAILING_TESTS.txt",
+  "junit_file": "FULL_SUITE_RESUME_SEED1.xml"
+}
