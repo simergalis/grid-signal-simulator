@@ -1,7 +1,7 @@
-# D6-F — implementation stopped at the F-1 gate
+# D6-F — gated implementation and validation record
 
-**Status: STOP; no implementation, test, documentation, candidate, or report commit was made.**  
-Base HEAD: `fd3bc85`. This report records the failure of the required accounting-only parity gate. No full-suite runs or workflow restart were performed after the gate failed. The D6b phase was not started.
+**Status: STOP at F-4 after one added full-suite failure.**
+The initial F-1 stop and its approved resumption are preserved below. F-1 parity passed after the approved reporting-field exclusions; focused tests passed. F-4 seed 1 then found one added failure, so seed 2 and the remaining F-6 commits/workflow restart were not performed. The D6b phase was not started.
 
 ## F-1 gate result
 
@@ -106,3 +106,23 @@ At served energy `616.322078773 MWh`, the included total is `$81.334370214/MWh s
 ### IMPL-ISL-24 (report only)
 
 Synchronized headroom (stranded capacity) is currently accumulated only in the fuel-gated `record_fuel_interval` path. Scenarios without a fuel model therefore report `0` for this existing headroom metric, which is misleading. Decouple headroom measurement from the fuel model only as a separate, gated change because it would change reported headroom for existing scenarios. No change was made for IMPL-ISL-24 in D6-F.
+
+## F-4 full-suite gate — STOP
+
+The real package suite ran to completion once with `PYTHONHASHSEED=1`:
+
+| Passed | Failed | Skipped | Xfailed | Warnings | Duration |
+|---:|---:|---:|---:|---:|---:|
+| 2,242 | 16 | 3 | 23 | 54 | 1,002.18 s |
+
+JUnit: `tools/dr_isl/d6f/FULL_SUITE_SEED1.xml`. Exact failing IDs: `tools/dr_isl/d6f/FULL_SUITE_SEED1_FAILING_TESTS.txt`. Summary and set comparison: `tools/dr_isl/d6f/FULL_SUITE_SEED1_SUMMARY.json`.
+
+Against the 16 IDs in `tools/dr_isl/PHASE_6C_FAILING_TESTS.txt`, there are 15 common failures, one added failure, and one removed failure:
+
+- **Added:** `tests/test_dr_isl_frequency_feedback.py::test_tc_isl_29_grid_tied_frequency_is_not_feedback_even_when_protection_is_reported`.
+- **Removed:** `tests/test_gpu_load_profile.py::test_gpu_load_profile` (it passed in this full-suite run; the IMPL-SSH-07 waiver was not needed).
+- All three Gridley failures remain: `test_gridley_logs_no_match_with_question_and_scenario_context`, `test_gridley_retrieves_operator_knowledge_for_natural_variants`, and `test_gridley_uses_grounded_operator_benefits_fallback_without_claude`.
+
+The added failure is a test-fixture/API-shape incompatibility, not a frequency assertion: `tests/test_dr_isl_frequency_feedback.py:232` calls `get_energy_summary`; `P/api/routes/runs.py:1213` reads `completed.operating_cost`; the test's `SimpleNamespace` fixture at `tests/test_dr_isl_frequency_feedback.py:208–228` has no `operating_cost` attribute. The exact exception is `AttributeError: 'types.SimpleNamespace' object has no attribute 'operating_cost'`. Per the gate, no test or application change was made and the `PYTHONHASHSEED=987654321` suite was not run.
+
+No D6-F implementation, test, or documentation commit was made after this added failure. The only new commit for this stop is report/evidence-only; no application workflow restart, publish, deploy, or push was performed. The package S10 scenario JSON was not edited, and no SuperCloud raw data or row-level extract is tracked. D6b was not started.
