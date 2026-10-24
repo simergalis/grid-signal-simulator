@@ -1,8 +1,8 @@
 # D6-F — S10 fuel model and operating-cost proposal
 
-**Decision record:** DR-2026-10-20-ISLAND-COLLAPSE, D6-F  
-**Status:** Read-only inventory and proposal; stopped for Lloyd's choice.  
-**Base inspected:** `c07bc9a01275752282c7e6b1fa4ea92b071b801a` (`D6a: record completed S10 CPU and SoC candidate runs`).  
+**Decision record:** DR-2026-10-20-ISLAND-COLLAPSE, D6-F
+**Status:** Read-only inventory and proposal; stopped for Lloyd's choice.
+**Base inspected:** `c07bc9a01275752282c7e6b1fa4ea92b071b801a` (`D6a: record completed S10 CPU and SoC candidate runs`).
 **Scope honored:** No application, test, scenario, template, or generator changes. `config/scenarios/S10_mit_supercloud_2021-08-11.json` was not changed or replaced. D6b was not started.
 
 ## Summary
