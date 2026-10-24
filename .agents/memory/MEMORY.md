@@ -84,3 +84,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Known-failure gates](known-failure-gates.md) — compare assertions and violation lists, not only node IDs; baseline failures can hide new regressions.
 - [S10 publication boundary](s10-data-publication-boundary.md) — user prohibits public-repo publication of S10; per-tick channel CSVs must remain local.
 - [Cooling envelope isolation](cooling-envelope-isolation.md) — the scalar cooling step-down can close GPU job envelopes when both paths share one CoolingModule.
+- [SGT-400 fuel proxy](sgt400-fuel-proxy.md) — S10 uses the selected 10,103 kJ/kWh SGT-400 row, with LHV explicitly assumed and installed equipment still unknown.

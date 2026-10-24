@@ -1,0 +1,41 @@
+{
+  "gas_price": {
+    "status": "CITED",
+    "source": "EIA U.S. Natural Gas Industrial Price, https://www.eia.gov/dnav/ng/hist/n3035us3m.htm",
+    "period": "2025-08 through 2026-07 12-month average",
+    "source_usd_per_mcf": 5.331,
+    "heat_content_source": "EIA 2025 U.S. average natural-gas heat content: 1,037 Btu/cf, equivalent to 1.037 MMBtu/Mcf; https://www.eia.gov/tools/faqs/faq.php?id=45&t=5",
+    "heat_content_mmbtu_per_mcf": 1.037,
+    "derived_usd_per_mmbtu_hhv": 5.140790742526519,
+    "formula": "5.331 / 1.037"
+  },
+  "july_2026_gas_sensitivity": {
+    "status": "CITED",
+    "source": "EIA U.S. Natural Gas Industrial Price, https://www.eia.gov/dnav/ng/hist/n3035us3m.htm",
+    "source_usd_per_mcf": 4.58,
+    "heat_content_mmbtu_per_mcf": 1.037,
+    "heat_content_source": "EIA 2025 U.S. average natural-gas heat content, https://www.eia.gov/tools/faqs/faq.php?id=45&t=5",
+    "derived_usd_per_mmbtu_hhv": 4.416586306653809,
+    "formula": "4.58 / 1.037"
+  },
+  "diesel_price": {
+    "status": "CITED",
+    "source": "EIA U.S. on-highway No. 2 diesel retail, week of 2026-10-19, https://www.eia.gov/petroleum/gasdiesel/",
+    "usd_per_gallon": 6.276,
+    "note": "Includes road taxes; off-road generator fuel may not bear those taxes. S10 candidate has no diesel."
+  },
+  "turbine_om_proxy": {
+    "status": "CITED",
+    "source": "EIA AEO2025 Capital Cost and Performance Characteristics, Table 1-2, Case 3, simple-cycle aeroderivative CTs, 4 x 54 MW, https://www.eia.gov/analysis/studies/powerplants/capitalcost/pdf/capital_cost_AEO2025.pdf",
+    "proxy_label": "larger aeroderivative units",
+    "currency_year": 2023,
+    "variable_om_usd_per_mwh": 5.7,
+    "fixed_om_usd_per_kw_year": 9.56
+  },
+  "fuel_heat_rate_conversion": {
+    "status": "PROPOSED_HERE",
+    "source": "DOE Hydrogen Analysis Resource Center, Lower and Higher Heating Values, https://h2tools.org/hyarc/calculator-tools/lower-and-higher-heating-values-fuels",
+    "lhv_to_hhv_mmbtu_factor": 1.108
+  },
+  "currency_note": "Mixed 2023 O&M proxy and 2026 fuel prices; no inflation normalization is applied."
+}

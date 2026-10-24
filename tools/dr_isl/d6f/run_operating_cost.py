@@ -11,6 +11,7 @@ import argparse
 import dataclasses
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import random
@@ -32,6 +33,8 @@ TOP_LEVEL_FUEL_FIELDS = {
     "turbine_fuel_telemetry",
     "turbine_fuel_parameter_provenance",
     "turbine_total_fuel_mmbtu",
+    # Fuel-model diagnostic counter; it does not enter dispatch or the ledger.
+    "turbine_minutes_below_low_load_threshold",
 }
 TURBINE_UNIT_FUEL_FIELDS = {
     "fuel_modelled",
@@ -96,12 +99,13 @@ def digest_rows(ticks, mapper):
     return digest.hexdigest()
 
 
-async def run(spec_path: Path, scenario_id: str):
+async def run(spec_path: Path, scenario_id: str, *, include_ticks: bool = False):
     spec_path = spec_path.resolve()
     sys.path.insert(0, str(PACKAGE))
     os.chdir(PACKAGE)
     from api.schemas import ScenarioSpec
     from core.physical_identity import PhysicalIdentityHasher
+    from runtime.advisory_router import AdvisoryRouter
     from runtime.operating_cost import compute_operating_cost
     from runtime.run_manager import InMemoryTimeseriesSink, RunManager, WebSocketHub
     from runtime.scenario_factory import build_run_context_from_spec
@@ -109,7 +113,12 @@ async def run(spec_path: Path, scenario_id: str):
     random.seed(SEED)
     np.random.seed(SEED)
     spec = ScenarioSpec.model_validate_json(spec_path.read_bytes()).model_dump(mode="json")
-    with patch("time.time", return_value=WALL_CLOCK):
+    # The live router repeatedly returned HTTP 402 and its documented error
+    # path returns None. Preserve that exact no-proposal result without issuing
+    # another remote request for every simulation tick.
+    with patch("time.time", return_value=WALL_CLOCK), patch.object(
+        AdvisoryRouter, "route", return_value=None
+    ):
         ctx = build_run_context_from_spec(
             scenario_id,
             spec,
@@ -205,7 +214,7 @@ async def run(spec_path: Path, scenario_id: str):
         else None
     )
 
-    return {
+    summary = {
         "scenario_id": scenario_id,
         "spec_path": str(spec_path),
         "seed": SEED,
@@ -229,6 +238,94 @@ async def run(spec_path: Path, scenario_id: str):
         ),
         "operating_cost": operating_cost,
     }
+    return (summary, ticks) if include_ticks else summary
+
+
+def _value_equal(left, right):
+    if isinstance(left, float) and isinstance(right, float):
+        return (math.isnan(left) and math.isnan(right)) or left == right
+    return left == right
+
+
+def _collect_differences(left, right, path=""):
+    """Return field-level differences without retaining per-tick exports."""
+    differences = []
+    if isinstance(left, dict) and isinstance(right, dict):
+        for key in sorted(set(left) | set(right)):
+            child = f"{path}.{key}" if path else str(key)
+            if key not in left or key not in right:
+                differences.append((child, left.get(key), right.get(key)))
+            else:
+                differences.extend(_collect_differences(left[key], right[key], child))
+    elif isinstance(left, list) and isinstance(right, list):
+        if len(left) != len(right):
+            differences.append((f"{path}.__length__", len(left), len(right)))
+        for index, (left_item, right_item) in enumerate(zip(left, right)):
+            differences.extend(
+                _collect_differences(left_item, right_item, f"{path}[{index}]")
+            )
+    elif not _value_equal(left, right):
+        differences.append((path, left, right))
+    return differences
+
+
+def compare_runs(baseline, baseline_ticks, candidate, candidate_ticks):
+    counts = {}
+    first_by_field = {}
+    first_nonfuel_difference = None
+    raw_field_counts = {}
+    first_raw_by_field = {}
+    for index, (left_tick, right_tick) in enumerate(
+        zip(baseline_ticks, candidate_ticks), start=1
+    ):
+        raw_left, raw_right = plain(left_tick), plain(right_tick)
+        for field, left_value, right_value in _collect_differences(
+            raw_left, raw_right
+        ):
+            raw_field_counts[field] = raw_field_counts.get(field, 0) + 1
+            first_raw_by_field.setdefault(
+                field,
+                {
+                    "tick": index,
+                    "sim_time": getattr(left_tick, "sim_time", None),
+                    "baseline": left_value,
+                    "candidate": right_value,
+                },
+            )
+        nonfuel_left, nonfuel_right = nonfuel_tick(left_tick), nonfuel_tick(right_tick)
+        for field, left_value, right_value in _collect_differences(
+            nonfuel_left, nonfuel_right
+        ):
+            counts[field] = counts.get(field, 0) + 1
+            first_by_field.setdefault(
+                field,
+                {
+                    "tick": index,
+                    "sim_time": getattr(left_tick, "sim_time", None),
+                    "baseline": left_value,
+                    "candidate": right_value,
+                },
+            )
+            if first_nonfuel_difference is None:
+                first_nonfuel_difference = {
+                    "tick": index,
+                    "sim_time": getattr(left_tick, "sim_time", None),
+                    "field": field,
+                    "baseline": left_value,
+                    "candidate": right_value,
+                }
+    return {
+        "tick_count_baseline": len(baseline_ticks),
+        "tick_count_candidate": len(candidate_ticks),
+        "all_tick_field_difference_counts": raw_field_counts,
+        "first_all_tick_difference_by_field": first_raw_by_field,
+        "nonfuel_tick_field_difference_counts": counts,
+        "first_nonfuel_difference_by_field": first_by_field,
+        "first_nonfuel_difference": first_nonfuel_difference,
+        "nonfuel_equal": not counts and len(baseline_ticks) == len(candidate_ticks),
+        "baseline_nonfuel_sha256": baseline["nonfuel_sha256"],
+        "candidate_nonfuel_sha256": candidate["nonfuel_sha256"],
+    }
 
 
 def main():
@@ -236,10 +333,30 @@ def main():
     parser.add_argument("spec", type=Path)
     parser.add_argument("--scenario-id", default="S10_mit_supercloud_2021-08-11")
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--compare-spec",
+        type=Path,
+        help="also run this baseline spec and write compact per-field differences",
+    )
     args = parser.parse_args()
     import asyncio
 
-    summary = asyncio.run(run(args.spec, args.scenario_id))
+    if args.compare_spec:
+        baseline, baseline_ticks = asyncio.run(
+            run(args.compare_spec, args.scenario_id, include_ticks=True)
+        )
+        candidate, candidate_ticks = asyncio.run(
+            run(args.spec, args.scenario_id, include_ticks=True)
+        )
+        summary = {
+            "baseline": baseline,
+            "candidate": candidate,
+            "comparison": compare_runs(
+                baseline, baseline_ticks, candidate, candidate_ticks
+            ),
+        }
+    else:
+        summary = asyncio.run(run(args.spec, args.scenario_id))
     args.output.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
     print(json.dumps(summary, indent=2, sort_keys=True))
 

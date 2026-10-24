@@ -1,0 +1,56 @@
+{
+  "bess_ac_throughput_mwh": 158.73523332738998,
+  "demand_mwh": 621.8578481855576,
+  "dispatch_curtailment_mwh": 45.77100963468485,
+  "nonfuel_sha256": "9ba60a494afac2b2ddee103639d1b1a634cccb6959c8cf1cd06e618f14b63296",
+  "operating_cost": null,
+  "physical_sha256": "87b7877a9c1f3bc2e6b547d823866ef8f7a9c42b9908f7409729dedbb6408803",
+  "scenario_id": "S10_mit_supercloud_2021-08-11",
+  "seed": 1729,
+  "served_mwh": 616.3220787729296,
+  "spec_path": "/home/runner/workspace/tools/dr_isl/d6/S10_2021-08-11_cpu_candidate_a_plus_c.json",
+  "tick_count": 17280,
+  "turbine_fuel_by_unit_mmbtu": {},
+  "turbine_fuel_components_by_unit_mmbtu": {
+    "turbine-0": {
+      "hot_standby_fuel_mmbtu": null,
+      "load_fuel_mmbtu": null,
+      "no_load_fuel_mmbtu": null,
+      "start_fuel_mmbtu": null,
+      "total_fuel_mmbtu": null
+    },
+    "turbine-1": {
+      "hot_standby_fuel_mmbtu": null,
+      "load_fuel_mmbtu": null,
+      "no_load_fuel_mmbtu": null,
+      "start_fuel_mmbtu": null,
+      "total_fuel_mmbtu": null
+    },
+    "turbine-2": {
+      "hot_standby_fuel_mmbtu": null,
+      "load_fuel_mmbtu": null,
+      "no_load_fuel_mmbtu": null,
+      "start_fuel_mmbtu": null,
+      "total_fuel_mmbtu": null
+    },
+    "turbine-3": {
+      "hot_standby_fuel_mmbtu": null,
+      "load_fuel_mmbtu": null,
+      "no_load_fuel_mmbtu": null,
+      "start_fuel_mmbtu": null,
+      "total_fuel_mmbtu": null
+    },
+    "turbine-4": {
+      "hot_standby_fuel_mmbtu": null,
+      "load_fuel_mmbtu": null,
+      "no_load_fuel_mmbtu": null,
+      "start_fuel_mmbtu": null,
+      "total_fuel_mmbtu": null
+    }
+  },
+  "turbine_fuel_total_mmbtu": null,
+  "turbine_mwh": 669.9665561792048,
+  "turbine_start_count": 37,
+  "unserved_mwh": 5.535769412629438,
+  "wall_clock": 1792454400.0
+}

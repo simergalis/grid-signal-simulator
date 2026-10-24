@@ -1,0 +1,1188 @@
+{
+  "baseline": {
+    "bess_ac_throughput_mwh": 158.73523332738998,
+    "demand_mwh": 621.8578481855576,
+    "dispatch_curtailment_mwh": 45.77100963468485,
+    "nonfuel_sha256": "410e7d5dab4d4b8f20067fd45ea9a495d77cac99b90686ab8bd281b922c8a025",
+    "operating_cost": null,
+    "physical_sha256": "87b7877a9c1f3bc2e6b547d823866ef8f7a9c42b9908f7409729dedbb6408803",
+    "scenario_id": "S10_mit_supercloud_2021-08-11",
+    "seed": 1729,
+    "served_mwh": 616.3220787729296,
+    "spec_path": "/home/runner/workspace/tools/dr_isl/d6/S10_2021-08-11_cpu_candidate_a_plus_c.json",
+    "tick_count": 17280,
+    "turbine_fuel_by_unit_mmbtu": {},
+    "turbine_fuel_components_by_unit_mmbtu": {
+      "turbine-0": {
+        "hot_standby_fuel_mmbtu": null,
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null,
+        "total_fuel_mmbtu": null
+      },
+      "turbine-1": {
+        "hot_standby_fuel_mmbtu": null,
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null,
+        "total_fuel_mmbtu": null
+      },
+      "turbine-2": {
+        "hot_standby_fuel_mmbtu": null,
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null,
+        "total_fuel_mmbtu": null
+      },
+      "turbine-3": {
+        "hot_standby_fuel_mmbtu": null,
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null,
+        "total_fuel_mmbtu": null
+      },
+      "turbine-4": {
+        "hot_standby_fuel_mmbtu": null,
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null,
+        "total_fuel_mmbtu": null
+      }
+    },
+    "turbine_fuel_total_mmbtu": null,
+    "turbine_mwh": 669.9665561792048,
+    "turbine_start_count": 37,
+    "unserved_mwh": 5.535769412629438,
+    "wall_clock": 1792454400.0
+  },
+  "candidate": {
+    "bess_ac_throughput_mwh": 158.73523332738998,
+    "demand_mwh": 621.8578481855576,
+    "dispatch_curtailment_mwh": 45.77100963468485,
+    "nonfuel_sha256": "d9d0c5ef70394ea80620eb73f03f4f1ae80e81c2c9efd1fd977136af2f951ced",
+    "operating_cost": {
+      "cost_per_mwh_it_load_usd": 97.305346065,
+      "cost_per_mwh_served_usd": 81.334370214,
+      "currency": "USD",
+      "currency_year": "mixed: 2023 USD O&M; 2026 USD fuel prices",
+      "currency_year_provenance": "CITED: EIA AEO2025 O&M proxy is 2023 dollars; fuel prices are US public prices observed in 2026. Values are not inflation-normalized.",
+      "denominators": {
+        "it_load_mwh": 515.163556304,
+        "served_mwh": 616.322078773
+      },
+      "lines": [
+        {
+          "amount_usd": 44344.975194,
+          "conversion_factor": 1.108,
+          "conversion_note": "PROPOSED_HERE: converted LHV to HHV using natural-gas LHV/HHV factor 1.108.",
+          "key": "turbine_gas_fuel",
+          "label": "Turbine gas fuel",
+          "provenance": {
+            "price": "CITED: EIA U.S. Natural Gas Industrial Price, Aug 2025\u2013Jul 2026 12-month mean $5.331/Mcf (https://www.eia.gov/dnav/ng/hist/n3035us3m.htm), divided by EIA 2025 average heat content 1,037 Btu/cf = 1.037 MMBtu/Mcf (https://www.eia.gov/tools/faqs/faq.php?id=45&t=5).",
+            "quantity": "Completed turbine fuel telemetry by unit; accounting-only heat-rate model."
+          },
+          "quantity": 8626.10003309,
+          "quantity_unit": "MMBtu (HHV)",
+          "unit_price": 5.140790743,
+          "unit_price_unit": "USD/MMBtu (HHV)"
+        },
+        {
+          "amount_usd": null,
+          "conversion_factor": null,
+          "conversion_note": null,
+          "key": "diesel_fuel",
+          "label": "Diesel fuel",
+          "provenance": {
+            "price": "CITED: EIA U.S. on-highway No. 2 diesel retail, week of 2026-10-19, $6.276/gal, including taxes (https://www.eia.gov/petroleum/gasdiesel/). Off-road generator fuel may exclude road taxes.",
+            "quantity": "Diesel fleet fuel-tank consumption delta; null when no diesel fleet is configured."
+          },
+          "quantity": null,
+          "quantity_unit": "gal",
+          "unit_price": 6.276,
+          "unit_price_unit": "USD/gal"
+        },
+        {
+          "amount_usd": 3818.80937,
+          "conversion_factor": null,
+          "conversion_note": null,
+          "key": "turbine_variable_om",
+          "label": "Turbine variable O&M",
+          "provenance": {
+            "price": "CITED proxy: EIA AEO2025 Capital Cost and Performance Characteristics, Table 1-2, Case 3, simple-cycle aeroderivative CTs, 4 \u00d7 54 MW; $5.70/MWh, 2023 dollars (https://www.eia.gov/analysis/studies/powerplants/capitalcost/pdf/capital_cost_AEO2025.pdf).",
+            "quantity": "Integrated measured turbine output."
+          },
+          "quantity": 669.966556179,
+          "quantity_unit": "MWh",
+          "unit_price": 5.7,
+          "unit_price_unit": "USD/MWh"
+        },
+        {
+          "amount_usd": 1964.383562,
+          "conversion_factor": null,
+          "conversion_note": null,
+          "key": "turbine_fixed_om",
+          "label": "Turbine fixed O&M allocation",
+          "provenance": {
+            "price": "CITED proxy: EIA AEO2025 Capital Cost and Performance Characteristics, Table 1-2, Case 3, simple-cycle aeroderivative CTs, 4 \u00d7 54 MW; $9.56/kW-year, 2023 dollars; proxy for larger aeroderivative units.",
+            "quantity": "Rated turbine kW \u00d7 run hours / 8,760 hours/year."
+          },
+          "quantity": 205.479452055,
+          "quantity_unit": "kW-year",
+          "unit_price": 9.56,
+          "unit_price_unit": "USD/kW-year"
+        },
+        {
+          "amount_usd": null,
+          "conversion_factor": null,
+          "conversion_note": null,
+          "key": "turbine_nonfuel_start",
+          "label": "Turbine non-fuel start charge",
+          "provenance": {
+            "price": "No cited non-fuel start-cost source; intentionally left null.",
+            "quantity": "Completed-run turbine start counter; excludes start fuel, priced in the gas line."
+          },
+          "quantity": 37.0,
+          "quantity_unit": "starts",
+          "unit_price": null,
+          "unit_price_unit": "USD/start"
+        },
+        {
+          "amount_usd": null,
+          "conversion_factor": null,
+          "conversion_note": null,
+          "key": "bess_degradation",
+          "label": "BESS degradation",
+          "provenance": {
+            "price": "No cited degradation-cost source; intentionally left null.",
+            "quantity": "PROPOSED_HERE: sum of absolute signed BESS AC output over ticks."
+          },
+          "quantity": 158.735233327,
+          "quantity_unit": "MWh AC throughput",
+          "unit_price": null,
+          "unit_price_unit": "USD/MWh"
+        },
+        {
+          "amount_usd": null,
+          "conversion_factor": null,
+          "conversion_note": null,
+          "key": "unserved_energy",
+          "label": "Unserved-energy value",
+          "provenance": {
+            "price": "No cited unserved-energy value; intentionally left null.",
+            "quantity": "Integrated D7 unserved-load telemetry."
+          },
+          "quantity": 5.535769413,
+          "quantity_unit": "MWh",
+          "unit_price": null,
+          "unit_price_unit": "USD/MWh"
+        }
+      ],
+      "total_excludes": [
+        {
+          "key": "diesel_fuel",
+          "reason": "quantity or unit price is null"
+        },
+        {
+          "key": "turbine_nonfuel_start",
+          "reason": "quantity or unit price is null"
+        },
+        {
+          "key": "bess_degradation",
+          "reason": "quantity or unit price is null"
+        },
+        {
+          "key": "unserved_energy",
+          "reason": "quantity or unit price is null"
+        },
+        {
+          "key": "grid_import",
+          "reason": "no operating-cost tariff input is configured"
+        },
+        {
+          "key": "fuel_cell_fuel",
+          "reason": "the requested gas line prices turbine fuel only"
+        },
+        {
+          "key": "solar_or_ppa",
+          "reason": "no source-specific contract input is configured"
+        },
+        {
+          "key": "cooling_labor_and_other_site_om",
+          "reason": "outside this energy-only input block"
+        }
+      ],
+      "total_includes": [
+        "turbine_gas_fuel",
+        "turbine_variable_om",
+        "turbine_fixed_om"
+      ],
+      "total_usd": 50128.168126
+    },
+    "physical_sha256": "4e33ec591dbf46a41a8d3518f891a7b7f7b1096ad3ca7bbf2a7afc27ab3f2029",
+    "scenario_id": "S10_mit_supercloud_2021-08-11",
+    "seed": 1729,
+    "served_mwh": 616.3220787729296,
+    "spec_path": "/home/runner/workspace/tools/dr_isl/d6/S10_2021-08-11_cpu_soc_fuel_candidate.json",
+    "tick_count": 17280,
+    "turbine_fuel_by_unit_mmbtu": {
+      "turbine-0": 2159.765863002893,
+      "turbine-1": 2033.1771594077563,
+      "turbine-2": 1596.6583090512238,
+      "turbine-3": 1043.8712907968952,
+      "turbine-4": 951.8162162698499
+    },
+    "turbine_fuel_components_by_unit_mmbtu": {
+      "turbine-0": {
+        "hot_standby_fuel_mmbtu": 0.0,
+        "load_fuel_mmbtu": 2130.965863002903,
+        "no_load_fuel_mmbtu": 28.799999999990046,
+        "start_fuel_mmbtu": 0.0,
+        "total_fuel_mmbtu": 2159.765863002893
+      },
+      "turbine-1": {
+        "hot_standby_fuel_mmbtu": 0.0,
+        "load_fuel_mmbtu": 1992.4971594077663,
+        "no_load_fuel_mmbtu": 28.679999999990155,
+        "start_fuel_mmbtu": 12.0,
+        "total_fuel_mmbtu": 2033.1771594077563
+      },
+      "turbine-2": {
+        "hot_standby_fuel_mmbtu": 0.0,
+        "load_fuel_mmbtu": 1517.1549757178957,
+        "no_load_fuel_mmbtu": 23.503333333328197,
+        "start_fuel_mmbtu": 56.0,
+        "total_fuel_mmbtu": 1596.6583090512238
+      },
+      "turbine-3": {
+        "hot_standby_fuel_mmbtu": 0.0,
+        "load_fuel_mmbtu": 884.5896241302271,
+        "no_load_fuel_mmbtu": 15.281666666668242,
+        "start_fuel_mmbtu": 144.0,
+        "total_fuel_mmbtu": 1043.8712907968952
+      },
+      "turbine-4": {
+        "hot_standby_fuel_mmbtu": 0.0,
+        "load_fuel_mmbtu": 785.0012162698483,
+        "no_load_fuel_mmbtu": 14.815000000001502,
+        "start_fuel_mmbtu": 152.0,
+        "total_fuel_mmbtu": 951.8162162698499
+      }
+    },
+    "turbine_fuel_total_mmbtu": 7785.288838528619,
+    "turbine_mwh": 669.9665561792048,
+    "turbine_start_count": 37,
+    "unserved_mwh": 5.535769412629438,
+    "wall_clock": 1792454400.0
+  },
+  "comparison": {
+    "all_tick_field_difference_counts": {
+      "turbine_fuel_modelled": 17280,
+      "turbine_fuel_parameter_provenance": 17280,
+      "turbine_fuel_status": 17280,
+      "turbine_fuel_telemetry[0].fuel_mmbtu_this_tick": 17280,
+      "turbine_fuel_telemetry[0].fuel_modelled": 17280,
+      "turbine_fuel_telemetry[0].fuel_parameter_provenance": 17280,
+      "turbine_fuel_telemetry[0].fuel_status": 17280,
+      "turbine_fuel_telemetry[0].fuel_type": 17280,
+      "turbine_fuel_telemetry[0].fuel_units": 17280,
+      "turbine_fuel_telemetry[0].hot_standby_fuel_mmbtu": 17280,
+      "turbine_fuel_telemetry[0].load_fuel_mmbtu": 17280,
+      "turbine_fuel_telemetry[0].low_load_threshold_pct": 17280,
+      "turbine_fuel_telemetry[0].minutes_below_low_load_threshold": 17280,
+      "turbine_fuel_telemetry[0].no_load_fuel_mmbtu": 17280,
+      "turbine_fuel_telemetry[0].start_fuel_mmbtu": 17280,
+      "turbine_fuel_telemetry[0].synchronized_headroom_mwh": 17280,
+      "turbine_fuel_telemetry[0].total_fuel_mmbtu": 17280,
+      "turbine_fuel_telemetry[1].fuel_mmbtu_this_tick": 17280,
+      "turbine_fuel_telemetry[1].fuel_modelled": 17280,
+      "turbine_fuel_telemetry[1].fuel_parameter_provenance": 17280,
+      "turbine_fuel_telemetry[1].fuel_status": 17280,
+      "turbine_fuel_telemetry[1].fuel_type": 17280,
+      "turbine_fuel_telemetry[1].fuel_units": 17280,
+      "turbine_fuel_telemetry[1].hot_standby_fuel_mmbtu": 17280,
+      "turbine_fuel_telemetry[1].load_fuel_mmbtu": 17280,
+      "turbine_fuel_telemetry[1].low_load_threshold_pct": 17280,
+      "turbine_fuel_telemetry[1].minutes_below_low_load_threshold": 17208,
+      "turbine_fuel_telemetry[1].no_load_fuel_mmbtu": 17280,
+      "turbine_fuel_telemetry[1].start_fuel_mmbtu": 17280,
+      "turbine_fuel_telemetry[1].synchronized_headroom_mwh": 17208,
+      "turbine_fuel_telemetry[1].total_fuel_mmbtu": 17280,
+      "turbine_fuel_telemetry[2].fuel_mmbtu_this_tick": 17280,
+      "turbine_fuel_telemetry[2].fuel_modelled": 17280,
+      "turbine_fuel_telemetry[2].fuel_parameter_provenance": 17280,
+      "turbine_fuel_telemetry[2].fuel_status": 17280,
+      "turbine_fuel_telemetry[2].fuel_type": 17280,
+      "turbine_fuel_telemetry[2].fuel_units": 17280,
+      "turbine_fuel_telemetry[2].hot_standby_fuel_mmbtu": 17280,
+      "turbine_fuel_telemetry[2].load_fuel_mmbtu": 17280,
+      "turbine_fuel_telemetry[2].low_load_threshold_pct": 17280,
+      "turbine_fuel_telemetry[2].minutes_below_low_load_threshold": 17054,
+      "turbine_fuel_telemetry[2].no_load_fuel_mmbtu": 17280,
+      "turbine_fuel_telemetry[2].start_fuel_mmbtu": 17280,
+      "turbine_fuel_telemetry[2].synchronized_headroom_mwh": 17054,
+      "turbine_fuel_telemetry[2].total_fuel_mmbtu": 17280,
+      "turbine_fuel_telemetry[3].fuel_mmbtu_this_tick": 17280,
+      "turbine_fuel_telemetry[3].fuel_modelled": 17280,
+      "turbine_fuel_telemetry[3].fuel_parameter_provenance": 17280,
+      "turbine_fuel_telemetry[3].fuel_status": 17280,
+      "turbine_fuel_telemetry[3].fuel_type": 17280,
+      "turbine_fuel_telemetry[3].fuel_units": 17280,
+      "turbine_fuel_telemetry[3].hot_standby_fuel_mmbtu": 17280,
+      "turbine_fuel_telemetry[3].load_fuel_mmbtu": 17280,
+      "turbine_fuel_telemetry[3].low_load_threshold_pct": 17280,
+      "turbine_fuel_telemetry[3].minutes_below_low_load_threshold": 16934,
+      "turbine_fuel_telemetry[3].no_load_fuel_mmbtu": 17280,
+      "turbine_fuel_telemetry[3].start_fuel_mmbtu": 17280,
+      "turbine_fuel_telemetry[3].synchronized_headroom_mwh": 16934,
+      "turbine_fuel_telemetry[3].total_fuel_mmbtu": 17280,
+      "turbine_fuel_telemetry[4].fuel_mmbtu_this_tick": 17280,
+      "turbine_fuel_telemetry[4].fuel_modelled": 17280,
+      "turbine_fuel_telemetry[4].fuel_parameter_provenance": 17280,
+      "turbine_fuel_telemetry[4].fuel_status": 17280,
+      "turbine_fuel_telemetry[4].fuel_type": 17280,
+      "turbine_fuel_telemetry[4].fuel_units": 17280,
+      "turbine_fuel_telemetry[4].hot_standby_fuel_mmbtu": 17280,
+      "turbine_fuel_telemetry[4].load_fuel_mmbtu": 17280,
+      "turbine_fuel_telemetry[4].low_load_threshold_pct": 17280,
+      "turbine_fuel_telemetry[4].minutes_below_low_load_threshold": 16741,
+      "turbine_fuel_telemetry[4].no_load_fuel_mmbtu": 17280,
+      "turbine_fuel_telemetry[4].start_fuel_mmbtu": 17280,
+      "turbine_fuel_telemetry[4].synchronized_headroom_mwh": 16741,
+      "turbine_fuel_telemetry[4].total_fuel_mmbtu": 17280,
+      "turbine_fuel_type": 17280,
+      "turbine_fuel_units": 17280,
+      "turbine_minutes_below_low_load_threshold": 17280,
+      "turbine_synchronized_headroom_mwh": 17280,
+      "turbine_total_fuel_mmbtu": 17280,
+      "turbine_units[0].fuel_low_load_threshold_pct": 17280,
+      "turbine_units[0].fuel_modelled": 17280,
+      "turbine_units[0].fuel_parameter_provenance": 17280,
+      "turbine_units[0].fuel_type": 17280,
+      "turbine_units[0].fuel_units": 17280,
+      "turbine_units[1].fuel_low_load_threshold_pct": 17280,
+      "turbine_units[1].fuel_modelled": 17280,
+      "turbine_units[1].fuel_parameter_provenance": 17280,
+      "turbine_units[1].fuel_type": 17280,
+      "turbine_units[1].fuel_units": 17280,
+      "turbine_units[2].fuel_low_load_threshold_pct": 17280,
+      "turbine_units[2].fuel_modelled": 17280,
+      "turbine_units[2].fuel_parameter_provenance": 17280,
+      "turbine_units[2].fuel_type": 17280,
+      "turbine_units[2].fuel_units": 17280,
+      "turbine_units[3].fuel_low_load_threshold_pct": 17280,
+      "turbine_units[3].fuel_modelled": 17280,
+      "turbine_units[3].fuel_parameter_provenance": 17280,
+      "turbine_units[3].fuel_type": 17280,
+      "turbine_units[3].fuel_units": 17280,
+      "turbine_units[4].fuel_low_load_threshold_pct": 17280,
+      "turbine_units[4].fuel_modelled": 17280,
+      "turbine_units[4].fuel_parameter_provenance": 17280,
+      "turbine_units[4].fuel_type": 17280,
+      "turbine_units[4].fuel_units": 17280
+    },
+    "baseline_nonfuel_sha256": "410e7d5dab4d4b8f20067fd45ea9a495d77cac99b90686ab8bd281b922c8a025",
+    "candidate_nonfuel_sha256": "d9d0c5ef70394ea80620eb73f03f4f1ae80e81c2c9efd1fd977136af2f951ced",
+    "first_all_tick_difference_by_field": {
+      "turbine_fuel_modelled": {
+        "baseline": false,
+        "candidate": true,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_parameter_provenance": {
+        "baseline": null,
+        "candidate": {
+          "turbine-0": {
+            "hot_standby_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+            "low_load_threshold_pct": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+            "part_load_heat_rate_btu_per_kwh": "Full-load point CITED: Siemens Energy Gas Turbine Portfolio Brochure 2024, Performance data overview: Power generation, SGT-400 (15 MW) at 14.3 MW(e) and 10,103 kJ/kWh; converted 10,103 \u00d7 0.947817 = 9,575.795151 Btu/kWh, rounded to 9,576. The brochure states gross efficiency but does not state ISO conditions or the heat-rate LHV/HHV/net/gross basis; ASSUMED LHV is PROPOSED_HERE. Source: https://assets.siemens-energy.com/dam/d7e01f44-f091-44f2-bf71-b20b010483e1/GT-Portfolio-Brochure-2024__FINAL_Low_Resolution-pdf_Original%20file.pdf. Part-load shape PROPOSED_HERE: core/models.py AERODERIVATIVE_FUEL_PARAMETERS curve scaled by 9,576/8,500.",
+            "start_fuel_mmbtu_cold": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+            "start_fuel_mmbtu_hot": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+            "start_fuel_mmbtu_warm": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+            "synchronized_no_load_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value."
+          },
+          "turbine-1": {
+            "hot_standby_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+            "low_load_threshold_pct": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+            "part_load_heat_rate_btu_per_kwh": "Full-load point CITED: Siemens Energy Gas Turbine Portfolio Brochure 2024, Performance data overview: Power generation, SGT-400 (15 MW) at 14.3 MW(e) and 10,103 kJ/kWh; converted 10,103 \u00d7 0.947817 = 9,575.795151 Btu/kWh, rounded to 9,576. The brochure states gross efficiency but does not state ISO conditions or the heat-rate LHV/HHV/net/gross basis; ASSUMED LHV is PROPOSED_HERE. Source: https://assets.siemens-energy.com/dam/d7e01f44-f091-44f2-bf71-b20b010483e1/GT-Portfolio-Brochure-2024__FINAL_Low_Resolution-pdf_Original%20file.pdf. Part-load shape PROPOSED_HERE: core/models.py AERODERIVATIVE_FUEL_PARAMETERS curve scaled by 9,576/8,500.",
+            "start_fuel_mmbtu_cold": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+            "start_fuel_mmbtu_hot": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+            "start_fuel_mmbtu_warm": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+            "synchronized_no_load_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value."
+          },
+          "turbine-2": {
+            "hot_standby_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+            "low_load_threshold_pct": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+            "part_load_heat_rate_btu_per_kwh": "Full-load point CITED: Siemens Energy Gas Turbine Portfolio Brochure 2024, Performance data overview: Power generation, SGT-400 (15 MW) at 14.3 MW(e) and 10,103 kJ/kWh; converted 10,103 \u00d7 0.947817 = 9,575.795151 Btu/kWh, rounded to 9,576. The brochure states gross efficiency but does not state ISO conditions or the heat-rate LHV/HHV/net/gross basis; ASSUMED LHV is PROPOSED_HERE. Source: https://assets.siemens-energy.com/dam/d7e01f44-f091-44f2-bf71-b20b010483e1/GT-Portfolio-Brochure-2024__FINAL_Low_Resolution-pdf_Original%20file.pdf. Part-load shape PROPOSED_HERE: core/models.py AERODERIVATIVE_FUEL_PARAMETERS curve scaled by 9,576/8,500.",
+            "start_fuel_mmbtu_cold": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+            "start_fuel_mmbtu_hot": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+            "start_fuel_mmbtu_warm": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+            "synchronized_no_load_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value."
+          },
+          "turbine-3": {
+            "hot_standby_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+            "low_load_threshold_pct": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+            "part_load_heat_rate_btu_per_kwh": "Full-load point CITED: Siemens Energy Gas Turbine Portfolio Brochure 2024, Performance data overview: Power generation, SGT-400 (15 MW) at 14.3 MW(e) and 10,103 kJ/kWh; converted 10,103 \u00d7 0.947817 = 9,575.795151 Btu/kWh, rounded to 9,576. The brochure states gross efficiency but does not state ISO conditions or the heat-rate LHV/HHV/net/gross basis; ASSUMED LHV is PROPOSED_HERE. Source: https://assets.siemens-energy.com/dam/d7e01f44-f091-44f2-bf71-b20b010483e1/GT-Portfolio-Brochure-2024__FINAL_Low_Resolution-pdf_Original%20file.pdf. Part-load shape PROPOSED_HERE: core/models.py AERODERIVATIVE_FUEL_PARAMETERS curve scaled by 9,576/8,500.",
+            "start_fuel_mmbtu_cold": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+            "start_fuel_mmbtu_hot": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+            "start_fuel_mmbtu_warm": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+            "synchronized_no_load_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value."
+          },
+          "turbine-4": {
+            "hot_standby_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+            "low_load_threshold_pct": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+            "part_load_heat_rate_btu_per_kwh": "Full-load point CITED: Siemens Energy Gas Turbine Portfolio Brochure 2024, Performance data overview: Power generation, SGT-400 (15 MW) at 14.3 MW(e) and 10,103 kJ/kWh; converted 10,103 \u00d7 0.947817 = 9,575.795151 Btu/kWh, rounded to 9,576. The brochure states gross efficiency but does not state ISO conditions or the heat-rate LHV/HHV/net/gross basis; ASSUMED LHV is PROPOSED_HERE. Source: https://assets.siemens-energy.com/dam/d7e01f44-f091-44f2-bf71-b20b010483e1/GT-Portfolio-Brochure-2024__FINAL_Low_Resolution-pdf_Original%20file.pdf. Part-load shape PROPOSED_HERE: core/models.py AERODERIVATIVE_FUEL_PARAMETERS curve scaled by 9,576/8,500.",
+            "start_fuel_mmbtu_cold": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+            "start_fuel_mmbtu_hot": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+            "start_fuel_mmbtu_warm": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+            "synchronized_no_load_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value."
+          }
+        },
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_status": {
+        "baseline": "not_modelled",
+        "candidate": "modelled",
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[0].fuel_mmbtu_this_tick": {
+        "baseline": null,
+        "candidate": 0.0880853725490196,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[0].fuel_modelled": {
+        "baseline": false,
+        "candidate": true,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[0].fuel_parameter_provenance": {
+        "baseline": null,
+        "candidate": {
+          "hot_standby_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "low_load_threshold_pct": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "part_load_heat_rate_btu_per_kwh": "Full-load point CITED: Siemens Energy Gas Turbine Portfolio Brochure 2024, Performance data overview: Power generation, SGT-400 (15 MW) at 14.3 MW(e) and 10,103 kJ/kWh; converted 10,103 \u00d7 0.947817 = 9,575.795151 Btu/kWh, rounded to 9,576. The brochure states gross efficiency but does not state ISO conditions or the heat-rate LHV/HHV/net/gross basis; ASSUMED LHV is PROPOSED_HERE. Source: https://assets.siemens-energy.com/dam/d7e01f44-f091-44f2-bf71-b20b010483e1/GT-Portfolio-Brochure-2024__FINAL_Low_Resolution-pdf_Original%20file.pdf. Part-load shape PROPOSED_HERE: core/models.py AERODERIVATIVE_FUEL_PARAMETERS curve scaled by 9,576/8,500.",
+          "start_fuel_mmbtu_cold": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "start_fuel_mmbtu_hot": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "start_fuel_mmbtu_warm": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "synchronized_no_load_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value."
+        },
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[0].fuel_status": {
+        "baseline": "not_modelled",
+        "candidate": "modelled",
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[0].fuel_type": {
+        "baseline": null,
+        "candidate": "natural_gas",
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[0].fuel_units": {
+        "baseline": null,
+        "candidate": "MMBtu",
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[0].hot_standby_fuel_mmbtu": {
+        "baseline": null,
+        "candidate": 0.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[0].load_fuel_mmbtu": {
+        "baseline": null,
+        "candidate": 0.08641870588235294,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[0].low_load_threshold_pct": {
+        "baseline": null,
+        "candidate": 50.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[0].minutes_below_low_load_threshold": {
+        "baseline": 0.0,
+        "candidate": 0.08333333333333333,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[0].no_load_fuel_mmbtu": {
+        "baseline": null,
+        "candidate": 0.0016666666666666668,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[0].start_fuel_mmbtu": {
+        "baseline": null,
+        "candidate": 0.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[0].synchronized_headroom_mwh": {
+        "baseline": 0.0,
+        "candidate": 0.013541666666666667,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[0].total_fuel_mmbtu": {
+        "baseline": null,
+        "candidate": 0.0880853725490196,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[1].fuel_mmbtu_this_tick": {
+        "baseline": null,
+        "candidate": 0.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[1].fuel_modelled": {
+        "baseline": false,
+        "candidate": true,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[1].fuel_parameter_provenance": {
+        "baseline": null,
+        "candidate": {
+          "hot_standby_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "low_load_threshold_pct": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "part_load_heat_rate_btu_per_kwh": "Full-load point CITED: Siemens Energy Gas Turbine Portfolio Brochure 2024, Performance data overview: Power generation, SGT-400 (15 MW) at 14.3 MW(e) and 10,103 kJ/kWh; converted 10,103 \u00d7 0.947817 = 9,575.795151 Btu/kWh, rounded to 9,576. The brochure states gross efficiency but does not state ISO conditions or the heat-rate LHV/HHV/net/gross basis; ASSUMED LHV is PROPOSED_HERE. Source: https://assets.siemens-energy.com/dam/d7e01f44-f091-44f2-bf71-b20b010483e1/GT-Portfolio-Brochure-2024__FINAL_Low_Resolution-pdf_Original%20file.pdf. Part-load shape PROPOSED_HERE: core/models.py AERODERIVATIVE_FUEL_PARAMETERS curve scaled by 9,576/8,500.",
+          "start_fuel_mmbtu_cold": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "start_fuel_mmbtu_hot": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "start_fuel_mmbtu_warm": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "synchronized_no_load_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value."
+        },
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[1].fuel_status": {
+        "baseline": "not_modelled",
+        "candidate": "modelled",
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[1].fuel_type": {
+        "baseline": null,
+        "candidate": "natural_gas",
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[1].fuel_units": {
+        "baseline": null,
+        "candidate": "MMBtu",
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[1].hot_standby_fuel_mmbtu": {
+        "baseline": null,
+        "candidate": 0.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[1].load_fuel_mmbtu": {
+        "baseline": null,
+        "candidate": 0.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[1].low_load_threshold_pct": {
+        "baseline": null,
+        "candidate": 50.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[1].minutes_below_low_load_threshold": {
+        "baseline": 0.0,
+        "candidate": 0.08333333333333333,
+        "sim_time": null,
+        "tick": 73
+      },
+      "turbine_fuel_telemetry[1].no_load_fuel_mmbtu": {
+        "baseline": null,
+        "candidate": 0.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[1].start_fuel_mmbtu": {
+        "baseline": null,
+        "candidate": 12.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[1].synchronized_headroom_mwh": {
+        "baseline": 0.0,
+        "candidate": 0.017361111111111112,
+        "sim_time": null,
+        "tick": 73
+      },
+      "turbine_fuel_telemetry[1].total_fuel_mmbtu": {
+        "baseline": null,
+        "candidate": 12.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[2].fuel_mmbtu_this_tick": {
+        "baseline": null,
+        "candidate": 0.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[2].fuel_modelled": {
+        "baseline": false,
+        "candidate": true,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[2].fuel_parameter_provenance": {
+        "baseline": null,
+        "candidate": {
+          "hot_standby_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "low_load_threshold_pct": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "part_load_heat_rate_btu_per_kwh": "Full-load point CITED: Siemens Energy Gas Turbine Portfolio Brochure 2024, Performance data overview: Power generation, SGT-400 (15 MW) at 14.3 MW(e) and 10,103 kJ/kWh; converted 10,103 \u00d7 0.947817 = 9,575.795151 Btu/kWh, rounded to 9,576. The brochure states gross efficiency but does not state ISO conditions or the heat-rate LHV/HHV/net/gross basis; ASSUMED LHV is PROPOSED_HERE. Source: https://assets.siemens-energy.com/dam/d7e01f44-f091-44f2-bf71-b20b010483e1/GT-Portfolio-Brochure-2024__FINAL_Low_Resolution-pdf_Original%20file.pdf. Part-load shape PROPOSED_HERE: core/models.py AERODERIVATIVE_FUEL_PARAMETERS curve scaled by 9,576/8,500.",
+          "start_fuel_mmbtu_cold": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "start_fuel_mmbtu_hot": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "start_fuel_mmbtu_warm": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "synchronized_no_load_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value."
+        },
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[2].fuel_status": {
+        "baseline": "not_modelled",
+        "candidate": "modelled",
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[2].fuel_type": {
+        "baseline": null,
+        "candidate": "natural_gas",
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[2].fuel_units": {
+        "baseline": null,
+        "candidate": "MMBtu",
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[2].hot_standby_fuel_mmbtu": {
+        "baseline": null,
+        "candidate": 0.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[2].load_fuel_mmbtu": {
+        "baseline": null,
+        "candidate": 0.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[2].low_load_threshold_pct": {
+        "baseline": null,
+        "candidate": 50.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[2].minutes_below_low_load_threshold": {
+        "baseline": 0.0,
+        "candidate": 0.08333333333333333,
+        "sim_time": null,
+        "tick": 227
+      },
+      "turbine_fuel_telemetry[2].no_load_fuel_mmbtu": {
+        "baseline": null,
+        "candidate": 0.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[2].start_fuel_mmbtu": {
+        "baseline": null,
+        "candidate": 0.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[2].synchronized_headroom_mwh": {
+        "baseline": 0.0,
+        "candidate": 0.017361111111111112,
+        "sim_time": null,
+        "tick": 227
+      },
+      "turbine_fuel_telemetry[2].total_fuel_mmbtu": {
+        "baseline": null,
+        "candidate": 0.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[3].fuel_mmbtu_this_tick": {
+        "baseline": null,
+        "candidate": 0.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[3].fuel_modelled": {
+        "baseline": false,
+        "candidate": true,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[3].fuel_parameter_provenance": {
+        "baseline": null,
+        "candidate": {
+          "hot_standby_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "low_load_threshold_pct": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "part_load_heat_rate_btu_per_kwh": "Full-load point CITED: Siemens Energy Gas Turbine Portfolio Brochure 2024, Performance data overview: Power generation, SGT-400 (15 MW) at 14.3 MW(e) and 10,103 kJ/kWh; converted 10,103 \u00d7 0.947817 = 9,575.795151 Btu/kWh, rounded to 9,576. The brochure states gross efficiency but does not state ISO conditions or the heat-rate LHV/HHV/net/gross basis; ASSUMED LHV is PROPOSED_HERE. Source: https://assets.siemens-energy.com/dam/d7e01f44-f091-44f2-bf71-b20b010483e1/GT-Portfolio-Brochure-2024__FINAL_Low_Resolution-pdf_Original%20file.pdf. Part-load shape PROPOSED_HERE: core/models.py AERODERIVATIVE_FUEL_PARAMETERS curve scaled by 9,576/8,500.",
+          "start_fuel_mmbtu_cold": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "start_fuel_mmbtu_hot": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "start_fuel_mmbtu_warm": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "synchronized_no_load_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value."
+        },
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[3].fuel_status": {
+        "baseline": "not_modelled",
+        "candidate": "modelled",
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[3].fuel_type": {
+        "baseline": null,
+        "candidate": "natural_gas",
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[3].fuel_units": {
+        "baseline": null,
+        "candidate": "MMBtu",
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[3].hot_standby_fuel_mmbtu": {
+        "baseline": null,
+        "candidate": 0.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[3].load_fuel_mmbtu": {
+        "baseline": null,
+        "candidate": 0.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[3].low_load_threshold_pct": {
+        "baseline": null,
+        "candidate": 50.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[3].minutes_below_low_load_threshold": {
+        "baseline": 0.0,
+        "candidate": 0.08333333333333333,
+        "sim_time": null,
+        "tick": 347
+      },
+      "turbine_fuel_telemetry[3].no_load_fuel_mmbtu": {
+        "baseline": null,
+        "candidate": 0.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[3].start_fuel_mmbtu": {
+        "baseline": null,
+        "candidate": 0.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[3].synchronized_headroom_mwh": {
+        "baseline": 0.0,
+        "candidate": 0.017361111111111112,
+        "sim_time": null,
+        "tick": 347
+      },
+      "turbine_fuel_telemetry[3].total_fuel_mmbtu": {
+        "baseline": null,
+        "candidate": 0.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[4].fuel_mmbtu_this_tick": {
+        "baseline": null,
+        "candidate": 0.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[4].fuel_modelled": {
+        "baseline": false,
+        "candidate": true,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[4].fuel_parameter_provenance": {
+        "baseline": null,
+        "candidate": {
+          "hot_standby_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "low_load_threshold_pct": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "part_load_heat_rate_btu_per_kwh": "Full-load point CITED: Siemens Energy Gas Turbine Portfolio Brochure 2024, Performance data overview: Power generation, SGT-400 (15 MW) at 14.3 MW(e) and 10,103 kJ/kWh; converted 10,103 \u00d7 0.947817 = 9,575.795151 Btu/kWh, rounded to 9,576. The brochure states gross efficiency but does not state ISO conditions or the heat-rate LHV/HHV/net/gross basis; ASSUMED LHV is PROPOSED_HERE. Source: https://assets.siemens-energy.com/dam/d7e01f44-f091-44f2-bf71-b20b010483e1/GT-Portfolio-Brochure-2024__FINAL_Low_Resolution-pdf_Original%20file.pdf. Part-load shape PROPOSED_HERE: core/models.py AERODERIVATIVE_FUEL_PARAMETERS curve scaled by 9,576/8,500.",
+          "start_fuel_mmbtu_cold": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "start_fuel_mmbtu_hot": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "start_fuel_mmbtu_warm": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "synchronized_no_load_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value."
+        },
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[4].fuel_status": {
+        "baseline": "not_modelled",
+        "candidate": "modelled",
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[4].fuel_type": {
+        "baseline": null,
+        "candidate": "natural_gas",
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[4].fuel_units": {
+        "baseline": null,
+        "candidate": "MMBtu",
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[4].hot_standby_fuel_mmbtu": {
+        "baseline": null,
+        "candidate": 0.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[4].load_fuel_mmbtu": {
+        "baseline": null,
+        "candidate": 0.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[4].low_load_threshold_pct": {
+        "baseline": null,
+        "candidate": 50.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[4].minutes_below_low_load_threshold": {
+        "baseline": 0.0,
+        "candidate": 0.08333333333333333,
+        "sim_time": null,
+        "tick": 540
+      },
+      "turbine_fuel_telemetry[4].no_load_fuel_mmbtu": {
+        "baseline": null,
+        "candidate": 0.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[4].start_fuel_mmbtu": {
+        "baseline": null,
+        "candidate": 0.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_telemetry[4].synchronized_headroom_mwh": {
+        "baseline": 0.0,
+        "candidate": 0.017361111111111112,
+        "sim_time": null,
+        "tick": 540
+      },
+      "turbine_fuel_telemetry[4].total_fuel_mmbtu": {
+        "baseline": null,
+        "candidate": 0.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_type": {
+        "baseline": null,
+        "candidate": "natural_gas",
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_fuel_units": {
+        "baseline": null,
+        "candidate": "MMBtu",
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_minutes_below_low_load_threshold": {
+        "baseline": 0.0,
+        "candidate": 0.08333333333333333,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_synchronized_headroom_mwh": {
+        "baseline": 0.0,
+        "candidate": 0.013541666666666667,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_total_fuel_mmbtu": {
+        "baseline": null,
+        "candidate": 12.08808537254902,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[0].fuel_low_load_threshold_pct": {
+        "baseline": null,
+        "candidate": 50.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[0].fuel_modelled": {
+        "baseline": false,
+        "candidate": true,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[0].fuel_parameter_provenance": {
+        "baseline": null,
+        "candidate": {
+          "hot_standby_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "low_load_threshold_pct": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "part_load_heat_rate_btu_per_kwh": "Full-load point CITED: Siemens Energy Gas Turbine Portfolio Brochure 2024, Performance data overview: Power generation, SGT-400 (15 MW) at 14.3 MW(e) and 10,103 kJ/kWh; converted 10,103 \u00d7 0.947817 = 9,575.795151 Btu/kWh, rounded to 9,576. The brochure states gross efficiency but does not state ISO conditions or the heat-rate LHV/HHV/net/gross basis; ASSUMED LHV is PROPOSED_HERE. Source: https://assets.siemens-energy.com/dam/d7e01f44-f091-44f2-bf71-b20b010483e1/GT-Portfolio-Brochure-2024__FINAL_Low_Resolution-pdf_Original%20file.pdf. Part-load shape PROPOSED_HERE: core/models.py AERODERIVATIVE_FUEL_PARAMETERS curve scaled by 9,576/8,500.",
+          "start_fuel_mmbtu_cold": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "start_fuel_mmbtu_hot": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "start_fuel_mmbtu_warm": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "synchronized_no_load_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value."
+        },
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[0].fuel_type": {
+        "baseline": null,
+        "candidate": "natural_gas",
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[0].fuel_units": {
+        "baseline": null,
+        "candidate": "MMBtu",
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[1].fuel_low_load_threshold_pct": {
+        "baseline": null,
+        "candidate": 50.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[1].fuel_modelled": {
+        "baseline": false,
+        "candidate": true,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[1].fuel_parameter_provenance": {
+        "baseline": null,
+        "candidate": {
+          "hot_standby_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "low_load_threshold_pct": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "part_load_heat_rate_btu_per_kwh": "Full-load point CITED: Siemens Energy Gas Turbine Portfolio Brochure 2024, Performance data overview: Power generation, SGT-400 (15 MW) at 14.3 MW(e) and 10,103 kJ/kWh; converted 10,103 \u00d7 0.947817 = 9,575.795151 Btu/kWh, rounded to 9,576. The brochure states gross efficiency but does not state ISO conditions or the heat-rate LHV/HHV/net/gross basis; ASSUMED LHV is PROPOSED_HERE. Source: https://assets.siemens-energy.com/dam/d7e01f44-f091-44f2-bf71-b20b010483e1/GT-Portfolio-Brochure-2024__FINAL_Low_Resolution-pdf_Original%20file.pdf. Part-load shape PROPOSED_HERE: core/models.py AERODERIVATIVE_FUEL_PARAMETERS curve scaled by 9,576/8,500.",
+          "start_fuel_mmbtu_cold": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "start_fuel_mmbtu_hot": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "start_fuel_mmbtu_warm": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "synchronized_no_load_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value."
+        },
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[1].fuel_type": {
+        "baseline": null,
+        "candidate": "natural_gas",
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[1].fuel_units": {
+        "baseline": null,
+        "candidate": "MMBtu",
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[2].fuel_low_load_threshold_pct": {
+        "baseline": null,
+        "candidate": 50.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[2].fuel_modelled": {
+        "baseline": false,
+        "candidate": true,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[2].fuel_parameter_provenance": {
+        "baseline": null,
+        "candidate": {
+          "hot_standby_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "low_load_threshold_pct": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "part_load_heat_rate_btu_per_kwh": "Full-load point CITED: Siemens Energy Gas Turbine Portfolio Brochure 2024, Performance data overview: Power generation, SGT-400 (15 MW) at 14.3 MW(e) and 10,103 kJ/kWh; converted 10,103 \u00d7 0.947817 = 9,575.795151 Btu/kWh, rounded to 9,576. The brochure states gross efficiency but does not state ISO conditions or the heat-rate LHV/HHV/net/gross basis; ASSUMED LHV is PROPOSED_HERE. Source: https://assets.siemens-energy.com/dam/d7e01f44-f091-44f2-bf71-b20b010483e1/GT-Portfolio-Brochure-2024__FINAL_Low_Resolution-pdf_Original%20file.pdf. Part-load shape PROPOSED_HERE: core/models.py AERODERIVATIVE_FUEL_PARAMETERS curve scaled by 9,576/8,500.",
+          "start_fuel_mmbtu_cold": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "start_fuel_mmbtu_hot": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "start_fuel_mmbtu_warm": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "synchronized_no_load_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value."
+        },
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[2].fuel_type": {
+        "baseline": null,
+        "candidate": "natural_gas",
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[2].fuel_units": {
+        "baseline": null,
+        "candidate": "MMBtu",
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[3].fuel_low_load_threshold_pct": {
+        "baseline": null,
+        "candidate": 50.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[3].fuel_modelled": {
+        "baseline": false,
+        "candidate": true,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[3].fuel_parameter_provenance": {
+        "baseline": null,
+        "candidate": {
+          "hot_standby_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "low_load_threshold_pct": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "part_load_heat_rate_btu_per_kwh": "Full-load point CITED: Siemens Energy Gas Turbine Portfolio Brochure 2024, Performance data overview: Power generation, SGT-400 (15 MW) at 14.3 MW(e) and 10,103 kJ/kWh; converted 10,103 \u00d7 0.947817 = 9,575.795151 Btu/kWh, rounded to 9,576. The brochure states gross efficiency but does not state ISO conditions or the heat-rate LHV/HHV/net/gross basis; ASSUMED LHV is PROPOSED_HERE. Source: https://assets.siemens-energy.com/dam/d7e01f44-f091-44f2-bf71-b20b010483e1/GT-Portfolio-Brochure-2024__FINAL_Low_Resolution-pdf_Original%20file.pdf. Part-load shape PROPOSED_HERE: core/models.py AERODERIVATIVE_FUEL_PARAMETERS curve scaled by 9,576/8,500.",
+          "start_fuel_mmbtu_cold": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "start_fuel_mmbtu_hot": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "start_fuel_mmbtu_warm": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "synchronized_no_load_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value."
+        },
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[3].fuel_type": {
+        "baseline": null,
+        "candidate": "natural_gas",
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[3].fuel_units": {
+        "baseline": null,
+        "candidate": "MMBtu",
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[4].fuel_low_load_threshold_pct": {
+        "baseline": null,
+        "candidate": 50.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[4].fuel_modelled": {
+        "baseline": false,
+        "candidate": true,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[4].fuel_parameter_provenance": {
+        "baseline": null,
+        "candidate": {
+          "hot_standby_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "low_load_threshold_pct": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "part_load_heat_rate_btu_per_kwh": "Full-load point CITED: Siemens Energy Gas Turbine Portfolio Brochure 2024, Performance data overview: Power generation, SGT-400 (15 MW) at 14.3 MW(e) and 10,103 kJ/kWh; converted 10,103 \u00d7 0.947817 = 9,575.795151 Btu/kWh, rounded to 9,576. The brochure states gross efficiency but does not state ISO conditions or the heat-rate LHV/HHV/net/gross basis; ASSUMED LHV is PROPOSED_HERE. Source: https://assets.siemens-energy.com/dam/d7e01f44-f091-44f2-bf71-b20b010483e1/GT-Portfolio-Brochure-2024__FINAL_Low_Resolution-pdf_Original%20file.pdf. Part-load shape PROPOSED_HERE: core/models.py AERODERIVATIVE_FUEL_PARAMETERS curve scaled by 9,576/8,500.",
+          "start_fuel_mmbtu_cold": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "start_fuel_mmbtu_hot": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "start_fuel_mmbtu_warm": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+          "synchronized_no_load_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value."
+        },
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[4].fuel_type": {
+        "baseline": null,
+        "candidate": "natural_gas",
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[4].fuel_units": {
+        "baseline": null,
+        "candidate": "MMBtu",
+        "sim_time": null,
+        "tick": 1
+      }
+    },
+    "first_nonfuel_difference": {
+      "baseline": 0.0,
+      "candidate": 0.013541666666666667,
+      "field": "turbine_synchronized_headroom_mwh",
+      "sim_time": null,
+      "tick": 1
+    },
+    "first_nonfuel_difference_by_field": {
+      "turbine_synchronized_headroom_mwh": {
+        "baseline": 0.0,
+        "candidate": 0.013541666666666667,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[0].fuel_low_load_threshold_pct": {
+        "baseline": null,
+        "candidate": 50.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[1].fuel_low_load_threshold_pct": {
+        "baseline": null,
+        "candidate": 50.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[2].fuel_low_load_threshold_pct": {
+        "baseline": null,
+        "candidate": 50.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[3].fuel_low_load_threshold_pct": {
+        "baseline": null,
+        "candidate": 50.0,
+        "sim_time": null,
+        "tick": 1
+      },
+      "turbine_units[4].fuel_low_load_threshold_pct": {
+        "baseline": null,
+        "candidate": 50.0,
+        "sim_time": null,
+        "tick": 1
+      }
+    },
+    "nonfuel_equal": false,
+    "nonfuel_tick_field_difference_counts": {
+      "turbine_synchronized_headroom_mwh": 17280,
+      "turbine_units[0].fuel_low_load_threshold_pct": 17280,
+      "turbine_units[1].fuel_low_load_threshold_pct": 17280,
+      "turbine_units[2].fuel_low_load_threshold_pct": 17280,
+      "turbine_units[3].fuel_low_load_threshold_pct": 17280,
+      "turbine_units[4].fuel_low_load_threshold_pct": 17280
+    },
+    "tick_count_baseline": 17280,
+    "tick_count_candidate": 17280
+  }
+}

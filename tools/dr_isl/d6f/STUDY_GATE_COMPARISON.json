@@ -1,0 +1,95 @@
+{
+  "comparisons": [
+    {
+      "arms": {
+        "baseline": {
+          "compared_metric_count": 14,
+          "expected_physical_hash": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+          "mismatches": {},
+          "physical_hash": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6"
+        },
+        "informed": {
+          "compared_metric_count": 14,
+          "expected_physical_hash": "72cc28766574a78c44913d389207bc6cca268ac1bf29b15abd148c63af334754",
+          "mismatches": {},
+          "physical_hash": "72cc28766574a78c44913d389207bc6cca268ac1bf29b15abd148c63af334754"
+        }
+      },
+      "compare_conditions_current": {
+        "baseline_energy_balance": true,
+        "baseline_fuel_reconciled": true,
+        "baseline_valid": true,
+        "build_parity": true,
+        "identical_compute_trace": true,
+        "informed_energy_balance": true,
+        "informed_fuel_reconciled": true,
+        "informed_peak_unserved_no_worse": true,
+        "informed_unserved_energy_no_worse": true,
+        "informed_valid": true
+      },
+      "compare_verdict_current": "PASS",
+      "scenario_id": "scenario-uneven-multisched-01"
+    },
+    {
+      "arms": {
+        "baseline": {
+          "compared_metric_count": 14,
+          "expected_physical_hash": "c4fa3b355b2eebf949f1f0ad9f43b1b76770cf05bb380d224a3282699985fc20",
+          "mismatches": {},
+          "physical_hash": "c4fa3b355b2eebf949f1f0ad9f43b1b76770cf05bb380d224a3282699985fc20"
+        },
+        "informed": {
+          "compared_metric_count": 14,
+          "expected_physical_hash": "437d480102d11676df747a5ddc742cd29c9785956c1255098dc8d00d9f18a264",
+          "mismatches": {},
+          "physical_hash": "437d480102d11676df747a5ddc742cd29c9785956c1255098dc8d00d9f18a264"
+        }
+      },
+      "compare_conditions_current": {
+        "baseline_energy_balance": true,
+        "baseline_fuel_reconciled": true,
+        "baseline_valid": true,
+        "build_parity": true,
+        "identical_compute_trace": true,
+        "informed_energy_balance": true,
+        "informed_fuel_reconciled": true,
+        "informed_peak_unserved_no_worse": true,
+        "informed_unserved_energy_no_worse": true,
+        "informed_valid": true
+      },
+      "compare_verdict_current": "PASS",
+      "scenario_id": "scenario-h1-k8s-ray-24h"
+    },
+    {
+      "arms": {
+        "baseline": {
+          "compared_metric_count": 15,
+          "expected_physical_hash": "603441374503951709dc77d5ae11234e966d5b479e50edca5dd608c7782f217f",
+          "mismatches": {},
+          "physical_hash": "603441374503951709dc77d5ae11234e966d5b479e50edca5dd608c7782f217f"
+        },
+        "informed": {
+          "compared_metric_count": 15,
+          "expected_physical_hash": "17954e9420ad8d0c9493a690c03cd670ae0a5f57df60f801b7c292aeea3a9fba",
+          "mismatches": {},
+          "physical_hash": "17954e9420ad8d0c9493a690c03cd670ae0a5f57df60f801b7c292aeea3a9fba"
+        }
+      },
+      "compare_conditions_current": {
+        "baseline_energy_balance": true,
+        "baseline_fuel_reconciled": true,
+        "baseline_valid": true,
+        "build_parity": true,
+        "identical_compute_trace": true,
+        "informed_energy_balance": true,
+        "informed_fuel_reconciled": true,
+        "informed_peak_unserved_no_worse": true,
+        "informed_unserved_energy_no_worse": true,
+        "informed_valid": true
+      },
+      "compare_verdict_current": "PASS",
+      "scenario_id": "scenario-h2-slurm-24h"
+    }
+  ],
+  "status": "PASS"
+}

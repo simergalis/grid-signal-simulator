@@ -1,0 +1,1458 @@
+[
+  {
+    "baseline": {
+      "bess_soc_final": 0.999999999,
+      "bess_soc_max": 0.999999999,
+      "bess_soc_min": 0.746789342,
+      "build_warnings": [
+        {
+          "code": "islanded_frequency_protection_unconfigured",
+          "message": "islanded run without frequency protection configured"
+        }
+      ],
+      "cache_hit": false,
+      "commitment": {
+        "distinct_event_count": 8,
+        "log_complete": true,
+        "omitted_record_count": 0,
+        "reserve_floor_distinct_event_count": 0,
+        "reserve_floor_log_complete": true,
+        "reserve_floor_omitted_record_count": 0,
+        "reserve_floor_refusal_count": 0,
+        "reserve_floor_suppressed_repeat_count": 0,
+        "reserve_floor_visible_distinct_event_count": 0,
+        "same_unit_restart_within_min_down_window_count": 0,
+        "suppressed_repeat_count": 0,
+        "visible_distinct_event_count": 8
+      },
+      "commitment_log_record_count": 8,
+      "compute_trace_count": 1440,
+      "compute_trace_sha256": "fb3a32d783d0a61ddd2cb8ec7bfbe0204712a2c6f6f9398ef60932160dafa54b",
+      "constraints_valid": true,
+      "daily_breakdown": [
+        {
+          "bess_soc_end": 0.999999999,
+          "curtailed_mwh": 8.136511735,
+          "day": 1,
+          "fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 0.039236111,
+            "load_fuel_mmbtu": 690.133782974,
+            "no_load_fuel_mmbtu": 8.19,
+            "start_fuel_mmbtu": 16.0
+          },
+          "fuel_mmbtu": 714.363019086,
+          "kind": "weekday",
+          "unserved_mwh": 0.351692658
+        }
+      ],
+      "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+        "gt-hot-01": 14.277890997,
+        "gt-hot-02": 11.637943604,
+        "gt-spin-01": 29.816221037,
+        "gt-spin-02": 29.711129581
+      },
+      "dispatch_curtailment_attributable_fuel_mmbtu": 85.443185219,
+      "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 0.0,
+        "load_fuel_mmbtu": 287.502680246,
+        "no_load_fuel_mmbtu": 3.726666667,
+        "start_fuel_mmbtu": 0.0
+      },
+      "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+        "gt-hot-01": 54.624513889,
+        "gt-hot-02": 50.639930556,
+        "gt-spin-01": 93.186666667,
+        "gt-spin-02": 92.778235801
+      },
+      "dispatch_curtailment_interval_exposure_fuel_mmbtu": 291.229346912,
+      "dispatch_curtailment_mwh": 8.136511735,
+      "energy_balance": {
+        "closure_status": true,
+        "max_abs_physical_ledger_defect_mw": 0.0,
+        "served_demand_mwh": 64.203838044,
+        "unserved_demand_mwh": 0.351692658
+      },
+      "engine_commit": "fd3bc85c90861844d829edcd5ca7d0110d7bb08c-dirty",
+      "forecast": {
+        "miss_count": 0,
+        "miss_peak_mw": 0.0
+      },
+      "forecast_misses": {
+        "count": 0,
+        "peak_mw": 0.0
+      },
+      "frequency_feedback_configured": false,
+      "fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 0.039236111,
+        "load_fuel_mmbtu": 690.133782974,
+        "no_load_fuel_mmbtu": 8.19,
+        "start_fuel_mmbtu": 16.0
+      },
+      "fuel_reconciled": true,
+      "hard_violations": [],
+      "harness_commit": "fd3bc85c90861844d829edcd5ca7d0110d7bb08c-dirty",
+      "identity_digest": "50b13fa59aec62622fc1fc130847d047cfba1122db7dd7440840d786e96d1574",
+      "interval_seconds": 5.0,
+      "invalid_frequency_fraction": 0.03680555555555556,
+      "invalid_frequency_tick_count": 53,
+      "measured_start_event_count": 2,
+      "mode": "baseline",
+      "peak_unserved_mw": 22.309362466,
+      "physical_identity_sha256": "f1ebd90e589a217bbaf85264a2153a268a493a8b644c75ebbe74fd89c7f5def6",
+      "protection_configured": false,
+      "replay_strategy": "baseline demand trace replay",
+      "run_id": "scenario-uneven-multisched-01-baseline-50b13fa59aec6262",
+      "scenario_id": "scenario-uneven-multisched-01",
+      "seed_manifest": {
+        "consumer_seeds": {
+          "advisory_deidentification": 11127443726550777859,
+          "diesel:diesel-000": 12566121577145444248,
+          "fabric": 1575259314589039680,
+          "kube:um-k8s-h100": 51,
+          "kube:um-ray-gb200": 2051,
+          "kube:um-slurm-h100": 1051,
+          "price_curve": 42,
+          "procurement_price_curve": 42,
+          "scada": 42,
+          "solar_sim": 8121001720803894877
+        },
+        "consumer_sources": {
+          "advisory_deidentification": "derived_from_run_seed",
+          "diesel:diesel-000": "derived_from_run_seed",
+          "fabric": "derived_from_run_seed",
+          "kube:um-k8s-h100": "explicit_config",
+          "kube:um-ray-gb200": "explicit_config",
+          "kube:um-slurm-h100": "explicit_config",
+          "price_curve": "explicit_config",
+          "procurement_price_curve": "explicit_config",
+          "scada": "explicit_config",
+          "solar_sim": "derived_from_run_seed"
+        },
+        "requested_run_seed": 42,
+        "resolved_at_utc": "2026-10-24T14:09:29.152792+00:00",
+        "root_seed": 42,
+        "root_seed_drawn": false,
+        "seed_derivation_version": "d4-sha256-v1"
+      },
+      "served_mwh": 64.203838044,
+      "start_fuel_reconciliation": {
+        "measured_event_count": 2,
+        "measured_start_fuel_mmbtu": 16.0,
+        "passed": true,
+        "recorded_event_count": 2,
+        "release_charged": true,
+        "tier_sum_mmbtu": null
+      },
+      "status": "PASS",
+      "stop_floor_refusal_count": 0,
+      "stop_floor_refusals_detail_count": 0,
+      "study_class": "base_demo",
+      "study_input_provenance": {
+        "canonicalised": true,
+        "post_validation_overrides": [
+          {
+            "field": "turbine_units",
+            "operation": "apply_study_fuel_model"
+          },
+          {
+            "field": "turbine_commitment_mode",
+            "value": "baseline"
+          },
+          {
+            "operation": "baseline_demand_replay",
+            "tick_count": 1440
+          },
+          {
+            "event_count": 240,
+            "operation": "baseline_workload_replay",
+            "removed_fields": [
+              "kube_clusters",
+              "slurm_config"
+            ]
+          }
+        ],
+        "source": "config/scenarios/scenario-uneven-multisched-01.json",
+        "validation": "ScenarioSpec.model_validate_json -> model_dump(mode=json)"
+      },
+      "tick_count": 1440,
+      "turbine_fuel_mmbtu": 714.363019086,
+      "unserved_intervals_detail_count": 2,
+      "unserved_mwh": 0.351692658
+    },
+    "comparison": {
+      "condition_inputs": {
+        "baseline_energy_balance": {
+          "baseline_energy_balance": true,
+          "baseline_frequency_feedback_configured": false,
+          "baseline_invalid_frequency_fraction": 0.03680555555555556,
+          "baseline_invalid_frequency_tick_count": 53,
+          "baseline_protection_configured": false,
+          "informed_frequency_feedback_configured": false,
+          "informed_invalid_frequency_fraction": 0.0,
+          "informed_invalid_frequency_tick_count": 0,
+          "informed_protection_configured": false
+        },
+        "baseline_fuel_reconciled": {
+          "baseline_frequency_feedback_configured": false,
+          "baseline_fuel_reconciled": true,
+          "baseline_invalid_frequency_fraction": 0.03680555555555556,
+          "baseline_invalid_frequency_tick_count": 53,
+          "baseline_protection_configured": false,
+          "informed_frequency_feedback_configured": false,
+          "informed_invalid_frequency_fraction": 0.0,
+          "informed_invalid_frequency_tick_count": 0,
+          "informed_protection_configured": false
+        },
+        "baseline_valid": {
+          "baseline_constraints_valid": true,
+          "baseline_frequency_feedback_configured": false,
+          "baseline_frequency_valid": true,
+          "baseline_hard_violations": [],
+          "baseline_invalid_frequency_fraction": 0.03680555555555556,
+          "baseline_invalid_frequency_tick_count": 53,
+          "baseline_protection_configured": false,
+          "informed_frequency_feedback_configured": false,
+          "informed_invalid_frequency_fraction": 0.0,
+          "informed_invalid_frequency_tick_count": 0,
+          "informed_protection_configured": false
+        },
+        "build_parity": {
+          "baseline_engine_commit": "fd3bc85c90861844d829edcd5ca7d0110d7bb08c-dirty",
+          "baseline_frequency_feedback_configured": false,
+          "baseline_harness_commit": "fd3bc85c90861844d829edcd5ca7d0110d7bb08c-dirty",
+          "baseline_invalid_frequency_fraction": 0.03680555555555556,
+          "baseline_invalid_frequency_tick_count": 53,
+          "baseline_protection_configured": false,
+          "informed_engine_commit": "fd3bc85c90861844d829edcd5ca7d0110d7bb08c-dirty",
+          "informed_frequency_feedback_configured": false,
+          "informed_harness_commit": "fd3bc85c90861844d829edcd5ca7d0110d7bb08c-dirty",
+          "informed_invalid_frequency_fraction": 0.0,
+          "informed_invalid_frequency_tick_count": 0,
+          "informed_protection_configured": false
+        },
+        "identical_compute_trace": {
+          "baseline_compute_trace_sha256": "fb3a32d783d0a61ddd2cb8ec7bfbe0204712a2c6f6f9398ef60932160dafa54b",
+          "baseline_frequency_feedback_configured": false,
+          "baseline_invalid_frequency_fraction": 0.03680555555555556,
+          "baseline_invalid_frequency_tick_count": 53,
+          "baseline_protection_configured": false,
+          "informed_compute_trace_sha256": "fb3a32d783d0a61ddd2cb8ec7bfbe0204712a2c6f6f9398ef60932160dafa54b",
+          "informed_frequency_feedback_configured": false,
+          "informed_invalid_frequency_fraction": 0.0,
+          "informed_invalid_frequency_tick_count": 0,
+          "informed_protection_configured": false
+        },
+        "informed_energy_balance": {
+          "baseline_frequency_feedback_configured": false,
+          "baseline_invalid_frequency_fraction": 0.03680555555555556,
+          "baseline_invalid_frequency_tick_count": 53,
+          "baseline_protection_configured": false,
+          "informed_energy_balance": true,
+          "informed_frequency_feedback_configured": false,
+          "informed_invalid_frequency_fraction": 0.0,
+          "informed_invalid_frequency_tick_count": 0,
+          "informed_protection_configured": false
+        },
+        "informed_fuel_reconciled": {
+          "baseline_frequency_feedback_configured": false,
+          "baseline_invalid_frequency_fraction": 0.03680555555555556,
+          "baseline_invalid_frequency_tick_count": 53,
+          "baseline_protection_configured": false,
+          "informed_frequency_feedback_configured": false,
+          "informed_fuel_reconciled": true,
+          "informed_invalid_frequency_fraction": 0.0,
+          "informed_invalid_frequency_tick_count": 0,
+          "informed_protection_configured": false
+        },
+        "informed_peak_unserved_no_worse": {
+          "baseline_frequency_feedback_configured": false,
+          "baseline_invalid_frequency_fraction": 0.03680555555555556,
+          "baseline_invalid_frequency_tick_count": 53,
+          "baseline_peak_unserved_mw": 22.309362466,
+          "baseline_protection_configured": false,
+          "informed_frequency_feedback_configured": false,
+          "informed_invalid_frequency_fraction": 0.0,
+          "informed_invalid_frequency_tick_count": 0,
+          "informed_peak_unserved_mw": 7.52325057,
+          "informed_protection_configured": false,
+          "tolerance_mw": 1e-09
+        },
+        "informed_unserved_energy_no_worse": {
+          "baseline_frequency_feedback_configured": false,
+          "baseline_invalid_frequency_fraction": 0.03680555555555556,
+          "baseline_invalid_frequency_tick_count": 53,
+          "baseline_protection_configured": false,
+          "baseline_unserved_mwh": 0.351692658,
+          "informed_frequency_feedback_configured": false,
+          "informed_invalid_frequency_fraction": 0.0,
+          "informed_invalid_frequency_tick_count": 0,
+          "informed_protection_configured": false,
+          "informed_unserved_mwh": 0.020719074,
+          "tolerance_mwh": 1e-09
+        },
+        "informed_valid": {
+          "baseline_frequency_feedback_configured": false,
+          "baseline_invalid_frequency_fraction": 0.03680555555555556,
+          "baseline_invalid_frequency_tick_count": 53,
+          "baseline_protection_configured": false,
+          "informed_constraints_valid": true,
+          "informed_frequency_feedback_configured": false,
+          "informed_frequency_valid": true,
+          "informed_hard_violations": [],
+          "informed_invalid_frequency_fraction": 0.0,
+          "informed_invalid_frequency_tick_count": 0,
+          "informed_protection_configured": false
+        }
+      },
+      "condition_order": [
+        "build_parity",
+        "baseline_valid",
+        "informed_valid",
+        "baseline_energy_balance",
+        "informed_energy_balance",
+        "baseline_fuel_reconciled",
+        "informed_fuel_reconciled",
+        "identical_compute_trace",
+        "informed_unserved_energy_no_worse",
+        "informed_peak_unserved_no_worse"
+      ],
+      "conditions": {
+        "baseline_energy_balance": true,
+        "baseline_fuel_reconciled": true,
+        "baseline_valid": true,
+        "build_parity": true,
+        "identical_compute_trace": true,
+        "informed_energy_balance": true,
+        "informed_fuel_reconciled": true,
+        "informed_peak_unserved_no_worse": true,
+        "informed_unserved_energy_no_worse": true,
+        "informed_valid": true
+      },
+      "frequency_inputs": {
+        "baseline_frequency_feedback_configured": false,
+        "baseline_invalid_frequency_fraction": 0.03680555555555556,
+        "baseline_invalid_frequency_tick_count": 53,
+        "baseline_protection_configured": false,
+        "informed_frequency_feedback_configured": false,
+        "informed_invalid_frequency_fraction": 0.0,
+        "informed_invalid_frequency_tick_count": 0,
+        "informed_protection_configured": false
+      },
+      "informed_vs_baseline": {
+        "baseline_peak_unserved_mw": 22.309362466,
+        "baseline_unserved_mwh": 0.351692658,
+        "informed_peak_unserved_mw": 7.52325057,
+        "informed_unserved_mwh": 0.020719074
+      },
+      "verdict": "PASS"
+    },
+    "informed": {
+      "bess_soc_final": 0.999999999,
+      "bess_soc_max": 0.999999999,
+      "bess_soc_min": 0.859751061,
+      "build_warnings": [
+        {
+          "code": "islanded_frequency_protection_unconfigured",
+          "message": "islanded run without frequency protection configured"
+        }
+      ],
+      "cache_hit": false,
+      "commitment": {
+        "distinct_event_count": 11,
+        "log_complete": true,
+        "omitted_record_count": 0,
+        "reserve_floor_distinct_event_count": 1377,
+        "reserve_floor_log_complete": true,
+        "reserve_floor_omitted_record_count": 0,
+        "reserve_floor_refusal_count": 1377,
+        "reserve_floor_suppressed_repeat_count": 0,
+        "reserve_floor_visible_distinct_event_count": 1377,
+        "same_unit_restart_within_min_down_window_count": 0,
+        "suppressed_repeat_count": 1374,
+        "visible_distinct_event_count": 11
+      },
+      "commitment_log_record_count": 11,
+      "compute_trace_count": 1440,
+      "compute_trace_sha256": "fb3a32d783d0a61ddd2cb8ec7bfbe0204712a2c6f6f9398ef60932160dafa54b",
+      "constraints_valid": true,
+      "daily_breakdown": [
+        {
+          "bess_soc_end": 0.999999999,
+          "curtailed_mwh": 5.278943188,
+          "day": 1,
+          "fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 0.000347222,
+            "load_fuel_mmbtu": 642.554567148,
+            "no_load_fuel_mmbtu": 6.843333333,
+            "start_fuel_mmbtu": 16.0
+          },
+          "fuel_mmbtu": 665.398247704,
+          "kind": "weekday",
+          "unserved_mwh": 0.020719074
+        }
+      ],
+      "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+        "gt-hot-01": 1.242273356,
+        "gt-hot-02": 1.182962935,
+        "gt-spin-01": 26.368861337,
+        "gt-spin-02": 26.22775275
+      },
+      "dispatch_curtailment_attributable_fuel_mmbtu": 55.021850379,
+      "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 0.0,
+        "load_fuel_mmbtu": 139.390513585,
+        "no_load_fuel_mmbtu": 1.753333333,
+        "start_fuel_mmbtu": 0.0
+      },
+      "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+        "gt-hot-01": 9.303598121,
+        "gt-hot-02": 9.038611111,
+        "gt-spin-01": 61.708845913,
+        "gt-spin-02": 61.092791773
+      },
+      "dispatch_curtailment_interval_exposure_fuel_mmbtu": 141.143846919,
+      "dispatch_curtailment_mwh": 5.278943188,
+      "energy_balance": {
+        "closure_status": true,
+        "max_abs_physical_ledger_defect_mw": 0.0,
+        "served_demand_mwh": 64.534811628,
+        "unserved_demand_mwh": 0.020719074
+      },
+      "engine_commit": "fd3bc85c90861844d829edcd5ca7d0110d7bb08c-dirty",
+      "forecast": {
+        "miss_count": 4,
+        "miss_peak_mw": 3.208264895
+      },
+      "forecast_misses": {
+        "count": 4,
+        "peak_mw": 3.2082648946925474
+      },
+      "frequency_feedback_configured": false,
+      "fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 0.000347222,
+        "load_fuel_mmbtu": 642.554567148,
+        "no_load_fuel_mmbtu": 6.843333333,
+        "start_fuel_mmbtu": 16.0
+      },
+      "fuel_reconciled": true,
+      "hard_violations": [],
+      "harness_commit": "fd3bc85c90861844d829edcd5ca7d0110d7bb08c-dirty",
+      "identity_digest": "c9ccd15e82fbe13217c63ed4ca77048a176aecdf397237287232df2ee83f464b",
+      "interval_seconds": 5.0,
+      "invalid_frequency_fraction": 0.0,
+      "invalid_frequency_tick_count": 0,
+      "measured_start_event_count": 2,
+      "mode": "informed",
+      "peak_unserved_mw": 7.52325057,
+      "physical_identity_sha256": "72cc28766574a78c44913d389207bc6cca268ac1bf29b15abd148c63af334754",
+      "protection_configured": false,
+      "replay_strategy": "baseline demand trace replay",
+      "run_id": "scenario-uneven-multisched-01-informed-c9ccd15e82fbe132",
+      "scenario_id": "scenario-uneven-multisched-01",
+      "seed_manifest": {
+        "consumer_seeds": {
+          "advisory_deidentification": 11127443726550777859,
+          "diesel:diesel-000": 12566121577145444248,
+          "fabric": 1575259314589039680,
+          "kube:um-k8s-h100": 51,
+          "kube:um-ray-gb200": 2051,
+          "kube:um-slurm-h100": 1051,
+          "price_curve": 42,
+          "procurement_price_curve": 42,
+          "scada": 42,
+          "solar_sim": 8121001720803894877
+        },
+        "consumer_sources": {
+          "advisory_deidentification": "derived_from_run_seed",
+          "diesel:diesel-000": "derived_from_run_seed",
+          "fabric": "derived_from_run_seed",
+          "kube:um-k8s-h100": "explicit_config",
+          "kube:um-ray-gb200": "explicit_config",
+          "kube:um-slurm-h100": "explicit_config",
+          "price_curve": "explicit_config",
+          "procurement_price_curve": "explicit_config",
+          "scada": "explicit_config",
+          "solar_sim": "derived_from_run_seed"
+        },
+        "requested_run_seed": 42,
+        "resolved_at_utc": "2026-10-24T14:09:29.152792+00:00",
+        "root_seed": 42,
+        "root_seed_drawn": false,
+        "seed_derivation_version": "d4-sha256-v1"
+      },
+      "served_mwh": 64.534811628,
+      "start_fuel_reconciliation": {
+        "measured_event_count": 2,
+        "measured_start_fuel_mmbtu": 16.0,
+        "passed": true,
+        "recorded_event_count": 2,
+        "release_charged": true,
+        "tier_sum_mmbtu": null
+      },
+      "status": "PASS",
+      "stop_floor_refusal_count": 1377,
+      "stop_floor_refusals_detail_count": 1377,
+      "study_class": "base_demo",
+      "study_input_provenance": {
+        "canonicalised": true,
+        "post_validation_overrides": [
+          {
+            "field": "turbine_units",
+            "operation": "apply_study_fuel_model"
+          },
+          {
+            "field": "turbine_commitment_mode",
+            "value": "informed"
+          },
+          {
+            "operation": "baseline_demand_replay",
+            "tick_count": 1440
+          },
+          {
+            "event_count": 240,
+            "operation": "baseline_workload_replay",
+            "removed_fields": [
+              "kube_clusters",
+              "slurm_config"
+            ]
+          }
+        ],
+        "source": "config/scenarios/scenario-uneven-multisched-01.json",
+        "validation": "ScenarioSpec.model_validate_json -> model_dump(mode=json)"
+      },
+      "tick_count": 1440,
+      "turbine_fuel_mmbtu": 665.398247704,
+      "unserved_intervals_detail_count": 1,
+      "unserved_mwh": 0.020719074
+    },
+    "scenario_id": "scenario-uneven-multisched-01"
+  },
+  {
+    "baseline": {
+      "bess_soc_final": 0.999999998,
+      "bess_soc_max": 0.999999999,
+      "bess_soc_min": 0.828342155,
+      "build_warnings": [
+        {
+          "code": "islanded_frequency_protection_unconfigured",
+          "message": "islanded run without frequency protection configured"
+        }
+      ],
+      "cache_hit": false,
+      "commitment": {
+        "distinct_event_count": 48,
+        "log_complete": true,
+        "omitted_record_count": 0,
+        "reserve_floor_distinct_event_count": 0,
+        "reserve_floor_log_complete": true,
+        "reserve_floor_omitted_record_count": 0,
+        "reserve_floor_refusal_count": 0,
+        "reserve_floor_suppressed_repeat_count": 0,
+        "reserve_floor_visible_distinct_event_count": 0,
+        "same_unit_restart_within_min_down_window_count": 0,
+        "suppressed_repeat_count": 0,
+        "visible_distinct_event_count": 48
+      },
+      "commitment_log_record_count": 48,
+      "compute_trace_count": 17280,
+      "compute_trace_sha256": "916eb28339ae921141941a8c90069e573e80ef4bf65f2be39cc3e45b8747ccff",
+      "constraints_valid": true,
+      "daily_breakdown": [
+        {
+          "bess_soc_end": 0.999999998,
+          "curtailed_mwh": 187.690139189,
+          "day": 1,
+          "fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 4.142013889,
+            "load_fuel_mmbtu": 5847.168216351,
+            "no_load_fuel_mmbtu": 72.43,
+            "start_fuel_mmbtu": 116.0
+          },
+          "fuel_mmbtu": 6039.74023024,
+          "kind": "weekday",
+          "unserved_mwh": 0.894372986
+        }
+      ],
+      "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+        "gt-hot-01": 79.517141839,
+        "gt-hot-02": 34.708880519,
+        "gt-spin-01": 929.988576652,
+        "gt-spin-02": 929.873705803
+      },
+      "dispatch_curtailment_attributable_fuel_mmbtu": 1974.088304814,
+      "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 3.865277778,
+        "load_fuel_mmbtu": 3347.181453153,
+        "no_load_fuel_mmbtu": 43.573333333,
+        "start_fuel_mmbtu": 0.0
+      },
+      "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+        "gt-hot-01": 154.755902778,
+        "gt-hot-02": 96.221875,
+        "gt-spin-01": 1572.100972222,
+        "gt-spin-02": 1571.541314265
+      },
+      "dispatch_curtailment_interval_exposure_fuel_mmbtu": 3394.620064264,
+      "dispatch_curtailment_mwh": 187.690139189,
+      "energy_balance": {
+        "closure_status": true,
+        "max_abs_physical_ledger_defect_mw": 0.0,
+        "served_demand_mwh": 367.781736493,
+        "unserved_demand_mwh": 0.894372986
+      },
+      "engine_commit": "fd3bc85c90861844d829edcd5ca7d0110d7bb08c-dirty",
+      "forecast": {
+        "miss_count": 0,
+        "miss_peak_mw": 0.0
+      },
+      "forecast_misses": {
+        "count": 0,
+        "peak_mw": 0.0
+      },
+      "frequency_feedback_configured": false,
+      "fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 4.142013889,
+        "load_fuel_mmbtu": 5847.168216351,
+        "no_load_fuel_mmbtu": 72.43,
+        "start_fuel_mmbtu": 116.0
+      },
+      "fuel_reconciled": true,
+      "hard_violations": [],
+      "harness_commit": "fd3bc85c90861844d829edcd5ca7d0110d7bb08c-dirty",
+      "identity_digest": "6ef8b020c53a19140a32e208e185c60275d09312a69018749acb1666044001f9",
+      "interval_seconds": 5.0,
+      "invalid_frequency_fraction": 0.04693287037037037,
+      "invalid_frequency_tick_count": 811,
+      "measured_start_event_count": 12,
+      "mode": "baseline",
+      "peak_unserved_mw": 35.021533247,
+      "physical_identity_sha256": "c4fa3b355b2eebf949f1f0ad9f43b1b76770cf05bb380d224a3282699985fc20",
+      "protection_configured": false,
+      "replay_strategy": "baseline demand trace replay",
+      "run_id": "scenario-h1-k8s-ray-24h-baseline-6ef8b020c53a1914",
+      "scenario_id": "scenario-h1-k8s-ray-24h",
+      "seed_manifest": {
+        "consumer_seeds": {
+          "advisory_deidentification": 11127443726550777859,
+          "fabric": 1575259314589039680,
+          "kube:um-k8s-h100": 51,
+          "kube:um-ray-gb200": 2051,
+          "price_curve": 42,
+          "procurement_price_curve": 42,
+          "scada": 42,
+          "solar_sim": 8121001720803894877
+        },
+        "consumer_sources": {
+          "advisory_deidentification": "derived_from_run_seed",
+          "fabric": "derived_from_run_seed",
+          "kube:um-k8s-h100": "explicit_config",
+          "kube:um-ray-gb200": "explicit_config",
+          "price_curve": "explicit_config",
+          "procurement_price_curve": "explicit_config",
+          "scada": "explicit_config",
+          "solar_sim": "derived_from_run_seed"
+        },
+        "requested_run_seed": 42,
+        "resolved_at_utc": "2026-10-24T14:09:52.608200+00:00",
+        "root_seed": 42,
+        "root_seed_drawn": false,
+        "seed_derivation_version": "d4-sha256-v1"
+      },
+      "served_mwh": 367.781736493,
+      "start_fuel_reconciliation": {
+        "measured_event_count": 12,
+        "measured_start_fuel_mmbtu": 116.0,
+        "passed": true,
+        "recorded_event_count": 12,
+        "release_charged": true,
+        "tier_sum_mmbtu": null
+      },
+      "status": "PASS",
+      "stop_floor_refusal_count": 0,
+      "stop_floor_refusals_detail_count": 0,
+      "study_class": "addendum_h",
+      "tick_count": 17280,
+      "turbine_fuel_mmbtu": 6039.74023024,
+      "unserved_intervals_detail_count": 20,
+      "unserved_mwh": 0.894372986
+    },
+    "comparison": {
+      "condition_inputs": {
+        "baseline_energy_balance": {
+          "baseline_energy_balance": true,
+          "baseline_frequency_feedback_configured": false,
+          "baseline_invalid_frequency_fraction": 0.04693287037037037,
+          "baseline_invalid_frequency_tick_count": 811,
+          "baseline_protection_configured": false,
+          "informed_frequency_feedback_configured": false,
+          "informed_invalid_frequency_fraction": 0.004398148148148148,
+          "informed_invalid_frequency_tick_count": 76,
+          "informed_protection_configured": false
+        },
+        "baseline_fuel_reconciled": {
+          "baseline_frequency_feedback_configured": false,
+          "baseline_fuel_reconciled": true,
+          "baseline_invalid_frequency_fraction": 0.04693287037037037,
+          "baseline_invalid_frequency_tick_count": 811,
+          "baseline_protection_configured": false,
+          "informed_frequency_feedback_configured": false,
+          "informed_invalid_frequency_fraction": 0.004398148148148148,
+          "informed_invalid_frequency_tick_count": 76,
+          "informed_protection_configured": false
+        },
+        "baseline_valid": {
+          "baseline_constraints_valid": true,
+          "baseline_frequency_feedback_configured": false,
+          "baseline_frequency_valid": true,
+          "baseline_hard_violations": [],
+          "baseline_invalid_frequency_fraction": 0.04693287037037037,
+          "baseline_invalid_frequency_tick_count": 811,
+          "baseline_protection_configured": false,
+          "informed_frequency_feedback_configured": false,
+          "informed_invalid_frequency_fraction": 0.004398148148148148,
+          "informed_invalid_frequency_tick_count": 76,
+          "informed_protection_configured": false
+        },
+        "build_parity": {
+          "baseline_engine_commit": "fd3bc85c90861844d829edcd5ca7d0110d7bb08c-dirty",
+          "baseline_frequency_feedback_configured": false,
+          "baseline_harness_commit": "fd3bc85c90861844d829edcd5ca7d0110d7bb08c-dirty",
+          "baseline_invalid_frequency_fraction": 0.04693287037037037,
+          "baseline_invalid_frequency_tick_count": 811,
+          "baseline_protection_configured": false,
+          "informed_engine_commit": "fd3bc85c90861844d829edcd5ca7d0110d7bb08c-dirty",
+          "informed_frequency_feedback_configured": false,
+          "informed_harness_commit": "fd3bc85c90861844d829edcd5ca7d0110d7bb08c-dirty",
+          "informed_invalid_frequency_fraction": 0.004398148148148148,
+          "informed_invalid_frequency_tick_count": 76,
+          "informed_protection_configured": false
+        },
+        "identical_compute_trace": {
+          "baseline_compute_trace_sha256": "916eb28339ae921141941a8c90069e573e80ef4bf65f2be39cc3e45b8747ccff",
+          "baseline_frequency_feedback_configured": false,
+          "baseline_invalid_frequency_fraction": 0.04693287037037037,
+          "baseline_invalid_frequency_tick_count": 811,
+          "baseline_protection_configured": false,
+          "informed_compute_trace_sha256": "916eb28339ae921141941a8c90069e573e80ef4bf65f2be39cc3e45b8747ccff",
+          "informed_frequency_feedback_configured": false,
+          "informed_invalid_frequency_fraction": 0.004398148148148148,
+          "informed_invalid_frequency_tick_count": 76,
+          "informed_protection_configured": false
+        },
+        "informed_energy_balance": {
+          "baseline_frequency_feedback_configured": false,
+          "baseline_invalid_frequency_fraction": 0.04693287037037037,
+          "baseline_invalid_frequency_tick_count": 811,
+          "baseline_protection_configured": false,
+          "informed_energy_balance": true,
+          "informed_frequency_feedback_configured": false,
+          "informed_invalid_frequency_fraction": 0.004398148148148148,
+          "informed_invalid_frequency_tick_count": 76,
+          "informed_protection_configured": false
+        },
+        "informed_fuel_reconciled": {
+          "baseline_frequency_feedback_configured": false,
+          "baseline_invalid_frequency_fraction": 0.04693287037037037,
+          "baseline_invalid_frequency_tick_count": 811,
+          "baseline_protection_configured": false,
+          "informed_frequency_feedback_configured": false,
+          "informed_fuel_reconciled": true,
+          "informed_invalid_frequency_fraction": 0.004398148148148148,
+          "informed_invalid_frequency_tick_count": 76,
+          "informed_protection_configured": false
+        },
+        "informed_peak_unserved_no_worse": {
+          "baseline_frequency_feedback_configured": false,
+          "baseline_invalid_frequency_fraction": 0.04693287037037037,
+          "baseline_invalid_frequency_tick_count": 811,
+          "baseline_peak_unserved_mw": 35.021533247,
+          "baseline_protection_configured": false,
+          "informed_frequency_feedback_configured": false,
+          "informed_invalid_frequency_fraction": 0.004398148148148148,
+          "informed_invalid_frequency_tick_count": 76,
+          "informed_peak_unserved_mw": 20.746308977,
+          "informed_protection_configured": false,
+          "tolerance_mw": 1e-09
+        },
+        "informed_unserved_energy_no_worse": {
+          "baseline_frequency_feedback_configured": false,
+          "baseline_invalid_frequency_fraction": 0.04693287037037037,
+          "baseline_invalid_frequency_tick_count": 811,
+          "baseline_protection_configured": false,
+          "baseline_unserved_mwh": 0.894372986,
+          "informed_frequency_feedback_configured": false,
+          "informed_invalid_frequency_fraction": 0.004398148148148148,
+          "informed_invalid_frequency_tick_count": 76,
+          "informed_protection_configured": false,
+          "informed_unserved_mwh": 0.124133405,
+          "tolerance_mwh": 1e-09
+        },
+        "informed_valid": {
+          "baseline_frequency_feedback_configured": false,
+          "baseline_invalid_frequency_fraction": 0.04693287037037037,
+          "baseline_invalid_frequency_tick_count": 811,
+          "baseline_protection_configured": false,
+          "informed_constraints_valid": true,
+          "informed_frequency_feedback_configured": false,
+          "informed_frequency_valid": true,
+          "informed_hard_violations": [],
+          "informed_invalid_frequency_fraction": 0.004398148148148148,
+          "informed_invalid_frequency_tick_count": 76,
+          "informed_protection_configured": false
+        }
+      },
+      "condition_order": [
+        "build_parity",
+        "baseline_valid",
+        "informed_valid",
+        "baseline_energy_balance",
+        "informed_energy_balance",
+        "baseline_fuel_reconciled",
+        "informed_fuel_reconciled",
+        "identical_compute_trace",
+        "informed_unserved_energy_no_worse",
+        "informed_peak_unserved_no_worse"
+      ],
+      "conditions": {
+        "baseline_energy_balance": true,
+        "baseline_fuel_reconciled": true,
+        "baseline_valid": true,
+        "build_parity": true,
+        "identical_compute_trace": true,
+        "informed_energy_balance": true,
+        "informed_fuel_reconciled": true,
+        "informed_peak_unserved_no_worse": true,
+        "informed_unserved_energy_no_worse": true,
+        "informed_valid": true
+      },
+      "frequency_inputs": {
+        "baseline_frequency_feedback_configured": false,
+        "baseline_invalid_frequency_fraction": 0.04693287037037037,
+        "baseline_invalid_frequency_tick_count": 811,
+        "baseline_protection_configured": false,
+        "informed_frequency_feedback_configured": false,
+        "informed_invalid_frequency_fraction": 0.004398148148148148,
+        "informed_invalid_frequency_tick_count": 76,
+        "informed_protection_configured": false
+      },
+      "informed_vs_baseline": {
+        "baseline_peak_unserved_mw": 35.021533247,
+        "baseline_unserved_mwh": 0.894372986,
+        "informed_peak_unserved_mw": 20.746308977,
+        "informed_unserved_mwh": 0.124133405
+      },
+      "verdict": "PASS"
+    },
+    "informed": {
+      "bess_soc_final": 0.999999989,
+      "bess_soc_max": 0.999999999,
+      "bess_soc_min": 0.877673489,
+      "build_warnings": [
+        {
+          "code": "islanded_frequency_protection_unconfigured",
+          "message": "islanded run without frequency protection configured"
+        }
+      ],
+      "cache_hit": false,
+      "commitment": {
+        "distinct_event_count": 59,
+        "log_complete": true,
+        "omitted_record_count": 0,
+        "reserve_floor_distinct_event_count": 16338,
+        "reserve_floor_log_complete": true,
+        "reserve_floor_omitted_record_count": 0,
+        "reserve_floor_refusal_count": 16340,
+        "reserve_floor_suppressed_repeat_count": 2,
+        "reserve_floor_visible_distinct_event_count": 16338,
+        "same_unit_restart_within_min_down_window_count": 0,
+        "suppressed_repeat_count": 14027,
+        "visible_distinct_event_count": 59
+      },
+      "commitment_log_record_count": 59,
+      "compute_trace_count": 17280,
+      "compute_trace_sha256": "916eb28339ae921141941a8c90069e573e80ef4bf65f2be39cc3e45b8747ccff",
+      "constraints_valid": true,
+      "daily_breakdown": [
+        {
+          "bess_soc_end": 0.999999989,
+          "curtailed_mwh": 176.779572526,
+          "day": 1,
+          "fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 4.110069444,
+            "load_fuel_mmbtu": 5660.766981827,
+            "no_load_fuel_mmbtu": 68.021666667,
+            "start_fuel_mmbtu": 116.0
+          },
+          "fuel_mmbtu": 5848.898717938,
+          "kind": "weekday",
+          "unserved_mwh": 0.124133405
+        }
+      ],
+      "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+        "gt-hot-01": 32.505522721,
+        "gt-hot-02": 2.203778644,
+        "gt-spin-01": 911.921257907,
+        "gt-spin-02": 911.395881109
+      },
+      "dispatch_curtailment_attributable_fuel_mmbtu": 1858.026440381,
+      "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 3.875694444,
+        "load_fuel_mmbtu": 3076.704847933,
+        "no_load_fuel_mmbtu": 39.875,
+        "start_fuel_mmbtu": 0.0
+      },
+      "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+        "gt-hot-01": 64.949375,
+        "gt-hot-02": 22.640694444,
+        "gt-spin-01": 1517.310386732,
+        "gt-spin-02": 1515.555086201
+      },
+      "dispatch_curtailment_interval_exposure_fuel_mmbtu": 3120.455542377,
+      "dispatch_curtailment_mwh": 176.779572526,
+      "energy_balance": {
+        "closure_status": true,
+        "max_abs_physical_ledger_defect_mw": 0.0,
+        "served_demand_mwh": 368.551976074,
+        "unserved_demand_mwh": 0.124133405
+      },
+      "engine_commit": "fd3bc85c90861844d829edcd5ca7d0110d7bb08c-dirty",
+      "forecast": {
+        "miss_count": 0,
+        "miss_peak_mw": 0.0
+      },
+      "forecast_misses": {
+        "count": 0,
+        "peak_mw": 0.0
+      },
+      "frequency_feedback_configured": false,
+      "fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 4.110069444,
+        "load_fuel_mmbtu": 5660.766981827,
+        "no_load_fuel_mmbtu": 68.021666667,
+        "start_fuel_mmbtu": 116.0
+      },
+      "fuel_reconciled": true,
+      "hard_violations": [],
+      "harness_commit": "fd3bc85c90861844d829edcd5ca7d0110d7bb08c-dirty",
+      "identity_digest": "194329bde4b751e8a055cc1c72974170b6b052fdcf01b187519880ddf901eab4",
+      "interval_seconds": 5.0,
+      "invalid_frequency_fraction": 0.004398148148148148,
+      "invalid_frequency_tick_count": 76,
+      "measured_start_event_count": 12,
+      "mode": "informed",
+      "peak_unserved_mw": 20.746308977,
+      "physical_identity_sha256": "437d480102d11676df747a5ddc742cd29c9785956c1255098dc8d00d9f18a264",
+      "protection_configured": false,
+      "replay_strategy": "baseline demand trace replay",
+      "run_id": "scenario-h1-k8s-ray-24h-informed-194329bde4b751e8",
+      "scenario_id": "scenario-h1-k8s-ray-24h",
+      "seed_manifest": {
+        "consumer_seeds": {
+          "advisory_deidentification": 11127443726550777859,
+          "fabric": 1575259314589039680,
+          "kube:um-k8s-h100": 51,
+          "kube:um-ray-gb200": 2051,
+          "price_curve": 42,
+          "procurement_price_curve": 42,
+          "scada": 42,
+          "solar_sim": 8121001720803894877
+        },
+        "consumer_sources": {
+          "advisory_deidentification": "derived_from_run_seed",
+          "fabric": "derived_from_run_seed",
+          "kube:um-k8s-h100": "explicit_config",
+          "kube:um-ray-gb200": "explicit_config",
+          "price_curve": "explicit_config",
+          "procurement_price_curve": "explicit_config",
+          "scada": "explicit_config",
+          "solar_sim": "derived_from_run_seed"
+        },
+        "requested_run_seed": 42,
+        "resolved_at_utc": "2026-10-24T14:09:52.608200+00:00",
+        "root_seed": 42,
+        "root_seed_drawn": false,
+        "seed_derivation_version": "d4-sha256-v1"
+      },
+      "served_mwh": 368.551976074,
+      "start_fuel_reconciliation": {
+        "measured_event_count": 12,
+        "measured_start_fuel_mmbtu": 116.0,
+        "passed": true,
+        "recorded_event_count": 12,
+        "release_charged": true,
+        "tier_sum_mmbtu": null
+      },
+      "status": "PASS",
+      "stop_floor_refusal_count": 16340,
+      "stop_floor_refusals_detail_count": 16340,
+      "study_class": "addendum_h",
+      "tick_count": 17280,
+      "turbine_fuel_mmbtu": 5848.898717938,
+      "unserved_intervals_detail_count": 7,
+      "unserved_mwh": 0.124133405
+    },
+    "scenario_id": "scenario-h1-k8s-ray-24h"
+  },
+  {
+    "baseline": {
+      "bess_soc_final": 0.999999998,
+      "bess_soc_max": 0.999999999,
+      "bess_soc_min": 0.950386947,
+      "build_warnings": [
+        {
+          "code": "islanded_frequency_protection_unconfigured",
+          "message": "islanded run without frequency protection configured"
+        }
+      ],
+      "cache_hit": false,
+      "commitment": {
+        "distinct_event_count": 44,
+        "log_complete": true,
+        "omitted_record_count": 0,
+        "reserve_floor_distinct_event_count": 0,
+        "reserve_floor_log_complete": true,
+        "reserve_floor_omitted_record_count": 0,
+        "reserve_floor_refusal_count": 0,
+        "reserve_floor_suppressed_repeat_count": 0,
+        "reserve_floor_visible_distinct_event_count": 0,
+        "same_unit_restart_within_min_down_window_count": 0,
+        "suppressed_repeat_count": 0,
+        "visible_distinct_event_count": 44
+      },
+      "commitment_log_record_count": 44,
+      "compute_trace_count": 17280,
+      "compute_trace_sha256": "ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b",
+      "constraints_valid": true,
+      "daily_breakdown": [
+        {
+          "bess_soc_end": 0.999999998,
+          "curtailed_mwh": 349.917690813,
+          "day": 1,
+          "fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 4.552430556,
+            "load_fuel_mmbtu": 5136.719001539,
+            "no_load_fuel_mmbtu": 65.231666667,
+            "start_fuel_mmbtu": 124.0
+          },
+          "fuel_mmbtu": 5330.503098761,
+          "kind": "weekday",
+          "unserved_mwh": 5.011418076
+        }
+      ],
+      "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+        "gt-hot-01": 221.207657519,
+        "gt-hot-02": 179.962055406,
+        "gt-spin-01": 1639.723878254,
+        "gt-spin-02": 1639.723878254
+      },
+      "dispatch_curtailment_attributable_fuel_mmbtu": 3680.617469434,
+      "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 4.362152778,
+        "load_fuel_mmbtu": 4712.832474807,
+        "no_load_fuel_mmbtu": 61.375,
+        "start_fuel_mmbtu": 60.0
+      },
+      "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+        "gt-hot-01": 345.279002588,
+        "gt-hot-02": 232.498541667,
+        "gt-spin-01": 2130.396041667,
+        "gt-spin-02": 2130.396041667
+      },
+      "dispatch_curtailment_interval_exposure_fuel_mmbtu": 4838.569627585,
+      "dispatch_curtailment_mwh": 349.917690813,
+      "energy_balance": {
+        "closure_status": true,
+        "max_abs_physical_ledger_defect_mw": 0.0,
+        "served_demand_mwh": 138.948956374,
+        "unserved_demand_mwh": 5.011418076
+      },
+      "engine_commit": "fd3bc85c90861844d829edcd5ca7d0110d7bb08c-dirty",
+      "forecast": {
+        "miss_count": 0,
+        "miss_peak_mw": 0.0
+      },
+      "forecast_misses": {
+        "count": 0,
+        "peak_mw": 0.0
+      },
+      "frequency_feedback_configured": false,
+      "fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 4.552430556,
+        "load_fuel_mmbtu": 5136.719001539,
+        "no_load_fuel_mmbtu": 65.231666667,
+        "start_fuel_mmbtu": 124.0
+      },
+      "fuel_reconciled": true,
+      "hard_violations": [],
+      "harness_commit": "fd3bc85c90861844d829edcd5ca7d0110d7bb08c-dirty",
+      "identity_digest": "470b3b588d343e3991f756a0f3658373cba07d4ff26629b3ddafb347b9f1112d",
+      "interval_seconds": 5.0,
+      "invalid_frequency_fraction": 0.03177083333333333,
+      "invalid_frequency_tick_count": 549,
+      "measured_start_event_count": 11,
+      "mode": "baseline",
+      "peak_unserved_mw": 44.86838787,
+      "physical_identity_sha256": "603441374503951709dc77d5ae11234e966d5b479e50edca5dd608c7782f217f",
+      "protection_configured": false,
+      "replay_strategy": "baseline demand trace replay",
+      "run_id": "scenario-h2-slurm-24h-baseline-470b3b588d343e39",
+      "scenario_id": "scenario-h2-slurm-24h",
+      "seed_manifest": {
+        "consumer_seeds": {
+          "advisory_deidentification": 11127443726550777859,
+          "fabric": 1575259314589039680,
+          "kube:um-slurm-h100": 1051,
+          "price_curve": 42,
+          "procurement_price_curve": 42,
+          "scada": 42,
+          "solar_sim": 8121001720803894877
+        },
+        "consumer_sources": {
+          "advisory_deidentification": "derived_from_run_seed",
+          "fabric": "derived_from_run_seed",
+          "kube:um-slurm-h100": "explicit_config",
+          "price_curve": "explicit_config",
+          "procurement_price_curve": "explicit_config",
+          "scada": "explicit_config",
+          "solar_sim": "derived_from_run_seed"
+        },
+        "requested_run_seed": 42,
+        "resolved_at_utc": "2026-10-24T14:15:23.143311+00:00",
+        "root_seed": 42,
+        "root_seed_drawn": false,
+        "seed_derivation_version": "d4-sha256-v1"
+      },
+      "served_mwh": 138.948956374,
+      "start_fuel_reconciliation": {
+        "measured_event_count": 11,
+        "measured_start_fuel_mmbtu": 124.0,
+        "passed": true,
+        "recorded_event_count": 11,
+        "release_charged": true,
+        "tier_sum_mmbtu": null
+      },
+      "status": "PASS",
+      "stop_floor_refusal_count": 0,
+      "stop_floor_refusals_detail_count": 0,
+      "study_class": "addendum_h",
+      "tick_count": 17280,
+      "turbine_fuel_mmbtu": 5330.503098761,
+      "unserved_intervals_detail_count": 7,
+      "unserved_mwh": 5.011418076
+    },
+    "comparison": {
+      "condition_inputs": {
+        "baseline_energy_balance": {
+          "baseline_energy_balance": true,
+          "baseline_frequency_feedback_configured": false,
+          "baseline_invalid_frequency_fraction": 0.03177083333333333,
+          "baseline_invalid_frequency_tick_count": 549,
+          "baseline_protection_configured": false,
+          "informed_frequency_feedback_configured": false,
+          "informed_invalid_frequency_fraction": 0.023842592592592592,
+          "informed_invalid_frequency_tick_count": 412,
+          "informed_protection_configured": false
+        },
+        "baseline_fuel_reconciled": {
+          "baseline_frequency_feedback_configured": false,
+          "baseline_fuel_reconciled": true,
+          "baseline_invalid_frequency_fraction": 0.03177083333333333,
+          "baseline_invalid_frequency_tick_count": 549,
+          "baseline_protection_configured": false,
+          "informed_frequency_feedback_configured": false,
+          "informed_invalid_frequency_fraction": 0.023842592592592592,
+          "informed_invalid_frequency_tick_count": 412,
+          "informed_protection_configured": false
+        },
+        "baseline_valid": {
+          "baseline_constraints_valid": true,
+          "baseline_frequency_feedback_configured": false,
+          "baseline_frequency_valid": true,
+          "baseline_hard_violations": [],
+          "baseline_invalid_frequency_fraction": 0.03177083333333333,
+          "baseline_invalid_frequency_tick_count": 549,
+          "baseline_protection_configured": false,
+          "informed_frequency_feedback_configured": false,
+          "informed_invalid_frequency_fraction": 0.023842592592592592,
+          "informed_invalid_frequency_tick_count": 412,
+          "informed_protection_configured": false
+        },
+        "build_parity": {
+          "baseline_engine_commit": "fd3bc85c90861844d829edcd5ca7d0110d7bb08c-dirty",
+          "baseline_frequency_feedback_configured": false,
+          "baseline_harness_commit": "fd3bc85c90861844d829edcd5ca7d0110d7bb08c-dirty",
+          "baseline_invalid_frequency_fraction": 0.03177083333333333,
+          "baseline_invalid_frequency_tick_count": 549,
+          "baseline_protection_configured": false,
+          "informed_engine_commit": "fd3bc85c90861844d829edcd5ca7d0110d7bb08c-dirty",
+          "informed_frequency_feedback_configured": false,
+          "informed_harness_commit": "fd3bc85c90861844d829edcd5ca7d0110d7bb08c-dirty",
+          "informed_invalid_frequency_fraction": 0.023842592592592592,
+          "informed_invalid_frequency_tick_count": 412,
+          "informed_protection_configured": false
+        },
+        "identical_compute_trace": {
+          "baseline_compute_trace_sha256": "ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b",
+          "baseline_frequency_feedback_configured": false,
+          "baseline_invalid_frequency_fraction": 0.03177083333333333,
+          "baseline_invalid_frequency_tick_count": 549,
+          "baseline_protection_configured": false,
+          "informed_compute_trace_sha256": "ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b",
+          "informed_frequency_feedback_configured": false,
+          "informed_invalid_frequency_fraction": 0.023842592592592592,
+          "informed_invalid_frequency_tick_count": 412,
+          "informed_protection_configured": false
+        },
+        "informed_energy_balance": {
+          "baseline_frequency_feedback_configured": false,
+          "baseline_invalid_frequency_fraction": 0.03177083333333333,
+          "baseline_invalid_frequency_tick_count": 549,
+          "baseline_protection_configured": false,
+          "informed_energy_balance": true,
+          "informed_frequency_feedback_configured": false,
+          "informed_invalid_frequency_fraction": 0.023842592592592592,
+          "informed_invalid_frequency_tick_count": 412,
+          "informed_protection_configured": false
+        },
+        "informed_fuel_reconciled": {
+          "baseline_frequency_feedback_configured": false,
+          "baseline_invalid_frequency_fraction": 0.03177083333333333,
+          "baseline_invalid_frequency_tick_count": 549,
+          "baseline_protection_configured": false,
+          "informed_frequency_feedback_configured": false,
+          "informed_fuel_reconciled": true,
+          "informed_invalid_frequency_fraction": 0.023842592592592592,
+          "informed_invalid_frequency_tick_count": 412,
+          "informed_protection_configured": false
+        },
+        "informed_peak_unserved_no_worse": {
+          "baseline_frequency_feedback_configured": false,
+          "baseline_invalid_frequency_fraction": 0.03177083333333333,
+          "baseline_invalid_frequency_tick_count": 549,
+          "baseline_peak_unserved_mw": 44.86838787,
+          "baseline_protection_configured": false,
+          "informed_frequency_feedback_configured": false,
+          "informed_invalid_frequency_fraction": 0.023842592592592592,
+          "informed_invalid_frequency_tick_count": 412,
+          "informed_peak_unserved_mw": 42.36838787,
+          "informed_protection_configured": false,
+          "tolerance_mw": 1e-09
+        },
+        "informed_unserved_energy_no_worse": {
+          "baseline_frequency_feedback_configured": false,
+          "baseline_invalid_frequency_fraction": 0.03177083333333333,
+          "baseline_invalid_frequency_tick_count": 549,
+          "baseline_protection_configured": false,
+          "baseline_unserved_mwh": 5.011418076,
+          "informed_frequency_feedback_configured": false,
+          "informed_invalid_frequency_fraction": 0.023842592592592592,
+          "informed_invalid_frequency_tick_count": 412,
+          "informed_protection_configured": false,
+          "informed_unserved_mwh": 0.859772492,
+          "tolerance_mwh": 1e-09
+        },
+        "informed_valid": {
+          "baseline_frequency_feedback_configured": false,
+          "baseline_invalid_frequency_fraction": 0.03177083333333333,
+          "baseline_invalid_frequency_tick_count": 549,
+          "baseline_protection_configured": false,
+          "informed_constraints_valid": true,
+          "informed_frequency_feedback_configured": false,
+          "informed_frequency_valid": true,
+          "informed_hard_violations": [],
+          "informed_invalid_frequency_fraction": 0.023842592592592592,
+          "informed_invalid_frequency_tick_count": 412,
+          "informed_protection_configured": false
+        }
+      },
+      "condition_order": [
+        "build_parity",
+        "baseline_valid",
+        "informed_valid",
+        "baseline_energy_balance",
+        "informed_energy_balance",
+        "baseline_fuel_reconciled",
+        "informed_fuel_reconciled",
+        "identical_compute_trace",
+        "informed_unserved_energy_no_worse",
+        "informed_peak_unserved_no_worse"
+      ],
+      "conditions": {
+        "baseline_energy_balance": true,
+        "baseline_fuel_reconciled": true,
+        "baseline_valid": true,
+        "build_parity": true,
+        "identical_compute_trace": true,
+        "informed_energy_balance": true,
+        "informed_fuel_reconciled": true,
+        "informed_peak_unserved_no_worse": true,
+        "informed_unserved_energy_no_worse": true,
+        "informed_valid": true
+      },
+      "frequency_inputs": {
+        "baseline_frequency_feedback_configured": false,
+        "baseline_invalid_frequency_fraction": 0.03177083333333333,
+        "baseline_invalid_frequency_tick_count": 549,
+        "baseline_protection_configured": false,
+        "informed_frequency_feedback_configured": false,
+        "informed_invalid_frequency_fraction": 0.023842592592592592,
+        "informed_invalid_frequency_tick_count": 412,
+        "informed_protection_configured": false
+      },
+      "informed_vs_baseline": {
+        "baseline_peak_unserved_mw": 44.86838787,
+        "baseline_unserved_mwh": 5.011418076,
+        "informed_peak_unserved_mw": 42.36838787,
+        "informed_unserved_mwh": 0.859772492
+      },
+      "verdict": "PASS"
+    },
+    "informed": {
+      "bess_soc_final": 0.999999987,
+      "bess_soc_max": 0.999999998,
+      "bess_soc_min": 0.950386947,
+      "build_warnings": [
+        {
+          "code": "islanded_frequency_protection_unconfigured",
+          "message": "islanded run without frequency protection configured"
+        }
+      ],
+      "cache_hit": false,
+      "commitment": {
+        "distinct_event_count": 65,
+        "log_complete": true,
+        "omitted_record_count": 0,
+        "reserve_floor_distinct_event_count": 14904,
+        "reserve_floor_log_complete": true,
+        "reserve_floor_omitted_record_count": 0,
+        "reserve_floor_refusal_count": 14904,
+        "reserve_floor_suppressed_repeat_count": 0,
+        "reserve_floor_visible_distinct_event_count": 14904,
+        "same_unit_restart_within_min_down_window_count": 0,
+        "suppressed_repeat_count": 11198,
+        "visible_distinct_event_count": 65
+      },
+      "commitment_log_record_count": 65,
+      "compute_trace_count": 17280,
+      "compute_trace_sha256": "ea1916a426e67dde51a9a926dc4b64b0c2eb2470ee2e0076fe7f17b8d55f420b",
+      "constraints_valid": true,
+      "daily_breakdown": [
+        {
+          "bess_soc_end": 0.999999987,
+          "curtailed_mwh": 342.977539092,
+          "day": 1,
+          "fuel_by_component_mmbtu": {
+            "hot_standby_fuel_mmbtu": 3.761458333,
+            "load_fuel_mmbtu": 5106.733034717,
+            "no_load_fuel_mmbtu": 64.855,
+            "start_fuel_mmbtu": 152.0
+          },
+          "fuel_mmbtu": 5327.34949305,
+          "kind": "weekday",
+          "unserved_mwh": 0.859772492
+        }
+      ],
+      "dispatch_curtailment_attributable_fuel_by_unit_mmbtu": {
+        "gt-hot-01": 536.782073718,
+        "gt-hot-02": 164.270090991,
+        "gt-spin-01": 1645.630131731,
+        "gt-spin-02": 1260.841712162
+      },
+      "dispatch_curtailment_attributable_fuel_mmbtu": 3607.524008603,
+      "dispatch_curtailment_interval_exposure_fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 3.642013889,
+        "load_fuel_mmbtu": 4675.898162461,
+        "no_load_fuel_mmbtu": 60.895,
+        "start_fuel_mmbtu": 152.0
+      },
+      "dispatch_curtailment_interval_exposure_fuel_by_unit_mmbtu": {
+        "gt-hot-01": 737.513194445,
+        "gt-hot-02": 293.579930556,
+        "gt-spin-01": 2152.666217898,
+        "gt-spin-02": 1708.675833457
+      },
+      "dispatch_curtailment_interval_exposure_fuel_mmbtu": 4892.43517635,
+      "dispatch_curtailment_mwh": 342.977539092,
+      "energy_balance": {
+        "closure_status": true,
+        "max_abs_physical_ledger_defect_mw": 0.0,
+        "served_demand_mwh": 143.100601957,
+        "unserved_demand_mwh": 0.859772492
+      },
+      "engine_commit": "fd3bc85c90861844d829edcd5ca7d0110d7bb08c-dirty",
+      "forecast": {
+        "miss_count": 39,
+        "miss_peak_mw": 13.130749227
+      },
+      "forecast_misses": {
+        "count": 39,
+        "peak_mw": 13.130749226769357
+      },
+      "frequency_feedback_configured": false,
+      "fuel_by_component_mmbtu": {
+        "hot_standby_fuel_mmbtu": 3.761458333,
+        "load_fuel_mmbtu": 5106.733034717,
+        "no_load_fuel_mmbtu": 64.855,
+        "start_fuel_mmbtu": 152.0
+      },
+      "fuel_reconciled": true,
+      "hard_violations": [],
+      "harness_commit": "fd3bc85c90861844d829edcd5ca7d0110d7bb08c-dirty",
+      "identity_digest": "7fbde8ab9661ad2ed90455f45ef336db29dfc95e9d714f8b45c7e64a95d8f28c",
+      "interval_seconds": 5.0,
+      "invalid_frequency_fraction": 0.023842592592592592,
+      "invalid_frequency_tick_count": 412,
+      "measured_start_event_count": 14,
+      "mode": "informed",
+      "peak_unserved_mw": 42.36838787,
+      "physical_identity_sha256": "17954e9420ad8d0c9493a690c03cd670ae0a5f57df60f801b7c292aeea3a9fba",
+      "protection_configured": false,
+      "replay_strategy": "baseline demand trace replay",
+      "run_id": "scenario-h2-slurm-24h-informed-7fbde8ab9661ad2e",
+      "scenario_id": "scenario-h2-slurm-24h",
+      "seed_manifest": {
+        "consumer_seeds": {
+          "advisory_deidentification": 11127443726550777859,
+          "fabric": 1575259314589039680,
+          "kube:um-slurm-h100": 1051,
+          "price_curve": 42,
+          "procurement_price_curve": 42,
+          "scada": 42,
+          "solar_sim": 8121001720803894877
+        },
+        "consumer_sources": {
+          "advisory_deidentification": "derived_from_run_seed",
+          "fabric": "derived_from_run_seed",
+          "kube:um-slurm-h100": "explicit_config",
+          "price_curve": "explicit_config",
+          "procurement_price_curve": "explicit_config",
+          "scada": "explicit_config",
+          "solar_sim": "derived_from_run_seed"
+        },
+        "requested_run_seed": 42,
+        "resolved_at_utc": "2026-10-24T14:15:23.143311+00:00",
+        "root_seed": 42,
+        "root_seed_drawn": false,
+        "seed_derivation_version": "d4-sha256-v1"
+      },
+      "served_mwh": 143.100601957,
+      "start_fuel_reconciliation": {
+        "measured_event_count": 14,
+        "measured_start_fuel_mmbtu": 152.0,
+        "passed": true,
+        "recorded_event_count": 14,
+        "release_charged": true,
+        "tier_sum_mmbtu": null
+      },
+      "status": "PASS",
+      "stop_floor_refusal_count": 14904,
+      "stop_floor_refusals_detail_count": 14904,
+      "study_class": "addendum_h",
+      "tick_count": 17280,
+      "turbine_fuel_mmbtu": 5327.34949305,
+      "unserved_intervals_detail_count": 7,
+      "unserved_mwh": 0.859772492
+    },
+    "scenario_id": "scenario-h2-slurm-24h"
+  }
+]
