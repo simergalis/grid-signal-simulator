@@ -64,7 +64,14 @@ def energy(ticks, field):
     return sum(float(getattr(tick, field, 0.0) or 0.0) * DT_S / 3600.0 for tick in ticks)
 
 
-async def run_one(label: str, spec_path: Path, repetition: int):
+async def run_one(
+    label: str,
+    scenario_id: str,
+    spec_path: Path,
+    repetition: int,
+    max_ticks=None,
+):
+    global DT_S
     sys.dont_write_bytecode = True
     sys.path.insert(0, str(PACKAGE))
     os.chdir(PACKAGE)
@@ -81,6 +88,7 @@ async def run_one(label: str, spec_path: Path, repetition: int):
         WebSocketHub,
     )
     from runtime.scenario_factory import build_run_context_from_spec
+    DT_S = float(TICK_INTERVAL_SIM_SECONDS)
 
     random.seed(SEED)
     np.random.seed(SEED)
@@ -91,12 +99,16 @@ async def run_one(label: str, spec_path: Path, repetition: int):
     # construction as well as RunManager execution.
     with patch("time.time", return_value=WALL_CLOCK):
         ctx = build_run_context_from_spec(
-            label,
+            scenario_id,
             spec,
             playback_speed=0.0,
             run_seed=SEED,
             execution_mode="headless",
         )
+        if max_ticks is not None:
+            ctx.end_sim_time = min(
+                float(ctx.end_sim_time), int(max_ticks) * DT_S
+            )
         corruption = spec.get("telemetry_corruption_config")
         if corruption is not None:
             from runtime.telemetry_corruption import generate_corruption_schedule
@@ -110,6 +122,10 @@ async def run_one(label: str, spec_path: Path, repetition: int):
             )
         sink = InMemoryTimeseriesSink()
         ctx.sink = sink
+        initial_turbine_states = {
+            str(turbine.config.asset_id): str(turbine.state.value)
+            for turbine in ctx.sim_state.turbines
+        }
         manager = RunManager(WebSocketHub())
         await manager.start_run(ctx)
         await manager._tasks[ctx.run_id]
@@ -126,7 +142,7 @@ async def run_one(label: str, spec_path: Path, repetition: int):
     controller = getattr(ctx, "turbine_commitment_controller", None)
     refusal_list = list(getattr(controller, "stop_floor_refusals", []) or [])
     transitions = []
-    prior_states = {}
+    prior_states = dict(initial_turbine_states)
     for tick in ticks:
         for unit in tick.turbine_units:
             asset_id = str(unit.get("asset_id", ""))
@@ -144,6 +160,16 @@ async def run_one(label: str, spec_path: Path, repetition: int):
                 )
                 prior_states[asset_id] = state
 
+    turbine_start_events = [
+        event
+        for event in transitions
+        if event["to"].lower() == "starting"
+    ]
+    turbine_stop_events = [
+        event
+        for event in transitions
+        if event["to"].lower() in {"unloading", "offline"}
+    ]
     min_stable = [
         sum(
             float(unit.get("msl_mw", 0.0))
@@ -171,6 +197,7 @@ async def run_one(label: str, spec_path: Path, repetition: int):
     bess = list(ctx.sim_state.bess_units)
     summary = {
         "case": label,
+        "scenario_id": scenario_id,
         "repetition": repetition,
         "source_spec": str(spec_path),
         "seed": SEED,
@@ -190,6 +217,8 @@ async def run_one(label: str, spec_path: Path, repetition: int):
             else None
         ),
         "turbine_start_count": int(final.turbine_start_count) if final else 0,
+        "turbine_start_events": turbine_start_events,
+        "turbine_stop_events": turbine_stop_events,
         "start_stop_transitions": transitions,
         "bess_soc_start_fraction": (
             float(bess[0].config.initial_soc_fraction) if bess else None
@@ -250,13 +279,19 @@ async def run_one(label: str, spec_path: Path, repetition: int):
 async def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--case", action="append", nargs=2, required=True)
+    parser.add_argument(
+        "--scenario-id",
+        default="S10_mit_supercloud_2021-08-11",
+        help="canonical app scenario ID, identical for current and candidate specs",
+    )
     parser.add_argument("--repetitions", type=int, default=1)
+    parser.add_argument("--max-ticks", type=int)
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
     if args.repetitions < 1:
         parser.error("--repetitions must be positive")
 
-    output = Path(args.out)
+    output = Path(args.out).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
     document = {
         "pinning": {
@@ -269,7 +304,13 @@ async def main():
     }
     for label, path in args.case:
         for repetition in range(1, args.repetitions + 1):
-            summary = await run_one(label, Path(path).resolve(), repetition)
+            summary = await run_one(
+                label,
+                args.scenario_id,
+                Path(path).resolve(),
+                repetition,
+                max_ticks=args.max_ticks,
+            )
             document["runs"].append(summary)
             output.write_text(
                 json.dumps(document, indent=2, allow_nan=True) + "\n",

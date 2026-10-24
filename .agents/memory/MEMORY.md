@@ -69,6 +69,7 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [Scenario seed round-trip buffer](seed-round-trip-buffer.md) — large explicit Slurm topology can exceed the test subprocess JSON buffer before UI assertions run.
 - [Full-matrix GPU timeout](full-matrix-gpu-timeout.md) — the GPU load-profile node passes but can take just over 300 seconds; split runs need a longer harness timeout.
 - [Headless export storage](headless-export-storage.md) — check the actual scratch filesystem; /tmp is separate and verbose tick exports can exhaust it and invalidate concurrent checks.
+- [Pinned run clock boundary](pinned-run-clock-boundary.md) — freeze wall time before context construction and keep it frozen through RunManager execution for reproducible headless runs.
 - [Phase 2a test harness](phase2a-test-harness.md) — run simulator tests from the gridsignal package directory; outer-root collection pulls in audit tests with incompatible imports.
 - [Forecast scale-event protection](forecast-scale-event-protection.md) — future SCALE events are burst starts for informed preload and restart-window commitment checks, even without a STARTING event.
 - [Fuel attribution and preload audit](fuel-attribution-and-preload-audit.md) — cumulative turbine counters use final rows; dispatch attribution uses positive interval increments; preload logs are signature-compacted.
@@ -82,3 +83,4 @@ description: Key decisions and traps across GS simulator implementation sessions
 - [MCP identity and legacy artifacts](mcp-identity-and-legacy-artifacts.md) — boundary run identities must mirror executor replay normalization; legacy records need trace and guard hydration from stored artifacts.
 - [Known-failure gates](known-failure-gates.md) — compare assertions and violation lists, not only node IDs; baseline failures can hide new regressions.
 - [S10 publication boundary](s10-data-publication-boundary.md) — user prohibits public-repo publication of S10; per-tick channel CSVs must remain local.
+- [Cooling envelope isolation](cooling-envelope-isolation.md) — the scalar cooling step-down can close GPU job envelopes when both paths share one CoolingModule.
