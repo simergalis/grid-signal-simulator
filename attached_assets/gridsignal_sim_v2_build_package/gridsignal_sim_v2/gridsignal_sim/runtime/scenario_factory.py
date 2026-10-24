@@ -43,6 +43,7 @@ from core.models import (
     DieselConfig,
     HardwareProfile,
     IslandMode,
+    NON_GPU_COOLING_JOB_ID,
     PmsConfig,
     PreStagingConfig,
     SiteConfig,
@@ -1302,6 +1303,9 @@ def build_run_context_from_spec(
         sim_state.non_gpu_load_profile_mw = sorted(
             (float(t), float(mw)) for t, mw in _non_gpu_load_raw
         )
+        # D6a-X2: create one isolated envelope before the first sample; the
+        # per-job path records every value, including intermediate zeroes.
+        sim_state.cooling.register_job_start(NON_GPU_COOLING_JOB_ID, 0.0)
 
     # ── Phase 11.4: Workload floor ────────────────────────────────────────
     # Compute the absolute floor MW from workload_floor_fraction × peak and

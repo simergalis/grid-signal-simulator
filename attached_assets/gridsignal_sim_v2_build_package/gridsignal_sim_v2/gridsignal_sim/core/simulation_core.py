@@ -57,7 +57,8 @@ from .scada_layer import CommandType, SimulatedPMS, SimulatedScadaLayer
 from .models import (
     ContingencyCoverage, ContingencyState, DataQualityTag,
     GENERIC_FALLBACK_PROFILE, IslandMode, KubeClusterMetrics, KubeMetrics,
-    SiteConfig, ThermalState, TickResult, WorkloadEventType, WorkloadSignal,
+    NON_GPU_COOLING_JOB_ID, SiteConfig, ThermalState, TickResult,
+    WorkloadEventType, WorkloadSignal,
 )
 from ._plane_guard import _EVALUATE_TICK_PERMITTED
 from .sim_clock import SimClock
@@ -1344,6 +1345,12 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
             _per_job_draws = dict(_per_job_draws)
             _per_job_draws["__floor__"] = 0.0
 
+    # D6a-X2: record measured non-GPU IT as its own per-job cooling envelope.
+    # PROPOSED_HERE key is registered by the factory and sampled here, keeping
+    # CPU profile changes isolated from GPU job envelope boundaries.
+    if state.non_gpu_load_profile_mw:
+        _per_job_draws[NON_GPU_COOLING_JOB_ID] = _non_gpu_it_mw
+
     _demand_replay = state.demand_replay_trace
     if _demand_replay is not None and state.tick_index < len(_demand_replay):
         # The live probe already measured the scheduler-shaped demand and the
@@ -1353,10 +1360,18 @@ def evaluate_tick(state: SimulationState, clock: SimClock) -> TickResult:
         p_compute_demand_mw, p_cooling_demand_mw = _demand_replay[state.tick_index]
     else:
         state.cooling.record_job_compute(sim_time, _per_job_draws)
-        # The scalar cooling-envelope interface tracks this separate IT load
-        # without changing GPU job envelopes or their workload-event semantics.
+        # End only this synthetic envelope after its final zero-valued profile
+        # point. Intermediate zeroes remain samples, allowing the series to rise
+        # again without closing or replacing any GPU job envelope.
         if state.non_gpu_load_profile_mw:
-            state.cooling.record_compute_sample(sim_time, _non_gpu_it_mw)
+            _non_gpu_end_t, _non_gpu_end_mw = state.non_gpu_load_profile_mw[-1]
+            if (
+                _non_gpu_end_mw == 0.0
+                and sim_time <= _non_gpu_end_t <= sim_time + dt_seconds
+            ):
+                state.cooling.register_job_end(
+                    NON_GPU_COOLING_JOB_ID, _non_gpu_end_t
+                )
 
         # 2. Cooling term (lagged)
         state.cooling.advance(sim_time, dt_seconds)

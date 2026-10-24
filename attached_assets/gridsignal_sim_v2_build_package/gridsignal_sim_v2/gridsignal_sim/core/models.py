@@ -42,6 +42,10 @@ from .ray_models import (
     validate_ray_bindings,
 )
 
+# PROPOSED_HERE: reserve one per-job cooling-envelope identity for the additive
+# measured non-GPU IT series, so its samples never share scalar step-down logic.
+NON_GPU_COOLING_JOB_ID = "non_gpu_it"
+
 
 # ---------------------------------------------------------------------------
 # Hardware / workload
