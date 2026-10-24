@@ -107,6 +107,13 @@ At served energy `616.322078773 MWh`, the included total is `$81.334370214/MWh s
 
 Synchronized headroom (stranded capacity) is currently accumulated only in the fuel-gated `record_fuel_interval` path. Scenarios without a fuel model therefore report `0` for this existing headroom metric, which is misleading. Decouple headroom measurement from the fuel model only as a separate, gated change because it would change reported headroom for existing scenarios. No change was made for IMPL-ISL-24 in D6-F.
 
+### F-2 surface and focused tests
+
+- REST `/energy-summary` adds `operating_cost` at `P/api/routes/runs.py:1268–1269`.
+- MCP `get_run_metrics` energy output adds `operating_cost` at `P/mcp_server/server.py:644–645`.
+- Scenario Planner renders the read-only itemized table and excluded-total details at `attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/frontend/src/components/ScenarioPlannerPage.tsx:657–708`.
+- Focused operating-cost tests passed: `10 passed`; generator tests passed: `10 passed`; frontend build passed. This does not override the F-4 suite stop below.
+
 ## F-4 full-suite gate — STOP
 
 The real package suite ran to completion once with `PYTHONHASHSEED=1`:
