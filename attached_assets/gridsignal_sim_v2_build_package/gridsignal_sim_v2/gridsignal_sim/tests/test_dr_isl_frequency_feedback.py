@@ -226,6 +226,12 @@ def test_tc_isl_29_grid_tied_frequency_is_not_feedback_even_when_protection_is_r
         turbine_minutes_below_low_load_threshold=0.0,
         turbine_fuel_telemetry=[],
         turbine_fuel_parameter_provenance=None,
+        # DR D6-F: this fixture predates the opt-in operating_cost fields.
+        operating_cost=None,
+        operating_cost_inputs=None,
+        turbine_fuel_heat_rate_basis_by_unit={},
+        diesel_fuel_consumed_gal=None,
+        turbine_rated_mw=0.0,
     )
     manager = SimpleNamespace(get_context=lambda _: None, get_completed=lambda _: completed)
     with patch("api.routes.runs.compute_run_cost_from_completed", return_value=({}, {})):
