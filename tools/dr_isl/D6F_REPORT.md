@@ -45,3 +45,64 @@ The observed change is therefore a reporting-path difference caused by adding th
 ## Working-tree state
 
 No D6-F code or test commit was made. The application implementation and tests remain uncommitted under the git-ignored `attached_assets/` tree; the candidate and evidence files under `tools/dr_isl/` are local and uncommitted. No publish, deploy, push, or workflow restart was performed. The immediate blocker is the headroom metric delta above; resolving whether that existing metric must remain identical requires a decision before resuming the gated work.
+
+## Resumption — F-1 amendment and read-only consumer audit
+
+On 2026-10-24 Lloyd approved classifying the synchronized-headroom fields and low-load diagnostic fields as fuel-model reporting for opt-in fuel candidates. Before excluding them, an exact-name search was run across the package. Results:
+
+- Producers: `core/asset_modules.py:1252–1254, 1279–1285, 1325–1327`; `core/simulation_core.py:4155–4162`.
+- Tick model and wire/restore serialization: `core/models.py:1613–1614`; `runtime/run_manager.py:398–402, 693–697, 1981–1982, 3815–3822`; `api/routes/runs.py:1251–1255`.
+- The per-unit low-load threshold is also materialized by `runtime/scenario_factory.py:2166`.
+- The search found no matching reads in dispatch, commitment, reserve, forecasts, ledger reconciliation, study metrics used by `compare_runs`, or alert logic. The remaining matches are definitions, recording, serialization/restoration, and tests.
+
+Accordingly, the parity helper now explicitly excludes these reporting-only fields in addition to fuel quantities/provenance: top-level `turbine_synchronized_headroom_mwh`, `turbine_minutes_below_low_load_threshold`, and `turbine_fuel_telemetry`; and per-unit `fuel_low_load_threshold_pct`, `synchronized_headroom_mwh`, `minutes_below_low_load_threshold`, and the fuel-model/status/quantity/provenance fields listed in `tools/dr_isl/d6f/run_operating_cost.py`. No producer or simulator behavior was changed. The amended paired parity result is recorded below.
+
+#### F-1 amended parity run
+
+The first attempt using relative paths exited with `FileNotFoundError`: after the no-fuel baseline run, the helper changed its working directory to the package and resolved the candidate path there. Re-running with absolute paths completed both 17,280-tick runs.
+
+- No-fuel candidate SHA-256: `87b7877a9c1f3bc2e6b547d823866ef8f7a9c42b9908f7409729dedbb6408803`.
+- Fuel candidate SHA-256: `4e33ec591dbf46a41a8d3518f891a7b7f7b1096ad3ca7bbf2a7afc27ab3f2029`.
+- Amended non-fuel SHA-256, both paths: `808873c0bd14974ae4a605c49df4a43e7ba349831689d00399c5a2063da68f9e`; `nonfuel_equal=true`.
+- Equal non-fuel metrics: demand `621.8578481855576 MWh`; served `616.3220787729296 MWh`; unserved `5.535769412629438 MWh`; curtailment `45.77100963468485 MWh`; turbine output `669.9665561792048 MWh`; BESS AC throughput `158.73523332738998 MWh`; starts `37`.
+- The candidate's modelled turbine fuel is `7,785.288838528619 MMBtu`; the unmodelled baseline correctly reports fuel as null.
+
+The exact exclusions in `tools/dr_isl/d6f/run_operating_cost.py` are:
+
+- Top-level: `turbine_fuel_status`, `turbine_fuel_type`, `turbine_fuel_units`, `turbine_fuel_modelled`, `turbine_fuel_telemetry`, `turbine_fuel_parameter_provenance`, `turbine_total_fuel_mmbtu`, `turbine_synchronized_headroom_mwh`, `turbine_minutes_below_low_load_threshold`.
+- Each `turbine_units[]` entry: `fuel_modelled`, `fuel_status`, `fuel_type`, `fuel_units`, `fuel_mmbtu_this_tick`, `load_fuel_mmbtu`, `no_load_fuel_mmbtu`, `hot_standby_fuel_mmbtu`, `start_fuel_mmbtu`, `total_fuel_mmbtu`, `fuel_parameter_provenance`, `low_load_threshold_pct`, `fuel_low_load_threshold_pct`, `synchronized_headroom_mwh`, `minutes_below_low_load_threshold`.
+- The whole top-level `turbine_fuel_telemetry` list is removed, so its per-unit fuel quantities/status/provenance and the headroom/low-load diagnostic counterparts are excluded as one payload.
+
+All 103 raw field differences in the diagnostic are contained in these fuel/reporting fields; the filtered tick digest and the listed physical/energy metrics are equal.
+
+Focused verification after the exclusion update: `tests/test_operating_cost.py` — 10 passed in 8.05 s; `tools/supercloud/test_make_scenario.py` — 10 passed in 0.21 s. The two added tests are TC-ISL-60 (F-1 headroom-reporting exclusion and no-fuel zero behavior) and TC-ISL-61 (Scenario Planner itemized operating-cost table is present).
+
+### Fuel totals and itemized cost (pinned seed 1729)
+
+The repeated fuel-candidate result is 7,785.288838528619 MMBtu total: load 7,310.208838528641; synchronized no-load 111.079999999978; hot standby 0; starts 364.
+
+| Unit | Load MMBtu | No-load MMBtu | Start MMBtu | Total MMBtu |
+|---|---:|---:|---:|---:|
+| turbine-0 | 2,130.965863 | 28.800000 | 0 | 2,159.765863 |
+| turbine-1 | 1,992.497159 | 28.680000 | 12 | 2,033.177159 |
+| turbine-2 | 1,517.154976 | 23.503333 | 56 | 1,596.658309 |
+| turbine-3 | 884.589624 | 15.281667 | 144 | 1,043.871291 |
+| turbine-4 | 785.001216 | 14.815000 | 152 | 951.816216 |
+
+For the S10 candidate, gas price is `$5.140790743/MMBtu HHV` from EIA `$5.331/Mcf ÷ 1.037 MMBtu/Mcf`; the July-2026 sensitivity is `$4.416586307/MMBtu HHV` from `$4.58/Mcf ÷ 1.037`. Diesel is `$6.276/gal` from EIA's 2026-10-19 on-highway price, including road taxes; S10 has no diesel, so its diesel-cost line is null. Turbine VOM is `$5.70/MWh` and FOM `$9.56/kW-year`, cited EIA AEO2025 proxy values in 2023 dollars. The reported currency basis is mixed 2023 USD O&M / 2026 USD fuel, with no inflation normalization.
+
+| Cost line | Amount |
+|---|---:|
+| Gas fuel (7,785.288839 MMBtu LHV × 1.108 = 8,626.100033 MMBtu HHV) | `$44,344.975194` |
+| Turbine variable O&M | `$3,818.809370` |
+| Turbine fixed O&M allocation | `$1,964.383562` |
+| **Included total** | **`$50,128.168126`** |
+| Diesel fuel, non-fuel starts, BESS degradation, unserved-energy value | null; no quantity or price input |
+
+The total includes only gas fuel, turbine VOM and turbine FOM. It excludes diesel fuel, non-fuel start cost, BESS degradation, unserved-energy value, grid import, fuel-cell fuel, solar/PPA contracts, cooling labor and other site O&M. The separate `operating_cost` is not added to the existing `cost_breakdown`.
+
+At served energy `616.322078773 MWh`, the included total is `$81.334370214/MWh served`; at IT load `515.163556304 MWh`, it is `$97.305346065/MWh IT`. July-2026 gas price sensitivity with the 1.108 LHV→HHV conversion gives total `$43,881.108218`, `$71.198338871/MWh served`, `$85.178983802/MWh IT`. Assuming the heat-rate quantity is already HHV (no conversion) at the 12-month price gives total `$45,805.733721`, `$74.321098170/MWh served`, `$88.914934219/MWh IT`.
+
+### IMPL-ISL-24 (report only)
+
+Synchronized headroom (stranded capacity) is currently accumulated only in the fuel-gated `record_fuel_interval` path. Scenarios without a fuel model therefore report `0` for this existing headroom metric, which is misleading. Decouple headroom measurement from the fuel model only as a separate, gated change because it would change reported headroom for existing scenarios. No change was made for IMPL-ISL-24 in D6-F.

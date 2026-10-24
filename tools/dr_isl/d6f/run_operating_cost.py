@@ -33,6 +33,9 @@ TOP_LEVEL_FUEL_FIELDS = {
     "turbine_fuel_telemetry",
     "turbine_fuel_parameter_provenance",
     "turbine_total_fuel_mmbtu",
+    # Lloyd's F-1 amendment classifies these opt-in, fuel-gated outputs as
+    # fuel-model reporting fields. Search verified they do not feed results.
+    "turbine_synchronized_headroom_mwh",
     # Fuel-model diagnostic counter; it does not enter dispatch or the ledger.
     "turbine_minutes_below_low_load_threshold",
 }
@@ -49,6 +52,10 @@ TURBINE_UNIT_FUEL_FIELDS = {
     "total_fuel_mmbtu",
     "fuel_parameter_provenance",
     "low_load_threshold_pct",
+    "fuel_low_load_threshold_pct",
+    # Per-unit counterparts of the fuel-gated reporting fields above.
+    "synchronized_headroom_mwh",
+    "minutes_below_low_load_threshold",
 }
 
 
