@@ -16,6 +16,18 @@ the existing confidence fallback uses measured total demand, so it sees only
 the current CPU load, not the profile's future points. Existing served/unserved
 and physical-balance accounting therefore treat it as ordinary demand.
 
+## D6a-X2 cooling route
+
+The non-GPU series uses the same per-job cooling interface as GPU draws, under
+the dedicated `non_gpu_it` envelope key (`core/models.py`, marked
+`PROPOSED_HERE`). `runtime/scenario_factory.py` creates that envelope once at
+run setup; `core/simulation_core.py` records its current sample in the
+`record_job_compute` map. Intermediate zero samples do not end the envelope, so
+later positive samples are supported. When the profile's final point is zero,
+the core marks only `non_gpu_it` ended at that final point. This avoids the
+scalar `record_compute_sample` step-down loop, which could close a GPU
+envelope. See D6a-X2 / IMPL-ISL-23.
+
 The tick telemetry field is `p_non_gpu_demand_mw`. API/WebSocket and persisted
 tick telemetry omit it when the profile is absent. Internally the absent
 profile remains `None`; the physical identity serializer omits that sentinel,
