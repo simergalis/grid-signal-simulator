@@ -1,0 +1,38 @@
+{
+  "decision_record": "DR-2026-10-20-ISLAND-COLLAPSE D6a.4",
+  "run": {
+    "scenario_id": "S10_mit_supercloud_2021-08-11",
+    "case": "CPU-only candidate (a), corrected X2 per-job cooling path",
+    "seed": 1729,
+    "wall_clock": 1792454400.0,
+    "tick_seconds": 5.0,
+    "ticks_run": 200,
+    "simulated_seconds": 1000.0,
+    "physical_sha256": "c27b81e38b960ec4936562556034378db0aae4c49f49c5ed01c33c829068b576"
+  },
+  "startup_surplus_window": {
+    "first_demand_exceeds_on_bus_turbine_msl_tick": 112,
+    "first_demand_exceeds_on_bus_turbine_msl_time_s": 560.0,
+    "demand_at_crossing_mw": 27.966987896684998,
+    "on_bus_turbine_msl_mw": 26.25,
+    "dispatch_curtailment_energy_before_crossing_mwh": 1.0016770896947318
+  },
+  "bess": {
+    "usable_mwh": 14.0,
+    "initial_soc_fraction_before_derivation": 1.0,
+    "minimum_initial_soc_fraction_allowed_by_schema": 0.1,
+    "schema_source": "attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/api/schemas.py:476",
+    "model_has_separate_minimum_soc_field": false
+  },
+  "derivation": {
+    "formula": "max(0.1, 1 - startup_surplus_energy_mwh / usable_mwh)",
+    "startup_surplus_fraction": 0.0715483635496237,
+    "derived_initial_soc_fraction": 0.9284516364503763,
+    "minimum_floor_applied": false
+  },
+  "fuel_model": {
+    "turbine_fuel_status": "not_modelled",
+    "turbine_fuel_mmbtu": null,
+    "reason": "all five S10 frame turbines have fuel_modelled=false; no fuel model is present in the scenario"
+  }
+}

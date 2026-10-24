@@ -1,0 +1,45 @@
+{
+  "baseline": "tools/dr_isl/PHASE_6C_FAILING_TESTS.txt",
+  "baseline_failures_including_waiver": 16,
+  "waived_node": "tests/test_gpu_load_profile.py::test_gpu_load_profile",
+  "runs": [
+    {
+      "pythonhashseed": "1",
+      "passed": 2233,
+      "failed": 15,
+      "skipped": 3,
+      "xfailed": 23,
+      "warnings": 54,
+      "subtests_passed": 3,
+      "duration_seconds": 807.19,
+      "exit_code": 1,
+      "added_failures": [],
+      "removed_failures": [
+        "tests/test_gpu_load_profile.py::test_gpu_load_profile"
+      ]
+    },
+    {
+      "pythonhashseed": "987654321",
+      "passed": 2233,
+      "failed": 15,
+      "skipped": 3,
+      "xfailed": 23,
+      "warnings": 54,
+      "subtests_passed": 3,
+      "duration_seconds": 810.57,
+      "exit_code": 1,
+      "added_failures": [],
+      "removed_failures": [
+        "tests/test_gpu_load_profile.py::test_gpu_load_profile"
+      ]
+    }
+  ],
+  "failing_node_sets_identical": true,
+  "artifacts": {
+    "failing_ids": "tools/dr_isl/d6/D6AX2_FAILING_TESTS.txt",
+    "run1_junit": "tools/dr_isl/d6/D6AX2_seed1.junit.xml",
+    "run2_junit": "tools/dr_isl/d6/D6AX2_seed987654321.junit.xml",
+    "run1_log": "tools/dr_isl/d6/D6AX2_seed1.log",
+    "run2_log": "tools/dr_isl/d6/D6AX2_seed987654321.log"
+  }
+}

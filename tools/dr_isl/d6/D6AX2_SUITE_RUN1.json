@@ -1,0 +1,26 @@
+{
+  "pythonhashseed": "1",
+  "summary": {
+    "failed": 15,
+    "passed": 2233,
+    "skipped": 3,
+    "xfailed": 23,
+    "warnings": 54,
+    "subtests_passed": 3,
+    "duration_seconds": 807.19,
+    "exit_code": 1
+  },
+  "comparison_to_tools/dr_isl/PHASE_6C_FAILING_TESTS.txt": {
+    "baseline_failure_count": 16,
+    "added": [],
+    "removed": [
+      "tests/test_gpu_load_profile.py::test_gpu_load_profile"
+    ],
+    "remaining": 15,
+    "result": "matches baseline minus the waived IMPL-SSH-07 node"
+  },
+  "artifacts": {
+    "log": "tools/dr_isl/d6/D6AX2_seed1.log",
+    "junit": "tools/dr_isl/d6/D6AX2_seed1.junit.xml"
+  }
+}

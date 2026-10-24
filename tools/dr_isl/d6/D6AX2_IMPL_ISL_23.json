@@ -1,0 +1,56 @@
+{
+  "method": "One full-day in-process ctx.step() run of the D6a CPU candidate, seed 1729, Python/NumPy seed 1729, wall clock 1792454400.0. The counterfactual changed only the experimental CoolingModule scalar step-down loop to consider _syn_* envelopes; no source files were modified for this measurement.",
+  "ticks": 17280,
+  "original_scalar_stepdown": {
+    "gpu_compute_mwh": 514.3713154094444,
+    "non_gpu_it_mwh": 0.7922408944087328,
+    "cooling_mwh": 30.363862450571027,
+    "total_demand_mwh": 545.5274187544242
+  },
+  "counterfactual_syn_only_stepdown": {
+    "gpu_compute_mwh": 514.3713154094444,
+    "non_gpu_it_mwh": 0.7922408944087328,
+    "cooling_mwh": 106.69541020299484,
+    "total_demand_mwh": 621.858966506848
+  },
+  "differences": {
+    "gpu_compute_mwh": 0.0,
+    "non_gpu_it_mwh": 0.0,
+    "cooling_mwh": 76.33154775242381,
+    "total_demand_mwh": 76.33154775242381
+  },
+  "record_compute_sample_callers_after_x2": [
+    "P/tests/test_classifier.py:277",
+    "P/tests/test_formulas.py:102",
+    "P/tests/test_formulas.py:103",
+    "P/tests/test_formulas.py:116",
+    "P/tests/test_formulas.py:1033",
+    "P/tests/test_formulas.py:1043",
+    "P/tests/test_formulas.py:1092",
+    "P/tests/test_formulas.py:1102",
+    "P/tests/test_13_5_criteria.py:65",
+    "P/tests/test_13_5_criteria.py:146",
+    "P/tests/test_cooling_mw_blackbox.py:93",
+    "P/tests/test_cooling_lag_tc03.py:76"
+  ],
+  "record_job_compute_callers_after_x2": [
+    "P/core/simulation_core.py:1362",
+    "P/tests/test_d6a_non_gpu_load_profile.py:151",
+    "P/tests/test_d6a_non_gpu_load_profile.py:157",
+    "P/tests/test_d6a_non_gpu_load_profile.py:165",
+    "P/tests/test_d6a_non_gpu_load_profile.py:173",
+    "P/tests/test_d6a_non_gpu_load_profile.py:181",
+    "P/tests/test_d6a_non_gpu_load_profile.py:189",
+    "P/tests/test_forecast_path.py:1121",
+    "P/tests/test_forecast_path.py:1126",
+    "P/tests/test_forecast_path.py:1162",
+    "P/tests/test_forecast_path.py:1242",
+    "P/tests/test_forecast_path.py:1255",
+    "P/tests/test_formulas.py:1145"
+  ],
+  "coexistence": {
+    "seeded_scenario_jsons_with_non_gpu_load_profile_mw": 0,
+    "candidate_before_x2_using_both_paths": "tools/dr_isl/d6/S10_2021-08-11_cpu_candidate.json",
+    "production_runs_using_both_paths_after_x2": []
+  }
+}

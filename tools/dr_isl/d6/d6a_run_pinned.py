@@ -195,6 +195,26 @@ async def run_one(
 
     final = ticks[-1] if ticks else None
     bess = list(ctx.sim_state.bess_units)
+    final_fuel_rows = (
+        list(getattr(final, "turbine_fuel_telemetry", ()) or ())
+        if final is not None
+        else []
+    )
+    modelled_final_fuel_rows = [
+        row
+        for row in final_fuel_rows
+        if row.get("fuel_modelled")
+        and row.get("total_fuel_mmbtu") is not None
+    ]
+    turbine_fuel_mmbtu = (
+        sum(float(row["total_fuel_mmbtu"]) for row in modelled_final_fuel_rows)
+        if modelled_final_fuel_rows
+        else (
+            float(final.turbine_total_fuel_mmbtu)
+            if final is not None and final.turbine_total_fuel_mmbtu is not None
+            else None
+        )
+    )
     summary = {
         "case": label,
         "scenario_id": scenario_id,
@@ -211,11 +231,21 @@ async def run_one(
         "peak_demand_mw": max(demand, default=0.0),
         "peak_unserved_mw": max(unserved, default=0.0),
         "dispatch_curtailment_mwh": energy(ticks, "p_dispatch_curtailed_mw"),
-        "turbine_fuel_mmbtu": (
-            float(final.turbine_total_fuel_mmbtu)
-            if final and final.turbine_total_fuel_mmbtu is not None
-            else None
+        "turbine_fuel_mmbtu": turbine_fuel_mmbtu,
+        "turbine_fuel_status": (
+            str(final.turbine_fuel_status) if final is not None else "not_modelled"
         ),
+        "turbine_fuel_modelled": (
+            bool(final.turbine_fuel_modelled) if final is not None else False
+        ),
+        "turbine_fuel_units": [
+            {
+                "asset_id": row.get("asset_id"),
+                "fuel_modelled": bool(row.get("fuel_modelled")),
+                "total_fuel_mmbtu": row.get("total_fuel_mmbtu"),
+            }
+            for row in final_fuel_rows
+        ],
         "turbine_start_count": int(final.turbine_start_count) if final else 0,
         "turbine_start_events": turbine_start_events,
         "turbine_stop_events": turbine_stop_events,
@@ -233,7 +263,6 @@ async def run_one(
             float(final.bess_soc_fraction) if final else None
         ),
         "bess_usable_mwh": sum(float(unit.config.usable_mwh) for unit in bess),
-        "bess_minimum_soc_fraction": 0.0,
         "reserve_floor_refusal_count": len(refusal_list),
         "reserve_floor_refusals": plain(refusal_list),
         "frequency_min_hz": min(frequency, default=0.0),
