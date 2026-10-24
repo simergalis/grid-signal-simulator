@@ -1,0 +1,4413 @@
+{
+  "advisory_router": "patched to None",
+  "baseline": {
+    "bess_ac_throughput_mwh": 158.86599709372857,
+    "demand_mwh": 620.9086288248361,
+    "dispatch_curtailment_mwh": 48.51928134810935,
+    "nonfuel_sha256": "51327f0b4e3defd962c5ee242818ed38cdee47698b92945c5280f019a78cab89",
+    "operating_cost": null,
+    "physical_sha256": "3e24904fd7e8f71afa1f5b30ec2f2958a6b43e7670ab9fefae04f3440aa57bff",
+    "scenario_id": "S10_mit_supercloud_2021-08-11",
+    "seed": 1729,
+    "served_mwh": 612.4446369086545,
+    "spec_path": "/home/runner/workspace/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/S10_mit_supercloud_2021-08-11.json",
+    "tick_count": 17280,
+    "turbine_fuel_by_unit_mmbtu": {},
+    "turbine_fuel_components_by_unit_mmbtu": {
+      "turbine-0": {
+        "hot_standby_fuel_mmbtu": null,
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null,
+        "total_fuel_mmbtu": null
+      },
+      "turbine-1": {
+        "hot_standby_fuel_mmbtu": null,
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null,
+        "total_fuel_mmbtu": null
+      },
+      "turbine-2": {
+        "hot_standby_fuel_mmbtu": null,
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null,
+        "total_fuel_mmbtu": null
+      },
+      "turbine-3": {
+        "hot_standby_fuel_mmbtu": null,
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null,
+        "total_fuel_mmbtu": null
+      },
+      "turbine-4": {
+        "hot_standby_fuel_mmbtu": null,
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null,
+        "total_fuel_mmbtu": null
+      }
+    },
+    "turbine_fuel_total_mmbtu": null,
+    "turbine_mwh": 667.8423099175071,
+    "turbine_start_count": 38,
+    "unserved_mwh": 8.4639919161834,
+    "wall_clock": 1792454400.0
+  },
+  "candidate": {
+    "bess_ac_throughput_mwh": 157.77422549908798,
+    "demand_mwh": 621.8578481855576,
+    "dispatch_curtailment_mwh": 46.77268672437931,
+    "nonfuel_sha256": "6d5c6be37ec3b2ab5630ed4fdc5bfbbdf0cba16c094672589740554fad878252",
+    "operating_cost": null,
+    "physical_sha256": "e819540659528686bd40c706290dc09883d87b865e25df17da970f4550fefa1b",
+    "scenario_id": "S10_mit_supercloud_2021-08-11",
+    "seed": 1729,
+    "served_mwh": 616.3219971385098,
+    "spec_path": "/home/runner/workspace/tools/dr_isl/d6/S10_2021-08-11_cpu_candidate.json",
+    "tick_count": 17280,
+    "turbine_fuel_by_unit_mmbtu": {},
+    "turbine_fuel_components_by_unit_mmbtu": {
+      "turbine-0": {
+        "hot_standby_fuel_mmbtu": null,
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null,
+        "total_fuel_mmbtu": null
+      },
+      "turbine-1": {
+        "hot_standby_fuel_mmbtu": null,
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null,
+        "total_fuel_mmbtu": null
+      },
+      "turbine-2": {
+        "hot_standby_fuel_mmbtu": null,
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null,
+        "total_fuel_mmbtu": null
+      },
+      "turbine-3": {
+        "hot_standby_fuel_mmbtu": null,
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null,
+        "total_fuel_mmbtu": null
+      },
+      "turbine-4": {
+        "hot_standby_fuel_mmbtu": null,
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null,
+        "total_fuel_mmbtu": null
+      }
+    },
+    "turbine_fuel_total_mmbtu": null,
+    "turbine_mwh": 669.9258052833919,
+    "turbine_start_count": 37,
+    "unserved_mwh": 5.535851047049171,
+    "wall_clock": 1792454400.0
+  },
+  "comparison": "tracked S10 vs CPU-only candidate; in-memory tick arrays only",
+  "d6f_nonfuel_parity": {
+    "a_plus_c_nonfuel_sha256": "808873c0bd14974ae4a605c49df4a43e7ba349831689d00399c5a2063da68f9e",
+    "expected_sha256": "808873c0bd14974ea4a605c49df4a43e7ba349831689d00399c5a2063da68f9e",
+    "fuel_candidate_nonfuel_sha256": "808873c0bd14974ae4a605c49df4a43e7ba349831689d00399c5a2063da68f9e",
+    "matches_expected": false,
+    "tick_counts": [
+      17280,
+      17280
+    ]
+  },
+  "first_decision_changes_first_100": [
+    {
+      "differences": [
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=45.0, commit_sustained=0/30 s, decommit_sustained=10/300 s; BESS charge-saturated; 14.96 MW turbine surplus remains after BESS absorbed 0.79 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=45.0, commit_sustained=0/30 s, decommit_sustained=10/300 s; BESS charge-saturated; 14.95 MW turbine surplus remains after BESS absorbed 0.80 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 5259
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=5/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6580
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=10/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6581
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=15/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6582
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=20/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6583
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=25/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6584
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=30/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6585
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=35/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6586
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=40/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6587
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=45/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6588
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=50/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6589
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=55/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6590
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=60/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6591
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=65/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6592
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=70/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6593
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=75/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6594
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=80/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6595
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=85/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6596
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=90/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6597
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=95/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6598
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=100/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6599
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=105/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6600
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=110/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6601
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=115/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6602
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=120/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6603
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=125/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6604
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=130/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6605
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=135/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6606
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=140/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6607
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=145/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6608
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=150/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6609
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=155/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6610
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=160/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6611
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=165/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6612
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=170/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6613
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=175/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6614
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=180/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6615
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=185/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6616
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=190/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6617
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=195/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6618
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=200/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6619
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=205/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6620
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=210/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6621
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=215/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6622
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=220/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6623
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=225/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6624
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=230/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6625
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=235/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6626
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=240/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6627
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=245/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6628
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=250/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6629
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=255/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6630
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=260/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6631
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=265/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6632
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=270/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6633
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=275/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6634
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=280/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6635
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=285/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6636
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=290/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6637
+    },
+    {
+      "differences": [
+        {
+          "baseline": null,
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=295/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6638
+    },
+    {
+      "differences": [
+        {
+          "baseline": "decommit",
+          "candidate": "hold",
+          "field": "commitment_action"
+        },
+        {
+          "baseline": "",
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000 \u2264 0.5, U_without=0.000 \u2264 0.7; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "turbine-1",
+          "candidate": null,
+          "field": "commitment_target_unit_id"
+        },
+        {
+          "baseline": "unloading",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6639
+    },
+    {
+      "differences": [
+        {
+          "baseline": "post-removal utilisation U_without=inf exceeds 0.7",
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=15.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "unloading",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6640
+    },
+    {
+      "differences": [
+        {
+          "baseline": "post-removal utilisation U_without=inf exceeds 0.7",
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=15.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "unloading",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6641
+    },
+    {
+      "differences": [
+        {
+          "baseline": "post-removal utilisation U_without=inf exceeds 0.7",
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=15.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "unloading",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6642
+    },
+    {
+      "differences": [
+        {
+          "baseline": "post-removal utilisation U_without=inf exceeds 0.7",
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=15.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "unloading",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6643
+    },
+    {
+      "differences": [
+        {
+          "baseline": "post-removal utilisation U_without=inf exceeds 0.7",
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=15.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "unloading",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6644
+    },
+    {
+      "differences": [
+        {
+          "baseline": "post-removal utilisation U_without=inf exceeds 0.7",
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=15.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "unloading",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6645
+    },
+    {
+      "differences": [
+        {
+          "baseline": "post-removal utilisation U_without=inf exceeds 0.7",
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=15.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "unloading",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6646
+    },
+    {
+      "differences": [
+        {
+          "baseline": "post-removal utilisation U_without=inf exceeds 0.7",
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=15.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "unloading",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6647
+    },
+    {
+      "differences": [
+        {
+          "baseline": "post-removal utilisation U_without=inf exceeds 0.7",
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=15.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "unloading",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6648
+    },
+    {
+      "differences": [
+        {
+          "baseline": "post-removal utilisation U_without=inf exceeds 0.7",
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=15.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "unloading",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6649
+    },
+    {
+      "differences": [
+        {
+          "baseline": "post-removal utilisation U_without=inf exceeds 0.7",
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=15.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "unloading",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6650
+    },
+    {
+      "differences": [
+        {
+          "baseline": "post-removal utilisation U_without=inf exceeds 0.7",
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=15.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "unloading",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6651
+    },
+    {
+      "differences": [
+        {
+          "baseline": "post-removal utilisation U_without=inf exceeds 0.7",
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=15.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 5.25 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "COVERED_WITH_SHED",
+          "candidate": "COVERED",
+          "field": "contingency_coverage.state"
+        },
+        {
+          "baseline": "offline",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6652
+    },
+    {
+      "differences": [
+        {
+          "baseline": "post-removal utilisation U_without=inf exceeds 0.7",
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=15.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 5.25 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "COVERED_WITH_SHED",
+          "candidate": "COVERED",
+          "field": "contingency_coverage.state"
+        },
+        {
+          "baseline": "offline",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6653
+    },
+    {
+      "differences": [
+        {
+          "baseline": "post-removal utilisation U_without=inf exceeds 0.7",
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=15.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 5.25 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "COVERED_WITH_SHED",
+          "candidate": "COVERED",
+          "field": "contingency_coverage.state"
+        },
+        {
+          "baseline": "offline",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6654
+    },
+    {
+      "differences": [
+        {
+          "baseline": "post-removal utilisation U_without=inf exceeds 0.7",
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=15.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 5.25 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "COVERED_WITH_SHED",
+          "candidate": "COVERED",
+          "field": "contingency_coverage.state"
+        },
+        {
+          "baseline": "offline",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6655
+    },
+    {
+      "differences": [
+        {
+          "baseline": "post-removal utilisation U_without=inf exceeds 0.7",
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=15.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 5.25 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "COVERED_WITH_SHED",
+          "candidate": "COVERED",
+          "field": "contingency_coverage.state"
+        },
+        {
+          "baseline": "offline",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6656
+    },
+    {
+      "differences": [
+        {
+          "baseline": "post-removal utilisation U_without=inf exceeds 0.7",
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=15.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 5.25 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "COVERED_WITH_SHED",
+          "candidate": "COVERED",
+          "field": "contingency_coverage.state"
+        },
+        {
+          "baseline": "offline",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6657
+    },
+    {
+      "differences": [
+        {
+          "baseline": "post-removal utilisation U_without=inf exceeds 0.7",
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=15.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 5.25 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "COVERED_WITH_SHED",
+          "candidate": "COVERED",
+          "field": "contingency_coverage.state"
+        },
+        {
+          "baseline": "offline",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6658
+    },
+    {
+      "differences": [
+        {
+          "baseline": "post-removal utilisation U_without=inf exceeds 0.7",
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=15.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 5.25 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "COVERED_WITH_SHED",
+          "candidate": "COVERED",
+          "field": "contingency_coverage.state"
+        },
+        {
+          "baseline": "offline",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6659
+    },
+    {
+      "differences": [
+        {
+          "baseline": "post-removal utilisation U_without=inf exceeds 0.7",
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=15.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 5.25 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "COVERED_WITH_SHED",
+          "candidate": "COVERED",
+          "field": "contingency_coverage.state"
+        },
+        {
+          "baseline": "offline",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6660
+    },
+    {
+      "differences": [
+        {
+          "baseline": "post-removal utilisation U_without=inf exceeds 0.7",
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.000, floor_mw=15.0, total_rated=15.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 5.25 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "COVERED_WITH_SHED",
+          "candidate": "COVERED",
+          "field": "contingency_coverage.state"
+        },
+        {
+          "baseline": "offline",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6661
+    },
+    {
+      "differences": [
+        {
+          "baseline": "reserve floor is currently violated",
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.095, floor_mw=16.4, total_rated=15.0, commit_sustained=5/30 s, decommit_sustained=0/300 s; BESS full; 3.82 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.048, floor_mw=16.4, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 9.07 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "COVERED_WITH_SHED",
+          "candidate": "COVERED",
+          "field": "contingency_coverage.state"
+        },
+        {
+          "baseline": "offline",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6662
+    },
+    {
+      "differences": [
+        {
+          "baseline": "reserve floor is currently violated",
+          "candidate": "reserve floor would be violated after removing the selected turbine",
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "U=0.309, floor_mw=19.6, total_rated=15.0, commit_sustained=10/30 s, decommit_sustained=0/300 s; BESS full; 0.61 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "candidate": "U=0.155, floor_mw=19.6, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 5.86 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "COVERED_WITH_SHED",
+          "candidate": "COVERED",
+          "field": "contingency_coverage.state"
+        },
+        {
+          "baseline": "offline",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6663
+    },
+    {
+      "differences": [
+        {
+          "baseline": "U=0.996, floor_mw=29.9, total_rated=15.0, commit_sustained=15/30 s, decommit_sustained=0/300 s",
+          "candidate": "U=0.498, floor_mw=29.9, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "COVERED_WITH_SHED",
+          "candidate": "COVERED",
+          "field": "contingency_coverage.state"
+        },
+        {
+          "baseline": "offline",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6664
+    },
+    {
+      "differences": [
+        {
+          "baseline": "U=1.682, floor_mw=40.2, total_rated=15.0, commit_sustained=20/30 s, decommit_sustained=0/300 s",
+          "candidate": "U=0.841, floor_mw=40.2, total_rated=30.0, commit_sustained=5/30 s, decommit_sustained=0/300 s",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "COVERED_WITH_SHED",
+          "candidate": "COVERED",
+          "field": "contingency_coverage.state"
+        },
+        {
+          "baseline": "offline",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6665
+    },
+    {
+      "differences": [
+        {
+          "baseline": "U=2.369, floor_mw=50.5, total_rated=15.0, commit_sustained=25/30 s, decommit_sustained=0/300 s",
+          "candidate": "U=1.185, floor_mw=50.5, total_rated=30.0, commit_sustained=10/30 s, decommit_sustained=0/300 s",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "COVERED_WITH_SHED",
+          "candidate": "COVERED",
+          "field": "contingency_coverage.state"
+        },
+        {
+          "baseline": "offline",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6666
+    },
+    {
+      "differences": [
+        {
+          "baseline": "start pending for 'turbine-2'",
+          "candidate": null,
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "commit condition met (U=3.056, floor_violated=True)",
+          "candidate": "U=1.528, floor_mw=60.8, total_rated=30.0, commit_sustained=15/30 s, decommit_sustained=0/300 s",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "offline",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6667
+    },
+    {
+      "differences": [
+        {
+          "baseline": "start pending for 'turbine-2'",
+          "candidate": null,
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "commit condition met (U=3.306, floor_violated=True)",
+          "candidate": "U=1.653, floor_mw=64.6, total_rated=30.0, commit_sustained=20/30 s, decommit_sustained=0/300 s",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "offline",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6668
+    },
+    {
+      "differences": [
+        {
+          "baseline": "start pending for 'turbine-2'",
+          "candidate": null,
+          "field": "commitment_blocked_by"
+        },
+        {
+          "baseline": "commit condition met (U=3.370, floor_violated=True)",
+          "candidate": "U=1.685, floor_mw=65.5, total_rated=30.0, commit_sustained=25/30 s, decommit_sustained=0/300 s",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "offline",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6669
+    },
+    {
+      "differences": [
+        {
+          "baseline": "commit condition met (U=3.433, floor_violated=True)",
+          "candidate": "commit condition met (U=1.717, floor_violated=True)",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "offline",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6670
+    },
+    {
+      "differences": [
+        {
+          "baseline": "commit condition met (U=3.433, floor_violated=True)",
+          "candidate": "commit condition met (U=1.717, floor_violated=True)",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "offline",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6671
+    },
+    {
+      "differences": [
+        {
+          "baseline": "commit condition met (U=3.433, floor_violated=True)",
+          "candidate": "commit condition met (U=1.717, floor_violated=True)",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "offline",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6672
+    },
+    {
+      "differences": [
+        {
+          "baseline": "commit condition met (U=3.433, floor_violated=True)",
+          "candidate": "commit condition met (U=1.717, floor_violated=True)",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "offline",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6673
+    },
+    {
+      "differences": [
+        {
+          "baseline": "commit condition met (U=3.433, floor_violated=True)",
+          "candidate": "commit condition met (U=1.717, floor_violated=True)",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "offline",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6674
+    },
+    {
+      "differences": [
+        {
+          "baseline": "commit condition met (U=3.433, floor_violated=True)",
+          "candidate": "commit condition met (U=1.717, floor_violated=True)",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "offline",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6675
+    },
+    {
+      "differences": [
+        {
+          "baseline": "commit condition met (U=3.433, floor_violated=True)",
+          "candidate": "commit condition met (U=1.717, floor_violated=True)",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "offline",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6676
+    },
+    {
+      "differences": [
+        {
+          "baseline": "commit condition met (U=3.433, floor_violated=True)",
+          "candidate": "commit condition met (U=1.717, floor_violated=True)",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "offline",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6677
+    },
+    {
+      "differences": [
+        {
+          "baseline": "commit condition met (U=3.433, floor_violated=True)",
+          "candidate": "commit condition met (U=1.717, floor_violated=True)",
+          "field": "commitment_reason"
+        },
+        {
+          "baseline": "offline",
+          "candidate": "synchronised",
+          "field": "turbine_units[1].state"
+        }
+      ],
+      "sim_time_s": null,
+      "tick": 6678
+    }
+  ],
+  "first_discrete_decision_difference": {
+    "differences": [
+      {
+        "baseline": "U=0.000, floor_mw=15.0, total_rated=45.0, commit_sustained=0/30 s, decommit_sustained=10/300 s; BESS charge-saturated; 14.96 MW turbine surplus remains after BESS absorbed 0.79 MW",
+        "candidate": "U=0.000, floor_mw=15.0, total_rated=45.0, commit_sustained=0/30 s, decommit_sustained=10/300 s; BESS charge-saturated; 14.95 MW turbine surplus remains after BESS absorbed 0.80 MW",
+        "field": "commitment_reason"
+      }
+    ],
+    "sim_time_s": null,
+    "tick": 5259
+  },
+  "first_physical_difference": {
+    "fields": [
+      {
+        "baseline": 10.486575666666667,
+        "candidate": 10.486416699778024,
+        "field": "asset_delivery_error_mw"
+      },
+      {
+        "baseline": -5.2432878333333335,
+        "candidate": -5.243208349889012,
+        "field": "bess_setpoint_mw"
+      },
+      {
+        "baseline": 5.2432878333333335,
+        "candidate": 5.243208349889012,
+        "field": "d4_balance_defect_mw"
+      },
+      {
+        "baseline": 0.00035425324074074067,
+        "candidate": 0.0003584482003021334,
+        "field": "edl_dispatch_cost_usd"
+      },
+      {
+        "baseline": 0.00044747777777777773,
+        "candidate": 0.0004527766740658527,
+        "field": "fleet_utilisation"
+      },
+      {
+        "baseline": 60.54595734564584,
+        "candidate": 60.54594906943219,
+        "field": "frequency_hz"
+      },
+      {
+        "baseline": 0.006712166666666666,
+        "candidate": 0.006791650110987791,
+        "field": "gt_setpoint_mw"
+      },
+      {
+        "baseline": 0.006712166666666666,
+        "candidate": 0.006791650110987791,
+        "field": "net_demand_mw"
+      },
+      {
+        "baseline": 0.006712166666666666,
+        "candidate": 0.006791650110987791,
+        "field": "p_demand_mw"
+      },
+      {
+        "baseline": 5.2432878333333335,
+        "candidate": 5.243208349889012,
+        "field": "p_dispatch_curtailed_mw"
+      },
+      {
+        "baseline": 5.2432878333333335,
+        "candidate": 5.243208349889012,
+        "field": "p_imbalance_mw"
+      },
+      {
+        "baseline": null,
+        "candidate": 7.948344432112468e-05,
+        "field": "p_non_gpu_demand_mw"
+      },
+      {
+        "baseline": 0.006712166666666666,
+        "candidate": 0.006791650110987791,
+        "field": "p_served_mw"
+      },
+      {
+        "baseline": 0.006712166666666666,
+        "candidate": 0.006791650110987791,
+        "field": "physical_balance.served_mw"
+      },
+      {
+        "baseline": 5.2432878333333335,
+        "candidate": 5.243208349889012,
+        "field": "physical_balance.terms.p_curtailment_mw"
+      },
+      {
+        "baseline": 0.006712166666666666,
+        "candidate": 0.006791650110987791,
+        "field": "physical_balance.terms.p_demand_mw"
+      },
+      {
+        "baseline": 0.006712166666666666,
+        "candidate": 0.006791650110987791,
+        "field": "physical_balance.terms.p_served_mw"
+      },
+      {
+        "baseline": 15.006712166666667,
+        "candidate": 15.006791650110987,
+        "field": "reserve_floor_mw"
+      }
+    ],
+    "sim_time_s": null,
+    "tick": 1
+  },
+  "per_tick_comparison": {
+    "all_tick_field_difference_counts": {
+      "absorbable_mw": 6416,
+      "advisory_telemetry.last_proposal_sim_time": 1640,
+      "advisory_telemetry.per_agent.calibration": 4536,
+      "advisory_telemetry.per_agent.compute": 483,
+      "advisory_telemetry.per_agent.renewable": 127,
+      "advisory_telemetry.per_agent.storage": 5037,
+      "advisory_telemetry.per_agent.thermal": 808,
+      "advisory_telemetry.proposals_pending": 1693,
+      "advisory_telemetry.proposals_total": 15492,
+      "approach_rate_mw_s": 496,
+      "asset_delivery_error_mw": 6902,
+      "bess_bridging_seconds": 4286,
+      "bess_discharge_sustained_s": 340,
+      "bess_escalation_active": 278,
+      "bess_escalation_reason": 278,
+      "bess_output_mw": 2564,
+      "bess_setpoint_mw": 6826,
+      "bess_soc_fraction": 15742,
+      "bridging_basis": 188,
+      "commitment_action": 6,
+      "commitment_blocked_by": 497,
+      "commitment_reason": 3183,
+      "commitment_target_unit_id": 153,
+      "committed_rated_mw": 674,
+      "compute_inlet_temp_c": 3852,
+      "contingency_coverage.bess_usable_energy_mwh": 15742,
+      "contingency_coverage.closable": 86,
+      "contingency_coverage.deficit_mw": 48,
+      "contingency_coverage.dispatchable_mw": 661,
+      "contingency_coverage.energy_test_passes": 87,
+      "contingency_coverage.headroom_surviving_mw": 738,
+      "contingency_coverage.r_surviving_mw_per_s": 661,
+      "contingency_coverage.ride_through_s": 15741,
+      "contingency_coverage.shed_equivalent_nodes": 149,
+      "contingency_coverage.shed_required_mw": 259,
+      "contingency_coverage.state": 87,
+      "contingency_coverage.time_to_close_s": 568,
+      "d4_balance_defect_mw": 4472,
+      "edl_dispatch_cost_usd": 6913,
+      "fleet_utilisation": 7034,
+      "frequency_forcing_mw": 753,
+      "frequency_hz": 11187,
+      "frequency_valid": 73,
+      "gt_setpoint_mw": 6777,
+      "net_demand_mw": 6777,
+      "p_compute_served_mw": 456,
+      "p_compute_unserved_mw": 457,
+      "p_cooling_demand_mw": 6416,
+      "p_cooling_served_mw": 6666,
+      "p_cooling_unserved_mw": 697,
+      "p_demand_mw": 6777,
+      "p_dispatch_curtailed_mw": 4280,
+      "p_generation_mw": 3029,
+      "p_imbalance_mw": 4472,
+      "p_non_gpu_demand_mw": 17280,
+      "p_served_mw": 6868,
+      "p_unserved_mw": 704,
+      "pending_start_unit_id": 237,
+      "physical_balance.defect_mw": 192,
+      "physical_balance.served_mw": 6868,
+      "physical_balance.terms.p_bess_mw": 2564,
+      "physical_balance.terms.p_curtailment_mw": 4280,
+      "physical_balance.terms.p_demand_mw": 6777,
+      "physical_balance.terms.p_generation_mw": 3029,
+      "physical_balance.terms.p_served_mw": 6868,
+      "physical_balance.terms.p_turbine_mw": 724,
+      "physical_balance.terms.p_unserved_mw": 704,
+      "ramp_capability_mw": 57,
+      "reserve_floor_mw": 6777,
+      "reserve_satisfied": 58,
+      "scada_commands_issued": 187,
+      "time_to_limit_s": 650,
+      "turbine_estimated_time_to_close_s": 150,
+      "turbine_fuel_telemetry[1].start_count": 10404,
+      "turbine_fuel_telemetry[2].start_count": 252,
+      "turbine_fuel_telemetry[3].start_count": 63,
+      "turbine_observed_ramp_mw_per_s": 187,
+      "turbine_output_mw": 724,
+      "turbine_start_count": 10404,
+      "turbine_units[0].output_mw": 24,
+      "turbine_units[0].setpoint_mw": 24,
+      "turbine_units[1].levelled_off": 10,
+      "turbine_units[1].output_mw": 295,
+      "turbine_units[1].setpoint_mw": 280,
+      "turbine_units[1].start_phase": 60,
+      "turbine_units[1].state": 298,
+      "turbine_units[1].thermal_state": 10404,
+      "turbine_units[1].time_to_online_s": 60,
+      "turbine_units[2].levelled_off": 20,
+      "turbine_units[2].output_mw": 638,
+      "turbine_units[2].setpoint_mw": 264,
+      "turbine_units[2].start_phase": 118,
+      "turbine_units[2].state": 448,
+      "turbine_units[2].time_to_online_s": 118,
+      "turbine_units[3].levelled_off": 20,
+      "turbine_units[3].output_mw": 187,
+      "turbine_units[3].setpoint_mw": 63,
+      "turbine_units[3].start_phase": 118,
+      "turbine_units[3].state": 198,
+      "turbine_units[3].time_to_online_s": 118,
+      "turbine_units[4].output_mw": 73,
+      "turbine_units[4].setpoint_mw": 73
+    },
+    "baseline_nonfuel_sha256": "51327f0b4e3defd962c5ee242818ed38cdee47698b92945c5280f019a78cab89",
+    "candidate_nonfuel_sha256": "6d5c6be37ec3b2ab5630ed4fdc5bfbbdf0cba16c094672589740554fad878252",
+    "first_all_tick_difference_by_field": {
+      "absorbable_mw": {
+        "baseline": 11.844132657545156,
+        "candidate": 11.84412914121003,
+        "sim_time": null,
+        "tick": 20
+      },
+      "advisory_telemetry.last_proposal_sim_time": {
+        "baseline": 8880.0,
+        "candidate": 8940.0,
+        "sim_time": null,
+        "tick": 1789
+      },
+      "advisory_telemetry.per_agent.calibration": {
+        "baseline": 15255.0,
+        "candidate": 18855.0,
+        "sim_time": null,
+        "tick": 3772
+      },
+      "advisory_telemetry.per_agent.compute": {
+        "baseline": 73185.0,
+        "candidate": 73715.0,
+        "sim_time": null,
+        "tick": 14744
+      },
+      "advisory_telemetry.per_agent.renewable": {
+        "baseline": 8880.0,
+        "candidate": 8940.0,
+        "sim_time": null,
+        "tick": 1789
+      },
+      "advisory_telemetry.per_agent.storage": {
+        "baseline": 15780.0,
+        "candidate": 15720.0,
+        "sim_time": null,
+        "tick": 3157
+      },
+      "advisory_telemetry.per_agent.thermal": {
+        "baseline": 8760.0,
+        "candidate": 9060.0,
+        "sim_time": null,
+        "tick": 1813
+      },
+      "advisory_telemetry.proposals_pending": {
+        "baseline": 6,
+        "candidate": 7,
+        "sim_time": null,
+        "tick": 1789
+      },
+      "advisory_telemetry.proposals_total": {
+        "baseline": 300,
+        "candidate": 301,
+        "sim_time": null,
+        "tick": 1789
+      },
+      "approach_rate_mw_s": {
+        "baseline": 0.00019242049096869067,
+        "candidate": 0.0001931237579943955,
+        "sim_time": null,
+        "tick": 20
+      },
+      "asset_delivery_error_mw": {
+        "baseline": 10.486575666666667,
+        "candidate": 10.486416699778024,
+        "sim_time": null,
+        "tick": 1
+      },
+      "bess_bridging_seconds": {
+        "baseline": 9594.118144588043,
+        "candidate": 9594.087795002088,
+        "sim_time": null,
+        "tick": 110
+      },
+      "bess_discharge_sustained_s": {
+        "baseline": 5.0,
+        "candidate": 0.0,
+        "sim_time": null,
+        "tick": 15342
+      },
+      "bess_escalation_active": {
+        "baseline": true,
+        "candidate": false,
+        "sim_time": null,
+        "tick": 6739
+      },
+      "bess_escalation_reason": {
+        "baseline": "turbine_catchup",
+        "candidate": "",
+        "sim_time": null,
+        "tick": 6739
+      },
+      "bess_output_mw": {
+        "baseline": 5.027867999993628,
+        "candidate": 5.027883896682489,
+        "sim_time": null,
+        "tick": 110
+      },
+      "bess_setpoint_mw": {
+        "baseline": -5.2432878333333335,
+        "candidate": -5.243208349889012,
+        "sim_time": null,
+        "tick": 1
+      },
+      "bess_soc_fraction": {
+        "baseline": 0.9994791188185532,
+        "candidate": 0.999479117171675,
+        "sim_time": null,
+        "tick": 110
+      },
+      "bridging_basis": {
+        "baseline": "no_load",
+        "candidate": "current_demand",
+        "sim_time": null,
+        "tick": 7608
+      },
+      "commitment_action": {
+        "baseline": "decommit",
+        "candidate": "hold",
+        "sim_time": null,
+        "tick": 6639
+      },
+      "commitment_blocked_by": {
+        "baseline": null,
+        "candidate": "reserve floor would be violated after removing the selected turbine",
+        "sim_time": null,
+        "tick": 6580
+      },
+      "commitment_reason": {
+        "baseline": "U=0.000, floor_mw=15.0, total_rated=45.0, commit_sustained=0/30 s, decommit_sustained=10/300 s; BESS charge-saturated; 14.96 MW turbine surplus remains after BESS absorbed 0.79 MW",
+        "candidate": "U=0.000, floor_mw=15.0, total_rated=45.0, commit_sustained=0/30 s, decommit_sustained=10/300 s; BESS charge-saturated; 14.95 MW turbine surplus remains after BESS absorbed 0.80 MW",
+        "sim_time": null,
+        "tick": 5259
+      },
+      "commitment_target_unit_id": {
+        "baseline": "turbine-1",
+        "candidate": null,
+        "sim_time": null,
+        "tick": 6639
+      },
+      "committed_rated_mw": {
+        "baseline": 15.0,
+        "candidate": 30.0,
+        "sim_time": null,
+        "tick": 6639
+      },
+      "compute_inlet_temp_c": {
+        "baseline": 20.298618942853604,
+        "candidate": 20.299611795621644,
+        "sim_time": null,
+        "tick": 20
+      },
+      "contingency_coverage.bess_usable_energy_mwh": {
+        "baseline": 13.399433224259015,
+        "candidate": 13.39943320218028,
+        "sim_time": null,
+        "tick": 110
+      },
+      "contingency_coverage.closable": {
+        "baseline": false,
+        "candidate": true,
+        "sim_time": null,
+        "tick": 6652
+      },
+      "contingency_coverage.deficit_mw": {
+        "baseline": 5.716971999996137,
+        "candidate": 5.716987896684998,
+        "sim_time": null,
+        "tick": 112
+      },
+      "contingency_coverage.dispatchable_mw": {
+        "baseline": 32.0,
+        "candidate": 47.0,
+        "sim_time": null,
+        "tick": 6652
+      },
+      "contingency_coverage.energy_test_passes": {
+        "baseline": false,
+        "candidate": true,
+        "sim_time": null,
+        "tick": 6652
+      },
+      "contingency_coverage.headroom_surviving_mw": {
+        "baseline": 17.033028,
+        "candidate": 17.033012103311137,
+        "sim_time": null,
+        "tick": 1064
+      },
+      "contingency_coverage.r_surviving_mw_per_s": {
+        "baseline": 0,
+        "candidate": 0.5,
+        "sim_time": null,
+        "tick": 6652
+      },
+      "contingency_coverage.ride_through_s": {
+        "baseline": 9188.18278234904,
+        "candidate": 9188.182767209335,
+        "sim_time": null,
+        "tick": 110
+      },
+      "contingency_coverage.shed_equivalent_nodes": {
+        "baseline": 499,
+        "candidate": null,
+        "sim_time": null,
+        "tick": 6662
+      },
+      "contingency_coverage.shed_required_mw": {
+        "baseline": 0.8118411555555518,
+        "candidate": 0.8118570522444166,
+        "sim_time": null,
+        "tick": 1066
+      },
+      "contingency_coverage.state": {
+        "baseline": "COVERED_WITH_SHED",
+        "candidate": "COVERED",
+        "sim_time": null,
+        "tick": 6652
+      },
+      "contingency_coverage.time_to_close_s": {
+        "baseline": 11.433943999992273,
+        "candidate": 11.433975793369996,
+        "sim_time": null,
+        "tick": 112
+      },
+      "d4_balance_defect_mw": {
+        "baseline": 5.2432878333333335,
+        "candidate": 5.243208349889012,
+        "sim_time": null,
+        "tick": 1
+      },
+      "edl_dispatch_cost_usd": {
+        "baseline": 0.00035425324074074067,
+        "candidate": 0.0003584482003021334,
+        "sim_time": null,
+        "tick": 1
+      },
+      "fleet_utilisation": {
+        "baseline": 0.00044747777777777773,
+        "candidate": 0.0004527766740658527,
+        "sim_time": null,
+        "tick": 1
+      },
+      "frequency_forcing_mw": {
+        "baseline": 0.0,
+        "candidate": 8.881784197001252e-16,
+        "sim_time": null,
+        "tick": 300
+      },
+      "frequency_hz": {
+        "baseline": 60.54595734564584,
+        "candidate": 60.54594906943219,
+        "sim_time": null,
+        "tick": 1
+      },
+      "frequency_valid": {
+        "baseline": false,
+        "candidate": true,
+        "sim_time": null,
+        "tick": 6666
+      },
+      "gt_setpoint_mw": {
+        "baseline": 0.006712166666666666,
+        "candidate": 0.006791650110987791,
+        "sim_time": null,
+        "tick": 1
+      },
+      "net_demand_mw": {
+        "baseline": 0.006712166666666666,
+        "candidate": 0.006791650110987791,
+        "sim_time": null,
+        "tick": 1
+      },
+      "p_compute_served_mw": {
+        "baseline": 3.0404363999999977,
+        "candidate": 3.040436399999998,
+        "sim_time": null,
+        "tick": 421
+      },
+      "p_compute_unserved_mw": {
+        "baseline": 1.1564823173178715e-15,
+        "candidate": 1.156102033705089e-15,
+        "sim_time": null,
+        "tick": 347
+      },
+      "p_cooling_demand_mw": {
+        "baseline": 0.0009621024548434534,
+        "candidate": 0.0009656187899719775,
+        "sim_time": null,
+        "tick": 20
+      },
+      "p_cooling_served_mw": {
+        "baseline": 0.0009621024548434534,
+        "candidate": 0.0009656187899719775,
+        "sim_time": null,
+        "tick": 20
+      },
+      "p_cooling_unserved_mw": {
+        "baseline": 2.3129646346357425e-16,
+        "candidate": 2.312964634635743e-16,
+        "sim_time": null,
+        "tick": 347
+      },
+      "p_demand_mw": {
+        "baseline": 0.006712166666666666,
+        "candidate": 0.006791650110987791,
+        "sim_time": null,
+        "tick": 1
+      },
+      "p_dispatch_curtailed_mw": {
+        "baseline": 5.2432878333333335,
+        "candidate": 5.243208349889012,
+        "sim_time": null,
+        "tick": 1
+      },
+      "p_generation_mw": {
+        "baseline": 15.527867999993628,
+        "candidate": 15.52788389668249,
+        "sim_time": null,
+        "tick": 110
+      },
+      "p_imbalance_mw": {
+        "baseline": 5.2432878333333335,
+        "candidate": 5.243208349889012,
+        "sim_time": null,
+        "tick": 1
+      },
+      "p_non_gpu_demand_mw": {
+        "baseline": null,
+        "candidate": 7.948344432112468e-05,
+        "sim_time": null,
+        "tick": 1
+      },
+      "p_served_mw": {
+        "baseline": 0.006712166666666666,
+        "candidate": 0.006791650110987791,
+        "sim_time": null,
+        "tick": 1
+      },
+      "p_unserved_mw": {
+        "baseline": 1.3322676295501878e-15,
+        "candidate": 8.881784197001252e-16,
+        "sim_time": null,
+        "tick": 421
+      },
+      "pending_start_unit_id": {
+        "baseline": "turbine-1",
+        "candidate": null,
+        "sim_time": null,
+        "tick": 6877
+      },
+      "physical_balance.defect_mw": {
+        "baseline": 0.0,
+        "candidate": 8.881784197001252e-16,
+        "sim_time": null,
+        "tick": 300
+      },
+      "physical_balance.served_mw": {
+        "baseline": 0.006712166666666666,
+        "candidate": 0.006791650110987791,
+        "sim_time": null,
+        "tick": 1
+      },
+      "physical_balance.terms.p_bess_mw": {
+        "baseline": 5.027867999993628,
+        "candidate": 5.027883896682489,
+        "sim_time": null,
+        "tick": 110
+      },
+      "physical_balance.terms.p_curtailment_mw": {
+        "baseline": 5.2432878333333335,
+        "candidate": 5.243208349889012,
+        "sim_time": null,
+        "tick": 1
+      },
+      "physical_balance.terms.p_demand_mw": {
+        "baseline": 0.006712166666666666,
+        "candidate": 0.006791650110987791,
+        "sim_time": null,
+        "tick": 1
+      },
+      "physical_balance.terms.p_generation_mw": {
+        "baseline": 15.527867999993628,
+        "candidate": 15.52788389668249,
+        "sim_time": null,
+        "tick": 110
+      },
+      "physical_balance.terms.p_served_mw": {
+        "baseline": 0.006712166666666666,
+        "candidate": 0.006791650110987791,
+        "sim_time": null,
+        "tick": 1
+      },
+      "physical_balance.terms.p_turbine_mw": {
+        "baseline": 10.966971999996137,
+        "candidate": 10.966987896684998,
+        "sim_time": null,
+        "tick": 112
+      },
+      "physical_balance.terms.p_unserved_mw": {
+        "baseline": 1.3322676295501878e-15,
+        "candidate": 8.881784197001252e-16,
+        "sim_time": null,
+        "tick": 421
+      },
+      "ramp_capability_mw": {
+        "baseline": 19.533028,
+        "candidate": 19.533012103311137,
+        "sim_time": null,
+        "tick": 1064
+      },
+      "reserve_floor_mw": {
+        "baseline": 15.006712166666667,
+        "candidate": 15.006791650110987,
+        "sim_time": null,
+        "tick": 1
+      },
+      "reserve_satisfied": {
+        "baseline": false,
+        "candidate": true,
+        "sim_time": null,
+        "tick": 6662
+      },
+      "scada_commands_issued": {
+        "baseline": 2,
+        "candidate": 1,
+        "sim_time": null,
+        "tick": 15342
+      },
+      "time_to_limit_s": {
+        "baseline": 61553.385494023874,
+        "candidate": 61329.2184463071,
+        "sim_time": null,
+        "tick": 20
+      },
+      "turbine_estimated_time_to_close_s": {
+        "baseline": 546.0712847924709,
+        "candidate": 546.052696033807,
+        "sim_time": null,
+        "tick": 112
+      },
+      "turbine_fuel_telemetry[1].start_count": {
+        "baseline": 2,
+        "candidate": 1,
+        "sim_time": null,
+        "tick": 6877
+      },
+      "turbine_fuel_telemetry[2].start_count": {
+        "baseline": 5,
+        "candidate": 4,
+        "sim_time": null,
+        "tick": 15558
+      },
+      "turbine_fuel_telemetry[3].start_count": {
+        "baseline": 12,
+        "candidate": 13,
+        "sim_time": null,
+        "tick": 15558
+      },
+      "turbine_observed_ramp_mw_per_s": {
+        "baseline": 0.031131466666409105,
+        "candidate": 0.03113252644566652,
+        "sim_time": null,
+        "tick": 112
+      },
+      "turbine_output_mw": {
+        "baseline": 10.966971999996137,
+        "candidate": 10.966987896684998,
+        "sim_time": null,
+        "tick": 112
+      },
+      "turbine_start_count": {
+        "baseline": 16,
+        "candidate": 15,
+        "sim_time": null,
+        "tick": 6877
+      },
+      "turbine_units[0].output_mw": {
+        "baseline": 8.5618,
+        "candidate": 8.5619,
+        "sim_time": null,
+        "tick": 114
+      },
+      "turbine_units[0].setpoint_mw": {
+        "baseline": 8.5618,
+        "candidate": 8.5619,
+        "sim_time": null,
+        "tick": 114
+      },
+      "turbine_units[1].levelled_off": {
+        "baseline": true,
+        "candidate": false,
+        "sim_time": null,
+        "tick": 6642
+      },
+      "turbine_units[1].output_mw": {
+        "baseline": 10.5618,
+        "candidate": 10.5619,
+        "sim_time": null,
+        "tick": 1066
+      },
+      "turbine_units[1].setpoint_mw": {
+        "baseline": 10.5618,
+        "candidate": 10.5619,
+        "sim_time": null,
+        "tick": 1066
+      },
+      "turbine_units[1].start_phase": {
+        "baseline": "purge",
+        "candidate": null,
+        "sim_time": null,
+        "tick": 6877
+      },
+      "turbine_units[1].state": {
+        "baseline": "unloading",
+        "candidate": "synchronised",
+        "sim_time": null,
+        "tick": 6639
+      },
+      "turbine_units[1].thermal_state": {
+        "baseline": "hot",
+        "candidate": "warm",
+        "sim_time": null,
+        "tick": 6877
+      },
+      "turbine_units[1].time_to_online_s": {
+        "baseline": 300.0,
+        "candidate": null,
+        "sim_time": null,
+        "tick": 6877
+      },
+      "turbine_units[2].levelled_off": {
+        "baseline": true,
+        "candidate": false,
+        "sim_time": null,
+        "tick": 15331
+      },
+      "turbine_units[2].output_mw": {
+        "baseline": 15.0,
+        "candidate": 14.8005,
+        "sim_time": null,
+        "tick": 6739
+      },
+      "turbine_units[2].setpoint_mw": {
+        "baseline": 15.0,
+        "candidate": 14.8005,
+        "sim_time": null,
+        "tick": 6739
+      },
+      "turbine_units[2].start_phase": {
+        "baseline": "purge",
+        "candidate": null,
+        "sim_time": null,
+        "tick": 15558
+      },
+      "turbine_units[2].state": {
+        "baseline": "unloading",
+        "candidate": "synchronised",
+        "sim_time": null,
+        "tick": 15328
+      },
+      "turbine_units[2].time_to_online_s": {
+        "baseline": 295.0,
+        "candidate": null,
+        "sim_time": null,
+        "tick": 15558
+      },
+      "turbine_units[3].levelled_off": {
+        "baseline": false,
+        "candidate": true,
+        "sim_time": null,
+        "tick": 15980
+      },
+      "turbine_units[3].output_mw": {
+        "baseline": 7.5,
+        "candidate": 5.25,
+        "sim_time": null,
+        "tick": 6880
+      },
+      "turbine_units[3].setpoint_mw": {
+        "baseline": 7.5,
+        "candidate": 5.25,
+        "sim_time": null,
+        "tick": 6880
+      },
+      "turbine_units[3].start_phase": {
+        "baseline": null,
+        "candidate": "purge",
+        "sim_time": null,
+        "tick": 15558
+      },
+      "turbine_units[3].state": {
+        "baseline": "offline",
+        "candidate": "starting",
+        "sim_time": null,
+        "tick": 15558
+      },
+      "turbine_units[3].time_to_online_s": {
+        "baseline": null,
+        "candidate": 295.0,
+        "sim_time": null,
+        "tick": 15558
+      },
+      "turbine_units[4].output_mw": {
+        "baseline": 7.5,
+        "candidate": 5.25,
+        "sim_time": null,
+        "tick": 6808
+      },
+      "turbine_units[4].setpoint_mw": {
+        "baseline": 7.5,
+        "candidate": 5.25,
+        "sim_time": null,
+        "tick": 6808
+      }
+    },
+    "first_nonfuel_difference": {
+      "baseline": 10.486575666666667,
+      "candidate": 10.486416699778024,
+      "field": "asset_delivery_error_mw",
+      "sim_time": null,
+      "tick": 1
+    },
+    "first_nonfuel_difference_by_field": {
+      "absorbable_mw": {
+        "baseline": 11.844132657545156,
+        "candidate": 11.84412914121003,
+        "sim_time": null,
+        "tick": 20
+      },
+      "advisory_telemetry.last_proposal_sim_time": {
+        "baseline": 8880.0,
+        "candidate": 8940.0,
+        "sim_time": null,
+        "tick": 1789
+      },
+      "advisory_telemetry.per_agent.calibration": {
+        "baseline": 15255.0,
+        "candidate": 18855.0,
+        "sim_time": null,
+        "tick": 3772
+      },
+      "advisory_telemetry.per_agent.compute": {
+        "baseline": 73185.0,
+        "candidate": 73715.0,
+        "sim_time": null,
+        "tick": 14744
+      },
+      "advisory_telemetry.per_agent.renewable": {
+        "baseline": 8880.0,
+        "candidate": 8940.0,
+        "sim_time": null,
+        "tick": 1789
+      },
+      "advisory_telemetry.per_agent.storage": {
+        "baseline": 15780.0,
+        "candidate": 15720.0,
+        "sim_time": null,
+        "tick": 3157
+      },
+      "advisory_telemetry.per_agent.thermal": {
+        "baseline": 8760.0,
+        "candidate": 9060.0,
+        "sim_time": null,
+        "tick": 1813
+      },
+      "advisory_telemetry.proposals_pending": {
+        "baseline": 6,
+        "candidate": 7,
+        "sim_time": null,
+        "tick": 1789
+      },
+      "advisory_telemetry.proposals_total": {
+        "baseline": 300,
+        "candidate": 301,
+        "sim_time": null,
+        "tick": 1789
+      },
+      "approach_rate_mw_s": {
+        "baseline": 0.00019242049096869067,
+        "candidate": 0.0001931237579943955,
+        "sim_time": null,
+        "tick": 20
+      },
+      "asset_delivery_error_mw": {
+        "baseline": 10.486575666666667,
+        "candidate": 10.486416699778024,
+        "sim_time": null,
+        "tick": 1
+      },
+      "bess_bridging_seconds": {
+        "baseline": 9594.118144588043,
+        "candidate": 9594.087795002088,
+        "sim_time": null,
+        "tick": 110
+      },
+      "bess_discharge_sustained_s": {
+        "baseline": 5.0,
+        "candidate": 0.0,
+        "sim_time": null,
+        "tick": 15342
+      },
+      "bess_escalation_active": {
+        "baseline": true,
+        "candidate": false,
+        "sim_time": null,
+        "tick": 6739
+      },
+      "bess_escalation_reason": {
+        "baseline": "turbine_catchup",
+        "candidate": "",
+        "sim_time": null,
+        "tick": 6739
+      },
+      "bess_output_mw": {
+        "baseline": 5.027867999993628,
+        "candidate": 5.027883896682489,
+        "sim_time": null,
+        "tick": 110
+      },
+      "bess_setpoint_mw": {
+        "baseline": -5.2432878333333335,
+        "candidate": -5.243208349889012,
+        "sim_time": null,
+        "tick": 1
+      },
+      "bess_soc_fraction": {
+        "baseline": 0.9994791188185532,
+        "candidate": 0.999479117171675,
+        "sim_time": null,
+        "tick": 110
+      },
+      "bridging_basis": {
+        "baseline": "no_load",
+        "candidate": "current_demand",
+        "sim_time": null,
+        "tick": 7608
+      },
+      "commitment_action": {
+        "baseline": "decommit",
+        "candidate": "hold",
+        "sim_time": null,
+        "tick": 6639
+      },
+      "commitment_blocked_by": {
+        "baseline": null,
+        "candidate": "reserve floor would be violated after removing the selected turbine",
+        "sim_time": null,
+        "tick": 6580
+      },
+      "commitment_reason": {
+        "baseline": "U=0.000, floor_mw=15.0, total_rated=45.0, commit_sustained=0/30 s, decommit_sustained=10/300 s; BESS charge-saturated; 14.96 MW turbine surplus remains after BESS absorbed 0.79 MW",
+        "candidate": "U=0.000, floor_mw=15.0, total_rated=45.0, commit_sustained=0/30 s, decommit_sustained=10/300 s; BESS charge-saturated; 14.95 MW turbine surplus remains after BESS absorbed 0.80 MW",
+        "sim_time": null,
+        "tick": 5259
+      },
+      "commitment_target_unit_id": {
+        "baseline": "turbine-1",
+        "candidate": null,
+        "sim_time": null,
+        "tick": 6639
+      },
+      "committed_rated_mw": {
+        "baseline": 15.0,
+        "candidate": 30.0,
+        "sim_time": null,
+        "tick": 6639
+      },
+      "compute_inlet_temp_c": {
+        "baseline": 20.298618942853604,
+        "candidate": 20.299611795621644,
+        "sim_time": null,
+        "tick": 20
+      },
+      "contingency_coverage.bess_usable_energy_mwh": {
+        "baseline": 13.399433224259015,
+        "candidate": 13.39943320218028,
+        "sim_time": null,
+        "tick": 110
+      },
+      "contingency_coverage.closable": {
+        "baseline": false,
+        "candidate": true,
+        "sim_time": null,
+        "tick": 6652
+      },
+      "contingency_coverage.deficit_mw": {
+        "baseline": 5.716971999996137,
+        "candidate": 5.716987896684998,
+        "sim_time": null,
+        "tick": 112
+      },
+      "contingency_coverage.dispatchable_mw": {
+        "baseline": 32.0,
+        "candidate": 47.0,
+        "sim_time": null,
+        "tick": 6652
+      },
+      "contingency_coverage.energy_test_passes": {
+        "baseline": false,
+        "candidate": true,
+        "sim_time": null,
+        "tick": 6652
+      },
+      "contingency_coverage.headroom_surviving_mw": {
+        "baseline": 17.033028,
+        "candidate": 17.033012103311137,
+        "sim_time": null,
+        "tick": 1064
+      },
+      "contingency_coverage.r_surviving_mw_per_s": {
+        "baseline": 0,
+        "candidate": 0.5,
+        "sim_time": null,
+        "tick": 6652
+      },
+      "contingency_coverage.ride_through_s": {
+        "baseline": 9188.18278234904,
+        "candidate": 9188.182767209335,
+        "sim_time": null,
+        "tick": 110
+      },
+      "contingency_coverage.shed_equivalent_nodes": {
+        "baseline": 499,
+        "candidate": null,
+        "sim_time": null,
+        "tick": 6662
+      },
+      "contingency_coverage.shed_required_mw": {
+        "baseline": 0.8118411555555518,
+        "candidate": 0.8118570522444166,
+        "sim_time": null,
+        "tick": 1066
+      },
+      "contingency_coverage.state": {
+        "baseline": "COVERED_WITH_SHED",
+        "candidate": "COVERED",
+        "sim_time": null,
+        "tick": 6652
+      },
+      "contingency_coverage.time_to_close_s": {
+        "baseline": 11.433943999992273,
+        "candidate": 11.433975793369996,
+        "sim_time": null,
+        "tick": 112
+      },
+      "d4_balance_defect_mw": {
+        "baseline": 5.2432878333333335,
+        "candidate": 5.243208349889012,
+        "sim_time": null,
+        "tick": 1
+      },
+      "edl_dispatch_cost_usd": {
+        "baseline": 0.00035425324074074067,
+        "candidate": 0.0003584482003021334,
+        "sim_time": null,
+        "tick": 1
+      },
+      "fleet_utilisation": {
+        "baseline": 0.00044747777777777773,
+        "candidate": 0.0004527766740658527,
+        "sim_time": null,
+        "tick": 1
+      },
+      "frequency_forcing_mw": {
+        "baseline": 0.0,
+        "candidate": 8.881784197001252e-16,
+        "sim_time": null,
+        "tick": 300
+      },
+      "frequency_hz": {
+        "baseline": 60.54595734564584,
+        "candidate": 60.54594906943219,
+        "sim_time": null,
+        "tick": 1
+      },
+      "frequency_valid": {
+        "baseline": false,
+        "candidate": true,
+        "sim_time": null,
+        "tick": 6666
+      },
+      "gt_setpoint_mw": {
+        "baseline": 0.006712166666666666,
+        "candidate": 0.006791650110987791,
+        "sim_time": null,
+        "tick": 1
+      },
+      "net_demand_mw": {
+        "baseline": 0.006712166666666666,
+        "candidate": 0.006791650110987791,
+        "sim_time": null,
+        "tick": 1
+      },
+      "p_compute_served_mw": {
+        "baseline": 3.0404363999999977,
+        "candidate": 3.040436399999998,
+        "sim_time": null,
+        "tick": 421
+      },
+      "p_compute_unserved_mw": {
+        "baseline": 1.1564823173178715e-15,
+        "candidate": 1.156102033705089e-15,
+        "sim_time": null,
+        "tick": 347
+      },
+      "p_cooling_demand_mw": {
+        "baseline": 0.0009621024548434534,
+        "candidate": 0.0009656187899719775,
+        "sim_time": null,
+        "tick": 20
+      },
+      "p_cooling_served_mw": {
+        "baseline": 0.0009621024548434534,
+        "candidate": 0.0009656187899719775,
+        "sim_time": null,
+        "tick": 20
+      },
+      "p_cooling_unserved_mw": {
+        "baseline": 2.3129646346357425e-16,
+        "candidate": 2.312964634635743e-16,
+        "sim_time": null,
+        "tick": 347
+      },
+      "p_demand_mw": {
+        "baseline": 0.006712166666666666,
+        "candidate": 0.006791650110987791,
+        "sim_time": null,
+        "tick": 1
+      },
+      "p_dispatch_curtailed_mw": {
+        "baseline": 5.2432878333333335,
+        "candidate": 5.243208349889012,
+        "sim_time": null,
+        "tick": 1
+      },
+      "p_generation_mw": {
+        "baseline": 15.527867999993628,
+        "candidate": 15.52788389668249,
+        "sim_time": null,
+        "tick": 110
+      },
+      "p_imbalance_mw": {
+        "baseline": 5.2432878333333335,
+        "candidate": 5.243208349889012,
+        "sim_time": null,
+        "tick": 1
+      },
+      "p_non_gpu_demand_mw": {
+        "baseline": null,
+        "candidate": 7.948344432112468e-05,
+        "sim_time": null,
+        "tick": 1
+      },
+      "p_served_mw": {
+        "baseline": 0.006712166666666666,
+        "candidate": 0.006791650110987791,
+        "sim_time": null,
+        "tick": 1
+      },
+      "p_unserved_mw": {
+        "baseline": 1.3322676295501878e-15,
+        "candidate": 8.881784197001252e-16,
+        "sim_time": null,
+        "tick": 421
+      },
+      "pending_start_unit_id": {
+        "baseline": "turbine-1",
+        "candidate": null,
+        "sim_time": null,
+        "tick": 6877
+      },
+      "physical_balance.defect_mw": {
+        "baseline": 0.0,
+        "candidate": 8.881784197001252e-16,
+        "sim_time": null,
+        "tick": 300
+      },
+      "physical_balance.served_mw": {
+        "baseline": 0.006712166666666666,
+        "candidate": 0.006791650110987791,
+        "sim_time": null,
+        "tick": 1
+      },
+      "physical_balance.terms.p_bess_mw": {
+        "baseline": 5.027867999993628,
+        "candidate": 5.027883896682489,
+        "sim_time": null,
+        "tick": 110
+      },
+      "physical_balance.terms.p_curtailment_mw": {
+        "baseline": 5.2432878333333335,
+        "candidate": 5.243208349889012,
+        "sim_time": null,
+        "tick": 1
+      },
+      "physical_balance.terms.p_demand_mw": {
+        "baseline": 0.006712166666666666,
+        "candidate": 0.006791650110987791,
+        "sim_time": null,
+        "tick": 1
+      },
+      "physical_balance.terms.p_generation_mw": {
+        "baseline": 15.527867999993628,
+        "candidate": 15.52788389668249,
+        "sim_time": null,
+        "tick": 110
+      },
+      "physical_balance.terms.p_served_mw": {
+        "baseline": 0.006712166666666666,
+        "candidate": 0.006791650110987791,
+        "sim_time": null,
+        "tick": 1
+      },
+      "physical_balance.terms.p_turbine_mw": {
+        "baseline": 10.966971999996137,
+        "candidate": 10.966987896684998,
+        "sim_time": null,
+        "tick": 112
+      },
+      "physical_balance.terms.p_unserved_mw": {
+        "baseline": 1.3322676295501878e-15,
+        "candidate": 8.881784197001252e-16,
+        "sim_time": null,
+        "tick": 421
+      },
+      "ramp_capability_mw": {
+        "baseline": 19.533028,
+        "candidate": 19.533012103311137,
+        "sim_time": null,
+        "tick": 1064
+      },
+      "reserve_floor_mw": {
+        "baseline": 15.006712166666667,
+        "candidate": 15.006791650110987,
+        "sim_time": null,
+        "tick": 1
+      },
+      "reserve_satisfied": {
+        "baseline": false,
+        "candidate": true,
+        "sim_time": null,
+        "tick": 6662
+      },
+      "scada_commands_issued": {
+        "baseline": 2,
+        "candidate": 1,
+        "sim_time": null,
+        "tick": 15342
+      },
+      "time_to_limit_s": {
+        "baseline": 61553.385494023874,
+        "candidate": 61329.2184463071,
+        "sim_time": null,
+        "tick": 20
+      },
+      "turbine_estimated_time_to_close_s": {
+        "baseline": 546.0712847924709,
+        "candidate": 546.052696033807,
+        "sim_time": null,
+        "tick": 112
+      },
+      "turbine_observed_ramp_mw_per_s": {
+        "baseline": 0.031131466666409105,
+        "candidate": 0.03113252644566652,
+        "sim_time": null,
+        "tick": 112
+      },
+      "turbine_output_mw": {
+        "baseline": 10.966971999996137,
+        "candidate": 10.966987896684998,
+        "sim_time": null,
+        "tick": 112
+      },
+      "turbine_start_count": {
+        "baseline": 16,
+        "candidate": 15,
+        "sim_time": null,
+        "tick": 6877
+      },
+      "turbine_units[0].output_mw": {
+        "baseline": 8.5618,
+        "candidate": 8.5619,
+        "sim_time": null,
+        "tick": 114
+      },
+      "turbine_units[0].setpoint_mw": {
+        "baseline": 8.5618,
+        "candidate": 8.5619,
+        "sim_time": null,
+        "tick": 114
+      },
+      "turbine_units[1].levelled_off": {
+        "baseline": true,
+        "candidate": false,
+        "sim_time": null,
+        "tick": 6642
+      },
+      "turbine_units[1].output_mw": {
+        "baseline": 10.5618,
+        "candidate": 10.5619,
+        "sim_time": null,
+        "tick": 1066
+      },
+      "turbine_units[1].setpoint_mw": {
+        "baseline": 10.5618,
+        "candidate": 10.5619,
+        "sim_time": null,
+        "tick": 1066
+      },
+      "turbine_units[1].start_phase": {
+        "baseline": "purge",
+        "candidate": null,
+        "sim_time": null,
+        "tick": 6877
+      },
+      "turbine_units[1].state": {
+        "baseline": "unloading",
+        "candidate": "synchronised",
+        "sim_time": null,
+        "tick": 6639
+      },
+      "turbine_units[1].thermal_state": {
+        "baseline": "hot",
+        "candidate": "warm",
+        "sim_time": null,
+        "tick": 6877
+      },
+      "turbine_units[1].time_to_online_s": {
+        "baseline": 300.0,
+        "candidate": null,
+        "sim_time": null,
+        "tick": 6877
+      },
+      "turbine_units[2].levelled_off": {
+        "baseline": true,
+        "candidate": false,
+        "sim_time": null,
+        "tick": 15331
+      },
+      "turbine_units[2].output_mw": {
+        "baseline": 15.0,
+        "candidate": 14.8005,
+        "sim_time": null,
+        "tick": 6739
+      },
+      "turbine_units[2].setpoint_mw": {
+        "baseline": 15.0,
+        "candidate": 14.8005,
+        "sim_time": null,
+        "tick": 6739
+      },
+      "turbine_units[2].start_phase": {
+        "baseline": "purge",
+        "candidate": null,
+        "sim_time": null,
+        "tick": 15558
+      },
+      "turbine_units[2].state": {
+        "baseline": "unloading",
+        "candidate": "synchronised",
+        "sim_time": null,
+        "tick": 15328
+      },
+      "turbine_units[2].time_to_online_s": {
+        "baseline": 295.0,
+        "candidate": null,
+        "sim_time": null,
+        "tick": 15558
+      },
+      "turbine_units[3].levelled_off": {
+        "baseline": false,
+        "candidate": true,
+        "sim_time": null,
+        "tick": 15980
+      },
+      "turbine_units[3].output_mw": {
+        "baseline": 7.5,
+        "candidate": 5.25,
+        "sim_time": null,
+        "tick": 6880
+      },
+      "turbine_units[3].setpoint_mw": {
+        "baseline": 7.5,
+        "candidate": 5.25,
+        "sim_time": null,
+        "tick": 6880
+      },
+      "turbine_units[3].start_phase": {
+        "baseline": null,
+        "candidate": "purge",
+        "sim_time": null,
+        "tick": 15558
+      },
+      "turbine_units[3].state": {
+        "baseline": "offline",
+        "candidate": "starting",
+        "sim_time": null,
+        "tick": 15558
+      },
+      "turbine_units[3].time_to_online_s": {
+        "baseline": null,
+        "candidate": 295.0,
+        "sim_time": null,
+        "tick": 15558
+      },
+      "turbine_units[4].output_mw": {
+        "baseline": 7.5,
+        "candidate": 5.25,
+        "sim_time": null,
+        "tick": 6808
+      },
+      "turbine_units[4].setpoint_mw": {
+        "baseline": 7.5,
+        "candidate": 5.25,
+        "sim_time": null,
+        "tick": 6808
+      }
+    },
+    "nonfuel_equal": false,
+    "nonfuel_tick_field_difference_counts": {
+      "absorbable_mw": 6416,
+      "advisory_telemetry.last_proposal_sim_time": 1640,
+      "advisory_telemetry.per_agent.calibration": 4536,
+      "advisory_telemetry.per_agent.compute": 483,
+      "advisory_telemetry.per_agent.renewable": 127,
+      "advisory_telemetry.per_agent.storage": 5037,
+      "advisory_telemetry.per_agent.thermal": 808,
+      "advisory_telemetry.proposals_pending": 1693,
+      "advisory_telemetry.proposals_total": 15492,
+      "approach_rate_mw_s": 496,
+      "asset_delivery_error_mw": 6902,
+      "bess_bridging_seconds": 4286,
+      "bess_discharge_sustained_s": 340,
+      "bess_escalation_active": 278,
+      "bess_escalation_reason": 278,
+      "bess_output_mw": 2564,
+      "bess_setpoint_mw": 6826,
+      "bess_soc_fraction": 15742,
+      "bridging_basis": 188,
+      "commitment_action": 6,
+      "commitment_blocked_by": 497,
+      "commitment_reason": 3183,
+      "commitment_target_unit_id": 153,
+      "committed_rated_mw": 674,
+      "compute_inlet_temp_c": 3852,
+      "contingency_coverage.bess_usable_energy_mwh": 15742,
+      "contingency_coverage.closable": 86,
+      "contingency_coverage.deficit_mw": 48,
+      "contingency_coverage.dispatchable_mw": 661,
+      "contingency_coverage.energy_test_passes": 87,
+      "contingency_coverage.headroom_surviving_mw": 738,
+      "contingency_coverage.r_surviving_mw_per_s": 661,
+      "contingency_coverage.ride_through_s": 15741,
+      "contingency_coverage.shed_equivalent_nodes": 149,
+      "contingency_coverage.shed_required_mw": 259,
+      "contingency_coverage.state": 87,
+      "contingency_coverage.time_to_close_s": 568,
+      "d4_balance_defect_mw": 4472,
+      "edl_dispatch_cost_usd": 6913,
+      "fleet_utilisation": 7034,
+      "frequency_forcing_mw": 753,
+      "frequency_hz": 11187,
+      "frequency_valid": 73,
+      "gt_setpoint_mw": 6777,
+      "net_demand_mw": 6777,
+      "p_compute_served_mw": 456,
+      "p_compute_unserved_mw": 457,
+      "p_cooling_demand_mw": 6416,
+      "p_cooling_served_mw": 6666,
+      "p_cooling_unserved_mw": 697,
+      "p_demand_mw": 6777,
+      "p_dispatch_curtailed_mw": 4280,
+      "p_generation_mw": 3029,
+      "p_imbalance_mw": 4472,
+      "p_non_gpu_demand_mw": 17280,
+      "p_served_mw": 6868,
+      "p_unserved_mw": 704,
+      "pending_start_unit_id": 237,
+      "physical_balance.defect_mw": 192,
+      "physical_balance.served_mw": 6868,
+      "physical_balance.terms.p_bess_mw": 2564,
+      "physical_balance.terms.p_curtailment_mw": 4280,
+      "physical_balance.terms.p_demand_mw": 6777,
+      "physical_balance.terms.p_generation_mw": 3029,
+      "physical_balance.terms.p_served_mw": 6868,
+      "physical_balance.terms.p_turbine_mw": 724,
+      "physical_balance.terms.p_unserved_mw": 704,
+      "ramp_capability_mw": 57,
+      "reserve_floor_mw": 6777,
+      "reserve_satisfied": 58,
+      "scada_commands_issued": 187,
+      "time_to_limit_s": 650,
+      "turbine_estimated_time_to_close_s": 150,
+      "turbine_observed_ramp_mw_per_s": 187,
+      "turbine_output_mw": 724,
+      "turbine_start_count": 10404,
+      "turbine_units[0].output_mw": 24,
+      "turbine_units[0].setpoint_mw": 24,
+      "turbine_units[1].levelled_off": 10,
+      "turbine_units[1].output_mw": 295,
+      "turbine_units[1].setpoint_mw": 280,
+      "turbine_units[1].start_phase": 60,
+      "turbine_units[1].state": 298,
+      "turbine_units[1].thermal_state": 10404,
+      "turbine_units[1].time_to_online_s": 60,
+      "turbine_units[2].levelled_off": 20,
+      "turbine_units[2].output_mw": 638,
+      "turbine_units[2].setpoint_mw": 264,
+      "turbine_units[2].start_phase": 118,
+      "turbine_units[2].state": 448,
+      "turbine_units[2].time_to_online_s": 118,
+      "turbine_units[3].levelled_off": 20,
+      "turbine_units[3].output_mw": 187,
+      "turbine_units[3].setpoint_mw": 63,
+      "turbine_units[3].start_phase": 118,
+      "turbine_units[3].state": 198,
+      "turbine_units[3].time_to_online_s": 118,
+      "turbine_units[4].output_mw": 73,
+      "turbine_units[4].setpoint_mw": 73
+    },
+    "tick_count_baseline": 17280,
+    "tick_count_candidate": 17280
+  },
+  "scenario_id": "S10_mit_supercloud_2021-08-11",
+  "seed": 1729,
+  "unit_record_keys": [
+    "asset_id",
+    "rated_mw",
+    "r_asset_mw_per_s",
+    "run_hours_h",
+    "gt_mode",
+    "fuel_modelled",
+    "fuel_type",
+    "fuel_units",
+    "fuel_low_load_threshold_pct",
+    "fuel_parameter_provenance",
+    "hot_standby",
+    "breaker_closed",
+    "no_load_mw",
+    "msl_mw",
+    "sync_relay_state",
+    "state",
+    "output_mw",
+    "time_to_online_s",
+    "thermal_state",
+    "start_phase",
+    "out_of_service_reason",
+    "setpoint_mw",
+    "levelled_off",
+    "hot_start_s",
+    "warm_start_s",
+    "cold_start_s"
+  ],
+  "unserved_delta_episodes": {
+    "count": 18,
+    "largest_episodes": [
+      {
+        "base_mwh": 4.096205470588591,
+        "baseline_unserved_mw_at_peak": 19.527639289878508,
+        "candidate_mwh": 1.1901352489540251,
+        "candidate_unserved_mw_at_peak": 4.527639289878508,
+        "delta_mwh": -2.906070221634564,
+        "end_sim_time_s": null,
+        "peak_delta_mw": 15.0,
+        "start_sim_time_s": null,
+        "units_on_bus_at_peak_baseline": [
+          {
+            "id": "turbine-0",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          }
+        ],
+        "units_on_bus_at_peak_candidate": [
+          {
+            "id": "turbine-0",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          }
+        ]
+      },
+      {
+        "base_mwh": 0.0231971911111111,
+        "baseline_unserved_mw_at_peak": 4.300494399999998,
+        "candidate_mwh": 0.0,
+        "candidate_unserved_mw_at_peak": 0.0,
+        "delta_mwh": -0.0231971911111111,
+        "end_sim_time_s": null,
+        "peak_delta_mw": 4.300494399999998,
+        "start_sim_time_s": null,
+        "units_on_bus_at_peak_baseline": [
+          {
+            "id": "turbine-0",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 5.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-2",
+            "mw": 10.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-3",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-4",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          }
+        ],
+        "units_on_bus_at_peak_candidate": [
+          {
+            "id": "turbine-0",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 14.0505,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-2",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-3",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-4",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          }
+        ]
+      },
+      {
+        "base_mwh": 0.008045641840723178,
+        "baseline_unserved_mw_at_peak": 5.7928621253206884,
+        "candidate_mwh": 0.0,
+        "candidate_unserved_mw_at_peak": 0.0,
+        "delta_mwh": -0.008045641840723178,
+        "end_sim_time_s": null,
+        "peak_delta_mw": 5.7928621253206884,
+        "start_sim_time_s": null,
+        "units_on_bus_at_peak_baseline": [
+          {
+            "id": "turbine-0",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-2",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          }
+        ],
+        "units_on_bus_at_peak_candidate": [
+          {
+            "id": "turbine-0",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-2",
+            "mw": 13.2809,
+            "state": "SYNCHRONISED"
+          }
+        ]
+      },
+      {
+        "base_mwh": 0.015208163040667966,
+        "baseline_unserved_mw_at_peak": 3.3357077892809315,
+        "candidate_mwh": 0.021630927649874326,
+        "candidate_unserved_mw_at_peak": 0.7100983079095116,
+        "delta_mwh": 0.006422764609206362,
+        "end_sim_time_s": null,
+        "peak_delta_mw": 2.62560948137142,
+        "start_sim_time_s": null,
+        "units_on_bus_at_peak_baseline": [
+          {
+            "id": "turbine-0",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 11.8858,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-2",
+            "mw": 7.75,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-3",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-4",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          }
+        ],
+        "units_on_bus_at_peak_candidate": [
+          {
+            "id": "turbine-0",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 11.8858,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-2",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-3",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-4",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          }
+        ]
+      },
+      {
+        "base_mwh": 0.006135698964483223,
+        "baseline_unserved_mw_at_peak": 4.41770325442792,
+        "candidate_mwh": 0.0,
+        "candidate_unserved_mw_at_peak": 0.0,
+        "delta_mwh": -0.006135698964483223,
+        "end_sim_time_s": null,
+        "peak_delta_mw": 4.41770325442792,
+        "start_sim_time_s": null,
+        "units_on_bus_at_peak_baseline": [
+          {
+            "id": "turbine-0",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          }
+        ],
+        "units_on_bus_at_peak_candidate": [
+          {
+            "id": "turbine-0",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-2",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          }
+        ]
+      },
+      {
+        "base_mwh": 0.0,
+        "baseline_unserved_mw_at_peak": 0.0,
+        "candidate_mwh": 0.0061212743954248295,
+        "candidate_unserved_mw_at_peak": 4.4073175647058775,
+        "delta_mwh": 0.0061212743954248295,
+        "end_sim_time_s": null,
+        "peak_delta_mw": 4.4073175647058775,
+        "start_sim_time_s": null,
+        "units_on_bus_at_peak_baseline": [
+          {
+            "id": "turbine-0",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          }
+        ],
+        "units_on_bus_at_peak_candidate": [
+          {
+            "id": "turbine-0",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          }
+        ]
+      },
+      {
+        "base_mwh": 0.0,
+        "baseline_unserved_mw_at_peak": 0.0,
+        "candidate_mwh": 0.0016659800000000027,
+        "candidate_unserved_mw_at_peak": 0.949505600000002,
+        "delta_mwh": 0.0016659800000000027,
+        "end_sim_time_s": null,
+        "peak_delta_mw": 0.949505600000002,
+        "start_sim_time_s": null,
+        "units_on_bus_at_peak_baseline": [
+          {
+            "id": "turbine-0",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-2",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-3",
+            "mw": 2.5,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-4",
+            "mw": 12.3005,
+            "state": "SYNCHRONISED"
+          }
+        ],
+        "units_on_bus_at_peak_candidate": [
+          {
+            "id": "turbine-0",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 14.0505,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-2",
+            "mw": 7.0505,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-3",
+            "mw": 2.5,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-4",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          }
+        ]
+      },
+      {
+        "base_mwh": 0.0,
+        "baseline_unserved_mw_at_peak": 0.0,
+        "candidate_mwh": 0.0014294782203106019,
+        "candidate_unserved_mw_at_peak": 1.0292243186236334,
+        "delta_mwh": 0.0014294782203106019,
+        "end_sim_time_s": null,
+        "peak_delta_mw": 1.0292243186236334,
+        "start_sim_time_s": null,
+        "units_on_bus_at_peak_baseline": [
+          {
+            "id": "turbine-0",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-2",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-3",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          }
+        ],
+        "units_on_bus_at_peak_candidate": [
+          {
+            "id": "turbine-0",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-2",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          }
+        ]
+      },
+      {
+        "base_mwh": 0.0010981198758575161,
+        "baseline_unserved_mw_at_peak": 0.7906463106174115,
+        "candidate_mwh": 0.0,
+        "candidate_unserved_mw_at_peak": 0.0,
+        "delta_mwh": -0.0010981198758575161,
+        "end_sim_time_s": null,
+        "peak_delta_mw": 0.7906463106174115,
+        "start_sim_time_s": null,
+        "units_on_bus_at_peak_baseline": [
+          {
+            "id": "turbine-0",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-2",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          }
+        ],
+        "units_on_bus_at_peak_candidate": [
+          {
+            "id": "turbine-0",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-2",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          }
+        ]
+      },
+      {
+        "base_mwh": 0.0018335399904382734,
+        "baseline_unserved_mw_at_peak": 1.3201487931155569,
+        "candidate_mwh": 0.002306586913610061,
+        "candidate_unserved_mw_at_peak": 1.660742577799244,
+        "delta_mwh": 0.0004730469231717876,
+        "end_sim_time_s": null,
+        "peak_delta_mw": 0.34059378468368706,
+        "start_sim_time_s": null,
+        "units_on_bus_at_peak_baseline": [
+          {
+            "id": "turbine-0",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-2",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          }
+        ],
+        "units_on_bus_at_peak_candidate": [
+          {
+            "id": "turbine-0",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-2",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          }
+        ]
+      },
+      {
+        "base_mwh": 0.0028496315961520653,
+        "baseline_unserved_mw_at_peak": 2.051734749229487,
+        "candidate_mwh": 0.0031830425663446514,
+        "candidate_unserved_mw_at_peak": 2.291790647768149,
+        "delta_mwh": 0.0003334109701925862,
+        "end_sim_time_s": null,
+        "peak_delta_mw": 0.24005589853866205,
+        "start_sim_time_s": null,
+        "units_on_bus_at_peak_baseline": [
+          {
+            "id": "turbine-0",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-4",
+            "mw": 2.5,
+            "state": "SYNCHRONISED"
+          }
+        ],
+        "units_on_bus_at_peak_candidate": [
+          {
+            "id": "turbine-0",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-4",
+            "mw": 2.5,
+            "state": "SYNCHRONISED"
+          }
+        ]
+      },
+      {
+        "base_mwh": 0.015486356350302908,
+        "baseline_unserved_mw_at_peak": 8.003102730544278,
+        "candidate_mwh": 0.015454326862592488,
+        "candidate_unserved_mw_at_peak": 7.991572114968527,
+        "delta_mwh": -3.202948771041905e-05,
+        "end_sim_time_s": null,
+        "peak_delta_mw": 0.011530615575750858,
+        "start_sim_time_s": null,
+        "units_on_bus_at_peak_baseline": [
+          {
+            "id": "turbine-0",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 10.8159,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-2",
+            "mw": 9.9581,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-3",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-4",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          }
+        ],
+        "units_on_bus_at_peak_candidate": [
+          {
+            "id": "turbine-0",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 10.8159,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-2",
+            "mw": 9.9696,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-3",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-4",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          }
+        ]
+      },
+      {
+        "base_mwh": 0.021608112579561734,
+        "baseline_unserved_mw_at_peak": 10.278920528642224,
+        "candidate_mwh": 0.021580659439446336,
+        "candidate_unserved_mw_at_peak": 10.26903739820068,
+        "delta_mwh": -2.745314011540027e-05,
+        "end_sim_time_s": null,
+        "peak_delta_mw": 0.009883130441544097,
+        "start_sim_time_s": null,
+        "units_on_bus_at_peak_baseline": [
+          {
+            "id": "turbine-0",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 11.9711,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-2",
+            "mw": 7.75,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-3",
+            "mw": 6.8858,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-4",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          }
+        ],
+        "units_on_bus_at_peak_candidate": [
+          {
+            "id": "turbine-0",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 11.981,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-2",
+            "mw": 7.75,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-3",
+            "mw": 6.8858,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-4",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          }
+        ]
+      },
+      {
+        "base_mwh": 0.5319712957541407,
+        "baseline_unserved_mw_at_peak": 6.473874666666653,
+        "candidate_mwh": 0.5319790674686969,
+        "candidate_unserved_mw_at_peak": 6.473970046799842,
+        "delta_mwh": 7.771714556081833e-06,
+        "end_sim_time_s": null,
+        "peak_delta_mw": 9.538013318888261e-05,
+        "start_sim_time_s": null,
+        "units_on_bus_at_peak_baseline": [
+          {
+            "id": "turbine-0",
+            "mw": 12.75,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 10.25,
+            "state": "SYNCHRONISED"
+          }
+        ],
+        "units_on_bus_at_peak_candidate": [
+          {
+            "id": "turbine-0",
+            "mw": 12.75,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 10.25,
+            "state": "SYNCHRONISED"
+          }
+        ]
+      },
+      {
+        "base_mwh": 0.01675137558042788,
+        "baseline_unserved_mw_at_peak": 12.060990417908073,
+        "candidate_mwh": 0.01675575600136021,
+        "candidate_unserved_mw_at_peak": 12.064144320979352,
+        "delta_mwh": 4.380420932332325e-06,
+        "end_sim_time_s": null,
+        "peak_delta_mw": 0.0031539030712792737,
+        "start_sim_time_s": null,
+        "units_on_bus_at_peak_baseline": [
+          {
+            "id": "turbine-0",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-2",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          }
+        ],
+        "units_on_bus_at_peak_candidate": [
+          {
+            "id": "turbine-0",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-2",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          }
+        ]
+      },
+      {
+        "base_mwh": 0.005618196778769629,
+        "baseline_unserved_mw_at_peak": 4.045101680714133,
+        "candidate_mwh": 0.005622253348822248,
+        "candidate_unserved_mw_at_peak": 4.048022411152019,
+        "delta_mwh": 4.056570052619119e-06,
+        "end_sim_time_s": null,
+        "peak_delta_mw": 0.0029207304378857657,
+        "start_sim_time_s": null,
+        "units_on_bus_at_peak_baseline": [
+          {
+            "id": "turbine-0",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-2",
+            "mw": 7.75,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-3",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-4",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          }
+        ],
+        "units_on_bus_at_peak_candidate": [
+          {
+            "id": "turbine-0",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-2",
+            "mw": 7.75,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-3",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-4",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          }
+        ]
+      },
+      {
+        "base_mwh": 0.012800785565237484,
+        "baseline_unserved_mw_at_peak": 9.216565606970988,
+        "candidate_mwh": 0.012803883145460363,
+        "candidate_unserved_mw_at_peak": 9.218795864731462,
+        "delta_mwh": 3.0975802228796723e-06,
+        "end_sim_time_s": null,
+        "peak_delta_mw": 0.002230257760473364,
+        "start_sim_time_s": null,
+        "units_on_bus_at_peak_baseline": [
+          {
+            "id": "turbine-0",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-2",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          }
+        ],
+        "units_on_bus_at_peak_candidate": [
+          {
+            "id": "turbine-0",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-2",
+            "mw": 15.0,
+            "state": "SYNCHRONISED"
+          }
+        ]
+      },
+      {
+        "base_mwh": 0.0031306279789838046,
+        "baseline_unserved_mw_at_peak": 2.2540521448683393,
+        "candidate_mwh": 0.003130853495207396,
+        "candidate_unserved_mw_at_peak": 2.2542145165493253,
+        "delta_mwh": 2.2551622359164487e-07,
+        "end_sim_time_s": null,
+        "peak_delta_mw": 0.0001623716809859843,
+        "start_sim_time_s": null,
+        "units_on_bus_at_peak_baseline": [
+          {
+            "id": "turbine-0",
+            "mw": 7.75,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-2",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-3",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-4",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          }
+        ],
+        "units_on_bus_at_peak_candidate": [
+          {
+            "id": "turbine-0",
+            "mw": 7.75,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-1",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-2",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-3",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          },
+          {
+            "id": "turbine-4",
+            "mw": 5.25,
+            "state": "SYNCHRONISED"
+          }
+        ]
+      }
+    ],
+    "total_delta_mwh": -2.928140869134271
+  },
+  "wall_clock": 1792454400.0
+}

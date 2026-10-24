@@ -1,0 +1,2074 @@
+{
+  "baseline_summary": {
+    "bess_ac_throughput_mwh": 158.86599709372857,
+    "demand_mwh": 620.9086288248361,
+    "dispatch_curtailment_mwh": 48.51928134810935,
+    "nonfuel_sha256": "51327f0b4e3defd962c5ee242818ed38cdee47698b92945c5280f019a78cab89",
+    "operating_cost": null,
+    "physical_sha256": "3e24904fd7e8f71afa1f5b30ec2f2958a6b43e7670ab9fefae04f3440aa57bff",
+    "scenario_id": "S10_mit_supercloud_2021-08-11",
+    "seed": 1729,
+    "served_mwh": 612.4446369086545,
+    "spec_path": "/home/runner/workspace/attached_assets/gridsignal_sim_v2_build_package/gridsignal_sim_v2/gridsignal_sim/config/scenarios/S10_mit_supercloud_2021-08-11.json",
+    "tick_count": 17280,
+    "turbine_fuel_by_unit_mmbtu": {},
+    "turbine_fuel_components_by_unit_mmbtu": {
+      "turbine-0": {
+        "hot_standby_fuel_mmbtu": null,
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null,
+        "total_fuel_mmbtu": null
+      },
+      "turbine-1": {
+        "hot_standby_fuel_mmbtu": null,
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null,
+        "total_fuel_mmbtu": null
+      },
+      "turbine-2": {
+        "hot_standby_fuel_mmbtu": null,
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null,
+        "total_fuel_mmbtu": null
+      },
+      "turbine-3": {
+        "hot_standby_fuel_mmbtu": null,
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null,
+        "total_fuel_mmbtu": null
+      },
+      "turbine-4": {
+        "hot_standby_fuel_mmbtu": null,
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null,
+        "total_fuel_mmbtu": null
+      }
+    },
+    "turbine_fuel_total_mmbtu": null,
+    "turbine_mwh": 667.8423099175071,
+    "turbine_start_count": 38,
+    "unserved_mwh": 8.4639919161834,
+    "wall_clock": 1792454400.0
+  },
+  "candidate_summary": {
+    "bess_ac_throughput_mwh": 157.77422549908798,
+    "demand_mwh": 621.8578481855576,
+    "dispatch_curtailment_mwh": 46.77268672437931,
+    "nonfuel_sha256": "6d5c6be37ec3b2ab5630ed4fdc5bfbbdf0cba16c094672589740554fad878252",
+    "operating_cost": null,
+    "physical_sha256": "e819540659528686bd40c706290dc09883d87b865e25df17da970f4550fefa1b",
+    "scenario_id": "S10_mit_supercloud_2021-08-11",
+    "seed": 1729,
+    "served_mwh": 616.3219971385098,
+    "spec_path": "/home/runner/workspace/tools/dr_isl/d6/S10_2021-08-11_cpu_candidate.json",
+    "tick_count": 17280,
+    "turbine_fuel_by_unit_mmbtu": {},
+    "turbine_fuel_components_by_unit_mmbtu": {
+      "turbine-0": {
+        "hot_standby_fuel_mmbtu": null,
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null,
+        "total_fuel_mmbtu": null
+      },
+      "turbine-1": {
+        "hot_standby_fuel_mmbtu": null,
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null,
+        "total_fuel_mmbtu": null
+      },
+      "turbine-2": {
+        "hot_standby_fuel_mmbtu": null,
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null,
+        "total_fuel_mmbtu": null
+      },
+      "turbine-3": {
+        "hot_standby_fuel_mmbtu": null,
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null,
+        "total_fuel_mmbtu": null
+      },
+      "turbine-4": {
+        "hot_standby_fuel_mmbtu": null,
+        "load_fuel_mmbtu": null,
+        "no_load_fuel_mmbtu": null,
+        "start_fuel_mmbtu": null,
+        "total_fuel_mmbtu": null
+      }
+    },
+    "turbine_fuel_total_mmbtu": null,
+    "turbine_mwh": 669.9258052833919,
+    "turbine_start_count": 37,
+    "unserved_mwh": 5.535851047049171,
+    "wall_clock": 1792454400.0
+  },
+  "first_discrete_change": {
+    "changes": [
+      {
+        "baseline": null,
+        "candidate": "reserve floor would be violated after removing the selected turbine",
+        "field": "commitment_blocked_by"
+      }
+    ],
+    "sim_time_seconds": 32900.0,
+    "tick": 6580
+  },
+  "replay_hashes_match_first_pass": {
+    "baseline_same": true,
+    "candidate_same": true
+  },
+  "tick_6639_and_previous_four": {
+    "rows": [
+      {
+        "baseline": {
+          "bess_escalation_active": false,
+          "bess_escalation_reason": "",
+          "bess_output_mw": -0.0,
+          "bess_soc_fraction": 0.9999999940185621,
+          "commitment_action": "hold",
+          "commitment_blocked_by": null,
+          "commitment_reason": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=285/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "commitment_target_unit_id": null,
+          "committed_rated_mw": 30.0,
+          "frequency_hz": 60.00000000000379,
+          "island_collapsed": false,
+          "p_compute_demand_mw": 0,
+          "p_cooling_demand_mw": 0.0,
+          "p_demand_mw": 0.0,
+          "p_dispatch_curtailed_mw": 10.5,
+          "p_generation_mw": 10.5,
+          "p_non_gpu_demand_mw": null,
+          "p_served_mw": 0.0,
+          "p_unserved_mw": 0.0,
+          "reserve_floor_mw": 15.0,
+          "reserve_satisfied": true,
+          "sim_time_seconds": 33180.0,
+          "tick_index": 6636,
+          "turbine_fuel_telemetry": [
+            {
+              "asset_id": "turbine-0",
+              "start_count": 0
+            },
+            {
+              "asset_id": "turbine-1",
+              "start_count": 1
+            },
+            {
+              "asset_id": "turbine-2",
+              "start_count": 1
+            },
+            {
+              "asset_id": "turbine-3",
+              "start_count": 5
+            },
+            {
+              "asset_id": "turbine-4",
+              "start_count": 5
+            }
+          ],
+          "turbine_output_mw": 10.5,
+          "turbine_start_count": 12,
+          "turbine_units": [
+            {
+              "asset_id": "turbine-0",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 5.25,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "synchronised"
+            },
+            {
+              "asset_id": "turbine-1",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 5.25,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "synchronised"
+            },
+            {
+              "asset_id": "turbine-2",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            },
+            {
+              "asset_id": "turbine-3",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            },
+            {
+              "asset_id": "turbine-4",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            }
+          ]
+        },
+        "candidate": {
+          "bess_escalation_active": false,
+          "bess_escalation_reason": "",
+          "bess_output_mw": -0.0,
+          "bess_soc_fraction": 0.9999999939221045,
+          "commitment_action": "hold",
+          "commitment_blocked_by": "reserve floor would be violated after removing the selected turbine",
+          "commitment_reason": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "commitment_target_unit_id": null,
+          "committed_rated_mw": 30.0,
+          "frequency_hz": 60.00000000000379,
+          "island_collapsed": false,
+          "p_compute_demand_mw": 0,
+          "p_cooling_demand_mw": 1.5896688864224935e-05,
+          "p_demand_mw": 9.538013318534962e-05,
+          "p_dispatch_curtailed_mw": 10.499904619866815,
+          "p_generation_mw": 10.5,
+          "p_non_gpu_demand_mw": 7.948344432112468e-05,
+          "p_served_mw": 9.538013318534962e-05,
+          "p_unserved_mw": 0.0,
+          "reserve_floor_mw": 15.000095380133185,
+          "reserve_satisfied": true,
+          "sim_time_seconds": 33180.0,
+          "tick_index": 6636,
+          "turbine_fuel_telemetry": [
+            {
+              "asset_id": "turbine-0",
+              "start_count": 0
+            },
+            {
+              "asset_id": "turbine-1",
+              "start_count": 1
+            },
+            {
+              "asset_id": "turbine-2",
+              "start_count": 1
+            },
+            {
+              "asset_id": "turbine-3",
+              "start_count": 5
+            },
+            {
+              "asset_id": "turbine-4",
+              "start_count": 5
+            }
+          ],
+          "turbine_output_mw": 10.5,
+          "turbine_start_count": 12,
+          "turbine_units": [
+            {
+              "asset_id": "turbine-0",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 5.25,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "synchronised"
+            },
+            {
+              "asset_id": "turbine-1",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 5.25,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "synchronised"
+            },
+            {
+              "asset_id": "turbine-2",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            },
+            {
+              "asset_id": "turbine-3",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            },
+            {
+              "asset_id": "turbine-4",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            }
+          ]
+        }
+      },
+      {
+        "baseline": {
+          "bess_escalation_active": false,
+          "bess_escalation_reason": "",
+          "bess_output_mw": -0.0,
+          "bess_soc_fraction": 0.9999999940185621,
+          "commitment_action": "hold",
+          "commitment_blocked_by": null,
+          "commitment_reason": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=290/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "commitment_target_unit_id": null,
+          "committed_rated_mw": 30.0,
+          "frequency_hz": 60.00000000000379,
+          "island_collapsed": false,
+          "p_compute_demand_mw": 0,
+          "p_cooling_demand_mw": 0.0,
+          "p_demand_mw": 0.0,
+          "p_dispatch_curtailed_mw": 10.5,
+          "p_generation_mw": 10.5,
+          "p_non_gpu_demand_mw": null,
+          "p_served_mw": 0.0,
+          "p_unserved_mw": 0.0,
+          "reserve_floor_mw": 15.0,
+          "reserve_satisfied": true,
+          "sim_time_seconds": 33185.0,
+          "tick_index": 6637,
+          "turbine_fuel_telemetry": [
+            {
+              "asset_id": "turbine-0",
+              "start_count": 0
+            },
+            {
+              "asset_id": "turbine-1",
+              "start_count": 1
+            },
+            {
+              "asset_id": "turbine-2",
+              "start_count": 1
+            },
+            {
+              "asset_id": "turbine-3",
+              "start_count": 5
+            },
+            {
+              "asset_id": "turbine-4",
+              "start_count": 5
+            }
+          ],
+          "turbine_output_mw": 10.5,
+          "turbine_start_count": 12,
+          "turbine_units": [
+            {
+              "asset_id": "turbine-0",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 5.25,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "synchronised"
+            },
+            {
+              "asset_id": "turbine-1",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 5.25,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "synchronised"
+            },
+            {
+              "asset_id": "turbine-2",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            },
+            {
+              "asset_id": "turbine-3",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            },
+            {
+              "asset_id": "turbine-4",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            }
+          ]
+        },
+        "candidate": {
+          "bess_escalation_active": false,
+          "bess_escalation_reason": "",
+          "bess_output_mw": -0.0,
+          "bess_soc_fraction": 0.9999999939221045,
+          "commitment_action": "hold",
+          "commitment_blocked_by": "reserve floor would be violated after removing the selected turbine",
+          "commitment_reason": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "commitment_target_unit_id": null,
+          "committed_rated_mw": 30.0,
+          "frequency_hz": 60.00000000000379,
+          "island_collapsed": false,
+          "p_compute_demand_mw": 0,
+          "p_cooling_demand_mw": 1.5896688864224935e-05,
+          "p_demand_mw": 9.538013318534962e-05,
+          "p_dispatch_curtailed_mw": 10.499904619866815,
+          "p_generation_mw": 10.5,
+          "p_non_gpu_demand_mw": 7.948344432112468e-05,
+          "p_served_mw": 9.538013318534962e-05,
+          "p_unserved_mw": 0.0,
+          "reserve_floor_mw": 15.000095380133185,
+          "reserve_satisfied": true,
+          "sim_time_seconds": 33185.0,
+          "tick_index": 6637,
+          "turbine_fuel_telemetry": [
+            {
+              "asset_id": "turbine-0",
+              "start_count": 0
+            },
+            {
+              "asset_id": "turbine-1",
+              "start_count": 1
+            },
+            {
+              "asset_id": "turbine-2",
+              "start_count": 1
+            },
+            {
+              "asset_id": "turbine-3",
+              "start_count": 5
+            },
+            {
+              "asset_id": "turbine-4",
+              "start_count": 5
+            }
+          ],
+          "turbine_output_mw": 10.5,
+          "turbine_start_count": 12,
+          "turbine_units": [
+            {
+              "asset_id": "turbine-0",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 5.25,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "synchronised"
+            },
+            {
+              "asset_id": "turbine-1",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 5.25,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "synchronised"
+            },
+            {
+              "asset_id": "turbine-2",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            },
+            {
+              "asset_id": "turbine-3",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            },
+            {
+              "asset_id": "turbine-4",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            }
+          ]
+        }
+      },
+      {
+        "baseline": {
+          "bess_escalation_active": false,
+          "bess_escalation_reason": "",
+          "bess_output_mw": -0.0,
+          "bess_soc_fraction": 0.9999999940185621,
+          "commitment_action": "hold",
+          "commitment_blocked_by": null,
+          "commitment_reason": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=295/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "commitment_target_unit_id": null,
+          "committed_rated_mw": 30.0,
+          "frequency_hz": 60.00000000000379,
+          "island_collapsed": false,
+          "p_compute_demand_mw": 0,
+          "p_cooling_demand_mw": 0.0,
+          "p_demand_mw": 0.0,
+          "p_dispatch_curtailed_mw": 10.5,
+          "p_generation_mw": 10.5,
+          "p_non_gpu_demand_mw": null,
+          "p_served_mw": 0.0,
+          "p_unserved_mw": 0.0,
+          "reserve_floor_mw": 15.0,
+          "reserve_satisfied": true,
+          "sim_time_seconds": 33190.0,
+          "tick_index": 6638,
+          "turbine_fuel_telemetry": [
+            {
+              "asset_id": "turbine-0",
+              "start_count": 0
+            },
+            {
+              "asset_id": "turbine-1",
+              "start_count": 1
+            },
+            {
+              "asset_id": "turbine-2",
+              "start_count": 1
+            },
+            {
+              "asset_id": "turbine-3",
+              "start_count": 5
+            },
+            {
+              "asset_id": "turbine-4",
+              "start_count": 5
+            }
+          ],
+          "turbine_output_mw": 10.5,
+          "turbine_start_count": 12,
+          "turbine_units": [
+            {
+              "asset_id": "turbine-0",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 5.25,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "synchronised"
+            },
+            {
+              "asset_id": "turbine-1",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 5.25,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "synchronised"
+            },
+            {
+              "asset_id": "turbine-2",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            },
+            {
+              "asset_id": "turbine-3",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            },
+            {
+              "asset_id": "turbine-4",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            }
+          ]
+        },
+        "candidate": {
+          "bess_escalation_active": false,
+          "bess_escalation_reason": "",
+          "bess_output_mw": -0.0,
+          "bess_soc_fraction": 0.9999999939221045,
+          "commitment_action": "hold",
+          "commitment_blocked_by": "reserve floor would be violated after removing the selected turbine",
+          "commitment_reason": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "commitment_target_unit_id": null,
+          "committed_rated_mw": 30.0,
+          "frequency_hz": 60.00000000000379,
+          "island_collapsed": false,
+          "p_compute_demand_mw": 0,
+          "p_cooling_demand_mw": 1.5896688864224935e-05,
+          "p_demand_mw": 9.538013318534962e-05,
+          "p_dispatch_curtailed_mw": 10.499904619866815,
+          "p_generation_mw": 10.5,
+          "p_non_gpu_demand_mw": 7.948344432112468e-05,
+          "p_served_mw": 9.538013318534962e-05,
+          "p_unserved_mw": 0.0,
+          "reserve_floor_mw": 15.000095380133185,
+          "reserve_satisfied": true,
+          "sim_time_seconds": 33190.0,
+          "tick_index": 6638,
+          "turbine_fuel_telemetry": [
+            {
+              "asset_id": "turbine-0",
+              "start_count": 0
+            },
+            {
+              "asset_id": "turbine-1",
+              "start_count": 1
+            },
+            {
+              "asset_id": "turbine-2",
+              "start_count": 1
+            },
+            {
+              "asset_id": "turbine-3",
+              "start_count": 5
+            },
+            {
+              "asset_id": "turbine-4",
+              "start_count": 5
+            }
+          ],
+          "turbine_output_mw": 10.5,
+          "turbine_start_count": 12,
+          "turbine_units": [
+            {
+              "asset_id": "turbine-0",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 5.25,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "synchronised"
+            },
+            {
+              "asset_id": "turbine-1",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 5.25,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "synchronised"
+            },
+            {
+              "asset_id": "turbine-2",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            },
+            {
+              "asset_id": "turbine-3",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            },
+            {
+              "asset_id": "turbine-4",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            }
+          ]
+        }
+      },
+      {
+        "baseline": {
+          "bess_escalation_active": false,
+          "bess_escalation_reason": "",
+          "bess_output_mw": -0.0,
+          "bess_soc_fraction": 0.9999999940185621,
+          "commitment_action": "decommit",
+          "commitment_blocked_by": "",
+          "commitment_reason": "U=0.000 \u2264 0.5, U_without=0.000 \u2264 0.7; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "commitment_target_unit_id": "turbine-1",
+          "committed_rated_mw": 15.0,
+          "frequency_hz": 60.00000000000379,
+          "island_collapsed": false,
+          "p_compute_demand_mw": 0,
+          "p_cooling_demand_mw": 0.0,
+          "p_demand_mw": 0.0,
+          "p_dispatch_curtailed_mw": 10.5,
+          "p_generation_mw": 10.5,
+          "p_non_gpu_demand_mw": null,
+          "p_served_mw": 0.0,
+          "p_unserved_mw": 0.0,
+          "reserve_floor_mw": 15.0,
+          "reserve_satisfied": true,
+          "sim_time_seconds": 33195.0,
+          "tick_index": 6639,
+          "turbine_fuel_telemetry": [
+            {
+              "asset_id": "turbine-0",
+              "start_count": 0
+            },
+            {
+              "asset_id": "turbine-1",
+              "start_count": 1
+            },
+            {
+              "asset_id": "turbine-2",
+              "start_count": 1
+            },
+            {
+              "asset_id": "turbine-3",
+              "start_count": 5
+            },
+            {
+              "asset_id": "turbine-4",
+              "start_count": 5
+            }
+          ],
+          "turbine_output_mw": 10.5,
+          "turbine_start_count": 12,
+          "turbine_units": [
+            {
+              "asset_id": "turbine-0",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 5.25,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "synchronised"
+            },
+            {
+              "asset_id": "turbine-1",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 5.25,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "unloading"
+            },
+            {
+              "asset_id": "turbine-2",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            },
+            {
+              "asset_id": "turbine-3",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            },
+            {
+              "asset_id": "turbine-4",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            }
+          ]
+        },
+        "candidate": {
+          "bess_escalation_active": false,
+          "bess_escalation_reason": "",
+          "bess_output_mw": -0.0,
+          "bess_soc_fraction": 0.9999999939221045,
+          "commitment_action": "hold",
+          "commitment_blocked_by": "reserve floor would be violated after removing the selected turbine",
+          "commitment_reason": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "commitment_target_unit_id": null,
+          "committed_rated_mw": 30.0,
+          "frequency_hz": 60.00000000000379,
+          "island_collapsed": false,
+          "p_compute_demand_mw": 0,
+          "p_cooling_demand_mw": 1.5896688864224935e-05,
+          "p_demand_mw": 9.538013318534962e-05,
+          "p_dispatch_curtailed_mw": 10.499904619866815,
+          "p_generation_mw": 10.5,
+          "p_non_gpu_demand_mw": 7.948344432112468e-05,
+          "p_served_mw": 9.538013318534962e-05,
+          "p_unserved_mw": 0.0,
+          "reserve_floor_mw": 15.000095380133185,
+          "reserve_satisfied": true,
+          "sim_time_seconds": 33195.0,
+          "tick_index": 6639,
+          "turbine_fuel_telemetry": [
+            {
+              "asset_id": "turbine-0",
+              "start_count": 0
+            },
+            {
+              "asset_id": "turbine-1",
+              "start_count": 1
+            },
+            {
+              "asset_id": "turbine-2",
+              "start_count": 1
+            },
+            {
+              "asset_id": "turbine-3",
+              "start_count": 5
+            },
+            {
+              "asset_id": "turbine-4",
+              "start_count": 5
+            }
+          ],
+          "turbine_output_mw": 10.5,
+          "turbine_start_count": 12,
+          "turbine_units": [
+            {
+              "asset_id": "turbine-0",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 5.25,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "synchronised"
+            },
+            {
+              "asset_id": "turbine-1",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 5.25,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "synchronised"
+            },
+            {
+              "asset_id": "turbine-2",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            },
+            {
+              "asset_id": "turbine-3",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            },
+            {
+              "asset_id": "turbine-4",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            }
+          ]
+        }
+      },
+      {
+        "baseline": {
+          "bess_escalation_active": false,
+          "bess_escalation_reason": "",
+          "bess_output_mw": -0.0,
+          "bess_soc_fraction": 0.9999999940185621,
+          "commitment_action": "hold",
+          "commitment_blocked_by": "post-removal utilisation U_without=inf exceeds 0.7",
+          "commitment_reason": "U=0.000, floor_mw=15.0, total_rated=15.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "commitment_target_unit_id": null,
+          "committed_rated_mw": 15.0,
+          "frequency_hz": 60.00000000000379,
+          "island_collapsed": false,
+          "p_compute_demand_mw": 0,
+          "p_cooling_demand_mw": 0.0,
+          "p_demand_mw": 0.0,
+          "p_dispatch_curtailed_mw": 10.5,
+          "p_generation_mw": 10.5,
+          "p_non_gpu_demand_mw": null,
+          "p_served_mw": 0.0,
+          "p_unserved_mw": 0.0,
+          "reserve_floor_mw": 15.0,
+          "reserve_satisfied": true,
+          "sim_time_seconds": 33200.0,
+          "tick_index": 6640,
+          "turbine_fuel_telemetry": [
+            {
+              "asset_id": "turbine-0",
+              "start_count": 0
+            },
+            {
+              "asset_id": "turbine-1",
+              "start_count": 1
+            },
+            {
+              "asset_id": "turbine-2",
+              "start_count": 1
+            },
+            {
+              "asset_id": "turbine-3",
+              "start_count": 5
+            },
+            {
+              "asset_id": "turbine-4",
+              "start_count": 5
+            }
+          ],
+          "turbine_output_mw": 10.5,
+          "turbine_start_count": 12,
+          "turbine_units": [
+            {
+              "asset_id": "turbine-0",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 5.25,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "synchronised"
+            },
+            {
+              "asset_id": "turbine-1",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 5.25,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "unloading"
+            },
+            {
+              "asset_id": "turbine-2",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            },
+            {
+              "asset_id": "turbine-3",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            },
+            {
+              "asset_id": "turbine-4",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            }
+          ]
+        },
+        "candidate": {
+          "bess_escalation_active": false,
+          "bess_escalation_reason": "",
+          "bess_output_mw": -0.0,
+          "bess_soc_fraction": 0.9999999939221045,
+          "commitment_action": "hold",
+          "commitment_blocked_by": "reserve floor would be violated after removing the selected turbine",
+          "commitment_reason": "U=0.000, floor_mw=15.0, total_rated=30.0, commit_sustained=0/30 s, decommit_sustained=0/300 s; BESS full; 10.50 MW turbine surplus remains after BESS absorbed 0.00 MW",
+          "commitment_target_unit_id": null,
+          "committed_rated_mw": 30.0,
+          "frequency_hz": 60.00000000000379,
+          "island_collapsed": false,
+          "p_compute_demand_mw": 0,
+          "p_cooling_demand_mw": 1.5896688864224935e-05,
+          "p_demand_mw": 9.538013318534962e-05,
+          "p_dispatch_curtailed_mw": 10.499904619866815,
+          "p_generation_mw": 10.5,
+          "p_non_gpu_demand_mw": 7.948344432112468e-05,
+          "p_served_mw": 9.538013318534962e-05,
+          "p_unserved_mw": 0.0,
+          "reserve_floor_mw": 15.000095380133185,
+          "reserve_satisfied": true,
+          "sim_time_seconds": 33200.0,
+          "tick_index": 6640,
+          "turbine_fuel_telemetry": [
+            {
+              "asset_id": "turbine-0",
+              "start_count": 0
+            },
+            {
+              "asset_id": "turbine-1",
+              "start_count": 1
+            },
+            {
+              "asset_id": "turbine-2",
+              "start_count": 1
+            },
+            {
+              "asset_id": "turbine-3",
+              "start_count": 5
+            },
+            {
+              "asset_id": "turbine-4",
+              "start_count": 5
+            }
+          ],
+          "turbine_output_mw": 10.5,
+          "turbine_start_count": 12,
+          "turbine_units": [
+            {
+              "asset_id": "turbine-0",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 5.25,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "synchronised"
+            },
+            {
+              "asset_id": "turbine-1",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 5.25,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "synchronised"
+            },
+            {
+              "asset_id": "turbine-2",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            },
+            {
+              "asset_id": "turbine-3",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            },
+            {
+              "asset_id": "turbine-4",
+              "hot_standby": false,
+              "msl_mw": 5.25,
+              "output_mw": 0.0,
+              "rated_mw": 15.0,
+              "setpoint_mw": 5.25,
+              "state": "offline"
+            }
+          ]
+        }
+      }
+    ],
+    "target_tick": 6639
+  },
+  "unserved_difference_episodes": {
+    "count": 18,
+    "largest_episodes": [
+      {
+        "baseline_peak_unserved_mw": 19.527639289878508,
+        "baseline_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          }
+        ],
+        "baseline_unserved_mwh": 4.096205470588591,
+        "cpu_candidate_peak_unserved_mw": 4.527639289878508,
+        "cpu_candidate_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          }
+        ],
+        "cpu_candidate_unserved_mwh": 1.1901352489540251,
+        "delta_unserved_mwh": -2.906070221634564,
+        "end_sim_time_s": 34050.0,
+        "end_tick": 6810,
+        "peak_delta_mw": 15.0,
+        "peak_sim_time_s": 33400.0,
+        "peak_tick": 6680,
+        "start_sim_time_s": 33400.0,
+        "start_tick": 6680
+      },
+      {
+        "baseline_peak_unserved_mw": 4.300494399999998,
+        "baseline_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 5.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-2",
+            "output_mw": 10.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-3",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-4",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          }
+        ],
+        "baseline_unserved_mwh": 0.0231971911111111,
+        "cpu_candidate_peak_unserved_mw": 0.0,
+        "cpu_candidate_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 14.0505,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-2",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-3",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-4",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          }
+        ],
+        "cpu_candidate_unserved_mwh": 0.0,
+        "delta_unserved_mwh": -0.0231971911111111,
+        "end_sim_time_s": 34710.0,
+        "end_tick": 6942,
+        "peak_delta_mw": 4.300494399999998,
+        "peak_sim_time_s": 34695.0,
+        "peak_tick": 6939,
+        "start_sim_time_s": 34695.0,
+        "start_tick": 6939
+      },
+      {
+        "baseline_peak_unserved_mw": 5.7928621253206884,
+        "baseline_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-2",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          }
+        ],
+        "baseline_unserved_mwh": 0.008045641840723178,
+        "cpu_candidate_peak_unserved_mw": 0.0,
+        "cpu_candidate_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-2",
+            "output_mw": 13.2809,
+            "state": "synchronised"
+          }
+        ],
+        "cpu_candidate_unserved_mwh": 0.0,
+        "delta_unserved_mwh": -0.008045641840723178,
+        "end_sim_time_s": 37665.0,
+        "end_tick": 7533,
+        "peak_delta_mw": 5.7928621253206884,
+        "peak_sim_time_s": 37665.0,
+        "peak_tick": 7533,
+        "start_sim_time_s": 37665.0,
+        "start_tick": 7533
+      },
+      {
+        "baseline_peak_unserved_mw": 3.3357077892809315,
+        "baseline_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 11.8858,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-2",
+            "output_mw": 7.75,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-3",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-4",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          }
+        ],
+        "baseline_unserved_mwh": 0.015208163040667966,
+        "cpu_candidate_peak_unserved_mw": 0.7100983079095116,
+        "cpu_candidate_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 11.8858,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-2",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-3",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-4",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          }
+        ],
+        "cpu_candidate_unserved_mwh": 0.021630927649874326,
+        "delta_unserved_mwh": 0.006422764609206362,
+        "end_sim_time_s": 38040.0,
+        "end_tick": 7608,
+        "peak_delta_mw": 2.62560948137142,
+        "peak_sim_time_s": 38025.0,
+        "peak_tick": 7605,
+        "start_sim_time_s": 38025.0,
+        "start_tick": 7605
+      },
+      {
+        "baseline_peak_unserved_mw": 4.41770325442792,
+        "baseline_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          }
+        ],
+        "baseline_unserved_mwh": 0.006135698964483223,
+        "cpu_candidate_peak_unserved_mw": 0.0,
+        "cpu_candidate_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-2",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          }
+        ],
+        "cpu_candidate_unserved_mwh": 0.0,
+        "delta_unserved_mwh": -0.006135698964483223,
+        "end_sim_time_s": 76705.0,
+        "end_tick": 15341,
+        "peak_delta_mw": 4.41770325442792,
+        "peak_sim_time_s": 76705.0,
+        "peak_tick": 15341,
+        "start_sim_time_s": 76705.0,
+        "start_tick": 15341
+      },
+      {
+        "baseline_peak_unserved_mw": 0.0,
+        "baseline_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          }
+        ],
+        "baseline_unserved_mwh": 0.0,
+        "cpu_candidate_peak_unserved_mw": 4.4073175647058775,
+        "cpu_candidate_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          }
+        ],
+        "cpu_candidate_unserved_mwh": 0.0061212743954248295,
+        "delta_unserved_mwh": 0.0061212743954248295,
+        "end_sim_time_s": 77325.0,
+        "end_tick": 15465,
+        "peak_delta_mw": 4.4073175647058775,
+        "peak_sim_time_s": 77325.0,
+        "peak_tick": 15465,
+        "start_sim_time_s": 77325.0,
+        "start_tick": 15465
+      },
+      {
+        "baseline_peak_unserved_mw": 0.0,
+        "baseline_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-2",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-3",
+            "output_mw": 2.5,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-4",
+            "output_mw": 12.3005,
+            "state": "synchronised"
+          }
+        ],
+        "baseline_unserved_mwh": 0.0,
+        "cpu_candidate_peak_unserved_mw": 0.949505600000002,
+        "cpu_candidate_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 14.0505,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-2",
+            "output_mw": 7.0505,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-3",
+            "output_mw": 2.5,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-4",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          }
+        ],
+        "cpu_candidate_unserved_mwh": 0.0016659800000000027,
+        "delta_unserved_mwh": 0.0016659800000000027,
+        "end_sim_time_s": 34395.0,
+        "end_tick": 6879,
+        "peak_delta_mw": 0.949505600000002,
+        "peak_sim_time_s": 34390.0,
+        "peak_tick": 6878,
+        "start_sim_time_s": 34390.0,
+        "start_tick": 6878
+      },
+      {
+        "baseline_peak_unserved_mw": 0.0,
+        "baseline_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-2",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-3",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          }
+        ],
+        "baseline_unserved_mwh": 0.0,
+        "cpu_candidate_peak_unserved_mw": 1.0292243186236334,
+        "cpu_candidate_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-2",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          }
+        ],
+        "cpu_candidate_unserved_mwh": 0.0014294782203106019,
+        "delta_unserved_mwh": 0.0014294782203106019,
+        "end_sim_time_s": 79950.0,
+        "end_tick": 15990,
+        "peak_delta_mw": 1.0292243186236334,
+        "peak_sim_time_s": 79950.0,
+        "peak_tick": 15990,
+        "start_sim_time_s": 79950.0,
+        "start_tick": 15990
+      },
+      {
+        "baseline_peak_unserved_mw": 0.7906463106174115,
+        "baseline_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-2",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          }
+        ],
+        "baseline_unserved_mwh": 0.0010981198758575161,
+        "cpu_candidate_peak_unserved_mw": 0.0,
+        "cpu_candidate_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-2",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          }
+        ],
+        "cpu_candidate_unserved_mwh": 0.0,
+        "delta_unserved_mwh": -0.0010981198758575161,
+        "end_sim_time_s": 80265.0,
+        "end_tick": 16053,
+        "peak_delta_mw": 0.7906463106174115,
+        "peak_sim_time_s": 80265.0,
+        "peak_tick": 16053,
+        "start_sim_time_s": 80265.0,
+        "start_tick": 16053
+      },
+      {
+        "baseline_peak_unserved_mw": 1.3201487931155569,
+        "baseline_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-2",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          }
+        ],
+        "baseline_unserved_mwh": 0.0018335399904382734,
+        "cpu_candidate_peak_unserved_mw": 1.660742577799244,
+        "cpu_candidate_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-2",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          }
+        ],
+        "cpu_candidate_unserved_mwh": 0.002306586913610061,
+        "delta_unserved_mwh": 0.0004730469231717876,
+        "end_sim_time_s": 83430.0,
+        "end_tick": 16686,
+        "peak_delta_mw": 0.34059378468368706,
+        "peak_sim_time_s": 83430.0,
+        "peak_tick": 16686,
+        "start_sim_time_s": 83430.0,
+        "start_tick": 16686
+      },
+      {
+        "baseline_peak_unserved_mw": 2.051734749229487,
+        "baseline_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-4",
+            "output_mw": 2.5,
+            "state": "synchronised"
+          }
+        ],
+        "baseline_unserved_mwh": 0.0028496315961520653,
+        "cpu_candidate_peak_unserved_mw": 2.291790647768149,
+        "cpu_candidate_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-4",
+            "output_mw": 2.5,
+            "state": "synchronised"
+          }
+        ],
+        "cpu_candidate_unserved_mwh": 0.0031830425663446514,
+        "delta_unserved_mwh": 0.0003334109701925862,
+        "end_sim_time_s": 77670.0,
+        "end_tick": 15534,
+        "peak_delta_mw": 0.24005589853866205,
+        "peak_sim_time_s": 77670.0,
+        "peak_tick": 15534,
+        "start_sim_time_s": 77670.0,
+        "start_tick": 15534
+      },
+      {
+        "baseline_peak_unserved_mw": 8.003102730544278,
+        "baseline_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 10.8159,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-2",
+            "output_mw": 9.9581,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-3",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-4",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          }
+        ],
+        "baseline_unserved_mwh": 0.015486356350302908,
+        "cpu_candidate_peak_unserved_mw": 7.991572114968527,
+        "cpu_candidate_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 10.8159,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-2",
+            "output_mw": 9.9696,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-3",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-4",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          }
+        ],
+        "cpu_candidate_unserved_mwh": 0.015454326862592488,
+        "delta_unserved_mwh": -3.202948771041905e-05,
+        "end_sim_time_s": 64595.0,
+        "end_tick": 12919,
+        "peak_delta_mw": 0.011530615575750858,
+        "peak_sim_time_s": 64590.0,
+        "peak_tick": 12918,
+        "start_sim_time_s": 64590.0,
+        "start_tick": 12918
+      },
+      {
+        "baseline_peak_unserved_mw": 10.278920528642224,
+        "baseline_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 11.9711,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-2",
+            "output_mw": 7.75,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-3",
+            "output_mw": 6.8858,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-4",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          }
+        ],
+        "baseline_unserved_mwh": 0.021608112579561734,
+        "cpu_candidate_peak_unserved_mw": 10.26903739820068,
+        "cpu_candidate_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 11.981,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-2",
+            "output_mw": 7.75,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-3",
+            "output_mw": 6.8858,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-4",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          }
+        ],
+        "cpu_candidate_unserved_mwh": 0.021580659439446336,
+        "delta_unserved_mwh": -2.745314011540027e-05,
+        "end_sim_time_s": 11945.0,
+        "end_tick": 2389,
+        "peak_delta_mw": 0.009883130441544097,
+        "peak_sim_time_s": 11940.0,
+        "peak_tick": 2388,
+        "start_sim_time_s": 11940.0,
+        "start_tick": 2388
+      },
+      {
+        "baseline_peak_unserved_mw": 6.473874666666653,
+        "baseline_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 12.75,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 10.25,
+            "state": "synchronised"
+          }
+        ],
+        "baseline_unserved_mwh": 0.5319712957541407,
+        "cpu_candidate_peak_unserved_mw": 6.473970046799842,
+        "cpu_candidate_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 12.75,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 10.25,
+            "state": "synchronised"
+          }
+        ],
+        "cpu_candidate_unserved_mwh": 0.5319790674686969,
+        "delta_unserved_mwh": 7.771714556081833e-06,
+        "end_sim_time_s": 52765.0,
+        "end_tick": 10553,
+        "peak_delta_mw": 9.538013318888261e-05,
+        "peak_sim_time_s": 52485.0,
+        "peak_tick": 10497,
+        "start_sim_time_s": 52485.0,
+        "start_tick": 10497
+      },
+      {
+        "baseline_peak_unserved_mw": 12.060990417908073,
+        "baseline_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-2",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          }
+        ],
+        "baseline_unserved_mwh": 0.01675137558042788,
+        "cpu_candidate_peak_unserved_mw": 12.064144320979352,
+        "cpu_candidate_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-2",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          }
+        ],
+        "cpu_candidate_unserved_mwh": 0.01675575600136021,
+        "delta_unserved_mwh": 4.380420932332325e-06,
+        "end_sim_time_s": 17460.0,
+        "end_tick": 3492,
+        "peak_delta_mw": 0.0031539030712792737,
+        "peak_sim_time_s": 17460.0,
+        "peak_tick": 3492,
+        "start_sim_time_s": 17460.0,
+        "start_tick": 3492
+      },
+      {
+        "baseline_peak_unserved_mw": 4.045101680714133,
+        "baseline_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-2",
+            "output_mw": 7.75,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-3",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-4",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          }
+        ],
+        "baseline_unserved_mwh": 0.005618196778769629,
+        "cpu_candidate_peak_unserved_mw": 4.048022411152019,
+        "cpu_candidate_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-2",
+            "output_mw": 7.75,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-3",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-4",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          }
+        ],
+        "cpu_candidate_unserved_mwh": 0.005622253348822248,
+        "delta_unserved_mwh": 4.056570052619119e-06,
+        "end_sim_time_s": 15135.0,
+        "end_tick": 3027,
+        "peak_delta_mw": 0.0029207304378857657,
+        "peak_sim_time_s": 15135.0,
+        "peak_tick": 3027,
+        "start_sim_time_s": 15135.0,
+        "start_tick": 3027
+      },
+      {
+        "baseline_peak_unserved_mw": 9.216565606970988,
+        "baseline_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-2",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          }
+        ],
+        "baseline_unserved_mwh": 0.012800785565237484,
+        "cpu_candidate_peak_unserved_mw": 9.218795864731462,
+        "cpu_candidate_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-2",
+            "output_mw": 15.0,
+            "state": "synchronised"
+          }
+        ],
+        "cpu_candidate_unserved_mwh": 0.012803883145460363,
+        "delta_unserved_mwh": 3.0975802228796723e-06,
+        "end_sim_time_s": 57520.0,
+        "end_tick": 11504,
+        "peak_delta_mw": 0.002230257760473364,
+        "peak_sim_time_s": 57520.0,
+        "peak_tick": 11504,
+        "start_sim_time_s": 57520.0,
+        "start_tick": 11504
+      },
+      {
+        "baseline_peak_unserved_mw": 2.2540521448683393,
+        "baseline_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 7.75,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-2",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-3",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-4",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          }
+        ],
+        "baseline_unserved_mwh": 0.0031306279789838046,
+        "cpu_candidate_peak_unserved_mw": 2.2542145165493253,
+        "cpu_candidate_units_on_bus_at_peak": [
+          {
+            "asset_id": "turbine-0",
+            "output_mw": 7.75,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-2",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-3",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-4",
+            "output_mw": 5.25,
+            "state": "synchronised"
+          }
+        ],
+        "cpu_candidate_unserved_mwh": 0.003130853495207396,
+        "delta_unserved_mwh": 2.2551622359164487e-07,
+        "end_sim_time_s": 55395.0,
+        "end_tick": 11079,
+        "peak_delta_mw": 0.0001623716809859843,
+        "peak_sim_time_s": 55395.0,
+        "peak_tick": 11079,
+        "start_sim_time_s": 55395.0,
+        "start_tick": 11079
+      }
+    ],
+    "sum_delta_mwh": -2.928140869134271
+  }
+}
