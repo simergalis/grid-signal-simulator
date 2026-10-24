@@ -1,0 +1,301 @@
+{
+  "all_ticks_identical": false,
+  "compared_ticks": 1,
+  "diagnostic": "correctly pinned first-tick comparison; no tick export",
+  "first_diff": {
+    "comparison_index": 1,
+    "differing_fields": {
+      "absorbable_mw": {
+        "pinned": 0.0,
+        "rest": 11.84509476
+      },
+      "bess_bridging_available_mw": {
+        "pinned": 0.0,
+        "rest": 17.0
+      },
+      "bess_bridging_floor_mw": {
+        "pinned": 0.0,
+        "rest": 2.6999999999999997
+      },
+      "bess_material_discharge_threshold_mw": {
+        "pinned": 0.0,
+        "rest": 1.0
+      },
+      "capacity_gate_headroom_mw": {
+        "pinned": 0.0,
+        "rest": 49.9933
+      },
+      "design_peak_load_mw": {
+        "pinned": 0.0,
+        "rest": 50.0
+      },
+      "edl_dispatch_cost_usd": {
+        "pinned": null,
+        "rest": 0.0003584482003021334
+      },
+      "rated_cooling_mw": {
+        "pinned": 0.0,
+        "rest": 11.84509476
+      },
+      "run_id": {
+        "pinned": "S10_mit_supercloud_2021-08-11",
+        "rest": "run-ba5fd804b7c7"
+      },
+      "site_lat": {
+        "pinned": 0.0,
+        "rest": 37.3541
+      },
+      "site_lon": {
+        "pinned": 0.0,
+        "rest": -121.9552
+      },
+      "site_name": {
+        "pinned": "",
+        "rest": "Santa Clara, CA, USA"
+      },
+      "site_utc_offset_h": {
+        "pinned": 0.0,
+        "rest": -8.130346666666666
+      },
+      "turbine_units": {
+        "pinned": [
+          {
+            "asset_id": "turbine-0",
+            "breaker_closed": true,
+            "hot_standby": false,
+            "msl_mw": 5.25,
+            "output_mw": 5.25,
+            "rated_mw": 15.0,
+            "state": "synchronised"
+          },
+          {
+            "asset_id": "turbine-1",
+            "breaker_closed": false,
+            "hot_standby": false,
+            "msl_mw": 5.25,
+            "output_mw": 0.0,
+            "rated_mw": 15.0,
+            "state": "starting"
+          },
+          {
+            "asset_id": "turbine-2",
+            "breaker_closed": false,
+            "hot_standby": false,
+            "msl_mw": 5.25,
+            "output_mw": 0.0,
+            "rated_mw": 15.0,
+            "state": "offline"
+          },
+          {
+            "asset_id": "turbine-3",
+            "breaker_closed": false,
+            "hot_standby": false,
+            "msl_mw": 5.25,
+            "output_mw": 0.0,
+            "rated_mw": 15.0,
+            "state": "offline"
+          },
+          {
+            "asset_id": "turbine-4",
+            "breaker_closed": false,
+            "hot_standby": false,
+            "msl_mw": 5.25,
+            "output_mw": 0.0,
+            "rated_mw": 15.0,
+            "state": "offline"
+          }
+        ],
+        "rest": [
+          {
+            "asset_id": "turbine-0",
+            "breaker_closed": true,
+            "cold_start_s": 600.0,
+            "fuel_low_load_threshold_pct": 50.0,
+            "fuel_modelled": true,
+            "fuel_parameter_provenance": {
+              "hot_standby_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+              "low_load_threshold_pct": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+              "part_load_heat_rate_btu_per_kwh": "Full-load point CITED: Siemens Energy Gas Turbine Portfolio Brochure 2024, Performance data overview: Power generation, SGT-400 (15 MW) at 14.3 MW(e) and 10,103 kJ/kWh; converted 10,103 \u00d7 0.947817 = 9,575.795151 Btu/kWh, rounded to 9,576. The brochure states gross efficiency but does not state ISO conditions or the heat-rate LHV/HHV/net/gross basis; ASSUMED LHV is PROPOSED_HERE. Source: https://assets.siemens-energy.com/dam/d7e01f44-f091-44f2-bf71-b20b010483e1/GT-Portfolio-Brochure-2024__FINAL_Low_Resolution-pdf_Original%20file.pdf. Part-load shape PROPOSED_HERE: core/models.py AERODERIVATIVE_FUEL_PARAMETERS curve scaled by 9,576/8,500.",
+              "start_fuel_mmbtu_cold": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+              "start_fuel_mmbtu_hot": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+              "start_fuel_mmbtu_warm": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+              "synchronized_no_load_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value."
+            },
+            "fuel_type": "natural_gas",
+            "fuel_units": "MMBtu",
+            "gt_mode": "frame",
+            "hot_standby": false,
+            "hot_start_s": 300.0,
+            "levelled_off": false,
+            "msl_mw": 5.25,
+            "no_load_mw": 0.0,
+            "out_of_service_reason": null,
+            "output_mw": 5.25,
+            "r_asset_mw_per_s": 0.5,
+            "rated_mw": 15.0,
+            "run_hours_h": null,
+            "setpoint_mw": 5.25,
+            "start_phase": null,
+            "state": "synchronised",
+            "sync_relay_state": "permissive",
+            "thermal_state": "hot",
+            "time_to_online_s": null,
+            "warm_start_s": 360.0
+          },
+          {
+            "asset_id": "turbine-1",
+            "breaker_closed": true,
+            "cold_start_s": 600,
+            "fuel_low_load_threshold_pct": 50.0,
+            "fuel_modelled": true,
+            "fuel_parameter_provenance": {
+              "hot_standby_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+              "low_load_threshold_pct": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+              "part_load_heat_rate_btu_per_kwh": "Full-load point CITED: Siemens Energy Gas Turbine Portfolio Brochure 2024, Performance data overview: Power generation, SGT-400 (15 MW) at 14.3 MW(e) and 10,103 kJ/kWh; converted 10,103 \u00d7 0.947817 = 9,575.795151 Btu/kWh, rounded to 9,576. The brochure states gross efficiency but does not state ISO conditions or the heat-rate LHV/HHV/net/gross basis; ASSUMED LHV is PROPOSED_HERE. Source: https://assets.siemens-energy.com/dam/d7e01f44-f091-44f2-bf71-b20b010483e1/GT-Portfolio-Brochure-2024__FINAL_Low_Resolution-pdf_Original%20file.pdf. Part-load shape PROPOSED_HERE: core/models.py AERODERIVATIVE_FUEL_PARAMETERS curve scaled by 9,576/8,500.",
+              "start_fuel_mmbtu_cold": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+              "start_fuel_mmbtu_hot": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+              "start_fuel_mmbtu_warm": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+              "synchronized_no_load_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value."
+            },
+            "fuel_type": "natural_gas",
+            "fuel_units": "MMBtu",
+            "gt_mode": "frame",
+            "hot_standby": false,
+            "hot_start_s": 300.0,
+            "levelled_off": false,
+            "msl_mw": 5.25,
+            "no_load_mw": 0.0,
+            "out_of_service_reason": null,
+            "output_mw": 0.0,
+            "r_asset_mw_per_s": 0.5,
+            "rated_mw": 15.0,
+            "run_hours_h": null,
+            "setpoint_mw": 0.0,
+            "start_phase": "purge",
+            "state": "starting",
+            "sync_relay_state": "permissive",
+            "thermal_state": "warm",
+            "time_to_online_s": 355.0,
+            "warm_start_s": 360.0
+          },
+          {
+            "asset_id": "turbine-2",
+            "breaker_closed": true,
+            "cold_start_s": 600.0,
+            "fuel_low_load_threshold_pct": 50.0,
+            "fuel_modelled": true,
+            "fuel_parameter_provenance": {
+              "hot_standby_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+              "low_load_threshold_pct": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+              "part_load_heat_rate_btu_per_kwh": "Full-load point CITED: Siemens Energy Gas Turbine Portfolio Brochure 2024, Performance data overview: Power generation, SGT-400 (15 MW) at 14.3 MW(e) and 10,103 kJ/kWh; converted 10,103 \u00d7 0.947817 = 9,575.795151 Btu/kWh, rounded to 9,576. The brochure states gross efficiency but does not state ISO conditions or the heat-rate LHV/HHV/net/gross basis; ASSUMED LHV is PROPOSED_HERE. Source: https://assets.siemens-energy.com/dam/d7e01f44-f091-44f2-bf71-b20b010483e1/GT-Portfolio-Brochure-2024__FINAL_Low_Resolution-pdf_Original%20file.pdf. Part-load shape PROPOSED_HERE: core/models.py AERODERIVATIVE_FUEL_PARAMETERS curve scaled by 9,576/8,500.",
+              "start_fuel_mmbtu_cold": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+              "start_fuel_mmbtu_hot": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+              "start_fuel_mmbtu_warm": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+              "synchronized_no_load_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value."
+            },
+            "fuel_type": "natural_gas",
+            "fuel_units": "MMBtu",
+            "gt_mode": "frame",
+            "hot_standby": false,
+            "hot_start_s": 300,
+            "levelled_off": false,
+            "msl_mw": 5.25,
+            "no_load_mw": 0.0,
+            "out_of_service_reason": null,
+            "output_mw": 0.0,
+            "r_asset_mw_per_s": 0.5,
+            "rated_mw": 15.0,
+            "run_hours_h": null,
+            "setpoint_mw": 0.0,
+            "start_phase": null,
+            "state": "offline",
+            "sync_relay_state": "permissive",
+            "thermal_state": "cold",
+            "time_to_online_s": null,
+            "warm_start_s": 360
+          },
+          {
+            "asset_id": "turbine-3",
+            "breaker_closed": true,
+            "cold_start_s": 600.0,
+            "fuel_low_load_threshold_pct": 50.0,
+            "fuel_modelled": true,
+            "fuel_parameter_provenance": {
+              "hot_standby_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+              "low_load_threshold_pct": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+              "part_load_heat_rate_btu_per_kwh": "Full-load point CITED: Siemens Energy Gas Turbine Portfolio Brochure 2024, Performance data overview: Power generation, SGT-400 (15 MW) at 14.3 MW(e) and 10,103 kJ/kWh; converted 10,103 \u00d7 0.947817 = 9,575.795151 Btu/kWh, rounded to 9,576. The brochure states gross efficiency but does not state ISO conditions or the heat-rate LHV/HHV/net/gross basis; ASSUMED LHV is PROPOSED_HERE. Source: https://assets.siemens-energy.com/dam/d7e01f44-f091-44f2-bf71-b20b010483e1/GT-Portfolio-Brochure-2024__FINAL_Low_Resolution-pdf_Original%20file.pdf. Part-load shape PROPOSED_HERE: core/models.py AERODERIVATIVE_FUEL_PARAMETERS curve scaled by 9,576/8,500.",
+              "start_fuel_mmbtu_cold": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+              "start_fuel_mmbtu_hot": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+              "start_fuel_mmbtu_warm": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+              "synchronized_no_load_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value."
+            },
+            "fuel_type": "natural_gas",
+            "fuel_units": "MMBtu",
+            "gt_mode": "frame",
+            "hot_standby": false,
+            "hot_start_s": 300,
+            "levelled_off": false,
+            "msl_mw": 5.25,
+            "no_load_mw": 0.0,
+            "out_of_service_reason": null,
+            "output_mw": 0.0,
+            "r_asset_mw_per_s": 0.5,
+            "rated_mw": 15.0,
+            "run_hours_h": null,
+            "setpoint_mw": 0.0,
+            "start_phase": null,
+            "state": "offline",
+            "sync_relay_state": "permissive",
+            "thermal_state": "cold",
+            "time_to_online_s": null,
+            "warm_start_s": 360
+          },
+          {
+            "asset_id": "turbine-4",
+            "breaker_closed": true,
+            "cold_start_s": 600.0,
+            "fuel_low_load_threshold_pct": 50.0,
+            "fuel_modelled": true,
+            "fuel_parameter_provenance": {
+              "hot_standby_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+              "low_load_threshold_pct": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+              "part_load_heat_rate_btu_per_kwh": "Full-load point CITED: Siemens Energy Gas Turbine Portfolio Brochure 2024, Performance data overview: Power generation, SGT-400 (15 MW) at 14.3 MW(e) and 10,103 kJ/kWh; converted 10,103 \u00d7 0.947817 = 9,575.795151 Btu/kWh, rounded to 9,576. The brochure states gross efficiency but does not state ISO conditions or the heat-rate LHV/HHV/net/gross basis; ASSUMED LHV is PROPOSED_HERE. Source: https://assets.siemens-energy.com/dam/d7e01f44-f091-44f2-bf71-b20b010483e1/GT-Portfolio-Brochure-2024__FINAL_Low_Resolution-pdf_Original%20file.pdf. Part-load shape PROPOSED_HERE: core/models.py AERODERIVATIVE_FUEL_PARAMETERS curve scaled by 9,576/8,500.",
+              "start_fuel_mmbtu_cold": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+              "start_fuel_mmbtu_hot": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+              "start_fuel_mmbtu_warm": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value.",
+              "synchronized_no_load_fuel_mmbtu_per_h": "PROPOSED_HERE: retained from the in-repo aeroderivative fuel parameters; not a Siemens SGT-400 vendor value."
+            },
+            "fuel_type": "natural_gas",
+            "fuel_units": "MMBtu",
+            "gt_mode": "frame",
+            "hot_standby": false,
+            "hot_start_s": 300,
+            "levelled_off": false,
+            "msl_mw": 5.25,
+            "no_load_mw": 0.0,
+            "out_of_service_reason": null,
+            "output_mw": 0.0,
+            "r_asset_mw_per_s": 0.5,
+            "rated_mw": 15.0,
+            "run_hours_h": null,
+            "setpoint_mw": 0.0,
+            "start_phase": null,
+            "state": "offline",
+            "sync_relay_state": "permissive",
+            "thermal_state": "cold",
+            "time_to_online_s": null,
+            "warm_start_s": 360
+          }
+        ]
+      }
+    },
+    "first_field": "absorbable_mw",
+    "sim_time_seconds": 5.0,
+    "tick_index": 1
+  },
+  "post_status": 201,
+  "run_id": "run-ba5fd804b7c7",
+  "run_seed": 1729,
+  "scenario_id": "S10_mit_supercloud_2021-08-11",
+  "wall_clock": 1792454400.0
+}
