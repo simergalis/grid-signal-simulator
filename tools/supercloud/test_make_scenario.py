@@ -257,7 +257,7 @@ def test_tc_isl_60_fuel_model_is_explicit_opt_in_and_records_provenance():
     assert report["invocation"]["gpu_partitions_status"].startswith("INFERRED")
     assert report["fuel_model"]["option"] == "siemens-sgt-400-proxy"
     assert report["fuel_model"]["full_load_conversion"]["converted_btu_per_kwh"] == pytest.approx(
-        10160.59824
+        9575.795151
     )
     assert with_fuel["workload_events"] == without_fuel["workload_events"]
     assert with_fuel["turbine_units"][0]["rated_mw"] == without_fuel["turbine_units"][0]["rated_mw"]

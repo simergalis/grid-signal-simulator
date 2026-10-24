@@ -112,11 +112,12 @@ CPU_WATTS_PER_CORE = {
 # Platinum 8260, 165 W / 24 cores).
 CPU_SENSITIVITY_WATTS_PER_CORE = 6.875
 
-# PROPOSED_HERE: SGT-400 proxy uses the 2024 Siemens brochure's 10,720 kJ/kWh
-# at 14.3 MWe, converted and rounded to 10,161 Btu/kWh. The brochure's basis
-# is treated as ASSUMED LHV because the extracted specification does not state
-# LHV/HHV. The equipment installed at S10 is unknown.
-SGT400_PROXY_FULL_LOAD_BTU_PER_KWH = 10161.0
+# PROPOSED_HERE: SGT-400 proxy uses the 2024 Siemens brochure's performance
+# table row for SGT-400 (15 MW): 14.3 MW(e) at 10,103 kJ/kWh, converted and
+# rounded to 9,576 Btu/kWh. The brochure does not state ISO conditions or
+# LHV/HHV heat-rate basis; the fuel block labels the basis ASSUMED LHV.
+# The equipment installed at S10 is unknown.
+SGT400_PROXY_FULL_LOAD_BTU_PER_KWH = 9576.0
 # PROPOSED_HERE: scale the repository's aeroderivative part-load curve so its
 # full-load point matches the SGT-400 proxy. The in-repo curve is
 # 11,000/9,800/9,000/8,500 Btu/kWh at 25/50/75/100% load
@@ -145,10 +146,13 @@ SGT400_PROXY_FUEL_BLOCK = {
         ),
         "part_load_heat_rate_btu_per_kwh": (
             "Full-load point CITED: Siemens Energy Gas Turbine Portfolio "
-            "Brochure 2024, SGT-400 14.3 MWe at 10,720 kJ/kWh; converted "
-            "10,720 × 0.947817 = 10,160.59824 Btu/kWh, rounded to 10,161. "
-            "Part-load shape PROPOSED_HERE: core/models.py "
-            "AERODERIVATIVE_FUEL_PARAMETERS curve scaled by 10,161/8,500."
+            "Brochure 2024, Performance data overview: Power generation, "
+            "SGT-400 (15 MW) at 14.3 MW(e) and 10,103 kJ/kWh; converted "
+            "10,103 × 0.947817 = 9,575.795151 Btu/kWh, rounded to 9,576. "
+            "The brochure states gross efficiency but does not state ISO "
+            "conditions or the heat-rate LHV/HHV/net/gross basis; ASSUMED LHV "
+            "is PROPOSED_HERE. Part-load shape PROPOSED_HERE: core/models.py "
+            "AERODERIVATIVE_FUEL_PARAMETERS curve scaled by 9,576/8,500."
         ),
         "synchronized_no_load_fuel_mmbtu_per_h": (
             "PROPOSED_HERE: retained from the in-repo aeroderivative fuel "
@@ -648,9 +652,9 @@ def build_scenario(
             "fuel_block": SGT400_PROXY_FUEL_BLOCK,
             "operating_cost_inputs": S10_OPERATING_COST_INPUTS,
             "full_load_conversion": {
-                "source_kj_per_kwh": 10720,
+                "source_kj_per_kwh": 10103,
                 "conversion_factor_to_btu_per_kwh": 0.947817,
-                "converted_btu_per_kwh": 10720 * 0.947817,
+                "converted_btu_per_kwh": 10103 * 0.947817,
                 "rounded_btu_per_kwh_for_curve": SGT400_PROXY_FULL_LOAD_BTU_PER_KWH,
                 "curve_scale": SGT400_PROXY_CURVE_SCALE,
             },
