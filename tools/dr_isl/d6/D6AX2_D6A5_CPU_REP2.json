@@ -1,0 +1,1841 @@
+{
+  "pinning": {
+    "seed": 1729,
+    "python_numpy_seed": 1729,
+    "wall_clock": 1792454400.0,
+    "dt_s": 5.0
+  },
+  "runs": [
+    {
+      "case": "cpu_candidate",
+      "scenario_id": "S10_mit_supercloud_2021-08-11",
+      "repetition": 1,
+      "source_spec": "/home/runner/workspace/tools/dr_isl/d6/S10_2021-08-11_cpu_candidate.json",
+      "seed": 1729,
+      "wall_clock": 1792454400.0,
+      "physical_sha256": "e819540659528686bd40c706290dc09883d87b865e25df17da970f4550fefa1b",
+      "tick_count": 17280,
+      "duration_s": 86400.0,
+      "demand_mwh": 621.8578481855469,
+      "served_mwh": 616.3219971384977,
+      "unserved_mwh": 5.5358510470491495,
+      "peak_demand_mw": 61.8004944,
+      "peak_unserved_mw": 16.800494399999998,
+      "dispatch_curtailment_mwh": 46.772686724380485,
+      "turbine_fuel_mmbtu": null,
+      "turbine_fuel_status": "not_modelled",
+      "turbine_fuel_modelled": false,
+      "turbine_fuel_units": [
+        {
+          "asset_id": "turbine-0",
+          "fuel_modelled": false,
+          "total_fuel_mmbtu": null
+        },
+        {
+          "asset_id": "turbine-1",
+          "fuel_modelled": false,
+          "total_fuel_mmbtu": null
+        },
+        {
+          "asset_id": "turbine-2",
+          "fuel_modelled": false,
+          "total_fuel_mmbtu": null
+        },
+        {
+          "asset_id": "turbine-3",
+          "fuel_modelled": false,
+          "total_fuel_mmbtu": null
+        },
+        {
+          "asset_id": "turbine-4",
+          "fuel_modelled": false,
+          "total_fuel_mmbtu": null
+        }
+      ],
+      "turbine_start_count": 37,
+      "turbine_start_events": [
+        {
+          "unit": "turbine-1",
+          "from": "offline",
+          "to": "starting",
+          "tick": 1,
+          "sim_time_s": 5.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "offline",
+          "to": "starting",
+          "tick": 107,
+          "sim_time_s": 535.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 226,
+          "sim_time_s": 1130.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 420,
+          "sim_time_s": 2100.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 1191,
+          "sim_time_s": 5955.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 1375,
+          "sim_time_s": 6875.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 1915,
+          "sim_time_s": 9575.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 1987,
+          "sim_time_s": 9935.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 2906,
+          "sim_time_s": 14530.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 3524,
+          "sim_time_s": 17620.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 3584,
+          "sim_time_s": 17920.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 5271,
+          "sim_time_s": 26355.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "offline",
+          "to": "starting",
+          "tick": 6662,
+          "sim_time_s": 33310.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 6733,
+          "sim_time_s": 33665.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 6805,
+          "sim_time_s": 34025.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 7479,
+          "sim_time_s": 37395.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 7539,
+          "sim_time_s": 37695.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 8150,
+          "sim_time_s": 40750.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 8639,
+          "sim_time_s": 43195.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 9389,
+          "sim_time_s": 46945.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "offline",
+          "to": "starting",
+          "tick": 10491,
+          "sim_time_s": 52455.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 10550,
+          "sim_time_s": 52750.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 10622,
+          "sim_time_s": 53110.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 11489,
+          "sim_time_s": 57445.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 11549,
+          "sim_time_s": 57745.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 12154,
+          "sim_time_s": 60770.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 12517,
+          "sim_time_s": 62585.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "offline",
+          "to": "starting",
+          "tick": 14726,
+          "sim_time_s": 73630.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 14789,
+          "sim_time_s": 73945.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 14859,
+          "sim_time_s": 74295.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 15474,
+          "sim_time_s": 77370.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 15558,
+          "sim_time_s": 77790.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "offline",
+          "to": "starting",
+          "tick": 15810,
+          "sim_time_s": 79050.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 16161,
+          "sim_time_s": 80805.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 16254,
+          "sim_time_s": 81270.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 16779,
+          "sim_time_s": 83895.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 16868,
+          "sim_time_s": 84340.0
+        }
+      ],
+      "turbine_stop_events": [
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 998,
+          "sim_time_s": 4990.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 1011,
+          "sim_time_s": 5055.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 1023,
+          "sim_time_s": 5115.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 1036,
+          "sim_time_s": 5180.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 1687,
+          "sim_time_s": 8435.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 1700,
+          "sim_time_s": 8500.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 1794,
+          "sim_time_s": 8970.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 1807,
+          "sim_time_s": 9035.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 2713,
+          "sim_time_s": 13565.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 2726,
+          "sim_time_s": 13630.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 3331,
+          "sim_time_s": 16655.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 3344,
+          "sim_time_s": 16720.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 3356,
+          "sim_time_s": 16780.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 3369,
+          "sim_time_s": 16845.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 4093,
+          "sim_time_s": 20465.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 4106,
+          "sim_time_s": 20530.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 4118,
+          "sim_time_s": 20590.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 4131,
+          "sim_time_s": 20655.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 5317,
+          "sim_time_s": 26585.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 5330,
+          "sim_time_s": 26650.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 5702,
+          "sim_time_s": 28510.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 5715,
+          "sim_time_s": 28575.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 7286,
+          "sim_time_s": 36430.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 7299,
+          "sim_time_s": 36495.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 7311,
+          "sim_time_s": 36555.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 7324,
+          "sim_time_s": 36620.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 7957,
+          "sim_time_s": 39785.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 7970,
+          "sim_time_s": 39850.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 7982,
+          "sim_time_s": 39910.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 7995,
+          "sim_time_s": 39975.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 8615,
+          "sim_time_s": 43075.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 8628,
+          "sim_time_s": 43140.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 9366,
+          "sim_time_s": 46830.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 9379,
+          "sim_time_s": 46895.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 9820,
+          "sim_time_s": 49100.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 9833,
+          "sim_time_s": 49165.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 9845,
+          "sim_time_s": 49225.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 9858,
+          "sim_time_s": 49290.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 11296,
+          "sim_time_s": 56480.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 11309,
+          "sim_time_s": 56545.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 11321,
+          "sim_time_s": 56605.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 11334,
+          "sim_time_s": 56670.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 11961,
+          "sim_time_s": 59805.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 11974,
+          "sim_time_s": 59870.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 11986,
+          "sim_time_s": 59930.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 11999,
+          "sim_time_s": 59995.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 14269,
+          "sim_time_s": 71345.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 14282,
+          "sim_time_s": 71410.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 14294,
+          "sim_time_s": 71470.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 14307,
+          "sim_time_s": 71535.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 14319,
+          "sim_time_s": 71595.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 14332,
+          "sim_time_s": 71660.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 15278,
+          "sim_time_s": 76390.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 15291,
+          "sim_time_s": 76455.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 15303,
+          "sim_time_s": 76515.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 15316,
+          "sim_time_s": 76580.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 15452,
+          "sim_time_s": 77260.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 15465,
+          "sim_time_s": 77325.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 15893,
+          "sim_time_s": 79465.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 15906,
+          "sim_time_s": 79530.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 15977,
+          "sim_time_s": 79885.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 15990,
+          "sim_time_s": 79950.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 16580,
+          "sim_time_s": 82900.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 16593,
+          "sim_time_s": 82965.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 16673,
+          "sim_time_s": 83365.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 16686,
+          "sim_time_s": 83430.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 17198,
+          "sim_time_s": 85990.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 17211,
+          "sim_time_s": 86055.0
+        }
+      ],
+      "start_stop_transitions": [
+        {
+          "unit": "turbine-1",
+          "from": "offline",
+          "to": "starting",
+          "tick": 1,
+          "sim_time_s": 5.0
+        },
+        {
+          "unit": "turbine-1",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 72,
+          "sim_time_s": 360.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "offline",
+          "to": "starting",
+          "tick": 107,
+          "sim_time_s": 535.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 226,
+          "sim_time_s": 1130.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 226,
+          "sim_time_s": 1130.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 346,
+          "sim_time_s": 1730.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 420,
+          "sim_time_s": 2100.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 539,
+          "sim_time_s": 2695.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 998,
+          "sim_time_s": 4990.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 1011,
+          "sim_time_s": 5055.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 1023,
+          "sim_time_s": 5115.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 1036,
+          "sim_time_s": 5180.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 1191,
+          "sim_time_s": 5955.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 1251,
+          "sim_time_s": 6255.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 1375,
+          "sim_time_s": 6875.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 1434,
+          "sim_time_s": 7170.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 1687,
+          "sim_time_s": 8435.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 1700,
+          "sim_time_s": 8500.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 1794,
+          "sim_time_s": 8970.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 1807,
+          "sim_time_s": 9035.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 1915,
+          "sim_time_s": 9575.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 1974,
+          "sim_time_s": 9870.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 1987,
+          "sim_time_s": 9935.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 2047,
+          "sim_time_s": 10235.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 2713,
+          "sim_time_s": 13565.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 2726,
+          "sim_time_s": 13630.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 2906,
+          "sim_time_s": 14530.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 2966,
+          "sim_time_s": 14830.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 3331,
+          "sim_time_s": 16655.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 3344,
+          "sim_time_s": 16720.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 3356,
+          "sim_time_s": 16780.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 3369,
+          "sim_time_s": 16845.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 3524,
+          "sim_time_s": 17620.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 3584,
+          "sim_time_s": 17920.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 3584,
+          "sim_time_s": 17920.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 3644,
+          "sim_time_s": 18220.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 4093,
+          "sim_time_s": 20465.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 4106,
+          "sim_time_s": 20530.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 4118,
+          "sim_time_s": 20590.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 4131,
+          "sim_time_s": 20655.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 5271,
+          "sim_time_s": 26355.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 5317,
+          "sim_time_s": 26585.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 5330,
+          "sim_time_s": 26650.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 5342,
+          "sim_time_s": 26710.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 5702,
+          "sim_time_s": 28510.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 5715,
+          "sim_time_s": 28575.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "offline",
+          "to": "starting",
+          "tick": 6662,
+          "sim_time_s": 33310.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 6733,
+          "sim_time_s": 33665.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 6733,
+          "sim_time_s": 33665.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 6805,
+          "sim_time_s": 34025.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 6805,
+          "sim_time_s": 34025.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 6877,
+          "sim_time_s": 34385.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 7286,
+          "sim_time_s": 36430.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 7299,
+          "sim_time_s": 36495.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 7311,
+          "sim_time_s": 36555.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 7324,
+          "sim_time_s": 36620.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 7479,
+          "sim_time_s": 37395.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 7539,
+          "sim_time_s": 37695.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 7539,
+          "sim_time_s": 37695.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 7599,
+          "sim_time_s": 37995.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 7957,
+          "sim_time_s": 39785.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 7970,
+          "sim_time_s": 39850.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 7982,
+          "sim_time_s": 39910.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 7995,
+          "sim_time_s": 39975.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 8150,
+          "sim_time_s": 40750.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 8210,
+          "sim_time_s": 41050.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 8615,
+          "sim_time_s": 43075.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 8628,
+          "sim_time_s": 43140.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 8639,
+          "sim_time_s": 43195.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 8698,
+          "sim_time_s": 43490.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 9366,
+          "sim_time_s": 46830.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 9379,
+          "sim_time_s": 46895.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 9389,
+          "sim_time_s": 46945.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 9460,
+          "sim_time_s": 47300.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 9820,
+          "sim_time_s": 49100.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 9833,
+          "sim_time_s": 49165.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 9845,
+          "sim_time_s": 49225.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 9858,
+          "sim_time_s": 49290.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "offline",
+          "to": "starting",
+          "tick": 10491,
+          "sim_time_s": 52455.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 10550,
+          "sim_time_s": 52750.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 10550,
+          "sim_time_s": 52750.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 10622,
+          "sim_time_s": 53110.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 10622,
+          "sim_time_s": 53110.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 10694,
+          "sim_time_s": 53470.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 11296,
+          "sim_time_s": 56480.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 11309,
+          "sim_time_s": 56545.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 11321,
+          "sim_time_s": 56605.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 11334,
+          "sim_time_s": 56670.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 11489,
+          "sim_time_s": 57445.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 11549,
+          "sim_time_s": 57745.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 11549,
+          "sim_time_s": 57745.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 11609,
+          "sim_time_s": 58045.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 11961,
+          "sim_time_s": 59805.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 11974,
+          "sim_time_s": 59870.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 11986,
+          "sim_time_s": 59930.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 11999,
+          "sim_time_s": 59995.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 12154,
+          "sim_time_s": 60770.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 12214,
+          "sim_time_s": 61070.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 12517,
+          "sim_time_s": 62585.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 12576,
+          "sim_time_s": 62880.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 14269,
+          "sim_time_s": 71345.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 14282,
+          "sim_time_s": 71410.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 14294,
+          "sim_time_s": 71470.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 14307,
+          "sim_time_s": 71535.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 14319,
+          "sim_time_s": 71595.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 14332,
+          "sim_time_s": 71660.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "offline",
+          "to": "starting",
+          "tick": 14726,
+          "sim_time_s": 73630.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 14785,
+          "sim_time_s": 73925.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 14789,
+          "sim_time_s": 73945.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 14848,
+          "sim_time_s": 74240.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 14859,
+          "sim_time_s": 74295.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 14918,
+          "sim_time_s": 74590.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 15278,
+          "sim_time_s": 76390.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 15291,
+          "sim_time_s": 76455.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 15303,
+          "sim_time_s": 76515.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 15316,
+          "sim_time_s": 76580.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 15452,
+          "sim_time_s": 77260.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 15465,
+          "sim_time_s": 77325.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 15474,
+          "sim_time_s": 77370.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 15533,
+          "sim_time_s": 77665.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 15558,
+          "sim_time_s": 77790.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 15617,
+          "sim_time_s": 78085.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "offline",
+          "to": "starting",
+          "tick": 15810,
+          "sim_time_s": 79050.0
+        },
+        {
+          "unit": "turbine-2",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 15869,
+          "sim_time_s": 79345.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 15893,
+          "sim_time_s": 79465.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 15906,
+          "sim_time_s": 79530.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 15977,
+          "sim_time_s": 79885.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 15990,
+          "sim_time_s": 79950.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 16161,
+          "sim_time_s": 80805.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 16220,
+          "sim_time_s": 81100.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 16254,
+          "sim_time_s": 81270.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 16313,
+          "sim_time_s": 81565.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 16580,
+          "sim_time_s": 82900.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 16593,
+          "sim_time_s": 82965.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 16673,
+          "sim_time_s": 83365.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 16686,
+          "sim_time_s": 83430.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "offline",
+          "to": "starting",
+          "tick": 16779,
+          "sim_time_s": 83895.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 16838,
+          "sim_time_s": 84190.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "offline",
+          "to": "starting",
+          "tick": 16868,
+          "sim_time_s": 84340.0
+        },
+        {
+          "unit": "turbine-3",
+          "from": "starting",
+          "to": "synchronised",
+          "tick": 16927,
+          "sim_time_s": 84635.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "synchronised",
+          "to": "unloading",
+          "tick": 17198,
+          "sim_time_s": 85990.0
+        },
+        {
+          "unit": "turbine-4",
+          "from": "unloading",
+          "to": "offline",
+          "tick": 17211,
+          "sim_time_s": 86055.0
+        }
+      ],
+      "bess_soc_start_fraction": 1.0,
+      "bess_soc_min_fraction": 0.0,
+      "bess_soc_max_fraction": 1.0,
+      "bess_soc_end_fraction": 0.9999999644397214,
+      "bess_usable_mwh": 14.0,
+      "reserve_floor_refusal_count": 0,
+      "reserve_floor_refusals": [],
+      "frequency_min_hz": -139.16266514361757,
+      "frequency_max_hz": 60.54594906943219,
+      "invalid_frequency_tick_count": 521,
+      "invalid_frequency_fraction": 0.030150462962962962,
+      "balance_failure_count": 0,
+      "first_balance_failure_tick": null,
+      "island_collapsed": false,
+      "collapse_time_s": null,
+      "collapse_reason": null,
+      "startup_surplus_window": {
+        "first_demand_exceeds_on_bus_turbine_msl": {
+          "tick": 112,
+          "sim_time_s": 560.0,
+          "demand_mw": 27.966987896684998,
+          "on_bus_turbine_msl_mw": 26.25
+        },
+        "dispatch_curtailment_energy_before_exceed_mwh": 1.0016770896947318
+      },
+      "seed_manifest": {
+        "seed_derivation_version": "d4-sha256-v1",
+        "requested_run_seed": 1729,
+        "root_seed": 1729,
+        "root_seed_drawn": false,
+        "resolved_at_utc": "2026-10-20T00:00:00+00:00",
+        "consumer_seeds": {
+          "advisory_deidentification": 8865589394022759354,
+          "fabric": 6183987952937733223,
+          "price_curve": 42,
+          "procurement_price_curve": 42,
+          "scada": 42,
+          "solar_sim": 8684894437775220153
+        },
+        "consumer_sources": {
+          "advisory_deidentification": "derived_from_run_seed",
+          "fabric": "derived_from_run_seed",
+          "price_curve": "explicit_config",
+          "procurement_price_curve": "explicit_config",
+          "scada": "explicit_config",
+          "solar_sim": "derived_from_run_seed"
+        }
+      }
+    }
+  ]
+}
