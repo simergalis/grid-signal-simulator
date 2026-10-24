@@ -311,7 +311,7 @@ def _run_s10_full_profile(spec_path, *, seed=1729):
         }
 
 
-def test_tc_isl_51_s10_cpu_profile_is_full_scale_additive():
+def test_tc_isl_51_s10_cpu_profile_is_full_scale_additive(tmp_path):
     """TC-ISL-51 — full S10 CPU profile preserves GPU heat and adds demand."""
     package = Path(__file__).resolve().parents[1]
     workspace = Path(__file__).resolve().parents[5]
@@ -321,7 +321,14 @@ def test_tc_isl_51_s10_cpu_profile_is_full_scale_additive():
     candidate_path = (
         workspace / "tools" / "dr_isl" / "d6" / "S10_2021-08-11_cpu_candidate.json"
     )
-    current = _run_s10_full_profile(current_path)
+    # D6b replaces tracked S10 with the CPU-enabled candidate. Keep this
+    # additivity comparison anchored to the same tracked spec, but remove only
+    # its now-superseded CPU profile to form the no-CPU test control.
+    current_spec = json.loads(current_path.read_text(encoding="utf-8"))
+    current_spec.pop("non_gpu_load_profile_mw", None)
+    no_cpu_path = tmp_path / "S10_without_non_gpu_load_profile.json"
+    no_cpu_path.write_text(json.dumps(current_spec), encoding="utf-8")
+    current = _run_s10_full_profile(no_cpu_path)
     candidate = _run_s10_full_profile(candidate_path)
     current_ticks = current["ticks"]
     candidate_ticks = candidate["ticks"]
